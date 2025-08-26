@@ -1,45 +1,39 @@
-import {
-  animate,
-  state,
-  style,
-  transition,
-  trigger,
-} from '@angular/animations';
+import { animate, state, style, transition, trigger } from "@angular/animations";
 
-export const tabToggleState = trigger('toggleState', [
+export const tabToggleState = trigger("toggleState", [
   state(
-    '*',
+    "*",
     style({
-      transform: 'translateY(0)',
-    }),
+      transform: "translateY(0)"
+    })
   ),
-  transition('* => *', [
+  transition("* => *", [
     style({
-      transform: 'translateY(60%)',
+      transform: "translateY(60%)"
     }),
     animate(
-      '400ms ease-in',
+      "400ms ease-in",
       style({
-        transform: 'translateY(0)',
-      }),
-    ),
+        transform: "translateY(0)"
+      })
+    )
   ]),
-  transition('* => *', [
+  transition("* => *", [
     style({
-      transform: 'translateY(60%)',
+      transform: "translateY(60%)"
     }),
     animate(
-      '400ms ease-out',
+      "400ms ease-out",
       style({
-        transform: 'translateY(0)',
-      }),
-    ),
-  ]),
+        transform: "translateY(0)"
+      })
+    )
+  ])
 ]);
 
-export const componentFadeAnimation = trigger('componentFade', [
-  transition(':enter', [
+export const componentFadeAnimation = trigger("componentFade", [
+  transition(":enter", [
     style({ opacity: 0 }),
-    animate('150ms ease-out', style({ opacity: 1 })),
-  ]),
+    animate("150ms ease-out", style({ opacity: 1 }))
+  ])
 ]);

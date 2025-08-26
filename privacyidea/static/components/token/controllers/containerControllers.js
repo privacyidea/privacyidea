@@ -378,7 +378,7 @@ myApp.controller("containerCreateController", ['$scope', '$http', '$q', 'Contain
             initParams["serial"] = serial;
             TokenFactory.enroll({}, initParams, function (data) {
                 $scope.tokenInitData[serial] = data.detail;
-                $scope.tokenInitData[serial].initParams = initParams;
+                $scope.tokenInitData[serial].init_params = initParams;
                 $scope.tokenInitData[serial].type = initParams.type;
             });
         };
@@ -702,10 +702,9 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
         };
 
         $scope.unassignUser = function () {
+            // only pass user id and resolver is enough and avoids errors if the user or realm does not exist anymore
             let params = {
                 container_serial: $scope.containerSerial,
-                user: fixUser($scope.containerOwner.user_name),
-                realm: $scope.containerOwner.user_realm,
                 user_id: $scope.containerOwner.user_id,
                 resolver: $scope.containerOwner.user_resolver
             }

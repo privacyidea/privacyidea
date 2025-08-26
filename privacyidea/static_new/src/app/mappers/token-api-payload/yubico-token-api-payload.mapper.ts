@@ -1,23 +1,17 @@
-import {
-  TokenApiPayloadMapper,
-  TokenEnrollmentData,
-  TokenEnrollmentPayload,
-} from './_token-api-payload.mapper';
-import { Injectable } from '@angular/core';
+import { TokenApiPayloadMapper, TokenEnrollmentData, TokenEnrollmentPayload } from "./_token-api-payload.mapper";
+import { Injectable } from "@angular/core";
 
 export interface YubicoEnrollmentData extends TokenEnrollmentData {
-  type: 'yubico';
+  type: "yubico";
   yubicoIdentifier?: string;
 }
 
 export interface YubicoEnrollmentPayload extends TokenEnrollmentPayload {
-  'yubico.tokenid'?: string;
+  "yubico.tokenid"?: string;
 }
 
-@Injectable({ providedIn: 'root' })
-export class YubicoApiPayloadMapper
-  implements TokenApiPayloadMapper<YubicoEnrollmentData>
-{
+@Injectable({ providedIn: "root" })
+export class YubicoApiPayloadMapper implements TokenApiPayloadMapper<YubicoEnrollmentData> {
   toApiPayload(data: YubicoEnrollmentData): YubicoEnrollmentPayload {
     const payload: YubicoEnrollmentPayload = {
       type: data.type,
@@ -26,12 +20,17 @@ export class YubicoApiPayloadMapper
       validity_period_start: data.validityPeriodStart,
       validity_period_end: data.validityPeriodEnd,
       user: data.user,
+      realm: data.user ? data.realm : null,
       pin: data.pin,
-      'yubico.tokenid': data.yubicoIdentifier,
+      "yubico.tokenid": data.yubicoIdentifier
     };
 
-    if (payload['yubico.tokenid'] === undefined) {
-      delete payload['yubico.tokenid'];
+    if (data.onlyAddToRealm) {
+      payload.realm = data.realm;
+      payload.user = null;
+    }
+    if (payload["yubico.tokenid"] === undefined) {
+      delete payload["yubico.tokenid"];
     }
     return payload;
   }

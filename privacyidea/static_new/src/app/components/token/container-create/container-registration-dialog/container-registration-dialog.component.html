@@ -1,20 +1,39 @@
-<h2 mat-dialog-title>Container Successfully Created</h2>
+<h2
+  i18n
+  mat-dialog-title>
+  Container Successfully Created
+</h2>
 <mat-dialog-content>
-  <span>The container was successfully created with serial number
-    <a (click)="containerSelected(data.containerSerial())">
-      {{ data.containerSerial() }} </a>.</span>
+  <span i18n
+    >The container was successfully created with serial number
+    <a (click)="containerSelected(data.containerSerial())"> {{ data.containerSerial() }} </a>.</span
+  >
   <div class="flex-row gap-1">
     @if (data.response.result?.value?.container_url?.img) {
-      <img alt="QR Code"
-           class="qr-code"
-           height="300px"
-           src="{{ data.response.result?.value?.container_url?.img }}"
-           width="300px" />
+      <img
+        i18n-alt
+        alt="QR Code"
+        class="qr-code"
+        height="300px"
+        src="{{ data.response.result?.value?.container_url?.img }}"
+        width="300px" />
     }
-    <p class="width-36">
-      Please scan the QR code with the privacyIDEA Authenticator App or click this
-      <a href="{{ data.response.result?.value?.container_url?.value }}">link</a> on your smartphone
-      to register your container. It will send the missing registration data to the configured
-      endpoint. </p>
+    <div
+      class="flex-column gap-1"
+      i18n>
+      <p class="width-36">
+        Please scan the QR code with the privacyIDEA Authenticator App or click this
+        <a href="{{ data.response.result?.value?.container_url?.value }}">link</a>
+        on your smartphone to register your container. It will send the missing registration data to the configured
+        endpoint.
+      </p>
+      <button
+        (click)="regenerateQRCode()"
+        class="card-button"
+        mat-flat-button>
+        <mat-icon>autorenew</mat-icon>
+        Regenerate QR Code
+      </button>
+    </div>
   </div>
 </mat-dialog-content>

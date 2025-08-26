@@ -1,37 +1,42 @@
 <div class="flex-column">
-  <div class="token-type-paragraph">
-    <p>{{ text }}</p>
-  </div>
   <h4 class="enroll-h4">Token Configuration</h4>
   <mat-form-field class="width-100">
-    <mat-label>VASCO Token blob</mat-label>
-    <textarea [errorStateMatcher]="vascoErrorStatematcher"
-              [formControl]="otpKeyControl"
-              matInput
-              placeholder="Enter blob"
-              required
-              rows="6">
+    <mat-label i18n>VASCO Token blob</mat-label>
+    <textarea
+      [errorStateMatcher]="vascoErrorStatematcher"
+      [formControl]="otpKeyControl"
+      i18n-placeholder
+      matInput
+      placeholder="Enter blob"
+      required
+      rows="6">
     </textarea>
     @if (otpKeyControl.hasError("minlength") || otpKeyControl.hasError("maxlength")) {
-      <mat-error>Expected VASCO Token blob as <strong>496-character hex string</strong></mat-error>
+      <mat-error i18n>Expected VASCO Token blob as <strong>496-character hex string</strong></mat-error>
     }
     @if (otpKeyControl.hasError("required")) {
-      <mat-error>VASCO Token blob is <strong>required</strong></mat-error>
+      <mat-error i18n>VASCO Token blob is <strong>required</strong></mat-error>
     }
   </mat-form-field>
   <div class="flex-row gap-1">
-    <mat-checkbox [formControl]="useVascoSerialControl"
-                  class="server-checkbox">
+    <mat-checkbox
+      [formControl]="useVascoSerialControl"
+      class="server-checkbox"
+      i18n>
       use VASCO Serial
     </mat-checkbox>
     <mat-form-field class="width-33">
-      <mat-label>Vasco Serial</mat-label>
-      <input [disabled]="!useVascoSerialControl.value"
-             [formControl]="vascoSerialControl"
-             matInput />
+      <mat-label i18n>Vasco Serial</mat-label>
+      <input
+        [disabled]="!useVascoSerialControl.value"
+        [formControl]="vascoSerialControl"
+        matInput />
     </mat-form-field>
   </div>
-  <span class="margin-bottom-1">The VASCO serial is read from the VASCO blob. If you want to use this VASCO
-    serial number within privacyIDEA, activate the checkbox. Otherwise
-    privacyIDEA will create a new unique serial number.</span>
+  <span
+    class="margin-bottom-1"
+    i18n
+    >The VASCO serial is read from the VASCO blob. If you want to use this VASCO serial number within privacyIDEA,
+    activate the checkbox. Otherwise privacyIDEA will create a new unique serial number.</span
+  >
 </div>

@@ -12,7 +12,7 @@ import {
   MatNoDataRow,
   MatRow,
   MatRowDef,
-  MatTable,
+  MatTable
 } from '@angular/material/table';
 import { MatFormField, MatLabel } from '@angular/material/form-field';
 import { FormsModule } from '@angular/forms';
@@ -29,8 +29,19 @@ import {
   NavigationSelfServiceComponent
 } from '../token/navigation-self-service/navigation-self-service.component';
 
+MatTable;
+}
+from;
+'@angular/material/table';
+import { RouterLink } from '@angular/router';
+import { ClearableInputComponent } from '../shared/clearable-input/clearable-input.component';
+import { CopyButtonComponent } from '../shared/copy-button/copy-button.component';
+import { ScrollToTopDirective } from '../shared/directives/app-scroll-to-top.directive';
+import { KeywordFilterComponent } from '../shared/keyword-filter/keyword-filter.component';
+import { AuditComponent } from './audit.component';
+
 @Component({
-  selector: 'app-audit-self-service',
+  selector: "app-audit-self-service",
   imports: [
     MatCardModule,
     KeywordFilterComponent,
@@ -58,9 +69,12 @@ import {
     MatDrawerContent,
     MatButtonModule,
     MatIcon,
-    NavigationSelfServiceComponent
+    NavigationSelfServiceComponent,
+    ScrollToTopDirective,
+    ClearableInputComponent
   ],
-  templateUrl: './audit.self-service.component.html',
-  styleUrl: './audit.component.scss',
+  templateUrl: "./audit.self-service.component.html",
+  styleUrl: "./audit.component.scss"
 })
-export class AuditComponentSelfServiceComponent extends AuditComponent {}
+export class AuditComponentSelfServiceComponent extends AuditComponent {
+}

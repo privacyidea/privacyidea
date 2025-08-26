@@ -1,9 +1,6 @@
-import { inject, Injectable } from '@angular/core';
-import {
-  ContentService,
-  ContentServiceInterface,
-} from '../content/content.service';
-import { ROUTE_PATHS } from '../../app.routes';
+import { inject, Injectable } from "@angular/core";
+import { ContentService, ContentServiceInterface } from "../content/content.service";
+import { ROUTE_PATHS } from "../../app.routes";
 
 export interface OverflowServiceInterface {
   isWidthOverflowing(selector: string, threshold: number): boolean;
@@ -18,11 +15,10 @@ export interface OverflowServiceInterface {
 }
 
 @Injectable({
-  providedIn: 'root',
+  providedIn: "root"
 })
 export class OverflowService implements OverflowServiceInterface {
-  private readonly contentService: ContentServiceInterface =
-    inject(ContentService);
+  private readonly contentService: ContentServiceInterface = inject(ContentService);
 
   isWidthOverflowing(selector: string, threshold: number): boolean {
     const element = document.querySelector(selector);
@@ -40,14 +36,11 @@ export class OverflowService implements OverflowServiceInterface {
     if (params.threshold !== undefined) {
       return element.clientHeight < params.threshold;
     } else if (params.thresholdSelector) {
-      const thresholdElement = document.querySelector<HTMLElement>(
-        params.thresholdSelector,
-      );
+      const thresholdElement = document.querySelector<HTMLElement>(params.thresholdSelector);
       if (!thresholdElement) return false;
       const computedStyle = window.getComputedStyle(thresholdElement);
       const paddingBottom = parseFloat(computedStyle.paddingBottom) || 0;
-      const thresholdHeightWithoutPadding =
-        thresholdElement.clientHeight - paddingBottom;
+      const thresholdHeightWithoutPadding = thresholdElement.clientHeight - paddingBottom;
       return element.clientHeight < thresholdHeightWithoutPadding + 150;
     } else {
       return false;
@@ -58,11 +51,7 @@ export class OverflowService implements OverflowServiceInterface {
     if (this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_DETAILS)) {
       return 1880;
     }
-    if (
-      this.contentService
-        .routeUrl()
-        .startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS)
-    ) {
+    if (this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS)) {
       return 1880;
     }
     switch (this.contentService.routeUrl()) {

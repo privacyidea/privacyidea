@@ -1,8 +1,8 @@
-import { httpResource, HttpResourceRef } from '@angular/common/http';
-import { Injectable, linkedSignal, WritableSignal } from '@angular/core';
-import { environment } from '../../../environments/environment';
-import { PiResponse } from '../../app.component';
-import { LocalService } from '../local/local.service';
+import { httpResource, HttpResourceRef } from "@angular/common/http";
+import { Injectable, linkedSignal, WritableSignal } from "@angular/core";
+import { environment } from "../../../environments/environment";
+import { PiResponse } from "../../app.component";
+import { AuthService } from "../auth/auth.service";
 
 export type Applications = {
   luks: ApplicationLuks;
@@ -53,14 +53,14 @@ export interface ApplicationServiceInterface {
 }
 
 @Injectable({
-  providedIn: 'root',
+  providedIn: "root"
 })
 export class ApplicationService implements ApplicationServiceInterface {
-  readonly applicationBaseUrl = environment.proxyUrl + '/application/';
+  readonly applicationBaseUrl = environment.proxyUrl + "/application/";
   applicationResource = httpResource<PiResponse<Applications>>(() => ({
     url: `${this.applicationBaseUrl}`,
-    method: 'GET',
-    headers: this.localService.getHeaders(),
+    method: "GET",
+    headers: this.authService.getHeaders()
   }));
   applications: WritableSignal<Applications> = linkedSignal({
     source: this.applicationResource.value,
@@ -72,28 +72,29 @@ export class ApplicationService implements ApplicationServiceInterface {
         previous?.value ?? {
           luks: {
             options: {
-              totp: { partition: { type: '' }, slot: { type: '', value: [] } },
-            },
+              totp: { partition: { type: "" }, slot: { type: "", value: [] } }
+            }
           },
           offline: {
             options: {
-              hotp: { count: { type: '' }, rounds: { type: '' } },
+              hotp: { count: { type: "" }, rounds: { type: "" } },
               passkey: {},
-              webauthn: {},
-            },
+              webauthn: {}
+            }
           },
           ssh: {
             options: {
               sshkey: {
-                service_id: { description: '', type: '', value: [] },
-                user: { description: '', type: '' },
-              },
-            },
-          },
+                service_id: { description: "", type: "", value: [] },
+                user: { description: "", type: "" }
+              }
+            }
+          }
         }
       );
-    },
+    }
   });
 
-  constructor(private localService: LocalService) {}
+  constructor(private authService: AuthService) {
+  }
 }

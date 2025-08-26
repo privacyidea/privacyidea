@@ -1,20 +1,10 @@
-import { httpResource, HttpResourceRef } from '@angular/common/http';
-import {
-  computed,
-  inject,
-  Injectable,
-  linkedSignal,
-  signal,
-  WritableSignal,
-} from '@angular/core';
-import { environment } from '../../../environments/environment';
-import { PiResponse } from '../../app.component';
-import {
-  ContentService,
-  ContentServiceInterface,
-} from '../content/content.service';
-import { LocalService, LocalServiceInterface } from '../local/local.service';
-import { ROUTE_PATHS } from '../../app.routes';
+import { httpResource, HttpResourceRef } from "@angular/common/http";
+import { computed, inject, Injectable, linkedSignal, signal, WritableSignal } from "@angular/core";
+import { environment } from "../../../environments/environment";
+import { PiResponse } from "../../app.component";
+import { ROUTE_PATHS } from "../../app.routes";
+import { AuthService, AuthServiceInterface } from "../auth/auth.service";
+import { ContentService, ContentServiceInterface } from "../content/content.service";
 
 export interface Audit {
   auditcolumns: string[];
@@ -56,27 +46,27 @@ export interface AuditData {
 }
 
 const apiFilter = [
-  'action',
-  'success',
-  'authentication',
-  'serial',
-  'date',
-  'startdate',
-  'duration',
-  'token_type',
-  'user',
-  'realm',
-  'administrator',
-  'action_call',
-  'info',
-  'privacyidea_server',
-  'client',
-  'user_agent',
-  'user_agent_version',
-  'policies',
-  'resolver',
-  'container_serial',
-  'container_type',
+  "action",
+  "success",
+  "authentication",
+  "serial",
+  "date",
+  "startdate",
+  "duration",
+  "token_type",
+  "user",
+  "realm",
+  "administrator",
+  "action_call",
+  "info",
+  "privacyidea_server",
+  "client",
+  "user_agent",
+  "user_agent_version",
+  "policies",
+  "resolver",
+  "container_serial",
+  "container_type"
 ];
 const advancedApiFilter: string[] = [];
 
@@ -91,16 +81,15 @@ export interface AuditServiceInterface {
 }
 
 @Injectable({
-  providedIn: 'root',
+  providedIn: "root"
 })
 export class AuditService implements AuditServiceInterface {
-  private readonly localService: LocalServiceInterface = inject(LocalService);
-  private readonly contentService: ContentServiceInterface =
-    inject(ContentService);
+  private readonly authService: AuthServiceInterface = inject(AuthService);
+  private readonly contentService: ContentServiceInterface = inject(ContentService);
 
   readonly apiFilter = apiFilter;
   readonly advancedApiFilter = advancedApiFilter;
-  private auditBaseUrl = environment.proxyUrl + '/audit/';
+  private auditBaseUrl = environment.proxyUrl + "/audit/";
   filterValue = signal({} as Record<string, string>);
   filterParams = computed<Record<string, string>>(() => {
     const allowedFilters = [...this.apiFilter, ...this.advancedApiFilter];
@@ -113,22 +102,22 @@ export class AuditService implements AuditServiceInterface {
     return filterPairs.reduce(
       (acc, { key, value }) => ({
         ...acc,
-        [key]: `*${value}*`,
+        [key]: `*${value}*`
       }),
-      {} as Record<string, string>,
+      {} as Record<string, string>
     );
   });
   pageSize = linkedSignal({
     source: this.filterValue,
-    computation: () => 10,
+    computation: () => 10
   });
   pageIndex = linkedSignal({
     source: () => ({
       filterValue: this.filterValue(),
       pageSize: this.pageSize(),
-      routeUrl: this.contentService.routeUrl(),
+      routeUrl: this.contentService.routeUrl()
     }),
-    computation: () => 0,
+    computation: () => 0
   });
   auditResource = httpResource<PiResponse<Audit>>(() => {
     if (this.contentService.routeUrl() !== ROUTE_PATHS.AUDIT) {
@@ -136,13 +125,13 @@ export class AuditService implements AuditServiceInterface {
     }
     return {
       url: this.auditBaseUrl,
-      method: 'GET',
-      headers: this.localService.getHeaders(),
+      method: "GET",
+      headers: this.authService.getHeaders(),
       params: {
         page_size: this.pageSize(),
         page: this.pageIndex(),
-        ...this.filterParams(),
-      },
+        ...this.filterParams()
+      }
     };
   });
 }

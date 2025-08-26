@@ -1,23 +1,13 @@
-import { httpResource, HttpResourceRef } from '@angular/common/http';
-import {
-  computed,
-  inject,
-  Injectable,
-  linkedSignal,
-  signal,
-  WritableSignal,
-} from '@angular/core';
-import { Sort } from '@angular/material/sort';
-import { PiResponse } from '../../../app.component';
-import {
-  ContentService,
-  ContentServiceInterface,
-} from '../../content/content.service';
-import { LocalService, LocalServiceInterface } from '../../local/local.service';
-import { TokenService, TokenServiceInterface } from '../token.service';
-import { ROUTE_PATHS } from '../../../app.routes';
+import { httpResource, HttpResourceRef } from "@angular/common/http";
+import { computed, inject, Injectable, linkedSignal, signal, WritableSignal } from "@angular/core";
+import { Sort } from "@angular/material/sort";
+import { PiResponse } from "../../../app.component";
+import { ROUTE_PATHS } from "../../../app.routes";
+import { AuthService, AuthServiceInterface } from "../../auth/auth.service";
+import { ContentService, ContentServiceInterface } from "../../content/content.service";
+import { TokenService, TokenServiceInterface } from "../token.service";
 
-const apiFilter = ['serial', 'transaction_id'];
+const apiFilter = ["serial", "transaction_id"];
 const advancedApiFilter: string[] = [];
 
 export interface Challenges {
@@ -52,20 +42,19 @@ export interface ChallengesServiceInterface {
 }
 
 @Injectable({
-  providedIn: 'root',
+  providedIn: "root"
 })
 export class ChallengesService implements ChallengesServiceInterface {
   private readonly tokenService: TokenServiceInterface = inject(TokenService);
-  private readonly localService: LocalServiceInterface = inject(LocalService);
-  private readonly contentService: ContentServiceInterface =
-    inject(ContentService);
+  private readonly authService: AuthServiceInterface = inject(AuthService);
+  private readonly contentService: ContentServiceInterface = inject(ContentService);
 
   readonly apiFilter = apiFilter;
   readonly advancedApiFilter = advancedApiFilter;
   tokenBaseUrl = this.tokenService.tokenBaseUrl;
   filterValue = linkedSignal({
     source: this.contentService.routeUrl,
-    computation: () => ({}) as Record<string, string>,
+    computation: () => ({}) as Record<string, string>
   });
   private filterParams = computed(() => {
     const allowedFilters = [...this.apiFilter, ...this.advancedApiFilter];
@@ -74,50 +63,48 @@ export class ChallengesService implements ChallengesServiceInterface {
       .filter(({ key }) => allowedFilters.includes(key));
     return filterPairs.reduce(
       (acc, { key, value }) => {
-        if (key === 'serial') {
+        if (key === "serial") {
           acc.serial = `*${value}*`;
         } else {
           acc.params[key] = `*${value}*`;
         }
         return acc;
       },
-      { params: {} as Record<string, string>, serial: '' },
+      { params: {} as Record<string, string>, serial: "" }
     );
   });
   pageSize = linkedSignal({
     source: this.contentService.routeUrl,
-    computation: () => 10,
+    computation: () => 10
   });
   pageIndex = linkedSignal({
     source: () => ({
       filterValue: this.filterValue(),
       pageSize: this.pageSize(),
-      routeUrl: this.contentService.routeUrl(),
+      routeUrl: this.contentService.routeUrl()
     }),
-    computation: () => 0,
+    computation: () => 0
   });
-  sort = signal({ active: 'timestamp', direction: 'asc' } as Sort);
+  sort = signal({ active: "timestamp", direction: "asc" } as Sort);
   challengesResource = httpResource<PiResponse<Challenges>>(() => {
     if (this.contentService.routeUrl() !== ROUTE_PATHS.TOKENS_CHALLENGES) {
       return undefined;
     }
     const { params: filterParams, serial } = this.filterParams();
-    const url = serial
-      ? `${this.tokenBaseUrl}challenges/${serial}`
-      : `${this.tokenBaseUrl}challenges/`;
+    const url = serial ? `${this.tokenBaseUrl}challenges/${serial}` : `${this.tokenBaseUrl}challenges/`;
     return {
       url,
-      method: 'GET',
-      headers: this.localService.getHeaders(),
+      method: "GET",
+      headers: this.authService.getHeaders(),
       params: {
         pagesize: this.pageSize(),
         page: this.pageIndex() + 1,
         ...(this.sort().active && {
           sortby: this.sort().active,
-          sortdir: this.sort().direction || 'asc',
+          sortdir: this.sort().direction || "asc"
         }),
-        ...filterParams,
-      },
+        ...filterParams
+      }
     };
   });
 }

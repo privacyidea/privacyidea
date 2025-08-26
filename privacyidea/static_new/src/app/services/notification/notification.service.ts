@@ -1,6 +1,6 @@
-import { Injectable } from '@angular/core';
-import { MatSnackBar, MatSnackBarRef } from '@angular/material/snack-bar';
-import { Subscription, timer } from 'rxjs';
+import { Injectable } from "@angular/core";
+import { MatSnackBar, MatSnackBarRef } from "@angular/material/snack-bar";
+import { Subscription, timer } from "rxjs";
 
 export interface NotificationServiceInterface {
   remainingTime: number;
@@ -11,7 +11,7 @@ export interface NotificationServiceInterface {
 }
 
 @Injectable({
-  providedIn: 'root',
+  providedIn: "root"
 })
 export class NotificationService implements NotificationServiceInterface {
   private totalDuration: number = 5000;
@@ -19,13 +19,14 @@ export class NotificationService implements NotificationServiceInterface {
   timerSub: Subscription = new Subscription();
   startTime: number = 0;
 
-  constructor(readonly snackBar: MatSnackBar) {}
+  constructor(readonly snackBar: MatSnackBar) {
+  }
 
   openSnackBar(message: string): void {
-    const snackBarRef = this.snackBar.open(message, '🗙', {
-      horizontalPosition: 'center',
-      verticalPosition: 'bottom',
-      duration: undefined,
+    const snackBarRef = this.snackBar.open(message, "🗙", {
+      horizontalPosition: "center",
+      verticalPosition: "bottom",
+      duration: undefined
     });
 
     this.remainingTime = this.totalDuration;
@@ -35,9 +36,9 @@ export class NotificationService implements NotificationServiceInterface {
     snackBarRef.afterOpened().subscribe(() => {
       const snackBarElement = (snackBarRef.containerInstance as any)._elementRef
         .nativeElement;
-      snackBarElement.addEventListener('mouseenter', () => this.onMouseEnter());
-      snackBarElement.addEventListener('mouseleave', () =>
-        this.onMouseLeave(snackBarRef),
+      snackBarElement.addEventListener("mouseenter", () => this.onMouseEnter());
+      snackBarElement.addEventListener("mouseleave", () =>
+        this.onMouseLeave(snackBarRef)
       );
     });
   }

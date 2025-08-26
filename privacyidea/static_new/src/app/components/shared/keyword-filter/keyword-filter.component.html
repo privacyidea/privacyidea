@@ -1,20 +1,21 @@
 <div class="filter-keyword-container">
   <div class="filter-keyword-title">
-    <mat-icon [ngClass]="{ 'filter-icon': true, 'yellow-light': !filterIsEmpty() }">filter_alt
-    </mat-icon>
-    Filter by:&nbsp;
+    <mat-icon [ngClass]="{ 'filter-icon': true, 'yellow-light': !filterIsEmpty() }">filter_alt</mat-icon>
+    <span i18n>Filter by:&nbsp;</span>
   </div>
   @for (filterKeyword of apiFilter; track filterKeyword) {
-    <button mat-fab
-            extended
-            (click)="onKeywordClick(filterKeyword)"
-            class="keyword-button">
-      <mat-icon class="keyword-button-icon"
-                [ngClass]="
+    <button
+      mat-fab
+      extended
+      (click)="onKeywordClick(filterKeyword)"
+      class="keyword-button">
+      <mat-icon
+        class="keyword-button-icon"
+        [ngClass]="
           {
             change_circle: 'change-keyword',
             remove_circle: 'remove-keyword',
-            add_circle: 'add-keyword',
+            add_circle: 'add-keyword'
           }[getFilterIconName(filterKeyword, filterValue())]
         ">
         {{ getFilterIconName(filterKeyword, filterValue()) }}
@@ -23,10 +24,11 @@
     </button>
   }
   @if (advancedApiFilter.length > 0) {
-    <button (click)="onToggleAdvancedFilter()"
-            class="more-keyword-button"
-            extended
-            mat-fab>
+    <button
+      (click)="onToggleAdvancedFilter()"
+      class="more-keyword-button"
+      extended
+      mat-fab>
       <mat-icon class="keyword-button-icon">
         {{ showAdvancedFilter() ? "remove" : "add" }}
       </mat-icon>
@@ -34,16 +36,18 @@
   }
   @if (showAdvancedFilter()) {
     @for (filterKeyword of advancedApiFilter; track filterKeyword) {
-      <button mat-fab
-              extended
-              (click)="onKeywordClick(filterKeyword)"
-              class="keyword-button">
-        <mat-icon class="keyword-button-icon"
-                  [ngClass]="
+      <button
+        mat-fab
+        extended
+        (click)="onKeywordClick(filterKeyword)"
+        class="keyword-button">
+        <mat-icon
+          class="keyword-button-icon"
+          [ngClass]="
             {
               change_circle: 'change-keyword',
               remove_circle: 'remove-keyword',
-              add_circle: 'add-keyword',
+              add_circle: 'add-keyword'
             }[getFilterIconName(filterKeyword, filterValue())]
           ">
           {{ getFilterIconName(filterKeyword, filterValue()) }}

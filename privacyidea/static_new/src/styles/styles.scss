@@ -47,14 +47,16 @@ body {
   --quarter-global-padding: calc(var(--global-padding) / 4);
   --eighth-global-padding: calc(var(--global-padding) / 8);
 
+  --global-gap: 16px;
+
   --light: #f3f3f3;
 
   --green-brand-base: hsl(72, 100%, 32%);
   --green-brand-light: hsl(72, 100%, 37%);
   --background-green-brand: linear-gradient(
-      145deg,
-      var(--green-brand-light),
-      var(--green-brand-base)
+                  145deg,
+                  var(--green-brand-light),
+                  var(--green-brand-base)
   );
 
   --box-shadow: var(--shadow-distance) var(--shadow-distance) var(--blur) var(--mat-sys-shadow),
@@ -65,14 +67,14 @@ body {
   inset var(--light-distance) var(--light-distance) var(--blur) var(--mat-sys-light);
 
   --background-blue: linear-gradient(
-      145deg,
-      var(--mat-sys-primary-dark),
-      var(--mat-sys-primary)
+                  145deg,
+                  var(--mat-sys-primary-dark),
+                  var(--mat-sys-primary)
   );
   --background-blue-inset: linear-gradient(
-      145deg,
-      var(--mat-sys-primary-light-active),
-      var(--mat-sys-primary-light)
+                  145deg,
+                  var(--mat-sys-primary-light-active),
+                  var(--mat-sys-primary-light)
   );
   --box-shadow-blue: inset var(--shadow-distance) var(--shadow-distance) var(--blur) var(--mat-sys-primary-light-active),
   inset var(--light-distance) var(--light-distance) var(--blur) var(--mat-sys-primary-dark);
@@ -80,14 +82,14 @@ body {
   inset var(--light-distance) var(--light-distance) var(--blur) var(--mat-sys-primary-light-active);
 
   --background-green: linear-gradient(
-      145deg,
-      var(--green-base),
-      var(--green-light)
+                  145deg,
+                  var(--green-base),
+                  var(--green-light)
   );
   --background-green-inset: linear-gradient(
-      145deg,
-      var(--green-light),
-      var(--green-base)
+                  145deg,
+                  var(--green-light),
+                  var(--green-base)
   );
   --box-shadow-green: inset var(--shadow-distance) var(--shadow-distance) var(--blur) var(--green-light-active),
   inset var(--light-distance) var(--light-distance) var(--blur) var(--green-dark);
@@ -96,9 +98,9 @@ body {
 
   --background-red: linear-gradient(145deg, var(--red-base), var(--red-light));
   --background-red-inset: linear-gradient(
-      145deg,
-      var(--red-light),
-      var(--red-base)
+                  145deg,
+                  var(--red-light),
+                  var(--red-base)
   );
   --box-shadow-red: inset var(--shadow-distance) var(--shadow-distance) var(--blur) var(--red-light-active),
   inset var(--light-distance) var(--light-distance) var(--blur) var(--red-dark);
@@ -106,25 +108,25 @@ body {
   inset var(--light-distance) var(--light-distance) var(--blur) var(--red-light-active);
 
   --background-yellow: linear-gradient(
-      145deg,
-      var(--yellow-base),
-      var(--yellow-light)
+                  145deg,
+                  var(--yellow-base),
+                  var(--yellow-light)
   );
   --background-yellow-inset: linear-gradient(
-      145deg,
-      var(--yellow-light),
-      var(--yellow-base)
+                  145deg,
+                  var(--yellow-light),
+                  var(--yellow-base)
   );
 
   --background-gray: linear-gradient(
-      145deg,
-      var(--grey-base),
-      var(--grey-light)
+                  145deg,
+                  var(--grey-base),
+                  var(--grey-light)
   );
   --background-gray-inset: linear-gradient(
-      145deg,
-      var(--grey-light),
-      var(--grey-base)
+                  145deg,
+                  var(--grey-light),
+                  var(--grey-base)
   );
 
   --box-shadow-gray: inset var(--shadow-distance) var(--shadow-distance) var(--blur) var(--grey-light-active),
@@ -139,7 +141,7 @@ body {
   --mdc-filled-text-field-container-color: var(surface-container-low);
   --mdc-tab-indicator-active-indicator-color: var(--mat-sys-primary);
   --mdc-filled-text-field-focus-active-indicator-color: var(
-      ---mat-sys-primary-light
+                  ---mat-sys-primary-light
   );
   --mat-tab-header-active-focus-indicator-color: var(--mat-sys-primary);
   --mat-tab-header-active-ripple-color: white;
@@ -238,6 +240,10 @@ body {
   justify-content: center;
 }
 
+.flex-size-none {
+  flex: none;
+}
+
 .flex-size-1 {
   flex: 1;
 }
@@ -331,6 +337,10 @@ body {
   width: 100%;
 }
 
+.height-auto {
+  height: auto;
+}
+
 .gap-1 {
   gap: 16px;
 }
@@ -390,4 +400,58 @@ body {
 
 .content-layout {
   max-width: 100vw;
+}
+
+.hidden {
+  visibility: hidden;
+}
+
+::ng-deep {
+  .multi-column-panel.mat-mdc-select-panel {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    max-height: unset;
+    column-gap: var(--third-global-padding);
+    padding: var(--three-quarters-global-padding);
+    padding-bottom: var(--global-padding);
+    overflow-y: auto;
+  }
+}
+
+.single-column-panel.mat-mdc-select-panel {
+  max-height: unset;
+  padding: var(--three-quarters-global-padding);
+  padding-bottom: var(--global-padding);
+  overflow-y: auto;
+}
+
+.select-option {
+  @include mat.elevation(3);
+  border-radius: var(--border-radius);
+  margin: 0 0 var(--third-global-padding) 0;
+}
+
+.sticky-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background-color: var(--mat-sys-surface-container-lowest);
+  padding: 16px;
+  transition: box-shadow 0.3s ease-in-out;
+}
+
+
+.sticky-header.is-sticky {
+  @include mat.elevation(3);
+}
+
+.sticky-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--global-gap);
+}
+
+.sticky-controls .mat-mdc-form-field {
+  flex-grow: 1;
+  width: 100%;
 }

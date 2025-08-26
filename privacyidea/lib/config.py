@@ -46,6 +46,7 @@ from .log import log_with
 from ..models import (Config, db, Resolver, Realm, PRIVACYIDEA_TIMESTAMP,
                       save_config_timestamp, Policy, EventHandler, CAConnector,
                       NodeName)
+from privacyidea.config import DefaultConfigValues, ConfigKey
 from privacyidea.lib.framework import get_request_local_store, get_app_config_value, get_app_local_store
 from privacyidea.lib.utils import to_list
 from privacyidea.lib.utils.export import (register_import, register_export)
@@ -1063,7 +1064,7 @@ def return_saml_attributes_on_fail():
     return r
 
 
-def get_privacyidea_node(default='localnode') -> str:
+def get_privacyidea_node(default=DefaultConfigValues.NODE_NAME) -> str:
     """
     This returns the node name of the privacyIDEA node as found in the pi.cfg
     file in PI_NODE.
@@ -1072,7 +1073,8 @@ def get_privacyidea_node(default='localnode') -> str:
     :return: the distinct node name
     :rtype: str
     """
-    node_name = get_app_config_value("PI_NODE", get_app_config_value("PI_AUDIT_SERVERNAME", default))
+    node_name = get_app_config_value(ConfigKey.NODE,
+                                     get_app_config_value(ConfigKey.AUDIT_SERVERNAME, default))
     return node_name
 
 

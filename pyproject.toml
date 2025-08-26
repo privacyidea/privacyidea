@@ -123,6 +123,8 @@ requires = ["setuptools", "setuptools-scm"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
+include-package-data = false
+
 # The standalone script files which should be made available in the virtual env
 script-files = [
     "tools/creategoogleauthenticator-file",
@@ -155,6 +157,12 @@ script-files = [
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["privacyidea*"]
+
+[tool.setuptools.package-data]
+"privacyidea" = ["static/**", "static_new/dist/**"]
+
+[tool.setuptools.exclude-package-data]
+"privacyidea" = ["static/node_modules/**", "static_new/node_modules/**"]
 
 [tool.setuptools.data-files]
 # Add requirements file to binary distribution to have it available when installed

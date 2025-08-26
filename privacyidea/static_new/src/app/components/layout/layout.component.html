@@ -1,22 +1,29 @@
-<div [ngClass]="!this.authService.isSelfServiceUser() ? 'layout' : 'layout-self-service'"
-     aria-label="Layout">
-  <header aria-label="Header">
+<div
+  [ngClass]="!this.authService.isSelfServiceUser() ? 'layout' : 'layout-self-service'"
+  aria-label="Layout"
+  i18n-aria-label>
+  <header
+    aria-label="Header"
+    i18n-aria-label>
     @if (!this.authService.isSelfServiceUser()) {
       <app-header></app-header>
     } @else {
       <app-header-self-service></app-header-self-service>
     }
   </header>
-  <main aria-label="Main Router Outlet">
+  <main
+    aria-label="Main Router Outlet"
+    i18n-aria-label>
     <router-outlet></router-outlet>
     @if (showProgressBar()) {
       <div class="loading-urls-container">
-      @for (l of loadingUrls(); track l.key) {
-        <span class="loading-url"> {{ l.url.slice(1) }} </span><br />
-      }
-    </div>
-    <mat-progress-bar class="progress-bar"
-                      mode="indeterminate" />
+        @for (l of loadingUrls(); track l.key) {
+          <span class="loading-url"> {{ l.url.slice(1) }} </span><br />
+        }
+      </div>
+      <mat-progress-bar
+        class="progress-bar"
+        mode="indeterminate" />
     }
   </main>
 </div>

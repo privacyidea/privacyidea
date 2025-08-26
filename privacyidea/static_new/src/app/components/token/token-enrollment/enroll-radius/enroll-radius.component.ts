@@ -1,53 +1,33 @@
-import {
-  Component,
-  computed,
-  effect,
-  EventEmitter,
-  inject,
-  OnInit,
-  Output,
-} from '@angular/core';
-import {
-  FormControl,
-  FormGroup,
-  FormsModule,
-  ReactiveFormsModule,
-  Validators,
-} from '@angular/forms';
-import { MatCheckbox } from '@angular/material/checkbox';
-import { MatOption } from '@angular/material/core';
-import { MatFormField, MatHint, MatLabel } from '@angular/material/form-field';
-import { MatInput } from '@angular/material/input';
-import { MatError, MatSelect } from '@angular/material/select';
+import { Component, computed, effect, EventEmitter, inject, OnInit, Output } from "@angular/core";
+import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
+import { MatCheckbox } from "@angular/material/checkbox";
+import { MatOption } from "@angular/material/core";
+import { MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
+import { MatInput } from "@angular/material/input";
+import { MatError, MatSelect } from "@angular/material/select";
 import {
   RadiusServerService,
-  RadiusServerServiceInterface,
-} from '../../../../services/radius-server/radius-server.service';
-import {
-  SystemService,
-  SystemServiceInterface,
-} from '../../../../services/system/system.service';
-import {
-  TokenService,
-  TokenServiceInterface,
-} from '../../../../services/token/token.service';
+  RadiusServerServiceInterface
+} from "../../../../services/radius-server/radius-server.service";
+import { SystemService, SystemServiceInterface } from "../../../../services/system/system.service";
+import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 
-import { Observable, of } from 'rxjs';
+import { Observable, of } from "rxjs";
 import {
   EnrollmentResponse,
-  TokenEnrollmentData,
-} from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
-import { RadiusApiPayloadMapper } from '../../../../mappers/token-api-payload/radius-token-api-payload.mapper';
+  TokenEnrollmentData
+} from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
+import { RadiusApiPayloadMapper } from "../../../../mappers/token-api-payload/radius-token-api-payload.mapper";
 
 export interface RadiusEnrollmentOptions extends TokenEnrollmentData {
-  type: 'radius';
+  type: "radius";
   radiusServerConfiguration: string;
   radiusUser: string;
   checkPinLocally: boolean;
 }
 
 @Component({
-  selector: 'app-enroll-radius',
+  selector: "app-enroll-radius",
   standalone: true,
   imports: [
     MatCheckbox,
@@ -59,14 +39,14 @@ export interface RadiusEnrollmentOptions extends TokenEnrollmentData {
     ReactiveFormsModule,
     FormsModule,
     MatHint,
-    MatError,
+    MatError
   ],
-  templateUrl: './enroll-radius.component.html',
-  styleUrl: './enroll-radius.component.scss',
+  templateUrl: "./enroll-radius.component.html",
+  styleUrl: "./enroll-radius.component.scss"
 })
 export class EnrollRadiusComponent implements OnInit {
   protected readonly enrollmentMapper: RadiusApiPayloadMapper = inject(
-    RadiusApiPayloadMapper,
+    RadiusApiPayloadMapper
   );
   protected readonly radiusServerService: RadiusServerServiceInterface =
     inject(RadiusServerService);
@@ -74,49 +54,45 @@ export class EnrollRadiusComponent implements OnInit {
     inject(SystemService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
 
-  text = this.tokenService
-    .tokenTypeOptions()
-    .find((type) => type.key === 'radius')?.text;
-
-  @Output() aditionalFormFieldsChange = new EventEmitter<{
+  @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
   @Output() clickEnrollChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => Observable<EnrollmentResponse | null>
   >();
 
-  radiusUserControl = new FormControl<string>('');
-  radiusServerConfigurationControl = new FormControl<string>('', [
-    Validators.required,
+  radiusUserControl = new FormControl<string>("");
+  radiusServerConfigurationControl = new FormControl<string>("", [
+    Validators.required
   ]);
   checkPinLocallyControl = new FormControl<boolean>(false, [
-    Validators.required,
+    Validators.required
   ]);
 
   radiusForm = new FormGroup({
     radiusUser: this.radiusUserControl,
     radiusServerConfiguration: this.radiusServerConfigurationControl,
-    checkPinLocally: this.checkPinLocallyControl,
+    checkPinLocally: this.checkPinLocallyControl
   });
 
   radiusServerConfigurationOptions = computed(
     () =>
       this.radiusServerService
         .radiusServerConfigurations()
-        ?.map((config) => config.name) ?? [],
+        ?.map((config) => config.name) ?? []
   );
 
   defaultRadiusServerIsSet = computed(() => {
     const cfg = this.systemService.systemConfigResource.value()?.result?.value;
-    return !!cfg?.['radius.identifier'];
+    return !!cfg?.["radius.identifier"];
   });
 
   constructor() {
     effect(() => {
       const id =
         this.systemService.systemConfigResource.value()?.result?.value?.[
-          'radius.identifier'
-        ];
+          "radius.identifier"
+          ];
       if (id && this.radiusServerConfigurationControl.pristine) {
         this.radiusServerConfigurationControl.setValue(id);
       }
@@ -124,34 +100,35 @@ export class EnrollRadiusComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.aditionalFormFieldsChange.emit({
+    this.additionalFormFieldsChange.emit({
       radiusUser: this.radiusUserControl,
       radiusServerConfiguration: this.radiusServerConfigurationControl,
-      checkPinLocally: this.checkPinLocallyControl,
+      checkPinLocally: this.checkPinLocallyControl
     });
     this.clickEnrollChange.emit(this.onClickEnroll);
   }
 
   onClickEnroll = (
-    basicOptions: TokenEnrollmentData,
+    basicOptions: TokenEnrollmentData
   ): Observable<EnrollmentResponse | null> => {
-    if (this.radiusForm.invalid) {
+    if (this.radiusUserControl.invalid || this.radiusServerConfigurationControl.invalid ||
+      this.checkPinLocallyControl.invalid) {
       this.radiusForm.markAllAsTouched();
       return of(null);
     }
 
     const enrollmentData: RadiusEnrollmentOptions = {
       ...basicOptions,
-      type: 'radius',
-      radiusUser: this.radiusUserControl.value ?? '',
+      type: "radius",
+      radiusUser: this.radiusUserControl.value ?? "",
       radiusServerConfiguration:
-        this.radiusServerConfigurationControl.value ?? '',
-      checkPinLocally: !!this.checkPinLocallyControl.value,
+        this.radiusServerConfigurationControl.value ?? "",
+      checkPinLocally: !!this.checkPinLocallyControl.value
     };
 
     return this.tokenService.enrollToken({
       data: enrollmentData,
-      mapper: this.enrollmentMapper,
+      mapper: this.enrollmentMapper
     });
   };
 }

@@ -1,3 +1,5 @@
+# (c) NetKnights GmbH 2025,  https://netknights.it
+#
 #  2020-02-16 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add QR codes for Authenticator Apps
 #  2016-02-07 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -29,6 +31,9 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+# SPDX-FileCopyrightText: 2025 Paul Lettich <paul.lettich@netknights.it>
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
 """
 These are the policy decorators as POST conditions for the API calls.
 I.e. these conditions are executed after the wrapped API call.
@@ -50,6 +55,7 @@ from urllib.parse import quote
 
 from flask import g, current_app, make_response, Request
 
+from privacyidea.config import ConfigKey
 from privacyidea.api.lib.utils import get_all_params
 from privacyidea.lib import _, lazy_gettext
 from privacyidea.lib.auth import ROLE
@@ -70,7 +76,6 @@ from privacyidea.lib.subscriptions import (subscription_status,
 from privacyidea.lib.token import get_tokens, assign_token, get_realms_of_token, get_one_token, init_token
 from privacyidea.lib.tokenclass import ROLLOUTSTATE, CHALLENGE_SESSION
 from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
-from privacyidea.lib.user import User
 from privacyidea.lib.utils import (create_img, get_version, AUTH_RESPONSE,
                                    get_plugin_info_from_useragent)
 from .prepolicy import check_max_token_user, check_max_token_realm, fido2_enroll, rss_age, container_registration_config
@@ -95,7 +100,7 @@ DEFAULT_POLICY_TEMPLATE_URL = "https://raw.githubusercontent.com/privacyidea/" \
 BODY_TEMPLATE = lazy_gettext("""
 <--- Please describe your Problem in detail --->
 
-<--- Please provide as many additional information as possible --->
+<--- Please provide as much additional information as possible --->
 
 privacyIDEA Version: {version}
 Subscriber: {subscriber_name}
@@ -181,13 +186,13 @@ def sign_response(request, response):
     :param request: The Request object
     :param response: The Response object
     """
-    if current_app.config.get("PI_NO_RESPONSE_SIGN"):
+    if current_app.config.get(ConfigKey.NO_RESPONSE_SIGN):
         return response
 
-    private_key_file = current_app.config.get("PI_AUDIT_KEY_PRIVATE")
+    private_key_file = current_app.config.get(ConfigKey.AUDIT_KEY_PRIVATE)
 
     # Disable the costly checking of private RSA keys when loading them.
-    check_private_key = not current_app.config.get("PI_RESPONSE_NO_PRIVATE_KEY_CHECK", False)
+    check_private_key = not current_app.config.get(ConfigKey.RESPONSE_NO_PRIVATE_KEY_CHECK, False)
     try:
         with open(private_key_file, 'rb') as file:
             private_key = file.read()
@@ -351,7 +356,7 @@ def no_detail_on_success(request, response):
         #  since they contain a dictionary in result->value
         content.pop("detail", None)
         response.set_data(json.dumps(content))
-        g.audit_object.add_policy([p.get("name") for p in policy])
+        g.audit_object.add_policy({p.get("name") for p in policy})
 
     return response
 
@@ -448,7 +453,7 @@ def add_user_detail_to_response(request, response):
             if isinstance(value, datetime.datetime):
                 ui[key] = str(value)
         content.setdefault("detail", {})["user"] = ui
-        g.audit_object.add_policy([p.get("name") for p in policy])
+        g.audit_object.add_policy({p.get("name") for p in policy})
 
     # Check for ADD RESOLVER IN RESPONSE
     policy = (Match.user(g, scope=SCOPE.AUTHZ, action=PolicyAction.ADDRESOLVERINRESPONSE, user_object=request.User)
@@ -457,7 +462,7 @@ def add_user_detail_to_response(request, response):
         # The policy was set, we need to add the resolver and the realm
         content.setdefault("detail", {})["user-resolver"] = request.User.resolver
         content["detail"]["user-realm"] = request.User.realm
-        g.audit_object.add_policy([p.get("name") for p in policy])
+        g.audit_object.add_policy({p.get("name") for p in policy})
 
     response.set_data(json.dumps(content))
     return response
@@ -487,7 +492,7 @@ def no_detail_on_fail(request, response):
         #  result->authentication entry and only strip away possible user information
         del content["detail"]
         response.set_data(json.dumps(content))
-        g.audit_object.add_policy([p.get("name") for p in detail_policy])
+        g.audit_object.add_policy({p.get("name") for p in detail_policy})
 
     return response
 
@@ -1065,7 +1070,7 @@ def multichallenge_enroll_via_validate(request, response):
             data = challenge.get_data()
             data.update({"enroll_via_multichallenge": True})
             data.update({"enroll_via_multichallenge_optional": enrollment_optional})
-            if not "type" in data:
+            if "type" not in data:
                 data.update({"type": enroll_type})
             challenge.set_data(data)
             challenge.save()
@@ -1210,11 +1215,13 @@ def check_verify_enrollment(request, response):
             # ["hotp totp", "hotp email"]
             # The key is the token type(s)
             do_verify_enrollment = False
+            audit_policies = set()
             for policy_key in verify_pol_dict:
                 if token.get_tokentype().upper() in [x.upper() for x in policy_key.split(" ")]:
                     # This token is supposed to do verify enrollment
                     do_verify_enrollment = True
-                    g.audit_object.add_policy(verify_pol_dict.get(policy_key))
+                    audit_policies.add(policy_key)
+            g.audit_object.add_policy(audit_policies)
             if do_verify_enrollment:
                 content = response.json
                 options = {"g": g, "user": request.User, "exception": request.all_data.get("exception", 0)}

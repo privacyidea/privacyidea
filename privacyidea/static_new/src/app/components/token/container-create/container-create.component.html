@@ -1,131 +1,188 @@
-<div aria-label="Create Container"
-     class="container-create-container">
-  <h3 class="margin-left-1">Create Container</h3>
-  <mat-form-field class="width-100 margin-bottom-1">
-    <mat-select [(ngModel)]="containerService.selectedContainerType">
-      @for (type of containerService.containerTypeOptions(); track type) {
-        <mat-option class="type-option"
-                    [value]="type">{{ type.description }}
-        </mat-option>
-      }
-      <div class="flex just-center">
-        <button (click)="versioningService.openDocumentation('containertypes')"
-                class="card-button"
-                mat-flat-button>
-          <mat-icon>info_outline</mat-icon>
-          Help About Containertypes
+<div
+  #scrollContainer
+  appScrollToTop
+  aria-label="Create Container"
+  class="container-create-container"
+  i18n-aria-label>
+  <h3
+    class="margin-left-1"
+    i18n>
+    Create a New Container
+  </h3>
+  <div #stickySentinel></div>
+  <div
+    #stickyHeader
+    class="sticky-header">
+    <div class="sticky-controls ali-center">
+      <div class="select-container-type">
+        <mat-form-field
+          class="width-100"
+          subscriptSizing="dynamic">
+          <mat-select
+            [(ngModel)]="containerService.selectedContainerType"
+            [ngModelOptions]="{ standalone: true }"
+            [panelClass]="'single-column-panel'"
+            [value]="containerService.selectedContainerType()">
+            @for (type of containerService.containerTypeOptions(); track type) {
+              <mat-option
+                class="select-option type-option"
+                [value]="type"
+                >{{ type.description }}
+              </mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      </div>
+      <div class="enroll-button-container">
+        <button
+          (click)="createContainer()"
+          class="card-button"
+          i18n
+          mat-flat-button>
+          <mat-icon>add</mat-icon>
+          Create
+        </button>
+        <button
+          (click)="reopenEnrollmentDialog()"
+          [matTooltip]="'Reopen enrollment dialog'"
+          [ngClass]="{ hidden: !registerResponse() }"
+          mat-icon-button
+          type="button">
+          <mat-icon>open_in_new</mat-icon>
         </button>
       </div>
-    </mat-select>
-    <mat-hint class="container-type-hint">
-      Supported Token Types:
-      @if (containerService.selectedContainerType().token_types.length >=
-      tokenService.tokenTypeOptions().length) {
-        All
-      } @else if (containerService.selectedContainerType().token_types.length > 1) {
-        {{ containerService.selectedContainerType().token_types.join(", ") }}
-      } @else {
-        {{ containerService.selectedContainerType().token_types[0] }}
-      }
-    </mat-hint>
-  </mat-form-field>
+    </div>
+  </div>
 
-  <div class="enroll-button-container">
-    <button (click)="createContainer()"
-            class="card-button"
-            mat-flat-button>
-      <mat-icon>add</mat-icon>
-      Create Container
-    </button>
-    <button (click)="reopenEnrollmentDialog()"
-            [disabled]="registerResponse() === null"
-            mat-icon-button
-            matTooltip="Reopen enrollment dialog">
-      <mat-icon>open_in_new</mat-icon>
-    </button>
+  <div
+    class="container-type-hint"
+    i18n>
+    Supported Token Types:
+    @if (containerService.selectedContainerType().token_types.length >= tokenService.tokenTypeOptions().length) {
+      All
+    } @else if (containerService.selectedContainerType().token_types.length > 1) {
+      {{ containerService.selectedContainerType().token_types.join(", ") }}
+    } @else {
+      {{ containerService.selectedContainerType().token_types[0] }}
+    }
   </div>
 
   <mat-form-field class="width-66 margin-top-1">
-    <mat-label>Description</mat-label>
-    <textarea [(ngModel)]="description"
-              [maxlength]="80"
-              matInput
-              placeholder="Enter description"
-              rows="3"></textarea>
+    <mat-label i18n>Description</mat-label>
+    <textarea
+      [(ngModel)]="description"
+      [maxlength]="80"
+      i18n
+      i18n-placeholder
+      matInput
+      placeholder="Enter description"
+      rows="3"></textarea>
   </mat-form-field>
 
   <div class="flex-column width-100 gap-1">
     <div class="flex-column width-66">
-      <h4 class="enroll-h4"> Use a Template</h4>
+      <h4
+        class="enroll-h4"
+        i18n>
+        Use a Template
+      </h4>
       <mat-form-field class="width-100 input-height">
-        <mat-label>Template</mat-label>
-        <mat-select [(ngModel)]="selectedTemplate"
-                    disabled>
+        <mat-label i18n>Template</mat-label>
+        <mat-select
+          [(ngModel)]="selectedTemplate"
+          [value]="selectedTemplate()"
+          disabled>
           @for (option of templateOptions(); track option) {
             <mat-option [value]="option">{{ option.name }}</mat-option>
           }
         </mat-select>
       </mat-form-field>
     </div>
-    <h4 class="enroll-h4"> Assign the Container to a User </h4>
+    <h4
+      class="enroll-h4"
+      i18n>
+      Assign the Container to a User
+    </h4>
     <div class="flex-row gap-1">
       <mat-form-field class="width-32 input-height">
-        <mat-label>Select Realm of User</mat-label>
-        <mat-select [(ngModel)]="userService.selectedUserRealm">
+        <mat-label i18n>Select Realm of User</mat-label>
+        <mat-select
+          [(ngModel)]="userService.selectedUserRealm"
+          [value]="userService.selectedUserRealm()">
           @for (option of realmService.realmOptions(); track option) {
             <mat-option value="{{ option }}">{{ option }}</mat-option>
           }
         </mat-select>
       </mat-form-field>
-        <mat-form-field class="width-32 input-height">
-          <mat-label>Enter User</mat-label>
-          <input [(ngModel)]="userService.userFilter"
-                 [disabled]="onlyAddToRealm()"
-                 [matAutocomplete]="userAuto"
-                 matInput />
-          <mat-error>User is <strong>required</strong></mat-error>
-          <mat-autocomplete #userAuto="matAutocomplete">
-            @for (option of userService.filteredUsernames(); track option) {
-              <mat-option [value]="option">{{ option }}</mat-option>
-            }
-          </mat-autocomplete>
-        </mat-form-field>
-        <mat-checkbox [(ngModel)]="onlyAddToRealm">
-          Only add to the realm <br /> (no user assignment)
-        </mat-checkbox>
+      <mat-form-field class="width-32 input-height">
+        <mat-label i18n>Enter User</mat-label>
+        <app-clearable-input
+          (onClick)="userService.userFilter.set('')"
+          [showClearButton]="userService.userFilter() !== ''">
+          <input
+            [(ngModel)]="userService.userFilter"
+            [disabled]="onlyAddToRealm()"
+            [matAutocomplete]="userAuto"
+            matInput />
+        </app-clearable-input>
+        <mat-error i18n>User is <strong>required</strong></mat-error>
+        <mat-autocomplete #userAuto="matAutocomplete">
+          @for (option of userService.filteredUsernames(); track option) {
+            <mat-option [value]="option">{{ option }}</mat-option>
+          }
+        </mat-autocomplete>
+      </mat-form-field>
+      <mat-checkbox
+        [(ngModel)]="onlyAddToRealm"
+        [disabled]="userService.userFilter() !== ''">
+        Only add to the realm <br />
+        (no user assignment)
+      </mat-checkbox>
     </div>
   </div>
 
   @if (containerService.selectedContainerType().containerType === "smartphone") {
-    <h4 class="enroll-h4"> Registration </h4>
+    <h4
+      i18n
+      class="enroll-h4">
+      Registration
+    </h4>
     <mat-checkbox [(ngModel)]="generateQRCode">
       Generate a QR code to register the container on a smartphone.
     </mat-checkbox>
     <mat-accordion>
-      <mat-expansion-panel class="expension-panel">
+      <mat-expansion-panel class="expansion-panel">
         <mat-expansion-panel-header>
-          <mat-panel-title> Optional Settings</mat-panel-title>
+          <mat-panel-title i18n> Optional Settings</mat-panel-title>
         </mat-expansion-panel-header>
         <mat-form-field class="width-100">
-          <mat-label>Passphrase Prompt</mat-label>
-          <textarea [(ngModel)]="passphrasePrompt"
-                    matInput
-                    placeholder="This prompt will be displayed to the user."
-                    rows="2"></textarea>
-          <mat-hint class="font-14">
-            Enter a passphrase prompt that will be displayed to the user. This should indicate which
-            passphrase the user should enter.
+          <mat-label i18n>Passphrase Prompt</mat-label>
+          <textarea
+            [(ngModel)]="passphrasePrompt"
+            matInput
+            i18n-placeholder
+            placeholder="This prompt will be displayed to the user."
+            rows="2"></textarea>
+          <mat-hint
+            i18n
+            class="font-14">
+            Enter a passphrase prompt that will be displayed to the user. This should indicate which passphrase the user
+            should enter.
           </mat-hint>
         </mat-form-field>
         <mat-form-field class="width-100 margin-top-2 margin-bottom-1">
-          <mat-label> Passphrase Response</mat-label>
-          <textarea [(ngModel)]="passphraseResponse"
-                    matInput
-                    placeholder="Passphrase the use has to enter to successfully register the container."
-                    rows="2"></textarea>
-          <mat-hint class="font-14">
-            This is the correct answer to the passphrase prompt the user has to enter to
-            successfully register the container.
+          <mat-label i18n> Passphrase Response</mat-label>
+          <textarea
+            [(ngModel)]="passphraseResponse"
+            matInput
+            i18n-placeholder
+            placeholder="Passphrase the use has to enter to successfully register the container."
+            rows="2"></textarea>
+          <mat-hint
+            i18n
+            class="font-14">
+            This is the correct answer to the passphrase prompt the user has to enter to successfully register the
+            container.
           </mat-hint>
         </mat-form-field>
       </mat-expansion-panel>

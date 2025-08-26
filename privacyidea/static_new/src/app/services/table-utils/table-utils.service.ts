@@ -1,5 +1,5 @@
-import { Injectable, signal, WritableSignal } from '@angular/core';
-import { MatTableDataSource } from '@angular/material/table';
+import { Injectable, signal, WritableSignal } from "@angular/core";
+import { MatTableDataSource } from "@angular/material/table";
 
 export interface FilterPair {
   key: string;
@@ -11,12 +11,12 @@ export interface TableUtilsServiceInterface {
 
   emptyDataSource<T>(
     pageSize: number,
-    columnsKeyMap: { key: string; label: string }[],
+    columnsKeyMap: { key: string; label: string }[]
   ): MatTableDataSource<T>;
 
   parseFilterString(
     filterValue: string,
-    apiFilter: string[],
+    apiFilter: string[]
   ): {
     filterPairs: FilterPair[];
     remainingFilterText: string;
@@ -50,7 +50,7 @@ export interface TableUtilsServiceInterface {
   getDisplayTextForKeyAndRevoked(
     key: string,
     value: any,
-    revoked: boolean,
+    revoked: boolean
   ): string;
 
   getTdClassForKey(key: string): string[];
@@ -61,53 +61,53 @@ export interface TableUtilsServiceInterface {
 }
 
 @Injectable({
-  providedIn: 'root',
+  providedIn: "root"
 })
 export class TableUtilsService implements TableUtilsServiceInterface {
   pageSizeOptions = signal([5, 10, 25, 50]);
 
   emptyDataSource<T>(
     pageSize: number,
-    columnsKeyMap: { key: string; label: string }[],
+    columnsKeyMap: { key: string; label: string }[]
   ): MatTableDataSource<T> {
     return new MatTableDataSource(
       Array.from({ length: pageSize }, () => {
         const emptyRow: any = {};
         columnsKeyMap.forEach((column) => {
-          emptyRow[column.key] = '';
+          emptyRow[column.key] = "";
         });
         return emptyRow;
-      }),
+      })
     );
   }
 
   parseFilterString(
     filterValue: string,
-    apiFilter: string[],
+    apiFilter: string[]
   ): {
     filterPairs: FilterPair[];
     remainingFilterText: string;
   } {
     const lowerFilterValue = filterValue.trim().toLowerCase();
     const filterLabels = apiFilter.flatMap((column) => {
-      if (column === 'infokey & infovalue') {
-        return ['infokey:', 'infovalue:'];
+      if (column === "infokey & infovalue") {
+        return ["infokey:", "infovalue:"];
       }
-      if (column === 'machineid & resolver') {
-        return ['machineid:', 'resolver:'];
+      if (column === "machineid & resolver") {
+        return ["machineid:", "resolver:"];
       }
-      return column.toLowerCase() + ':';
+      return column.toLowerCase() + ":";
     });
-    const filterValueSplit = lowerFilterValue.split(' ');
+    const filterValueSplit = lowerFilterValue.split(" ");
     const filterPairs: FilterPair[] = [];
 
-    let currentLabel = '';
-    let currentValue = '';
-    let remainingFilterText = '';
+    let currentLabel = "";
+    let currentValue = "";
+    let remainingFilterText = "";
 
     const findMatchingLabel = (parts: string[]): string | null => {
       for (let i = 1; i <= parts.length; i++) {
-        const possibleLabel = parts.slice(0, i).join(' ');
+        const possibleLabel = parts.slice(0, i).join(" ");
         if (filterLabels.includes(possibleLabel)) {
           return possibleLabel;
         }
@@ -128,11 +128,11 @@ export class TableUtilsService implements TableUtilsServiceInterface {
             if (currentLabel && currentValue) {
               filterPairs.push({
                 key: currentLabel.slice(0, -1),
-                value: currentValue.trim(),
+                value: currentValue.trim()
               });
             }
             currentLabel = matchingLabel;
-            currentValue = token.slice(label.length) + ' ';
+            currentValue = token.slice(label.length) + " ";
             i += 1;
             break;
           }
@@ -146,24 +146,24 @@ export class TableUtilsService implements TableUtilsServiceInterface {
         if (currentLabel && currentValue) {
           filterPairs.push({
             key: currentLabel.slice(0, -1),
-            value: currentValue.trim(),
+            value: currentValue.trim()
           });
         }
         currentLabel = matchingLabel;
-        currentValue = '';
-        i += matchingLabel.split(' ').length;
+        currentValue = "";
+        i += matchingLabel.split(" ").length;
       } else if (currentLabel) {
-        currentValue += filterValueSplit[i] + ' ';
+        currentValue += filterValueSplit[i] + " ";
         i++;
       } else {
-        remainingFilterText += filterValueSplit[i] + ' ';
+        remainingFilterText += filterValueSplit[i] + " ";
         i++;
       }
     }
     if (currentLabel) {
       filterPairs.push({
         key: currentLabel.slice(0, -1),
-        value: currentValue.trim(),
+        value: currentValue.trim()
       });
     }
 
@@ -171,8 +171,8 @@ export class TableUtilsService implements TableUtilsServiceInterface {
   }
 
   toggleKeywordInFilter(currentValue: string, keyword: string): string {
-    if (keyword.includes('&')) {
-      const keywords = keyword.split('&').map((k) => k.trim());
+    if (keyword.includes("&")) {
+      const keywords = keyword.split("&").map((k) => k.trim());
       let newValue = currentValue;
       for (const key of keywords) {
         newValue = this.toggleKeywordInFilter(newValue, key);
@@ -181,16 +181,16 @@ export class TableUtilsService implements TableUtilsServiceInterface {
     }
     const keywordPattern = new RegExp(
       `\\b${keyword}:.*?(?=(\\s+\\w+:|$))`,
-      'i',
+      "i"
     );
     if (keywordPattern.test(currentValue)) {
       return currentValue
-        .replace(keywordPattern, ' ')
+        .replace(keywordPattern, " ")
         .trimStart()
-        .replace(/\s{2,}/g, ' ');
+        .replace(/\s{2,}/g, " ");
     } else {
       if (currentValue.length > 0) {
-        return (currentValue + ` ${keyword}: `).replace(/\s{2,}/g, ' ');
+        return (currentValue + ` ${keyword}: `).replace(/\s{2,}/g, " ");
       } else {
         return `${keyword}: `;
       }
@@ -204,7 +204,7 @@ export class TableUtilsService implements TableUtilsServiceInterface {
     const { keyword, currentValue } = args;
     const regex = new RegExp(
       `\\b${keyword}:\\s?([\\w\\d]*)(?![\\w\\d]*:)`,
-      'i',
+      "i"
     );
     const match = currentValue.match(regex);
 
@@ -213,13 +213,13 @@ export class TableUtilsService implements TableUtilsServiceInterface {
     } else {
       const existingValue = match[1].toLowerCase();
 
-      if (existingValue === 'true') {
-        return currentValue.replace(regex, keyword + ': false');
-      } else if (existingValue === 'false') {
-        const removed = currentValue.replace(regex, '').trim();
-        return removed.replace(/\s{2,}/g, ' ');
+      if (existingValue === "true") {
+        return currentValue.replace(regex, keyword + ": false");
+      } else if (existingValue === "false") {
+        const removed = currentValue.replace(regex, "").trim();
+        return removed.replace(/\s{2,}/g, " ");
       } else {
-        return currentValue.replace(regex, keyword + ': true');
+        return currentValue.replace(regex, keyword + ": true");
       }
     }
   }
@@ -240,7 +240,7 @@ export class TableUtilsService implements TableUtilsServiceInterface {
 
   isLink(columnKey: string): boolean {
     return (
-      columnKey === 'container_serial' //||
+      columnKey === "container_serial" //||
       //columnKey === 'username' ||
       //columnKey === 'user_realm' ||
       //columnKey === 'users' ||
@@ -249,48 +249,48 @@ export class TableUtilsService implements TableUtilsServiceInterface {
   }
 
   getClassForColumn(columnKey: string, element: any): string {
-    if (element['locked'] || element['revoked']) return 'highlight-disabled';
+    if (element["locked"] || element["revoked"]) return "highlight-disabled";
 
     switch (columnKey) {
-      case 'active':
-        if (element['active']) return 'highlight-true-clickable';
-        if (element['active'] === false) return 'highlight-false-clickable';
-        return '';
+      case "active":
+        if (element["active"]) return "highlight-true-clickable";
+        if (element["active"] === false) return "highlight-false-clickable";
+        return "";
 
-      case 'failcount':
-        if (element['failcount'] === '') return '';
-        if (element['failcount'] <= 0) return 'highlight-true';
-        if (element['failcount'] < element['maxfail']) {
-          return 'highlight-warning-clickable';
+      case "failcount":
+        if (element["failcount"] === "") return "";
+        if (element["failcount"] <= 0) return "highlight-true";
+        if (element["failcount"] < element["maxfail"]) {
+          return "highlight-warning-clickable";
         }
-        return 'highlight-false-clickable';
+        return "highlight-false-clickable";
     }
-    return '';
+    return "";
   }
 
   getTooltipForColumn(columnKey: string, element: any): string {
-    if (element['locked']) return 'Locked';
-    if (element['revoked']) return 'Revoked';
+    if (element["locked"]) return "Locked";
+    if (element["revoked"]) return "Revoked";
 
     switch (columnKey) {
-      case 'active':
-        if (element['active'] === '') return '';
-        return element['active'] ? 'Deactivate Token' : 'Activate Token';
+      case "active":
+        if (element["active"] === "") return "";
+        return element["active"] ? "Deactivate Token" : "Activate Token";
 
-      case 'failcount':
-        return element['failcount'] ? 'Reset Fail Counter' : '';
+      case "failcount":
+        return element["failcount"] ? "Reset Fail Counter" : "";
     }
-    return '';
+    return "";
   }
 
   getDisplayText(columnKey: string, element: any): string {
     switch (columnKey) {
-      case 'active':
-        if (element['active'] === '') return '';
-        if (element['revoked']) return 'revoked';
-        if (element['locked']) return 'locked';
-        if (element['active']) return 'active';
-        if (element['active'] === false) return 'deactivated';
+      case "active":
+        if (element["active"] === "") return "";
+        if (element["revoked"]) return "revoked";
+        if (element["locked"]) return "locked";
+        if (element["active"]) return "active";
+        if (element["active"] === false) return "deactivated";
         break;
     }
     return element[columnKey];
@@ -302,96 +302,96 @@ export class TableUtilsService implements TableUtilsServiceInterface {
     maxfail?: any;
   }): string {
     const { key, value, maxfail } = args;
-    if (key === 'success') {
-      if (value === '' || value === null || value === undefined) {
-        return '';
+    if (key === "success") {
+      if (value === "" || value === null || value === undefined) {
+        return "";
       }
-      if (value) return 'highlight-true';
-      return 'highlight-false';
+      if (value) return "highlight-true";
+      return "highlight-false";
     }
-    if (key === 'description') {
-      return 'details-table-item details-description';
+    if (key === "description") {
+      return "details-table-item details-description";
     }
-    if (key === 'active') {
-      if (value === '') {
-        return '';
+    if (key === "active") {
+      if (value === "") {
+        return "";
       }
-      return value === true ? 'highlight-true' : 'highlight-false';
+      return value === true ? "highlight-true" : "highlight-false";
     }
-    if (key === 'failcount') {
-      if (value === '') {
-        return '';
+    if (key === "failcount") {
+      if (value === "") {
+        return "";
       } else if (value === 0) {
-        return 'highlight-true';
+        return "highlight-true";
       } else if (value >= 1 && value < maxfail) {
-        return 'highlight-warning';
+        return "highlight-warning";
       } else {
-        return 'highlight-false';
+        return "highlight-false";
       }
     }
-    return 'details-table-item';
+    return "details-table-item";
   }
 
   getDivClassForKey(key: string) {
-    if (key === 'description') {
-      return 'details-scrollable-container';
+    if (key === "description") {
+      return "details-scrollable-container";
     } else if (
-      key === 'maxfail' ||
-      key === 'count_window' ||
-      key === 'sync_window'
+      key === "maxfail" ||
+      key === "count_window" ||
+      key === "sync_window"
     ) {
-      return 'details-value';
+      return "details-value";
     }
 
-    return '';
+    return "";
   }
 
   getClassForColumnKey(columnKey: string): string {
     switch (columnKey) {
-      case 'failcount':
-      case 'active':
-      case 'revoke':
-      case 'delete':
-        return 'flex-center';
-      case 'realms':
-      case 'description':
-        return 'table-scroll-container';
+      case "failcount":
+      case "active":
+      case "revoke":
+      case "delete":
+        return "flex-center";
+      case "realms":
+      case "description":
+        return "table-scroll-container";
       default:
-        return 'flex-center-vertical';
+        return "flex-center-vertical";
     }
   }
 
   getChildClassForColumnKey(columnKey: string): string {
     if (
-      this.getClassForColumnKey(columnKey).includes('table-scroll-container')
+      this.getClassForColumnKey(columnKey).includes("table-scroll-container")
     ) {
-      return 'scroll-item';
+      return "scroll-item";
     }
-    return '';
+    return "";
   }
 
   getDisplayTextForKeyAndRevoked(
     key: string,
     value: any,
-    revoked: boolean,
+    revoked: boolean
   ): string {
-    if (value === '') {
-      return '';
+    if (value === "") {
+      return "";
     }
-    if (key === 'active') {
-      return revoked ? 'revoked' : value ? 'active' : 'deactivated';
+    if (key === "active") {
+      return revoked ? "revoked" : value ? "active" : "deactivated";
     }
     return value;
   }
 
   getTdClassForKey(key: string) {
-    const classes = ['fix-width-20-padr-0'];
-    if (key === 'description') {
-      classes.push('height-104');
-    } else if (['realms', 'tokengroup'].includes(key)) {
-      classes.push('height-78');
+    const classes = ["fix-width-20-padr-0"];
+    if (key === "description") {
+      classes.push("height-104");
+    } else if (["realms", "tokengroup"].includes(key)) {
+      classes.push("height-78");
     } else {
-      classes.push('height-52');
+      classes.push("height-52");
     }
     return classes;
   }
@@ -399,29 +399,29 @@ export class TableUtilsService implements TableUtilsServiceInterface {
   getSpanClassForState(state: string, clickable: boolean): string {
     switch (clickable) {
       case false:
-        if (state === 'active') {
-          return 'highlight-true';
-        } else if (state === 'disabled') {
-          return 'highlight-false';
+        if (state === "active") {
+          return "highlight-true";
+        } else if (state === "disabled") {
+          return "highlight-false";
         } else {
-          return '';
+          return "";
         }
       case true:
-        if (state === 'active') {
-          return 'highlight-true-clickable';
-        } else if (state === 'disabled') {
-          return 'highlight-false-clickable';
+        if (state === "active") {
+          return "highlight-true-clickable";
+        } else if (state === "disabled") {
+          return "highlight-false-clickable";
         } else {
-          return '';
+          return "";
         }
     }
   }
 
   getDisplayTextForState(state: string) {
-    if (state === 'active') {
-      return 'active';
-    } else if (state === 'disabled') {
-      return 'deactivated';
+    if (state === "active") {
+      return "active";
+    } else if (state === "disabled") {
+      return "deactivated";
     } else {
       return state;
     }

@@ -1,17 +1,15 @@
-import { TestBed } from '@angular/core/testing';
-import { HttpClient, provideHttpClient } from '@angular/common/http';
-import { of } from 'rxjs';
+import { TestBed } from "@angular/core/testing";
+import { HttpClient, provideHttpClient } from "@angular/common/http";
+import { of } from "rxjs";
 
-import { ValidateCheckResponse, ValidateService } from './validate.service';
-import { LocalService } from '../local/local.service';
-import { NotificationService } from '../notification/notification.service';
-import { Base64Service } from '../base64/base64.service';
-import { AuthResponse, AuthService } from '../auth/auth.service';
+import { ValidateCheckResponse, ValidateService } from "./validate.service";
+import { LocalService } from "../local/local.service";
+import { NotificationService } from "../notification/notification.service";
+import { Base64Service } from "../base64/base64.service";
+import { AuthResponse, AuthService } from "../auth/auth.service";
 
 class MockLocalService {
-  getHeaders = jest
-    .fn()
-    .mockReturnValue({ Authorization: 'Bearer FAKE_TOKEN' });
+  getHeaders = jest.fn().mockReturnValue({ Authorization: "Bearer FAKE_TOKEN" });
 }
 
 class MockNotificationService {
@@ -19,14 +17,14 @@ class MockNotificationService {
 }
 
 class MockBase64Service {
-  bytesToBase64 = jest.fn(() => 'b64');
+  bytesToBase64 = jest.fn(() => "b64");
 }
 
 class MockAuthService {
   authenticate = jest.fn().mockReturnValue(of({ success: true } as any));
 }
 
-describe('ValidateService', () => {
+describe("ValidateService", () => {
   let validateService: ValidateService;
   let http: HttpClient;
   let postSpy: jest.SpyInstance;
@@ -46,20 +44,19 @@ describe('ValidateService', () => {
         { provide: LocalService, useClass: MockLocalService },
         { provide: NotificationService, useClass: MockNotificationService },
         { provide: Base64Service, useClass: MockBase64Service },
-        { provide: AuthService, useClass: MockAuthService },
-      ],
+        { provide: AuthService, useClass: MockAuthService }
+      ]
     });
 
     validateService = TestBed.inject(ValidateService);
     http = TestBed.inject(HttpClient);
-    postSpy = jest.spyOn(http, 'post');
+    postSpy = jest.spyOn(http, "post");
 
-    consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    consoleErrorSpy = jest.spyOn(console, "error").mockImplementation(() => {
+    });
 
     local = TestBed.inject(LocalService) as unknown as MockLocalService;
-    notif = TestBed.inject(
-      NotificationService,
-    ) as unknown as MockNotificationService;
+    notif = TestBed.inject(NotificationService) as unknown as MockNotificationService;
     b64 = TestBed.inject(Base64Service) as unknown as MockBase64Service;
     auth = TestBed.inject(AuthService) as unknown as MockAuthService;
   });
@@ -69,36 +66,34 @@ describe('ValidateService', () => {
     consoleErrorSpy.mockRestore();
   });
 
-  it('should be created', () => {
+  it("should be created", () => {
     expect(validateService).toBeTruthy();
   });
 
-  it('testToken should POST correct payload and return API result', () => {
+  it("testToken should POST correct payload and return API result", () => {
     const apiResp: ValidateCheckResponse = {
       success: true,
-      detail: { message: 'OK' },
+      detail: { message: "OK" }
     } as unknown as ValidateCheckResponse;
     postSpy.mockReturnValue(of(apiResp));
 
     let result!: ValidateCheckResponse;
-    validateService
-      .testToken('HOTP1', '000000', '1')
-      .subscribe((r) => (result = r));
+    validateService.testToken("HOTP1", "000000", "1").subscribe((r) => (result = r));
 
     expect(postSpy).toHaveBeenCalledWith(
       expect.stringMatching(/\/validate\/check$/),
-      { serial: 'HOTP1', pass: '000000', otponly: '1' },
-      { headers: local.getHeaders() },
+      { serial: "HOTP1", pass: "000000", otponly: "1" },
+      { headers: local.getHeaders() }
     );
     expect(result).toEqual(apiResp);
   });
 
-  describe('authenticatePasskey', () => {
-    it('should error and notify when WebAuthn is unsupported', async () => {
+  describe("authenticatePasskey", () => {
+    it("should error and notify when WebAuthn is unsupported", async () => {
       let restore: () => void;
-      if ('PublicKeyCredential' in window) {
+      if ("PublicKeyCredential" in window) {
         const spy = jest
-          .spyOn(window as any, 'PublicKeyCredential', 'get')
+          .spyOn(window as any, "PublicKeyCredential", "get")
           .mockReturnValue(undefined);
         restore = () => spy.mockRestore();
       } else {
@@ -107,27 +102,27 @@ describe('ValidateService', () => {
       }
 
       validateService.authenticatePasskey().subscribe({
-        next: () => fail('expected error'),
+        next: () => fail("expected error"),
         error: (err) => {
           expect(err.message).toMatch(/WebAuthn is not supported/i);
           expect(notif.openSnackBar).toHaveBeenCalledWith(
-            'WebAuthn is not supported by this browser.',
+            "WebAuthn is not supported by this browser."
           );
-        },
+        }
       });
 
       restore();
     });
 
-    it('should initialise, collect credentials, then POST /check when isTest=true', async () => {
+    it("should initialise, collect credentials, then POST /check when isTest=true", async () => {
       const credGet = jest.fn().mockResolvedValue({
-        id: 'cred-1',
+        id: "cred-1",
         response: {
           authenticatorData: new ArrayBuffer(2),
           clientDataJSON: new ArrayBuffer(2),
           signature: new ArrayBuffer(2),
-          userHandle: new ArrayBuffer(2),
-        },
+          userHandle: new ArrayBuffer(2)
+        }
       });
 
       const pkc: any = (window as any).PublicKeyCredential ?? {};
@@ -136,19 +131,19 @@ describe('ValidateService', () => {
         (window as any).PublicKeyCredential = pkc;
       }
 
-      Object.defineProperty(navigator, 'credentials', {
+      Object.defineProperty(navigator, "credentials", {
         value: { get: credGet },
-        configurable: true,
+        configurable: true
       });
 
       const initResp = {
         detail: {
           passkey: {
-            challenge: 'abc',
-            rpId: 'example.com',
-            transaction_id: 'tid-42',
-          },
-        },
+            challenge: "abc",
+            rpId: "example.com",
+            transaction_id: "tid-42"
+          }
+        }
       };
       let capturedCheckBody: any;
 
@@ -174,8 +169,8 @@ describe('ValidateService', () => {
       expect(postSpy.mock.calls[0][0]).toMatch(/\/validate\/initialize$/);
       expect(postSpy.mock.calls[1][0]).toMatch(/\/validate\/check$/);
       expect(capturedCheckBody).toMatchObject({
-        transaction_id: 'tid-42',
-        credential_id: 'cred-1',
+        transaction_id: "tid-42",
+        credential_id: "cred-1"
       });
 
       expect(b64.bytesToBase64).toHaveBeenCalled();

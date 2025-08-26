@@ -1,26 +1,26 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from "@angular/core/testing";
 
-import { UserComponent } from './user.component';
-import { provideHttpClient } from '@angular/common/http';
-import { signal } from '@angular/core';
-import { UserData, UserService } from '../../services/user/user.service';
+import { UserComponent } from "./user.component";
+import { provideHttpClient } from "@angular/common/http";
+import { signal } from "@angular/core";
+import { UserData, UserService } from "../../services/user/user.service";
 
 class MockUserService {
   user = signal<UserData>({
-    description: '',
+    description: "",
     editable: false,
-    email: '',
-    givenname: '',
-    mobile: '',
-    phone: '',
-    resolver: '',
-    surname: '',
-    userid: '',
-    username: 'test',
+    email: "",
+    givenname: "",
+    mobile: "",
+    phone: "",
+    resolver: "",
+    surname: "",
+    userid: "",
+    username: "test"
   });
 }
 
-describe('UserComponent', () => {
+describe("UserComponent", () => {
   let component: UserComponent;
   let fixture: ComponentFixture<UserComponent>;
 
@@ -28,9 +28,9 @@ describe('UserComponent', () => {
     await TestBed.configureTestingModule({
       providers: [
         provideHttpClient(),
-        { provide: UserService, useClass: MockUserService },
+        { provide: UserService, useClass: MockUserService }
       ],
-      imports: [UserComponent],
+      imports: [UserComponent]
     }).compileComponents();
 
     fixture = TestBed.createComponent(UserComponent);
@@ -38,7 +38,7 @@ describe('UserComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create', () => {
+  it("should create", () => {
     expect(component).toBeTruthy();
   });
 });

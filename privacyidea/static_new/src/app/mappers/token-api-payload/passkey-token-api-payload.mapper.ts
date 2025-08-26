@@ -1,47 +1,81 @@
-import {
-  TokenApiPayloadMapper,
-  TokenEnrollmentData,
-  TokenEnrollmentPayload,
-} from './_token-api-payload.mapper';
-import { Injectable } from '@angular/core';
+import { TokenApiPayloadMapper, TokenEnrollmentData, TokenEnrollmentPayload } from "./_token-api-payload.mapper";
+import { Injectable } from "@angular/core";
 
 // Interface for Passkey-specific enrollment data
 export interface PasskeyEnrollmentData extends TokenEnrollmentData {
-  type: 'passkey';
-  credential_id?: string;
+  type: "passkey";
 }
 
-export interface PasskeyEnrollmentPayload extends TokenEnrollmentPayload {
-  credential_id?: string; // If present, all fields from PasskeyEnrollmentData are part of payload
+export interface PasskeyFinalizeData extends PasskeyEnrollmentData {
+  credential_id: string;
+  attestationObject: string;
+  clientDataJSON: string;
+  rawId: string;
+  authenticatorAttachment: string | null;
+  transaction_id: string;
+  serial: string;
+  credProps?: any;
 }
 
-@Injectable({ providedIn: 'root' })
-export class PasskeyApiPayloadMapper
-  implements TokenApiPayloadMapper<PasskeyEnrollmentData>
-{
-  toApiPayload(data: PasskeyEnrollmentData): PasskeyEnrollmentPayload {
-    const payload: PasskeyEnrollmentPayload = {
+export interface PasskeyFinalizationPayload extends TokenEnrollmentPayload {
+  credential_id: string; // If present, all fields from PasskeyEnrollmentData are part of payload
+  attestationObject: string;
+  clientDataJSON: string;
+  rawId: string;
+  authenticatorAttachment: string | null;
+  transaction_id: string;
+  serial: string | null;
+  credProps?: any;
+}
+
+@Injectable({ providedIn: "root" })
+export class PasskeyApiPayloadMapper implements TokenApiPayloadMapper<PasskeyEnrollmentData> {
+  toApiPayload(data: PasskeyEnrollmentData): TokenEnrollmentPayload {
+    const payload: TokenEnrollmentPayload = {
       type: data.type,
       description: data.description,
       container_serial: data.containerSerial,
       validity_period_start: data.validityPeriodStart,
       validity_period_end: data.validityPeriodEnd,
       user: data.user,
-      pin: data.pin,
+      realm: data.user ? data.realm : null,
+      pin: data.pin
     };
 
-    if (data.credential_id) {
-      // Switch logic copies all of `data` if credential_id is present.
-      // Adhering to PasskeyEnrollmentPayload which only adds credential_id.
-      payload.credential_id = data.credential_id;
+    if (data.onlyAddToRealm) {
+      payload.realm = data.realm;
+      payload.user = null;
     }
-
-    if (payload.credential_id === undefined) delete payload.credential_id;
     return payload;
   }
 
   fromApiPayload(payload: any): PasskeyEnrollmentData {
     // Placeholder: Implement transformation from API payload. We will replace this later.
     return payload as PasskeyEnrollmentData;
+  }
+}
+
+@Injectable({ providedIn: "root" })
+export class PasskeyFinalizeApiPayloadMapper implements TokenApiPayloadMapper<PasskeyFinalizeData> {
+  toApiPayload(data: PasskeyFinalizeData): PasskeyFinalizationPayload {
+    const payload: PasskeyFinalizationPayload = {
+      type: data.type,
+      serial: data.serial,
+      credential_id: data.credential_id,
+      attestationObject: data.attestationObject,
+      clientDataJSON: data.clientDataJSON,
+      rawId: data.rawId,
+      authenticatorAttachment: data.authenticatorAttachment,
+      transaction_id: data.transaction_id
+    };
+
+    if (data.credProps) payload.credProps = data.credProps;
+
+    return payload;
+  }
+
+  fromApiPayload(payload: any): PasskeyFinalizeData {
+    // Placeholder: Implement transformation from API payload. We will replace this later.
+    return payload as PasskeyFinalizeData;
   }
 }

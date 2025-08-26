@@ -1,18 +1,18 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
-import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-import { TokenDetailsInfoComponent } from './token-details-info.component';
-import { signal } from '@angular/core';
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { provideHttpClient } from "@angular/common/http";
+import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
+import { TokenDetailsInfoComponent } from "./token-details-info.component";
+import { signal } from "@angular/core";
 
-describe('TokenDetailsInfoComponent', () => {
+describe("TokenDetailsInfoComponent", () => {
   let component: TokenDetailsInfoComponent;
   let fixture: ComponentFixture<TokenDetailsInfoComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [TokenDetailsInfoComponent, BrowserAnimationsModule],
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      providers: [provideHttpClient(), provideHttpClientTesting()]
     }).compileComponents();
 
     fixture = TestBed.createComponent(TokenDetailsInfoComponent);
@@ -26,7 +26,7 @@ describe('TokenDetailsInfoComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create', () => {
+  it("should create", () => {
     expect(component).toBeTruthy();
   });
 });

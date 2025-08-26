@@ -1,12 +1,8 @@
-import {
-  TokenApiPayloadMapper,
-  TokenEnrollmentData,
-  TokenEnrollmentPayload,
-} from './_token-api-payload.mapper';
-import { Injectable } from '@angular/core';
+import { TokenApiPayloadMapper, TokenEnrollmentData, TokenEnrollmentPayload } from "./_token-api-payload.mapper";
+import { Injectable } from "@angular/core";
 
 export interface TotpEnrollmentData extends TokenEnrollmentData {
-  type: 'totp';
+  type: "totp";
   generateOnServer?: boolean;
   otpKey?: string;
   otpLength?: number;
@@ -20,12 +16,11 @@ export interface TotpEnrollmentPayload extends TokenEnrollmentPayload {
   otplen?: number;
   hashlib?: string;
   timeStep?: number;
+  serial?: string | null;
 }
 
-@Injectable({ providedIn: 'root' })
-export class TotpApiPayloadMapper
-  implements TokenApiPayloadMapper<TotpEnrollmentData>
-{
+@Injectable({ providedIn: "root" })
+export class TotpApiPayloadMapper implements TokenApiPayloadMapper<TotpEnrollmentData> {
   toApiPayload(data: TotpEnrollmentData): TotpEnrollmentPayload {
     const payload: TotpEnrollmentPayload = {
       type: data.type,
@@ -34,17 +29,24 @@ export class TotpApiPayloadMapper
       validity_period_start: data.validityPeriodStart,
       validity_period_end: data.validityPeriodEnd,
       user: data.user,
+      realm: data.user ? data.realm : null,
       pin: data.pin,
       otpkey: data.generateOnServer ? null : (data.otpKey ?? null),
       genkey: data.generateOnServer ? 1 : 0,
       otplen: data.otpLength !== undefined ? Number(data.otpLength) : undefined,
       hashlib: data.hashAlgorithm,
       timeStep: data.timeStep !== undefined ? Number(data.timeStep) : undefined,
+      serial: data.serial ?? null
     };
 
+    if (data.onlyAddToRealm) {
+      payload.realm = data.realm;
+      payload.user = null;
+    }
     if (payload.otplen === undefined) delete payload.otplen;
     if (payload.hashlib === undefined) delete payload.hashlib;
     if (payload.timeStep === undefined) delete payload.timeStep;
+    if (payload.serial === null) delete payload.serial;
 
     return payload;
   }

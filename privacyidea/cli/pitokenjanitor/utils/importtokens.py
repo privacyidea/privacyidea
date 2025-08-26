@@ -47,10 +47,13 @@
 # INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE
+import json
 
-from flask.cli import AppGroup
 import click
-from privacyidea.lib.token import import_token
+from cryptography.fernet import Fernet
+from flask.cli import AppGroup
+
+from privacyidea.lib.token import import_token, import_tokens
 
 importtokens_cli = AppGroup("import", help="Import tokens from different sources.")
 
@@ -95,3 +98,55 @@ def pskc(pskc_file, preshared_key, validate_mac):
               f" because they could not be validated: {not_parsed_tokens}")
     print(f"Successfully imported {success} tokens.")
     print(f"Failed to import {failed} tokens: {failed_tokens}")
+
+
+@importtokens_cli.command('privacyidea')
+@click.argument('file', nargs=1, type=click.File())
+@click.option('--key', required=True, type=str,
+              help='The encryption key given by PrivacyIDEA during token export.')
+@click.pass_context
+def import_token_from_privacyidea(ctx, file, key):
+    """
+    Import tokens from a PrivacyIDEA token file.
+
+    FILE is the file containing the tokens to be imported.
+    KEY is the encryption key used to decrypt the tokens.
+    """
+    try:
+        f = Fernet(key)
+    except Exception as e:
+        click.echo(f"Invalid encryption key format. Please ensure the key is valid. Details: {e}")
+        ctx.exit(1)
+
+    try:
+        token_data = file.read()
+    except Exception as e:
+        click.echo(f"Error reading file: {e}")
+        ctx.exit(1)
+
+    try:
+        decrypted_data = f.decrypt(token_data)
+    except Exception as e:
+        click.echo(f"Error decrypting token data: {e}")
+        ctx.exit(1)
+
+    try:
+        token_list = decrypted_data.decode("utf-8")
+    except UnicodeDecodeError as e:
+        click.echo(f"Error decoding token data: {e}")
+        ctx.exit(1)
+
+    try:
+        token_list = json.loads(token_list)
+    except Exception as ex:
+        click.echo(f"Could not parse the token import data from JSON: {ex}")
+        ctx.exit(1)
+
+    try:
+        ret = import_tokens(token_list)
+        click.echo(f"{len(ret.successful_tokens)} tokens imported successfully.\n"
+                   f"{len(ret.failed_tokens)} tokens failed to import.\n"
+                   f"{len(ret.updated_tokens)} tokens updated.\n")
+    except Exception as e:
+        click.echo(f"Error importing tokens: {e}")
+        ctx.exit(1)

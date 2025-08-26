@@ -1,49 +1,38 @@
-import { Component, EventEmitter, inject, OnInit, Output } from '@angular/core';
-import {
-  FormControl,
-  FormGroup,
-  FormsModule,
-  ReactiveFormsModule,
-} from '@angular/forms';
-import { firstValueFrom, from, lastValueFrom, Observable } from 'rxjs';
+import { Component, EventEmitter, inject, OnInit, Output } from "@angular/core";
+import { FormControl, FormGroup, FormsModule, ReactiveFormsModule } from "@angular/forms";
+import { firstValueFrom, from, lastValueFrom, Observable } from "rxjs";
 import {
   EnrollmentResponse,
-  TokenEnrollmentData,
-} from '../../../../mappers/token-api-payload/_token-api-payload.mapper';
+  TokenEnrollmentData
+} from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
 import {
   WebAuthnApiPayloadMapper,
   WebAuthnEnrollmentData,
-  WebauthnEnrollmentResponse,
-  WebauthnFinalizeData,
-} from '../../../../mappers/token-api-payload/webauthn-token-api-payload.mapper';
-import {
-  Base64Service,
-  Base64ServiceInterface,
-} from '../../../../services/base64/base64.service';
-import {
-  DialogService,
-  DialogServiceInterface,
-} from '../../../../services/dialog/dialog.service';
+  WebauthnEnrollmentResponse, WebAuthnFinalizeApiPayloadMapper,
+  WebauthnFinalizeData
+} from "../../../../mappers/token-api-payload/webauthn-token-api-payload.mapper";
+import { Base64Service, Base64ServiceInterface } from "../../../../services/base64/base64.service";
+import { DialogService, DialogServiceInterface } from "../../../../services/dialog/dialog.service";
 import {
   NotificationService,
-  NotificationServiceInterface,
-} from '../../../../services/notification/notification.service';
-import {
-  TokenService,
-  TokenServiceInterface,
-} from '../../../../services/token/token.service';
-import { ReopenDialogFn } from '../token-enrollment.component';
+  NotificationServiceInterface
+} from "../../../../services/notification/notification.service";
+import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
+import { ReopenDialogFn } from "../token-enrollment.component";
 
 @Component({
-  selector: 'app-enroll-webauthn',
+  selector: "app-enroll-webauthn",
   standalone: true,
   imports: [ReactiveFormsModule, FormsModule],
-  templateUrl: './enroll-webauthn.component.html',
-  styleUrl: './enroll-webauthn.component.scss',
+  templateUrl: "./enroll-webauthn.component.html",
+  styleUrl: "./enroll-webauthn.component.scss"
 })
 export class EnrollWebauthnComponent implements OnInit {
   protected readonly enrollmentMapper: WebAuthnApiPayloadMapper = inject(
-    WebAuthnApiPayloadMapper,
+    WebAuthnApiPayloadMapper
+  );
+  protected readonly finalizeMapper: WebAuthnFinalizeApiPayloadMapper = inject(
+    WebAuthnFinalizeApiPayloadMapper
   );
   protected readonly notificationService: NotificationServiceInterface =
     inject(NotificationService);
@@ -53,11 +42,7 @@ export class EnrollWebauthnComponent implements OnInit {
   protected readonly dialogService: DialogServiceInterface =
     inject(DialogService);
 
-  text = this.tokenService
-    .tokenTypeOptions()
-    .find((type) => type.key === 'webauthn')?.text;
-
-  @Output() aditionalFormFieldsChange = new EventEmitter<{
+  @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
   @Output() clickEnrollChange = new EventEmitter<
@@ -68,22 +53,22 @@ export class EnrollWebauthnComponent implements OnInit {
   webauthnForm = new FormGroup({});
 
   ngOnInit(): void {
-    this.aditionalFormFieldsChange.emit({});
+    this.additionalFormFieldsChange.emit({});
     this.clickEnrollChange.emit((data) => from(this.onClickEnroll(data)));
   }
 
   onClickEnroll = async (
-    basicEnrollmentData: TokenEnrollmentData,
+    basicEnrollmentData: TokenEnrollmentData
   ): Promise<EnrollmentResponse | null> => {
     if (!navigator.credentials?.create) {
-      const errorMsg = 'WebAuthn is not supported by this browser.';
+      const errorMsg = "WebAuthn is not supported by this browser.";
       this.notificationService.openSnackBar(errorMsg);
       return null;
     }
 
     const webauthnEnrollmentData: WebAuthnEnrollmentData = {
       ...basicEnrollmentData,
-      type: 'webauthn',
+      type: "webauthn"
     };
 
     let webauthnEnrollmentResponse: WebauthnEnrollmentResponse | null = null;
@@ -94,8 +79,8 @@ export class EnrollWebauthnComponent implements OnInit {
           WebauthnEnrollmentResponse
         >({
           data: webauthnEnrollmentData,
-          mapper: this.enrollmentMapper,
-        }),
+          mapper: this.enrollmentMapper
+        })
       );
     } catch (error: any) {
       const errMsg = `WebAuthn registration process failed: ${error.message || error}`;
@@ -105,7 +90,7 @@ export class EnrollWebauthnComponent implements OnInit {
 
     if (!webauthnEnrollmentResponse || !webauthnEnrollmentResponse.detail) {
       this.notificationService.openSnackBar(
-        'Failed to initiate WebAuthn registration: Invalid server response or missing details.',
+        "Failed to initiate WebAuthn registration: Invalid server response or missing details."
       );
       return null;
     }
@@ -115,19 +100,19 @@ export class EnrollWebauthnComponent implements OnInit {
 
     if (!webAuthnRegOptions) {
       this.notificationService.openSnackBar(
-        'Failed to initiate WebAuthn registration: Missing WebAuthn registration request data.',
+        "Failed to initiate WebAuthn registration: Missing WebAuthn registration request data."
       );
       return null;
     }
 
     this.openStepOneDialog({
       webauthnEnrollmentData,
-      webauthnEnrollmentResponse: webauthnEnrollmentResponse,
+      webauthnEnrollmentResponse: webauthnEnrollmentResponse
     });
 
     const responseLastStep = await this.finalizeEnrollment({
       webauthnEnrollmentData,
-      webauthnEnrollmentResponse: webauthnEnrollmentResponse,
+      webauthnEnrollmentResponse: webauthnEnrollmentResponse
     });
 
     if (!responseLastStep) {
@@ -139,13 +124,13 @@ export class EnrollWebauthnComponent implements OnInit {
   };
 
   readPublicKeyCred = async (
-    enrollmentResponse: WebauthnEnrollmentResponse,
+    enrollmentResponse: WebauthnEnrollmentResponse
   ): Promise<any | null> => {
     const request = enrollmentResponse.detail?.webAuthnRegisterRequest;
 
     if (!request) {
       this.notificationService.openSnackBar(
-        'Invalid WebAuthn registration request data.',
+        "Invalid WebAuthn registration request data."
       );
       return null;
     }
@@ -153,36 +138,36 @@ export class EnrollWebauthnComponent implements OnInit {
     const publicKeyOptions: any = {
       rp: {
         id: request.relyingParty.id,
-        name: request.relyingParty.name,
+        name: request.relyingParty.name
       },
       user: {
         id: new TextEncoder().encode(request.serialNumber),
         name: request.name,
-        displayName: request.displayName,
+        displayName: request.displayName
       },
       challenge: this.base64Service.base64URLToBytes(request.nonce),
       pubKeyCredParams: request.pubKeyCredAlgorithms,
       timeout: request.timeout,
       excludeCredentials: request.excludeCredentials
         ? request.excludeCredentials.map((cred: any) => ({
-            id: this.base64Service.base64URLToBytes(cred.id),
-            type: cred.type,
-            transports: cred.transports,
-          }))
+          id: this.base64Service.base64URLToBytes(cred.id),
+          type: cred.type,
+          transports: cred.transports
+        }))
         : [],
       authenticatorSelection: request.authenticatorSelection,
       attestation: request.attestation,
-      extensions: request.extensions,
+      extensions: request.extensions
     };
 
     let publicKeyCred: any | null = null;
     try {
       publicKeyCred = await navigator.credentials.create({
-        publicKey: publicKeyOptions,
+        publicKey: publicKeyOptions
       });
     } catch (browserOrCredentialError: any) {
       this.notificationService.openSnackBar(
-        `WebAuthn credential creation failed: ${browserOrCredentialError.message || 'Unknown error'}`,
+        `WebAuthn credential creation failed: ${browserOrCredentialError.message || "Unknown error"}`
       );
       publicKeyCred = null;
     } finally {
@@ -201,7 +186,7 @@ export class EnrollWebauthnComponent implements OnInit {
       if (!this.dialogService.isTokenEnrollmentFirstStepDialogOpen) {
         this.dialogService.openTokenEnrollmentFirstStepDialog({
           data: { enrollmentResponse: webauthnEnrollmentResponse },
-          disableClose: true,
+          disableClose: true
         });
         return webauthnEnrollmentResponse;
       }
@@ -210,7 +195,7 @@ export class EnrollWebauthnComponent implements OnInit {
 
     this.dialogService.openTokenEnrollmentFirstStepDialog({
       data: { enrollmentResponse: webauthnEnrollmentResponse },
-      disableClose: true,
+      disableClose: true
     });
   }
 
@@ -226,7 +211,7 @@ export class EnrollWebauthnComponent implements OnInit {
 
     if (!webauthnEnrollmentResponse || !webauthnEnrollmentResponse.detail) {
       this.notificationService.openSnackBar(
-        'Enrollment response or its detail is missing for finalization.',
+        "Enrollment response or its detail is missing for finalization."
       );
       return null;
     }
@@ -240,13 +225,13 @@ export class EnrollWebauthnComponent implements OnInit {
       !detail.serial
     ) {
       this.notificationService.openSnackBar(
-        'Invalid transaction ID or serial number in enrollment detail for finalization.',
+        "Invalid transaction ID or serial number in enrollment detail for finalization."
       );
       return null;
     }
 
     const publicKeyCred = await this.readPublicKeyCred(
-      webauthnEnrollmentResponse,
+      webauthnEnrollmentResponse
     );
     if (publicKeyCred === null) {
       return null;
@@ -258,15 +243,15 @@ export class EnrollWebauthnComponent implements OnInit {
       serial: detail.serial,
       credential_id: publicKeyCred.id,
       rawId: this.base64Service.bytesToBase64(
-        new Uint8Array(publicKeyCred.rawId),
+        new Uint8Array(publicKeyCred.rawId)
       ),
       authenticatorAttachment: publicKeyCred.authenticatorAttachment,
       regdata: this.base64Service.bytesToBase64(
-        new Uint8Array(publicKeyCred.response.attestationObject),
+        new Uint8Array(publicKeyCred.response.attestationObject)
       ),
       clientdata: this.base64Service.bytesToBase64(
-        new Uint8Array(publicKeyCred.response.clientDataJSON),
-      ),
+        new Uint8Array(publicKeyCred.response.clientDataJSON)
+      )
     };
 
     const extResults = publicKeyCred.getClientExtensionResults();
@@ -275,12 +260,14 @@ export class EnrollWebauthnComponent implements OnInit {
     }
 
     try {
-      return await firstValueFrom(
+      const response: EnrollmentResponse = await firstValueFrom(
         this.tokenService.enrollToken({
           data: params,
-          mapper: this.enrollmentMapper,
-        }),
+          mapper: this.finalizeMapper
+        })
       );
+      response.detail.serial = detail.serial;
+      return response;
     } catch (error: any) {
       const errMsg = `WebAuthn finalization failed: ${error.message || error}`;
       this.notificationService.openSnackBar(errMsg);
