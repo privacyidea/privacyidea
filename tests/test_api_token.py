@@ -524,10 +524,13 @@ class API000TokenAdminRealmList(MyApiTestCase):
         csv_serials = ",".join(token_serials)
         result = self.request_assert_200(f"/token/?serial={csv_serials}", {}, self.at, "DELETE")
         result = result.get("result").get("value")
-
-        self.assertTrue(result.get(token1.get_serial()))
-        self.assertFalse(result.get(token2.get_serial()))
-        self.assertTrue(result.get(token3.get_serial()))
+        count_deleted = result.get("count_deleted")
+        self.assertEqual(2, count_deleted)
+        failed = result.get("failed")
+        self.assertFalse(failed)
+        unauthorized = result.get("unauthorized")
+        self.assertEqual(1, len(unauthorized))
+        self.assertEqual(token2.get_serial(), unauthorized[0])
         self.assertRaises(ResourceNotFoundError, get_tokens_from_serial_or_user, token1.get_serial(), None)
         self.assertEqual(1, len(get_tokens_from_serial_or_user(token2.get_serial(), None)))
         self.assertRaises(ResourceNotFoundError, get_tokens_from_serial_or_user, token3.get_serial(), None)
@@ -551,8 +554,14 @@ class API000TokenAdminRealmList(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertEqual(200, res.status_code, res.json)
             result = res.json.get("result").get("value")
-            self.assertTrue(result.get(token1.get_serial()))
-            self.assertFalse(result.get(token2.get_serial()))
+            count_unassigned = result.get("count_unassigned")
+            self.assertEqual(1, count_unassigned, res.json)
+            failed = result.get("failed")
+            self.assertEqual(0, len(failed), failed)
+            # One token is in a realm that is not allowed for the user
+            unauthorized = result.get("unauthorized")
+            self.assertEqual(1, len(unauthorized))
+            self.assertIn(token2.get_serial(), unauthorized)
         self.assertIsNone(token1.user)
         self.assertIsNotNone(token2.user)
 
@@ -582,10 +591,17 @@ class API000TokenAdminRealmList(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertEqual(200, res.status_code, res.json)
             result = res.json.get("result").get("value")
-            self.assertTrue(result.get(token1.get_serial()))
-            self.assertFalse(result.get(wrong_serial1))
-            self.assertFalse(result.get("DOESNOTEXIST"))
-            self.assertFalse(result.get("THISNEITHER"))
+            # The only real, processable serial is the one of token1
+            count_unassigned = result.get("count_unassigned")
+            self.assertEqual(1, count_unassigned, result)
+            failed = result.get("failed")
+            self.assertEqual(3, len(failed), failed)
+            self.assertIn("DOESNOTEXIST", failed)
+            self.assertIn("THISNEITHER", failed)
+            self.assertIn("FANTASYSERIAL", failed)
+            # The other 3 are unauthorized because they are not in realm1
+            unauthorized = result.get("unauthorized")
+            self.assertEqual(0, len(unauthorized))
             self.assertIsNone(token1.user)
 
         # No JSON
@@ -599,14 +615,22 @@ class API000TokenAdminRealmList(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertEqual(200, res.status_code, res.json)
             result = res.json.get("result").get("value")
-            self.assertTrue(result.get(token1.get_serial()))
-            self.assertFalse(result.get(wrong_serial1))
-            self.assertFalse(result.get("DOESNOTEXIST"))
-            self.assertFalse(result.get("THISNEITHER"))
+            # The only real, processable serial is the one of token1
+            count_unassigned = result.get("count_unassigned")
+            self.assertEqual(1, count_unassigned, result)
+            failed = result.get("failed")
+            self.assertEqual(3, len(failed), failed)
+            self.assertIn("DOESNOTEXIST", failed)
+            self.assertIn("THISNEITHER", failed)
+            self.assertIn("FANTASYSERIAL", failed)
+            # The other 3 are unauthorized because they are not in realm1
+            unauthorized = result.get("unauthorized")
+            self.assertEqual(0, len(unauthorized))
             self.assertIsNone(token1.user)
 
         delete_policy("policy")
         remove_token(token1.get_serial())
+
 
 class APIAttestationTestCase(MyApiTestCase):
     @pytest.mark.usefixtures("setup_local_ca")

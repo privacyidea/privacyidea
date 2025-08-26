@@ -569,13 +569,14 @@ def unassign_api():
     :jsonparam serials: A list of serial numbers of multiple tokens.
     authorized to manage.
 
-    :return: In case of success, it returns 1 if only one serial is given, or a dictionary with the serials as keys and
-     the success status of the deletion as values.
+    :return: In case of success, it returns 1 if only one serial is given.
+            If multiple serials were given, the response will contain "count_unassigned" as int for the number of
+            unassigned token, "failed" with a list of serials for which the operation failed and "unauthorized" with a
+            list of serials that were not authorized for the operation.
     :rtype: JSON object
     """
     user = request.User
     serial_list = get_optional(request.all_data, "serials")
-    not_authorized_serials = get_optional(request.all_data, "not_authorized_serials") or []
 
     if not serial_list:
         res = unassign_token(serial=None, user=user)
@@ -583,23 +584,28 @@ def unassign_api():
         return send_result(res)
 
     g.audit_object.log({"serial": serial_list if len(serial_list) != 1 else serial_list[0]})
-
+    not_authorized_serials = get_optional(request.all_data, "not_authorized_serials", [])
+    not_found_serials = get_optional(request.all_data, "not_found_serials", [])
     # If only one serial is given, the value in the send result is expected to be a boolean (old API behavior).
-    if len(serial_list) == 1 and not not_authorized_serials:
+    if len(serial_list) == 1 and not not_authorized_serials and not not_found_serials:
         res = unassign_token(serial_list[0], user=user)
         g.audit_object.log({"success": True})
         return send_result(res)
 
-    ret = {}
+    count_success = 0
+    failed = get_optional(request.all_data, "not_found_serials", [])
     for serial in serial_list:
         try:
-            success = unassign_token(serial, user=user)
+            tmp = unassign_token(serial, user=user)
+            count_success += tmp
         except Exception as ex:
             log.error(f"Error unassigning token {serial}: {ex}")
-            success = False
-        ret[serial] = success
-
-    res = add_not_authorized_tokens_result(ret, not_authorized_serials)
+            failed.append(serial)
+    res = {
+        "count_unassigned": count_success,
+        "failed": failed,
+        "unauthorized": not_authorized_serials
+    }
     g.audit_object.log({"success": True})
     return send_result(res)
 
@@ -703,8 +709,10 @@ def delete_api(serial=None):
     :jsonparam serials: A list of serial numbers of multiple tokens.
     authorized to manage.
 
-    :return: In case of success it returns 1 if only one serial is given, or a dictionary with the serials as keys and
-     the success status of the deletion as values.
+     :return: In case of success, it returns 1 if only one serial is given.
+            If multiple serials were given, the response will contain "count_deleted" as int for the number of
+            deleted token, "failed" with a list of serials for which the operation failed and "unauthorized" with a
+            list of serials that were not authorized for the operation.
     :rtype: json object
     """
     user = request.User
@@ -719,15 +727,21 @@ def delete_api(serial=None):
         g.audit_object.log({"success": True})
         return send_result(res)
 
-    ret = {}
+    count_success = 0
+    failed = get_optional(request.all_data, "not_found_serials", [])
     for serial in serial_list:
         try:
-            ret[serial] = remove_token(serial, user=user)
+            tmp = remove_token(serial, user=user)
+            count_success += tmp
         except Exception as ex:
             log.exception(f"Error deleting token {serial}: {ex}")
-            ret[serial] = False
+            failed.append(serial)
 
-    res = add_not_authorized_tokens_result(ret, not_authorized_serials)
+    res = {
+        "count_deleted": count_success,
+        "failed": failed,
+        "unauthorized": not_authorized_serials
+    }
     g.audit_object.log({"success": True})
     return send_result(res)
 

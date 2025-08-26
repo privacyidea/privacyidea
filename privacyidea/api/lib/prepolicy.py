@@ -1337,9 +1337,13 @@ def check_token_action(request: Request = None, action: str = None):
     # Process the collected serials
     authorized_serials = []
     not_authorized_serials = []
+    not_found_serials = []
     for serial in all_serials:
         try:
             allowed = check_token_action_allowed(g, action, serial, replace(user_attributes))
+        except ResourceNotFoundError:
+            not_found_serials.append(serial)
+            continue
         except Exception as ex:  # pragma: no cover
             allowed = False
             log.error(f"Error while checking action '{action}' on token {serial}: {ex}")
@@ -1351,7 +1355,7 @@ def check_token_action(request: Request = None, action: str = None):
 
     # If any serial was not authorized, and it was the only one provided, raise an error.
     # This preserves the behavior of failing hard on single-token operations.
-    if not_authorized_serials and len(all_serials) == 1:
+    if not_authorized_serials and len(all_serials) == 1 and len(not_found_serials) == 0:
         raise PolicyError(f"{role.capitalize()} actions are defined, but the action {action} is not allowed!")
 
     # For multi-token operations, log the ones that were skipped.
@@ -1363,6 +1367,7 @@ def check_token_action(request: Request = None, action: str = None):
     request.all_data["serials"] = authorized_serials
     request.all_data["serial"] = ",".join(authorized_serials)
     request.all_data["not_authorized_serials"] = not_authorized_serials
+    request.all_data["not_found_serials"] = not_found_serials
     return True
 
 
