@@ -21,35 +21,36 @@
     </span>
   }
   <div class="flex-row gap-1">
-    @if (!["registration", "paper", "spass", "email", "yubico"].includes(data.tokentype.key)
-    && data.response.detail.googleurl?.img) {
-      <img
-        alt="QR Code"
-        class="qr-code"
-        height="300px"
-        src="{{ data.response.detail.googleurl?.img }}"
-        width="300px" />
-    } @else if (data.response.detail.motpurl?.img) {
-      <img
-        alt="QR Code"
-        class="qr-code"
-        height="300px"
-        src="{{ data.response.detail.motpurl?.img }}"
-        width="300px" />
-    } @else if (data.response.detail.otpkey?.img) {
-      <img
-        alt="QR Code"
-        class="qr-code"
-        height="300px"
-        src="{{ data.response.detail.otpkey?.img }}"
-        width="300px" />
-    } @else if (data.response.detail.tiqrenroll?.img) {
-      <img
-        alt="QR Code"
-        class="qr-code"
-        height="300px"
-        src="{{ data.response.detail.tiqrenroll?.img }}"
-        width="300px" />
+    @if (!["registration", "paper", "spass", "email", "yubico", "yubikey"].includes(data.tokentype.key)) {
+      @if (data.response.detail.googleurl?.img) {
+        <img
+          alt="QR Code"
+          class="qr-code"
+          height="300px"
+          src="{{ data.response.detail.googleurl?.img }}"
+          width="300px" />
+      } @else if (data.response.detail.motpurl?.img) {
+        <img
+          alt="QR Code"
+          class="qr-code"
+          height="300px"
+          src="{{ data.response.detail.motpurl?.img }}"
+          width="300px" />
+      } @else if (data.response.detail.otpkey?.img) {
+        <img
+          alt="QR Code"
+          class="qr-code"
+          height="300px"
+          src="{{ data.response.detail.otpkey?.img }}"
+          width="300px" />
+      } @else if (data.response.detail.tiqrenroll?.img) {
+        <img
+          alt="QR Code"
+          class="qr-code"
+          height="300px"
+          src="{{ data.response.detail.tiqrenroll?.img }}"
+          width="300px" />
+      }
     }
     <div class="flex-column gap-1">
       @let url =
@@ -57,16 +58,15 @@
         data.response.detail.motpurl?.value ??
         data.response.detail.otpkey?.value ??
         data.response.detail.tiqrenroll?.value;
-      @if (url && !["spass", "tiqr"].includes(data.tokentype.key)) {
+      @if (url && !["spass", "tiqr", "registration", "email", "yubico", "yubikey"].includes(data.tokentype.key)) {
         <p class="width-36">
           Click
           <a href="{{ url }}">here</a>
           or scan the QR Code, if you want to add the Token to your smartphone authenticator app. The QR Code contains
           the secret key of your token. You need to protect it.
 
-          <strong>
-            If you are in doubt, that someone else saw it, please regenerate the QR Code, when no one else is watching.
-          </strong>
+          <strong> If you are in doubt, that someone else saw it, please regenerate the QR Code, when no one else is
+                   watching. </strong>
         </p>
 
         <button
@@ -86,7 +86,7 @@
       }
 
       @if (data.response.detail.otpkey?.value && !data.response.detail["otps"]
-      && !["registration", "paper", "tan", "spass"].includes(data.tokentype.key)) {
+      && !["registration", "paper", "tan", "spass", "email", "yubico", "yubikey"].includes(data.tokentype.key)) {
         <mat-accordion class="otpkey-expension">
           <mat-expansion-panel>
             <mat-expansion-panel-header>
