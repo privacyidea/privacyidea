@@ -36,7 +36,7 @@
 privacyIDEA: Open-Source Multi-Factor Authentication
 ==================================================
 
-privacyIDEA is an open-source MFA platform for orchestrating all your second-factor authentication needs. Secure your entire stack with a flexible, self-hosted solution that puts you in control.
+privacyIDEA is an open-source MFA platform for orchestrating all your second-factor authentication needs. Secure your entire stack with a flexible, self-hosted solution that puts you in control. As an on-premise platform, your sensitive user data always remains within your infrastructure—never in a third-party cloud.
 
 Key Features
 ------------
@@ -49,8 +49,9 @@ Key Features
 Supported Authentication Factors
 ------------------------------
 
-* 🔑 **Passkeys & Hardware:** FIDO2/WebAuthn devices (like YubiKey, Plug-Up), Smartcards (x509).
-* 📱 **Software & Mobile:** PUSH notifications (privacyIDEA Authenticator), TOTP/HOTP (Google Authenticator, etc.), TiQR.
+* 🔑 **Passkeys & Hardware:** FIDO2/WebAuthn devices (like YubiKey, Plug-Up).
+* 💳 **Smartcards (PIV/x509):** Connect to a Microsoft CA using the `ms-ca-service <https://github.com/privacyidea/ms-ca-service>`_ and enroll certificates directly to PIV-compatible devices with our `enrollment client for Windows <https://github.com/privacyidea/smartcard-client-windows>`_.
+* 📱 **Software & Mobile:** Use the `privacyIDEA Authenticator <https://github.com/privacyidea/pi-authenticator>`_ for PUSH notifications, TOTP, and HOTP; for standard TOTP/HOTP, other apps like Google Authenticator are also compatible. TiQR is also supported.
 * 📜 **Classic & Remote:** SMS, Email, SSH Keys, Security Questionnaires, and simple Registration Codes for easy rollout.
 
 Seamless Integration
@@ -58,12 +59,13 @@ Seamless Integration
 
 Enhance the security of your existing infrastructure:
 
-* **Operating Systems:** Linux (PAM), Windows (Credential Provider)
-* **Identity Providers:** Keycloak, ADFS, Shibboleth, SimpleSAMLphp
+* **Operating Systems:** `Linux (PAM) <https://github.com/privacyidea/privacyidea-pam>`_, `Windows (Credential Provider) <https://github.com/privacyidea/privacyidea-credential-provider>`_
+* **Identity Providers:** `Keycloak <https://github.com/privacyidea/keycloak-provider>`_, `ADFS <https://github.com/privacyidea/adfs-provider>`_, `Shibboleth <https://github.com/privacyidea/shibboleth-plugin>`_, `SimpleSAMLphp <https://github.com/privacyidea/simplesamlphp-module-privacyidea>`_
 * **Remote Access:** VPNs (OpenVPN, Fortinet, Palo Alto), SSH
 * **Web Applications:** Apache, Nginx, any web portal via RADIUS or our REST API.
-* **nextCloud, ownCloud**
+* **`nextCloud <https://github.com/privacyidea/privacyidea-nextcloud-app>`_, `ownCloud <https://github.com/privacyidea/privacyidea-owncloud-app>`_**
 * **and more..**
+
 ----
 
 Join the Community
