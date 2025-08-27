@@ -36,7 +36,7 @@
 privacyIDEA: Open-Source Multi-Factor Authentication
 ==================================================
 
-privacyIDEA is a modern, open-source MFA platform for orchestrating all your second-factor authentication needs. Secure your entire stack with a flexible, self-hosted solution that puts you in control.
+privacyIDEA is an open-source MFA platform for orchestrating all your second-factor authentication needs. Secure your entire stack with a flexible, self-hosted solution that puts you in control.
 
 Key Features
 ------------
