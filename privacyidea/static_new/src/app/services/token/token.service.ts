@@ -426,7 +426,7 @@ export class TokenService implements TokenServiceInterface {
   }
 
   batchUnassignTokens(tokenDetails: TokenDetails[]): Observable<Object> {
-    const headers = this.localService.getHeaders();
+    const headers = this.authService.getHeaders();
     return this.http
       .post<Object>(
         this.tokenBaseUrl + "unassign",
@@ -448,7 +448,7 @@ export class TokenService implements TokenServiceInterface {
   }
 
   batchDeleteTokens(selectedTokens: TokenDetails[]): Observable<Object> {
-    const headers = this.localService.getHeaders();
+    const headers = this.authService.getHeaders();
     const body = { serials: selectedTokens.map(t => t.serial) };
 
     return this.http
