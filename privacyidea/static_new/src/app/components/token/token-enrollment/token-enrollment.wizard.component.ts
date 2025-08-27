@@ -99,7 +99,7 @@ import { TokenEnrollmentComponent } from "./token-enrollment.component";
     AsyncPipe,
     MatError,
     MatTooltip,
-    ScrollToTopDirective,
+    ScrollToTopDirective
   ],
   templateUrl: "./token-enrollment.wizard.component.html",
   styleUrl: "./token-enrollment.component.scss"
@@ -151,7 +151,7 @@ export class TokenEnrollmentWizardComponent extends TokenEnrollmentComponent {
         enrollToken: this.enrollToken.bind(this),
         user: user,
         userRealm: this.userService.selectedUserRealm(),
-        onlyAddToRealm: this.onlyAddToRealm()
+        onlyAddToRealm: this.onlyAddToRealmControl.value
       }
     });
   }

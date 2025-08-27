@@ -2,7 +2,7 @@ import { httpResource, HttpResourceRef } from "@angular/common/http";
 import { Injectable, linkedSignal, WritableSignal } from "@angular/core";
 import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
-import { LocalService } from "../local/local.service";
+import { AuthService } from "../auth/auth.service";
 
 export type Applications = {
   luks: ApplicationLuks;
@@ -60,7 +60,7 @@ export class ApplicationService implements ApplicationServiceInterface {
   applicationResource = httpResource<PiResponse<Applications>>(() => ({
     url: `${this.applicationBaseUrl}`,
     method: "GET",
-    headers: this.localService.getHeaders()
+    headers: this.authService.getHeaders()
   }));
   applications: WritableSignal<Applications> = linkedSignal({
     source: this.applicationResource.value,
@@ -95,6 +95,6 @@ export class ApplicationService implements ApplicationServiceInterface {
     }
   });
 
-  constructor(private localService: LocalService) {
+  constructor(private authService: AuthService) {
   }
 }

@@ -22,11 +22,16 @@ export class RadiusApiPayloadMapper implements TokenApiPayloadMapper<RadiusEnrol
       validity_period_start: data.validityPeriodStart,
       validity_period_end: data.validityPeriodEnd,
       user: data.user,
+      realm: data.user ? data.realm : null,
       pin: data.pin,
       "radius.identifier": data.radiusServerConfiguration,
       "radius.user": data.radiusUser
     };
 
+    if (data.onlyAddToRealm) {
+      payload.realm = data.realm;
+      payload.user = null;
+    }
     if (payload["radius.identifier"] === undefined) {
       delete payload["radius.identifier"];
     }

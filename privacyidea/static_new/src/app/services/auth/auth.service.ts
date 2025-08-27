@@ -4,6 +4,7 @@ import { Observable, throwError } from "rxjs";
 import { catchError, tap } from "rxjs/operators";
 import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
+import { BEARER_TOKEN_STORAGE_KEY } from "../../core/constants";
 import { LocalService, LocalServiceInterface } from "../local/local.service";
 import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
 import { VersioningService, VersioningServiceInterface } from "../version/version.service";
@@ -63,13 +64,36 @@ export interface JwtData {
 
 export type AuthRole = "admin" | "user" | "";
 
+export interface MultiChallenge {
+  client_mode: string;
+  message: string;
+  serial: string;
+  transaction_id: string;
+  type: string;
+  attributes?: {
+    webAuthnSignRequest?: any;
+  };
+}
+
 export interface AuthDetail {
-  username: string;
+  username?: string;
+  attributes?: {
+    hideResponseInput?: boolean;
+  };
+  client_mode?: string;
+  loginmode?: string;
+  message?: string;
+  messages?: string[];
+  multi_challenge?: MultiChallenge[];
+  serial?: string;
+  threadid?: number;
+  transaction_id?: string;
+  transaction_ids?: string[];
+  type?: string;
 }
 
 export interface AuthServiceInterface {
   authUrl: string;
-  TOKEN_KEY: "bearer_token";
   jwtData: WritableSignal<JwtData | null>;
   jwtNonce: Signal<string>;
   authtype: Signal<"cookie" | "none">;
@@ -79,6 +103,8 @@ export interface AuthServiceInterface {
   authenticationAccepted: () => boolean;
 
   isAuthenticated: () => boolean;
+
+  getHeaders: () => HttpHeaders;
 
   logLevel: () => number;
   menus: () => string[];
@@ -121,7 +147,7 @@ export interface AuthServiceInterface {
   authenticate: (params: any) => Observable<AuthResponse>;
 
   acceptAuthentication: () => void;
-  deauthenticate: () => void;
+  logout: () => void;
 }
 
 @Injectable({
@@ -135,15 +161,12 @@ export class AuthService implements AuthServiceInterface {
   private readonly versioningService: VersioningServiceInterface = inject(VersioningService);
   private readonly localService: LocalServiceInterface = inject(LocalService);
 
-  readonly TOKEN_KEY = "bearer_token";
-
   authData = signal<AuthData | null>(null);
   jwtData = signal<JwtData | null>(null);
 
   authenticationAccepted = signal<boolean>(false);
 
   isAuthenticated = computed(() => this.authenticationAccepted() && !!this.authData());
-
   logLevel = computed(() => this.authData()?.log_level || 0);
   menus = computed(() => this.authData()?.menus || []);
   realm = computed(() => this.jwtData()?.realm || this.authData()?.realm || "");
@@ -151,18 +174,6 @@ export class AuthService implements AuthServiceInterface {
   role = computed(() => this.jwtData()?.role || this.authData()?.role || "");
   token = computed(() => this.authData()?.token || "");
   username = computed(() => this.jwtData()?.username || this.authData()?.username || "");
-  logoutTimeSeconds = computed(() => {
-    const jwtExpDate = this.jwtExpDate()!;
-    let jwtLogoutTime: number | null = null;
-    const authDataLogoutTime = this.authData()?.logout_time || null;
-    if (jwtExpDate) {
-      const now = new Date();
-      jwtLogoutTime = Math.max(0, Math.floor((jwtExpDate.getTime() - now.getTime()) / 1000));
-    }
-    if (jwtLogoutTime === null) return authDataLogoutTime;
-    if (authDataLogoutTime === null) return jwtLogoutTime;
-    return Math.min(jwtLogoutTime, authDataLogoutTime);
-  });
   auditPageSize = computed(() => this.authData()?.audit_page_size || 10);
   tokenPageSize = computed(() => this.authData()?.token_page_size || 10);
   userPageSize = computed(() => this.authData()?.user_page_size || 10);
@@ -191,17 +202,33 @@ export class AuthService implements AuthServiceInterface {
   requireDescription = computed(() => this.authData()?.require_description || []);
   rssAge = computed(() => this.authData()?.rss_age || 0);
   containerWizard = computed(() => this.authData()?.container_wizard || { enabled: false });
-
   jwtNonce = computed(() => this.jwtData()?.nonce || "");
   authtype = computed(() => (this.jwtData()?.authtype || this.jwtData() ? "cookie" : "none"));
   jwtExpDate = computed(() => {
     const exp = this.jwtData()?.exp;
     return exp ? new Date(exp * 1000) : null;
   });
-
+  logoutTimeSeconds = computed(() => {
+    const jwtExpDate = this.jwtExpDate()!;
+    let jwtLogoutTime: number | null = null;
+    const authDataLogoutTime = this.authData()?.logout_time || null;
+    if (jwtExpDate) {
+      const now = new Date();
+      jwtLogoutTime = Math.max(0, Math.floor((jwtExpDate.getTime() - now.getTime()) / 1000));
+    }
+    if (jwtLogoutTime === null) return authDataLogoutTime;
+    if (authDataLogoutTime === null) return jwtLogoutTime;
+    return Math.min(jwtLogoutTime, authDataLogoutTime);
+  });
   isSelfServiceUser = computed(() => {
     return this.role() === "user";
   });
+
+  public getHeaders(): HttpHeaders {
+    return new HttpHeaders({
+      "PI-Authorization": this.localService.getData(BEARER_TOKEN_STORAGE_KEY) || ""
+    });
+  }
 
   authenticate(params: any): Observable<AuthResponse> {
     return this.http
@@ -220,13 +247,10 @@ export class AuthService implements AuthServiceInterface {
             this.acceptAuthentication();
             this.authData.set(value);
             this.jwtData.set(this.decodeJwtPayload(value.token));
-            this.localService.saveData(this.TOKEN_KEY, value.token);
+            this.localService.saveData(BEARER_TOKEN_STORAGE_KEY, value.token);
           }
         }),
         catchError((error) => {
-          console.error("Login failed.", error);
-          const message = error.error?.result?.error?.message || "";
-          this.notificationService.openSnackBar("Login failed. " + message);
           return throwError(() => error);
         })
       );
@@ -236,10 +260,10 @@ export class AuthService implements AuthServiceInterface {
     this.authenticationAccepted.set(true);
   }
 
-  deauthenticate(): void {
+  logout(): void {
     this.authData.set(null);
     this.jwtData.set(null);
-    this.localService.removeData(this.TOKEN_KEY);
+    this.localService.removeData(BEARER_TOKEN_STORAGE_KEY);
     this.authenticationAccepted.set(false);
   }
 

@@ -5,16 +5,16 @@ import { forkJoin, Observable, Subject, switchMap, throwError, timer } from "rxj
 import { catchError, shareReplay, takeUntil, takeWhile } from "rxjs/operators";
 import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
+import { ROUTE_PATHS } from "../../app.routes";
 import { TokenComponent, TokenTypeOption as TokenTypeKey } from "../../components/token/token.component";
 import {
   EnrollmentResponse,
   TokenApiPayloadMapper,
   TokenEnrollmentData
 } from "../../mappers/token-api-payload/_token-api-payload.mapper";
+import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
-import { LocalService, LocalServiceInterface } from "../local/local.service";
 import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
-import { ROUTE_PATHS } from "../../app.routes";
 
 const apiFilter = [
   "serial",
@@ -198,11 +198,7 @@ export interface TokenServiceInterface {
 
   setRandomPin(tokenSerial: string): Observable<any>;
 
-  resyncOTPToken(
-    tokenSerial: string,
-    fristOTPValue: string,
-    secondOTPValue: string
-  ): Observable<Object>;
+  resyncOTPToken(tokenSerial: string, fristOTPValue: string, secondOTPValue: string): Observable<Object>;
 
   getTokenDetails(tokenSerial: string): Observable<PiResponse<Tokens>>;
 
@@ -218,10 +214,7 @@ export interface TokenServiceInterface {
 
   stopPolling(): void;
 
-  pollTokenRolloutState(args: {
-    tokenSerial: string;
-    initDelay: number;
-  }): Observable<PiResponse<Tokens>>;
+  pollTokenRolloutState(args: { tokenSerial: string; initDelay: number }): Observable<PiResponse<Tokens>>;
 
   setTokenRealm(
     tokenSerial: string,
@@ -245,11 +238,10 @@ export interface TokenServiceInterface {
 })
 export class TokenService implements TokenServiceInterface {
   private readonly http: HttpClient = inject(HttpClient);
-  private readonly localService: LocalServiceInterface = inject(LocalService);
-  private readonly notificationService: NotificationServiceInterface =
-    inject(NotificationService);
-  private readonly contentService: ContentServiceInterface =
-    inject(ContentService);
+
+  private readonly authService: AuthServiceInterface = inject(AuthService);
+  private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
+  private readonly contentService: ContentServiceInterface = inject(ContentService);
 
   readonly apiFilter = apiFilter;
   readonly advancedApiFilter = advancedApiFilter;
@@ -300,7 +292,7 @@ export class TokenService implements TokenServiceInterface {
     return {
       url: this.tokenBaseUrl,
       method: "GET",
-      headers: this.localService.getHeaders(),
+      headers: this.authService.getHeaders(),
       params: { serial: this.tokenSerial() }
     };
   });
@@ -311,7 +303,7 @@ export class TokenService implements TokenServiceInterface {
     return {
       url: environment.proxyUrl + "/auth/rights",
       method: "GET",
-      headers: this.localService.getHeaders()
+      headers: this.authService.getHeaders()
     };
   });
   tokenTypeOptions = computed<TokenType[]>(() => {
@@ -373,14 +365,7 @@ export class TokenService implements TokenServiceInterface {
     return filterPairs.reduce(
       (acc, { key, value }) => ({
         ...acc,
-        [key]: [
-          "user",
-          "infokey",
-          "infovalue",
-          "active",
-          "assigned",
-          "container_serial"
-        ].includes(key)
+        [key]: ["user", "infokey", "infovalue", "active", "assigned", "container_serial"].includes(key)
           ? `${value}`
           : `*${value}*`
       }),
@@ -399,7 +384,7 @@ export class TokenService implements TokenServiceInterface {
     return {
       url: this.tokenBaseUrl,
       method: "GET",
-      headers: this.localService.getHeaders(),
+      headers: this.authService.getHeaders(),
       params: {
         page: this.pageIndex() + 1,
         pagesize: this.pageSize(),
@@ -477,17 +462,11 @@ export class TokenService implements TokenServiceInterface {
         })
       );
   }
-
-  toggleActive(
-    tokenSerial: string,
-    active: boolean
-  ): Observable<PiResponse<boolean>> {
-    const headers = this.localService.getHeaders();
+  toggleActive(tokenSerial: string, active: boolean): Observable<PiResponse<boolean>> {
+    const headers = this.authService.getHeaders();
     const action = active ? "disable" : "enable";
     return this.http
-      .post<
-        PiResponse<boolean>
-      >(`${this.tokenBaseUrl}${action}`, { serial: tokenSerial }, { headers })
+      .post<PiResponse<boolean>>(`${this.tokenBaseUrl}${action}`, { serial: tokenSerial }, { headers })
       .pipe(
         catchError((error) => {
           console.error("Failed to toggle active.", error);
@@ -501,35 +480,23 @@ export class TokenService implements TokenServiceInterface {
   }
 
   resetFailCount(tokenSerial: string): Observable<PiResponse<boolean>> {
-    const headers = this.localService.getHeaders();
-    return this.http
-      .post<
-        PiResponse<boolean>
-      >(this.tokenBaseUrl + "reset", { serial: tokenSerial }, { headers })
-      .pipe(
-        catchError((error) => {
-          console.error("Failed to reset fail count.", error);
-          const message = error.error?.result?.error?.message || "";
-          this.notificationService.openSnackBar(
-            "Failed to reset fail count. " + message
-          );
-          return throwError(() => error);
-        })
-      );
+    const headers = this.authService.getHeaders();
+    return this.http.post<PiResponse<boolean>>(this.tokenBaseUrl + "reset", { serial: tokenSerial }, { headers }).pipe(
+      catchError((error) => {
+        console.error("Failed to reset fail count.", error);
+        const message = error.error?.result?.error?.message || "";
+        this.notificationService.openSnackBar("Failed to reset fail count. " + message);
+        return throwError(() => error);
+      })
+    );
   }
 
-  saveTokenDetail(
-    tokenSerial: string,
-    key: string,
-    value: any
-  ): Observable<PiResponse<boolean>> {
-    const headers = this.localService.getHeaders();
+  saveTokenDetail(tokenSerial: string, key: string, value: any): Observable<PiResponse<boolean>> {
+    const headers = this.authService.getHeaders();
     const set_url = `${this.tokenBaseUrl}set`;
 
     const params =
-      key === "maxfail"
-        ? { serial: tokenSerial, max_failcount: value }
-        : { serial: tokenSerial, [key]: value };
+      key === "maxfail" ? { serial: tokenSerial, max_failcount: value } : { serial: tokenSerial, [key]: value };
 
     return this.http
       .post<PiResponse<boolean>>(set_url, params, { headers })
@@ -545,11 +512,8 @@ export class TokenService implements TokenServiceInterface {
       );
   }
 
-  setTokenInfos(
-    tokenSerial: string,
-    infos: any
-  ): Observable<PiResponse<boolean>[]> {
-    const headers = this.localService.getHeaders();
+  setTokenInfos(tokenSerial: string, infos: any): Observable<PiResponse<boolean>[]> {
+    const headers = this.authService.getHeaders();
     const set_url = `${this.tokenBaseUrl}set`;
     const info_url = `${this.tokenBaseUrl}info`;
 
@@ -589,7 +553,7 @@ export class TokenService implements TokenServiceInterface {
   }
 
   deleteToken(tokenSerial: string): Observable<Object> {
-    const headers = this.localService.getHeaders();
+    const headers = this.authService.getHeaders();
     return this.http.delete(this.tokenBaseUrl + tokenSerial, { headers });
   }
 
@@ -601,23 +565,19 @@ export class TokenService implements TokenServiceInterface {
   }
 
   revokeToken(tokenSerial: string): Observable<any> {
-    const headers = this.localService.getHeaders();
-    return this.http
-      .post(`${this.tokenBaseUrl}revoke`, { serial: tokenSerial }, { headers })
-      .pipe(
-        catchError((error) => {
-          console.error("Failed to revoke token.", error);
-          const message = error.error?.result?.error?.message || "";
-          this.notificationService.openSnackBar(
-            "Failed to revoke token. " + message
-          );
-          return throwError(() => error);
-        })
-      );
+    const headers = this.authService.getHeaders();
+    return this.http.post(`${this.tokenBaseUrl}revoke`, { serial: tokenSerial }, { headers }).pipe(
+      catchError((error) => {
+        console.error("Failed to revoke token.", error);
+        const message = error.error?.result?.error?.message || "";
+        this.notificationService.openSnackBar("Failed to revoke token. " + message);
+        return throwError(() => error);
+      })
+    );
   }
 
   deleteInfo(tokenSerial: string, infoKey: string): Observable<Object> {
-    const headers = this.localService.getHeaders();
+    const headers = this.authService.getHeaders();
     return this.http
       .delete(`${this.tokenBaseUrl}info/` + tokenSerial + "/" + infoKey, {
         headers
@@ -650,20 +610,16 @@ export class TokenService implements TokenServiceInterface {
       catchError((error) => {
         console.error("Failed to unassign user from all tokens.", error);
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar(
-          "Failed to unassign user from all tokens. " + message
-        );
+        this.notificationService.openSnackBar("Failed to unassign user from all tokens. " + message);
         return throwError(() => error);
       })
     );
   }
 
   unassignUser(tokenSerial: string): Observable<PiResponse<boolean>> {
-    const headers = this.localService.getHeaders();
+    const headers = this.authService.getHeaders();
     return this.http
-      .post<
-        PiResponse<boolean>
-      >(`${this.tokenBaseUrl}unassign`, { serial: tokenSerial }, { headers })
+      .post<PiResponse<boolean>>(`${this.tokenBaseUrl}unassign`, { serial: tokenSerial }, { headers })
       .pipe(
         catchError((error) => {
           console.error("Failed to unassign user.", error);
@@ -710,7 +666,7 @@ export class TokenService implements TokenServiceInterface {
     pin?: string;
   }): Observable<PiResponse<boolean>> {
     const { tokenSerial, username, realm, pin } = args;
-    const headers = this.localService.getHeaders();
+    const headers = this.authService.getHeaders();
     return this.http
       .post<PiResponse<boolean>>(
         `${this.tokenBaseUrl}assign`,
@@ -735,7 +691,7 @@ export class TokenService implements TokenServiceInterface {
   }
 
   setPin(tokenSerial: string, userPin: string): Observable<any> {
-    const headers = this.localService.getHeaders();
+    const headers = this.authService.getHeaders();
     return this.http
       .post(
         `${this.tokenBaseUrl}setpin`,
@@ -758,7 +714,7 @@ export class TokenService implements TokenServiceInterface {
   }
 
   setRandomPin(tokenSerial: string): Observable<any> {
-    const headers = this.localService.getHeaders();
+    const headers = this.authService.getHeaders();
     return this.http
       .post(
         `${this.tokenBaseUrl}setrandompin`,
@@ -779,12 +735,8 @@ export class TokenService implements TokenServiceInterface {
       );
   }
 
-  resyncOTPToken(
-    tokenSerial: string,
-    fristOTPValue: string,
-    secondOTPValue: string
-  ): Observable<Object> {
-    const headers = this.localService.getHeaders();
+  resyncOTPToken(tokenSerial: string, fristOTPValue: string, secondOTPValue: string): Observable<Object> {
+    const headers = this.authService.getHeaders();
     return this.http
       .post(
         `${this.tokenBaseUrl}resync`,
@@ -807,11 +759,9 @@ export class TokenService implements TokenServiceInterface {
       );
   }
 
-  setTokenRealm(
-    tokenSerial: string,
-    value: string[]
-  ): Observable<PiResponse<boolean>> {
-    const headers = this.localService.getHeaders();
+  setTokenRealm(tokenSerial: string, value: string[]): Observable<PiResponse<boolean>> {
+    const headers = this.authService.getHeaders();
+
     return this.http
       .post<PiResponse<boolean>>(
         `${this.tokenBaseUrl}realm/` + tokenSerial,
@@ -832,11 +782,9 @@ export class TokenService implements TokenServiceInterface {
       );
   }
 
-  setTokengroup(
-    tokenSerial: string,
-    value: string | string[]
-  ): Observable<Object> {
-    const headers = this.localService.getHeaders();
+  setTokengroup(tokenSerial: string, value: string | string[]): Observable<Object> {
+    const headers = this.authService.getHeaders();
+
     const valueArray: string[] = Array.isArray(value)
       ? value
       : typeof value === "object" && value !== null
@@ -863,23 +811,15 @@ export class TokenService implements TokenServiceInterface {
   }
 
   lostToken(tokenSerial: string): Observable<LostTokenResponse> {
-    const headers = this.localService.getHeaders();
-    return this.http
-      .post<LostTokenResponse>(
-        `${this.tokenBaseUrl}lost/` + tokenSerial,
-        {},
-        { headers }
-      )
-      .pipe(
-        catchError((error) => {
-          console.error("Failed to mark token as lost.", error);
-          const message = error.error?.result?.error?.message || "";
-          this.notificationService.openSnackBar(
-            "Failed to mark token as lost. " + message
-          );
-          return throwError(() => error);
-        })
-      );
+    const headers = this.authService.getHeaders();
+    return this.http.post<LostTokenResponse>(`${this.tokenBaseUrl}lost/` + tokenSerial, {}, { headers }).pipe(
+      catchError((error) => {
+        console.error("Failed to mark token as lost.", error);
+        const message = error.error?.result?.error?.message || "";
+        this.notificationService.openSnackBar("Failed to mark token as lost. " + message);
+        return throwError(() => error);
+      })
+    );
   }
 
   enrollToken<
@@ -887,7 +827,7 @@ export class TokenService implements TokenServiceInterface {
     R extends EnrollmentResponse,
   >(args: { data: T; mapper: TokenApiPayloadMapper<T> }): Observable<R> {
     const { data, mapper } = args;
-    const headers = this.localService.getHeaders();
+    const headers = this.authService.getHeaders();
     const params = mapper.toApiPayload(data);
 
     return this.http
@@ -907,7 +847,7 @@ export class TokenService implements TokenServiceInterface {
   }
 
   getTokenDetails(tokenSerial: string): Observable<PiResponse<Tokens>> {
-    const headers = this.localService.getHeaders();
+    const headers = this.authService.getHeaders();
     let params = new HttpParams().set("serial", tokenSerial);
     return this.http.get<PiResponse<Tokens>>(this.tokenBaseUrl, {
       headers,
@@ -916,30 +856,22 @@ export class TokenService implements TokenServiceInterface {
   }
 
   getTokengroups(): Observable<PiResponse<TokenGroups>> {
-    const headers = this.localService.getHeaders();
-    return this.http
-      .get<
-        PiResponse<TokenGroups>
-      >(environment.proxyUrl + `/tokengroup/`, { headers })
-      .pipe(
-        catchError((error) => {
-          console.error("Failed to get token groups.", error);
-          const message = error.error?.result?.error?.message || "";
-          this.notificationService.openSnackBar(
-            "Failed to get tokengroups. " + message
-          );
-          return throwError(() => error);
-        })
-      );
+    const headers = this.authService.getHeaders();
+    return this.http.get<PiResponse<TokenGroups>>(environment.proxyUrl + `/tokengroup/`, { headers }).pipe(
+      catchError((error) => {
+        console.error("Failed to get token groups.", error);
+        const message = error.error?.result?.error?.message || "";
+        this.notificationService.openSnackBar("Failed to get tokengroups. " + message);
+        return throwError(() => error);
+      })
+    );
   }
 
   getSerial(
     otp: string,
     params: HttpParams
-  ): Observable<
-    PiResponse<{ count: number; serial?: string | undefined }, unknown>
-  > {
-    const headers = this.localService.getHeaders();
+  ): Observable<PiResponse<{ count: number; serial?: string | undefined }, unknown>> {
+    const headers = this.authService.getHeaders();
     return this.http
       .get<PiResponse<{ count: number; serial?: string }>>(
         `${this.tokenBaseUrl}getserial/${otp}`,
@@ -960,10 +892,7 @@ export class TokenService implements TokenServiceInterface {
       );
   }
 
-  pollTokenRolloutState(args: {
-    tokenSerial: string;
-    initDelay: number;
-  }): Observable<PiResponse<Tokens>> {
+  pollTokenRolloutState(args: { tokenSerial: string; initDelay: number }): Observable<PiResponse<Tokens>> {
     const { tokenSerial, initDelay } = args;
     this.tokenSerial.set(tokenSerial);
     return timer(initDelay, 2000).pipe(
@@ -971,11 +900,7 @@ export class TokenService implements TokenServiceInterface {
       switchMap(() => {
         return this.getTokenDetails(this.tokenSerial());
       }),
-      takeWhile(
-        (response: any) =>
-          response.result?.value.tokens[0].rollout_state === "clientwait",
-        true
-      ),
+      takeWhile((response: any) => response.result?.value.tokens[0].rollout_state === "clientwait", true),
       catchError((error) => {
         console.error("Failed to poll token state.", error);
         const message = error.error?.result?.error?.message || "";

@@ -1,6 +1,8 @@
 <div
+  appScrollToTop
   aria-label="Container Table"
-  class="container-table-container" appScrollToTop>
+  class="container-table-container"
+  i18n-aria-label>
   <div class="filter-paginator-container-selfservice">
     <mat-paginator
       (page)="onPageEvent($event)"
@@ -8,19 +10,20 @@
       [pageIndex]="pageIndex()"
       [pageSizeOptions]="pageSizeOptions()"
       [pageSize]="pageSize()"
-      showFirstLastButtons/>
+      showFirstLastButtons />
   </div>
   <table
     (matSortChange)="onSortEvent($event)"
     [dataSource]="containerDataSource()"
     aria-label="Container Data Table"
     class="container-table"
+    i18n-aria-label
     mat-table
     matSort
     multiTemplateDataRows>
     @for (column of columnKeysMapSelfService; track column) {
       <ng-container [matColumnDef]="column.key">
-        @if (column.key === 'select') {
+        @if (column.key === "select") {
           <th
             *matHeaderCellDef
             mat-header-cell
@@ -29,7 +32,7 @@
               (change)="$event ? toggleAllRows() : null"
               [checked]="isAllSelected()"
               [indeterminate]="containerSelection().length > 0 && !isAllSelected()"
-              [disabled]="total() === 0"/>
+              [disabled]="total() === 0" />
           </th>
         } @else {
           <th
@@ -45,27 +48,26 @@
           attr.aria-label="{{ column.label }} Cell"
           mat-cell
           [ngClass]="{
-              'width-18rem': column.key === 'description',
-              'table-checkbox': column.key === 'select'
-            }">
+            'width-18rem': column.key === 'description',
+            'table-checkbox': column.key === 'select'
+          }">
           <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
             @switch (column.key) {
-              @case ('select') {
+              @case ("select") {
                 <mat-checkbox
                   (change)="$event ? toggleRow(row) : null"
                   (click)="$event.stopPropagation()"
                   [checked]="containerSelection().includes(row)"
-                  [disabled]="total() === 0"/>
+                  [disabled]="total() === 0" />
               }
               @case ("serial") {
                 <a
                   attr.aria-label="{{ column.label }} Link"
-                  (click)="contentService.containerSelected(element.serial)"> {{
-                    element[column.key]
-                  }}
+                  (click)="contentService.containerSelected(element.serial)">
+                  {{ element[column.key] }}
                 </a>
                 @if (element.serial !== "") {
-                  <app-copy-button [copyText]="element.serial"/>
+                  <app-copy-button [copyText]="element.serial" />
                 }
               }
               @case ("realms") {
@@ -73,8 +75,9 @@
                   @for (realm of element[column.key]; track realm; let idx = $index) {
                     <a
                       attr.aria-label="{{ column.label }} Link"
-                      href="#"> {{ realm }}
-                    </a><br style="margin-top: 3px"/>
+                      href="#">
+                      {{ realm }} </a
+                    ><br style="margin-top: 3px" />
                   }
                 </div>
               }
@@ -88,7 +91,8 @@
               @case ("delete") {
                 <button
                   (click)="deleteContainer(element.serial)"
-                  mat-icon-button>
+                  mat-icon-button
+                  i18n-aria-label="Delete Container">
                   <mat-icon> delete</mat-icon>
                 </button>
               }
@@ -96,7 +100,8 @@
                 @if (tableUtilsService.isLink(column.key)) {
                   <a
                     attr.aria-label="{{ column.label }} Link"
-                    href="#"> {{ element[column.key] }}
+                    href="#">
+                    {{ element[column.key] }}
                   </a>
                 } @else {
                   {{ element[column.key] }}
@@ -126,12 +131,16 @@
                   {{ token.serial }}
                 }
                 @if (token.tokentype) {
-                  [{{ token.tokentype }}]
+                  [
+                  <span i18n>{{ token.tokentype }}</span
+                  >]
                 }
               </div>
             }
             @if (element.tokens?.length === 0) {
-              <div class="flex ali-center">
+              <div
+                i18n
+                class="flex ali-center">
                 Container has no tokens.
               </div>
             }
@@ -157,7 +166,9 @@
       mat-row></tr>
 
     <tr *matNoDataRow>
-      <td [attr.colspan]="columnKeysSelfService.length">
+      <td
+        [attr.colspan]="columnKeysSelfService.length"
+        i18n>
         No data matching the filter.
       </td>
     </tr>

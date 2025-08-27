@@ -1,11 +1,17 @@
-import { ApplicationConfig, provideExperimentalZonelessChangeDetection } from "@angular/core";
+import { APP_BASE_HREF } from "@angular/common";
+import { provideHttpClient, withInterceptors } from "@angular/common/http";
+import {
+  ApplicationConfig,
+  inject,
+  provideAppInitializer,
+  provideExperimentalZonelessChangeDetection
+} from "@angular/core";
+import { provideAnimationsAsync } from "@angular/platform-browser/animations/async";
 import { provideRouter } from "@angular/router";
 import { routes } from "./app.routes";
-import { provideAnimationsAsync } from "@angular/platform-browser/animations/async";
-import { APP_BASE_HREF } from "@angular/common";
-import { AuthService } from "./services/auth/auth.service";
-import { provideHttpClient, withInterceptors } from "@angular/common/http";
 import { loadingInterceptor } from "./interceptor/loading/loading.interceptor";
+import { AuthService } from "./services/auth/auth.service";
+import { ThemeService } from "./services/theme/theme.service";
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -14,6 +20,10 @@ export const appConfig: ApplicationConfig = {
     provideAnimationsAsync(),
     { provide: APP_BASE_HREF, useValue: "/app/v2/" },
     AuthService,
-    provideHttpClient(withInterceptors([loadingInterceptor]))
+    provideHttpClient(withInterceptors([loadingInterceptor])),
+    provideAppInitializer(() => {
+      const themeService = inject(ThemeService);
+      themeService.initializeTheme();
+    })
   ]
 };

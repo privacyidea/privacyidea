@@ -1,7 +1,6 @@
 import { computed, effect, inject, Injectable, Signal, signal } from "@angular/core";
 import { Router } from "@angular/router";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
-import { LocalService, LocalServiceInterface } from "../local/local.service";
 import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
 
 export interface SessionTimerServiceInterface {
@@ -20,7 +19,7 @@ export interface SessionTimerServiceInterface {
 export class SessionTimerService implements SessionTimerServiceInterface {
   private readonly router: Router = inject(Router);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
-  private readonly localService: LocalServiceInterface = inject(LocalService);
+
   private readonly authService: AuthServiceInterface = inject(AuthService);
 
   private readonly sessionTimeoutMs = computed<number | undefined>(() => {
@@ -30,8 +29,8 @@ export class SessionTimerService implements SessionTimerServiceInterface {
     }
     return;
   });
-  private timer: any;
-  private intervalId: any;
+  private timer: NodeJS.Timeout | undefined;
+  private intervalId: NodeJS.Timeout | undefined;
   private startTime = signal(Date.now());
   private currentTime = signal(Date.now());
   remainingTime = computed(() => {
@@ -60,7 +59,7 @@ export class SessionTimerService implements SessionTimerServiceInterface {
         this.handleSessionTimeout();
       }, this.sessionTimeoutMs());
     } else {
-      this.timer?.clear();
+      clearTimeout(this.timer);
       this.timer = undefined;
       console.warn("Session timeout is not defined. Cannot start session timer.");
     }
@@ -79,7 +78,7 @@ export class SessionTimerService implements SessionTimerServiceInterface {
   }
 
   private handleSessionTimeout(): void {
-    this.authService.deauthenticate();
+    this.authService.logout();
     this.notificationService.openSnackBar("Session expired. Redirecting to login page.");
     this.router.navigate(["login"]);
     this.clearRefreshInterval();

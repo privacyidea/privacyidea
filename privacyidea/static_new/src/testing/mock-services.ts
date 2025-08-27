@@ -5,13 +5,21 @@ import { MatTableDataSource } from "@angular/material/table";
 import { Router } from "@angular/router";
 import { Observable, of, Subject, Subscription } from "rxjs";
 import { PiResponse } from "../app/app.component";
+import { BEARER_TOKEN_STORAGE_KEY } from "../app/core/constants";
 import {
   EnrollmentResponse,
   TokenApiPayloadMapper,
   TokenEnrollmentData
 } from "../app/mappers/token-api-payload/_token-api-payload.mapper";
 import { Audit, AuditServiceInterface } from "../app/services/audit/audit.service";
-import { AuthData, AuthDetail, AuthResponse, AuthRole, AuthServiceInterface } from "../app/services/auth/auth.service";
+import {
+  AuthData,
+  AuthDetail,
+  AuthResponse,
+  AuthRole,
+  AuthServiceInterface,
+  JwtData
+} from "../app/services/auth/auth.service";
 import {
   ContainerDetailData,
   ContainerDetails,
@@ -22,12 +30,12 @@ import {
   ContainerTypes
 } from "../app/services/container/container.service";
 import { ContentServiceInterface } from "../app/services/content/content.service";
-import { LocalService, LocalServiceInterface } from "../app/services/local/local.service";
+import { LocalServiceInterface } from "../app/services/local/local.service";
 import { Machines, MachineServiceInterface, TokenApplication } from "../app/services/machine/machine.service";
 import { NotificationServiceInterface } from "../app/services/notification/notification.service";
 import { OverflowServiceInterface } from "../app/services/overflow/overflow.service";
 import { Realm, Realms, RealmServiceInterface } from "../app/services/realm/realm.service";
-import { FilterPair, TableUtilsService } from "../app/services/table-utils/table-utils.service";
+import { FilterPair, TableUtilsServiceInterface } from "../app/services/table-utils/table-utils.service";
 import {
   LostTokenResponse,
   TokenDetails,
@@ -118,7 +126,8 @@ export class MockHttpResourceRef<T> implements HttpResourceRef<T> {
     return this.value() !== undefined;
   }
 
-  destroy(): void {}
+  destroy(): void {
+  }
 
   set(value: T): void {
     this.value.set(value);
@@ -206,6 +215,7 @@ export class MockPiResponse<Value, Detail = unknown> implements PiResponse<Value
 
 export class MockAuthService implements AuthServiceInterface {
   readonly authUrl = "environmentMock.proxyUrl + '/auth'";
+  authtype: Signal<"cookie" | "none"> = signal("cookie");
 
   static MOCK_AUTH_DATA: AuthData = {
     log_level: 0,
@@ -250,7 +260,14 @@ export class MockAuthService implements AuthServiceInterface {
 
   authData = signal(MockAuthService.MOCK_AUTH_DATA);
 
-  isAuthenticated: WritableSignal<boolean> = signal(true);
+  isAuthenticated: WritableSignal<boolean> = signal(false);
+
+  public getHeaders(): HttpHeaders {
+    return new HttpHeaders({
+      "PI-Authorization": this.localService.getData(BEARER_TOKEN_STORAGE_KEY) || ""
+    });
+  }
+
   menus: WritableSignal<string[]> = signal(MockAuthService.MOCK_AUTH_DATA.menus);
   realm: WritableSignal<string> = signal(MockAuthService.MOCK_AUTH_DATA.realm);
   rights: WritableSignal<string[]> = signal(MockAuthService.MOCK_AUTH_DATA.rights);
@@ -297,7 +314,7 @@ export class MockAuthService implements AuthServiceInterface {
     this.realm.set("default");
   });
 
-  deauthenticate = jest.fn().mockImplementation(() => {
+  logout = jest.fn().mockImplementation(() => {
     this.isAuthenticated.set(false);
     this.role.set("");
     this.username.set("");
@@ -308,12 +325,50 @@ export class MockAuthService implements AuthServiceInterface {
 
   constructor(
     readonly http: HttpClient = new HttpClient({} as any),
+    readonly localService: LocalServiceInterface = new MockLocalService(),
     readonly notificationService: NotificationServiceInterface = new MockNotificationService(),
     readonly versioningService: VersioningService = new VersioningService()
-  ) {}
+  ) {
+  }
+
+  jwtData: WritableSignal<JwtData | null> = signal({
+    username: "",
+    realm: "",
+    nonce: "",
+    role: "admin",
+    authtype: "cookie",
+    exp: 0,
+    rights: []
+  });
+
+  jwtNonce: WritableSignal<string> = signal(this.jwtData()?.nonce || "");
+  jwtExpDate: Signal<Date | null> = computed(() => {
+    const exp = this.jwtData()?.exp;
+    return exp ? new Date(exp * 1000) : null;
+  });
+  authenticationAccepted: () => boolean = () => {
+    return this.isAuthenticated() && this.role() !== "";
+  };
+  logLevel: () => number = () => {
+    return this.authData().log_level;
+  };
+  policyTemplateUrl: () => string = () => {
+    return this.authData().policy_template_url;
+  };
+  defaultTokentype: () => string = () => {
+    return this.authData().default_tokentype;
+  };
+  defaultContainerType: () => string = () => {
+    return this.authData().default_container_type;
+  };
 }
 
 export class MockUserService implements UserServiceInterface {
+  filterValue: WritableSignal<Record<string, string>> = signal({});
+  pageIndex: WritableSignal<number> = signal(0);
+  pageSize: WritableSignal<number> = signal(10);
+  apiFilter: string[] = [];
+  advancedApiFilter: string[] = [];
   userResource: HttpResourceRef<PiResponse<UserData[]> | undefined> = new MockHttpResourceRef(
     MockPiResponse.fromValue([])
   );
@@ -387,6 +442,19 @@ export class MockValidateService implements ValidateServiceInterface {
   authenticatePasskey(args?: { isTest?: boolean }): Observable<AuthResponse> {
     return of(MockPiResponse.fromValue<AuthData, AuthDetail>(new MockAuthData(), new MockAuthDetail()));
   }
+
+  authenticateWebAuthn(args: {
+    signRequest: any;
+    transaction_id: string;
+    username: string;
+    isTest?: boolean;
+  }): Observable<AuthResponse> {
+    return of(MockPiResponse.fromValue<AuthData, AuthDetail>(new MockAuthData(), new MockAuthDetail()));
+  }
+
+  pollTransaction(transactionId: string): Observable<boolean> {
+    return of(true);
+  }
 }
 
 export class MockRealmService implements RealmServiceInterface {
@@ -417,10 +485,12 @@ export class MockContentService implements ContentServiceInterface {
   });
   isProgrammaticTabChange = signal(false);
 
-  constructor(public authService: MockAuthService = new MockAuthService()) {}
+  constructor(public authService: MockAuthService = new MockAuthService()) {
+  }
 }
 
 export class MockContainerService implements ContainerServiceInterface {
+  containerBelongsToUser = jest.fn().mockReturnValue(true);
   #containerDetailSignal = signal({
     containers: [
       {
@@ -883,9 +953,10 @@ export class MockMachineService implements MachineServiceInterface {
 
   constructor(
     public http: HttpClient = new HttpClient({} as any),
-    public localService: LocalService = new LocalService(),
-    public tableUtilsService: TableUtilsService = new MockTableUtilsService()
-  ) {}
+    public authService: AuthServiceInterface = new MockAuthService(),
+    public tableUtilsService: TableUtilsServiceInterface = new MockTableUtilsService()
+  ) {
+  }
 
   postAssignMachineToToken(args: {
     service_id: string;
@@ -899,33 +970,8 @@ export class MockMachineService implements MachineServiceInterface {
   }
 }
 
-export class MockTableUtilsService implements AuthServiceInterface {
-  isAuthenticated: () => boolean = jest.fn().mockReturnValue(true);
-  username: () => string = jest.fn().mockReturnValue("alice");
-  realm: () => string = jest.fn().mockReturnValue("default");
-  role: () => AuthRole = jest.fn().mockReturnValue("admin");
-  menus: () => string[] = jest
-    .fn()
-    .mockReturnValue(["token_overview", "token_self-service_menu", "container_overview"]);
-  isSelfServiceUser: () => boolean = jest
-    .fn()
-    .mockReturnValue(this.role() === "user" && this.menus().includes("token_self-service_menu"));
-  authenticate: (params: any) => Observable<AuthResponse> = jest
-    .fn()
-    .mockReturnValue(of(MockPiResponse.fromValue<AuthData, AuthDetail>(new MockAuthData(), new MockAuthDetail())));
-  isAuthenticatedUser: () => boolean = jest.fn().mockReturnValue(this.isAuthenticated() && this.role() === "user");
-  acceptAuthentication: () => void = jest.fn().mockImplementation(() => {
-    this.isAuthenticated = jest.fn().mockReturnValue(true);
-    this.role = jest.fn().mockReturnValue("admin");
-    this.username = jest.fn().mockReturnValue("alice");
-    this.realm = jest.fn().mockReturnValue("default");
-  });
-  deauthenticate: () => void = jest.fn().mockImplementation(() => {
-    this.isAuthenticated = jest.fn().mockReturnValue(false);
-    this.role = jest.fn().mockReturnValue("");
-    this.username = jest.fn().mockReturnValue("");
-    this.realm = jest.fn().mockReturnValue("");
-  });
+export class MockTableUtilsService implements TableUtilsServiceInterface {
+  pageSizeOptions: WritableSignal<number[]> = signal([5, 10, 25, 50]);
   handleColumnClick = jest.fn();
   getClassForColumnKey = jest.fn();
   isLink = jest.fn().mockReturnValue(false);
@@ -1023,13 +1069,11 @@ export class MockAuditService implements AuditServiceInterface {
 }
 
 export class MockLocalService implements LocalServiceInterface {
-  private data: Record<string, string> = {};
   key: string = "mockLocalServiceKey";
-  bearerTokenKey: string = "mockBearerTokenKey";
+  private data: Record<string, string> = {};
   saveData = jest.fn().mockImplementation((key: string, value: string) => {
     this.data[key] = value;
   });
-
   getData = jest.fn().mockImplementation((key: string) => {
     const dataValue = this.data[key];
     if (dataValue === undefined) {
@@ -1045,6 +1089,5 @@ export class MockLocalService implements LocalServiceInterface {
       console.warn(`MockLocalService: No data found for key: ${key}`);
     }
   });
-
   getHeaders = jest.fn().mockReturnValue({ Authorization: "Bearer x" });
 }

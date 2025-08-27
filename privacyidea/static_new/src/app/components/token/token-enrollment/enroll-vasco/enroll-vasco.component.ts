@@ -49,11 +49,7 @@ export class EnrollVascoComponent implements OnInit {
   );
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
 
-  text = this.tokenService
-    .tokenTypeOptions()
-    .find((type) => type.key === "vasco")?.text;
-
-  @Output() aditionalFormFieldsChange = new EventEmitter<{
+  @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
   @Output() clickEnrollChange = new EventEmitter<
@@ -86,7 +82,7 @@ export class EnrollVascoComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.aditionalFormFieldsChange.emit({
+    this.additionalFormFieldsChange.emit({
       otpKey: this.otpKeyControl,
       useVascoSerial: this.useVascoSerialControl,
       vascoSerial: this.vascoSerialControl

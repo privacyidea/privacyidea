@@ -85,9 +85,11 @@ import { DialogService, DialogServiceInterface } from "../../../services/dialog/
 import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { TokenEnrollmentLastStepDialogData } from "./token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
+import { MatCheckbox } from "@angular/material/checkbox";
+import { QuestionApiPayloadMapper } from "../../../mappers/token-api-payload/question-token-api-payload.mapper";
 
 export type ClickEnrollFn = (
-  enrollementOptions: TokenEnrollmentData
+  enrollmentOptions: TokenEnrollmentData
 ) => Promise<EnrollmentResponse | null> | Observable<EnrollmentResponse | null>;
 
 export type ReopenDialogFn =
@@ -197,8 +199,9 @@ export class CustomDateAdapter extends NativeDateAdapter {
     MatError,
     EnrollPasskeyComponent,
     MatTooltipModule,
-    ScrollToTopDirective,
-    ClearableInputComponent
+    MatCheckbox,
+    ClearableInputComponent,
+    ScrollToTopDirective
   ],
   providers: [
     provideNativeDateAdapter(),
@@ -219,7 +222,9 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
   protected readonly versioningService: VersioningServiceInterface = inject(VersioningService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
+
   protected readonly renderer: Renderer2 = inject(Renderer2);
+  protected readonly QuestionApiPayloadMapper = QuestionApiPayloadMapper;
   private observer!: IntersectionObserver;
   timezoneOptions = TIMEZONE_OFFSETS;
   pollResponse: WritableSignal<any> = linkedSignal({
@@ -230,6 +235,13 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     source: this.tokenService.selectedTokenType,
     computation: () => null
   });
+  tokenTypeDescription: WritableSignal<any> = linkedSignal({
+    source: this.tokenService.tokenTypeOptions,
+    computation: (tokenTypes) => {
+      return tokenTypes.find((type) => type.key === this.tokenService.selectedTokenType().key)?.text;
+    }
+  });
+  serial = signal<string | null>(null);
   @ViewChild("scrollContainer") scrollContainer!: ElementRef<HTMLElement>;
   @ViewChild("stickyHeader") stickyHeader!: ElementRef<HTMLElement>;
   @ViewChild("stickySentinel") stickySentinel!: ElementRef<HTMLElement>;
@@ -259,18 +271,20 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
   userFilterControl = new FormControl<string | UserData | null>(this.userService.userFilter(), {
     nonNullable: true
   });
+  onlyAddToRealmControl = new FormControl<boolean>(false, { nonNullable: true });
   setPinControl = new FormControl<string>("", { nonNullable: true });
   repeatPinControl = new FormControl<string>("", { nonNullable: true });
-  selectedContainerControl = new FormControl<string | null>(this.containerService.selectedContainer(), {
+  selectedContainerControl = new FormControl(
+    this.containerService.selectedContainer(),
+    { nonNullable: true }
+  );
+  selectedTimezoneOffsetControl = new FormControl<string>("+00:00", {
     nonNullable: true
   });
   selectedStartDateControl = new FormControl<Date | null>(new Date(), {
     nonNullable: true
   });
   selectedStartTimeControl = new FormControl<string>("00:00", {
-    nonNullable: true
-  });
-  selectedTimezoneOffsetControl = new FormControl<string>("+00:00", {
     nonNullable: true
   });
   selectedEndDateControl = new FormControl<Date | null>(new Date(), {
@@ -332,6 +346,12 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     );
     this.userFilterControl.valueChanges.subscribe((value) => {
       this.userService.userFilter.set(value ?? "");
+      if (value) {
+        this.onlyAddToRealmControl.setValue(false, {});
+        this.onlyAddToRealmControl.disable({ emitEvent: false });
+      } else {
+        this.onlyAddToRealmControl.enable({ emitEvent: false });
+      }
     });
     this.selectedUserRealmControl.valueChanges.subscribe((value) => {
       this.userFilterControl.reset("", { emitEvent: false });
@@ -343,6 +363,13 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
 
       if (value !== this.userService.selectedUserRealm()) {
         this.userService.selectedUserRealm.set(value ?? "");
+      }
+    });
+    this.onlyAddToRealmControl.valueChanges.subscribe((value) => {
+      if (value) {
+        this.userFilterControl.disable({ emitEvent: false });
+      } else {
+        this.userFilterControl.enable({ emitEvent: false });
       }
     });
   }
@@ -430,22 +457,21 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
       additionalFormFields: this.additionalFormFields(),
       selectedUser: this.userService.selectedUser()
     }),
-    computation: (source, previous) => {
-      const { additionalFormFields, selectedUser } = source;
+    computation: (source, _previous) => {
+      const { additionalFormFields } = source;
+
       this.selectedUserRealmControl.setValidators(this.isUserRequired ? [Validators.required] : []);
 
       this.userFilterControl.setValidators(
         this.isUserRequired ? [Validators.required, this.userExistsValidator] : [this.userExistsValidator]
       );
 
-      if (selectedUser !== this.userFilterControl.value) {
-        this.userFilterControl.setValue(selectedUser, { emitEvent: false });
-      }
       return new FormGroup(
         {
           description: this.descriptionControl,
           selectedUserRealm: this.selectedUserRealmControl,
           userFilter: this.userFilterControl,
+          onlyAddToRealm: this.onlyAddToRealmControl,
           setPin: this.setPinControl,
           repeatPin: this.repeatPinControl,
           selectedContainer: this.selectedContainerControl,
@@ -488,39 +514,43 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
       this.notificationService.openSnackBar("Enrollment action is not available for the selected token type.");
       return;
     }
-    let serial = null;
-    if (this.enrollResponse()) {
-      serial = this.enrollResponse()?.detail?.serial ?? null;
+
+    let validityPeriodStart = "";
+    if (this.selectedStartDateControl.value) {
+      validityPeriodStart = this.formatDateTimeOffset(
+        this.selectedStartDateControl.value,
+        this.selectedStartTimeControl.value ?? "00:00",
+        this.selectedTimezoneOffsetControl.value ?? "+00:00"
+      );
     }
+    let validityPeriodEnd = "";
+    if (this.selectedEndDateControl.value) {
+      validityPeriodEnd = this.formatDateTimeOffset(
+        this.selectedEndDateControl.value,
+        this.selectedEndTimeControl.value ?? "23:59",
+        this.selectedTimezoneOffsetControl.value ?? "+00:00"
+      );
+    }
+
     const basicOptions: TokenEnrollmentData = {
       type: currentTokenType.key,
       description: this.descriptionControl.value.trim(),
       containerSerial: this.selectedContainerControl.value?.trim() ?? "",
-      validityPeriodStart: this.formatDateTimeOffset(
-        this.selectedStartDateControl.value ?? new Date(),
-        this.selectedStartTimeControl.value ?? "00:00",
-        this.selectedTimezoneOffsetControl.value ?? "+00:00"
-      ),
-      validityPeriodEnd: this.formatDateTimeOffset(
-        this.selectedEndDateControl.value ?? new Date(),
-        this.selectedEndTimeControl.value ?? "23:59",
-        this.selectedTimezoneOffsetControl.value ?? "+00:00"
-      ),
+      validityPeriodStart: validityPeriodStart,
+      validityPeriodEnd: validityPeriodEnd,
       user: user?.username ?? "",
+      realm: this.selectedUserRealmControl.value ?? "",
+      onlyAddToRealm: this.onlyAddToRealmControl.value ?? false,
       pin: this.setPinControl.value ?? "",
-      serial: serial
+      serial: this.serial()
     };
 
     const enrollResponse = this.clickEnroll(basicOptions);
     let enrollPromise: Promise<EnrollmentResponse | null>;
     if (enrollResponse instanceof Promise) {
       enrollPromise = enrollResponse;
-    } else if (enrollResponse instanceof Observable) {
-      enrollPromise = lastValueFrom(enrollResponse);
     } else {
-      this.notificationService.openSnackBar("Failed to enroll token. No response returned.");
-      console.error("Failed to enroll token. No response returned.");
-      return;
+      enrollPromise = lastValueFrom(enrollResponse);
     }
     enrollPromise.catch((error) => {
       const message = error.error?.result?.error?.message || "";
@@ -545,10 +575,11 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
 
     const dialogData: TokenEnrollmentLastStepDialogData = {
       response: response,
+      serial: this.serial,
       enrollToken: this.enrollToken.bind(this),
       user: user,
       userRealm: this.userService.selectedUserRealm(),
-      onlyAddToRealm: this.onlyAddToRealm()
+      onlyAddToRealm: this.onlyAddToRealmControl.value
     };
     this._lastTokenEnrollmentLastStepDialogData.set(dialogData);
     this.dialogService.openTokenEnrollmentLastStepDialog({
