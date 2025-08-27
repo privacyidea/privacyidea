@@ -36,13 +36,13 @@
 privacyIDEA: Open-Source Multi-Factor Authentication
 ==================================================
 
-privacyIDEA is an open-source MFA platform for orchestrating all your second-factor authentication needs. Secure your entire stack with a flexible, self-hosted solution that puts you in control. As an on-premise platform, your sensitive user data always remains within your infrastructure—never in a third-party cloud.
+privacyIDEA is an open-source MFA platform for orchestrating all your multi-factor authentication needs. Secure your entire stack with a flexible, self-hosted solution that puts you in control. As an on-premise platform, your sensitive user data always remains within your infrastructure.
 
 Key Features
 ------------
 
 * **Universal MFA:** Add a second factor to virtually any application—from SSH and VPNs to IdPs like Keycloak and web portals.
-* **Extensive Factor Support:** Go beyond simple OTP. We support everything from cutting-edge Passkeys to mobile push authenticators.
+* **Extensive Factor Support:** Go beyond simple OTP. We support everything from cutting-edge Passkeys and push authenticaton to various OTP types.
 * **Vendor-Agnostic:** Connect to your existing user stores (AD, LDAP, SQL, EntraID) without being locked into a specific ecosystem.
 * **Truly Open:** Licensed under AGPLv3 to guarantee your software freedom, always.
 
@@ -61,9 +61,9 @@ Enhance the security of your existing infrastructure:
 
 * **Operating Systems:** `Linux (PAM) <https://github.com/privacyidea/privacyidea-pam>`_, `Windows (Credential Provider) <https://github.com/privacyidea/privacyidea-credential-provider>`_
 * **Identity Providers:** `Keycloak <https://github.com/privacyidea/keycloak-provider>`_, `ADFS <https://github.com/privacyidea/adfs-provider>`_, `Shibboleth <https://github.com/privacyidea/shibboleth-plugin>`_, `SimpleSAMLphp <https://github.com/privacyidea/simplesamlphp-module-privacyidea>`_
-* **Remote Access:** VPNs (OpenVPN, Fortinet, Palo Alto), SSH
-* **Web Applications:** Apache, Nginx, any web portal via RADIUS or our REST API.
-* **`nextCloud <https://github.com/privacyidea/privacyidea-nextcloud-app>`_, `ownCloud <https://github.com/privacyidea/privacyidea-owncloud-app>`_**
+* **Remote Access:** VPNs with RADIUS (OpenVPN, Fortinet, Palo Alto), SSH
+* **Web Applications:** Apache, Nginx, any web portal via our REST API.
+* `nextCloud <https://github.com/privacyidea/privacyidea-nextcloud-app>`_, `ownCloud <https://github.com/privacyidea/privacyidea-owncloud-app>`_
 * **and more..**
 
 ----
