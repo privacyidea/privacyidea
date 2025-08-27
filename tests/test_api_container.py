@@ -1508,11 +1508,16 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         token_user = init_token({"genkey": "1"}, user=User("hans", self.realm2))
         add_token_to_container(c_serial_user, token_user.get_serial())
         token_serials = ','.join([token_no_user.get_serial(), token_user.get_serial()])
-        result = self.request_assert_success(f"/container/{c_serial_user}/removeall", {"serial": token_serials},
-                                             self.at,
-                                             method='POST')
-        self.assertFalse(result["result"]["value"][token_no_user.get_serial()])
-        self.assertFalse(result["result"]["value"][token_user.get_serial()])
+
+        response = self.request_denied_assert_403(f"/container/{c_serial_user}/removeall", {"serial": token_serials},
+                                                self.at,
+                                                method='POST')
+        result = response.get("result")
+        self.assertIn("error", result)
+        error = result.get("error")
+        self.assertEqual(303, error.get("code"))
+        self.assertEqual("Admin actions are defined, but the action container_remove_token is not allowed for any of"
+                         " the serials provided!", error.get("message"))
         delete_policy("policy_realm")
         delete_policy("policy_resolver")
 
