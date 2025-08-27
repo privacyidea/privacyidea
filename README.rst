@@ -1,6 +1,3 @@
-privacyIDEA
-===========
-
 .. .. image:: https://circleci.com/gh/privacyidea/privacyidea/tree/master.svg?style=shield&circle-token=:circle-token
 ..     :alt: CircleCI
 ..     :target: https://circleci.com/gh/privacyidea/privacyidea
@@ -36,48 +33,44 @@ privacyIDEA
     :alt: Codacy Badge
     :target: https://www.codacy.com/app/cornelius-koelbel/privacyidea
 
-.. image:: https://img.shields.io/twitter/follow/privacyidea.svg?style=social&label=Follow
-    :alt: privacyIDEA on twitter
+privacyIDEA: Open-Source Multi-Factor Authentication
+==================================================
 
-privacyIDEA is an open solution for strong two-factor authentication like FIDO2 (Passkeys, WebAuthn),
-classic OTP tokens such as HOTP/TOTP, SMS or Email and other types like SSH keys or Questionaire token.
-Using privacyIDEA you can enhance your existing applications like local login
-(PAM, Windows Credential Provider), Identity Providers such as Keycloak, AD FS or Shibboleth,
-VPN, remote access, SSH connections, access to web sites or web portals with
-a second factor during authentication. Thus boosting the security of your
-existing applications.
+privacyIDEA is a modern, open-source MFA platform for orchestrating all your second-factor authentication needs. Secure your entire stack with a flexible, self-hosted solution that puts you in control.
 
-Overview
-========
+Key Features
+------------
 
-privacyIDEA runs as an additional service in your network and you can connect different
-applications to privacyIDEA.
+* **Universal MFA:** Add a second factor to virtually any application—from SSH and VPNs to IdPs like Keycloak and web portals.
+* **Extensive Factor Support:** Go beyond simple OTP. We support everything from cutting-edge Passkeys to mobile push authenticators.
+* **Vendor-Agnostic:** Connect to your existing user stores (AD, LDAP, SQL, EntraID) without being locked into a specific ecosystem.
+* **Truly Open:** Licensed under AGPLv3 to guarantee your software freedom, always.
 
-.. image:: https://privacyidea.org/wp-content/uploads/2017/privacyIDEA-Integration.png
-    :alt: privacyIDEA Integration
+Supported Authentication Factors
+------------------------------
 
-privacyIDEA does not bind you to any decision of the authentication
-protocol, nor does it dictate you where your user information should be
-stored. This is achieved by its totally modular architecture.
-privacyIDEA is not only open as far as its modular architecture is
-concerned. But privacyIDEA is completely licensed under the AGPLv3.
+* 🔑 **Passkeys & Hardware:** FIDO2/WebAuthn devices (like YubiKey, Plug-Up), Smartcards (x509).
+* 📱 **Software & Mobile:** PUSH notifications (privacyIDEA Authenticator), TOTP/HOTP (Google Authenticator, etc.), TiQR.
+* 📜 **Classic & Remote:** SMS, Email, SSH Keys, Security Questionnaires, and simple Registration Codes for easy rollout.
 
-It supports a wide variety of authentication devices like OTP tokens
-(HMAC, HOTP, TOTP, OCRA, mOTP), Yubikey (HOTP, TOTP, AES), FIDO U2F, as well
-as FIDO2 WebAuthn devices like Yubikey and Plug-Up, smartphone Apps like Google
-Authenticator, FreeOTP, Token2  or TiQR, SMS, Email, SSH keys, x509 certificates
-and Registration Codes for easy deployment.
+Seamless Integration
+--------------------
 
-privacyIDEA is based on Flask and SQLAlchemy as the python backend. The
-web UI is based on angularJS and bootstrap.
-A MachineToken design lets you assign tokens to machines. Thus you can use
-your Yubikey to unlock LUKS, assign SSH keys to SSH servers or use Offline OTP
-with PAM.
+Enhance the security of your existing infrastructure:
 
-You may join the discourse discussion forum to give feedback, help other users,
-discuss questions and ideas:
+* **Operating Systems:** Linux (PAM), Windows (Credential Provider)
+* **Identity Providers:** Keycloak, ADFS, Shibboleth, SimpleSAMLphp
+* **Remote Access:** VPNs (OpenVPN, Fortinet, Palo Alto), SSH
+* **Web Applications:** Apache, Nginx, any web portal via RADIUS or our REST API.
+* **nextCloud, ownCloud**
+* **and more..**
+----
+
+Join the Community
+------------------
+
+Have feedback, questions, or ideas? Join the discussion on our community forum:
 https://community.privacyidea.org
-
 
 Setup
 =====
@@ -103,21 +96,6 @@ additional dependencies::
 
 You may also want to read the blog post about development and debugging at
 https://www.privacyidea.org/privacyidea-development-howto/
-
-Getting and updating submodules
-===============================
-
-The client-side library for the registering and signing of WebAuthn-Credentials
-resides in a submodule.
-
-To fetch all submodules for this repository, run::
-
-   git submodule update --init --recursive
-
-When pulling changes from upstream later, you can automatically update any outdated
-submodules, by running::
-
-   git pull --recurse-submodules
 
 Running it
 ==========
@@ -223,6 +201,7 @@ Shibboleth            10000           N/A
 ADFS                  50              50
 privacyIDEA PAM       10000           N/A
 Credential Provider   50              50
+nextCloud              50              N/A
 ownCloud              50              N/A
 LDAP proxy            50              N/A
 ====================  ==============  ========================
