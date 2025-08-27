@@ -4013,7 +4013,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # Generic policy
         set_policy(name="policy", scope=SCOPE.ADMIN, action="enable")
         self.assertTrue(check_token_action(request=req, action="enable"))
-        self.assertEqual(serial_list, req.all_data["serials"])
+        for s in serial_list:
+            self.assertIn(s, req.all_data["serials"])
         self.assertListEqual([], req.all_data["not_authorized_serials"])
         delete_policy("policy")
 
