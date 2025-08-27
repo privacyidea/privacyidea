@@ -101,9 +101,8 @@ export class ContainerDetailsTokenTableComponent {
     user_id: string;
   }> = linkedSignal({
     source: () => this.containerService.containerDetail(),
-    computation: (source, previous) =>
-      source.containers[0]?.users[0] ??
-      previous?.value ?? {
+    computation: (source) =>
+      source.containers[0]?.users[0] ?? {
         user_realm: "",
         user_name: "",
         user_resolver: "",
@@ -251,39 +250,28 @@ export class ContainerDetailsTokenTableComponent {
     );
 
     this.dialog
-      .open(UserAssignmentDialogComponent)
+      .open<UserAssignmentDialogComponent, void, string | null>(UserAssignmentDialogComponent)
       .afterClosed()
-      .subscribe((pin: string) => {
-        const tokenSerialsAssignedToOtherUser = tokensAssignedToOtherUser.map(
-          (token) => token.serial
-        );
-        this.tokenService
-          .unassignUserFromAll(tokenSerialsAssignedToOtherUser)
-          .subscribe({
-            next: () => {
-              const tokenSerialsToAssign = tokensToAssign.map(
-                (token) => token.serial
-              );
-              this.tokenService
-                .assignUserToAll({
-                  tokenSerials: tokenSerialsToAssign,
-                  username: username,
-                  realm: realm,
-                  pin: pin
-                })
-                .subscribe({
-                  next: () => {
-                    this.containerService.containerDetailResource.reload();
-                  },
-                  error: (error) => {
-                    console.error("Error assigning user to all tokens:", error);
-                  }
-                });
-            },
-            error: (error) => {
-              console.error("Error unassigning user from all tokens:", error);
-            }
-          });
+      .subscribe((pin: string | null | undefined) => {
+        if (pin == null) return;
+
+        const tokenSerialsAssignedToOtherUser = tokensAssignedToOtherUser.map(token => token.serial);
+        this.tokenService.unassignUserFromAll(tokenSerialsAssignedToOtherUser).subscribe({
+          next: () => {
+            const tokenSerialsToAssign = tokensToAssign.map(token => token.serial);
+            this.tokenService.assignUserToAll({
+              tokenSerials: tokenSerialsToAssign,
+              username: username,
+              realm: realm,
+              pin: pin
+            })
+              .subscribe({
+                next: () => this.containerService.containerDetailResource.reload(),
+                error: (error) => console.error("Error assigning user to all tokens:", error)
+              });
+          },
+          error: (error) => console.error("Error unassigning user from all tokens:", error)
+        });
       });
   }
 

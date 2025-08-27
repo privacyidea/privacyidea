@@ -21,7 +21,6 @@
       matSuffix
       type="button">
       <mat-icon>{{ hidePin() ? "visibility_off" : "visibility" }}</mat-icon>
-      Show PIN
     </button>
   </mat-form-field>
   <mat-form-field
@@ -41,7 +40,6 @@
       matSuffix
       type="button">
       <mat-icon>{{ hidePin() ? "visibility_off" : "visibility" }}</mat-icon>
-      Show PIN Repeat
     </button>
     @if (pinRepeat() && !pinsMatch()) {
       <mat-error i18n>PINs do not match</mat-error>
