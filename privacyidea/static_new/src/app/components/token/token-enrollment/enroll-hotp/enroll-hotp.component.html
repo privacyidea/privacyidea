@@ -2,14 +2,14 @@
   <h4 class="enroll-h4">Token Configuration</h4>
   <mat-checkbox
     [formControl]="generateOnServerFormControl"
-    class="server-checkbox">
+    class="server-checkbox"
+    i18n>
     Generate OTP key on the server
     @if (generateOnServerFormControl.value) {
       <span class="dot">.</span>
       <span>
-        <br/>
-        The server will create the OTP key and a QR Code will be displayed to
-        you to be scanned.
+        <br />
+        The server will create the OTP key and a QR Code will be displayed to you to be scanned.
       </span>
     }
   </mat-checkbox>
@@ -17,41 +17,40 @@
     <mat-form-field
       [ngClass]="generateOnServerFormControl.value ? 'hint-spacer' : ''"
       class="input-height width-33">
-      <mat-label>OTP length</mat-label>
-      <mat-select [formControl]="otpLengthFormControl"
-                  [value]="otpLengthFormControl.value">
+      <mat-label i18n>OTP length</mat-label>
+      <mat-select
+        [formControl]="otpLengthFormControl"
+        [value]="otpLengthFormControl.value">
         @for (len of otpLengthOptions; track len) {
           <mat-option [value]="len">{{ len }}</mat-option>
         }
       </mat-select>
       @if (generateOnServerFormControl.value) {
-        <mat-hint>
-          Some Authenticator Apps only support an OTP length of 6.
-        </mat-hint>
+        <mat-hint i18n> Some Authenticator Apps only support an OTP length of 6.</mat-hint>
       }
     </mat-form-field>
     <mat-form-field
       [ngClass]="generateOnServerFormControl.value ? 'hint-spacer' : ''"
       class="input-height width-33">
-      <mat-label>Hash algorithm</mat-label>
-      <mat-select [formControl]="hashAlgorithmFormControl"
-                  [value]="hashAlgorithmFormControl.value">
+      <mat-label i18n>Hash algorithm</mat-label>
+      <mat-select
+        [formControl]="hashAlgorithmFormControl"
+        [value]="hashAlgorithmFormControl.value">
         @for (alg of hashAlgorithmOptions; track alg.value) {
           <mat-option [value]="alg.value">{{ alg.viewValue }}</mat-option>
         }
       </mat-select>
       @if (generateOnServerFormControl.value) {
-        <mat-hint>
-          Some Authenticator Apps only support the SHA1 algorithm.
-        </mat-hint>
+        <mat-hint i18n> Some Authenticator Apps only support the SHA1 algorithm.</mat-hint>
       }
     </mat-form-field>
     @if (!generateOnServerFormControl.value) {
       <mat-form-field class="input-height width-33">
-        <mat-label>OTP Key</mat-label>
+        <mat-label i18n>OTP Key</mat-label>
         <input
           matInput
           [formControl]="otpKeyFormControl"
+          i18n-placeholder
           placeholder="Enter OTP key"
           required/>
           <mat-error> OTP key is <strong>required</strong></mat-error>

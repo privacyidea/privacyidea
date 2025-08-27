@@ -1,8 +1,7 @@
 <h2 mat-dialog-title>Token successfully enrolled</h2>
 <mat-dialog-content>
   <span>The token was successfully enrolled with serial number
-    <a (click)="tokenSelected(data.response.detail.serial)">
-      {{ data.response.detail.serial }} </a>.</span>
+    <a (click)="tokenSelected(data.response.detail.serial)"> {{ data.response.detail.serial }} </a>.</span>
   @if (data.response.detail["container_serial"]) {
     <br/>
     <span>It has been enrolled in the container
@@ -11,9 +10,7 @@
   }
   @if (data.user?.username && data.userRealm != "" && !data.onlyAddToRealm) {
     <br/>
-    <span>The user {{ data.user!.username }} in the realm {{ data.userRealm }} was
-      assigned to the token.
-    </span>
+    <span>The user {{ data.user!.username }} in the realm {{ data.userRealm }} was assigned to the token. </span>
   }
   <div class="flex-row gap-1">
     @if (!["registration", "paper", "tan", "spass"].includes(data.tokentype.key)) {
@@ -125,6 +122,7 @@
 <mat-dialog-actions>
   <button
     mat-button
-    mat-dialog-close>Close
+    mat-dialog-close>
+    Close
   </button>
 </mat-dialog-actions>

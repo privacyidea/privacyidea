@@ -1,9 +1,6 @@
 <div class="flex-column">
   <h4 class="enroll-h4">Token Configuration</h4>
-  <span>
-    Please answer at least {{ configMinNumberOfAnswers() }} of the following
-    questions.
-  </span>
+  <span> Please answer at least {{ configMinNumberOfAnswers() }} of the following questions. </span>
   <div
     [formGroup]="questionForm()"
     class="margin-top-1 form-group">
@@ -13,12 +10,11 @@
         <input
           type="text"
           [formControlName]="questionControlNames()[i]"
-          matInput>
+          matInput />
       </mat-form-field>
     }
   </div>
   @if (questionForm().hasError("minAnswers") && questionForm().touched) {
-    <mat-error>At least {{ configMinNumberOfAnswers() }} answers are <strong>required</strong>.
-    </mat-error>
+    <mat-error>At least {{ configMinNumberOfAnswers() }} answers are <strong>required</strong>. </mat-error>
   }
 </div>

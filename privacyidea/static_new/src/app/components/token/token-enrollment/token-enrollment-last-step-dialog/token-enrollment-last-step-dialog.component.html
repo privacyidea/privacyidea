@@ -1,18 +1,23 @@
 <h2 mat-dialog-title>Token successfully enrolled</h2>
 <mat-dialog-content>
-  <span>The token was successfully enrolled with serial number
-    <a (click)="tokenSelected(data.response.detail.serial)">
-      {{ data.response.detail.serial }} </a>.</span>
+  <span
+    >The token was successfully enrolled with serial number
+    <a (click)="tokenSelected(data.response.detail.serial)"> {{ data.response.detail.serial }} </a>.</span
+  >
   @if (data.response.detail["container_serial"]) {
-    <br/>
-    <span>It has been enrolled in the container
+    <br />
+    <span
+      >It has been enrolled in the container
       <a (click)="containerSelected(data.response.detail['container_serial'])">
-        {{ data.response.detail["container_serial"] }} </a>.</span>
+        {{ data.response.detail["container_serial"] }} </a
+      >.</span
+    >
   }
   @if (data.user?.username && data.userRealm != "" && !data.onlyAddToRealm) {
-    <br/>
-    <span>The user <a href="#">{{ data.user!.username }}</a> in the realm
-      <a href="#">{{ data.userRealm }}</a> was assigned to the token.
+    <br />
+    <span
+      >The user <a href="#">{{ data.user!.username }}</a> in the realm <a href="#">{{ data.userRealm }}</a> was assigned
+      to the token.
     </span>
   }
   <div class="flex-row gap-1">
@@ -23,28 +28,28 @@
         class="qr-code"
         height="300px"
         src="{{ data.response.detail.googleurl?.img }}"
-        width="300px"/>
+        width="300px" />
     } @else if (data.response.detail.motpurl?.img) {
       <img
         alt="QR Code"
         class="qr-code"
         height="300px"
         src="{{ data.response.detail.motpurl?.img }}"
-        width="300px"/>
+        width="300px" />
     } @else if (data.response.detail.otpkey?.img) {
       <img
         alt="QR Code"
         class="qr-code"
         height="300px"
         src="{{ data.response.detail.otpkey?.img }}"
-        width="300px"/>
+        width="300px" />
     } @else if (data.response.detail.tiqrenroll?.img) {
       <img
         alt="QR Code"
         class="qr-code"
         height="300px"
         src="{{ data.response.detail.tiqrenroll?.img }}"
-        width="300px"/>
+        width="300px" />
     }
     <div class="flex-column gap-1">
       @let url =
@@ -59,8 +64,9 @@
           or scan the QR Code, if you want to add the Token to your smartphone authenticator app. The QR Code contains
           the secret key of your token. You need to protect it.
 
-          <strong> If you are in doubt, that someone else saw it, please regenerate the QR Code, when no one else is
-                   watching. </strong>
+          <strong>
+            If you are in doubt, that someone else saw it, please regenerate the QR Code, when no one else is watching.
+          </strong>
         </p>
 
         <button
@@ -74,7 +80,9 @@
 
       @if (data.response.detail["password"]) {
         <p>
-          Your Password: <strong>{{ data.response.detail["password"] }}</strong>. </p>
+          Your Password: <strong>{{ data.response.detail["password"] }}</strong
+          >.
+        </p>
       }
 
       @if (data.response.detail.otpkey?.value && !data.response.detail["otps"]
@@ -153,6 +161,7 @@
 <mat-dialog-actions>
   <button
     mat-button
-    mat-dialog-close>Close
+    mat-dialog-close>
+    Close
   </button>
 </mat-dialog-actions>
