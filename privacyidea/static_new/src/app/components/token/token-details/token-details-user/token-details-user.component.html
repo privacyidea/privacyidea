@@ -42,11 +42,10 @@
                 </mat-autocomplete>
               </mat-form-field>
             } @else {
-              <a
-                href="#"
+              <span
                 i18n-aria-label="{{ element.keyMap.label }} Link"
                 >{{ element.value }}
-              </a>
+              </span>
             }
           }
           @case ("user_realm") {
@@ -62,11 +61,10 @@
                 </mat-select>
               </mat-form-field>
             } @else {
-              <a
-                href="#"
+              <span
                 i18n-aria-label="{{ element.keyMap.label }} Link"
                 >{{ element.value }}
-              </a>
+              </span>
             }
           }
           @default {
