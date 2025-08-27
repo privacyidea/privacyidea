@@ -343,12 +343,12 @@ export class ContainerDetailsComponent {
   }
 
   isEditableElement(key: string) {
-    const role = this.authService.role();
-    if (role === "admin") {
-      return key === "description" || key === "realms";
-    } else {
-      return key === "description";
+    if (key === "description" && this.authService.actionAllowed("container_description")) {
+      return true;
+    } else if (key === "realms" && this.authService.actionAllowed("container_realms")) {
+      return true;
     }
+    return false;
   }
 
   cancelContainerEdit(element: EditableElement) {

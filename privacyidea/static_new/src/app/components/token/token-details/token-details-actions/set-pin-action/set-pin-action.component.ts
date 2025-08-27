@@ -9,7 +9,7 @@ import {
 import { TokenService, TokenServiceInterface } from "../../../../../services/token/token.service";
 import { SimpleDialogComponent, SimpleDialogData } from "../../../../shared/simple-dialog/simple-dialog.component";
 import { MatDialog } from "@angular/material/dialog";
-import {AuthService, AuthServiceInterface} from "../../../../../services/auth/auth.service";
+import { AuthService, AuthServiceInterface } from "../../../../../services/auth/auth.service";
 
 @Component({
   selector: "app-set-pin-action",
@@ -21,7 +21,7 @@ export class SetPinActionComponent {
   private readonly notificationService: NotificationServiceInterface =
     inject(NotificationService);
   private readonly tokenService: TokenServiceInterface = inject(TokenService);
-  private readonly authService: AuthServiceInterface = inject(AuthService);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly dialog: MatDialog = inject(MatDialog);
   @Input() setPinValue!: WritableSignal<string>;
   @Input() repeatPinValue!: WritableSignal<string>;

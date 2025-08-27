@@ -17,6 +17,7 @@ import { AuditService, AuditServiceInterface } from "../../../../services/audit/
 import { SelectedUserAssignDialogComponent } from "../selected-user-assign-dialog/selected-user-assign-dialog.component";
 import { tap } from "rxjs/operators";
 import { ROUTE_PATHS } from "../../../../app.routes";
+import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
 
 @Component({
   selector: "app-token-tab",
@@ -42,6 +43,7 @@ export class TokenTabComponent {
     inject(ContentService);
   private readonly dialog: MatDialog = inject(MatDialog);
   protected readonly auditService: AuditServiceInterface = inject(AuditService);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
   private router = inject(Router);
   tokenIsActive = this.tokenService.tokenIsActive;

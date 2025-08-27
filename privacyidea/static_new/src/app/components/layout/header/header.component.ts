@@ -62,7 +62,9 @@ export class HeaderComponent {
   refreshPage() {
     if (this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_DETAILS)) {
       this.tokenService.tokenDetailResource.reload();
-      this.containerService.containerResource.reload();
+      if(this.authService.rights().includes("list_containers")) {
+        this.containerService.containerResource.reload();
+      }
     }
     if (this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS)) {
       this.containerService.containerDetailResource.reload();

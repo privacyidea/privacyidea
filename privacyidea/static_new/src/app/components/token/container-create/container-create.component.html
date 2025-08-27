@@ -6,9 +6,7 @@
   i18n-aria-label>
   <h3
     class="margin-left-1"
-    i18n>
-    Create a New Container
-  </h3>
+    i18n>Create a New Container</h3>
   <div #stickySentinel></div>
   <div
     #stickyHeader
@@ -26,8 +24,7 @@
             @for (type of containerService.containerTypeOptions(); track type) {
               <mat-option
                 class="select-option type-option"
-                [value]="type"
-                >{{ type.description }}
+                [value]="type">{{ type.description }}
               </mat-option>
             }
           </mat-select>
@@ -80,29 +77,23 @@
   </mat-form-field>
 
   <div class="flex-column width-100 gap-1">
-    <div class="flex-column width-66">
-      <h4
-        class="enroll-h4"
-        i18n>
-        Use a Template
-      </h4>
-      <mat-form-field class="width-100 input-height">
-        <mat-label i18n>Template</mat-label>
-        <mat-select
-          [(ngModel)]="selectedTemplate"
-          [value]="selectedTemplate()"
-          disabled>
-          @for (option of templateOptions(); track option) {
-            <mat-option [value]="option">{{ option.name }}</mat-option>
-          }
-        </mat-select>
-      </mat-form-field>
-    </div>
-    <h4
-      class="enroll-h4"
-      i18n>
-      Assign the Container to a User
-    </h4>
+    @if (authService.actionAllowed("container_template_list")) {
+      <div class="flex-column width-66">
+        <h4 class="enroll-h4" i18n>Use a Template</h4>
+        <mat-form-field class="width-100 input-height">
+          <mat-label i18n>Template</mat-label>
+          <mat-select
+            [(ngModel)]="selectedTemplate"
+            [value]="selectedTemplate()"
+            disabled>
+            @for (option of templateOptions(); track option) {
+              <mat-option [value]="option">{{ option.name }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      </div>
+    }
+    <h4 class="enroll-h4" i18n>Assign the Container to a User</h4>
     <div class="flex-row gap-1">
       <mat-form-field class="width-32 input-height">
         <mat-label i18n>Select Realm of User</mat-label>
@@ -123,7 +114,7 @@
             [(ngModel)]="userService.userFilter"
             [disabled]="onlyAddToRealm()"
             [matAutocomplete]="userAuto"
-            matInput />
+            matInput/>
         </app-clearable-input>
         <mat-error i18n>User is <strong>required</strong></mat-error>
         <mat-autocomplete #userAuto="matAutocomplete">
@@ -145,8 +136,7 @@
     <h4
       i18n
       class="enroll-h4">
-      Registration
-    </h4>
+      Registration </h4>
     <mat-checkbox [(ngModel)]="generateQRCode">
       Generate a QR code to register the container on a smartphone.
     </mat-checkbox>

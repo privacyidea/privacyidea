@@ -118,7 +118,9 @@ export class MachineService implements MachineServiceInterface {
   });
 
   machinesResource = httpResource<PiResponse<Machines>>(() => {
-    if (!this.contentService.routeUrl().includes(ROUTE_PATHS.TOKENS_APPLICATIONS)) {
+    if (!(this.contentService.routeUrl().includes(ROUTE_PATHS.TOKENS_APPLICATIONS) ||
+      this.contentService.routeUrl().includes(ROUTE_PATHS.TOKENS_DETAILS)) ||
+      !this.authService.actionAllowed("machinelist")) {
       return undefined;
     }
     return {

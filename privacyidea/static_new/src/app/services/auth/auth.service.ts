@@ -148,6 +148,10 @@ export interface AuthServiceInterface {
 
   acceptAuthentication: () => void;
   logout: () => void;
+
+  actionAllowed: (action: string) => boolean;
+  actionsAllowed: (actions: string[]) => boolean;
+  oneActionAllowed: (actions: string[]) => boolean;
 }
 
 @Injectable({
@@ -281,5 +285,17 @@ export class AuthService implements AuthServiceInterface {
       console.error("Failed to decode JWT:", e);
       return null;
     }
+  }
+
+  actionAllowed(action: string): boolean {
+    return this.rights().includes(action);
+  }
+
+  actionsAllowed(actions: string[]): boolean {
+    return actions.every(action => this.actionAllowed(action));
+  }
+
+  oneActionAllowed(actions: string[]): boolean {
+    return actions.some(action => this.actionAllowed(action));
   }
 }

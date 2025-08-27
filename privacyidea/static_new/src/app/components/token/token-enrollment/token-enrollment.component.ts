@@ -87,6 +87,7 @@ import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.
 import { TokenEnrollmentLastStepDialogData } from "./token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { QuestionApiPayloadMapper } from "../../../mappers/token-api-payload/question-token-api-payload.mapper";
+import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
 
 export type ClickEnrollFn = (
   enrollmentOptions: TokenEnrollmentData
@@ -225,6 +226,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
 
   protected readonly renderer: Renderer2 = inject(Renderer2);
   protected readonly QuestionApiPayloadMapper = QuestionApiPayloadMapper;
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
   private observer!: IntersectionObserver;
   timezoneOptions = TIMEZONE_OFFSETS;
   pollResponse: WritableSignal<any> = linkedSignal({
