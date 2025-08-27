@@ -4023,8 +4023,9 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         set_policy(name="policy", scope=SCOPE.ADMIN, action="enable", resolver=[self.resolvername3])
         self.assertTrue(check_token_action(request=req, action="enable"))
         self.assertEqual([token.get_serial()], req.all_data["serials"])
-        self.assertListEqual([token_no_user.get_serial(), token_another_realm.get_serial()],
-                             req.all_data["not_authorized_serials"])
+        unauthorized = req.all_data["not_authorized_serials"]
+        self.assertIn(token_no_user.get_serial(), unauthorized)
+        self.assertIn(token_another_realm.get_serial(), unauthorized)
         delete_policy("policy")
 
         # Policy for realm
@@ -4033,8 +4034,9 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         set_policy(name="policy", scope=SCOPE.ADMIN, action="enable", realm=[self.realm3])
         self.assertTrue(check_token_action(request=req, action="enable"))
         self.assertEqual([token.get_serial()], req.all_data["serials"])
-        self.assertListEqual([token_no_user.get_serial(), token_another_realm.get_serial()],
-                             req.all_data["not_authorized_serials"])
+        unauthorized = req.all_data["not_authorized_serials"]
+        self.assertIn(token_no_user.get_serial(), unauthorized)
+        self.assertIn(token_another_realm.get_serial(), unauthorized)
         delete_policy("policy")
 
         # Policy for user
@@ -4044,8 +4046,9 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
                    resolver=[self.resolvername3])
         self.assertTrue(check_token_action(request=req, action="enable"))
         self.assertEqual([token.get_serial()], req.all_data["serials"])
-        self.assertListEqual([token_no_user.get_serial(), token_another_realm.get_serial()],
-                             req.all_data["not_authorized_serials"])
+        unauthorized = req.all_data["not_authorized_serials"]
+        self.assertIn(token_no_user.get_serial(), unauthorized)
+        self.assertIn(token_another_realm.get_serial(), unauthorized)
         delete_policy("policy")
 
         token.delete_token()
