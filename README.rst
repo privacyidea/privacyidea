@@ -42,7 +42,7 @@ Key Features
 ------------
 
 * **Universal MFA:** Add a second factor to virtually any application—from SSH and VPNs to IdPs like Keycloak and web portals.
-* **Extensive Factor Support:** Go beyond simple OTP. We support everything from cutting-edge Passkeys and push authenticaton to various OTP types.
+* **Extensive Factor Support:** Go beyond simple OTP. We support everything from cutting-edge Passkeys and push authentication to various OTP types.
 * **Vendor-Agnostic:** Connect to your existing user stores (AD, LDAP, SQL, EntraID) without being locked into a specific ecosystem.
 * **Truly Open:** Licensed under AGPLv3 to guarantee your software freedom, always.
 
@@ -64,7 +64,7 @@ Enhance the security of your existing infrastructure:
 * **Remote Access:** VPNs with RADIUS (OpenVPN, Fortinet, Palo Alto), SSH
 * **Web Applications:** Apache, Nginx, any web portal via our REST API.
 * `nextCloud <https://github.com/privacyidea/privacyidea-nextcloud-app>`_, `ownCloud <https://github.com/privacyidea/privacyidea-owncloud-app>`_
-* **and more..**
+* **and more...**
 
 ----
 
