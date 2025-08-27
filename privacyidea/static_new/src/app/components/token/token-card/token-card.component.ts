@@ -13,6 +13,7 @@ import { TokenTabComponent } from "./token-tab/token-tab.component";
 import { ContainerTabComponent } from "./container-tab/container-tab.component";
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "../../../app.routes";
+import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
 
 @Component({
   selector: "app-token-card",
@@ -37,6 +38,7 @@ export class TokenCardComponent {
     inject(ContainerService);
   private readonly contentService: ContentServiceInterface =
     inject(ContentService);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
   private router = inject(Router);
   selectedTabIndex = linkedSignal({
     source: this.contentService.routeUrl,

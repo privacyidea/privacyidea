@@ -1,7 +1,8 @@
 <div
   #scrollContainer
   aria-label="Create Container"
-  class="container-create-container" appScrollToTop>
+  class="container-create-container"
+  appScrollToTop>
   <h3 class="margin-left-1">Create Container</h3>
 
   <div #stickySentinel></div>
@@ -21,8 +22,7 @@
             @for (type of containerService.containerTypeOptions(); track type) {
               <mat-option
                 class="select-option type-option"
-                [value]="type"
-                >{{ type.description }}
+                [value]="type">{{ type.description }}
               </mat-option>
             }
           </mat-select>
@@ -69,20 +69,22 @@
       rows="3"></textarea>
   </mat-form-field>
 
-  <div class="flex-column width-66">
-    <h4 class="enroll-h4">Use a Template</h4>
-    <mat-form-field class="width-100 input-height">
-      <mat-label>Template</mat-label>
-      <mat-select
-        [(ngModel)]="selectedTemplate"
-        disabled
-        [value]="selectedTemplate()">
-        @for (option of templateOptions(); track option) {
-          <mat-option [value]="option">{{ option.name }}</mat-option>
-        }
-      </mat-select>
-    </mat-form-field>
-  </div>
+  @if (authService.actionAllowed("container_template_list")) {
+    <div class="flex-column width-66">
+      <h4 class="enroll-h4">Use a Template</h4>
+      <mat-form-field class="width-100 input-height">
+        <mat-label>Template</mat-label>
+        <mat-select
+          [(ngModel)]="selectedTemplate"
+          disabled
+          [value]="selectedTemplate()">
+          @for (option of templateOptions(); track option) {
+            <mat-option [value]="option">{{ option.name }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+    </div>
+  }
 
   @if (containerService.selectedContainerType().containerType === "smartphone") {
     <h4 class="enroll-h4">Registration</h4>

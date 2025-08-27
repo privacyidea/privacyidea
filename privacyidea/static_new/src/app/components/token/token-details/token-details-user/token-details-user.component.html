@@ -73,7 +73,7 @@
         @switch (element.keyMap.key) {
           @case ("username") {
             @if (!(isAnyEditingOrRevoked() && !isEditingUser())) {
-              @if (element.value) {
+              @if (element.value && authService.actionAllowed("unassign")) {
                 <div class="edit-button-container">
                   <button
                     mat-icon-button
@@ -82,7 +82,7 @@
                     <mat-icon>person_remove</mat-icon>
                   </button>
                 </div>
-              } @else {
+              } @else if (authService.actionAllowed("assign")) {
                 <app-edit-buttons
                   [toggleEdit]="toggleUserEdit.bind(this)"
                   [saveEdit]="saveUser.bind(this)"

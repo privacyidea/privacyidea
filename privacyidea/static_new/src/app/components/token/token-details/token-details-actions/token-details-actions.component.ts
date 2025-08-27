@@ -16,6 +16,7 @@ import { NgClass } from "@angular/common";
 import { SetPinActionComponent } from "./set-pin-action/set-pin-action.component";
 import { ResyncTokenActionComponent } from "./resync-token-action/resync-token-action.component";
 import { TestOtpPinActionComponent } from "./test-otp-pin-action/test-otp-pin-action.component";
+import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
 
 @Component({
   selector: "app-token-details-actions",
@@ -42,6 +43,7 @@ export class TokenDetailsActionsComponent {
     inject(OverflowService);
   protected readonly notificationService: NotificationServiceInterface =
     inject(NotificationService);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
   @Input() setPinValue!: WritableSignal<string>;
   @Input() repeatPinValue!: WritableSignal<string>;
   @Input() tokenType!: WritableSignal<string>;

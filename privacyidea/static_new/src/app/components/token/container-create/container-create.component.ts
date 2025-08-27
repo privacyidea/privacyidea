@@ -40,6 +40,7 @@ import {
   ContainerCreationDialogData,
   ContainerRegistrationDialogComponent
 } from "./container-registration-dialog/container-registration-dialog.component";
+import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
 
 export type ContainerTypeOption = "generic" | "smartphone" | "yubikey";
 
@@ -83,6 +84,7 @@ export class ContainerCreateComponent {
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly TokenComponent = TokenComponent;
   protected readonly renderer: Renderer2 = inject(Renderer2);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
   private router = inject(Router);
   private observer!: IntersectionObserver;
   containerSerial = this.containerService.containerSerial;

@@ -1,6 +1,7 @@
 <div
   aria-label="Token Table"
-  class="token-table-layout" appScrollToTop>
+  class="token-table-layout"
+  appScrollToTop>
   <div class="filter-paginator-container">
     <mat-form-field
       class="token-table-filter"
@@ -14,7 +15,7 @@
           [(ngModel)]="filterValueString"
           aria-label="Filter Input"
           matInput
-          placeholder="Example query: 'type: hotp userid: 1000'" />
+          placeholder="Example query: 'type: hotp userid: 1000'"/>
       </app-clearable-input>
     </mat-form-field>
     <mat-paginator
@@ -23,14 +24,14 @@
       [pageIndex]="pageIndex()"
       [pageSizeOptions]="pageSizeOptions()"
       [pageSize]="pageSize()"
-      showFirstLastButtons />
+      showFirstLastButtons/>
   </div>
   <div class="table-keyword-filter-row">
     <app-keyword-filter
       [advancedApiFilter]="advancedApiFilter"
       [apiFilter]="apiFilter"
       [filterHTMLInputElement]="filterHTMLInputElement"
-      [filterValue]="filterValue" />
+      [filterValue]="filterValue"/>
   </div>
   <table
     (matSortChange)="onSortEvent($event)"
@@ -50,7 +51,7 @@
               (change)="$event ? toggleAllRows() : null"
               [checked]="isAllSelected()"
               [indeterminate]="tokenSelection().length > 0 && !isAllSelected()"
-              [disabled]="totalLength() === 0" />
+              [disabled]="totalLength() === 0"/>
           </th>
         } @else {
           <th
@@ -76,7 +77,7 @@
                   (change)="$event ? toggleRow(tokenDetails) : null"
                   (click)="$event.stopPropagation()"
                   [checked]="tokenSelection().includes(tokenDetails)"
-                  [disabled]="totalLength() === 0" />
+                  [disabled]="totalLength() === 0"/>
               }
               @case ("serial") {
                 <div class="flex-row">
@@ -86,7 +87,7 @@
                     (click)="contentService.tokenSelected(tokenDetails.serial)">
                     {{ tokenDetails[column.key] }}
                   </a>
-                  <app-copy-button [copyText]="tokenDetails.serial" />
+                  <app-copy-button [copyText]="tokenDetails.serial"/>
                 </div>
               }
               @case ("active") {
@@ -109,8 +110,7 @@
                     <span
                       attr.aria-label="{{ column.label }} Link"
                       href="#">
-                      {{ realm }} </span
-                    ><br style="margin-top: 3px" />
+                      {{ realm }} </span><br style="margin-top: 3px"/>
                   }
                 </div>
               }
@@ -121,7 +121,7 @@
                   {{ tokenDetails[column.key] }}
                 </a>
                 @if (tokenDetails.container_serial !== "") {
-                  <app-copy-button [copyText]="tokenDetails.container_serial" />
+                  <app-copy-button [copyText]="tokenDetails.container_serial"/>
                 }
               }
               @default {

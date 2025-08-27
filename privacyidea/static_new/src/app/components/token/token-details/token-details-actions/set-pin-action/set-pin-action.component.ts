@@ -7,6 +7,7 @@ import {
   NotificationServiceInterface
 } from "../../../../../services/notification/notification.service";
 import { TokenService, TokenServiceInterface } from "../../../../../services/token/token.service";
+import { AuthService, AuthServiceInterface } from "../../../../../services/auth/auth.service";
 
 @Component({
   selector: "app-set-pin-action",
@@ -18,6 +19,7 @@ export class SetPinActionComponent {
   private readonly notificationService: NotificationServiceInterface =
     inject(NotificationService);
   private readonly tokenService: TokenServiceInterface = inject(TokenService);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
   @Input() setPinValue!: WritableSignal<string>;
   @Input() repeatPinValue!: WritableSignal<string>;
 

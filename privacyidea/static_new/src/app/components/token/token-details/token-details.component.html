@@ -1,6 +1,7 @@
 <div
   aria-label="Details"
-  class="details-container" appScrollToTop>
+  class="details-container"
+  appScrollToTop>
   <div class="details-flex-layout flex-column">
     <div class="details-header">
       <h3>Details for Token: </h3>
@@ -8,11 +9,7 @@
       <app-copy-button [copyText]="tokenSerial()"></app-copy-button>
     </div>
     <div
-      [ngClass]="[
-        overflowService.isWidthOverflowing('body', 1310)
-          ? 'flex-column'
-          : 'flex-row',
-      ]"
+      [ngClass]="[overflowService.isWidthOverflowing('body', 1310) ? 'flex-column' : 'flex-row']"
       class="details-flex-layout">
       <div>
         <table
@@ -161,10 +158,7 @@
                         [(ngModel)]="element.value"></textarea>
                     </mat-form-field>
                   } @else {
-                    <div
-                      [ngClass]="[
-                        tableUtilsService.getDivClassForKey(element.keyMap.key),
-                      ]">
+                    <div [ngClass]="[tableUtilsService.getDivClassForKey(element.keyMap.key)]">
                       <span
                         [ngClass]="[
                           tableUtilsService.getSpanClassForKey({
@@ -193,7 +187,8 @@
               class="edit-column-cell"
               mat-cell>
               <div class="ali-center">
-                @if (element.keyMap.key === "failcount" && !isAnyEditingOrRevoked()) {
+                @if (element.keyMap.key === "failcount" && !isAnyEditingOrRevoked() &&
+                authService.actionAllowed("reset")) {
                   <div class="edit-button-container">
                     <button
                       mat-icon-button
@@ -201,9 +196,8 @@
                       <mat-icon> lock_reset</mat-icon>
                     </button>
                   </div>
-                } @else if (element.keyMap.key === "container_serial" &&
-                !isAnyEditingOrRevoked() &&
-                element.value) {
+                } @else if (element.keyMap.key === "container_serial" && !isAnyEditingOrRevoked() &&
+                element.value && authService.actionAllowed("container_remove_token")) {
                   <div class="edit-button-container">
                     <button
                       mat-icon-button

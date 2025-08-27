@@ -2,7 +2,8 @@
   [ngClass]="{
     'pad-0': overflowService.isWidthOverflowing('body', 1310)
   }"
-  class="user-container" appScrollToTop>
+  class="user-container"
+  appScrollToTop>
   <table
     [dataSource]="userData()"
     aria-label="User Detail Data Table"
@@ -32,7 +33,7 @@
                   <input
                     matInput
                     [(ngModel)]="userService.userFilter"
-                    [matAutocomplete]="userAuto" />
+                    [matAutocomplete]="userAuto"/>
                   <mat-autocomplete #userAuto="matAutocomplete">
                     @for (option of userService.filteredUsernames(); track option) {
                       <mat-option [value]="option">{{ option }}</mat-option>
@@ -48,8 +49,9 @@
             @if (isEditingUser()) {
               <mat-form-field>
                 <mat-label>Select Realm of User</mat-label>
-                <mat-select [(ngModel)]="userService.selectedUserRealm"
-                            [value]="userService.selectedUserRealm()">
+                <mat-select
+                  [(ngModel)]="userService.selectedUserRealm"
+                  [value]="userService.selectedUserRealm()">
                   @for (option of realmService.realmOptions(); track option) {
                     <mat-option value="{{ option }}">{{ option }}</mat-option>
                   }
@@ -72,26 +74,16 @@
         mat-cell>
         @switch (element.keyMap.key) {
           @case ("username") {
-            @if (!(isAnyEditingOrRevoked() && !isEditingUser())) {
-              @if (element.value) {
-                <div class="edit-button-container">
-                  <button
-                    mat-icon-button
-                    class="yellow"
-                    (click)="unassignUser()">
-                    <mat-icon>person_remove</mat-icon>
-                  </button>
-                </div>
-              } @else {
-                <app-edit-buttons
-                  [toggleEdit]="toggleUserEdit.bind(this)"
-                  [saveEdit]="saveUser.bind(this)"
-                  [cancelEdit]="cancelUserEdit.bind(this)"
-                  [shouldHideEdit]="isAnyEditingOrRevoked"
-                  [isEditingUser]="isEditingUser"
-                  [isEditingInfo]="isEditingInfo"
-                  [element]="element"></app-edit-buttons>
-              }
+            @if (!(isAnyEditingOrRevoked() && !isEditingUser()) && element.value &&
+            authService.actionAllowed("unassign")) {
+              <div class="edit-button-container">
+                <button
+                  mat-icon-button
+                  class="yellow"
+                  (click)="unassignUser()">
+                  <mat-icon>person_remove</mat-icon>
+                </button>
+              </div>
             }
           }
         }

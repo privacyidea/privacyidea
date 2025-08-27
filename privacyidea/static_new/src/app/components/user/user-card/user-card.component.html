@@ -23,19 +23,18 @@
           </button>
         </mat-list-item>
 
-        <mat-list-item>
-          <button
-            [ngClass]="
-              contentService.routeUrl() === '#'
-                ? 'card-button-active'
-                : 'card-button-disabled'"
-            [routerLink]="['#']"
-            disabled
-            mat-flat-button>
-            <mat-icon>person_add</mat-icon>
-            Add User
-          </button>
-        </mat-list-item>
+        @if (authService.actionAllowed("adduser")) {
+          <mat-list-item>
+            <button
+              [ngClass]="contentService.routeUrl() === '#' ? 'card-button-active' : 'card-button-disabled'"
+              [routerLink]="['#']"
+              disabled
+              mat-flat-button>
+              <mat-icon>person_add</mat-icon>
+              Add User
+            </button>
+          </mat-list-item>
+        }
 
         <mat-list-item>
           <button
@@ -72,8 +71,9 @@
         <mat-list-item class="height-auto">
           <mat-form-field class="width-100">
             <mat-label>Select Realm of User</mat-label>
-            <mat-select [(ngModel)]="userService.selectedUserRealm"
-                        [value]="userService.selectedUserRealm()">
+            <mat-select
+              [(ngModel)]="userService.selectedUserRealm"
+              [value]="userService.selectedUserRealm()">
               @for (option of realmService.realmOptions(); track option) {
                 <mat-option [value]="option">{{ option }}</mat-option>
               }

@@ -51,7 +51,6 @@ export class TokenTableSelfServiceComponent extends TokenTableComponent {
   readonly columnKeysSelfService: string[] = this.columnKeysMapSelfService.map(
     (column: { key: string; label: string }) => column.key
   );
-  protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly containerService: ContainerServiceInterface =
     inject(ContainerService);
   private dialog = inject(MatDialog);

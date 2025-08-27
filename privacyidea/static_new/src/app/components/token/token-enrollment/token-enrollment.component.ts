@@ -85,6 +85,7 @@ import { DialogService, DialogServiceInterface } from "../../../services/dialog/
 import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { TokenEnrollmentLastStepDialogData } from "./token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
+import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
 
 export type ClickEnrollFn = (
   enrollmentOptions: TokenEnrollmentData
@@ -220,6 +221,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected readonly renderer: Renderer2 = inject(Renderer2);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
   private observer!: IntersectionObserver;
   timezoneOptions = TIMEZONE_OFFSETS;
   pollResponse: WritableSignal<any> = linkedSignal({

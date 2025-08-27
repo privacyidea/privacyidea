@@ -13,6 +13,7 @@ import { Component, computed, inject } from "@angular/core";
 import { ConfirmationDialogComponent } from "../../../shared/confirmation-dialog/confirmation-dialog.component";
 import { Router, RouterLink } from "@angular/router";
 import { ROUTE_PATHS } from "../../../../app.routes";
+import { AuthService } from "../../../../services/auth/auth.service";
 
 @Component({
   selector: "app-container-tab",
@@ -38,6 +39,7 @@ export class ContainerTabComponent {
     inject(ContentService);
   protected readonly versioningService: VersioningServiceInterface =
     inject(VersioningService);
+  protected readonly authService = inject(AuthService);
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
   private router = inject(Router);
   containerSelection = this.containerService.containerSelection;

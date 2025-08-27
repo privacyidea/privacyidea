@@ -1,7 +1,8 @@
 <div
   #scrollContainer
   aria-label="Token Enrollment"
-  class="token-enrollment-container" appScrollToTop>
+  class="token-enrollment-container"
+  appScrollToTop>
   <h3 class="margin-left-1"> Enroll a New Token </h3>
   <form
     (ngSubmit)="enrollToken()"
@@ -195,23 +196,25 @@
         rows="3"></textarea>
     </mat-form-field>
     <div class="flex-row gap-1">
-      <div class="flex-column width-100">
-        <h4 class="enroll-h4">Assign Token to a Container</h4>
-        <mat-form-field class="width-47 input-height">
-          <mat-label>Enter Container</mat-label>
-          <input
-            [formControlName]="'selectedContainer'"
-            [formControl]="selectedContainerControl"
-            [matAutocomplete]="containerAuto"
-            matInput/>
-          <mat-autocomplete #containerAuto="matAutocomplete">
-            @for (option of containerService.filteredContainerOptions();
-              track option) {
-              <mat-option [value]="option">{{ option }}</mat-option>
-            }
-          </mat-autocomplete>
-        </mat-form-field>
-      </div>
+      @if (authService.actionAllowed("container_list")) {
+        <div class="flex-column width-100">
+          <h4 class="enroll-h4">Assign Token to a Container</h4>
+          <mat-form-field class="width-47 input-height">
+            <mat-label>Enter Container</mat-label>
+            <input
+              [formControlName]="'selectedContainer'"
+              [formControl]="selectedContainerControl"
+              [matAutocomplete]="containerAuto"
+              matInput/>
+            <mat-autocomplete #containerAuto="matAutocomplete">
+              @for (option of containerService.filteredContainerOptions();
+                track option) {
+                <mat-option [value]="option">{{ option }}</mat-option>
+              }
+            </mat-autocomplete>
+          </mat-form-field>
+        </div>
+      }
       @if (tokenService.selectedTokenType().key !== "passkey") {
         <div class="flex-column user-pin-container">
           <h4 class="enroll-h4">Set PIN</h4>

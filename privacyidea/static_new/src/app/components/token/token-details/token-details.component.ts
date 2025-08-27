@@ -85,6 +85,16 @@ export const tokenDetailsKeyMap = [
   { key: "container_serial", label: "Container Serial" }
 ];
 
+export const tokenDetailsRightsMap = [
+  { key: "maxfail", right: "set" },
+  { key: "count_window", right: "set" },
+  { key: "sync_window", right: "set" },
+  { key: "description", right: "setdescription" },
+  { key: "realms", right: "tokenrealms" },
+  { key: "tokengroup", right: "tokengroups" },
+  { key: "container_serial", right: "container_add_token" }
+];
+
 export const userDetailsKeyMap = [
   { key: "user_realm", label: "User Realm" },
   { key: "username", label: "User" },
@@ -136,7 +146,7 @@ export class TokenDetailsComponent {
     inject(TableUtilsService);
   protected readonly contentService: ContentServiceInterface =
     inject(ContentService);
-  private readonly authService: AuthServiceInterface = inject(AuthService);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
   private router = inject(Router);
   tokenIsActive = this.tokenService.tokenIsActive;
   tokenIsRevoked = this.tokenService.tokenIsRevoked;
@@ -362,21 +372,8 @@ export class TokenDetailsComponent {
   }
 
   isEditableElement(key: string) {
-    const role = this.authService.role();
-    if (role === "admin") {
-      return (
-        key === "maxfail" ||
-        key === "count_window" ||
-        key === "sync_window" ||
-        key === "description" ||
-        key === "info" ||
-        key === "realms" ||
-        key === "tokengroup" ||
-        key === "container_serial"
-      );
-    } else {
-      return key === "description" || key === "container_serial";
-    }
+    const rightEntry = tokenDetailsRightsMap.find(entry => entry.key === key);
+    return !!(rightEntry && this.authService.actionAllowed(rightEntry.right));
   }
 
   isNumberElement(key: string) {

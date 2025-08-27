@@ -1,7 +1,8 @@
 <div
   #scrollContainer
   aria-label="Create Container"
-  class="container-create-container" appScrollToTop>
+  class="container-create-container"
+  appScrollToTop>
   <h3 class="margin-left-1">Create a New Container</h3>
   <div #stickySentinel></div>
   <div
@@ -20,8 +21,7 @@
             @for (type of containerService.containerTypeOptions(); track type) {
               <mat-option
                 class="select-option type-option"
-                [value]="type"
-                >{{ type.description }}
+                [value]="type">{{ type.description }}
               </mat-option>
             }
           </mat-select>
@@ -69,26 +69,29 @@
   </mat-form-field>
 
   <div class="flex-column width-100 gap-1">
-    <div class="flex-column width-66">
-      <h4 class="enroll-h4">Use a Template</h4>
-      <mat-form-field class="width-100 input-height">
-        <mat-label>Template</mat-label>
-        <mat-select
-          [(ngModel)]="selectedTemplate"
-          [value]="selectedTemplate()"
-          disabled>
-          @for (option of templateOptions(); track option) {
-            <mat-option [value]="option">{{ option.name }}</mat-option>
-          }
-        </mat-select>
-      </mat-form-field>
-    </div>
+    @if (authService.actionAllowed("container_template_list")) {
+      <div class="flex-column width-66">
+        <h4 class="enroll-h4">Use a Template</h4>
+        <mat-form-field class="width-100 input-height">
+          <mat-label>Template</mat-label>
+          <mat-select
+            [(ngModel)]="selectedTemplate"
+            [value]="selectedTemplate()"
+            disabled>
+            @for (option of templateOptions(); track option) {
+              <mat-option [value]="option">{{ option.name }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      </div>
+    }
     <h4 class="enroll-h4">Assign the Container to a User</h4>
     <div class="flex-row gap-1">
       <mat-form-field class="width-32 input-height">
         <mat-label>Select Realm of User</mat-label>
-        <mat-select [(ngModel)]="userService.selectedUserRealm"
-                    [value]="userService.selectedUserRealm()">
+        <mat-select
+          [(ngModel)]="userService.selectedUserRealm"
+          [value]="userService.selectedUserRealm()">
           @for (option of realmService.realmOptions(); track option) {
             <mat-option value="{{ option }}">{{ option }}</mat-option>
           }
@@ -103,7 +106,7 @@
             [(ngModel)]="userService.userFilter"
             [disabled]="onlyAddToRealm()"
             [matAutocomplete]="userAuto"
-            matInput />
+            matInput/>
         </app-clearable-input>
         <mat-error>User is <strong>required</strong></mat-error>
         <mat-autocomplete #userAuto="matAutocomplete">
@@ -113,8 +116,7 @@
         </mat-autocomplete>
       </mat-form-field>
       <mat-checkbox [(ngModel)]="onlyAddToRealm">
-        Only add to the realm <br />
-        (no user assignment)
+        Only add to the realm <br/> (no user assignment)
       </mat-checkbox>
     </div>
   </div>
