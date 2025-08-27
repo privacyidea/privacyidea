@@ -16,12 +16,12 @@
   @if (data.user?.username && data.userRealm != "" && !data.onlyAddToRealm) {
     <br />
     <span
-      >The user <a href="#">{{ data.user!.username }}</a> in the realm <a href="#">{{ data.userRealm }}</a> was assigned
+      >The user <span>{{ data.user!.username }}</span> in the realm <span>{{ data.userRealm }}</span> was assigned
       to the token.
     </span>
   }
   <div class="flex-row gap-1">
-    @if (!["registration", "paper", "spass", "email", "yubico", "yubikey"].includes(data.tokentype.key)) {
+    @if (!["registration", "paper", "tan", "spass", "email", "yubico", "yubikey"].includes(data.tokentype.key)) {
       @if (data.response.detail.googleurl?.img) {
         <img
           alt="QR Code"
@@ -58,7 +58,8 @@
         data.response.detail.motpurl?.value ??
         data.response.detail.otpkey?.value ??
         data.response.detail.tiqrenroll?.value;
-      @if (url && !["spass", "tiqr", "registration", "email", "yubico", "yubikey"].includes(data.tokentype.key)) {
+      @if (url &&
+      !["spass", "tiqr", "registration", "email", "yubico", "yubikey", "tan", "paper"].includes(data.tokentype.key)) {
         <p class="width-36">
           Click
           <a href="{{ url }}">here</a>
