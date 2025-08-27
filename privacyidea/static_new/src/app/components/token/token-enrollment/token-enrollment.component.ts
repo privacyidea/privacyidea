@@ -255,14 +255,6 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
   additionalFormFields: WritableSignal<{
     [key: string]: FormControl<any>;
   }> = signal({});
-  onlyAddToRealm = computed(() => {
-    if (this.tokenService.selectedTokenType()?.key === "4eyes") {
-      const foureyesControls = this.additionalFormFields();
-      const control = foureyesControls["onlyAddToRealm"] as FormControl<boolean>;
-      return !!control?.value;
-    }
-    return false;
-  });
   descriptionControl = new FormControl<string>("", {
     nonNullable: true,
     validators: [Validators.maxLength(80)]

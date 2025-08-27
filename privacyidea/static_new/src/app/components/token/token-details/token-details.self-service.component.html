@@ -173,7 +173,7 @@
                       <mat-icon> lock_reset</mat-icon>
                     </button>
                   </div>
-                } @else if (element.keyMap.key === "container_serial" && isAnyEditingOrRevoked() &&
+                } @else if (element.keyMap.key === "container_serial" && !isAnyEditingOrRevoked() &&
                 element.value && authService.actionAllowed("container_remove_token")) {
                   <div class="edit-button-container">
                     <button
