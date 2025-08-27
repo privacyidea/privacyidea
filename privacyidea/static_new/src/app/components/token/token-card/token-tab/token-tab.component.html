@@ -1,6 +1,6 @@
 <div class="tab-list">
   <mat-list>
-    <mat-divider class="margin-bottom-1"/>
+    <mat-divider class="margin-bottom-1" />
     <mat-list-item>
       <button
         [ngClass]="contentService.routeUrl() === ROUTE_PATHS.TOKENS ? 'card-button-active' : 'card-button'"
@@ -53,7 +53,7 @@
             </button>
           </mat-list-item>
         }
-        <mat-divider class="margin-top-1 margin-bottom-1"/>
+        <mat-divider class="margin-top-1 margin-bottom-1" />
         @if (authService.actionAllowed("getserial")) {
           <mat-list-item>
             <button
@@ -69,45 +69,45 @@
             </button>
           </mat-list-item>
         }
-      }
-      <mat-list-item>
-        <button
-          class="card-button"
-          (click)="versioningService.openDocumentation(contentService.routeUrl())"
-          mat-flat-button
-          i18n>
-          <mat-icon>info_outline</mat-icon>
-          Help
-        </button>
-      </mat-list-item>
-      @if (contentService.routeUrl() === ROUTE_PATHS.TOKENS) {
-        @if (authService.oneActionAllowed(["delete", "assign"])) {
-          <mat-divider class="margin-top-1 margin-bottom-1"/>
-          @if (authService.actionAllowed("delete")) {
-            <mat-list-item>
-              <button
-                [ngClass]="[tokenSelection().length === 0 ? 'card-button-disabled' : 'card-button-delete']"
-                (click)="deleteSelectedTokens()"
-                [disabled]="tokenSelection().length === 0"
-                mat-flat-button
-                i18n>
-                <mat-icon> delete_sweep</mat-icon>
-                Delete Selected
-              </button>
-            </mat-list-item>
-          }
-          @if (authService.actionAllowed("assign")) {
-            <mat-list-item>
-              <button
-                [ngClass]="[tokenSelection().length === 0 ? 'card-button-disabled' : 'card-button']"
-                (click)="assignSelectedTokens()"
-                [disabled]="tokenSelection().length === 0"
-                mat-flat-button
-                i18n>
-                <mat-icon> person_add</mat-icon>
-                Assign Selected
-              </button>
-            </mat-list-item>
+        <mat-list-item>
+          <button
+            class="card-button"
+            (click)="versioningService.openDocumentation(contentService.routeUrl())"
+            mat-flat-button
+            i18n>
+            <mat-icon>info_outline</mat-icon>
+            Help
+          </button>
+        </mat-list-item>
+        @if (contentService.routeUrl() === ROUTE_PATHS.TOKENS) {
+          @if (authService.oneActionAllowed(["delete", "assign"])) {
+            <mat-divider class="margin-top-1 margin-bottom-1" />
+            @if (authService.actionAllowed("delete")) {
+              <mat-list-item>
+                <button
+                  [ngClass]="[tokenSelection().length === 0 ? 'card-button-disabled' : 'card-button-delete']"
+                  (click)="deleteSelectedTokens()"
+                  [disabled]="tokenSelection().length === 0"
+                  mat-flat-button
+                  i18n>
+                  <mat-icon> delete_sweep</mat-icon>
+                  Delete Selected
+                </button>
+              </mat-list-item>
+            }
+            @if (authService.actionAllowed("assign")) {
+              <mat-list-item>
+                <button
+                  [ngClass]="[tokenSelection().length === 0 ? 'card-button-disabled' : 'card-button']"
+                  (click)="assignSelectedTokens()"
+                  [disabled]="tokenSelection().length === 0"
+                  mat-flat-button
+                  i18n>
+                  <mat-icon> person_add</mat-icon>
+                  Assign Selected
+                </button>
+              </mat-list-item>
+            }
           }
         }
       } @else {
@@ -134,7 +134,7 @@
             </button>
           </mat-list-item>
         }
-        <mat-divider class="margin-top-1 margin-bottom-1"/>
+        <mat-divider class="margin-top-1 margin-bottom-1" />
         @if (authService.actionAllowed("losttoken")) {
           <mat-list-item>
             <button
@@ -158,7 +158,7 @@
           </button>
         </mat-list-item>
         @if (authService.oneActionAllowed(["disable", "enable", "delete", "revoke"])) {
-          <mat-divider class="margin-top-1 margin-bottom-1"/>
+          <mat-divider class="margin-top-1 margin-bottom-1" />
           @if ((tokenIsActive() && authService.actionAllowed("disable")) ||
           (!tokenIsActive() && authService.actionAllowed("enable"))) {
             <mat-list-item>

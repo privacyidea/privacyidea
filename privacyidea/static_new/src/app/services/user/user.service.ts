@@ -76,7 +76,7 @@ export class UserService implements UserServiceInterface {
   });
   pageSize = linkedSignal({
     source: this.filterValue,
-    computation: () => 10
+    computation: () => this.authService.userPageSize()
   });
   pageIndex = linkedSignal({
     source: () => ({

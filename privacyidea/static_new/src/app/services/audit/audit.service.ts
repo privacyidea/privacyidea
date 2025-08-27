@@ -109,7 +109,7 @@ export class AuditService implements AuditServiceInterface {
   });
   pageSize = linkedSignal({
     source: this.filterValue,
-    computation: () => 10
+    computation: () => this.authService.auditPageSize()
   });
   pageIndex = linkedSignal({
     source: () => ({

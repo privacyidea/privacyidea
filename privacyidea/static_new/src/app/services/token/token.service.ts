@@ -286,14 +286,13 @@ export class TokenService implements TokenServiceInterface {
       routeUrl: this.contentService.routeUrl()
     }),
     computation: (source) =>
-      source.tokenTypeOptions.find((type) => type.key === "hotp") ||
-      source.tokenTypeOptions[0] ||
-      ({ key: "hotp", info: "", text: "" } as TokenType)
+      source.tokenTypeOptions.find((type) => type.key === this.authService.defaultTokentype()) ||
+      source.tokenTypeOptions[0] || ({ key: "hotp", info: "", text: "" } as TokenType)
   });
   pageSize = linkedSignal<Record<string, string>, number>({
     source: this.filterValue,
     computation: (_, previous) => {
-      const previousValue = previous?.value ?? 10;
+      const previousValue = previous?.value ?? this.authService.tokenPageSize();
 
       if (!this.defaultSizeOptions.includes(previousValue)) {
         return (
