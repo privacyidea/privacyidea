@@ -16,7 +16,6 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from __future__ import annotations
 
-import functools
 import os
 import sys
 import logging
@@ -116,7 +115,7 @@ class DefaultConfigValues:
 
 def _random_password(size):
     log.info("SECRET_KEY not set in config. Generating a random key.")
-    passwd = [secrets.choice(string.ascii_lowercase + \
+    passwd = [secrets.choice(string.ascii_lowercase +
                              string.ascii_uppercase + string.digits) for _x in range(size)]
     return "".join(passwd)
 
@@ -218,7 +217,9 @@ class ProductionConfig(Config):
     SUPERUSER_REALM = ['superuser']
 
 
-@functools.lru_cache
+docker_secrets_dir = Path("/run/secrets/")
+
+
 def _get_secrets_from_environment(name: str) -> str | None:
     if f"{name}_FILE" in os.environ:
         file_name = os.environ[f"{name}_FILE"]
@@ -227,16 +228,28 @@ def _get_secrets_from_environment(name: str) -> str | None:
                 return f.read().strip()
         except IOError as _e:
             sys.stderr.write(f"Could not read secret from file defined in variable '{name}_FILE'")
-    return os.getenv(name, None)
+    return os.getenv(name)
+
+
+def _get_secrets_paths_from_environment(path: str, name: str) -> str | None:
+    if (docker_secrets_dir / path).is_file():
+        return str(docker_secrets_dir / path)
+    elif name in os.environ:
+        if Path(os.environ[name]).is_file():
+            return os.environ[name]
+        else:
+            sys.stderr.write(f"Could not read secret file path defined in variable '{name}'")
+            return None
+    else:
+        return None
 
 
 class DockerConfig:
-    secrets_dir = Path("/run/secrets/")
 
     # Try to set the database url from the environment variables
     # First we try if the URL component was set individually
-    if _get_secrets_from_environment(ConfigKey.DB_PASSWORD):
-        PI_DB_PASSWORD = _get_secrets_from_environment(ConfigKey.DB_PASSWORD)
+    if db_password := _get_secrets_from_environment(ConfigKey.DB_PASSWORD):
+        PI_DB_PASSWORD = db_password
 
         if all(x in os.environ for x in [ConfigKey.DB_USER, ConfigKey.DB_HOST]) and PI_DB_PASSWORD:
             SQLALCHEMY_DATABASE_URI = "{0}://{1}:{2}@{3}{4}/{5}{6}".format(
@@ -250,23 +263,24 @@ class DockerConfig:
             )
     # If the complete SQLALCHEMY_DATABASE_URI is given in the environment (secret)
     # it overwrites the one combined from components
-    if _get_secrets_from_environment(ConfigKey.SQLALCHEMY_DATABASE_URI):
-        SQLALCHEMY_DATABASE_URI = _get_secrets_from_environment(ConfigKey.SQLALCHEMY_DATABASE_URI)
+    if sqlalchemy_db_url := _get_secrets_from_environment(ConfigKey.SQLALCHEMY_DATABASE_URI):
+        SQLALCHEMY_DATABASE_URI = sqlalchemy_db_url
+    if pi_pepper := _get_secrets_from_environment(ConfigKey.PEPPER):
+        PI_PEPPER = pi_pepper
+    if secret_key := _get_secrets_from_environment(ConfigKey.SECRET_KEY):
+        SECRET_KEY = secret_key
+
+    if enc_key := _get_secrets_paths_from_environment("enckey", ConfigKey.ENCFILE):
+        PI_ENCFILE = enc_key
+    if audit_key_public := _get_secrets_paths_from_environment("audit_key_public",
+                                                               ConfigKey.AUDIT_KEY_PUBLIC):
+        PI_AUDIT_KEY_PUBLIC = audit_key_public
+    if audit_key_private := _get_secrets_paths_from_environment("audit_key_private",
+                                                                ConfigKey.AUDIT_KEY_PRIVATE):
+        PI_AUDIT_KEY_PRIVATE = audit_key_private
 
     PI_AUDIT_MODULE = "privacyidea.lib.auditmodules.sqlaudit"
     PI_AUDIT_SQL_TRUNCATE = True
-
-    if (secrets_dir / "enckey").is_file():
-        PI_ENCFILE = str(secrets_dir / "enckey")
-
-    if _get_secrets_from_environment(ConfigKey.PEPPER):
-        PI_PEPPER = _get_secrets_from_environment(ConfigKey.PEPPER)
-    if _get_secrets_from_environment(ConfigKey.SECRET_KEY):
-        SECRET_KEY = _get_secrets_from_environment(ConfigKey.SECRET_KEY)
-    if _get_secrets_from_environment(ConfigKey.AUDIT_KEY_PUBLIC):
-        PI_AUDIT_KEY_PUBLIC = _get_secrets_from_environment(ConfigKey.AUDIT_KEY_PUBLIC)
-    if _get_secrets_from_environment(ConfigKey.AUDIT_KEY_PRIVATE):
-        PI_AUDIT_KEY_PRIVATE = _get_secrets_from_environment(ConfigKey.AUDIT_KEY_PRIVATE)
 
 
 config = {
