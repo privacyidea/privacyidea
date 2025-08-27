@@ -568,11 +568,17 @@ def unassign_api():
     :jsonparam serial: The serial number of a single token, or comma-separated list of serials.
     :jsonparam serials: A list of serial numbers of multiple tokens.
     authorized to manage.
-
+    :jsonparam user: Username of the user to unassign all token from. Does only work if serial and serials are not
+    given and realm parameter is also provided.
+    :jsonparam realm: Realm of the user to unassign all token from.  Does only work if serial and serials are not
+    given and user parameter is also provided.
     :return: In case of success, it returns 1 if only one serial is given.
             If multiple serials were given, the response will contain "count_unassigned" as int for the number of
             unassigned token, "failed" with a list of serials for which the operation failed and "unauthorized" with a
             list of serials that were not authorized for the operation.
+            If no authorized serials are provided, returns status 403.
+            If none of the serials could be found, returns status 404.
+            For mixed results, the data described above is returned with status 200.
     :rtype: JSON object
     """
     user = request.User
@@ -620,11 +626,10 @@ def revoke_api(serial=None):
     Revoke a single token or all the tokens of a user.
     A revoked token will usually be locked. A locked token can not be used
     anymore.
-    For certain token types additional actions might occur when revoking a
+    For certain token types, additional actions might occur when revoking a
     token.
 
-    :jsonparam basestring serial: the serial number of the single token to
-        revoke
+    :jsonparam basestring serial: the serial number of the single token to revoke
     :jsonparam basestring user: The login name of the user
     :jsonparam basestring realm: the realm name of the user
     :return: In case of success it returns the number of revoked
@@ -702,17 +707,18 @@ def disable_api(serial=None):
 @log_with(log)
 def delete_api(serial=None):
     """
-    Delete token(s) by their serial number.
-    All errors during the deletion of multiple tokens are fetched to be able to delete the remaining tokens.
+    Delete tokens by their serial number.
 
     :jsonparam serial: The serial number of a single token, or comma-separated list of serials.
     :jsonparam serials: A list of serial numbers of multiple tokens.
-    authorized to manage.
 
      :return: In case of success, it returns 1 if only one serial is given.
             If multiple serials were given, the response will contain "count_deleted" as int for the number of
             deleted token, "failed" with a list of serials for which the operation failed and "unauthorized" with a
             list of serials that were not authorized for the operation.
+            If no authorized serials are provided, returns status 403.
+            If none of the serials could be found, returns status 404.
+            For mixed results, the data described above is returned with status 200.
     :rtype: json object
     """
     user = request.User
