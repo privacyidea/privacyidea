@@ -15,7 +15,7 @@ type ThemeIcon = "light_mode" | "dark_mode";
 })
 export class ThemeSwitcherComponent {
   private readonly systemPrefersDark = signal(window.matchMedia("(prefers-color-scheme: dark)").matches);
-  private readonly themeService = inject(ThemeService)
+  private readonly themeService = inject(ThemeService);
   readonly isDark = computed(() => {
     const current = this.themeService.currentTheme();
     return current === "dark" || (current === "system" && this.systemPrefersDark());

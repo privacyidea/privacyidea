@@ -12,11 +12,11 @@ import { TableUtilsService, TableUtilsServiceInterface } from "../../../services
   styleUrl: "./keyword-filter.component.scss"
 })
 export class KeywordFilterComponent {
+  private readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   @Input() apiFilter: string[] = [];
   @Input() advancedApiFilter: string[] = [];
   @Input() filterHTMLInputElement!: HTMLInputElement;
   @Input() filterValue!: WritableSignal<Record<string, string>>;
-  private readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService)
   showAdvancedFilter = signal(false);
 
   onKeywordClick(filterKeyword: string): void {
