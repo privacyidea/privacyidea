@@ -37,10 +37,15 @@
                   @if (element.isEditing()) {
                     <mat-form-field class="width-18rem container-form-field">
                       <mat-label i18n>Enter Container</mat-label>
-                      <input
-                        matInput
-                        [(ngModel)]="containerService.selectedContainer"
-                        [matAutocomplete]="containerAuto" />
+                      <app-clearable-input
+                        (onClick)="containerHTMLInputElement.value = ''; containerService.selectedContainer.set(null)"
+                        [showClearButton]="containerService.selectedContainer() !== ''">
+                        <input
+                          #containerHTMLInputElement
+                          matInput
+                          [(ngModel)]="containerService.selectedContainer"
+                          [matAutocomplete]="containerAuto" />
+                      </app-clearable-input>
                       <mat-autocomplete #containerAuto="matAutocomplete">
                         @for (option of containerService.filteredContainerOptions(); track option) {
                           <mat-option [value]="option">{{ option }}</mat-option>

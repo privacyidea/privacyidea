@@ -1,27 +1,29 @@
-import { NgClass } from "@angular/common";
-import { Component, computed, effect, inject, linkedSignal, signal, WritableSignal } from "@angular/core";
-import { FormsModule, ReactiveFormsModule } from "@angular/forms";
-import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
-import { MatIconButton } from "@angular/material/button";
-import { MatDialog } from "@angular/material/dialog";
-import { MatFormFieldModule } from "@angular/material/form-field";
-import { MatIcon } from "@angular/material/icon";
-import { MatInput } from "@angular/material/input";
-import { MatListItem } from "@angular/material/list";
-import { MatSelectModule } from "@angular/material/select";
-import { MatCell, MatColumnDef, MatRow, MatTable, MatTableModule } from "@angular/material/table";
-import { Router } from "@angular/router";
-import { ROUTE_PATHS } from "../../../app.routes";
 import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
+import { Component, WritableSignal, computed, effect, inject, linkedSignal, signal } from "@angular/core";
 import { ContainerService, ContainerServiceInterface } from "../../../services/container/container.service";
 import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
+import { EditButtonsComponent, EditableElement } from "../../shared/edit-buttons/edit-buttons.component";
+import { FormsModule, ReactiveFormsModule } from "@angular/forms";
+import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
+import { MatCell, MatColumnDef, MatRow, MatTable, MatTableModule } from "@angular/material/table";
 import { OverflowService, OverflowServiceInterface } from "../../../services/overflow/overflow.service";
 import { RealmService, RealmServiceInterface } from "../../../services/realm/realm.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "../../../services/table-utils/table-utils.service";
 import { TokenDetails, TokenService, TokenServiceInterface } from "../../../services/token/token.service";
+
+import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
 import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
+import { MatDialog } from "@angular/material/dialog";
+import { MatFormFieldModule } from "@angular/material/form-field";
+import { MatIcon } from "@angular/material/icon";
+import { MatIconButton } from "@angular/material/button";
+import { MatInput } from "@angular/material/input";
+import { MatListItem } from "@angular/material/list";
+import { MatSelectModule } from "@angular/material/select";
+import { NgClass } from "@angular/common";
+import { ROUTE_PATHS } from "../../../app.routes";
+import { Router } from "@angular/router";
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
-import { EditableElement, EditButtonsComponent } from "../../shared/edit-buttons/edit-buttons.component";
 import { TokenDetailsActionsComponent } from "./token-details-actions/token-details-actions.component";
 import { TokenDetailsInfoComponent } from "./token-details-info/token-details-info.component";
 import { TokenDetailsUserComponent } from "./token-details-user/token-details-user.component";
@@ -77,6 +79,7 @@ export const infoDetailsKeyMap = [{ key: "info", label: "Information" }];
     TokenDetailsActionsComponent,
     EditButtonsComponent,
     CopyButtonComponent,
+    ClearableInputComponent,
     ScrollToTopDirective
   ],
   templateUrl: "./token-details.component.html",
@@ -236,7 +239,7 @@ export class TokenDetailsComponent {
   saveTokenEdit(element: EditableElement<string>) {
     switch (element.keyMap.key) {
       case "container_serial":
-        this.containerService.selectedContainer.set(this.containerService.selectedContainer().trim() ?? null);
+        this.containerService.selectedContainer.set(this.containerService.selectedContainer()?.trim() ?? null);
         this.saveContainer();
         break;
       case "tokengroup":
@@ -280,19 +283,25 @@ export class TokenDetailsComponent {
   }
 
   saveContainer() {
-    this.containerService.assignContainer(this.tokenSerial(), this.containerService.selectedContainer()).subscribe({
-      next: () => {
-        this.tokenDetailResource.reload();
-      }
-    });
+    const selectedContainer = this.containerService.selectedContainer();
+    if (selectedContainer) {
+      this.containerService.assignContainer(this.tokenSerial(), selectedContainer).subscribe({
+        next: () => {
+          this.tokenDetailResource.reload();
+        }
+      });
+    }
   }
 
   deleteContainer() {
-    this.containerService.unassignContainer(this.tokenSerial(), this.containerService.selectedContainer()).subscribe({
-      next: () => {
-        this.tokenDetailResource.reload();
-      }
-    });
+    const selectedContainer = this.containerService.selectedContainer();
+    if (selectedContainer) {
+      this.containerService.unassignContainer(this.tokenSerial(), selectedContainer).subscribe({
+        next: () => {
+          this.tokenDetailResource.reload();
+        }
+      });
+    }
   }
 
   isEditableElement(key: string) {

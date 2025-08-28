@@ -264,14 +264,18 @@
         </div>
         <mat-form-field class="add-token">
           <mat-label i18n>Add Token to Container</mat-label>
-          <input
-            #filterHTMLInputElement
-            #tokenAutoTrigger="matAutocompleteTrigger"
-            [(ngModel)]="filterValueString"
-            [matAutocomplete]="tokenAuto"
-            i18n-placeholder
-            matInput
-            placeholder="Example query: 'type: hotp serial: 123'" />
+          <app-clearable-input
+            (onClick)="filterValueString.set('')"
+            [showClearButton]="filterValueString().length > 0">
+            <input
+              #filterHTMLInputElement
+              #tokenAutoTrigger="matAutocompleteTrigger"
+              [(ngModel)]="filterValueString"
+              [matAutocomplete]="tokenAuto"
+              i18n-placeholder
+              matInput
+              placeholder="Example query: 'type: hotp serial: 123'" />
+          </app-clearable-input>
           <mat-autocomplete #tokenAuto="matAutocomplete">
             @for (option of tokenDataSource().data; track option) {
               <mat-option
