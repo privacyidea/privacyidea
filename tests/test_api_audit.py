@@ -402,7 +402,7 @@ class APIAuditTestCase(MyApiTestCase):
         three_days = timedelta(days=3)
         # enroll policies are within last day and enable policies not
         audit = Audit(action="enroll", success=1, realm=self.realm1a)
-        audit.date = date=date - timedelta(minutes=5)
+        audit.date = date - timedelta(minutes=5)
         audit.save()
         audit = Audit(action="enable", success=1, realm=self.realm1a)
         audit.date = date - three_days
