@@ -215,16 +215,6 @@ export class ContainerDetailsTokenTableComponent {
   assignToAllToken() {
     var username = this.assignedUser().user_name;
     var realm = this.assignedUser().user_realm;
-    if (username === "" || realm === "") {
-      this.dialog.open(ConfirmationDialogComponent, {
-        data: {
-          title: "No User Assigned",
-          message: "Please assign a user to the container first."
-        }
-      });
-      return;
-    }
-
     var tokensToAssign = this.containerTokenData().data.filter((token) => {
       return token.username !== username;
     });
@@ -232,31 +222,21 @@ export class ContainerDetailsTokenTableComponent {
       return;
     }
     var tokensAssignedToOtherUser = tokensToAssign.filter((token) => token.username !== "");
-
-    this.dialog
-      .open<UserAssignmentDialogComponent, void, string | null>(UserAssignmentDialogComponent)
-      .afterClosed()
-      .subscribe((pin: string | null | undefined) => {
-        if (pin == null) return;
-
-        const tokenSerialsAssignedToOtherUser = tokensAssignedToOtherUser.map(token => token.serial);
-        this.tokenService.unassignUserFromAll(tokenSerialsAssignedToOtherUser).subscribe({
-          next: () => {
-            const tokenSerialsToAssign = tokensToAssign.map(token => token.serial);
-            this.tokenService.assignUserToAll({
-              tokenSerials: tokenSerialsToAssign,
-              username: username,
-              realm: realm,
-              pin: pin
-            })
-              .subscribe({
-                next: () => this.containerService.containerDetailResource.reload(),
-                error: (error) => console.error("Error assigning user to all tokens:", error)
-              });
-          },
-          error: (error) => console.error("Error unassigning user from all tokens:", error)
-        });
-      });
+    const tokenSerialsAssignedToOtherUser = tokensAssignedToOtherUser.map(token => token.serial);
+    this.tokenService.unassignUserFromAll(tokenSerialsAssignedToOtherUser).subscribe({
+      next: () => {
+        const tokenSerialsToAssign = tokensToAssign.map(token => token.serial);
+        this.tokenService.assignUserToAll({
+          tokenSerials: tokenSerialsToAssign,
+          username: username,
+          realm: realm,
+        })
+          .subscribe({
+            next: () => this.containerService.containerDetailResource.reload(),
+            error: (error) => console.error("Error assigning user to all tokens:", error)
+          });
+      }
+    });
   }
 
   toggleActive(token: ContainerDetailToken): void {
