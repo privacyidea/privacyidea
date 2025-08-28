@@ -19,22 +19,13 @@ export interface IndexedSecretEnrollmentOptions extends TokenEnrollmentData {
 @Component({
   selector: "app-enroll-indexedsecret",
   standalone: true,
-  imports: [
-    MatFormField,
-    MatInput,
-    MatLabel,
-    ReactiveFormsModule,
-    FormsModule,
-    MatError
-  ],
+  imports: [MatFormField, MatInput, MatLabel, ReactiveFormsModule, FormsModule, MatError],
   templateUrl: "./enroll-indexedsecret.component.html",
   styleUrl: "./enroll-indexedsecret.component.scss"
 })
 export class EnrollIndexedsecretComponent implements OnInit {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
-  protected readonly enrollmentMapper: IndexedSecretApiPayloadMapper = inject(
-    IndexedSecretApiPayloadMapper
-  );
+  protected readonly enrollmentMapper: IndexedSecretApiPayloadMapper = inject(IndexedSecretApiPayloadMapper);
 
   @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
@@ -43,10 +34,7 @@ export class EnrollIndexedsecretComponent implements OnInit {
     (basicOptions: TokenEnrollmentData) => Observable<EnrollmentResponse | null>
   >();
 
-  otpKeyControl = new FormControl<string>("", [
-    Validators.required,
-    Validators.minLength(16)
-  ]);
+  otpKeyControl = new FormControl<string>("", [Validators.required, Validators.minLength(16)]);
 
   indexedSecretForm = new FormGroup({
     otpKey: this.otpKeyControl
@@ -59,9 +47,7 @@ export class EnrollIndexedsecretComponent implements OnInit {
     this.clickEnrollChange.emit(this.onClickEnroll);
   }
 
-  onClickEnroll = (
-    basicOptions: TokenEnrollmentData
-  ): Observable<EnrollmentResponse | null> => {
+  onClickEnroll = (basicOptions: TokenEnrollmentData): Observable<EnrollmentResponse | null> => {
     if (this.otpKeyControl.invalid) {
       this.indexedSecretForm.markAllAsTouched();
       return of(null);

@@ -10,6 +10,29 @@
   overflow: auto;
 }
 
+.selfservice-margin {
+  margin: calc(var(--global-padding) * 2) calc(var(--global-padding) * 2) 100vh 6rem;
+}
+
+.drawer-button-div {
+  display: flex;
+  margin-top: 284px;
+  margin-left: var(--global-padding);
+  height: 100%;
+  position: fixed;
+}
+
+.drawer-content-div {
+  display: flex;
+  flex-direction: row;
+  gap: 20px;
+}
+
+.selfservice-drawer {
+  width: unset;
+  border: solid 2px var(--mat-sys-surface-container-highest);
+}
+
 .audit-filter-paginator-container {
   width: 94vw;
 }

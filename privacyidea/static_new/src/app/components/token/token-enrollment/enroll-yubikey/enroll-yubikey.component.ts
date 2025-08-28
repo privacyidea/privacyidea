@@ -22,19 +22,10 @@ import { TokenService, TokenServiceInterface } from "../../../../services/token/
   templateUrl: "./enroll-yubikey.component.html",
   styleUrls: ["./enroll-yubikey.component.scss"],
   standalone: true,
-  imports: [
-    CommonModule,
-    ReactiveFormsModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatOptionModule,
-    MatSelect
-  ]
+  imports: [CommonModule, ReactiveFormsModule, MatFormFieldModule, MatInputModule, MatOptionModule, MatSelect]
 })
 export class EnrollYubikeyComponent implements OnInit {
-  protected readonly enrollmentMapper: YubikeyApiPayloadMapper = inject(
-    YubikeyApiPayloadMapper
-  );
+  protected readonly enrollmentMapper: YubikeyApiPayloadMapper = inject(YubikeyApiPayloadMapper);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
 
   @Output() additionalFormFieldsChange = new EventEmitter<{
@@ -45,11 +36,7 @@ export class EnrollYubikeyComponent implements OnInit {
   >();
 
   testYubiKeyControl = new FormControl("");
-  otpKeyControl = new FormControl("", [
-    Validators.required,
-    Validators.minLength(32),
-    Validators.maxLength(32)
-  ]);
+  otpKeyControl = new FormControl("", [Validators.required, Validators.minLength(32), Validators.maxLength(32)]);
   otpLengthControl = new FormControl<number | null>(44, [Validators.required]);
 
   yubikeyForm = new FormGroup({
@@ -67,9 +54,7 @@ export class EnrollYubikeyComponent implements OnInit {
     this.clickEnrollChange.emit(this.onClickEnroll);
   }
 
-  onClickEnroll = (
-    basicOptions: TokenEnrollmentData
-  ): Observable<EnrollmentResponse | null> => {
+  onClickEnroll = (basicOptions: TokenEnrollmentData): Observable<EnrollmentResponse | null> => {
     if (this.yubikeyForm.invalid) {
       this.yubikeyForm.markAllAsTouched();
       return of(null);

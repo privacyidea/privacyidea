@@ -24,8 +24,8 @@
         subscriptSizing="dynamic">
         <mat-label i18n>Enter Filter</mat-label>
         <app-clearable-input
-          (onClick)="machineService.filterValueString.set('')"
-          [showClearButton]="machineService.filterValueString.length > 0">
+          (onClick)="filterInput.value = ''; machineService.filterValueString.set('')"
+          [showClearButton]="filterInput.value.length > 0">
           <input
             #filterInput
             [(ngModel)]="machineService.filterValueString"

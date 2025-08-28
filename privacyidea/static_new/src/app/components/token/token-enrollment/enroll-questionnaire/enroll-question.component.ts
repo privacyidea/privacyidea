@@ -20,13 +20,13 @@ import {
 import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { Observable, of, Subscription } from "rxjs";
-import { SystemService, SystemServiceInterface } from "../../../../services/system/system.service";
-import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 import {
   EnrollmentResponse,
   TokenEnrollmentData
 } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
 import { QuestionApiPayloadMapper } from "../../../../mappers/token-api-payload/question-token-api-payload.mapper";
+import { SystemService, SystemServiceInterface } from "../../../../services/system/system.service";
+import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 
 export interface QuestionEnrollmentOptions extends TokenEnrollmentData {
   type: "question";
@@ -61,9 +61,7 @@ export class EnrollQuestionComponent implements OnInit {
       .map(([, v]) => ({ question: String(v) }));
   });
 
-  questionControlNames = computed(() =>
-    this.configQuestions().map((q) => `answer_${q.question.replace(/\s+/g, "_")}`)
-  );
+  questionControlNames = computed(() => this.configQuestions().map((q) => `answer_${q.question.replace(/\s+/g, "_")}`));
 
   questionForm = linkedSignal({
     source: () => this.questionControlNames(),
