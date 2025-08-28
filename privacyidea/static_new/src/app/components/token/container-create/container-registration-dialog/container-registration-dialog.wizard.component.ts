@@ -15,8 +15,7 @@ import { ContainerRegistrationDialogComponent } from "./container-registration-d
   styleUrl: "./container-registration-dialog.component.scss"
 })
 export class ContainerRegistrationDialogWizardComponent extends ContainerRegistrationDialogComponent {
-  protected override readonly containerService: ContainerServiceInterface =
-    inject(ContainerService);
+  protected override readonly containerService: ContainerServiceInterface = inject(ContainerService);
   public override readonly data: {
     response: any;
     containerSerial: WritableSignal<string>;

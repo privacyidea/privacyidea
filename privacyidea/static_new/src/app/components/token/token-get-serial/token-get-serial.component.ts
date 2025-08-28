@@ -41,10 +41,8 @@ import { GetSerialResultDialogComponent } from "./get-serial-result-dialog/get-s
 })
 export class TokenGetSerialComponent {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
-  protected readonly notificationService: NotificationServiceInterface =
-    inject(NotificationService);
-  protected readonly contentService: ContentServiceInterface =
-    inject(ContentService);
+  protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
+  protected readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly dialog: MatDialog = inject(MatDialog);
   private router = inject(Router);
   tokenSerial = this.tokenService.tokenSerial;
@@ -68,21 +66,8 @@ export class TokenGetSerialComponent {
   ];
 
   constructor() {
-    const tokenWithOTP = [
-      "hotp",
-      "totp",
-      "spass",
-      "motp",
-      "sshkey",
-      "yubikey",
-      "remote",
-      "yubico",
-      "radius",
-      "sms"
-    ];
-    this.tokenTypesWithOTP = this.tokenService
-      .tokenTypeOptions()
-      .filter((type) => tokenWithOTP.includes(type.key));
+    const tokenWithOTP = ["hotp", "totp", "spass", "motp", "sshkey", "yubikey", "remote", "yubico", "radius", "sms"];
+    this.tokenTypesWithOTP = this.tokenService.tokenTypeOptions().filter((type) => tokenWithOTP.includes(type.key));
 
     effect(() => {
       this.otpValue();
@@ -138,11 +123,7 @@ export class TokenGetSerialComponent {
     this.currentStep.set("counting");
     this.tokenService.getSerial(this.otpValue(), params).subscribe({
       next: (response) => {
-        this.tokenCount.set(
-          response?.result?.value?.count !== undefined
-            ? String(response.result?.value.count)
-            : ""
-        );
+        this.tokenCount.set(response?.result?.value?.count !== undefined ? String(response.result?.value.count) : "");
         this.currentStep.set("countDone");
         if (this.countIsLarge()) {
           this.dialog
@@ -181,29 +162,27 @@ export class TokenGetSerialComponent {
     let params = this.getParams();
     params = params.delete("count");
     this.currentStep.set("searching");
-    this.serialSubscription = this.tokenService
-      .getSerial(this.otpValue(), params)
-      .subscribe({
-        next: (response) => {
-          const serial = response.result?.value?.serial ?? "";
-          this.dialog.open(GetSerialResultDialogComponent, {
-            data: {
-              foundSerial: serial,
-              otpValue: this.otpValue(),
-              onClickSerial: () => {
-                this.tokenSerial.set(serial);
-                this.router.navigateByUrl(ROUTE_PATHS.TOKENS_DETAILS + serial);
-                this.dialog.closeAll();
-              },
-              reset: () => {
-                this.resetSteps();
-              }
+    this.serialSubscription = this.tokenService.getSerial(this.otpValue(), params).subscribe({
+      next: (response) => {
+        const serial = response.result?.value?.serial ?? "";
+        this.dialog.open(GetSerialResultDialogComponent, {
+          data: {
+            foundSerial: serial,
+            otpValue: this.otpValue(),
+            onClickSerial: () => {
+              this.tokenSerial.set(serial);
+              this.router.navigateByUrl(ROUTE_PATHS.TOKENS_DETAILS + serial);
+              this.dialog.closeAll();
+            },
+            reset: () => {
+              this.resetSteps();
             }
-          });
-          this.foundSerial.set(serial);
-          this.currentStep.set("found");
-        }
-      });
+          }
+        });
+        this.foundSerial.set(serial);
+        this.currentStep.set("found");
+      }
+    });
   }
 
   resetSteps(): void {

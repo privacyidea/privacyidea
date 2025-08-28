@@ -63,20 +63,15 @@ export class TokenDetailsInfoComponent {
   }
 
   saveInfo(element: EditableElement<Record<string, string>>): void {
-    if (
-      this.newInfo().key.trim() !== "" &&
-      this.newInfo().value.trim() !== ""
-    ) {
+    if (this.newInfo().key.trim() !== "" && this.newInfo().value.trim() !== "") {
       element.value[this.newInfo().key] = this.newInfo().value;
     }
-    this.tokenService
-      .setTokenInfos(this.tokenSerial(), element.value)
-      .subscribe({
-        next: () => {
-          this.newInfo.set({ key: "", value: "" });
-          this.tokenService.tokenDetailResource.reload();
-        }
-      });
+    this.tokenService.setTokenInfos(this.tokenSerial(), element.value).subscribe({
+      next: () => {
+        this.newInfo.set({ key: "", value: "" });
+        this.tokenService.tokenDetailResource.reload();
+      }
+    });
     this.isEditingInfo.set(false);
   }
 
@@ -85,9 +80,7 @@ export class TokenDetailsInfoComponent {
       .deleteInfo(this.tokenSerial(), key)
       .pipe(
         switchMap(() => {
-          const info = this.detailData().find(
-            (detail) => detail.keyMap.key === "info"
-          );
+          const info = this.detailData().find((detail) => detail.keyMap.key === "info");
           if (info) {
             this.isEditingInfo.set(true);
           }

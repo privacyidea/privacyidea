@@ -21,8 +21,8 @@
           class="token-type-option type-option"
           [value]="type"
           i18n-matTooltip
-          matTooltip="{{ type.info.split(':')[1] }}"
-          >{{ type.info.split(":")[0] }}
+          matTooltip="{{ type.info.split(':')[1] }}">
+          {{ type.info.split(":")[0] }}
         </mat-option>
       }
 
@@ -262,14 +262,12 @@
               i18n-placeholder
               placeholder="Repeat PIN" />
           </div>
-          @if (
-            formGroup.hasError("pinMismatch") &&
-            (formGroup.get("setPin")?.touched || formGroup.get("repeatPin")?.touched)
-          ) {
+          @if (formGroup.hasError("pinMismatch") &&
+          (formGroup.get("setPin")?.touched || formGroup.get("repeatPin")?.touched)) {
             <mat-error
               i18n
-              class="pin-error"
-              >PINs do not match.
+              class="pin-error">
+              PINs do not match.
             </mat-error>
           }
         </div>

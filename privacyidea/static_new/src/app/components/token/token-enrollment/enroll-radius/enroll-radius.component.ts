@@ -45,13 +45,9 @@ export interface RadiusEnrollmentOptions extends TokenEnrollmentData {
   styleUrl: "./enroll-radius.component.scss"
 })
 export class EnrollRadiusComponent implements OnInit {
-  protected readonly enrollmentMapper: RadiusApiPayloadMapper = inject(
-    RadiusApiPayloadMapper
-  );
-  protected readonly radiusServerService: RadiusServerServiceInterface =
-    inject(RadiusServerService);
-  protected readonly systemService: SystemServiceInterface =
-    inject(SystemService);
+  protected readonly enrollmentMapper: RadiusApiPayloadMapper = inject(RadiusApiPayloadMapper);
+  protected readonly radiusServerService: RadiusServerServiceInterface = inject(RadiusServerService);
+  protected readonly systemService: SystemServiceInterface = inject(SystemService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
 
   @Output() additionalFormFieldsChange = new EventEmitter<{
@@ -62,12 +58,8 @@ export class EnrollRadiusComponent implements OnInit {
   >();
 
   radiusUserControl = new FormControl<string>("");
-  radiusServerConfigurationControl = new FormControl<string>("", [
-    Validators.required
-  ]);
-  checkPinLocallyControl = new FormControl<boolean>(false, [
-    Validators.required
-  ]);
+  radiusServerConfigurationControl = new FormControl<string>("", [Validators.required]);
+  checkPinLocallyControl = new FormControl<boolean>(false, [Validators.required]);
 
   radiusForm = new FormGroup({
     radiusUser: this.radiusUserControl,
@@ -76,10 +68,7 @@ export class EnrollRadiusComponent implements OnInit {
   });
 
   radiusServerConfigurationOptions = computed(
-    () =>
-      this.radiusServerService
-        .radiusServerConfigurations()
-        ?.map((config) => config.name) ?? []
+    () => this.radiusServerService.radiusServerConfigurations()?.map((config) => config.name) ?? []
   );
 
   defaultRadiusServerIsSet = computed(() => {
@@ -89,10 +78,7 @@ export class EnrollRadiusComponent implements OnInit {
 
   constructor() {
     effect(() => {
-      const id =
-        this.systemService.systemConfigResource.value()?.result?.value?.[
-          "radius.identifier"
-          ];
+      const id = this.systemService.systemConfigResource.value()?.result?.value?.["radius.identifier"];
       if (id && this.radiusServerConfigurationControl.pristine) {
         this.radiusServerConfigurationControl.setValue(id);
       }
@@ -108,11 +94,12 @@ export class EnrollRadiusComponent implements OnInit {
     this.clickEnrollChange.emit(this.onClickEnroll);
   }
 
-  onClickEnroll = (
-    basicOptions: TokenEnrollmentData
-  ): Observable<EnrollmentResponse | null> => {
-    if (this.radiusUserControl.invalid || this.radiusServerConfigurationControl.invalid ||
-      this.checkPinLocallyControl.invalid) {
+  onClickEnroll = (basicOptions: TokenEnrollmentData): Observable<EnrollmentResponse | null> => {
+    if (
+      this.radiusUserControl.invalid ||
+      this.radiusServerConfigurationControl.invalid ||
+      this.checkPinLocallyControl.invalid
+    ) {
       this.radiusForm.markAllAsTouched();
       return of(null);
     }
@@ -121,8 +108,7 @@ export class EnrollRadiusComponent implements OnInit {
       ...basicOptions,
       type: "radius",
       radiusUser: this.radiusUserControl.value ?? "",
-      radiusServerConfiguration:
-        this.radiusServerConfigurationControl.value ?? "",
+      radiusServerConfiguration: this.radiusServerConfigurationControl.value ?? "",
       checkPinLocally: !!this.checkPinLocallyControl.value
     };
 

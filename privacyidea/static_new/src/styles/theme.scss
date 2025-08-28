@@ -148,25 +148,25 @@ html {
   }
 
   @include mat.theme(
-                  (
-                          color: mat.$blue-palette,
-                  ),
-          $overrides: (
-                  "corner-large": 16px,
-                  "primary": var(--mat-sys-primary-base),
-                  "on-primary": var(--mat-sys-on-primary),
-                  "primary-container": var(--mat-sys-primary-container),
-                  "surface-container-lowest": var(--mat-sys-surface-container-lowest),
-                  "surface-container-low": var(--mat-sys-surface-container-low),
-                  "surface-container": var(--mat-sys-surface-container),
-                  "surface-container-high": var(--mat-sys-surface-container-high),
-                  "surface-container-highest": var(--mat-sys-surface-container-highest),
-                  "surface-variant": var(--mat-sys-surface-variant),
-                  "background": var(--mat-sys-background),
-                  "on-surface": var(--mat-sys-on-surface),
-                  "on-surface-variant": var(--mat-sys-on-surface-variant),
-                  "on-primary-container": var(--mat-sys-on-primary-container),
-                  "shadow": var(--mat-sys-shadow)
-          )
+    (
+      color: mat.$blue-palette
+    ),
+    $overrides: (
+      "corner-large": 16px,
+      "primary": var(--mat-sys-primary-base),
+      "on-primary": var(--mat-sys-on-primary),
+      "primary-container": var(--mat-sys-primary-container),
+      "surface-container-lowest": var(--mat-sys-surface-container-lowest),
+      "surface-container-low": var(--mat-sys-surface-container-low),
+      "surface-container": var(--mat-sys-surface-container),
+      "surface-container-high": var(--mat-sys-surface-container-high),
+      "surface-container-highest": var(--mat-sys-surface-container-highest),
+      "surface-variant": var(--mat-sys-surface-variant),
+      "background": var(--mat-sys-background),
+      "on-surface": var(--mat-sys-on-surface),
+      "on-surface-variant": var(--mat-sys-on-surface-variant),
+      "on-primary-container": var(--mat-sys-on-primary-container),
+      "shadow": var(--mat-sys-shadow)
+    )
   );
 }

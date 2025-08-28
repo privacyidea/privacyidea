@@ -1,22 +1,21 @@
 <h2 mat-dialog-title>Token successfully enrolled</h2>
 <mat-dialog-content>
-  <span
-    >The token was successfully enrolled with serial number
-    <a (click)="tokenSelected(data.response.detail.serial)"> {{ data.response.detail.serial }} </a>.</span
-  >
+  <span>The token was successfully enrolled with serial number
+    <a (click)="tokenSelected(data.response.detail.serial)"> {{ data.response.detail.serial }} </a>.</span>
   @if (data.response.detail["container_serial"]) {
     <br />
-    <span
-      >It has been enrolled in the container
+    <span>
+      It has been enrolled in the container
       <a (click)="containerSelected(data.response.detail['container_serial'])">
-        {{ data.response.detail["container_serial"] }} </a
-      >.</span
-    >
+        {{ data.response.detail["container_serial"] }}
+      </a>
+      .
+    </span>
   }
   @if (data.user?.username && data.userRealm != "" && !data.onlyAddToRealm) {
     <br />
-    <span
-      >The user <a href="#">{{ data.user!.username }}</a> in the realm <a href="#">{{ data.userRealm }}</a> was assigned
+    <span>
+      The user <a href="#">{{ data.user!.username }}</a> in the realm <a href="#">{{ data.userRealm }}</a> was assigned
       to the token.
     </span>
   }
@@ -63,9 +62,8 @@
           or scan the QR Code, if you want to add the Token to your smartphone authenticator app. The QR Code contains
           the secret key of your token. You need to protect it.
 
-          <strong>
-            If you are in doubt, that someone else saw it, please regenerate the QR Code, when no one else is watching.
-          </strong>
+          <strong> If you are in doubt, that someone else saw it, please regenerate the QR Code, when no one else is
+                   watching. </strong>
         </p>
 
         <button
@@ -79,8 +77,7 @@
 
       @if (data.response.detail["password"]) {
         <p>
-          Your Password: <strong>{{ data.response.detail["password"] }}</strong
-          >.
+          Your Password:<strong>{{ data.response.detail["password"] }}</strong>.
         </p>
       }
 

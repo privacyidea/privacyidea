@@ -25,8 +25,8 @@
                 <mat-option
                   class="token-type-option type-option"
                   [value]="type"
-                  [matTooltip]="type.info.split(':')[1]"
-                  >{{ type.info.split(":")[0] }}
+                  [matTooltip]="type.info.split(':')[1]">
+                  {{ type.info.split(":")[0] }}
                 </mat-option>
               }
             </mat-select>
@@ -244,10 +244,8 @@
               class="input"
               placeholder="Repeat PIN" />
           </div>
-          @if (
-            formGroupSignal().hasError("pinMismatch") &&
-            (formGroupSignal().get("setPin")?.touched || formGroupSignal().get("repeatPin")?.touched)
-          ) {
+          @if (formGroupSignal().hasError("pinMismatch") &&
+          (formGroupSignal().get("setPin")?.touched || formGroupSignal().get("repeatPin")?.touched)) {
             <mat-error class="pin-error">PINs do not match.</mat-error>
           }
         </div>
