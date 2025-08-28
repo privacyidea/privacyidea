@@ -1,11 +1,13 @@
 <div
+  appScrollToTop
   aria-label="Container Table"
-  class="container-table-container" appScrollToTop>
+  class="container-table-container"
+  i18n-aria-label>
   <div class="filter-paginator-container">
     <mat-form-field
       class="container-table-filter"
       subscriptSizing="dynamic">
-      <mat-label>Enter Filter</mat-label>
+      <mat-label i18n>Enter Filter</mat-label>
       <app-clearable-input
         (onClick)="filterValueString.set('')"
         [showClearButton]="filterValueString().length > 0">
@@ -13,6 +15,8 @@
           #filterHTMLInputElement
           [(ngModel)]="filterValueString"
           aria-label="Filter Input"
+          i18n-aria-label
+          i18n-placeholder
           matInput
           placeholder="Example query: 'type: generic user: admin'" />
       </app-clearable-input>
@@ -36,6 +40,7 @@
     [matSortDisableClear]="false"
     aria-label="Container Data Table"
     class="container-table"
+    i18n-aria-label
     mat-table
     matSort
     multiTemplateDataRows>
@@ -133,12 +138,16 @@
           <div class="expanded-token-list">
             @for (token of element.tokens; track token) {
               <div class="token-item">
-                <a (click)="contentService.tokenSelected(token.serial)"> {{ token.serial }} </a>
+                <a (click)="contentService.tokenSelected(token.serial)"> {{ token.serial }}</a>
                 [{{ token.tokentype }}]
               </div>
             }
             @if (element.tokens?.length === 0) {
-              <div class="flex ali-center">Container has no tokens.</div>
+              <div
+                i18n
+                class="flex ali-center">
+                Container has no tokens.
+              </div>
             }
           </div>
         </div>
@@ -162,7 +171,11 @@
       mat-row></tr>
 
     <tr *matNoDataRow>
-      <td [attr.colspan]="columnKeys.length">No data matching the filter.</td>
+      <td
+        [attr.colspan]="columnKeys.length"
+        i18n>
+        No data matching the filter.
+      </td>
     </tr>
   </table>
 </div>

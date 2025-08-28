@@ -41,22 +41,15 @@ export class EnrollEmailComponent implements OnInit {
     EmailApiPayloadMapper
   );
 
-  text = this.tokenService
-    .tokenTypeOptions()
-    .find((type) => type.key === "email")?.text;
-
-  @Output() aditionalFormFieldsChange = new EventEmitter<{
+  @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
   @Output() clickEnrollChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => Observable<EnrollmentResponse | null>
   >();
 
-  emailAddressControl = new FormControl<string>("", [Validators.email]);
-  readEmailDynamicallyControl = new FormControl<boolean>(false, [
-    Validators.required
-  ]);
-
+  emailAddressControl = new FormControl<string>("");
+  readEmailDynamicallyControl = new FormControl<boolean>(false);
   emailForm = new FormGroup({
     emailAddress: this.emailAddressControl,
     readEmailDynamically: this.readEmailDynamicallyControl
@@ -68,13 +61,18 @@ export class EnrollEmailComponent implements OnInit {
   });
 
   ngOnInit(): void {
-    this.aditionalFormFieldsChange.emit({
+    this.additionalFormFieldsChange.emit({
       emailAddress: this.emailAddressControl,
       readEmailDynamically: this.readEmailDynamicallyControl
     });
     this.clickEnrollChange.emit(this.onClickEnroll);
 
-    this.readEmailDynamicallyControl.valueChanges.subscribe((dynamic) => {
+    this.readEmailDynamicallyControl.valueChanges.subscribe((readEmailDynamic) => {
+      if (!readEmailDynamic) {
+        this.emailAddressControl.setValidators([Validators.email, Validators.required]);
+      } else {
+        this.emailAddressControl.clearValidators();
+      }
       this.emailAddressControl.updateValueAndValidity();
     });
   }
@@ -82,7 +80,7 @@ export class EnrollEmailComponent implements OnInit {
   onClickEnroll = (
     basicOptions: TokenEnrollmentData
   ): Observable<EnrollmentResponse | null> => {
-    if (this.emailForm.invalid) {
+    if (!this.readEmailDynamicallyControl.value && this.emailAddressControl.invalid) {
       this.emailForm.markAllAsTouched();
       return of(null);
     }

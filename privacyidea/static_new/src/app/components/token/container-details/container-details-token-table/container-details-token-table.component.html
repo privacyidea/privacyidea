@@ -1,19 +1,26 @@
 <div
   aria-label="Container Details Token Table"
-  class="container-details-token-table-layout">
+  class="container-details-token-table-layout"
+  i18n-aria-label>
   <div class="flex-column">
-    <h3 class="margin-left-1">Token in Container</h3>
+    <h3
+      class="margin-left-1"
+      i18n>
+      Token in Container
+    </h3>
     @if (dataSource.data.length > 1) {
       <mat-form-field
         class="container-details-token-table-filter"
         subscriptSizing="dynamic">
-        <mat-label>Enter Filter</mat-label>
+        <mat-label i18n>Enter Filter</mat-label>
         <input
           #filterInput
           (keyup)="handleFilterInput($event)"
+          i18n-aria-label
           aria-label="Filter Input"
           matInput
-          placeholder="Filter across all columns."/>
+          i18n-placeholder
+          placeholder="Filter across all columns." />
       </mat-form-field>
     }
     <mat-paginator
@@ -22,16 +29,12 @@
       class="flex-just-start"
       showFirstLastButtons></mat-paginator>
   </div>
-  <div
-    [ngClass]="[
-      overflowService.isWidthOverflowing('body', 1580)
-        ? 'flex-column'
-        : 'flex-row',
-    ]">
+  <div [ngClass]="[overflowService.isWidthOverflowing('body', 1580) ? 'flex-column' : 'flex-row']">
     <table
       [dataSource]="dataSource"
       aria-label="Token of Container Data Table"
       class="container-details-token-table"
+      i18n-aria-label
       mat-table
       matSort>
       @for (column of columnsKeyMap; track column) {
@@ -52,11 +55,11 @@
               <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
                 @switch (column.key) {
                   @case ("serial") {
-                    @if (element.username === authService.user() ||
-                    authService.role() === "admin") {
+                    @if (element.username === authService.username() || authService.role() === "admin") {
                       <a
                         attr.aria-label="{{ column.label }} Link"
-                        (click)="contentService.tokenSelected(element.serial)"> {{ element[column.key] }}
+                        (click)="contentService.tokenSelected(element.serial)">
+                        {{ element[column.key] }}
                       </a>
                     } @else {
                       <span> {{ element[column.key] }} </span>
@@ -66,25 +69,17 @@
                   @case ("active") {
                     <span
                       (click)="toggleActive(element)"
-                      [matTooltip]="
-                        tableUtilsService.getTooltipForColumn(
-                          column.key,
-                          element
-                        )
-                      "
-                      [ngClass]="
-                        tableUtilsService.getClassForColumn(column.key, element)
-                      ">
-                      {{
-                        tableUtilsService.getDisplayText(column.key, element)
-                      }}
+                      [matTooltip]="tableUtilsService.getTooltipForColumn(column.key, element)"
+                      [ngClass]="tableUtilsService.getClassForColumn(column.key, element)">
+                      {{ tableUtilsService.getDisplayText(column.key, element) }}
                     </span>
                   }
                   @default {
                     @if (tableUtilsService.isLink(column.key)) {
                       <a
                         attr.aria-label="{{ column.label }} Link"
-                        href="#"> {{ element[column.key] }}
+                        href="#">
+                        {{ element[column.key] }}
                       </a>
                     } @else {
                       <span> {{ element[column.key] }} </span>
@@ -100,16 +95,20 @@
         <th
           *matHeaderCellDef
           aria-label="Remove Column Header"
+          i18n
+          i18n-aria-label
           mat-header-cell>
           Remove
         </th>
         <td
           *matCellDef="let element"
           aria-label="Remove Button Cell"
+          i18n-aria-label
           mat-cell>
           <div class="flex just-center">
             <button
               (click)="removeTokenFromContainer(containerSerial(), element.serial)"
+              i18n-matTooltip
               mat-icon-button
               matTooltip="Remove Token from Container">
               <mat-icon> highlight_remove</mat-icon>
@@ -121,16 +120,20 @@
         <th
           *matHeaderCellDef
           aria-label="Delete Column Header"
+          i18n
+          i18n-aria-label
           mat-header-cell>
           Delete
         </th>
         <td
           *matCellDef="let element"
           aria-label="Delete Button Cell"
+          i18n-aria-label
           mat-cell>
           <div class="flex just-center">
             <button
               (click)="deleteTokenFromContainer(element.serial)"
+              i18n-matTooltip
               mat-icon-button
               matTooltip="Delete Token">
               <mat-icon> delete</mat-icon>
@@ -141,17 +144,22 @@
       <tr
         *matHeaderRowDef="displayedColumns"
         aria-label="Header Row"
+        i18n-aria-label
         mat-header-row></tr>
       <tr
         *matRowDef="let row; columns: displayedColumns"
         aria-label="Data Row"
+        i18n-aria-label
         mat-row></tr>
       <tr
         *matNoDataRow
-        aria-label="No Data Row">
+        aria-label="No Data Row"
+        i18n-aria-label>
         <td
           [attr.colspan]="displayedColumns.length"
-          aria-label="No Data Cell">
+          aria-label="No Data Cell"
+          i18n
+          i18n-aria-label>
           No data matching the filter.
         </td>
       </tr>
@@ -160,14 +168,13 @@
       [ngClass]="[
         overflowService.isWidthOverflowing('body', 1580)
           ? 'container-details-action-column'
-          : 'container-details-action-row',
+          : 'container-details-action-row'
       ]">
       <button
         (click)="assignToAllToken()"
         [disabled]="!isAssignableToAllToken()"
-        [ngClass]="[
-          isAssignableToAllToken() ? 'card-button' : 'card-button-disabled',
-        ]"
+        [ngClass]="[isAssignableToAllToken() ? 'card-button' : 'card-button-disabled']"
+        i18n
         mat-flat-button>
         <mat-icon>playlist_add</mat-icon>
         {{ "Assign to All Tokens" }}
@@ -175,9 +182,8 @@
       <button
         (click)="unassignFromAllToken()"
         [disabled]="!isUnassignableFromAllToken()"
-        [ngClass]="[
-          isUnassignableFromAllToken() ? 'card-button' : 'card-button-disabled',
-        ]"
+        [ngClass]="[isUnassignableFromAllToken() ? 'card-button' : 'card-button-disabled']"
+        i18n
         mat-flat-button>
         <mat-icon>playlist_remove</mat-icon>
         {{ "Unassign from All Tokens" }}
@@ -185,6 +191,7 @@
       <button
         (click)="toggleAll('activate')"
         class="card-button-activate"
+        i18n
         mat-flat-button>
         <mat-icon>playlist_play</mat-icon>
         {{ "Activate All Tokens" }}
@@ -192,13 +199,15 @@
       <button
         (click)="toggleAll('deactivate')"
         class="card-button-delete"
+        i18n
         mat-flat-button>
-        <mat-icon class="mdi--list-lock"/>
+        <mat-icon class="mdi--list-lock" />
         {{ "Deactivate All Tokens" }}
       </button>
       <button
         (click)="removeAll()"
         class="card-button-delete"
+        i18n
         mat-flat-button>
         <mat-icon> playlist_remove</mat-icon>
         {{ "Remove All Tokens" }}
@@ -206,6 +215,7 @@
       <button
         (click)="deleteAllTokens()"
         class="card-button-delete"
+        i18n
         mat-flat-button>
         <mat-icon> delete_sweep</mat-icon>
         {{ "Delete All Tokens" }}

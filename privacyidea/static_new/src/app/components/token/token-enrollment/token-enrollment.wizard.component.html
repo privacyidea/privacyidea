@@ -1,10 +1,16 @@
 <div
+  appScrollToTop
   aria-label="Token Enrollment"
-  class="token-enrollment-container" appScrollToTop>
+  class="token-enrollment-container"
+  i18n-aria-label>
   <div
     [innerHTML]="preTopHtml$ | async"
     class="margin-top-1"></div>
-  <h3 class="margin-left-1">Token Enrollment</h3>
+  <h3
+    class="margin-left-1"
+    i18n>
+    Token Enrollment
+  </h3>
   <mat-form-field class="width-100">
     <mat-select
       [(ngModel)]="selectedTokenType"
@@ -14,6 +20,8 @@
         <mat-option
           class="token-type-option type-option"
           [value]="type"
+          i18n-matTooltip
+          matTooltip="{{ type.info.split(':')[1] }}"
           >{{ type.info.split(":")[0] }}
         </mat-option>
       }
@@ -21,12 +29,15 @@
       <button
         (click)="versioningService.openDocumentation('tokentypes')"
         class="card-button width-100"
+        i18n
         mat-flat-button>
         <mat-icon>info_outline</mat-icon>
         Help About Tokentypes
       </button>
     </mat-select>
-    <mat-hint class="token-type-hint">
+    <mat-hint
+      class="token-type-hint"
+      i18n>
       @if (selectedTokenType().info) {
         {{ selectedTokenType().info.split(":")[1] }}
       }
@@ -38,6 +49,7 @@
         (click)="reopenEnrollmentDialog()"
         [disabled]="!canReopenEnrollmentDialog()"
         [matTooltip]="'Reopen enrollment dialog'"
+        i18n-matTooltip
         mat-icon-button
         type="button">
         <mat-icon>open_in_new</mat-icon>
@@ -48,148 +60,152 @@
           'card-button-disabled': formGroup.invalid,
           'card-button': true
         }"
+        i18n
         mat-flat-button>
         <mat-icon>add</mat-icon>
-        Enroll {{ selectedTokenType().key }} Token
+        <span i18n>Enroll</span>
+        {{ selectedTokenType().key }}
+        <span i18n>Token</span>
       </button>
     </div>
     @switch (selectedTokenType().key) {
       @case ("hotp") {
         <app-enroll-hotp
-          (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
           (clickEnrollChange)="updateClickEnroll($event)" />
       }
       @case ("totp") {
         <app-enroll-totp
-          (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
           (clickEnrollChange)="updateClickEnroll($event)" />
       }
       @case ("spass") {
         <app-enroll-spass
-          (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
           (clickEnrollChange)="updateClickEnroll($event)" />
       }
       @case ("motp") {
         <app-enroll-motp
-          (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
           (clickEnrollChange)="updateClickEnroll($event)" />
       }
       @case ("sshkey") {
         <app-enroll-sshkey
-          (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
           (clickEnrollChange)="updateClickEnroll($event)" />
       }
       @case ("yubikey") {
         <app-enroll-yubikey
-          (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
           (clickEnrollChange)="updateClickEnroll($event)" />
       }
       @case ("remote") {
         <app-enroll-remote
-          (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
           (clickEnrollChange)="updateClickEnroll($event)" />
       }
       @case ("yubico") {
         <app-enroll-yubico
-          (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
           (clickEnrollChange)="updateClickEnroll($event)" />
       }
       @case ("radius") {
         <app-enroll-radius
-          (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
           (clickEnrollChange)="updateClickEnroll($event)" />
       }
       @case ("sms") {
         <app-enroll-sms
-          (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
           (clickEnrollChange)="updateClickEnroll($event)" />
       }
       @case ("4eyes") {
         <app-enroll-foureyes
-          (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
           (clickEnrollChange)="updateClickEnroll($event)" />
       }
       @case ("applspec") {
         <app-enroll-applspec
-          (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
           (clickEnrollChange)="updateClickEnroll($event)" />
       }
       @case ("daypassword") {
         <app-enroll-daypassword
-          (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
           (clickEnrollChange)="updateClickEnroll($event)" />
       }
       @case ("certificate") {
         <app-enroll-certificate
-          (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
           (clickEnrollChange)="updateClickEnroll($event)" />
       }
       @case ("email") {
         <app-enroll-email
-          (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
           (clickEnrollChange)="updateClickEnroll($event)" />
       }
       @case ("indexedsecret") {
         <app-enroll-indexedsecret
-          (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
           (clickEnrollChange)="updateClickEnroll($event)" />
       }
       @case ("paper") {
         <app-enroll-paper
-          (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
           (clickEnrollChange)="updateClickEnroll($event)" />
       }
       @case ("push") {
         <app-enroll-push
-          (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
           (clickEnrollChange)="updateClickEnroll($event)" />
       }
       @case ("question") {
         <app-enroll-question
-          (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
           (clickEnrollChange)="updateClickEnroll($event)" />
       }
       @case ("registration") {
         <app-enroll-registration
-          (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
           (clickEnrollChange)="updateClickEnroll($event)" />
       }
       @case ("tan") {
         <app-enroll-tan
-          (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
           (clickEnrollChange)="updateClickEnroll($event)" />
       }
       @case ("tiqr") {
         <app-enroll-tiqr
-          (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
           (clickEnrollChange)="updateClickEnroll($event)" />
       }
       @case ("u2f") {
         <app-enroll-u2f
-          (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
           (clickEnrollChange)="updateClickEnroll($event)" />
       }
       @case ("vasco") {
         <app-enroll-vasco
-          (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
           (clickEnrollChange)="updateClickEnroll($event)" />
       }
       @case ("webauthn") {
         <app-enroll-webauthn
-          (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
           (clickEnrollChange)="updateClickEnroll($event)" />
       }
       @case ("passkey") {
         <app-enroll-passkey
-          (aditionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
           (clickEnrollChange)="updateClickEnroll($event)" />
       }
     }
     <mat-form-field class="description-form">
-      <mat-label>Description</mat-label>
+      <mat-label i18n>Description</mat-label>
       <textarea
         [formControl]="descriptionControl"
         [maxlength]="80"
+        i18n-placeholder
         matInput
         placeholder="Enter description"
         rows="3"></textarea>
@@ -202,9 +218,13 @@
         <input
           style="display: none"
           type="password" />
-        <h4 class="enroll-h4">Assign Token to a Container</h4>
+        <h4
+          class="enroll-h4"
+          i18n>
+          Assign Token to a Container
+        </h4>
         <mat-form-field class="width-50 input-height">
-          <mat-label>Enter Container</mat-label>
+          <mat-label i18n>Enter Container</mat-label>
           <app-clearable-input
             (onClick)="containerInput.value = ''; selectedContainerControl.setValue(null)"
             [showClearButton]="containerService.selectedContainer() !== ''">
@@ -223,24 +243,34 @@
       </div>
       @if (selectedTokenType().key !== "passkey") {
         <div class="flex-column user-pin-container">
-          <h4 class="enroll-h4">Set PIN</h4>
+          <h4
+            i18n
+            class="enroll-h4">
+            Set PIN
+          </h4>
           <div class="user-pin-input">
             <input
               [formControl]="setPinControl"
               [type]="'password'"
               class="input"
+              i18n-placeholder
               placeholder="PIN" />
             <input
               [formControl]="repeatPinControl"
               [type]="'password'"
               class="input"
+              i18n-placeholder
               placeholder="Repeat PIN" />
           </div>
           @if (
             formGroup.hasError("pinMismatch") &&
             (formGroup.get("setPin")?.touched || formGroup.get("repeatPin")?.touched)
           ) {
-            <mat-error class="pin-error">PINs do not match.</mat-error>
+            <mat-error
+              i18n
+              class="pin-error"
+              >PINs do not match.
+            </mat-error>
           }
         </div>
       } @else {

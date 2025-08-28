@@ -1,25 +1,28 @@
 <div
   aria-label="Token Applications SSH"
-  class="token-applications-ssh">
+  class="token-applications-ssh"
+  i18n-aria-label>
   <div class="details-flex-layout flex-column">
     <div class="application-p-div">
-      <p>
+      <p i18n>
         SSH Tokens can be attached to a service ID with a user. The user is the user on the SSH server and may differ
         from the token owner. To attach the token to a service ID go to the token details.
       </p>
-      <p>
+      <p i18n>
         To define service IDs go to
         <a ui-sref="config.serviceid">Service ID config</a>
         .
       </p>
     </div>
   </div>
-  <div class="application-table-container" appScrollToTop>
+  <div
+    appScrollToTop
+    class="application-table-container">
     <div class="filter-paginator-container">
       <mat-form-field
         class="application-table-filter"
         subscriptSizing="dynamic">
-        <mat-label>Enter Filter</mat-label>
+        <mat-label i18n>Enter Filter</mat-label>
         <app-clearable-input
           (onClick)="filterInput.value = ''; machineService.filterValueString.set('')"
           [showClearButton]="filterInput.value.length > 0">
@@ -27,6 +30,8 @@
             #filterInput
             [(ngModel)]="machineService.filterValueString"
             aria-label="Filter Input"
+            i18n-aria-label
+            i18n-placeholder
             matInput
             placeholder="Example query: 'service_id: myService'" />
         </app-clearable-input>
@@ -50,6 +55,7 @@
       [matSortDisableClear]="false"
       aria-label="Token Applications Table"
       class="token-table"
+      i18n-aria-label
       mat-table
       matSort>
       @for (column of columnsKeyMap; track column) {
@@ -97,17 +103,22 @@
       <tr
         *matHeaderRowDef="displayedColumns"
         aria-label="Header Row"
+        i18n-aria-label
         mat-header-row></tr>
       <tr
         *matRowDef="let row; columns: displayedColumns"
         aria-label="Data Row"
+        i18n-aria-label
         mat-row></tr>
       <tr
         *matNoDataRow
-        aria-label="No Data Row">
+        aria-label="No Data Row"
+        i18n-aria-label>
         <td
           [attr.colspan]="displayedColumns.length"
-          aria-label="No Data Cell">
+          aria-label="No Data Cell"
+          i18n
+          i18n-aria-label>
           No data matching the filter.
         </td>
       </tr>

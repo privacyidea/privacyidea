@@ -6,7 +6,6 @@ import { PiResponse } from "../../app.component";
 import { ROUTE_PATHS } from "../../app.routes";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
-import { LocalService, LocalServiceInterface } from "../local/local.service";
 import { RealmService, RealmServiceInterface } from "../realm/realm.service";
 import { TokenService, TokenServiceInterface } from "../token/token.service";
 
@@ -51,7 +50,6 @@ export interface UserServiceInterface {
   providedIn: "root"
 })
 export class UserService implements UserServiceInterface {
-  private readonly localService: LocalServiceInterface = inject(LocalService);
   private readonly realmService: RealmServiceInterface = inject(RealmService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly tokenService: TokenServiceInterface = inject(TokenService);
@@ -121,7 +119,7 @@ export class UserService implements UserServiceInterface {
     return {
       url: this.baseUrl,
       method: "GET",
-      headers: this.localService.getHeaders()
+      headers: this.authService.getHeaders()
     };
   });
   user: WritableSignal<UserData> = linkedSignal({
@@ -163,7 +161,7 @@ export class UserService implements UserServiceInterface {
     return {
       url: this.baseUrl,
       method: "GET",
-      headers: this.localService.getHeaders(),
+      headers: this.authService.getHeaders(),
       params: {
         realm: selectedUserRealm,
         ...this.filterParams()
@@ -178,7 +176,7 @@ export class UserService implements UserServiceInterface {
   selectedUser = computed<UserData | null>(() => {
     var userName = "";
     if (this.authService.role() === "user") {
-      userName = this.authService.user();
+      userName = this.authService.username();
     } else {
       userName = this.userNameFilter();
     }

@@ -293,7 +293,7 @@ export class ContainerService implements ContainerServiceInterface {
     return {
       url: this.containerBaseUrl,
       method: "GET",
-      headers: this.localService.getHeaders(),
+      headers: this.authService.getHeaders(),
       params: {
         ...(!this.loadAllContainers() && {
           page: this.pageIndex() + 1,
@@ -336,7 +336,7 @@ export class ContainerService implements ContainerServiceInterface {
     return {
       url: `${this.containerBaseUrl}types`,
       method: "GET",
-      headers: this.localService.getHeaders()
+      headers: this.authService.getHeaders()
     };
   });
 
@@ -371,7 +371,7 @@ export class ContainerService implements ContainerServiceInterface {
     return {
       url: this.containerBaseUrl,
       method: "GET",
-      headers: this.localService.getHeaders(),
+      headers: this.authService.getHeaders(),
       params: {
         container_serial: serial
       }
@@ -399,7 +399,7 @@ export class ContainerService implements ContainerServiceInterface {
     return {
       url: `${this.containerBaseUrl}templates`,
       method: "GET",
-      headers: this.localService.getHeaders()
+      headers: this.authService.getHeaders()
     };
   });
 
@@ -429,7 +429,7 @@ export class ContainerService implements ContainerServiceInterface {
   }
 
   assignContainer(tokenSerial: string, containerSerial: string): Observable<any> {
-    const headers = this.localService.getHeaders();
+    const headers = this.authService.getHeaders();
     return this.http
       .post<PiResponse<boolean>>(`${this.containerBaseUrl}${containerSerial}/add`, { serial: tokenSerial }, { headers })
       .pipe(
@@ -443,7 +443,7 @@ export class ContainerService implements ContainerServiceInterface {
   }
 
   unassignContainer(tokenSerial: string, containerSerial: string): Observable<any> {
-    const headers = this.localService.getHeaders();
+    const headers = this.authService.getHeaders();
     return this.http
       .post<
         PiResponse<boolean>
@@ -459,7 +459,7 @@ export class ContainerService implements ContainerServiceInterface {
   }
 
   setContainerRealm(containerSerial: string, value: string[]): Observable<any> {
-    const headers = this.localService.getHeaders();
+    const headers = this.authService.getHeaders();
     const valueString = value ? value.join(",") : "";
     return this.http
       .post(`${this.containerBaseUrl}${containerSerial}/realms`, { realms: valueString }, { headers })
@@ -474,7 +474,7 @@ export class ContainerService implements ContainerServiceInterface {
   }
 
   setContainerDescription(containerSerial: string, value: string): Observable<any> {
-    const headers = this.localService.getHeaders();
+    const headers = this.authService.getHeaders();
     return this.http
       .post(`${this.containerBaseUrl}${containerSerial}/description`, { description: value }, { headers })
       .pipe(
@@ -491,7 +491,7 @@ export class ContainerService implements ContainerServiceInterface {
     containerSerial: string,
     states: string[]
   ): Observable<PiResponse<{ disabled: boolean } | { active: boolean }>> {
-    const headers = this.localService.getHeaders();
+    const headers = this.authService.getHeaders();
     let new_states = states
       .map((state) => {
         if (state === "active") {
@@ -521,7 +521,7 @@ export class ContainerService implements ContainerServiceInterface {
   }
 
   unassignUser(containerSerial: string, username: string, userRealm: string): Observable<any> {
-    const headers = this.localService.getHeaders();
+    const headers = this.authService.getHeaders();
     return this.http
       .post(`${this.containerBaseUrl}${containerSerial}/unassign`, { user: username, realm: userRealm }, { headers })
       .pipe(
@@ -535,7 +535,7 @@ export class ContainerService implements ContainerServiceInterface {
   }
 
   assignUser(args: { containerSerial: string; username: string; userRealm: string }): Observable<any> {
-    const headers = this.localService.getHeaders();
+    const headers = this.authService.getHeaders();
     return this.http
       .post(
         `${this.containerBaseUrl}${args.containerSerial}/assign`,
@@ -553,7 +553,7 @@ export class ContainerService implements ContainerServiceInterface {
   }
 
   setContainerInfos(containerSerial: string, infos: any): Observable<Object>[] {
-    const headers = this.localService.getHeaders();
+    const headers = this.authService.getHeaders();
     const info_url = `${this.containerBaseUrl}${containerSerial}/info`;
     return Object.keys(infos).map((info) => {
       const infoValue = infos[info];
@@ -569,7 +569,7 @@ export class ContainerService implements ContainerServiceInterface {
   }
 
   deleteInfo(containerSerial: string, key: string): Observable<any> {
-    const headers = this.localService.getHeaders();
+    const headers = this.authService.getHeaders();
     return this.http
       .delete(`${this.containerBaseUrl}${containerSerial}/info/delete/${key}`, {
         headers
@@ -585,7 +585,7 @@ export class ContainerService implements ContainerServiceInterface {
   }
 
   addTokenToContainer(containerSerial: string, tokenSerial: string): Observable<any> {
-    const headers = this.localService.getHeaders();
+    const headers = this.authService.getHeaders();
     return this.http.post(`${this.containerBaseUrl}${containerSerial}/add`, { serial: tokenSerial }, { headers }).pipe(
       catchError((error) => {
         console.error("Failed to add token to container.", error);
@@ -597,7 +597,7 @@ export class ContainerService implements ContainerServiceInterface {
   }
 
   removeTokenFromContainer(containerSerial: string, tokenSerial: string): Observable<any> {
-    const headers = this.localService.getHeaders();
+    const headers = this.authService.getHeaders();
     return this.http
       .post(`${this.containerBaseUrl}${containerSerial}/remove`, { serial: tokenSerial }, { headers })
       .pipe(
@@ -658,7 +658,7 @@ export class ContainerService implements ContainerServiceInterface {
       return of(null);
     }
 
-    const headers = this.localService.getHeaders();
+    const headers = this.authService.getHeaders();
 
     return this.http
       .post<
@@ -675,7 +675,7 @@ export class ContainerService implements ContainerServiceInterface {
   }
 
   deleteContainer(containerSerial: string): Observable<any> {
-    const headers = this.localService.getHeaders();
+    const headers = this.authService.getHeaders();
     return this.http.delete(`${this.containerBaseUrl}${containerSerial}`, { headers }).pipe(
       catchError((error) => {
         console.error("Failed to delete container.", error);
@@ -687,7 +687,7 @@ export class ContainerService implements ContainerServiceInterface {
   }
 
   deleteAllTokens(param: { containerSerial: string; serialList: string }): Observable<any> {
-    const headers = this.localService.getHeaders();
+    const headers = this.authService.getHeaders();
     return this.http
       .post(`${this.containerBaseUrl}${param.containerSerial}/removeall`, { serial: param.serialList }, { headers })
       .pipe(
@@ -708,7 +708,7 @@ export class ContainerService implements ContainerServiceInterface {
     realm?: string;
     options?: any;
   }): Observable<PiResponse<{ container_serial: string }>> {
-    const headers = this.localService.getHeaders();
+    const headers = this.authService.getHeaders();
     return this.http
       .post<PiResponse<{ container_serial: string }>>(
         `${this.containerBaseUrl}init`,
@@ -737,7 +737,7 @@ export class ContainerService implements ContainerServiceInterface {
     passphrase_prompt: string;
     passphrase_response: string;
   }): Observable<PiResponse<ContainerRegisterData>> {
-    const headers = this.localService.getHeaders();
+    const headers = this.authService.getHeaders();
     return this.http
       .post<PiResponse<ContainerRegisterData>>(
         `${this.containerBaseUrl}register/initialize`,
@@ -764,7 +764,7 @@ export class ContainerService implements ContainerServiceInterface {
   }
 
   getContainerDetails(containerSerial: string): Observable<PiResponse<ContainerDetails>> {
-    const headers = this.localService.getHeaders();
+    const headers = this.authService.getHeaders();
     let params = new HttpParams().set("container_serial", containerSerial);
     return this.http.get<PiResponse<ContainerDetails>>(this.containerBaseUrl, {
       headers,

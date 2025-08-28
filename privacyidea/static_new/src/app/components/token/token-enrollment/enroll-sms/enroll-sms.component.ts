@@ -50,10 +50,7 @@ export class EnrollSmsComponent implements OnInit {
     inject(SystemService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
 
-  text = this.tokenService.tokenTypeOptions().find((type) => type.key === "sms")
-    ?.text;
-
-  @Output() aditionalFormFieldsChange = new EventEmitter<{
+  @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
   @Output() clickEnrollChange = new EventEmitter<
@@ -95,7 +92,7 @@ export class EnrollSmsComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.aditionalFormFieldsChange.emit({
+    this.additionalFormFieldsChange.emit({
       smsGateway: this.smsGatewayControl,
       phoneNumber: this.phoneNumberControl,
       readNumberDynamically: this.readNumberDynamicallyControl
@@ -115,7 +112,8 @@ export class EnrollSmsComponent implements OnInit {
   onClickEnroll = (
     basicOptions: TokenEnrollmentData
   ): Observable<EnrollmentResponse | null> => {
-    if (this.smsForm.invalid) {
+    if (this.smsGatewayControl.invalid ||
+      (!this.readNumberDynamicallyControl.value && this.phoneNumberControl.invalid)) {
       this.smsForm.markAllAsTouched();
       return of(null);
     }

@@ -1,9 +1,11 @@
 <div
+  appScrollToTop
   aria-label="Details"
-  class="details-container" appScrollToTop>
+  class="details-container"
+  i18n-aria-label>
   <div class="details-flex-layout flex-column">
     <div class="container-details-header">
-      <h3>Details for Container:</h3>
+      <h3 i18n>Details for Container:</h3>
       <h3 style="color: var(--mat-sys-primary)">{{ containerSerial() }}</h3>
       <app-copy-button [copyText]="containerSerial()"></app-copy-button>
     </div>
@@ -15,6 +17,7 @@
           [dataSource]="containerDetailData()"
           aria-label="Container Detail Data Table"
           class="details-table border-bottom-none"
+          i18n-aria-label
           mat-table>
           <ng-container matColumnDef="key">
             <td
@@ -43,7 +46,7 @@
                 @case ("realms") {
                   @if (element.isEditing()) {
                     <mat-form-field class="width-18rem">
-                      <mat-label>Select Realms</mat-label>
+                      <mat-label i18n>Select Realms</mat-label>
                       <mat-select
                         [(ngModel)]="selectedRealms"
                         [value]="selectedRealms()"
@@ -56,7 +59,7 @@
                               >{{ option }}
                             </mat-option>
                           } @else {
-                            <mat-option value="{{ option }}">{{ option }} </mat-option>
+                            <mat-option value="{{ option }}">{{ option }}</mat-option>
                           }
                         }
                       </mat-select>
@@ -80,6 +83,7 @@
                         matInput
                         rows="4"
                         [(ngModel)]="element.value"
+                        i18n-placeholder
                         placeholder="Enter description"></textarea>
                     </mat-form-field>
                   } @else {
@@ -122,6 +126,7 @@
           [dataSource]="userData()"
           aria-label="User Detail Data Table"
           class="details-table"
+          i18n-aria-label
           mat-table>
           <ng-container matColumnDef="key">
             <td
@@ -158,26 +163,23 @@
                       </app-clearable-input>
                     </mat-form-field>
                   } @else {
-                    <a href="#">{{ element.value }}</a>
+                    <span>{{ element.value }}</span>
                   }
                 }
                 @case ("user_realm") {
                   @if (isEditingUser()) {
                     <mat-form-field class="width-18rem">
-                      <mat-label>Select Realm of User</mat-label>
-                      <mat-select [(ngModel)]="userService.selectedUserRealm"
-                                  [value]="userService.selectedUserRealm()">
-                        @for (option of realmService.realmOptions();
-                          track option) {
-                          <mat-option value="{{ option }}">{{
-                              option
-                            }}
-                          </mat-option>
+                      <mat-label i18n>Select Realm of User</mat-label>
+                      <mat-select
+                        [(ngModel)]="userService.selectedUserRealm"
+                        [value]="userService.selectedUserRealm()">
+                        @for (option of realmService.realmOptions(); track option) {
+                          <mat-option value="{{ option }}">{{ option }}</mat-option>
                         }
                       </mat-select>
                     </mat-form-field>
                   } @else {
-                    <a href="#">{{ element.value }}</a>
+                    <span>{{ element.value }}</span>
                   }
                 }
                 @default {
@@ -197,7 +199,8 @@
                     <button
                       mat-icon-button
                       class="yellow"
-                      (click)="unassignUser()">
+                      (click)="unassignUser()"
+                      i18n-aria-label="Unassign User">
                       <mat-icon>person_remove</mat-icon>
                     </button>
                   </div>
@@ -239,11 +242,15 @@
             <mat-checkbox
               [(ngModel)]="showOnlyTokenNotInContainer"
               [ngClass]="{ 'pad-top-10': showOnlyTokenNotInContainer() }">
-              <span> Only display tokens not in a container </span>
+              <span i18n> Only display tokens not in a container </span>
               @if (!showOnlyTokenNotInContainer()) {
                 <br />
-                <span> Note: Adding a token removes it from</span><br />
-                <span style="margin-left: 39px"> its previous container. </span>
+                <span i18n> Note: Adding a token removes it from</span><br />
+                <span
+                  i18n
+                  style="margin-left: 39px">
+                  its previous container.
+                </span>
               }
             </mat-checkbox>
           </section>
@@ -255,7 +262,7 @@
             [pageSize]="pageSize()"></mat-paginator>
         </div>
         <mat-form-field class="add-token">
-          <mat-label>Add Token to Container</mat-label>
+          <mat-label i18n>Add Token to Container</mat-label>
           <app-clearable-input
             (onClick)="filterValueString.set('')"
             [showClearButton]="filterValueString().length > 0">
@@ -264,6 +271,7 @@
               #tokenAutoTrigger="matAutocompleteTrigger"
               [(ngModel)]="filterValueString"
               [matAutocomplete]="tokenAuto"
+              i18n-placeholder
               matInput
               placeholder="Example query: 'type: hotp serial: 123'" />
           </app-clearable-input>
@@ -277,6 +285,7 @@
                   {{ option["tokentype"] }}
                 </span>
                 <span
+                  i18n
                   class="token-option-span"
                   [ngClass]="option['active'] ? 'highlight-true' : 'highlight-false'">
                   {{ option["active"] ? "active" : "deactivated" }}

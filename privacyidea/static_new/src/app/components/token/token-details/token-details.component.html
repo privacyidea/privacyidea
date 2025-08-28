@@ -1,9 +1,11 @@
 <div
+  appScrollToTop
   aria-label="Details"
-  class="details-container" appScrollToTop>
+  class="details-container"
+  i18n-aria-label>
   <div class="details-flex-layout flex-column">
     <div class="details-header">
-      <h3>Details for Token:</h3>
+      <h3 i18n>Details for Token:</h3>
       <h3 style="color: var(--mat-sys-primary)">{{ tokenSerial() }}</h3>
       <app-copy-button [copyText]="tokenSerial()"></app-copy-button>
     </div>
@@ -15,6 +17,7 @@
           [dataSource]="tokenDetailData()"
           aria-label="Token Details Data Table"
           class="details-table"
+          i18n-aria-label
           mat-table>
           <ng-container matColumnDef="key">
             <td
@@ -33,7 +36,7 @@
                 @case ("container_serial") {
                   @if (element.isEditing()) {
                     <mat-form-field class="width-18rem container-form-field">
-                      <mat-label>Enter Container</mat-label>
+                      <mat-label i18n>Enter Container</mat-label>
                       <app-clearable-input
                         (onClick)="containerHTMLInputElement.value = ''; containerService.selectedContainer.set(null)"
                         [showClearButton]="containerService.selectedContainer() !== ''">
@@ -63,7 +66,7 @@
                 @case ("realms") {
                   @if (element.isEditing()) {
                     <mat-form-field class="width-18rem">
-                      <mat-label>Select Realms</mat-label>
+                      <mat-label i18n>Select Realms</mat-label>
                       <mat-select
                         [(ngModel)]="realmService.selectedRealms"
                         [value]="realmService.selectedRealms()"
@@ -76,7 +79,7 @@
                               >{{ option }}
                             </mat-option>
                           } @else {
-                            <mat-option value="{{ option }}">{{ option }} </mat-option>
+                            <mat-option value="{{ option }}">{{ option }}</mat-option>
                           }
                         }
                       </mat-select>
@@ -96,7 +99,7 @@
                 @case ("tokengroup") {
                   @if (element.isEditing()) {
                     <mat-form-field class="width-18rem">
-                      <mat-label>Select Token Group</mat-label>
+                      <mat-label i18n>Select Token Group</mat-label>
                       <mat-select
                         [(ngModel)]="selectedTokengroup"
                         [value]="selectedTokengroup()"
@@ -109,7 +112,7 @@
                               >{{ option }}
                             </mat-option>
                           } @else {
-                            <mat-option value="{{ option }}">{{ option }} </mat-option>
+                            <mat-option value="{{ option }}">{{ option }}</mat-option>
                           }
                         }
                       </mat-select>
@@ -136,6 +139,7 @@
                         rows="4"
                         [maxlength]="80"
                         [(ngModel)]="element.value"
+                        i18n-placeholder
                         placeholder="Enter description"></textarea>
                     </mat-form-field>
                   } @else {
@@ -195,7 +199,8 @@
                   <div class="edit-button-container">
                     <button
                       mat-icon-button
-                      (click)="resetFailCount()">
+                      (click)="resetFailCount()"
+                      i18n-aria-label="Reset Fail Count">
                       <mat-icon> lock_reset</mat-icon>
                     </button>
                   </div>
@@ -204,7 +209,8 @@
                     <button
                       mat-icon-button
                       class="red"
-                      (click)="deleteContainer()">
+                      (click)="deleteContainer()"
+                      i18n-aria-label="Delete Container">
                       <mat-icon>folder_delete</mat-icon>
                     </button>
                   </div>

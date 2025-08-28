@@ -1,20 +1,20 @@
-import { TestBed } from "@angular/core/testing";
-import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
-import { provideRouter, Router } from "@angular/router";
 import { APP_BASE_HREF, Location } from "@angular/common";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { TestBed } from "@angular/core/testing";
+import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
+import { provideRouter, Router } from "@angular/router";
 
 import { AppComponent } from "./app.component";
-import { routes } from "./app.routes";
 import { appConfig } from "./app.config";
+import { routes } from "./app.routes";
+import { AuthGuard } from "./guards/auth.guard";
 import { AuthService } from "./services/auth/auth.service";
 import { NotificationService } from "./services/notification/notification.service";
 import { SessionTimerService } from "./services/session-timer/session-timer.service";
-import { AuthGuard } from "./guards/auth.guard";
 
 class MockAuthService {
-  isAuthenticatedUser = jest.fn(() => false);
+  isAuthenticated = jest.fn(() => false);
   role = jest.fn(() => "admin");
 }
 
@@ -62,28 +62,20 @@ describe("AppComponent", () => {
 
   it("starts timer and shows snackbar when user already authenticated", () => {
     const auth = TestBed.inject(AuthService) as unknown as MockAuthService;
-    const timer = TestBed.inject(
-      SessionTimerService
-    ) as unknown as MockSessionTimerService;
-    const note = TestBed.inject(
-      NotificationService
-    ) as unknown as MockNotificationService;
+    const timer = TestBed.inject(SessionTimerService) as unknown as MockSessionTimerService;
+    const note = TestBed.inject(NotificationService) as unknown as MockNotificationService;
 
-    auth.isAuthenticatedUser.mockReturnValue(true);
+    auth.isAuthenticated.mockReturnValue(true);
 
     TestBed.createComponent(AppComponent).detectChanges();
 
     expect(timer.startTimer).toHaveBeenCalled();
-    expect(auth.isAuthenticatedUser).toHaveBeenCalled();
-    expect(note.openSnackBar).toHaveBeenCalledWith(
-      "User is already logged in."
-    );
+    expect(auth.isAuthenticated).toHaveBeenCalled();
+    expect(note.openSnackBar).toHaveBeenCalledWith("User is already logged in.");
   });
 
   it("resets & restarts timer on user interaction", () => {
-    const timer = TestBed.inject(
-      SessionTimerService
-    ) as unknown as MockSessionTimerService;
+    const timer = TestBed.inject(SessionTimerService) as unknown as MockSessionTimerService;
 
     const fixture = TestBed.createComponent(AppComponent);
     fixture.detectChanges();
@@ -100,9 +92,7 @@ describe("AppComponent", () => {
     });
 
     it("contains APP_BASE_HREF set to /ui/", () => {
-      const p = appConfig.providers.find(
-        (x: any) => x.provide === APP_BASE_HREF
-      );
+      const p = appConfig.providers.find((x: any) => x.provide === APP_BASE_HREF);
       if (p && "useValue" in p) {
         expect(p?.useValue).toBe("/ui/");
       }
@@ -119,7 +109,7 @@ describe("AppComponent", () => {
       location = TestBed.inject(Location);
       auth = TestBed.inject(AuthService) as unknown as MockAuthService;
 
-      auth.isAuthenticatedUser.mockReturnValue(true);
+      auth.isAuthenticated.mockReturnValue(true);
       auth.role.mockReturnValue("admin");
 
       await router.navigateByUrl("/");

@@ -2,10 +2,10 @@ import { httpResource, HttpResourceRef } from "@angular/common/http";
 import { computed, inject, Injectable, linkedSignal, signal, WritableSignal } from "@angular/core";
 import { Sort } from "@angular/material/sort";
 import { PiResponse } from "../../../app.component";
-import { ContentService, ContentServiceInterface } from "../../content/content.service";
-import { LocalService, LocalServiceInterface } from "../../local/local.service";
-import { TokenService, TokenServiceInterface } from "../token.service";
 import { ROUTE_PATHS } from "../../../app.routes";
+import { AuthService, AuthServiceInterface } from "../../auth/auth.service";
+import { ContentService, ContentServiceInterface } from "../../content/content.service";
+import { TokenService, TokenServiceInterface } from "../token.service";
 
 const apiFilter = ["serial", "transaction_id"];
 const advancedApiFilter: string[] = [];
@@ -46,7 +46,7 @@ export interface ChallengesServiceInterface {
 })
 export class ChallengesService implements ChallengesServiceInterface {
   private readonly tokenService: TokenServiceInterface = inject(TokenService);
-  private readonly localService: LocalServiceInterface = inject(LocalService);
+  private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
 
   readonly apiFilter = apiFilter;
@@ -91,13 +91,11 @@ export class ChallengesService implements ChallengesServiceInterface {
       return undefined;
     }
     const { params: filterParams, serial } = this.filterParams();
-    const url = serial
-      ? `${this.tokenBaseUrl}challenges/${serial}`
-      : `${this.tokenBaseUrl}challenges/`;
+    const url = serial ? `${this.tokenBaseUrl}challenges/${serial}` : `${this.tokenBaseUrl}challenges/`;
     return {
       url,
       method: "GET",
-      headers: this.localService.getHeaders(),
+      headers: this.authService.getHeaders(),
       params: {
         pagesize: this.pageSize(),
         page: this.pageIndex() + 1,

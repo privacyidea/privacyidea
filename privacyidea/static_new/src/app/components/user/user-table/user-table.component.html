@@ -1,12 +1,15 @@
 <div
   aria-label="User Layout"
-  class="user-layout">
-  <div class="user-table-container" appScrollToTop>
+  class="user-layout"
+  i18n-aria-label>
+  <div
+    appScrollToTop
+    class="user-table-container">
     <div class="filter-paginator-container">
       <mat-form-field
         class="token-table-filter"
         subscriptSizing="dynamic">
-        <mat-label>Enter Filter</mat-label>
+        <mat-label i18n>Enter Filter</mat-label>
         <app-clearable-input
           (onClick)="filterHTMLInputElement.value = ''; filterValueString.set('')"
           [showClearButton]="filterHTMLInputElement.value.length > 0">
@@ -14,6 +17,8 @@
             #filterHTMLInputElement
             [(ngModel)]="filterValueString"
             aria-label="Filter Input"
+            i18n-aria-label
+            i18n-placeholder
             matInput
             placeholder="Example query: 'type: hotp userid: 1000'" />
         </app-clearable-input>
@@ -34,6 +39,7 @@
         [dataSource]="usersDataSource()"
         aria-label="User Data Table"
         class="token-table"
+        i18n-aria-label
         mat-table
         matSort>
         @for (column of columnKeysMap; track column) {
@@ -75,17 +81,22 @@
         <tr
           *matHeaderRowDef="columnKeys"
           aria-label="Header Row"
+          i18n-aria-label
           mat-header-row></tr>
         <tr
           *matRowDef="let row; columns: columnKeys"
           aria-label="Data Row"
+          i18n-aria-label
           mat-row></tr>
         <tr
           *matNoDataRow
-          aria-label="No Data Row">
+          aria-label="No Data Row"
+          i18n-aria-label>
           <td
             [attr.colspan]="columnKeys.length"
-            aria-label="No Data Cell">
+            aria-label="No Data Cell"
+            i18n
+            i18n-aria-label>
             No data matching the filter.
           </td>
         </tr>
