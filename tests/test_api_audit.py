@@ -458,7 +458,7 @@ class APIAuditTestCase(MyApiTestCase):
             self.assertEqual(2, audit_result.get("count"))
             for audit in audit_result.get("auditdata"):
                 self.assertNotEqual("enable", audit.get("action"), audit)
-                self.assertNotEqual(self.realm1, audit.get("realm"), audit)
+                self.assertNotEqual(self.realm1a, audit.get("realm"), audit)
 
 
         delete_policy("audit_age")
