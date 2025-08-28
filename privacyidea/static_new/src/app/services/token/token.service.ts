@@ -290,9 +290,8 @@ export class TokenService implements TokenServiceInterface {
       source.tokenTypeOptions[0] ||
       ({ key: "hotp", info: "", text: "" } as TokenType)
   });
-  pageSize = linkedSignal<{ filterValue: Record<string, string>; role: string }, number>({
+  pageSize = linkedSignal<{ role: string }, number>({
     source: () => ({
-      filterValue: this.filterValue(),
       role: this.authService.role(),
     }),
     computation: (source, previous) => {
