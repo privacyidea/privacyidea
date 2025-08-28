@@ -50,8 +50,7 @@ export type TokenEnrollmentLastStepDialogData = {
   styleUrl: "./token-enrollment-last-step-dialog.component.scss"
 })
 export class TokenEnrollmentLastStepDialogComponent {
-  protected readonly dialogRef: MatDialogRef<TokenEnrollmentLastStepDialogComponent> =
-    inject(MatDialogRef);
+  protected readonly dialogRef: MatDialogRef<TokenEnrollmentLastStepDialogComponent> = inject(MatDialogRef);
   public readonly data: TokenEnrollmentLastStepDialogData = inject(MAT_DIALOG_DATA);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);

@@ -57,10 +57,7 @@ export class DialogService implements DialogServiceInterface {
 
   readonly isSelfServing = computed(() => this.authService.role() === "user");
 
-  private _tokenEnrollmentFirstStepRef: MatDialogRef<
-    TokenEnrollmentFirstStepDialogComponent,
-    any
-  > | null = null;
+  private _tokenEnrollmentFirstStepRef: MatDialogRef<TokenEnrollmentFirstStepDialogComponent, any> | null = null;
 
   get tokenEnrollmentFirstStepRef() {
     return this._tokenEnrollmentFirstStepRef;
@@ -70,10 +67,7 @@ export class DialogService implements DialogServiceInterface {
     return this._tokenEnrollmentFirstStepRef !== null;
   }
 
-  private _tokenEnrollmentLastStepRef: MatDialogRef<
-    TokenEnrollmentLastStepDialogComponent,
-    any
-  > | null = null;
+  private _tokenEnrollmentLastStepRef: MatDialogRef<TokenEnrollmentLastStepDialogComponent, any> | null = null;
 
   get tokenEnrollmentLastStepRef() {
     return this._tokenEnrollmentLastStepRef;
@@ -89,10 +83,7 @@ export class DialogService implements DialogServiceInterface {
     if (this._tokenEnrollmentFirstStepRef) {
       this._tokenEnrollmentFirstStepRef.close();
     }
-    this._tokenEnrollmentFirstStepRef = this.dialog.open(
-      TokenEnrollmentFirstStepDialogComponent,
-      config
-    );
+    this._tokenEnrollmentFirstStepRef = this.dialog.open(TokenEnrollmentFirstStepDialogComponent, config);
 
     this._tokenEnrollmentFirstStepRef.afterClosed().subscribe(() => {
       this._tokenEnrollmentFirstStepRef = null;
@@ -112,17 +103,15 @@ export class DialogService implements DialogServiceInterface {
       this._tokenEnrollmentLastStepRef.close();
     }
 
-    const [
-      { TokenEnrollmentLastStepDialogComponent },
-      { TokenEnrollmentLastStepDialogSelfServiceComponent }
-    ] = await Promise.all([
-      import(
-        "../../components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component"
-        ),
-      import(
-        "../../components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.self-service.component"
-        )
-    ]);
+    const [{ TokenEnrollmentLastStepDialogComponent }, { TokenEnrollmentLastStepDialogSelfServiceComponent }] =
+      await Promise.all([
+        import(
+          "../../components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component"
+          ),
+        import(
+          "../../components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.self-service.component"
+          )
+      ]);
 
     const component = this.isSelfServing()
       ? TokenEnrollmentLastStepDialogSelfServiceComponent
@@ -143,11 +132,10 @@ export class DialogService implements DialogServiceInterface {
 
   confirm(config: MatDialogConfigRequired<ConfirmationDialogData>): Promise<boolean> {
     return new Promise((resolve) => {
-      const dialogRef = this.dialog.open<
+      const dialogRef = this.dialog.open<ConfirmationDialogComponent, ConfirmationDialogData, boolean>(
         ConfirmationDialogComponent,
-        ConfirmationDialogData,
-        boolean
-      >(ConfirmationDialogComponent, config);
+        config
+      );
 
       dialogRef.afterClosed().subscribe((result) => resolve(result ?? false));
     });

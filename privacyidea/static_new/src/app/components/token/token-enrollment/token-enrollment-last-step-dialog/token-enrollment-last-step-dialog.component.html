@@ -1,22 +1,16 @@
 <h2 mat-dialog-title>Token successfully enrolled</h2>
 <mat-dialog-content>
-  <span
-    >The token was successfully enrolled with serial number
-    <a (click)="tokenSelected(data.response.detail.serial)"> {{ data.response.detail.serial }} </a>.</span
-  >
+  <span>The token was successfully enrolled with serial number
+    <a (click)="tokenSelected(data.response.detail.serial)"> {{ data.response.detail.serial }} </a>.</span>
   @if (data.response.detail["container_serial"]) {
     <br />
-    <span
-      >It has been enrolled in the container
+    <span>It has been enrolled in the container
       <a (click)="containerSelected(data.response.detail['container_serial'])">
-        {{ data.response.detail["container_serial"] }} </a
-      >.</span
-    >
+        {{ data.response.detail["container_serial"] }} </a>.</span>
   }
   @if (data.user?.username && data.userRealm != "" && !data.onlyAddToRealm) {
     <br />
-    <span
-      >The user <span>{{ data.user!.username }}</span> in the realm <span>{{ data.userRealm }}</span> was assigned
+    <span>The user <span>{{ data.user!.username }}</span> in the realm <span>{{ data.userRealm }}</span> was assigned
       to the token.
     </span>
   }
@@ -81,9 +75,7 @@
 
       @if (data.response.detail["password"]) {
         <p>
-          Your Password: <strong>{{ data.response.detail["password"] }}</strong
-          >.
-        </p>
+          Your Password: <strong>{{ data.response.detail["password"] }}</strong>. </p>
       }
 
       @if (data.response.detail.otpkey?.value && !data.response.detail["otps"]

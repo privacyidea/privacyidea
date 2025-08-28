@@ -53,20 +53,13 @@ import { ContainerCreateComponent } from "./container-create.component";
   styleUrl: "./container-create.component.scss"
 })
 export class ContainerCreateWizardComponent extends ContainerCreateComponent {
-  protected override readonly versioningService: VersioningServiceInterface =
-    inject(VersioningService);
-  protected override readonly userService: UserServiceInterface =
-    inject(UserService);
-  protected override readonly realmService: RealmServiceInterface =
-    inject(RealmService);
-  protected override readonly containerService: ContainerServiceInterface =
-    inject(ContainerService);
-  protected override readonly notificationService: NotificationServiceInterface =
-    inject(NotificationService);
-  protected override readonly tokenService: TokenServiceInterface =
-    inject(TokenService);
-  protected override readonly contentService: ContentServiceInterface =
-    inject(ContentService);
+  protected override readonly versioningService: VersioningServiceInterface = inject(VersioningService);
+  protected override readonly userService: UserServiceInterface = inject(UserService);
+  protected override readonly realmService: RealmServiceInterface = inject(RealmService);
+  protected override readonly containerService: ContainerServiceInterface = inject(ContainerService);
+  protected override readonly notificationService: NotificationServiceInterface = inject(NotificationService);
+  protected override readonly tokenService: TokenServiceInterface = inject(TokenService);
+  protected override readonly contentService: ContentServiceInterface = inject(ContentService);
 
   readonly preTopHtml$ = this.http
     .get("/customize/container-create.wizard.pre.top.html", {

@@ -1,5 +1,5 @@
-import { TokenApiPayloadMapper, TokenEnrollmentData, TokenEnrollmentPayload } from "./_token-api-payload.mapper";
 import { Injectable } from "@angular/core";
+import { TokenApiPayloadMapper, TokenEnrollmentData, TokenEnrollmentPayload } from "./_token-api-payload.mapper";
 
 // Interface for Certificate Token-specific enrollment data
 export interface CertificateEnrollmentData extends TokenEnrollmentData {
@@ -18,8 +18,7 @@ export interface CertificateEnrollmentPayload extends TokenEnrollmentPayload {
 }
 
 @Injectable({ providedIn: "root" })
-export class CertificateApiPayloadMapper
-  implements TokenApiPayloadMapper<CertificateEnrollmentData> {
+export class CertificateApiPayloadMapper implements TokenApiPayloadMapper<CertificateEnrollmentData> {
   toApiPayload(data: CertificateEnrollmentData): CertificateEnrollmentPayload {
     const payload: CertificateEnrollmentPayload = {
       type: data.type,

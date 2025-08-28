@@ -25,8 +25,8 @@
                 <mat-option
                   class="select-option type-option"
                   [value]="type"
-                  [matTooltip]="type.info.split(':')[1]"
-                  >{{ type.info.split(":")[0] }}
+                  [matTooltip]="type.info.split(':')[1]">
+                  {{ type.info.split(":")[0] }}
                 </mat-option>
               }
             </mat-select>
@@ -206,11 +206,15 @@
         <h4 class="enroll-h4">Assign Token to a Container</h4>
         <mat-form-field class="width-47 input-height">
           <mat-label>Enter Container</mat-label>
-          <input
-            [formControlName]="'selectedContainer'"
-            [formControl]="selectedContainerControl"
-            [matAutocomplete]="containerAuto"
-            matInput />
+          <app-clearable-input
+            (onClick)="selectedContainerControl.setValue(null)"
+            [showClearButton]="containerService.selectedContainer() !== ''">
+            <input
+              [formControlName]="'selectedContainer'"
+              [formControl]="selectedContainerControl"
+              [matAutocomplete]="containerAuto"
+              matInput />
+          </app-clearable-input>
           <mat-autocomplete #containerAuto="matAutocomplete">
             @for (option of containerService.filteredContainerOptions(); track option) {
               <mat-option [value]="option">{{ option }}</mat-option>
@@ -240,10 +244,8 @@
               class="input"
               placeholder="Repeat PIN" />
           </div>
-          @if (
-            formGroupSignal().hasError("pinMismatch") &&
-            (formGroupSignal().get("setPin")?.touched || formGroupSignal().get("repeatPin")?.touched)
-          ) {
+          @if (formGroupSignal().hasError("pinMismatch") &&
+          (formGroupSignal().get("setPin")?.touched || formGroupSignal().get("repeatPin")?.touched)) {
             <mat-error class="pin-error">PINs do not match.</mat-error>
           }
         </div>

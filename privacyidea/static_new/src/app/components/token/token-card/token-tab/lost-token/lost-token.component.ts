@@ -1,3 +1,4 @@
+import { DatePipe } from "@angular/common";
 import { Component, effect, inject, WritableSignal } from "@angular/core";
 import { MatButton } from "@angular/material/button";
 import { MatCard, MatCardContent } from "@angular/material/card";
@@ -14,28 +15,17 @@ import {
   NotificationServiceInterface
 } from "../../../../../services/notification/notification.service";
 import { LostTokenData, TokenService, TokenServiceInterface } from "../../../../../services/token/token.service";
-import { DatePipe } from "@angular/common";
 
 @Component({
   selector: "app-lost-token",
   standalone: true,
-  imports: [
-    MatDialogTitle,
-    MatDialogContent,
-    MatButton,
-    MatDialogClose,
-    MatIcon,
-    MatCard,
-    MatCardContent,
-    DatePipe
-  ],
+  imports: [MatDialogTitle, MatDialogContent, MatButton, MatDialogClose, MatIcon, MatCard, MatCardContent, DatePipe],
   templateUrl: "./lost-token.component.html",
   styleUrl: "./lost-token.component.scss"
 })
 export class LostTokenComponent {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
-  private readonly notificationService: NotificationServiceInterface =
-    inject(NotificationService);
+  private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   public readonly data: {
     isLost: WritableSignal<boolean>;
     tokenSerial: WritableSignal<string>;
@@ -58,18 +48,14 @@ export class LostTokenComponent {
       next: (response) => {
         this.data.isLost.set(true);
         this.lostTokenData = response?.result?.value;
-        this.notificationService.openSnackBar(
-          "Token marked as lost: " + this.data.tokenSerial()
-        );
+        this.notificationService.openSnackBar("Token marked as lost: " + this.data.tokenSerial());
       }
     });
   }
 
   tokenSelected(tokenSerial?: string) {
     if (!tokenSerial) {
-      this.notificationService.openSnackBar(
-        "No token selected, please select a token."
-      );
+      this.notificationService.openSnackBar("No token selected, please select a token.");
       return;
     }
     this.dialogRef.close();

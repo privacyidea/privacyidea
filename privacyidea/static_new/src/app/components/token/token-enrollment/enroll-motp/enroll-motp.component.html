@@ -63,9 +63,7 @@
         i18n-placeholder
         matInput
         placeholder="Repeat Password" />
-      @if (
-        repeatMotpPinControl.hasError("motpPinMismatch") && (repeatMotpPinControl.touched || repeatMotpPinControl.dirty)
-      ) {
+      @if (repeatMotpPinControl.hasError("motpPinMismatch") && (repeatMotpPinControl.touched || repeatMotpPinControl.dirty)) {
         <mat-error i18n>mOTP PINs do not match.</mat-error>
       }
     </mat-form-field>

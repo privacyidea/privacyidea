@@ -1,3 +1,4 @@
+import { Injectable } from "@angular/core";
 import { WebAuthnRegisterRequest } from "../../services/token/token.service";
 import {
   EnrollmentResponse,
@@ -6,11 +7,8 @@ import {
   TokenEnrollmentData,
   TokenEnrollmentPayload
 } from "./_token-api-payload.mapper";
-import { Injectable } from "@angular/core";
 
-export interface WebauthnEnrollmentResponse
-  extends EnrollmentResponse<WebauthnEnrollmentResponseDetail> {
-}
+export interface WebauthnEnrollmentResponse extends EnrollmentResponse<WebauthnEnrollmentResponseDetail> {}
 
 export interface WebauthnEnrollmentResponseDetail extends EnrollmentResponseDetail {
   webAuthnRegisterRequest: WebAuthnRegisterRequest;

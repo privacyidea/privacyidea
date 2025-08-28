@@ -22,10 +22,8 @@ export interface TiqrEnrollmentOptions extends TokenEnrollmentData {
   styleUrl: "./enroll-tiqr.component.scss"
 })
 export class EnrollTiqrComponent implements OnInit {
-  protected readonly enrollmentMapper: TiqrApiPayloadMapper =
-    inject(TiqrApiPayloadMapper);
-  protected readonly systemService: SystemServiceInterface =
-    inject(SystemService);
+  protected readonly enrollmentMapper: TiqrApiPayloadMapper = inject(TiqrApiPayloadMapper);
+  protected readonly systemService: SystemServiceInterface = inject(SystemService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
 
   @Output() additionalFormFieldsChange = new EventEmitter<{
@@ -37,11 +35,7 @@ export class EnrollTiqrComponent implements OnInit {
 
   defaultTiQRIsSet = computed(() => {
     const cfg = this.systemService.systemConfigResource.value()?.result?.value;
-    return !!(
-      cfg?.["tiqr.infoUrl"] &&
-      cfg?.["tiqr.logoUrl"] &&
-      cfg?.["tiqr.regServer"]
-    );
+    return !!(cfg?.["tiqr.infoUrl"] && cfg?.["tiqr.logoUrl"] && cfg?.["tiqr.regServer"]);
   });
 
   tiqrForm = new FormGroup({});
@@ -51,9 +45,7 @@ export class EnrollTiqrComponent implements OnInit {
     this.clickEnrollChange.emit(this.onClickEnroll);
   }
 
-  onClickEnroll = (
-    basicOptions: TokenEnrollmentData
-  ): Observable<EnrollmentResponse | null> => {
+  onClickEnroll = (basicOptions: TokenEnrollmentData): Observable<EnrollmentResponse | null> => {
     const enrollmentData: TiqrEnrollmentOptions = {
       ...basicOptions,
       type: "tiqr"

@@ -21,8 +21,7 @@ export interface YubicoEnrollmentOptions extends TokenEnrollmentData {
 
 export class YubicoErrorStateMatcher implements ErrorStateMatcher {
   isErrorState(control: FormControl | null): boolean {
-    const invalidLength =
-      control && control.value ? control.value.length !== 12 : true;
+    const invalidLength = control && control.value ? control.value.length !== 12 : true;
     return !!(control && invalidLength && (control.dirty || control.touched));
   }
 }
@@ -30,23 +29,13 @@ export class YubicoErrorStateMatcher implements ErrorStateMatcher {
 @Component({
   selector: "app-enroll-yubico",
   standalone: true,
-  imports: [
-    MatFormField,
-    MatInput,
-    MatLabel,
-    ReactiveFormsModule,
-    FormsModule,
-    MatError
-  ],
+  imports: [MatFormField, MatInput, MatLabel, ReactiveFormsModule, FormsModule, MatError],
   templateUrl: "./enroll-yubico.component.html",
   styleUrl: "./enroll-yubico.component.scss"
 })
 export class EnrollYubicoComponent implements OnInit {
-  protected readonly enrollmentMapper: YubicoApiPayloadMapper = inject(
-    YubicoApiPayloadMapper
-  );
-  protected readonly systemService: SystemServiceInterface =
-    inject(SystemService);
+  protected readonly enrollmentMapper: YubicoApiPayloadMapper = inject(YubicoApiPayloadMapper);
+  protected readonly systemService: SystemServiceInterface = inject(SystemService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
 
   yubicoErrorStatematcher = new YubicoErrorStateMatcher();
@@ -70,11 +59,7 @@ export class EnrollYubicoComponent implements OnInit {
 
   yubicoIsConfigured = computed(() => {
     const cfg = this.systemService.systemConfigResource.value()?.result?.value;
-    return !!(
-      cfg?.["yubico.id"] &&
-      cfg?.["yubico.url"] &&
-      cfg?.["yubico.secret"]
-    );
+    return !!(cfg?.["yubico.id"] && cfg?.["yubico.url"] && cfg?.["yubico.secret"]);
   });
 
   ngOnInit(): void {
@@ -84,9 +69,7 @@ export class EnrollYubicoComponent implements OnInit {
     this.clickEnrollChange.emit(this.onClickEnroll);
   }
 
-  onClickEnroll = (
-    basicOptions: TokenEnrollmentData
-  ): Observable<EnrollmentResponse | null> => {
+  onClickEnroll = (basicOptions: TokenEnrollmentData): Observable<EnrollmentResponse | null> => {
     this.yubicoForm.updateValueAndValidity();
     if (this.yubicoForm.invalid) {
       this.yubicoForm.markAllAsTouched();

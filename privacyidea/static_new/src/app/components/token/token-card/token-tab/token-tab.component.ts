@@ -1,45 +1,35 @@
-import { Component, inject, signal } from "@angular/core";
 import { NgClass } from "@angular/common";
+import { Component, inject, signal } from "@angular/core";
+import { MatButton } from "@angular/material/button";
+import { MatDialog } from "@angular/material/dialog";
+import { MatDivider } from "@angular/material/divider";
 import { MatIcon } from "@angular/material/icon";
 import { MatList, MatListItem } from "@angular/material/list";
-import { MatButton } from "@angular/material/button";
-import { MatDivider } from "@angular/material/divider";
-import { MatDialog } from "@angular/material/dialog";
+import { Router, RouterLink } from "@angular/router";
 import { catchError, concatMap, EMPTY, filter, forkJoin, from, reduce, switchMap } from "rxjs";
+import { tap } from "rxjs/operators";
 import { tabToggleState } from "../../../../../styles/animations/animations";
+import { ROUTE_PATHS } from "../../../../app.routes";
+import { AuditService, AuditServiceInterface } from "../../../../services/audit/audit.service";
 import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 import { VersioningService, VersioningServiceInterface } from "../../../../services/version/version.service";
 import { ConfirmationDialogComponent } from "../../../shared/confirmation-dialog/confirmation-dialog.component";
-import { LostTokenComponent } from "./lost-token/lost-token.component";
-import { Router, RouterLink } from "@angular/router";
-import { AuditService, AuditServiceInterface } from "../../../../services/audit/audit.service";
 import { SelectedUserAssignDialogComponent } from "../selected-user-assign-dialog/selected-user-assign-dialog.component";
-import { tap } from "rxjs/operators";
-import { ROUTE_PATHS } from "../../../../app.routes";
+import { LostTokenComponent } from "./lost-token/lost-token.component";
 
 @Component({
   selector: "app-token-tab",
   standalone: true,
-  imports: [
-    MatIcon,
-    MatList,
-    MatListItem,
-    MatButton,
-    MatDivider,
-    NgClass,
-    RouterLink
-  ],
+  imports: [MatIcon, MatList, MatListItem, MatButton, MatDivider, NgClass, RouterLink],
   templateUrl: "./token-tab.component.html",
   styleUrl: "./token-tab.component.scss",
   animations: [tabToggleState]
 })
 export class TokenTabComponent {
   private readonly tokenService: TokenServiceInterface = inject(TokenService);
-  protected readonly versioningService: VersioningServiceInterface =
-    inject(VersioningService);
-  protected readonly contentService: ContentServiceInterface =
-    inject(ContentService);
+  protected readonly versioningService: VersioningServiceInterface = inject(VersioningService);
+  protected readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly dialog: MatDialog = inject(MatDialog);
   protected readonly auditService: AuditServiceInterface = inject(AuditService);
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
@@ -56,13 +46,11 @@ export class TokenTabComponent {
   }
 
   toggleActive(): void {
-    this.tokenService
-      .toggleActive(this.tokenSerial(), this.tokenIsActive())
-      .subscribe({
-        next: () => {
-          this.tokenService.tokenDetailResource.reload();
-        }
-      });
+    this.tokenService.toggleActive(this.tokenSerial(), this.tokenIsActive()).subscribe({
+      next: () => {
+        this.tokenService.tokenDetailResource.reload();
+      }
+    });
   }
 
   revokeToken(): void {
@@ -82,11 +70,7 @@ export class TokenTabComponent {
           if (result) {
             this.tokenService
               .revokeToken(this.tokenSerial())
-              .pipe(
-                switchMap(() =>
-                  this.tokenService.getTokenDetails(this.tokenSerial())
-                )
-              )
+              .pipe(switchMap(() => this.tokenService.getTokenDetails(this.tokenSerial())))
               .subscribe({
                 next: () => {
                   this.tokenService.tokenDetailResource.reload();
@@ -139,11 +123,7 @@ export class TokenTabComponent {
       .subscribe({
         next: (result) => {
           if (result) {
-            forkJoin(
-              selectedTokens.map((token) =>
-                this.tokenService.deleteToken(token.serial)
-              )
-            ).subscribe({
+            forkJoin(selectedTokens.map((token) => this.tokenService.deleteToken(token.serial))).subscribe({
               next: () => {
                 this.tokenService.tokenResource.reload();
               },
@@ -180,15 +160,11 @@ export class TokenTabComponent {
                 realm: result.realm
               });
               return token.username
-                ? this.tokenService
-                  .unassignUser(token.serial)
-                  .pipe(switchMap(() => assign$))
+                ? this.tokenService.unassignUser(token.serial).pipe(switchMap(() => assign$))
                 : assign$;
             }),
             reduce(() => null, null),
-            switchMap(() =>
-              this.tokenService.getTokenDetails(this.tokenSerial())
-            )
+            switchMap(() => this.tokenService.getTokenDetails(this.tokenSerial()))
           )
         ),
         tap(() => this.tokenService.tokenResource.reload()),
