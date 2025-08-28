@@ -56,10 +56,6 @@ export class TokenTableSelfServiceComponent extends TokenTableComponent {
     inject(ContainerService);
   private dialog = inject(MatDialog);
 
-  ngOnInit(): void {
-    this.pageSize.set(5);
-  }
-
   revokeToken(serial: string): void {
     this.dialog
       .open(ConfirmationDialogComponent, {
