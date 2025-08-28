@@ -1,6 +1,5 @@
 import { NgModule } from "@angular/core";
 import { RouterModule, Routes } from "@angular/router";
-import { AuditComponent } from "./components/audit/audit.component";
 import { LayoutComponent } from "./components/layout/layout.component";
 import { LoginComponent } from "./components/login/login.component";
 import { adminMatch, AuthGuard, selfServiceMatch } from "./guards/auth.guard";
@@ -38,8 +37,7 @@ export const routes: Routes = [
         path: "",
         canMatch: [selfServiceMatch],
         loadChildren: () => import("./self-service.routes").then((m) => m.routes)
-      },
-      { path: "audit", component: AuditComponent }
+      }
     ]
   },
   { path: "**", redirectTo: "login" }
