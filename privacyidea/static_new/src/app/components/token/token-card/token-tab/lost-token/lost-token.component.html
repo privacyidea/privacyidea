@@ -33,14 +33,16 @@
       class="lost-card">
       <mat-card-content
         i18n
-        class="lost-card-content">Token was marked as lost successfully.
+        class="lost-card-content">
+        Token was marked as lost successfully.
       </mat-card-content>
     </mat-card>
 
     <p i18n>
       The serial of the new token is
       <a (click)="tokenSelected(lostTokenData?.serial)"> {{ lostTokenData?.serial ?? "" }}</a>
-      <br /> The password that needs to be combined with the OTP PIN:
+      <br />
+      The password that needs to be combined with the OTP PIN:
     </p>
 
     <p class="lost-password">

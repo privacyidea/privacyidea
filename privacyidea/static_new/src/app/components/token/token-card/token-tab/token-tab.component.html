@@ -51,8 +51,10 @@
             <mat-icon>now_widgets</mat-icon>
             Applications
           </button>
-        </mat-list-item><br />
-        <mat-divider /><br />
+        </mat-list-item>
+        <br />
+        <mat-divider />
+        <br />
         <mat-list-item>
           <button
             [ngClass]="[
@@ -77,7 +79,8 @@
         </mat-list-item>
         @if (contentService.routeUrl() === ROUTE_PATHS.TOKENS) {
           <br />
-          <mat-divider /><br />
+          <mat-divider />
+          <br />
           <mat-list-item>
             <button
               [ngClass]="[tokenSelection().length === 0 ? 'card-button-disabled' : 'card-button-delete']"
@@ -123,8 +126,10 @@
             <mat-icon>manage_search</mat-icon>
             Show in Audit Log
           </button>
-        </mat-list-item><br />
-        <mat-divider /><br />
+        </mat-list-item>
+        <br />
+        <mat-divider />
+        <br />
         <mat-list-item>
           <button
             class="card-button"
@@ -144,8 +149,10 @@
             <mat-icon>info_outline</mat-icon>
             Help
           </button>
-        </mat-list-item><br />
-        <mat-divider /><br />
+        </mat-list-item>
+        <br />
+        <mat-divider />
+        <br />
         <mat-list-item>
           <button
             (click)="toggleActive()"
