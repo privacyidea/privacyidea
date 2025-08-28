@@ -293,11 +293,14 @@ export class TokenService implements TokenServiceInterface {
   pageSize = linkedSignal<{ filterValue: Record<string, string>; role: string }, number>({
     source: () => ({
       filterValue: this.filterValue(),
-      role: this.authService.role()
+      role: this.authService.role(),
     }),
-    computation: (source) => {
+    computation: (source, previous) => {
+      if (previous && source.role === previous.source.role) {
+        return previous.value;
+      }
       return source.role === 'user' ? 5 : 10;
-    }
+    },
   });
   sort = signal({ active: "serial", direction: "asc" } as Sort);
   pageIndex = linkedSignal({
