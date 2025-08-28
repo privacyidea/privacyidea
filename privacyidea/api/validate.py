@@ -91,7 +91,7 @@ from privacyidea.api.lib.prepolicy import (prepolicy, set_realm,
                                            webauthntoken_authz,
                                            webauthntoken_request, check_application_tokentype,
                                            increase_failcounter_on_challenge, get_first_policy_value, fido2_enroll,
-                                           disabled_token_types)
+                                           disabled_token_types, load_challenge_text)
 from privacyidea.api.lib.utils import get_all_params, get_optional_one_of, get_optional
 from privacyidea.api.recover import recover_blueprint
 from privacyidea.api.register import register_blueprint
@@ -266,6 +266,7 @@ def offlinerefill():
 @prepolicy(webauthntoken_request, request=request)
 @prepolicy(webauthntoken_authz, request=request)
 @prepolicy(disabled_token_types, request=request)
+@prepolicy(load_challenge_text, request=request)
 @prepolicy(fido2_auth, request=request)
 @check_user_serial_or_cred_id_in_request(request)
 @CheckSubscription(request)
@@ -621,6 +622,7 @@ def check():
 @prepolicy(increase_failcounter_on_challenge, request=request)
 @prepolicy(check_base_action, request, action=PolicyAction.TRIGGERCHALLENGE)
 @prepolicy(webauthntoken_request, request=request)
+@prepolicy(load_challenge_text, request=request)
 @prepolicy(fido2_auth, request=request)
 @event("validate_triggerchallenge", request, g)
 def trigger_challenge():

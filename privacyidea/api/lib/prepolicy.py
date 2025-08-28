@@ -2083,6 +2083,16 @@ def webauthntoken_authz(request, action):
     return True
 
 
+def load_challenge_text(request, action):
+    """
+    Checks if the policy CHALLENGE_TEXT is active, and if so, add the value to the request data.
+    """
+    user = request.User if hasattr(request, "User") else None
+    text = get_first_policy_value(PolicyAction.CHALLENGETEXT, "", scope=SCOPE.AUTH, user=user)
+    if text:
+        request.all_data[PolicyAction.CHALLENGETEXT] = text
+    return True
+
 def fido2_auth(request, action):
     """
     Add policy values for FIDO2 tokens to the request.
