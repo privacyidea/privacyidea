@@ -338,7 +338,8 @@ class TokenContainerClass:
                                 realm_id=user.realm_id).save()
             # Add user realm to container realms
             realm_db = Realm.query.filter_by(name=user.realm).first()
-            self._db_container.realms.append(realm_db)
+            if realm_db and realm_db not in self._db_container.realms:
+                self._db_container.realms.append(realm_db)
             self._db_container.save()
             return True
         log.info(f"Container {self.serial} already has an owner.")

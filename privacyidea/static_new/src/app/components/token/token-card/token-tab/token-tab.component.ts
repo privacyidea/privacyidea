@@ -7,16 +7,26 @@ import { MatIcon } from "@angular/material/icon";
 import { MatList, MatListItem } from "@angular/material/list";
 import { Router, RouterLink } from "@angular/router";
 import { catchError, concatMap, EMPTY, filter, forkJoin, from, reduce, switchMap } from "rxjs";
-import { tap } from "rxjs/operators";
 import { tabToggleState } from "../../../../../styles/animations/animations";
-import { ROUTE_PATHS } from "../../../../app.routes";
 import { AuditService, AuditServiceInterface } from "../../../../services/audit/audit.service";
 import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 import { VersioningService, VersioningServiceInterface } from "../../../../services/version/version.service";
 import { ConfirmationDialogComponent } from "../../../shared/confirmation-dialog/confirmation-dialog.component";
 import { SelectedUserAssignDialogComponent } from "../selected-user-assign-dialog/selected-user-assign-dialog.component";
+import { tap } from "rxjs/operators";
 import { LostTokenComponent } from "./lost-token/lost-token.component";
+import { ROUTE_PATHS } from "../../../../app.routes";
+import {
+  NotificationService,
+  NotificationServiceInterface
+} from "../../../../services/notification/notification.service";
+import { PiResponse } from "../../../../app.component";
+
+interface BatchResult {
+  failed: string[];
+  unauthorized: string[];
+}
 
 @Component({
   selector: "app-token-tab",
@@ -32,6 +42,7 @@ export class TokenTabComponent {
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly dialog: MatDialog = inject(MatDialog);
   protected readonly auditService: AuditServiceInterface = inject(AuditService);
+  protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
   private router = inject(Router);
   tokenIsActive = this.tokenService.tokenIsActive;
@@ -57,7 +68,7 @@ export class TokenTabComponent {
     this.dialog
       .open(ConfirmationDialogComponent, {
         data: {
-          serial_list: [this.tokenSerial()],
+          serialList: [this.tokenSerial()],
           title: "Revoke Token",
           type: "token",
           action: "revoke",
@@ -85,7 +96,7 @@ export class TokenTabComponent {
     this.dialog
       .open(ConfirmationDialogComponent, {
         data: {
-          serial_list: [this.tokenSerial()],
+          serialList: [this.tokenSerial()],
           title: "Delete Token",
           type: "token",
           action: "delete",
@@ -98,7 +109,7 @@ export class TokenTabComponent {
           if (result) {
             this.tokenService.deleteToken(this.tokenSerial()).subscribe({
               next: () => {
-                this.router.navigateByUrl(ROUTE_PATHS.TOKENS);
+                this.router.navigateByUrl(ROUTE_PATHS.TOKENS).then();
                 this.tokenSerial.set("");
               }
             });
@@ -112,8 +123,8 @@ export class TokenTabComponent {
     this.dialog
       .open(ConfirmationDialogComponent, {
         data: {
-          serial_list: selectedTokens.map((token) => token.serial),
-          title: "Delete All Tokens",
+          serialList: selectedTokens.map((token) => token.serial),
+          title: "Delete Selected Tokens",
           type: "token",
           action: "delete",
           numberOfTokens: selectedTokens.length
@@ -123,12 +134,32 @@ export class TokenTabComponent {
       .subscribe({
         next: (result) => {
           if (result) {
-            forkJoin(selectedTokens.map((token) => this.tokenService.deleteToken(token.serial))).subscribe({
-              next: () => {
+            this.tokenService.batchDeleteTokens(selectedTokens).subscribe({
+              next: (response: PiResponse<BatchResult, any>) => {
+                const failedTokens = response.result?.value?.failed || [];
+                const unauthorizedTokens = response.result?.value?.unauthorized || [];
+                const messages: string[] = [];
+
+                if (failedTokens.length > 0) {
+                  messages.push(`The following tokens failed to delete: ${failedTokens.join(", ")}`);
+                }
+
+                if (unauthorizedTokens.length > 0) {
+                  messages.push(`You are not authorized to delete the following tokens: ${unauthorizedTokens.join(", ")}`);
+                }
+
+                if (messages.length > 0) {
+                  this.notificationService.openSnackBar(messages.join("\n"));
+                }
+
                 this.tokenService.tokenResource.reload();
               },
               error: (err) => {
-                console.error("Error deleting tokens:", err);
+                let message = "An error occurred while deleting tokens.";
+                if (err.error?.result?.error?.message) {
+                  message = err.error.result.error.message;
+                }
+                this.notificationService.openSnackBar(message);
               }
             });
           }
@@ -169,10 +200,63 @@ export class TokenTabComponent {
         ),
         tap(() => this.tokenService.tokenResource.reload()),
         catchError((err) => {
-          console.error("Error assigning tokens:", err);
+          let message = "An error occurred while assigning tokens.";
+          if (err.error?.result?.error?.message) {
+            message = err.error.result.error.message;
+          }
+          this.notificationService.openSnackBar(message);
           return EMPTY;
         })
       )
       .subscribe();
+  }
+
+  unassignSelectedTokens() {
+    const selectedTokens = this.tokenSelection();
+    console.log("selected tokens: ", selectedTokens);
+    this.dialog
+      .open(ConfirmationDialogComponent, {
+        data: {
+          serialList: selectedTokens.map((token) => token.serial),
+          title: "Unassign Selected Tokens",
+          type: "token",
+          action: "unassign",
+          numberOfTokens: selectedTokens.length
+        }
+      })
+      .afterClosed()
+      .subscribe({
+        next: (result) => {
+          if (result) {
+            this.tokenService.batchUnassignTokens(selectedTokens).subscribe({
+              next: (response: PiResponse<BatchResult, any>) => {
+                const failedTokens = response.result?.value?.failed || [];
+                const unauthorizedTokens = response.result?.value?.unauthorized || [];
+                const messages: string[] = [];
+
+                if (failedTokens.length > 0) {
+                  messages.push(`The following tokens failed to unassign: ${failedTokens.join(", ")}`);
+                }
+
+                if (unauthorizedTokens.length > 0) {
+                  messages.push(`You are not authorized to unassign the following tokens: ${unauthorizedTokens.join(", ")}`);
+                }
+
+                if (messages.length > 0) {
+                  this.notificationService.openSnackBar(messages.join("\n"));
+                }
+                this.tokenService.tokenResource.reload();
+              },
+              error: (err) => {
+                let message = "An error occurred while unassigning tokens.";
+                if (err.error?.result?.error?.message) {
+                  message = err.error.result.error.message;
+                }
+                this.notificationService.openSnackBar(message);
+              }
+            });
+          }
+        }
+      });
   }
 }
