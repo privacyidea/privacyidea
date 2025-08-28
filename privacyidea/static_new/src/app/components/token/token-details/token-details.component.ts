@@ -1,8 +1,8 @@
 import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
-import { Component, WritableSignal, computed, effect, inject, linkedSignal, signal } from "@angular/core";
+import { Component, computed, effect, inject, linkedSignal, signal, WritableSignal } from "@angular/core";
 import { ContainerService, ContainerServiceInterface } from "../../../services/container/container.service";
 import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
-import { EditButtonsComponent, EditableElement } from "../../shared/edit-buttons/edit-buttons.component";
+import { EditableElement, EditButtonsComponent } from "../../shared/edit-buttons/edit-buttons.component";
 import { FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
 import { MatCell, MatColumnDef, MatRow, MatTable, MatTableModule } from "@angular/material/table";
@@ -112,29 +112,29 @@ export class TokenDetailsComponent {
       return res && res.result?.value?.tokens[0]
         ? (res.result?.value.tokens[0] as TokenDetails)
         : {
-            active: false,
-            container_serial: "",
-            count: 0,
-            count_window: 0,
-            description: "",
-            failcount: 0,
-            id: 0,
-            info: {},
-            locked: false,
-            maxfail: 0,
-            otplen: 0,
-            realms: [],
-            resolver: "",
-            revoked: false,
-            rollout_state: "",
-            serial: "",
-            sync_window: 0,
-            tokengroup: [],
-            tokentype: "hotp",
-            user_id: "",
-            user_realm: "",
-            username: ""
-          };
+          active: false,
+          container_serial: "",
+          count: 0,
+          count_window: 0,
+          description: "",
+          failcount: 0,
+          id: 0,
+          info: {},
+          locked: false,
+          maxfail: 0,
+          otplen: 0,
+          realms: [],
+          resolver: "",
+          revoked: false,
+          rollout_state: "",
+          serial: "",
+          sync_window: 0,
+          tokengroup: [],
+          tokentype: "hotp",
+          user_id: "",
+          user_realm: "",
+          username: ""
+        };
     }
   });
   tokenDetailData = linkedSignal({
