@@ -584,12 +584,13 @@ def unassign_api():
     user = request.User
     serial_list = get_optional(request.all_data, "serials")
 
-    if not serial_list:
-        res = unassign_token(serial=None, user=user)
-        g.audit_object.log({"serial": None, "success": True})
-        return send_result(res)
+    # check_token_action will raise an error if no processable token are given. So at this point we can assume that
+    # serial_list at least contains one serial.
+    # check_token_action will also put the serials of all token of the users in the serial_list
+    # if just the user was given as parameter, so we do not need to check that here - just use the serial_list
 
     g.audit_object.log({"serial": serial_list if len(serial_list) != 1 else serial_list[0]})
+
     not_authorized_serials = get_optional(request.all_data, "not_authorized_serials", [])
     not_found_serials = get_optional(request.all_data, "not_found_serials", [])
     # If only one serial is given, the value in the send result is expected to be a boolean (old API behavior).
