@@ -1,6 +1,6 @@
 import { CommonModule } from "@angular/common";
 import { HttpParams } from "@angular/common/http";
-import { Component, effect, inject, linkedSignal, signal } from "@angular/core";
+import { Component, effect, inject, linkedSignal, signal, WritableSignal } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { MatButton } from "@angular/material/button";
 import { MatDialog } from "@angular/material/dialog";
@@ -14,7 +14,7 @@ import { Subscription } from "rxjs";
 import { ROUTE_PATHS } from "../../../app.routes";
 import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
 import { NotificationService, NotificationServiceInterface } from "../../../services/notification/notification.service";
-import { TokenService, TokenServiceInterface } from "../../../services/token/token.service";
+import { TokenService, TokenServiceInterface, TokenType } from "../../../services/token/token.service";
 import { ConfirmationDialogComponent } from "../../shared/confirmation-dialog/confirmation-dialog.component";
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { GetSerialResultDialogComponent } from "./get-serial-result-dialog/get-serial-result-dialog.component";
@@ -68,9 +68,9 @@ export class TokenGetSerialComponent {
       "radius",
       "sms"
     ];
-  tokenTypesWithOTP = linkedSignal({
+  tokenTypesWithOTP: WritableSignal<TokenType[]> = linkedSignal({
       source: this.tokenService.tokenTypeOptions,
-      computation: (tokenTypeOptions: any[]) =>
+      computation: (tokenTypeOptions: TokenType[]) =>
         tokenTypeOptions.filter((type) => this.tokenWithOTP.includes(type.key))
     });
   serialSubscription: Subscription | null = null;
