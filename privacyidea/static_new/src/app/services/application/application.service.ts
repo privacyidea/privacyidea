@@ -95,6 +95,5 @@ export class ApplicationService implements ApplicationServiceInterface {
     }
   });
 
-  constructor(private authService: AuthService) {
-  }
+  constructor(private authService: AuthService) {}
 }

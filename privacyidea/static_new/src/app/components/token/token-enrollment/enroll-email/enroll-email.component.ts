@@ -21,25 +21,14 @@ export interface EmailEnrollmentOptions extends TokenEnrollmentData {
 @Component({
   selector: "app-enroll-email",
   standalone: true,
-  imports: [
-    MatCheckbox,
-    MatFormField,
-    MatInput,
-    MatLabel,
-    ReactiveFormsModule,
-    FormsModule,
-    MatError
-  ],
+  imports: [MatCheckbox, MatFormField, MatInput, MatLabel, ReactiveFormsModule, FormsModule, MatError],
   templateUrl: "./enroll-email.component.html",
   styleUrl: "./enroll-email.component.scss"
 })
 export class EnrollEmailComponent implements OnInit {
-  protected readonly systemService: SystemServiceInterface =
-    inject(SystemService);
+  protected readonly systemService: SystemServiceInterface = inject(SystemService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
-  protected readonly enrollmentMapper: EmailApiPayloadMapper = inject(
-    EmailApiPayloadMapper
-  );
+  protected readonly enrollmentMapper: EmailApiPayloadMapper = inject(EmailApiPayloadMapper);
 
   @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
@@ -77,9 +66,7 @@ export class EnrollEmailComponent implements OnInit {
     });
   }
 
-  onClickEnroll = (
-    basicOptions: TokenEnrollmentData
-  ): Observable<EnrollmentResponse | null> => {
+  onClickEnroll = (basicOptions: TokenEnrollmentData): Observable<EnrollmentResponse | null> => {
     if (!this.readEmailDynamicallyControl.value && this.emailAddressControl.invalid) {
       this.emailForm.markAllAsTouched();
       return of(null);

@@ -1,9 +1,9 @@
-import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { httpResource, HttpResourceRef } from "@angular/common/http";
 import { inject, Injectable, linkedSignal, WritableSignal } from "@angular/core";
+import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 
-import { PiResponse } from "../../app.component";
 import { environment } from "../../../environments/environment";
+import { PiResponse } from "../../app.component";
 
 export type RemoteServerOptions = RemoteServer[];
 

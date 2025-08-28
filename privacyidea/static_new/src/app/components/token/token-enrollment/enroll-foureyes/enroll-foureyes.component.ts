@@ -4,14 +4,14 @@ import { ErrorStateMatcher, MatOption } from "@angular/material/core";
 import { MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { MatError, MatSelect } from "@angular/material/select";
-import { RealmService, RealmServiceInterface } from "../../../../services/realm/realm.service";
-import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 import { Observable, of } from "rxjs";
 import { FourEyesApiPayloadMapper } from "../../../../mappers/token-api-payload/4eyes-token-api-payload.mapper";
 import {
   EnrollmentResponse,
   TokenEnrollmentData
 } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
+import { RealmService, RealmServiceInterface } from "../../../../services/realm/realm.service";
+import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 
 export interface FourEyesEnrollmentOptions extends TokenEnrollmentData {
   type: "4eyes";
@@ -30,16 +30,7 @@ export class RequiredRealmsErrorStateMatcher implements ErrorStateMatcher {
 @Component({
   selector: "app-enroll-foureyes",
   standalone: true,
-  imports: [
-    MatFormField,
-    MatInput,
-    MatLabel,
-    ReactiveFormsModule,
-    FormsModule,
-    MatOption,
-    MatSelect,
-    MatError
-  ],
+  imports: [MatFormField, MatInput, MatLabel, ReactiveFormsModule, FormsModule, MatOption, MatSelect, MatError],
   templateUrl: "./enroll-foureyes.component.html",
   styleUrl: "./enroll-foureyes.component.scss"
 })
@@ -54,9 +45,7 @@ export class EnrollFoureyesComponent implements OnInit {
   >();
 
   separatorControl = new FormControl<string>("|", [Validators.required]);
-  requiredTokensOfRealmsControl = new FormControl<string[]>(
-    [], [Validators.required, Validators.minLength(1)]
-  );
+  requiredTokensOfRealmsControl = new FormControl<string[]>([], [Validators.required, Validators.minLength(1)]);
 
   foureyesForm = new FormGroup({
     separator: this.separatorControl,
@@ -90,7 +79,7 @@ export class EnrollFoureyesComponent implements OnInit {
       return of(null);
     }
     const selected = this.requiredTokensOfRealmsControl.value ?? [];
-    const requiredTokenOfRealms = selected.map(realm => ({
+    const requiredTokenOfRealms = selected.map((realm) => ({
       realm,
       tokens: this.getTokenCount(realm)
     }));

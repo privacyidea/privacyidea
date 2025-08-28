@@ -219,18 +219,15 @@ export class ContainerDetailsComponent {
         .filter((detail) => detail.value !== undefined);
     }
   });
-  containerTokenData: WritableSignal<MatTableDataSource<ContainerDetailToken, MatPaginator>> =
-    linkedSignal({
-      source: this.containerDetails,
-      computation: (containerDetails, previous) => {
-        if (!containerDetails) {
-          return previous?.value ?? new MatTableDataSource<ContainerDetailToken, MatPaginator>([]);
-        }
-        return new MatTableDataSource<ContainerDetailToken, MatPaginator>(
-          containerDetails.tokens ?? []
-        );
+  containerTokenData: WritableSignal<MatTableDataSource<ContainerDetailToken, MatPaginator>> = linkedSignal({
+    source: this.containerDetails,
+    computation: (containerDetails, previous) => {
+      if (!containerDetails) {
+        return previous?.value ?? new MatTableDataSource<ContainerDetailToken, MatPaginator>([]);
       }
-    });
+      return new MatTableDataSource<ContainerDetailToken, MatPaginator>(containerDetails.tokens ?? []);
+    }
+  });
   selectedRealms = linkedSignal({
     source: this.containerDetails,
     computation: (containerDetails) => containerDetails?.realms || []
@@ -238,11 +235,7 @@ export class ContainerDetailsComponent {
   rawUserData = linkedSignal({
     source: this.containerDetails,
     computation: (containerDetails) => {
-      if (
-        !containerDetails ||
-        !Array.isArray(containerDetails.users) ||
-        containerDetails.users.length === 0
-      ) {
+      if (!containerDetails || !Array.isArray(containerDetails.users) || containerDetails.users.length === 0) {
         return {
           user_realm: "",
           user_name: "",
@@ -272,9 +265,7 @@ export class ContainerDetailsComponent {
 
   isAnyEditing = computed(() => {
     return (
-      this.containerDetailData().some((element) => element.isEditing()) ||
-      this.isEditingUser() ||
-      this.isEditingInfo()
+      this.containerDetailData().some((element) => element.isEditing()) || this.isEditingUser() || this.isEditingInfo()
     );
   });
 
@@ -411,13 +402,11 @@ export class ContainerDetailsComponent {
   unassignUser() {
     const userName = this.userData().find((d) => d.keyMap.key === "user_name")?.value;
     const userRealm = this.userData().find((d) => d.keyMap.key === "user_realm")?.value;
-    this.containerService
-      .unassignUser(this.containerSerial(), userName ?? "", userRealm ?? "")
-      .subscribe({
-        next: () => {
-          this.containerDetailResource.reload();
-        }
-      });
+    this.containerService.unassignUser(this.containerSerial(), userName ?? "", userRealm ?? "").subscribe({
+      next: () => {
+        this.containerDetailResource.reload();
+      }
+    });
   }
 
   onPageEvent(event: PageEvent) {
@@ -439,19 +428,15 @@ export class ContainerDetailsComponent {
   }
 
   saveRealms() {
-    this.containerService
-      .setContainerRealm(this.containerSerial(), this.selectedRealms())
-      .subscribe({
-        next: () => {
-          this.containerDetailResource.reload();
-        }
-      });
+    this.containerService.setContainerRealm(this.containerSerial(), this.selectedRealms()).subscribe({
+      next: () => {
+        this.containerDetailResource.reload();
+      }
+    });
   }
 
   saveDescription() {
-    const description = this.containerDetailData().find(
-      (detail) => detail.keyMap.key === "description"
-    )?.value;
+    const description = this.containerDetailData().find((detail) => detail.keyMap.key === "description")?.value;
     this.containerService.setContainerDescription(this.containerSerial(), description).subscribe({
       next: () => {
         this.containerDetailResource.reload();

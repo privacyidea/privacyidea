@@ -53,7 +53,12 @@ export class Base64Service implements Base64ServiceInterface {
    * @returns {Uint8Array} - The decoded binary.
    */
   public webAuthnBase64DecToArr(sBase64: string): Uint8Array {
-    return this.base64DecToArr(sBase64.replace(/-/g, "+").replace(/_/g, "/").padEnd((sBase64.length | 3) + 1, "="));
+    return this.base64DecToArr(
+      sBase64
+        .replace(/-/g, "+")
+        .replace(/_/g, "/")
+        .padEnd((sBase64.length | 3) + 1, "=")
+    );
   }
 
   /**
@@ -87,36 +92,36 @@ export class Base64Service implements Base64ServiceInterface {
       sView += String.fromCharCode(
         nPart > 251 && nPart < 254 && nIdx + 5 < nLen
           ? /* six bytes */
-          (nPart - 252) * 1073741824 /* << 30 */ +
-          ((aBytes[++nIdx] - 128) << 24) +
-          ((aBytes[++nIdx] - 128) << 18) +
-          ((aBytes[++nIdx] - 128) << 12) +
-          ((aBytes[++nIdx] - 128) << 6) +
-          aBytes[++nIdx] -
-          128
-          : nPart > 247 && nPart < 252 && nIdx + 4 < nLen
-            ? /* five bytes */
-            ((nPart - 248) << 24) +
-            ((aBytes[++nIdx] - 128) << 18) +
-            ((aBytes[++nIdx] - 128) << 12) +
-            ((aBytes[++nIdx] - 128) << 6) +
-            aBytes[++nIdx] -
-            128
-            : nPart > 239 && nPart < 248 && nIdx + 3 < nLen
-              ? /* four bytes */
-              ((nPart - 240) << 18) +
+            (nPart - 252) * 1073741824 /* << 30 */ +
+              ((aBytes[++nIdx] - 128) << 24) +
+              ((aBytes[++nIdx] - 128) << 18) +
               ((aBytes[++nIdx] - 128) << 12) +
               ((aBytes[++nIdx] - 128) << 6) +
               aBytes[++nIdx] -
               128
+          : nPart > 247 && nPart < 252 && nIdx + 4 < nLen
+            ? /* five bytes */
+              ((nPart - 248) << 24) +
+              ((aBytes[++nIdx] - 128) << 18) +
+              ((aBytes[++nIdx] - 128) << 12) +
+              ((aBytes[++nIdx] - 128) << 6) +
+              aBytes[++nIdx] -
+              128
+            : nPart > 239 && nPart < 248 && nIdx + 3 < nLen
+              ? /* four bytes */
+                ((nPart - 240) << 18) +
+                ((aBytes[++nIdx] - 128) << 12) +
+                ((aBytes[++nIdx] - 128) << 6) +
+                aBytes[++nIdx] -
+                128
               : nPart > 223 && nPart < 240 && nIdx + 2 < nLen
                 ? /* three bytes */
-                ((nPart - 224) << 12) + ((aBytes[++nIdx] - 128) << 6) + aBytes[++nIdx] - 128
+                  ((nPart - 224) << 12) + ((aBytes[++nIdx] - 128) << 6) + aBytes[++nIdx] - 128
                 : nPart > 191 && nPart < 224 && nIdx + 1 < nLen
                   ? /* two bytes */
-                  ((nPart - 192) << 6) + aBytes[++nIdx] - 128
+                    ((nPart - 192) << 6) + aBytes[++nIdx] - 128
                   : /* one byte */
-                  nPart
+                    nPart
       );
     }
 
@@ -144,17 +149,7 @@ export class Base64Service implements Base64ServiceInterface {
     for (let nMapIdx = 0; nMapIdx < nStrLen; nMapIdx++) {
       nChr = sDOMStr.charCodeAt(nMapIdx);
       nArrLen +=
-        nChr < 0x80
-          ? 1
-          : nChr < 0x800
-            ? 2
-            : nChr < 0x10000
-              ? 3
-              : nChr < 0x200000
-                ? 4
-                : nChr < 0x4000000
-                  ? 5
-                  : 6;
+        nChr < 0x80 ? 1 : nChr < 0x800 ? 2 : nChr < 0x10000 ? 3 : nChr < 0x200000 ? 4 : nChr < 0x4000000 ? 5 : 6;
     }
 
     aBytes = new Uint8Array(nArrLen);
@@ -265,9 +260,7 @@ export class Base64Service implements Base64ServiceInterface {
   private base64DecToArr(sBase64: string, nBlockSize?: number): Uint8Array {
     const sB64Enc = sBase64.replace(/[^A-Za-z0-9+\/]/g, "");
     const nInLen = sB64Enc.length;
-    const nOutLen = nBlockSize
-      ? Math.ceil(((nInLen * 3 + 1) >>> 2) / nBlockSize) * nBlockSize
-      : (nInLen * 3 + 1) >>> 2;
+    const nOutLen = nBlockSize ? Math.ceil(((nInLen * 3 + 1) >>> 2) / nBlockSize) * nBlockSize : (nInLen * 3 + 1) >>> 2;
     const aBytes = new Uint8Array(nOutLen);
 
     let nMod3,

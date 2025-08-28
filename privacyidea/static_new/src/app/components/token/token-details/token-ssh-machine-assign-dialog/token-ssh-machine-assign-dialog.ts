@@ -40,8 +40,7 @@ import { Observable } from "rxjs";
 })
 export class TokenSshMachineAssignDialogComponent {
   /// Data for the dialog ///
-  private applicationService: ApplicationServiceInterface =
-    inject(ApplicationService);
+  private applicationService: ApplicationServiceInterface = inject(ApplicationService);
   private machineService: MachineServiceInterface = inject(MachineService);
   private userService: UserServiceInterface = inject(UserService);
   public data: {
@@ -49,10 +48,7 @@ export class TokenSshMachineAssignDialogComponent {
     tokenDetails: Record<string, any>;
     tokenType: string;
   } = inject(MAT_DIALOG_DATA);
-  public dialogRef: MatDialogRef<
-    TokenSshMachineAssignDialogComponent,
-    Observable<any> | null
-  > = inject(MatDialogRef);
+  public dialogRef: MatDialogRef<TokenSshMachineAssignDialogComponent, Observable<any> | null> = inject(MatDialogRef);
 
   availableApplications = linkedSignal({
     source: this.applicationService.applications,
@@ -95,17 +91,12 @@ export class TokenSshMachineAssignDialogComponent {
     if (!filterString) {
       return this.availableUsers();
     }
-    return this.availableUsers().filter((user) =>
-      user.toLowerCase().includes(filterString)
-    );
+    return this.availableUsers().filter((user) => user.toLowerCase().includes(filterString));
   });
 
   /// Form controls ///
   selectedApplication = new FormControl<string>("ssh", Validators.required);
-  selectedMachine = new FormControl<string | Machine>(
-    "",
-    this.machineValidator
-  );
+  selectedMachine = new FormControl<string | Machine>("", this.machineValidator);
   selectedServiceId = new FormControl<string>("", Validators.required);
   selectedUser = new FormControl<string>("", Validators.required);
 
@@ -160,8 +151,7 @@ export class TokenSshMachineAssignDialogComponent {
     };
     const request = this.machineService.postAssignMachineToToken(args);
     request.subscribe({
-      next: (response) => {
-      },
+      next: (response) => {},
       error: (error) => {
         console.error("Error during assignment request:", error);
       }
@@ -173,9 +163,7 @@ export class TokenSshMachineAssignDialogComponent {
     this.dialogRef.close(null);
   }
 
-  machineValidator(
-    control: AbstractControl<string | Machine>
-  ): ValidationErrors | null {
+  machineValidator(control: AbstractControl<string | Machine>): ValidationErrors | null {
     if (!control.value) {
       return { required: true }; // Machine selection is required
     }
@@ -183,12 +171,7 @@ export class TokenSshMachineAssignDialogComponent {
       return { required: true }; // Machine selection is required
     }
     const machine = control.value as Machine;
-    if (
-      !machine.id ||
-      !machine.hostname ||
-      !machine.ip ||
-      !machine.resolver_name
-    ) {
+    if (!machine.id || !machine.hostname || !machine.ip || !machine.resolver_name) {
       return { invalidMachine: true }; // Invalid machine object
     }
     return null; // No validation error

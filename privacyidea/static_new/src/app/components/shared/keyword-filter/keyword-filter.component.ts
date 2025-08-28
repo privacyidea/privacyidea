@@ -1,7 +1,7 @@
-import { Component, Input, signal, WritableSignal } from "@angular/core";
 import { NgClass } from "@angular/common";
-import { MatIcon } from "@angular/material/icon";
+import { Component, Input, signal, WritableSignal } from "@angular/core";
 import { MatFabButton } from "@angular/material/button";
+import { MatIcon } from "@angular/material/icon";
 import { TableUtilsService } from "../../../services/table-utils/table-utils.service";
 
 @Component({
@@ -18,8 +18,7 @@ export class KeywordFilterComponent {
   @Input() filterValue!: WritableSignal<Record<string, string>>;
   showAdvancedFilter = signal(false);
 
-  constructor(private tableUtilsService: TableUtilsService) {
-  }
+  constructor(private tableUtilsService: TableUtilsService) {}
 
   onKeywordClick(filterKeyword: string): void {
     this.toggleFilter(filterKeyword, this.filterHTMLInputElement);
@@ -29,10 +28,7 @@ export class KeywordFilterComponent {
     this.showAdvancedFilter.update((b) => !b);
   }
 
-  isFilterSelected(
-    filter: string,
-    inputValue: Record<string, string>
-  ): boolean {
+  isFilterSelected(filter: string, inputValue: Record<string, string>): boolean {
     if (filter === "infokey & infovalue") {
       return "infokey" in inputValue || "infovalue" in inputValue;
     }
@@ -42,24 +38,13 @@ export class KeywordFilterComponent {
     return filter in inputValue;
   }
 
-  getFilterIconName(
-    keyword: string,
-    currentValue: Record<string, string>
-  ): string {
-    if (
-      keyword === "active" ||
-      keyword === "assigned" ||
-      keyword === "success"
-    ) {
+  getFilterIconName(keyword: string, currentValue: Record<string, string>): string {
+    if (keyword === "active" || keyword === "assigned" || keyword === "success") {
       const value = currentValue[keyword]?.toLowerCase();
       if (!value) {
         return "add_circle";
       }
-      return value === "true"
-        ? "change_circle"
-        : value === "false"
-          ? "remove_circle"
-          : "add_circle";
+      return value === "true" ? "change_circle" : value === "false" ? "remove_circle" : "add_circle";
     } else {
       const isSelected = this.isFilterSelected(keyword, currentValue);
       return isSelected ? "remove_circle" : "add_circle";
@@ -69,20 +54,13 @@ export class KeywordFilterComponent {
   toggleFilter(filterKeyword: string, inputElement: HTMLInputElement): void {
     let newValue;
     var textValue = inputElement.value.trim();
-    if (
-      filterKeyword === "active" ||
-      filterKeyword === "assigned" ||
-      filterKeyword === "success"
-    ) {
+    if (filterKeyword === "active" || filterKeyword === "assigned" || filterKeyword === "success") {
       newValue = this.tableUtilsService.toggleBooleanInFilter({
         keyword: filterKeyword,
         currentValue: textValue
       });
     } else {
-      newValue = this.tableUtilsService.toggleKeywordInFilter(
-        textValue,
-        filterKeyword
-      );
+      newValue = this.tableUtilsService.toggleKeywordInFilter(textValue, filterKeyword);
     }
     inputElement.value = newValue;
     const recordsFromText = this.tableUtilsService.recordsFromText(newValue);

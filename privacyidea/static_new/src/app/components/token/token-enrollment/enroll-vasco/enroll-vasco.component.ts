@@ -22,8 +22,7 @@ export interface VascoEnrollmentOptions extends TokenEnrollmentData {
 
 export class VascoErrorStateMatcher implements ErrorStateMatcher {
   isErrorState(control: FormControl | null): boolean {
-    const invalid =
-      control && control.value ? control.value.length !== 496 : true;
+    const invalid = control && control.value ? control.value.length !== 496 : true;
     return !!(control && invalid && (control.dirty || control.touched));
   }
 }
@@ -31,22 +30,12 @@ export class VascoErrorStateMatcher implements ErrorStateMatcher {
 @Component({
   selector: "app-enroll-vasco",
   standalone: true,
-  imports: [
-    MatFormField,
-    MatInput,
-    MatLabel,
-    ReactiveFormsModule,
-    FormsModule,
-    MatCheckbox,
-    MatError
-  ],
+  imports: [MatFormField, MatInput, MatLabel, ReactiveFormsModule, FormsModule, MatCheckbox, MatError],
   templateUrl: "./enroll-vasco.component.html",
   styleUrl: "./enroll-vasco.component.scss"
 })
 export class EnrollVascoComponent implements OnInit {
-  protected readonly enrollmentMapper: VascoApiPayloadMapper = inject(
-    VascoApiPayloadMapper
-  );
+  protected readonly enrollmentMapper: VascoApiPayloadMapper = inject(VascoApiPayloadMapper);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
 
   @Output() additionalFormFieldsChange = new EventEmitter<{
@@ -57,9 +46,7 @@ export class EnrollVascoComponent implements OnInit {
   >();
 
   otpKeyControl = new FormControl<string>("");
-  useVascoSerialControl = new FormControl<boolean>(false, [
-    Validators.required
-  ]);
+  useVascoSerialControl = new FormControl<boolean>(false, [Validators.required]);
   vascoSerialControl = new FormControl<string>("");
 
   vascoForm = new FormGroup({
@@ -94,11 +81,7 @@ export class EnrollVascoComponent implements OnInit {
         this.vascoSerialControl.setValidators([Validators.required]);
         this.otpKeyControl.clearValidators();
       } else {
-        this.otpKeyControl.setValidators([
-          Validators.required,
-          Validators.minLength(496),
-          Validators.maxLength(496)
-        ]);
+        this.otpKeyControl.setValidators([Validators.required, Validators.minLength(496), Validators.maxLength(496)]);
         this.vascoSerialControl.clearValidators();
       }
       this.otpKeyControl.updateValueAndValidity();
@@ -107,9 +90,7 @@ export class EnrollVascoComponent implements OnInit {
     this.useVascoSerialControl.updateValueAndValidity();
   }
 
-  onClickEnroll = (
-    basicOptions: TokenEnrollmentData
-  ): Observable<EnrollmentResponse | null> => {
+  onClickEnroll = (basicOptions: TokenEnrollmentData): Observable<EnrollmentResponse | null> => {
     if (this.vascoForm.invalid) {
       this.vascoForm.markAllAsTouched();
       return of(null);

@@ -107,22 +107,14 @@ import { TokenEnrollmentComponent } from "./token-enrollment.component";
 export class TokenEnrollmentWizardComponent extends TokenEnrollmentComponent {
   protected readonly http: HttpClient = inject(HttpClient);
   protected readonly sanitizer: DomSanitizer = inject(DomSanitizer);
-  protected override readonly containerService: ContainerServiceInterface =
-    inject(ContainerService);
-  protected override readonly realmService: RealmServiceInterface =
-    inject(RealmService);
-  protected override readonly notificationService: NotificationServiceInterface =
-    inject(NotificationService);
-  protected override readonly userService: UserServiceInterface =
-    inject(UserService);
-  protected override readonly tokenService: TokenServiceInterface =
-    inject(TokenService);
-  protected override readonly contentService: ContentServiceInterface =
-    inject(ContentService);
-  protected override readonly versioningService: VersioningServiceInterface =
-    inject(VersioningService);
-  protected override readonly dialogService: DialogServiceInterface =
-    inject(DialogService);
+  protected override readonly containerService: ContainerServiceInterface = inject(ContainerService);
+  protected override readonly realmService: RealmServiceInterface = inject(RealmService);
+  protected override readonly notificationService: NotificationServiceInterface = inject(NotificationService);
+  protected override readonly userService: UserServiceInterface = inject(UserService);
+  protected override readonly tokenService: TokenServiceInterface = inject(TokenService);
+  protected override readonly contentService: ContentServiceInterface = inject(ContentService);
+  protected override readonly versioningService: VersioningServiceInterface = inject(VersioningService);
+  protected override readonly dialogService: DialogServiceInterface = inject(DialogService);
 
   readonly preTopHtml$ = this.http
     .get("/customize/token-enrollment.wizard.pre.top.html", {
@@ -140,10 +132,7 @@ export class TokenEnrollmentWizardComponent extends TokenEnrollmentComponent {
     super(renderer);
   }
 
-  protected override openLastStepDialog(args: {
-    response: EnrollmentResponse;
-    user: UserData | null;
-  }) {
+  protected override openLastStepDialog(args: { response: EnrollmentResponse; user: UserData | null }) {
     const { response, user } = args;
     this.dialogService.openTokenEnrollmentLastStepDialog({
       data: {

@@ -49,6 +49,5 @@ export class ServiceIdService implements ServiceIdServiceInterface {
     }
   });
 
-  constructor(private authService: AuthService) {
-  }
+  constructor(private authService: AuthService) {}
 }

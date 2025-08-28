@@ -1,6 +1,6 @@
+import { Injectable } from "@angular/core";
 import { RemoteServer } from "../../services/privavyidea-server/privacyidea-server.service";
 import { TokenApiPayloadMapper, TokenEnrollmentData, TokenEnrollmentPayload } from "./_token-api-payload.mapper";
-import { Injectable } from "@angular/core";
 
 export interface RemoteEnrollmentData extends TokenEnrollmentData {
   type: "remote";

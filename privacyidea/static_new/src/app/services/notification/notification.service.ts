@@ -19,8 +19,7 @@ export class NotificationService implements NotificationServiceInterface {
   timerSub: Subscription = new Subscription();
   startTime: number = 0;
 
-  constructor(readonly snackBar: MatSnackBar) {
-  }
+  constructor(readonly snackBar: MatSnackBar) {}
 
   openSnackBar(message: string): void {
     const snackBarRef = this.snackBar.open(message, "🗙", {
@@ -34,12 +33,9 @@ export class NotificationService implements NotificationServiceInterface {
     this.startTimer(snackBarRef);
 
     snackBarRef.afterOpened().subscribe(() => {
-      const snackBarElement = (snackBarRef.containerInstance as any)._elementRef
-        .nativeElement;
+      const snackBarElement = (snackBarRef.containerInstance as any)._elementRef.nativeElement;
       snackBarElement.addEventListener("mouseenter", () => this.onMouseEnter());
-      snackBarElement.addEventListener("mouseleave", () =>
-        this.onMouseLeave(snackBarRef)
-      );
+      snackBarElement.addEventListener("mouseleave", () => this.onMouseLeave(snackBarRef));
     });
   }
 

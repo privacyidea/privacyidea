@@ -41,14 +41,10 @@ import { ContainerTableComponent } from "./container-table.component";
 })
 export class ContainerTableSelfServiceComponent extends ContainerTableComponent {
   private readonly dialog = inject(MatDialog);
-  protected override readonly containerService: ContainerServiceInterface =
-    inject(ContainerService);
-  protected override readonly tokenService: TokenServiceInterface =
-    inject(TokenService);
-  protected override readonly tableUtilsService: TableUtilsServiceInterface =
-    inject(TableUtilsService);
-  protected override readonly contentService: ContentServiceInterface =
-    inject(ContentService);
+  protected override readonly containerService: ContainerServiceInterface = inject(ContainerService);
+  protected override readonly tokenService: TokenServiceInterface = inject(TokenService);
+  protected override readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
+  protected override readonly contentService: ContentServiceInterface = inject(ContentService);
 
   readonly columnKeysMapSelfService = [
     { key: "serial", label: "Serial" },

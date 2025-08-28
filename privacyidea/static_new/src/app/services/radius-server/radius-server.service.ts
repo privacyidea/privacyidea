@@ -41,6 +41,5 @@ export class RadiusServerService implements RadiusServerServiceInterface {
       []
   });
 
-  constructor(private authService: AuthService) {
-  }
+  constructor(private authService: AuthService) {}
 }
