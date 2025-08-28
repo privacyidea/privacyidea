@@ -1,7 +1,7 @@
 <h2 mat-dialog-title>{{ data.title }}</h2>
 
 <mat-dialog-content>
-  @if (data.action === "remove" || data.action === "delete" || data.action === "revoke") {
+  @if (data.action === "remove" || data.action === "delete" || data.action === "revoke" || data.action === "unassign") {
     <p i18n>
       Are you sure you want to {{ data.action }}
       @if ((data.serialList?.length ?? 0) > 1 && data.type === "token") {

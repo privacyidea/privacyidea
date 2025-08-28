@@ -22,6 +22,7 @@ import {
   templateUrl: "./confirmation-dialog.component.html",
   styleUrl: "./confirmation-dialog.component.scss"
 })
+
 export class ConfirmationDialogComponent {
   public readonly data: ConfirmationDialogData = inject(MAT_DIALOG_DATA);
 }

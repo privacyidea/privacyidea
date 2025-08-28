@@ -124,7 +124,7 @@ export class TokenTabComponent {
       .open(ConfirmationDialogComponent, {
         data: {
           serialList: selectedTokens.map((token) => token.serial),
-          title: "Delete All Tokens",
+          title: "Delete Selected Tokens",
           type: "token",
           action: "delete",
           numberOfTokens: selectedTokens.length
@@ -213,11 +213,12 @@ export class TokenTabComponent {
 
   unassignSelectedTokens() {
     const selectedTokens = this.tokenSelection();
+    console.log("selected tokens: ", selectedTokens);
     this.dialog
       .open(ConfirmationDialogComponent, {
         data: {
           serialList: selectedTokens.map((token) => token.serial),
-          title: "Unassign Tokens",
+          title: "Unassign Selected Tokens",
           type: "token",
           action: "unassign",
           numberOfTokens: selectedTokens.length
