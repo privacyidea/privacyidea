@@ -112,29 +112,29 @@ export class TokenDetailsComponent {
       return res && res.result?.value?.tokens[0]
         ? (res.result?.value.tokens[0] as TokenDetails)
         : {
-          active: false,
-          container_serial: "",
-          count: 0,
-          count_window: 0,
-          description: "",
-          failcount: 0,
-          id: 0,
-          info: {},
-          locked: false,
-          maxfail: 0,
-          otplen: 0,
-          realms: [],
-          resolver: "",
-          revoked: false,
-          rollout_state: "",
-          serial: "",
-          sync_window: 0,
-          tokengroup: [],
-          tokentype: "hotp",
-          user_id: "",
-          user_realm: "",
-          username: ""
-        };
+            active: false,
+            container_serial: "",
+            count: 0,
+            count_window: 0,
+            description: "",
+            failcount: 0,
+            id: 0,
+            info: {},
+            locked: false,
+            maxfail: 0,
+            otplen: 0,
+            realms: [],
+            resolver: "",
+            revoked: false,
+            rollout_state: "",
+            serial: "",
+            sync_window: 0,
+            tokengroup: [],
+            tokentype: "hotp",
+            user_id: "",
+            user_realm: "",
+            username: ""
+          };
     }
   });
   tokenDetailData = linkedSignal({
