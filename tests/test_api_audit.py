@@ -417,7 +417,7 @@ class APIAuditTestCase(MyApiTestCase):
         audit.date = date
         audit.save()
 
-        # check, that we see all audit entries
+        # check that we see all audit entries
         with self.app.test_request_context('/audit/',
                                            method='GET',
                                            headers={'Authorization': self.at}):
@@ -429,7 +429,7 @@ class APIAuditTestCase(MyApiTestCase):
 
         # Set audit age policy
         set_policy("audit_age", scope=SCOPE.ADMIN, action=f"{PolicyAction.AUDIT},{PolicyAction.AUDIT_AGE}=1d")
-        # no we should only get audit entries within the last day
+        # Now we should only get audit entries within the last day
         with self.app.test_request_context('/audit/',
                                            method='GET',
                                            headers={'Authorization': self.at}):
@@ -454,11 +454,10 @@ class APIAuditTestCase(MyApiTestCase):
             self.assertTrue(json_response.get("result").get("status"), res)
             audit_result = json_response.get("result").get("value")
             # TODO: This should also contain my own auth audit entries, but currently the audit entries are filtered
-            #   by the real which excludes the own auth entry.
+            # TODO: by the real which excludes the own auth entry.
             self.assertEqual(2, audit_result.get("count"))
             for audit in audit_result.get("auditdata"):
                 self.assertNotEqual("enable", audit.get("action"), audit)
                 self.assertNotEqual(self.realm1a, audit.get("realm"), audit)
-
 
         delete_policy("audit_age")
