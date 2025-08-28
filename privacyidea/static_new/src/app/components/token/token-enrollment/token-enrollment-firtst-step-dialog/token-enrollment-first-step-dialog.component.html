@@ -4,9 +4,7 @@
   Take action on your authenticator
 </h2>
 <mat-dialog-content>
-  @if (
-    data.enrollmentResponse.detail["webAuthnRegisterRequest"] || data.enrollmentResponse.detail.passkey_registration
-  ) {
+  @if (data.enrollmentResponse.detail["webAuthnRegisterRequest"] || data.enrollmentResponse.detail.passkey_registration) {
     <p
       i18n
       class="max-width-600">

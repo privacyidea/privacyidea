@@ -1,5 +1,5 @@
-import { TokenApiPayloadMapper, TokenEnrollmentData, TokenEnrollmentPayload } from "./_token-api-payload.mapper";
 import { Injectable } from "@angular/core";
+import { TokenApiPayloadMapper, TokenEnrollmentData, TokenEnrollmentPayload } from "./_token-api-payload.mapper";
 
 // Interface for DayPassword-specific enrollment data
 export interface DaypasswordEnrollmentData extends TokenEnrollmentData {
@@ -20,8 +20,7 @@ export interface DaypasswordEnrollmentPayload extends TokenEnrollmentPayload {
 }
 
 @Injectable({ providedIn: "root" })
-export class DaypasswordApiPayloadMapper
-  implements TokenApiPayloadMapper<DaypasswordEnrollmentData> {
+export class DaypasswordApiPayloadMapper implements TokenApiPayloadMapper<DaypasswordEnrollmentData> {
   toApiPayload(data: DaypasswordEnrollmentData): DaypasswordEnrollmentPayload {
     const payload: DaypasswordEnrollmentPayload = {
       type: data.type,

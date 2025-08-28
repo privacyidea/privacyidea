@@ -22,8 +22,7 @@ export interface U2fEnrollmentOptions extends TokenEnrollmentData {
 })
 export class EnrollU2fComponent implements OnInit {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
-  protected readonly enrollmentMapper: U2fApiPayloadMapper =
-    inject(U2fApiPayloadMapper);
+  protected readonly enrollmentMapper: U2fApiPayloadMapper = inject(U2fApiPayloadMapper);
 
   @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
@@ -39,9 +38,7 @@ export class EnrollU2fComponent implements OnInit {
     this.clickEnrollChange.emit(this.onClickEnroll);
   }
 
-  onClickEnroll = (
-    basicOptions: TokenEnrollmentData
-  ): Observable<EnrollmentResponse | null> => {
+  onClickEnroll = (basicOptions: TokenEnrollmentData): Observable<EnrollmentResponse | null> => {
     const enrollmentData: U2fEnrollmentOptions = {
       ...basicOptions,
       type: "u2f"

@@ -47,11 +47,8 @@ export class RemoteErrorStateMatcher implements ErrorStateMatcher {
   styleUrl: "./enroll-remote.component.scss"
 })
 export class EnrollRemoteComponent implements OnInit {
-  protected readonly enrollmentMapper: RemoteApiPayloadMapper = inject(
-    RemoteApiPayloadMapper
-  );
-  protected readonly privacyideaServerService: PrivacyideaServerServiceInterface =
-    inject(PrivacyideaServerService);
+  protected readonly enrollmentMapper: RemoteApiPayloadMapper = inject(RemoteApiPayloadMapper);
+  protected readonly privacyideaServerService: PrivacyideaServerServiceInterface = inject(PrivacyideaServerService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
 
   @Output() additionalFormFieldsChange = new EventEmitter<{
@@ -61,12 +58,8 @@ export class EnrollRemoteComponent implements OnInit {
     (basicOptions: TokenEnrollmentData) => Observable<EnrollmentResponse | null>
   >();
 
-  checkPinLocallyControl = new FormControl<boolean>(false, [
-    Validators.required
-  ]);
-  remoteServerControl = new FormControl<RemoteServer | null>(null, [
-    Validators.required
-  ]);
+  checkPinLocallyControl = new FormControl<boolean>(false, [Validators.required]);
+  remoteServerControl = new FormControl<RemoteServer | null>(null, [Validators.required]);
   remoteSerialControl = new FormControl<string>("");
   remoteUserControl = new FormControl<string>("");
   remoteRealmControl = new FormControl<string>("");
@@ -96,15 +89,15 @@ export class EnrollRemoteComponent implements OnInit {
     this.clickEnrollChange.emit(this.onClickEnroll);
   }
 
-  onClickEnroll = (
-    basicOptions: TokenEnrollmentData
-  ): Observable<EnrollmentResponse | null> => {
-    if (this.remoteServerControl.invalid ||
+  onClickEnroll = (basicOptions: TokenEnrollmentData): Observable<EnrollmentResponse | null> => {
+    if (
+      this.remoteServerControl.invalid ||
       this.remoteSerialControl.invalid ||
       this.remoteUserControl.invalid ||
       this.remoteRealmControl.invalid ||
       this.remoteResolverControl.invalid ||
-      this.checkPinLocallyControl.invalid) {
+      this.checkPinLocallyControl.invalid
+    ) {
       this.remoteForm.markAllAsTouched();
       return of(null);
     }

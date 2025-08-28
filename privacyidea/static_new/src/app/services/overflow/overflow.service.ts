@@ -1,15 +1,11 @@
 import { inject, Injectable } from "@angular/core";
-import { ContentService, ContentServiceInterface } from "../content/content.service";
 import { ROUTE_PATHS } from "../../app.routes";
+import { ContentService, ContentServiceInterface } from "../content/content.service";
 
 export interface OverflowServiceInterface {
   isWidthOverflowing(selector: string, threshold: number): boolean;
 
-  isHeightOverflowing(params: {
-    selector: string;
-    threshold?: number;
-    thresholdSelector?: string;
-  }): boolean;
+  isHeightOverflowing(params: { selector: string; threshold?: number; thresholdSelector?: string }): boolean;
 
   getOverflowThreshold(): number;
 }
@@ -25,11 +21,7 @@ export class OverflowService implements OverflowServiceInterface {
     return element ? element.clientWidth < threshold : false;
   }
 
-  isHeightOverflowing(params: {
-    selector: string;
-    threshold?: number;
-    thresholdSelector?: string;
-  }): boolean {
+  isHeightOverflowing(params: { selector: string; threshold?: number; thresholdSelector?: string }): boolean {
     const element = document.querySelector<HTMLElement>(params.selector);
     if (!element) return false;
 

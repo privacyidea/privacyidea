@@ -42,9 +42,7 @@ export interface DaypasswordEnrollmentOptions extends TokenEnrollmentData {
 })
 export class EnrollDaypasswordComponent implements OnInit {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
-  protected readonly enrollmentMapper: DaypasswordApiPayloadMapper = inject(
-    DaypasswordApiPayloadMapper
-  );
+  protected readonly enrollmentMapper: DaypasswordApiPayloadMapper = inject(DaypasswordApiPayloadMapper);
   readonly otpLengthOptions = [6, 8];
   readonly hashAlgorithmOptions = [
     { value: "sha1", viewValue: "SHA1" },
@@ -58,12 +56,8 @@ export class EnrollDaypasswordComponent implements OnInit {
     (basicOptions: TokenEnrollmentData) => Observable<EnrollmentResponse | null>
   >();
   otpKeyControl = new FormControl<string>("");
-  hashAlgorithmControl = new FormControl<string>("sha256", [
-    Validators.required
-  ]);
-  timeStepControl = new FormControl<number | string>(86400, [
-    Validators.required
-  ]);
+  hashAlgorithmControl = new FormControl<string>("sha256", [Validators.required]);
+  timeStepControl = new FormControl<number | string>(86400, [Validators.required]);
   generateOnServerControl = new FormControl(true);
   otpLengthControl = new FormControl<number>(6, [Validators.required]);
   daypasswordForm = new FormGroup({
@@ -90,9 +84,7 @@ export class EnrollDaypasswordComponent implements OnInit {
     });
   }
 
-  onClickEnroll = (
-    basicOptions: TokenEnrollmentData
-  ): Observable<EnrollmentResponse | null> => {
+  onClickEnroll = (basicOptions: TokenEnrollmentData): Observable<EnrollmentResponse | null> => {
     if (this.daypasswordForm.invalid) {
       this.daypasswordForm.markAllAsTouched();
       return of(null);
@@ -123,10 +115,7 @@ export class EnrollDaypasswordComponent implements OnInit {
       this.otpKeyControl.clearValidators();
     } else {
       this.otpKeyControl.enable({ emitEvent: false });
-      this.otpKeyControl.setValidators([
-        Validators.required,
-        Validators.minLength(16)
-      ]);
+      this.otpKeyControl.setValidators([Validators.required, Validators.minLength(16)]);
     }
     this.otpKeyControl.updateValueAndValidity();
   }

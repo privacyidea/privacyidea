@@ -21,8 +21,7 @@ export interface TanEnrollmentOptions extends TokenEnrollmentData {
   styleUrl: "./enroll-tan.component.scss"
 })
 export class EnrollTanComponent implements OnInit {
-  protected readonly enrollmentMapper: TanApiPayloadMapper =
-    inject(TanApiPayloadMapper);
+  protected readonly enrollmentMapper: TanApiPayloadMapper = inject(TanApiPayloadMapper);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
 
   @Output() additionalFormFieldsChange = new EventEmitter<{
@@ -39,9 +38,7 @@ export class EnrollTanComponent implements OnInit {
     this.clickEnrollChange.emit(this.onClickEnroll);
   }
 
-  onClickEnroll = (
-    basicOptions: TokenEnrollmentData
-  ): Observable<EnrollmentResponse | null> => {
+  onClickEnroll = (basicOptions: TokenEnrollmentData): Observable<EnrollmentResponse | null> => {
     const enrollmentData: TanEnrollmentOptions = {
       ...basicOptions,
       type: "tan"
