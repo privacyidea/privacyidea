@@ -599,7 +599,6 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
       return;
     }
 
-    this.notificationService.openSnackBar(`Token ${detail.serial} enrolled successfully.`);
     this.openLastStepDialog({ response, user });
   }
 }
