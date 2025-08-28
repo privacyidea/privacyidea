@@ -69,29 +69,19 @@ const columnsKeyMap = [
 })
 export class ContainerDetailsTokenTableComponent {
   protected readonly dialog: MatDialog = inject(MatDialog);
-  protected readonly containerService: ContainerServiceInterface =
-    inject(ContainerService);
+  protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
-  protected readonly tableUtilsService: TableUtilsServiceInterface =
-    inject(TableUtilsService);
-  protected readonly overflowService: OverflowServiceInterface =
-    inject(OverflowService);
-  protected readonly contentService: ContentServiceInterface =
-    inject(ContentService);
+  protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
+  protected readonly overflowService: OverflowServiceInterface = inject(OverflowService);
+  protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
 
   protected readonly columnsKeyMap = columnsKeyMap;
-  displayedColumns: string[] = [
-    ...columnsKeyMap.map((column) => column.key),
-    "remove",
-    "delete"
-  ];
+  displayedColumns: string[] = [...columnsKeyMap.map((column) => column.key), "remove", "delete"];
   pageSize = 10;
   pageSizeOptions = this.tableUtilsService.pageSizeOptions;
   filterValue = "";
-  @Input() containerTokenData!: WritableSignal<
-    MatTableDataSource<ContainerDetailToken, MatPaginator>
-  >;
+  @Input() containerTokenData!: WritableSignal<MatTableDataSource<ContainerDetailToken, MatPaginator>>;
   dataSource = new MatTableDataSource<ContainerDetailToken>([]);
   containerSerial = this.containerService.containerSerial;
   assignedUser: WritableSignal<{
@@ -174,13 +164,11 @@ export class ContainerDetailsTokenTableComponent {
       .subscribe({
         next: (result) => {
           if (result) {
-            this.containerService
-              .removeTokenFromContainer(containerSerial, tokenSerial)
-              .subscribe({
-                next: () => {
-                  this.containerService.containerDetailResource.reload();
-                }
-              });
+            this.containerService.removeTokenFromContainer(containerSerial, tokenSerial).subscribe({
+              next: () => {
+                this.containerService.containerDetailResource.reload();
+              }
+            });
           }
         }
       });
@@ -193,9 +181,7 @@ export class ContainerDetailsTokenTableComponent {
   }
 
   unassignFromAllToken() {
-    const tokenToUnassign = this.containerTokenData().data.filter(
-      (token) => token.username !== ""
-    );
+    const tokenToUnassign = this.containerTokenData().data.filter((token) => token.username !== "");
     if (tokenToUnassign.length === 0) {
       return;
     }
@@ -246,44 +232,36 @@ export class ContainerDetailsTokenTableComponent {
     if (tokensToAssign.length === 0) {
       return;
     }
-    var tokensAssignedToOtherUser = tokensToAssign.filter(
-      (token) => token.username !== ""
-    );
+    var tokensAssignedToOtherUser = tokensToAssign.filter((token) => token.username !== "");
 
     this.dialog
       .open(UserAssignmentDialogComponent)
       .afterClosed()
       .subscribe((pin: string) => {
-        const tokenSerialsAssignedToOtherUser = tokensAssignedToOtherUser.map(
-          (token) => token.serial
-        );
-        this.tokenService
-          .unassignUserFromAll(tokenSerialsAssignedToOtherUser)
-          .subscribe({
-            next: () => {
-              const tokenSerialsToAssign = tokensToAssign.map(
-                (token) => token.serial
-              );
-              this.tokenService
-                .assignUserToAll({
-                  tokenSerials: tokenSerialsToAssign,
-                  username: username,
-                  realm: realm,
-                  pin: pin
-                })
-                .subscribe({
-                  next: () => {
-                    this.containerService.containerDetailResource.reload();
-                  },
-                  error: (error) => {
-                    console.error("Error assigning user to all tokens:", error);
-                  }
-                });
-            },
-            error: (error) => {
-              console.error("Error unassigning user from all tokens:", error);
-            }
-          });
+        const tokenSerialsAssignedToOtherUser = tokensAssignedToOtherUser.map((token) => token.serial);
+        this.tokenService.unassignUserFromAll(tokenSerialsAssignedToOtherUser).subscribe({
+          next: () => {
+            const tokenSerialsToAssign = tokensToAssign.map((token) => token.serial);
+            this.tokenService
+              .assignUserToAll({
+                tokenSerials: tokenSerialsToAssign,
+                username: username,
+                realm: realm,
+                pin: pin
+              })
+              .subscribe({
+                next: () => {
+                  this.containerService.containerDetailResource.reload();
+                },
+                error: (error) => {
+                  console.error("Error assigning user to all tokens:", error);
+                }
+              });
+          },
+          error: (error) => {
+            console.error("Error unassigning user from all tokens:", error);
+          }
+        });
       });
   }
 

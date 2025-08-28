@@ -22,9 +22,7 @@ export interface PaperEnrollmentOptions extends TokenEnrollmentData {
 })
 export class EnrollPaperComponent implements OnInit {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
-  protected readonly enrollmentMapper: PaperApiPayloadMapper = inject(
-    PaperApiPayloadMapper
-  );
+  protected readonly enrollmentMapper: PaperApiPayloadMapper = inject(PaperApiPayloadMapper);
 
   @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
@@ -40,9 +38,7 @@ export class EnrollPaperComponent implements OnInit {
     this.clickEnrollChange.emit(this.onClickEnroll);
   }
 
-  onClickEnroll = (
-    basicOptions: TokenEnrollmentData
-  ): Observable<EnrollmentResponse | null> => {
+  onClickEnroll = (basicOptions: TokenEnrollmentData): Observable<EnrollmentResponse | null> => {
     const enrollmentData: PaperEnrollmentOptions = {
       ...basicOptions,
       type: "paper"

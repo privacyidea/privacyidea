@@ -18,7 +18,8 @@
     @if (showProgressBar()) {
       <div class="loading-urls-container">
         @for (l of loadingUrls(); track l.key) {
-          <span class="loading-url"> {{ l.url.slice(1) }} </span><br />
+          <span class="loading-url"> {{ l.url.slice(1) }} </span>
+          <br />
         }
       </div>
       <mat-progress-bar

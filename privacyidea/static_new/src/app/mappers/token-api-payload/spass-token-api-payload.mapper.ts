@@ -1,12 +1,11 @@
-import { TokenApiPayloadMapper, TokenEnrollmentData, TokenEnrollmentPayload } from "./_token-api-payload.mapper";
 import { Injectable } from "@angular/core";
+import { TokenApiPayloadMapper, TokenEnrollmentData, TokenEnrollmentPayload } from "./_token-api-payload.mapper";
 
 export interface SpassEnrollmentData extends TokenEnrollmentData {
   type: "spass";
 }
 
-export interface SpassEnrollmentPayload extends TokenEnrollmentPayload {
-}
+export interface SpassEnrollmentPayload extends TokenEnrollmentPayload {}
 
 @Injectable({ providedIn: "root" })
 export class SpassApiPayloadMapper implements TokenApiPayloadMapper<SpassEnrollmentData> {

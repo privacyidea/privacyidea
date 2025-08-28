@@ -1,5 +1,5 @@
-import { TokenApiPayloadMapper, TokenEnrollmentData, TokenEnrollmentPayload } from "./_token-api-payload.mapper";
 import { Injectable } from "@angular/core";
+import { TokenApiPayloadMapper, TokenEnrollmentData, TokenEnrollmentPayload } from "./_token-api-payload.mapper";
 
 // Interface for Indexed Secret-specific enrollment data
 export interface IndexedSecretEnrollmentData extends TokenEnrollmentData {
@@ -12,8 +12,7 @@ export interface IndexedSecretEnrollmentPayload extends TokenEnrollmentPayload {
 }
 
 @Injectable({ providedIn: "root" })
-export class IndexedSecretApiPayloadMapper
-  implements TokenApiPayloadMapper<IndexedSecretEnrollmentData> {
+export class IndexedSecretApiPayloadMapper implements TokenApiPayloadMapper<IndexedSecretEnrollmentData> {
   toApiPayload(data: IndexedSecretEnrollmentData): IndexedSecretEnrollmentPayload {
     const payload: IndexedSecretEnrollmentPayload = {
       type: data.type,

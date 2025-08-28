@@ -29,22 +29,13 @@ export interface MotpEnrollmentOptions extends TokenEnrollmentData {
 @Component({
   selector: "app-enroll-motp",
   standalone: true,
-  imports: [
-    FormsModule,
-    ReactiveFormsModule,
-    MatFormField,
-    MatInput,
-    MatLabel,
-    MatCheckbox,
-    MatError
-  ],
+  imports: [FormsModule, ReactiveFormsModule, MatFormField, MatInput, MatLabel, MatCheckbox, MatError],
   templateUrl: "./enroll-motp.component.html",
   styleUrl: "./enroll-motp.component.scss"
 })
 export class EnrollMotpComponent implements OnInit {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
-  protected readonly enrollmentMapper: MotpApiPayloadMapper =
-    inject(MotpApiPayloadMapper);
+  protected readonly enrollmentMapper: MotpApiPayloadMapper = inject(MotpApiPayloadMapper);
 
   @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
@@ -53,27 +44,15 @@ export class EnrollMotpComponent implements OnInit {
     (basicOptions: TokenEnrollmentData) => Observable<EnrollmentResponse | null>
   >();
 
-  generateOnServerControl = new FormControl<boolean>(true, [
-    Validators.required
-  ]);
+  generateOnServerControl = new FormControl<boolean>(true, [Validators.required]);
   otpKeyControl = new FormControl<string>("");
-  motpPinControl = new FormControl<string>("", [
-    Validators.required,
-    Validators.minLength(4)
-  ]);
+  motpPinControl = new FormControl<string>("", [Validators.required, Validators.minLength(4)]);
   repeatMotpPinControl = new FormControl<string>("", [
     Validators.required,
-    (control: AbstractControl) =>
-      EnrollMotpComponent.motpPinMismatchValidator(
-        this.motpPinControl,
-        control
-      )
+    (control: AbstractControl) => EnrollMotpComponent.motpPinMismatchValidator(this.motpPinControl, control)
   ]);
 
-  static motpPinMismatchValidator(
-    motpPin: AbstractControl,
-    repeatMotpPin: AbstractControl
-  ): ValidationErrors | null {
+  static motpPinMismatchValidator(motpPin: AbstractControl, repeatMotpPin: AbstractControl): ValidationErrors | null {
     if (motpPin && repeatMotpPin && motpPin.value !== repeatMotpPin.value) {
       return { motpPinMismatch: true };
     }
@@ -103,9 +82,7 @@ export class EnrollMotpComponent implements OnInit {
     });
   }
 
-  onClickEnroll = (
-    basicOptions: TokenEnrollmentData
-  ): Observable<EnrollmentResponse | null> => {
+  onClickEnroll = (basicOptions: TokenEnrollmentData): Observable<EnrollmentResponse | null> => {
     const enrollmentData: MotpEnrollmentOptions = {
       ...basicOptions,
       type: "motp",

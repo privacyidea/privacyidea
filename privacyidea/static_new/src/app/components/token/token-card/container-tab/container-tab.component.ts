@@ -1,43 +1,32 @@
+import { NgClass } from "@angular/common";
+import { Component, computed, inject } from "@angular/core";
+import { MatButton } from "@angular/material/button";
+import { MatDialog } from "@angular/material/dialog";
+import { MatDivider } from "@angular/material/divider";
 import { MatIcon } from "@angular/material/icon";
 import { MatList, MatListItem } from "@angular/material/list";
-import { MatButton } from "@angular/material/button";
-import { MatDivider } from "@angular/material/divider";
-import { MatDialog } from "@angular/material/dialog";
+import { Router, RouterLink } from "@angular/router";
 import { forkJoin } from "rxjs";
 import { tabToggleState } from "../../../../../styles/animations/animations";
+import { ROUTE_PATHS } from "../../../../app.routes";
 import { ContainerService, ContainerServiceInterface } from "../../../../services/container/container.service";
 import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
 import { VersioningService, VersioningServiceInterface } from "../../../../services/version/version.service";
-import { NgClass } from "@angular/common";
-import { Component, computed, inject } from "@angular/core";
 import { ConfirmationDialogComponent } from "../../../shared/confirmation-dialog/confirmation-dialog.component";
-import { Router, RouterLink } from "@angular/router";
-import { ROUTE_PATHS } from "../../../../app.routes";
 
 @Component({
   selector: "app-container-tab",
   standalone: true,
-  imports: [
-    MatIcon,
-    MatList,
-    MatListItem,
-    MatButton,
-    NgClass,
-    MatDivider,
-    RouterLink
-  ],
+  imports: [MatIcon, MatList, MatListItem, MatButton, NgClass, MatDivider, RouterLink],
   templateUrl: "./container-tab.component.html",
   styleUrl: "./container-tab.component.scss",
   animations: [tabToggleState]
 })
 export class ContainerTabComponent {
   private readonly dialog: MatDialog = inject(MatDialog);
-  private readonly containerService: ContainerServiceInterface =
-    inject(ContainerService);
-  protected readonly contentService: ContentServiceInterface =
-    inject(ContentService);
-  protected readonly versioningService: VersioningServiceInterface =
-    inject(VersioningService);
+  private readonly containerService: ContainerServiceInterface = inject(ContainerService);
+  protected readonly contentService: ContentServiceInterface = inject(ContentService);
+  protected readonly versioningService: VersioningServiceInterface = inject(VersioningService);
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
   private router = inject(Router);
   containerSelection = this.containerService.containerSelection;
@@ -45,8 +34,7 @@ export class ContainerTabComponent {
   selectedContainer = this.containerService.selectedContainer;
   containerIsSelected = computed(() => this.containerSerial() !== "");
   states = computed(() => {
-    const containerDetail =
-      this.containerService.containerDetailResource.value();
+    const containerDetail = this.containerService.containerDetailResource.value();
     return containerDetail?.result?.value?.containers[0]?.states ?? [];
   });
   version!: string;
@@ -66,11 +54,9 @@ export class ContainerTabComponent {
   }
 
   toggleActive(): void {
-    this.containerService
-      .toggleActive(this.containerSerial(), this.states())
-      .subscribe(() => {
-        this.containerService.containerDetailResource.reload();
-      });
+    this.containerService.toggleActive(this.containerSerial(), this.states()).subscribe(() => {
+      this.containerService.containerDetailResource.reload();
+    });
   }
 
   deleteContainer() {
@@ -87,18 +73,16 @@ export class ContainerTabComponent {
       .afterClosed()
       .subscribe((result) => {
         if (result) {
-          this.containerService
-            .deleteContainer(this.containerSerial())
-            .subscribe(() => {
-              const prev = this.contentService.previousUrl();
+          this.containerService.deleteContainer(this.containerSerial()).subscribe(() => {
+            const prev = this.contentService.previousUrl();
 
-              if (prev.startsWith(ROUTE_PATHS.TOKENS_DETAILS)) {
-                this.contentService.isProgrammaticTabChange.set(true);
-                this.router.navigateByUrl(prev);
-              } else {
-                this.router.navigateByUrl(ROUTE_PATHS.TOKENS_CONTAINERS);
-              }
-            });
+            if (prev.startsWith(ROUTE_PATHS.TOKENS_DETAILS)) {
+              this.contentService.isProgrammaticTabChange.set(true);
+              this.router.navigateByUrl(prev);
+            } else {
+              this.router.navigateByUrl(ROUTE_PATHS.TOKENS_CONTAINERS);
+            }
+          });
         }
       });
   }
@@ -120,9 +104,7 @@ export class ContainerTabComponent {
         next: (result) => {
           if (result) {
             forkJoin(
-              selectedContainers.map((container) =>
-                this.containerService.deleteContainer(container.serial)
-              )
+              selectedContainers.map((container) => this.containerService.deleteContainer(container.serial))
             ).subscribe({
               next: () => {
                 this.containerSelection.set([]);
