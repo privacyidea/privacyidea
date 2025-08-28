@@ -117,6 +117,11 @@ export interface LostTokenData {
   valid_to: string;
 }
 
+export interface BatchResult {
+  failed: string[];
+  unauthorized: string[];
+}
+
 export interface TokenServiceInterface {
   stopPolling$: Subject<void>;
   tokenBaseUrl: string;
@@ -198,7 +203,7 @@ export interface TokenServiceInterface {
 
   setRandomPin(tokenSerial: string): Observable<any>;
 
-  resyncOTPToken(tokenSerial: string, fristOTPValue: string, secondOTPValue: string): Observable<Object>;
+  resyncOTPToken(tokenSerial: string, firstOTPValue: string, secondOTPValue: string): Observable<Object>;
 
   getTokenDetails(tokenSerial: string): Observable<PiResponse<Tokens>>;
 
@@ -228,9 +233,9 @@ export interface TokenServiceInterface {
     value: string | string[]
   ): Observable<Object>;
 
-  batchDeleteTokens(selectedTokens: TokenDetails[]): Observable<Object>;
+  batchDeleteTokens(selectedTokens: TokenDetails[]): Observable<PiResponse<BatchResult, any>>;
 
-  batchUnassignTokens(tokenDetails: TokenDetails[]): Observable<Object>;
+  batchUnassignTokens(tokenDetails: TokenDetails[]): Observable<PiResponse<BatchResult, any>>;
 }
 
 @Injectable({
@@ -425,10 +430,10 @@ export class TokenService implements TokenServiceInterface {
     });
   }
 
-  batchUnassignTokens(tokenDetails: TokenDetails[]): Observable<Object> {
+  batchUnassignTokens(tokenDetails: TokenDetails[]): Observable<PiResponse<BatchResult, any>> {
     const headers = this.authService.getHeaders();
     return this.http
-      .post<Object>(
+      .post<PiResponse<BatchResult, any>>(
         this.tokenBaseUrl + "unassign",
         {
           serials: tokenDetails.map((token) => token.serial)
@@ -447,12 +452,12 @@ export class TokenService implements TokenServiceInterface {
       );
   }
 
-  batchDeleteTokens(selectedTokens: TokenDetails[]): Observable<Object> {
+  batchDeleteTokens(selectedTokens: TokenDetails[]): Observable<PiResponse<BatchResult, any>> {
     const headers = this.authService.getHeaders();
     const body = { serials: selectedTokens.map(t => t.serial) };
 
     return this.http
-      .delete<Object>(this.tokenBaseUrl, { headers, body })
+      .delete<PiResponse<BatchResult, any>>(this.tokenBaseUrl, { headers, body })
       .pipe(
         catchError((error) => {
           console.error("Failed to delete tokens.", error);
@@ -462,6 +467,7 @@ export class TokenService implements TokenServiceInterface {
         })
       );
   }
+
   toggleActive(tokenSerial: string, active: boolean): Observable<PiResponse<boolean>> {
     const headers = this.authService.getHeaders();
     const action = active ? "disable" : "enable";

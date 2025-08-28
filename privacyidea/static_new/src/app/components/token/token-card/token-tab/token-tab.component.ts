@@ -17,6 +17,16 @@ import { AuditService, AuditServiceInterface } from "../../../../services/audit/
 import { SelectedUserAssignDialogComponent } from "../selected-user-assign-dialog/selected-user-assign-dialog.component";
 import { tap } from "rxjs/operators";
 import { ROUTE_PATHS } from "../../../../app.routes";
+import {
+  NotificationService,
+  NotificationServiceInterface
+} from "../../../../services/notification/notification.service";
+import { PiResponse } from "../../../../app.component";
+
+interface BatchResult {
+  failed: string[];
+  unauthorized: string[];
+}
 
 @Component({
   selector: "app-token-tab",
@@ -42,6 +52,7 @@ export class TokenTabComponent {
     inject(ContentService);
   private readonly dialog: MatDialog = inject(MatDialog);
   protected readonly auditService: AuditServiceInterface = inject(AuditService);
+  protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
   private router = inject(Router);
   tokenIsActive = this.tokenService.tokenIsActive;
@@ -140,11 +151,28 @@ export class TokenTabComponent {
         next: (result) => {
           if (result) {
             this.tokenService.batchDeleteTokens(selectedTokens).subscribe({
-              next: () => {
+              next: (response: PiResponse<BatchResult, any>) => {
+                const failedTokens = response.result?.value?.failed || [];
+                const unauthorizedTokens = response.result?.value?.unauthorized || [];
+                const messages: string[] = [];
+
+                if (failedTokens.length > 0) {
+                  messages.push(`The following tokens failed to delete: ${failedTokens.join(", ")}`);
+                }
+
+                if (unauthorizedTokens.length > 0) {
+                  messages.push(`You are not authorized to delete the following tokens: ${unauthorizedTokens.join(", ")}`);
+                }
+
+                if (messages.length > 0) {
+                  this.notificationService.openSnackBar(messages.join("\n"));
+                }
+
                 this.tokenService.tokenResource.reload();
               },
               error: (err) => {
                 console.error("Error deleting tokens:", err);
+                this.notificationService.openSnackBar("An error occurred while deleting tokens.");
               }
             });
           }
@@ -210,11 +238,27 @@ export class TokenTabComponent {
         next: (result) => {
           if (result) {
             this.tokenService.batchUnassignTokens(selectedTokens).subscribe({
-              next: () => {
+              next: (response: PiResponse<BatchResult, any>) => {
+                const failedTokens = response.result?.value?.failed || [];
+                const unauthorizedTokens = response.result?.value?.unauthorized || [];
+                const messages: string[] = [];
+
+                if (failedTokens.length > 0) {
+                  messages.push(`The following tokens failed to unassign: ${failedTokens.join(", ")}`);
+                }
+
+                if (unauthorizedTokens.length > 0) {
+                  messages.push(`You are not authorized to unassign the following tokens: ${unauthorizedTokens.join(", ")}`);
+                }
+
+                if (messages.length > 0) {
+                  this.notificationService.openSnackBar(messages.join("\n"));
+                }
                 this.tokenService.tokenResource.reload();
               },
               error: (err) => {
                 console.error("Error unassigning tokens:", err);
+                this.notificationService.openSnackBar("An error occurred while unassigning tokens.");
               }
             });
           }
