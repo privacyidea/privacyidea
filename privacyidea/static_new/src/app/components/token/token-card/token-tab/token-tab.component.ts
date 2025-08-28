@@ -7,9 +7,7 @@ import { MatIcon } from "@angular/material/icon";
 import { MatList, MatListItem } from "@angular/material/list";
 import { Router, RouterLink } from "@angular/router";
 import { catchError, concatMap, EMPTY, filter, forkJoin, from, reduce, switchMap } from "rxjs";
-import { tap } from "rxjs/operators";
 import { tabToggleState } from "../../../../../styles/animations/animations";
-import { ROUTE_PATHS } from "../../../../app.routes";
 import { AuditService, AuditServiceInterface } from "../../../../services/audit/audit.service";
 import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
@@ -111,7 +109,7 @@ export class TokenTabComponent {
           if (result) {
             this.tokenService.deleteToken(this.tokenSerial()).subscribe({
               next: () => {
-                this.router.navigateByUrl(ROUTE_PATHS.TOKENS);
+                this.router.navigateByUrl(ROUTE_PATHS.TOKENS).then();
                 this.tokenSerial.set("");
               }
             });
@@ -157,8 +155,11 @@ export class TokenTabComponent {
                 this.tokenService.tokenResource.reload();
               },
               error: (err) => {
-                console.error("Error deleting tokens:", err);
-                this.notificationService.openSnackBar("An error occurred while deleting tokens.");
+                let message = "An error occurred while deleting tokens.";
+                if (err.error?.result?.error?.message) {
+                  message = err.error.result.error.message;
+                }
+                this.notificationService.openSnackBar(message);
               }
             });
           }
@@ -199,7 +200,11 @@ export class TokenTabComponent {
         ),
         tap(() => this.tokenService.tokenResource.reload()),
         catchError((err) => {
-          console.error("Error assigning tokens:", err);
+          let message = "An error occurred while assigning tokens.";
+          if (err.error?.result?.error?.message) {
+            message = err.error.result.error.message;
+          }
+          this.notificationService.openSnackBar(message);
           return EMPTY;
         })
       )
@@ -242,8 +247,11 @@ export class TokenTabComponent {
                 this.tokenService.tokenResource.reload();
               },
               error: (err) => {
-                console.error("Error unassigning tokens:", err);
-                this.notificationService.openSnackBar("An error occurred while unassigning tokens.");
+                let message = "An error occurred while unassigning tokens.";
+                if (err.error?.result?.error?.message) {
+                  message = err.error.result.error.message;
+                }
+                this.notificationService.openSnackBar(message);
               }
             });
           }

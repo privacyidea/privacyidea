@@ -320,18 +320,6 @@ describe("TokenService", () => {
     });
   });
 
-  describe("deleteTokens()", () => {
-    it("calls deleteToken for each serial and aggregates", (done) => {
-      const delMock = jest.spyOn(tokenService, "deleteToken").mockReturnValue(of({ ok: true } as any));
-
-      tokenService.deleteTokens(["A", "B"]).subscribe((arr) => {
-        expect(delMock).toHaveBeenCalledTimes(2);
-        expect(arr).toEqual([{ ok: true }, { ok: true }]);
-        done();
-      });
-    });
-  });
-
   describe("revokeToken()", () => {
     it("posts /revoke and propagates result", (done) => {
       postSpy.mockReturnValue(of({ success: true } as any));

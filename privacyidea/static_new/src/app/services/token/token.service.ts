@@ -173,7 +173,7 @@ export interface TokenServiceInterface {
 
   deleteToken(tokenSerial: string): Observable<Object>;
 
-  deleteTokens(tokenSerials: string[]): Observable<Object[]>;
+  batchDeleteTokens(selectedTokens: TokenDetails[]): Observable<PiResponse<BatchResult, any>>;
 
   revokeToken(tokenSerial: string): Observable<any>;
 
@@ -184,6 +184,8 @@ export interface TokenServiceInterface {
   ): Observable<PiResponse<boolean>[]>;
 
   unassignUser(tokenSerial: string): Observable<PiResponse<boolean>>;
+
+  batchUnassignTokens(tokenDetails: TokenDetails[]): Observable<PiResponse<BatchResult, any>>;
 
   assignUserToAll(args: {
     tokenSerials: string[];
@@ -233,9 +235,6 @@ export interface TokenServiceInterface {
     value: string | string[]
   ): Observable<Object>;
 
-  batchDeleteTokens(selectedTokens: TokenDetails[]): Observable<PiResponse<BatchResult, any>>;
-
-  batchUnassignTokens(tokenDetails: TokenDetails[]): Observable<PiResponse<BatchResult, any>>;
 }
 
 @Injectable({
@@ -259,12 +258,36 @@ export class TokenService implements TokenServiceInterface {
   tokenIsActive = signal(true);
   tokenIsRevoked = signal(true);
   tokenSerial = this.contentService.tokenSerial;
+
+  constructor() {
+    effect(() => {
+      if (this.tokenResource.error()) {
+        let tokensResourceError =
+          this.tokenResource.error() as HttpErrorResponse;
+        console.error("Failed to get token data.", tokensResourceError.message);
+        this.notificationService.openSnackBar(tokensResourceError.message);
+      }
+    });
+    effect(() => {
+      if (this.tokenTypesResource.error()) {
+        let tokenTypesResourceError =
+          this.tokenTypesResource.error() as HttpErrorResponse;
+        console.error(
+          "Failed to get token type data.",
+          tokenTypesResourceError.message
+        );
+        this.notificationService.openSnackBar(tokenTypesResourceError.message);
+      }
+    });
+  }
+
   showOnlyTokenNotInContainer = linkedSignal({
     source: this.contentService.routeUrl,
     computation: (routeUrl) => {
       return routeUrl.startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS);
     }
   });
+
   filterValue: WritableSignal<Record<string, string>> = linkedSignal({
     source: () => ({
       showOnlyTokenNotInContainer: this.showOnlyTokenNotInContainer(),
@@ -288,6 +311,7 @@ export class TokenService implements TokenServiceInterface {
       }
     }
   });
+
   tokenDetailResource = httpResource<PiResponse<Tokens>>(() => {
     if (
       !this.contentService.routeUrl().includes(ROUTE_PATHS.TOKENS_DETAILS, 0)
@@ -301,6 +325,7 @@ export class TokenService implements TokenServiceInterface {
       params: { serial: this.tokenSerial() }
     };
   });
+
   tokenTypesResource = httpResource<PiResponse<{}>>(() => {
     if (this.contentService.routeUrl() !== ROUTE_PATHS.TOKENS_ENROLLMENT) {
       return undefined;
@@ -311,6 +336,7 @@ export class TokenService implements TokenServiceInterface {
       headers: this.authService.getHeaders()
     };
   });
+
   tokenTypeOptions = computed<TokenType[]>(() => {
     const obj = this.tokenTypesResource?.value()?.result?.value;
     if (!obj) return [];
@@ -321,6 +347,7 @@ export class TokenService implements TokenServiceInterface {
         TokenComponent.tokenTypeTexts.find((t) => t.key === key)?.text || ""
     }));
   });
+
   selectedTokenType = linkedSignal({
     source: () => ({
       tokenTypeOptions: this.tokenTypeOptions(),
@@ -331,6 +358,7 @@ export class TokenService implements TokenServiceInterface {
       source.tokenTypeOptions[0] ||
       ({ key: "hotp", info: "", text: "" } as TokenType)
   });
+
   pageSize = linkedSignal<Record<string, string>, number>({
     source: this.filterValue,
     computation: (_, previous) => {
@@ -348,6 +376,7 @@ export class TokenService implements TokenServiceInterface {
     }
   });
   sort = signal({ active: "serial", direction: "asc" } as Sort);
+
   pageIndex = linkedSignal({
     source: () => ({
       filterValue: this.filterValue(),
@@ -357,6 +386,7 @@ export class TokenService implements TokenServiceInterface {
     }),
     computation: () => 0
   });
+
   filterParams = computed<Record<string, string>>(() => {
     const allowedFilters = [
       ...this.apiFilter,
@@ -377,6 +407,7 @@ export class TokenService implements TokenServiceInterface {
       {} as Record<string, string>
     );
   });
+
   tokenResource = httpResource<PiResponse<Tokens>>(() => {
     if (
       this.contentService.routeUrl() !== ROUTE_PATHS.TOKENS &&
@@ -407,28 +438,6 @@ export class TokenService implements TokenServiceInterface {
     }),
     computation: () => []
   });
-
-  constructor() {
-    effect(() => {
-      if (this.tokenResource.error()) {
-        let tokensResourceError =
-          this.tokenResource.error() as HttpErrorResponse;
-        console.error("Failed to get token data.", tokensResourceError.message);
-        this.notificationService.openSnackBar(tokensResourceError.message);
-      }
-    });
-    effect(() => {
-      if (this.tokenTypesResource.error()) {
-        let tokenTypesResourceError =
-          this.tokenTypesResource.error() as HttpErrorResponse;
-        console.error(
-          "Failed to get token type data.",
-          tokenTypesResourceError.message
-        );
-        this.notificationService.openSnackBar(tokenTypesResourceError.message);
-      }
-    });
-  }
 
   batchUnassignTokens(tokenDetails: TokenDetails[]): Observable<PiResponse<BatchResult, any>> {
     const headers = this.authService.getHeaders();
@@ -461,7 +470,7 @@ export class TokenService implements TokenServiceInterface {
       .pipe(
         catchError((error) => {
           console.error("Failed to delete tokens.", error);
-          const message = error.error?.result?.error?.message || "";
+          const message = error.result?.error?.message || "";
           this.notificationService.openSnackBar("Failed to delete tokens. " + message);
           return throwError(() => error);
         })
@@ -561,13 +570,6 @@ export class TokenService implements TokenServiceInterface {
   deleteToken(tokenSerial: string): Observable<Object> {
     const headers = this.authService.getHeaders();
     return this.http.delete(this.tokenBaseUrl + tokenSerial, { headers });
-  }
-
-  deleteTokens(tokenSerials: string[]): Observable<Object[]> {
-    const observables = tokenSerials.map((tokenSerial) =>
-      this.deleteToken(tokenSerial)
-    );
-    return forkJoin(observables);
   }
 
   revokeToken(tokenSerial: string): Observable<any> {
