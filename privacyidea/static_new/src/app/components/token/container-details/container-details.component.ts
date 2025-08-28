@@ -1,14 +1,14 @@
 import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
 import {
   Component,
-  ElementRef,
-  ViewChild,
-  WritableSignal,
   computed,
   effect,
+  ElementRef,
   inject,
   linkedSignal,
-  signal
+  signal,
+  ViewChild,
+  WritableSignal
 } from "@angular/core";
 import {
   ContainerDetailData,
@@ -17,7 +17,7 @@ import {
   ContainerServiceInterface
 } from "../../../services/container/container.service";
 import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
-import { EditButtonsComponent, EditableElement } from "../../shared/edit-buttons/edit-buttons.component";
+import { EditableElement, EditButtonsComponent } from "../../shared/edit-buttons/edit-buttons.component";
 import { FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
 import { MatCell, MatColumnDef, MatTableDataSource, MatTableModule } from "@angular/material/table";

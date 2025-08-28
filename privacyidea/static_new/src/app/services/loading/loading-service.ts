@@ -9,11 +9,7 @@ export interface LoadingServiceInterface {
 
   notifyListeners(): void;
 
-  addLoading(loading: {
-    key: string;
-    observable: Observable<HttpEvent<unknown>>;
-    url: string;
-  }): void;
+  addLoading(loading: { key: string; observable: Observable<HttpEvent<unknown>>; url: string }): void;
 
   getLoadingUrls(): { key: string; url: string }[];
 
@@ -43,11 +39,7 @@ export class LoadingService implements LoadingServiceInterface {
     Object.values(this.listeners).forEach((l) => l(this.isLoading()));
   }
 
-  addLoading(loading: {
-    key: string;
-    observable: Observable<HttpEvent<unknown>>;
-    url: string;
-  }): void {
+  addLoading(loading: { key: string; observable: Observable<HttpEvent<unknown>>; url: string }): void {
     const subscription = loading.observable.subscribe({
       complete: () => {
         this.removeLoading(loading.key);

@@ -1,24 +1,22 @@
-import { AuditService, AuditServiceInterface } from "../../../../services/audit/audit.service";
+import { NgClass } from "@angular/common";
 import { Component, inject, signal } from "@angular/core";
-import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
-import { EMPTY, catchError, concatMap, filter, forkJoin, from, reduce, switchMap } from "rxjs";
-import { MatList, MatListItem } from "@angular/material/list";
-import { Router, RouterLink } from "@angular/router";
-import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
-import { VersioningService, VersioningServiceInterface } from "../../../../services/version/version.service";
-
-import { ConfirmationDialogComponent } from "../../../shared/confirmation-dialog/confirmation-dialog.component";
-import { FilterValue } from "../../../../core/models/filter_value";
-import { LostTokenComponent } from "./lost-token/lost-token.component";
 import { MatButton } from "@angular/material/button";
 import { MatDialog } from "@angular/material/dialog";
 import { MatDivider } from "@angular/material/divider";
 import { MatIcon } from "@angular/material/icon";
-import { NgClass } from "@angular/common";
-import { ROUTE_PATHS } from "../../../../app.routes";
-import { SelectedUserAssignDialogComponent } from "../selected-user-assign-dialog/selected-user-assign-dialog.component";
-import { tabToggleState } from "../../../../../styles/animations/animations";
+import { MatList, MatListItem } from "@angular/material/list";
+import { Router, RouterLink } from "@angular/router";
+import { catchError, concatMap, EMPTY, filter, forkJoin, from, reduce, switchMap } from "rxjs";
 import { tap } from "rxjs/operators";
+import { tabToggleState } from "../../../../../styles/animations/animations";
+import { ROUTE_PATHS } from "../../../../app.routes";
+import { AuditService, AuditServiceInterface } from "../../../../services/audit/audit.service";
+import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
+import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
+import { VersioningService, VersioningServiceInterface } from "../../../../services/version/version.service";
+import { ConfirmationDialogComponent } from "../../../shared/confirmation-dialog/confirmation-dialog.component";
+import { SelectedUserAssignDialogComponent } from "../selected-user-assign-dialog/selected-user-assign-dialog.component";
+import { LostTokenComponent } from "./lost-token/lost-token.component";
 
 @Component({
   selector: "app-token-tab",

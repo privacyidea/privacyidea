@@ -1,10 +1,9 @@
-import { Component, Input, WritableSignal, signal } from "@angular/core";
-
-import { FilterValue } from "../../../core/models/filter_value";
+import { NgClass } from "@angular/common";
+import { Component, inject, Input, signal, WritableSignal } from "@angular/core";
 import { MatFabButton } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
-import { NgClass } from "@angular/common";
-import { TableUtilsService } from "../../../services/table-utils/table-utils.service";
+import { TableUtilsService, TableUtilsServiceInterface } from "../../../services/table-utils/table-utils.service";
+import { FilterValue } from "../../../core/models/filter_value";
 
 @Component({
   selector: "app-keyword-filter",
@@ -14,13 +13,12 @@ import { TableUtilsService } from "../../../services/table-utils/table-utils.ser
   styleUrl: "./keyword-filter.component.scss"
 })
 export class KeywordFilterComponent {
+  private readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   @Input() apiFilter: string[] = [];
   @Input() advancedApiFilter: string[] = [];
   @Input() filterHTMLInputElement!: HTMLInputElement;
   @Input() filterValue!: WritableSignal<FilterValue>;
   showAdvancedFilter = signal(false);
-
-  constructor(private tableUtilsService: TableUtilsService) {}
 
   onKeywordClick(filterKeyword: string): void {
     this.toggleFilter(filterKeyword, this.filterHTMLInputElement);

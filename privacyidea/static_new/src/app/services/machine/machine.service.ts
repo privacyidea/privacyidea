@@ -1,7 +1,7 @@
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
 import { HttpClient, HttpParams, httpResource } from "@angular/common/http";
-import { Injectable, WritableSignal, computed, inject, linkedSignal, signal } from "@angular/core";
+import { computed, inject, Injectable, linkedSignal, signal, WritableSignal } from "@angular/core";
 import { TableUtilsService, TableUtilsServiceInterface } from "../table-utils/table-utils.service";
 
 import { FilterValue } from "../../core/models/filter_value";
