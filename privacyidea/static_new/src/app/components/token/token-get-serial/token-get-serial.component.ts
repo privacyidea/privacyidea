@@ -1,6 +1,6 @@
 import { CommonModule } from "@angular/common";
 import { HttpParams } from "@angular/common/http";
-import { Component, effect, inject, signal } from "@angular/core";
+import { Component, effect, inject, linkedSignal, signal } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { MatButton } from "@angular/material/button";
 import { MatDialog } from "@angular/material/dialog";
@@ -56,19 +56,7 @@ export class TokenGetSerialComponent {
   currentStep = signal("init");
   foundSerial = signal<string>("");
   tokenCount = signal<string>("");
-  serialSubscription: Subscription | null = null;
-  tokenTypesWithOTP: { key: string; info: string }[] = [];
-  assignmentStates = [
-    { key: "assigned", info: "The token is assigned to a user" },
-    { key: "unassigned", info: "The token is not assigned to a user" },
-    {
-      key: "don't care",
-      info: "It does not matter, if the token is assigned or not"
-    }
-  ];
-
-  constructor() {
-    const tokenWithOTP = [
+  tokenWithOTP = [
       "hotp",
       "totp",
       "spass",
@@ -80,9 +68,22 @@ export class TokenGetSerialComponent {
       "radius",
       "sms"
     ];
-    this.tokenTypesWithOTP = this.tokenService
-      .tokenTypeOptions()
-      .filter((type) => tokenWithOTP.includes(type.key));
+  tokenTypesWithOTP = linkedSignal({
+      source: this.tokenService.tokenTypeOptions,
+      computation: (tokenTypeOptions: any[]) =>
+        tokenTypeOptions.filter((type) => this.tokenWithOTP.includes(type.key))
+    });
+  serialSubscription: Subscription | null = null;
+  assignmentStates = [
+    { key: "assigned", info: "The token is assigned to a user" },
+    { key: "unassigned", info: "The token is not assigned to a user" },
+    {
+      key: "don't care",
+      info: "It does not matter, if the token is assigned or not"
+    }
+  ];
+
+  constructor() {
 
     effect(() => {
       this.otpValue();

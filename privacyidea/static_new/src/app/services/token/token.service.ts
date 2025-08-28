@@ -262,7 +262,7 @@ export class TokenService implements TokenServiceInterface {
     };
   });
   tokenTypesResource = httpResource<PiResponse<{}>>(() => {
-    if (this.contentService.routeUrl() !== ROUTE_PATHS.TOKENS_ENROLLMENT) {
+    if (![ROUTE_PATHS.TOKENS_ENROLLMENT, ROUTE_PATHS.TOKENS_GET_SERIAL].includes(this.contentService.routeUrl())) {
       return undefined;
     }
     return {
