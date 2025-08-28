@@ -15,7 +15,6 @@
   </mat-checkbox>
   <div class="otp-inputs-container">
     <mat-form-field
-      [ngClass]="generateOnServerFormControl.value ? 'hint-spacer' : ''"
       class="input-height width-33">
       <mat-label i18n>OTP length</mat-label>
       <mat-select
@@ -30,7 +29,6 @@
       }
     </mat-form-field>
     <mat-form-field
-      [ngClass]="generateOnServerFormControl.value ? 'hint-spacer' : ''"
       class="input-height width-33">
       <mat-label i18n>Hash algorithm</mat-label>
       <mat-select
