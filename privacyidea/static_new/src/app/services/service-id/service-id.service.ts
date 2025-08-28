@@ -1,8 +1,8 @@
 import { httpResource, HttpResourceRef } from "@angular/common/http";
-import { Injectable, linkedSignal, WritableSignal } from "@angular/core";
+import { inject, Injectable, linkedSignal, WritableSignal } from "@angular/core";
 import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
-import { AuthService } from "../auth/auth.service";
+import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 
 type ServiceIds = {
   [key: string]: _ServiceId;
@@ -28,6 +28,7 @@ export interface ServiceIdServiceInterface {
   providedIn: "root"
 })
 export class ServiceIdService implements ServiceIdServiceInterface {
+  private readonly authService: AuthServiceInterface = inject(AuthService);
   serviceIdResource = httpResource<PiResponse<ServiceIds>>(() => ({
     url: environment.proxyUrl + "/serviceid/",
     method: "GET",
@@ -48,6 +49,4 @@ export class ServiceIdService implements ServiceIdServiceInterface {
       return array;
     }
   });
-
-  constructor(private authService: AuthService) {}
 }

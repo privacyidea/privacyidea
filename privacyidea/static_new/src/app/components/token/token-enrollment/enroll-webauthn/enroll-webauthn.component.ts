@@ -135,10 +135,10 @@ export class EnrollWebauthnComponent implements OnInit {
       timeout: request.timeout,
       excludeCredentials: request.excludeCredentials
         ? request.excludeCredentials.map((cred: any) => ({
-            id: this.base64Service.base64URLToBytes(cred.id),
-            type: cred.type,
-            transports: cred.transports
-          }))
+          id: this.base64Service.base64URLToBytes(cred.id),
+          type: cred.type,
+          transports: cred.transports
+        }))
         : [],
       authenticatorSelection: request.authenticatorSelection,
       attestation: request.attestation,

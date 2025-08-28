@@ -53,8 +53,7 @@
                           @if (option === userRealm()) {
                             <mat-option
                               value="{{ option }}"
-                              disabled
-                              >{{ option }}
+                              disabled>{{ option }}
                             </mat-option>
                           } @else {
                             <mat-option value="{{ option }}">{{ option }}</mat-option>
@@ -170,7 +169,7 @@
                         [(ngModel)]="userService.selectedUserRealm"
                         [value]="userService.selectedUserRealm()">
                         @for (option of realmService.realmOptions(); track option) {
-                          <mat-option value="{{ option }}">{{ option }} </mat-option>
+                          <mat-option value="{{ option }}">{{ option }}</mat-option>
                         }
                       </mat-select>
                     </mat-form-field>
@@ -226,7 +225,8 @@
         </div>
         @if (overflowService.isWidthOverflowing("body", 1310)) {
           <br />
-          <mat-divider></mat-divider><br />
+          <mat-divider></mat-divider>
+          <br />
         }
       </div>
       <div
@@ -240,7 +240,8 @@
               <span> Only display tokens not in a container </span>
               @if (!showOnlyTokenNotInContainer()) {
                 <br />
-                <span> Note: Adding a token removes it from</span><br />
+                <span> Note: Adding a token removes it from</span>
+                <br />
                 <span style="margin-left: 39px"> its previous container. </span>
               }
             </mat-checkbox>

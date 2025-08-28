@@ -1,8 +1,8 @@
 import { httpResource, HttpResourceRef } from "@angular/common/http";
-import { Injectable, linkedSignal, WritableSignal } from "@angular/core";
+import { inject, Injectable, linkedSignal, WritableSignal } from "@angular/core";
 import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
-import { AuthService } from "../auth/auth.service";
+import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 
 export type Applications = {
   luks: ApplicationLuks;
@@ -56,6 +56,7 @@ export interface ApplicationServiceInterface {
   providedIn: "root"
 })
 export class ApplicationService implements ApplicationServiceInterface {
+  private readonly authService: AuthServiceInterface = inject(AuthService);
   readonly applicationBaseUrl = environment.proxyUrl + "/application/";
   applicationResource = httpResource<PiResponse<Applications>>(() => ({
     url: `${this.applicationBaseUrl}`,
@@ -94,6 +95,4 @@ export class ApplicationService implements ApplicationServiceInterface {
       );
     }
   });
-
-  constructor(private authService: AuthService) {}
 }

@@ -1,4 +1,4 @@
-import { Injectable } from "@angular/core";
+import { inject, Injectable } from "@angular/core";
 import { MatSnackBar, MatSnackBarRef } from "@angular/material/snack-bar";
 import { Subscription, timer } from "rxjs";
 
@@ -14,12 +14,11 @@ export interface NotificationServiceInterface {
   providedIn: "root"
 })
 export class NotificationService implements NotificationServiceInterface {
+  readonly snackBar = inject(MatSnackBar);
   private totalDuration: number = 5000;
   remainingTime: number = this.totalDuration;
   timerSub: Subscription = new Subscription();
   startTime: number = 0;
-
-  constructor(readonly snackBar: MatSnackBar) {}
 
   openSnackBar(message: string): void {
     const snackBarRef = this.snackBar.open(message, "🗙", {

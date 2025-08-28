@@ -106,10 +106,10 @@ export class DialogService implements DialogServiceInterface {
       await Promise.all([
         import(
           "../../components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component"
-        ),
+          ),
         import(
           "../../components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.self-service.component"
-        )
+          )
       ]);
 
     const component = this.isSelfServing()

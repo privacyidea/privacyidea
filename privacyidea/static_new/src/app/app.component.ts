@@ -105,7 +105,9 @@ export class AppComponent implements OnInit {
     }
   }
 
-  ngOnInit(): void {}
+  ngOnInit(): void {
+    throw new Error("Method not implemented.");
+  }
 
   @HostListener("document:click")
   @HostListener("document:keydown")

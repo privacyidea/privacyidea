@@ -1,4 +1,4 @@
-import { Component, computed, signal, WritableSignal } from "@angular/core";
+import { Component, computed, inject, signal, WritableSignal } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
 import { MatDialogModule, MatDialogRef } from "@angular/material/dialog";
@@ -14,13 +14,11 @@ import { MatInputModule } from "@angular/material/input";
   imports: [MatFormFieldModule, MatInputModule, MatButtonModule, FormsModule, MatDialogModule, MatIconModule]
 })
 export class UserAssignmentDialogComponent {
+  public dialogRef = inject(MatDialogRef<UserAssignmentDialogComponent, string | null>);
   pin: WritableSignal<string> = signal("");
   pinRepeat: WritableSignal<string> = signal("");
   hidePin: WritableSignal<boolean> = signal(true);
-
   pinsMatch = computed(() => this.pin() === this.pinRepeat());
-
-  constructor(public dialogRef: MatDialogRef<UserAssignmentDialogComponent, string | null>) {}
 
   togglePinVisibility(): void {
     this.hidePin.update((prev) => !prev);
