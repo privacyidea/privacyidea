@@ -1,27 +1,29 @@
-import { NgClass } from "@angular/common";
-import { Component, computed, effect, inject, linkedSignal, signal, WritableSignal } from "@angular/core";
-import { FormsModule, ReactiveFormsModule } from "@angular/forms";
-import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
-import { MatIconButton } from "@angular/material/button";
-import { MatDialog } from "@angular/material/dialog";
-import { MatFormFieldModule } from "@angular/material/form-field";
-import { MatIcon } from "@angular/material/icon";
-import { MatInput } from "@angular/material/input";
-import { MatListItem } from "@angular/material/list";
-import { MatSelectModule } from "@angular/material/select";
-import { MatCell, MatColumnDef, MatRow, MatTable, MatTableModule } from "@angular/material/table";
-import { Router } from "@angular/router";
-import { ROUTE_PATHS } from "../../../app.routes";
 import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
+import { Component, WritableSignal, computed, effect, inject, linkedSignal, signal } from "@angular/core";
 import { ContainerService, ContainerServiceInterface } from "../../../services/container/container.service";
 import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
+import { EditButtonsComponent, EditableElement } from "../../shared/edit-buttons/edit-buttons.component";
+import { FormsModule, ReactiveFormsModule } from "@angular/forms";
+import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
+import { MatCell, MatColumnDef, MatRow, MatTable, MatTableModule } from "@angular/material/table";
 import { OverflowService, OverflowServiceInterface } from "../../../services/overflow/overflow.service";
 import { RealmService, RealmServiceInterface } from "../../../services/realm/realm.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "../../../services/table-utils/table-utils.service";
 import { TokenDetails, TokenService, TokenServiceInterface } from "../../../services/token/token.service";
+
+import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
 import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
+import { MatDialog } from "@angular/material/dialog";
+import { MatFormFieldModule } from "@angular/material/form-field";
+import { MatIcon } from "@angular/material/icon";
+import { MatIconButton } from "@angular/material/button";
+import { MatInput } from "@angular/material/input";
+import { MatListItem } from "@angular/material/list";
+import { MatSelectModule } from "@angular/material/select";
+import { NgClass } from "@angular/common";
+import { ROUTE_PATHS } from "../../../app.routes";
+import { Router } from "@angular/router";
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
-import { EditableElement, EditButtonsComponent } from "../../shared/edit-buttons/edit-buttons.component";
 import { TokenDetailsActionsComponent } from "./token-details-actions/token-details-actions.component";
 import { TokenDetailsInfoComponent } from "./token-details-info/token-details-info.component";
 import { TokenDetailsUserComponent } from "./token-details-user/token-details-user.component";
@@ -77,6 +79,7 @@ export const infoDetailsKeyMap = [{ key: "info", label: "Information" }];
     TokenDetailsActionsComponent,
     EditButtonsComponent,
     CopyButtonComponent,
+    ClearableInputComponent,
     ScrollToTopDirective
   ],
   templateUrl: "./token-details.component.html",
@@ -85,15 +88,11 @@ export const infoDetailsKeyMap = [{ key: "info", label: "Information" }];
 export class TokenDetailsComponent {
   protected readonly matDialog: MatDialog = inject(MatDialog);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
-  protected readonly containerService: ContainerServiceInterface =
-    inject(ContainerService);
+  protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
   protected readonly realmService: RealmServiceInterface = inject(RealmService);
-  protected readonly overflowService: OverflowServiceInterface =
-    inject(OverflowService);
-  protected readonly tableUtilsService: TableUtilsServiceInterface =
-    inject(TableUtilsService);
-  protected readonly contentService: ContentServiceInterface =
-    inject(ContentService);
+  protected readonly overflowService: OverflowServiceInterface = inject(OverflowService);
+  protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
+  protected readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private router = inject(Router);
   tokenIsActive = this.tokenService.tokenIsActive;
@@ -113,29 +112,29 @@ export class TokenDetailsComponent {
       return res && res.result?.value?.tokens[0]
         ? (res.result?.value.tokens[0] as TokenDetails)
         : {
-          active: false,
-          container_serial: "",
-          count: 0,
-          count_window: 0,
-          description: "",
-          failcount: 0,
-          id: 0,
-          info: {},
-          locked: false,
-          maxfail: 0,
-          otplen: 0,
-          realms: [],
-          resolver: "",
-          revoked: false,
-          rollout_state: "",
-          serial: "",
-          sync_window: 0,
-          tokengroup: [],
-          tokentype: "hotp",
-          user_id: "",
-          user_realm: "",
-          username: ""
-        };
+            active: false,
+            container_serial: "",
+            count: 0,
+            count_window: 0,
+            description: "",
+            failcount: 0,
+            id: 0,
+            info: {},
+            locked: false,
+            maxfail: 0,
+            otplen: 0,
+            realms: [],
+            resolver: "",
+            revoked: false,
+            rollout_state: "",
+            serial: "",
+            sync_window: 0,
+            tokengroup: [],
+            tokentype: "hotp",
+            user_id: "",
+            user_realm: "",
+            username: ""
+          };
     }
   });
   tokenDetailData = linkedSignal({
@@ -218,13 +217,9 @@ export class TokenDetailsComponent {
       this.tokenIsActive.set(this.tokenDetails().active);
       this.tokenIsRevoked.set(this.tokenDetails().revoked);
       this.maxfail = this.tokenDetails().maxfail;
-      this.containerService.selectedContainer.set(
-        this.tokenDetails().container_serial
-      );
+      this.containerService.selectedContainer.set(this.tokenDetails().container_serial);
       this.realmService.selectedRealms.set(this.tokenDetails().realms);
-      this.userRealm =
-        this.userData().find((detail) => detail.keyMap.key === "user_realm")
-          ?.value || "";
+      this.userRealm = this.userData().find((detail) => detail.keyMap.key === "user_realm")?.value || "";
     });
   }
 
@@ -244,9 +239,7 @@ export class TokenDetailsComponent {
   saveTokenEdit(element: EditableElement<string>) {
     switch (element.keyMap.key) {
       case "container_serial":
-        this.containerService.selectedContainer.set(
-          this.containerService.selectedContainer().trim() ?? null
-        );
+        this.containerService.selectedContainer.set(this.containerService.selectedContainer()?.trim() ?? null);
         this.saveContainer();
         break;
       case "tokengroup":
@@ -271,9 +264,7 @@ export class TokenDetailsComponent {
               const tokengroups = response.result?.value || {};
               this.tokengroupOptions.set(Object.keys(tokengroups));
               this.selectedTokengroup.set(
-                this.tokenDetailData().find(
-                  (detail) => detail.keyMap.key === "tokengroup"
-                )?.value
+                this.tokenDetailData().find((detail) => detail.keyMap.key === "tokengroup")?.value
               );
             }
           });
@@ -284,39 +275,33 @@ export class TokenDetailsComponent {
   }
 
   saveTokenDetail(key: string, value: string): void {
-    this.tokenService
-      .saveTokenDetail(this.tokenSerial(), key, value)
-      .subscribe({
-        next: () => {
-          this.tokenDetailResource.reload();
-        }
-      });
+    this.tokenService.saveTokenDetail(this.tokenSerial(), key, value).subscribe({
+      next: () => {
+        this.tokenDetailResource.reload();
+      }
+    });
   }
 
   saveContainer() {
-    this.containerService
-      .assignContainer(
-        this.tokenSerial(),
-        this.containerService.selectedContainer()
-      )
-      .subscribe({
+    const selectedContainer = this.containerService.selectedContainer();
+    if (selectedContainer) {
+      this.containerService.assignContainer(this.tokenSerial(), selectedContainer).subscribe({
         next: () => {
           this.tokenDetailResource.reload();
         }
       });
+    }
   }
 
   deleteContainer() {
-    this.containerService
-      .unassignContainer(
-        this.tokenSerial(),
-        this.containerService.selectedContainer()
-      )
-      .subscribe({
+    const selectedContainer = this.containerService.selectedContainer();
+    if (selectedContainer) {
+      this.containerService.unassignContainer(this.tokenSerial(), selectedContainer).subscribe({
         next: () => {
           this.tokenDetailResource.reload();
         }
       });
+    }
   }
 
   isEditableElement(key: string) {
@@ -343,9 +328,7 @@ export class TokenDetailsComponent {
 
   containerSelected(containerSerial: string) {
     this.isProgrammaticTabChange.set(true);
-    this.router.navigateByUrl(
-      ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + containerSerial
-    );
+    this.router.navigateByUrl(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + containerSerial);
     this.containerSerial.set(containerSerial);
   }
 
@@ -366,17 +349,11 @@ export class TokenDetailsComponent {
         this.containerService.selectedContainer.set("");
         break;
       case "tokengroup":
-        this.selectedTokengroup.set(
-          this.tokenDetailData().find(
-            (detail) => detail.keyMap.key === "tokengroup"
-          )?.value
-        );
+        this.selectedTokengroup.set(this.tokenDetailData().find((detail) => detail.keyMap.key === "tokengroup")?.value);
         break;
       case "realms":
         this.realmService.selectedRealms.set(
-          this.tokenDetailData().find(
-            (detail) => detail.keyMap.key === "realms"
-          )?.value
+          this.tokenDetailData().find((detail) => detail.keyMap.key === "realms")?.value
         );
         break;
       default:
@@ -386,13 +363,11 @@ export class TokenDetailsComponent {
   }
 
   private saveRealms() {
-    this.tokenService
-      .setTokenRealm(this.tokenSerial(), this.realmService.selectedRealms())
-      .subscribe({
-        next: () => {
-          this.tokenDetailResource.reload();
-        }
-      });
+    this.tokenService.setTokenRealm(this.tokenSerial(), this.realmService.selectedRealms()).subscribe({
+      next: () => {
+        this.tokenDetailResource.reload();
+      }
+    });
   }
 
   private saveTokengroup(value: string[]) {

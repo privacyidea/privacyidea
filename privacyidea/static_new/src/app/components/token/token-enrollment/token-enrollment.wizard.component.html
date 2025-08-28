@@ -225,10 +225,15 @@
         </h4>
         <mat-form-field class="width-50 input-height">
           <mat-label i18n>Enter Container</mat-label>
-          <input
-            [formControl]="selectedContainerControl"
-            [matAutocomplete]="containerAuto"
-            matInput />
+          <app-clearable-input
+            (onClick)="containerInput.value = ''; selectedContainerControl.setValue(null)"
+            [showClearButton]="containerService.selectedContainer() !== ''">
+            <input
+              #containerInput
+              [formControl]="selectedContainerControl"
+              [matAutocomplete]="containerAuto"
+              matInput />
+          </app-clearable-input>
           <mat-autocomplete #containerAuto="matAutocomplete">
             @for (option of containerService.filteredContainerOptions(); track option) {
               <mat-option [value]="option">{{ option }}</mat-option>

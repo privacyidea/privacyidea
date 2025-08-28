@@ -254,14 +254,18 @@
         </div>
         <mat-form-field class="add-token">
           <mat-label>Add Token to Container</mat-label>
-          <input
-            #filterHTMLInputElement
-            #tokenAutoTrigger="matAutocompleteTrigger"
-            (input)="tokenService.handleFilterInput($event)"
-            [value]="tokenService.tokenFilter().filterString"
-            [matAutocomplete]="tokenAuto"
-            matInput
-            placeholder="Example query: 'type: hotp serial: 123'" />
+          <app-clearable-input
+            (onClick)="tokenService.clearFilter()"
+            [showClearButton]="tokenService.tokenFilter().isNotEmpty">
+            <input
+              #filterHTMLInputElement
+              #tokenAutoTrigger="matAutocompleteTrigger"
+              (input)="tokenService.handleFilterInput($event)"
+              [value]="tokenService.tokenFilter().filterString"
+              [matAutocomplete]="tokenAuto"
+              matInput
+              placeholder="Example query: 'type: hotp serial: 123'" />
+          </app-clearable-input>
           <mat-autocomplete #tokenAuto="matAutocomplete">
             @for (option of tokenDataSource().data; track option) {
               <mat-option
