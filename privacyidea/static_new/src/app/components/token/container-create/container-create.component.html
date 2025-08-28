@@ -117,9 +117,10 @@
       <mat-form-field class="width-32 input-height">
         <mat-label i18n>Enter User</mat-label>
         <app-clearable-input
-          (onClick)="userService.userFilter.set('')"
+          (onClick)="userInput.value = ''; userService.userFilter.set(null)"
           [showClearButton]="userService.userFilter() !== ''">
           <input
+            #userInput
             [(ngModel)]="userService.userFilter"
             [disabled]="onlyAddToRealm()"
             [matAutocomplete]="userAuto"

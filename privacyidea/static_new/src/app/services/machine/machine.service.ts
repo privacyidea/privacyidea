@@ -1,15 +1,15 @@
-import { HttpClient, HttpParams, httpResource } from "@angular/common/http";
-import { computed, effect, inject, Injectable, linkedSignal, signal, WritableSignal } from "@angular/core";
-import { Sort } from "@angular/material/sort";
-import { environment } from "../../../environments/environment";
-import { TableUtilsService, TableUtilsServiceInterface } from "../table-utils/table-utils.service";
-
-import { PageEvent } from "@angular/material/paginator";
-import { Observable } from "rxjs";
-import { PiResponse } from "../../app.component";
-import { ROUTE_PATHS } from "../../app.routes";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
+import { HttpClient, HttpParams, httpResource } from "@angular/common/http";
+import { Injectable, WritableSignal, computed, effect, inject, linkedSignal, signal } from "@angular/core";
+import { TableUtilsService, TableUtilsServiceInterface } from "../table-utils/table-utils.service";
+
+import { Observable } from "rxjs";
+import { PageEvent } from "@angular/material/paginator";
+import { PiResponse } from "../../app.component";
+import { ROUTE_PATHS } from "../../app.routes";
+import { Sort } from "@angular/material/sort";
+import { environment } from "../../../environments/environment";
 
 type TokenApplications = TokenApplication[];
 
