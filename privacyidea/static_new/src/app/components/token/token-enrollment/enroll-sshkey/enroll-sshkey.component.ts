@@ -19,26 +19,14 @@ export interface SshkeyEnrollmentOptions extends TokenEnrollmentData {
 
 @Component({
   selector: "app-enroll-sshkey",
-  imports: [
-    FormsModule,
-    MatFormField,
-    MatInput,
-    MatLabel,
-    MatError,
-    ReactiveFormsModule
-  ],
+  imports: [FormsModule, MatFormField, MatInput, MatLabel, MatError, ReactiveFormsModule],
   templateUrl: "./enroll-sshkey.component.html"
 })
 export class EnrollSshkeyComponent {
-  protected readonly enrollmentMapper: SshkeyApiPayloadMapper = inject(
-    SshkeyApiPayloadMapper
-  );
+  protected readonly enrollmentMapper: SshkeyApiPayloadMapper = inject(SshkeyApiPayloadMapper);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
 
-  sshPublicKeyFormControl = new FormControl<string>("", [
-    Validators.required,
-    EnrollSshkeyComponent.sshKeyValidator
-  ]);
+  sshPublicKeyFormControl = new FormControl<string>("", [Validators.required, EnrollSshkeyComponent.sshKeyValidator]);
 
   @Output() clickEnrollChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => Observable<EnrollmentResponse | null>
@@ -47,9 +35,7 @@ export class EnrollSshkeyComponent {
     [key: string]: FormControl<any>;
   }>();
 
-  static sshKeyValidator(
-    control: AbstractControl
-  ): { [key: string]: boolean } | null {
+  static sshKeyValidator(control: AbstractControl): { [key: string]: boolean } | null {
     const sshKeyPattern =
       /^ssh-(rsa|dss|ed25519|ecdsa-sha2-nistp256|ecdsa-sha2-nistp384|ecdsa-sha2-nistp521) [A-Za-z0-9+/=]+( .+)?$/;
     if (control.value && !sshKeyPattern.test(control.value)) {
@@ -65,9 +51,7 @@ export class EnrollSshkeyComponent {
     this.clickEnrollChange.emit(this.onClickEnroll);
   }
 
-  onClickEnroll = (
-    basicOptions: TokenEnrollmentData
-  ): Observable<EnrollmentResponse | null> => {
+  onClickEnroll = (basicOptions: TokenEnrollmentData): Observable<EnrollmentResponse | null> => {
     if (this.sshPublicKeyFormControl.invalid) {
       this.sshPublicKeyFormControl.markAsTouched();
       return of(null);

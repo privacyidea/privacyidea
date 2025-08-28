@@ -50,9 +50,11 @@
             i18n>
             <mat-icon>now_widgets</mat-icon>
             Applications
-          </button> </mat-list-item
-        ><br />
-        <mat-divider /><br />
+          </button>
+        </mat-list-item>
+        <br />
+        <mat-divider />
+        <br />
         <mat-list-item>
           <button
             [ngClass]="[
@@ -77,7 +79,8 @@
         </mat-list-item>
         @if (contentService.routeUrl() === ROUTE_PATHS.TOKENS) {
           <br />
-          <mat-divider /><br />
+          <mat-divider />
+          <br />
           <mat-list-item>
             <button
               [ngClass]="[tokenSelection().length === 0 ? 'card-button-disabled' : 'card-button-delete']"
@@ -98,6 +101,17 @@
               i18n>
               <mat-icon> person_add</mat-icon>
               Assign Selected
+            </button>
+          </mat-list-item>
+          <mat-list-item>
+            <button
+              [ngClass]="[tokenSelection().length === 0 ? 'card-button-disabled' :
+            'card-button']"
+              (click)="unassignSelectedTokens()"
+              [disabled]="tokenSelection().length === 0"
+              mat-flat-button>
+              <mat-icon> person_remove</mat-icon>
+              Unassign Selected
             </button>
           </mat-list-item>
         }
@@ -122,9 +136,11 @@
             i18n>
             <mat-icon>manage_search</mat-icon>
             Show in Audit Log
-          </button> </mat-list-item
-        ><br />
-        <mat-divider /><br />
+          </button>
+        </mat-list-item>
+        <br />
+        <mat-divider />
+        <br />
         <mat-list-item>
           <button
             class="card-button"
@@ -143,9 +159,11 @@
             i18n>
             <mat-icon>info_outline</mat-icon>
             Help
-          </button> </mat-list-item
-        ><br />
-        <mat-divider /><br />
+          </button>
+        </mat-list-item>
+        <br />
+        <mat-divider />
+        <br />
         <mat-list-item>
           <button
             (click)="toggleActive()"

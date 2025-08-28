@@ -3,7 +3,8 @@ import {
   MAT_DIALOG_DATA,
   MatDialogActions,
   MatDialogClose,
-  MatDialogContent, MatDialogTitle
+  MatDialogContent,
+  MatDialogTitle
 } from "@angular/material/dialog";
 import { MatButton } from "@angular/material/button";
 

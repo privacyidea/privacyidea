@@ -1,8 +1,8 @@
 import { httpResource, HttpResourceRef } from "@angular/common/http";
-import { Injectable, linkedSignal, WritableSignal } from "@angular/core";
+import { inject, Injectable, linkedSignal, WritableSignal } from "@angular/core";
 import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
-import { AuthService } from "../auth/auth.service";
+import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 
 export type RadiusServerConfigurations = {
   [key: string]: any;
@@ -27,6 +27,7 @@ export interface RadiusServerServiceInterface {
   providedIn: "root"
 })
 export class RadiusServerService implements RadiusServerServiceInterface {
+  private readonly authService: AuthServiceInterface = inject(AuthService);
   radiusServerConfigurationResource = httpResource<PiResponse<RadiusServerConfigurations>>(() => ({
     url: environment.proxyUrl + "/radiusserver/",
     method: "GET",
@@ -40,7 +41,4 @@ export class RadiusServerService implements RadiusServerServiceInterface {
       previous?.value ??
       []
   });
-
-  constructor(private authService: AuthService) {
-  }
 }

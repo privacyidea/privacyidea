@@ -9,6 +9,7 @@ import { MatInput } from "@angular/material/input";
 import { MatListItem } from "@angular/material/list";
 import { MatSelectModule } from "@angular/material/select";
 import { MatCell, MatColumnDef, MatRow, MatTable, MatTableModule } from "@angular/material/table";
+import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
 import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
 import { EditButtonsComponent } from "../../shared/edit-buttons/edit-buttons.component";
 import { TokenDetailsActionsComponent } from "./token-details-actions/token-details-actions.component";
@@ -40,7 +41,8 @@ import { TokenDetailsComponent } from "./token-details.component";
     TokenDetailsInfoComponent,
     TokenDetailsActionsComponent,
     EditButtonsComponent,
-    CopyButtonComponent
+    CopyButtonComponent,
+    ClearableInputComponent
   ],
   templateUrl: "./token-details.self-service.component.html",
   styleUrls: ["./token-details.component.scss"]

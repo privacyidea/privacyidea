@@ -3,6 +3,7 @@ import { Component, effect, inject, signal, ViewChild } from "@angular/core";
 import { MatFabButton } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import { MatDrawer, MatDrawerContainer, MatSidenavModule } from "@angular/material/sidenav";
+import { RouterOutlet } from "@angular/router";
 import { ContentService, ContentServiceInterface } from "../../services/content/content.service";
 import { OverflowService, OverflowServiceInterface } from "../../services/overflow/overflow.service";
 import { ContainerDetailsComponent } from "./container-details/container-details.component";
@@ -10,7 +11,6 @@ import { ContainerTableComponent } from "./container-table/container-table.compo
 import { TokenCardComponent } from "./token-card/token-card.component";
 import { TokenDetailsComponent } from "./token-details/token-details.component";
 import { TokenTableComponent } from "./token-table/token-table.component";
-import { RouterOutlet } from "@angular/router";
 
 export type TokenTypeOption =
   | "hotp"
@@ -57,10 +57,8 @@ export type TokenTypeOption =
   styleUrl: "./token.component.scss"
 })
 export class TokenComponent {
-  protected readonly overflowService: OverflowServiceInterface =
-    inject(OverflowService);
-  protected readonly contentService: ContentServiceInterface =
-    inject(ContentService);
+  protected readonly overflowService: OverflowServiceInterface = inject(OverflowService);
+  protected readonly contentService: ContentServiceInterface = inject(ContentService);
   static tokenTypeTexts = [
     {
       key: "hotp",
