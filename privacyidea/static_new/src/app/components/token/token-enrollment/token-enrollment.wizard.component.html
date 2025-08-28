@@ -262,10 +262,8 @@
               i18n-placeholder
               placeholder="Repeat PIN" />
           </div>
-          @if (
-            formGroup.hasError("pinMismatch") &&
-            (formGroup.get("setPin")?.touched || formGroup.get("repeatPin")?.touched)
-          ) {
+          @if (formGroup.hasError("pinMismatch") &&
+          (formGroup.get("setPin")?.touched || formGroup.get("repeatPin")?.touched)) {
             <mat-error
               i18n
               class="pin-error">

@@ -244,10 +244,8 @@
               class="input"
               placeholder="Repeat PIN" />
           </div>
-          @if (
-            formGroupSignal().hasError("pinMismatch") &&
-            (formGroupSignal().get("setPin")?.touched || formGroupSignal().get("repeatPin")?.touched)
-          ) {
+          @if (formGroupSignal().hasError("pinMismatch") &&
+          (formGroupSignal().get("setPin")?.touched || formGroupSignal().get("repeatPin")?.touched)) {
             <mat-error class="pin-error">PINs do not match.</mat-error>
           }
         </div>
