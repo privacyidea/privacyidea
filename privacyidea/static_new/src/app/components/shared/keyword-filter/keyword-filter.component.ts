@@ -42,7 +42,7 @@ export class KeywordFilterComponent {
 
   getFilterIconName(keyword: string, currentValue: FilterValue): string {
     if (keyword === "active" || keyword === "assigned" || keyword === "success") {
-      const value = currentValue.getValue(keyword)?.toLowerCase();
+      const value = currentValue.getValueOfKey(keyword)?.toLowerCase();
       if (!value) {
         return "add_circle";
       }

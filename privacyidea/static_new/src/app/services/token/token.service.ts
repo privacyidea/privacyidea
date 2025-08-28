@@ -237,19 +237,15 @@ export class TokenService implements TokenServiceInterface {
     }),
     computation: (source, previous) => {
       if (!source.routeUrl.startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS)) {
-        console.log("Resetting filter because we are not in container details view.");
         return new FilterValue();
       }
       if (!previous || source.routeUrl !== previous.source.routeUrl) {
-        console.log("Resetting filter because routeUrl changed.");
         return new FilterValue({ hiddenValue: source.showOnlyTokenNotInContainer ? "container_serial: " : "" });
       }
       const filterValue = previous.value;
       if (source.showOnlyTokenNotInContainer) {
-        console.log("Adding container_serial to filter.");
         filterValue.addHiddenKey("container_serial");
       } else {
-        console.log("Removing container_serial from filter.");
         filterValue.removeHiddenKey("container_serial");
       }
       return filterValue;
@@ -338,8 +334,6 @@ export class TokenService implements TokenServiceInterface {
     let filterPairsMap = filterPairs
       .filter(([key]) => allowedFilters.includes(key))
       .map(([key, value]) => ({ key, value }));
-
-    console.log(filterPairsMap);
 
     return filterPairsMap.reduce(
       (acc, { key, value }) => ({

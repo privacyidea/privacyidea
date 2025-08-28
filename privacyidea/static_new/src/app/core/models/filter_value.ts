@@ -1,6 +1,13 @@
 export class FilterValue {
   private _value: string;
+  get value(): string {
+    return this._value;
+  }
+
   private _hiddenValue: string;
+  get hiddenValue(): string {
+    return this._hiddenValue;
+  }
 
   get isEmpty(): boolean {
     return this._value.length === 0;
@@ -45,18 +52,18 @@ export class FilterValue {
       this._hiddenValue = this._hiddenValue ? `${this._hiddenValue} ${key}: ` : `${key}: `;
     }
   }
-  public getValue(keyword: string): string | undefined {
-    return this.filterMap.get(keyword);
+  public getValueOfKey(key: string): string | undefined {
+    return this.filterMap.get(key);
   }
 
   public removeKey(key: string): void {
     const regex = new RegExp(`(?<=^|\\s)(${key})+:\\s*[\\w\\d]*(?=$|\\s)`, "g");
-    this._value = this._value.replace(regex, "").trim().replace(/\s+/g, "");
+    this._value = this._value.replace(regex, "").trim().replace(/\s+/g, " ");
   }
 
   public removeHiddenKey(key: string) {
     const regex = new RegExp(`(?<=^|\\s)(${key})+:\\s*[\\w\\d]*(?=$|\\s)`, "g");
-    this._hiddenValue = this._hiddenValue.replace(regex, "").trim().replace(/\s+/g, "");
+    this._hiddenValue = this._hiddenValue.replace(regex, "").trim().replace(/\s+/g, " ");
   }
 
   public hasKey(key: string): boolean {
@@ -82,7 +89,6 @@ export class FilterValue {
     const map = new Map<string, string>();
     const regex = RegExp(/(?<=^|\s)[\w\d]+:\s*[\w\d]*(?=$|\s)/, "g");
     const matches = this._value.match(regex);
-    console.log(this._value, matches);
     if (matches) {
       matches.forEach((pair) => {
         const [key, value] = pair.split(/:\s+(.+)/); // Split only on the first occurrence of ": "
