@@ -1,5 +1,5 @@
-import { TokenApiPayloadMapper, TokenEnrollmentData, TokenEnrollmentPayload } from "./_token-api-payload.mapper";
 import { Injectable } from "@angular/core";
+import { TokenApiPayloadMapper, TokenEnrollmentData, TokenEnrollmentPayload } from "./_token-api-payload.mapper";
 
 // Interface for Registration Token-specific enrollment data
 export interface RegistrationEnrollmentData extends TokenEnrollmentData {
@@ -11,8 +11,7 @@ export interface RegistrationEnrollmentPayload extends TokenEnrollmentPayload {
 }
 
 @Injectable({ providedIn: "root" })
-export class RegistrationApiPayloadMapper
-  implements TokenApiPayloadMapper<RegistrationEnrollmentData> {
+export class RegistrationApiPayloadMapper implements TokenApiPayloadMapper<RegistrationEnrollmentData> {
   toApiPayload(data: RegistrationEnrollmentData): RegistrationEnrollmentPayload {
     // No type-specific fields in switch statement for 'registration'
     const payload: RegistrationEnrollmentPayload = {

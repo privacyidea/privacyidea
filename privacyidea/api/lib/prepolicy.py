@@ -1078,7 +1078,10 @@ def auditlog_age(request=None, action=None):
     :type action: basestring
     :returns: Always true. Modified the parameter request
     """
-    audit_age = Match.admin_or_user(g, action=PolicyAction.AUDIT_AGE, user_obj=request.User).action_values(unique=True)
+    user = request.User
+    if g.logged_in_user.get("role") == ROLE.ADMIN:
+        user = None
+    audit_age = Match.admin_or_user(g, action=PolicyAction.AUDIT_AGE, user_obj=user).action_values(unique=True)
     timelimit = None
     timelimit_s = None
     for aa in audit_age:

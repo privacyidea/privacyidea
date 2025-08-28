@@ -73,9 +73,9 @@
                 </div>
               }
               @case ("otp_received") {
-                <span [ngClass]="[element[column.key] ? 'highlight-true' : 'highlight-false']">{{
-                  element[column.key]
-                }}</span>
+                <span [ngClass]="[element[column.key] ? 'highlight-true' : 'highlight-false']">
+                  {{ element[column.key] }}
+                </span>
               }
               @default {
                 <span>{{ element[column.key] }}</span>

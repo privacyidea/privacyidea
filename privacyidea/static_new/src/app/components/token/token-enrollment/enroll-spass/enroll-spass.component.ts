@@ -21,9 +21,7 @@ export interface SpassEnrollmentOptions extends TokenEnrollmentData {
   styleUrl: "./enroll-spass.component.scss"
 })
 export class EnrollSpassComponent implements OnInit {
-  protected readonly enrollmentMapper: SpassApiPayloadMapper = inject(
-    SpassApiPayloadMapper
-  );
+  protected readonly enrollmentMapper: SpassApiPayloadMapper = inject(SpassApiPayloadMapper);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
 
   @Output() additionalFormFieldsChange = new EventEmitter<{
@@ -40,9 +38,7 @@ export class EnrollSpassComponent implements OnInit {
     this.clickEnrollChange.emit(this.onClickEnroll);
   }
 
-  onClickEnroll = (
-    basicOptions: TokenEnrollmentData
-  ): Observable<EnrollmentResponse | null> => {
+  onClickEnroll = (basicOptions: TokenEnrollmentData): Observable<EnrollmentResponse | null> => {
     const enrollmentData: SpassEnrollmentOptions = {
       ...basicOptions,
       type: "spass"

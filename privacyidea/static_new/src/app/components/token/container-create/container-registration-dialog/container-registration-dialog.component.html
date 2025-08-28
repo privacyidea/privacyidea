@@ -4,10 +4,9 @@
   Container Successfully Created
 </h2>
 <mat-dialog-content>
-  <span i18n
-    >The container was successfully created with serial number
-    <a (click)="containerSelected(data.containerSerial())"> {{ data.containerSerial() }} </a>.</span
-  >
+  <span
+    i18n>The container was successfully created with serial number
+    <a (click)="containerSelected(data.containerSerial())"> {{ data.containerSerial() }} </a>.</span>
   <div class="flex-row gap-1">
     @if (data.response.result?.value?.container_url?.img) {
       <img

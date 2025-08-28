@@ -21,9 +21,7 @@ export interface RegistrationEnrollmentOptions extends TokenEnrollmentData {
   styleUrl: "./enroll-registration.component.scss"
 })
 export class EnrollRegistrationComponent implements OnInit {
-  protected readonly enrollmentMapper: RegistrationApiPayloadMapper = inject(
-    RegistrationApiPayloadMapper
-  );
+  protected readonly enrollmentMapper: RegistrationApiPayloadMapper = inject(RegistrationApiPayloadMapper);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
 
   @Output() additionalFormFieldsChange = new EventEmitter<{
@@ -40,9 +38,7 @@ export class EnrollRegistrationComponent implements OnInit {
     this.clickEnrollChange.emit(this.onClickEnroll);
   }
 
-  onClickEnroll = (
-    basicOptions: TokenEnrollmentData
-  ): Observable<EnrollmentResponse | null> => {
+  onClickEnroll = (basicOptions: TokenEnrollmentData): Observable<EnrollmentResponse | null> => {
     const enrollmentData: RegistrationEnrollmentOptions = {
       ...basicOptions,
       type: "registration"

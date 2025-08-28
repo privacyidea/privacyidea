@@ -32,8 +32,5 @@ export const tabToggleState = trigger("toggleState", [
 ]);
 
 export const componentFadeAnimation = trigger("componentFade", [
-  transition(":enter", [
-    style({ opacity: 0 }),
-    animate("150ms ease-out", style({ opacity: 1 }))
-  ])
+  transition(":enter", [style({ opacity: 0 }), animate("150ms ease-out", style({ opacity: 1 }))])
 ]);

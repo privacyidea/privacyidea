@@ -41,8 +41,7 @@ export interface HotpEnrollmentOptions extends TokenEnrollmentData {
   standalone: true
 })
 export class EnrollHotpComponent implements OnInit {
-  protected readonly enrollmentMapper: HotpApiPayloadMapper =
-    inject(HotpApiPayloadMapper);
+  protected readonly enrollmentMapper: HotpApiPayloadMapper = inject(HotpApiPayloadMapper);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   readonly otpLengthOptions = [6, 8];
   readonly hashAlgorithmOptions = [
@@ -56,14 +55,10 @@ export class EnrollHotpComponent implements OnInit {
   @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
-  generateOnServerFormControl = new FormControl<boolean>(true, [
-    Validators.required
-  ]);
+  generateOnServerFormControl = new FormControl<boolean>(true, [Validators.required]);
   otpLengthFormControl = new FormControl<number>(6, [Validators.required]);
   otpKeyFormControl = new FormControl<string>("");
-  hashAlgorithmFormControl = new FormControl<string>("sha1", [
-    Validators.required
-  ]);
+  hashAlgorithmFormControl = new FormControl<string>("sha1", [Validators.required]);
 
   ngOnInit(): void {
     this.additionalFormFieldsChange.emit({
@@ -84,15 +79,12 @@ export class EnrollHotpComponent implements OnInit {
     });
   }
 
-  onClickEnroll = (
-    basicOptions: TokenEnrollmentData
-  ): Observable<EnrollmentResponse | null> => {
+  onClickEnroll = (basicOptions: TokenEnrollmentData): Observable<EnrollmentResponse | null> => {
     if (
       this.generateOnServerFormControl.invalid ||
       this.otpLengthFormControl.invalid ||
       this.hashAlgorithmFormControl.invalid ||
-      (!this.generateOnServerFormControl.value &&
-        this.otpKeyFormControl.invalid)
+      (!this.generateOnServerFormControl.value && this.otpKeyFormControl.invalid)
     ) {
       this.generateOnServerFormControl.markAsTouched();
       this.otpLengthFormControl.markAsTouched();

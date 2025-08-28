@@ -25,8 +25,8 @@
                 <mat-option
                   class="select-option type-option"
                   [value]="type"
-                  [matTooltip]="type.info.split(':')[1]"
-                  >{{ type.info.split(":")[0] }}
+                  [matTooltip]="type.info.split(':')[1]">
+                  {{ type.info.split(":")[0] }}
                 </mat-option>
               }
             </mat-select>
@@ -236,7 +236,7 @@
               <mat-error>User Realm is <strong>required</strong></mat-error>
             }
             @if (!selectedUserRealmControl.value && !onlyAddToRealmControl.value && tokenService.selectedTokenType()) {
-              <mat-hint> Select a realm first to enable user selection. </mat-hint>
+              <mat-hint> Select a realm first to enable user selection.</mat-hint>
             }
             @if (userFilterControl.hasError("required")) {
               <mat-error>User is <strong>required</strong></mat-error>
@@ -282,10 +282,8 @@
               class="input"
               placeholder="Repeat PIN" />
           </div>
-          @if (
-            formGroupSignal().hasError("pinMismatch") &&
-            (formGroupSignal().get("setPin")?.touched || formGroupSignal().get("repeatPin")?.touched)
-          ) {
+          @if (formGroupSignal().hasError("pinMismatch") &&
+          (formGroupSignal().get("setPin")?.touched || formGroupSignal().get("repeatPin")?.touched)) {
             <mat-error class="pin-error">PINs do not match.</mat-error>
           }
         </div>
