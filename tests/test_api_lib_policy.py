@@ -62,7 +62,7 @@ from privacyidea.api.lib.prepolicy import (check_token_upload,
                                            hide_tokeninfo, init_ca_template, init_ca_connector,
                                            init_subject_components, increase_failcounter_on_challenge,
                                            require_description, jwt_validity, check_container_action,
-                                           check_token_action, check_token_list_action, check_user_params,
+                                           check_token_action, check_user_params,
                                            check_client_container_action, container_registration_config,
                                            smartphone_config, check_client_container_disabled_action, rss_age,
                                            hide_container_info, require_description_on_edit, force_server_generate_key)
@@ -4007,45 +4007,49 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # create token with another user from another realm and resolver and token without a user
         token_another_realm = init_token({"type": "hotp", "genkey": True}, user=User("hans", self.realm2))
         token_no_user = init_token({"type": "hotp", "genkey": True})
-        serial_list = ",".join([token_no_user.get_serial(), token.get_serial(), token_another_realm.get_serial()])
-        req.all_data["serial"] = serial_list
+        serial_list = [token_no_user.get_serial(), token.get_serial(), token_another_realm.get_serial()]
+        req.all_data["serials"] = serial_list
 
         # Generic policy
         set_policy(name="policy", scope=SCOPE.ADMIN, action="enable")
-        self.assertTrue(check_token_list_action(request=req, action="enable"))
-        self.assertEqual(serial_list, req.all_data["serial"])
+        self.assertTrue(check_token_action(request=req, action="enable"))
+        for s in serial_list:
+            self.assertIn(s, req.all_data["serials"])
         self.assertListEqual([], req.all_data["not_authorized_serials"])
         delete_policy("policy")
 
         # Policy for resolver
-        req.all_data["serial"] = serial_list
+        req.all_data["serials"] = serial_list
         del req.all_data["not_authorized_serials"]
         set_policy(name="policy", scope=SCOPE.ADMIN, action="enable", resolver=[self.resolvername3])
-        self.assertTrue(check_token_list_action(request=req, action="enable"))
-        self.assertEqual(token.get_serial(), req.all_data["serial"])
-        self.assertListEqual([token_no_user.get_serial(), token_another_realm.get_serial()],
-                             req.all_data["not_authorized_serials"])
+        self.assertTrue(check_token_action(request=req, action="enable"))
+        self.assertEqual([token.get_serial()], req.all_data["serials"])
+        unauthorized = req.all_data["not_authorized_serials"]
+        self.assertIn(token_no_user.get_serial(), unauthorized)
+        self.assertIn(token_another_realm.get_serial(), unauthorized)
         delete_policy("policy")
 
         # Policy for realm
-        req.all_data["serial"] = serial_list
+        req.all_data["serials"] = serial_list
         del req.all_data["not_authorized_serials"]
         set_policy(name="policy", scope=SCOPE.ADMIN, action="enable", realm=[self.realm3])
-        self.assertTrue(check_token_list_action(request=req, action="enable"))
-        self.assertEqual(token.get_serial(), req.all_data["serial"])
-        self.assertListEqual([token_no_user.get_serial(), token_another_realm.get_serial()],
-                             req.all_data["not_authorized_serials"])
+        self.assertTrue(check_token_action(request=req, action="enable"))
+        self.assertEqual([token.get_serial()], req.all_data["serials"])
+        unauthorized = req.all_data["not_authorized_serials"]
+        self.assertIn(token_no_user.get_serial(), unauthorized)
+        self.assertIn(token_another_realm.get_serial(), unauthorized)
         delete_policy("policy")
 
         # Policy for user
-        req.all_data["serial"] = serial_list
+        req.all_data["serials"] = serial_list
         del req.all_data["not_authorized_serials"]
         set_policy(name="policy", scope=SCOPE.ADMIN, action="enable", user="root", realm=[self.realm3],
                    resolver=[self.resolvername3])
-        self.assertTrue(check_token_list_action(request=req, action="enable"))
-        self.assertEqual(token.get_serial(), req.all_data["serial"])
-        self.assertListEqual([token_no_user.get_serial(), token_another_realm.get_serial()],
-                             req.all_data["not_authorized_serials"])
+        self.assertTrue(check_token_action(request=req, action="enable"))
+        self.assertEqual([token.get_serial()], req.all_data["serials"])
+        unauthorized = req.all_data["not_authorized_serials"]
+        self.assertIn(token_no_user.get_serial(), unauthorized)
+        self.assertIn(token_another_realm.get_serial(), unauthorized)
         delete_policy("policy")
 
         token.delete_token()
