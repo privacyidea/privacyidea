@@ -667,8 +667,7 @@ class ValidateAPITestCase(MyApiTestCase):
     test the api.validate endpoints
     """
 
-    def setUp(self):
-        super(ValidateAPITestCase, self).setUp()
+    def test_00_setup(self):
         self.setUp_user_realms()
         self.setUp_user_realm2()
 
@@ -1165,8 +1164,9 @@ class ValidateAPITestCase(MyApiTestCase):
         token.add_user(User("cornelius", self.realm1))
         token.set_pin(pin)
         token.set_failcount(5)
+        db_token.save()
 
-        # try to do challenge response without a policy. It will fail and increase the failcounter
+        # try to do challenge response without a policy.
         with self.app.test_request_context('/validate/check',
                                            method='POST',
                                            data={"user": "cornelius",
@@ -1178,7 +1178,7 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertFalse(result.get("value"))
             self.assertEqual(detail.get("message"), _("wrong otp pin"))
             self.assertNotIn("transaction_id", detail)
-            self.assertEqual(6, token.get_failcount())
+            self.assertEqual(5, token.get_failcount())
 
         # Policy to enable challenge-response and the text
         challenge_text = "custom challenge text"
@@ -1199,7 +1199,7 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertEqual("CHALLENGE", result.get("authentication"))
             self.assertEqual(detail.get("message"), challenge_text)
             transaction_id = detail.get("transaction_id")
-            self.assertEqual(6, token.get_failcount())
+            self.assertEqual(5, token.get_failcount())
 
         # OTP value will be accepted and reset the failcounter
         with self.app.test_request_context('/validate/check',
@@ -1211,8 +1211,8 @@ class ValidateAPITestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            res.json.get("detail")
             self.assertTrue(result.get("value"))
+            self.assertEqual("ACCEPT", result.get("authentication"))
 
         self.assertEqual(token.get_failcount(), 0)
         # delete the token and policies
