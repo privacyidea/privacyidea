@@ -1197,7 +1197,7 @@ class ValidateAPITestCase(MyApiTestCase):
             detail = res.json.get("detail")
             self.assertFalse(result.get("value"))
             self.assertEqual("CHALLENGE", result.get("authentication"))
-            self.assertEqual(detail.get("message"), challenge_text)
+            self.assertEqual(challenge_text, detail.get("message"))
             transaction_id = detail.get("transaction_id")
             self.assertEqual(5, token.get_failcount())
 
