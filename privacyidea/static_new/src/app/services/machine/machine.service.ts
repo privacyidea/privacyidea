@@ -221,13 +221,6 @@ export class MachineService implements MachineServiceInterface {
     computation: (tokenApplicationResource, previous) => tokenApplicationResource?.result?.value ?? previous?.value
   });
 
-  // constructor() {
-  //   effect(() => {
-  //     const recordsFromText = this.tableUtilsService.recordsFromText(this.filterValueString());
-  //     this.filterValue.set(recordsFromText);
-  //   });
-  // }
-
   postAssignMachineToToken(args: {
     service_id: string;
     user: string;

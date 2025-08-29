@@ -78,11 +78,7 @@ export class UserTableComponent {
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
   pageSizeOptions = this.tableUtilsService.pageSizeOptions;
-  filterValueString: WritableSignal<string> = linkedSignal(() =>
-    Object.entries(this.userService.userFilter())
-      .map(([key, value]) => `${key}: ${value}`)
-      .join(" ")
-  );
+
   totalLength: WritableSignal<number> = linkedSignal({
     source: this.userService.usersResource.value,
     computation: (userResource, previous) => {
@@ -111,12 +107,4 @@ export class UserTableComponent {
       return previous?.value ?? new MatTableDataSource(this.emptyResource());
     }
   });
-
-  // constructor() {
-  //   effect(() => {
-  //     const recordsFromText = this.tableUtilsService.recordsFromText(this.filterValueString());
-  //     this.userService.filterValue.set(recordsFromText);
-  //     this.userService.pageIndex.set(0);
-  //   });
-  // }
 }

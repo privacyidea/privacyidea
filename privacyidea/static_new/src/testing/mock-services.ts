@@ -363,11 +363,18 @@ export class MockAuthService implements AuthServiceInterface {
 }
 
 export class MockUserService implements UserServiceInterface {
-  filterValue: WritableSignal<FilterValue> = signal(new FilterValue());
+  resetFilter = jest.fn().mockImplementation(() => {
+    this.apiUserFilter.set(new FilterValue());
+  });
+  handleFilterInput = jest.fn().mockImplementation(($event: Event) => {
+    const inputElement = $event.target as HTMLInputElement;
+    this.apiUserFilter.set(new FilterValue({ value: inputElement.value }));
+  });
+  apiUserFilter: WritableSignal<FilterValue> = signal(new FilterValue());
   pageIndex: WritableSignal<number> = signal(0);
   pageSize: WritableSignal<number> = signal(10);
-  apiFilter: string[] = [];
-  advancedApiFilter: string[] = [];
+  apiFilterOptions: string[] = [];
+  advancedApiFilterOptions: string[] = [];
   userResource: HttpResourceRef<PiResponse<UserData[]> | undefined> = new MockHttpResourceRef(
     MockPiResponse.fromValue([])
   );
@@ -391,13 +398,13 @@ export class MockUserService implements UserServiceInterface {
   usersOfRealmResource: HttpResourceRef<PiResponse<UserData[], undefined> | undefined> = new MockHttpResourceRef(
     MockPiResponse.fromValue([])
   );
-  filteredUsernames: Signal<string[]> = signal([]);
+  selectionFilteredUsernames: Signal<string[]> = signal([]);
   selectedUserRealm = signal("");
   selectedUsername = signal("");
-  userFilter = signal("");
-  userNameFilter = signal("");
+  selectionFilter = signal("");
+  selectionUsernameFilter = signal("");
   setDefaultRealm = jest.fn();
-  filteredUsers = signal([]);
+  selectionFilteredUsers = signal([]);
   selectedUser = signal<UserData | null>(null);
 
   displayUser = jest.fn().mockImplementation((username: string, realm: string) => {
@@ -408,7 +415,7 @@ export class MockUserService implements UserServiceInterface {
   });
 
   resetUserSelection() {
-    this.userFilter.set("");
+    this.selectionFilter.set("");
     this.selectedUserRealm.set("");
   }
 }

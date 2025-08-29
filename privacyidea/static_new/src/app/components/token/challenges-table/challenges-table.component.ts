@@ -50,7 +50,7 @@ const columnKeysMap = [
 export class ChallengesTableComponent {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
-  private readonly challengesService: ChallengesServiceInterface = inject(ChallengesService);
+  protected readonly challengesService: ChallengesServiceInterface = inject(ChallengesService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
 
   columnsKeyMap = columnKeysMap;
@@ -61,7 +61,6 @@ export class ChallengesTableComponent {
   tokenSerial = this.tokenService.tokenSerial;
   pageSize = this.challengesService.pageSize;
   pageIndex = this.challengesService.pageIndex;
-  filterValue = this.challengesService.filterValue;
   sortby_sortdir = this.challengesService.sort;
   length = linkedSignal({
     source: this.challengesService.challengesResource.value,
@@ -84,11 +83,6 @@ export class ChallengesTableComponent {
 
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
-  @ViewChild("filterInput", { static: true }) filterInput!: HTMLInputElement;
-
-  onFilterChange(newFilter: string) {
-    this.challengesService.handleFilterInput(newFilter);
-  }
 
   onPageEvent(event: PageEvent) {
     this.pageSize.set(event.pageSize);

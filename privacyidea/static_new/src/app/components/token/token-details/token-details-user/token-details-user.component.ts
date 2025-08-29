@@ -76,19 +76,19 @@ export class TokenDetailsUserComponent {
 
   cancelUserEdit(): void {
     this.isEditingUser.update((b) => !b);
-    this.userService.userFilter.set("");
+    this.userService.selectionFilter.set("");
   }
 
   saveUser() {
     this.tokenService
       .assignUser({
         tokenSerial: this.tokenSerial(),
-        username: this.userService.userNameFilter(),
+        username: this.userService.selectionUsernameFilter(),
         realm: this.userService.selectedUserRealm()
       })
       .subscribe({
         next: () => {
-          this.userService.userFilter.set("");
+          this.userService.selectionFilter.set("");
           this.userService.selectedUserRealm.set("");
           this.isEditingUser.update((b) => !b);
           this.tokenService.tokenDetailResource.reload();

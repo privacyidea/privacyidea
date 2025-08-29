@@ -16,12 +16,12 @@ export class KeywordFilterComponent {
   private readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   @Input() apiFilter: string[] = [];
   @Input() advancedApiFilter: string[] = [];
-  @Input() filterHTMLInputElement!: HTMLInputElement;
-  @Input() filterValue!: WritableSignal<FilterValue>;
+  @Input({ required: true }) filterHTMLInputElement!: HTMLInputElement;
+  @Input({ required: true }) filterValue!: WritableSignal<FilterValue>;
   showAdvancedFilter = signal(false);
 
   onKeywordClick(filterKeyword: string): void {
-    this.toggleFilter(filterKeyword, this.filterHTMLInputElement);
+    this.toggleFilter(filterKeyword);
   }
 
   onToggleAdvancedFilter(): void {
@@ -51,25 +51,22 @@ export class KeywordFilterComponent {
     }
   }
 
-  toggleFilter(filterKeyword: string, inputElement: HTMLInputElement): void {
+  toggleFilter(filterKeyword: string): void {
     let newValue;
-    var textValue = inputElement.value.trim();
     if (filterKeyword === "active" || filterKeyword === "assigned" || filterKeyword === "success") {
       newValue = this.tableUtilsService.toggleBooleanInFilter({
         keyword: filterKeyword,
-        currentValue: textValue
+        currentValue: this.filterValue().filterString
       });
     } else {
-      newValue = this.tableUtilsService.toggleKeywordInFilter(textValue, filterKeyword);
+      newValue = this.tableUtilsService.toggleKeywordInFilter(this.filterValue().filterString, filterKeyword);
     }
-    inputElement.value = newValue;
     this.filterValue.set(new FilterValue({ value: newValue }));
-    inputElement.focus();
+    this.filterHTMLInputElement.focus();
   }
 
   filterIsEmpty(): boolean {
-    const inputText = this.filterHTMLInputElement?.value.trim() ?? "";
     const current = this.filterValue?.() ?? {};
-    return inputText === "" && Object.keys(current).length === 0;
+    return Object.keys(current).length === 0;
   }
 }

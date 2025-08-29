@@ -147,16 +147,16 @@
                     <mat-form-field class="width-18rem">
                       <mat-label>Enter User</mat-label>
                       <app-clearable-input
-                        (onClick)="userService.userFilter.set('')"
-                        [showClearButton]="userService.userFilter() !== ''">
+                        (onClick)="userService.selectionFilter.set('')"
+                        [showClearButton]="userService.selectionFilter() !== ''">
                         <input
                           matInput
-                          [(ngModel)]="userService.userFilter"
+                          [(ngModel)]="userService.selectionFilter"
                           [matAutocomplete]="userAuto" />
                         <mat-autocomplete
                           #userAuto="matAutocomplete"
                           class="user-selection-autocomplete">
-                          @for (option of userService.filteredUsernames(); track option) {
+                          @for (option of userService.selectionFilteredUsernames(); track option) {
                             <mat-option [value]="option">{{ option }}</mat-option>
                           }
                         </mat-autocomplete>

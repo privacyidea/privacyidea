@@ -11,11 +11,12 @@
         subscriptSizing="dynamic">
         <mat-label i18n>Enter Filter</mat-label>
         <app-clearable-input
-          (onClick)="filterHTMLInputElement.value = ''; filterValueString.set('')"
+          (onClick)="userService.resetFilter()"
           [showClearButton]="filterHTMLInputElement.value.length > 0">
           <input
             #filterHTMLInputElement
-            [(ngModel)]="filterValueString"
+            (input)="userService.handleFilterInput($event)"
+            [value]="userService.apiUserFilter().filterString"
             aria-label="Filter Input"
             i18n-aria-label
             i18n-placeholder
@@ -30,10 +31,10 @@
         showFirstLastButtons></mat-paginator>
     </div>
     <app-keyword-filter
-      [advancedApiFilter]="userService.advancedApiFilter"
-      [apiFilter]="userService.apiFilter"
+      [advancedApiFilter]="userService.advancedApiFilterOptions"
+      [apiFilter]="userService.apiFilterOptions"
       [filterHTMLInputElement]="filterHTMLInputElement"
-      [filterValue]="userService.filterValue"></app-keyword-filter>
+      [filterValue]="userService.apiUserFilter"></app-keyword-filter>
     <div class="audit-table-overflow">
       <table
         [dataSource]="usersDataSource()"

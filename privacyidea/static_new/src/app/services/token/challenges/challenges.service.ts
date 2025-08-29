@@ -34,23 +34,21 @@ export interface Challenge {
 }
 
 export interface ChallengesServiceInterface {
-  handleFilterInput(newFilter: string): void;
   apiFilter: string[];
   advancedApiFilter: string[];
-  filterValue: WritableSignal<FilterValue>;
+  challengesFilter: WritableSignal<FilterValue>;
   pageSize: WritableSignal<number>;
   pageIndex: WritableSignal<number>;
   sort: WritableSignal<Sort>;
   challengesResource: HttpResourceRef<PiResponse<Challenges> | undefined>;
+  clearFilter(): void;
+  handleFilterInput($event: Event): void;
 }
 
 @Injectable({
   providedIn: "root"
 })
 export class ChallengesService implements ChallengesServiceInterface {
-  handleFilterInput(newFilter: string): void {
-    this.filterValue.set(new FilterValue({ value: newFilter }));
-  }
   private readonly tokenService: TokenServiceInterface = inject(TokenService);
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
@@ -58,13 +56,13 @@ export class ChallengesService implements ChallengesServiceInterface {
   readonly apiFilter = apiFilter;
   readonly advancedApiFilter = advancedApiFilter;
   tokenBaseUrl = this.tokenService.tokenBaseUrl;
-  filterValue = linkedSignal({
+  challengesFilter = linkedSignal({
     source: this.contentService.routeUrl,
     computation: () => new FilterValue()
   });
   private filterParams = computed(() => {
     const allowedFilters = [...this.apiFilter, ...this.advancedApiFilter];
-    const filterPairs = Object.entries(this.filterValue())
+    const filterPairs = Object.entries(this.challengesFilter())
       .map(([key, value]) => ({ key, value }))
       .filter(({ key }) => allowedFilters.includes(key));
     return filterPairs.reduce(
@@ -85,7 +83,7 @@ export class ChallengesService implements ChallengesServiceInterface {
   });
   pageIndex = linkedSignal({
     source: () => ({
-      filterValue: this.filterValue(),
+      filterValue: this.challengesFilter(),
       pageSize: this.pageSize(),
       routeUrl: this.contentService.routeUrl()
     }),
@@ -113,4 +111,15 @@ export class ChallengesService implements ChallengesServiceInterface {
       }
     };
   });
+
+  clearFilter(): void {
+    this.challengesFilter.set(new FilterValue());
+  }
+  handleFilterInput($event: Event): void {
+    const input = $event.target as HTMLInputElement;
+    if (this.challengesFilter().filterString === input.value) {
+      return;
+    }
+    this.challengesFilter.set(new FilterValue({ value: input.value }));
+  }
 }

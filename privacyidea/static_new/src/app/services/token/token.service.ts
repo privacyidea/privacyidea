@@ -114,6 +114,11 @@ export interface LostTokenData {
   valid_to: string;
 }
 
+export interface BatchResult {
+  failed: string[];
+  unauthorized: string[];
+}
+
 export interface TokenServiceInterface {
   stopPolling$: Subject<void>;
   tokenBaseUrl: string;
@@ -154,7 +159,7 @@ export interface TokenServiceInterface {
 
   deleteToken(tokenSerial: string): Observable<Object>;
 
-  deleteTokens(tokenSerials: string[]): Observable<Object[]>;
+  batchDeleteTokens(selectedTokens: TokenDetails[]): Observable<PiResponse<BatchResult, any>>;
 
   revokeToken(tokenSerial: string): Observable<any>;
 
@@ -163,6 +168,8 @@ export interface TokenServiceInterface {
   unassignUserFromAll(tokenSerials: string[]): Observable<PiResponse<boolean>[]>;
 
   unassignUser(tokenSerial: string): Observable<PiResponse<boolean>>;
+
+  batchUnassignTokens(tokenDetails: TokenDetails[]): Observable<PiResponse<BatchResult, any>>;
 
   assignUserToAll(args: {
     tokenSerials: string[];
@@ -182,7 +189,7 @@ export interface TokenServiceInterface {
 
   setRandomPin(tokenSerial: string): Observable<any>;
 
-  resyncOTPToken(tokenSerial: string, fristOTPValue: string, secondOTPValue: string): Observable<Object>;
+  resyncOTPToken(tokenSerial: string, firstOTPValue: string, secondOTPValue: string): Observable<Object>;
 
   getTokenDetails(tokenSerial: string): Observable<PiResponse<Tokens>>;
 
@@ -209,6 +216,7 @@ export interface TokenServiceInterface {
 })
 export class TokenService implements TokenServiceInterface {
   private readonly http: HttpClient = inject(HttpClient);
+
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
@@ -224,6 +232,24 @@ export class TokenService implements TokenServiceInterface {
   tokenIsActive = signal(true);
   tokenIsRevoked = signal(true);
   tokenSerial = this.contentService.tokenSerial;
+
+  constructor() {
+    effect(() => {
+      if (this.tokenResource.error()) {
+        let tokensResourceError = this.tokenResource.error() as HttpErrorResponse;
+        console.error("Failed to get token data.", tokensResourceError.message);
+        this.notificationService.openSnackBar(tokensResourceError.message);
+      }
+    });
+    effect(() => {
+      if (this.tokenTypesResource.error()) {
+        let tokenTypesResourceError = this.tokenTypesResource.error() as HttpErrorResponse;
+        console.error("Failed to get token type data.", tokenTypesResourceError.message);
+        this.notificationService.openSnackBar(tokenTypesResourceError.message);
+      }
+    });
+  }
+
   showOnlyTokenNotInContainer = linkedSignal({
     source: this.contentService.routeUrl,
     computation: (routeUrl) => {
@@ -272,6 +298,7 @@ export class TokenService implements TokenServiceInterface {
       params: { serial: this.tokenSerial() }
     };
   });
+
   tokenTypesResource = httpResource<PiResponse<{}>>(() => {
     if (this.contentService.routeUrl() !== ROUTE_PATHS.TOKENS_ENROLLMENT) {
       return undefined;
@@ -282,6 +309,7 @@ export class TokenService implements TokenServiceInterface {
       headers: this.authService.getHeaders()
     };
   });
+
   tokenTypeOptions = computed<TokenType[]>(() => {
     const obj = this.tokenTypesResource?.value()?.result?.value;
     if (!obj) return [];
@@ -291,6 +319,7 @@ export class TokenService implements TokenServiceInterface {
       text: TokenComponent.tokenTypeTexts.find((t) => t.key === key)?.text || ""
     }));
   });
+
   selectedTokenType = linkedSignal({
     source: () => ({
       tokenTypeOptions: this.tokenTypeOptions(),
@@ -318,6 +347,7 @@ export class TokenService implements TokenServiceInterface {
     }
   });
   sort = signal({ active: "serial", direction: "asc" } as Sort);
+
   pageIndex = linkedSignal({
     source: () => ({
       filterValue: this.tokenFilter(),
@@ -330,7 +360,10 @@ export class TokenService implements TokenServiceInterface {
 
   filterParams = computed<Record<string, string>>(() => {
     const allowedFilters = [...this.apiFilter, ...this.advancedApiFilter, ...this.hiddenApiFilter];
-    let filterPairs = [...this.tokenFilter().filterMap, ...this.tokenFilter().hiddenFilterMap];
+    let filterPairs = [
+      ...Array.from(this.tokenFilter().filterMap.entries()),
+      ...Array.from(this.tokenFilter().hiddenFilterMap.entries())
+    ];
     let filterPairsMap = filterPairs
       .filter(([key]) => allowedFilters.includes(key))
       .map(([key, value]) => ({ key, value }));
@@ -345,6 +378,7 @@ export class TokenService implements TokenServiceInterface {
       {} as Record<string, string>
     );
   });
+
   tokenResource = httpResource<PiResponse<Tokens>>(() => {
     if (
       this.contentService.routeUrl() !== ROUTE_PATHS.TOKENS &&
@@ -374,21 +408,38 @@ export class TokenService implements TokenServiceInterface {
     computation: () => []
   });
 
-  constructor() {
-    effect(() => {
-      if (this.tokenResource.error()) {
-        let tokensResourceError = this.tokenResource.error() as HttpErrorResponse;
-        console.error("Failed to get token data.", tokensResourceError.message);
-        this.notificationService.openSnackBar(tokensResourceError.message);
-      }
-    });
-    effect(() => {
-      if (this.tokenTypesResource.error()) {
-        let tokenTypesResourceError = this.tokenTypesResource.error() as HttpErrorResponse;
-        console.error("Failed to get token type data.", tokenTypesResourceError.message);
-        this.notificationService.openSnackBar(tokenTypesResourceError.message);
-      }
-    });
+  batchUnassignTokens(tokenDetails: TokenDetails[]): Observable<PiResponse<BatchResult, any>> {
+    const headers = this.authService.getHeaders();
+    return this.http
+      .post<PiResponse<BatchResult, any>>(
+        this.tokenBaseUrl + "unassign",
+        {
+          serials: tokenDetails.map((token) => token.serial)
+        },
+        { headers }
+      )
+      .pipe(
+        catchError((error) => {
+          console.error("Failed to unassign tokens.", error);
+          const message = error.error?.result?.error?.message || "";
+          this.notificationService.openSnackBar("Failed to unassign tokens. " + message);
+          return throwError(() => error);
+        })
+      );
+  }
+
+  batchDeleteTokens(selectedTokens: TokenDetails[]): Observable<PiResponse<BatchResult, any>> {
+    const headers = this.authService.getHeaders();
+    const body = { serials: selectedTokens.map((t) => t.serial) };
+
+    return this.http.delete<PiResponse<BatchResult, any>>(this.tokenBaseUrl, { headers, body }).pipe(
+      catchError((error) => {
+        console.error("Failed to delete tokens.", error);
+        const message = error.result?.error?.message || "";
+        this.notificationService.openSnackBar("Failed to delete tokens. " + message);
+        return throwError(() => error);
+      })
+    );
   }
 
   toggleActive(tokenSerial: string, active: boolean): Observable<PiResponse<boolean>> {
@@ -476,11 +527,6 @@ export class TokenService implements TokenServiceInterface {
   deleteToken(tokenSerial: string): Observable<Object> {
     const headers = this.authService.getHeaders();
     return this.http.delete(this.tokenBaseUrl + tokenSerial, { headers });
-  }
-
-  deleteTokens(tokenSerials: string[]): Observable<Object[]> {
-    const observables = tokenSerials.map((tokenSerial) => this.deleteToken(tokenSerial));
-    return forkJoin(observables);
   }
 
   revokeToken(tokenSerial: string): Observable<any> {
@@ -662,6 +708,7 @@ export class TokenService implements TokenServiceInterface {
 
   setTokenRealm(tokenSerial: string, value: string[]): Observable<PiResponse<boolean>> {
     const headers = this.authService.getHeaders();
+
     return this.http
       .post<PiResponse<boolean>>(
         `${this.tokenBaseUrl}realm/` + tokenSerial,
@@ -682,6 +729,7 @@ export class TokenService implements TokenServiceInterface {
 
   setTokengroup(tokenSerial: string, value: string | string[]): Observable<Object> {
     const headers = this.authService.getHeaders();
+
     const valueArray: string[] = Array.isArray(value)
       ? value
       : typeof value === "object" && value !== null

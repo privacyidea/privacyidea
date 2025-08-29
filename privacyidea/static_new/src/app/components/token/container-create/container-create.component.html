@@ -117,25 +117,26 @@
       <mat-form-field class="width-32 input-height">
         <mat-label i18n>Enter User</mat-label>
         <app-clearable-input
-          (onClick)="userInput.value = ''; userService.userFilter.set(null)"
-          [showClearButton]="userService.userFilter() !== ''">
+          (onClick)="userService.resetFilter()"
+          [showClearButton]="userService.apiUserFilter().isNotEmpty">
           <input
             #userInput
-            [(ngModel)]="userService.userFilter"
+            (input)="userService.handleFilterInput($event)"
+            [value]="userService.apiUserFilter().filterString"
             [disabled]="onlyAddToRealm()"
             [matAutocomplete]="userAuto"
             matInput />
         </app-clearable-input>
         <mat-error i18n>User is <strong>required</strong></mat-error>
         <mat-autocomplete #userAuto="matAutocomplete">
-          @for (option of userService.filteredUsernames(); track option) {
+          @for (option of userService.selectionFilteredUsernames(); track option) {
             <mat-option [value]="option">{{ option }}</mat-option>
           }
         </mat-autocomplete>
       </mat-form-field>
       <mat-checkbox
         [(ngModel)]="onlyAddToRealm"
-        [disabled]="userService.userFilter() !== ''">
+        [disabled]="userService.apiUserFilter().isNotEmpty">
         Only add to the realm
         <br />
         (no user assignment)
