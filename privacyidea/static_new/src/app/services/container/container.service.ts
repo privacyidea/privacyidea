@@ -138,7 +138,7 @@ export interface ContainerServiceInterface {
   eventPageSize: number;
   states: WritableSignal<string[]>;
   containerSerial: WritableSignal<string>;
-  selectedContainer: WritableSignal<string>;
+  selectedContainer: WritableSignal<string | null>;
   sort: WritableSignal<Sort>;
   filterValue: WritableSignal<Record<string, string>>;
   filterParams: Signal<Record<string, string>>;
@@ -218,7 +218,7 @@ export class ContainerService implements ContainerServiceInterface {
   eventPageSize = 10;
   states = signal<string[]>([]);
   containerSerial = this.contentService.containerSerial;
-  selectedContainer: WritableSignal<string> = linkedSignal({
+  selectedContainer: WritableSignal<string | null> = linkedSignal({
     source: () => ({
       routeUrl: this.contentService.routeUrl()
     }),

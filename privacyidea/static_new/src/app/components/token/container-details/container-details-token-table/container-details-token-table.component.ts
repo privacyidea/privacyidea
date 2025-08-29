@@ -69,15 +69,11 @@ const columnsKeyMap = [
 })
 export class ContainerDetailsTokenTableComponent {
   protected readonly dialog: MatDialog = inject(MatDialog);
-  protected readonly containerService: ContainerServiceInterface =
-    inject(ContainerService);
+  protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
-  protected readonly tableUtilsService: TableUtilsServiceInterface =
-    inject(TableUtilsService);
-  protected readonly overflowService: OverflowServiceInterface =
-    inject(OverflowService);
-  protected readonly contentService: ContentServiceInterface =
-    inject(ContentService);
+  protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
+  protected readonly overflowService: OverflowServiceInterface = inject(OverflowService);
+  protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
 
   protected readonly columnsKeyMap = columnsKeyMap;
@@ -85,9 +81,7 @@ export class ContainerDetailsTokenTableComponent {
   pageSize = 10;
   pageSizeOptions = this.tableUtilsService.pageSizeOptions;
   filterValue = "";
-  @Input() containerTokenData!: WritableSignal<
-    MatTableDataSource<ContainerDetailToken, MatPaginator>
-  >;
+  @Input() containerTokenData!: WritableSignal<MatTableDataSource<ContainerDetailToken, MatPaginator>>;
   dataSource = new MatTableDataSource<ContainerDetailToken>([]);
   containerSerial = this.containerService.containerSerial;
   assignedUser: WritableSignal<{
@@ -165,7 +159,7 @@ export class ContainerDetailsTokenTableComponent {
     this.dialog
       .open(ConfirmationDialogComponent, {
         data: {
-          serial_list: [tokenSerial],
+          serialList: [tokenSerial],
           title: "Remove Token",
           type: "token",
           action: "remove",
@@ -176,13 +170,11 @@ export class ContainerDetailsTokenTableComponent {
       .subscribe({
         next: (result) => {
           if (result) {
-            this.containerService
-              .removeTokenFromContainer(containerSerial, tokenSerial)
-              .subscribe({
-                next: () => {
-                  this.containerService.containerDetailResource.reload();
-                }
-              });
+            this.containerService.removeTokenFromContainer(containerSerial, tokenSerial).subscribe({
+              next: () => {
+                this.containerService.containerDetailResource.reload();
+              }
+            });
           }
         }
       });
@@ -195,9 +187,7 @@ export class ContainerDetailsTokenTableComponent {
   }
 
   unassignFromAllToken() {
-    const tokenToUnassign = this.containerTokenData().data.filter(
-      (token) => token.username !== ""
-    );
+    const tokenToUnassign = this.containerTokenData().data.filter((token) => token.username !== "");
     if (tokenToUnassign.length === 0) {
       return;
     }
@@ -206,7 +196,7 @@ export class ContainerDetailsTokenTableComponent {
       .open(ConfirmationDialogComponent, {
         data: {
           type: "token",
-          serial_list: tokenSerials,
+          serialList: tokenSerials,
           title: "Unassign User from All Tokens",
           action: "unassign",
           numberOfTokens: tokenSerials.length
@@ -248,44 +238,36 @@ export class ContainerDetailsTokenTableComponent {
     if (tokensToAssign.length === 0) {
       return;
     }
-    const tokensAssignedToOtherUser = tokensToAssign.filter(
-      (token) => token.username !== ""
-    );
+    const tokensAssignedToOtherUser = tokensToAssign.filter((token) => token.username !== "");
 
     this.dialog
       .open(UserAssignmentDialogComponent)
       .afterClosed()
       .subscribe((pin: string) => {
-        const tokenSerialsAssignedToOtherUser = tokensAssignedToOtherUser.map(
-          (token) => token.serial
-        );
-        this.tokenService
-          .unassignUserFromAll(tokenSerialsAssignedToOtherUser)
-          .subscribe({
-            next: () => {
-              const tokenSerialsToAssign = tokensToAssign.map(
-                (token) => token.serial
-              );
-              this.tokenService
-                .assignUserToAll({
-                  tokenSerials: tokenSerialsToAssign,
-                  username: username,
-                  realm: realm,
-                  pin: pin
-                })
-                .subscribe({
-                  next: () => {
-                    this.containerService.containerDetailResource.reload();
-                  },
-                  error: (error) => {
-                    console.error("Error assigning user to all tokens:", error);
-                  }
-                });
-            },
-            error: (error) => {
-              console.error("Error unassigning user from all tokens:", error);
-            }
-          });
+        const tokenSerialsAssignedToOtherUser = tokensAssignedToOtherUser.map((token) => token.serial);
+        this.tokenService.unassignUserFromAll(tokenSerialsAssignedToOtherUser).subscribe({
+          next: () => {
+            const tokenSerialsToAssign = tokensToAssign.map((token) => token.serial);
+            this.tokenService
+              .assignUserToAll({
+                tokenSerials: tokenSerialsToAssign,
+                username: username,
+                realm: realm,
+                pin: pin
+              })
+              .subscribe({
+                next: () => {
+                  this.containerService.containerDetailResource.reload();
+                },
+                error: (error) => {
+                  console.error("Error assigning user to all tokens:", error);
+                }
+              });
+          },
+          error: (error) => {
+            console.error("Error unassigning user from all tokens:", error);
+          }
+        });
       });
   }
 
@@ -306,17 +288,17 @@ export class ContainerDetailsTokenTableComponent {
   }
 
   removeAll() {
-    const serial_list = this.containerTokenData()
+    const serialList = this.containerTokenData()
       .data.map((token) => token.serial)
       .join(",");
     this.dialog
       .open(ConfirmationDialogComponent, {
         data: {
-          serial_list: serial_list.split(","),
+          serialList: serialList.split(","),
           title: "Remove Token",
           type: "token",
           action: "remove",
-          numberOfTokens: serial_list.split(",").length
+          numberOfTokens: serialList.split(",").length
         }
       })
       .afterClosed()
@@ -340,7 +322,7 @@ export class ContainerDetailsTokenTableComponent {
     this.dialog
       .open(ConfirmationDialogComponent, {
         data: {
-          serial_list: serialList.split(","),
+          serialList: serialList.split(","),
           title: "Delete All Tokens",
           type: "token",
           action: "delete",
@@ -370,7 +352,7 @@ export class ContainerDetailsTokenTableComponent {
     this.dialog
       .open(ConfirmationDialogComponent, {
         data: {
-          serial_list: [tokenSerial],
+          serialList: [tokenSerial],
           title: "Delete Token",
           type: "token",
           action: "delete",

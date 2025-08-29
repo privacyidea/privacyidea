@@ -233,8 +233,9 @@
             [isEditingUser]="isEditingUser"/>
         </div>
         @if (overflowService.isWidthOverflowing("body", 1310)) {
-          <br/>
-          <mat-divider></mat-divider><br/>
+          <br />
+          <mat-divider></mat-divider>
+          <br />
         }
       </div>
       <div
@@ -248,8 +249,9 @@
                 [ngClass]="{ 'pad-top-10': showOnlyTokenNotInContainer() }">
                 <span i18n> Only display tokens that are not in a container </span>
                 @if (!showOnlyTokenNotInContainer()) {
-                  <br/>
-                  <span i18n> Note: Adding a token removes it from</span><br/>
+                  <br />
+                  <span i18n> Note: Adding a token removes it from</span>
+                  <br />
                   <span
                     i18n
                     style="margin-left: 39px">
@@ -267,14 +269,18 @@
           </div>
           <mat-form-field class="add-token">
             <mat-label i18n>Add Token to Container</mat-label>
-            <input
-              #filterHTMLInputElement
-              #tokenAutoTrigger="matAutocompleteTrigger"
-              [(ngModel)]="filterValueString"
-              [matAutocomplete]="tokenAuto"
-              i18n-placeholder
-              matInput
-              placeholder="Example query: 'type: hotp serial: 123'"/>
+            <app-clearable-input
+              (onClick)="filterValueString.set('')"
+              [showClearButton]="filterValueString().length > 0">
+              <input
+                #filterHTMLInputElement
+                #tokenAutoTrigger="matAutocompleteTrigger"
+                [(ngModel)]="filterValueString"
+                [matAutocomplete]="tokenAuto"
+                i18n-placeholder
+                matInput
+                placeholder="Example query: 'type: hotp serial: 123'" />
+            </app-clearable-input>
             <mat-autocomplete #tokenAuto="matAutocomplete">
               @for (option of tokenDataSource().data; track option) {
                 <mat-option

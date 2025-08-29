@@ -5,7 +5,8 @@
   @if (showProgressBar()) {
     <div class="loading-urls-container">
       @for (l of loadingUrls(); track l.key) {
-        <span class="loading-url"> {{ l.url.slice(1) }} </span><br />
+        <span class="loading-url"> {{ l.url.slice(1) }} </span>
+        <br />
       }
     </div>
     <div class="progress-bar">
@@ -20,16 +21,14 @@
         href="https://privacyidea.readthedocs.io"
         i18n
         i18n-aria-label
-        target="_blank"
-        >Online Documentation
+        target="_blank">Online Documentation
       </a>
       <a
         aria-label="privacyIDEA Forum"
         href="https://community.privacyidea.org/"
         i18n
         i18n-aria-label
-        target="_blank"
-        >privacyIDEA Forum
+        target="_blank">privacyIDEA Forum
       </a>
     </div>
   </div>

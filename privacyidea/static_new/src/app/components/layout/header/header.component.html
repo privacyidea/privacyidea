@@ -23,7 +23,8 @@
             routerLink="{{authService.actionAllowed('tokenlist') ? this.ROUTE_PATHS.TOKENS :
             authService.actionAllowed('container_list') ? this.ROUTE_PATHS.TOKENS_CONTAINERS : this.ROUTE_PATHS.TOKENS}}">
             <mat-icon>shield</mat-icon>
-            <h4 i18n>Tokens</h4></a>
+            <h4 i18n>Tokens</h4>
+          </a>
         }
         @if (authService.menus().includes("users")) {
           <a
@@ -32,7 +33,8 @@
             mat-fab
             routerLink="{{ this.ROUTE_PATHS.USERS }}">
             <mat-icon>supervised_user_circle</mat-icon>
-            <h4>{{ authService.role() === "admin" ? "Users" : "User" }}</h4></a>
+            <h4>{{ authService.role() === "admin" ? "Users" : "User" }}</h4>
+          </a>
         }
         @if (authService.menus().includes("machines")) {
           <a
@@ -41,7 +43,8 @@
             mat-fab
             disabled>
             <mat-icon>dns</mat-icon>
-            <h4 i18n>Machines</h4></a>
+            <h4 i18n>Machines</h4>
+          </a>
         }
         @if (authService.menus().includes("config")) {
           <a
@@ -50,7 +53,8 @@
             mat-fab
             disabled>
             <mat-icon>miscellaneous_services</mat-icon>
-            <h4 i18n>Configuration</h4></a>
+            <h4 i18n>Configuration</h4>
+          </a>
         }
         @if (authService.menus().includes("audit")) {
           <a
@@ -59,7 +63,8 @@
             mat-fab
             routerLink="{{ ROUTE_PATHS.AUDIT }}">
             <mat-icon>manage_search</mat-icon>
-            <h4 i18n>Audit</h4></a>
+            <h4 i18n>Audit</h4>
+          </a>
         }
         @if (authService.menus().includes("components")) {
           <a
@@ -68,7 +73,8 @@
             mat-fab
             disabled>
             <mat-icon>grid_view</mat-icon>
-            <h4 i18n>Components</h4></a>
+            <h4 i18n>Components</h4>
+          </a>
         }
       }
       <button

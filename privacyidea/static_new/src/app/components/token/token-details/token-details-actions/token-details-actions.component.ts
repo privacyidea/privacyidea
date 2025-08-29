@@ -1,3 +1,4 @@
+import { NgClass } from "@angular/common";
 import { Component, inject, Input, WritableSignal } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { MatFabButton } from "@angular/material/button";
@@ -12,9 +13,8 @@ import { OverflowService, OverflowServiceInterface } from "../../../../services/
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 import { ValidateService, ValidateServiceInterface } from "../../../../services/validate/validate.service";
 import { TokenSshMachineAssignDialogComponent } from "../token-ssh-machine-assign-dialog/token-ssh-machine-assign-dialog";
-import { NgClass } from "@angular/common";
-import { SetPinActionComponent } from "./set-pin-action/set-pin-action.component";
 import { ResyncTokenActionComponent } from "./resync-token-action/resync-token-action.component";
+import { SetPinActionComponent } from "./set-pin-action/set-pin-action.component";
 import { TestOtpPinActionComponent } from "./test-otp-pin-action/test-otp-pin-action.component";
 import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
 
@@ -37,12 +37,9 @@ import { AuthService, AuthServiceInterface } from "../../../../services/auth/aut
 export class TokenDetailsActionsComponent {
   private readonly matDialog: MatDialog = inject(MatDialog);
   private readonly tokenService: TokenServiceInterface = inject(TokenService);
-  protected readonly validateService: ValidateServiceInterface =
-    inject(ValidateService);
-  protected readonly overflowService: OverflowServiceInterface =
-    inject(OverflowService);
-  protected readonly notificationService: NotificationServiceInterface =
-    inject(NotificationService);
+  protected readonly validateService: ValidateServiceInterface = inject(ValidateService);
+  protected readonly overflowService: OverflowServiceInterface = inject(OverflowService);
+  protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   @Input() setPinValue!: WritableSignal<string>;
   @Input() repeatPinValue!: WritableSignal<string>;
@@ -54,8 +51,7 @@ export class TokenDetailsActionsComponent {
       next: (checkResponse) => {
         if (checkResponse.result?.value) {
           this.notificationService.openSnackBar(
-            "Test successful. You would have been logged in as: " +
-            (checkResponse.detail?.username ?? "Unknown User")
+            "Test successful. You would have been logged in as: " + (checkResponse.detail?.username ?? "Unknown User")
           );
         } else {
           this.notificationService.openSnackBar("No user found.");

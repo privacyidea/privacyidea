@@ -1,24 +1,25 @@
 <h2 mat-dialog-title>{{ data.title }}</h2>
 
 <mat-dialog-content>
-  @if (data.action === "remove" || data.action === "delete" || data.action === "revoke") {
+  @if (data.action === "remove" || data.action === "delete" || data.action === "revoke" || data.action === "unassign") {
     <p i18n>
       Are you sure you want to {{ data.action }}
-      @if ((data.serial_list?.length ?? 0) > 1 && data.type === "token") {
-        all ({{ data.serial_list?.length }}) {{ data.type }}s?
+      @if ((data.serialList?.length ?? 0) > 1 && data.type === "token") {
+        all selected ({{ data.serialList?.length }}) {{ data.type }}s?
       } @else {
         this {{ data.type }}?
       }
     </p>
     <ul>
-      @for (serial of data.serial_list; track serial) {
+      @for (serial of data.serialList; track serial) {
         <li>{{ serial }}</li>
       }
     </ul>
   } @else if (data.action === "search") {
     <p i18n>
-      This search request will check {{ data.numberOfTokens }} tokens in the system for the given OTP value. <br />This
-      could take a lot of time and could even time out.
+      This search request will check {{ data.numberOfTokens }} tokens in the system for the given OTP value.
+      <br />
+      This could take a lot of time and could even time out.
     </p>
   }
 </mat-dialog-content>

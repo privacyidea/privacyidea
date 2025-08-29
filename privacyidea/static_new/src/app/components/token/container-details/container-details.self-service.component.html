@@ -126,7 +126,7 @@
                         <input
                           matInput
                           [(ngModel)]="userService.userFilter"
-                          [matAutocomplete]="userAuto"/>
+                          [matAutocomplete]="userAuto" />
                         <mat-autocomplete
                           #userAuto="matAutocomplete"
                           class="user-selection-autocomplete">
@@ -148,7 +148,7 @@
                         [(ngModel)]="userService.selectedUserRealm"
                         [value]="userService.selectedUserRealm()">
                         @for (option of realmService.realmOptions(); track option) {
-                          <mat-option value="{{ option }}">{{ option }} </mat-option>
+                          <mat-option value="{{ option }}">{{ option }}</mat-option>
                         }
                       </mat-select>
                     </mat-form-field>
@@ -200,11 +200,11 @@
             [infoData]="infoData"
             [isAnyEditingOrRevoked]="isAnyEditing"
             [isEditingInfo]="isEditingInfo"
-            [isEditingUser]="isEditingUser"/>
+            [isEditingUser]="isEditingUser" />
         </div>
         @if (overflowService.isWidthOverflowing("body", 1310)) {
-          <br/>
-          <mat-divider></mat-divider><br/>
+          <br />
+          <mat-divider></mat-divider><br />
         }
       </div>
       <div
@@ -216,10 +216,10 @@
               <mat-checkbox
                 [(ngModel)]="showOnlyTokenNotInContainer"
                 [ngClass]="{ 'pad-top-10': showOnlyTokenNotInContainer() }">
-                <span> Only display tokens that are not in a container </span>
+                <span> Only display tokens not in a container </span>
                 @if (!showOnlyTokenNotInContainer()) {
-                  <br/>
-                  <span> Note: Adding a token removes it from</span><br/>
+                  <br />
+                  <span> Note: Adding a token removes it from</span><br />
                   <span style="margin-left: 39px"> its previous container. </span>
                 }
               </mat-checkbox>
@@ -233,13 +233,17 @@
           </div>
           <mat-form-field class="add-token">
             <mat-label>Add Token to Container</mat-label>
-            <input
-              #filterHTMLInputElement
-              #tokenAutoTrigger="matAutocompleteTrigger"
-              [(ngModel)]="filterValueString"
-              [matAutocomplete]="tokenAuto"
-              matInput
-              placeholder="Example query: 'type: hotp serial: 123'"/>
+            <app-clearable-input
+              (onClick)="filterValueString.set('')"
+              [showClearButton]="filterValueString().length > 0">
+              <input
+                #filterHTMLInputElement
+                #tokenAutoTrigger="matAutocompleteTrigger"
+                [(ngModel)]="filterValueString"
+                [matAutocomplete]="tokenAuto"
+                matInput
+                placeholder="Example query: 'type: hotp serial: 123'" />
+            </app-clearable-input>
             <mat-autocomplete #tokenAuto="matAutocomplete">
               @for (option of tokenDataSource().data; track option) {
                 <mat-option
@@ -250,11 +254,11 @@
                   <span
                     class="token-option-span"
                     [ngClass]="option['active'] ? 'highlight-true' : 'highlight-false'">
-                    {{ option["active"] ? "active" : "deactivated" }}
-                  </span>
+                  {{ option["active"] ? "active" : "deactivated" }}
+                </span>
                   <span class="token-option-span">
-                    {{ option["username"] }}
-                  </span>
+                  {{ option["username"] }}
+                </span>
                   <mat-icon>add</mat-icon>
                 </mat-option>
               }
@@ -262,7 +266,7 @@
           </mat-form-field>
           <mat-divider class="width-36"></mat-divider>
         }
-        <app-container-details-token-table-self-service [containerTokenData]="containerTokenData"/>
+        <app-container-details-token-table-self-service [containerTokenData]="containerTokenData" />
       </div>
     </div>
   </div>

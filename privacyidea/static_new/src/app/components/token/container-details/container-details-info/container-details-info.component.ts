@@ -42,10 +42,8 @@ export interface ContainerInfoDetail<T = any> {
   styleUrl: "./container-details-info.component.scss"
 })
 export class ContainerDetailsInfoComponent {
-  private readonly containerService: ContainerServiceInterface =
-    inject(ContainerService);
-  protected readonly overflowService: OverflowServiceInterface =
-    inject(OverflowService);
+  private readonly containerService: ContainerServiceInterface = inject(ContainerService);
+  protected readonly overflowService: OverflowServiceInterface = inject(OverflowService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
 
   protected readonly Object = Object;
@@ -68,16 +66,10 @@ export class ContainerDetailsInfoComponent {
   }
 
   saveInfo(element: ContainerInfoDetail): void {
-    if (
-      this.newInfo().key.trim() !== "" &&
-      this.newInfo().value.trim() !== ""
-    ) {
+    if (this.newInfo().key.trim() !== "" && this.newInfo().value.trim() !== "") {
       element.value[this.newInfo().key] = this.newInfo().value;
     }
-    const requests = this.containerService.setContainerInfos(
-      this.containerSerial(),
-      element.value
-    );
+    const requests = this.containerService.setContainerInfos(this.containerSerial(), element.value);
     forkJoin(requests).subscribe({
       next: () => {
         this.newInfo.set({ key: "", value: "" });
@@ -92,9 +84,7 @@ export class ContainerDetailsInfoComponent {
       .deleteInfo(this.containerSerial(), key)
       .pipe(
         switchMap(() => {
-          const info = this.detailData().find(
-            (detail) => detail.keyMap.key === "info"
-          );
+          const info = this.detailData().find((detail) => detail.keyMap.key === "info");
           if (info) {
             this.isEditingInfo.set(true);
           }

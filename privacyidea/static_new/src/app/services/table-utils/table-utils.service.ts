@@ -10,10 +10,7 @@ export interface FilterPair {
 export interface TableUtilsServiceInterface {
   pageSizeOptions: WritableSignal<number[]>;
 
-  emptyDataSource<T>(
-    pageSize: number,
-    columnsKeyMap: { key: string; label: string }[]
-  ): MatTableDataSource<T>;
+  emptyDataSource<T>(pageSize: number, columnsKeyMap: { key: string; label: string }[]): MatTableDataSource<T>;
 
   parseFilterString(
     filterValue: string,
@@ -25,10 +22,7 @@ export interface TableUtilsServiceInterface {
 
   toggleKeywordInFilter(currentValue: string, keyword: string): string;
 
-  toggleBooleanInFilter(args: {
-    keyword: string;
-    currentValue: string;
-  }): string;
+  toggleBooleanInFilter(args: { keyword: string; currentValue: string }): string;
 
   recordsFromText(textValue: string): Record<string, string>;
 
@@ -48,11 +42,7 @@ export interface TableUtilsServiceInterface {
 
   getChildClassForColumnKey(columnKey: string): string;
 
-  getDisplayTextForKeyAndRevoked(
-    key: string,
-    value: any,
-    revoked: boolean
-  ): string;
+  getDisplayTextForKeyAndRevoked(key: string, value: any, revoked: boolean): string;
 
   getTdClassForKey(key: string): string[];
 
@@ -68,10 +58,7 @@ export class TableUtilsService implements TableUtilsServiceInterface {
   private readonly authService: AuthServiceInterface = inject(AuthService);
   pageSizeOptions = signal([5, 10, 25, 50]);
 
-  emptyDataSource<T>(
-    pageSize: number,
-    columnsKeyMap: { key: string; label: string }[]
-  ): MatTableDataSource<T> {
+  emptyDataSource<T>(pageSize: number, columnsKeyMap: { key: string; label: string }[]): MatTableDataSource<T> {
     return new MatTableDataSource(
       Array.from({ length: pageSize }, () => {
         const emptyRow: any = {};
@@ -181,10 +168,7 @@ export class TableUtilsService implements TableUtilsServiceInterface {
       }
       return newValue;
     }
-    const keywordPattern = new RegExp(
-      `\\b${keyword}:.*?(?=(\\s+\\w+:|$))`,
-      "i"
-    );
+    const keywordPattern = new RegExp(`\\b${keyword}:.*?(?=(\\s+\\w+:|$))`, "i");
     if (keywordPattern.test(currentValue)) {
       return currentValue
         .replace(keywordPattern, " ")
@@ -199,15 +183,9 @@ export class TableUtilsService implements TableUtilsServiceInterface {
     }
   }
 
-  public toggleBooleanInFilter(args: {
-    keyword: string;
-    currentValue: string;
-  }): string {
+  public toggleBooleanInFilter(args: { keyword: string; currentValue: string }): string {
     const { keyword, currentValue } = args;
-    const regex = new RegExp(
-      `\\b${keyword}:\\s?([\\w\\d]*)(?![\\w\\d]*:)`,
-      "i"
-    );
+    const regex = new RegExp(`\\b${keyword}:\\s?([\\w\\d]*)(?![\\w\\d]*:)`, "i");
     const match = currentValue.match(regex);
 
     if (!match) {
@@ -305,11 +283,7 @@ export class TableUtilsService implements TableUtilsServiceInterface {
     return element[columnKey];
   }
 
-  getSpanClassForKey(args: {
-    key: string;
-    value?: any;
-    maxfail?: any;
-  }): string {
+  getSpanClassForKey(args: { key: string; value?: any; maxfail?: any }): string {
     const { key, value, maxfail } = args;
     if (key === "success") {
       if (value === "" || value === null || value === undefined) {
@@ -344,11 +318,7 @@ export class TableUtilsService implements TableUtilsServiceInterface {
   getDivClassForKey(key: string) {
     if (key === "description") {
       return "details-scrollable-container";
-    } else if (
-      key === "maxfail" ||
-      key === "count_window" ||
-      key === "sync_window"
-    ) {
+    } else if (key === "maxfail" || key === "count_window" || key === "sync_window") {
       return "details-value";
     }
 
@@ -371,19 +341,13 @@ export class TableUtilsService implements TableUtilsServiceInterface {
   }
 
   getChildClassForColumnKey(columnKey: string): string {
-    if (
-      this.getClassForColumnKey(columnKey).includes("table-scroll-container")
-    ) {
+    if (this.getClassForColumnKey(columnKey).includes("table-scroll-container")) {
       return "scroll-item";
     }
     return "";
   }
 
-  getDisplayTextForKeyAndRevoked(
-    key: string,
-    value: any,
-    revoked: boolean
-  ): string {
+  getDisplayTextForKeyAndRevoked(key: string, value: any, revoked: boolean): string {
     if (value === "") {
       return "";
     }

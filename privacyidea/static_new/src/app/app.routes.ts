@@ -1,8 +1,7 @@
 import { NgModule } from "@angular/core";
 import { RouterModule, Routes } from "@angular/router";
-import { LoginComponent } from "./components/login/login.component";
 import { LayoutComponent } from "./components/layout/layout.component";
-import { AuditComponent } from "./components/audit/audit.component";
+import { LoginComponent } from "./components/login/login.component";
 import { adminMatch, AuthGuard, selfServiceMatch } from "./guards/auth.guard";
 
 export const ROUTE_PATHS = {
@@ -37,10 +36,8 @@ export const routes: Routes = [
       {
         path: "",
         canMatch: [selfServiceMatch],
-        loadChildren: () =>
-          import("./self-service.routes").then((m) => m.routes)
-      },
-      { path: "audit", component: AuditComponent }
+        loadChildren: () => import("./self-service.routes").then((m) => m.routes)
+      }
     ]
   },
   { path: "**", redirectTo: "login" }
@@ -50,5 +47,4 @@ export const routes: Routes = [
   imports: [RouterModule.forRoot(routes, { useHash: false })],
   exports: [RouterModule]
 })
-export class AppRoutingModule {
-}
+export class AppRoutingModule {}
