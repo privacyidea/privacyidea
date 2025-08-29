@@ -40,12 +40,6 @@ import { GetSerialResultDialogComponent } from "./get-serial-result-dialog/get-s
   styleUrl: "./token-get-serial.component.scss"
 })
 export class TokenGetSerialComponent {
-  protected readonly tokenService: TokenServiceInterface = inject(TokenService);
-  protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
-  protected readonly contentService: ContentServiceInterface = inject(ContentService);
-  private readonly dialog: MatDialog = inject(MatDialog);
-  private router = inject(Router);
-  tokenSerial = this.tokenService.tokenSerial;
   otpValue = signal<string>("");
   tokenType = signal<string>("");
   assignmentState = signal<string>("");
@@ -64,11 +58,17 @@ export class TokenGetSerialComponent {
     }
   ];
   tokenWithOTP = ["hotp", "totp", "spass", "motp", "sshkey", "yubikey", "remote", "yubico", "radius", "sms"];
+  protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+  tokenSerial = this.tokenService.tokenSerial;
   tokenTypesWithOTP: WritableSignal<TokenType[]> = linkedSignal({
-      source: this.tokenService.tokenTypeOptions,
-      computation: (tokenTypeOptions: TokenType[]) =>
-        tokenTypeOptions.filter((type) => this.tokenWithOTP.includes(type.key))
-    });
+    source: this.tokenService.tokenTypeOptions,
+    computation: (tokenTypeOptions: TokenType[]) =>
+      tokenTypeOptions.filter((type) => this.tokenWithOTP.includes(type.key))
+  });
+  protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
+  protected readonly contentService: ContentServiceInterface = inject(ContentService);
+  private readonly dialog: MatDialog = inject(MatDialog);
+  private router = inject(Router);
 
   constructor() {
 
