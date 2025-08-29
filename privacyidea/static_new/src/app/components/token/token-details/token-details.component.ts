@@ -28,6 +28,7 @@ import { TokenDetailsActionsComponent } from "./token-details-actions/token-deta
 import { TokenDetailsInfoComponent } from "./token-details-info/token-details-info.component";
 import { TokenDetailsUserComponent } from "./token-details-user/token-details-user.component";
 import { TokenSshMachineAssignDialogComponent } from "./token-ssh-machine-assign-dialog/token-ssh-machine-assign-dialog";
+import { TokenDetailsMachineComponent } from "./token-details-machine/token-details-machine.component";
 
 export const tokenDetailsKeyMap = [
   { key: "tokentype", label: "Type" },
@@ -80,7 +81,8 @@ export const infoDetailsKeyMap = [{ key: "info", label: "Information" }];
     EditButtonsComponent,
     CopyButtonComponent,
     ClearableInputComponent,
-    ScrollToTopDirective
+    ScrollToTopDirective,
+    TokenDetailsMachineComponent
   ],
   templateUrl: "./token-details.component.html",
   styleUrls: ["./token-details.component.scss"]

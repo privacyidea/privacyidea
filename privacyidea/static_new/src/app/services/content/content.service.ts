@@ -6,7 +6,7 @@ import { ROUTE_PATHS } from "../../app.routes";
 
 export interface ContentServiceInterface {
   router: Router;
-  routeUrl: () => string;
+  routeUrl: Signal<string>;
   previousUrl: Signal<string>;
   isProgrammaticTabChange: WritableSignal<boolean>;
   tokenSerial: WritableSignal<string>;

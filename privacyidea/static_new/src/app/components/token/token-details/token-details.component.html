@@ -248,6 +248,9 @@
             [isAnyEditingOrRevoked]="isAnyEditingOrRevoked"
             [isEditingInfo]="isEditingInfo"
             [isEditingUser]="isEditingUser"></app-token-details-info>
+          @if (tokenType() === "sshkey" || tokenType() === "hotp" || tokenType() === "passkey") {
+            <app-token-details-machine />
+          }
         </div>
         <app-token-details-actions
           [repeatPinValue]="repeatPinValue"

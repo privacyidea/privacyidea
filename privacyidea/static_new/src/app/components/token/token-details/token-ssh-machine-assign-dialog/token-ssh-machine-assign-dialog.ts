@@ -151,7 +151,10 @@ export class TokenSshMachineAssignDialogComponent {
     };
     const request = this.machineService.postAssignMachineToToken(args);
     request.subscribe({
-      next: (response) => {},
+      next: (_) => {
+        this.machineService.machinesResource.reload();
+        this.machineService.tokenApplicationResource.reload();
+      },
       error: (error) => {
         console.error("Error during assignment request:", error);
       }

@@ -1,17 +1,18 @@
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
-import { HttpClient, HttpParams, httpResource } from "@angular/common/http";
+import { HttpClient, HttpParams, httpResource, HttpResourceRef } from "@angular/common/http";
 import { computed, effect, inject, Injectable, linkedSignal, signal, WritableSignal } from "@angular/core";
 import { TableUtilsService, TableUtilsServiceInterface } from "../table-utils/table-utils.service";
 
-import { Observable } from "rxjs";
+import { catchError, Observable, of, switchMap } from "rxjs";
 import { PageEvent } from "@angular/material/paginator";
 import { PiResponse } from "../../app.component";
 import { ROUTE_PATHS } from "../../app.routes";
 import { Sort } from "@angular/material/sort";
 import { environment } from "../../../environments/environment";
+import { TokenService, TokenServiceInterface } from "../token/token.service";
 
-type TokenApplications = TokenApplication[];
+export type TokenApplications = TokenApplication[];
 
 export type Machines = Machine[];
 
@@ -24,15 +25,16 @@ export interface Machine {
 
 export interface TokenApplication {
   application: string;
+  hostname: string;
   id: number;
-  serial: string;
-  machine_id?: any;
-  resolver?: any;
-  type: string;
+  machine_id?: string;
   options: {
     service_id?: string;
     user?: string;
   };
+  resolver?: string;
+  serial: string;
+  type: string;
 }
 
 export interface MachineServiceInterface {
@@ -49,8 +51,10 @@ export interface MachineServiceInterface {
   filterParams: () => Record<string, string>;
   sort: WritableSignal<Sort>;
   pageIndex: WritableSignal<number>;
-  machinesResource: any;
+  machinesResource: HttpResourceRef<PiResponse<Machines> | undefined>;
   tokenApplicationResource: any;
+
+  deleteAssignMachineToToken(args: { serial: string; application: string; mtid: string }): Observable<any>;
 
   postAssignMachineToToken(args: {
     service_id: string;
@@ -118,9 +122,6 @@ export class MachineService implements MachineServiceInterface {
   });
 
   machinesResource = httpResource<PiResponse<Machines>>(() => {
-    if (!this.contentService.routeUrl().includes(ROUTE_PATHS.TOKENS_APPLICATIONS)) {
-      return undefined;
-    }
     return {
       url: `${this.baseUrl}`,
       method: "GET",
@@ -136,9 +137,24 @@ export class MachineService implements MachineServiceInterface {
     computation: (machinesResource, previous) => machinesResource?.result?.value ?? previous?.value
   });
   filterValue: WritableSignal<Record<string, string>> = linkedSignal({
-    source: this.selectedApplicationType,
-    // This gets also updated by the effect in the constructor, when filterValueString changes.
-    computation: () => ({})
+    source: () => ({
+      selectedApplicationType: this.selectedApplicationType(),
+      tokenSerial: this.contentService.tokenSerial(),
+      routeUrl: this.contentService.routeUrl()
+    }),
+    computation: (source, previous) => {
+      if (source.routeUrl !== previous?.source.routeUrl) {
+        // Reset filter when route changes
+        return {};
+      }
+      let filter = {} as Record<string, string>;
+      let { selectedApplicationType, tokenSerial } = source;
+
+      if (tokenSerial) {
+        filter["serial"] = tokenSerial;
+      }
+      return filter;
+    }
   });
   filterValueString: WritableSignal<string> = linkedSignal({
     source: this.filterValue,
@@ -189,9 +205,6 @@ export class MachineService implements MachineServiceInterface {
     computation: () => 0
   });
   tokenApplicationResource = httpResource<PiResponse<TokenApplications>>(() => {
-    if (!this.contentService.routeUrl().includes(ROUTE_PATHS.TOKENS_APPLICATIONS)) {
-      return undefined;
-    }
     const params = {
       application: this.selectedApplicationType(),
       page: this.pageIndex() + 1,
@@ -229,6 +242,11 @@ export class MachineService implements MachineServiceInterface {
   }): Observable<any> {
     const headers = this.authService.getHeaders();
     return this.http.post(`${this.baseUrl}token`, args, { headers });
+  }
+
+  deleteAssignMachineToToken(args: { serial: string; application: string; mtid: string }): Observable<any> {
+    const headers = this.authService.getHeaders();
+    return this.http.delete(`${this.baseUrl}token/${args.serial}/${args.application}/${args.mtid}`, { headers });
   }
 
   postTokenOption(

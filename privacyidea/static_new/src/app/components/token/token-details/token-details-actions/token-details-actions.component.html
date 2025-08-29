@@ -20,17 +20,6 @@
   }
   @if (tokenType() !== "passkey") {
     <app-test-otp-pin-action />
-    @if (tokenType() === "sshkey") {
-      <button
-        (click)="assignSSHMachineDialog()"
-        class="detail-button"
-        extended
-        mat-fab
-        i18n>
-        <mat-icon class="detail-button-icon">computer</mat-icon>
-        Assign SSH Machine
-      </button>
-    }
   } @else {
     <button
       (click)="testPasskey()"
@@ -40,6 +29,17 @@
       i18n>
       <mat-icon class="detail-button-icon">key</mat-icon>
       Test Passkey
+    </button>
+  }
+  @if (tokenType() === "sshkey" || tokenType() === "hotp" || tokenType() === "passkey") {
+    <button
+      (click)="assignSSHMachineDialog()"
+      class="detail-button"
+      extended
+      mat-fab
+      i18n>
+      <mat-icon class="detail-button-icon">computer</mat-icon>
+      Assign SSH Machine
     </button>
   }
 </div>
