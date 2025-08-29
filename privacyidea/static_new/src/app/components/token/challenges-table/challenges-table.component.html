@@ -13,11 +13,12 @@
       subscriptSizing="dynamic">
       <mat-label i18n>Enter Filter</mat-label>
       <app-clearable-input
-        (onClick)="filterInput.value = ''; onFilterChange('')"
-        [showClearButton]="filterInput.value.length > 0">
+        (onClick)="challengesService.clearFilter()"
+        [showClearButton]="challengesService.challengesFilter().isNotEmpty">
         <input
-          #filterInput
-          (keyup)="onFilterChange(filterInput.value)"
+          #filterHTMLInputElement
+          (input)="challengesService.handleFilterInput($event)"
+          [value]="challengesService.challengesFilter().filterString"
           i18n-placeholder
           matInput
           placeholder="Example query: 'transaction_id: 00000000000000000001'" />
@@ -34,8 +35,8 @@
   <app-keyword-filter
     [advancedApiFilter]="advancedApiFilter"
     [apiFilter]="apiFilter"
-    [filterHTMLInputElement]="filterInput"
-    [filterValue]="filterValue"></app-keyword-filter>
+    [filterHTMLInputElement]="filterHTMLInputElement"
+    [filterValue]="challengesService.challengesFilter"></app-keyword-filter>
   <table
     (matSortChange)="onSortEvent($event)"
     [dataSource]="challengesDataSource()"

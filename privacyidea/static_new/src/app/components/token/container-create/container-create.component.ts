@@ -160,7 +160,7 @@ export class ContainerCreateComponent {
       container_type: this.containerService.selectedContainerType().containerType,
       description: this.description(),
       template: this.selectedTemplate(),
-      user: this.userService.userNameFilter(),
+      user: this.userService.selectionUsernameFilter(),
       realm: ""
     };
     if (createData.user || this.onlyAddToRealm()) {

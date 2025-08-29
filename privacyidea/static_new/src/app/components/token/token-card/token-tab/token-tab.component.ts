@@ -22,6 +22,7 @@ import {
   NotificationServiceInterface
 } from "../../../../services/notification/notification.service";
 import { PiResponse } from "../../../../app.component";
+import { FilterValue } from "../../../../core/models/filter_value";
 
 interface BatchResult {
   failed: string[];
@@ -145,7 +146,9 @@ export class TokenTabComponent {
                 }
 
                 if (unauthorizedTokens.length > 0) {
-                  messages.push(`You are not authorized to delete the following tokens: ${unauthorizedTokens.join(", ")}`);
+                  messages.push(
+                    `You are not authorized to delete the following tokens: ${unauthorizedTokens.join(", ")}`
+                  );
                 }
 
                 if (messages.length > 0) {
@@ -211,6 +214,9 @@ export class TokenTabComponent {
       .subscribe();
   }
 
+  onClickManageSearch(): void {
+    this.auditService.auditFilter.set(new FilterValue({ value: `serial: ${this.tokenSerial()}` }));
+  }
   unassignSelectedTokens() {
     const selectedTokens = this.tokenSelection();
     console.log("selected tokens: ", selectedTokens);
@@ -239,7 +245,9 @@ export class TokenTabComponent {
                 }
 
                 if (unauthorizedTokens.length > 0) {
-                  messages.push(`You are not authorized to unassign the following tokens: ${unauthorizedTokens.join(", ")}`);
+                  messages.push(
+                    `You are not authorized to unassign the following tokens: ${unauthorizedTokens.join(", ")}`
+                  );
                 }
 
                 if (messages.length > 0) {

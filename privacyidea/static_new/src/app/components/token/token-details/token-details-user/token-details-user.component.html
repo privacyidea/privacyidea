@@ -28,15 +28,15 @@
               <mat-form-field>
                 <mat-label i18n>Enter User</mat-label>
                 <app-clearable-input
-                  (onClick)="userService.userFilter.set('')"
-                  [showClearButton]="userService.userFilter() !== ''">
+                  (onClick)="userService.selectionFilter.set('')"
+                  [showClearButton]="userService.selectionFilter() !== ''">
                   <input
                     matInput
-                    [(ngModel)]="userService.userFilter"
+                    [(ngModel)]="userService.selectionFilter"
                     [matAutocomplete]="userAuto" />
                 </app-clearable-input>
                 <mat-autocomplete #userAuto="matAutocomplete">
-                  @for (option of userService.filteredUsernames(); track option) {
+                  @for (option of userService.selectionFilteredUsernames(); track option) {
                     <mat-option [value]="option">{{ option }}</mat-option>
                   }
                 </mat-autocomplete>

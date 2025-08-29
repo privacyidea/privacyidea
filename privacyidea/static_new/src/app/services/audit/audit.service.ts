@@ -1,10 +1,12 @@
-import { httpResource, HttpResourceRef } from "@angular/common/http";
-import { computed, inject, Injectable, linkedSignal, signal, WritableSignal } from "@angular/core";
-import { environment } from "../../../environments/environment";
-import { PiResponse } from "../../app.component";
-import { ROUTE_PATHS } from "../../app.routes";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
+import { HttpResourceRef, httpResource } from "@angular/common/http";
+import { Injectable, WritableSignal, computed, inject, linkedSignal, signal } from "@angular/core";
+
+import { FilterValue } from "../../core/models/filter_value";
+import { PiResponse } from "../../app.component";
+import { ROUTE_PATHS } from "../../app.routes";
+import { environment } from "../../../environments/environment";
 
 export interface Audit {
   auditcolumns: string[];
@@ -73,7 +75,7 @@ const advancedApiFilter: string[] = [];
 export interface AuditServiceInterface {
   apiFilter: string[];
   advancedApiFilter: string[];
-  filterValue: WritableSignal<Record<string, string>>;
+  auditFilter: WritableSignal<FilterValue>;
   filterParams: () => Record<string, string>;
   pageSize: WritableSignal<number>;
   pageIndex: WritableSignal<number>;
@@ -90,10 +92,10 @@ export class AuditService implements AuditServiceInterface {
   readonly apiFilter = apiFilter;
   readonly advancedApiFilter = advancedApiFilter;
   private auditBaseUrl = environment.proxyUrl + "/audit/";
-  filterValue = signal({} as Record<string, string>);
+  auditFilter = signal(new FilterValue());
   filterParams = computed<Record<string, string>>(() => {
     const allowedFilters = [...this.apiFilter, ...this.advancedApiFilter];
-    const filterPairs = Object.entries(this.filterValue())
+    const filterPairs = Object.entries(this.auditFilter())
       .map(([key, value]) => ({ key, value }))
       .filter(({ key }) => allowedFilters.includes(key));
     if (filterPairs.length === 0) {
@@ -108,12 +110,12 @@ export class AuditService implements AuditServiceInterface {
     );
   });
   pageSize = linkedSignal({
-    source: this.filterValue,
+    source: this.auditFilter,
     computation: () => 10
   });
   pageIndex = linkedSignal({
     source: () => ({
-      filterValue: this.filterValue(),
+      filterValue: this.auditFilter(),
       pageSize: this.pageSize(),
       routeUrl: this.contentService.routeUrl()
     }),

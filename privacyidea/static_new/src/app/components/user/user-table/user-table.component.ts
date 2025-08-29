@@ -1,10 +1,5 @@
-import { NgClass } from "@angular/common";
-import { Component, effect, inject, linkedSignal, ViewChild, WritableSignal } from "@angular/core";
-import { FormsModule } from "@angular/forms";
-import { MatFormField, MatLabel } from "@angular/material/form-field";
-import { MatInput } from "@angular/material/input";
-import { MatPaginator } from "@angular/material/paginator";
-import { MatSort, MatSortModule } from "@angular/material/sort";
+import { Component, ViewChild, WritableSignal, inject, linkedSignal } from "@angular/core";
+import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
 import {
   MatCell,
   MatCellDef,
@@ -19,13 +14,19 @@ import {
   MatTable,
   MatTableDataSource
 } from "@angular/material/table";
-import { RouterLink } from "@angular/router";
-import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
+import { MatFormField, MatLabel } from "@angular/material/form-field";
+import { MatSort, MatSortModule } from "@angular/material/sort";
 import { TableUtilsService, TableUtilsServiceInterface } from "../../../services/table-utils/table-utils.service";
 import { UserData, UserService, UserServiceInterface } from "../../../services/user/user.service";
+
 import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
-import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
+import { FormsModule } from "@angular/forms";
 import { KeywordFilterComponent } from "../../shared/keyword-filter/keyword-filter.component";
+import { MatInput } from "@angular/material/input";
+import { MatPaginator } from "@angular/material/paginator";
+import { NgClass } from "@angular/common";
+import { RouterLink } from "@angular/router";
+import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 
 const columnKeysMap = [
   { key: "username", label: "Username" },
@@ -77,11 +78,7 @@ export class UserTableComponent {
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
   pageSizeOptions = this.tableUtilsService.pageSizeOptions;
-  filterValueString: WritableSignal<string> = linkedSignal(() =>
-    Object.entries(this.userService.filterValue())
-      .map(([key, value]) => `${key}: ${value}`)
-      .join(" ")
-  );
+
   totalLength: WritableSignal<number> = linkedSignal({
     source: this.userService.usersResource.value,
     computation: (userResource, previous) => {
@@ -110,12 +107,4 @@ export class UserTableComponent {
       return previous?.value ?? new MatTableDataSource(this.emptyResource());
     }
   });
-
-  constructor() {
-    effect(() => {
-      const recordsFromText = this.tableUtilsService.recordsFromText(this.filterValueString());
-      this.userService.filterValue.set(recordsFromText);
-      this.userService.pageIndex.set(0);
-    });
-  }
 }

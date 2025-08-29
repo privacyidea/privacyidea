@@ -1,20 +1,20 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { MatTableDataSource } from "@angular/material/table";
-
-import { provideHttpClient } from "@angular/common/http";
-import { ActivatedRoute } from "@angular/router";
-import { of } from "rxjs";
 import {
   MockAuditService,
   MockAuthService,
   MockContentService,
   MockTableUtilsService
 } from "../../../testing/mock-services";
+
+import { ActivatedRoute } from "@angular/router";
+import { AuditComponent } from "./audit.component";
 import { AuditService } from "../../services/audit/audit.service";
 import { AuthService } from "../../services/auth/auth.service";
 import { ContentService } from "../../services/content/content.service";
+import { MatTableDataSource } from "@angular/material/table";
 import { TableUtilsService } from "../../services/table-utils/table-utils.service";
-import { AuditComponent } from "./audit.component";
+import { of } from "rxjs";
+import { provideHttpClient } from "@angular/common/http";
 
 describe("AuditComponent (unit)", () => {
   let fixture: ComponentFixture<AuditComponent>;
@@ -124,7 +124,7 @@ describe("AuditComponent (unit)", () => {
 
   it("parses filterValueString and resets pageIndex through the effect", async () => {
     mockAuditService.pageIndex.set(3);
-    mockAuditService.filterValue.set({ user: "bob", success: "true" });
+    mockAuditService.auditFilter.set({ user: "bob", success: "true" });
 
     await fixture.whenStable();
     await Promise.resolve();

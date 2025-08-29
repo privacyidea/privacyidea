@@ -1,11 +1,13 @@
-import { httpResource, HttpResourceRef } from "@angular/common/http";
-import { computed, inject, Injectable, linkedSignal, signal, WritableSignal } from "@angular/core";
-import { Sort } from "@angular/material/sort";
-import { PiResponse } from "../../../app.component";
-import { ROUTE_PATHS } from "../../../app.routes";
 import { AuthService, AuthServiceInterface } from "../../auth/auth.service";
 import { ContentService, ContentServiceInterface } from "../../content/content.service";
+import { HttpResourceRef, httpResource } from "@angular/common/http";
+import { Injectable, WritableSignal, computed, inject, linkedSignal, signal } from "@angular/core";
 import { TokenService, TokenServiceInterface } from "../token.service";
+
+import { FilterValue } from "../../../core/models/filter_value";
+import { PiResponse } from "../../../app.component";
+import { ROUTE_PATHS } from "../../../app.routes";
+import { Sort } from "@angular/material/sort";
 
 const apiFilter = ["serial", "transaction_id"];
 const advancedApiFilter: string[] = [];
@@ -34,11 +36,13 @@ export interface Challenge {
 export interface ChallengesServiceInterface {
   apiFilter: string[];
   advancedApiFilter: string[];
-  filterValue: WritableSignal<Record<string, string>>;
+  challengesFilter: WritableSignal<FilterValue>;
   pageSize: WritableSignal<number>;
   pageIndex: WritableSignal<number>;
   sort: WritableSignal<Sort>;
   challengesResource: HttpResourceRef<PiResponse<Challenges> | undefined>;
+  clearFilter(): void;
+  handleFilterInput($event: Event): void;
 }
 
 @Injectable({
@@ -52,13 +56,13 @@ export class ChallengesService implements ChallengesServiceInterface {
   readonly apiFilter = apiFilter;
   readonly advancedApiFilter = advancedApiFilter;
   tokenBaseUrl = this.tokenService.tokenBaseUrl;
-  filterValue = linkedSignal({
+  challengesFilter = linkedSignal({
     source: this.contentService.routeUrl,
-    computation: () => ({}) as Record<string, string>
+    computation: () => new FilterValue()
   });
   private filterParams = computed(() => {
     const allowedFilters = [...this.apiFilter, ...this.advancedApiFilter];
-    const filterPairs = Object.entries(this.filterValue())
+    const filterPairs = Object.entries(this.challengesFilter())
       .map(([key, value]) => ({ key, value }))
       .filter(({ key }) => allowedFilters.includes(key));
     return filterPairs.reduce(
@@ -79,7 +83,7 @@ export class ChallengesService implements ChallengesServiceInterface {
   });
   pageIndex = linkedSignal({
     source: () => ({
-      filterValue: this.filterValue(),
+      filterValue: this.challengesFilter(),
       pageSize: this.pageSize(),
       routeUrl: this.contentService.routeUrl()
     }),
@@ -107,4 +111,15 @@ export class ChallengesService implements ChallengesServiceInterface {
       }
     };
   });
+
+  clearFilter(): void {
+    this.challengesFilter.set(new FilterValue());
+  }
+  handleFilterInput($event: Event): void {
+    const input = $event.target as HTMLInputElement;
+    if (this.challengesFilter().filterString === input.value) {
+      return;
+    }
+    this.challengesFilter.set(new FilterValue({ value: input.value }));
+  }
 }

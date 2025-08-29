@@ -2,29 +2,14 @@ import { Injectable, signal, WritableSignal } from "@angular/core";
 
 import { MatTableDataSource } from "@angular/material/table";
 
-export interface FilterPair {
-  key: string;
-  value: string;
-}
-
 export interface TableUtilsServiceInterface {
   pageSizeOptions: WritableSignal<number[]>;
 
   emptyDataSource<T>(pageSize: number, columnsKeyMap: { key: string; label: string }[]): MatTableDataSource<T>;
 
-  parseFilterString(
-    filterValue: string,
-    apiFilter: string[]
-  ): {
-    filterPairs: FilterPair[];
-    remainingFilterText: string;
-  };
-
   toggleKeywordInFilter(currentValue: string, keyword: string): string;
 
   toggleBooleanInFilter(args: { keyword: string; currentValue: string }): string;
-
-  recordsFromText(textValue: string): Record<string, string>;
 
   isLink(columnKey: string): boolean;
 
@@ -67,95 +52,6 @@ export class TableUtilsService implements TableUtilsServiceInterface {
         return emptyRow;
       })
     );
-  }
-
-  parseFilterString(
-    filterValue: string,
-    apiFilter: string[]
-  ): {
-    filterPairs: FilterPair[];
-    remainingFilterText: string;
-  } {
-    const lowerFilterValue = filterValue.trim().toLowerCase();
-    const filterLabels = apiFilter.flatMap((column) => {
-      if (column === "infokey & infovalue") {
-        return ["infokey:", "infovalue:"];
-      }
-      if (column === "machineid & resolver") {
-        return ["machineid:", "resolver:"];
-      }
-      return column.toLowerCase() + ":";
-    });
-    const filterValueSplit = lowerFilterValue.split(" ");
-    const filterPairs: FilterPair[] = [];
-
-    let currentLabel = "";
-    let currentValue = "";
-    let remainingFilterText = "";
-
-    const findMatchingLabel = (parts: string[]): string | null => {
-      for (let i = 1; i <= parts.length; i++) {
-        const possibleLabel = parts.slice(0, i).join(" ");
-        if (filterLabels.includes(possibleLabel)) {
-          return possibleLabel;
-        }
-      }
-      return null;
-    };
-
-    let i = 0;
-    while (i < filterValueSplit.length) {
-      const parts = filterValueSplit.slice(i);
-      let matchingLabel = findMatchingLabel(parts);
-
-      if (!matchingLabel) {
-        const token = parts[0];
-        for (const label of filterLabels) {
-          if (token.startsWith(label)) {
-            matchingLabel = label;
-            if (currentLabel && currentValue) {
-              filterPairs.push({
-                key: currentLabel.slice(0, -1),
-                value: currentValue.trim()
-              });
-            }
-            currentLabel = matchingLabel;
-            currentValue = token.slice(label.length) + " ";
-            i += 1;
-            break;
-          }
-        }
-        if (matchingLabel === currentLabel) {
-          continue;
-        }
-      }
-
-      if (matchingLabel) {
-        if (currentLabel && currentValue) {
-          filterPairs.push({
-            key: currentLabel.slice(0, -1),
-            value: currentValue.trim()
-          });
-        }
-        currentLabel = matchingLabel;
-        currentValue = "";
-        i += matchingLabel.split(" ").length;
-      } else if (currentLabel) {
-        currentValue += filterValueSplit[i] + " ";
-        i++;
-      } else {
-        remainingFilterText += filterValueSplit[i] + " ";
-        i++;
-      }
-    }
-    if (currentLabel) {
-      filterPairs.push({
-        key: currentLabel.slice(0, -1),
-        value: currentValue.trim()
-      });
-    }
-
-    return { filterPairs, remainingFilterText: remainingFilterText.trim() };
   }
 
   toggleKeywordInFilter(currentValue: string, keyword: string): string {

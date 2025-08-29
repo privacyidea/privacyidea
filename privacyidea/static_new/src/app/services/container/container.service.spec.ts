@@ -1,18 +1,19 @@
-import { TestBed } from "@angular/core/testing";
-import { HttpClient, provideHttpClient } from "@angular/common/http";
-import { lastValueFrom, of, throwError } from "rxjs";
 import { ContainerDetails, ContainerService } from "./container.service";
-import { LocalService } from "../local/local.service";
-import { NotificationService } from "../notification/notification.service";
-import { TokenService } from "../token/token.service";
-import { environment } from "../../../environments/environment";
+import { HttpClient, provideHttpClient } from "@angular/common/http";
 import {
   MockContentService,
   MockLocalService,
   MockNotificationService,
   MockTokenService
 } from "../../../testing/mock-services";
+import { lastValueFrom, of, throwError } from "rxjs";
+
 import { ContentService } from "../content/content.service";
+import { LocalService } from "../local/local.service";
+import { NotificationService } from "../notification/notification.service";
+import { TestBed } from "@angular/core/testing";
+import { TokenService } from "../token/token.service";
+import { environment } from "../../../environments/environment";
 
 environment.proxyUrl = "/api";
 
@@ -45,9 +46,7 @@ describe("ContainerService", () => {
 
   it("assignContainer posts payload and returns result", async () => {
     jest.spyOn(http, "post").mockReturnValue(of({ result: true } as any));
-    const r = await lastValueFrom(
-      containerService.assignContainer("tok1", "cont1")
-    );
+    const r = await lastValueFrom(containerService.assignContainer("tok1", "cont1"));
     expect(http.post).toHaveBeenCalledWith(
       "/api/container/cont1/add",
       { serial: "tok1" },
@@ -57,19 +56,13 @@ describe("ContainerService", () => {
   });
 
   it("assignContainer propagates error and shows snackbar", async () => {
-    jest
-      .spyOn(http, "post")
-      .mockReturnValue(throwError(() => ({ status: 400, error: {} })));
-    await expect(
-      lastValueFrom(containerService.assignContainer("tokX", "contX"))
-    ).rejects.toBeDefined();
+    jest.spyOn(http, "post").mockReturnValue(throwError(() => ({ status: 400, error: {} })));
+    await expect(lastValueFrom(containerService.assignContainer("tokX", "contX"))).rejects.toBeDefined();
     expect(notificationService.openSnackBar).toHaveBeenCalled();
   });
 
   it("toggleActive switches active → disabled", async () => {
-    jest
-      .spyOn(http, "post")
-      .mockReturnValue(of({ result: { disabled: true } } as any));
+    jest.spyOn(http, "post").mockReturnValue(of({ result: { disabled: true } } as any));
     await lastValueFrom(containerService.toggleActive("c1", ["active"]));
     expect(http.post).toHaveBeenCalledWith(
       "/api/container/c1/states",
@@ -79,9 +72,7 @@ describe("ContainerService", () => {
   });
 
   it("toggleActive adds active when no state present", async () => {
-    jest
-      .spyOn(http, "post")
-      .mockReturnValue(of({ result: { active: true } } as any));
+    jest.spyOn(http, "post").mockReturnValue(of({ result: { active: true } } as any));
     await lastValueFrom(containerService.toggleActive("c2", []));
     expect(http.post).toHaveBeenCalledWith(
       "/api/container/c2/states",
@@ -154,15 +145,11 @@ describe("ContainerService", () => {
     containerService.containerDetail.set(details);
     const r = await lastValueFrom(containerService.toggleAll("activate"));
     expect(r).toBeNull();
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith(
-      "No tokens for action."
-    );
+    expect(notificationService.openSnackBar).toHaveBeenCalledWith("No tokens for action.");
   });
 
   it("removeAll posts combined serial list", async () => {
-    const postSpy = jest
-      .spyOn(http, "post")
-      .mockReturnValue(of({ result: true }) as any);
+    const postSpy = jest.spyOn(http, "post").mockReturnValue(of({ result: true }) as any);
     const details: ContainerDetails = {
       count: 1,
       containers: [
@@ -195,11 +182,7 @@ describe("ContainerService", () => {
   });
 
   it("createContainer posts data and returns new serial", async () => {
-    jest
-      .spyOn(http, "post")
-      .mockReturnValue(
-        of({ result: { value: { container_serial: "CNEW" } } } as any)
-      );
+    jest.spyOn(http, "post").mockReturnValue(of({ result: { value: { container_serial: "CNEW" } } } as any));
     const r = await lastValueFrom(
       containerService.createContainer({
         container_type: "generic",
@@ -222,11 +205,7 @@ describe("ContainerService", () => {
   });
 
   it("registerContainer posts registration payload", async () => {
-    jest
-      .spyOn(http, "post")
-      .mockReturnValue(
-        of({ result: { value: { container_url: "u" } } } as any)
-      );
+    jest.spyOn(http, "post").mockReturnValue(of({ result: { value: { container_url: "u" } } } as any));
     const r = await lastValueFrom(
       containerService.registerContainer({
         container_serial: "cReg",
@@ -257,35 +236,33 @@ describe("ContainerService", () => {
         }
       } as any)
     );
-    const r = await lastValueFrom(
-      containerService.pollContainerRolloutState("cPoll", 0)
-    );
+    const r = await lastValueFrom(containerService.pollContainerRolloutState("cPoll", 0));
     expect(containerService.getContainerDetails).toHaveBeenCalled();
     expect(r.result?.value?.containers[0].info.registration_state).toBe("done");
   });
 
   it("filterParams converts blank values and drops unknown keys", () => {
-    containerService.filterValue.set({ user: "Alice", type: "", foo: "bar" });
+    containerService.containerFilter.set({ user: "Alice", type: "", foo: "bar" });
     const fp = containerService.filterParams();
     expect(fp).toEqual({ user: "Alice", type: "*" });
   });
 
   it("pageSize falls back to 10 for invalid eventPageSize", () => {
     containerService.eventPageSize = 7;
-    containerService.filterValue.set({});
+    containerService.containerFilter.set({});
     expect(containerService.pageSize()).toBe(10);
   });
 
   it("pageSize keeps valid eventPageSize", () => {
     containerService.eventPageSize = 15;
-    containerService.filterValue.set({});
+    containerService.containerFilter.set({});
     expect(containerService.pageSize()).toBe(15);
   });
 
   it("pageIndex resets to 0 when filter changes", () => {
     containerService.pageIndex.set(2);
     expect(containerService.pageIndex()).toBe(2);
-    containerService.filterValue.set({ type: "x" });
+    containerService.containerFilter.set({ type: "x" });
     expect(containerService.pageIndex()).toBe(0);
   });
 
@@ -296,15 +273,13 @@ describe("ContainerService", () => {
   });
 
   it("containerTypeOptions maps API result", () => {
-    jest
-      .spyOn(containerService.containerTypesResource, "value")
-      .mockReturnValue({
-        result: {
-          value: {
-            generic: { description: "Generic", token_types: ["hmac"] }
-          }
+    jest.spyOn(containerService.containerTypesResource, "value").mockReturnValue({
+      result: {
+        value: {
+          generic: { description: "Generic", token_types: ["hmac"] }
         }
-      } as any);
+      }
+    } as any);
     const opt = containerService.containerTypeOptions();
     expect(opt[0]).toEqual({
       containerType: "generic",
@@ -328,9 +303,7 @@ describe("ContainerService", () => {
     });
     const r = await lastValueFrom(containerService.removeAll("cX"));
     expect(r).toBeNull();
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith(
-      "No valid tokens array found in data."
-    );
+    expect(notificationService.openSnackBar).toHaveBeenCalledWith("No valid tokens array found in data.");
   });
 
   it("removeAll returns null when no tokens array", async () => {
@@ -341,9 +314,7 @@ describe("ContainerService", () => {
     });
     const r = await lastValueFrom(containerService.removeAll("cX"));
     expect(r).toBeNull();
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith(
-      "No valid tokens array found in data."
-    );
+    expect(notificationService.openSnackBar).toHaveBeenCalledWith("No valid tokens array found in data.");
   });
 
   it("toggleAll returns null when containerDetail invalid", async () => {
@@ -354,14 +325,12 @@ describe("ContainerService", () => {
     });
     const r = await lastValueFrom(containerService.toggleAll("activate"));
     expect(r).toBeNull();
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith(
-      "No valid tokens array found in data."
-    );
+    expect(notificationService.openSnackBar).toHaveBeenCalledWith("No valid tokens array found in data.");
   });
 
   it("filterParams handles wildcards and converts blank values", () => {
     (containerService.apiFilter as string[]).push("desc");
-    containerService.filterValue.set({
+    containerService.containerFilter.set({
       desc: "foo",
       token_serial: "123",
       type: "",
@@ -378,15 +347,13 @@ describe("ContainerService", () => {
   it("pageIndex resets when pageSize source changes", () => {
     containerService.pageIndex.set(4);
     containerService.eventPageSize = 5;
-    containerService.filterValue.set({});
+    containerService.containerFilter.set({});
     expect(containerService.pageSize()).toBe(5);
     expect(containerService.pageIndex()).toBe(0);
   });
 
   it("toggleActive switches disabled → active", async () => {
-    jest
-      .spyOn(http, "post")
-      .mockReturnValue(of({ result: { active: true } } as any));
+    jest.spyOn(http, "post").mockReturnValue(of({ result: { active: true } } as any));
     await lastValueFrom(containerService.toggleActive("cD", ["disabled"]));
     expect(http.post).toHaveBeenCalledWith(
       "/api/container/cD/states",
@@ -404,16 +371,12 @@ describe("ContainerService", () => {
       { headers: { Authorization: "Bearer x" } }
     );
 
-    jest
-      .spyOn(http, "post")
-      .mockReturnValueOnce(throwError(() => ({ status: 500, error: {} })));
-    await expect(
-      lastValueFrom(containerService.unassignContainer("tokX", "contX"))
-    ).rejects.toBeDefined();
+    jest.spyOn(http, "post").mockReturnValueOnce(throwError(() => ({ status: 500, error: {} })));
+    await expect(lastValueFrom(containerService.unassignContainer("tokX", "contX"))).rejects.toBeDefined();
     expect(notificationService.openSnackBar).toHaveBeenCalled();
   });
 
-  it("setContainerRealm joins array, blank array ⇒ \"\"", async () => {
+  it('setContainerRealm joins array, blank array ⇒ ""', async () => {
     const post = jest.spyOn(http, "post").mockReturnValue(of({}) as any);
     await lastValueFrom(containerService.setContainerRealm("cX", ["r1", "r2"]));
     expect(post).toHaveBeenCalledWith(
@@ -431,9 +394,7 @@ describe("ContainerService", () => {
   });
 
   it("toggleActive adds active when neither active nor disabled present", async () => {
-    jest
-      .spyOn(http, "post")
-      .mockReturnValue(of({ result: { active: true } } as any));
+    jest.spyOn(http, "post").mockReturnValue(of({ result: { active: true } } as any));
     await lastValueFrom(containerService.toggleActive("c7", ["locked"]));
     expect(http.post).toHaveBeenCalledWith(
       "/api/container/c7/states",
@@ -471,13 +432,11 @@ describe("ContainerService", () => {
     });
     const res = await lastValueFrom(containerService.removeAll("c9"));
     expect(res).toBeNull();
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith(
-      "No tokens to remove."
-    );
+    expect(notificationService.openSnackBar).toHaveBeenCalledWith("No tokens to remove.");
   });
 
   it("filterParams wildcards non‑ID fields", () => {
-    containerService.filterValue.set({
+    containerService.containerFilter.set({
       container_serial: "S1",
       desc: "foo"
     } as any);
@@ -489,18 +448,16 @@ describe("ContainerService", () => {
 
   it("pageSize boundary values 5 and 15 are respected", () => {
     containerService.eventPageSize = 5;
-    containerService.filterValue.set({});
+    containerService.containerFilter.set({});
     expect(containerService.pageSize()).toBe(5);
 
     containerService.eventPageSize = 15;
-    containerService.filterValue.set({});
+    containerService.containerFilter.set({});
     expect(containerService.pageSize()).toBe(15);
   });
 
   it("containerTypeOptions returns [] when API empty", () => {
-    jest
-      .spyOn(containerService.containerTypesResource, "value")
-      .mockReturnValue(undefined);
+    jest.spyOn(containerService.containerTypesResource, "value").mockReturnValue(undefined);
     expect(containerService.containerTypeOptions()).toEqual([]);
   });
 });

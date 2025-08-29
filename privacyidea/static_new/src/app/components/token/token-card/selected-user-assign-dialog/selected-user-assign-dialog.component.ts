@@ -55,7 +55,7 @@ export class SelectedUserAssignDialogComponent {
     nonNullable: true,
     validators: [Validators.required]
   });
-  userFilterControl = new FormControl<string | UserData | null>(this.userService.userFilter(), {
+  userFilterControl = new FormControl<string | UserData | null>(this.userService.selectionFilter(), {
     nonNullable: true,
     validators: [Validators.required]
   });

@@ -219,7 +219,7 @@
             <mat-label>Enter User</mat-label>
             <app-clearable-input
               (onClick)="userFilterControl.setValue('')"
-              [showClearButton]="userService.userFilter() !== ''">
+              [showClearButton]="userService.selectionFilter() !== ''">
               <input
                 [formControl]="userFilterControl"
                 [matAutocomplete]="userAuto"
@@ -228,7 +228,7 @@
             <mat-autocomplete
               #userAuto="matAutocomplete"
               [displayWith]="userService.displayUser">
-              @for (user of userService.filteredUsers(); track user) {
+              @for (user of userService.selectionFilteredUsers(); track user.userid) {
                 <mat-option [value]="user">{{ user.username }}</mat-option>
               }
             </mat-autocomplete>
@@ -282,8 +282,10 @@
               class="input"
               placeholder="Repeat PIN" />
           </div>
-          @if (formGroupSignal().hasError("pinMismatch") &&
-          (formGroupSignal().get("setPin")?.touched || formGroupSignal().get("repeatPin")?.touched)) {
+          @if (
+            formGroupSignal().hasError("pinMismatch") &&
+            (formGroupSignal().get("setPin")?.touched || formGroupSignal().get("repeatPin")?.touched)
+          ) {
             <mat-error class="pin-error">PINs do not match.</mat-error>
           }
         </div>
