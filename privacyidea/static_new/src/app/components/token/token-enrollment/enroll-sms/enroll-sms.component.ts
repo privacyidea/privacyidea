@@ -92,8 +92,10 @@ export class EnrollSmsComponent implements OnInit {
 
     this.readNumberDynamicallyControl.valueChanges.subscribe((dynamic) => {
       if (!dynamic) {
+        this.phoneNumberControl.enable({ emitEvent: false });
         this.phoneNumberControl.setValidators([Validators.required]);
       } else {
+        this.phoneNumberControl.disable({ emitEvent: false });
         this.phoneNumberControl.clearValidators();
       }
       this.phoneNumberControl.updateValueAndValidity();

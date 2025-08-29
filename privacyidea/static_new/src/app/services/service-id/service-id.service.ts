@@ -41,12 +41,11 @@ export class ServiceIdService implements ServiceIdServiceInterface {
       if (!value) {
         return previous?.value ?? [];
       }
-      const array = Object.entries(value).map(([name, { description, id }]) => ({
+      return Object.entries(value).map(([name, { description, id }]) => ({
         name,
         description,
         id
       }));
-      return array;
     }
   });
 }

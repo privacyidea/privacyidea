@@ -4,18 +4,23 @@
     [formControl]="generateOnServerFormControl"
     class="server-checkbox"
     i18n>
-    Generate OTP key on the server
-    @if (generateOnServerFormControl.value) {
-      <span class="dot">.</span>
-      <span>
-        <br />
-        The server will create the OTP key and a QR Code will be displayed to you to be scanned.
-      </span>
-    }
+    Generate the OTP key on the server and show a QR code to scan.
   </mat-checkbox>
   <div class="otp-inputs-container">
+    <mat-form-field class="input-height width-33">
+      <mat-label i18n>OTP Key</mat-label>
+      <input
+        matInput
+        [formControl]="otpKeyFormControl"
+        i18n-placeholder
+        placeholder="Enter OTP key"
+        required />
+      @if (otpKeyFormControl.hasError("required")) {
+        <mat-error i18n> OTP key is <strong>required</strong></mat-error>
+      }
+    </mat-form-field>
+
     <mat-form-field
-      [ngClass]="generateOnServerFormControl.value ? 'hint-spacer' : ''"
       class="input-height width-33">
       <mat-label i18n>OTP length</mat-label>
       <mat-select
@@ -25,12 +30,10 @@
           <mat-option [value]="len">{{ len }}</mat-option>
         }
       </mat-select>
-      @if (generateOnServerFormControl.value) {
-        <mat-hint i18n> Some Authenticator Apps only support an OTP length of 6.</mat-hint>
-      }
+      <mat-hint i18n> Some Authenticator Apps only support an OTP length of 6.</mat-hint>
     </mat-form-field>
+
     <mat-form-field
-      [ngClass]="generateOnServerFormControl.value ? 'hint-spacer' : ''"
       class="input-height width-33">
       <mat-label i18n>Hash algorithm</mat-label>
       <mat-select
@@ -40,25 +43,8 @@
           <mat-option [value]="alg.value">{{ alg.viewValue }}</mat-option>
         }
       </mat-select>
-      @if (generateOnServerFormControl.value) {
-        <mat-hint i18n> Some Authenticator Apps only support the SHA1 algorithm.</mat-hint>
-      }
+      <mat-hint i18n> Some Authenticator Apps only support the SHA1 algorithm.</mat-hint>
     </mat-form-field>
-    @if (!generateOnServerFormControl.value) {
-      <mat-form-field class="input-height width-33">
-        <mat-label i18n>OTP Key</mat-label>
-        <input
-          matInput
-          [formControl]="otpKeyFormControl"
-          i18n-placeholder
-          placeholder="Enter OTP key"
-          required />
-        @if (otpKeyFormControl.hasError("required")) {
-          <mat-error i18n> OTP key is <strong>required</strong></mat-error>
-        }
-      </mat-form-field>
-    } @else {
-      <span class="input-height width-33"></span>
-    }
+
   </div>
 </div>

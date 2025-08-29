@@ -23,7 +23,7 @@
               [value]="tokenService.selectedTokenType()">
               @for (type of tokenService.tokenTypeOptions(); track type) {
                 <mat-option
-                  class="token-type-option type-option"
+                  class="select-option type-option"
                   [value]="type"
                   [matTooltip]="type.info.split(':')[1]">
                   {{ type.info.split(":")[0] }}

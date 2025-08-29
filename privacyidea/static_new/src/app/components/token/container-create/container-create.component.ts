@@ -176,7 +176,6 @@ export class ContainerCreateComponent {
         if (this.generateQRCode()) {
           this.registerContainer(containerSerial);
         } else {
-          this.notificationService.openSnackBar(`Container ${containerSerial} enrolled successfully.`);
           this.router.navigateByUrl(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + containerSerial);
           this.containerSerial.set(containerSerial);
         }
@@ -225,7 +224,6 @@ export class ContainerCreateComponent {
         if (pollResponse.result?.value?.containers[0].info.registration_state !== "client_wait") {
           this.registrationDialog.closeAll();
           this.router.navigateByUrl(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + containerSerial);
-          this.notificationService.openSnackBar(`Container ${this.containerSerial()} enrolled successfully.`);
         }
       }
     });

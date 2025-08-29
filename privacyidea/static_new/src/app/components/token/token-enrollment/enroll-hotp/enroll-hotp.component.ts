@@ -57,7 +57,7 @@ export class EnrollHotpComponent implements OnInit {
   }>();
   generateOnServerFormControl = new FormControl<boolean>(true, [Validators.required]);
   otpLengthFormControl = new FormControl<number>(6, [Validators.required]);
-  otpKeyFormControl = new FormControl<string>("");
+  otpKeyFormControl = new FormControl<string>({ value: "", disabled: true });
   hashAlgorithmFormControl = new FormControl<string>("sha1", [Validators.required]);
 
   ngOnInit(): void {
@@ -71,8 +71,10 @@ export class EnrollHotpComponent implements OnInit {
 
     this.generateOnServerFormControl.valueChanges.subscribe((generate) => {
       if (!generate) {
+        this.otpKeyFormControl.enable({ emitEvent: false });
         this.otpKeyFormControl.setValidators([Validators.required]);
       } else {
+        this.otpKeyFormControl.disable({ emitEvent: false });
         this.otpKeyFormControl.clearValidators();
       }
       this.otpKeyFormControl.updateValueAndValidity();

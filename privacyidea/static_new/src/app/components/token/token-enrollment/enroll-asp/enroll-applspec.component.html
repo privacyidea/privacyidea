@@ -5,16 +5,18 @@
     class="server-checkbox"
     i18n>
     Generate the static password on the Server
-    @if (generateOnServerControl.value) {
-      <span class="dot">.</span>
-      <span>
-        <br />
-        The server will create the static password.
-      </span>
-    }
   </mat-checkbox>
 
   <div class="flex-row gap-1">
+     <mat-form-field class="serviceid-input-form input-height">
+      <mat-label i18n>Application Specific Password</mat-label>
+      <input
+        matInput
+        [formControl]="otpKeyFormControl"
+        i18n-placeholder
+        placeholder="Enter static password" />
+    </mat-form-field>
+
     <mat-form-field class="width-64 input-height">
       <mat-label i18n>Service ID</mat-label>
       <mat-select
@@ -28,16 +30,5 @@
       </mat-select>
       <mat-error i18n>Service ID is <strong>required</strong></mat-error>
     </mat-form-field>
-
-    @if (!generateOnServerControl.value) {
-      <mat-form-field class="serviceid-input-form input-height">
-        <mat-label i18n>Application Specific Password</mat-label>
-        <input
-          matInput
-          [formControl]="otpKeyControl"
-          i18n-placeholder
-          placeholder="Enter static password" />
-      </mat-form-field>
-    }
   </div>
 </div>

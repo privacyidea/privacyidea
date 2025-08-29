@@ -13,18 +13,15 @@
     Read number dynamically from user source on each request.
   </mat-checkbox>
   <div class="flex-row gap-1">
-    @if (!readNumberDynamicallyControl.value) {
-      <mat-form-field class="width-33 input-height">
-        <mat-label i18n>Phone number</mat-label>
-        <input
-          [formControl]="phoneNumberControl"
-          matInput
-          required />
-        <mat-error i18n>Phone number is <strong>required</strong></mat-error>
-      </mat-form-field>
-    } @else {
-      <span class="width-33"></span>
-    }
+    <mat-form-field class="width-33 input-height">
+      <mat-label i18n>Phone number</mat-label>
+      <input
+        [formControl]="phoneNumberControl"
+        matInput
+        required />
+      <mat-error i18n>Phone number is <strong>required</strong></mat-error>
+    </mat-form-field>
+
     <mat-form-field class="width-66 input-height">
       <mat-label i18n> A token specific SMS gateway</mat-label>
       <mat-hint i18n>

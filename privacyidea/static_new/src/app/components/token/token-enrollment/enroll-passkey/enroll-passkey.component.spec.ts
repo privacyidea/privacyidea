@@ -3,6 +3,7 @@ import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { EnrollPasskeyComponent } from "./enroll-passkey.component";
+import "@angular/localize/init";
 
 describe("EnrollPasskeyComponent", () => {
   let component: EnrollPasskeyComponent;
