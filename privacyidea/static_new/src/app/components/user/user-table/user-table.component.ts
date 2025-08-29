@@ -19,7 +19,6 @@ import {
   MatTable,
   MatTableDataSource
 } from "@angular/material/table";
-import { RouterLink } from "@angular/router";
 import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "../../../services/table-utils/table-utils.service";
 import { UserData, UserService, UserServiceInterface } from "../../../services/user/user.service";
@@ -61,7 +60,6 @@ const columnKeysMap = [
     MatRow,
     MatNoDataRow,
     MatHeaderCellDef,
-    RouterLink,
     ScrollToTopDirective,
     ClearableInputComponent
   ],

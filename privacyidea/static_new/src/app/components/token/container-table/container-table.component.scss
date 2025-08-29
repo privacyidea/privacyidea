@@ -70,3 +70,12 @@ tr.example-detail-row td {
   border-radius: var(--border-radius);
   background: var(--mat-sys-surface-container-low);
 }
+
+.table-container {
+  width: 1430px;
+}
+
+.selfservice-paginator-container {
+  justify-content: end;
+  display: flex;
+}

@@ -50,6 +50,7 @@ const apiFilter = [
   "success",
   "authentication",
   "serial",
+  "container_serial",
   "date",
   "startdate",
   "duration",
@@ -65,7 +66,6 @@ const apiFilter = [
   "user_agent_version",
   "policies",
   "resolver",
-  "container_serial",
   "container_type"
 ];
 const advancedApiFilter: string[] = [];

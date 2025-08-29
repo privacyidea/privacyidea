@@ -4,6 +4,7 @@
   class="container-table-container"
   i18n-aria-label>
   <div class="filter-paginator-container-selfservice">
+    <h3 class="selfservice-paginator-label"> Your Containers </h3>
     <mat-paginator
       (page)="onPageEvent($event)"
       [length]="total()"
@@ -12,167 +13,168 @@
       [pageSize]="pageSize()"
       showFirstLastButtons />
   </div>
-  <table
-    (matSortChange)="onSortEvent($event)"
-    [dataSource]="containerDataSource()"
-    aria-label="Container Data Table"
-    class="container-table"
-    i18n-aria-label
-    mat-table
-    matSort
-    multiTemplateDataRows>
-    @for (column of columnKeysMapSelfService; track column) {
-      <ng-container [matColumnDef]="column.key">
-        @if (column.key === "select") {
-          <th
-            *matHeaderCellDef
-            mat-header-cell
-            class="table-checkbox">
-            <mat-checkbox
-              (change)="$event ? toggleAllRows() : null"
-              [checked]="isAllSelected()"
-              [indeterminate]="containerSelection().length > 0 && !isAllSelected()"
-              [disabled]="total() === 0" />
-          </th>
-        } @else {
-          <th
-            *matHeaderCellDef
-            attr.aria-label="{{ column.label }} Header"
-            mat-header-cell
-            mat-sort-header>
-            {{ column.label }}
-          </th>
-        }
-        <td
-          *matCellDef="let element; let row"
-          attr.aria-label="{{ column.label }} Cell"
-          mat-cell
-          [ngClass]="{
+  <div class="self-service-table-container">
+    <table
+      (matSortChange)="onSortEvent($event)"
+      [dataSource]="containerDataSource()"
+      aria-label="Container Data Table"
+      class="container-table"
+      i18n-aria-label
+      mat-table
+      matSort
+      multiTemplateDataRows>
+      @for (column of columnKeysMapSelfService; track column) {
+        <ng-container [matColumnDef]="column.key">
+          @if (column.key === "select") {
+            <th
+              *matHeaderCellDef
+              mat-header-cell
+              class="table-checkbox">
+              <mat-checkbox
+                (change)="$event ? toggleAllRows() : null"
+                [checked]="isAllSelected()"
+                [indeterminate]="containerSelection().length > 0 && !isAllSelected()"
+                [disabled]="total() === 0" />
+            </th>
+          } @else {
+            <th
+              *matHeaderCellDef
+              attr.aria-label="{{ column.label }} Header"
+              mat-header-cell
+              mat-sort-header>
+              {{ column.label }}
+            </th>
+          }
+          <td
+            *matCellDef="let element; let row"
+            attr.aria-label="{{ column.label }} Cell"
+            mat-cell
+            [ngClass]="{
             'width-18rem': column.key === 'description',
             'table-checkbox': column.key === 'select'
           }">
-          <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
-            @switch (column.key) {
-              @case ("select") {
-                <mat-checkbox
-                  (change)="$event ? toggleRow(row) : null"
-                  (click)="$event.stopPropagation()"
-                  [checked]="containerSelection().includes(row)"
-                  [disabled]="total() === 0" />
-              }
-              @case ("serial") {
-                <a
-                  attr.aria-label="{{ column.label }} Link"
-                  (click)="contentService.containerSelected(element.serial)">
-                  {{ element[column.key] }}
-                </a>
-                @if (element.serial !== "") {
-                  <app-copy-button [copyText]="element.serial" />
+            <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
+              @switch (column.key) {
+                @case ("select") {
+                  <mat-checkbox
+                    (change)="$event ? toggleRow(row) : null"
+                    (click)="$event.stopPropagation()"
+                    [checked]="containerSelection().includes(row)"
+                    [disabled]="total() === 0" />
                 }
-              }
-              @case ("realms") {
-                <div [ngClass]="(element[column.key]?.length || 0) > 1 ? 'realm-list' : 'realm'">
-                  @for (realm of element[column.key]; track realm; let idx = $index) {
+                @case ("serial") {
+                  <a
+                    attr.aria-label="{{ column.label }} Link"
+                    (click)="contentService.containerSelected(element.serial)">
+                    {{ element[column.key] }}
+                  </a>
+                  @if (element.serial !== "") {
+                    <app-copy-button [copyText]="element.serial" />
+                  }
+                }
+                @case ("realms") {
+                  <div [ngClass]="(element[column.key]?.length || 0) > 1 ? 'realm-list' : 'realm'">
+                    @for (realm of element[column.key]; track realm; let idx = $index) {
+                      <a
+                        attr.aria-label="{{ column.label }} Link"
+                        href="#">
+                        {{ realm }}
+                      </a><br style="margin-top: 3px" />
+                    }
+                  </div>
+                }
+                @case ("states") {
+                  <span
+                    (click)="handleStateClick(element)"
+                    [ngClass]="tableUtilsService.getSpanClassForState(element[column.key][0], true)">
+                  {{ tableUtilsService.getDisplayTextForState(element[column.key][0]) }}
+                </span>
+                }
+                @case ("delete") {
+                  <button
+                    (click)="deleteContainer(element.serial)"
+                    mat-icon-button
+                    i18n-aria-label="Delete Container">
+                    <mat-icon> delete</mat-icon>
+                  </button>
+                }
+                @default {
+                  @if (tableUtilsService.isLink(column.key)) {
                     <a
                       attr.aria-label="{{ column.label }} Link"
                       href="#">
-                      {{ realm }}
+                      {{ element[column.key] }}
                     </a>
-                    <br style="margin-top: 3px" />
+                  } @else {
+                    {{ element[column.key] }}
+                  }
+                }
+              }
+            </div>
+          </td>
+        </ng-container>
+      }
+      <ng-container matColumnDef="expandedDetail">
+        <td
+          *matCellDef="let element"
+          [attr.colspan]="columnKeysSelfService.length"
+          mat-cell>
+          <div
+            [@detailExpand]="expandedElement === element ? 'expanded' : 'collapsed'"
+            class="expanded-detail">
+            <div class="expanded-token-list-self-serivce">
+              @for (token of element.tokens; track token) {
+                <div class="token-item">
+                  @if (containerService.containerBelongsToUser(token.container_serial)) {
+                    <a (click)="contentService.tokenSelected(token.serial)">
+                      {{ token.serial }}
+                    </a>
+                  } @else {
+                    {{ token.serial }}
+                  }
+                  @if (token.tokentype) {
+                    [
+                    <span i18n>
+                    {{ token.tokentype }}
+                  </span>]
                   }
                 </div>
               }
-              @case ("states") {
-                <span
-                  (click)="handleStateClick(element)"
-                  [ngClass]="tableUtilsService.getSpanClassForState(element[column.key][0], true)">
-                  {{ tableUtilsService.getDisplayTextForState(element[column.key][0]) }}
-                </span>
+              @if (element.tokens?.length === 0) {
+                <div
+                  i18n
+                  class="flex ali-center">
+                  Container has no tokens.
+                </div>
               }
-              @case ("delete") {
-                <button
-                  (click)="deleteContainer(element.serial)"
-                  mat-icon-button
-                  i18n-aria-label="Delete Container">
-                  <mat-icon> delete</mat-icon>
-                </button>
-              }
-              @default {
-                @if (tableUtilsService.isLink(column.key)) {
-                  <a
-                    attr.aria-label="{{ column.label }} Link"
-                    href="#">
-                    {{ element[column.key] }}
-                  </a>
-                } @else {
-                  {{ element[column.key] }}
-                }
-              }
-            }
+            </div>
           </div>
         </td>
       </ng-container>
-    }
-    <ng-container matColumnDef="expandedDetail">
-      <td
-        *matCellDef="let element"
-        [attr.colspan]="columnKeysSelfService.length"
-        mat-cell>
-        <div
-          [@detailExpand]="expandedElement === element ? 'expanded' : 'collapsed'"
-          class="expanded-detail">
-          <div class="expanded-token-list-self-serivce">
-            @for (token of element.tokens; track token) {
-              <div class="token-item">
-                @if (containerService.containerBelongsToUser(token.container_serial)) {
-                  <a (click)="contentService.tokenSelected(token.serial)">
-                    {{ token.serial }}
-                  </a>
-                } @else {
-                  {{ token.serial }}
-                }
-                @if (token.tokentype) {
-                  [
-                  <span i18n>
-                    {{ token.tokentype }}
-                  </span>]
-                }
-              </div>
-            }
-            @if (element.tokens?.length === 0) {
-              <div
-                i18n
-                class="flex ali-center">
-                Container has no tokens.
-              </div>
-            }
-          </div>
-        </div>
-      </td>
-    </ng-container>
 
-    <tr
-      *matHeaderRowDef="columnKeysSelfService"
-      mat-header-row></tr>
+      <tr
+        *matHeaderRowDef="columnKeysSelfService"
+        mat-header-row></tr>
 
-    <tr
-      (click)="expandedElement = expandedElement === row ? null : row"
-      *matRowDef="let row; columns: columnKeysSelfService"
-      [class.example-expanded-row]="expandedElement === row"
-      class="example-element-row"
-      mat-row></tr>
+      <tr
+        (click)="expandedElement = expandedElement === row ? null : row"
+        *matRowDef="let row; columns: columnKeysSelfService"
+        [class.example-expanded-row]="expandedElement === row"
+        class="example-element-row"
+        mat-row></tr>
 
-    <tr
-      *matRowDef="let row; columns: ['expandedDetail']"
-      class="example-detail-row"
-      mat-row></tr>
+      <tr
+        *matRowDef="let row; columns: ['expandedDetail']"
+        class="example-detail-row"
+        mat-row></tr>
 
-    <tr *matNoDataRow>
-      <td
-        [attr.colspan]="columnKeysSelfService.length"
-        i18n>
-        No data matching the filter.
-      </td>
-    </tr>
-  </table>
+      <tr *matNoDataRow>
+        <td
+          [attr.colspan]="columnKeysSelfService.length"
+          i18n>
+          No data matching the filter.
+        </td>
+      </tr>
+    </table>
+  </div>
 </div>
