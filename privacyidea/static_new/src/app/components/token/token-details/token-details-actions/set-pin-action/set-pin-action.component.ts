@@ -1,5 +1,5 @@
 import { AuthService, AuthServiceInterface } from "../../../../../services/auth/auth.service";
-import { Component, Input, WritableSignal, inject } from "@angular/core";
+import { Component, inject, Input, WritableSignal } from "@angular/core";
 import {
   NotificationService,
   NotificationServiceInterface
@@ -11,7 +11,6 @@ import { FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
 import { MatDialog } from "@angular/material/dialog";
 import { MatIcon } from "@angular/material/icon";
-import { AuthService, AuthServiceInterface } from "../../../../../services/auth/auth.service";
 
 @Component({
   selector: "app-set-pin-action",

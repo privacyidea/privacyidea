@@ -80,7 +80,7 @@
           </button>
         </mat-list-item>
         @if (contentService.routeUrl() === ROUTE_PATHS.TOKENS) {
-          @if (authService.oneActionAllowed(["delete", "assign"])) {
+          @if (authService.oneActionAllowed(["delete", "assign", "unassign"])) {
             <mat-divider class="margin-top-1 margin-bottom-1" />
             @if (authService.actionAllowed("delete")) {
               <mat-list-item>
@@ -108,17 +108,18 @@
                 </button>
               </mat-list-item>
             }
-            <mat-list-item>
-            <button
-              [ngClass]="[tokenSelection().length === 0 ? 'card-button-disabled' :
-            'card-button']"
-              (click)="unassignSelectedTokens()"
-              [disabled]="tokenSelection().length === 0"
-              mat-flat-button>
-              <mat-icon> person_remove</mat-icon>
-              Unassign Selected
-            </button>
-          </mat-list-item>
+            @if (authService.actionAllowed("unassign")) {
+              <mat-list-item>
+                <button
+                  [ngClass]="[tokenSelection().length === 0 ? 'card-button-disabled' : 'card-button']"
+                  (click)="unassignSelectedTokens()"
+                  [disabled]="tokenSelection().length === 0"
+                  mat-flat-button>
+                  <mat-icon> person_remove</mat-icon>
+                  Unassign Selected
+                </button>
+              </mat-list-item>
+            }
           }
         }
       } @else {
