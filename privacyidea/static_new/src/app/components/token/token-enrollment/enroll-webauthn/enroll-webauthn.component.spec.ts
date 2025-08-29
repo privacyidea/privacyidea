@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { EnrollWebauthnComponent } from "./enroll-webauthn.component";
 import { provideHttpClient } from "@angular/common/http";
+import "@angular/localize/init";
 
 describe("EnrollWebauthnComponent", () => {
   let component: EnrollWebauthnComponent;

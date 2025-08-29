@@ -1,4 +1,4 @@
-import { Component, inject, WritableSignal } from "@angular/core";
+import { Component, computed, inject, WritableSignal } from "@angular/core";
 import { MatButton, MatIconButton } from "@angular/material/button";
 import {
   MAT_DIALOG_DATA,
@@ -20,6 +20,11 @@ import { ContentService, ContentServiceInterface } from "../../../../services/co
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 import { UserData } from "../../../../services/user/user.service";
 import { TokenType } from "../../../../services/token/token.service";
+import {
+  NO_QR_CODE_TOKEN_TYPES,
+  NO_REGENERATE_TOKEN_TYPES,
+  REGENERATE_AS_VALUES_TOKEN_TYPES
+} from "../token-enrollment.constants";
 
 export type TokenEnrollmentLastStepDialogData = {
   tokentype: TokenType;
@@ -49,6 +54,7 @@ export type TokenEnrollmentLastStepDialogData = {
   templateUrl: "./token-enrollment-last-step-dialog.component.html",
   styleUrl: "./token-enrollment-last-step-dialog.component.scss"
 })
+
 export class TokenEnrollmentLastStepDialogComponent {
   protected readonly dialogRef: MatDialogRef<TokenEnrollmentLastStepDialogComponent> = inject(MatDialogRef);
   public readonly data: TokenEnrollmentLastStepDialogData = inject(MAT_DIALOG_DATA);
@@ -56,6 +62,18 @@ export class TokenEnrollmentLastStepDialogComponent {
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
 
   protected readonly Object = Object;
+
+  showQRCode(): boolean {
+    return !NO_QR_CODE_TOKEN_TYPES.includes(this.data.tokentype?.key);
+  }
+
+  showRegenerateButton(): boolean {
+    return !NO_REGENERATE_TOKEN_TYPES.includes(this.data.tokentype?.key);
+  }
+
+  regenerateButtonText(): string {
+    return REGENERATE_AS_VALUES_TOKEN_TYPES.includes(this.data.tokentype?.key) ? "Values" : "QR Code";
+  }
 
   constructor() {
     this.dialogRef.afterClosed().subscribe(() => {

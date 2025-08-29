@@ -16,7 +16,7 @@
     </span>
   }
   <div class="flex-row gap-1">
-    @if (!["registration", "paper", "spass", "tan", "email", "yubico", "yubikey"].includes(data.tokentype.key)) {
+    @if (showQRCode()) {
       @if (data.response.detail.googleurl?.img) {
         <img
           alt="QR Code"
@@ -53,7 +53,7 @@
         data.response.detail.motpurl?.value ??
         data.response.detail.otpkey?.value ??
         data.response.detail.tiqrenroll?.value;
-      @if (url && !["spass", "tiqr", "registration", "email", "yubico", "yubikey"].includes(data.tokentype.key)) {
+      @if (url && showQRCode()) {
         <p class="width-36">
           Click
           <a href="{{ url }}">here</a>
@@ -62,13 +62,14 @@
                                                                          please regenerate the QR Code, when no one else
                                                                          is watching. </strong>
         </p>
-
+      }
+      @if (url && showRegenerateButton()) {
         <button
           (click)="regenerateQRCode()"
           class="card-button"
           mat-flat-button>
           <mat-icon>autorenew</mat-icon>
-          Regenerate {{ !["paper", "tan",].includes(data.tokentype.key) ? "QR Code" : "Values" }}
+          Regenerate {{ regenerateButtonText() }}
         </button>
       }
 
@@ -77,8 +78,7 @@
           Your Password: <strong>{{ data.response.detail["password"] }}</strong>. </p>
       }
 
-      @if (data.response.detail.otpkey?.value && !data.response.detail["otps"]
-      && !["registration", "paper", "tan", "spass", "email", "yubico", "yubikey"].includes(data.tokentype.key)) {
+      @if (data.response.detail.otpkey?.value && !data.response.detail["otps"] && showQRCode()) {
         <mat-accordion class="otpkey-expension">
           <mat-expansion-panel>
             <mat-expansion-panel-header>

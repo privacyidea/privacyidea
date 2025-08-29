@@ -5,6 +5,7 @@ import { ReactiveFormsModule } from "@angular/forms";
 import { TokenEnrollmentFirstStepDialogComponent } from "./token-enrollment-first-step-dialog.component";
 import { provideHttpClient } from "@angular/common/http";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
+import "@angular/localize/init";
 
 describe("TokenEnrollmentFirstStepDialogComponent", () => {
   let component: TokenEnrollmentFirstStepDialogComponent;
