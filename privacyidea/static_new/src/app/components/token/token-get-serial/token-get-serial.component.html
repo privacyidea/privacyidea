@@ -54,7 +54,7 @@
       [value]="tokenType()"
       i18n-placeholder
       placeholder="Select token type">
-      @for (type of tokenTypesWithOTP; track type) {
+      @for (type of tokenTypesWithOTP(); track type) {
         <mat-option [value]="type['key']">{{ type["info"] }}</mat-option>
       }
     </mat-select>
