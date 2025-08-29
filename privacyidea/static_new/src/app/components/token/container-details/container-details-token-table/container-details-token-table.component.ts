@@ -30,7 +30,6 @@ import { TableUtilsService, TableUtilsServiceInterface } from "../../../../servi
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 import { ConfirmationDialogComponent } from "../../../shared/confirmation-dialog/confirmation-dialog.component";
 import { CopyButtonComponent } from "../../../shared/copy-button/copy-button.component";
-import { UserAssignmentDialogComponent } from "../user-assignment-dialog/user-assignment-dialog.component";
 
 const columnsKeyMap = [
   { key: "serial", label: "Serial" },
