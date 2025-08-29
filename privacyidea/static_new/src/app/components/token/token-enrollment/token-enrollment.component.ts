@@ -224,13 +224,9 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
 
   protected readonly renderer: Renderer2 = inject(Renderer2);
-  protected readonly QuestionApiPayloadMapper = QuestionApiPayloadMapper;
   private observer!: IntersectionObserver;
   timezoneOptions = TIMEZONE_OFFSETS;
-  pollResponse: WritableSignal<any> = linkedSignal({
-    source: this.tokenService.selectedTokenType,
-    computation: () => null
-  });
+
   enrollResponse: WritableSignal<EnrollmentResponse | null> = linkedSignal({
     source: this.tokenService.selectedTokenType,
     computation: () => null

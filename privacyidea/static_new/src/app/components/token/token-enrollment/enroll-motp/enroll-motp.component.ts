@@ -45,7 +45,7 @@ export class EnrollMotpComponent implements OnInit {
   >();
 
   generateOnServerControl = new FormControl<boolean>(true, [Validators.required]);
-  otpKeyControl = new FormControl<string>("");
+  otpKeyFormControl = new FormControl<string>({ value: "", disabled: true });
   motpPinControl = new FormControl<string>("", [Validators.required, Validators.minLength(4)]);
   repeatMotpPinControl = new FormControl<string>("", [
     Validators.required,
@@ -62,7 +62,7 @@ export class EnrollMotpComponent implements OnInit {
   ngOnInit(): void {
     this.additionalFormFieldsChange.emit({
       generateOnServer: this.generateOnServerControl,
-      otpKey: this.otpKeyControl,
+      otpKey: this.otpKeyFormControl,
       motpPin: this.motpPinControl,
       repeatMotpPin: this.repeatMotpPinControl
     });
@@ -70,11 +70,13 @@ export class EnrollMotpComponent implements OnInit {
 
     this.generateOnServerControl.valueChanges.subscribe((generate) => {
       if (!generate) {
-        this.otpKeyControl.setValidators([Validators.required]);
+        this.otpKeyFormControl.enable({ emitEvent: false });
+        this.otpKeyFormControl.setValidators([Validators.required]);
       } else {
-        this.otpKeyControl.clearValidators();
+        this.otpKeyFormControl.disable({ emitEvent: false });
+        this.otpKeyFormControl.clearValidators();
       }
-      this.otpKeyControl.updateValueAndValidity();
+      this.otpKeyFormControl.updateValueAndValidity();
     });
 
     this.motpPinControl.valueChanges.subscribe(() => {
@@ -90,7 +92,7 @@ export class EnrollMotpComponent implements OnInit {
       motpPin: this.motpPinControl.value ?? ""
     };
     if (!enrollmentData.generateOnServer) {
-      enrollmentData.otpKey = this.otpKeyControl.value ?? "";
+      enrollmentData.otpKey = this.otpKeyFormControl.value ?? "";
     }
     return this.tokenService.enrollToken({
       data: enrollmentData,
