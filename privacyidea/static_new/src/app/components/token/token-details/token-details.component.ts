@@ -55,8 +55,6 @@ export const userDetailsKeyMap = [
 export const infoDetailsKeyMap = [{ key: "info", label: "Information" }];
 
 @Component({
-  selector: "app-token-details",
-  standalone: true,
   imports: [
     MatCell,
     MatTableModule,
@@ -78,6 +76,9 @@ export const infoDetailsKeyMap = [{ key: "info", label: "Information" }];
     TokenDetailsInfoComponent,
     TokenDetailsActionsComponent,
     EditButtonsComponent,
+    CopyButtonComponent,
+    ScrollToTopDirective,
+    ClearableInputComponent,
     CopyButtonComponent,
     ClearableInputComponent,
     ScrollToTopDirective

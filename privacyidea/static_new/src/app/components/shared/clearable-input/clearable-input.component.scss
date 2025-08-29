@@ -11,14 +11,16 @@
   border: 0 solid transparent;
   background-color: var(--grey-light-active);
   color: var(--mat-sys-primary-container);
-  width: 18px;
+  width: 1.6rem;
+  height: 1.6rem;
+  aspect-ratio: 1;
   display: flex;
   justify-content: center;
   align-items: center;
 }
 
 .input-container button mat-icon {
-  font-size: 0.8rem;
+  font-size: 18px;
   font-weight: 800;
   display: flex;
   align-items: center;
