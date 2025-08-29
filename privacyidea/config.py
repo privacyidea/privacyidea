@@ -227,7 +227,7 @@ def _get_secrets_from_environment(name: str) -> str | None:
             with open(file_name) as f:
                 return f.read().strip()
         except IOError as _e:
-            sys.stderr.write(f"Could not read secret from file defined in variable '{name}_FILE'")
+            sys.stderr.write(f"Could not read secret from file defined in variable '{name}_FILE'\n")
     return os.getenv(name)
 
 
@@ -238,7 +238,7 @@ def _get_secrets_paths_from_environment(path: str, name: str) -> str | None:
         if Path(os.environ[name]).is_file():
             return os.environ[name]
         else:
-            sys.stderr.write(f"Could not read secret file path defined in variable '{name}'")
+            sys.stderr.write(f"Could not read secret file path defined in variable '{name}'\n")
             return None
     else:
         return None
