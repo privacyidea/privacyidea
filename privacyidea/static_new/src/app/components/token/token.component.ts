@@ -125,7 +125,7 @@ export class TokenComponent {
     {
       key: "daypassword",
       text: "The DayPassword token is a time based password token with a larger time window. OTP values of this" +
-        " token can be re-used by default."
+        " token can be reused by default."
     },
     {
       key: "email",
