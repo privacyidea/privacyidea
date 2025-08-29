@@ -16,16 +16,18 @@
           </button>
         </mat-list-item>
 
-        <mat-list-item>
-          <button
-            [ngClass]="contentService.routeUrl() === '#' ? 'card-button-active' : 'card-button-disabled'"
-            [routerLink]="['#']"
-            disabled
-            mat-flat-button>
-            <mat-icon>person_add</mat-icon>
-            Add User
-          </button>
-        </mat-list-item>
+        @if (authService.actionAllowed("adduser")) {
+          <mat-list-item>
+            <button
+              [ngClass]="contentService.routeUrl() === '#' ? 'card-button-active' : 'card-button-disabled'"
+              [routerLink]="['#']"
+              disabled
+              mat-flat-button>
+              <mat-icon>person_add</mat-icon>
+              Add User
+            </button>
+          </mat-list-item>
+        }
 
         <mat-list-item>
           <button

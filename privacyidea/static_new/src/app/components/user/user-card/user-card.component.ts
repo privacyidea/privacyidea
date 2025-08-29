@@ -18,6 +18,7 @@ import { MatOption } from "@angular/material/core";
 import { RealmService, RealmServiceInterface } from "../../../services/realm/realm.service";
 import { UserService, UserServiceInterface } from "../../../services/user/user.service";
 import { ROUTE_PATHS } from "../../../app.routes";
+import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
 
 @Component({
   selector: "app-user-card",
@@ -52,6 +53,7 @@ export class UserCardComponent {
     inject(VersioningService);
   protected readonly realmService: RealmServiceInterface = inject(RealmService);
   protected readonly userService: UserServiceInterface = inject(UserService);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
   selectedUserRealmControl = new FormControl<string>(
     this.userService.selectedUserRealm(),

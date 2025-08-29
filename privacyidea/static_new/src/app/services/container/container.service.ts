@@ -20,7 +20,6 @@ import { ContainerTypeOption } from "../../components/token/container-create/con
 import { EnrollmentUrl } from "../../mappers/token-api-payload/_token-api-payload.mapper";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
-import { LocalService, LocalServiceInterface } from "../local/local.service";
 import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
 import { TokenService, TokenServiceInterface } from "../token/token.service";
 
@@ -207,7 +206,6 @@ export interface ContainerServiceInterface {
 })
 export class ContainerService implements ContainerServiceInterface {
   private readonly http: HttpClient = inject(HttpClient);
-  private readonly localService: LocalServiceInterface = inject(LocalService);
   private readonly tokenService: TokenServiceInterface = inject(TokenService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
@@ -284,9 +282,9 @@ export class ContainerService implements ContainerServiceInterface {
     if (
       (!this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_DETAILS) &&
         ![ROUTE_PATHS.TOKENS_CONTAINERS, ROUTE_PATHS.TOKENS_ENROLLMENT, ROUTE_PATHS.TOKENS].includes(
-          this.contentService.routeUrl()
-        )) ||
-      (this.authService.role() === "admin" && this.contentService.routeUrl() === ROUTE_PATHS.TOKENS)
+          this.contentService.routeUrl())) ||
+      (this.authService.role() === "admin" && this.contentService.routeUrl() === ROUTE_PATHS.TOKENS) ||
+      !this.authService.actionAllowed("container_list")
     ) {
       return undefined;
     }
@@ -355,7 +353,8 @@ export class ContainerService implements ContainerServiceInterface {
   selectedContainerType = linkedSignal({
     source: this.contentService.routeUrl,
     computation: () =>
-      this.containerTypeOptions()[0] ?? {
+      this.containerTypeOptions().find((type) => type.containerType === this.authService.defaultContainerType()) ||
+      this.containerTypeOptions()[0] || {
         containerType: "generic",
         description: "No container type data available",
         token_types: []
@@ -393,7 +392,8 @@ export class ContainerService implements ContainerServiceInterface {
   });
 
   templatesResource = httpResource<PiResponse<{ templates: ContainerTemplate[] }>>(() => {
-    if (this.contentService.routeUrl() !== ROUTE_PATHS.TOKENS_CONTAINERS_CREATE) {
+    if (this.contentService.routeUrl() !== ROUTE_PATHS.TOKENS_CONTAINERS_CREATE ||
+      !this.authService.actionAllowed("container_template_list")) {
       return undefined;
     }
     return {

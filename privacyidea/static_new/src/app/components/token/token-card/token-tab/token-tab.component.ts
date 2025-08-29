@@ -6,7 +6,7 @@ import { MatDivider } from "@angular/material/divider";
 import { MatIcon } from "@angular/material/icon";
 import { MatList, MatListItem } from "@angular/material/list";
 import { Router, RouterLink } from "@angular/router";
-import { catchError, concatMap, EMPTY, filter, forkJoin, from, reduce, switchMap } from "rxjs";
+import { catchError, concatMap, EMPTY, filter, from, reduce, switchMap } from "rxjs";
 import { tabToggleState } from "../../../../../styles/animations/animations";
 import { AuditService, AuditServiceInterface } from "../../../../services/audit/audit.service";
 import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
@@ -17,6 +17,7 @@ import { SelectedUserAssignDialogComponent } from "../selected-user-assign-dialo
 import { tap } from "rxjs/operators";
 import { LostTokenComponent } from "./lost-token/lost-token.component";
 import { ROUTE_PATHS } from "../../../../app.routes";
+import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
 import {
   NotificationService,
   NotificationServiceInterface
@@ -37,11 +38,12 @@ interface BatchResult {
   animations: [tabToggleState]
 })
 export class TokenTabComponent {
-  private readonly tokenService: TokenServiceInterface = inject(TokenService);
+  protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly versioningService: VersioningServiceInterface = inject(VersioningService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly dialog: MatDialog = inject(MatDialog);
   protected readonly auditService: AuditServiceInterface = inject(AuditService);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
   private router = inject(Router);

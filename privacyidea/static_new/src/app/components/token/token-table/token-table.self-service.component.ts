@@ -10,7 +10,6 @@ import { MatInputModule } from "@angular/material/input";
 import { MatPaginatorModule } from "@angular/material/paginator";
 import { MatSortModule } from "@angular/material/sort";
 import { MatTableModule } from "@angular/material/table";
-import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
 import { ContainerService, ContainerServiceInterface } from "../../../services/container/container.service";
 import { ConfirmationDialogComponent } from "../../shared/confirmation-dialog/confirmation-dialog.component";
 import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
@@ -51,7 +50,6 @@ export class TokenTableSelfServiceComponent extends TokenTableComponent {
   readonly columnKeysSelfService: string[] = this.columnKeysMapSelfService.map(
     (column: { key: string; label: string }) => column.key
   );
-  protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
   private dialog = inject(MatDialog);
 

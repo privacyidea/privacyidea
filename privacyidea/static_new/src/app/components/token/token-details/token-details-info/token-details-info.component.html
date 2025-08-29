@@ -84,7 +84,7 @@
         *matCellDef="let element"
         class="height-52 edit-column-cell"
         mat-cell>
-        @if (authService.role() === "admin") {
+        @if (authService.actionAllowed("settokeninfo")) {
           <app-edit-buttons
             [cancelEdit]="toggleInfoEdit.bind(this)"
             [element]="element"

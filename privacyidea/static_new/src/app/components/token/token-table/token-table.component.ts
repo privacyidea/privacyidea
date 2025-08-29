@@ -16,6 +16,7 @@ import { ClearableInputComponent } from "../../shared/clearable-input/clearable-
 import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { KeywordFilterComponent } from "../../shared/keyword-filter/keyword-filter.component";
+import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
 
 const columnKeysMap = [
   { key: "select", label: "" },
@@ -57,6 +58,7 @@ export class TokenTableComponent {
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
 
   readonly columnKeysMap = columnKeysMap;
   readonly columnKeys: string[] = columnKeysMap.map((column) => column.key);
@@ -152,7 +154,9 @@ export class TokenTableComponent {
   }
 
   toggleActive(tokenDetails: TokenDetails): void {
-    if (!tokenDetails.revoked && !tokenDetails.locked) {
+    if (!tokenDetails.revoked && !tokenDetails.locked &&
+      ((tokenDetails.active && this.authService.actionAllowed("disable")) ||
+        (!tokenDetails.active && this.authService.actionAllowed("enable")))) {
       this.tokenService.toggleActive(tokenDetails.serial, tokenDetails.active).subscribe({
         next: () => {
           this.tokenResource.reload();
@@ -162,7 +166,7 @@ export class TokenTableComponent {
   }
 
   resetFailCount(tokenDetails: TokenDetails): void {
-    if (!tokenDetails.revoked && !tokenDetails.locked) {
+    if (!tokenDetails.revoked && !tokenDetails.locked && this.authService.actionAllowed("reset")) {
       this.tokenService.resetFailCount(tokenDetails.serial).subscribe({
         next: () => {
           this.tokenResource.reload();

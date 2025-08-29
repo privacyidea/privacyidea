@@ -17,8 +17,8 @@ import { RealmService, RealmServiceInterface } from "../../../../services/realm/
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 import { UserService, UserServiceInterface } from "../../../../services/user/user.service";
 import { ClearableInputComponent } from "../../../shared/clearable-input/clearable-input.component";
-import { EditButtonsComponent } from "../../../shared/edit-buttons/edit-buttons.component";
 import { TokenDetailsUserComponent } from "./token-details-user.component";
+import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
 
 @Component({
   selector: "app-token-details-user-self-service",
@@ -38,7 +38,6 @@ import { TokenDetailsUserComponent } from "./token-details-user.component";
     MatSelect,
     MatIconButton,
     MatIcon,
-    EditButtonsComponent,
     NgClass,
     ClearableInputComponent
   ],
@@ -51,6 +50,7 @@ export class TokenDetailsUserSelfServiceComponent extends TokenDetailsUserCompon
   protected override userService: UserServiceInterface = inject(UserService);
   protected override notificationService: NotificationServiceInterface = inject(NotificationService);
   protected override overflowService: OverflowServiceInterface = inject(OverflowService);
+  protected  override authService: AuthServiceInterface = inject(AuthService);
 
   constructor() {
     super();

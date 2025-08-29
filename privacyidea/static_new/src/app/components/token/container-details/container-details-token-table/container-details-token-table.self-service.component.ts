@@ -1,5 +1,5 @@
 import { NgClass } from "@angular/common";
-import { Component, inject } from "@angular/core";
+import { Component, computed, inject } from "@angular/core";
 import { FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { MatButton, MatIconButton } from "@angular/material/button";
 import { MatDialog } from "@angular/material/dialog";
@@ -49,20 +49,19 @@ import { ContainerDetailsTokenTableComponent } from "./container-details-token-t
 })
 export class ContainerDetailsTokenTableSelfServiceComponent extends ContainerDetailsTokenTableComponent {
   protected override readonly dialog: MatDialog = inject(MatDialog);
-  protected override readonly containerService: ContainerServiceInterface =
-    inject(ContainerService);
-  protected override readonly tokenService: TokenServiceInterface =
-    inject(TokenService);
-  protected override readonly tableUtilsService: TableUtilsServiceInterface =
-    inject(TableUtilsService);
-  protected override readonly overflowService: OverflowServiceInterface =
-    inject(OverflowService);
-  protected override readonly contentService: ContentServiceInterface =
-    inject(ContentService);
-  protected override readonly authService: AuthServiceInterface =
-    inject(AuthService);
+  protected override readonly containerService: ContainerServiceInterface = inject(ContainerService);
+  protected override readonly tokenService: TokenServiceInterface = inject(TokenService);
+  protected override readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
+  protected override readonly overflowService: OverflowServiceInterface = inject(OverflowService);
+  protected override readonly contentService: ContentServiceInterface = inject(ContentService);
+  protected override readonly authService: AuthServiceInterface = inject(AuthService);
 
   constructor() {
     super();
   }
+
+  override isAssignableToAllToken = computed<boolean>(() => {
+    const assignedUser = this.assignedUser();
+    return assignedUser.user_name !== "";
+  });
 }

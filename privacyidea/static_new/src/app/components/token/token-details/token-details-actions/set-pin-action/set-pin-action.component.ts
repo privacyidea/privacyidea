@@ -1,5 +1,5 @@
 import { AuthService, AuthServiceInterface } from "../../../../../services/auth/auth.service";
-import { Component, Input, WritableSignal, inject } from "@angular/core";
+import { Component, inject, Input, WritableSignal } from "@angular/core";
 import {
   NotificationService,
   NotificationServiceInterface
@@ -21,7 +21,7 @@ import { MatIcon } from "@angular/material/icon";
 export class SetPinActionComponent {
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly tokenService: TokenServiceInterface = inject(TokenService);
-  private readonly authService: AuthServiceInterface = inject(AuthService);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly dialog: MatDialog = inject(MatDialog);
   @Input() setPinValue!: WritableSignal<string>;
   @Input() repeatPinValue!: WritableSignal<string>;

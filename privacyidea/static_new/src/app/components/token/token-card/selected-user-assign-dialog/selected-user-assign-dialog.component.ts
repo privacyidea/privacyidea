@@ -11,6 +11,7 @@ import { RealmService, RealmServiceInterface } from "../../../../services/realm/
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 import { UserData, UserService, UserServiceInterface } from "../../../../services/user/user.service";
 import { ClearableInputComponent } from "../../../shared/clearable-input/clearable-input.component";
+import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
 
 export interface SelectedUserAssignResult {
   username: string;
@@ -47,6 +48,7 @@ export class SelectedUserAssignDialogComponent {
   protected readonly realmService: RealmServiceInterface = inject(RealmService);
   protected readonly dialogRef: MatDialogRef<SelectedUserAssignDialogComponent, SelectedUserAssignResult | null> =
     inject(MatDialogRef);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
   pin: WritableSignal<string> = signal("");
   pinRepeat: WritableSignal<string> = signal("");
   hidePin: WritableSignal<boolean> = signal(true);

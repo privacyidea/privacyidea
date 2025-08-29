@@ -148,6 +148,10 @@ export interface AuthServiceInterface {
 
   acceptAuthentication: () => void;
   logout: () => void;
+
+  actionAllowed: (action: string) => boolean;
+  actionsAllowed: (actions: string[]) => boolean;
+  oneActionAllowed: (actions: string[]) => boolean;
 }
 
 @Injectable({
@@ -178,8 +182,8 @@ export class AuthService implements AuthServiceInterface {
   tokenPageSize = computed(() => this.authData()?.token_page_size || 10);
   userPageSize = computed(() => this.authData()?.user_page_size || 10);
   policyTemplateUrl = computed(() => this.authData()?.policy_template_url || "");
-  defaultTokentype = computed(() => this.authData()?.default_tokentype || "");
-  defaultContainerType = computed(() => this.authData()?.default_container_type || "");
+  defaultTokentype = computed(() => this.authData()?.default_tokentype || "hotp");
+  defaultContainerType = computed(() => this.authData()?.default_container_type || "generic");
   userDetails = computed(() => this.authData()?.user_details || false);
   tokenWizard = computed(() => this.authData()?.token_wizard || false);
   tokenWizard2nd = computed(() => this.authData()?.token_wizard_2nd || false);
@@ -281,5 +285,17 @@ export class AuthService implements AuthServiceInterface {
       console.error("Failed to decode JWT:", e);
       return null;
     }
+  }
+
+  actionAllowed(action: string): boolean {
+    return this.rights().includes(action);
+  }
+
+  actionsAllowed(actions: string[]): boolean {
+    return actions.every(action => this.actionAllowed(action));
+  }
+
+  oneActionAllowed(actions: string[]): boolean {
+    return actions.some(action => this.actionAllowed(action));
   }
 }

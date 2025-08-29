@@ -13,6 +13,7 @@ import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "../../../app.routes";
 import { ContainerTabComponent } from "./container-tab/container-tab.component";
 import { TokenTabComponent } from "./token-tab/token-tab.component";
+import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
 
 @Component({
   selector: "app-token-card",
@@ -26,6 +27,7 @@ export class TokenCardComponent {
   private readonly tokenService: TokenServiceInterface = inject(TokenService);
   private readonly containerService: ContainerServiceInterface = inject(ContainerService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
   private router = inject(Router);
   selectedTabIndex = linkedSignal({
     source: this.contentService.routeUrl,
@@ -46,6 +48,17 @@ export class TokenCardComponent {
     } else {
       this.router.navigateByUrl(ROUTE_PATHS.TOKENS_CONTAINERS);
     }
+  }
+
+  anyTokenActionAllowed(): boolean {
+    const allowed = this.authService.oneActionAllowed(
+      ["tokenlist", "getchallenges", "getserial", "machinelist"]);
+    return allowed || this.tokenService.enrollmentAllowed();
+  }
+
+  anyContainerActionAllowed(): boolean {
+    return this.authService.oneActionAllowed(
+      ["container_list", "container_create", "container_template_list", "container_template_create"]);
   }
 
   tokenTabActive = () => this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS) && !this.containerTabActive();
