@@ -22,6 +22,7 @@ import {
   templateUrl: "./confirmation-dialog.component.html",
   styleUrl: "./confirmation-dialog.component.scss"
 })
+
 export class ConfirmationDialogComponent {
   public readonly data: ConfirmationDialogData = inject(MAT_DIALOG_DATA);
 }
@@ -29,7 +30,7 @@ export class ConfirmationDialogComponent {
 export type ConfirmationDialogData = {
   numberOfTokens?: string;
   type: "token" | string;
-  serial_list?: string[];
+  serialList?: string[];
   title: string;
-  action: "remove" | "delete" | "revoke" | "search";
+  action: "remove" | "delete" | "revoke" | "search" | "unassign";
 };

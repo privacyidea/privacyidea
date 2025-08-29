@@ -69,9 +69,7 @@ export class VersioningService implements VersioningServiceInterface {
         const html = await response.text();
         const parser = new DOMParser();
         const doc = parser.parseFromString(html, "text/html");
-        return !doc.querySelector(
-          "div.document div.documentwrapper div.bodywrapper div.body h1#notfound"
-        );
+        return !doc.querySelector("div.document div.documentwrapper div.bodywrapper div.body h1#notfound");
       } catch (error) {
         console.error("Error checking the page:", error);
         return false;

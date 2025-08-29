@@ -11,8 +11,8 @@
         subscriptSizing="dynamic">
         <mat-label i18n>Enter Filter</mat-label>
         <app-clearable-input
-          (onClick)="filterValueString.set('')"
-          [showClearButton]="filterValueString().length > 0">
+          (onClick)="filterHTMLInputElement.value = ''; filterValueString.set('')"
+          [showClearButton]="filterHTMLInputElement.value.length > 0">
           <input
             #filterHTMLInputElement
             [(ngModel)]="filterValueString"

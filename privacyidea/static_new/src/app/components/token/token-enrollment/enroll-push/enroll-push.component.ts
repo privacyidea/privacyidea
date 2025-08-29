@@ -27,16 +27,12 @@ export interface PushEnrollmentOptions extends TokenEnrollmentData {
 })
 export class EnrollPushComponent implements OnInit {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
-  protected readonly dialogService: DialogServiceInterface =
-    inject(DialogService);
-  protected readonly enrollmentMapper: PushApiPayloadMapper =
-    inject(PushApiPayloadMapper);
+  protected readonly dialogService: DialogServiceInterface = inject(DialogService);
+  protected readonly enrollmentMapper: PushApiPayloadMapper = inject(PushApiPayloadMapper);
 
   pollResponse = signal<PiResponse<Tokens> | undefined>(undefined);
 
-  text = this.tokenService
-    .tokenTypeOptions()
-    .find((type) => type.key === "push")?.text;
+  text = this.tokenService.tokenTypeOptions().find((type) => type.key === "push")?.text;
 
   @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
@@ -53,9 +49,7 @@ export class EnrollPushComponent implements OnInit {
     this.clickEnrollChange.emit(this.onClickEnroll);
   }
 
-  onClickEnroll = async (
-    basicOptions: TokenEnrollmentData
-  ): Promise<EnrollmentResponse | null> => {
+  onClickEnroll = async (basicOptions: TokenEnrollmentData): Promise<EnrollmentResponse | null> => {
     const enrollmentData: PushEnrollmentOptions = {
       ...basicOptions,
       type: "push"
@@ -71,10 +65,7 @@ export class EnrollPushComponent implements OnInit {
     if (!initResponse) {
       return null;
     }
-    const pollResponse = await this.pollTokenRolloutState(
-      initResponse,
-      5000
-    ).catch(() => {
+    const pollResponse = await this.pollTokenRolloutState(initResponse, 5000).catch(() => {
       return null;
     });
     if (!pollResponse) {
@@ -101,9 +92,7 @@ export class EnrollPushComponent implements OnInit {
     observable.subscribe({
       next: (pollResponse) => {
         this.pollResponse.set(pollResponse);
-        if (
-          pollResponse.result?.value?.tokens[0].rollout_state !== "clientwait"
-        ) {
+        if (pollResponse.result?.value?.tokens[0].rollout_state !== "clientwait") {
           this.dialogService.closeTokenEnrollmentFirstStepDialog();
         }
       }

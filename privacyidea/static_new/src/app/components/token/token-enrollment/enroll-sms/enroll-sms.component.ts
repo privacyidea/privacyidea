@@ -42,12 +42,9 @@ export interface SmsEnrollmentOptions extends TokenEnrollmentData {
   styleUrl: "./enroll-sms.component.scss"
 })
 export class EnrollSmsComponent implements OnInit {
-  protected readonly enrollmentMapper: SmsApiPayloadMapper =
-    inject(SmsApiPayloadMapper);
-  protected readonly smsGatewayService: SmsGatewayServiceInterface =
-    inject(SmsGatewayService);
-  protected readonly systemService: SystemServiceInterface =
-    inject(SystemService);
+  protected readonly enrollmentMapper: SmsApiPayloadMapper = inject(SmsApiPayloadMapper);
+  protected readonly smsGatewayService: SmsGatewayServiceInterface = inject(SmsGatewayService);
+  protected readonly systemService: SystemServiceInterface = inject(SystemService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
 
   @Output() additionalFormFieldsChange = new EventEmitter<{
@@ -59,9 +56,7 @@ export class EnrollSmsComponent implements OnInit {
 
   smsGatewayControl = new FormControl<string>("", [Validators.required]);
   phoneNumberControl = new FormControl<string>("");
-  readNumberDynamicallyControl = new FormControl<boolean>(false, [
-    Validators.required
-  ]);
+  readNumberDynamicallyControl = new FormControl<boolean>(false, [Validators.required]);
 
   smsForm = new FormGroup({
     smsGateway: this.smsGatewayControl,
@@ -69,8 +64,7 @@ export class EnrollSmsComponent implements OnInit {
     readNumberDynamically: this.readNumberDynamicallyControl
   });
   smsGatewayOptions = computed(() => {
-    const raw =
-      this.smsGatewayService.smsGatewayResource.value()?.result?.value;
+    const raw = this.smsGatewayService.smsGatewayResource.value()?.result?.value;
     return raw && Array.isArray(raw) ? raw.map((gw) => gw.name) : [];
   });
 
@@ -81,10 +75,7 @@ export class EnrollSmsComponent implements OnInit {
 
   constructor() {
     effect(() => {
-      const id =
-        this.systemService.systemConfigResource.value()?.result?.value?.[
-          "sms.identifier"
-          ];
+      const id = this.systemService.systemConfigResource.value()?.result?.value?.["sms.identifier"];
       if (id && this.smsGatewayControl.pristine) {
         this.smsGatewayControl.setValue(id);
       }
@@ -109,11 +100,11 @@ export class EnrollSmsComponent implements OnInit {
     });
   }
 
-  onClickEnroll = (
-    basicOptions: TokenEnrollmentData
-  ): Observable<EnrollmentResponse | null> => {
-    if (this.smsGatewayControl.invalid ||
-      (!this.readNumberDynamicallyControl.value && this.phoneNumberControl.invalid)) {
+  onClickEnroll = (basicOptions: TokenEnrollmentData): Observable<EnrollmentResponse | null> => {
+    if (
+      this.smsGatewayControl.invalid ||
+      (!this.readNumberDynamicallyControl.value && this.phoneNumberControl.invalid)
+    ) {
       this.smsForm.markAllAsTouched();
       return of(null);
     }

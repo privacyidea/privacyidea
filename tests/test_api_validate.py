@@ -667,7 +667,7 @@ class ValidateAPITestCase(MyApiTestCase):
     test the api.validate endpoints
     """
 
-    def test_00_create_realms(self):
+    def test_00_setup(self):
         self.setUp_user_realms()
         self.setUp_user_realm2()
 
@@ -1150,6 +1150,10 @@ class ValidateAPITestCase(MyApiTestCase):
         remove_token(serial="ChalResp1")
 
     def test_11_challenge_response_hotp(self):
+        """
+        Verify that HOTP token work with the challenge_response policy. Also verify that the challenge_text policy is
+        applied correctly.
+        """
         serial = "CHALRESP1"
         pin = "chalresp1"
         # create a token and assign to the user
@@ -1159,10 +1163,10 @@ class ValidateAPITestCase(MyApiTestCase):
         token = HotpTokenClass(db_token)
         token.add_user(User("cornelius", self.realm1))
         token.set_pin(pin)
-        # Set the failcounter
         token.set_failcount(5)
+        db_token.save()
 
-        # try to do challenge response without a policy. It will fail
+        # try to do challenge response without a policy.
         with self.app.test_request_context('/validate/check',
                                            method='POST',
                                            data={"user": "cornelius",
@@ -1174,22 +1178,15 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertFalse(result.get("value"))
             self.assertEqual(detail.get("message"), _("wrong otp pin"))
             self.assertNotIn("transaction_id", detail)
+            self.assertEqual(5, token.get_failcount())
 
-        # set a chalresp policy for HOTP
-        with self.app.test_request_context('/policy/pol_chal_resp',
-                                           data={'action': "challenge_response=hotp",
-                                                 'scope': "authentication",
-                                                 'realm': '',
-                                                 'active': True},
-                                           method='POST',
-                                           headers={'Authorization': self.at}):
-            res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, 200, res)
-            result = res.json.get("result")
-            self.assertTrue(result["status"], result)
-            self.assertGreaterEqual(result['value']['setPolicy pol_chal_resp'], 1, result)
+        # Policy to enable challenge-response and the text
+        challenge_text = "custom challenge text"
+        set_policy("challengetext", scope=SCOPE.AUTH, action=f"{PolicyAction.CHALLENGETEXT}={challenge_text}")
+        set_policy("challenge_response_hotp", scope=SCOPE.AUTH, action=f"{PolicyAction.CHALLENGERESPONSE}=hotp")
 
-        # create the challenge by authenticating with the OTP PIN
+        # Create the challenge by authenticating with the OTP PIN. The failcounter will not increase.
+        # The challenge message will be taken from the policy action value
         with self.app.test_request_context('/validate/check',
                                            method='POST',
                                            data={"user": "cornelius",
@@ -1199,11 +1196,12 @@ class ValidateAPITestCase(MyApiTestCase):
             result = res.json.get("result")
             detail = res.json.get("detail")
             self.assertFalse(result.get("value"))
-            self.assertEqual(detail.get("message"), _("please enter otp: "))
+            self.assertEqual("CHALLENGE", result.get("authentication"))
+            self.assertEqual(challenge_text, detail.get("message"))
             transaction_id = detail.get("transaction_id")
-        self.assertEqual(token.get_failcount(), 5)
+            self.assertEqual(5, token.get_failcount())
 
-        # send the OTP value
+        # OTP value will be accepted and reset the failcounter
         with self.app.test_request_context('/validate/check',
                                            method='POST',
                                            data={"user": "cornelius",
@@ -1213,12 +1211,14 @@ class ValidateAPITestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            detail = res.json.get("detail")
             self.assertTrue(result.get("value"))
+            self.assertEqual("ACCEPT", result.get("authentication"))
 
         self.assertEqual(token.get_failcount(), 0)
-        # delete the token
+        # delete the token and policies
         remove_token(serial=serial)
+        delete_policy("challengetext")
+        delete_policy("challenge_response_hotp")
 
     def test_11a_challenge_response_registration(self):
         serial = "CHALRESP1"

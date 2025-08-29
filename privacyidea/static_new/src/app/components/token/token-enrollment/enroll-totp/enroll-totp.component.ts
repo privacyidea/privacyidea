@@ -43,8 +43,7 @@ export interface TotpEnrollmentOptions extends TokenEnrollmentData {
   styleUrl: "./enroll-totp.component.scss"
 })
 export class EnrollTotpComponent implements OnInit {
-  protected readonly enrollmentMapper: TotpApiPayloadMapper =
-    inject(TotpApiPayloadMapper);
+  protected readonly enrollmentMapper: TotpApiPayloadMapper = inject(TotpApiPayloadMapper);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   readonly otpLengthOptions = [6, 8];
   readonly hashAlgorithmOptions = [
@@ -59,9 +58,7 @@ export class EnrollTotpComponent implements OnInit {
   @Output() clickEnrollChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => Observable<EnrollmentResponse | null>
   >();
-  generateOnServerFormControl = new FormControl<boolean>(true, [
-    Validators.required
-  ]);
+  generateOnServerFormControl = new FormControl<boolean>(true, [Validators.required]);
   otpLengthControl = new FormControl<number>(6, [Validators.required]);
   otpKeyControl = new FormControl<string>("");
   hashAlgorithmControl = new FormControl<string>("sha1", [Validators.required]);
@@ -86,10 +83,7 @@ export class EnrollTotpComponent implements OnInit {
 
     this.generateOnServerFormControl.valueChanges.subscribe((generate) => {
       if (!generate) {
-        this.otpKeyControl.setValidators([
-          Validators.required,
-          Validators.minLength(16)
-        ]);
+        this.otpKeyControl.setValidators([Validators.required, Validators.minLength(16)]);
       } else {
         this.otpKeyControl.clearValidators();
       }
@@ -97,9 +91,7 @@ export class EnrollTotpComponent implements OnInit {
     });
   }
 
-  onClickEnroll = (
-    basicOptions: TokenEnrollmentData
-  ): Observable<EnrollmentResponse | null> => {
+  onClickEnroll = (basicOptions: TokenEnrollmentData): Observable<EnrollmentResponse | null> => {
     if (this.totpForm.invalid) {
       this.totpForm.markAllAsTouched();
       return of(null);
