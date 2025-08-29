@@ -3,12 +3,13 @@ This test file tests the lib.tokens.questionnairetoken
 This depends on lib.tokenclass
 """
 
-from .base import MyTestCase
-from privacyidea.lib.tokens.questionnairetoken import QuestionnaireTokenClass
-from privacyidea.lib.token import init_token, import_tokens, get_tokens
-from privacyidea.lib.config import set_privacyidea_config
-from privacyidea.models import Token
 import json
+
+from privacyidea.lib.config import set_privacyidea_config
+from privacyidea.lib.token import init_token, import_tokens, get_tokens
+from privacyidea.lib.tokens.questionnairetoken import QuestionnaireTokenClass
+from privacyidea.models import Token
+from .base import MyTestCase
 
 
 class QuestionnaireTokenTestCase(MyTestCase):
@@ -22,6 +23,7 @@ class QuestionnaireTokenTestCase(MyTestCase):
 
     dumb_questions = {"dumb questiontype": "answer"}
     j_dumb_questions = json.dumps(dumb_questions)
+
     # add_user, get_user, reset, set_user_identifiers
 
     def test_00_users(self):
@@ -156,17 +158,17 @@ class QuestionnaireTokenTestCase(MyTestCase):
         self.assertTrue(set(expected_keys).issubset(exported_data.keys()))
 
         expected_tokeninfo_keys = ["tokenkind", "frage1", "frage2", "frage3"]
-        self.assertTrue(set(expected_tokeninfo_keys).issubset(exported_data["tokeninfo"].keys()))
+        self.assertTrue(set(expected_tokeninfo_keys).issubset(exported_data["info_list"].keys()))
 
         # Test that the exported values match the token's data
         self.assertEqual(exported_data["serial"], "QUST1234")
         self.assertEqual(exported_data["type"], "question")
         self.assertEqual(exported_data["description"], "this is a questionnaire token export test")
-        self.assertEqual(exported_data["tokeninfo"]["tokenkind"], "software")
+        self.assertEqual(exported_data["info_list"]["tokenkind"], "software")
         self.assertEqual(exported_data["issuer"], "privacyIDEA")
-        self.assertEqual(exported_data["tokeninfo"]["frage1"], "antwort1")
-        self.assertEqual(exported_data["tokeninfo"]["frage2"], "antwort2")
-        self.assertEqual(exported_data["tokeninfo"]["frage3"], "antwort3")
+        self.assertEqual(exported_data["info_list"]["frage1"], "antwort1")
+        self.assertEqual(exported_data["info_list"]["frage2"], "antwort2")
+        self.assertEqual(exported_data["info_list"]["frage3"], "antwort3")
 
         # Clean up
         token.delete_token()
@@ -177,7 +179,7 @@ class QuestionnaireTokenTestCase(MyTestCase):
                        'issuer': 'privacyIDEA',
                        'serial': 'QUST1234',
                        'type': 'question',
-                       'tokeninfo': {'frage1': 'antwort1',
+                       'info_list': {'frage1': 'antwort1',
                                      'frage1.type': 'password',
                                      'frage2': 'antwort2',
                                      'frage2.type': 'password',

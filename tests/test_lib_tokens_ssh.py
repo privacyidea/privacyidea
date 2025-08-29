@@ -4,14 +4,13 @@ This depends on lib.tokenclass
 """
 from privacyidea.lib.error import TokenAdminError
 from privacyidea.lib.token import init_token, import_tokens, get_tokens
-from .base import MyTestCase
 from privacyidea.lib.tokenclass import ROLLOUTSTATE
 from privacyidea.lib.tokens.sshkeytoken import SSHkeyTokenClass
 from privacyidea.models import Token
+from .base import MyTestCase
 
 
 class SSHTokenTestCase(MyTestCase):
-
     otppin = "topsecret"
     serial1 = "ser1"
     serial2 = "ser2"
@@ -146,17 +145,17 @@ class SSHTokenTestCase(MyTestCase):
         self.assertTrue(set(expected_keys).issubset(exported_data.keys()))
 
         expected_tokeninfo_keys = ["tokenkind", "ssh_key", "ssh_type", "ssh_comment"]
-        self.assertTrue(set(expected_tokeninfo_keys).issubset(exported_data["tokeninfo"].keys()))
+        self.assertTrue(set(expected_tokeninfo_keys).issubset(exported_data["info_list"].keys()))
 
         # Test that the exported values match the token's data
         self.assertEqual(exported_data["serial"], "ser1")
         self.assertEqual(exported_data["type"], "sshkey")
         self.assertEqual(exported_data["description"], "this is a ssh token export test")
-        self.assertEqual(exported_data["tokeninfo"]["tokenkind"], "software")
+        self.assertEqual(exported_data["info_list"]["tokenkind"], "software")
         self.assertEqual(exported_data["issuer"], "privacyIDEA")
-        self.assertEqual(exported_data["tokeninfo"]["ssh_key"], self.sshkey[8:-28])  # ss_key without type and comment
-        self.assertEqual(exported_data["tokeninfo"]["ssh_type"], "ssh-rsa")
-        self.assertEqual(exported_data["tokeninfo"]["ssh_comment"], "NetKnights GmbH Descröption")
+        self.assertEqual(exported_data["info_list"]["ssh_key"], self.sshkey[8:-28])  # ss_key without type and comment
+        self.assertEqual(exported_data["info_list"]["ssh_type"], "ssh-rsa")
+        self.assertEqual(exported_data["info_list"]["ssh_comment"], "NetKnights GmbH Descröption")
 
         # Clean up
         token.delete_token()
@@ -167,7 +166,7 @@ class SSHTokenTestCase(MyTestCase):
                        'issuer': 'privacyIDEA',
                        'serial': 'newserial',
                        'type': 'sshkey',
-                       'tokeninfo': {'ssh_comment': 'NetKnights GmbH Descröption',
+                       'info_list': {'ssh_comment': 'NetKnights GmbH Descröption',
                                      'ssh_key': self.sshkey[8:-28],  # ss_key without type and comment
                                      'ssh_key.type': 'password',
                                      'ssh_type': 'ssh-rsa',

@@ -3,23 +3,23 @@ This test file tests the lib.tokenclass
 
 The lib.tokenclass depends on the DB model and lib.user
 """
+import binascii
+import datetime
 import logging
+import time
+from unittest import mock
 
 from testfixtures import LogCapture
 
-from privacyidea.lib.token import init_token, remove_token, import_tokens, get_tokens
-from .base import MyTestCase, FakeAudit, FakeFlaskG
-from privacyidea.lib.resolver import (save_resolver)
-from privacyidea.lib.realm import (set_realm)
-from privacyidea.lib.user import (User)
-from privacyidea.lib.tokens.totptoken import TotpTokenClass
-from privacyidea.lib.policy import (PolicyClass, set_policy, delete_policy, SCOPE)
-from unittest import mock
-from privacyidea.models import Token, Config, Challenge
 from privacyidea.lib.config import (set_privacyidea_config, set_prepend_pin)
-import datetime
-import binascii
-import time
+from privacyidea.lib.policy import (PolicyClass, set_policy, delete_policy, SCOPE)
+from privacyidea.lib.realm import (set_realm)
+from privacyidea.lib.resolver import (save_resolver)
+from privacyidea.lib.token import init_token, remove_token, import_tokens, get_tokens
+from privacyidea.lib.tokens.totptoken import TotpTokenClass
+from privacyidea.lib.user import (User)
+from privacyidea.models import Token, Config, Challenge
+from .base import MyTestCase, FakeAudit, FakeFlaskG
 
 PWFILE = "tests/testdata/passwords"
 
@@ -833,17 +833,17 @@ class TOTPTokenTestCase(MyTestCase):
         self.assertTrue(set(expected_keys).issubset(exported_data.keys()))
 
         expected_tokeninfo_keys = ["hashlib", "tokenkind", "timeWindow", "timeStep", "timeShift"]
-        self.assertTrue(set(expected_tokeninfo_keys).issubset(exported_data["tokeninfo"].keys()))
+        self.assertTrue(set(expected_tokeninfo_keys).issubset(exported_data["info_list"].keys()))
 
         # Test that the exported values match the token's data
         exported_data = totptoken.export_token()
         self.assertEqual(exported_data["serial"], "TOTP12345678")
         self.assertEqual(exported_data["type"], "totp")
         self.assertEqual(exported_data["description"], "this is a totp token export test")
-        self.assertEqual(exported_data["tokeninfo"]["hashlib"], "sha256")
+        self.assertEqual(exported_data["info_list"]["hashlib"], "sha256")
         self.assertEqual(exported_data["otplen"], 8)
         self.assertEqual(exported_data["otpkey"], '12345')
-        self.assertEqual(exported_data["tokeninfo"]["tokenkind"], "software")
+        self.assertEqual(exported_data["info_list"]["tokenkind"], "software")
         self.assertEqual(exported_data["issuer"], "privacyIDEA")
 
         # Clean up
@@ -859,7 +859,7 @@ class TOTPTokenTestCase(MyTestCase):
             "otplen": 8,
             "issuer": "privacyIDEA",
             "count": 0,
-            "tokeninfo": {"hashlib": "sha256", "timeShift": 0, "timeStep": 60, "timeWindow": 180,
+            "info_list": {"hashlib": "sha256", "timeShift": 0, "timeStep": 60, "timeWindow": 180,
                           "tokenkind": "software"}
         }]
 
