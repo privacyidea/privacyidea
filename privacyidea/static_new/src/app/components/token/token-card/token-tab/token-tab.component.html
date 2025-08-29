@@ -14,18 +14,20 @@
 
     <div [@toggleState]="contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_CONTAINERS)">
       @if (!contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_DETAILS)) {
-        <mat-list-item>
-          <button
-            [routerLink]="[ROUTE_PATHS.TOKENS_ENROLLMENT]"
-            [ngClass]="
+        @if (tokenService.enrollmentAllowed()) {
+          <mat-list-item>
+            <button
+              [routerLink]="[ROUTE_PATHS.TOKENS_ENROLLMENT]"
+              [ngClass]="
               contentService.routeUrl() === ROUTE_PATHS.TOKENS_ENROLLMENT ? 'card-button-active' : 'card-button'
             "
-            mat-flat-button
-            i18n>
-            <mat-icon>add_moderator</mat-icon>
-            Enrollment
-          </button>
-        </mat-list-item>
+              mat-flat-button
+              i18n>
+              <mat-icon>add_moderator</mat-icon>
+              Enrollment
+            </button>
+          </mat-list-item>
+        }
         @if (authService.actionAllowed("getchallenges")) {
           <mat-list-item>
             <button

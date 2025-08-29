@@ -6,7 +6,7 @@ import { MatDivider } from "@angular/material/divider";
 import { MatIcon } from "@angular/material/icon";
 import { MatList, MatListItem } from "@angular/material/list";
 import { Router, RouterLink } from "@angular/router";
-import { catchError, concatMap, EMPTY, filter, forkJoin, from, reduce, switchMap } from "rxjs";
+import { catchError, concatMap, EMPTY, filter, from, reduce, switchMap } from "rxjs";
 import { tabToggleState } from "../../../../../styles/animations/animations";
 import { AuditService, AuditServiceInterface } from "../../../../services/audit/audit.service";
 import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
@@ -38,7 +38,7 @@ interface BatchResult {
   animations: [tabToggleState]
 })
 export class TokenTabComponent {
-  private readonly tokenService: TokenServiceInterface = inject(TokenService);
+  protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly versioningService: VersioningServiceInterface = inject(VersioningService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly dialog: MatDialog = inject(MatDialog);

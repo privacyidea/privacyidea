@@ -50,6 +50,17 @@ export class TokenCardComponent {
     }
   }
 
+  anyTokenActionAllowed(): boolean {
+    const allowed = this.authService.oneActionAllowed(
+      ["tokenlist", "getchallenges", "getserial", "machinelist"]);
+    return allowed || this.tokenService.enrollmentAllowed();
+  }
+
+  anyContainerActionAllowed(): boolean {
+    return this.authService.oneActionAllowed(
+      ["container_list", "container_create", "container_template_list", "container_template_create"]);
+  }
+
   tokenTabActive = () => this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS) && !this.containerTabActive();
   containerTabActive = () => this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_CONTAINERS);
 }

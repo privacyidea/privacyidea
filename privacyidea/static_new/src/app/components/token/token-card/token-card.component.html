@@ -9,25 +9,31 @@
       fitInkBarToContent
       mat-align-tabs="center"
       mat-stretch-tabs="false">
-      @if (authService.rights().includes("tokenlist")) {
+      @if (anyTokenActionAllowed()) {
         <mat-tab>
           <ng-template mat-tab-label>
             <mat-icon [ngClass]="{ 'tab-active': tokenTabActive() }">shield</mat-icon>
-            <h4 [ngClass]="{ 'tab-active': tokenTabActive() }" i18n>Token</h4>
+            <h4
+              [ngClass]="{ 'tab-active': tokenTabActive() }"
+              i18n>Token
+            </h4>
           </ng-template>
           <ng-template matTabContent>
-            <app-token-tab/>
+            <app-token-tab />
           </ng-template>
         </mat-tab>
       }
-      @if (authService.rights().includes("container_list")) {
+      @if (anyContainerActionAllowed()) {
         <mat-tab>
           <ng-template mat-tab-label>
             <mat-icon [ngClass]="{ 'tab-active': containerTabActive() }">folder</mat-icon>
-            <h4 [ngClass]="{ 'tab-active': containerTabActive() }" i18n>Container</h4>
+            <h4
+              [ngClass]="{ 'tab-active': containerTabActive() }"
+              i18n>Container
+            </h4>
           </ng-template>
           <ng-template matTabContent>
-            <app-container-tab/>
+            <app-container-tab />
           </ng-template>
         </mat-tab>
       }
