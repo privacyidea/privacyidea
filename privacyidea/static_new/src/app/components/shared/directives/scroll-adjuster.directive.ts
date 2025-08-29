@@ -16,21 +16,14 @@ export class ScrollAdjusterDirective implements AfterViewInit, OnDestroy {
   constructor(
     private el: ElementRef<HTMLElement>,
     private ngZone: NgZone
-  ) {
-  }
+  ) {}
 
   ngAfterViewInit(): void {
     const container = this.el.nativeElement;
 
     const computedStyle = getComputedStyle(container);
-    if (
-      computedStyle.overflowY !== "scroll" &&
-      computedStyle.overflowY !== "auto"
-    ) {
-      console.warn(
-        "ScrollAdjusterDirective: Element must have overflow-y: scroll or auto.",
-        container
-      );
+    if (computedStyle.overflowY !== "scroll" && computedStyle.overflowY !== "auto") {
+      console.warn("ScrollAdjusterDirective: Element must have overflow-y: scroll or auto.", container);
     }
 
     this.resizeObserver = new ResizeObserver(() => {

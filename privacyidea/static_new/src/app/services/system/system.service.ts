@@ -1,6 +1,6 @@
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
-import { HttpResourceRef, httpResource } from "@angular/common/http";
-import { Injectable, inject } from "@angular/core";
+import { httpResource, HttpResourceRef } from "@angular/common/http";
+import { inject, Injectable } from "@angular/core";
 
 import { environment } from "../../../environments/environment";
 

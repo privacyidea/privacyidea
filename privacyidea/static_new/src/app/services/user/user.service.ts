@@ -28,7 +28,7 @@ export interface UserData {
 export interface UserServiceInterface {
   selectedUserRealm: WritableSignal<string>;
   selectedUser: Signal<UserData | null>;
-  userFilter: WritableSignal<string | UserData>;
+  userFilter: WritableSignal<string | UserData | null>;
   userNameFilter: Signal<string>;
   userResource: HttpResourceRef<PiResponse<UserData[]> | undefined>;
   user: WritableSignal<UserData>;

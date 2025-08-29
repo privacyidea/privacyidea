@@ -13,10 +13,8 @@ import { VersioningService, VersioningServiceInterface } from "../../../services
   styleUrl: "./footer.component.scss"
 })
 export class FooterComponent implements OnInit {
-  private readonly versioningService: VersioningServiceInterface =
-    inject(VersioningService);
-  private readonly loadingService: LoadingServiceInterface =
-    inject(LoadingService);
+  private readonly versioningService: VersioningServiceInterface = inject(VersioningService);
+  private readonly loadingService: LoadingServiceInterface = inject(LoadingService);
 
   version!: string;
   showProgressBar = signal(false);
