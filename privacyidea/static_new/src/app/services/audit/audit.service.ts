@@ -51,20 +51,19 @@ const apiFilter = [
   "authentication",
   "serial",
   "container_serial",
-  "date",
   "startdate",
   "duration",
   "token_type",
   "user",
   "realm",
   "administrator",
-  "action_call",
+  "action_detail",
   "info",
-  "privacyidea_server",
+  "policies",
   "client",
   "user_agent",
   "user_agent_version",
-  "policies",
+  "privacyidea_server",
   "resolver",
   "container_type"
 ];
@@ -107,10 +106,9 @@ export class AuditService implements AuditServiceInterface {
       {} as Record<string, string>
     );
   });
-  pageSize = linkedSignal({
-    source: this.filterValue,
-    computation: () => 10
-  });
+
+  pageSize = signal(25)
+
   pageIndex = linkedSignal({
     source: () => ({
       filterValue: this.filterValue(),
