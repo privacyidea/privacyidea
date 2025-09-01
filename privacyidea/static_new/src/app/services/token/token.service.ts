@@ -358,21 +358,16 @@ export class TokenService implements TokenServiceInterface {
       source.tokenTypeOptions[0] || ({ key: "hotp", info: "", text: "" } as TokenType)
   });
 
-  pageSize = linkedSignal<Record<string, string>, number>({
-    source: this.filterValue,
-    computation: (_, previous) => {
-      const previousValue = previous?.value ?? this.authService.tokenPageSize();
-
-      if (!this.defaultSizeOptions.includes(previousValue)) {
-        return (
-          this.defaultSizeOptions
-            .slice()
-            .reverse()
-            .find((size) => size <= previousValue) ?? 10
-        );
+  pageSize = linkedSignal<{ role: string }, number>({
+    source: () => ({
+      role: this.authService.role(),
+    }),
+    computation: (source, previous) => {
+      if (previous && source.role === previous.source.role) {
+        return previous.value;
       }
-      return previousValue;
-    }
+      return source.role === 'user' ? 5 : 10;
+    },
   });
   sort = signal({ active: "serial", direction: "asc" } as Sort);
 

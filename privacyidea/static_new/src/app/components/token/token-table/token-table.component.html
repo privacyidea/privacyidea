@@ -37,143 +37,145 @@
         [filterHTMLInputElement]="filterHTMLInputElement"
         [filterValue]="filterValue" />
     </div>
-    <table
-      (matSortChange)="onSortEvent($event)"
-      [dataSource]="tokenDataSource()"
-      aria-label="Token Data Table"
-      class="token-table"
-      i18n-aria-label
-      mat-table
-      matSort>
-      @for (column of columnKeysMap; track column) {
-        <ng-container [matColumnDef]="column.key">
-          @if (column.key === "select") {
-            <th
-              *matHeaderCellDef
-              mat-header-cell
-              class="table-checkbox">
-              <mat-checkbox
-                (change)="$event ? toggleAllRows() : null"
-                [checked]="isAllSelected()"
-                [indeterminate]="tokenSelection().length > 0 && !isAllSelected()"
-                [disabled]="totalLength() === 0" />
-            </th>
-          } @else {
-            <th
-              *matHeaderCellDef
-              attr.aria-label="{{ column.label }} Header"
-              mat-header-cell
-              mat-sort-header>
-              {{ column.label }}
-            </th>
-          }
-          <td
-            *matCellDef="let tokenDetails"
-            attr.aria-label="{{ column.label }} Cell"
-            mat-cell
-            [ngClass]="{
+    <div class="table-container">
+      <table
+        (matSortChange)="onSortEvent($event)"
+        [dataSource]="tokenDataSource()"
+        aria-label="Token Data Table"
+        class="token-table"
+        i18n-aria-label
+        mat-table
+        matSort>
+        @for (column of columnKeysMap; track column) {
+          <ng-container [matColumnDef]="column.key">
+            @if (column.key === "select") {
+              <th
+                *matHeaderCellDef
+                mat-header-cell
+                class="table-checkbox">
+                <mat-checkbox
+                  (change)="$event ? toggleAllRows() : null"
+                  [checked]="isAllSelected()"
+                  [indeterminate]="tokenSelection().length > 0 && !isAllSelected()"
+                  [disabled]="totalLength() === 0" />
+              </th>
+            } @else {
+              <th
+                *matHeaderCellDef
+                attr.aria-label="{{ column.label }} Header"
+                mat-header-cell
+                mat-sort-header>
+                {{ column.label }}
+              </th>
+            }
+            <td
+              *matCellDef="let tokenDetails"
+              attr.aria-label="{{ column.label }} Cell"
+              mat-cell
+              [ngClass]="{
             'width-18rem': column.key === 'description',
             'table-checkbox': column.key === 'select'
           }">
-            <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
-              @switch (column.key) {
-                @case ("select") {
-                  <mat-checkbox
-                    (change)="$event ? toggleRow(tokenDetails) : null"
-                    (click)="$event.stopPropagation()"
-                    [checked]="tokenSelection().includes(tokenDetails)"
-                    [disabled]="totalLength() === 0" />
-                }
-                @case ("serial") {
-                  <div class="flex-row">
-                    <a
-                      class="flex ali-center"
-                      attr.aria-label="{{ column.label }} Link"
-                      (click)="contentService.tokenSelected(tokenDetails.serial)">
-                      {{ tokenDetails[column.key] }}
-                    </a>
-                    <app-copy-button [copyText]="tokenDetails.serial" />
-                  </div>
-                }
-                @case ("active") {
-                  <span
-                    [ngClass]="tableUtilsService.getClassForColumn(column.key, tokenDetails)"
-                    (click)="toggleActive(tokenDetails)">
-                  {{ tableUtilsService.getDisplayText(column.key, tokenDetails) }}
-                </span>
-                }
-                @case ("failcount") {
-                  <span
-                    [ngClass]="tableUtilsService.getClassForColumn(column.key, tokenDetails)"
-                    (click)="resetFailCount(tokenDetails)">
-                  {{ tableUtilsService.getDisplayText(column.key, tokenDetails) }}
-                </span>
-                }
-                @case ("realms") {
-                  <div [ngClass]="(tokenDetails[column.key]?.length || 0) > 1 ? 'realm-list' : 'realm'">
-                    @for (realm of tokenDetails[column.key]; track realm; let idx = $index) {
-                      <span
+              <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
+                @switch (column.key) {
+                  @case ("select") {
+                    <mat-checkbox
+                      (change)="$event ? toggleRow(tokenDetails) : null"
+                      (click)="$event.stopPropagation()"
+                      [checked]="tokenSelection().includes(tokenDetails)"
+                      [disabled]="totalLength() === 0" />
+                  }
+                  @case ("serial") {
+                    <div class="flex-row">
+                      <a
+                        class="flex ali-center"
                         attr.aria-label="{{ column.label }} Link"
-                        href="#">
+                        (click)="contentService.tokenSelected(tokenDetails.serial)">
+                        {{ tokenDetails[column.key] }}
+                      </a>
+                      <app-copy-button [copyText]="tokenDetails.serial" />
+                    </div>
+                  }
+                  @case ("active") {
+                    <span
+                      [ngClass]="tableUtilsService.getClassForColumn(column.key, tokenDetails)"
+                      (click)="toggleActive(tokenDetails)">
+                  {{ tableUtilsService.getDisplayText(column.key, tokenDetails) }}
+                </span>
+                  }
+                  @case ("failcount") {
+                    <span
+                      [ngClass]="tableUtilsService.getClassForColumn(column.key, tokenDetails)"
+                      (click)="resetFailCount(tokenDetails)">
+                  {{ tableUtilsService.getDisplayText(column.key, tokenDetails) }}
+                </span>
+                  }
+                  @case ("realms") {
+                    <div [ngClass]="(tokenDetails[column.key]?.length || 0) > 1 ? 'realm-list' : 'realm'">
+                      @for (realm of tokenDetails[column.key]; track realm; let idx = $index) {
+                        <span
+                          attr.aria-label="{{ column.label }} Link"
+                          href="#">
                       {{ realm }}
                     </span>
-                      <br style="margin-top: 3px" />
-                    }
-                  </div>
-                }
-                @case ("container_serial") {
-                  <a
-                    attr.aria-label="{{ column.label }} Link"
-                    (click)="contentService.containerSelected(tokenDetails.container_serial)">
-                    {{ tokenDetails[column.key] }}
-                  </a>
-                  @if (tokenDetails.container_serial !== "") {
-                    <app-copy-button [copyText]="tokenDetails.container_serial" />
+                        <br style="margin-top: 3px" />
+                      }
+                    </div>
                   }
-                }
-                @default {
-                  @if (tableUtilsService.isLink(column.key)) {
+                  @case ("container_serial") {
                     <a
                       attr.aria-label="{{ column.label }} Link"
-                      href="#">
+                      (click)="contentService.containerSelected(tokenDetails.container_serial)">
                       {{ tokenDetails[column.key] }}
                     </a>
-                  } @else {
-                    <span>
+                    @if (tokenDetails.container_serial !== "") {
+                      <app-copy-button [copyText]="tokenDetails.container_serial" />
+                    }
+                  }
+                  @default {
+                    @if (tableUtilsService.isLink(column.key)) {
+                      <a
+                        attr.aria-label="{{ column.label }} Link"
+                        href="#">
+                        {{ tokenDetails[column.key] }}
+                      </a>
+                    } @else {
+                      <span>
                     {{ tokenDetails[column.key] }}
                   </span>
+                    }
                   }
                 }
-              }
-            </div>
-          </td>
-        </ng-container>
-      }
-      <tr
-        *matHeaderRowDef="columnKeys"
-        aria-label="Header Row"
-        i18n-aria-label
-        mat-header-row></tr>
+              </div>
+            </td>
+          </ng-container>
+        }
+        <tr
+          *matHeaderRowDef="columnKeys"
+          aria-label="Header Row"
+          i18n-aria-label
+          mat-header-row></tr>
 
-      <tr
-        *matRowDef="let row; columns: columnKeys"
-        aria-label="Data Row"
-        i18n-aria-label
-        mat-row></tr>
+        <tr
+          *matRowDef="let row; columns: columnKeys"
+          aria-label="Data Row"
+          i18n-aria-label
+          mat-row></tr>
 
-      <tr
-        *matNoDataRow
-        aria-label="No Data Row"
-        i18n-aria-label>
-        <td
-          [attr.colspan]="columnKeys.length"
-          aria-label="No Data Cell"
-          i18n
+        <tr
+          *matNoDataRow
+          aria-label="No Data Row"
           i18n-aria-label>
-          No data matching the filter.
-        </td>
-      </tr>
-    </table>
+          <td
+            [attr.colspan]="columnKeys.length"
+            aria-label="No Data Cell"
+            i18n
+            i18n-aria-label>
+            No data matching the filter.
+          </td>
+        </tr>
+      </table>
+    </div>
   } @else {
     <div
       i18n>
