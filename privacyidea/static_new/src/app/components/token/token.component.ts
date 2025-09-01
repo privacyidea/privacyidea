@@ -62,11 +62,13 @@ export class TokenComponent {
   static tokenTypeTexts = [
     {
       key: "hotp",
-      text: "The HOTP token is an event based token. You can paste a secret key or have the server generate the secret and scan the QR code with a smartphone app like the privacyIDEA Authenticator turning your smartphone into an authentication device. You can also use other authenticator apps like Google Authenticator. But note, that these might have limitations in the supported hash algorithms or other parameters."
+      text: "The HOTP token is an event based token. With a smartphone app like the privacyIDEA Authenticator" +
+        " you can turn your smartphone into an authentication device."
     },
     {
       key: "totp",
-      text: "The TOTP token is a time based token. You can paste a secret key or have the server generate the secret and scan the QR code with a smartphone app like the privacyIDEA Authenticator turning your smartphone into an authentication device. You can also use other authenticator apps like Google Authenticator, Microsoft Authenticator, Authy or FreeOTP. But note, that these might have limitations in the supported hash algorithms or other parameters."
+      text: "The TOTP token is a time based token. With a smartphone app like the privacyIDEA Authenticator" +
+        " you can turn your smartphone into an authentication device."
     },
     {
       key: "spass",
@@ -74,7 +76,8 @@ export class TokenComponent {
     },
     {
       key: "motp",
-      text: "The mOTP token is a time based OTP token for mobile devices. You can have the server generate the secret and scan the QR code."
+      text: "The mOTP token is a time based OTP token for mobile devices. You can have the server generate the secret" +
+        " and scan the QR code."
     },
     {
       key: "sshkey",
@@ -82,19 +85,25 @@ export class TokenComponent {
     },
     {
       key: "yubikey",
-      text: "The Yubikey Token is an USB device that emits an event based One Time Password. You can initialize the Yubikey using the YubiKey personalization tools. The secret hex key and the final OTP length are needed here. For tokens compatible with the Yubico cloud service the OTP length must be 44 (12 characters UID and 32 characters OTP). When programming the token for the Yubico cloud service, the Public Identity Length must be 6 bytes, which will give you a UID with 12 characters. The current OTP length of a programmed YubiKey can automatically be determined by inserting it in the test field."
+      text: "The Yubikey Token is an USB device that emits an event based One Time Password. You can initialize the" +
+        " Yubikey using the YubiKey personalization tools. The secret hex key and the final OTP length are needed here." +
+        " For tokens compatible with the Yubico cloud service the OTP length must be 44 (12 characters UID and 32 " +
+        "characters OTP). When programming the token for the Yubico cloud service, the Public Identity Length must be 6" +
+        " bytes, which will give you a UID with 12 characters. The current OTP length of a programmed YubiKey can " +
+        "automatically be determined by inserting it in the test field."
     },
     {
       key: "remote",
-      text: "The remote token forwards the authentication request to another privacyIDEA server. You can choose if the PIN should be stripped and checked locally."
+      text: "The remote token forwards the authentication request to another privacyIDEA server."
     },
     {
       key: "yubico",
-      text: "The Yubico Cloud mode forwards the authentication request to the YubiCloud. The Yubikey needs to be registered with the YubiCloud."
+      text: "The Yubico Cloud mode forwards the authentication request to the YubiCloud. The Yubikey needs to be " +
+        "registered with the YubiCloud."
     },
     {
       key: "radius",
-      text: "The RADIUS token forwards the authentication request to another RADIUS server. You can choose if the PIN should be stripped and checked locally."
+      text: "The RADIUS token forwards the authentication request to another RADIUS server."
     },
     {
       key: "sms",
@@ -102,19 +111,21 @@ export class TokenComponent {
     },
     {
       key: "4eyes",
-      text: "The 4 Eyes token will only authenticate if two or more users are present at once. You can define how many existing tokens of the given realms need to be present to perform a successful authentication."
+      text: "The 4 Eyes token will only authenticate if two or more users use their token in succession. You can" +
+        " define how many tokens are required for a successful authentication."
     },
     {
       key: "applspec",
-      text: "The Application Specific Password Token is a static password, that can be bound to certain services. This static password then can only be used to authenticate at this service."
+      text: "The Application Specific Password token is a static password, that is bound to certain services."
     },
     {
       key: "certificate",
-      text: "The Certificate Token lets you enroll an x509 ceritificate by the given CA."
+      text: "The Certificate Token lets you enroll an x509 certificate with the specified Certificate Authority."
     },
     {
       key: "daypassword",
-      text: "The DayPassword token is a time based password token. You can paste a secret key or have the server generate the secret and scan the QR code with an authenticator app that supports the token."
+      text: "The DayPassword token is a time based password token with a larger time window. OTP values of this" +
+        " token can be reused by default."
     },
     {
       key: "email",
@@ -122,47 +133,61 @@ export class TokenComponent {
     },
     {
       key: "indexedsecret",
-      text: "The indexed secret Token is based on a shared secret between privacyIDEA and the user. During authentication the user is asked for random positions from this known secret."
+      text: "The indexed secret Token is based on a shared secret between privacyIDEA and the user. During " +
+        "authentication, the user is asked for characters at random positions of this known secret."
     },
     {
       key: "paper",
-      text: "The Paper token will let you print a list of OTP values. These OTP values can be used to authenticate. You need to use on value after the other."
+      text: "The Paper token will let you print a list of OTP values. In contrast to the TAN token, the OTP values" +
+        " have to be used in order."
     },
     {
       key: "push",
-      text: "With the PUSH token privacyIDEA sends a notification to your registered smartphone asking if you want to approve the authentication step. You can accept or deny the authentication on your smartphone. For the enrollment process and for the authentication process your smartphone needs an internet connection to privacyIDEA."
+      text: "The PUSH token works with the privacyIDEA Authenticator App. It will send an authentication request to" +
+        " the app, which can be accepted by just tapping a button. Optionally, it can require users to use the" +
+        " configured unlock mechanism (PIN/Biometric) on their smartphone to accept." +
+        "The smartphone needs to be able to reach privacyIDEA for this token to work."
     },
     {
       key: "question",
-      text: "The Questionnaire token will let you define answers to questions. When authenticating with this type of token, you will be asked a random question and then need to provide the previously defined answer."
+      text: "The Questionnaire token will let you define answers to questions. When authenticating with this type of " +
+        "token, you will be asked a random question and then need to provide the previously defined answer."
     },
     {
       key: "registration",
-      text: "The registration token is a code, that the user can use to authenticate once! After using this code to login, the registration token is deleted and can not be used anymore. This is used, so that the user can enroll a token on his own, after logging in for the first time."
+      text: "The registration token is a code, that the user can use to authenticate once. Then the token is deleted" +
+        " automatically. This can be useful for setting up users."
     },
     {
       key: "tan",
-      text: "The TAN token will let you print a list of OTP values. These OTP values can be used to authenticate. The values can be used in an arbitrary order."
+      text: "The TAN token will let you print a list of OTP values. In contrast to the Paper token, the OTP values can" +
+        " be used in an arbitrary order."
     },
     {
       key: "tiqr",
-      text: "The TiQR token is a Smartphone App token, which allows easy authentication by just scanning a QR Code during the authentication process."
+      text: "The TiQR token is a Smartphone App token, which allows easy authentication by just scanning a QR Code " +
+        "during the authentication process."
     },
     {
       key: "u2f",
-      text: "The U2F token is a token defined by the Fido Alliance. You can register this token with any webservice and with as many web services you wish to."
+      text: "The U2F token is a token defined by the Fido Alliance. It is the predecessor to WebAuthn/Passkey, " +
+        "has been superseded by them, and therefore should not be used any more."
     },
     {
       key: "vasco",
-      text: "The VASCO token is a proprietary OTP token. You can paste the VASCO token blob in a hexlified format."
+      text: "The VASCO token is a proprietary OTP token. You can paste the VASCO token blob in hex format."
     },
     {
       key: "webauthn",
-      text: "The WebAuthn token is a token defined by the W3C and the Fido Alliance. You can register this token with any webservice and with as many web services you wish to.\n"
+      text: "A WebAuthn token is a phishing-resistant credential that uses public-key cryptography to prove your " +
+        "identity without sharing a secret. The WebAuthn token stores the encrypted key on the server to allow" +
+        " unlimited registrations."
     },
     {
       key: "passkey",
-      text: "The Passkey is a token defined by the W3C and the Fido Alliance. You can register this token with any webservice and with as many web services you wish to."
+      text: "A passkey is a phishing-resistant credential that uses public-key cryptography to prove your identity " +
+        "without sharing a secret. The private key is stored securely on your authenticator (like a phone or " +
+        "hardware token) and is unlocked for each sign-in using your device's PIN, fingerprint, or face scan."
     }
   ];
   tokenTypeOptions = signal([]);
