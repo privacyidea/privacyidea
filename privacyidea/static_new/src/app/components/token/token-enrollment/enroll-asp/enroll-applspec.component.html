@@ -8,6 +8,7 @@
   </mat-checkbox>
 
   <div class="flex-row gap-1">
+    @if (!authService.checkForceServerGenerateOTPKey("applspec")){
      <mat-form-field class="serviceid-input-form input-height">
       <mat-label i18n>Application Specific Password</mat-label>
       <input
@@ -16,6 +17,7 @@
         i18n-placeholder
         placeholder="Enter static password" />
     </mat-form-field>
+    }
 
     <mat-form-field class="width-64 input-height">
       <mat-label i18n>Service ID</mat-label>

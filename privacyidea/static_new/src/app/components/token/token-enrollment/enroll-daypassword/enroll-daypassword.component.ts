@@ -12,6 +12,7 @@ import {
 } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
 import { DaypasswordApiPayloadMapper } from "../../../../mappers/token-api-payload/daypassword-token-api-payload.mapper";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
+import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
 
 export interface DaypasswordEnrollmentOptions extends TokenEnrollmentData {
   type: "daypassword";
@@ -43,6 +44,7 @@ export interface DaypasswordEnrollmentOptions extends TokenEnrollmentData {
 export class EnrollDaypasswordComponent implements OnInit {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly enrollmentMapper: DaypasswordApiPayloadMapper = inject(DaypasswordApiPayloadMapper);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
   readonly otpLengthOptions = [6, 8];
   readonly hashAlgorithmOptions = [
     { value: "sha1", viewValue: "SHA1" },
@@ -81,9 +83,13 @@ export class EnrollDaypasswordComponent implements OnInit {
 
     this.updateOtpKeyControlState(this.generateOnServerControl.value ?? true);
 
-    this.generateOnServerControl.valueChanges.subscribe((generateOnServer) => {
-      this.updateOtpKeyControlState(generateOnServer ?? true);
-    });
+    if (this.authService.checkForceServerGenerateOTPKey("daypassword")) {
+      this.generateOnServerControl.disable({ emitEvent: false });
+    } else {
+      this.generateOnServerControl.valueChanges.subscribe((generateOnServer) => {
+        this.updateOtpKeyControlState(generateOnServer ?? true);
+      });
+    }
   }
 
   onClickEnroll = (basicOptions: TokenEnrollmentData): Observable<EnrollmentResponse | null> => {

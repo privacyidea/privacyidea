@@ -13,6 +13,7 @@ import {
 } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
 import { TotpApiPayloadMapper } from "../../../../mappers/token-api-payload/totp-token-api-payload.mapper";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
+import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
 
 export interface TotpEnrollmentOptions extends TokenEnrollmentData {
   type: "totp";
@@ -44,6 +45,7 @@ export interface TotpEnrollmentOptions extends TokenEnrollmentData {
 export class EnrollTotpComponent implements OnInit {
   protected readonly enrollmentMapper: TotpApiPayloadMapper = inject(TotpApiPayloadMapper);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
   readonly otpLengthOptions = [6, 8];
   readonly hashAlgorithmOptions = [
     { value: "sha1", viewValue: "SHA1" },
@@ -80,16 +82,20 @@ export class EnrollTotpComponent implements OnInit {
     });
     this.clickEnrollChange.emit(this.onClickEnroll);
 
-    this.generateOnServerFormControl.valueChanges.subscribe((generate) => {
-      if (!generate) {
-        this.otpKeyFormControl.enable({ emitEvent: false });
-        this.otpKeyFormControl.setValidators([Validators.required, Validators.minLength(16)]);
-      } else {
-        this.otpKeyFormControl.disable({ emitEvent: false });
-        this.otpKeyFormControl.clearValidators();
-      }
-      this.otpKeyFormControl.updateValueAndValidity();
-    });
+    if (this.authService.checkForceServerGenerateOTPKey("totp")) {
+      this.generateOnServerFormControl.disable({ emitEvent: false });
+    } else {
+      this.generateOnServerFormControl.valueChanges.subscribe((generate) => {
+        if (!generate) {
+          this.otpKeyFormControl.enable({ emitEvent: false });
+          this.otpKeyFormControl.setValidators([Validators.required, Validators.minLength(16)]);
+        } else {
+          this.otpKeyFormControl.disable({ emitEvent: false });
+          this.otpKeyFormControl.clearValidators();
+        }
+        this.otpKeyFormControl.updateValueAndValidity();
+      });
+    }
   }
 
   onClickEnroll = (basicOptions: TokenEnrollmentData): Observable<EnrollmentResponse | null> => {

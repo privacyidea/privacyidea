@@ -155,6 +155,7 @@ export interface AuthServiceInterface {
   anyContainerActionAllowed: () => boolean;
   tokenEnrollmentAllowed: () => boolean;
   anyTokenActionAllowed: () => boolean;
+  checkForceServerGenerateOTPKey: (tokenType: string) => boolean;
 }
 
 @Injectable({
@@ -314,5 +315,9 @@ export class AuthService implements AuthServiceInterface {
   anyTokenActionAllowed(): boolean {
     const allowed = this.oneActionAllowed(["tokenlist", "getchallenges", "getserial", "machinelist"]);
     return allowed || this.tokenEnrollmentAllowed();
+  }
+
+  checkForceServerGenerateOTPKey(tokenType: string): boolean {
+    return this.actionAllowed(tokenType + "_force_server_generate");
   }
 }
