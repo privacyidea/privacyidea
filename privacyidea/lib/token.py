@@ -3037,8 +3037,7 @@ def import_tokens(tokens: list[dict], update_existing_tokens: bool = True,
                 else:
                     updated_tokens.append(serial)
             else:
-                log.info(f"Token with serial {serial} already exists. "
-                         f"Set update_existing=True to update the token.")
+                log.info(f"Token with serial {serial} already exists.")
                 failed_tokens.append(serial)
         except Exception as e:
             log.error(f"Could not import token {serial}: {e}")

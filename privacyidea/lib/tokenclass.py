@@ -237,8 +237,8 @@ class TokenClass(object):
                 # We remove the old user
                 self.remove_user()
             else:
-                log.info("The token with serial {0!s} is already assigned "
-                         "to user {1!s}. Can not assign to {2!s}.".format(self.token.serial, self.user, user))
+                log.warning("The token with serial {0!s} is already assigned "
+                            "to user {1!s}. Can not assign to {2!s}.".format(self.token.serial, self.user, user))
                 raise TokenAdminError("This token is already assigned to another user.")
 
         if not self.user:

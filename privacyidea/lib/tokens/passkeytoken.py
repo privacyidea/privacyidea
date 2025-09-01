@@ -473,9 +473,9 @@ class PasskeyTokenClass(TokenClass):
 
     def import_token(self, token_information: dict):
         """
-        Import a hotp token.
+        Import a passkey token.
         """
-        TokenClass.import_token(self, token_information)
+        super().import_token(token_information)
         if self.user:
             self.user.set_attribute(FIDO2TokenInfo.USER_ID,
                                     self.token.get_tokeninfo(FIDO2TokenInfo.USER_ID, default=""))
