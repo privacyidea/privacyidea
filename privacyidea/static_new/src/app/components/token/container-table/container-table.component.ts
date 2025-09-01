@@ -20,6 +20,7 @@ import { ClearableInputComponent } from "../../shared/clearable-input/clearable-
 import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { KeywordFilterComponent } from "../../shared/keyword-filter/keyword-filter.component";
+import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
 
 const columnsKeyMap = [
   { key: "select", label: "" },
@@ -64,6 +65,7 @@ export class ContainerTableComponent {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
 
   readonly columnsKeyMap = columnsKeyMap;
   readonly columnKeys: string[] = columnsKeyMap.map((column) => column.key);

@@ -6,7 +6,7 @@
     key="{{ this.ROUTE_PATHS.TOKENS }}"
     matIconName="shield"
     title="Token Overview" />
-  @if (tokenService.enrollmentAllowed()) {
+  @if (authService.tokenEnrollmentAllowed()) {
     <app-navigation-self-service-button
       i18n-title
       key="{{ this.ROUTE_PATHS.TOKENS_ENROLLMENT }}"

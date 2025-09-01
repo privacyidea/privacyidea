@@ -6,8 +6,8 @@ import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
 import { BEARER_TOKEN_STORAGE_KEY } from "../../core/constants";
 import { LocalService, LocalServiceInterface } from "../local/local.service";
-import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
 import { VersioningService, VersioningServiceInterface } from "../version/version.service";
+import { tokenTypes } from "../../utils/token.utils";
 
 export type AuthResponse = PiResponse<AuthData, AuthDetail>;
 
@@ -152,6 +152,9 @@ export interface AuthServiceInterface {
   actionAllowed: (action: string) => boolean;
   actionsAllowed: (actions: string[]) => boolean;
   oneActionAllowed: (actions: string[]) => boolean;
+  anyContainerActionAllowed: () => boolean;
+  tokenEnrollmentAllowed: () => boolean;
+  anyTokenActionAllowed: () => boolean;
 }
 
 @Injectable({
@@ -161,7 +164,6 @@ export class AuthService implements AuthServiceInterface {
   readonly authUrl = environment.proxyUrl + "/auth";
 
   private readonly http: HttpClient = inject(HttpClient);
-  private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly versioningService: VersioningServiceInterface = inject(VersioningService);
   private readonly localService: LocalServiceInterface = inject(LocalService);
 
@@ -297,5 +299,20 @@ export class AuthService implements AuthServiceInterface {
 
   oneActionAllowed(actions: string[]): boolean {
     return actions.some(action => this.actionAllowed(action));
+  }
+
+  anyContainerActionAllowed(): boolean {
+    return this.oneActionAllowed(
+      ["container_list", "container_create", "container_template_list", "container_template_create"]);
+  }
+
+  tokenEnrollmentAllowed(): boolean {
+    const enrollPolicies = tokenTypes.map((type) => "enroll" + type.key.toUpperCase());
+    return this.oneActionAllowed(enrollPolicies);
+  }
+
+  anyTokenActionAllowed(): boolean {
+    const allowed = this.oneActionAllowed(["tokenlist", "getchallenges", "getserial", "machinelist"]);
+    return allowed || this.tokenEnrollmentAllowed();
   }
 }

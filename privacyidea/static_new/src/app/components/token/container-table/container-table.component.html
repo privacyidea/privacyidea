@@ -3,6 +3,7 @@
   aria-label="Container Table"
   class="container-table-container"
   i18n-aria-label>
+  @if (authService.actionAllowed("container_list")) {
   <div class="filter-paginator-container">
     <mat-form-field
       class="container-table-filter"
@@ -179,4 +180,10 @@
       </td>
     </tr>
   </table>
+  } @else {
+    <div
+      i18n>
+      You do not have the permission to view the container list.
+    </div>
+  }
 </div>

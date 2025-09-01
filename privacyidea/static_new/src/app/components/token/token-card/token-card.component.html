@@ -9,7 +9,7 @@
       fitInkBarToContent
       mat-align-tabs="center"
       mat-stretch-tabs="false">
-      @if (anyTokenActionAllowed()) {
+      @if (authService.anyTokenActionAllowed()) {
         <mat-tab>
           <ng-template mat-tab-label>
             <mat-icon [ngClass]="{ 'tab-active': tokenTabActive() }">shield</mat-icon>
@@ -23,7 +23,7 @@
           </ng-template>
         </mat-tab>
       }
-      @if (anyContainerActionAllowed()) {
+      @if (authService.anyContainerActionAllowed()) {
         <mat-tab>
           <ng-template mat-tab-label>
             <mat-icon [ngClass]="{ 'tab-active': containerTabActive() }">folder</mat-icon>

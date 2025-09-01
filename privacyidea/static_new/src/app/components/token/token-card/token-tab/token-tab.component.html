@@ -14,7 +14,7 @@
 
     <div [@toggleState]="contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_CONTAINERS)">
       @if (!contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_DETAILS)) {
-        @if (tokenService.enrollmentAllowed()) {
+        @if (authService.tokenEnrollmentAllowed()) {
           <mat-list-item>
             <button
               [routerLink]="[ROUTE_PATHS.TOKENS_ENROLLMENT]"

@@ -20,8 +20,8 @@
             [ngClass]="{ active: isActive(ROUTE_PATHS.TOKENS) }"
             extended
             mat-fab
-            routerLink="{{authService.actionAllowed('tokenlist') ? this.ROUTE_PATHS.TOKENS :
-            authService.actionAllowed('container_list') ? this.ROUTE_PATHS.TOKENS_CONTAINERS : this.ROUTE_PATHS.TOKENS}}">
+            routerLink="{{authService.anyTokenActionAllowed() ? this.ROUTE_PATHS.TOKENS :
+            (authService.anyContainerActionAllowed() ? this.ROUTE_PATHS.TOKENS_CONTAINERS : this.ROUTE_PATHS.TOKENS)}}">
             <mat-icon>shield</mat-icon>
             <h4 i18n>Tokens</h4>
           </a>
