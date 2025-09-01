@@ -1,5 +1,4 @@
 import { Component, ViewChild, WritableSignal, inject, linkedSignal } from "@angular/core";
-import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
 import {
   MatCell,
   MatCellDef,
@@ -14,19 +13,18 @@ import {
   MatTable,
   MatTableDataSource
 } from "@angular/material/table";
-import { MatFormField, MatLabel } from "@angular/material/form-field";
-import { MatSort, MatSortModule } from "@angular/material/sort";
+import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "../../../services/table-utils/table-utils.service";
 import { UserData, UserService, UserServiceInterface } from "../../../services/user/user.service";
 
 import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
 import { FormsModule } from "@angular/forms";
 import { KeywordFilterComponent } from "../../shared/keyword-filter/keyword-filter.component";
-import { MatInput } from "@angular/material/input";
+import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
 import { MatPaginator } from "@angular/material/paginator";
 import { NgClass } from "@angular/common";
-import { RouterLink } from "@angular/router";
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
+import { MatSort, MatSortModule } from "@angular/material/sort";
 
 const columnKeysMap = [
   { key: "username", label: "Username" },
@@ -62,7 +60,6 @@ const columnKeysMap = [
     MatRow,
     MatNoDataRow,
     MatHeaderCellDef,
-    RouterLink,
     ScrollToTopDirective,
     ClearableInputComponent
   ],
