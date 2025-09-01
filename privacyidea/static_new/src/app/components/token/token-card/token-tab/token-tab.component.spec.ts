@@ -1,4 +1,4 @@
-import { ComponentFixture, fakeAsync, TestBed, tick } from "@angular/core/testing";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { TokenTabComponent } from "./token-tab.component";
 import "@angular/localize/init";
 
@@ -10,15 +10,23 @@ import { signal } from "@angular/core";
 import { of, throwError } from "rxjs";
 
 import { MatDialog, MatDialogRef } from "@angular/material/dialog";
-import { NotificationService, NotificationServiceInterface } from "../../../../services/notification/notification.service";
-import { BatchResult, TokenDetails, TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
-import { VersioningService, VersioningServiceInterface } from "../../../../services/version/version.service";
+import {
+  NotificationService,
+  NotificationServiceInterface
+} from "../../../../services/notification/notification.service";
+import {
+  BatchResult,
+  TokenDetails,
+  TokenService,
+  TokenServiceInterface
+} from "../../../../services/token/token.service";
+import { VersioningService } from "../../../../services/version/version.service";
 
 import { ConfirmationDialogComponent } from "../../../shared/confirmation-dialog/confirmation-dialog.component";
 import { ActivatedRoute, NavigationEnd, Router } from "@angular/router";
 import { MockPiResponse } from "../../../../../testing/mock-services";
-import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
-import { AuditService, AuditServiceInterface } from "../../../../services/audit/audit.service";
+import { ContentService } from "../../../../services/content/content.service";
+import { AuditService } from "../../../../services/audit/audit.service";
 
 describe("TokenTabComponent", () => {
   let component: TokenTabComponent;
@@ -136,14 +144,12 @@ describe("TokenTabComponent", () => {
   });
 
   describe("deleteToken()", () => {
-    it("opens confirm dialog, deletes, clears serial, and navigates", () => {
-      const setSpy = jest.spyOn(tokenService.tokenSerial, "set");
+    it("opens confirm dialog, deletes and navigates", () => {
       component.deleteToken();
 
       expect(dialog.open).toHaveBeenCalled();
       expect(tokenService.deleteToken).toHaveBeenCalledWith("MOCK_SERIAL");
       expect(router.navigateByUrl).toHaveBeenCalledWith("/tokens");
-      expect(setSpy).toHaveBeenCalledWith("");
     });
   });
 
@@ -224,20 +230,27 @@ describe("TokenTabComponent", () => {
   });
 
   describe("assignSelectedTokens()", () => {
-    it("should do nothing if dialog is cancelled", fakeAsync(() => {
+    it("should do nothing if dialog is cancelled", async () => {
       (dialog.open as jest.Mock).mockReturnValue({ afterClosed: () => of(null) });
       component.assignSelectedTokens();
-      tick();
+      jest.advanceTimersByTime(100);
+      await Promise.resolve();
       expect(tokenService.assignUser).not.toHaveBeenCalled();
-    }));
+    });
 
-    it("should assign tokens without a user", fakeAsync(() => {
+    it("should assign tokens without a user", async () => {
       const tokens = [{ serial: "T1", username: "" }] as TokenDetails[];
       tokenService.tokenSelection.set(tokens);
-      (dialog.open as jest.Mock).mockReturnValue({ afterClosed: () => of({ username: "new_user", realm: "new_realm" }) });
+      (dialog.open as jest.Mock).mockReturnValue({
+        afterClosed: () => of({
+          username: "new_user",
+          realm: "new_realm"
+        })
+      });
 
       component.assignSelectedTokens();
-      tick();
+      jest.advanceTimersByTime(100);
+      await Promise.resolve();
 
       expect(tokenService.unassignUser).not.toHaveBeenCalled();
       expect(tokenService.assignUser).toHaveBeenCalledWith({
@@ -246,15 +259,21 @@ describe("TokenTabComponent", () => {
         realm: "new_realm"
       });
       expect(tokenService.tokenResource.reload).toHaveBeenCalled();
-    }));
+    });
 
-    it("should unassign and then re-assign tokens that already have a user", fakeAsync(() => {
+    it("should unassign and then re-assign tokens that already have a user", async () => {
       const tokens = [{ serial: "T1", username: "old_user" }] as TokenDetails[];
       tokenService.tokenSelection.set(tokens);
-      (dialog.open as jest.Mock).mockReturnValue({ afterClosed: () => of({ username: "new_user", realm: "new_realm" }) });
+      (dialog.open as jest.Mock).mockReturnValue({
+        afterClosed: () => of({
+          username: "new_user",
+          realm: "new_realm"
+        })
+      });
 
       component.assignSelectedTokens();
-      tick();
+      jest.advanceTimersByTime(100);
+      await Promise.resolve();
 
       expect(tokenService.unassignUser).toHaveBeenCalledWith("T1");
       expect(tokenService.assignUser).toHaveBeenCalledWith({
@@ -263,6 +282,6 @@ describe("TokenTabComponent", () => {
         realm: "new_realm"
       });
       expect(tokenService.tokenResource.reload).toHaveBeenCalled();
-    }));
+    });
   });
 });

@@ -10,6 +10,22 @@ describe("LayoutComponent", () => {
   let component: LayoutComponent;
   let fixture: ComponentFixture<LayoutComponent>;
 
+  beforeAll(() => {
+    Object.defineProperty(window, "matchMedia", {
+      writable: true,
+      value: (query: string) => ({
+        matches: false,
+        media: query,
+        onchange: null,
+        addListener: jest.fn(),
+        removeListener: jest.fn(),
+        addEventListener: jest.fn(),
+        removeEventListener: jest.fn(),
+        dispatchEvent: jest.fn()
+      })
+    });
+  });
+
   beforeEach(async () => {
     TestBed.resetTestingModule();
     await TestBed.configureTestingModule({

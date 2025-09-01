@@ -10,7 +10,7 @@ import { OverflowService, OverflowServiceInterface } from "../../../services/ove
 import { TokenService, TokenServiceInterface } from "../../../services/token/token.service";
 
 import { Router } from "@angular/router";
-import { ROUTE_PATHS } from "../../../app.routes";
+import { ROUTE_PATHS } from "../../../route_paths";
 import { ContainerTabComponent } from "./container-tab/container-tab.component";
 import { TokenTabComponent } from "./token-tab/token-tab.component";
 

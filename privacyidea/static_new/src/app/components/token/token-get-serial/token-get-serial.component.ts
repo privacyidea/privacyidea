@@ -11,7 +11,7 @@ import { MatProgressBarModule } from "@angular/material/progress-bar";
 import { MatOption, MatSelect } from "@angular/material/select";
 import { Router } from "@angular/router";
 import { Subscription } from "rxjs";
-import { ROUTE_PATHS } from "../../../app.routes";
+import { ROUTE_PATHS } from "../../../route_paths";
 import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
 import { NotificationService, NotificationServiceInterface } from "../../../services/notification/notification.service";
 import { TokenService, TokenServiceInterface } from "../../../services/token/token.service";

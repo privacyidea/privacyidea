@@ -15,7 +15,7 @@ import {
 } from "rxjs";
 import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
-import { ROUTE_PATHS } from "../../app.routes";
+import { ROUTE_PATHS } from "../../route_paths";
 import { ContainerTypeOption } from "../../components/token/container-create/container-create.component";
 import { EnrollmentUrl } from "../../mappers/token-api-payload/_token-api-payload.mapper";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";

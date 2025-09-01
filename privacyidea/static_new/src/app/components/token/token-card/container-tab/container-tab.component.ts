@@ -8,7 +8,7 @@ import { MatList, MatListItem } from "@angular/material/list";
 import { Router, RouterLink } from "@angular/router";
 import { forkJoin } from "rxjs";
 import { tabToggleState } from "../../../../../styles/animations/animations";
-import { ROUTE_PATHS } from "../../../../app.routes";
+import { ROUTE_PATHS } from "../../../../route_paths";
 import { ContainerService, ContainerServiceInterface } from "../../../../services/container/container.service";
 import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
 import { VersioningService, VersioningServiceInterface } from "../../../../services/version/version.service";

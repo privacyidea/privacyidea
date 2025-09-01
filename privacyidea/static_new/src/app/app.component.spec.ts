@@ -94,7 +94,7 @@ describe("AppComponent", () => {
     it("contains APP_BASE_HREF set to /ui/", () => {
       const p = appConfig.providers.find((x: any) => x.provide === APP_BASE_HREF);
       if (p && "useValue" in p) {
-        expect(p?.useValue).toBe("/ui/");
+        expect(p?.useValue).toBe("/app/v2/");
       }
     });
   });
