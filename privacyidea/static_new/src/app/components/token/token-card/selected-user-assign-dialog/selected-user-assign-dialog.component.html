@@ -1,7 +1,8 @@
 <h1
   i18n
   mat-dialog-title>
-  Assign Selected Token to User </h1>
+  Assign Selected Token to User
+</h1>
 <mat-dialog-content>
   @if (selectionContainsAssignedToken()) {
     <p
@@ -33,7 +34,7 @@
           [formControl]="userFilterControl"
           [matAutocomplete]="userAuto"
           matInput
-          required/>
+          required />
         <mat-autocomplete
           #userAuto="matAutocomplete"
           [displayWith]="userService.displayUser">
@@ -63,16 +64,17 @@
         class="pin-field">
         <input
           style="display: none"
-          type="text"/> <input
-        style="display: none"
-        type="password"/>
+          type="text" />
+        <input
+          style="display: none"
+          type="password" />
         <mat-label i18n>PIN (optional)</mat-label>
         <input
           (ngModelChange)="pin.set($event)"
           [ngModel]="pin()"
           [type]="hidePin() ? 'password' : 'text'"
           autocomplete="new-password"
-          matInput/>
+          matInput />
         <button
           (click)="togglePinVisibility()"
           [attr.aria-label]="'Show PIN'"
@@ -93,7 +95,7 @@
           [ngModel]="pinRepeat()"
           [type]="hidePin() ? 'password' : 'text'"
           autocomplete="new-password"
-          matInput/>
+          matInput />
         <button
           (click)="togglePinVisibility()"
           [attr.aria-label]="'Show PIN Repeat'"

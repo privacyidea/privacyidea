@@ -152,7 +152,7 @@
                         <input
                           matInput
                           [(ngModel)]="userService.userFilter"
-                          [matAutocomplete]="userAuto"/>
+                          [matAutocomplete]="userAuto" />
                         <mat-autocomplete
                           #userAuto="matAutocomplete"
                           class="user-selection-autocomplete">
@@ -230,7 +230,7 @@
             [infoData]="infoData"
             [isAnyEditingOrRevoked]="isAnyEditing"
             [isEditingInfo]="isEditingInfo"
-            [isEditingUser]="isEditingUser"/>
+            [isEditingUser]="isEditingUser" />
         </div>
         @if (overflowService.isWidthOverflowing("body", 1310)) {
           <br />
@@ -306,7 +306,7 @@
           </mat-form-field>
           <mat-divider class="width-36"></mat-divider>
         }
-        <app-container-details-token-table [containerTokenData]="containerTokenData"/>
+        <app-container-details-token-table [containerTokenData]="containerTokenData" />
       </div>
     </div>
   </div>
