@@ -8,6 +8,7 @@ import { BEARER_TOKEN_STORAGE_KEY } from "../../core/constants";
 import { LocalService, LocalServiceInterface } from "../local/local.service";
 import { VersioningService, VersioningServiceInterface } from "../version/version.service";
 import { tokenTypes } from "../../utils/token.utils";
+import { PolicyAction } from "./policy-actions";
 
 export type AuthResponse = PiResponse<AuthData, AuthDetail>;
 
@@ -99,59 +100,60 @@ export interface AuthServiceInterface {
   authtype: Signal<"cookie" | "none">;
   jwtExpDate: Signal<Date | null>;
 
-  authData: () => AuthData | null;
-  authenticationAccepted: () => boolean;
+  authData: Signal<AuthData | null>;
+  authenticationAccepted: Signal<boolean>;
 
-  isAuthenticated: () => boolean;
+  isAuthenticated: Signal<boolean>;
 
   getHeaders: () => HttpHeaders;
 
-  logLevel: () => number;
-  menus: () => string[];
-  realm: () => string;
-  rights: () => string[];
-  role: () => AuthRole;
-  token: () => string;
-  username: () => string;
-  logoutTimeSeconds: () => number | null;
-  auditPageSize: () => number;
-  tokenPageSize: () => number | null;
-  userPageSize: () => number;
-  policyTemplateUrl: () => string;
-  defaultTokentype: () => string;
-  defaultContainerType: () => string;
-  userDetails: () => boolean;
-  tokenWizard: () => boolean;
-  tokenWizard2nd: () => boolean;
-  adminDashboard: () => boolean;
-  dialogNoToken: () => boolean;
-  searchOnEnter: () => boolean;
-  timeoutAction: () => string;
-  tokenRollover: () => any;
-  hideWelcome: () => boolean;
-  hideButtons: () => boolean;
-  deletionConfirmation: () => boolean;
-  showSeed: () => boolean;
-  showNode: () => string;
-  subscriptionStatus: () => number;
-  subscriptionStatusPush: () => number;
-  qrImageAndroid: () => string | null;
-  qrImageIOS: () => string | null;
-  qrImageCustom: () => string | null;
-  logoutRedirectUrl: () => string;
-  requireDescription: () => string[];
-  rssAge: () => number;
-  containerWizard: () => { enabled: boolean };
+  logLevel: Signal<number>;
+  menus: Signal<string[]>;
+  realm: Signal<string>;
+  rights: Signal<string[]>;
+  role: Signal<AuthRole>;
+  token: Signal<string>;
+  username: Signal<string>;
+  logoutTimeSeconds: Signal<number | null>;
+  auditPageSize: Signal<number>;
+  tokenPageSize: Signal<number | null>;
+  userPageSize: Signal<number>;
+  policyTemplateUrl: Signal<string>;
+  defaultTokentype: Signal<string>;
+  defaultContainerType: Signal<string>;
+  userDetails: Signal<boolean>;
+  tokenWizard: Signal<boolean>;
+  tokenWizard2nd: Signal<boolean>;
+  adminDashboard: Signal<boolean>;
+  dialogNoToken: Signal<boolean>;
+  searchOnEnter: Signal<boolean>;
+  timeoutAction: Signal<string>;
+  tokenRollover: Signal<any>;
+  hideWelcome: Signal<boolean>;
+  hideButtons: Signal<boolean>;
+  deletionConfirmation: Signal<boolean>;
+  showSeed: Signal<boolean>;
+  showNode: Signal<string>;
+  subscriptionStatus: Signal<number>;
+  subscriptionStatusPush: Signal<number>;
+  qrImageAndroid: Signal<string | null>;
+  qrImageIOS: Signal<string | null>;
+  qrImageCustom: Signal<string | null>;
+  logoutRedirectUrl: Signal<string>;
+  requireDescription: Signal<string[]>;
+  rssAge: Signal<number>;
+  // TODO: When enabled there are more entries in the dict. We need to adapt the type accordingly.
+  containerWizard: Signal<{ enabled: boolean }>;
 
-  isSelfServiceUser: () => boolean;
+  isSelfServiceUser: Signal<boolean>;
   authenticate: (params: any) => Observable<AuthResponse>;
 
   acceptAuthentication: () => void;
   logout: () => void;
 
-  actionAllowed: (action: string) => boolean;
-  actionsAllowed: (actions: string[]) => boolean;
-  oneActionAllowed: (actions: string[]) => boolean;
+  actionAllowed: (action: PolicyAction) => boolean;
+  actionsAllowed: (actions: PolicyAction[]) => boolean;
+  oneActionAllowed: (actions: PolicyAction[]) => boolean;
   anyContainerActionAllowed: () => boolean;
   tokenEnrollmentAllowed: () => boolean;
   anyTokenActionAllowed: () => boolean;
@@ -290,15 +292,15 @@ export class AuthService implements AuthServiceInterface {
     }
   }
 
-  actionAllowed(action: string): boolean {
+  actionAllowed(action: PolicyAction): boolean {
     return this.rights().includes(action);
   }
 
-  actionsAllowed(actions: string[]): boolean {
+  actionsAllowed(actions: PolicyAction[]): boolean {
     return actions.every(action => this.actionAllowed(action));
   }
 
-  oneActionAllowed(actions: string[]): boolean {
+  oneActionAllowed(actions: PolicyAction[]): boolean {
     return actions.some(action => this.actionAllowed(action));
   }
 
@@ -308,7 +310,7 @@ export class AuthService implements AuthServiceInterface {
   }
 
   tokenEnrollmentAllowed(): boolean {
-    const enrollPolicies = tokenTypes.map((type) => "enroll" + type.key.toUpperCase());
+    const enrollPolicies = tokenTypes.map((type) => "enroll" + type.key.toUpperCase() as PolicyAction);
     return this.oneActionAllowed(enrollPolicies);
   }
 
@@ -318,6 +320,6 @@ export class AuthService implements AuthServiceInterface {
   }
 
   checkForceServerGenerateOTPKey(tokenType: string): boolean {
-    return this.actionAllowed(tokenType + "_force_server_generate");
+    return this.actionAllowed(tokenType + "_force_server_generate" as PolicyAction);
   }
 }

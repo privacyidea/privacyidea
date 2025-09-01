@@ -30,7 +30,7 @@
         i18n-aria-label
         mat-table
         matSort>
-        @for (column of columnKeysMapSelfService; track column) {
+        @for (column of columnKeysMapSelfService(); track column) {
           <ng-container [matColumnDef]="column.key">
             <th
               *matHeaderCellDef

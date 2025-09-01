@@ -28,6 +28,7 @@ import { TokenDetailsActionsComponent } from "./token-details-actions/token-deta
 import { TokenDetailsInfoComponent } from "./token-details-info/token-details-info.component";
 import { TokenDetailsUserComponent } from "./token-details-user/token-details-user.component";
 import { TokenSshMachineAssignDialogComponent } from "./token-ssh-machine-assign-dialog/token-ssh-machine-assign-dialog";
+import { PolicyAction } from "../../../services/auth/policy-actions";
 
 export const tokenDetailsKeyMap = [
   { key: "tokentype", label: "Type" },
@@ -317,7 +318,7 @@ export class TokenDetailsComponent {
 
   isEditableElement(key: string) {
     const rightEntry = tokenDetailsRightsMap.find(entry => entry.key === key);
-    return !!(rightEntry && this.authService.actionAllowed(rightEntry.right));
+    return !!(rightEntry && this.authService.actionAllowed(rightEntry.right as PolicyAction));
   }
 
   isNumberElement(key: string) {

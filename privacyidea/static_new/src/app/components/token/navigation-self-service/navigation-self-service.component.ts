@@ -14,5 +14,4 @@ import { TokenService, TokenServiceInterface } from "../../../services/token/tok
 export class NavigationSelfServiceComponent {
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
   protected readonly authService: AuthServiceInterface = inject(AuthService);
-  protected readonly tokenService: TokenServiceInterface = inject(TokenService);
 }
