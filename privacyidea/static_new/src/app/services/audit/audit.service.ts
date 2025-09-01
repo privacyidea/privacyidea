@@ -107,7 +107,10 @@ export class AuditService implements AuditServiceInterface {
     );
   });
 
-  pageSize = signal(this.authService.auditPageSize())
+  pageSize = linkedSignal({
+    source: () => this.authService.auditPageSize(),
+    computation: (pageSize) => (pageSize > 0 ? pageSize : 10)
+  })
 
   pageIndex = linkedSignal({
     source: () => ({

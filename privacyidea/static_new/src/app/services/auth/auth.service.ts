@@ -115,7 +115,7 @@ export interface AuthServiceInterface {
   username: () => string;
   logoutTimeSeconds: () => number | null;
   auditPageSize: () => number;
-  tokenPageSize: () => number;
+  tokenPageSize: () => number | null;
   userPageSize: () => number;
   policyTemplateUrl: () => string;
   defaultTokentype: () => string;
@@ -182,7 +182,7 @@ export class AuthService implements AuthServiceInterface {
   token = computed(() => this.authData()?.token || "");
   username = computed(() => this.jwtData()?.username || this.authData()?.username || "");
   auditPageSize = computed(() => this.authData()?.audit_page_size || 10);
-  tokenPageSize = computed(() => this.authData()?.token_page_size || 10);
+  tokenPageSize = computed(() => this.authData()?.token_page_size || null);
   userPageSize = computed(() => this.authData()?.user_page_size || 10);
   policyTemplateUrl = computed(() => this.authData()?.policy_template_url || "");
   defaultTokentype = computed(() => this.authData()?.default_tokentype || "hotp");

@@ -366,6 +366,10 @@ export class TokenService implements TokenServiceInterface {
       if (previous && source.role === previous.source.role) {
         return previous.value;
       }
+      if (this.authService.tokenPageSize() !== null && this.authService.tokenPageSize() !== undefined &&
+        this.authService.tokenPageSize()! > 0) {
+        return this.authService.tokenPageSize()!;
+      }
       return source.role === 'user' ? 5 : 10;
     },
   });
