@@ -159,7 +159,7 @@ where = ["."]
 include = ["privacyidea*"]
 
 [tool.setuptools.package-data]
-"privacyidea" = ["static/**", "static_new/dist/**"]
+"privacyidea" = ["static/**", "static_new/dist/**", "migrations/**"]
 
 [tool.setuptools.exclude-package-data]
 "privacyidea" = ["static/node_modules/**", "static_new/node_modules/**"]
