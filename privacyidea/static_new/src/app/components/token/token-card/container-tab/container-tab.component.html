@@ -8,6 +8,7 @@
           this.contentService.routeUrl() === ROUTE_PATHS.TOKENS_CONTAINERS ? 'card-button-active' : 'card-button'
         "
         [routerLink]="[ROUTE_PATHS.TOKENS_CONTAINERS]"
+        i18n
         mat-flat-button>
         <mat-icon class="mdi--folder-search"></mat-icon>
         Overview
@@ -24,7 +25,8 @@
                 ? 'card-button-active'
                 : 'card-button'
             "
-            mat-flat-button>
+            mat-flat-button
+            i18n>
             <mat-icon>create_new_folder</mat-icon>
             Create
           </button>
@@ -36,7 +38,8 @@
           <button
             class="card-button-disabled"
             mat-flat-button
-            disabled>
+            disabled
+            i18n>
             <mat-icon>plagiarism</mat-icon>
             Templates
           </button>
@@ -45,6 +48,7 @@
           <button
             class="card-button-disabled"
             mat-flat-button
+            i18n
             disabled>
             <mat-icon>note_add</mat-icon>
             Create Template
@@ -57,7 +61,8 @@
           <button
             class="card-button"
             (click)="versioningService.openDocumentation(contentService.routeUrl())"
-            mat-flat-button>
+            mat-flat-button
+            i18n>
             <mat-icon>info_outline</mat-icon>
             Help
           </button>
@@ -71,185 +76,10 @@
               [ngClass]="[containerSelection().length === 0 ? 'card-button-disabled' : 'card-button-delete']"
               (click)="deleteSelectedContainer()"
               [disabled]="containerSelection().length === 0"
-              mat-flat-button>
-              <div class="tab-list">
-                <mat-list>
-                  <mat-divider />
-                  <br />
-                  <mat-list-item>
-                    <button
-                      [ngClass]="
-                        this.contentService.routeUrl() === ROUTE_PATHS.TOKENS_CONTAINERS
-                          ? 'card-button-active'
-                          : 'card-button'
-                      "
-                      [routerLink]="[ROUTE_PATHS.TOKENS_CONTAINERS]"
-                      mat-flat-button
-                      i18n>
-                      <mat-icon class="mdi--folder-search"></mat-icon>
-                      Overview
-                    </button>
-                  </mat-list-item>
-
-                  <div [@toggleState]="this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_CONTAINERS)">
-                    @if (!this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS)) {
-                      <mat-list-item>
-                        <button
-                          [routerLink]="[ROUTE_PATHS.TOKENS_CONTAINERS_CREATE]"
-                          [ngClass]="
-                            this.contentService.routeUrl() === ROUTE_PATHS.TOKENS_CONTAINERS_CREATE
-                              ? 'card-button-active'
-                              : 'card-button'
-                          "
-                          mat-flat-button
-                          i18n>
-                          <mat-icon>create_new_folder</mat-icon>
-                          Create
-                        </button>
-                      </mat-list-item>
-                      <br />
-                      <mat-divider />
-                      <br />
-                      <mat-list-item>
-                        <button
-                          class="card-button-disabled"
-                          mat-flat-button
-                          disabled
-                          i18n>
-                          <mat-icon>plagiarism</mat-icon>
-                          Templates
-                        </button>
-                      </mat-list-item>
-                      <mat-list-item>
-                        <button
-                          class="card-button-disabled"
-                          mat-flat-button
-                          disabled
-                          i18n>
-                          <mat-icon>note_add</mat-icon>
-                          Create Template
-                        </button>
-                      </mat-list-item>
-                      <br />
-                      <mat-divider />
-                      <br />
-                      <mat-list-item>
-                        <button
-                          class="card-button"
-                          (click)="versioningService.openDocumentation(contentService.routeUrl())"
-                          mat-flat-button
-                          i18n>
-                          <mat-icon>info_outline</mat-icon>
-                          Help
-                        </button>
-                      </mat-list-item>
-                      @if (this.contentService.routeUrl() === ROUTE_PATHS.TOKENS_CONTAINERS) {
-                        <br />
-                        <mat-divider />
-                        <br />
-                        <mat-list-item>
-                          <button
-                            [ngClass]="[
-                              containerSelection().length === 0 ? 'card-button-disabled' : 'card-button-delete'
-                            ]"
-                            (click)="deleteSelectedContainer()"
-                            [disabled]="containerSelection().length === 0"
-                            mat-flat-button
-                            i18n>
-                            <mat-icon> delete_sweep</mat-icon>
-                            Delete Selected
-                          </button>
-                        </mat-list-item>
-                      }
-                    } @else {
-                      <mat-list-item>
-                        <button
-                          [ngClass]="
-                            this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS)
-                              ? 'card-button-active'
-                              : 'card-button'
-                          "
-                          mat-flat-button
-                          i18n>
-                          <mat-icon>health_and_safety</mat-icon>
-                          Container Details
-                        </button>
-                      </mat-list-item>
-                      <mat-list-item>
-                        <button
-                          (click)="enrollTokenInContainer()"
-                          class="card-button"
-                          mat-flat-button
-                          i18n>
-                          <mat-icon>add_moderator</mat-icon>
-                          Enroll Token
-                        </button>
-                      </mat-list-item>
-                      <br />
-                      <mat-divider />
-                      <br />
-                      <mat-list-item>
-                        <button
-                          (click)="lostContainer()"
-                          class="card-button-disabled"
-                          mat-flat-button
-                          disabled
-                          i18n>
-                          <mat-icon>remove_red_eye</mat-icon>
-                          Lost Container
-                        </button>
-                      </mat-list-item>
-                      <mat-list-item>
-                        <button
-                          (click)="damagedContainer()"
-                          class="card-button-disabled"
-                          mat-flat-button
-                          disabled
-                          i18n>
-                          <mat-icon>broken_image</mat-icon>
-                          Damaged Container
-                        </button>
-                      </mat-list-item>
-                      <mat-list-item>
-                        <button
-                          class="card-button"
-                          (click)="versioningService.openDocumentation(this.contentService.routeUrl())"
-                          mat-flat-button
-                          i18n>
-                          <mat-icon>info_outline</mat-icon>
-                          Help
-                        </button>
-                      </mat-list-item>
-                      <br />
-                      <mat-divider />
-                      <br />
-                      <mat-list-item>
-                        <button
-                          (click)="toggleActive()"
-                          [ngClass]="{
-                            'card-button-delete': states().includes('active'),
-                            'card-button-activate': !states().includes('active')
-                          }"
-                          mat-flat-button
-                          i18n>
-                          <mat-icon>{{ states().includes("active") ? "lock" : "play_circle" }}</mat-icon>
-                          {{ states().includes("active") ? "Deactivate" : "Activate" }}
-                        </button>
-                      </mat-list-item>
-                      <mat-list-item>
-                        <button
-                          (click)="deleteContainer()"
-                          class="card-button-delete"
-                          mat-flat-button
-                          i18n>
-                          <mat-icon> delete</mat-icon>
-                          Delete
-                        </button>
-                      </mat-list-item>
-                    }
-                  </div>
-                </mat-list>
-              </div>
+              mat-flat-button
+              i18n>
+              <mat-icon> delete_sweep</mat-icon>
+              Delete Selected
             </button>
           </mat-list-item>
         }
@@ -261,7 +91,8 @@
                 ? 'card-button-active'
                 : 'card-button'
             "
-            mat-flat-button>
+            mat-flat-button
+            i18n>
             <mat-icon>health_and_safety</mat-icon>
             Container Details
           </button>
@@ -270,7 +101,8 @@
           <button
             (click)="enrollTokenInContainer()"
             class="card-button"
-            mat-flat-button>
+            mat-flat-button
+            i18n>
             <mat-icon>add_moderator</mat-icon>
             Enroll Token
           </button>
@@ -283,7 +115,8 @@
             (click)="lostContainer()"
             class="card-button-disabled"
             mat-flat-button
-            disabled>
+            disabled
+            i18n>
             <mat-icon>remove_red_eye</mat-icon>
             Lost Container
           </button>
@@ -293,7 +126,8 @@
             (click)="damagedContainer()"
             class="card-button-disabled"
             mat-flat-button
-            disabled>
+            disabled
+            i18n>
             <mat-icon>broken_image</mat-icon>
             Damaged Container
           </button>
@@ -302,7 +136,8 @@
           <button
             class="card-button"
             (click)="versioningService.openDocumentation(this.contentService.routeUrl())"
-            mat-flat-button>
+            mat-flat-button
+            i18n>
             <mat-icon>info_outline</mat-icon>
             Help
           </button>
@@ -317,7 +152,8 @@
               'card-button-delete': states().includes('active'),
               'card-button-activate': !states().includes('active')
             }"
-            mat-flat-button>
+            mat-flat-button
+            i18n>
             <mat-icon>{{ states().includes("active") ? "lock" : "play_circle" }}</mat-icon>
             {{ states().includes("active") ? "Deactivate" : "Activate" }}
           </button>
@@ -326,7 +162,8 @@
           <button
             (click)="deleteContainer()"
             class="card-button-delete"
-            mat-flat-button>
+            mat-flat-button
+            i18n>
             <mat-icon> delete</mat-icon>
             Delete
           </button>
