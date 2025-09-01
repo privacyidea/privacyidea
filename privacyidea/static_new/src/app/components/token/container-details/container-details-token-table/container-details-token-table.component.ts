@@ -26,12 +26,7 @@ import { TokenService, TokenServiceInterface } from "../../../../services/token/
 import { ConfirmationDialogComponent } from "../../../shared/confirmation-dialog/confirmation-dialog.component";
 import { CopyButtonComponent } from "../../../shared/copy-button/copy-button.component";
 import { MatDialog } from "@angular/material/dialog";
-import { MatIcon } from "@angular/material/icon";
-import { MatInput } from "@angular/material/input";
 import { MatPaginator } from "@angular/material/paginator";
-import { MatTooltip } from "@angular/material/tooltip";
-import { NgClass } from "@angular/common";
-import { UserAssignmentDialogComponent } from "../user-assignment-dialog/user-assignment-dialog.component";
 
 const columnsKeyMap = [
   { key: "serial", label: "Serial" },
@@ -47,23 +42,18 @@ const columnsKeyMap = [
     MatFormField,
     MatHeaderCell,
     MatHeaderRow,
-    MatInput,
     MatLabel,
-    MatPaginator,
     MatRow,
     MatSort,
     MatSortHeader,
     MatTable,
-    NgClass,
     MatTableModule,
     MatSortModule,
-    MatIcon,
     MatIconButton,
     MatButton,
     CopyButtonComponent,
     ReactiveFormsModule,
-    FormsModule,
-    MatTooltip
+    FormsModule
   ],
   templateUrl: "./container-details-token-table.component.html",
   styleUrl: "./container-details-token-table.component.scss"
@@ -92,9 +82,8 @@ export class ContainerDetailsTokenTableComponent {
     user_id: string;
   }> = linkedSignal({
     source: () => this.containerService.containerDetail(),
-    computation: (source, previous) =>
-      source.containers[0]?.users[0] ??
-      previous?.value ?? {
+    computation: (source) =>
+      source.containers[0]?.users[0] ?? {
         user_realm: "",
         user_name: "",
         user_resolver: "",
@@ -216,16 +205,6 @@ export class ContainerDetailsTokenTableComponent {
   assignToAllToken() {
     var username = this.assignedUser().user_name;
     var realm = this.assignedUser().user_realm;
-    if (username === "" || realm === "") {
-      this.dialog.open(ConfirmationDialogComponent, {
-        data: {
-          title: "No User Assigned",
-          message: "Please assign a user to the container first."
-        }
-      });
-      return;
-    }
-
     var tokensToAssign = this.containerTokenData().data.filter((token) => {
       return token.username !== username;
     });
@@ -233,36 +212,22 @@ export class ContainerDetailsTokenTableComponent {
       return;
     }
     var tokensAssignedToOtherUser = tokensToAssign.filter((token) => token.username !== "");
-
-    this.dialog
-      .open(UserAssignmentDialogComponent)
-      .afterClosed()
-      .subscribe((pin: string) => {
-        const tokenSerialsAssignedToOtherUser = tokensAssignedToOtherUser.map((token) => token.serial);
-        this.tokenService.unassignUserFromAll(tokenSerialsAssignedToOtherUser).subscribe({
-          next: () => {
-            const tokenSerialsToAssign = tokensToAssign.map((token) => token.serial);
-            this.tokenService
-              .assignUserToAll({
-                tokenSerials: tokenSerialsToAssign,
-                username: username,
-                realm: realm,
-                pin: pin
-              })
-              .subscribe({
-                next: () => {
-                  this.containerService.containerDetailResource.reload();
-                },
-                error: (error) => {
-                  console.error("Error assigning user to all tokens:", error);
-                }
-              });
-          },
-          error: (error) => {
-            console.error("Error unassigning user from all tokens:", error);
-          }
-        });
-      });
+    const tokenSerialsAssignedToOtherUser = tokensAssignedToOtherUser.map((token) => token.serial);
+    this.tokenService.unassignUserFromAll(tokenSerialsAssignedToOtherUser).subscribe({
+      next: () => {
+        const tokenSerialsToAssign = tokensToAssign.map((token) => token.serial);
+        this.tokenService
+          .assignUserToAll({
+            tokenSerials: tokenSerialsToAssign,
+            username: username,
+            realm: realm
+          })
+          .subscribe({
+            next: () => this.containerService.containerDetailResource.reload(),
+            error: (error) => console.error("Error assigning user to all tokens:", error)
+          });
+      }
+    });
   }
 
   toggleActive(token: ContainerDetailToken): void {
