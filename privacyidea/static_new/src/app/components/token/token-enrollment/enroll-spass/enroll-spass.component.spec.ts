@@ -3,6 +3,7 @@ import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { EnrollSpassComponent } from "./enroll-spass.component";
+import "@angular/localize/init";
 
 describe("EnrollSpassComponent", () => {
   let component: EnrollSpassComponent;

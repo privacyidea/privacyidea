@@ -65,7 +65,7 @@ export class ContainerTableSelfServiceComponent extends ContainerTableComponent 
     this.dialog
       .open(ConfirmationDialogComponent, {
         data: {
-          serial_list: [serial],
+          serialList: [serial],
           title: "Delete Container",
           type: "container",
           action: "delete",

@@ -11,6 +11,7 @@
   @include styles.base-table-structure(".token-table", ".token-table-filter", ".table-scroll-container");
   max-height: calc(var(--main-height) - var(--global-padding) * 5);
   max-width: calc(100vw - var(--global-padding) * 5 - 48px);
+  width: 1370px;
   display: grid;
   overflow: auto;
 }
