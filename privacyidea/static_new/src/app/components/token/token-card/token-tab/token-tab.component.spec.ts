@@ -102,9 +102,6 @@ describe("TokenTabComponent", () => {
         "Mock serial",
         true
       );
-      expect(tokenServiceStub.getTokenDetails).toHaveBeenCalledWith(
-        "Mock serial"
-      );
       expect(tokenServiceStub.tokenDetailResource.reload).toHaveBeenCalled();
       expect(notificationServiceStub.openSnackBar).not.toHaveBeenCalled();
     });

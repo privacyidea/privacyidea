@@ -5,7 +5,7 @@ import { RouterOutlet } from "@angular/router";
 import { AuthService, AuthServiceInterface } from "../../services/auth/auth.service";
 import { LoadingService, LoadingServiceInterface } from "../../services/loading/loading-service";
 import { HeaderComponent } from "./header/header.component";
-import { HeaderSelfServiceComponent } from "./header/header.serlf-service.component";
+import { HeaderSelfServiceComponent } from "./header/header.self-service.component";
 
 @Component({
   selector: "layout",

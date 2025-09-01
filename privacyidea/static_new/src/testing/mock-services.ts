@@ -786,6 +786,7 @@ export class MockTokenService implements TokenServiceInterface {
   unassignUser = jest.fn().mockReturnValue(of(null));
   toggleActive = jest.fn().mockReturnValue(of({}));
   getTokenData = this.getTokenDetails;
+  resyncOTPToken = jest.fn().mockReturnValue(of(null));
 
   setTokenInfos(tokenSerial: string, infos: any): Observable<PiResponse<boolean, unknown>[]> {
     throw new Error("Method not implemented.");
@@ -825,10 +826,6 @@ export class MockTokenService implements TokenServiceInterface {
   }
 
   setRandomPin(tokenSerial: string): Observable<Object> {
-    throw new Error("Method not implemented.");
-  }
-
-  resyncOTPToken(tokenSerial: string, fristOTPValue: string, secondOTPValue: string): Observable<Object> {
     throw new Error("Method not implemented.");
   }
 

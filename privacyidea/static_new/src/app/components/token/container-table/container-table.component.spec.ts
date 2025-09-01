@@ -29,6 +29,7 @@ const authServiceMock = {
 
 const tableUtilsMock = {
   // Only the bits used by this component/tests.
+  pageSizeOptions: () => [5, 10, 25, 50],
   recordsFromText: jest.fn().mockReturnValue({}),
   getClassForColumnKey: jest.fn().mockReturnValue(""),
   isLink: jest.fn().mockReturnValue(false),
