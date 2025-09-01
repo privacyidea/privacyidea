@@ -70,6 +70,7 @@ export class EnrollYubicoComponent implements OnInit {
   }
 
   onClickEnroll = (basicOptions: TokenEnrollmentData): Observable<EnrollmentResponse | null> => {
+    this.yubicoForm.updateValueAndValidity();
     if (this.yubicoForm.invalid) {
       this.yubicoForm.markAllAsTouched();
       return of(null);

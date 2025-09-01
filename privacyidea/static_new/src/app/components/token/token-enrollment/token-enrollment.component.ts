@@ -224,13 +224,9 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
 
   protected readonly renderer: Renderer2 = inject(Renderer2);
-  protected readonly QuestionApiPayloadMapper = QuestionApiPayloadMapper;
   private observer!: IntersectionObserver;
   timezoneOptions = TIMEZONE_OFFSETS;
-  pollResponse: WritableSignal<any> = linkedSignal({
-    source: this.tokenService.selectedTokenType,
-    computation: () => null
-  });
+
   enrollResponse: WritableSignal<EnrollmentResponse | null> = linkedSignal({
     source: this.tokenService.selectedTokenType,
     computation: () => null
@@ -571,6 +567,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     }
 
     const dialogData: TokenEnrollmentLastStepDialogData = {
+      tokentype: this.tokenService.selectedTokenType(),
       response: response,
       serial: this.serial,
       enrollToken: this.enrollToken.bind(this),
@@ -598,7 +595,6 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
       return;
     }
 
-    this.notificationService.openSnackBar(`Token ${detail.serial} enrolled successfully.`);
     this.openLastStepDialog({ response, user });
   }
 }
