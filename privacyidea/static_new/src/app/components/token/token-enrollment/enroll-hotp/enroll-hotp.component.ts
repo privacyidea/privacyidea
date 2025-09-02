@@ -5,7 +5,6 @@ import { MatInput } from "@angular/material/input";
 import { MatError, MatFormField, MatHint, MatLabel, MatOption, MatSelect } from "@angular/material/select";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 
-import { NgClass } from "@angular/common";
 import { Observable, of } from "rxjs";
 import {
   EnrollmentResponse,
@@ -33,8 +32,7 @@ export interface HotpEnrollmentOptions extends TokenEnrollmentData {
     MatInput,
     MatHint,
     MatError,
-    ReactiveFormsModule,
-    NgClass
+    ReactiveFormsModule
   ],
   templateUrl: "./enroll-hotp.component.html",
   styleUrl: "./enroll-hotp.component.scss",

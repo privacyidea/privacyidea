@@ -26,7 +26,11 @@ import { TokenService, TokenServiceInterface } from "../../../../services/token/
 import { ConfirmationDialogComponent } from "../../../shared/confirmation-dialog/confirmation-dialog.component";
 import { CopyButtonComponent } from "../../../shared/copy-button/copy-button.component";
 import { MatDialog } from "@angular/material/dialog";
-import { MatPaginator } from "@angular/material/paginator";
+import { MatPaginator, MatPaginatorModule } from "@angular/material/paginator";
+import { NgClass } from "@angular/common";
+import { f } from "../../../../../../node_modules/@angular/material/icon-module.d-d06a5620";
+import { MatIconModule } from "@angular/material/icon";
+import { MatTooltipModule } from "@angular/material/tooltip";
 
 const columnsKeyMap = [
   { key: "serial", label: "Serial" },
@@ -53,7 +57,11 @@ const columnsKeyMap = [
     MatButton,
     CopyButtonComponent,
     ReactiveFormsModule,
-    FormsModule
+    FormsModule,
+    MatPaginatorModule,
+    NgClass,
+    MatIconModule,
+    MatTooltipModule
   ],
   templateUrl: "./container-details-token-table.component.html",
   styleUrl: "./container-details-token-table.component.scss"
