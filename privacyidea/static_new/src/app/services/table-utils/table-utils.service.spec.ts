@@ -138,7 +138,7 @@ describe("TableUtilsService", () => {
     expect(rec).toEqual({ k1: "v1", k2: "v2" });
   });
 
-  it.each([ // TODO should be true once these links are reatchable
+  it.each([ // TODO should be true once these links are reachable
     ["username", false],
     ["realms", false],
     ["unknown", false]
