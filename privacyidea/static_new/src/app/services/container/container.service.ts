@@ -16,15 +16,14 @@ import {
   throwError,
   timer
 } from "rxjs";
-import { TokenService, TokenServiceInterface } from "../token/token.service";
-
+import { environment } from "../../../environments/environment";
+import { PiResponse } from "../../app.component";
+import { ROUTE_PATHS } from "../../route_paths";
 import { ContainerTypeOption } from "../../components/token/container-create/container-create.component";
 import { EnrollmentUrl } from "../../mappers/token-api-payload/_token-api-payload.mapper";
 import { FilterValue } from "../../core/models/filter_value";
-import { PiResponse } from "../../app.component";
-import { ROUTE_PATHS } from "../../app.routes";
 import { Sort } from "@angular/material/sort";
-import { environment } from "../../../environments/environment";
+import { TokenService, TokenServiceInterface } from "../token/token.service";
 
 const apiFilter = ["container_serial", "type", "user"];
 const advancedApiFilter = ["token_serial"];

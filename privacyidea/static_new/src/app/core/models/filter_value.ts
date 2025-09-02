@@ -90,18 +90,15 @@ export class FilterValue {
     const map = new Map<string, string>();
     const regex = RegExp(/(?<=^|\s)[\w\d]+:\s*[\w\d]*(?=$|\s)/, "g");
     const matches = this._value.match(regex);
-    console.log("Matches: ", matches);
     if (matches) {
       matches.forEach((pair) => {
         let [key, value] = pair.split(/:/); // Split only on the first occurrence of ": "
         value = value?.trim();
-        console.log("Key: ", key, " Value: ", value);
         if (key) {
           map.set(key, value ?? "");
         }
       });
     }
-    console.log("Map: ", map);
     return map;
   }
 
@@ -115,17 +112,12 @@ export class FilterValue {
     const map = new Map<string, string>();
     const regex = RegExp(/(?<=^|\s)[\w\d]+:\s*[\w\d]*(?=$|\s)/, "g");
     const matches = this._hiddenValue.match(regex);
-    console.log("Matches: ", matches);
     if (matches) {
       matches.forEach((pair) => {
-        console.log("Pair: ", pair);
         let [key, value] = pair.split(/:/); // Split only on the first occurrence of ": "
         value = value?.trim();
-        console.log("Key: ", key, " Value: ", value);
         if (key) {
-          console.log("Map: ", map);
           map.set(key, value ?? "");
-          console.log("Updated Map: ", map);
         }
       });
     }

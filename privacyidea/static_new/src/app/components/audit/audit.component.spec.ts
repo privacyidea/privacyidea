@@ -64,9 +64,9 @@ describe("AuditComponent (unit)", () => {
   describe("page‑related derived signals", () => {
     it.each`
       count | expectedOptions
-      ${12} | ${[5, 10, 15, 12]}
-      ${10} | ${[5, 10, 15]}
-      ${60} | ${[5, 10, 15, 50]}
+      ${12} | ${[5, 10, 25, 50]}
+      ${10} | ${[5, 10, 25, 50]}
+      ${60} | ${[5, 10, 25, 50]}
     `("total=$count → pageSizeOptions=$expectedOptions", ({ count, expectedOptions }) => {
       mockAuditService.auditResource.value.set({
         detail: undefined,

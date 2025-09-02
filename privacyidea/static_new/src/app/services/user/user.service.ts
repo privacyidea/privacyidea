@@ -7,9 +7,9 @@ import { TokenService, TokenServiceInterface } from "../token/token.service";
 
 import { FilterValue } from "../../core/models/filter_value";
 import { PiResponse } from "../../app.component";
-import { ROUTE_PATHS } from "../../app.routes";
 import { Sort } from "@angular/material/sort";
 import { environment } from "../../../environments/environment";
+import { ROUTE_PATHS } from "../../route_paths";
 
 const apiFilter = ["description", "email", "givenname", "mobile", "phone", "resolver", "surname", "userid", "username"];
 const advancedApiFilter: string[] = [];

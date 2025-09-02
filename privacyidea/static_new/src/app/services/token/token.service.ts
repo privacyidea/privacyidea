@@ -14,9 +14,9 @@ import { catchError, shareReplay, takeUntil, takeWhile } from "rxjs/operators";
 
 import { FilterValue } from "../../core/models/filter_value";
 import { PiResponse } from "../../app.component";
-import { ROUTE_PATHS } from "../../app.routes";
 import { Sort } from "@angular/material/sort";
 import { environment } from "../../../environments/environment";
+import { ROUTE_PATHS } from "../../route_paths";
 
 const apiFilter = [
   "serial",
@@ -284,7 +284,6 @@ export class TokenService implements TokenServiceInterface {
   handleFilterInput($event: Event): void {
     const input = $event.target as HTMLInputElement;
     const newFilter = this.tokenFilter().copyWith({ value: input.value.trim() });
-    console.log("newFilter: ", newFilter);
     this.tokenFilter.set(newFilter);
   }
 
@@ -301,7 +300,7 @@ export class TokenService implements TokenServiceInterface {
   });
 
   tokenTypesResource = httpResource<PiResponse<{}>>(() => {
-    if (this.contentService.routeUrl() !== ROUTE_PATHS.TOKENS_ENROLLMENT) {
+    if (![ROUTE_PATHS.TOKENS_ENROLLMENT, ROUTE_PATHS.TOKENS_GET_SERIAL].includes(this.contentService.routeUrl())) {
       return undefined;
     }
     return {
@@ -359,11 +358,9 @@ export class TokenService implements TokenServiceInterface {
     const allowedFilters = [...this.apiFilter, ...this.advancedApiFilter, ...this.hiddenApiFilter];
     const hiddenFilterMap = this.tokenFilter().hiddenFilterMap;
     let filterPairs = [...Array.from(this.tokenFilter().filterMap.entries()), ...Array.from(hiddenFilterMap.entries())];
-    console.log("Filter Pairs: ", filterPairs);
     let filterPairsMap = filterPairs
       .filter(([key]) => allowedFilters.includes(key))
       .map(([key, value]) => ({ key, value }));
-    console.log("Filter Pairs Map: ", filterPairsMap);
     const mopdifiedmap = filterPairsMap.reduce(
       (acc, { key, value }) => ({
         ...acc,
@@ -373,7 +370,6 @@ export class TokenService implements TokenServiceInterface {
       }),
       {} as Record<string, string>
     );
-    console.log("Modified Map: ", mopdifiedmap);
     return mopdifiedmap;
   });
 

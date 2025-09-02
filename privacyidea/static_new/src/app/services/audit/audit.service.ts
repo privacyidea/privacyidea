@@ -1,12 +1,12 @@
+import { httpResource, HttpResourceRef } from "@angular/common/http";
+import { computed, inject, Injectable, linkedSignal, signal, WritableSignal } from "@angular/core";
+import { environment } from "../../../environments/environment";
+import { PiResponse } from "../../app.component";
+import { ROUTE_PATHS } from "../../route_paths";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
-import { HttpResourceRef, httpResource } from "@angular/common/http";
-import { Injectable, WritableSignal, computed, inject, linkedSignal, signal } from "@angular/core";
 
 import { FilterValue } from "../../core/models/filter_value";
-import { PiResponse } from "../../app.component";
-import { ROUTE_PATHS } from "../../app.routes";
-import { environment } from "../../../environments/environment";
 
 export interface Audit {
   auditcolumns: string[];

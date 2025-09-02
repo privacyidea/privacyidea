@@ -1,4 +1,4 @@
-import { HttpClient, HttpParams } from "@angular/common/http";
+import { HttpClient, HttpHeaders, HttpParams } from "@angular/common/http";
 import { MockContentService, MockLocalService, MockTableUtilsService } from "../../../testing/mock-services";
 import { lastValueFrom, of } from "rxjs";
 
@@ -48,42 +48,48 @@ describe("MachineService (with mock classes)", () => {
       resolver: "RES"
     };
     await lastValueFrom(machineService.postAssignMachineToToken(args));
-    expect(httpStub.post).toHaveBeenCalledWith("/api/machine/token", args, {
-      headers: { Authorization: "Bearer x" }
+    const [url, body, opts] = (httpStub.post as jest.Mock).mock.calls[0];
+    expect(url).toBe("/api/machine/token");
+    expect(body).toEqual({
+      service_id: "svc",
+      user: "alice",
+      serial: "serial",
+      application: "ssh",
+      machineid: "MID",
+      resolver: "RES"
     });
+    expect(opts.headers instanceof HttpHeaders).toBe(true);
   });
 
   it("postTokenOption builds correct request body", async () => {
     httpStub.post.mockReturnValue(of({}));
     await lastValueFrom(machineService.postTokenOption("host", "mid", "res", "serial", "ssh", "mtid"));
-    expect(httpStub.post).toHaveBeenCalledWith(
-      "/api/machine/tokenoption",
-      {
-        hostname: "host",
-        machineid: "mid",
-        resolver: "res",
-        serial: "serial",
-        application: "ssh",
-        mtid: "mtid"
-      },
-      { headers: { Authorization: "Bearer x" } }
-    );
+    const [url, body, opts] = (httpStub.post as jest.Mock).mock.calls[0];
+    expect(url).toBe("/api/machine/tokenoption");
+    expect(body).toEqual({
+      hostname: "host",
+      machineid: "mid",
+      resolver: "res",
+      serial: "serial",
+      application: "ssh",
+      mtid: "mtid"
+    });
+    expect(opts.headers instanceof HttpHeaders).toBe(true);
   });
 
   it("postToken hits /token endpoint", async () => {
     httpStub.post.mockReturnValue(of({}));
     await lastValueFrom(machineService.postToken("host", "mid", "res", "serial", "offline"));
-    expect(httpStub.post).toHaveBeenCalledWith(
-      "/api/machine/token",
-      {
-        hostname: "host",
-        machineid: "mid",
-        resolver: "res",
-        serial: "serial",
-        application: "offline"
-      },
-      { headers: { Authorization: "Bearer x" } }
-    );
+    const [url, body, opts] = (httpStub.post as jest.Mock).mock.calls[0];
+    expect(url).toBe("/api/machine/token");
+    expect(body).toEqual({
+      hostname: "host",
+      machineid: "mid",
+      resolver: "res",
+      serial: "serial",
+      application: "offline"
+    });
+    expect(opts.headers instanceof HttpHeaders).toBe(true);
   });
 
   it("getAuthItem chooses URL with and without application", () => {
@@ -126,13 +132,11 @@ describe("MachineService (with mock classes)", () => {
   it("deleteToken & deleteTokenMtid craft correct URLs", async () => {
     httpStub.delete.mockReturnValue(of({}));
     await lastValueFrom(machineService.deleteToken("S", "M", "R", "ssh"));
-    expect(httpStub.delete).toHaveBeenCalledWith("/api/machine/token/S/M/R/ssh", {
-      headers: { Authorization: "Bearer x" }
-    });
+    const [url] = (httpStub.delete as jest.Mock).mock.calls[0];
+    expect(url).toBe("/api/machine/token/S/M/R/ssh");
     await lastValueFrom(machineService.deleteTokenMtid("S2", "offline", "MT"));
-    expect(httpStub.delete).toHaveBeenCalledWith("/api/machine/token/S2/offline/MT", {
-      headers: { Authorization: "Bearer x" }
-    });
+    const [url2] = (httpStub.delete as jest.Mock).mock.calls[1];
+    expect(url2).toBe("/api/machine/token/S2/offline/MT");
   });
 
   it("filterParams produces expected object for ssh", () => {

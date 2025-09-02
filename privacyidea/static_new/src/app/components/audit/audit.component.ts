@@ -91,14 +91,11 @@ const columnKeysMap = [
   styleUrl: "./audit.component.scss"
 })
 export class AuditComponent {
-  protected readonly auditService: AuditServiceInterface = inject(AuditService);
-  protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
-  protected readonly contentService: ContentServiceInterface = inject(ContentService);
-  protected readonly authService: AuthServiceInterface = inject(AuthService);
-
   readonly columnKeysMap = columnKeysMap;
   readonly columnKeys: string[] = this.columnKeysMap.map((column) => column.key);
-
+  @ViewChild("filterHTMLInputElement", { static: true })
+  filterInput!: HTMLInputElement;
+  protected readonly auditService: AuditServiceInterface = inject(AuditService);
   filterValueString: WritableSignal<string> = linkedSignal(() =>
     Object.entries(this.auditService.auditFilter())
       .map(([key, value]) => `${key}: ${value}`)
@@ -113,14 +110,11 @@ export class AuditComponent {
       return previous?.value ?? 0;
     }
   });
-  pageSizeOptions = this.tableUtilsService.pageSizeOptions;
-
   emptyResource: WritableSignal<AuditData[]> = linkedSignal({
     source: this.auditService.pageSize,
     computation: (pageSize: number) =>
       Array.from({ length: pageSize }, () => Object.fromEntries(this.columnKeysMap.map((col) => [col.key, ""])))
   });
-
   auditDataSource: WritableSignal<MatTableDataSource<AuditData>> = linkedSignal({
     source: this.auditService.auditResource.value,
     computation: (auditResource, previous) => {
@@ -130,9 +124,10 @@ export class AuditComponent {
       return previous?.value ?? new MatTableDataSource(this.emptyResource());
     }
   });
-
-  @ViewChild("filterHTMLInputElement", { static: true })
-  filterInput!: HTMLInputElement;
+  protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
+  pageSizeOptions = this.tableUtilsService.pageSizeOptions;
+  protected readonly contentService: ContentServiceInterface = inject(ContentService);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
 
   onPageEvent(event: PageEvent) {
     this.auditService.pageSize.set(event.pageSize);

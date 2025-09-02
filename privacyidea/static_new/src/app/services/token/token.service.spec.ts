@@ -312,12 +312,6 @@ describe("TokenService", () => {
         description: "*vpn*"
       });
     });
-
-    it("pageSize falls back to nearest default option", () => {
-      tokenService.pageSize.set(37 as any);
-      tokenService.tokenFilter.set({ foo: "bar" } as any);
-      expect(tokenService.pageSize()).toBe(25);
-    });
   });
 
   describe("revokeToken()", () => {

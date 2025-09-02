@@ -62,7 +62,7 @@ describe("versioningService", () => {
 
       jest.spyOn(global, "fetch").mockImplementation(() => mockFetchWithHTML(VALID_HTML));
 
-      versioningService.openDocumentation("/tokens/enroll");
+      versioningService.openDocumentation("/tokens/enrollment");
       await flushPromises();
 
       const expectedUrl =
@@ -81,12 +81,12 @@ describe("versioningService", () => {
         .mockImplementationOnce(() => mockFetchWithHTML(NOT_FOUND_HTML))
         .mockImplementationOnce(() => mockFetchWithHTML(VALID_HTML));
 
-      versioningService.openDocumentation("/tokens/enroll");
+      versioningService.openDocumentation("/tokens/enrollment");
       await flushPromises();
       await flushPromises();
 
       const fallbackUrl =
-        "https://privacyidea.readthedocs.io/en/latest/webui/token_details.html#enroll-token";
+        "https://privacyidea.readthedocs.io/en/stable/webui/token_details.html#enroll-token";
 
       expect(window.open).toHaveBeenCalledWith(fallbackUrl, "_blank");
       expect(window.alert).not.toHaveBeenCalled();

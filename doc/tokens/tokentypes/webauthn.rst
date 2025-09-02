@@ -16,7 +16,9 @@ present, which typically happens by tapping a button on the token. The user may
 also be required by policy to provide some form of verification, which might be
 biometric or knowledge-based, depending on the token.
 
-The devices is identified and assigned to the user.
+When enrolling, the authenticator is not requested to create a resident key, in contrast to the passkey token: :ref:`passkey`.
+However, the authenticator can still decide to create a resident key. If that is the case, the WebAuthn token can be used
+like a passkey token for usernameless logins with privacyIDEA.
 
 .. note:: This is a normal token object which can also be reassigned to
     another user.

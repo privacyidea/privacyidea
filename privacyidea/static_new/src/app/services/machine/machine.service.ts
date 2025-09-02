@@ -8,7 +8,7 @@ import { FilterValue } from "../../core/models/filter_value";
 import { Observable } from "rxjs";
 import { PageEvent } from "@angular/material/paginator";
 import { PiResponse } from "../../app.component";
-import { ROUTE_PATHS } from "../../app.routes";
+import { ROUTE_PATHS } from "../../route_paths";
 import { Sort } from "@angular/material/sort";
 import { environment } from "../../../environments/environment";
 
