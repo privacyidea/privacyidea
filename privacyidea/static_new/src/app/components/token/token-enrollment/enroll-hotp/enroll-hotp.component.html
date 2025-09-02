@@ -10,9 +10,9 @@
     <mat-form-field class="input-height width-33">
       <mat-label i18n>OTP Key</mat-label>
       <input
-        matInput
         [formControl]="otpKeyFormControl"
         i18n-placeholder
+        matInput
         placeholder="Enter OTP key"
         required />
       @if (otpKeyFormControl.hasError("required")) {
