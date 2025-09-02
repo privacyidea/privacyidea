@@ -32,7 +32,9 @@ describe("ValidateService", () => {
         ValidateService,
         { provide: NotificationService, useClass: MockNotificationService },
         { provide: Base64Service, useClass: MockBase64Service },
-        { provide: AuthService, useClass: MockAuthService }
+        { provide: AuthService, useClass: MockAuthService },
+        MockLocalService,
+        MockNotificationService
       ]
     });
 

@@ -168,7 +168,7 @@ export class AuthService implements AuthServiceInterface {
 
   private readonly http: HttpClient = inject(HttpClient);
   private readonly versioningService: VersioningServiceInterface = inject(VersioningService);
-  private readonly localService: LocalServiceInterface = inject(LocalService);
+  protected readonly localService: LocalServiceInterface = inject(LocalService);
 
   authData = signal<AuthData | null>(null);
   jwtData = signal<JwtData | null>(null);

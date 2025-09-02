@@ -250,7 +250,8 @@ export class TableUtilsService implements TableUtilsServiceInterface {
           if (this.authService.actionAllowed("reset")) return "highlight-warning-clickable";
           else return "highlight-warning";
         }
-        return "highlight-false-clickable";
+        if (this.authService.actionAllowed("reset")) return "highlight-false-clickable";
+        else return "highlight-false";
     }
     return "";
   }

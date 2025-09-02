@@ -8,7 +8,12 @@ import { LocalService } from "../local/local.service";
 import { TableUtilsService } from "../table-utils/table-utils.service";
 import { ContentService } from "../content/content.service";
 import { environment } from "../../../environments/environment";
-import { MockContentService, MockLocalService, MockTableUtilsService } from "../../../testing/mock-services";
+import {
+  MockContentService,
+  MockLocalService,
+  MockNotificationService,
+  MockTableUtilsService
+} from "../../../testing/mock-services";
 
 environment.proxyUrl = "/api";
 
@@ -29,7 +34,9 @@ describe("MachineService (with mock classes)", () => {
         { provide: LocalService, useClass: MockLocalService },
         { provide: TableUtilsService, useClass: MockTableUtilsService },
         { provide: ContentService, useClass: MockContentService },
-        MachineService
+        MachineService,
+        MockLocalService,
+        MockNotificationService
       ]
     });
 

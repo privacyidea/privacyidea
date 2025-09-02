@@ -11,7 +11,7 @@ import { ContainerDetailsTokenTableComponent } from "./container-details-token-t
 import {
   MockAuthService,
   MockContainerService,
-  MockContentService,
+  MockContentService, MockLocalService,
   MockNotificationService,
   MockOverflowService,
   MockTableUtilsService,
@@ -53,7 +53,6 @@ describe("ContainerDetailsTokenTableComponent", () => {
   const tokenServiceMock = new MockTokenService();
   const overflowServiceMock = new MockOverflowService();
   const tableUtilsMock = new MockTableUtilsService();
-  const authServiceMock = new MockAuthService();
   const notificationServiceMock = new MockNotificationService();
 
   beforeEach(async () => {
@@ -63,7 +62,7 @@ describe("ContainerDetailsTokenTableComponent", () => {
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
-        { provide: AuthService, useValue: authServiceMock },
+        { provide: AuthService, useClass: MockAuthService },
         { provide: ContainerService, useValue: containerServiceMock },
         { provide: TokenService, useValue: tokenServiceMock },
         { provide: TableUtilsService, useValue: tableUtilsMock },
@@ -72,7 +71,9 @@ describe("ContainerDetailsTokenTableComponent", () => {
         { provide: Router, useValue: routerMock },
         { provide: MatDialog, useValue: matDialogMock },
         { provide: UserService, useClass: MockUserService },
-        { provide: ContentService, useClass: MockContentService }
+        { provide: ContentService, useClass: MockContentService },
+        MockLocalService,
+        MockNotificationService
       ]
     }).compileComponents();
 

@@ -52,7 +52,9 @@ describe("LoginComponent", () => {
         { provide: NotificationService, useClass: MockNotificationService },
         { provide: ValidateService, useClass: MockValidateService },
         { provide: SessionTimerService, useValue: sessionTimerServiceMock },
-        { provide: Router, useValue: routerMock }
+        { provide: Router, useValue: routerMock },
+        MockLocalService,
+        MockNotificationService
       ]
     }).compileComponents();
 
@@ -316,10 +318,11 @@ describe("LoginComponent", () => {
 
   describe("logout", () => {
     it("should remove token, logout, and navigate to login", async() => {
+      const authServiceSpy = jest.spyOn(authService, "logout");
       component.logout();
       fixture.whenStable().then(() => {
         expect(localService.removeData).toHaveBeenCalledWith("bearer_token");
-        expect(authService.logout).toHaveBeenCalled();
+        expect(authServiceSpy).toHaveBeenCalled();
         expect(router.navigate).toHaveBeenCalledWith(["login"]);
       });
     });

@@ -7,7 +7,7 @@ import { of } from "rxjs";
 import {
   MockAuditService,
   MockAuthService,
-  MockContentService,
+  MockContentService, MockLocalService, MockNotificationService,
   MockTableUtilsService
 } from "../../../testing/mock-services";
 import { AuditService } from "../../services/audit/audit.service";
@@ -45,7 +45,9 @@ describe("AuditComponent (unit)", () => {
         { provide: AuditService, useExisting: MockAuditService },
         { provide: TableUtilsService, useExisting: MockTableUtilsService },
         { provide: ContentService, useExisting: MockContentService },
-        { provide: AuthService, useExisting: MockAuthService }
+        { provide: AuthService, useExisting: MockAuthService },
+        MockLocalService,
+        MockNotificationService
       ]
     }).compileComponents();
 

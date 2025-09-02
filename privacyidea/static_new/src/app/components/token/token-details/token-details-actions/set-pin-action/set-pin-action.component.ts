@@ -53,10 +53,4 @@ export class SetPinActionComponent {
       }
     });
   }
-
-  canSetRandomPin() {
-    return (
-      this.authService.rights().includes("setrandompin") && this.authService.rights().includes("otp_pin_set_random")
-    );
-  }
 }
