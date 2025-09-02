@@ -5,7 +5,7 @@ import { forkJoin, Observable, Subject, switchMap, throwError, timer } from "rxj
 import { catchError, shareReplay, takeUntil, takeWhile } from "rxjs/operators";
 import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
-import { ROUTE_PATHS } from "../../app.routes";
+import { ROUTE_PATHS } from "../../route_paths";
 import { TokenComponent, TokenTypeOption as TokenTypeKey } from "../../components/token/token.component";
 import {
   EnrollmentResponse,

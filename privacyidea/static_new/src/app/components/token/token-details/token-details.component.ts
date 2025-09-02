@@ -21,7 +21,7 @@ import { MatInput } from "@angular/material/input";
 import { MatListItem } from "@angular/material/list";
 import { MatSelectModule } from "@angular/material/select";
 import { NgClass } from "@angular/common";
-import { ROUTE_PATHS } from "../../../app.routes";
+import { ROUTE_PATHS } from "../../../route_paths";
 import { Router } from "@angular/router";
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { TokenDetailsActionsComponent } from "./token-details-actions/token-details-actions.component";

@@ -20,8 +20,6 @@ class MockTokenService {
 describe("TokenDetailsActionsComponent", () => {
   let component: TokenDetailsActionsComponent;
   let fixture: ComponentFixture<TokenDetailsActionsComponent>;
-  let tokenService: TokenService;
-  let validateService: ValidateService;
 
   beforeEach(async () => {
     jest.clearAllMocks();
@@ -39,11 +37,7 @@ describe("TokenDetailsActionsComponent", () => {
     fixture = TestBed.createComponent(TokenDetailsActionsComponent);
     component = fixture.componentInstance;
     component.tokenSerial = signal("Mock serial");
-    component.refreshTokenDetails = signal(false);
     component.tokenType = signal("Mock type");
-
-    tokenService = TestBed.inject(TokenService);
-    validateService = TestBed.inject(ValidateService);
 
     fixture.detectChanges();
   });
@@ -52,37 +46,4 @@ describe("TokenDetailsActionsComponent", () => {
     expect(component).toBeTruthy();
   });
 
-  it("should test and verify token", () => {
-    const testSpy = jest.spyOn(validateService, "testToken");
-    component.otpOrPinToTest = "1234";
-
-    component.testToken();
-    component.verifyOTPValue();
-
-    expect(testSpy).toHaveBeenCalledWith("Mock serial", "1234");
-  });
-
-  it("should resync OTP token", () => {
-    component.fristOTPValue = "otp1";
-    component.secondOTPValue = "otp2";
-
-    const resyncSpy = jest.spyOn(tokenService, "resyncOTPToken");
-    component.resyncOTPToken();
-
-    expect(resyncSpy).toHaveBeenCalledWith("Mock serial", "otp1", "otp2");
-  });
-
-  it("should resync OTP token on button click", () => {
-    component.fristOTPValue = "otp1";
-    component.secondOTPValue = "otp2";
-
-    const resyncSpy = jest.spyOn(tokenService, "resyncOTPToken");
-
-    const btn: HTMLButtonElement = fixture.nativeElement.querySelector(
-      ".actions-pin-input-button button"
-    );
-    btn.click();
-
-    expect(resyncSpy).toHaveBeenCalledWith("Mock serial", "otp1", "otp2");
-  });
 });

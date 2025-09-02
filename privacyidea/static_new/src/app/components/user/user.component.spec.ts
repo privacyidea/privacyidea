@@ -1,24 +1,10 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-
 import { UserComponent } from "./user.component";
 import { provideHttpClient } from "@angular/common/http";
-import { signal } from "@angular/core";
-import { UserData, UserService } from "../../services/user/user.service";
-
-class MockUserService {
-  user = signal<UserData>({
-    description: "",
-    editable: false,
-    email: "",
-    givenname: "",
-    mobile: "",
-    phone: "",
-    resolver: "",
-    surname: "",
-    userid: "",
-    username: "test"
-  });
-}
+import { UserService } from "../../services/user/user.service";
+import { ActivatedRoute } from "@angular/router";
+import { of } from "rxjs";
+import { MockUserService } from "../../../testing/mock-services";
 
 describe("UserComponent", () => {
   let component: UserComponent;
@@ -28,7 +14,13 @@ describe("UserComponent", () => {
     await TestBed.configureTestingModule({
       providers: [
         provideHttpClient(),
-        { provide: UserService, useClass: MockUserService }
+        { provide: UserService, useClass: MockUserService },
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            params: of({ id: "123" })
+          }
+        }
       ],
       imports: [UserComponent]
     }).compileComponents();

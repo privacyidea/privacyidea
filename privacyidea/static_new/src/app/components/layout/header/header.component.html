@@ -88,11 +88,11 @@
         ]"
         class="session-timer">
         @if (sessionTimerService.remainingTime()! < 599500) {
-          {{ sessionTimerService.remainingTime() | date: "m:ss" }}
-        } @else if (sessionTimerService.remainingTime()! >= 599500 && sessionTimerService.remainingTime()! < 6000000) {
-          {{ sessionTimerService.remainingTime() | date: "m" }}min
+          {{ sessionTimerService.remainingTime() | date:'m:ss':'UTC' }}
+        } @else if (sessionTimerService.remainingTime()! < 3600000) {
+          {{ sessionTimerService.remainingTime() | date:'m':'UTC' }}min
         } @else {
-          {{ sessionTimerService.remainingTime() | date: "mm" }}min
+          {{ sessionTimerService.remainingTime() | date:"H'h' mm'min'":"UTC" }}
         }
       </div>
       <div class="profile-logout-div flex-row">

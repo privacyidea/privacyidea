@@ -1,6 +1,6 @@
 import { Component } from "@angular/core";
 import { NavigationSelfServiceButtonComponent } from "./navigation-self-service-button/navigation-self-service-button.component";
-import { ROUTE_PATHS } from "../../../app.routes";
+import { ROUTE_PATHS } from "../../../route_paths";
 
 @Component({
   selector: "app-navigation-self-service",

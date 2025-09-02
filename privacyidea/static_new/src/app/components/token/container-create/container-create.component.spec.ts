@@ -18,6 +18,18 @@ const mockNotificationService = {
   }
 };
 
+class MockIntersectionObserver {
+  constructor(private callback: any, private options?: any) {}
+  observe = jest.fn();
+  disconnect = jest.fn();
+}
+
+Object.defineProperty(global, 'IntersectionObserver', {
+  writable: true,
+  configurable: true,
+  value: MockIntersectionObserver
+});
+
 describe("ContainerCreateComponent", () => {
   let component: ContainerCreateComponent;
   let fixture: ComponentFixture<ContainerCreateComponent>;
