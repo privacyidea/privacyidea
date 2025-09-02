@@ -5,7 +5,7 @@ import { forkJoin, Observable, Subject, switchMap, throwError, timer } from "rxj
 import { catchError, shareReplay, takeUntil, takeWhile } from "rxjs/operators";
 import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
-import { ROUTE_PATHS } from "../../app.routes";
+import { ROUTE_PATHS } from "../../route_paths";
 import { TokenTypeOption as TokenTypeKey } from "../../components/token/token.component";
 import {
   EnrollmentResponse,
@@ -328,7 +328,7 @@ export class TokenService implements TokenServiceInterface {
   });
 
   tokenTypesResource = httpResource<PiResponse<{}>>(() => {
-    if (this.contentService.routeUrl() !== ROUTE_PATHS.TOKENS_ENROLLMENT) {
+    if (![ROUTE_PATHS.TOKENS_ENROLLMENT, ROUTE_PATHS.TOKENS_GET_SERIAL].includes(this.contentService.routeUrl())) {
       return undefined;
     }
     return {

@@ -1,5 +1,5 @@
 import { TestBed } from "@angular/core/testing";
-import { HttpClient, provideHttpClient } from "@angular/common/http";
+import { HttpClient, HttpHeaders, provideHttpClient } from "@angular/common/http";
 import { of } from "rxjs";
 
 import { ValidateCheckResponse, ValidateService } from "./validate.service";
@@ -7,22 +7,12 @@ import { LocalService } from "../local/local.service";
 import { NotificationService } from "../notification/notification.service";
 import { Base64Service } from "../base64/base64.service";
 import { AuthResponse, AuthService } from "../auth/auth.service";
-
-class MockLocalService {
-  getHeaders = jest.fn().mockReturnValue({ Authorization: "Bearer FAKE_TOKEN" });
-}
-
-class MockNotificationService {
-  openSnackBar = jest.fn();
-}
-
-class MockBase64Service {
-  bytesToBase64 = jest.fn(() => "b64");
-}
-
-class MockAuthService {
-  authenticate = jest.fn().mockReturnValue(of({ success: true } as any));
-}
+import {
+  MockAuthService,
+  MockBase64Service,
+  MockLocalService,
+  MockNotificationService
+} from "../../../testing/mock-services";
 
 describe("ValidateService", () => {
   let validateService: ValidateService;
@@ -30,7 +20,6 @@ describe("ValidateService", () => {
   let postSpy: jest.SpyInstance;
   let consoleErrorSpy: jest.SpyInstance;
 
-  let local: MockLocalService;
   let notif: MockNotificationService;
   let b64: MockBase64Service;
   let auth: MockAuthService;
@@ -41,7 +30,6 @@ describe("ValidateService", () => {
       providers: [
         provideHttpClient(),
         ValidateService,
-        { provide: LocalService, useClass: MockLocalService },
         { provide: NotificationService, useClass: MockNotificationService },
         { provide: Base64Service, useClass: MockBase64Service },
         { provide: AuthService, useClass: MockAuthService }
@@ -55,7 +43,6 @@ describe("ValidateService", () => {
     consoleErrorSpy = jest.spyOn(console, "error").mockImplementation(() => {
     });
 
-    local = TestBed.inject(LocalService) as unknown as MockLocalService;
     notif = TestBed.inject(NotificationService) as unknown as MockNotificationService;
     b64 = TestBed.inject(Base64Service) as unknown as MockBase64Service;
     auth = TestBed.inject(AuthService) as unknown as MockAuthService;
@@ -80,11 +67,10 @@ describe("ValidateService", () => {
     let result!: ValidateCheckResponse;
     validateService.testToken("HOTP1", "000000", "1").subscribe((r) => (result = r));
 
-    expect(postSpy).toHaveBeenCalledWith(
-      expect.stringMatching(/\/validate\/check$/),
-      { serial: "HOTP1", pass: "000000", otponly: "1" },
-      { headers: local.getHeaders() }
-    );
+    const [url, body, opts] = (http.post as jest.Mock).mock.calls[0];
+    expect(url).toBe('/validate/check');
+    expect(body).toEqual({ otponly: '1', pass: '000000', serial: 'HOTP1' });
+    expect(opts.headers instanceof HttpHeaders).toBe(true);
     expect(result).toEqual(apiResp);
   });
 

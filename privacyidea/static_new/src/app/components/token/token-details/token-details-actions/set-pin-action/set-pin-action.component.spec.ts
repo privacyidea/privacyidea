@@ -34,6 +34,7 @@ describe("SetPinActionComponent", () => {
   };
 
   beforeEach(async () => {
+    TestBed.resetTestingModule();
     await TestBed.configureTestingModule({
       imports: [SetPinActionComponent],
       providers: [

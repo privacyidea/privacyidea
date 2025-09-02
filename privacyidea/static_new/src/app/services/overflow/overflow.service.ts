@@ -1,5 +1,5 @@
 import { inject, Injectable } from "@angular/core";
-import { ROUTE_PATHS } from "../../app.routes";
+import { ROUTE_PATHS } from "../../route_paths";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
 
 export interface OverflowServiceInterface {

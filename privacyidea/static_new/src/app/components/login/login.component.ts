@@ -8,7 +8,7 @@ import { MatInput } from "@angular/material/input";
 import { Router } from "@angular/router";
 import { catchError, EMPTY, filter, Subscription, switchMap, take, timeout, timer } from "rxjs";
 import { challengesTriggered, isAuthenticationSuccessful } from "../../app.component";
-import { ROUTE_PATHS } from "../../app.routes";
+import { ROUTE_PATHS } from "../../route_paths";
 import { AuthResponse, AuthService, AuthServiceInterface } from "../../services/auth/auth.service";
 import { LocalService, LocalServiceInterface } from "../../services/local/local.service";
 import { NotificationService, NotificationServiceInterface } from "../../services/notification/notification.service";

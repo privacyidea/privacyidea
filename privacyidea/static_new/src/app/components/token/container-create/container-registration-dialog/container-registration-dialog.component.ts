@@ -4,7 +4,7 @@ import { MAT_DIALOG_DATA, MatDialogContent, MatDialogRef, MatDialogTitle } from 
 import { MatIcon } from "@angular/material/icon";
 import { Router } from "@angular/router";
 import { PiResponse } from "../../../../app.component";
-import { ROUTE_PATHS } from "../../../../app.routes";
+import { ROUTE_PATHS } from "../../../../route_paths";
 import {
   ContainerRegisterData,
   ContainerService,

@@ -1,5 +1,5 @@
 import { Injectable, signal, WritableSignal } from "@angular/core";
-import { ROUTE_PATHS } from "../../app.routes";
+import { ROUTE_PATHS } from "../../route_paths";
 
 export interface VersioningServiceInterface {
   version: WritableSignal<string>;

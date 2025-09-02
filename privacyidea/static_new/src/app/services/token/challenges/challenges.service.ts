@@ -2,7 +2,7 @@ import { httpResource, HttpResourceRef } from "@angular/common/http";
 import { computed, inject, Injectable, linkedSignal, signal, WritableSignal } from "@angular/core";
 import { Sort } from "@angular/material/sort";
 import { PiResponse } from "../../../app.component";
-import { ROUTE_PATHS } from "../../../app.routes";
+import { ROUTE_PATHS } from "../../../route_paths";
 import { AuthService, AuthServiceInterface } from "../../auth/auth.service";
 import { ContentService, ContentServiceInterface } from "../../content/content.service";
 import { TokenService, TokenServiceInterface } from "../token.service";

@@ -16,7 +16,7 @@ import { ConfirmationDialogComponent } from "../../../shared/confirmation-dialog
 import { SelectedUserAssignDialogComponent } from "../selected-user-assign-dialog/selected-user-assign-dialog.component";
 import { tap } from "rxjs/operators";
 import { LostTokenComponent } from "./lost-token/lost-token.component";
-import { ROUTE_PATHS } from "../../../../app.routes";
+import { ROUTE_PATHS } from "../../../../route_paths";
 import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
 import {
   NotificationService,

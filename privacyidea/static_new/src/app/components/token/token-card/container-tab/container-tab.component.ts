@@ -12,7 +12,7 @@ import { ContentService, ContentServiceInterface } from "../../../../services/co
 import { VersioningService, VersioningServiceInterface } from "../../../../services/version/version.service";
 import { ConfirmationDialogComponent } from "../../../shared/confirmation-dialog/confirmation-dialog.component";
 import { Router, RouterLink } from "@angular/router";
-import { ROUTE_PATHS } from "../../../../app.routes";
+import { ROUTE_PATHS } from "../../../../route_paths";
 import { AuthService } from "../../../../services/auth/auth.service";
 
 @Component({

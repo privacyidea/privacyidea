@@ -3,7 +3,7 @@ import { computed, inject, Injectable, linkedSignal, signal, Signal, WritableSig
 import { Sort } from "@angular/material/sort";
 import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
-import { ROUTE_PATHS } from "../../app.routes";
+import { ROUTE_PATHS } from "../../route_paths";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
 import { RealmService, RealmServiceInterface } from "../realm/realm.service";

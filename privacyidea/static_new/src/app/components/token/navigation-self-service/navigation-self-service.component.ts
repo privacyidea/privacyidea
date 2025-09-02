@@ -1,6 +1,6 @@
 import { Component, inject } from "@angular/core";
 import { NavigationSelfServiceButtonComponent } from "./navigation-self-service-button/navigation-self-service-button.component";
-import { ROUTE_PATHS } from "../../../app.routes";
+import { ROUTE_PATHS } from "../../../route_paths";
 import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
 import { TokenService, TokenServiceInterface } from "../../../services/token/token.service";
 
