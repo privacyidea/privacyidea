@@ -28,35 +28,43 @@ export class FilterValue {
   }
 
   public copyWith(args?: { value?: string; hiddenValue?: string }): FilterValue {
-    return new FilterValue({ value: args?.value ?? this._value, hiddenValue: args?.hiddenValue ?? this._hiddenValue });
+    const newFilter = new FilterValue({
+      value: args?.value ?? this._value,
+      hiddenValue: args?.hiddenValue ?? this._hiddenValue
+    });
+    return newFilter;
   }
 
-  public addKey(key: string): void {
+  public addKey(key: string): FilterValue {
     // Adds a new key to the string if it does not already exist.
     const regex = new RegExp(`(?<=^|\\s)(${key})+:\\s*[\\w\\d]*(?=$|\\s)`, "g");
     if (!this._value.match(regex)) {
       this._value = this._value ? `${this._value} ${key}: ` : `${key}: `;
     }
+    return new FilterValue({ value: this._value, hiddenValue: this._hiddenValue });
   }
-  public addHiddenKey(key: string) {
+  public addHiddenKey(key: string): FilterValue {
     // Adds a new key to the string if it does not already exist.
     const regex = new RegExp(`(?<=^|\\s)(${key})+:\\s*[\\w\\d]*(?=$|\\s)`, "g");
     if (!this._hiddenValue.match(regex)) {
       this._hiddenValue = this._hiddenValue ? `${this._hiddenValue} ${key}: ` : `${key}: `;
     }
+    return new FilterValue({ value: this._value, hiddenValue: this._hiddenValue });
   }
   public getValueOfKey(key: string): string | undefined {
     return this.filterMap.get(key);
   }
 
-  public removeKey(key: string): void {
+  public removeKey(key: string): FilterValue {
     const regex = new RegExp(`(?<=^|\\s)(${key})+:\\s*[\\w\\d]*(?=$|\\s)`, "g");
     this._value = this._value.replace(regex, "").trim().replace(/\s+/g, " ");
+    return new FilterValue({ value: this._value, hiddenValue: this._hiddenValue });
   }
 
-  public removeHiddenKey(key: string) {
+  public removeHiddenKey(key: string): FilterValue {
     const regex = new RegExp(`(?<=^|\\s)(${key})+:\\s*[\\w\\d]*(?=$|\\s)`, "g");
     this._hiddenValue = this._hiddenValue.replace(regex, "").trim().replace(/\s+/g, " ");
+    return new FilterValue({ value: this._value, hiddenValue: this._hiddenValue });
   }
 
   public hasKey(key: string): boolean {
@@ -64,11 +72,11 @@ export class FilterValue {
     return regex.test(this._value);
   }
 
-  public toggleKey(key: string): void {
+  public toggleKey(key: string): FilterValue {
     if (this.hasKey(key)) {
-      this.removeKey(key);
+      return this.removeKey(key);
     } else {
-      this.addKey(key);
+      return this.addKey(key);
     }
   }
 
@@ -82,14 +90,18 @@ export class FilterValue {
     const map = new Map<string, string>();
     const regex = RegExp(/(?<=^|\s)[\w\d]+:\s*[\w\d]*(?=$|\s)/, "g");
     const matches = this._value.match(regex);
+    console.log("Matches: ", matches);
     if (matches) {
       matches.forEach((pair) => {
-        const [key, value] = pair.split(/:\s*(.+)/); // Split only on the first occurrence of ": "
+        let [key, value] = pair.split(/:/); // Split only on the first occurrence of ": "
+        value = value?.trim();
+        console.log("Key: ", key, " Value: ", value);
         if (key) {
           map.set(key, value ?? "");
         }
       });
     }
+    console.log("Map: ", map);
     return map;
   }
 
@@ -103,11 +115,17 @@ export class FilterValue {
     const map = new Map<string, string>();
     const regex = RegExp(/(?<=^|\s)[\w\d]+:\s*[\w\d]*(?=$|\s)/, "g");
     const matches = this._hiddenValue.match(regex);
+    console.log("Matches: ", matches);
     if (matches) {
       matches.forEach((pair) => {
-        const [key, value] = pair.split(/:\s*(.+)/); // Split only on the first occurrence of ": "
-        if (key && value) {
-          map.set(key, value);
+        console.log("Pair: ", pair);
+        let [key, value] = pair.split(/:/); // Split only on the first occurrence of ": "
+        value = value?.trim();
+        console.log("Key: ", key, " Value: ", value);
+        if (key) {
+          console.log("Map: ", map);
+          map.set(key, value ?? "");
+          console.log("Updated Map: ", map);
         }
       });
     }

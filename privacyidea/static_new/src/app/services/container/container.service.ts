@@ -432,7 +432,8 @@ export class ContainerService implements ContainerServiceInterface {
   }
   handleFilterInput($event: Event): void {
     const input = $event.target as HTMLInputElement;
-    this.containerFilter.set(new FilterValue({ value: input.value }));
+    const newFilter = this.containerFilter().copyWith({ value: input.value });
+    this.containerFilter.set(newFilter);
   }
   clearFilter(): void {
     this.containerFilter.set(new FilterValue());

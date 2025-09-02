@@ -31,6 +31,7 @@ import { NgClass } from "@angular/common";
 import { f } from "../../../../../../node_modules/@angular/material/icon-module.d-d06a5620";
 import { MatIconModule } from "@angular/material/icon";
 import { MatTooltipModule } from "@angular/material/tooltip";
+import { MatInput } from "@angular/material/input";
 
 const columnsKeyMap = [
   { key: "serial", label: "Serial" },
@@ -61,7 +62,8 @@ const columnsKeyMap = [
     MatPaginatorModule,
     NgClass,
     MatIconModule,
-    MatTooltipModule
+    MatTooltipModule,
+    MatInput
   ],
   templateUrl: "./container-details-token-table.component.html",
   styleUrl: "./container-details-token-table.component.scss"
@@ -137,8 +139,8 @@ export class ContainerDetailsTokenTableComponent {
     }
   }
 
-  handleFilterInput(event: Event): void {
-    this.filterValue = (event.target as HTMLInputElement).value.trim();
+  handleFilterInput($event: Event): void {
+    this.filterValue = ($event.target as HTMLInputElement).value.trim();
     const normalised = this.filterValue.toLowerCase();
     this.dataSource.filter = normalised;
     if (this.containerTokenData) {

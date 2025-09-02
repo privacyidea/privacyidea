@@ -105,7 +105,8 @@ export interface MachineServiceInterface {
 export class MachineService implements MachineServiceInterface {
   handleFilterInput($event: Event): void {
     const input = $event.target as HTMLInputElement;
-    this.machineFilter.set(new FilterValue({ value: input.value }));
+    const newFilter = this.machineFilter().copyWith({ value: input.value });
+    this.machineFilter.set(newFilter);
   }
   clearFilter(): void {
     this.machineFilter.set(new FilterValue());

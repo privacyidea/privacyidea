@@ -117,9 +117,7 @@ export class ChallengesService implements ChallengesServiceInterface {
   }
   handleFilterInput($event: Event): void {
     const input = $event.target as HTMLInputElement;
-    if (this.challengesFilter().filterString === input.value) {
-      return;
-    }
-    this.challengesFilter.set(new FilterValue({ value: input.value }));
+    const newFilter = this.challengesFilter().copyWith({ value: input.value });
+    this.challengesFilter.set(newFilter);
   }
 }

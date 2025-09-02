@@ -266,15 +266,14 @@ export class TokenService implements TokenServiceInterface {
         return new FilterValue();
       }
       if (!previous || source.routeUrl !== previous.source.routeUrl) {
-        return new FilterValue({ hiddenValue: source.showOnlyTokenNotInContainer ? "container_serial: " : "" });
+        return new FilterValue({ hiddenValue: source.showOnlyTokenNotInContainer ? "container_serial:" : " " });
       }
       const filterValue = previous.value;
       if (source.showOnlyTokenNotInContainer) {
-        filterValue.addHiddenKey("container_serial");
+        return filterValue.addHiddenKey("container_serial");
       } else {
-        filterValue.removeHiddenKey("container_serial");
+        return filterValue.removeHiddenKey("container_serial");
       }
-      return filterValue;
     }
   });
 
@@ -282,9 +281,11 @@ export class TokenService implements TokenServiceInterface {
     this.tokenFilter.set(new FilterValue());
   }
 
-  handleFilterInput(event: Event) {
-    const input = event.target as HTMLInputElement;
-    this.tokenFilter.set(new FilterValue({ value: input.value.trim() }));
+  handleFilterInput($event: Event): void {
+    const input = $event.target as HTMLInputElement;
+    const newFilter = this.tokenFilter().copyWith({ value: input.value.trim() });
+    console.log("newFilter: ", newFilter);
+    this.tokenFilter.set(newFilter);
   }
 
   tokenDetailResource = httpResource<PiResponse<Tokens>>(() => {
@@ -356,15 +357,14 @@ export class TokenService implements TokenServiceInterface {
 
   filterParams = computed<Record<string, string>>(() => {
     const allowedFilters = [...this.apiFilter, ...this.advancedApiFilter, ...this.hiddenApiFilter];
-    let filterPairs = [
-      ...Array.from(this.tokenFilter().filterMap.entries()),
-      ...Array.from(this.tokenFilter().hiddenFilterMap.entries())
-    ];
+    const hiddenFilterMap = this.tokenFilter().hiddenFilterMap;
+    let filterPairs = [...Array.from(this.tokenFilter().filterMap.entries()), ...Array.from(hiddenFilterMap.entries())];
+    console.log("Filter Pairs: ", filterPairs);
     let filterPairsMap = filterPairs
       .filter(([key]) => allowedFilters.includes(key))
       .map(([key, value]) => ({ key, value }));
-
-    return filterPairsMap.reduce(
+    console.log("Filter Pairs Map: ", filterPairsMap);
+    const mopdifiedmap = filterPairsMap.reduce(
       (acc, { key, value }) => ({
         ...acc,
         [key]: ["user", "infokey", "infovalue", "active", "assigned", "container_serial"].includes(key)
@@ -373,6 +373,8 @@ export class TokenService implements TokenServiceInterface {
       }),
       {} as Record<string, string>
     );
+    console.log("Modified Map: ", mopdifiedmap);
+    return mopdifiedmap;
   });
 
   tokenResource = httpResource<PiResponse<Tokens>>(() => {

@@ -222,9 +222,7 @@ export class UserService implements UserServiceInterface {
   }
   handleFilterInput($event: Event): void {
     const input = $event.target as HTMLInputElement;
-    if (this.apiUserFilter().filterString === input.value) {
-      return;
-    }
-    this.apiUserFilter.set(new FilterValue({ value: input.value }));
+    const newFilter = this.apiUserFilter().copyWith({ value: input.value });
+    this.apiUserFilter.set(newFilter);
   }
 }
