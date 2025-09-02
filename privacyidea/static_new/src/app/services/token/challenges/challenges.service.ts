@@ -62,7 +62,7 @@ export class ChallengesService implements ChallengesServiceInterface {
   });
   private filterParams = computed(() => {
     const allowedFilters = [...this.apiFilter, ...this.advancedApiFilter];
-    const filterPairs = Object.entries(this.challengesFilter())
+    const filterPairs = Object.entries(this.challengesFilter().filterMap)
       .map(([key, value]) => ({ key, value }))
       .filter(({ key }) => allowedFilters.includes(key));
     return filterPairs.reduce(

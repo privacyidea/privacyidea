@@ -94,7 +94,7 @@ export class AuditService implements AuditServiceInterface {
   auditFilter = signal(new FilterValue());
   filterParams = computed<Record<string, string>>(() => {
     const allowedFilters = [...this.apiFilter, ...this.advancedApiFilter];
-    const filterPairs = Object.entries(this.auditFilter())
+    const filterPairs = Object.entries(this.auditFilter().filterMap)
       .map(([key, value]) => ({ key, value }))
       .filter(({ key }) => allowedFilters.includes(key));
     if (filterPairs.length === 0) {
