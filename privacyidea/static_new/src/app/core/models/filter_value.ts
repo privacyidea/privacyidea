@@ -21,13 +21,6 @@ export class FilterValue {
   set setString(newValue: string) {
     this._value = this._normalize(newValue);
   }
-  set setMap(newValue: Map<string, string>) {
-    // Convert map to a normalized string representation
-    // {key1:value1,key2:value2,...} => "key1: value1 key2: value2 ..."
-    this._value = Array.from(newValue.entries())
-      .map(([key, value]) => `${key}: ${value}`)
-      .join(" ");
-  }
 
   constructor(args: { value?: string; hiddenValue?: string } = {}) {
     this._value = args.value ? this._normalize(args.value) : "";
@@ -91,9 +84,9 @@ export class FilterValue {
     const matches = this._value.match(regex);
     if (matches) {
       matches.forEach((pair) => {
-        const [key, value] = pair.split(/:\s+(.+)/); // Split only on the first occurrence of ": "
-        if (key && value) {
-          map.set(key, value);
+        const [key, value] = pair.split(/:\s*(.+)/); // Split only on the first occurrence of ": "
+        if (key) {
+          map.set(key, value ?? "");
         }
       });
     }
@@ -112,7 +105,7 @@ export class FilterValue {
     const matches = this._hiddenValue.match(regex);
     if (matches) {
       matches.forEach((pair) => {
-        const [key, value] = pair.split(/:\s+(.+)/); // Split only on the first occurrence of ": "
+        const [key, value] = pair.split(/:\s*(.+)/); // Split only on the first occurrence of ": "
         if (key && value) {
           map.set(key, value);
         }
@@ -124,7 +117,20 @@ export class FilterValue {
   public addEntry(key: string, value: string): void {
     const map = this.filterMap;
     map.set(key, value);
-    this.setMap = map;
+    this.setFromMap(map);
+  }
+
+  /**
+   * Sets the filter value from a map of key-value pairs.
+   * Converts the map to the normalized string format and updates _value.
+   */
+  public setFromMap(map: Map<string, string>): void {
+    // Convert the map to the normalized string format: "key1: value1 key2: value2 ..."
+    const entries: string[] = [];
+    map.forEach((value, key) => {
+      entries.push(`${key}: ${value}`);
+    });
+    this._value = entries.join(" ");
   }
 
   private _normalize(value: string): string {
