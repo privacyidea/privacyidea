@@ -3,17 +3,9 @@ import { Route, Router, UrlSegment } from "@angular/router";
 import { AuthService } from "../services/auth/auth.service";
 import { NotificationService } from "../services/notification/notification.service";
 import { adminMatch, AuthGuard, selfServiceMatch } from "./auth.guard";
+import { MockAuthService, MockNotificationService } from "../../testing/mock-services";
 
 const flushPromises = () => new Promise((r) => setTimeout(r, 0));
-
-class MockAuthService {
-  isAuthenticatedUser = jest.fn();
-  role = jest.fn();
-}
-
-class MockNotificationService {
-  openSnackBar = jest.fn();
-}
 
 const routerMock = {
   navigate: jest.fn().mockResolvedValue(true)
@@ -32,20 +24,20 @@ describe("AuthGuard — CanMatch helpers", () => {
   it("adminMatch returns true only for role \"admin\"", () => {
     const auth = TestBed.inject(AuthService) as unknown as MockAuthService;
 
-    auth.role.mockReturnValue("admin");
+    auth.role.set("admin");
     expect(runMatch(adminMatch)).toBe(true);
 
-    auth.role.mockReturnValue("user");
+    auth.role.set("user");
     expect(runMatch(adminMatch)).toBe(false);
   });
 
   it("selfServiceMatch returns true only for role \"user\"", () => {
     const auth = TestBed.inject(AuthService) as unknown as MockAuthService;
 
-    auth.role.mockReturnValue("user");
+    auth.role.set("user");
     expect(runMatch(selfServiceMatch)).toBe(true);
 
-    auth.role.mockReturnValue("admin");
+    auth.role.set("admin");
     expect(runMatch(selfServiceMatch)).toBe(false);
   });
 });
@@ -80,21 +72,18 @@ describe("AuthGuard class", () => {
   });
 
   it("allows activation when user is authenticated", () => {
-    authService.isAuthenticated.mockReturnValue(true);
+    authService.isAuthenticated.set(true);
 
     expect(guard.canActivate()).toBe(true);
     expect(guard.canActivateChild()).toBe(true);
-    expect(authService.isAuthenticated).toHaveBeenCalledTimes(2);
     expect(routerMock.navigate).not.toHaveBeenCalled();
   });
 
   it("blocks activation and redirects to /login when not authenticated", async () => {
-    authService.isAuthenticated.mockReturnValue(false);
+    authService.isAuthenticated.set(false);
 
     expect(guard.canActivate()).toBe(false);
     expect(guard.canActivateChild()).toBe(false);
-
-    expect(authService.isAuthenticated).toHaveBeenCalledTimes(2);
     expect(routerMock.navigate).toHaveBeenCalledWith(["/login"]);
 
     await flushPromises();

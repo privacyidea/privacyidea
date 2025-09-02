@@ -6,7 +6,7 @@ import { MatDivider } from "@angular/material/divider";
 import { MatIcon } from "@angular/material/icon";
 import { MatList, MatListItem } from "@angular/material/list";
 import { Router, RouterLink } from "@angular/router";
-import { catchError, concatMap, EMPTY, filter, forkJoin, from, reduce, switchMap } from "rxjs";
+import { catchError, concatMap, EMPTY, filter, from, reduce, switchMap } from "rxjs";
 import { tabToggleState } from "../../../../../styles/animations/animations";
 import { AuditService, AuditServiceInterface } from "../../../../services/audit/audit.service";
 import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
@@ -16,7 +16,7 @@ import { ConfirmationDialogComponent } from "../../../shared/confirmation-dialog
 import { SelectedUserAssignDialogComponent } from "../selected-user-assign-dialog/selected-user-assign-dialog.component";
 import { tap } from "rxjs/operators";
 import { LostTokenComponent } from "./lost-token/lost-token.component";
-import { ROUTE_PATHS } from "../../../../app.routes";
+import { ROUTE_PATHS } from "../../../../route_paths";
 import {
   NotificationService,
   NotificationServiceInterface

@@ -1,6 +1,6 @@
 import { CommonModule } from "@angular/common";
 import { HttpParams } from "@angular/common/http";
-import { Component, effect, inject, signal } from "@angular/core";
+import { Component, effect, inject, linkedSignal, signal, WritableSignal } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { MatButton } from "@angular/material/button";
 import { MatDialog } from "@angular/material/dialog";
@@ -11,10 +11,10 @@ import { MatProgressBarModule } from "@angular/material/progress-bar";
 import { MatOption, MatSelect } from "@angular/material/select";
 import { Router } from "@angular/router";
 import { Subscription } from "rxjs";
-import { ROUTE_PATHS } from "../../../app.routes";
+import { ROUTE_PATHS } from "../../../route_paths";
 import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
 import { NotificationService, NotificationServiceInterface } from "../../../services/notification/notification.service";
-import { TokenService, TokenServiceInterface } from "../../../services/token/token.service";
+import { TokenService, TokenServiceInterface, TokenType } from "../../../services/token/token.service";
 import { ConfirmationDialogComponent } from "../../shared/confirmation-dialog/confirmation-dialog.component";
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { GetSerialResultDialogComponent } from "./get-serial-result-dialog/get-serial-result-dialog.component";
@@ -40,12 +40,6 @@ import { GetSerialResultDialogComponent } from "./get-serial-result-dialog/get-s
   styleUrl: "./token-get-serial.component.scss"
 })
 export class TokenGetSerialComponent {
-  protected readonly tokenService: TokenServiceInterface = inject(TokenService);
-  protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
-  protected readonly contentService: ContentServiceInterface = inject(ContentService);
-  private readonly dialog: MatDialog = inject(MatDialog);
-  private router = inject(Router);
-  tokenSerial = this.tokenService.tokenSerial;
   otpValue = signal<string>("");
   tokenType = signal<string>("");
   assignmentState = signal<string>("");
@@ -55,7 +49,6 @@ export class TokenGetSerialComponent {
   foundSerial = signal<string>("");
   tokenCount = signal<string>("");
   serialSubscription: Subscription | null = null;
-  tokenTypesWithOTP: { key: string; info: string }[] = [];
   assignmentStates = [
     { key: "assigned", info: "The token is assigned to a user" },
     { key: "unassigned", info: "The token is not assigned to a user" },
@@ -64,10 +57,20 @@ export class TokenGetSerialComponent {
       info: "It does not matter, if the token is assigned or not"
     }
   ];
+  tokenWithOTP = ["hotp", "totp", "spass", "motp", "sshkey", "yubikey", "remote", "yubico", "radius", "sms"];
+  protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+  tokenSerial = this.tokenService.tokenSerial;
+  tokenTypesWithOTP: WritableSignal<TokenType[]> = linkedSignal({
+    source: this.tokenService.tokenTypeOptions,
+    computation: (tokenTypeOptions: TokenType[]) =>
+      tokenTypeOptions.filter((type) => this.tokenWithOTP.includes(type.key))
+  });
+  protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
+  protected readonly contentService: ContentServiceInterface = inject(ContentService);
+  private readonly dialog: MatDialog = inject(MatDialog);
+  private router = inject(Router);
 
   constructor() {
-    const tokenWithOTP = ["hotp", "totp", "spass", "motp", "sshkey", "yubikey", "remote", "yubico", "radius", "sms"];
-    this.tokenTypesWithOTP = this.tokenService.tokenTypeOptions().filter((type) => tokenWithOTP.includes(type.key));
 
     effect(() => {
       this.otpValue();
