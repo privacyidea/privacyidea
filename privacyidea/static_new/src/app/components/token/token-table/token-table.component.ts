@@ -48,7 +48,8 @@ const columnKeysMap = [
     FormsModule,
     MatIconModule,
     ScrollToTopDirective,
-    ClearableInputComponent
+    ClearableInputComponent,
+    CopyButtonComponent
   ],
   templateUrl: "./token-table.component.html",
   styleUrl: "./token-table.component.scss"
