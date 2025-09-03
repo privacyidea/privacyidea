@@ -4,8 +4,6 @@ import { MatCheckbox } from "@angular/material/checkbox";
 import { MatInput } from "@angular/material/input";
 import { MatError, MatFormField, MatHint, MatLabel, MatOption, MatSelect } from "@angular/material/select";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
-
-import { NgClass } from "@angular/common";
 import { Observable, of } from "rxjs";
 import {
   EnrollmentResponse,
@@ -33,8 +31,7 @@ export interface HotpEnrollmentOptions extends TokenEnrollmentData {
     MatInput,
     MatHint,
     MatError,
-    ReactiveFormsModule,
-    NgClass
+    ReactiveFormsModule
   ],
   templateUrl: "./enroll-hotp.component.html",
   styleUrl: "./enroll-hotp.component.scss",
@@ -59,28 +56,6 @@ export class EnrollHotpComponent implements OnInit {
   otpLengthFormControl = new FormControl<number>(6, [Validators.required]);
   otpKeyFormControl = new FormControl<string>({ value: "", disabled: true });
   hashAlgorithmFormControl = new FormControl<string>("sha1", [Validators.required]);
-
-  ngOnInit(): void {
-    this.additionalFormFieldsChange.emit({
-      generateOnServer: this.generateOnServerFormControl,
-      otpLength: this.otpLengthFormControl,
-      otpKey: this.otpKeyFormControl,
-      hashAlgorithm: this.hashAlgorithmFormControl
-    });
-    this.clickEnrollChange.emit(this.onClickEnroll);
-
-    this.generateOnServerFormControl.valueChanges.subscribe((generate) => {
-      if (!generate) {
-        this.otpKeyFormControl.enable({ emitEvent: false });
-        this.otpKeyFormControl.setValidators([Validators.required]);
-      } else {
-        this.otpKeyFormControl.disable({ emitEvent: false });
-        this.otpKeyFormControl.clearValidators();
-      }
-      this.otpKeyFormControl.updateValueAndValidity();
-    });
-  }
-
   onClickEnroll = (basicOptions: TokenEnrollmentData): Observable<EnrollmentResponse | null> => {
     if (
       this.generateOnServerFormControl.invalid ||
@@ -113,4 +88,25 @@ export class EnrollHotpComponent implements OnInit {
       mapper: this.enrollmentMapper
     });
   };
+
+  ngOnInit(): void {
+    this.additionalFormFieldsChange.emit({
+      generateOnServer: this.generateOnServerFormControl,
+      otpLength: this.otpLengthFormControl,
+      otpKey: this.otpKeyFormControl,
+      hashAlgorithm: this.hashAlgorithmFormControl
+    });
+    this.clickEnrollChange.emit(this.onClickEnroll);
+
+    this.generateOnServerFormControl.valueChanges.subscribe((generate) => {
+      if (!generate) {
+        this.otpKeyFormControl.enable({ emitEvent: false });
+        this.otpKeyFormControl.setValidators([Validators.required]);
+      } else {
+        this.otpKeyFormControl.disable({ emitEvent: false });
+        this.otpKeyFormControl.clearValidators();
+      }
+      this.otpKeyFormControl.updateValueAndValidity();
+    });
+  }
 }

@@ -95,13 +95,14 @@
                   }
                 }
                 @case ("realms") {
-                  <div [ngClass]="(element[column.key]?.length || 0) > 1 ? 'realm-list' : 'realm'">
+                  <div [ngClass]="{'realm-list': (element[column.key]?.length || 0) > 1}">
                     @for (realm of element[column.key]; track realm; let idx = $index) {
                       <div>
                         <span
                           attr.aria-label="{{ column.label }} Link">
                           {{ realm }}
                         </span>
+                        <br style="margin-top: 3px" />
                       </div>
                     }
                   </div>
