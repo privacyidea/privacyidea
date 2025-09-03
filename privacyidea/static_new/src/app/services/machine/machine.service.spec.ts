@@ -57,7 +57,7 @@ describe("MachineService (with mock classes)", () => {
     };
     await lastValueFrom(machineService.postAssignMachineToToken(args));
     const [url, body, opts] = (httpStub.post as jest.Mock).mock.calls[0];
-    expect(url).toBe('/api/machine/token');
+    expect(url).toBe("/api/machine/token");
     expect(body).toEqual({
       "service_id": "svc",
       "user": "alice",

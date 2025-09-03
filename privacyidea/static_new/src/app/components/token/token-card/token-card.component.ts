@@ -37,6 +37,8 @@ export class TokenCardComponent {
   containerSerial = this.containerService.containerSerial;
   states = this.containerService.states;
   isProgrammaticTabChange = this.contentService.isProgrammaticTabChange;
+  tokenTabActive = () => this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS) && !this.containerTabActive();
+  containerTabActive = () => this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_CONTAINERS);
 
   onTabChange(event: MatTabChangeEvent): void {
     if (this.isProgrammaticTabChange()) {
@@ -49,7 +51,4 @@ export class TokenCardComponent {
       this.router.navigateByUrl(ROUTE_PATHS.TOKENS_CONTAINERS);
     }
   }
-
-  tokenTabActive = () => this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS) && !this.containerTabActive();
-  containerTabActive = () => this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_CONTAINERS);
 }

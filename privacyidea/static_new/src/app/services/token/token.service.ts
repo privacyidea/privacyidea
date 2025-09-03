@@ -247,17 +247,10 @@ export class TokenService implements TokenServiceInterface {
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
-
-  readonly apiFilter = apiFilter;
-  readonly advancedApiFilter = advancedApiFilter;
   readonly hiddenApiFilter = hiddenApiFilter;
-  readonly defaultSizeOptions = [5, 10, 25, 50];
-
+  stopPolling$ = new Subject<void>();
   tokenBaseUrl = environment.proxyUrl + "/token/";
   eventPageSize = 10;
-  stopPolling$ = new Subject<void>();
-  tokenIsActive = signal(true);
-  tokenIsRevoked = signal(true);
   tokenSerial = this.contentService.tokenSerial;
 
   constructor() {
@@ -281,6 +274,12 @@ export class TokenService implements TokenServiceInterface {
       }
     });
   }
+
+  readonly apiFilter = apiFilter;
+  readonly advancedApiFilter = advancedApiFilter;
+  readonly defaultSizeOptions = [5, 10, 25, 50];
+  tokenIsActive = signal(true);
+  tokenIsRevoked = signal(true);
 
   showOnlyTokenNotInContainer = linkedSignal({
     source: this.contentService.routeUrl,
@@ -360,7 +359,7 @@ export class TokenService implements TokenServiceInterface {
 
   pageSize = linkedSignal<{ role: string }, number>({
     source: () => ({
-      role: this.authService.role(),
+      role: this.authService.role()
     }),
     computation: (source, previous) => {
       if (previous && source.role === previous.source.role) {
@@ -369,8 +368,8 @@ export class TokenService implements TokenServiceInterface {
       if (this.authService.tokenPageSize() != null && this.authService.tokenPageSize()! > 0) {
         return this.authService.tokenPageSize()!;
       }
-      return source.role === 'user' ? 5 : 10;
-    },
+      return source.role === "user" ? 5 : 10;
+    }
   });
   sort = signal({ active: "serial", direction: "asc" } as Sort);
 
@@ -435,6 +434,7 @@ export class TokenService implements TokenServiceInterface {
     }),
     computation: () => []
   });
+
 
   batchUnassignTokens(tokenDetails: TokenDetails[]): Observable<PiResponse<BatchResult, any>> {
     const headers = this.authService.getHeaders();

@@ -54,10 +54,23 @@ export class UserService implements UserServiceInterface {
   private readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly tokenService: TokenServiceInterface = inject(TokenService);
   private readonly authService: AuthServiceInterface = inject(AuthService);
-  readonly apiFilter = apiFilter;
-  readonly advancedApiFilter = advancedApiFilter;
   private baseUrl = environment.proxyUrl + "/user/";
-  filterValue = signal({} as Record<string, string>);
+  selectedUserRealm = linkedSignal({
+    source: () => ({
+      routeUrl: this.contentService.routeUrl(),
+      defaultRealm: this.realmService.defaultRealm(),
+      selectedTokenType: this.tokenService.selectedTokenType(),
+      authRole: this.authService.role(),
+      authRealm: this.authService.realm()
+    }),
+    computation: (source) => {
+      if (source.authRole === "user") {
+        return source.authRealm;
+      }
+      return source.defaultRealm;
+    }
+  });  readonly apiFilter = apiFilter;
+  sort = signal({ active: "serial", direction: "asc" } as Sort);
   filterParams = computed<Record<string, string>>(() => {
     const allowedFilters = [...this.apiFilter, ...this.advancedApiFilter];
     const filterPairs = Object.entries(this.filterValue())
@@ -73,7 +86,10 @@ export class UserService implements UserServiceInterface {
       }),
       {} as Record<string, string>
     );
-  });
+  });  readonly advancedApiFilter = advancedApiFilter;
+
+  filterValue = signal({} as Record<string, string>);
+
   pageSize = linkedSignal({
     source: () => this.authService.userPageSize(),
     computation: (pageSize) => (pageSize > 0 ? pageSize : 10)
@@ -86,21 +102,7 @@ export class UserService implements UserServiceInterface {
     }),
     computation: () => 0
   });
-  selectedUserRealm = linkedSignal({
-    source: () => ({
-      routeUrl: this.contentService.routeUrl(),
-      defaultRealm: this.realmService.defaultRealm(),
-      selectedTokenType: this.tokenService.selectedTokenType(),
-      authRole: this.authService.role(),
-      authRealm: this.authService.realm()
-    }),
-    computation: (source) => {
-      if (source.authRole === "user") {
-        return source.authRealm;
-      }
-      return source.defaultRealm;
-    }
-  });
+
   userFilter = linkedSignal<string, UserData | string>({
     source: this.selectedUserRealm,
     computation: () => ""
@@ -168,7 +170,7 @@ export class UserService implements UserServiceInterface {
       }
     };
   });
-  sort = signal({ active: "serial", direction: "asc" } as Sort);
+
   users: WritableSignal<UserData[]> = linkedSignal({
     source: this.usersResource.value,
     computation: (source, previous) => source?.result?.value ?? previous?.value ?? []

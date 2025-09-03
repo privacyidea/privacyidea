@@ -111,6 +111,14 @@ export class MachineService implements MachineServiceInterface {
   sshAdvancedApiFilter = ["hostname", "machineid & resolver"];
   offlineApiFilter = ["serial", "count", "rounds"];
   offlineAdvancedApiFilter = ["hostname", "machineid & resolver"];
+
+  constructor() {
+    effect(() => {
+      const recordsFromText = this.tableUtilsService.recordsFromText(this.filterValueString());
+      this.filterValue.set(recordsFromText);
+    });
+  }
+
   selectedApplicationType = signal<"ssh" | "offline">("ssh");
   pageSize = linkedSignal({
     source: this.selectedApplicationType,
@@ -119,7 +127,7 @@ export class MachineService implements MachineServiceInterface {
 
   machinesResource = httpResource<PiResponse<Machines>>(() => {
     if (!(this.contentService.routeUrl().includes(ROUTE_PATHS.TOKENS_APPLICATIONS) ||
-      this.contentService.routeUrl().includes(ROUTE_PATHS.TOKENS_DETAILS)) ||
+        this.contentService.routeUrl().includes(ROUTE_PATHS.TOKENS_DETAILS)) ||
       !this.authService.actionAllowed("machinelist")) {
       return undefined;
     }
@@ -214,12 +222,6 @@ export class MachineService implements MachineServiceInterface {
     computation: (tokenApplicationResource, previous) => tokenApplicationResource?.result?.value ?? previous?.value
   });
 
-  constructor() {
-    effect(() => {
-      const recordsFromText = this.tableUtilsService.recordsFromText(this.filterValueString());
-      this.filterValue.set(recordsFromText);
-    });
-  }
 
   postAssignMachineToToken(args: {
     service_id: string;

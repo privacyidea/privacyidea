@@ -5,12 +5,7 @@ import { ContainerDetails, ContainerService } from "./container.service";
 import { NotificationService } from "../notification/notification.service";
 import { TokenService } from "../token/token.service";
 import { environment } from "../../../environments/environment";
-import {
-  MockLocalService,
-  MockNotificationService,
-  MockTokenService
-} from "../../../testing/mock-services";
-import { ContentService } from "../content/content.service";
+import { MockLocalService, MockNotificationService, MockTokenService } from "../../../testing/mock-services";
 import { AuthService } from "../auth/auth.service";
 
 environment.proxyUrl = "/api";

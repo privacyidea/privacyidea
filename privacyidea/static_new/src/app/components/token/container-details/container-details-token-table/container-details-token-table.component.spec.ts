@@ -11,7 +11,8 @@ import { ContainerDetailsTokenTableComponent } from "./container-details-token-t
 import {
   MockAuthService,
   MockContainerService,
-  MockContentService, MockLocalService,
+  MockContentService,
+  MockLocalService,
   MockNotificationService,
   MockOverflowService,
   MockTableUtilsService,

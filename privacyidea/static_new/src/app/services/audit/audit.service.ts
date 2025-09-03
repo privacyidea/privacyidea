@@ -88,7 +88,6 @@ export class AuditService implements AuditServiceInterface {
 
   readonly apiFilter = apiFilter;
   readonly advancedApiFilter = advancedApiFilter;
-  private auditBaseUrl = environment.proxyUrl + "/audit/";
   filterValue = signal({} as Record<string, string>);
   filterParams = computed<Record<string, string>>(() => {
     const allowedFilters = [...this.apiFilter, ...this.advancedApiFilter];
@@ -106,12 +105,10 @@ export class AuditService implements AuditServiceInterface {
       {} as Record<string, string>
     );
   });
-
   pageSize = linkedSignal({
     source: () => this.authService.auditPageSize(),
     computation: (pageSize) => (pageSize > 0 ? pageSize : 10)
-  })
-
+  });
   pageIndex = linkedSignal({
     source: () => ({
       filterValue: this.filterValue(),
@@ -120,6 +117,7 @@ export class AuditService implements AuditServiceInterface {
     }),
     computation: () => 0
   });
+  private auditBaseUrl = environment.proxyUrl + "/audit/";
   auditResource = httpResource<PiResponse<Audit>>(() => {
     if (this.contentService.routeUrl() !== ROUTE_PATHS.AUDIT) {
       return undefined;

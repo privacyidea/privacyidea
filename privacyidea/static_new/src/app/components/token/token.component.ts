@@ -11,7 +11,6 @@ import { ContainerTableComponent } from "./container-table/container-table.compo
 import { TokenCardComponent } from "./token-card/token-card.component";
 import { TokenDetailsComponent } from "./token-details/token-details.component";
 import { TokenTableComponent } from "./token-table/token-table.component";
-import { AuthService, AuthServiceInterface } from "../../services/auth/auth.service";
 
 export type TokenTypeOption =
   | "hotp"

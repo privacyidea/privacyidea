@@ -3,7 +3,6 @@ import { HttpClient, HttpHeaders, provideHttpClient } from "@angular/common/http
 import { of } from "rxjs";
 
 import { ValidateCheckResponse, ValidateService } from "./validate.service";
-import { LocalService } from "../local/local.service";
 import { NotificationService } from "../notification/notification.service";
 import { Base64Service } from "../base64/base64.service";
 import { AuthResponse, AuthService } from "../auth/auth.service";
@@ -70,8 +69,8 @@ describe("ValidateService", () => {
     validateService.testToken("HOTP1", "000000", "1").subscribe((r) => (result = r));
 
     const [url, body, opts] = (http.post as jest.Mock).mock.calls[0];
-    expect(url).toBe('/validate/check');
-    expect(body).toEqual({ otponly: '1', pass: '000000', serial: 'HOTP1' });
+    expect(url).toBe("/validate/check");
+    expect(body).toEqual({ otponly: "1", pass: "000000", serial: "HOTP1" });
     expect(opts.headers instanceof HttpHeaders).toBe(true);
     expect(result).toEqual(apiResp);
   });

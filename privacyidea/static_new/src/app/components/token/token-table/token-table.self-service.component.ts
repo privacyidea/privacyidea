@@ -37,6 +37,8 @@ import { TokenTableComponent } from "./token-table.component";
   styleUrl: "./token-table.component.scss"
 })
 export class TokenTableSelfServiceComponent extends TokenTableComponent {
+  protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
+  private dialog = inject(MatDialog);
   columnKeysMapSelfService = computed(() => {
     const columnKeys = [
       { key: "serial", label: "Serial" },
@@ -45,18 +47,15 @@ export class TokenTableSelfServiceComponent extends TokenTableComponent {
       { key: "container_serial", label: "Container" },
       { key: "active", label: "Active" },
       { key: "failcount", label: "Fail Counter" }
-    ]
+    ];
     if (this.authService.actionAllowed("revoke")) columnKeys.push({ key: "revoke", label: "Revoke" });
     if (this.authService.actionAllowed("delete")) columnKeys.push({ key: "delete", label: "Delete" });
 
-    return columnKeys
-  })
-
+    return columnKeys;
+  });
   readonly columnKeysSelfService: string[] = this.columnKeysMapSelfService().map(
     (column: { key: string; label: string }) => column.key
   );
-  protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
-  private dialog = inject(MatDialog);
 
   revokeToken(serial: string): void {
     this.dialog

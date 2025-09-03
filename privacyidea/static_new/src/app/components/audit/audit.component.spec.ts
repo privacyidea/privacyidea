@@ -7,7 +7,9 @@ import { of } from "rxjs";
 import {
   MockAuditService,
   MockAuthService,
-  MockContentService, MockLocalService, MockNotificationService,
+  MockContentService,
+  MockLocalService,
+  MockNotificationService,
   MockTableUtilsService
 } from "../../../testing/mock-services";
 import { AuditService } from "../../services/audit/audit.service";
