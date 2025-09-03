@@ -17,6 +17,7 @@ import { SelectedUserAssignDialogComponent } from "../selected-user-assign-dialo
 import { tap } from "rxjs/operators";
 import { LostTokenComponent } from "./lost-token/lost-token.component";
 import { ROUTE_PATHS } from "../../../../route_paths";
+import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
 import {
   NotificationService,
   NotificationServiceInterface
@@ -37,11 +38,12 @@ interface BatchResult {
   animations: [tabToggleState]
 })
 export class TokenTabComponent {
-  private readonly tokenService: TokenServiceInterface = inject(TokenService);
+  protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly versioningService: VersioningServiceInterface = inject(VersioningService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly dialog: MatDialog = inject(MatDialog);
   protected readonly auditService: AuditServiceInterface = inject(AuditService);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
   private router = inject(Router);

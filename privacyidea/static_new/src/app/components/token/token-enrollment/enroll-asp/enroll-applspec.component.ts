@@ -14,6 +14,7 @@ import {
   TokenEnrollmentData
 } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
 import { ApplspecApiPayloadMapper } from "../../../../mappers/token-api-payload/applspec-token-api-payload.mapper";
+import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
 
 export interface ApplspecEnrollmentOptions extends TokenEnrollmentData {
   type: "applspec";
@@ -53,6 +54,7 @@ export class EnrollApplspecComponent implements OnInit {
   protected readonly serviceIdService: ServiceIdServiceInterface =
     inject(ServiceIdService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
 
   @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
@@ -86,16 +88,20 @@ export class EnrollApplspecComponent implements OnInit {
     });
     this.clickEnrollChange.emit(this.onClickEnroll);
 
-    this.generateOnServerControl.valueChanges.subscribe((generate) => {
-      if (!generate) {
-        this.otpKeyFormControl.enable({ emitEvent: false });
-        this.otpKeyFormControl.setValidators([Validators.required]);
-      } else {
-        this.otpKeyFormControl.disable({ emitEvent: false });
-        this.otpKeyFormControl.clearValidators();
-      }
-      this.otpKeyFormControl.updateValueAndValidity();
-    });
+    if (this.authService.checkForceServerGenerateOTPKey("applspec")) {
+      this.generateOnServerControl.disable({ emitEvent: false });
+    } else {
+      this.generateOnServerControl.valueChanges.subscribe((generate) => {
+        if (!generate) {
+          this.otpKeyFormControl.enable({ emitEvent: false });
+          this.otpKeyFormControl.setValidators([Validators.required]);
+        } else {
+          this.otpKeyFormControl.disable({ emitEvent: false });
+          this.otpKeyFormControl.clearValidators();
+        }
+        this.otpKeyFormControl.updateValueAndValidity();
+      });
+    }
   }
 
   onClickEnroll = (

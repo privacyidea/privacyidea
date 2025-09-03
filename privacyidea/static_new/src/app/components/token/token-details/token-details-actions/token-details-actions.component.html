@@ -1,26 +1,24 @@
 @if (overflowService.isWidthOverflowing("body", 1580)) {
-  <br />
+  <br/>
 }
 <div
-  [ngClass]="{
-    'ali-center': overflowService.isWidthOverflowing('body', 1580)
-  }"
+  [ngClass]="{'ali-center': overflowService.isWidthOverflowing('body', 1580)}"
   class="actions-otp-container">
-  <div class="user-pin-container user-pin-container-padding">
-    <app-set-pin-action
-      [repeatPinValue]="repeatPinValue"
-      [setPinValue]="setPinValue" />
-    <br />
-    <mat-divider />
-    <br />
-  </div>
-  @if (tokenType() !== "passkey") {
-    <app-resync-token-action /><br />
-    <mat-divider /><br />
+  @if (authService.actionAllowed("setpin") || authService.actionsAllowed(["setrandompin", "otp_pin_set_random"])) {
+    <div class="user-pin-container">
+      <app-set-pin-action
+        [setPinValue]="setPinValue"
+        [repeatPinValue]="repeatPinValue"/>
+      <mat-divider class="margin-top-1 margin-bottom-1"/>
+    </div>
+  }
+  @if (tokenType() !== "passkey" && authService.actionAllowed("resync")) {
+    <app-resync-token-action/>
+    <mat-divider class="margin-top-1 margin-bottom-1"/>
   }
   @if (tokenType() !== "passkey") {
-    <app-test-otp-pin-action />
-    @if (tokenType() === "sshkey") {
+    <app-test-otp-pin-action/>
+    @if (tokenType() === "sshkey" && authService.actionsAllowed(["manage_machine_tokens", "machinelist"])) {
       <button
         (click)="assignSSHMachineDialog()"
         class="detail-button"

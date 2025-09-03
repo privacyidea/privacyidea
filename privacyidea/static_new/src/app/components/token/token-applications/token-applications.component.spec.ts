@@ -5,12 +5,12 @@ import { TokenApplicationsOfflineComponent } from "./token-applications-offline/
 import { MatSelectModule } from "@angular/material/select";
 import { MachineService } from "../../../services/machine/machine.service";
 import { provideHttpClient } from "@angular/common/http";
-import { MockMachineService } from "../../../../testing/mock-services";
+import { MockLocalService, MockMachineService, MockNotificationService } from "../../../../testing/mock-services";
 
 describe("TokenApplicationsComponent (Jest)", () => {
   let fixture: ComponentFixture<TokenApplicationsComponent>;
   let component: TokenApplicationsComponent;
-  const machineServiceMock = new MockMachineService();
+  let machineServiceMock: MockMachineService;
 
   beforeEach(async () => {
     TestBed.resetTestingModule();
@@ -24,12 +24,15 @@ describe("TokenApplicationsComponent (Jest)", () => {
       ],
       providers: [
         provideHttpClient(),
-        { provide: MachineService, useValue: machineServiceMock }
+        { provide: MachineService, useClass: MockMachineService },
+        MockLocalService,
+        MockNotificationService
       ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(TokenApplicationsComponent);
     component = fixture.componentInstance;
+    machineServiceMock = TestBed.inject(MachineService) as any;
     fixture.detectChanges();
   });
 

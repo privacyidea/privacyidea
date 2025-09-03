@@ -10,6 +10,7 @@ import {
   TokenEnrollmentData
 } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
 import { HotpApiPayloadMapper } from "../../../../mappers/token-api-payload/hotp-token-api-payload.mapper";
+import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
 
 export interface HotpEnrollmentOptions extends TokenEnrollmentData {
   type: "hotp";
@@ -40,6 +41,7 @@ export interface HotpEnrollmentOptions extends TokenEnrollmentData {
 export class EnrollHotpComponent implements OnInit {
   protected readonly enrollmentMapper: HotpApiPayloadMapper = inject(HotpApiPayloadMapper);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
   readonly otpLengthOptions = [6, 8];
   readonly hashAlgorithmOptions = [
     { value: "sha1", viewValue: "SHA1" },
@@ -56,6 +58,32 @@ export class EnrollHotpComponent implements OnInit {
   otpLengthFormControl = new FormControl<number>(6, [Validators.required]);
   otpKeyFormControl = new FormControl<string>({ value: "", disabled: true });
   hashAlgorithmFormControl = new FormControl<string>("sha1", [Validators.required]);
+
+  ngOnInit(): void {
+    this.additionalFormFieldsChange.emit({
+      generateOnServer: this.generateOnServerFormControl,
+      otpLength: this.otpLengthFormControl,
+      otpKey: this.otpKeyFormControl,
+      hashAlgorithm: this.hashAlgorithmFormControl
+    });
+    this.clickEnrollChange.emit(this.onClickEnroll);
+
+    if (this.authService.checkForceServerGenerateOTPKey("hotp")) {
+      this.generateOnServerFormControl.disable({ emitEvent: false });
+    } else {
+      this.generateOnServerFormControl.valueChanges.subscribe((generate) => {
+        if (!generate) {
+          this.otpKeyFormControl.enable({ emitEvent: false });
+          this.otpKeyFormControl.setValidators([Validators.required]);
+        } else {
+          this.otpKeyFormControl.disable({ emitEvent: false });
+          this.otpKeyFormControl.clearValidators();
+        }
+        this.otpKeyFormControl.updateValueAndValidity();
+      });
+    }
+  }
+
   onClickEnroll = (basicOptions: TokenEnrollmentData): Observable<EnrollmentResponse | null> => {
     if (
       this.generateOnServerFormControl.invalid ||
@@ -88,25 +116,4 @@ export class EnrollHotpComponent implements OnInit {
       mapper: this.enrollmentMapper
     });
   };
-
-  ngOnInit(): void {
-    this.additionalFormFieldsChange.emit({
-      generateOnServer: this.generateOnServerFormControl,
-      otpLength: this.otpLengthFormControl,
-      otpKey: this.otpKeyFormControl,
-      hashAlgorithm: this.hashAlgorithmFormControl
-    });
-    this.clickEnrollChange.emit(this.onClickEnroll);
-
-    this.generateOnServerFormControl.valueChanges.subscribe((generate) => {
-      if (!generate) {
-        this.otpKeyFormControl.enable({ emitEvent: false });
-        this.otpKeyFormControl.setValidators([Validators.required]);
-      } else {
-        this.otpKeyFormControl.disable({ emitEvent: false });
-        this.otpKeyFormControl.clearValidators();
-      }
-      this.otpKeyFormControl.updateValueAndValidity();
-    });
-  }
 }

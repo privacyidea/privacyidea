@@ -30,6 +30,16 @@ export class UserComponent {
   @ViewChild("userTableComponent")
   userTableComponent!: UserTableComponent;
   @ViewChild("drawer") drawer!: MatDrawer;
+  updateOverflowState = () => {
+    setTimeout(() => {
+      this.isUserDrawerOverflowing.set(
+        this.overflowService.isHeightOverflowing({
+          selector: ".user-layout",
+          thresholdSelector: ".drawer"
+        })
+      );
+    }, 400);
+  };
 
   constructor() {
     effect(() => {
@@ -46,15 +56,4 @@ export class UserComponent {
   ngOnDestroy() {
     window.removeEventListener("resize", this.updateOverflowState);
   }
-
-  updateOverflowState = () => {
-    setTimeout(() => {
-      this.isUserDrawerOverflowing.set(
-        this.overflowService.isHeightOverflowing({
-          selector: ".user-layout",
-          thresholdSelector: ".drawer"
-        })
-      );
-    }, 400);
-  };
 }

@@ -76,7 +76,7 @@ export class ContainerDetailsTokenTableComponent {
   protected readonly authService: AuthServiceInterface = inject(AuthService);
 
   protected readonly columnsKeyMap = columnsKeyMap;
-  displayedColumns: string[] = [...columnsKeyMap.map((column) => column.key), "remove", "delete"];
+  displayedColumns: string[] = [...columnsKeyMap.map((column) => column.key)];
   pageSize = 10;
   pageSizeOptions = this.tableUtilsService.pageSizeOptions;
   filterValue = "";
@@ -118,6 +118,12 @@ export class ContainerDetailsTokenTableComponent {
   });
 
   constructor() {
+    if (this.authService.actionAllowed("container_remove_token")) {
+      this.displayedColumns.push("remove");
+    }
+    if (this.authService.actionAllowed("delete")) {
+      this.displayedColumns.push("delete");
+    }
     effect(() => {
       if (!this.containerTokenData) {
         return;
@@ -212,15 +218,15 @@ export class ContainerDetailsTokenTableComponent {
   }
 
   assignToAllToken() {
-    var username = this.assignedUser().user_name;
-    var realm = this.assignedUser().user_realm;
-    var tokensToAssign = this.containerTokenData().data.filter((token) => {
+    const username = this.assignedUser().user_name;
+    const realm = this.assignedUser().user_realm;
+    const tokensToAssign = this.containerTokenData().data.filter((token) => {
       return token.username !== username;
     });
     if (tokensToAssign.length === 0) {
       return;
     }
-    var tokensAssignedToOtherUser = tokensToAssign.filter((token) => token.username !== "");
+    const tokensAssignedToOtherUser = tokensToAssign.filter((token) => token.username !== "");
     const tokenSerialsAssignedToOtherUser = tokensAssignedToOtherUser.map(token => token.serial);
     this.tokenService.unassignUserFromAll(tokenSerialsAssignedToOtherUser).subscribe({
       next: () => {

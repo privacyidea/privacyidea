@@ -13,6 +13,7 @@ import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "../../../route_paths";
 import { ContainerTabComponent } from "./container-tab/container-tab.component";
 import { TokenTabComponent } from "./token-tab/token-tab.component";
+import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
 
 @Component({
   selector: "app-token-card",
@@ -26,6 +27,7 @@ export class TokenCardComponent {
   private readonly tokenService: TokenServiceInterface = inject(TokenService);
   private readonly containerService: ContainerServiceInterface = inject(ContainerService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
   private router = inject(Router);
   selectedTabIndex = linkedSignal({
     source: this.contentService.routeUrl,
@@ -35,6 +37,8 @@ export class TokenCardComponent {
   containerSerial = this.containerService.containerSerial;
   states = this.containerService.states;
   isProgrammaticTabChange = this.contentService.isProgrammaticTabChange;
+  tokenTabActive = () => this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS) && !this.containerTabActive();
+  containerTabActive = () => this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_CONTAINERS);
 
   onTabChange(event: MatTabChangeEvent): void {
     if (this.isProgrammaticTabChange()) {
@@ -47,7 +51,4 @@ export class TokenCardComponent {
       this.router.navigateByUrl(ROUTE_PATHS.TOKENS_CONTAINERS);
     }
   }
-
-  tokenTabActive = () => this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS) && !this.containerTabActive();
-  containerTabActive = () => this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_CONTAINERS);
 }

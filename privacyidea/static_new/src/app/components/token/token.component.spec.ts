@@ -33,7 +33,6 @@ describe("TokenComponent", () => {
 
     fixture = TestBed.createComponent(TokenComponent);
     component = fixture.componentInstance;
-    fixture.detectChanges();
   });
 
   it("should create", () => {

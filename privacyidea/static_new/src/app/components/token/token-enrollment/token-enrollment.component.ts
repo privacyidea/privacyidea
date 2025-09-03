@@ -87,6 +87,7 @@ import { DialogService, DialogServiceInterface } from "../../../services/dialog/
 import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { TokenEnrollmentLastStepDialogData } from "./token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
+import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
 
 export type ClickEnrollFn = (
   enrollmentOptions: TokenEnrollmentData
@@ -224,6 +225,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
 
   protected readonly renderer: Renderer2 = inject(Renderer2);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
   private observer!: IntersectionObserver;
   timezoneOptions = TIMEZONE_OFFSETS;
 
@@ -249,14 +251,6 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
   additionalFormFields: WritableSignal<{
     [key: string]: FormControl<any>;
   }> = signal({});
-  onlyAddToRealm = computed(() => {
-    if (this.tokenService.selectedTokenType()?.key === "4eyes") {
-      const foureyesControls = this.additionalFormFields();
-      const control = foureyesControls["onlyAddToRealm"] as FormControl<boolean>;
-      return !!control?.value;
-    }
-    return false;
-  });
   descriptionControl = new FormControl<string>("", {
     nonNullable: true,
     validators: [Validators.maxLength(80)]

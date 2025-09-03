@@ -57,59 +57,61 @@
       }
     </mat-form-field>
   </div>
-  <div class="selected-user-assign-container">
-    <mat-form-field
-      appearance="fill"
-      class="pin-field">
-      <input
-        style="display: none"
-        type="text" />
-      <input
-        style="display: none"
-        type="password" />
-      <mat-label i18n>PIN (optional)</mat-label>
-      <input
-        (ngModelChange)="pin.set($event)"
-        [ngModel]="pin()"
-        [type]="hidePin() ? 'password' : 'text'"
-        autocomplete="new-password"
-        matInput />
-      <button
-        (click)="togglePinVisibility()"
-        [attr.aria-label]="'Show PIN'"
-        [attr.aria-pressed]="!hidePin()"
-        mat-icon-button
-        matSuffix
-        type="button">
-        <mat-icon>{{ hidePin() ? "visibility_off" : "visibility" }}</mat-icon>
-        Show PIN
-      </button>
-    </mat-form-field>
-    <mat-form-field
-      appearance="fill"
-      class="pin-field">
-      <mat-label i18n>PIN (repeat)</mat-label>
-      <input
-        (ngModelChange)="pinRepeat.set($event)"
-        [ngModel]="pinRepeat()"
-        [type]="hidePin() ? 'password' : 'text'"
-        autocomplete="new-password"
-        matInput />
-      <button
-        (click)="togglePinVisibility()"
-        [attr.aria-label]="'Show PIN Repeat'"
-        [attr.aria-pressed]="!hidePin()"
-        mat-icon-button
-        matSuffix
-        type="button">
-        <mat-icon>{{ hidePin() ? "visibility_off" : "visibility" }}</mat-icon>
-        Show PIN Repeat
-      </button>
-      @if (pinRepeat() && !pinsMatch()) {
-        <mat-error i18n>PINs do not match</mat-error>
-      }
-    </mat-form-field>
-  </div>
+  @if (authService.actionAllowed("setpin")) {
+    <div class="selected-user-assign-container">
+      <mat-form-field
+        appearance="fill"
+        class="pin-field">
+        <input
+          style="display: none"
+          type="text" />
+        <input
+          style="display: none"
+          type="password" />
+        <mat-label i18n>PIN (optional)</mat-label>
+        <input
+          (ngModelChange)="pin.set($event)"
+          [ngModel]="pin()"
+          [type]="hidePin() ? 'password' : 'text'"
+          autocomplete="new-password"
+          matInput />
+        <button
+          (click)="togglePinVisibility()"
+          [attr.aria-label]="'Show PIN'"
+          [attr.aria-pressed]="!hidePin()"
+          mat-icon-button
+          matSuffix
+          type="button">
+          <mat-icon>{{ hidePin() ? "visibility_off" : "visibility" }}</mat-icon>
+          Show PIN
+        </button>
+      </mat-form-field>
+      <mat-form-field
+        appearance="fill"
+        class="pin-field">
+        <mat-label i18n>PIN (repeat)</mat-label>
+        <input
+          (ngModelChange)="pinRepeat.set($event)"
+          [ngModel]="pinRepeat()"
+          [type]="hidePin() ? 'password' : 'text'"
+          autocomplete="new-password"
+          matInput />
+        <button
+          (click)="togglePinVisibility()"
+          [attr.aria-label]="'Show PIN Repeat'"
+          [attr.aria-pressed]="!hidePin()"
+          mat-icon-button
+          matSuffix
+          type="button">
+          <mat-icon>{{ hidePin() ? "visibility_off" : "visibility" }}</mat-icon>
+          Show PIN Repeat
+        </button>
+        @if (pinRepeat() && !pinsMatch()) {
+          <mat-error i18n>PINs do not match</mat-error>
+        }
+      </mat-form-field>
+    </div>
+  }
 </mat-dialog-content>
 <mat-dialog-actions>
   <button

@@ -202,74 +202,77 @@
         rows="3"></textarea>
     </mat-form-field>
     <div class="flex-row gap-1">
-      <div class="flex-column width-100">
-        <h4 class="enroll-h4">Assign Token to User</h4>
-        <div class="assign-user-container">
-          <mat-form-field class="width-50 input-height">
-            <mat-label>Select Realm of User</mat-label>
-            <mat-select
-              [formControl]="selectedUserRealmControl"
-              [value]="userService.selectedUserRealm()">
-              @for (option of realmService.realmOptions(); track option) {
-                <mat-option [value]="option">{{ option }}</mat-option>
+      @if (authService.actionAllowed("userlist")) {
+        <div class="flex-column width-100">
+          <h4 class="enroll-h4">Assign Token to User</h4>
+          <div class="assign-user-container">
+            <mat-form-field class="width-50 input-height">
+              <mat-label>Select Realm of User</mat-label>
+              <mat-select
+                [formControl]="selectedUserRealmControl"
+                [value]="userService.selectedUserRealm()">
+                @for (option of realmService.realmOptions(); track option) {
+                  <mat-option [value]="option">{{ option }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+            <mat-form-field class="width-50 input-height">
+              <mat-label>Enter User</mat-label>
+              <app-clearable-input
+                (onClick)="userFilterControl.setValue('')"
+                [showClearButton]="userService.userFilter() !== ''">
+                <input
+                  [formControl]="userFilterControl"
+                  [matAutocomplete]="userAuto"
+                  matInput />
+              </app-clearable-input>
+              <mat-autocomplete
+                #userAuto="matAutocomplete"
+                [displayWith]="userService.displayUser">
+                @for (user of userService.filteredUsers(); track user) {
+                  <mat-option [value]="user">{{ user.username }}</mat-option>
+                }
+              </mat-autocomplete>
+              @if (selectedUserRealmControl.hasError("required")) {
+                <mat-error>User Realm is <strong>required</strong></mat-error>
               }
-            </mat-select>
-          </mat-form-field>
-          <mat-form-field class="width-50 input-height">
-            <mat-label>Enter User</mat-label>
-            <app-clearable-input
-              (onClick)="userFilterControl.setValue('')"
-              [showClearButton]="userService.userFilter() !== ''">
-              <input
-                [formControl]="userFilterControl"
-                [matAutocomplete]="userAuto"
-                matInput />
-            </app-clearable-input>
-            <mat-autocomplete
-              #userAuto="matAutocomplete"
-              [displayWith]="userService.displayUser">
-              @for (user of userService.filteredUsers(); track user) {
-                <mat-option [value]="user">{{ user.username }}</mat-option>
+              @if (!selectedUserRealmControl.value && !onlyAddToRealmControl.value &&
+              tokenService.selectedTokenType()) {
+                <mat-hint> Select a realm first to enable user selection.</mat-hint>
               }
-            </mat-autocomplete>
-            @if (selectedUserRealmControl.hasError("required")) {
-              <mat-error>User Realm is <strong>required</strong></mat-error>
-            }
-            @if (!selectedUserRealmControl.value && !onlyAddToRealmControl.value && tokenService.selectedTokenType()) {
-              <mat-hint> Select a realm first to enable user selection.</mat-hint>
-            }
-            @if (userFilterControl.hasError("required")) {
-              <mat-error>User is <strong>required</strong></mat-error>
-            }
-            @if (userFilterControl.hasError("userNotInOptions")) {
-              <mat-error>User must be selected from the list.</mat-error>
-            }
-            @if (userFilterControl.hasError("userNotInRealm")) {
-              <mat-error> User does not exist in the selected realm.</mat-error>
-            }
-          </mat-form-field>
-        </div>
-        <!--    TODO: We should avoid these token type ifs. Instead create components and include
-                  them only in the desired token type enrollment components -->
-        @if (!["passkey", "webauthn", "tiqr", "push"].includes(tokenService.selectedTokenType().key)) {
-          <div class="margin-bottom-1">
-            <mat-checkbox [formControl]="onlyAddToRealmControl">
-              Only add to the realm (no user assignment)
-            </mat-checkbox>
+              @if (userFilterControl.hasError("required")) {
+                <mat-error>User is <strong>required</strong></mat-error>
+              }
+              @if (userFilterControl.hasError("userNotInOptions")) {
+                <mat-error>User must be selected from the list.</mat-error>
+              }
+              @if (userFilterControl.hasError("userNotInRealm")) {
+                <mat-error> User does not exist in the selected realm.</mat-error>
+              }
+            </mat-form-field>
           </div>
-        }
-      </div>
+          <!--    TODO: We should avoid these token type ifs. Instead create components and include
+                  them only in the desired token type enrollment components -->
+          @if (!["passkey", "webauthn", "tiqr", "push"].includes(tokenService.selectedTokenType().key)) {
+            <div class="margin-bottom-1">
+              <mat-checkbox [formControl]="onlyAddToRealmControl">
+                Only add to the realm (no user assignment)
+              </mat-checkbox>
+            </div>
+          }
+        </div>
+      }
+
       @if (tokenService.selectedTokenType().key !== "passkey") {
         <div class="flex-column user-pin-container">
           <h4 class="enroll-h4">Set PIN</h4>
           <input
             style="display: none"
             type="text" />
-
           <input
             style="display: none"
             type="password" />
-          <div class="user-pin-input">
+          <div class="user-pin-input margin-bottom-1">
             <input
               [formControl]="setPinControl"
               [type]="'password'"
@@ -292,90 +295,94 @@
       }
     </div>
 
-    <h4 class="enroll-h4">Assign Token to a Container</h4>
-    <mat-form-field class="width-33 input-height">
-      <app-clearable-input
-        (onClick)="selectedContainerControl.setValue('')"
-        [showClearButton]="containerService.selectedContainer() !== ''">
-        <input
-          [formControl]="selectedContainerControl"
-          [matAutocomplete]="containerAuto"
-          matInput />
-      </app-clearable-input>
-      <mat-label>Enter Container</mat-label>
-      <mat-autocomplete #containerAuto="matAutocomplete">
-        @for (option of containerService.filteredContainerOptions(); track option) {
-          <mat-option [value]="option">{{ option }}</mat-option>
-        }
-      </mat-autocomplete>
-    </mat-form-field>
+    @if (authService.actionAllowed("container_list")) {
+      <h4 class="enroll-h4">Assign Token to a Container</h4>
+      <mat-form-field class="width-33 input-height">
+        <app-clearable-input
+          (onClick)="selectedContainerControl.setValue('')"
+          [showClearButton]="containerService.selectedContainer() !== ''">
+          <input
+            [formControl]="selectedContainerControl"
+            [matAutocomplete]="containerAuto"
+            matInput />
+        </app-clearable-input>
+        <mat-label>Enter Container</mat-label>
+        <mat-autocomplete #containerAuto="matAutocomplete">
+          @for (option of containerService.filteredContainerOptions(); track option) {
+            <mat-option [value]="option">{{ option }}</mat-option>
+          }
+        </mat-autocomplete>
+      </mat-form-field>
+    }
 
-    <mat-accordion>
-      <mat-expansion-panel class="expansion-panel">
-        <mat-expansion-panel-header>
-          <mat-panel-title> Extended Attributes</mat-panel-title>
-        </mat-expansion-panel-header>
-        <div class="flex-row">
-          <mat-form-field class="date-picker">
-            <mat-label>Choose a Start Date</mat-label>
-            <input
-              [formControl]="selectedStartDateControl"
-              [matDatepicker]="startPicker"
-              matInput
-              placeholder="Start date" />
-            <mat-hint>Date Format: YYYY-MM-DD</mat-hint>
-            <mat-datepicker-toggle
-              [for]="startPicker"
-              matIconSuffix></mat-datepicker-toggle>
-            <mat-datepicker #startPicker></mat-datepicker>
-          </mat-form-field>
+    <div>
+      <mat-accordion>
+        <mat-expansion-panel class="expansion-panel">
+          <mat-expansion-panel-header>
+            <mat-panel-title> Extended Attributes</mat-panel-title>
+          </mat-expansion-panel-header>
+          <div class="flex-row">
+            <mat-form-field class="date-picker">
+              <mat-label>Choose a Start Date</mat-label>
+              <input
+                [formControl]="selectedStartDateControl"
+                [matDatepicker]="startPicker"
+                matInput
+                placeholder="Start date" />
+              <mat-hint>Date Format: YYYY-MM-DD</mat-hint>
+              <mat-datepicker-toggle
+                [for]="startPicker"
+                matIconSuffix></mat-datepicker-toggle>
+              <mat-datepicker #startPicker></mat-datepicker>
+            </mat-form-field>
 
-          <mat-form-field class="time-picker">
-            <mat-label>Enter a Start Time</mat-label>
-            <input
-              [formControl]="selectedStartTimeControl"
-              matInput
-              max="23"
-              min="0"
-              placeholder="HH"
-              type="time" />
-          </mat-form-field>
+            <mat-form-field class="time-picker">
+              <mat-label>Enter a Start Time</mat-label>
+              <input
+                [formControl]="selectedStartTimeControl"
+                matInput
+                max="23"
+                min="0"
+                placeholder="HH"
+                type="time" />
+            </mat-form-field>
 
-          <mat-form-field class="zone-picker">
-            <mat-label>Timezone Offset</mat-label>
-            <mat-select [formControl]="selectedTimezoneOffsetControl">
-              @for (option of timezoneOptions; track option) {
-                <mat-option [value]="option.value">{{ option.label }}</mat-option>
-              }
-            </mat-select>
-          </mat-form-field>
-        </div>
-        <div class="flex-row">
-          <mat-form-field class="date-picker">
-            <mat-label>Choose an End Date</mat-label>
-            <input
-              [formControl]="selectedEndDateControl"
-              [matDatepicker]="endPicker"
-              matInput
-              placeholder="End date" />
-            <mat-hint>Date Format: YYYY-MM-DD</mat-hint>
-            <mat-datepicker-toggle
-              [for]="endPicker"
-              matIconSuffix></mat-datepicker-toggle>
-            <mat-datepicker #endPicker></mat-datepicker>
-          </mat-form-field>
+            <mat-form-field class="zone-picker">
+              <mat-label>Timezone Offset</mat-label>
+              <mat-select [formControl]="selectedTimezoneOffsetControl">
+                @for (option of timezoneOptions; track option) {
+                  <mat-option [value]="option.value">{{ option.label }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+          </div>
+          <div class="flex-row">
+            <mat-form-field class="date-picker">
+              <mat-label>Choose an End Date</mat-label>
+              <input
+                [formControl]="selectedEndDateControl"
+                [matDatepicker]="endPicker"
+                matInput
+                placeholder="End date" />
+              <mat-hint>Date Format: YYYY-MM-DD</mat-hint>
+              <mat-datepicker-toggle
+                [for]="endPicker"
+                matIconSuffix></mat-datepicker-toggle>
+              <mat-datepicker #endPicker></mat-datepicker>
+            </mat-form-field>
 
-          <mat-form-field class="time-picker">
-            <mat-label>Enter an End Time</mat-label>
-            <input
-              [formControl]="selectedEndTimeControl"
-              matInput
-              max="23"
-              min="0"
-              type="time" />
-          </mat-form-field>
-        </div>
-      </mat-expansion-panel>
-    </mat-accordion>
+            <mat-form-field class="time-picker">
+              <mat-label>Enter an End Time</mat-label>
+              <input
+                [formControl]="selectedEndTimeControl"
+                matInput
+                max="23"
+                min="0"
+                type="time" />
+            </mat-form-field>
+          </div>
+        </mat-expansion-panel>
+      </mat-accordion>
+    </div>
   </form>
 </div>

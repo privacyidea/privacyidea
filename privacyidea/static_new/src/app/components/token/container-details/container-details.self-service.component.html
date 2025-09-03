@@ -42,37 +42,15 @@
                   }
                 }
                 @case ("realms") {
-                  @if (element.isEditing()) {
-                    <mat-form-field class="width-18rem">
-                      <mat-label>Select Realms</mat-label>
-                      <mat-select
-                        [(ngModel)]="selectedRealms"
-                        [value]="selectedRealms()"
-                        multiple>
-                        @for (option of realmService.realmOptions(); track option) {
-                          @if (option === userRealm()) {
-                            <mat-option
-                              value="{{ option }}"
-                              disabled>
-                              {{ option }}
-                            </mat-option>
-                          } @else {
-                            <mat-option value="{{ option }}">{{ option }}</mat-option>
-                          }
-                        }
-                      </mat-select>
-                    </mat-form-field>
-                  } @else {
-                    <div
-                      class="details-scrollable-container"
-                      [ngClass]="{ 'details-list': element.value.length > 2 }">
-                      @for (realm of element.value; track realm; let idx = $index) {
-                        <mat-list-item class="height-auto">
-                          <span class="font-14">• {{ realm }}</span>
-                        </mat-list-item>
-                      }
-                    </div>
-                  }
+                  <div
+                    class="details-scrollable-container"
+                    [ngClass]="{ 'details-list': element.value.length > 2 }">
+                    @for (realm of element.value; track realm; let idx = $index) {
+                      <mat-list-item class="height-auto">
+                        <span class="font-14">• {{ realm }}</span>
+                      </mat-list-item>
+                    }
+                  </div>
                 }
                 @case ("description") {
                   @if (element.isEditing()) {
@@ -226,68 +204,68 @@
         </div>
         @if (overflowService.isWidthOverflowing("body", 1310)) {
           <br />
-          <mat-divider></mat-divider>
-          <br />
+          <mat-divider></mat-divider><br />
         }
       </div>
       <div
         [ngClass]="[overflowService.isWidthOverflowing('body', 1310) ? '' : 'margin-left-1']"
         class="flex-column">
-        <div class="flex-row checkbox-paginator-container">
-          <section>
-            <mat-checkbox
-              [(ngModel)]="showOnlyTokenNotInContainer"
-              [ngClass]="{ 'pad-top-10': showOnlyTokenNotInContainer() }">
-              <span> Only display tokens not in a container </span>
-              @if (!showOnlyTokenNotInContainer()) {
-                <br />
-                <span> Note: Adding a token removes it from</span>
-                <br />
-                <span style="margin-left: 39px"> its previous container. </span>
-              }
-            </mat-checkbox>
-          </section>
-          <mat-paginator
-            (page)="onPageEvent($event)"
-            [hidePageSize]="true"
-            [length]="total()"
-            [pageIndex]="pageIndex()"
-            [pageSize]="pageSize()"></mat-paginator>
-        </div>
-        <mat-form-field class="add-token">
-          <mat-label>Add Token to Container</mat-label>
-          <app-clearable-input
-            (onClick)="filterValueString.set('')"
-            [showClearButton]="filterValueString().length > 0">
-            <input
-              #filterHTMLInputElement
-              #tokenAutoTrigger="matAutocompleteTrigger"
-              [(ngModel)]="filterValueString"
-              [matAutocomplete]="tokenAuto"
-              matInput
-              placeholder="Example query: 'type: hotp serial: 123'" />
-          </app-clearable-input>
-          <mat-autocomplete #tokenAuto="matAutocomplete">
-            @for (option of tokenDataSource().data; track option) {
-              <mat-option
-                class="token-option"
-                (click)="addTokenToContainer(option)">
-                <span class="token-option-span"> {{ option["serial"] }} </span>
-                <span class="token-option-span"> {{ option["tokentype"] }} </span>
-                <span
-                  class="token-option-span"
-                  [ngClass]="option['active'] ? 'highlight-true' : 'highlight-false'">
+        @if (authService.actionAllowed("container_add_token")) {
+          <div class="flex-row checkbox-paginator-container">
+            <section>
+              <mat-checkbox
+                [(ngModel)]="showOnlyTokenNotInContainer"
+                [ngClass]="{ 'pad-top-10': showOnlyTokenNotInContainer() }">
+                <span> Only display tokens that are not in a container </span>
+                @if (!showOnlyTokenNotInContainer()) {
+                  <br />
+                  <span> Note: Adding a token removes it from</span><br />
+                  <span style="margin-left: 39px"> its previous container. </span>
+                }
+              </mat-checkbox>
+            </section>
+            <mat-paginator
+              (page)="onPageEvent($event)"
+              [hidePageSize]="true"
+              [length]="total()"
+              [pageIndex]="pageIndex()"
+              [pageSize]="pageSize()"></mat-paginator>
+          </div>
+          <mat-form-field class="add-token">
+            <mat-label>Add Token to Container</mat-label>
+            <app-clearable-input
+              (onClick)="filterValueString.set('')"
+              [showClearButton]="filterValueString().length > 0">
+              <input
+                #filterHTMLInputElement
+                #tokenAutoTrigger="matAutocompleteTrigger"
+                [(ngModel)]="filterValueString"
+                [matAutocomplete]="tokenAuto"
+                matInput
+                placeholder="Example query: 'type: hotp serial: 123'" />
+            </app-clearable-input>
+            <mat-autocomplete #tokenAuto="matAutocomplete">
+              @for (option of tokenDataSource().data; track option) {
+                <mat-option
+                  class="token-option"
+                  (click)="addTokenToContainer(option)">
+                  <span class="token-option-span"> {{ option["serial"] }} </span>
+                  <span class="token-option-span"> {{ option["tokentype"] }} </span>
+                  <span
+                    class="token-option-span"
+                    [ngClass]="option['active'] ? 'highlight-true' : 'highlight-false'">
                   {{ option["active"] ? "active" : "deactivated" }}
                 </span>
-                <span class="token-option-span">
+                  <span class="token-option-span">
                   {{ option["username"] }}
                 </span>
-                <mat-icon>add</mat-icon>
-              </mat-option>
-            }
-          </mat-autocomplete>
-        </mat-form-field>
-        <mat-divider class="width-36"></mat-divider>
+                  <mat-icon>add</mat-icon>
+                </mat-option>
+              }
+            </mat-autocomplete>
+          </mat-form-field>
+          <mat-divider class="width-36"></mat-divider>
+        }
         <app-container-details-token-table-self-service [containerTokenData]="containerTokenData" />
       </div>
     </div>

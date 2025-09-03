@@ -1,6 +1,6 @@
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { ComponentFixture, fakeAsync, TestBed, tick, waitForAsync } from "@angular/core/testing";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { Router } from "@angular/router";
 import { of, throwError } from "rxjs";
@@ -52,7 +52,9 @@ describe("LoginComponent", () => {
         { provide: NotificationService, useClass: MockNotificationService },
         { provide: ValidateService, useClass: MockValidateService },
         { provide: SessionTimerService, useValue: sessionTimerServiceMock },
-        { provide: Router, useValue: routerMock }
+        { provide: Router, useValue: routerMock },
+        MockLocalService,
+        MockNotificationService
       ]
     }).compileComponents();
 
@@ -315,11 +317,12 @@ describe("LoginComponent", () => {
   });
 
   describe("logout", () => {
-    it("should remove token, logout, and navigate to login", async() => {
+    it("should remove token, logout, and navigate to login", async () => {
+      const authServiceSpy = jest.spyOn(authService, "logout");
       component.logout();
       fixture.whenStable().then(() => {
         expect(localService.removeData).toHaveBeenCalledWith("bearer_token");
-        expect(authService.logout).toHaveBeenCalled();
+        expect(authServiceSpy).toHaveBeenCalled();
         expect(router.navigate).toHaveBeenCalledWith(["login"]);
       });
     });

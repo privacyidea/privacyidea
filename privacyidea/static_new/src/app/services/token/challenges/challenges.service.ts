@@ -51,11 +51,23 @@ export class ChallengesService implements ChallengesServiceInterface {
 
   readonly apiFilter = apiFilter;
   readonly advancedApiFilter = advancedApiFilter;
-  tokenBaseUrl = this.tokenService.tokenBaseUrl;
   filterValue = linkedSignal({
     source: this.contentService.routeUrl,
     computation: () => ({}) as Record<string, string>
   });
+  pageSize = linkedSignal({
+    source: this.contentService.routeUrl,
+    computation: () => 10
+  });
+  pageIndex = linkedSignal({
+    source: () => ({
+      filterValue: this.filterValue(),
+      pageSize: this.pageSize(),
+      routeUrl: this.contentService.routeUrl()
+    }),
+    computation: () => 0
+  });
+  sort = signal({ active: "timestamp", direction: "asc" } as Sort);
   private filterParams = computed(() => {
     const allowedFilters = [...this.apiFilter, ...this.advancedApiFilter];
     const filterPairs = Object.entries(this.filterValue())
@@ -73,19 +85,7 @@ export class ChallengesService implements ChallengesServiceInterface {
       { params: {} as Record<string, string>, serial: "" }
     );
   });
-  pageSize = linkedSignal({
-    source: this.contentService.routeUrl,
-    computation: () => 10
-  });
-  pageIndex = linkedSignal({
-    source: () => ({
-      filterValue: this.filterValue(),
-      pageSize: this.pageSize(),
-      routeUrl: this.contentService.routeUrl()
-    }),
-    computation: () => 0
-  });
-  sort = signal({ active: "timestamp", direction: "asc" } as Sort);
+  tokenBaseUrl = this.tokenService.tokenBaseUrl;
   challengesResource = httpResource<PiResponse<Challenges>>(() => {
     if (this.contentService.routeUrl() !== ROUTE_PATHS.TOKENS_CHALLENGES) {
       return undefined;

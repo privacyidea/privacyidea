@@ -5,8 +5,7 @@ import { ContainerDetails, ContainerService } from "./container.service";
 import { NotificationService } from "../notification/notification.service";
 import { TokenService } from "../token/token.service";
 import { environment } from "../../../environments/environment";
-import { MockContentService, MockNotificationService, MockTokenService } from "../../../testing/mock-services";
-import { ContentService } from "../content/content.service";
+import { MockLocalService, MockNotificationService, MockTokenService } from "../../../testing/mock-services";
 import { AuthService } from "../auth/auth.service";
 
 environment.proxyUrl = "/api";
@@ -18,25 +17,27 @@ class MockAuthService implements Partial<AuthService> {
 describe("ContainerService", () => {
   let containerService: ContainerService;
   let http: HttpClient;
-  let authService = new MockAuthService();
-  let notificationService = new MockNotificationService();
-  let tokenService = new MockTokenService();
-  let contentService = new MockContentService();
+  let authService: MockAuthService;
+  let notificationService: MockNotificationService;
+  let tokenService: MockTokenService;
 
   beforeEach(() => {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(),
-        { provide: AuthService, useValue: authService },
-        { provide: NotificationService, useValue: notificationService },
-        { provide: TokenService, useValue: tokenService },
-        { provide: ContentService, useValue: contentService }
+        { provide: AuthService, useClass: MockAuthService },
+        { provide: NotificationService, useClass: MockNotificationService },
+        { provide: TokenService, useClass: MockTokenService },
+        MockLocalService,
+        MockNotificationService
       ]
     });
     containerService = TestBed.inject(ContainerService);
     http = TestBed.inject(HttpClient);
     authService = TestBed.inject(AuthService) as any;
+    notificationService = TestBed.inject(NotificationService) as any;
+    tokenService = TestBed.inject(TokenService) as any;
   });
 
   it("creates the service", () => {

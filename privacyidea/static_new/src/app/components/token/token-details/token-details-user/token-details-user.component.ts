@@ -18,6 +18,7 @@ import { TokenService, TokenServiceInterface } from "../../../../services/token/
 import { UserService, UserServiceInterface } from "../../../../services/user/user.service";
 import { ClearableInputComponent } from "../../../shared/clearable-input/clearable-input.component";
 import { EditableElement, EditButtonsComponent } from "../../../shared/edit-buttons/edit-buttons.component";
+import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
 
 @Component({
   selector: "app-token-details-user",
@@ -50,6 +51,7 @@ export class TokenDetailsUserComponent {
   protected readonly userService: UserServiceInterface = inject(UserService);
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   protected readonly overflowService: OverflowServiceInterface = inject(OverflowService);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
 
   @Input() userData = signal<EditableElement[]>([]);
   @Input() tokenSerial!: WritableSignal<string>;
