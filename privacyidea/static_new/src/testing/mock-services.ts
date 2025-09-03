@@ -245,7 +245,7 @@ export class MockAuthService implements AuthServiceInterface {
 
   public getHeaders(): HttpHeaders {
     return new HttpHeaders({
-      "PI-Authorization": this.localService.getData(BEARER_TOKEN_STORAGE_KEY) || ""
+      "PI-Authorization": "Mock Bearer Token"
     });
   }
 
@@ -352,13 +352,6 @@ export class MockAuthService implements AuthServiceInterface {
     }
   };
   isAuthenticatedUser = jest.fn().mockReturnValue(this.isAuthenticated() && this.role() === "user");
-
-  constructor(
-    readonly http: HttpClient = new HttpClient({} as any),
-    readonly localService: LocalServiceInterface = new MockLocalService(),
-    readonly notificationService: NotificationServiceInterface = new MockNotificationService(),
-    readonly versioningService: VersioningService = new VersioningService()
-  ) {}
 }
 
 export class MockUserService implements UserServiceInterface {
@@ -400,8 +393,17 @@ export class MockUserService implements UserServiceInterface {
   selectionFilteredUsernames: Signal<string[]> = signal([]);
   selectedUserRealm = signal("");
   selectedUsername = signal("");
-  selectionFilter = signal("");
-  selectionUsernameFilter = signal("");
+  selectionFilter = linkedSignal<string, UserData | string>({
+    source: this.selectedUserRealm,
+    computation: () => ""
+  });
+  selectionUsernameFilter = computed<string>(() => {
+    const filter = this.selectionFilter();
+    if (typeof filter === "string") {
+      return filter;
+    }
+    return filter?.username ?? "asdasd";
+  });
   setDefaultRealm = jest.fn();
   selectionFilteredUsers = signal([]);
   selectedUser = signal<UserData | null>(null);
@@ -489,8 +491,6 @@ export class MockContentService implements ContentServiceInterface {
   containerSelected = jest.fn().mockImplementation((serial: string) => {
     this.containerSerial.set(serial);
   });
-
-  constructor(public authService: MockAuthService = new MockAuthService()) {}
 }
 
 export class MockContainerService implements ContainerServiceInterface {
@@ -720,7 +720,6 @@ export class MockTokenService implements TokenServiceInterface {
     text: "HMAC-based One-Time Password"
   });
   showOnlyTokenNotInContainer = signal(false);
-  filterValue = signal<Record<string, string>>({});
   tokenDetailResource = new MockHttpResourceRef(
     MockPiResponse.fromValue<Tokens>({
       count: 1,
@@ -881,9 +880,6 @@ export class MockTokenService implements TokenServiceInterface {
     throw new Error("Method not implemented.");
   }
 
-  getRealms = jest.fn().mockReturnValue(of({ result: { value: [] } }));
-  getTokenData = this.getTokenDetails;
-
   deleteTokens(tokenSerials: string[]): Observable<Object[]> {
     throw new Error("Method not implemented.");
   }
@@ -980,11 +976,6 @@ export class MockMachineService implements MachineServiceInterface {
   onPageEvent = jest.fn();
   onSortEvent = jest.fn();
 
-  constructor(
-    public http: HttpClient = new HttpClient({} as any),
-    public authService: AuthServiceInterface = new MockAuthService(),
-    public tableUtilsService: TableUtilsServiceInterface = new MockTableUtilsService()
-  ) {}
   handleFilterInput($event: Event): void {
     throw new Error("Method not implemented.");
   }
@@ -1002,59 +993,56 @@ export class MockTableUtilsService implements TableUtilsServiceInterface {
     return dataSource;
   });
 
-  toggleKeywordInFilter(currentValue: string, keyword: string): string {
-    throw new Error("Mock method not implemented.");
-  }
+  toggleKeywordInFilter = jest.fn().mockImplementation((args: { keyword: string; currentValue: FilterValue }) => {
+    const { keyword, currentValue } = args;
+    if (keyword.includes("&")) {
+      const keywords = keyword.split("&").map((k) => k.trim());
+      let newValue = currentValue;
+      for (const key of keywords) {
+        newValue = this.toggleKeywordInFilter({ keyword: key, currentValue: newValue });
+      }
+      return newValue;
+    }
+    if (currentValue.hasKey(keyword)) {
+      return currentValue.removeKey(keyword);
+    } else {
+      return currentValue.addKey(keyword);
+    }
+  });
 
-  public toggleBooleanInFilter(args: { keyword: string; currentValue: string }): string {
-    throw new Error("Mock method not implemented.");
-  }
+  public toggleBooleanInFilter = jest
+    .fn()
+    .mockImplementation((args: { keyword: string; currentValue: FilterValue }) => {
+      const { keyword, currentValue } = args;
+      const booleanValue = currentValue.getValueOfKey(keyword)?.toLowerCase();
 
-  recordsFromText = jest.fn((filterString: string) => {
-    const records: { [key: string]: string } = {};
-    filterString.split(" ").forEach((part) => {
-      const [key, value] = part.split(": ");
-      if (key && value) {
-        records[key] = value;
+      if (!booleanValue) {
+        return currentValue.addKey(keyword);
+      } else {
+        const existingValue = booleanValue;
+
+        if (existingValue === "true") {
+          return currentValue.addEntry(keyword, "false");
+        } else if (existingValue === "false") {
+          return currentValue.removeKey(keyword);
+        } else {
+          return currentValue.addEntry(keyword, "true");
+        }
       }
     });
-    return records;
-  });
   isLink = jest.fn().mockReturnValue(false);
   getClassForColumn = jest.fn();
   getTooltipForColumn = jest.fn();
   getDisplayText = jest.fn();
 
-  getSpanClassForKey(args: { key: string; value?: any; maxfail?: any }): string {
-    throw new Error("Mock method not implemented.");
-  }
-
-  getDivClassForKey(key: string): "" | "details-scrollable-container" | "details-value" {
-    throw new Error("Mock method not implemented.");
-  }
-
+  getSpanClassForKey = jest.fn().mockReturnValue("");
+  getDivClassForKey = jest.fn().mockReturnValue("");
   getClassForColumnKey = jest.fn();
-
-  getChildClassForColumnKey(columnKey: string): string {
-    throw new Error("Mock method not implemented.");
-  }
-
-  getDisplayTextForKeyAndRevoked(key: string, value: any, revoked: boolean): string {
-    throw new Error("Mock method not implemented.");
-  }
-
-  getTdClassForKey(key: string): string[] {
-    throw new Error("Mock method not implemented.");
-  }
-
-  getSpanClassForState(state: string, clickable: boolean): string {
-    throw new Error("Mock method not implemented.");
-  }
-
-  getDisplayTextForState(state: string): string {
-    throw new Error("Mock method not implemented.");
-  }
-
+  getChildClassForColumnKey = jest.fn().mockReturnValue("");
+  getDisplayTextForKeyAndRevoked = jest.fn().mockReturnValue("");
+  getTdClassForKey = jest.fn().mockReturnValue("");
+  getSpanClassForState = jest.fn().mockReturnValue("");
+  getDisplayTextForState = jest.fn().mockReturnValue("");
   handleColumnClick = jest.fn();
 }
 
@@ -1063,15 +1051,14 @@ export class MockAuditService implements AuditServiceInterface {
   sort: WritableSignal<Sort> = signal({ active: "time", direction: "desc" });
   apiFilter = ["user", "success"];
   advancedApiFilter = ["machineid", "resolver"];
-  filterValue = signal<Record<string, string>>({});
   filterParams: Signal<Record<string, string>> = signal({});
   pageSize = linkedSignal({
-    source: this.filterValue,
+    source: this.auditFilter,
     computation: () => 10
   });
   pageIndex = linkedSignal({
     source: () => ({
-      filterValue: this.filterValue(),
+      filterValue: this.auditFilter(),
       pageSize: this.pageSize()
     }),
     computation: () => 0
@@ -1084,6 +1071,14 @@ export class MockAuditService implements AuditServiceInterface {
       current: 0
     })
   );
+  clearFilter = jest.fn().mockImplementation(() => {
+    this.auditFilter.set(new FilterValue());
+  });
+
+  handleFilterInput = jest.fn().mockImplementation(($event: Event) => {
+    const inputElement = $event.target as HTMLInputElement;
+    this.auditFilter.set(new FilterValue({ value: inputElement.value }));
+  });
 }
 
 export class MockLocalService implements LocalServiceInterface {

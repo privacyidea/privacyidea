@@ -27,11 +27,12 @@
             subscriptSizing="dynamic">
             <mat-label i18n>Enter Filter</mat-label>
             <app-clearable-input
-              (onClick)="filterValueString.set('')"
-              [showClearButton]="filterValueString().length > 0">
+              (onClick)="auditService.clearFilter()"
+              [showClearButton]="auditService.auditFilter().isNotEmpty">
               <input
                 #filterHTMLInputElement
-                [(ngModel)]="filterValueString"
+                (input)="auditService.handleFilterInput($event)"
+                [value]="auditService.auditFilter().value"
                 aria-label="Filter Input"
                 i18n-aria-label
                 i18n-placeholder

@@ -38,15 +38,15 @@ export class KeywordFilterComponent {
     return inputValue.hasKey(filter);
   }
 
-  getFilterIconName(keyword: string, currentValue: FilterValue): string {
+  getFilterIconName(keyword: string): string {
     if (keyword === "active" || keyword === "assigned" || keyword === "success") {
-      const value = currentValue.getValueOfKey(keyword)?.toLowerCase();
+      const value = this.filterValue()?.getValueOfKey(keyword)?.toLowerCase();
       if (!value) {
         return "add_circle";
       }
       return value === "true" ? "change_circle" : value === "false" ? "remove_circle" : "add_circle";
     } else {
-      const isSelected = this.isFilterSelected(keyword, currentValue);
+      const isSelected = this.isFilterSelected(keyword, this.filterValue());
       return isSelected ? "remove_circle" : "add_circle";
     }
   }
@@ -56,12 +56,15 @@ export class KeywordFilterComponent {
     if (filterKeyword === "active" || filterKeyword === "assigned" || filterKeyword === "success") {
       newValue = this.tableUtilsService.toggleBooleanInFilter({
         keyword: filterKeyword,
-        currentValue: this.filterValue().filterString
+        currentValue: this.filterValue()
       });
     } else {
-      newValue = this.tableUtilsService.toggleKeywordInFilter(this.filterValue().filterString, filterKeyword);
+      newValue = this.tableUtilsService.toggleKeywordInFilter({
+        keyword: filterKeyword,
+        currentValue: this.filterValue()
+      });
     }
-    this.filterValue.set(new FilterValue({ value: newValue }));
+    this.filterValue.set(newValue);
     this.filterHTMLInputElement.focus();
   }
 

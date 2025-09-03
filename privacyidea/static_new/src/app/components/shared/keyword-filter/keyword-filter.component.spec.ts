@@ -8,7 +8,6 @@ import { FilterValue } from "../../../core/models/filter_value";
 class MockTableUtilsService {
   toggleBooleanInFilter = jest.fn();
   toggleKeywordInFilter = jest.fn();
-  recordsFromText = jest.fn();
 }
 
 function setupComponent(): {
@@ -26,11 +25,13 @@ function setupComponent(): {
   const fixture = TestBed.createComponent(KeywordFilterComponent);
   const component = fixture.componentInstance;
 
-  component.filterHTMLInputElement = document.createElement("input");
-  component.filterHTMLInputElement.focus = jest.fn();
-  component.filterValue = signal<FilterValue>(new FilterValue());
   component.apiFilter = ["active", "host", "infokey & infovalue"];
   component.advancedApiFilter = ["machineid & resolver"];
+  component.filterHTMLInputElement = document.createElement("input");
+  component.filterHTMLInputElement.focus = jest.fn();
+
+  component.filterValue = signal<FilterValue>(new FilterValue());
+  component.showAdvancedFilter = signal(false);
 
   fixture.detectChanges();
   return { fixture, component, mockTableUtilsService: mockTableUtilsService };
@@ -60,18 +61,24 @@ describe("KeywordFilterComponent", () => {
       ${"false"}   | ${"remove_circle"}
     `('returns $expected when value="$stored"', ({ stored, expected }) => {
       const current = stored ? new FilterValue({ value: `active:${stored}` }) : new FilterValue({ value: "active: " });
-      expect(component.getFilterIconName("active", current)).toBe(expected);
+      component.filterValue.set(current);
+      fixture.detectChanges();
+      expect(component.getFilterIconName("active")).toBe(expected);
     });
   });
 
   describe("getFilterIconName", () => {
     it("returns remove_circle if keyword is already present", () => {
-      const icon = component.getFilterIconName("host", new FilterValue({ value: "host: abc" }));
+      component.filterValue.set(new FilterValue({ value: "host: abc" }));
+      fixture.detectChanges();
+      const icon = component.getFilterIconName("host");
       expect(icon).toBe("remove_circle");
     });
 
     it("returns add_circle if keyword not present", () => {
-      const icon = component.getFilterIconName("host", new FilterValue());
+      component.filterValue.set(new FilterValue());
+      fixture.detectChanges();
+      const icon = component.getFilterIconName("host");
       expect(icon).toBe("add_circle");
     });
   });
@@ -97,27 +104,34 @@ describe("KeywordFilterComponent", () => {
     });
 
     it("uses toggleBooleanInFilter for boolean keywords", () => {
-      mockSvc.toggleBooleanInFilter.mockReturnValue("active:true");
-      mockSvc.recordsFromText.mockReturnValue({ active: "true" });
+      mockSvc.toggleBooleanInFilter.mockRejectedValue(new FilterValue({ value: "active:true" }));
+      component.filterValue.set(new FilterValue());
+      fixture.detectChanges();
 
       component.toggleFilter("active");
 
       expect(mockSvc.toggleBooleanInFilter).toHaveBeenCalledWith({
         keyword: "active",
-        currentValue: ""
+        currentValue: new FilterValue()
       });
+      fixture.detectChanges();
       expect(component.filterHTMLInputElement.value).toBe("active:true");
       expect(component.filterValue()).toEqual({ active: "true" });
       expect(component.filterHTMLInputElement.focus).toHaveBeenCalled();
     });
 
     it("uses toggleKeywordInFilter for non‑boolean keywords", () => {
-      mockSvc.toggleKeywordInFilter.mockReturnValue("host:abc");
-      mockSvc.recordsFromText.mockReturnValue({ host: "abc" });
+      mockSvc.toggleKeywordInFilter.mockRejectedValue(new FilterValue({ value: "host:abc" }));
 
       component.toggleFilter("host");
 
-      expect(mockSvc.toggleKeywordInFilter).toHaveBeenCalledWith("", "host");
+      expect(mockSvc.toggleKeywordInFilter).toHaveBeenCalledWith({
+        keyword: "host",
+        currentValue: new FilterValue()
+      });
+
+      /// Wait for signals to propagate
+      fixture.detectChanges();
       expect(component.filterHTMLInputElement.value).toBe("host:abc");
       expect(component.filterValue()).toEqual({ host: "abc" });
       expect(component.filterHTMLInputElement.focus).toHaveBeenCalled();
@@ -127,25 +141,6 @@ describe("KeywordFilterComponent", () => {
   it("delegates to toggleFilter with current input element", () => {
     const spy = jest.spyOn(component, "toggleFilter");
     component.onKeywordClick("host");
-    expect(spy).toHaveBeenCalledWith("host", component.filterHTMLInputElement);
-  });
-
-  describe("filterIsEmpty", () => {
-    it("is true when both text and signal are empty", () => {
-      component.filterHTMLInputElement.value = "";
-      component.filterValue.set(new FilterValue());
-      expect(component.filterIsEmpty()).toBe(true);
-    });
-
-    it("is false when text is non‑empty", () => {
-      component.filterHTMLInputElement.value = "foo";
-      expect(component.filterIsEmpty()).toBe(false);
-    });
-
-    it("is false when signal contains data", () => {
-      component.filterHTMLInputElement.value = "";
-      component.filterValue.set(new FilterValue({ value: "host: abc" }));
-      expect(component.filterIsEmpty()).toBe(false);
-    });
+    expect(spy).toHaveBeenCalledWith("host");
   });
 });

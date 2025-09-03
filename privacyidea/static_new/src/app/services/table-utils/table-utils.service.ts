@@ -1,38 +1,25 @@
 import { Injectable, signal, WritableSignal } from "@angular/core";
 
 import { MatTableDataSource } from "@angular/material/table";
+import { FilterValue } from "../../core/models/filter_value";
 
 export interface TableUtilsServiceInterface {
   pageSizeOptions: WritableSignal<number[]>;
 
   emptyDataSource<T>(pageSize: number, columnsKeyMap: { key: string; label: string }[]): MatTableDataSource<T>;
-
-  toggleKeywordInFilter(currentValue: string, keyword: string): string;
-
-  toggleBooleanInFilter(args: { keyword: string; currentValue: string }): string;
-
+  toggleKeywordInFilter(args: { keyword: string; currentValue: FilterValue }): FilterValue;
+  toggleBooleanInFilter(args: { keyword: string; currentValue: FilterValue }): FilterValue;
   isLink(columnKey: string): boolean;
-
   getClassForColumn(columnKey: string, element: any): string;
-
   getTooltipForColumn(columnKey: string, element: any): string;
-
   getDisplayText(columnKey: string, element: any): string;
-
   getSpanClassForKey(args: { key: string; value?: any; maxfail?: any }): string;
-
   getDivClassForKey(key: string): string;
-
   getClassForColumnKey(columnKey: string): string;
-
   getChildClassForColumnKey(columnKey: string): string;
-
   getDisplayTextForKeyAndRevoked(key: string, value: any, revoked: boolean): string;
-
   getTdClassForKey(key: string): string[];
-
   getSpanClassForState(state: string, clickable: boolean): string;
-
   getDisplayTextForState(state: string): string;
 }
 
@@ -54,63 +41,41 @@ export class TableUtilsService implements TableUtilsServiceInterface {
     );
   }
 
-  toggleKeywordInFilter(currentValue: string, keyword: string): string {
+  toggleKeywordInFilter(args: { keyword: string; currentValue: FilterValue }): FilterValue {
+    const { keyword, currentValue } = args;
+
     if (keyword.includes("&")) {
       const keywords = keyword.split("&").map((k) => k.trim());
       let newValue = currentValue;
       for (const key of keywords) {
-        newValue = this.toggleKeywordInFilter(newValue, key);
+        newValue = this.toggleKeywordInFilter({ keyword: key, currentValue: newValue });
       }
       return newValue;
     }
-    const keywordPattern = new RegExp(`\\b${keyword}:.*?(?=(\\s+\\w+:|$))`, "i");
-    if (keywordPattern.test(currentValue)) {
-      return currentValue
-        .replace(keywordPattern, " ")
-        .trimStart()
-        .replace(/\s{2,}/g, " ");
+    if (currentValue.hasKey(keyword)) {
+      return currentValue.removeKey(keyword);
     } else {
-      if (currentValue.length > 0) {
-        return (currentValue + ` ${keyword}: `).replace(/\s{2,}/g, " ");
-      } else {
-        return `${keyword}: `;
-      }
+      return currentValue.addKey(keyword);
     }
   }
 
-  public toggleBooleanInFilter(args: { keyword: string; currentValue: string }): string {
+  public toggleBooleanInFilter(args: { keyword: string; currentValue: FilterValue }): FilterValue {
     const { keyword, currentValue } = args;
-    const regex = new RegExp(`\\b${keyword}:\\s?([\\w\\d]*)(?![\\w\\d]*:)`, "i");
-    const match = currentValue.match(regex);
+    const booleanValue = currentValue.getValueOfKey(keyword)?.toLowerCase();
 
-    if (!match) {
-      return (currentValue.trim() + ` ${keyword}: true`).trim();
+    if (!booleanValue) {
+      return currentValue.addEntry(keyword, "true");
     } else {
-      const existingValue = match[1].toLowerCase();
+      const existingValue = booleanValue;
 
       if (existingValue === "true") {
-        return currentValue.replace(regex, keyword + ": false");
+        return currentValue.addEntry(keyword, "false");
       } else if (existingValue === "false") {
-        const removed = currentValue.replace(regex, "").trim();
-        return removed.replace(/\s{2,}/g, " ");
+        return currentValue.removeKey(keyword);
       } else {
-        return currentValue.replace(regex, keyword + ": true");
+        return currentValue.addEntry(keyword, "true");
       }
     }
-  }
-
-  public recordsFromText(textValue: string): Record<string, string> {
-    const mapValue = {} as Record<string, string>;
-    const regex = /(\w+):\s*([^:]*?)(?=\s+\w+:|$)/g;
-    let match;
-    while ((match = regex.exec(textValue)) !== null) {
-      const key = match[1].trim();
-      const value = match[2].trim();
-      if (key) {
-        mapValue[key] = value;
-      }
-    }
-    return mapValue;
   }
 
   isLink(columnKey: string): boolean {

@@ -239,7 +239,7 @@ export class ContainerService implements ContainerServiceInterface {
   });
   filterParams = computed<Record<string, string>>(() => {
     const allowedFilters = [...this.apiFilter, ...this.advancedApiFilter];
-    const filterPairs = Object.entries(this.containerFilter().filterMap)
+    const filterPairs = Array.from(this.containerFilter().filterMap.entries())
       .filter(([key]) => allowedFilters.includes(key))
       .map(([key, value]) => {
         if (value === "") {

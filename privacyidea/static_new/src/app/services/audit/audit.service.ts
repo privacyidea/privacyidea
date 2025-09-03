@@ -79,6 +79,8 @@ export interface AuditServiceInterface {
   pageSize: WritableSignal<number>;
   pageIndex: WritableSignal<number>;
   auditResource: HttpResourceRef<PiResponse<Audit> | undefined>;
+  clearFilter(): void;
+  handleFilterInput($event: Event): void;
 }
 
 @Injectable({
@@ -94,12 +96,17 @@ export class AuditService implements AuditServiceInterface {
   auditFilter = signal(new FilterValue());
   filterParams = computed<Record<string, string>>(() => {
     const allowedFilters = [...this.apiFilter, ...this.advancedApiFilter];
-    const filterPairs = Object.entries(this.auditFilter().filterMap)
+    console.log("Current Filter Map: ", this.auditFilter().filterMap);
+    console.log("Current Hidden Filter Map: ", this.auditFilter().hiddenFilterMap);
+    console.log("Allowed Filters: ", allowedFilters);
+    const filterPairs = Array.from(this.auditFilter().filterMap.entries())
       .map(([key, value]) => ({ key, value }))
       .filter(({ key }) => allowedFilters.includes(key));
+    console.log("Filtered Pairs: ", filterPairs);
     if (filterPairs.length === 0) {
       return {};
     }
+    console.log("filterPairs: ", filterPairs);
     return filterPairs.reduce(
       (acc, { key, value }) => ({
         ...acc,
@@ -134,4 +141,12 @@ export class AuditService implements AuditServiceInterface {
       }
     };
   });
+
+  clearFilter(): void {
+    this.auditFilter.set(this.auditFilter().copyWith({ value: "" }));
+  }
+  handleFilterInput($event: Event): void {
+    const input = $event.target as HTMLInputElement;
+    this.auditFilter.set(this.auditFilter().copyWith({ value: input.value }));
+  }
 }

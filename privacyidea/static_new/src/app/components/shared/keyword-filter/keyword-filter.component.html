@@ -16,9 +16,9 @@
             change_circle: 'change-keyword',
             remove_circle: 'remove-keyword',
             add_circle: 'add-keyword'
-          }[getFilterIconName(filterKeyword, filterValue())]
+          }[getFilterIconName(filterKeyword)]
         ">
-        {{ getFilterIconName(filterKeyword, filterValue()) }}
+        {{ getFilterIconName(filterKeyword) }}
       </mat-icon>
       {{ filterKeyword }}
     </button>
@@ -48,9 +48,9 @@
               change_circle: 'change-keyword',
               remove_circle: 'remove-keyword',
               add_circle: 'add-keyword'
-            }[getFilterIconName(filterKeyword, filterValue())]
+            }[getFilterIconName(filterKeyword)]
           ">
-          {{ getFilterIconName(filterKeyword, filterValue()) }}
+          {{ getFilterIconName(filterKeyword) }}
         </mat-icon>
         {{ filterKeyword }}
       </button>

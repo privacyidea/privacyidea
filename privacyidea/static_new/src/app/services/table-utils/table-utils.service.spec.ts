@@ -3,6 +3,7 @@ import { TableUtilsService } from "./table-utils.service";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { MatTableDataSource } from "@angular/material/table";
+import { FilterValue } from "../../core/models/filter_value";
 
 describe("TableUtilsService", () => {
   let service: TableUtilsService;
@@ -10,11 +11,7 @@ describe("TableUtilsService", () => {
   beforeEach(() => {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
-      providers: [
-        TableUtilsService,
-        provideHttpClient(),
-        provideHttpClientTesting()
-      ]
+      providers: [TableUtilsService, provideHttpClient(), provideHttpClientTesting()]
     });
     service = TestBed.inject(TableUtilsService);
   });
@@ -24,83 +21,43 @@ describe("TableUtilsService", () => {
   });
 
   describe("emptyDataSource", () => {
-    it.each([2, 3])(
-      "returns a MatTableDataSource with %i blank rows",
-      (rows) => {
-        const ds = service.emptyDataSource<{ id: string; name: string }>(rows, [
-          { key: "id", label: "ID" },
-          { key: "name", label: "Name" }
-        ]);
-        expect(ds).toBeInstanceOf(MatTableDataSource);
-        expect(ds.data.length).toBe(rows);
-        ds.data.forEach((row) => expect(row).toEqual({ id: "", name: "" }));
-      }
-    );
-  });
-
-  describe("parseFilterString", () => {
-    it("captures multi‑word values when no later label is found", () => {
-      const r = service.parseFilterString(
-        "username: Alice status: active some words",
-        ["username", "status"]
-      );
-      expect(r.filterPairs).toEqual([
-        { key: "username", value: "alice" },
-        { key: "status", value: "active some words" }
+    it.each([2, 3])("returns a MatTableDataSource with %i blank rows", (rows) => {
+      const ds = service.emptyDataSource<{ id: string; name: string }>(rows, [
+        { key: "id", label: "ID" },
+        { key: "name", label: "Name" }
       ]);
-      expect(r.remainingFilterText).toBe("");
-    });
-
-    it("handles composite labels like \"infokey & infovalue\"", () => {
-      const r = service.parseFilterString(
-        "infokey: model infovalue: 42 extra",
-        ["infokey & infovalue"]
-      );
-      expect(r.filterPairs).toEqual([
-        { key: "infokey", value: "model" },
-        { key: "infovalue", value: "42 extra" }
-      ]);
-      expect(r.remainingFilterText).toBe("");
-    });
-
-    it("keeps leading free‑text in remainingFilterText", () => {
-      const r = service.parseFilterString("free words username: bob", [
-        "username"
-      ]);
-      expect(r.filterPairs).toEqual([{ key: "username", value: "bob" }]);
-      expect(r.remainingFilterText).toBe("free words");
-    });
-
-    it("parses \"username:alice status:active\" form", () => {
-      const r = service.parseFilterString("username:alice status:active", [
-        "username",
-        "status"
-      ]);
-      expect(r.filterPairs).toEqual([
-        { key: "username", value: "alice" },
-        { key: "status", value: "active" }
-      ]);
-      expect(r.remainingFilterText).toBe("");
+      expect(ds).toBeInstanceOf(MatTableDataSource);
+      expect(ds.data.length).toBe(rows);
+      ds.data.forEach((row) => expect(row).toEqual({ id: "", name: "" }));
     });
   });
 
   describe("toggleKeywordInFilter", () => {
     it("adds a missing keyword placeholder", () => {
-      expect(service.toggleKeywordInFilter("", "username")).toBe("username: ");
+      // expect(service.toggleKeywordInFilter("", "username")).toBe("username: ");
+      expect(service.toggleKeywordInFilter({ keyword: "username", currentValue: new FilterValue() }).filterString).toBe(
+        "username: "
+      );
     });
 
     it("removes an existing keyword (idempotent)", () => {
-      const once = service.toggleKeywordInFilter("username: ", "username");
+      const once = service.toggleKeywordInFilter({
+        keyword: "username",
+        currentValue: new FilterValue({ value: "username: " })
+      }).filterString;
       expect(once).toBe("");
-      const twice = service.toggleKeywordInFilter(
-        "machineid: 1 resolver: x",
-        "machineid & resolver"
-      );
+      const twice = service.toggleKeywordInFilter({
+        keyword: "machineid & resolver",
+        currentValue: new FilterValue({ value: "machineid: 1 resolver: x" })
+      }).filterString;
       expect(twice).toBe("");
     });
 
     it("adds a composite keyword placeholder", () => {
-      const value = service.toggleKeywordInFilter("", "machineid & resolver");
+      const value = service.toggleKeywordInFilter({
+        keyword: "machineid & resolver",
+        currentValue: new FilterValue()
+      }).filterString;
       expect(value).toBe("machineid: resolver: ");
     });
   });
@@ -109,114 +66,82 @@ describe("TableUtilsService", () => {
     it("cycles through true → false → (removed)", () => {
       const step1 = service.toggleBooleanInFilter({
         keyword: "active",
-        currentValue: ""
+        currentValue: new FilterValue()
       });
-      expect(step1).toBe("active: true");
+      expect(step1.filterString).toBe("active: true");
       const step2 = service.toggleBooleanInFilter({
         keyword: "active",
         currentValue: step1
       });
-      expect(step2).toBe("active: false");
+      expect(step2.filterString).toBe("active: false");
       const step3 = service.toggleBooleanInFilter({
         keyword: "active",
         currentValue: step2
       });
-      expect(step3).toBe("");
+      expect(step3.filterString).toBe("");
     });
 
     it("converts non‑boolean value to true", () => {
       const out = service.toggleBooleanInFilter({
         keyword: "flag",
-        currentValue: "flag: maybe"
+        currentValue: new FilterValue({ value: "flag: maybe" })
       });
-      expect(out).toBe("flag: true");
+      expect(out.filterString).toBe("flag: true");
     });
   });
 
-  it("recordsFromText converts a filter string to a record map", () => {
-    const rec = service.recordsFromText("k1: v1 k2: v2");
-    expect(rec).toEqual({ k1: "v1", k2: "v2" });
-  });
-
-  it.each([ // TODO should be true once these links are reachable
+  it.each([
+    // TODO should be true once these links are reachable
     ["username", false],
     ["realms", false],
     ["unknown", false]
-  ])("isLink(\"%s\") → %s", (key, expected) => {
+  ])('isLink("%s") → %s', (key, expected) => {
     expect(service.isLink(key)).toBe(expected);
   });
 
   describe("getClassForColumn", () => {
     it("returns highlight-disabled when locked", () => {
-      expect(service.getClassForColumn("any", { locked: true })).toBe(
-        "highlight-disabled"
-      );
+      expect(service.getClassForColumn("any", { locked: true })).toBe("highlight-disabled");
     });
 
     it("returns the correct class for active column", () => {
-      expect(service.getClassForColumn("active", { active: true })).toBe(
-        "highlight-true-clickable"
-      );
-      expect(service.getClassForColumn("active", { active: false })).toBe(
-        "highlight-false-clickable"
-      );
+      expect(service.getClassForColumn("active", { active: true })).toBe("highlight-true-clickable");
+      expect(service.getClassForColumn("active", { active: false })).toBe("highlight-false-clickable");
     });
 
     it("returns the correct class for failcount column", () => {
-      expect(
-        service.getClassForColumn("failcount", { failcount: 0, maxfail: 5 })
-      ).toBe("highlight-true");
-      expect(
-        service.getClassForColumn("failcount", { failcount: 2, maxfail: 5 })
-      ).toBe("highlight-warning-clickable");
-      expect(
-        service.getClassForColumn("failcount", { failcount: 5, maxfail: 5 })
-      ).toBe("highlight-false-clickable");
+      expect(service.getClassForColumn("failcount", { failcount: 0, maxfail: 5 })).toBe("highlight-true");
+      expect(service.getClassForColumn("failcount", { failcount: 2, maxfail: 5 })).toBe("highlight-warning-clickable");
+      expect(service.getClassForColumn("failcount", { failcount: 5, maxfail: 5 })).toBe("highlight-false-clickable");
     });
 
-    it("returns \"\" when failcount is empty string", () => {
-      expect(
-        service.getClassForColumn("failcount", { failcount: "", maxfail: 5 })
-      ).toBe("");
+    it('returns "" when failcount is empty string', () => {
+      expect(service.getClassForColumn("failcount", { failcount: "", maxfail: 5 })).toBe("");
     });
 
-    it("returns \"\" when active is undefined", () => {
-      expect(service.getClassForColumn("active", { active: undefined })).toBe(
-        ""
-      );
+    it('returns "" when active is undefined', () => {
+      expect(service.getClassForColumn("active", { active: undefined })).toBe("");
     });
   });
 
   describe("getTooltipForColumn", () => {
     it("returns tooltip for active column", () => {
-      expect(service.getTooltipForColumn("active", { active: true })).toBe(
-        "Deactivate Token"
-      );
-      expect(service.getTooltipForColumn("active", { active: false })).toBe(
-        "Activate Token"
-      );
+      expect(service.getTooltipForColumn("active", { active: true })).toBe("Deactivate Token");
+      expect(service.getTooltipForColumn("active", { active: false })).toBe("Activate Token");
     });
 
     it("returns Locked / Revoked first", () => {
-      expect(service.getTooltipForColumn("active", { locked: true })).toBe(
-        "Locked"
-      );
-      expect(service.getTooltipForColumn("failcount", { revoked: true })).toBe(
-        "Revoked"
-      );
+      expect(service.getTooltipForColumn("active", { locked: true })).toBe("Locked");
+      expect(service.getTooltipForColumn("failcount", { revoked: true })).toBe("Revoked");
     });
 
-    it("returns empty string when active = \"\"", () => {
+    it('returns empty string when active = ""', () => {
       expect(service.getTooltipForColumn("active", { active: "" })).toBe("");
     });
 
     it("returns Reset Fail Counter only when failcount > 0", () => {
-      expect(service.getTooltipForColumn("failcount", { failcount: 3 })).toBe(
-        "Reset Fail Counter"
-      );
-      expect(service.getTooltipForColumn("failcount", { failcount: 0 })).toBe(
-        ""
-      );
+      expect(service.getTooltipForColumn("failcount", { failcount: 3 })).toBe("Reset Fail Counter");
+      expect(service.getTooltipForColumn("failcount", { failcount: 0 })).toBe("");
     });
   });
 
@@ -227,7 +152,7 @@ describe("TableUtilsService", () => {
       [{ active: true, locked: true }, "locked"],
       [{ active: false, revoked: true }, "revoked"],
       [{ active: "" }, ""]
-    ])("maps element → \"%s\"", (element, expected) => {
+    ])('maps element → "%s"', (element, expected) => {
       expect(service.getDisplayText("active", element)).toBe(expected);
     });
 
@@ -241,10 +166,7 @@ describe("TableUtilsService", () => {
       [{ key: "success", value: "" }, ""],
       [{ key: "success", value: true }, "highlight-true"],
       [{ key: "success", value: false }, "highlight-false"],
-      [
-        { key: "description", value: "x" },
-        "details-table-item details-description"
-      ],
+      [{ key: "description", value: "x" }, "details-table-item details-description"],
       [{ key: "active", value: "" }, ""],
       [{ key: "active", value: true }, "highlight-true"],
       [{ key: "active", value: false }, "highlight-false"],
@@ -264,7 +186,7 @@ describe("TableUtilsService", () => {
     ["count_window", "details-value"],
     ["sync_window", "details-value"],
     ["other", ""]
-  ])("getDivClassForKey(\"%s\") → \"%s\"", (key, expected) => {
+  ])('getDivClassForKey("%s") → "%s"', (key, expected) => {
     expect(service.getDivClassForKey(key)).toBe(expected);
   });
 
@@ -274,11 +196,11 @@ describe("TableUtilsService", () => {
     ["realms", "table-scroll-container"],
     ["description", "table-scroll-container"],
     ["xyz", "flex-center-vertical"]
-  ])("getClassForColumnKey(\"%s\") → \"%s\"", (col, expected) => {
+  ])('getClassForColumnKey("%s") → "%s"', (col, expected) => {
     expect(service.getClassForColumnKey(col)).toBe(expected);
   });
 
-  it("getChildClassForColumnKey returns \"scroll-item\" only for scroll containers", () => {
+  it('getChildClassForColumnKey returns "scroll-item" only for scroll containers', () => {
     expect(service.getChildClassForColumnKey("realms")).toBe("scroll-item");
     expect(service.getChildClassForColumnKey("active")).toBe("");
   });
@@ -298,7 +220,7 @@ describe("TableUtilsService", () => {
     ["realms", "height-78"],
     ["tokengroup", "height-78"],
     ["id", "height-52"]
-  ])("getTdClassForKey(\"%s\") includes %s", (key, expectedPart) => {
+  ])('getTdClassForKey("%s") includes %s', (key, expectedPart) => {
     expect(service.getTdClassForKey(key)).toContain(expectedPart);
   });
 
@@ -309,7 +231,7 @@ describe("TableUtilsService", () => {
     ["active", true, "highlight-true-clickable"],
     ["disabled", true, "highlight-false-clickable"],
     ["other", true, ""]
-  ])("getSpanClassForState(\"%s\", %s) → %s", (state, clickable, expected) => {
+  ])('getSpanClassForState("%s", %s) → %s', (state, clickable, expected) => {
     expect(service.getSpanClassForState(state, clickable)).toBe(expected);
   });
 
@@ -317,7 +239,7 @@ describe("TableUtilsService", () => {
     ["active", "active"],
     ["disabled", "deactivated"],
     ["mystery", "mystery"]
-  ])("getDisplayTextForState(\"%s\") → %s", (state, expected) => {
+  ])('getDisplayTextForState("%s") → %s', (state, expected) => {
     expect(service.getDisplayTextForState(state)).toBe(expected);
   });
 });

@@ -68,7 +68,7 @@ export class UserService implements UserServiceInterface {
   apiUserFilter = signal(new FilterValue());
   filterParams = computed<Record<string, string>>(() => {
     const allowedFilters = [...this.apiFilterOptions, ...this.advancedApiFilterOptions];
-    const filterPairs = Object.entries(this.apiUserFilter().filterMap)
+    const filterPairs = Array.from(this.apiUserFilter().filterMap.entries())
       .map(([key, value]) => ({ key, value }))
       .filter(({ key }) => allowedFilters.includes(key));
     if (filterPairs.length === 0) {

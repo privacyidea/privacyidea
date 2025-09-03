@@ -19,12 +19,12 @@ export class FilterValue {
     return this._value;
   }
   set setString(newValue: string) {
-    this._value = this._normalize(newValue);
+    this._value = newValue;
   }
 
   constructor(args: { value?: string; hiddenValue?: string } = {}) {
-    this._value = args.value ? this._normalize(args.value) : "";
-    this._hiddenValue = args.hiddenValue ? this._normalize(args.hiddenValue) : "";
+    this._value = args.value ? args.value : "";
+    this._hiddenValue = args.hiddenValue ? args.hiddenValue : "";
   }
 
   public copyWith(args?: { value?: string; hiddenValue?: string }): FilterValue {
@@ -39,7 +39,7 @@ export class FilterValue {
     // Adds a new key to the string if it does not already exist.
     const regex = new RegExp(`(?<=^|\\s)(${key})+:\\s*[\\w\\d]*(?=$|\\s)`, "g");
     if (!this._value.match(regex)) {
-      this._value = this._value ? `${this._value} ${key}: ` : `${key}: `;
+      this._value = this._value ? `${this._value.trim()} ${key}: ` : `${key}: `;
     }
     return new FilterValue({ value: this._value, hiddenValue: this._hiddenValue });
   }
@@ -124,10 +124,17 @@ export class FilterValue {
     return map;
   }
 
-  public addEntry(key: string, value: string): void {
+  /**
+   * Adds a new entry to the filter value.
+   * If the key already exists, it updates the value.
+   * @param key The key to add or update.
+   * @param value The value associated with the key.
+   */
+  public addEntry(key: string, value: string): FilterValue {
     const map = this.filterMap;
     map.set(key, value);
     this.setFromMap(map);
+    return new FilterValue({ value: this._value, hiddenValue: this._hiddenValue });
   }
 
   /**
@@ -141,9 +148,5 @@ export class FilterValue {
       entries.push(`${key}: ${value}`);
     });
     this._value = entries.join(" ");
-  }
-
-  private _normalize(value: string): string {
-    return value.toLowerCase();
   }
 }

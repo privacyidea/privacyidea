@@ -96,11 +96,7 @@ export class AuditComponent {
   @ViewChild("filterHTMLInputElement", { static: true })
   filterInput!: HTMLInputElement;
   protected readonly auditService: AuditServiceInterface = inject(AuditService);
-  filterValueString: WritableSignal<string> = linkedSignal(() =>
-    Object.entries(this.auditService.auditFilter())
-      .map(([key, value]) => `${key}: ${value}`)
-      .join(" ")
-  );
+
   totalLength: WritableSignal<number> = linkedSignal({
     source: this.auditService.auditResource.value,
     computation: (auditResource, previous) => {

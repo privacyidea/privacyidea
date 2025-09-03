@@ -356,8 +356,11 @@ export class TokenService implements TokenServiceInterface {
 
   filterParams = computed<Record<string, string>>(() => {
     const allowedFilters = [...this.apiFilter, ...this.advancedApiFilter, ...this.hiddenApiFilter];
-    const hiddenFilterMap = this.tokenFilter().hiddenFilterMap;
-    let filterPairs = [...Array.from(this.tokenFilter().filterMap.entries()), ...Array.from(hiddenFilterMap.entries())];
+
+    let filterPairs = [
+      ...Array.from(this.tokenFilter().filterMap.entries()),
+      ...Array.from(this.tokenFilter().hiddenFilterMap.entries())
+    ];
     let filterPairsMap = filterPairs
       .filter(([key]) => allowedFilters.includes(key))
       .map(([key, value]) => ({ key, value }));

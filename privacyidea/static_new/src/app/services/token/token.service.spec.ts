@@ -8,6 +8,7 @@ import { TestBed } from "@angular/core/testing";
 import { TokenService } from "./token.service";
 import { signal } from "@angular/core";
 import { AuthService } from "../auth/auth.service";
+import { FilterValue } from "../../core/models/filter_value";
 
 class MockAuthService {
   getHeaders = jest.fn().mockReturnValue({ Authorization: "Bearer FAKE_TOKEN" });
@@ -301,11 +302,7 @@ describe("TokenService", () => {
 
   describe("reactive helpers", () => {
     it("filterParams wildcard‑wraps non‑ID fields", () => {
-      tokenService.tokenFilter.set({
-        serial: "otp",
-        user: "alice",
-        description: "vpn"
-      });
+      tokenService.tokenFilter.set(new FilterValue({ value: "serial: otp user: alice description: vpn" }));
       expect(tokenService.filterParams()).toEqual({
         serial: "*otp*",
         user: "alice",

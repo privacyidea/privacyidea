@@ -131,7 +131,10 @@ export class ContainerTableComponent {
   expandedElement: ContainerDetailData | null = null;
 
   isAllSelected() {
-    return this.containerSelection().length === this.containerDataSource().data.length;
+    return (
+      this.containerSelection().length === this.containerDataSource().data.length &&
+      this.containerDataSource().data.length > 0
+    );
   }
 
   toggleAllRows() {

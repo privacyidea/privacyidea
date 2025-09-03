@@ -6,6 +6,7 @@ import { environment } from "../../../environments/environment";
 import { provideHttpClient } from "@angular/common/http";
 import { signal } from "@angular/core";
 import { AuthService } from "../auth/auth.service";
+import { FilterValue } from "../../core/models/filter_value";
 
 environment.proxyUrl = "/api";
 
@@ -40,11 +41,7 @@ describe("AuditService (signals & helpers)", () => {
   it("filterParams ignores unknown keys and wildcard‑wraps allowed ones", () => {
     expect(auditService.filterParams()).toEqual({});
 
-    auditService.auditFilter.set({
-      action: "LOGIN",
-      foo: "bar",
-      user: "alice"
-    });
+    auditService.auditFilter.set(new FilterValue({ value: "foo: bar action: LOGIN user: alice" }));
     expect(auditService.filterParams()).toEqual({
       action: "*LOGIN*",
       user: "*alice*"
@@ -61,8 +58,7 @@ describe("AuditService (signals & helpers)", () => {
 
   it("auditResource becomes active and derived params update", () => {
     content.routeUrl.set("/audit");
-    auditService.auditFilter.set({ serial: "otp123" });
-
+    auditService.auditFilter.set(new FilterValue({ value: "serial: otp123" }));
     auditService.auditResource.reload();
 
     expect(auditService.auditResource.value()).toBeUndefined();

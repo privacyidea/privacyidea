@@ -15,6 +15,7 @@ import { TestBed } from "@angular/core/testing";
 import { environment } from "../../../environments/environment";
 import { TokenService } from "../token/token.service";
 import { AuthService } from "../auth/auth.service";
+import { FilterValue } from "../../core/models/filter_value";
 
 environment.proxyUrl = "/api";
 
@@ -248,27 +249,27 @@ describe("ContainerService", () => {
   });
 
   it("filterParams converts blank values and drops unknown keys", () => {
-    containerService.containerFilter.set({ user: "Alice", type: "", foo: "bar" });
+    containerService.containerFilter.set(new FilterValue({ value: "user: Alice type: foo: bar" }));
     const fp = containerService.filterParams();
     expect(fp).toEqual({ user: "Alice", type: "*" });
   });
 
   it("pageSize falls back to 10 for invalid eventPageSize", () => {
     containerService.eventPageSize = 7;
-    containerService.containerFilter.set({});
+    containerService.containerFilter.set(new FilterValue());
     expect(containerService.pageSize()).toBe(10);
   });
 
   it("pageSize keeps valid eventPageSize", () => {
     containerService.eventPageSize = 15;
-    containerService.containerFilter.set({});
+    containerService.containerFilter.set(new FilterValue());
     expect(containerService.pageSize()).toBe(15);
   });
 
   it("pageIndex resets to 0 when filter changes", () => {
     containerService.pageIndex.set(2);
     expect(containerService.pageIndex()).toBe(2);
-    containerService.containerFilter.set({ type: "x" });
+    containerService.containerFilter.set(new FilterValue({ value: "type: x" }));
     expect(containerService.pageIndex()).toBe(0);
   });
 
@@ -336,12 +337,7 @@ describe("ContainerService", () => {
 
   it("filterParams handles wildcards and converts blank values", () => {
     (containerService.apiFilter as string[]).push("desc");
-    containerService.containerFilter.set({
-      desc: "foo",
-      token_serial: "123",
-      type: "",
-      user: "Bob"
-    });
+    containerService.containerFilter.set(new FilterValue({ value: "desc: foo token_serial: 123 type: user: Bob" }));
     expect(containerService.filterParams()).toEqual({
       desc: "*foo*",
       token_serial: "123",
@@ -353,7 +349,7 @@ describe("ContainerService", () => {
   it("pageIndex resets when pageSize source changes", () => {
     containerService.pageIndex.set(4);
     containerService.eventPageSize = 5;
-    containerService.containerFilter.set({});
+    containerService.containerFilter.set(new FilterValue());
     expect(containerService.pageSize()).toBe(5);
     expect(containerService.pageIndex()).toBe(0);
   });
@@ -442,10 +438,7 @@ describe("ContainerService", () => {
   });
 
   it("filterParams wildcards non‑ID fields", () => {
-    containerService.containerFilter.set({
-      container_serial: "S1",
-      desc: "foo"
-    } as any);
+    containerService.containerFilter.set(new FilterValue({ value: "container_serial: S1 desc: foo" }));
     expect(containerService.filterParams()).toEqual({
       container_serial: "S1",
       desc: "*foo*"
@@ -454,11 +447,11 @@ describe("ContainerService", () => {
 
   it("pageSize boundary values 5 and 15 are respected", () => {
     containerService.eventPageSize = 5;
-    containerService.containerFilter.set({});
+    containerService.containerFilter.set(new FilterValue());
     expect(containerService.pageSize()).toBe(5);
 
     containerService.eventPageSize = 15;
-    containerService.containerFilter.set({});
+    containerService.containerFilter.set(new FilterValue());
     expect(containerService.pageSize()).toBe(15);
   });
 
