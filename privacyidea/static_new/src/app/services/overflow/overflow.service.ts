@@ -33,7 +33,7 @@ export class OverflowService implements OverflowServiceInterface {
       const computedStyle = window.getComputedStyle(thresholdElement);
       const paddingBottom = parseFloat(computedStyle.paddingBottom) || 0;
       const thresholdHeightWithoutPadding = thresholdElement.clientHeight - paddingBottom;
-      return element.clientHeight < thresholdHeightWithoutPadding + 150;
+      return element.clientHeight < thresholdHeightWithoutPadding;
     } else {
       return false;
     }
