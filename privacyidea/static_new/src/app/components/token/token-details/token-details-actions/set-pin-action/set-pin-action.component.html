@@ -1,34 +1,38 @@
-<div class="user-pin-input">
-  <input
-    style="display: none"
-    type="text" />
-  <input
-    style="display: none"
-    type="password" />
-  <input
-    [(ngModel)]="setPinValue"
-    [type]="'password'"
-    class="input"
-    i18n-placeholder
-    placeholder="Token PIN" />
-  <input
-    [(ngModel)]="repeatPinValue"
-    [type]="'password'"
-    class="input"
-    i18n-placeholder
-    placeholder="Repeat PIN" />
-</div>
+@if (authService.actionAllowed("setpin")) {
+  <div class="user-pin-input">
+    <input
+      style="display: none"
+      type="text"/>
+    <input
+      style="display: none"
+      type="password"/>
+    <input
+      [(ngModel)]="setPinValue"
+      [type]="'password'"
+      class="input"
+      i18n-placeholder
+      placeholder="Token PIN"/>
+    <input
+      [(ngModel)]="repeatPinValue"
+      [type]="'password'"
+      class="input"
+      i18n-placeholder
+      placeholder="Repeat PIN"/>
+  </div>
+}
 <div class="user-pin-button">
-  <button
-    (click)="setPin()"
-    class="detail-button"
-    extended
-    i18n
-    mat-fab>
-    <mat-icon class="detail-button-icon">password</mat-icon>
-    Set PIN
-  </button>
-  @if (canSetRandomPin()) {
+  @if (authService.actionAllowed("setpin")) {
+    <button
+      (click)="setPin()"
+      class="detail-button"
+      extended
+      i18n
+      mat-fab>
+      <mat-icon class="detail-button-icon">password</mat-icon>
+      Set PIN
+    </button>
+  }
+  @if (authService.actionsAllowed(["setrandompin", "otp_pin_set_random"])) {
     <button
       (click)="setRandomPin()"
       class="detail-button"

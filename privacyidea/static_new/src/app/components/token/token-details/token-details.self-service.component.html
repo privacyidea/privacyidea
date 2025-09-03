@@ -118,7 +118,7 @@
                       <input
                         type="number"
                         matInput
-                        [(ngModel)]="element.value" />
+                        [(ngModel)]="element.value"/>
                     </mat-form-field>
                   } @else if (element.isEditing()) {
                     <mat-form-field class="width-18rem">
@@ -158,15 +158,19 @@
               mat-cell>
               <div class="ali-center">
                 @if (element.keyMap.key === "active" && !isAnyEditingOrRevoked()) {
-                  <div class="edit-button-container">
-                    <button
-                      mat-icon-button
-                      (click)="toggleActive(element.value)"
-                      i18n-aria-label="Toggle Token Active State">
-                      <mat-icon>{{ tokenIsActive() ? "lock" : "play_circle" }}</mat-icon>
-                    </button>
-                  </div>
-                } @else if (element.keyMap.key === "failcount" && !isAnyEditingOrRevoked()) {
+                  @if ((tokenIsActive() && authService.actionAllowed("disable")) || (!tokenIsActive() &&
+                    authService.actionAllowed("enable"))) {
+                    <div class="edit-button-container">
+                      <button
+                        mat-icon-button
+                        (click)="toggleActive(element.value)"
+                        i18n-aria-label="Toggle Token Active State">
+                        <mat-icon>{{ tokenIsActive() ? "lock" : "play_circle" }}</mat-icon>
+                      </button>
+                    </div>
+                  }
+                } @else if (element.keyMap.key === "failcount" && !isAnyEditingOrRevoked() &&
+                authService.actionAllowed("reset")) {
                   <div class="edit-button-container">
                     <button
                       mat-icon-button
@@ -174,9 +178,8 @@
                       <mat-icon> lock_reset</mat-icon>
                     </button>
                   </div>
-                } @else if (
-                  element.keyMap.key === "container_serial" && !isAnyEditingOrRevoked() && element.value !== ""
-                ) {
+                } @else if (element.keyMap.key === "container_serial" && !isAnyEditingOrRevoked() &&
+                element.value && authService.actionAllowed("container_remove_token")) {
                   <div class="edit-button-container">
                     <button
                       mat-icon-button

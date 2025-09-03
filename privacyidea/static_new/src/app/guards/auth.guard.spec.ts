@@ -3,7 +3,9 @@ import { Route, Router, UrlSegment } from "@angular/router";
 import { AuthService } from "../services/auth/auth.service";
 import { NotificationService } from "../services/notification/notification.service";
 import { adminMatch, AuthGuard, selfServiceMatch } from "./auth.guard";
-import { MockAuthService, MockNotificationService } from "../../testing/mock-services";
+import { MockAuthService, MockLocalService, MockNotificationService } from "../../testing/mock-services";
+import { provideHttpClient } from "@angular/common/http";
+import { provideHttpClientTesting } from "@angular/common/http/testing";
 
 const flushPromises = () => new Promise((r) => setTimeout(r, 0));
 
@@ -17,7 +19,13 @@ describe("AuthGuard — CanMatch helpers", () => {
   beforeEach(() => {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
-      providers: [{ provide: AuthService, useClass: MockAuthService }]
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: AuthService, useClass: MockAuthService },
+        MockLocalService,
+        MockNotificationService
+      ]
     });
   });
 
@@ -52,9 +60,13 @@ describe("AuthGuard class", () => {
     TestBed.configureTestingModule({
       providers: [
         AuthGuard,
+        provideHttpClient(),
+        provideHttpClientTesting(),
         { provide: AuthService, useClass: MockAuthService },
         { provide: Router, useValue: routerMock },
-        { provide: NotificationService, useClass: MockNotificationService }
+        { provide: NotificationService, useClass: MockNotificationService },
+        MockLocalService,
+        MockNotificationService
       ]
     });
 

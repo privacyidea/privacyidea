@@ -3,6 +3,8 @@ import {
   MockAuditService,
   MockAuthService,
   MockContentService,
+  MockLocalService,
+  MockNotificationService,
   MockTableUtilsService
 } from "../../../testing/mock-services";
 
@@ -46,7 +48,9 @@ describe("AuditComponent (unit)", () => {
         { provide: AuditService, useExisting: MockAuditService },
         { provide: TableUtilsService, useExisting: MockTableUtilsService },
         { provide: ContentService, useExisting: MockContentService },
-        { provide: AuthService, useExisting: MockAuthService }
+        { provide: AuthService, useExisting: MockAuthService },
+        MockLocalService,
+        MockNotificationService
       ]
     }).compileComponents();
 

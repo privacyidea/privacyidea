@@ -194,7 +194,8 @@
               class="edit-column-cell"
               mat-cell>
               <div class="ali-center">
-                @if (element.keyMap.key === "failcount" && !isAnyEditingOrRevoked()) {
+                @if (element.keyMap.key === "failcount" && !isAnyEditingOrRevoked() &&
+                authService.actionAllowed("reset")) {
                   <div class="edit-button-container">
                     <button
                       mat-icon-button
@@ -203,7 +204,8 @@
                       <mat-icon> lock_reset</mat-icon>
                     </button>
                   </div>
-                } @else if (element.keyMap.key === "container_serial" && !isAnyEditingOrRevoked() && element.value) {
+                } @else if (element.keyMap.key === "container_serial" && !isAnyEditingOrRevoked() &&
+                element.value && authService.actionAllowed("container_remove_token")) {
                   <div class="edit-button-container">
                     <button
                       mat-icon-button

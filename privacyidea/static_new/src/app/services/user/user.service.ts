@@ -82,9 +82,15 @@ export class UserService implements UserServiceInterface {
       {} as Record<string, string>
     );
   });
+
+  readonly apiFilter = apiFilter;
+  readonly advancedApiFilter = advancedApiFilter;
+
+  filterValue = signal({} as Record<string, string>);
+
   pageSize = linkedSignal({
-    source: this.apiUserFilter,
-    computation: () => 10
+    source: () => this.authService.userPageSize(),
+    computation: (pageSize) => (pageSize > 0 ? pageSize : 10)
   });
   pageIndex = linkedSignal({
     source: () => ({
@@ -121,7 +127,7 @@ export class UserService implements UserServiceInterface {
     return filter?.username ?? "";
   });
   userResource = httpResource<PiResponse<UserData[]>>(() => {
-    if (this.authService.role() !== "user") {
+    if (!this.authService.actionAllowed("userlist")) {
       return undefined;
     }
     return {
@@ -154,7 +160,7 @@ export class UserService implements UserServiceInterface {
     const selectedUserRealm = this.selectedUserRealm();
     if (
       selectedUserRealm === "" ||
-      this.authService.role() === "user" ||
+      !this.authService.actionAllowed("userlist") ||
       (!this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_DETAILS) &&
         !this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS) &&
         ![
@@ -176,7 +182,7 @@ export class UserService implements UserServiceInterface {
       }
     };
   });
-  sort = signal({ active: "serial", direction: "asc" } as Sort);
+
   users: WritableSignal<UserData[]> = linkedSignal({
     source: this.usersResource.value,
     computation: (source, previous) => source?.result?.value ?? previous?.value ?? []

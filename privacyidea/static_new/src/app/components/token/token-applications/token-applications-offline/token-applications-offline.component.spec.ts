@@ -1,21 +1,25 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MatTableDataSource } from "@angular/material/table";
 import { MatTabsModule } from "@angular/material/tabs";
-import { MockMachineService, MockTableUtilsService } from "../../../../../testing/mock-services";
+import {
+  MockLocalService,
+  MockMachineService, MockNotificationService,
+  MockTableUtilsService
+} from "../../../../../testing/mock-services";
 import { MachineService, TokenApplication } from "../../../../services/machine/machine.service";
 import { TableUtilsService } from "../../../../services/table-utils/table-utils.service";
 import { TokenService } from "../../../../services/token/token.service";
 import { CopyButtonComponent } from "../../../shared/copy-button/copy-button.component";
 import { KeywordFilterComponent } from "../../../shared/keyword-filter/keyword-filter.component";
 import { TokenApplicationsOfflineComponent } from "./token-applications-offline.component";
+import { provideHttpClient } from "@angular/common/http";
+import { provideHttpClientTesting } from "@angular/common/http/testing";
 
 describe("TokenApplicationsOfflineComponent (Jest)", () => {
   let fixture: ComponentFixture<TokenApplicationsOfflineComponent>;
   let component: TokenApplicationsOfflineComponent;
-
+  let machineServiceMock: MockMachineService;
   let mockTokenService: Partial<TokenService> = {};
-  const machineServiceMock = new MockMachineService();
-  const tableUtilsMock = new MockTableUtilsService();
 
   beforeEach(async () => {
     TestBed.resetTestingModule();
@@ -27,13 +31,18 @@ describe("TokenApplicationsOfflineComponent (Jest)", () => {
         CopyButtonComponent
       ],
       providers: [
-        { provide: MachineService, useValue: machineServiceMock },
-        { provide: TableUtilsService, useValue: tableUtilsMock },
-        { provide: TokenService, useValue: mockTokenService }
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: MachineService, useClass: MockMachineService },
+        { provide: TableUtilsService, useClass: MockTableUtilsService },
+        { provide: TokenService, useValue: mockTokenService },
+        MockLocalService,
+        MockNotificationService
       ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(TokenApplicationsOfflineComponent);
+    machineServiceMock = TestBed.inject(MachineService) as any;
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

@@ -7,18 +7,20 @@
     Generate the OTP key on the server and show a QR code to scan.
   </mat-checkbox>
   <div class="otp-inputs-container">
-    <mat-form-field class="input-height width-33">
-      <mat-label i18n>OTP Key</mat-label>
-      <input
-        matInput
-        [formControl]="otpKeyFormControl"
-        i18n-placeholder
-        placeholder="Enter OTP key"
-        required />
-      @if (otpKeyFormControl.hasError("required")) {
-        <mat-error i18n> OTP key is <strong>required</strong></mat-error>
-      }
-    </mat-form-field>
+    @if (!this.authService.checkForceServerGenerateOTPKey("hotp")) {
+      <mat-form-field class="input-height width-33">
+        <mat-label i18n>OTP Key</mat-label>
+        <input
+          matInput
+          [formControl]="otpKeyFormControl"
+          i18n-placeholder
+          placeholder="Enter OTP key"
+          required />
+        @if (otpKeyFormControl.hasError("required")) {
+          <mat-error i18n> OTP key is <strong>required</strong></mat-error>
+        }
+      </mat-form-field>
+    }
 
     <mat-form-field
       class="input-height width-33">
@@ -45,6 +47,5 @@
       </mat-select>
       <mat-hint i18n> Some Authenticator Apps only support the SHA1 algorithm.</mat-hint>
     </mat-form-field>
-
   </div>
 </div>

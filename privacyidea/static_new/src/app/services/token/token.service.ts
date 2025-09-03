@@ -1,22 +1,22 @@
-import { AuthService, AuthServiceInterface } from "../auth/auth.service";
-import { ContentService, ContentServiceInterface } from "../content/content.service";
+import { HttpClient, HttpErrorResponse, HttpParams, httpResource, HttpResourceRef } from "@angular/common/http";
+import { computed, effect, inject, Injectable, linkedSignal, Signal, signal, WritableSignal } from "@angular/core";
+import { Sort } from "@angular/material/sort";
+import { forkJoin, Observable, Subject, switchMap, throwError, timer } from "rxjs";
+import { catchError, shareReplay, takeUntil, takeWhile } from "rxjs/operators";
+import { environment } from "../../../environments/environment";
+import { PiResponse } from "../../app.component";
+import { ROUTE_PATHS } from "../../route_paths";
+import { TokenTypeOption as TokenTypeKey } from "../../components/token/token.component";
 import {
   EnrollmentResponse,
   TokenApiPayloadMapper,
   TokenEnrollmentData
 } from "../../mappers/token-api-payload/_token-api-payload.mapper";
-import { HttpClient, HttpErrorResponse, HttpParams, HttpResourceRef, httpResource } from "@angular/common/http";
-import { Injectable, Signal, WritableSignal, computed, effect, inject, linkedSignal, signal } from "@angular/core";
 import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
-import { Observable, Subject, forkJoin, switchMap, throwError, timer } from "rxjs";
-import { TokenComponent, TokenTypeOption as TokenTypeKey } from "../../components/token/token.component";
-import { catchError, shareReplay, takeUntil, takeWhile } from "rxjs/operators";
-
+import { tokenTypes } from "../../utils/token.utils";
 import { FilterValue } from "../../core/models/filter_value";
-import { PiResponse } from "../../app.component";
-import { Sort } from "@angular/material/sort";
-import { environment } from "../../../environments/environment";
-import { ROUTE_PATHS } from "../../route_paths";
+import { AuthService, AuthServiceInterface } from "../auth/auth.service";
+import { ContentService, ContentServiceInterface } from "../content/content.service";
 
 const apiFilter = [
   "serial",
@@ -220,17 +220,10 @@ export class TokenService implements TokenServiceInterface {
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
-
-  readonly apiFilter = apiFilter;
-  readonly advancedApiFilter = advancedApiFilter;
   readonly hiddenApiFilter = hiddenApiFilter;
-  readonly defaultSizeOptions = [5, 10, 25, 50];
-
+  stopPolling$ = new Subject<void>();
   tokenBaseUrl = environment.proxyUrl + "/token/";
   eventPageSize = 10;
-  stopPolling$ = new Subject<void>();
-  tokenIsActive = signal(true);
-  tokenIsRevoked = signal(true);
   tokenSerial = this.contentService.tokenSerial;
 
   constructor() {
@@ -249,6 +242,12 @@ export class TokenService implements TokenServiceInterface {
       }
     });
   }
+
+  readonly apiFilter = apiFilter;
+  readonly advancedApiFilter = advancedApiFilter;
+  readonly defaultSizeOptions = [5, 10, 25, 50];
+  tokenIsActive = signal(true);
+  tokenIsRevoked = signal(true);
 
   showOnlyTokenNotInContainer = linkedSignal({
     source: this.contentService.routeUrl,
@@ -316,7 +315,7 @@ export class TokenService implements TokenServiceInterface {
     return Object.entries(obj).map(([key, info]) => ({
       key: key as TokenTypeKey,
       info: String(info),
-      text: TokenComponent.tokenTypeTexts.find((t) => t.key === key)?.text || ""
+      text: tokenTypes.find((t) => t.key === key)?.text || ""
     }));
   });
 
@@ -326,7 +325,7 @@ export class TokenService implements TokenServiceInterface {
       routeUrl: this.contentService.routeUrl()
     }),
     computation: (source) =>
-      source.tokenTypeOptions.find((type) => type.key === "hotp") ||
+      source.tokenTypeOptions.find((type) => type.key === this.authService.defaultTokentype()) ||
       source.tokenTypeOptions[0] ||
       ({ key: "hotp", info: "", text: "" } as TokenType)
   });
@@ -338,6 +337,9 @@ export class TokenService implements TokenServiceInterface {
     computation: (source, previous) => {
       if (previous && source.role === previous.source.role) {
         return previous.value;
+      }
+      if (this.authService.tokenPageSize() != null && this.authService.tokenPageSize()! > 0) {
+        return this.authService.tokenPageSize()!;
       }
       return source.role === "user" ? 5 : 10;
     }

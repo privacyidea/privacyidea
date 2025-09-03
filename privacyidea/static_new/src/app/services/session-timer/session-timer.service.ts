@@ -41,15 +41,6 @@ export class SessionTimerService implements SessionTimerServiceInterface {
     return;
   });
 
-  constructor() {
-    effect(() => {
-      const remainingTime = this.remainingTime();
-      if (remainingTime && remainingTime > 30_000 && remainingTime < 31_000) {
-        this.notificationService.openSnackBar("Session will expire in 30 seconds.");
-      }
-    });
-  }
-
   startTimer(): void {
     this.resetTimer();
     this.startTime.set(Date.now());
@@ -75,6 +66,15 @@ export class SessionTimerService implements SessionTimerServiceInterface {
     this.intervalId = setInterval(() => {
       this.currentTime.set(Date.now());
     }, 1000);
+  }
+
+  constructor() {
+    effect(() => {
+      const remainingTime = this.remainingTime();
+      if (remainingTime && remainingTime > 30_000 && remainingTime < 31_000) {
+        this.notificationService.openSnackBar("Session will expire in 30 seconds.");
+      }
+    });
   }
 
   private handleSessionTimeout(): void {

@@ -121,6 +121,7 @@ export class MachineService implements MachineServiceInterface {
   sshAdvancedApiFilter = ["hostname", "machineid & resolver"];
   offlineApiFilter = ["serial", "count", "rounds"];
   offlineAdvancedApiFilter = ["hostname", "machineid & resolver"];
+
   selectedApplicationType = signal<"ssh" | "offline">("ssh");
   pageSize = linkedSignal({
     source: this.selectedApplicationType,
@@ -128,7 +129,13 @@ export class MachineService implements MachineServiceInterface {
   });
 
   machinesResource = httpResource<PiResponse<Machines>>(() => {
-    if (!this.contentService.routeUrl().includes(ROUTE_PATHS.TOKENS_APPLICATIONS)) {
+    if (
+      !(
+        this.contentService.routeUrl().includes(ROUTE_PATHS.TOKENS_APPLICATIONS) ||
+        this.contentService.routeUrl().includes(ROUTE_PATHS.TOKENS_DETAILS)
+      ) ||
+      !this.authService.actionAllowed("machinelist")
+    ) {
       return undefined;
     }
     return {
@@ -147,15 +154,7 @@ export class MachineService implements MachineServiceInterface {
   });
   machineFilter: WritableSignal<FilterValue> = linkedSignal({
     source: this.selectedApplicationType,
-    // This gets also updated by the effect in the constructor, when filterValueString changes.
     computation: () => new FilterValue()
-  });
-  filterValueString: WritableSignal<string> = linkedSignal({
-    source: this.machineFilter,
-    computation: () =>
-      Object.entries(this.machineFilter())
-        .map(([key, value]) => `${key}: ${value}`)
-        .join(" ")
   });
   filterParams = computed<Record<string, string>>(() => {
     let allowedKeywords =

@@ -75,27 +75,18 @@
         mat-cell>
         @switch (element.keyMap.key) {
           @case ("username") {
-            @if (!(isAnyEditingOrRevoked() && !isEditingUser())) {
-              @if (element.value) {
-                <div class="edit-button-container">
-                  <button
-                    mat-icon-button
-                    class="yellow"
-                    (click)="unassignUser()"
-                    i18n-aria-label="Unassign User">
-                    <mat-icon>person_remove</mat-icon>
-                  </button>
-                </div>
-              } @else {
-                <app-edit-buttons
-                  [toggleEdit]="toggleUserEdit.bind(this)"
-                  [saveEdit]="saveUser.bind(this)"
-                  [cancelEdit]="cancelUserEdit.bind(this)"
-                  [shouldHideEdit]="isAnyEditingOrRevoked"
-                  [isEditingUser]="isEditingUser"
-                  [isEditingInfo]="isEditingInfo"
-                  [element]="element"></app-edit-buttons>
-              }
+            @if (
+              !(isAnyEditingOrRevoked() && !isEditingUser()) && element.value && authService.actionAllowed("unassign")
+            ) {
+              <div class="edit-button-container">
+                <button
+                  mat-icon-button
+                  class="yellow"
+                  (click)="unassignUser()"
+                  i18n-aria-label="Unassign User">
+                  <mat-icon>person_remove</mat-icon>
+                </button>
+              </div>
             }
           }
         }

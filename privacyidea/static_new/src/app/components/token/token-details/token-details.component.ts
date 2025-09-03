@@ -28,6 +28,7 @@ import { TokenDetailsActionsComponent } from "./token-details-actions/token-deta
 import { TokenDetailsInfoComponent } from "./token-details-info/token-details-info.component";
 import { TokenDetailsUserComponent } from "./token-details-user/token-details-user.component";
 import { TokenSshMachineAssignDialogComponent } from "./token-ssh-machine-assign-dialog/token-ssh-machine-assign-dialog";
+import { PolicyAction } from "../../../services/auth/policy-actions";
 
 export const tokenDetailsKeyMap = [
   { key: "tokentype", label: "Type" },
@@ -43,6 +44,16 @@ export const tokenDetailsKeyMap = [
   { key: "realms", label: "Token Realms" },
   { key: "tokengroup", label: "Token Groups" },
   { key: "container_serial", label: "Container Serial" }
+];
+
+export const tokenDetailsRightsMap = [
+  { key: "maxfail", right: "set" },
+  { key: "count_window", right: "set" },
+  { key: "sync_window", right: "set" },
+  { key: "description", right: "setdescription" },
+  { key: "realms", right: "tokenrealms" },
+  { key: "tokengroup", right: "tokengroups" },
+  { key: "container_serial", right: "container_add_token" }
 ];
 
 export const userDetailsKeyMap = [
@@ -94,7 +105,7 @@ export class TokenDetailsComponent {
   protected readonly overflowService: OverflowServiceInterface = inject(OverflowService);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
-  private readonly authService: AuthServiceInterface = inject(AuthService);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
   private router = inject(Router);
   tokenIsActive = this.tokenService.tokenIsActive;
   tokenIsRevoked = this.tokenService.tokenIsRevoked;
@@ -306,21 +317,8 @@ export class TokenDetailsComponent {
   }
 
   isEditableElement(key: string) {
-    const role = this.authService.role();
-    if (role === "admin") {
-      return (
-        key === "maxfail" ||
-        key === "count_window" ||
-        key === "sync_window" ||
-        key === "description" ||
-        key === "info" ||
-        key === "realms" ||
-        key === "tokengroup" ||
-        key === "container_serial"
-      );
-    } else {
-      return key === "description" || key === "container_serial";
-    }
+    const rightEntry = tokenDetailsRightsMap.find(entry => entry.key === key);
+    return !!(rightEntry && this.authService.actionAllowed(rightEntry.right as PolicyAction));
   }
 
   isNumberElement(key: string) {

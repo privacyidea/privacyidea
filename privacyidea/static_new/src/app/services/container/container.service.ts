@@ -2,7 +2,6 @@ import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
 import { HttpClient, HttpErrorResponse, HttpParams, HttpResourceRef, httpResource } from "@angular/common/http";
 import { Injectable, Signal, WritableSignal, computed, effect, inject, linkedSignal, signal } from "@angular/core";
-import { LocalService, LocalServiceInterface } from "../local/local.service";
 import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
 import {
   Observable,
@@ -210,7 +209,6 @@ export interface ContainerServiceInterface {
 })
 export class ContainerService implements ContainerServiceInterface {
   private readonly http: HttpClient = inject(HttpClient);
-  private readonly localService: LocalServiceInterface = inject(LocalService);
   private readonly tokenService: TokenServiceInterface = inject(TokenService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
@@ -288,7 +286,8 @@ export class ContainerService implements ContainerServiceInterface {
         ![ROUTE_PATHS.TOKENS_CONTAINERS, ROUTE_PATHS.TOKENS_ENROLLMENT, ROUTE_PATHS.TOKENS].includes(
           this.contentService.routeUrl()
         )) ||
-      (this.authService.role() === "admin" && this.contentService.routeUrl() === ROUTE_PATHS.TOKENS)
+      (this.authService.role() === "admin" && this.contentService.routeUrl() === ROUTE_PATHS.TOKENS) ||
+      !this.authService.actionAllowed("container_list")
     ) {
       return undefined;
     }
@@ -357,7 +356,8 @@ export class ContainerService implements ContainerServiceInterface {
   selectedContainerType = linkedSignal({
     source: this.contentService.routeUrl,
     computation: () =>
-      this.containerTypeOptions()[0] ?? {
+      this.containerTypeOptions().find((type) => type.containerType === this.authService.defaultContainerType()) ||
+      this.containerTypeOptions()[0] || {
         containerType: "generic",
         description: "No container type data available",
         token_types: []
@@ -395,7 +395,10 @@ export class ContainerService implements ContainerServiceInterface {
   });
 
   templatesResource = httpResource<PiResponse<{ templates: ContainerTemplate[] }>>(() => {
-    if (this.contentService.routeUrl() !== ROUTE_PATHS.TOKENS_CONTAINERS_CREATE) {
+    if (
+      this.contentService.routeUrl() !== ROUTE_PATHS.TOKENS_CONTAINERS_CREATE ||
+      !this.authService.actionAllowed("container_template_list")
+    ) {
       return undefined;
     }
     return {
@@ -710,6 +713,43 @@ export class ContainerService implements ContainerServiceInterface {
       );
   }
 
+  registerContainer(params: {
+    container_serial: string;
+    passphrase_prompt: string;
+    passphrase_response: string;
+  }): Observable<PiResponse<ContainerRegisterData>> {
+    const headers = this.authService.getHeaders();
+    return this.http
+      .post<PiResponse<ContainerRegisterData>>(
+        `${this.containerBaseUrl}register/initialize`,
+        {
+          container_serial: params.container_serial,
+          passphrase_ad: false,
+          passphrase_prompt: params.passphrase_prompt,
+          passphrase_response: params.passphrase_response
+        },
+        { headers }
+      )
+      .pipe(
+        catchError((error) => {
+          console.error("Failed to register container.", error);
+          const message = error.error?.result?.error?.message || "";
+          this.notificationService.openSnackBar("Failed to register container. " + message);
+          return throwError(() => error);
+        })
+      );
+  }
+
+  containerBelongsToUser(containerSerial: any): false | true | undefined {
+    return this.containerResource
+      .value()
+      ?.result?.value?.containers?.some((container) => container.serial === containerSerial);
+  }
+
+  stopPolling(): void {
+    this.stopPolling$.next();
+  }
+
   createContainer(param: {
     container_type: string;
     description?: string;
@@ -742,46 +782,6 @@ export class ContainerService implements ContainerServiceInterface {
       );
   }
 
-  registerContainer(params: {
-    container_serial: string;
-    passphrase_prompt: string;
-    passphrase_response: string;
-  }): Observable<PiResponse<ContainerRegisterData>> {
-    const headers = this.authService.getHeaders();
-    return this.http
-      .post<PiResponse<ContainerRegisterData>>(
-        `${this.containerBaseUrl}register/initialize`,
-        {
-          container_serial: params.container_serial,
-          passphrase_ad: false,
-          passphrase_prompt: params.passphrase_prompt,
-          passphrase_response: params.passphrase_response
-        },
-        { headers }
-      )
-      .pipe(
-        catchError((error) => {
-          console.error("Failed to register container.", error);
-          const message = error.error?.result?.error?.message || "";
-          this.notificationService.openSnackBar("Failed to register container. " + message);
-          return throwError(() => error);
-        })
-      );
-  }
-
-  stopPolling(): void {
-    this.stopPolling$.next();
-  }
-
-  getContainerDetails(containerSerial: string): Observable<PiResponse<ContainerDetails>> {
-    const headers = this.authService.getHeaders();
-    let params = new HttpParams().set("container_serial", containerSerial);
-    return this.http.get<PiResponse<ContainerDetails>>(this.containerBaseUrl, {
-      headers,
-      params
-    });
-  }
-
   pollContainerRolloutState(containerSerial: string, startTime: number): Observable<PiResponse<ContainerDetails>> {
     this.containerSerial.set(containerSerial);
     return timer(startTime, 2000).pipe(
@@ -797,9 +797,12 @@ export class ContainerService implements ContainerServiceInterface {
     );
   }
 
-  containerBelongsToUser(containerSerial: any): false | true | undefined {
-    return this.containerResource
-      .value()
-      ?.result?.value?.containers?.some((container) => container.serial === containerSerial);
+  getContainerDetails(containerSerial: string): Observable<PiResponse<ContainerDetails>> {
+    const headers = this.authService.getHeaders();
+    let params = new HttpParams().set("container_serial", containerSerial);
+    return this.http.get<PiResponse<ContainerDetails>>(this.containerBaseUrl, {
+      headers,
+      params
+    });
   }
 }

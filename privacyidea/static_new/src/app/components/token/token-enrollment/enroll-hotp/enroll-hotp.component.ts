@@ -4,13 +4,13 @@ import { MatCheckbox } from "@angular/material/checkbox";
 import { MatInput } from "@angular/material/input";
 import { MatError, MatFormField, MatHint, MatLabel, MatOption, MatSelect } from "@angular/material/select";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
-
 import { Observable, of } from "rxjs";
 import {
   EnrollmentResponse,
   TokenEnrollmentData
 } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
 import { HotpApiPayloadMapper } from "../../../../mappers/token-api-payload/hotp-token-api-payload.mapper";
+import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
 
 export interface HotpEnrollmentOptions extends TokenEnrollmentData {
   type: "hotp";
@@ -41,6 +41,7 @@ export interface HotpEnrollmentOptions extends TokenEnrollmentData {
 export class EnrollHotpComponent implements OnInit {
   protected readonly enrollmentMapper: HotpApiPayloadMapper = inject(HotpApiPayloadMapper);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
   readonly otpLengthOptions = [6, 8];
   readonly hashAlgorithmOptions = [
     { value: "sha1", viewValue: "SHA1" },
@@ -67,16 +68,20 @@ export class EnrollHotpComponent implements OnInit {
     });
     this.clickEnrollChange.emit(this.onClickEnroll);
 
-    this.generateOnServerFormControl.valueChanges.subscribe((generate) => {
-      if (!generate) {
-        this.otpKeyFormControl.enable({ emitEvent: false });
-        this.otpKeyFormControl.setValidators([Validators.required]);
-      } else {
-        this.otpKeyFormControl.disable({ emitEvent: false });
-        this.otpKeyFormControl.clearValidators();
-      }
-      this.otpKeyFormControl.updateValueAndValidity();
-    });
+    if (this.authService.checkForceServerGenerateOTPKey("hotp")) {
+      this.generateOnServerFormControl.disable({ emitEvent: false });
+    } else {
+      this.generateOnServerFormControl.valueChanges.subscribe((generate) => {
+        if (!generate) {
+          this.otpKeyFormControl.enable({ emitEvent: false });
+          this.otpKeyFormControl.setValidators([Validators.required]);
+        } else {
+          this.otpKeyFormControl.disable({ emitEvent: false });
+          this.otpKeyFormControl.clearValidators();
+        }
+        this.otpKeyFormControl.updateValueAndValidity();
+      });
+    }
   }
 
   onClickEnroll = (basicOptions: TokenEnrollmentData): Observable<EnrollmentResponse | null> => {

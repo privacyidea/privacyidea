@@ -21,6 +21,7 @@ import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { NgClass } from "@angular/common";
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
+import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
 
 const columnsKeyMap = [
   { key: "select", label: "" },
@@ -65,6 +66,7 @@ export class ContainerTableComponent {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
 
   readonly columnsKeyMap = columnsKeyMap;
   readonly columnKeys: string[] = columnsKeyMap.map((column) => column.key);
@@ -77,31 +79,10 @@ export class ContainerTableComponent {
   sort = this.containerService.sort;
   containerResource = this.containerService.containerResource;
 
-  emptyResource: WritableSignal<ContainerDetailData[]> = linkedSignal({
-    source: this.pageSize,
-    computation: (pageSize: number) =>
-      Array.from({ length: pageSize }, () => {
-        return {
-          serial: "",
-          type: "",
-          states: [],
-          description: "",
-          users: [],
-          user_realm: "",
-          realms: [],
-          tokens: [],
-          info: {},
-          internal_info_keys: [],
-          last_authentication: null,
-          last_synchronization: null
-        } as ContainerDetailData;
-      })
-  });
-
   containerDataSource: WritableSignal<MatTableDataSource<ContainerDetailData>> = linkedSignal({
     source: this.containerResource.value,
     computation: (containerResource, previous) => {
-      if (containerResource) {
+      if (containerResource && containerResource.result?.value) {
         const processedData =
           containerResource.result?.value?.containers.map((item) => ({
             ...item,
@@ -110,7 +91,7 @@ export class ContainerTableComponent {
           })) ?? [];
         return new MatTableDataSource<ContainerDetailData>(processedData);
       }
-      return previous?.value ?? new MatTableDataSource(this.emptyResource());
+      return previous?.value ?? new MatTableDataSource<ContainerDetailData>([]);
     }
   });
 

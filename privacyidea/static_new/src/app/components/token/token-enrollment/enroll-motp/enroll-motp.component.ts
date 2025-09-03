@@ -18,6 +18,7 @@ import {
   TokenEnrollmentData
 } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
 import { MotpApiPayloadMapper } from "../../../../mappers/token-api-payload/motp-token-api-payload.mapper";
+import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
 
 export interface MotpEnrollmentOptions extends TokenEnrollmentData {
   type: "motp";
@@ -36,6 +37,7 @@ export interface MotpEnrollmentOptions extends TokenEnrollmentData {
 export class EnrollMotpComponent implements OnInit {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly enrollmentMapper: MotpApiPayloadMapper = inject(MotpApiPayloadMapper);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
 
   @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
@@ -68,16 +70,20 @@ export class EnrollMotpComponent implements OnInit {
     });
     this.clickEnrollChange.emit(this.onClickEnroll);
 
-    this.generateOnServerControl.valueChanges.subscribe((generate) => {
-      if (!generate) {
-        this.otpKeyFormControl.enable({ emitEvent: false });
-        this.otpKeyFormControl.setValidators([Validators.required]);
-      } else {
-        this.otpKeyFormControl.disable({ emitEvent: false });
-        this.otpKeyFormControl.clearValidators();
-      }
-      this.otpKeyFormControl.updateValueAndValidity();
-    });
+    if (this.authService.checkForceServerGenerateOTPKey("motp")) {
+      this.generateOnServerControl.disable({ emitEvent: false });
+    } else {
+      this.generateOnServerControl.valueChanges.subscribe((generate) => {
+        if (!generate) {
+          this.otpKeyFormControl.enable({ emitEvent: false });
+          this.otpKeyFormControl.setValidators([Validators.required]);
+        } else {
+          this.otpKeyFormControl.disable({ emitEvent: false });
+          this.otpKeyFormControl.clearValidators();
+        }
+        this.otpKeyFormControl.updateValueAndValidity();
+      });
+    }
 
     this.motpPinControl.valueChanges.subscribe(() => {
       this.repeatMotpPinControl.updateValueAndValidity();

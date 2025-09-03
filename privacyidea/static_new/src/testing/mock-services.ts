@@ -1,12 +1,5 @@
 import { Audit, AuditServiceInterface } from "../app/services/audit/audit.service";
-import {
-  AuthData,
-  AuthDetail,
-  AuthResponse,
-  AuthRole,
-  AuthServiceInterface,
-  JwtData
-} from "../app/services/auth/auth.service";
+import { AuthData, AuthDetail, AuthResponse, AuthRole, AuthService, JwtData } from "../app/services/auth/auth.service";
 import {
   ContainerDetailData,
   ContainerDetails,
@@ -21,7 +14,7 @@ import {
   TokenApiPayloadMapper,
   TokenEnrollmentData
 } from "../app/mappers/token-api-payload/_token-api-payload.mapper";
-import { HttpClient, HttpHeaders, HttpParams, HttpProgressEvent, HttpResourceRef } from "@angular/common/http";
+import { HttpHeaders, HttpParams, HttpProgressEvent, HttpResourceRef } from "@angular/common/http";
 import {
   BatchResult,
   LostTokenResponse,
@@ -34,11 +27,20 @@ import {
 import { MachineServiceInterface, Machines, TokenApplication } from "../app/services/machine/machine.service";
 import { Observable, Subject, Subscription, of } from "rxjs";
 import { Realm, RealmServiceInterface, Realms } from "../app/services/realm/realm.service";
-import { Resource, ResourceStatus, Signal, WritableSignal, computed, input, linkedSignal, signal } from "@angular/core";
+import {
+  Resource,
+  ResourceStatus,
+  Signal,
+  WritableSignal,
+  computed,
+  inject,
+  input,
+  linkedSignal,
+  signal
+} from "@angular/core";
 import { UserData, UserServiceInterface } from "../app/services/user/user.service";
 import { ValidateCheckResponse, ValidateServiceInterface } from "../app/services/validate/validate.service";
 
-import { BEARER_TOKEN_STORAGE_KEY } from "../app/core/constants";
 import { ContentServiceInterface } from "../app/services/content/content.service";
 import { FilterValue } from "../app/core/models/filter_value";
 import { LocalServiceInterface } from "../app/services/local/local.service";
@@ -49,7 +51,6 @@ import { PiResponse } from "../app/app.component";
 import { Router } from "@angular/router";
 import { Sort } from "@angular/material/sort";
 import { TableUtilsServiceInterface } from "../app/services/table-utils/table-utils.service";
-import { VersioningService } from "../app/services/version/version.service";
 
 export function makeResource<T>(initial: T) {
   return {
@@ -220,9 +221,12 @@ export class MockPiResponse<Value, Detail = unknown> implements PiResponse<Value
   }
 }
 
-export class MockAuthService implements AuthServiceInterface {
-  readonly authUrl = "environmentMock.proxyUrl + '/auth'";
-  jwtData: WritableSignal<JwtData | null> = signal({
+export class MockAuthService extends AuthService {
+  override readonly authUrl = "environmentMock.proxyUrl + '/auth'";
+  protected override readonly localService: LocalServiceInterface = inject(MockLocalService);
+  readonly notificationService: NotificationServiceInterface = inject(MockNotificationService);
+
+  override jwtData: WritableSignal<JwtData | null> = signal({
     username: "",
     realm: "",
     nonce: "",
@@ -231,86 +235,58 @@ export class MockAuthService implements AuthServiceInterface {
     exp: 0,
     rights: []
   });
-  jwtNonce: WritableSignal<string> = signal(this.jwtData()?.nonce || "");
-  authtype: Signal<"cookie" | "none"> = signal("cookie");
-  jwtExpDate: Signal<Date | null> = computed(() => {
+  override jwtNonce: WritableSignal<string> = signal(this.jwtData()?.nonce || "");
+  override authtype: Signal<"cookie" | "none"> = signal("cookie");
+  override jwtExpDate: Signal<Date | null> = computed(() => {
     const exp = this.jwtData()?.exp;
     return exp ? new Date(exp * 1000) : null;
   });
-  authData = signal(MockAuthService.MOCK_AUTH_DATA);
-  authenticationAccepted: () => boolean = () => {
-    return this.isAuthenticated() && this.role() !== "";
-  };
-  isAuthenticated: WritableSignal<boolean> = signal(false);
+  override authData = signal(MockAuthService.MOCK_AUTH_DATA);
+  override isAuthenticated: WritableSignal<boolean> = signal(false);
 
-  public getHeaders(): HttpHeaders {
-    return new HttpHeaders({
-      "PI-Authorization": "Mock Bearer Token"
-    });
-  }
-
-  logLevel: () => number = () => {
-    return this.authData().log_level;
-  };
-  menus: WritableSignal<string[]> = signal(MockAuthService.MOCK_AUTH_DATA.menus);
-  realm: WritableSignal<string> = signal(MockAuthService.MOCK_AUTH_DATA.realm);
-  rights: WritableSignal<string[]> = signal(MockAuthService.MOCK_AUTH_DATA.rights);
-  role: WritableSignal<AuthRole> = signal(MockAuthService.MOCK_AUTH_DATA.role);
-  token: WritableSignal<string> = signal(MockAuthService.MOCK_AUTH_DATA.token);
-  username: WritableSignal<string> = signal(MockAuthService.MOCK_AUTH_DATA.username);
-  logoutTimeSeconds: WritableSignal<number> = signal(MockAuthService.MOCK_AUTH_DATA.logout_time);
-  auditPageSize: WritableSignal<number> = signal(MockAuthService.MOCK_AUTH_DATA.audit_page_size);
-  tokenPageSize: WritableSignal<number> = signal(MockAuthService.MOCK_AUTH_DATA.token_page_size);
-  userPageSize: WritableSignal<number> = signal(MockAuthService.MOCK_AUTH_DATA.user_page_size);
-  policyTemplateUrl: () => string = () => {
-    return this.authData().policy_template_url;
-  };
-  defaultTokentype: () => string = () => {
-    return this.authData().default_tokentype;
-  };
-  defaultContainerType: () => string = () => {
-    return this.authData().default_container_type;
-  };
-  userDetails: WritableSignal<boolean> = signal(MockAuthService.MOCK_AUTH_DATA.user_details);
-  tokenWizard: WritableSignal<boolean> = signal(MockAuthService.MOCK_AUTH_DATA.token_wizard);
-  tokenWizard2nd: WritableSignal<boolean> = signal(MockAuthService.MOCK_AUTH_DATA.token_wizard_2nd);
-  adminDashboard: WritableSignal<boolean> = signal(MockAuthService.MOCK_AUTH_DATA.admin_dashboard);
-  dialogNoToken: WritableSignal<boolean> = signal(MockAuthService.MOCK_AUTH_DATA.dialog_no_token);
-  searchOnEnter: WritableSignal<boolean> = signal(MockAuthService.MOCK_AUTH_DATA.search_on_enter);
-  timeoutAction: WritableSignal<string> = signal(MockAuthService.MOCK_AUTH_DATA.timeout_action);
-  tokenRollover: WritableSignal<any> = signal(MockAuthService.MOCK_AUTH_DATA.token_rollover);
-  hideWelcome: WritableSignal<boolean> = signal(MockAuthService.MOCK_AUTH_DATA.hide_welcome);
-  hideButtons: WritableSignal<boolean> = signal(MockAuthService.MOCK_AUTH_DATA.hide_buttons);
-  deletionConfirmation: WritableSignal<boolean> = signal(MockAuthService.MOCK_AUTH_DATA.deletion_confirmation);
-  showSeed: WritableSignal<boolean> = signal(MockAuthService.MOCK_AUTH_DATA.show_seed);
-  showNode: WritableSignal<string> = signal(MockAuthService.MOCK_AUTH_DATA.show_node);
-  subscriptionStatus: WritableSignal<number> = signal(MockAuthService.MOCK_AUTH_DATA.subscription_status);
-  subscriptionStatusPush: WritableSignal<number> = signal(MockAuthService.MOCK_AUTH_DATA.subscription_status_push);
-  qrImageAndroid: WritableSignal<string | null> = signal(MockAuthService.MOCK_AUTH_DATA.qr_image_android);
-  qrImageIOS: WritableSignal<string | null> = signal(MockAuthService.MOCK_AUTH_DATA.qr_image_ios);
-  qrImageCustom: WritableSignal<string | null> = signal(MockAuthService.MOCK_AUTH_DATA.qr_image_custom);
-  logoutRedirectUrl: WritableSignal<string> = signal(MockAuthService.MOCK_AUTH_DATA.logout_redirect_url);
-  requireDescription: WritableSignal<string[]> = signal(MockAuthService.MOCK_AUTH_DATA.require_description);
-  rssAge: WritableSignal<number> = signal(MockAuthService.MOCK_AUTH_DATA.rss_age);
-  containerWizard: WritableSignal<{ enabled: boolean }> = signal(MockAuthService.MOCK_AUTH_DATA.container_wizard);
-  isSelfServiceUser: Signal<boolean> = signal(
+  override menus: WritableSignal<string[]> = signal(MockAuthService.MOCK_AUTH_DATA.menus);
+  override realm: WritableSignal<string> = signal(MockAuthService.MOCK_AUTH_DATA.realm);
+  override rights: WritableSignal<string[]> = signal(MockAuthService.MOCK_AUTH_DATA.rights);
+  override role: WritableSignal<AuthRole> = signal(MockAuthService.MOCK_AUTH_DATA.role);
+  override token: WritableSignal<string> = signal(MockAuthService.MOCK_AUTH_DATA.token);
+  override username: WritableSignal<string> = signal(MockAuthService.MOCK_AUTH_DATA.username);
+  override logoutTimeSeconds: WritableSignal<number> = signal(MockAuthService.MOCK_AUTH_DATA.logout_time);
+  override auditPageSize: WritableSignal<number> = signal(MockAuthService.MOCK_AUTH_DATA.audit_page_size);
+  override tokenPageSize: WritableSignal<number> = signal(MockAuthService.MOCK_AUTH_DATA.token_page_size);
+  override userPageSize: WritableSignal<number> = signal(MockAuthService.MOCK_AUTH_DATA.user_page_size);
+  override userDetails: WritableSignal<boolean> = signal(MockAuthService.MOCK_AUTH_DATA.user_details);
+  override tokenWizard: WritableSignal<boolean> = signal(MockAuthService.MOCK_AUTH_DATA.token_wizard);
+  override tokenWizard2nd: WritableSignal<boolean> = signal(MockAuthService.MOCK_AUTH_DATA.token_wizard_2nd);
+  override adminDashboard: WritableSignal<boolean> = signal(MockAuthService.MOCK_AUTH_DATA.admin_dashboard);
+  override dialogNoToken: WritableSignal<boolean> = signal(MockAuthService.MOCK_AUTH_DATA.dialog_no_token);
+  override searchOnEnter: WritableSignal<boolean> = signal(MockAuthService.MOCK_AUTH_DATA.search_on_enter);
+  override timeoutAction: WritableSignal<string> = signal(MockAuthService.MOCK_AUTH_DATA.timeout_action);
+  override tokenRollover: WritableSignal<any> = signal(MockAuthService.MOCK_AUTH_DATA.token_rollover);
+  override hideWelcome: WritableSignal<boolean> = signal(MockAuthService.MOCK_AUTH_DATA.hide_welcome);
+  override hideButtons: WritableSignal<boolean> = signal(MockAuthService.MOCK_AUTH_DATA.hide_buttons);
+  override deletionConfirmation: WritableSignal<boolean> = signal(MockAuthService.MOCK_AUTH_DATA.deletion_confirmation);
+  override showSeed: WritableSignal<boolean> = signal(MockAuthService.MOCK_AUTH_DATA.show_seed);
+  override showNode: WritableSignal<string> = signal(MockAuthService.MOCK_AUTH_DATA.show_node);
+  override subscriptionStatus: WritableSignal<number> = signal(MockAuthService.MOCK_AUTH_DATA.subscription_status);
+  override subscriptionStatusPush: WritableSignal<number> = signal(
+    MockAuthService.MOCK_AUTH_DATA.subscription_status_push
+  );
+  override qrImageAndroid: WritableSignal<string | null> = signal(MockAuthService.MOCK_AUTH_DATA.qr_image_android);
+  override qrImageIOS: WritableSignal<string | null> = signal(MockAuthService.MOCK_AUTH_DATA.qr_image_ios);
+  override qrImageCustom: WritableSignal<string | null> = signal(MockAuthService.MOCK_AUTH_DATA.qr_image_custom);
+  override logoutRedirectUrl: WritableSignal<string> = signal(MockAuthService.MOCK_AUTH_DATA.logout_redirect_url);
+  override requireDescription: WritableSignal<string[]> = signal(MockAuthService.MOCK_AUTH_DATA.require_description);
+  override rssAge: WritableSignal<number> = signal(MockAuthService.MOCK_AUTH_DATA.rss_age);
+  override containerWizard: WritableSignal<{
+    enabled: boolean;
+  }> = signal(MockAuthService.MOCK_AUTH_DATA.container_wizard);
+  override isSelfServiceUser: Signal<boolean> = signal(
     this.role() === "user" && this.menus().includes("token_self-service_menu")
   );
-  authenticate = jest
+  override authenticate = jest
     .fn()
     .mockReturnValue(of(MockPiResponse.fromValue<AuthData, AuthDetail>(new MockAuthData(), new MockAuthDetail())));
-  acceptAuthentication = jest.fn().mockImplementation(() => {
-    this.isAuthenticated.set(true);
-    this.role.set("admin");
-    this.username.set("alice");
-    this.realm.set("default");
-  });
-  logout = jest.fn().mockImplementation(() => {
-    this.isAuthenticated.set(false);
-    this.role.set("");
-    this.username.set("");
-    this.realm.set("");
-  });
+
   static MOCK_AUTH_DATA: AuthData = {
     log_level: 0,
     menus: ["token_overview", "token_self-service_menu", "container_overview"],
@@ -320,7 +296,7 @@ export class MockAuthService implements AuthServiceInterface {
     token: "",
     username: "alice",
     logout_time: 3600,
-    audit_page_size: 10,
+    audit_page_size: 25,
     token_page_size: 10,
     user_page_size: 10,
     policy_template_url: "",
@@ -796,6 +772,7 @@ export class MockTokenService implements TokenServiceInterface {
   getSerial(otp: string, params: HttpParams): Observable<PiResponse<{ count: number; serial?: string }, unknown>> {
     throw new Error("Method not implemented.");
   }
+
   resyncOTPToken = jest.fn().mockReturnValue(of(null));
 
   setTokenInfos(tokenSerial: string, infos: any): Observable<PiResponse<boolean, unknown>[]> {
@@ -896,7 +873,6 @@ export class MockMachineService implements MachineServiceInterface {
   selectedApplicationType = signal<"ssh" | "offline">("ssh");
   pageSize = signal(10);
   filterValue: WritableSignal<Record<string, string>> = signal({});
-  filterValueString: WritableSignal<string> = signal("");
   filterParams = computed(() => {
     let allowedKeywords =
       this.selectedApplicationType() === "ssh"

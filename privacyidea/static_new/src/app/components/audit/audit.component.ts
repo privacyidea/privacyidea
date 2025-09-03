@@ -93,10 +93,12 @@ const columnKeysMap = [
 export class AuditComponent {
   readonly columnKeysMap = columnKeysMap;
   readonly columnKeys: string[] = this.columnKeysMap.map((column) => column.key);
+  protected readonly auditService: AuditServiceInterface = inject(AuditService);
+  protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
+  protected readonly contentService: ContentServiceInterface = inject(ContentService);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
   @ViewChild("filterHTMLInputElement", { static: true })
   filterInput!: HTMLInputElement;
-  protected readonly auditService: AuditServiceInterface = inject(AuditService);
-
   totalLength: WritableSignal<number> = linkedSignal({
     source: this.auditService.auditResource.value,
     computation: (auditResource, previous) => {
@@ -120,10 +122,7 @@ export class AuditComponent {
       return previous?.value ?? new MatTableDataSource(this.emptyResource());
     }
   });
-  protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   pageSizeOptions = this.tableUtilsService.pageSizeOptions;
-  protected readonly contentService: ContentServiceInterface = inject(ContentService);
-  protected readonly authService: AuthServiceInterface = inject(AuthService);
 
   onPageEvent(event: PageEvent) {
     this.auditService.pageSize.set(event.pageSize);

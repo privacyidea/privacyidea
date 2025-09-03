@@ -6,6 +6,9 @@ import { TokenService } from "../../../../../services/token/token.service";
 import { signal } from "@angular/core";
 import { NotificationService } from "../../../../../services/notification/notification.service";
 import { AuthService } from "../../../../../services/auth/auth.service";
+import { MockAuthService, MockLocalService, MockNotificationService } from "../../../../../../testing/mock-services";
+import { provideHttpClient } from "@angular/common/http";
+import { provideHttpClientTesting } from "@angular/common/http/testing";
 
 describe("SetPinActionComponent", () => {
   let component: SetPinActionComponent;
@@ -16,10 +19,6 @@ describe("SetPinActionComponent", () => {
     setRandomPin: jest.fn().mockReturnValue(of({ detail: { pin: "1234" } })),
     tokenSerial: signal<string>("Mock serial")
   } as unknown as TokenService;
-
-  const authServiceStub = {
-    rights: signal<string[]>([])
-  };
 
   const matDialogRefStub = {
     afterClosed: () => of(true)
@@ -38,10 +37,14 @@ describe("SetPinActionComponent", () => {
     await TestBed.configureTestingModule({
       imports: [SetPinActionComponent],
       providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
         { provide: TokenService, useValue: tokenServiceStub },
         { provide: MatDialog, useValue: matDialogStub },
         { provide: NotificationService, useValue: notificationServiceStub },
-        { provide: AuthService, useValue: authServiceStub }
+        { provide: AuthService, useClass: MockAuthService },
+        MockLocalService,
+        MockNotificationService
       ]
     })
       .compileComponents();
@@ -74,21 +77,5 @@ describe("SetPinActionComponent", () => {
     component.setRandomPin();
     expect(matDialogStub.open).toHaveBeenCalled();
     expect(tokenServiceStub.setRandomPin).toHaveBeenCalled();
-  });
-
-  it("canSetRandomPin() should return true if user has rights", () => {
-    authServiceStub.rights.set(["enable", "setrandompin", "otp_pin_set_random", "delete"]);
-    expect(component.canSetRandomPin()).toBe(true);
-  });
-
-  it("canSetRandomPin() should return false if user does not have right", () => {
-    authServiceStub.rights.set(["enable", "delete"]);
-    expect(component.canSetRandomPin()).toBe(false);
-
-    authServiceStub.rights.set(["enable", "setrandompin", "delete"]);
-    expect(component.canSetRandomPin()).toBe(false);
-
-    authServiceStub.rights.set(["enable", "delete", "otp_pin_set_random"]);
-    expect(component.canSetRandomPin()).toBe(false);
   });
 });

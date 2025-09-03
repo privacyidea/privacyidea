@@ -1,5 +1,10 @@
 import { HttpClient, HttpHeaders, HttpParams } from "@angular/common/http";
-import { MockContentService, MockLocalService, MockTableUtilsService } from "../../../testing/mock-services";
+import {
+  MockContentService,
+  MockLocalService,
+  MockNotificationService,
+  MockTableUtilsService
+} from "../../../testing/mock-services";
 import { lastValueFrom, of } from "rxjs";
 
 import { ContentService } from "../content/content.service";
@@ -28,7 +33,9 @@ describe("MachineService (with mock classes)", () => {
         { provide: LocalService, useClass: MockLocalService },
         { provide: TableUtilsService, useClass: MockTableUtilsService },
         { provide: ContentService, useClass: MockContentService },
-        MachineService
+        MachineService,
+        MockLocalService,
+        MockNotificationService
       ]
     });
 

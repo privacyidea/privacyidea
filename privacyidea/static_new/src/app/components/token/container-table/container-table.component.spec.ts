@@ -17,7 +17,8 @@ import {
   MockContainerService,
   MockContentService,
   MockNotificationService,
-  MockTableUtilsService
+  MockTableUtilsService,
+  MockLocalService
 } from "../../../../testing/mock-services";
 import { ContainerDetailData, ContainerService } from "../../../services/container/container.service";
 import { MatTableDataSource } from "@angular/material/table";
@@ -43,7 +44,6 @@ describe("ContainerTableComponent (Jest)", () => {
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
-
         { provide: AuthService, useClass: MockAuthService },
         { provide: ContainerService, useClass: MockContainerService },
         { provide: TableUtilsService, useClass: MockTableUtilsService },
@@ -55,7 +55,9 @@ describe("ContainerTableComponent (Jest)", () => {
             navigate: jest.fn(),
             events: of(new NavigationEnd(0, "/", "/"))
           }
-        }
+        },
+        MockLocalService,
+        MockNotificationService
       ]
     }).compileComponents();
 

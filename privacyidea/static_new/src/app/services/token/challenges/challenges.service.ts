@@ -60,6 +60,19 @@ export class ChallengesService implements ChallengesServiceInterface {
     source: this.contentService.routeUrl,
     computation: () => new FilterValue()
   });
+  pageSize = linkedSignal({
+    source: this.contentService.routeUrl,
+    computation: () => 10
+  });
+  pageIndex = linkedSignal({
+    source: () => ({
+      filterValue: this.challengesFilter(),
+      pageSize: this.pageSize(),
+      routeUrl: this.contentService.routeUrl()
+    }),
+    computation: () => 0
+  });
+  sort = signal({ active: "timestamp", direction: "asc" } as Sort);
   private filterParams = computed(() => {
     const allowedFilters = [...this.apiFilter, ...this.advancedApiFilter];
     const filterPairs = Array.from(this.challengesFilter().filterMap.entries())
@@ -77,19 +90,6 @@ export class ChallengesService implements ChallengesServiceInterface {
       { params: {} as Record<string, string>, serial: "" }
     );
   });
-  pageSize = linkedSignal({
-    source: this.contentService.routeUrl,
-    computation: () => 10
-  });
-  pageIndex = linkedSignal({
-    source: () => ({
-      filterValue: this.challengesFilter(),
-      pageSize: this.pageSize(),
-      routeUrl: this.contentService.routeUrl()
-    }),
-    computation: () => 0
-  });
-  sort = signal({ active: "timestamp", direction: "asc" } as Sort);
   challengesResource = httpResource<PiResponse<Challenges>>(() => {
     if (this.contentService.routeUrl() !== ROUTE_PATHS.TOKENS_CHALLENGES) {
       return undefined;

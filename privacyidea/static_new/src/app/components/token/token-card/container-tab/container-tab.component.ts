@@ -5,14 +5,15 @@ import { MatDialog } from "@angular/material/dialog";
 import { MatDivider } from "@angular/material/divider";
 import { MatIcon } from "@angular/material/icon";
 import { MatList, MatListItem } from "@angular/material/list";
-import { Router, RouterLink } from "@angular/router";
 import { forkJoin } from "rxjs";
 import { tabToggleState } from "../../../../../styles/animations/animations";
-import { ROUTE_PATHS } from "../../../../route_paths";
 import { ContainerService, ContainerServiceInterface } from "../../../../services/container/container.service";
 import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
 import { VersioningService, VersioningServiceInterface } from "../../../../services/version/version.service";
 import { ConfirmationDialogComponent } from "../../../shared/confirmation-dialog/confirmation-dialog.component";
+import { Router, RouterLink } from "@angular/router";
+import { ROUTE_PATHS } from "../../../../route_paths";
+import { AuthService } from "../../../../services/auth/auth.service";
 
 @Component({
   selector: "app-container-tab",
@@ -27,6 +28,7 @@ export class ContainerTabComponent {
   private readonly containerService: ContainerServiceInterface = inject(ContainerService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly versioningService: VersioningServiceInterface = inject(VersioningService);
+  protected readonly authService = inject(AuthService);
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
   private router = inject(Router);
   containerSelection = this.containerService.containerSelection;
