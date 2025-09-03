@@ -69,7 +69,7 @@ export class UserService implements UserServiceInterface {
       }
       return source.defaultRealm;
     }
-  });  readonly apiFilter = apiFilter;
+  });
   sort = signal({ active: "serial", direction: "asc" } as Sort);
   filterParams = computed<Record<string, string>>(() => {
     const allowedFilters = [...this.apiFilter, ...this.advancedApiFilter];
@@ -86,7 +86,10 @@ export class UserService implements UserServiceInterface {
       }),
       {} as Record<string, string>
     );
-  });  readonly advancedApiFilter = advancedApiFilter;
+  });
+
+  readonly apiFilter = apiFilter;
+  readonly advancedApiFilter = advancedApiFilter;
 
   filterValue = signal({} as Record<string, string>);
 
