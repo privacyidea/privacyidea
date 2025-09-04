@@ -70,6 +70,6 @@ export class KeywordFilterComponent {
 
   filterIsEmpty(): boolean {
     const current = this.filterValue?.() ?? {};
-    return Object.keys(current).length === 0;
+    return current.value === "";
   }
 }

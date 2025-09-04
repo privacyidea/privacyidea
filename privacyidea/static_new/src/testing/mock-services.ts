@@ -969,43 +969,8 @@ export class MockTableUtilsService implements TableUtilsServiceInterface {
     return dataSource;
   });
 
-  toggleKeywordInFilter = jest.fn().mockImplementation((args: { keyword: string; currentValue: FilterValue }) => {
-    const { keyword, currentValue } = args;
-    if (keyword.includes("&")) {
-      const keywords = keyword.split("&").map((k) => k.trim());
-      let newValue = currentValue;
-      for (const key of keywords) {
-        newValue = this.toggleKeywordInFilter({ keyword: key, currentValue: newValue });
-      }
-      return newValue;
-    }
-    if (currentValue.hasKey(keyword)) {
-      return currentValue.removeKey(keyword);
-    } else {
-      return currentValue.addKey(keyword);
-    }
-  });
-
-  public toggleBooleanInFilter = jest
-    .fn()
-    .mockImplementation((args: { keyword: string; currentValue: FilterValue }) => {
-      const { keyword, currentValue } = args;
-      const booleanValue = currentValue.getValueOfKey(keyword)?.toLowerCase();
-
-      if (!booleanValue) {
-        return currentValue.addKey(keyword);
-      } else {
-        const existingValue = booleanValue;
-
-        if (existingValue === "true") {
-          return currentValue.addEntry(keyword, "false");
-        } else if (existingValue === "false") {
-          return currentValue.removeKey(keyword);
-        } else {
-          return currentValue.addEntry(keyword, "true");
-        }
-      }
-    });
+  toggleKeywordInFilter = jest.fn();
+  public toggleBooleanInFilter = jest.fn();
   isLink = jest.fn().mockReturnValue(false);
   getClassForColumn = jest.fn();
   getTooltipForColumn = jest.fn();
