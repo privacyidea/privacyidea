@@ -149,6 +149,12 @@ class TokenImportResult:
     failed_tokens: list[str]
 
 
+@dataclass(frozen=True)
+class TokenExportResult:
+    successful_tokens: list[str] # The serialized tokens for which the export succeeded
+    failed_tokens: list[str] # The serial of tokens for which the export failed
+
+
 @compiles(clob_to_varchar, 'oracle')
 def fn_clob_to_varchar_oracle(element, compiler, **kw):
     return "to_char(%s)" % compiler.process(element.clauses, **kw)
@@ -2980,16 +2986,20 @@ def regenerate_enroll_url(serial: str, request: Request, g) -> Union[str, None]:
     return enroll_url
 
 
-def export_tokens(tokens: list[TokenClass], export_user: bool = True) -> list[dict]:
+def export_tokens(tokens: list[TokenClass], export_user: bool = True) -> TokenExportResult:
     """
-    Takes a list of tokens and returns an dict with all infos.
-
-    :param tokens: list of token objects
-    :param export_user: bool
-    :return: list of dict with token information
+    Export a list of tokens.
     """
-    exported_tokens = [token.export_token(export_user=export_user) for token in tokens]
-    return exported_tokens
+    success = []
+    failed = []
+    for token in tokens:
+        try:
+            exported = token.export_token(export_user=export_user)
+            success.append(exported)
+        except Exception as ex:
+            log.warning(f"Failed to export token {token.get_serial()}: {ex}")
+            failed.append(token.get_serial())
+    return TokenExportResult(successful_tokens=success, failed_tokens=failed)
 
 
 def import_tokens(tokens: list[dict], update_existing_tokens: bool = True,

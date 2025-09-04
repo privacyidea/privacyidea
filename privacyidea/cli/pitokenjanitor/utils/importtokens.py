@@ -102,17 +102,31 @@ def pskc(pskc_file, preshared_key, validate_mac):
 
 @importtokens_cli.command('privacyidea')
 @click.argument('file', nargs=1, type=click.File())
-@click.option('--key', required=True, type=str,
+@click.option('--key', required=False, type=str,
               help='The encryption key given by PrivacyIDEA during token export.')
+@click.option("--keyfile", required=False, type=click.File(),
+              help="The file that contains the encryption key.")
 @click.option('--user/--no-user', default=False)
 @click.pass_context
-def import_token_from_privacyidea(ctx, file, key, user):
+def import_token_from_privacyidea(ctx, file, key, keyfile, user):
     """
     Import tokens from a PrivacyIDEA token file.
 
     FILE is the file containing the tokens to be imported.
     KEY is the encryption key used to decrypt the tokens.
+    KEYFILE is the file that contains the encryption key.
     """
+    if not key and keyfile:
+        try:
+            key = keyfile.read().strip()
+        except Exception as e:
+            click.echo(f"Error reading keyfile: {e}")
+            ctx.exit(1)
+
+    if not key:
+        click.echo("You must provide either --key or --keyfile.")
+        ctx.exit(1)
+
     try:
         f = Fernet(key)
     except Exception as e:
