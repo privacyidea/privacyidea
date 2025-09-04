@@ -617,7 +617,8 @@ def export(ctx, export_format, b32, file, user):
         click.echo(f"Successfully exported {len(exported_tokens)} tokens.")
         if failed_exports:
             click.echo(f"Failed to export {len(failed_exports)} tokens:")
-            _ = [click.echo(f"{serial}") for serial in failed_exports]
+            for serial in failed_exports:
+                click.echo(f"{serial}")
             click.echo(f"Check the logfile for the cause of the failures.")
 
         click.secho(f'\nThe key to import the tokens is:\n\n\t{key}\n\n', fg='red', err=True)
