@@ -40,10 +40,8 @@ export class TokenDetailsMachineComponent {
   protected readonly JSON = JSON;
   protected readonly Object = Object;
   private machineService: MachineServiceInterface = inject(MachineService);
-  protected readonly authService: AuthServiceInterface = inject(AuthService);
+  private contentService: ContentServiceInterface = inject(ContentService);
   protected readonly overflowService: OverflowServiceInterface = inject(OverflowService);
-  protected readonly contentService: ContentServiceInterface = inject(ContentService);
-  protected isEditing: WritableSignal<boolean> = signal(false);
 
   machineData = computed<TokenApplications>(() => this.machineService.tokenApplications() || []);
 
