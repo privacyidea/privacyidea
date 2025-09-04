@@ -229,6 +229,15 @@ export class MachineService implements MachineServiceInterface {
     computation: () => 0
   });
   tokenApplicationResource = httpResource<PiResponse<TokenApplications>>(() => {
+    if (
+      !(
+        this.contentService.routeUrl().includes(ROUTE_PATHS.TOKENS_APPLICATIONS) ||
+        this.contentService.routeUrl().includes(ROUTE_PATHS.TOKENS_DETAILS)
+      ) ||
+      !this.authService.actionAllowed("tokenlist")
+    ) {
+      return undefined;
+    }
     const params = {
       application: this.selectedApplicationType(),
       page: this.pageIndex() + 1,

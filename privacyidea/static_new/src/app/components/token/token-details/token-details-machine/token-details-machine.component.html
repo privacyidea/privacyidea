@@ -26,15 +26,17 @@
                 @if (key === "serial" || key === "application" || key === "type") {
                 } @else if (key === "options") {
                   @if (machine[key] && Object.keys(machine[key]).length > 0) {
-                    <mat-list-item class="height-auto info-row">
-                      <div class="info-span">
-                        <span class="info-span-title"> {{ key }}: </span>
-                        @for (optionsKey of Object.keys(machine[key]); track optionsKey) {
-                          <span class="info-span-value">{{ `${optionsKey}: ${machine[key][optionsKey]}` }}</span>
-                        }
-                        <mat-divider class="info-divider" />
-                      </div>
-                    </mat-list-item>
+                    @for (optionsKey of Object.keys(machine[key]); track optionsKey) {
+                      @if (machine[key][optionsKey]) {
+                        <mat-list-item class="height-auto info-row">
+                          <div class="info-span">
+                            <span class="info-span-title"> {{ optionsKey }}: </span>
+                            <span class="info-span-value">{{ machine[key][optionsKey] }}</span>
+                            <mat-divider class="info-divider" />
+                          </div>
+                        </mat-list-item>
+                      }
+                    }
                   }
                 } @else if (machine[key] !== null && machine[key] !== undefined && machine[key] !== "") {
                   <mat-list-item class="height-auto info-row">
