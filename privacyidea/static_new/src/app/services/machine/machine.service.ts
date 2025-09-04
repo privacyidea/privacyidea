@@ -1,15 +1,16 @@
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
 import { HttpClient, HttpParams, httpResource, HttpResourceRef } from "@angular/common/http";
-import { computed, effect, inject, Injectable, linkedSignal, signal, WritableSignal } from "@angular/core";
+import { computed, inject, Injectable, linkedSignal, WritableSignal } from "@angular/core";
 import { TableUtilsService, TableUtilsServiceInterface } from "../table-utils/table-utils.service";
 import { FilterValue } from "../../core/models/filter_value";
-import { Observable } from "rxjs";
+import { Observable, shareReplay } from "rxjs";
 import { PageEvent } from "@angular/material/paginator";
 import { PiResponse } from "../../app.component";
 import { ROUTE_PATHS } from "../../route_paths";
 import { Sort } from "@angular/material/sort";
 import { environment } from "../../../environments/environment";
+import { TokenService, TokenServiceInterface } from "../token/token.service";
 
 export type TokenApplications = TokenApplication[];
 
@@ -17,7 +18,7 @@ export type Machines = Machine[];
 
 export interface Machine {
   hostname: string[];
-  id: string;
+  id: number;
   ip: string;
   resolver_name: string;
 }
@@ -52,17 +53,19 @@ export interface MachineServiceInterface {
   sort: WritableSignal<Sort>;
   pageIndex: WritableSignal<number>;
   machinesResource: HttpResourceRef<PiResponse<Machines> | undefined>;
-  tokenApplicationResource: any;
+  tokenApplicationResource: HttpResourceRef<PiResponse<TokenApplications> | undefined>;
 
   deleteAssignMachineToToken(args: { serial: string; application: string; mtid: string }): Observable<any>;
 
   postAssignMachineToToken(args: {
-    service_id: string;
-    user: string;
+    service_id?: string;
+    user?: string;
     serial: string;
-    application: string;
-    machineid: string;
+    application: "ssh" | "offline";
+    machineid: number;
     resolver: string;
+    count?: number;
+    rounds?: number;
   }): Observable<any>;
 
   postTokenOption(
@@ -118,22 +121,40 @@ export class MachineService implements MachineServiceInterface {
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
 
+  protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+
   private baseUrl = environment.proxyUrl + "/machine/";
   sshApiFilter = ["serial", "service_id"];
   sshAdvancedApiFilter = ["hostname", "machineid & resolver"];
   offlineApiFilter = ["serial", "count", "rounds"];
   offlineAdvancedApiFilter = ["hostname", "machineid & resolver"];
 
-  selectedApplicationType = signal<"ssh" | "offline">("ssh");
+  selectedApplicationType = linkedSignal({
+    source: this.tokenService.tokenDetailResource.value,
+    computation: (tokenDetailResource) => {
+      const tokenType = tokenDetailResource?.result?.value?.tokens[0]?.tokentype;
+      if (tokenType === "hotp" || tokenType === "passkey") {
+        return "offline";
+      }
+      return "ssh";
+    }
+  });
+
+  // signal<"ssh" | "offline">("ssh");
   pageSize = linkedSignal({
-    source: this.selectedApplicationType,
+    source: () => ({
+      selectedApplicationType: this.selectedApplicationType,
+      tokenApplicationResource: this.tokenService.tokenDetailResource.value
+    }),
     computation: () => 10
   });
 
   machinesResource = httpResource<PiResponse<Machines>>(() => {
     if (
-      !this.contentService.routeUrl().includes(ROUTE_PATHS.TOKENS_APPLICATIONS) ||
-      !this.contentService.routeUrl().includes(ROUTE_PATHS.TOKENS_DETAILS) ||
+      !(
+        this.contentService.routeUrl().includes(ROUTE_PATHS.TOKENS_APPLICATIONS) ||
+        this.contentService.routeUrl().includes(ROUTE_PATHS.TOKENS_DETAILS)
+      ) ||
       !this.authService.actionAllowed("machinelist")
     ) {
       return undefined;
@@ -153,8 +174,17 @@ export class MachineService implements MachineServiceInterface {
     computation: (machinesResource, previous) => machinesResource?.result?.value ?? previous?.value
   });
   machineFilter: WritableSignal<FilterValue> = linkedSignal({
-    source: this.selectedApplicationType,
-    computation: () => new FilterValue()
+    source: () => ({
+      selectedApplicationType: this.selectedApplicationType,
+      tokenApplicationResource: this.tokenService.tokenDetailResource.value
+    }),
+    computation: (source) => {
+      const tokenSerial = source.tokenApplicationResource()?.result?.value?.tokens[0]?.serial;
+      if (!tokenSerial) {
+        return new FilterValue();
+      }
+      return new FilterValue({ value: `tokenSerial:${tokenSerial}` });
+    }
   });
   filterParams = computed<Record<string, string>>(() => {
     let allowedKeywords =
@@ -193,7 +223,8 @@ export class MachineService implements MachineServiceInterface {
     source: () => ({
       application: this.selectedApplicationType(),
       filter: this.machineFilter(),
-      sort: this.sort()
+      sort: this.sort(),
+      tokenApplicationResource: this.tokenService.tokenDetailResource.value
     }),
     computation: () => 0
   });
@@ -219,20 +250,24 @@ export class MachineService implements MachineServiceInterface {
   });
 
   postAssignMachineToToken(args: {
-    service_id: string;
-    user: string;
+    service_id?: string;
+    user?: string;
     serial: string;
     application: string;
-    machineid: string;
+    machineid: number;
     resolver: string;
+    count?: number;
+    rounds?: number;
   }): Observable<any> {
     const headers = this.authService.getHeaders();
-    return this.http.post(`${this.baseUrl}token`, args, { headers });
+    return this.http.post(`${this.baseUrl}token`, args, { headers }).pipe(shareReplay(1));
   }
 
   deleteAssignMachineToToken(args: { serial: string; application: string; mtid: string }): Observable<any> {
     const headers = this.authService.getHeaders();
-    return this.http.delete(`${this.baseUrl}token/${args.serial}/${args.application}/${args.mtid}`, { headers });
+    return this.http
+      .delete(`${this.baseUrl}token/${args.serial}/${args.application}/${args.mtid}`, { headers })
+      .pipe(shareReplay(1));
   }
 
   postTokenOption(
@@ -244,20 +279,20 @@ export class MachineService implements MachineServiceInterface {
     mtid: string
   ): Observable<any> {
     const headers = this.authService.getHeaders();
-    return this.http.post(
-      `${this.baseUrl}tokenoption`,
-      { hostname, machineid, resolver, serial, application, mtid },
-      { headers }
-    );
+    return this.http
+      .post(`${this.baseUrl}tokenoption`, { hostname, machineid, resolver, serial, application, mtid }, { headers })
+      .pipe(shareReplay(1));
   }
 
   getAuthItem(challenge: string, hostname: string, application?: string): Observable<any> {
     const headers = this.authService.getHeaders();
     let params = new HttpParams().set("challenge", challenge).set("hostname", hostname);
-    return this.http.get(application ? `${this.baseUrl}authitem/${application}` : `${this.baseUrl}authitem`, {
-      headers,
-      params
-    });
+    return this.http
+      .get(application ? `${this.baseUrl}authitem/${application}` : `${this.baseUrl}authitem`, {
+        headers,
+        params
+      })
+      .pipe(shareReplay(1));
   }
 
   postToken(
@@ -268,7 +303,9 @@ export class MachineService implements MachineServiceInterface {
     application: string
   ): Observable<any> {
     const headers = this.authService.getHeaders();
-    return this.http.post(`${this.baseUrl}token`, { hostname, machineid, resolver, serial, application }, { headers });
+    return this.http
+      .post(`${this.baseUrl}token`, { hostname, machineid, resolver, serial, application }, { headers })
+      .pipe(shareReplay(1));
   }
 
   getMachine(args: {
@@ -286,20 +323,24 @@ export class MachineService implements MachineServiceInterface {
     if (id !== undefined) params = params.set("id", id);
     if (resolver !== undefined) params = params.set("resolver", resolver);
     if (any !== undefined) params = params.set("any", any);
-    return this.http.get<PiResponse<Machines>>(`${this.baseUrl}`, {
-      headers,
-      params
-    });
+    return this.http
+      .get<PiResponse<Machines>>(`${this.baseUrl}`, {
+        headers,
+        params
+      })
+      .pipe(shareReplay(1));
   }
 
   deleteToken(serial: string, machineid: string, resolver: string, application: string): Observable<any> {
     const headers = this.authService.getHeaders();
-    return this.http.delete(`${this.baseUrl}token/${serial}/${machineid}/${resolver}/${application}`, { headers });
+    return this.http
+      .delete(`${this.baseUrl}token/${serial}/${machineid}/${resolver}/${application}`, { headers })
+      .pipe(shareReplay(1));
   }
 
   deleteTokenMtid(serial: string, application: string, mtid: string): Observable<any> {
     const headers = this.authService.getHeaders();
-    return this.http.delete(`${this.baseUrl}token/${serial}/${application}/${mtid}`, { headers });
+    return this.http.delete(`${this.baseUrl}token/${serial}/${application}/${mtid}`, { headers }).pipe(shareReplay(1));
   }
 
   onPageEvent(event: PageEvent): void {

@@ -7,7 +7,7 @@
     <span
       class="info-title details-key-row"
       i18n>
-      {{ "Machine " + machine.machine_id }}
+      Attached Machine
     </span>
     <table
       [dataSource]="dataSourceFromMachine(machine)"
@@ -23,22 +23,24 @@
           <div class="info-value-container">
             <mat-list>
               @for (key of Object.keys(machine); track key) {
-                @if (key === "id" || key === "hostname" || key === "resolver") {
+                @if (key === "serial" || key === "application" || key === "type") {
+                } @else if (key === "options") {
+                  @if (machine[key] && Object.keys(machine[key]).length > 0) {
+                    <mat-list-item class="height-auto info-row">
+                      <div class="info-span">
+                        <span class="info-span-title"> {{ key }}: </span>
+                        @for (optionsKey of Object.keys(machine[key]); track optionsKey) {
+                          <span class="info-span-value">{{ `${optionsKey}: ${machine[key][optionsKey]}` }}</span>
+                        }
+                        <mat-divider class="info-divider" />
+                      </div>
+                    </mat-list-item>
+                  }
+                } @else if (machine[key] !== null && machine[key] !== undefined && machine[key] !== "") {
                   <mat-list-item class="height-auto info-row">
                     <div class="info-span">
                       <span class="info-span-title"> {{ key }}: </span>
                       <span class="info-span-value">{{ machine[key] }}</span>
-                      <mat-divider class="info-divider" />
-                    </div>
-                  </mat-list-item>
-                }
-                @if (key === "options") {
-                  <mat-list-item class="height-auto info-row">
-                    <div class="info-span">
-                      <span class="info-span-title"> {{ key }}: </span>
-                      @for (optionsKey of Object.keys(machine[key]); track optionsKey) {
-                        <span class="info-span-value">{{ `${optionsKey}: ${machine[key][optionsKey]}` }}</span>
-                      }
                       <mat-divider class="info-divider" />
                     </div>
                   </mat-list-item>

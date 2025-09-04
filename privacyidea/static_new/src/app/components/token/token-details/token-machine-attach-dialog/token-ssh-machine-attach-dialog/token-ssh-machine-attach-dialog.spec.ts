@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { TokenSshMachineAssignDialogComponent } from "./token-ssh-machine-assign-dialog";
+import { TokenSshMachineAssignDialogComponent } from "./token-ssh-machine-attach-dialog";
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from "@angular/material/dialog";
 
 describe("TokenSshMachineAssignDialogComponent", () => {
@@ -11,11 +11,7 @@ describe("TokenSshMachineAssignDialogComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [
-        TokenSshMachineAssignDialogComponent,
-        BrowserAnimationsModule,
-        MatDialogModule
-      ],
+      imports: [TokenSshMachineAssignDialogComponent, BrowserAnimationsModule, MatDialogModule],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
@@ -23,8 +19,7 @@ describe("TokenSshMachineAssignDialogComponent", () => {
         {
           provide: MatDialogRef,
           useValue: {
-            close: () => {
-            }
+            close: () => {}
           }
         }
       ]

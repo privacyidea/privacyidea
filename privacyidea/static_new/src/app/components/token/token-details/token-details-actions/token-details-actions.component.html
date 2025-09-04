@@ -18,17 +18,6 @@
   }
   @if (tokenType() !== "passkey") {
     <app-test-otp-pin-action />
-    @if (tokenType() === "sshkey" && authService.actionsAllowed(["manage_machine_tokens", "machinelist"])) {
-      <button
-        (click)="assignSSHMachineDialog()"
-        class="detail-button"
-        extended
-        mat-fab
-        i18n>
-        <mat-icon class="detail-button-icon">computer</mat-icon>
-        Assign SSH Machine
-      </button>
-    }
   } @else {
     <button
       (click)="testPasskey()"
@@ -40,15 +29,37 @@
       Test Passkey
     </button>
   }
-  @if (tokenType() === "sshkey" || tokenType() === "hotp" || tokenType() === "passkey") {
-    <button
-      (click)="assignSSHMachineDialog()"
-      class="detail-button"
-      extended
-      mat-fab
-      i18n>
-      <mat-icon class="detail-button-icon">computer</mat-icon>
-      Assign SSH Machine
-    </button>
+  @if (authService.actionsAllowed(["manage_machine_tokens", "machinelist"])) {
+    @if (tokenType() === "sshkey") {
+      <button
+        (click)="attachSshToMachineDialog()"
+        class="detail-button"
+        extended
+        mat-fab
+        i18n>
+        <mat-icon class="detail-button-icon">computer</mat-icon>
+        Attach to Machine
+      </button>
+    } @else if (tokenType() === "passkey") {
+      <button
+        (click)="attachPasskeyToMachine()"
+        class="detail-button"
+        extended
+        mat-fab
+        i18n>
+        <mat-icon class="detail-button-icon">computer</mat-icon>
+        Attach to Machine
+      </button>
+    } @else if (tokenType() === "hotp") {
+      <button
+        (click)="attachHotpToMachineDialog()"
+        class="detail-button"
+        extended
+        mat-fab
+        i18n>
+        <mat-icon class="detail-button-icon">computer</mat-icon>
+        Attach to Machine
+      </button>
+    }
   }
 </div>

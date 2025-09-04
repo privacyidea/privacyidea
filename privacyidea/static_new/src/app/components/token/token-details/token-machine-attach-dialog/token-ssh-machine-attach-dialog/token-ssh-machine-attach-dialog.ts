@@ -9,9 +9,12 @@ import {
 } from "@angular/forms";
 import { MatOptionModule } from "@angular/material/core";
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from "@angular/material/dialog";
-import { ApplicationService, ApplicationServiceInterface } from "../../../../services/application/application.service";
-import { Machine, MachineService, MachineServiceInterface } from "../../../../services/machine/machine.service";
-import { UserService, UserServiceInterface } from "../../../../services/user/user.service";
+import {
+  ApplicationService,
+  ApplicationServiceInterface
+} from "../../../../../services/application/application.service";
+import { Machine, MachineService, MachineServiceInterface } from "../../../../../services/machine/machine.service";
+import { UserService, UserServiceInterface } from "../../../../../services/user/user.service";
 
 import { MatAutocompleteModule } from "@angular/material/autocomplete";
 import { MatDividerModule } from "@angular/material/divider";
@@ -21,10 +24,16 @@ import { MatButtonModule } from "@angular/material/button";
 import { MatInputModule } from "@angular/material/input";
 import { Observable } from "rxjs";
 
+export type SshMachineAssignDialogData = {
+  tokenSerial: string;
+  tokenDetails: Record<string, any>;
+  tokenType: string;
+};
+
 @Component({
-  selector: "token-ssh-machine-assign-dialog",
-  styleUrls: ["./token-ssh-machine-assign-dialog.component.scss"],
-  templateUrl: "./token-ssh-machine-assign-dialog.component.html",
+  selector: "token-ssh-machine-attach-dialog",
+  styleUrls: ["./token-ssh-machine-attach-dialog.component.scss"],
+  templateUrl: "./token-ssh-machine-attach-dialog.component.html",
   standalone: true,
   imports: [
     ReactiveFormsModule,
@@ -43,11 +52,7 @@ export class TokenSshMachineAssignDialogComponent {
   private applicationService: ApplicationServiceInterface = inject(ApplicationService);
   private machineService: MachineServiceInterface = inject(MachineService);
   private userService: UserServiceInterface = inject(UserService);
-  public data: {
-    tokenSerial: string;
-    tokenDetails: Record<string, any>;
-    tokenType: string;
-  } = inject(MAT_DIALOG_DATA);
+  public data: SshMachineAssignDialogData = inject(MAT_DIALOG_DATA);
   public dialogRef: MatDialogRef<TokenSshMachineAssignDialogComponent, Observable<any> | null> = inject(MatDialogRef);
 
   availableApplications = linkedSignal({
@@ -61,7 +66,7 @@ export class TokenSshMachineAssignDialogComponent {
       return availableApps;
     }
   });
-  availableMachines = this.machineService.machines;
+
   availableServiceIds: WritableSignal<string[]> = linkedSignal({
     source: this.applicationService.applications,
     computation: (source) => {
@@ -77,12 +82,10 @@ export class TokenSshMachineAssignDialogComponent {
   machineFilter: WritableSignal<string> = signal("");
   filteredMachines = computed(() => {
     const filterString = this.machineFilter().trim().toLowerCase();
-    if (!filterString) {
-      return this.availableMachines();
-    }
-    return this.availableMachines()?.filter((machine) =>
-      this.getFullMachineName(machine).toLowerCase().includes(filterString)
-    );
+    if (!filterString) return this.machineService.machines();
+    return this.machineService
+      .machines()
+      ?.filter((machine) => this.getFullMachineName(machine).toLowerCase().includes(filterString));
   });
 
   userFilter: WritableSignal<string> = signal("");
@@ -95,13 +98,11 @@ export class TokenSshMachineAssignDialogComponent {
   });
 
   /// Form controls ///
-  selectedApplication = new FormControl<string>("ssh", Validators.required);
   selectedMachine = new FormControl<string | Machine>("", this.machineValidator);
   selectedServiceId = new FormControl<string>("", Validators.required);
   selectedUser = new FormControl<string>("", Validators.required);
 
   formGroup = new FormGroup({
-    selectedApplication: this.selectedApplication,
     selectedMachine: this.selectedMachine,
     selectedServiceId: this.selectedServiceId,
     selectedUser: this.selectedUser
@@ -141,15 +142,14 @@ export class TokenSshMachineAssignDialogComponent {
       console.error("Invalid machine selection:", machine);
       return;
     }
-    const args = {
+    const request = this.machineService.postAssignMachineToToken({
       service_id: this.selectedServiceId.value!,
       user: this.selectedUser.value!,
       serial: this.data.tokenSerial,
-      application: this.selectedApplication.value!,
+      application: "ssh",
       machineid: machine!.id,
       resolver: machine!.resolver_name
-    };
-    const request = this.machineService.postAssignMachineToToken(args);
+    });
     request.subscribe({
       next: (_) => {
         this.machineService.machinesResource.reload();

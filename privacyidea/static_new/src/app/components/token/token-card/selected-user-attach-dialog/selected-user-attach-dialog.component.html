@@ -13,7 +13,7 @@
       Assigning a token to a user will remove the previous assignment.
     </p>
   }
-  <div class="selected-user-assign-container">
+  <div class="selected-user-attach-container">
     <mat-form-field class="width-50 input-height">
       <mat-label i18n>Select Realm of User</mat-label>
       <mat-select
@@ -58,7 +58,7 @@
     </mat-form-field>
   </div>
   @if (authService.actionAllowed("setpin")) {
-    <div class="selected-user-assign-container">
+    <div class="selected-user-attach-container">
       <mat-form-field
         appearance="fill"
         class="pin-field">

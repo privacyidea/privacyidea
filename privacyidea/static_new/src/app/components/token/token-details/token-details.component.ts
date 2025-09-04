@@ -27,9 +27,13 @@ import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.
 import { TokenDetailsActionsComponent } from "./token-details-actions/token-details-actions.component";
 import { TokenDetailsInfoComponent } from "./token-details-info/token-details-info.component";
 import { TokenDetailsUserComponent } from "./token-details-user/token-details-user.component";
-import { TokenSshMachineAssignDialogComponent } from "./token-ssh-machine-assign-dialog/token-ssh-machine-assign-dialog";
+import {
+  SshMachineAssignDialogData,
+  TokenSshMachineAssignDialogComponent
+} from "./token-machine-attach-dialog/token-ssh-machine-attach-dialog/token-ssh-machine-attach-dialog";
 import { TokenDetailsMachineComponent } from "./token-details-machine/token-details-machine.component";
 import { PolicyAction } from "../../../services/auth/policy-actions";
+import { MachineService, MachineServiceInterface, TokenApplications } from "../../../services/machine/machine.service";
 
 export const tokenDetailsKeyMap = [
   { key: "tokentype", label: "Type" },
@@ -108,6 +112,7 @@ export class TokenDetailsComponent {
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
+  protected readonly machineService: MachineServiceInterface = inject(MachineService);
   private router = inject(Router);
   tokenIsActive = this.tokenService.tokenIsActive;
   tokenIsRevoked = this.tokenService.tokenIsRevoked;
@@ -118,6 +123,10 @@ export class TokenDetailsComponent {
   isEditingInfo = signal(false);
   setPinValue = signal("");
   repeatPinValue = signal("");
+
+  attachedMachines = computed<TokenApplications>(() => {
+    return this.machineService.tokenApplications() || [];
+  });
 
   tokenDetailResource = this.tokenService.tokenDetailResource;
   tokenDetails: WritableSignal<TokenDetails> = linkedSignal({
@@ -334,13 +343,14 @@ export class TokenDetailsComponent {
   }
 
   openSshMachineAssignDialog() {
+    const data: SshMachineAssignDialogData = {
+      tokenSerial: this.tokenSerial(),
+      tokenDetails: this.tokenDetails(),
+      tokenType: this.tokenType()
+    };
+
     this.matDialog.open(TokenSshMachineAssignDialogComponent, {
-      data: {
-        tokenSerial: this.tokenSerial(),
-        tokenDetails: this.tokenDetails(),
-        containerSerial: this.containerSerial(),
-        tokenType: this.tokenType()
-      }
+      data: data
     });
   }
 

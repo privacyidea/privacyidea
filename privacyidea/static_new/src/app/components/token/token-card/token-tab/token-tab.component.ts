@@ -13,7 +13,7 @@ import { ContentService, ContentServiceInterface } from "../../../../services/co
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 import { VersioningService, VersioningServiceInterface } from "../../../../services/version/version.service";
 import { ConfirmationDialogComponent } from "../../../shared/confirmation-dialog/confirmation-dialog.component";
-import { SelectedUserAssignDialogComponent } from "../selected-user-assign-dialog/selected-user-assign-dialog.component";
+import { SelectedUserAssignDialogComponent } from "../selected-user-attach-dialog/selected-user-attach-dialog.component";
 import { tap } from "rxjs/operators";
 import { LostTokenComponent } from "./lost-token/lost-token.component";
 import { ROUTE_PATHS } from "../../../../route_paths";

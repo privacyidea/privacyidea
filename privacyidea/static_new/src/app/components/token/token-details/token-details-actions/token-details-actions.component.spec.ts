@@ -4,18 +4,8 @@ import { TokenService } from "../../../../services/token/token.service";
 import { ValidateService } from "../../../../services/validate/validate.service";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { of } from "rxjs";
 import { signal } from "@angular/core";
-
-class MockTokenService {
-  resyncOTPToken() {
-    return of(null);
-  }
-
-  testToken() {
-    return of(null);
-  }
-}
+import { MockTokenService } from "../../../../../testing/mock-services";
 
 describe("TokenDetailsActionsComponent", () => {
   let component: TokenDetailsActionsComponent;
@@ -45,5 +35,4 @@ describe("TokenDetailsActionsComponent", () => {
   it("should create", () => {
     expect(component).toBeTruthy();
   });
-
 });

@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 
-import { SelectedUserAssignDialogComponent } from "./selected-user-assign-dialog.component";
+import { SelectedUserAssignDialogComponent } from "./selected-user-attach-dialog.component";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { MatDialogRef } from "@angular/material/dialog";
