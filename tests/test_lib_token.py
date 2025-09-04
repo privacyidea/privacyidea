@@ -1809,7 +1809,7 @@ class TokenTestCase(MyTestCase):
                                       "description": "Totp Token"})
 
         # Export the tokens
-        exported_tokens = export_tokens([hotptoken, totptoken])
+        exported_tokens = export_tokens([hotptoken, totptoken]).successful_tokens
         exported_tokens_str = json.dumps(exported_tokens)
         self.assertIn('"type": "hotp"', exported_tokens_str)
         self.assertIn('"serial": "OATH12345678"', exported_tokens_str)
@@ -1877,7 +1877,7 @@ class TokenTestCase(MyTestCase):
         assign_token(user=user, serial="OATH12345678")
         assign_token(user=user, serial="TOTP12345678")
 
-        exported_tokens = export_tokens([hotptoken, totptoken], export_user=True)
+        exported_tokens = export_tokens([hotptoken, totptoken], export_user=True).successful_tokens
         self.assertIn('"login": "cornelius"', json.dumps(exported_tokens))
 
         # Remove the tokens

@@ -595,7 +595,7 @@ def export(ctx, export_format, b32, file, user):
                 try:
                     token_dict = token._to_dict(b32=b32)
                     token_dict["owner"] = f"{token.user.login}@{token.user.realm}" if (
-                                token.user and user) else "n/a"
+                            token.user and user) else "n/a"
                     token_list.append(token_dict)
                 except Exception as e:
                     sys.stderr.write(f"\nFailed to export token {token.get_serial()} ({e}).\n")
@@ -608,7 +608,7 @@ def export(ctx, export_format, b32, file, user):
         for token_list in ctx.obj['tokens']:
             result = export_tokens(token_list, export_user=user)
             exported_tokens.extend(result.successful_tokens)
-            failed_exports = result.failed_tokens
+            failed_exports.extend(result.failed_tokens)
         list_of_exported_tokens = json.dumps(exported_tokens, default=repr, indent=2)
         f = Fernet(key)
         file.write(f.encrypt(list_of_exported_tokens.encode()).decode())
