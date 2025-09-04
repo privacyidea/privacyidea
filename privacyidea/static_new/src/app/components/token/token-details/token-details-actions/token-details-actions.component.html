@@ -18,6 +18,17 @@
   }
   @if (tokenType() !== "passkey") {
     <app-test-otp-pin-action />
+    @if (tokenType() === "sshkey" && authService.actionsAllowed(["manage_machine_tokens", "machinelist"])) {
+      <button
+        (click)="assignSSHMachineDialog()"
+        class="detail-button"
+        extended
+        mat-fab
+        i18n>
+        <mat-icon class="detail-button-icon">computer</mat-icon>
+        Assign SSH Machine
+      </button>
+    }
   } @else {
     <button
       (click)="testPasskey()"

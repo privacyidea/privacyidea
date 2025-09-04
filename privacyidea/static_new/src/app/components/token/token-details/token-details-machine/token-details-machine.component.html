@@ -57,7 +57,7 @@
             <button
               mat-icon-button
               class="delete-info-button"
-              (click)="unassignMachine(element.id, 'ssh')"
+              (click)="unassignMachine(element.id, element.type)"
               i18n-aria-label="Delete Information">
               <mat-icon>delete_outlined</mat-icon>
             </button>
