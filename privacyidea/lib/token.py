@@ -3035,8 +3035,8 @@ def import_tokens(tokens: list[dict], update_existing_tokens: bool = True,
                                  uid=token_info_dict.get("user").get("uid"))
                     token.add_user(owner, override=True)
                 except Exception as e:
-                    log.error(f"Could not assign user to token {serial}: {e}"
-                              f"the token will not be imported.")
+                    log.error(f"Could not assign user to token {serial}: {e}. "
+                              f"The token will not be imported.")
                     failed_tokens.append(serial)
                     token.delete_token()
                     continue
