@@ -10,11 +10,12 @@
         subscriptSizing="dynamic">
         <mat-label i18n>Enter Filter</mat-label>
         <app-clearable-input
-          (onClick)="filterValueString.set('')"
-          [showClearButton]="filterValueString().length > 0">
+          (onClick)="tokenService.clearFilter()"
+          [showClearButton]="tokenService.tokenFilter().isNotEmpty">
           <input
             #filterHTMLInputElement
-            [(ngModel)]="filterValueString"
+            (input)="tokenService.handleFilterInput($event)"
+            [value]="tokenService.tokenFilter().filterString"
             aria-label="Filter Input"
             i18n-aria-label
             i18n-placeholder
@@ -35,7 +36,7 @@
         [advancedApiFilter]="advancedApiFilter"
         [apiFilter]="apiFilter"
         [filterHTMLInputElement]="filterHTMLInputElement"
-        [filterValue]="filterValue" />
+        [filterValue]="tokenService.tokenFilter" />
     </div>
     <div class="table-container">
       <table
@@ -73,9 +74,9 @@
               attr.aria-label="{{ column.label }} Cell"
               mat-cell
               [ngClass]="{
-            'width-18rem': column.key === 'description',
-            'table-checkbox': column.key === 'select'
-          }">
+                'width-18rem': column.key === 'description',
+                'table-checkbox': column.key === 'select'
+              }">
               <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
                 @switch (column.key) {
                   @case ("select") {
@@ -100,23 +101,22 @@
                     <span
                       [ngClass]="tableUtilsService.getClassForColumn(column.key, tokenDetails)"
                       (click)="toggleActive(tokenDetails)">
-                  {{ tableUtilsService.getDisplayText(column.key, tokenDetails) }}
-                </span>
+                      {{ tableUtilsService.getDisplayText(column.key, tokenDetails) }}
+                    </span>
                   }
                   @case ("failcount") {
                     <span
                       [ngClass]="tableUtilsService.getClassForColumn(column.key, tokenDetails)"
                       (click)="resetFailCount(tokenDetails)">
-                  {{ tableUtilsService.getDisplayText(column.key, tokenDetails) }}
-                </span>
+                      {{ tableUtilsService.getDisplayText(column.key, tokenDetails) }}
+                    </span>
                   }
                   @case ("realms") {
-                    <div [ngClass]="{'realm-list': (tokenDetails[column.key]?.length || 0) > 1}">
+                    <div [ngClass]="{ 'realm-list': (tokenDetails[column.key]?.length || 0) > 1 }">
                       @for (realm of tokenDetails[column.key]; track realm; let idx = $index) {
-                        <span
-                          attr.aria-label="{{ column.label }} Link">
-                      {{ realm }}
-                    </span>
+                        <span attr.aria-label="{{ column.label }} Link">
+                          {{ realm }}
+                        </span>
                         <br style="margin-top: 3px" />
                       }
                     </div>
@@ -140,8 +140,8 @@
                       </a>
                     } @else {
                       <span>
-                    {{ tokenDetails[column.key] }}
-                  </span>
+                        {{ tokenDetails[column.key] }}
+                      </span>
                     }
                   }
                 }
@@ -176,9 +176,6 @@
       </table>
     </div>
   } @else {
-    <div
-      i18n>
-      You do not have the permission to view the token list.
-    </div>
+    <div i18n>You do not have the permission to view the token list.</div>
   }
 </div>

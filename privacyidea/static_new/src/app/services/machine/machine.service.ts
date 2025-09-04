@@ -1,9 +1,10 @@
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
 import { HttpClient, HttpParams, httpResource } from "@angular/common/http";
-import { computed, effect, inject, Injectable, linkedSignal, signal, WritableSignal } from "@angular/core";
+import { computed, inject, Injectable, linkedSignal, signal, WritableSignal } from "@angular/core";
 import { TableUtilsService, TableUtilsServiceInterface } from "../table-utils/table-utils.service";
 
+import { FilterValue } from "../../core/models/filter_value";
 import { Observable } from "rxjs";
 import { PageEvent } from "@angular/material/paginator";
 import { PiResponse } from "../../app.component";
@@ -36,6 +37,8 @@ export interface TokenApplication {
 }
 
 export interface MachineServiceInterface {
+  handleFilterInput($event: Event): void;
+  clearFilter(): void;
   sshApiFilter: string[];
   sshAdvancedApiFilter: string[];
   offlineApiFilter: string[];
@@ -44,8 +47,7 @@ export interface MachineServiceInterface {
   tokenApplications: WritableSignal<TokenApplications | undefined>;
   selectedApplicationType: WritableSignal<"ssh" | "offline">;
   pageSize: WritableSignal<number>;
-  filterValue: WritableSignal<Record<string, string>>;
-  filterValueString: WritableSignal<string>;
+  machineFilter: WritableSignal<FilterValue>;
   filterParams: () => Record<string, string>;
   sort: WritableSignal<Sort>;
   pageIndex: WritableSignal<number>;
@@ -101,6 +103,14 @@ export interface MachineServiceInterface {
   providedIn: "root"
 })
 export class MachineService implements MachineServiceInterface {
+  handleFilterInput($event: Event): void {
+    const input = $event.target as HTMLInputElement;
+    const newFilter = this.machineFilter().copyWith({ value: input.value });
+    this.machineFilter.set(newFilter);
+  }
+  clearFilter(): void {
+    this.machineFilter.set(new FilterValue());
+  }
   private readonly http: HttpClient = inject(HttpClient);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
@@ -112,13 +122,6 @@ export class MachineService implements MachineServiceInterface {
   offlineApiFilter = ["serial", "count", "rounds"];
   offlineAdvancedApiFilter = ["hostname", "machineid & resolver"];
 
-  constructor() {
-    effect(() => {
-      const recordsFromText = this.tableUtilsService.recordsFromText(this.filterValueString());
-      this.filterValue.set(recordsFromText);
-    });
-  }
-
   selectedApplicationType = signal<"ssh" | "offline">("ssh");
   pageSize = linkedSignal({
     source: this.selectedApplicationType,
@@ -126,9 +129,13 @@ export class MachineService implements MachineServiceInterface {
   });
 
   machinesResource = httpResource<PiResponse<Machines>>(() => {
-    if (!(this.contentService.routeUrl().includes(ROUTE_PATHS.TOKENS_APPLICATIONS) ||
-        this.contentService.routeUrl().includes(ROUTE_PATHS.TOKENS_DETAILS)) ||
-      !this.authService.actionAllowed("machinelist")) {
+    if (
+      !(
+        this.contentService.routeUrl().includes(ROUTE_PATHS.TOKENS_APPLICATIONS) ||
+        this.contentService.routeUrl().includes(ROUTE_PATHS.TOKENS_DETAILS)
+      ) ||
+      !this.authService.actionAllowed("machinelist")
+    ) {
       return undefined;
     }
     return {
@@ -145,17 +152,9 @@ export class MachineService implements MachineServiceInterface {
     source: this.machinesResource.value,
     computation: (machinesResource, previous) => machinesResource?.result?.value ?? previous?.value
   });
-  filterValue: WritableSignal<Record<string, string>> = linkedSignal({
+  machineFilter: WritableSignal<FilterValue> = linkedSignal({
     source: this.selectedApplicationType,
-    // This gets also updated by the effect in the constructor, when filterValueString changes.
-    computation: () => ({})
-  });
-  filterValueString: WritableSignal<string> = linkedSignal({
-    source: this.filterValue,
-    computation: () =>
-      Object.entries(this.filterValue())
-        .map(([key, value]) => `${key}: ${value}`)
-        .join(" ")
+    computation: () => new FilterValue()
   });
   filterParams = computed<Record<string, string>>(() => {
     let allowedKeywords =
@@ -163,7 +162,7 @@ export class MachineService implements MachineServiceInterface {
         ? [...this.sshApiFilter, ...this.sshAdvancedApiFilter]
         : [...this.offlineApiFilter, ...this.offlineAdvancedApiFilter];
 
-    const filterPairs = Object.entries(this.filterValue())
+    const filterPairs = Object.entries(this.machineFilter())
       .map(([key, value]) => ({ key, value }))
       .filter(({ key }) => allowedKeywords.includes(key));
     if (filterPairs.length === 0) {
@@ -193,7 +192,7 @@ export class MachineService implements MachineServiceInterface {
   pageIndex = linkedSignal({
     source: () => ({
       application: this.selectedApplicationType(),
-      filter: this.filterValue(),
+      filter: this.machineFilter(),
       sort: this.sort()
     }),
     computation: () => 0
@@ -221,7 +220,6 @@ export class MachineService implements MachineServiceInterface {
     source: this.tokenApplicationResource.value,
     computation: (tokenApplicationResource, previous) => tokenApplicationResource?.result?.value ?? previous?.value
   });
-
 
   postAssignMachineToToken(args: {
     service_id: string;

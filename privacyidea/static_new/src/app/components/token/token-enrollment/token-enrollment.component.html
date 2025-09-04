@@ -220,7 +220,7 @@
               <mat-label>Enter User</mat-label>
               <app-clearable-input
                 (onClick)="userFilterControl.setValue('')"
-                [showClearButton]="userService.userFilter() !== ''">
+                [showClearButton]="userService.selectionFilter() !== ''">
                 <input
                   [formControl]="userFilterControl"
                   [matAutocomplete]="userAuto"
@@ -229,15 +229,16 @@
               <mat-autocomplete
                 #userAuto="matAutocomplete"
                 [displayWith]="userService.displayUser">
-                @for (user of userService.filteredUsers(); track user) {
+                @for (user of userService.selectionFilteredUsers(); track user) {
                   <mat-option [value]="user">{{ user.username }}</mat-option>
                 }
               </mat-autocomplete>
               @if (selectedUserRealmControl.hasError("required")) {
                 <mat-error>User Realm is <strong>required</strong></mat-error>
               }
-              @if (!selectedUserRealmControl.value && !onlyAddToRealmControl.value &&
-              tokenService.selectedTokenType()) {
+              @if (
+                !selectedUserRealmControl.value && !onlyAddToRealmControl.value && tokenService.selectedTokenType()
+              ) {
                 <mat-hint> Select a realm first to enable user selection.</mat-hint>
               }
               @if (userFilterControl.hasError("required")) {
@@ -285,8 +286,10 @@
               class="input"
               placeholder="Repeat PIN" />
           </div>
-          @if (formGroupSignal().hasError("pinMismatch") &&
-          (formGroupSignal().get("setPin")?.touched || formGroupSignal().get("repeatPin")?.touched)) {
+          @if (
+            formGroupSignal().hasError("pinMismatch") &&
+            (formGroupSignal().get("setPin")?.touched || formGroupSignal().get("repeatPin")?.touched)
+          ) {
             <mat-error class="pin-error">PINs do not match.</mat-error>
           }
         </div>

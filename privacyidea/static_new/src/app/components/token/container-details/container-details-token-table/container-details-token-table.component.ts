@@ -1,13 +1,13 @@
-import { NgClass } from "@angular/common";
-import { Component, computed, effect, inject, Input, linkedSignal, ViewChild, WritableSignal } from "@angular/core";
+import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
+import { Component, Input, ViewChild, WritableSignal, computed, effect, inject, linkedSignal } from "@angular/core";
+import {
+  ContainerDetailToken,
+  ContainerService,
+  ContainerServiceInterface
+} from "../../../../services/container/container.service";
+import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
 import { FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { MatButton, MatIconButton } from "@angular/material/button";
-import { MatDialog } from "@angular/material/dialog";
-import { MatFormField, MatLabel } from "@angular/material/form-field";
-import { MatIcon } from "@angular/material/icon";
-import { MatInput } from "@angular/material/input";
-import { MatPaginator } from "@angular/material/paginator";
-import { MatSort, MatSortHeader, MatSortModule } from "@angular/material/sort";
 import {
   MatCell,
   MatHeaderCell,
@@ -17,19 +17,21 @@ import {
   MatTableDataSource,
   MatTableModule
 } from "@angular/material/table";
-import { MatTooltip } from "@angular/material/tooltip";
-import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
-import {
-  ContainerDetailToken,
-  ContainerService,
-  ContainerServiceInterface
-} from "../../../../services/container/container.service";
-import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
+import { MatFormField, MatLabel } from "@angular/material/form-field";
+import { MatSort, MatSortHeader, MatSortModule } from "@angular/material/sort";
 import { OverflowService, OverflowServiceInterface } from "../../../../services/overflow/overflow.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "../../../../services/table-utils/table-utils.service";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
+
 import { ConfirmationDialogComponent } from "../../../shared/confirmation-dialog/confirmation-dialog.component";
 import { CopyButtonComponent } from "../../../shared/copy-button/copy-button.component";
+import { MatDialog } from "@angular/material/dialog";
+import { MatPaginator, MatPaginatorModule } from "@angular/material/paginator";
+import { NgClass } from "@angular/common";
+import { f } from "../../../../../../node_modules/@angular/material/icon-module.d-d06a5620";
+import { MatIconModule } from "@angular/material/icon";
+import { MatTooltipModule } from "@angular/material/tooltip";
+import { MatInput } from "@angular/material/input";
 
 const columnsKeyMap = [
   { key: "serial", label: "Serial" },
@@ -45,23 +47,23 @@ const columnsKeyMap = [
     MatFormField,
     MatHeaderCell,
     MatHeaderRow,
-    MatInput,
     MatLabel,
-    MatPaginator,
     MatRow,
     MatSort,
     MatSortHeader,
     MatTable,
-    NgClass,
     MatTableModule,
     MatSortModule,
-    MatIcon,
     MatIconButton,
     MatButton,
     CopyButtonComponent,
     ReactiveFormsModule,
     FormsModule,
-    MatTooltip
+    MatPaginatorModule,
+    NgClass,
+    MatIconModule,
+    MatTooltipModule,
+    MatInput
   ],
   templateUrl: "./container-details-token-table.component.html",
   styleUrl: "./container-details-token-table.component.scss"
@@ -143,10 +145,9 @@ export class ContainerDetailsTokenTableComponent {
     }
   }
 
-  handleFilterInput(event: Event): void {
-    this.filterValue = (event.target as HTMLInputElement).value.trim();
+  handleFilterInput($event: Event): void {
+    this.filterValue = ($event.target as HTMLInputElement).value.trim();
     const normalised = this.filterValue.toLowerCase();
-
     this.dataSource.filter = normalised;
     if (this.containerTokenData) {
       this.containerTokenData().filter = normalised;
@@ -227,15 +228,16 @@ export class ContainerDetailsTokenTableComponent {
       return;
     }
     const tokensAssignedToOtherUser = tokensToAssign.filter((token) => token.username !== "");
-    const tokenSerialsAssignedToOtherUser = tokensAssignedToOtherUser.map(token => token.serial);
+    const tokenSerialsAssignedToOtherUser = tokensAssignedToOtherUser.map((token) => token.serial);
     this.tokenService.unassignUserFromAll(tokenSerialsAssignedToOtherUser).subscribe({
       next: () => {
-        const tokenSerialsToAssign = tokensToAssign.map(token => token.serial);
-        this.tokenService.assignUserToAll({
-          tokenSerials: tokenSerialsToAssign,
-          username: username,
-          realm: realm,
-        })
+        const tokenSerialsToAssign = tokensToAssign.map((token) => token.serial);
+        this.tokenService
+          .assignUserToAll({
+            tokenSerials: tokenSerialsToAssign,
+            username: username,
+            realm: realm
+          })
           .subscribe({
             next: () => this.containerService.containerDetailResource.reload(),
             error: (error) => console.error("Error assigning user to all tokens:", error)

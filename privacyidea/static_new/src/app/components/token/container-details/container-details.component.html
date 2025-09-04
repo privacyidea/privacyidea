@@ -147,16 +147,16 @@
                     <mat-form-field class="width-18rem">
                       <mat-label>Enter User</mat-label>
                       <app-clearable-input
-                        (onClick)="userService.userFilter.set('')"
-                        [showClearButton]="userService.userFilter() !== ''">
+                        (onClick)="userService.selectionFilter.set('')"
+                        [showClearButton]="userService.selectionFilter() !== ''">
                         <input
                           matInput
-                          [(ngModel)]="userService.userFilter"
+                          [(ngModel)]="userService.selectionFilter"
                           [matAutocomplete]="userAuto" />
                         <mat-autocomplete
                           #userAuto="matAutocomplete"
                           class="user-selection-autocomplete">
-                          @for (option of userService.filteredUsernames(); track option) {
+                          @for (option of userService.selectionFilteredUsernames(); track option) {
                             <mat-option [value]="option">{{ option }}</mat-option>
                           }
                         </mat-autocomplete>
@@ -255,8 +255,8 @@
                   <span
                     i18n
                     style="margin-left: 39px">
-                  its previous container.
-                </span>
+                    its previous container.
+                  </span>
                 }
               </mat-checkbox>
             </section>
@@ -270,12 +270,13 @@
           <mat-form-field class="add-token">
             <mat-label i18n>Add Token to Container</mat-label>
             <app-clearable-input
-              (onClick)="filterValueString.set('')"
-              [showClearButton]="filterValueString().length > 0">
+              (onClick)="tokenService.clearFilter()"
+              [showClearButton]="tokenService.tokenFilter().isNotEmpty">
               <input
                 #filterHTMLInputElement
                 #tokenAutoTrigger="matAutocompleteTrigger"
-                [(ngModel)]="filterValueString"
+                (input)="tokenService.handleFilterInput($event)"
+                [value]="tokenService.tokenFilter().filterString"
                 [matAutocomplete]="tokenAuto"
                 i18n-placeholder
                 matInput
@@ -288,17 +289,17 @@
                   (click)="addTokenToContainer(option)">
                   <span class="token-option-span"> {{ option["serial"] }} </span>
                   <span class="token-option-span">
-                  {{ option["tokentype"] }}
-                </span>
+                    {{ option["tokentype"] }}
+                  </span>
                   <span
                     i18n
                     class="token-option-span"
                     [ngClass]="option['active'] ? 'highlight-true' : 'highlight-false'">
-                  {{ option["active"] ? "active" : "deactivated" }}
-                </span>
+                    {{ option["active"] ? "active" : "deactivated" }}
+                  </span>
                   <span class="token-option-span">
-                  {{ option["username"] }}
-                </span>
+                    {{ option["username"] }}
+                  </span>
                   <mat-icon>add</mat-icon>
                 </mat-option>
               }

@@ -6,6 +6,8 @@ import { ROUTE_PATHS } from "../../route_paths";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
 
+import { FilterValue } from "../../core/models/filter_value";
+
 export interface Audit {
   auditcolumns: string[];
   auditdata: AuditData[];
@@ -72,11 +74,13 @@ const advancedApiFilter: string[] = [];
 export interface AuditServiceInterface {
   apiFilter: string[];
   advancedApiFilter: string[];
-  filterValue: WritableSignal<Record<string, string>>;
+  auditFilter: WritableSignal<FilterValue>;
   filterParams: () => Record<string, string>;
   pageSize: WritableSignal<number>;
   pageIndex: WritableSignal<number>;
   auditResource: HttpResourceRef<PiResponse<Audit> | undefined>;
+  clearFilter(): void;
+  handleFilterInput($event: Event): void;
 }
 
 @Injectable({
@@ -88,15 +92,21 @@ export class AuditService implements AuditServiceInterface {
 
   readonly apiFilter = apiFilter;
   readonly advancedApiFilter = advancedApiFilter;
-  filterValue = signal({} as Record<string, string>);
+  private auditBaseUrl = environment.proxyUrl + "/audit/";
+  auditFilter = signal(new FilterValue());
   filterParams = computed<Record<string, string>>(() => {
     const allowedFilters = [...this.apiFilter, ...this.advancedApiFilter];
-    const filterPairs = Object.entries(this.filterValue())
+    console.log("Current Filter Map: ", this.auditFilter().filterMap);
+    console.log("Current Hidden Filter Map: ", this.auditFilter().hiddenFilterMap);
+    console.log("Allowed Filters: ", allowedFilters);
+    const filterPairs = Array.from(this.auditFilter().filterMap.entries())
       .map(([key, value]) => ({ key, value }))
       .filter(({ key }) => allowedFilters.includes(key));
+    console.log("Filtered Pairs: ", filterPairs);
     if (filterPairs.length === 0) {
       return {};
     }
+    console.log("filterPairs: ", filterPairs);
     return filterPairs.reduce(
       (acc, { key, value }) => ({
         ...acc,
@@ -111,13 +121,12 @@ export class AuditService implements AuditServiceInterface {
   });
   pageIndex = linkedSignal({
     source: () => ({
-      filterValue: this.filterValue(),
+      filterValue: this.auditFilter(),
       pageSize: this.pageSize(),
       routeUrl: this.contentService.routeUrl()
     }),
     computation: () => 0
   });
-  private auditBaseUrl = environment.proxyUrl + "/audit/";
   auditResource = httpResource<PiResponse<Audit>>(() => {
     if (this.contentService.routeUrl() !== ROUTE_PATHS.AUDIT) {
       return undefined;
@@ -133,4 +142,12 @@ export class AuditService implements AuditServiceInterface {
       }
     };
   });
+
+  clearFilter(): void {
+    this.auditFilter.set(this.auditFilter().copyWith({ value: "" }));
+  }
+  handleFilterInput($event: Event): void {
+    const input = $event.target as HTMLInputElement;
+    this.auditFilter.set(this.auditFilter().copyWith({ value: input.value }));
+  }
 }

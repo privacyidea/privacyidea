@@ -1,12 +1,14 @@
-import { HttpClient, HttpErrorResponse, HttpParams, httpResource, HttpResourceRef } from "@angular/common/http";
-import { computed, effect, inject, Injectable, linkedSignal, Signal, signal, WritableSignal } from "@angular/core";
-import { Sort } from "@angular/material/sort";
+import { AuthService, AuthServiceInterface } from "../auth/auth.service";
+import { ContentService, ContentServiceInterface } from "../content/content.service";
+import { HttpClient, HttpErrorResponse, HttpParams, HttpResourceRef, httpResource } from "@angular/common/http";
+import { Injectable, Signal, WritableSignal, computed, effect, inject, linkedSignal, signal } from "@angular/core";
+import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
 import {
+  Observable,
+  Subject,
   catchError,
   forkJoin,
-  Observable,
   of,
-  Subject,
   switchMap,
   takeUntil,
   takeWhile,
@@ -18,9 +20,8 @@ import { PiResponse } from "../../app.component";
 import { ROUTE_PATHS } from "../../route_paths";
 import { ContainerTypeOption } from "../../components/token/container-create/container-create.component";
 import { EnrollmentUrl } from "../../mappers/token-api-payload/_token-api-payload.mapper";
-import { AuthService, AuthServiceInterface } from "../auth/auth.service";
-import { ContentService, ContentServiceInterface } from "../content/content.service";
-import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
+import { FilterValue } from "../../core/models/filter_value";
+import { Sort } from "@angular/material/sort";
 import { TokenService, TokenServiceInterface } from "../token/token.service";
 
 const apiFilter = ["container_serial", "type", "user"];
@@ -131,6 +132,8 @@ export interface ContainerRegisterData {
 }
 
 export interface ContainerServiceInterface {
+  handleFilterInput($event: Event): void;
+  clearFilter(): void;
   apiFilter: string[];
   advancedApiFilter: string[];
   stopPolling$: Subject<void>;
@@ -140,7 +143,7 @@ export interface ContainerServiceInterface {
   containerSerial: WritableSignal<string>;
   selectedContainer: WritableSignal<string | null>;
   sort: WritableSignal<Sort>;
-  filterValue: WritableSignal<Record<string, string>>;
+  containerFilter: WritableSignal<FilterValue>;
   filterParams: Signal<Record<string, string>>;
   pageSize: WritableSignal<number>;
   pageIndex: WritableSignal<number>;
@@ -228,14 +231,13 @@ export class ContainerService implements ContainerServiceInterface {
 
   sort = signal<Sort>({ active: "serial", direction: "asc" });
 
-  filterValue: WritableSignal<Record<string, string>> = linkedSignal({
+  containerFilter: WritableSignal<FilterValue> = linkedSignal({
     source: this.contentService.routeUrl,
-    computation: () => ({})
+    computation: () => new FilterValue()
   });
   filterParams = computed<Record<string, string>>(() => {
     const allowedFilters = [...this.apiFilter, ...this.advancedApiFilter];
-    const filterValue = this.filterValue();
-    const filterPairs = Object.entries(filterValue)
+    const filterPairs = Array.from(this.containerFilter().filterMap.entries())
       .filter(([key]) => allowedFilters.includes(key))
       .map(([key, value]) => {
         if (value === "") {
@@ -256,7 +258,7 @@ export class ContainerService implements ContainerServiceInterface {
     );
   });
   pageSize = linkedSignal({
-    source: this.filterValue,
+    source: this.containerFilter,
     computation: (): any => {
       if (![5, 10, 15].includes(this.eventPageSize)) {
         return 10;
@@ -266,7 +268,7 @@ export class ContainerService implements ContainerServiceInterface {
   });
   pageIndex = linkedSignal({
     source: () => ({
-      filterValue: this.filterValue(),
+      filterValue: this.containerFilter(),
       pageSize: this.pageSize(),
       routeUrl: this.contentService.routeUrl()
     }),
@@ -282,7 +284,8 @@ export class ContainerService implements ContainerServiceInterface {
     if (
       (!this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_DETAILS) &&
         ![ROUTE_PATHS.TOKENS_CONTAINERS, ROUTE_PATHS.TOKENS_ENROLLMENT, ROUTE_PATHS.TOKENS].includes(
-          this.contentService.routeUrl())) ||
+          this.contentService.routeUrl()
+        )) ||
       (this.authService.role() === "admin" && this.contentService.routeUrl() === ROUTE_PATHS.TOKENS) ||
       !this.authService.actionAllowed("container_list")
     ) {
@@ -322,7 +325,7 @@ export class ContainerService implements ContainerServiceInterface {
       pageIndex: this.pageIndex(),
       pageSize: this.pageSize(),
       sort: this.sort(),
-      filterValue: this.filterValue()
+      filterValue: this.containerFilter()
     }),
     computation: () => []
   });
@@ -392,8 +395,10 @@ export class ContainerService implements ContainerServiceInterface {
   });
 
   templatesResource = httpResource<PiResponse<{ templates: ContainerTemplate[] }>>(() => {
-    if (this.contentService.routeUrl() !== ROUTE_PATHS.TOKENS_CONTAINERS_CREATE ||
-      !this.authService.actionAllowed("container_template_list")) {
+    if (
+      this.contentService.routeUrl() !== ROUTE_PATHS.TOKENS_CONTAINERS_CREATE ||
+      !this.authService.actionAllowed("container_template_list")
+    ) {
       return undefined;
     }
     return {
@@ -407,6 +412,34 @@ export class ContainerService implements ContainerServiceInterface {
     source: this.templatesResource.value,
     computation: (templatesResource, previous) => templatesResource?.result?.value?.templates ?? previous?.value ?? []
   });
+
+  constructor() {
+    effect(() => {
+      this.selectedContainer(); // Trigger recomputation for enrollment from container details
+    });
+    effect(() => {
+      if (this.containerDetailResource.error()) {
+        const containerDetailError = this.containerDetailResource.error() as HttpErrorResponse;
+        console.error("Failed to get container details.", containerDetailError.message);
+        const message = containerDetailError.error?.result?.error?.message || containerDetailError.message;
+        this.notificationService.openSnackBar("Failed to get container details." + message);
+      }
+    });
+    effect(() => {
+      if (this.containerResource.error()) {
+        const error = this.containerResource.error() as HttpErrorResponse;
+        this.notificationService.openSnackBar(error.message);
+      }
+    });
+  }
+  handleFilterInput($event: Event): void {
+    const input = $event.target as HTMLInputElement;
+    const newFilter = this.containerFilter().copyWith({ value: input.value });
+    this.containerFilter.set(newFilter);
+  }
+  clearFilter(): void {
+    this.containerFilter.set(new FilterValue());
+  }
 
   assignContainer(tokenSerial: string, containerSerial: string): Observable<any> {
     const headers = this.authService.getHeaders();
@@ -762,26 +795,6 @@ export class ContainerService implements ContainerServiceInterface {
         return throwError(() => error);
       })
     );
-  }
-
-  constructor() {
-    effect(() => {
-      this.selectedContainer(); // Trigger recomputation for enrollment from container details
-    });
-    effect(() => {
-      if (this.containerDetailResource.error()) {
-        const containerDetailError = this.containerDetailResource.error() as HttpErrorResponse;
-        console.error("Failed to get container details.", containerDetailError.message);
-        const message = containerDetailError.error?.result?.error?.message || containerDetailError.message;
-        this.notificationService.openSnackBar("Failed to get container details." + message);
-      }
-    });
-    effect(() => {
-      if (this.containerResource.error()) {
-        const error = this.containerResource.error() as HttpErrorResponse;
-        this.notificationService.openSnackBar(error.message);
-      }
-    });
   }
 
   getContainerDetails(containerSerial: string): Observable<PiResponse<ContainerDetails>> {

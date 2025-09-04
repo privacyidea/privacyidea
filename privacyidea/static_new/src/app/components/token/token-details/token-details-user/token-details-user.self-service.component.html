@@ -29,14 +29,14 @@
               <mat-form-field>
                 <mat-label i18n>Enter User</mat-label>
                 <app-clearable-input
-                  (onClick)="userService.userFilter.set('')"
-                  [showClearButton]="userService.userFilter() !== ''">
+                  (onClick)="userService.selectionFilter.set('')"
+                  [showClearButton]="userService.selectionFilter() !== ''">
                   <input
                     matInput
-                    [(ngModel)]="userService.userFilter"
-                    [matAutocomplete]="userAuto"/>
+                    [(ngModel)]="userService.selectionFilter"
+                    [matAutocomplete]="userAuto" />
                   <mat-autocomplete #userAuto="matAutocomplete">
-                    @for (option of userService.filteredUsernames(); track option) {
+                    @for (option of userService.selectionFilteredUsernames(); track option) {
                       <mat-option [value]="option">{{ option }}</mat-option>
                     }
                   </mat-autocomplete>
@@ -75,8 +75,9 @@
         mat-cell>
         @switch (element.keyMap.key) {
           @case ("username") {
-            @if (!(isAnyEditingOrRevoked() && !isEditingUser()) && element.value &&
-            authService.actionAllowed("unassign")) {
+            @if (
+              !(isAnyEditingOrRevoked() && !isEditingUser()) && element.value && authService.actionAllowed("unassign")
+            ) {
               <div class="edit-button-container">
                 <button
                   mat-icon-button

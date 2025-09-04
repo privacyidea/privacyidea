@@ -28,8 +28,8 @@
     <mat-form-field class="width-50 input-height">
       <mat-label i18n>Enter User</mat-label>
       <app-clearable-input
-        (onClick)="userService.userFilter.set('')"
-        [showClearButton]="userService.userFilter() !== ''">
+        (onClick)="userService.selectionFilter.set('')"
+        [showClearButton]="userService.selectionFilter() !== ''">
         <input
           [formControl]="userFilterControl"
           [matAutocomplete]="userAuto"
@@ -38,7 +38,7 @@
         <mat-autocomplete
           #userAuto="matAutocomplete"
           [displayWith]="userService.displayUser">
-          @for (user of userService.filteredUsers(); track user) {
+          @for (user of userService.selectionFilteredUsers(); track user) {
             <mat-option [value]="user">{{ user.username }}</mat-option>
           }
         </mat-autocomplete>

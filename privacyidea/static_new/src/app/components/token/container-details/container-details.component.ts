@@ -32,6 +32,7 @@ import { ClearableInputComponent } from "../../shared/clearable-input/clearable-
 import { ContainerDetailsInfoComponent } from "./container-details-info/container-details-info.component";
 import { ContainerDetailsTokenTableComponent } from "./container-details-token-table/container-details-token-table.component";
 import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
+import { FilterValue } from "../../../core/models/filter_value";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatDivider } from "@angular/material/divider";
 import { MatFormField } from "@angular/material/form-field";
@@ -118,17 +119,6 @@ export class ContainerDetailsComponent {
   tokenSerial = this.tokenService.tokenSerial;
   containerSerial = this.containerService.containerSerial;
   showOnlyTokenNotInContainer = this.tokenService.showOnlyTokenNotInContainer;
-  filterValue = this.tokenService.filterValue;
-  filterValueString: WritableSignal<string> = linkedSignal(() => {
-    const _filterValue: Record<string, string> = { ...this.filterValue() };
-    delete _filterValue["container_serial"];
-    delete _filterValue["type_list"];
-    if (Object.keys(_filterValue).length === 0) {
-      return "";
-    }
-    const filterEntries = Object.entries(_filterValue);
-    return filterEntries.map(([key, value]: [string, string]) => `${key}: ${value}`).join(" ");
-  });
 
   tokenResource = this.tokenService.tokenResource;
   pageIndex = this.tokenService.pageIndex;
@@ -290,46 +280,29 @@ export class ContainerDetailsComponent {
         });
       }
     });
-    effect(() => {
-      const currentFilter = this.filterValue();
-
-      let recordsFromText = this.tableUtilsService.recordsFromText(this.filterValueString());
-      if (this.showOnlyTokenNotInContainer()) {
-        recordsFromText["container_serial"] = "";
-      }
-      recordsFromText = this._addTypeListToFilter(recordsFromText);
-      const objValueFromText: Record<string, string> = {};
-      Object.entries(recordsFromText).forEach(([key, value]) => {
-        objValueFromText[key] = value as string;
-      });
-      if (JSON.stringify(currentFilter) !== JSON.stringify(objValueFromText)) {
-        this.filterValue.set(objValueFromText);
-      }
-    });
   }
 
-  _addTypeListToFilter(currentFilter: Record<string, string>): Record<string, string> {
+  _addTypeListToFilter(currentFilter: FilterValue): FilterValue {
     const containerDetails = this.containerDetails();
     const containerType = containerDetails?.type;
     const allowedTokenTypes = allowedTokenTypesMap.get(containerType);
-    const _currentFilter = { ...currentFilter } as Record<string, string>;
+    const _currentFilter = currentFilter.copyWith();
     if (
       !allowedTokenTypes ||
       allowedTokenTypes === "all" ||
       !Array.isArray(allowedTokenTypes) ||
       allowedTokenTypes.length === 0
     ) {
-      delete _currentFilter["type"];
-      delete _currentFilter["type_list"];
+      _currentFilter.removeKey("type");
+      _currentFilter.removeKey("type_list");
       return _currentFilter;
     }
     if (allowedTokenTypes.length === 1) {
-      _currentFilter["type"] = allowedTokenTypes[0];
-      delete _currentFilter["type_list"];
+      _currentFilter.addEntry("type", allowedTokenTypes[0]);
+      _currentFilter.removeKey("type_list");
     } else {
-      _currentFilter["type_list"] = allowedTokenTypes.join(",");
-
-      delete _currentFilter["type"];
+      _currentFilter.addEntry("type_list", allowedTokenTypes.join(","));
+      _currentFilter.removeKey("type");
     }
     return _currentFilter;
   }
@@ -387,12 +360,12 @@ export class ContainerDetailsComponent {
     this.containerService
       .assignUser({
         containerSerial: this.containerSerial(),
-        username: this.userService.userNameFilter(),
+        username: this.userService.selectionUsernameFilter(),
         userRealm: this.userService.selectedUserRealm()
       })
       .subscribe({
         next: () => {
-          this.userService.userFilter.set("");
+          this.userService.selectionFilter.set("");
           this.userService.selectedUserRealm.set("");
           this.isEditingUser.update((b) => !b);
           this.containerDetailResource.reload();

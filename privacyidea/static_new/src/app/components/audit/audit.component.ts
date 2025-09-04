@@ -1,10 +1,7 @@
-import { NgClass } from "@angular/common";
-import { Component, effect, inject, linkedSignal, ViewChild, WritableSignal } from "@angular/core";
-import { FormsModule } from "@angular/forms";
-import { MatCardModule } from "@angular/material/card";
-import { MatFormField, MatLabel } from "@angular/material/form-field";
-import { MatInput } from "@angular/material/input";
-import { MatPaginator, PageEvent } from "@angular/material/paginator";
+import { AuditData, AuditService, AuditServiceInterface } from "../../services/audit/audit.service";
+import { AuthService, AuthServiceInterface } from "../../services/auth/auth.service";
+import { Component, ViewChild, WritableSignal, inject, linkedSignal } from "@angular/core";
+import { ContentService, ContentServiceInterface } from "../../services/content/content.service";
 import {
   MatCell,
   MatCellDef,
@@ -19,15 +16,19 @@ import {
   MatTable,
   MatTableDataSource
 } from "@angular/material/table";
-import { RouterLink } from "@angular/router";
-import { AuditData, AuditService, AuditServiceInterface } from "../../services/audit/audit.service";
-import { AuthService, AuthServiceInterface } from "../../services/auth/auth.service";
-import { ContentService, ContentServiceInterface } from "../../services/content/content.service";
+import { MatFormField, MatLabel } from "@angular/material/form-field";
+import { MatPaginator, PageEvent } from "@angular/material/paginator";
 import { TableUtilsService, TableUtilsServiceInterface } from "../../services/table-utils/table-utils.service";
+
 import { ClearableInputComponent } from "../shared/clearable-input/clearable-input.component";
 import { CopyButtonComponent } from "../shared/copy-button/copy-button.component";
-import { ScrollToTopDirective } from "../shared/directives/app-scroll-to-top.directive";
+import { FormsModule } from "@angular/forms";
 import { KeywordFilterComponent } from "../shared/keyword-filter/keyword-filter.component";
+import { MatCardModule } from "@angular/material/card";
+import { MatInput } from "@angular/material/input";
+import { NgClass } from "@angular/common";
+import { RouterLink } from "@angular/router";
+import { ScrollToTopDirective } from "../shared/directives/app-scroll-to-top.directive";
 
 const columnKeysMap = [
   { key: "number", label: "Number" },
@@ -98,11 +99,6 @@ export class AuditComponent {
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   @ViewChild("filterHTMLInputElement", { static: true })
   filterInput!: HTMLInputElement;
-  filterValueString: WritableSignal<string> = linkedSignal(() =>
-    Object.entries(this.auditService.filterValue())
-      .map(([key, value]) => `${key}: ${value}`)
-      .join(" ")
-  );
   totalLength: WritableSignal<number> = linkedSignal({
     source: this.auditService.auditResource.value,
     computation: (auditResource, previous) => {
@@ -127,20 +123,6 @@ export class AuditComponent {
     }
   });
   pageSizeOptions = this.tableUtilsService.pageSizeOptions;
-
-  constructor() {
-    effect(() => {
-      const filterValueString = this.filterValueString();
-      const recordsFromText = this.tableUtilsService.recordsFromText(filterValueString);
-      if (this.filterInput) {
-        this.filterInput.value = filterValueString;
-      }
-      if (JSON.stringify(this.auditService.filterValue()) !== JSON.stringify(recordsFromText)) {
-        this.auditService.filterValue.set(recordsFromText);
-      }
-      this.auditService.pageIndex.set(0);
-    });
-  }
 
   onPageEvent(event: PageEvent) {
     this.auditService.pageSize.set(event.pageSize);
