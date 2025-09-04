@@ -25,7 +25,9 @@ export const NO_REGENERATE_TOKEN_TYPES = [
   "yubikey",
   "sms",
   "applspec",
-  "indexedsecret"
+  "indexedsecret",
+  "webauthn",
+  "passkey"
 ];
 
 /**
