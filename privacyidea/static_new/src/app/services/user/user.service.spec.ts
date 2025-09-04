@@ -78,18 +78,18 @@ describe("UserService", () => {
     });
 
     it("selectedUser returns the matching user when userNameFilter is set", () => {
-      userService.userFilter.set("Alice");
+      userService.selectionFilter.set("Alice");
       expect(userService.selectedUser()).toEqual(alice);
     });
 
     it("filteredUsers narrows the list by the string in userFilter (case-insensitive)", () => {
-      userService.userFilter.set("aL"); // any case
-      expect(userService.filteredUsers()).toEqual([users[0]]);
+      userService.selectionFilter.set("aL"); // any case
+      expect(userService.selectionFilteredUsers()).toEqual([users[0]]);
     });
 
     it("should return all users when filter is empty", () => {
-      userService.userFilter.set("");
-      expect(userService.filteredUsers()).toEqual(users);
+      userService.selectionFilter.set("");
+      expect(userService.selectionFilteredUsers()).toEqual(users);
     });
   });
 });

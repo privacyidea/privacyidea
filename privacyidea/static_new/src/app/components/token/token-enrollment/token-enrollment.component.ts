@@ -258,7 +258,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
   selectedUserRealmControl = new FormControl<string>(this.userService.selectedUserRealm(), {
     nonNullable: true
   });
-  userFilterControl = new FormControl<string | UserData | null>(this.userService.userFilter(), {
+  userFilterControl = new FormControl<string | UserData | null>(this.userService.selectionFilter(), {
     nonNullable: true
   });
   onlyAddToRealmControl = new FormControl<boolean>(false, { nonNullable: true });
@@ -290,7 +290,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
 
   constructor() {
     effect(() => {
-      const users = this.userService.filteredUsers();
+      const users = this.userService.selectionFilteredUsers();
       if (users.length === 1 && this.userFilterControl.value === users[0].username) {
         this.userFilterControl.setValue(users[0]);
       }
@@ -332,7 +332,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
       this.containerService.selectedContainer.set(value ?? "")
     );
     this.userFilterControl.valueChanges.subscribe((value) => {
-      this.userService.userFilter.set(value ?? "");
+      this.userService.selectionFilter.set(value ?? "");
       if (value) {
         this.onlyAddToRealmControl.setValue(false, {});
         this.onlyAddToRealmControl.disable({ emitEvent: false });

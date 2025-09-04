@@ -3,14 +3,13 @@ import { ContentService, ContentServiceInterface } from "../content/content.serv
 import { HttpClient, HttpParams, httpResource, HttpResourceRef } from "@angular/common/http";
 import { computed, effect, inject, Injectable, linkedSignal, signal, WritableSignal } from "@angular/core";
 import { TableUtilsService, TableUtilsServiceInterface } from "../table-utils/table-utils.service";
-
-import { catchError, Observable, of, switchMap } from "rxjs";
+import { FilterValue } from "../../core/models/filter_value";
+import { Observable } from "rxjs";
 import { PageEvent } from "@angular/material/paginator";
 import { PiResponse } from "../../app.component";
 import { ROUTE_PATHS } from "../../route_paths";
 import { Sort } from "@angular/material/sort";
 import { environment } from "../../../environments/environment";
-import { TokenService, TokenServiceInterface } from "../token/token.service";
 
 export type TokenApplications = TokenApplication[];
 
@@ -38,6 +37,8 @@ export interface TokenApplication {
 }
 
 export interface MachineServiceInterface {
+  handleFilterInput($event: Event): void;
+  clearFilter(): void;
   sshApiFilter: string[];
   sshAdvancedApiFilter: string[];
   offlineApiFilter: string[];
@@ -46,8 +47,7 @@ export interface MachineServiceInterface {
   tokenApplications: WritableSignal<TokenApplications | undefined>;
   selectedApplicationType: WritableSignal<"ssh" | "offline">;
   pageSize: WritableSignal<number>;
-  filterValue: WritableSignal<Record<string, string>>;
-  filterValueString: WritableSignal<string>;
+  machineFilter: WritableSignal<FilterValue>;
   filterParams: () => Record<string, string>;
   sort: WritableSignal<Sort>;
   pageIndex: WritableSignal<number>;
@@ -105,6 +105,14 @@ export interface MachineServiceInterface {
   providedIn: "root"
 })
 export class MachineService implements MachineServiceInterface {
+  handleFilterInput($event: Event): void {
+    const input = $event.target as HTMLInputElement;
+    const newFilter = this.machineFilter().copyWith({ value: input.value });
+    this.machineFilter.set(newFilter);
+  }
+  clearFilter(): void {
+    this.machineFilter.set(new FilterValue());
+  }
   private readonly http: HttpClient = inject(HttpClient);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
@@ -115,13 +123,6 @@ export class MachineService implements MachineServiceInterface {
   sshAdvancedApiFilter = ["hostname", "machineid & resolver"];
   offlineApiFilter = ["serial", "count", "rounds"];
   offlineAdvancedApiFilter = ["hostname", "machineid & resolver"];
-
-  constructor() {
-    effect(() => {
-      const recordsFromText = this.tableUtilsService.recordsFromText(this.filterValueString());
-      this.filterValue.set(recordsFromText);
-    });
-  }
 
   selectedApplicationType = signal<"ssh" | "offline">("ssh");
   pageSize = linkedSignal({
@@ -151,32 +152,9 @@ export class MachineService implements MachineServiceInterface {
     source: this.machinesResource.value,
     computation: (machinesResource, previous) => machinesResource?.result?.value ?? previous?.value
   });
-  filterValue: WritableSignal<Record<string, string>> = linkedSignal({
-    source: () => ({
-      selectedApplicationType: this.selectedApplicationType(),
-      tokenSerial: this.contentService.tokenSerial(),
-      routeUrl: this.contentService.routeUrl()
-    }),
-    computation: (source, previous) => {
-      if (source.routeUrl !== previous?.source.routeUrl) {
-        // Reset filter when route changes
-        return {};
-      }
-      let filter = {} as Record<string, string>;
-      let { selectedApplicationType, tokenSerial } = source;
-
-      if (tokenSerial) {
-        filter["serial"] = tokenSerial;
-      }
-      return filter;
-    }
-  });
-  filterValueString: WritableSignal<string> = linkedSignal({
-    source: this.filterValue,
-    computation: () =>
-      Object.entries(this.filterValue())
-        .map(([key, value]) => `${key}: ${value}`)
-        .join(" ")
+  machineFilter: WritableSignal<FilterValue> = linkedSignal({
+    source: this.selectedApplicationType,
+    computation: () => new FilterValue()
   });
   filterParams = computed<Record<string, string>>(() => {
     let allowedKeywords =
@@ -184,7 +162,7 @@ export class MachineService implements MachineServiceInterface {
         ? [...this.sshApiFilter, ...this.sshAdvancedApiFilter]
         : [...this.offlineApiFilter, ...this.offlineAdvancedApiFilter];
 
-    const filterPairs = Object.entries(this.filterValue())
+    const filterPairs = Object.entries(this.machineFilter())
       .map(([key, value]) => ({ key, value }))
       .filter(({ key }) => allowedKeywords.includes(key));
     if (filterPairs.length === 0) {
@@ -214,7 +192,7 @@ export class MachineService implements MachineServiceInterface {
   pageIndex = linkedSignal({
     source: () => ({
       application: this.selectedApplicationType(),
-      filter: this.filterValue(),
+      filter: this.machineFilter(),
       sort: this.sort()
     }),
     computation: () => 0

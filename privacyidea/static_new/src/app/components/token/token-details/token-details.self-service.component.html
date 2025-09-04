@@ -38,7 +38,7 @@
                     <mat-form-field class="width-288px container-form-field">
                       <mat-label i18n>Enter Container</mat-label>
                       <app-clearable-input
-                        (onClick)="containerHTMLInputElement.value = ''; containerService.selectedContainer.set(null)"
+                        (onClick)="containerService.selectedContainer.set(null)"
                         [showClearButton]="containerService.selectedContainer() !== ''">
                         <input
                           #containerHTMLInputElement

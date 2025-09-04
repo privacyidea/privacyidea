@@ -10,11 +10,12 @@
         subscriptSizing="dynamic">
         <mat-label i18n>Enter Filter</mat-label>
         <app-clearable-input
-          (onClick)="filterValueString.set('')"
-          [showClearButton]="filterValueString().length > 0">
+          (onClick)="containerService.clearFilter()"
+          [showClearButton]="containerService.containerFilter().isNotEmpty">
           <input
             #filterHTMLInputElement
-            [(ngModel)]="filterValueString"
+            (input)="containerService.handleFilterInput($event)"
+            [value]="containerService.containerFilter().filterString"
             aria-label="Filter Input"
             i18n-aria-label
             i18n-placeholder
@@ -34,7 +35,7 @@
       [advancedApiFilter]="advancedApiFilter"
       [apiFilter]="apiFilter"
       [filterHTMLInputElement]="filterHTMLInputElement"
-      [filterValue]="filterValue"></app-keyword-filter>
+      [filterValue]="containerService.containerFilter"></app-keyword-filter>
     <div class="table-container">
       <table
         (matSortChange)="onSortEvent($event)"
@@ -73,9 +74,9 @@
               attr.aria-label="{{ column.label }} Cell"
               mat-cell
               [ngClass]="{
-            'width-18rem': column.key === 'description',
-            'table-checkbox': column.key === 'select'
-          }">
+                'width-18rem': column.key === 'description',
+                'table-checkbox': column.key === 'select'
+              }">
               <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
                 @switch (column.key) {
                   @case ("select") {
@@ -96,13 +97,12 @@
                     }
                   }
                   @case ("realms") {
-                    <div [ngClass]="{'realm-list': (element[column.key]?.length || 0) > 1}">
+                    <div [ngClass]="{ 'realm-list': (element[column.key]?.length || 0) > 1 }">
                       @for (realm of element[column.key]; track realm; let idx = $index) {
                         <div>
-                        <span
-                          attr.aria-label="{{ column.label }} Link">
-                          {{ realm }}
-                        </span>
+                          <span attr.aria-label="{{ column.label }} Link">
+                            {{ realm }}
+                          </span>
                           <br style="margin-top: 3px" />
                         </div>
                       }
@@ -112,8 +112,8 @@
                     <span
                       (click)="handleStateClick(element)"
                       [ngClass]="tableUtilsService.getSpanClassForState(element[column.key][0], true)">
-                  {{ tableUtilsService.getDisplayTextForState(element[column.key][0]) }}
-                </span>
+                      {{ tableUtilsService.getDisplayTextForState(element[column.key][0]) }}
+                    </span>
                   }
                   @default {
                     @if (tableUtilsService.isLink(column.key)) {
@@ -184,9 +184,6 @@
       </table>
     </div>
   } @else {
-    <div
-      i18n>
-      You do not have the permission to view the container list.
-    </div>
+    <div i18n>You do not have the permission to view the container list.</div>
   }
 </div>

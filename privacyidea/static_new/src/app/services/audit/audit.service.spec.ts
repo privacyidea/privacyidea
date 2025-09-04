@@ -1,11 +1,12 @@
-import { TestBed } from "@angular/core/testing";
-import { signal } from "@angular/core";
-
 import { AuditService } from "./audit.service";
 import { ContentService } from "../content/content.service";
+import { LocalService } from "../local/local.service";
+import { TestBed } from "@angular/core/testing";
 import { environment } from "../../../environments/environment";
 import { provideHttpClient } from "@angular/common/http";
+import { signal } from "@angular/core";
 import { AuthService } from "../auth/auth.service";
+import { FilterValue } from "../../core/models/filter_value";
 import { MockAuthService, MockLocalService, MockNotificationService } from "../../../testing/mock-services";
 
 environment.proxyUrl = "/api";
@@ -39,11 +40,7 @@ describe("AuditService (signals & helpers)", () => {
   it("filterParams ignores unknown keys and wildcard‑wraps allowed ones", () => {
     expect(auditService.filterParams()).toEqual({});
 
-    auditService.filterValue.set({
-      action: "LOGIN",
-      foo: "bar",
-      user: "alice"
-    });
+    auditService.auditFilter.set(new FilterValue({ value: "foo: bar action: LOGIN user: alice" }));
     expect(auditService.filterParams()).toEqual({
       action: "*LOGIN*",
       user: "*alice*"
@@ -61,8 +58,7 @@ describe("AuditService (signals & helpers)", () => {
 
   it("auditResource becomes active and derived params update", () => {
     content.routeUrl.set("/audit");
-    auditService.filterValue.set({ serial: "otp123" });
-
+    auditService.auditFilter.set(new FilterValue({ value: "serial: otp123" }));
     auditService.auditResource.reload();
 
     expect(auditService.auditResource.value()).toBeUndefined();

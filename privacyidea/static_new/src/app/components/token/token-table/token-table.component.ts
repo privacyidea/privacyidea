@@ -1,21 +1,22 @@
-import { NgClass } from "@angular/common";
-import { Component, effect, inject, linkedSignal, ViewChild, WritableSignal } from "@angular/core";
+import { Component, WritableSignal, inject, linkedSignal } from "@angular/core";
+import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
+import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
+import { MatPaginatorModule, PageEvent } from "@angular/material/paginator";
+import { MatSortModule, Sort } from "@angular/material/sort";
+import { MatTableDataSource, MatTableModule } from "@angular/material/table";
+import { TableUtilsService, TableUtilsServiceInterface } from "../../../services/table-utils/table-utils.service";
+import { TokenDetails, TokenService, TokenServiceInterface } from "../../../services/token/token.service";
+
+import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
+import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
 import { FormsModule } from "@angular/forms";
+import { KeywordFilterComponent } from "../../shared/keyword-filter/keyword-filter.component";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
-import { MatPaginatorModule, PageEvent } from "@angular/material/paginator";
-import { MatSortModule, Sort } from "@angular/material/sort";
-import { MatTableDataSource, MatTableModule } from "@angular/material/table";
-import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
-import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
-import { TableUtilsService, TableUtilsServiceInterface } from "../../../services/table-utils/table-utils.service";
-import { TokenDetails, TokenService, TokenServiceInterface } from "../../../services/token/token.service";
-import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
-import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
+import { NgClass } from "@angular/common";
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
-import { KeywordFilterComponent } from "../../shared/keyword-filter/keyword-filter.component";
 import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
 
 const columnKeysMap = [
@@ -43,12 +44,12 @@ const columnKeysMap = [
     MatSortModule,
     NgClass,
     KeywordFilterComponent,
-    CopyButtonComponent,
     MatCheckboxModule,
     FormsModule,
     MatIconModule,
     ScrollToTopDirective,
-    ClearableInputComponent
+    ClearableInputComponent,
+    CopyButtonComponent
   ],
   templateUrl: "./token-table.component.html",
   styleUrl: "./token-table.component.scss"
@@ -68,15 +69,7 @@ export class TokenTableComponent {
   isProgrammaticTabChange = this.contentService.isProgrammaticTabChange;
 
   tokenResource = this.tokenService.tokenResource;
-
-  filterValue = this.tokenService.filterValue;
-  filterValueString: WritableSignal<string> = linkedSignal(() => {
-    const filterMap = this.filterValue();
-    return Object.entries(filterMap)
-      .map(([key, value]) => `${key}: ${value}`)
-      .join(" ");
-  });
-
+  tokenFilter = this.tokenService.tokenFilter;
   pageSize = this.tokenService.pageSize;
   pageIndex = this.tokenService.pageIndex;
   sort = this.tokenService.sort;
@@ -115,23 +108,6 @@ export class TokenTableComponent {
 
   pageSizeOptions = this.tableUtilsService.pageSizeOptions;
 
-  @ViewChild("filterHTMLInputElement", { static: true })
-  filterInput!: HTMLInputElement;
-
-  constructor() {
-    effect(() => {
-      const filterValueString = this.filterValueString();
-      if (this.filterInput) {
-        this.filterInput.value = filterValueString;
-      }
-      const recordsFromText = this.tableUtilsService.recordsFromText(filterValueString);
-      if (JSON.stringify(this.filterValue()) !== JSON.stringify(recordsFromText)) {
-        this.filterValue.set(recordsFromText);
-      }
-      this.pageIndex.set(0);
-    });
-  }
-
   isAllSelected() {
     return this.tokenSelection().length === this.tokenDataSource().data.length;
   }
@@ -154,9 +130,12 @@ export class TokenTableComponent {
   }
 
   toggleActive(tokenDetails: TokenDetails): void {
-    if (!tokenDetails.revoked && !tokenDetails.locked &&
+    if (
+      !tokenDetails.revoked &&
+      !tokenDetails.locked &&
       ((tokenDetails.active && this.authService.actionAllowed("disable")) ||
-        (!tokenDetails.active && this.authService.actionAllowed("enable")))) {
+        (!tokenDetails.active && this.authService.actionAllowed("enable")))
+    ) {
       this.tokenService.toggleActive(tokenDetails.serial, tokenDetails.active).subscribe({
         next: () => {
           this.tokenResource.reload();
