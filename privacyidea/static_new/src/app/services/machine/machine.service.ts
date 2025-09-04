@@ -1,7 +1,7 @@
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
 import { HttpClient, HttpParams, httpResource, HttpResourceRef } from "@angular/common/http";
-import { computed, inject, Injectable, linkedSignal, WritableSignal } from "@angular/core";
+import { computed, inject, Injectable, linkedSignal, Signal, WritableSignal } from "@angular/core";
 import { TableUtilsService, TableUtilsServiceInterface } from "../table-utils/table-utils.service";
 import { FilterValue } from "../../core/models/filter_value";
 import { Observable, shareReplay } from "rxjs";
@@ -45,7 +45,7 @@ export interface MachineServiceInterface {
   offlineApiFilter: string[];
   offlineAdvancedApiFilter: string[];
   machines: WritableSignal<Machines | undefined>;
-  tokenApplications: WritableSignal<TokenApplications | undefined>;
+  tokenApplications: Signal<TokenApplications | undefined>;
   selectedApplicationType: WritableSignal<"ssh" | "offline">;
   pageSize: WritableSignal<number>;
   machineFilter: WritableSignal<FilterValue>;
@@ -176,14 +176,14 @@ export class MachineService implements MachineServiceInterface {
   machineFilter: WritableSignal<FilterValue> = linkedSignal({
     source: () => ({
       selectedApplicationType: this.selectedApplicationType,
-      tokenApplicationResource: this.tokenService.tokenDetailResource.value
+      tokenDetailResource: this.tokenService.tokenDetailResource.value
     }),
     computation: (source) => {
-      const tokenSerial = source.tokenApplicationResource()?.result?.value?.tokens[0]?.serial;
+      const tokenSerial = source.tokenDetailResource()?.result?.value?.tokens[0]?.serial;
       if (!tokenSerial) {
         return new FilterValue();
       }
-      return new FilterValue({ value: `tokenSerial:${tokenSerial}` });
+      return new FilterValue({ value: `serial:${tokenSerial}` });
     }
   });
   filterParams = computed<Record<string, string>>(() => {
@@ -191,10 +191,10 @@ export class MachineService implements MachineServiceInterface {
       this.selectedApplicationType() === "ssh"
         ? [...this.sshApiFilter, ...this.sshAdvancedApiFilter]
         : [...this.offlineApiFilter, ...this.offlineAdvancedApiFilter];
-
-    const filterPairs = Object.entries(this.machineFilter())
+    const filterPairs = Array.from(this.machineFilter().filterMap.entries())
       .map(([key, value]) => ({ key, value }))
       .filter(({ key }) => allowedKeywords.includes(key));
+
     if (filterPairs.length === 0) {
       return {};
     }
@@ -253,7 +253,7 @@ export class MachineService implements MachineServiceInterface {
       params: params
     };
   });
-  tokenApplications: WritableSignal<TokenApplications | undefined> = linkedSignal({
+  tokenApplications: Signal<TokenApplications | undefined> = linkedSignal({
     source: this.tokenApplicationResource.value,
     computation: (tokenApplicationResource, previous) => tokenApplicationResource?.result?.value ?? previous?.value
   });

@@ -7,7 +7,7 @@
     <span
       class="info-title details-key-row"
       i18n>
-      Attached Machine
+      Offline Parameter
     </span>
     <table
       [dataSource]="dataSourceFromMachine(machine)"
@@ -23,7 +23,7 @@
           <div class="info-value-container">
             <mat-list>
               @for (key of Object.keys(machine); track key) {
-                @if (key === "serial" || key === "application" || key === "type") {
+                @if (key === "serial" || key === "application" || key === "type" || key === "id") {
                 } @else if (key === "options") {
                   @if (machine[key] && Object.keys(machine[key]).length > 0) {
                     @for (optionsKey of Object.keys(machine[key]); track optionsKey) {

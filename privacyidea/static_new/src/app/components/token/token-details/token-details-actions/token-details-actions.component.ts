@@ -1,5 +1,5 @@
 import { NgClass } from "@angular/common";
-import { Component, inject, Input, signal, WritableSignal } from "@angular/core";
+import { Component, computed, inject, Input, signal, WritableSignal } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { MatFabButton } from "@angular/material/button";
 import { MatDialog } from "@angular/material/dialog";
@@ -49,7 +49,7 @@ import { lastValueFrom } from "rxjs";
 })
 export class TokenDetailsActionsComponent {
   private readonly matDialog: MatDialog = inject(MatDialog);
-  private readonly tokenService: TokenServiceInterface = inject(TokenService);
+  protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   private readonly machineService: MachineServiceInterface = inject(MachineService);
   protected readonly validateService: ValidateServiceInterface = inject(ValidateService);
   protected readonly overflowService: OverflowServiceInterface = inject(OverflowService);
@@ -60,7 +60,12 @@ export class TokenDetailsActionsComponent {
   @Input() tokenType!: WritableSignal<string>;
   tokenSerial = this.tokenService.tokenSerial;
 
-  assignedMachines = signal<TokenApplications>([]);
+  isAttachedToMachine = computed<boolean>(() => {
+    const tokenApplications = this.machineService.tokenApplications();
+    if (!tokenApplications) return false;
+    if (tokenApplications.length === 0) return false;
+    return true;
+  });
 
   testPasskey() {
     this.validateService.authenticatePasskey({ isTest: true }).subscribe({
@@ -118,7 +123,7 @@ export class TokenDetailsActionsComponent {
   }
 
   attachPasskeyToMachine() {
-    const request = this.machineService
+    this.machineService
       .postAssignMachineToToken({
         serial: this.tokenSerial(),
         application: "offline",
@@ -131,6 +136,24 @@ export class TokenDetailsActionsComponent {
         },
         error: (error) => {
           console.error("Error during assignment request:", error);
+        }
+      });
+  }
+
+  removePasskeyFromMachine() {
+    const mtid = this.machineService.tokenApplications()?.[0]?.id;
+    this.machineService
+      .deleteAssignMachineToToken({
+        serial: this.tokenSerial(),
+        application: "offline",
+        mtid: `${mtid}`
+      })
+      .subscribe({
+        next: (_) => {
+          this.machineService.tokenApplicationResource.reload();
+        },
+        error: (error) => {
+          console.error("Error during unassignment request:", error);
         }
       });
   }

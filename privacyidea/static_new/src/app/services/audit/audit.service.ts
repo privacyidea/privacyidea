@@ -99,7 +99,6 @@ export class AuditService implements AuditServiceInterface {
     const filterPairs = Array.from(this.auditFilter().filterMap.entries())
       .map(([key, value]) => ({ key, value }))
       .filter(({ key }) => allowedFilters.includes(key));
-
     if (filterPairs.length === 0) {
       return {};
     }

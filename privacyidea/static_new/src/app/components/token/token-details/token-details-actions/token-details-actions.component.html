@@ -41,16 +41,28 @@
         Attach to Machine
       </button>
     } @else if (tokenType() === "passkey") {
-      <button
-        (click)="attachPasskeyToMachine()"
-        class="detail-button"
-        extended
-        mat-fab
-        i18n>
-        <mat-icon class="detail-button-icon">computer</mat-icon>
-        Attach to Machine
-      </button>
-    } @else if (tokenType() === "hotp") {
+      @if (isAttachedToMachine()) {
+        <button
+          (click)="removePasskeyFromMachine()"
+          class="detail-button"
+          extended
+          mat-fab
+          i18n>
+          <mat-icon class="detail-button-icon">computer</mat-icon>
+          Use Online
+        </button>
+      } @else {
+        <button
+          (click)="attachPasskeyToMachine()"
+          class="detail-button"
+          extended
+          mat-fab
+          i18n>
+          <mat-icon class="detail-button-icon">computer</mat-icon>
+          Use Offline
+        </button>
+      }
+    } @else if (tokenType() === "hotp" && !isAttachedToMachine()) {
       <button
         (click)="attachHotpToMachineDialog()"
         class="detail-button"
@@ -58,7 +70,7 @@
         mat-fab
         i18n>
         <mat-icon class="detail-button-icon">computer</mat-icon>
-        Attach to Machine
+        Use Offline
       </button>
     }
   }

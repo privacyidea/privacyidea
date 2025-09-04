@@ -124,8 +124,11 @@ export class TokenDetailsComponent {
   setPinValue = signal("");
   repeatPinValue = signal("");
 
-  attachedMachines = computed<TokenApplications>(() => {
-    return this.machineService.tokenApplications() || [];
+  isAttachedToMachine = computed<boolean>(() => {
+    const tokenApplications = this.machineService.tokenApplications();
+    if (!tokenApplications) return false;
+    if (tokenApplications.length === 0) return false;
+    return true;
   });
 
   tokenDetailResource = this.tokenService.tokenDetailResource;
