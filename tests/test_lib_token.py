@@ -14,32 +14,27 @@ getToken....
 """
 import binascii
 import datetime
-from dateutil import parser
-from dateutil.tz import tzlocal
 import hashlib
 import json
 import logging
-import mock
-from testfixtures import log_capture, LogCapture
 import warnings
 
-from .base import MyTestCase, FakeAudit, FakeFlaskG
-from privacyidea.lib.user import (User)
-from privacyidea.lib.tokenclass import (TokenClass, TOKENKIND,
-                                        FAILCOUNTER_EXCEEDED,
-                                        FAILCOUNTER_CLEAR_TIMEOUT)
-from privacyidea.lib.token import weigh_token_type, import_tokens, export_tokens
-from privacyidea.lib.tokens.totptoken import TotpTokenClass
-from privacyidea.lib.container import (init_container, add_token_to_container,
-                                       find_container_by_serial)
-from privacyidea.models import (db, Token, Challenge, TokenRealm)
+import mock
+from dateutil import parser
+from dateutil.tz import tzlocal
+from testfixtures import log_capture, LogCapture
+
 from privacyidea.lib.config import (set_privacyidea_config, get_token_types,
                                     delete_privacyidea_config, SYSCONF)
+from privacyidea.lib.container import (init_container, add_token_to_container,
+                                       find_container_by_serial)
+from privacyidea.lib.error import PolicyError, UserError
+from privacyidea.lib.error import (TokenAdminError, ParameterError,
+                                   privacyIDEAError, ResourceNotFoundError)
+from privacyidea.lib.framework import get_app_config
+from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import (set_policy, SCOPE, PolicyClass,
                                     delete_policy)
-from privacyidea.lib.policies.actions import PolicyAction
-from privacyidea.lib.utils import b32encode_and_unicode, hexlify_and_unicode
-from privacyidea.lib.error import PolicyError, UserError
 from privacyidea.lib.token import (create_tokenclass_object,
                                    get_tokens, list_tokengroups,
                                    get_token_type, check_serial,
@@ -70,11 +65,17 @@ from privacyidea.lib.token import (create_tokenclass_object,
                                    import_token, get_one_token, get_tokens_from_serial_or_user,
                                    get_tokens_paginated_generator, assign_tokengroup, unassign_tokengroup)
 from privacyidea.lib.token import log as token_log
-from privacyidea.lib.tokengroup import set_tokengroup, delete_tokengroup
-from privacyidea.lib.error import (TokenAdminError, ParameterError,
-                                   privacyIDEAError, ResourceNotFoundError)
+from privacyidea.lib.token import weigh_token_type, import_tokens, export_tokens
 from privacyidea.lib.tokenclass import DATE_FORMAT
-from privacyidea.lib.framework import get_app_config
+from privacyidea.lib.tokenclass import (TokenClass, TOKENKIND,
+                                        FAILCOUNTER_EXCEEDED,
+                                        FAILCOUNTER_CLEAR_TIMEOUT)
+from privacyidea.lib.tokengroup import set_tokengroup, delete_tokengroup
+from privacyidea.lib.tokens.totptoken import TotpTokenClass
+from privacyidea.lib.user import (User)
+from privacyidea.lib.utils import b32encode_and_unicode, hexlify_and_unicode
+from privacyidea.models import (db, Token, Challenge, TokenRealm)
+from .base import MyTestCase, FakeAudit, FakeFlaskG
 
 PWFILE = "tests/testdata/passwords"
 OTPKEY = "3132333435363738393031323334353637383930"
@@ -1808,7 +1809,7 @@ class TokenTestCase(MyTestCase):
                                       "description": "Totp Token"})
 
         # Export the tokens
-        exported_tokens = export_tokens([hotptoken, totptoken])
+        exported_tokens = export_tokens([hotptoken, totptoken]).successful_tokens
         exported_tokens_str = json.dumps(exported_tokens)
         self.assertIn('"type": "hotp"', exported_tokens_str)
         self.assertIn('"serial": "OATH12345678"', exported_tokens_str)
@@ -1858,6 +1859,65 @@ class TokenTestCase(MyTestCase):
         # Remove the tokens
         hotptoken.delete_token()
         totptoken.delete_token()
+
+    def test_63_token_export_with_user(self):
+        # Set up a user and a token
+        self.setUp_user_realm2()
+        user = User("cornelius", self.realm2)
+        hotptoken = init_token(param={'serial': "OATH12345678",
+                                      'type': 'hotp',
+                                      'otpkey': self.otpkey,
+                                      "otplen": '8',
+                                      "description": "Hotp Token"})
+        totptoken = init_token(param={'serial': "TOTP12345678",
+                                      'type': 'totp',
+                                      'otpkey': self.otpkey,
+                                      "otplen": '8',
+                                      "description": "Totp Token"})
+        assign_token(user=user, serial="OATH12345678")
+        assign_token(user=user, serial="TOTP12345678")
+
+        exported_tokens = export_tokens([hotptoken, totptoken], export_user=True).successful_tokens
+        self.assertIn('"login": "cornelius"', json.dumps(exported_tokens))
+
+        # Remove the tokens
+        unassign_token(user=user, serial="OATH12345678")
+        unassign_token(user=user, serial="TOTP12345678")
+        hotptoken.delete_token()
+        totptoken.delete_token()
+
+        # import the tokens with user assignment
+        updated_tokens = import_tokens(exported_tokens, update_existing_tokens=True, assign_to_user=True)
+        hotptoken = get_tokens(serial="OATH12345678")[0]
+        totptoken = get_tokens(serial="TOTP12345678")[0]
+
+        self.assertEqual(hotptoken.owners[0].login, "cornelius")
+        self.assertEqual(totptoken.owners[0].login, "cornelius")
+
+        # unassign the tokens
+        unassign_token(user=user, serial="OATH12345678")
+        unassign_token(user=user, serial="TOTP12345678")
+
+        self.assertEqual(hotptoken.token.first_owner, None)
+        self.assertEqual(totptoken.token.first_owner, None)
+
+        # check token will be assigned to the user on update
+        updated_tokens = import_tokens(exported_tokens, update_existing_tokens=True, assign_to_user=True)
+        self.assertEqual(hotptoken.owners[0].login, "cornelius")
+        self.assertEqual(totptoken.owners[0].login, "cornelius")
+
+        # unassign the tokens
+        unassign_token(user=user, serial="OATH12345678")
+        unassign_token(user=user, serial="TOTP12345678")
+
+        self.assertEqual(hotptoken.token.first_owner, None)
+        self.assertEqual(totptoken.token.first_owner, None)
+
+        # check token will not be assigned to the user on no update
+        updated_tokens = import_tokens(exported_tokens, update_existing_tokens=False, assign_to_user=True)
+        self.assertEqual(hotptoken.token.first_owner, None)
+        self.assertEqual(totptoken.token.first_owner, None)
+
 
 class TokenOutOfBandTestCase(MyTestCase):
 
@@ -2420,6 +2480,7 @@ class ExportAndReencryptTestCase(MyTestCase):
             if d.get("type") == "totp":
                 tokeninfo = d.get("info_list")
                 self.assertEqual("30", tokeninfo.get("timeStep"), d)
+
 
 class TestMultipleUserToken(MyTestCase):
     def test_01_user_with_multiple_token(self):
