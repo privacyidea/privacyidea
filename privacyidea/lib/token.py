@@ -2997,7 +2997,7 @@ def export_tokens(tokens: list[TokenClass], export_user: bool = True) -> TokenEx
             exported = token.export_token(export_user=export_user)
             success.append(exported)
         except Exception as ex:
-            log.warning(f"Failed to export token {token.get_serial()}: {ex}")
+            log.error(f"Failed to export token {token.get_serial()}: {ex}")
             failed.append(token.get_serial())
     return TokenExportResult(successful_tokens=success, failed_tokens=failed)
 

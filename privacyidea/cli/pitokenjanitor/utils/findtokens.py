@@ -616,8 +616,9 @@ def export(ctx, export_format, b32, file, user):
             click.echo("\n\n")
         click.echo(f"Successfully exported {len(exported_tokens)} tokens.")
         if failed_exports:
-            click.echo(f"\nFailed to export {len(failed_exports)} tokens:")
+            click.echo(f"Failed to export {len(failed_exports)} tokens:")
             _ = [click.echo(f"{serial}") for serial in failed_exports]
+            click.echo(f"Check the logfile for the cause of the failures.")
 
         click.secho(f'\nThe key to import the tokens is:\n\n\t{key}\n\n', fg='red', err=True)
         if file != sys.stdout:
@@ -625,9 +626,9 @@ def export(ctx, export_format, b32, file, user):
                        f'pi-tokenjanitor import privacyidea {file.name} --key {key}\n', err=True)
         if click.confirm('Do you want to save the key to a file?', default=False, err=True):
             key_file = click.prompt('Please enter the file name to save the key to',
-                                    type=click.File('w'), default=sys.stdout, err=True)
+                                    type=click.File('w'), err=True)
             key_file.write(key)
-            click.echo(f'The key is saved to {key_file.name}', err=True)
+            click.echo(f'The export encryption key has been saved to "{key_file.name}"', err=True)
 
     if file != sys.stdout:
         click.echo(f'The tokens have been exported to "{file.name}".\n')

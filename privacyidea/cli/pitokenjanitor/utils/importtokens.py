@@ -159,9 +159,13 @@ def import_token_from_privacyidea(ctx, file, key, keyfile, user):
 
     try:
         ret = import_tokens(token_list, assign_to_user=user)
-        click.echo(f"{len(ret.successful_tokens)} tokens imported successfully.\n"
-                   f"{len(ret.failed_tokens)} tokens failed to import.\n"
-                   f"{len(ret.updated_tokens)} tokens updated.\n")
+        if ret.successful_tokens:
+            click.echo(f"{len(ret.successful_tokens)} tokens imported successfully.")
+        if ret.updated_tokens:
+            click.echo(f"{len(ret.updated_tokens)} tokens updated.")
+        if ret.failed_tokens:
+            click.echo(f"{len(ret.failed_tokens)} tokens failed to import.")
+            click.echo(f"Check the logfile for the cause of failure.")
     except Exception as e:
         click.echo(f"Error importing tokens: {e}")
         ctx.exit(1)
