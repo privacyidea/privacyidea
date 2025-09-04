@@ -3008,39 +3008,52 @@ def import_tokens(tokens: list[dict], update_existing_tokens: bool = True,
 
     for token_info_dict in tokens:
         serial = token_info_dict.get("serial")
-        try:
-            existing_token = get_one_token(serial=serial, silent_fail=True)
-            # We check if there is no existing token or if we want to update existing tokens
-            if not existing_token or update_existing_tokens:
-
-                # We create a new token, if there is no existing token
-                if not existing_token:
+        existing_token = get_one_token(serial=serial, silent_fail=True)
+        # We check if there is no existing token or if we want to update existing tokens
+        if not existing_token or update_existing_tokens:
+            # We create a new token, if there is no existing token
+            if not existing_token:
+                try:
                     token_type = token_info_dict.get("type")
                     db_token = Token(serial, tokentype=token_type.lower())
                     db_token.save()
                     token = create_tokenclass_object(db_token)
-                # We use the existing token and update it
-                else:
-                    token = existing_token
+                except Exception as e:
+                    log.error(f"Could not create token {serial}: {e}")
+                    failed_tokens.append(serial)
+                    continue
+            # We use the existing token and update it
+            else:
+                token = existing_token
 
-                # Assign the user, if wanted and if there is a user in the token info dict
-                if assign_to_user and token_info_dict.get("user"):
+            # Assign the user, if wanted and if there is a user in the token info dict
+            if assign_to_user and token_info_dict.get("user"):
+                try:
                     owner = User(login=token_info_dict.get("user").get("login"),
                                  resolver=token_info_dict.get("user").get("resolver"),
                                  realm=token_info_dict.get("user").get("realm"),
                                  uid=token_info_dict.get("user").get("uid"))
                     token.add_user(owner, override=True)
+                except Exception as e:
+                    log.error(f"Could not assign user to token {serial}: {e}"
+                              f"the token will not be imported.")
+                    failed_tokens.append(serial)
+                    token.delete_token()
+                    continue
+            try:
                 token.import_token(token_info_dict)
-
-                if not existing_token:
-                    successful_tokens.append(serial)
-                else:
-                    updated_tokens.append(serial)
-            else:
-                log.info(f"Token with serial {serial} already exists.")
+            except Exception as e:
+                log.exception(f"Could not import token {serial}: {e}")
                 failed_tokens.append(serial)
-        except Exception as e:
-            log.error(f"Could not import token {serial}: {e}")
+                token.delete_token()
+                continue
+
+            if not existing_token:
+                successful_tokens.append(serial)
+            else:
+                updated_tokens.append(serial)
+        else:
+            log.info(f"Token with serial {serial} already exists.")
             failed_tokens.append(serial)
     return TokenImportResult(successful_tokens=successful_tokens, updated_tokens=updated_tokens,
                              failed_tokens=failed_tokens)
