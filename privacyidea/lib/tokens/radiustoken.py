@@ -47,21 +47,19 @@ import logging
 
 import traceback
 import binascii
-from privacyidea.lib.utils import is_true, to_bytes, hexlify_and_unicode, to_unicode
+from privacyidea.lib.utils import is_true, hexlify_and_unicode
 from privacyidea.lib.tokens.remotetoken import RemoteTokenClass
 from privacyidea.lib.tokenclass import TokenClass, TOKENKIND, AUTHENTICATIONMODE
 from privacyidea.api.lib.utils import getParam, ParameterError
 from privacyidea.lib.log import log_with
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.decorators import check_token_locked
-from privacyidea.lib.radiusserver import get_radius
+from privacyidea.lib.radiusserver import get_radius, get_temporary_radius_server
 from privacyidea.models import Challenge
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.policydecorators import challenge_response_allowed
 
 import pyrad.packet
-from pyrad.client import Client, Timeout
-from pyrad.dictionary import Dictionary
 from pyrad.packet import AccessChallenge, AccessAccept, AccessReject
 from privacyidea.lib import _
 from privacyidea.lib.policy import SCOPE, GROUP
@@ -457,84 +455,48 @@ class RadiusTokenClass(RemoteTokenClass):
         if options is None:
             options = {}
 
-        radius_dictionary = None
         radius_identifier = self.get_tokeninfo("radius.identifier")
         radius_user = self.get_tokeninfo("radius.user")
         system_radius_settings = self.get_tokeninfo("radius.system_settings")
-        radius_timeout = 5
-        radius_retries = 3
+        radius_server = radius_secret = None
         if radius_identifier:
             # New configuration
             radius_server_object = get_radius(radius_identifier)
-            radius_server = radius_server_object.config.server
-            radius_port = radius_server_object.config.port
-            radius_server = "{0!s}:{1!s}".format(radius_server, radius_port)
-            radius_secret = radius_server_object.get_secret()
-            radius_dictionary = radius_server_object.config.dictionary
-            radius_timeout = int(radius_server_object.config.timeout or 10)
-            radius_retries = int(radius_server_object.config.retries or 1)
         elif system_radius_settings:
             # system configuration
-            radius_server = get_from_config("radius.server")
+            radius_server = get_from_config("radius.server").split(':')
             radius_secret = get_from_config("radius.secret")
+            radius_server_object = get_temporary_radius_server(
+                server=radius_server[0],
+                secret=radius_secret,
+                port=int(radius_server[1]) if len(radius_server) > 1 else 1812
+            )
         else:
             # individual token settings
-            radius_server = self.get_tokeninfo("radius.server")
+            radius_server = self.get_tokeninfo("radius.server").split(':')
             # Read the secret
             secret = self.token.get_otpkey()
             radius_secret = binascii.unhexlify(secret.getKey())
+            radius_server_object = get_temporary_radius_server(
+                server=radius_server[0],
+                secret=str(radius_secret),
+                port=int(radius_server[1]) if len(radius_server) > 1 else 1812
+            )
 
         # here we also need to check for radius.user
         log.debug("checking OTP len:{0!s} on radius server: "
-                  "{1!s}, user: {2!r}".format(len(otpval), radius_server,
+                  "{1!s}, user: {2!r}".format(len(otpval),
+                                              radius_server_object.config.server,
                                               radius_user))
 
         try:
-            # pyrad does not allow to set timeout and retries.
-            # it defaults to retries=3, timeout=5
-
             # TODO: At the moment we support only one radius server.
             # No round robin.
-            server = radius_server.split(':')
-            r_server = server[0]
-            r_authport = 1812
-            if len(server) >= 2:
-                r_authport = int(server[1])
-            nas_identifier = get_from_config("radius.nas_identifier",
-                                             "privacyIDEA")
-            if not radius_dictionary:
-                radius_dictionary = get_from_config("radius.dictfile",
-                                                    "/etc/privacyidea/dictionary")
-            log.debug("NAS Identifier: %r, "
-                      "Dictionary: %r" % (nas_identifier, radius_dictionary))
-            log.debug("constructing client object "
-                      "with server: %r, port: %r, secret: %r" %
-                      (r_server, r_authport, to_unicode(radius_secret)))
-
-            srv = Client(server=r_server,
-                         authport=r_authport,
-                         secret=to_bytes(radius_secret),
-                         dict=Dictionary(radius_dictionary))
-
-            # Set retries and timeout of the client
-            srv.timeout = radius_timeout
-            srv.retries = radius_retries
-
-            req = srv.CreateAuthPacket(code=pyrad.packet.AccessRequest,
-                                       User_Name=radius_user.encode('utf-8'),
-                                       NAS_Identifier=nas_identifier.encode('ascii'))
-
-            req["User-Password"] = req.PwCrypt(otpval)
-
-            if radius_state:
-                req["State"] = radius_state
-                log.info("Sending saved challenge to radius server: {0!r} ".format(radius_state))
-
-            try:
-                response = srv.SendPacket(req)
-            except Timeout:
-                log.warning("The remote RADIUS server {0!s} timeout out for user {1!s}.".format(
-                    r_server, radius_user))
+            response = radius_server_object.request(user=radius_user,
+                                                    password=otpval,
+                                                    radius_state=radius_state)
+            if not response:
+                # This happens when a timeout occurs
                 return AccessReject
 
             # handle the RADIUS challenge
@@ -549,19 +511,19 @@ class RadiusTokenClass(RemoteTokenClass):
             elif response.code == pyrad.packet.AccessAccept:
                 radius_state = '<SUCCESS>'
                 radius_message = 'RADIUS authentication succeeded'
-                log.info("RADIUS server {0!s} granted "
-                         "access to user {1!s}.".format(r_server, radius_user))
+                log.info(f"RADIUS server {radius_server_object.config.identifier} "
+                         f"granted access to user {radius_user}.")
                 result = AccessAccept
             else:
                 radius_state = '<REJECTED>'
                 radius_message = 'RADIUS authentication failed'
-                log.debug('radius response code {0!s}'.format(response.code))
-                log.info("Radiusserver {0!s} "
-                         "rejected access to user {1!s}.".format(r_server, radius_user))
+                log.debug("radius response code: %r" % response.code)
+                log.info(f"Radiusserver {radius_server_object.config.identifier} "
+                         f"rejected access to user {radius_user}!")
                 result = AccessReject
 
-        except Exception as ex:  # pragma: no cover
-            log.error("Error contacting radius Server: {0!r}".format((ex)))
+        except Exception as e:  # pragma: no cover
+            log.error(f"Error contacting radius Server: {e}")
             log.info("{0!s}".format(traceback.format_exc()))
 
         options.update({'radius_result': result})

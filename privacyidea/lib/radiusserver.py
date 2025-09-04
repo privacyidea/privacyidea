@@ -30,11 +30,14 @@ It depends on the RADIUSserver in the database model models.py. This module can
 be tested standalone without any webservices.
 This module is tested in tests/test_lib_radiusserver.py
 """
+from __future__ import annotations
+
 import logging
 import pyrad.packet
 from pyrad.client import Client
 from pyrad.client import Timeout
 from pyrad.dictionary import Dictionary
+import secrets
 
 from privacyidea.models import db, RADIUSServer as RADIUSServerDB
 from privacyidea.lib.crypto import (decryptPassword, encryptPassword,
@@ -69,7 +72,7 @@ class RADIUSServer(object):
     def get_secret(self):
         return decryptPassword(self.config.secret)
 
-    def request(self, user, password):
+    def request(self, user: str, password: str, radius_state: bytes = None) -> pyrad.packet | None:
         """
         Perform a RADIUS request to a RADIUS server.
         The RADIUS configuration contains the IP address, the port and the
@@ -82,24 +85,20 @@ class RADIUSServer(object):
         * config.timeout
 
         :param user: the radius username
-        :type user: str
         :param password: the radius password
-        :type password: str
-        :return: True or False. If any error occurs, an exception is raised.
+        :param radius_state: Challenge attribute for the RADIUS request
+        :return: The response object from the RADIUS request
         """
-        success = False
-
         nas_identifier = get_from_config("radius.nas_identifier",
                                          "privacyIDEA")
-        r_dict = self.config.dictionary or get_from_config("radius.dictfile",
-                                                           "/etc/privacyidea/"
-                                                           "dictionary")
+        radius_dictionary = self.config.dictionary or get_from_config("radius.dictfile",
+                                                                      "/etc/privacyidea/dictionary")
         message_authenticator = False
         if self.config.options:
             message_authenticator = self.config.options.get("message_authenticator", False)
         log.debug("NAS Identifier: %r, "
-                  "Dictionary: %r" % (nas_identifier, r_dict))
-        log.debug("constructing client object "
+                  "Dictionary: %r" % (nas_identifier, radius_dictionary))
+        log.debug("Constructing client object "
                   "with server: %r, port: %r, secret: %r" %
                   (self.config.server, self.config.port, self.config.secret))
         log.debug("Using Message-Authenticator: %r", message_authenticator)
@@ -107,7 +106,7 @@ class RADIUSServer(object):
         srv = Client(server=self.config.server,
                      authport=self.config.port,
                      secret=to_bytes(decryptPassword(self.config.secret)),
-                     dict=Dictionary(r_dict))
+                     dict=Dictionary(radius_dictionary))
 
         # Set retries and timeout of the client
         srv.timeout = self.config.timeout
@@ -120,27 +119,40 @@ class RADIUSServer(object):
 
         # PwCrypt encodes unicode strings to UTF-8
         req["User-Password"] = req.PwCrypt(password)
+
+        if radius_state:
+            req["State"] = radius_state
+            log.debug("Sending Challenge to RADIUS server: %r" % radius_state)
+
         try:
             # The authenticator is available after the call to PwCrypt
             request_authenticator = req.authenticator
             response = srv.SendPacket(req)
 
-            if response.code == pyrad.packet.AccessAccept:
-                if response.verify_message_authenticator(original_authenticator=request_authenticator):
-                    log.info("RADIUS server %s granted access to user %s.", self.config.server, user)
-                    success = True
+            # Check the Message-Authenticator attribute in the Response
+            if not response.verify_message_authenticator(original_authenticator=request_authenticator):
+                if not message_authenticator:
+                    log.warning("Failed to verify Message-Authenticator Attribute")
                 else:
-                    log.warning("Unable to verify 'Message-Authenticator' attribute of RADIUS response.")
-            elif response.code == pyrad.packet.AccessChallenge:
-                log.info("RADIUS server create a challenge.")
-                pass
-            else:
-                log.warning("Radiusserver %s rejected access to user %s. "
-                            "Received response package code %d", self.config.server, user, response.code)
+                    raise privacyIDEAError("Failed to verify Message-Authenticator Attribute")
         except Timeout:
             log.warning("Received timeout from remote radius server {0!s}".format(self.config.server))
+            response = None
 
-        return success
+        return response
+
+
+@log_with(log, hide_args=[1])
+def get_temporary_radius_server(server: str, secret: str, port: int = 1812,
+                                timeout: int = 5, retries: int = 3,
+                                dictionary: str = "/etc/privacyidea/dictionary") -> RADIUSServer:
+    """Return a temporary RADIUS server instance for old RADIUS configuration."""
+    s = RADIUSServerDB(identifier=f"tmp_rad_{secrets.token_urlsafe(4)}",
+                       server=server, port=port,
+                       secret=encryptPassword(secret), dictionary=dictionary,
+                       retries=retries, timeout=timeout)
+    radius_server = RADIUSServer(s)
+    return radius_server
 
 
 @log_with(log)
@@ -234,6 +246,15 @@ def add_radius(identifier: str, server: str = None, secret: str = None,
     :return: The Id of the database object
     """
     encrypted_secret = encryptPassword(secret)
+    if secret == CENSORED:
+        # It looks like we are updating a RADIUS server
+        try:
+            rad_serv = fetch_one_resource(RADIUSServerDB, identifier=identifier)
+            encrypted_secret = rad_serv.secret
+        except ResourceNotFoundError:
+            # Maybe __CENSORED__ is the secret?
+            pass
+
     if len(encrypted_secret) > 255:
         raise privacyIDEAError(description=_("The RADIUS secret is too long"),
                                id=2234)
@@ -269,6 +290,7 @@ def test_radius(identifier, server, secret, user, password, port=1812, descripti
     :param options: Additional options for the RADIUS server
     :return: The result of the access request
     """
+    result = False
     # Check if the secret is censored. If it is, we can assume a configuration exists and use its secret
     encrypted_secret = encryptPassword(secret)
     if secret == CENSORED:
@@ -279,14 +301,28 @@ def test_radius(identifier, server, secret, user, password, port=1812, descripti
             # Maybe __CENSORED__ is the secret?
             pass
     if len(encrypted_secret) > 255:
-        raise privacyIDEAError(description=_("The RADIUS secret is too long"),
-                               id=2234)
+        raise privacyIDEAError("The RADIUS secret is too long")
+    # Create a (temporary) RADIUS Server database object in order to initialize the RADUISServer object
     s = RADIUSServerDB(identifier=identifier, server=server, port=port,
                        secret=encrypted_secret, dictionary=dictionary,
                        retries=retries, timeout=timeout,
                        description=description, options=options)
     radius_server = RADIUSServer(s)
-    return radius_server.request(user, password)
+    response = radius_server.request(user, password)
+    if response:
+        # TODO: Add message to Audit info
+        if response.code == pyrad.packet.AccessAccept:
+            log.info("RADIUS Server test successful!")
+            result = True
+        elif response.code == pyrad.packet.AccessChallenge:
+            log.info("RADIUS Server test failed! Server requires "
+                     "Challenge-Response (Answer: %r)" % response["Reply-Message"])
+            result = False
+        else:
+            log.info("RADIUS Server test failed! Server rejected authentication.")
+            result = False
+    # TODO: Return test result message to frontend
+    return result
 
 
 @log_with(log)
