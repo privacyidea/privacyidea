@@ -1,6 +1,6 @@
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { ComponentFixture, fakeAsync, TestBed, tick, waitForAsync } from "@angular/core/testing";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { Router } from "@angular/router";
 import { of, throwError } from "rxjs";
@@ -52,7 +52,9 @@ describe("LoginComponent", () => {
         { provide: NotificationService, useClass: MockNotificationService },
         { provide: ValidateService, useClass: MockValidateService },
         { provide: SessionTimerService, useValue: sessionTimerServiceMock },
-        { provide: Router, useValue: routerMock }
+        { provide: Router, useValue: routerMock },
+        MockLocalService,
+        MockNotificationService
       ]
     }).compileComponents();
 
@@ -268,7 +270,11 @@ describe("LoginComponent", () => {
   });
 
   describe("Push Polling", () => {
-    it("should start polling when a push challenge is received", fakeAsync(() => {
+    beforeEach(() => {
+      jest.useFakeTimers();
+    });
+
+    it("should start polling when a push challenge is received", async () => {
       const pollSpy = jest.spyOn(validateService, "pollTransaction").mockReturnValue(of(false));
       const challengeResponse = new MockPiResponse<AuthData, AuthDetail>({
         detail: {
@@ -280,16 +286,17 @@ describe("LoginComponent", () => {
       authService.authenticate.mockReturnValue(of(challengeResponse));
 
       component.onSubmit();
-      tick(1000); // Let some polling happen (5 polls at 200ms)
+      jest.advanceTimersByTime(1000); // Let some polling happen (5 polls at 200ms)
+      await Promise.resolve();
 
       expect(component.pushTriggered()).toBe(true);
       expect(pollSpy).toHaveBeenCalledWith("tx-push");
       expect(pollSpy.mock.calls.length).toBeGreaterThan(1);
 
       component.ngOnDestroy(); // cleanup
-    }));
+    });
 
-    it("should stop polling and log in on successful poll", fakeAsync(() => {
+    it("should stop polling and log in on successful poll", async () => {
       jest.spyOn(validateService, "pollTransaction").mockReturnValueOnce(of(false)).mockReturnValueOnce(of(true)); // Succeed on second poll
       const successResponse = MockPiResponse.fromValue<AuthData, AuthDetail>({ token: "push-token" } as AuthData);
       authService.authenticate.mockReturnValue(of(successResponse));
@@ -297,7 +304,8 @@ describe("LoginComponent", () => {
       component.username.set("test-user");
 
       (component as any).startPushPolling();
-      tick(500); // 2 polls at 200ms interval + buffer
+      jest.advanceTimersByTime(500); // 2 polls at 200ms interval + buffer
+      await Promise.resolve();
 
       expect(authService.authenticate).toHaveBeenCalledWith({
         username: "test-user",
@@ -305,17 +313,18 @@ describe("LoginComponent", () => {
         transaction_id: "tx-push-success"
       });
       expect(localService.saveData).toHaveBeenCalledWith("bearer_token", "push-token");
-    }));
+    });
   });
 
   describe("logout", () => {
-    it("should remove token, logout, and navigate to login", waitForAsync(() => {
+    it("should remove token, logout, and navigate to login", async () => {
+      const authServiceSpy = jest.spyOn(authService, "logout");
       component.logout();
       fixture.whenStable().then(() => {
         expect(localService.removeData).toHaveBeenCalledWith("bearer_token");
-        expect(authService.logout).toHaveBeenCalled();
+        expect(authServiceSpy).toHaveBeenCalled();
         expect(router.navigate).toHaveBeenCalledWith(["login"]);
       });
-    }));
+    });
   });
 });

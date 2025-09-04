@@ -25,10 +25,10 @@ html {
     --yellow-light: light-dark(hsl(28, 85%, 55%), hsl(28, 85%, 45%));
     --yellow-light-active: light-dark(hsl(28, 85%, 60%), hsl(28, 85%, 50%));
 
-    --grey-dark: light-dark(hsl(0, 0%, 42%), hsl(0, 0%, 72%));
-    --grey-base: light-dark(hsl(0, 0%, 50%), hsl(0, 0%, 65%));
-    --grey-light: light-dark(hsl(0, 0%, 55%), hsl(0, 0%, 60%));
-    --grey-light-active: light-dark(hsl(0, 0%, 60%), hsl(0, 0%, 55%));
+    --grey-dark: light-dark(hsl(0, 0%, 42%), hsl(0, 0%, 50%));
+    --grey-base: light-dark(hsl(0, 0%, 50%), hsl(0, 0%, 55%));
+    --grey-light: light-dark(hsl(0, 0%, 55%), hsl(0, 0%, 62%));
+    --grey-light-active: light-dark(hsl(0, 0%, 60%), hsl(0, 0%, 58%));
 
     --mat-sys-shadow-color-high: light-dark(#ababab, #050505);
 
@@ -120,10 +120,10 @@ html {
     --yellow-light: hsl(28, 85%, 45%);
     --yellow-light-active: hsl(28, 85%, 50%);
 
-    --grey-dark: hsl(0, 0%, 72%);
-    --grey-base: hsl(0, 0%, 65%);
-    --grey-light: hsl(0, 0%, 60%);
-    --grey-light-active: hsl(0, 0%, 55%);
+    --grey-dark: hsl(0, 0%, 50%);
+    --grey-base: hsl(0, 0%, 55%);
+    --grey-light: hsl(0, 0%, 62%);
+    --grey-light-active: hsl(0, 0%, 58%);
 
     --mat-sys-shadow-color-high: #050505;
     --mat-sys-primary: var(--mat-sys-primary-base);

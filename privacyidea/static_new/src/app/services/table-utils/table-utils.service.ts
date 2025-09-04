@@ -1,6 +1,6 @@
-import { Injectable, signal, WritableSignal } from "@angular/core";
-
+import { inject, Injectable, signal, WritableSignal } from "@angular/core";
 import { MatTableDataSource } from "@angular/material/table";
+import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 
 export interface FilterPair {
   key: string;
@@ -55,6 +55,7 @@ export interface TableUtilsServiceInterface {
   providedIn: "root"
 })
 export class TableUtilsService implements TableUtilsServiceInterface {
+  private readonly authService: AuthServiceInterface = inject(AuthService);
   pageSizeOptions = signal([5, 10, 25, 50]);
 
   emptyDataSource<T>(pageSize: number, columnsKeyMap: { key: string; label: string }[]): MatTableDataSource<T> {
@@ -232,17 +233,25 @@ export class TableUtilsService implements TableUtilsServiceInterface {
 
     switch (columnKey) {
       case "active":
-        if (element["active"]) return "highlight-true-clickable";
-        if (element["active"] === false) return "highlight-false-clickable";
+        if (element["active"]) {
+          if (this.authService.actionAllowed("disable")) return "highlight-true-clickable";
+          else return "highlight-true";
+        }
+        if (element["active"] === false) {
+          if (this.authService.actionAllowed("enable")) return "highlight-false-clickable";
+          else return "highlight-false";
+        }
         return "";
 
       case "failcount":
         if (element["failcount"] === "") return "";
         if (element["failcount"] <= 0) return "highlight-true";
         if (element["failcount"] < element["maxfail"]) {
-          return "highlight-warning-clickable";
+          if (this.authService.actionAllowed("reset")) return "highlight-warning-clickable";
+          else return "highlight-warning";
         }
-        return "highlight-false-clickable";
+        if (this.authService.actionAllowed("reset")) return "highlight-false-clickable";
+        else return "highlight-false";
     }
     return "";
   }

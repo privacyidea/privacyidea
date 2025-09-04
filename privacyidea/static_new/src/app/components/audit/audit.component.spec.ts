@@ -8,6 +8,8 @@ import {
   MockAuditService,
   MockAuthService,
   MockContentService,
+  MockLocalService,
+  MockNotificationService,
   MockTableUtilsService
 } from "../../../testing/mock-services";
 import { AuditService } from "../../services/audit/audit.service";
@@ -45,7 +47,9 @@ describe("AuditComponent (unit)", () => {
         { provide: AuditService, useExisting: MockAuditService },
         { provide: TableUtilsService, useExisting: MockTableUtilsService },
         { provide: ContentService, useExisting: MockContentService },
-        { provide: AuthService, useExisting: MockAuthService }
+        { provide: AuthService, useExisting: MockAuthService },
+        MockLocalService,
+        MockNotificationService
       ]
     }).compileComponents();
 
@@ -64,9 +68,9 @@ describe("AuditComponent (unit)", () => {
   describe("page‑related derived signals", () => {
     it.each`
       count | expectedOptions
-      ${12} | ${[5, 10, 15, 12]}
-      ${10} | ${[5, 10, 15]}
-      ${60} | ${[5, 10, 15, 50]}
+      ${12} | ${[5, 10, 25, 50]}
+      ${10} | ${[5, 10, 25, 50]}
+      ${60} | ${[5, 10, 25, 50]}
     `("total=$count → pageSizeOptions=$expectedOptions", ({ count, expectedOptions }) => {
       mockAuditService.auditResource.value.set({
         detail: undefined,

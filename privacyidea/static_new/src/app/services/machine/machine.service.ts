@@ -7,7 +7,7 @@ import { TableUtilsService, TableUtilsServiceInterface } from "../table-utils/ta
 import { catchError, Observable, of, switchMap } from "rxjs";
 import { PageEvent } from "@angular/material/paginator";
 import { PiResponse } from "../../app.component";
-import { ROUTE_PATHS } from "../../app.routes";
+import { ROUTE_PATHS } from "../../route_paths";
 import { Sort } from "@angular/material/sort";
 import { environment } from "../../../environments/environment";
 import { TokenService, TokenServiceInterface } from "../token/token.service";
@@ -115,6 +115,14 @@ export class MachineService implements MachineServiceInterface {
   sshAdvancedApiFilter = ["hostname", "machineid & resolver"];
   offlineApiFilter = ["serial", "count", "rounds"];
   offlineAdvancedApiFilter = ["hostname", "machineid & resolver"];
+
+  constructor() {
+    effect(() => {
+      const recordsFromText = this.tableUtilsService.recordsFromText(this.filterValueString());
+      this.filterValue.set(recordsFromText);
+    });
+  }
+
   selectedApplicationType = signal<"ssh" | "offline">("ssh");
   pageSize = linkedSignal({
     source: this.selectedApplicationType,
@@ -122,6 +130,13 @@ export class MachineService implements MachineServiceInterface {
   });
 
   machinesResource = httpResource<PiResponse<Machines>>(() => {
+    if (
+      !this.contentService.routeUrl().includes(ROUTE_PATHS.TOKENS_APPLICATIONS) ||
+      !this.contentService.routeUrl().includes(ROUTE_PATHS.TOKENS_DETAILS) ||
+      !this.authService.actionAllowed("machinelist")
+    ) {
+      return undefined;
+    }
     return {
       url: `${this.baseUrl}`,
       method: "GET",
@@ -224,13 +239,6 @@ export class MachineService implements MachineServiceInterface {
     source: this.tokenApplicationResource.value,
     computation: (tokenApplicationResource, previous) => tokenApplicationResource?.result?.value ?? previous?.value
   });
-
-  constructor() {
-    effect(() => {
-      const recordsFromText = this.tableUtilsService.recordsFromText(this.filterValueString());
-      this.filterValue.set(recordsFromText);
-    });
-  }
 
   postAssignMachineToToken(args: {
     service_id: string;

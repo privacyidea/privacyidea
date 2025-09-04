@@ -2,7 +2,7 @@ import { httpResource, HttpResourceRef } from "@angular/common/http";
 import { computed, inject, Injectable, linkedSignal, signal, WritableSignal } from "@angular/core";
 import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
-import { ROUTE_PATHS } from "../../app.routes";
+import { ROUTE_PATHS } from "../../route_paths";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
 
@@ -50,22 +50,21 @@ const apiFilter = [
   "success",
   "authentication",
   "serial",
-  "date",
+  "container_serial",
   "startdate",
   "duration",
   "token_type",
   "user",
   "realm",
   "administrator",
-  "action_call",
+  "action_detail",
   "info",
-  "privacyidea_server",
+  "policies",
   "client",
   "user_agent",
   "user_agent_version",
-  "policies",
+  "privacyidea_server",
   "resolver",
-  "container_serial",
   "container_type"
 ];
 const advancedApiFilter: string[] = [];
@@ -89,7 +88,6 @@ export class AuditService implements AuditServiceInterface {
 
   readonly apiFilter = apiFilter;
   readonly advancedApiFilter = advancedApiFilter;
-  private auditBaseUrl = environment.proxyUrl + "/audit/";
   filterValue = signal({} as Record<string, string>);
   filterParams = computed<Record<string, string>>(() => {
     const allowedFilters = [...this.apiFilter, ...this.advancedApiFilter];
@@ -108,8 +106,8 @@ export class AuditService implements AuditServiceInterface {
     );
   });
   pageSize = linkedSignal({
-    source: this.filterValue,
-    computation: () => 10
+    source: () => this.authService.auditPageSize(),
+    computation: (pageSize) => (pageSize > 0 ? pageSize : 10)
   });
   pageIndex = linkedSignal({
     source: () => ({
@@ -119,6 +117,7 @@ export class AuditService implements AuditServiceInterface {
     }),
     computation: () => 0
   });
+  private auditBaseUrl = environment.proxyUrl + "/audit/";
   auditResource = httpResource<PiResponse<Audit>>(() => {
     if (this.contentService.routeUrl() !== ROUTE_PATHS.AUDIT) {
       return undefined;

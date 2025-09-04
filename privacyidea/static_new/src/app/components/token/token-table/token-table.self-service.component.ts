@@ -1,5 +1,5 @@
 import { NgClass } from "@angular/common";
-import { Component, inject } from "@angular/core";
+import { Component, computed, inject } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { MatIconButton } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
@@ -10,7 +10,6 @@ import { MatInputModule } from "@angular/material/input";
 import { MatPaginatorModule } from "@angular/material/paginator";
 import { MatSortModule } from "@angular/material/sort";
 import { MatTableModule } from "@angular/material/table";
-import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
 import { ContainerService, ContainerServiceInterface } from "../../../services/container/container.service";
 import { ConfirmationDialogComponent } from "../../shared/confirmation-dialog/confirmation-dialog.component";
 import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
@@ -38,32 +37,31 @@ import { TokenTableComponent } from "./token-table.component";
   styleUrl: "./token-table.component.scss"
 })
 export class TokenTableSelfServiceComponent extends TokenTableComponent {
-  readonly columnKeysMapSelfService = [
-    { key: "serial", label: "Serial" },
-    { key: "tokentype", label: "Type" },
-    { key: "description", label: "Description" },
-    { key: "container_serial", label: "Container" },
-    { key: "active", label: "Active" },
-    { key: "failcount", label: "Fail Counter" },
-    { key: "revoke", label: "Revoke" },
-    { key: "delete", label: "Delete" }
-  ];
-  readonly columnKeysSelfService: string[] = this.columnKeysMapSelfService.map(
-    (column: { key: string; label: string }) => column.key
-  );
-  protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
   private dialog = inject(MatDialog);
+  columnKeysMapSelfService = computed(() => {
+    const columnKeys = [
+      { key: "serial", label: "Serial" },
+      { key: "tokentype", label: "Type" },
+      { key: "description", label: "Description" },
+      { key: "container_serial", label: "Container" },
+      { key: "active", label: "Active" },
+      { key: "failcount", label: "Fail Counter" }
+    ];
+    if (this.authService.actionAllowed("revoke")) columnKeys.push({ key: "revoke", label: "Revoke" });
+    if (this.authService.actionAllowed("delete")) columnKeys.push({ key: "delete", label: "Delete" });
 
-  ngOnInit(): void {
-    this.pageSize.set(5);
-  }
+    return columnKeys;
+  });
+  readonly columnKeysSelfService: string[] = this.columnKeysMapSelfService().map(
+    (column: { key: string; label: string }) => column.key
+  );
 
   revokeToken(serial: string): void {
     this.dialog
       .open(ConfirmationDialogComponent, {
         data: {
-          serial_list: [serial],
+          serialList: [serial],
           title: "Revoke Token",
           type: "token",
           action: "revoke",
@@ -88,7 +86,7 @@ export class TokenTableSelfServiceComponent extends TokenTableComponent {
     this.dialog
       .open(ConfirmationDialogComponent, {
         data: {
-          serial_list: [serial],
+          serialList: [serial],
           title: "Delete Token",
           type: "token",
           action: "delete",

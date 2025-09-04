@@ -36,7 +36,6 @@ const columnKeysMap = [
   { key: "authentication", label: "Authentication" },
   { key: "serial", label: "Serial" },
   { key: "container_serial", label: "Container Serial" },
-  { key: "date", label: "End Date" },
   { key: "startdate", label: "Start Date" },
   { key: "duration", label: "Duration" },
   { key: "token_type", label: "Token Type" },
@@ -45,12 +44,12 @@ const columnKeysMap = [
   { key: "administrator", label: "Administrator" },
   { key: "action_detail", label: "Action Detail" },
   { key: "info", label: "Info" },
-  { key: "privacyidea_server", label: "PrivacyIDEA Server" },
+  { key: "policies", label: "Policies" },
   { key: "client", label: "Client" },
   { key: "user_agent", label: "User Agent" },
   { key: "user_agent_version", label: "User Agent Version" },
+  { key: "privacyidea_server", label: "PrivacyIDEA Server" },
   { key: "log_level", label: "Log Level" },
-  { key: "policies", label: "Policies" },
   { key: "clearance_level", label: "Clearance Level" },
   { key: "sig_check", label: "Signature Check" },
   { key: "missing_line", label: "Missing Line" },
@@ -91,14 +90,14 @@ const columnKeysMap = [
   styleUrl: "./audit.component.scss"
 })
 export class AuditComponent {
+  readonly columnKeysMap = columnKeysMap;
+  readonly columnKeys: string[] = this.columnKeysMap.map((column) => column.key);
   protected readonly auditService: AuditServiceInterface = inject(AuditService);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
-
-  readonly columnKeysMap = columnKeysMap;
-  readonly columnKeys: string[] = this.columnKeysMap.map((column) => column.key);
-
+  @ViewChild("filterHTMLInputElement", { static: true })
+  filterInput!: HTMLInputElement;
   filterValueString: WritableSignal<string> = linkedSignal(() =>
     Object.entries(this.auditService.filterValue())
       .map(([key, value]) => `${key}: ${value}`)
@@ -113,14 +112,11 @@ export class AuditComponent {
       return previous?.value ?? 0;
     }
   });
-  pageSizeOptions = this.tableUtilsService.pageSizeOptions;
-
   emptyResource: WritableSignal<AuditData[]> = linkedSignal({
     source: this.auditService.pageSize,
     computation: (pageSize: number) =>
       Array.from({ length: pageSize }, () => Object.fromEntries(this.columnKeysMap.map((col) => [col.key, ""])))
   });
-
   auditDataSource: WritableSignal<MatTableDataSource<AuditData>> = linkedSignal({
     source: this.auditService.auditResource.value,
     computation: (auditResource, previous) => {
@@ -130,9 +126,7 @@ export class AuditComponent {
       return previous?.value ?? new MatTableDataSource(this.emptyResource());
     }
   });
-
-  @ViewChild("filterHTMLInputElement", { static: true })
-  filterInput!: HTMLInputElement;
+  pageSizeOptions = this.tableUtilsService.pageSizeOptions;
 
   constructor() {
     effect(() => {

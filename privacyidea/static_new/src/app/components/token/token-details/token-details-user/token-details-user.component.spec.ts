@@ -40,8 +40,6 @@ describe("TokenDetailsUserComponent", () => {
 
     component.tokenSerial = signal("Mock serial");
     component.isEditingUser = signal(false);
-    component.setPinValue = signal("");
-    component.repeatPinValue = signal("");
 
     fixture.detectChanges();
   });
@@ -53,29 +51,15 @@ describe("TokenDetailsUserComponent", () => {
   it("should assign user", () => {
     userService.selectedUsername.set("testUser");
     userService.selectedUserRealm.set("testRealm");
-    component.setPinValue.set("1234");
-    component.repeatPinValue.set("1234");
 
     const assignSpy = jest.spyOn(tokenService, "assignUser");
 
     component.saveUser();
 
     expect(assignSpy).toHaveBeenCalledWith({
-      pin: "1234",
       realm: "testRealm",
       tokenSerial: "Mock serial",
       username: ""
     });
-  });
-
-  it("should not assign user if PINs do not match", () => {
-    component.setPinValue.set("1234");
-    component.repeatPinValue.set("5678");
-
-    const assignSpy = jest.spyOn(tokenService, "assignUser");
-
-    component.saveUser();
-
-    expect(assignSpy).not.toHaveBeenCalled();
   });
 });

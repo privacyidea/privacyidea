@@ -14,6 +14,7 @@ import {
   TokenEnrollmentData
 } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
 import { ApplspecApiPayloadMapper } from "../../../../mappers/token-api-payload/applspec-token-api-payload.mapper";
+import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
 
 export interface ApplspecEnrollmentOptions extends TokenEnrollmentData {
   type: "applspec";
@@ -53,6 +54,7 @@ export class EnrollApplspecComponent implements OnInit {
   protected readonly serviceIdService: ServiceIdServiceInterface =
     inject(ServiceIdService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
 
   @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
@@ -65,12 +67,13 @@ export class EnrollApplspecComponent implements OnInit {
   generateOnServerControl = new FormControl<boolean>(true, [
     Validators.required
   ]);
-  otpKeyControl = new FormControl<string>("");
+
+  otpKeyFormControl = new FormControl<string>({ value: "", disabled: true });
 
   applspecForm = new FormGroup({
     serviceId: this.serviceIdControl,
     generateOnServer: this.generateOnServerControl,
-    otpKey: this.otpKeyControl
+    otpKey: this.otpKeyFormControl
   });
   serviceIdOptions = computed(
     () => this.serviceIdService.serviceIds().map((s) => s.name) || []
@@ -81,24 +84,30 @@ export class EnrollApplspecComponent implements OnInit {
     this.additionalFormFieldsChange.emit({
       serviceId: this.serviceIdControl,
       generateOnServer: this.generateOnServerControl,
-      otpKey: this.otpKeyControl
+      otpKey: this.otpKeyFormControl
     });
     this.clickEnrollChange.emit(this.onClickEnroll);
 
-    this.generateOnServerControl.valueChanges.subscribe((generate) => {
-      if (!generate) {
-        this.otpKeyControl.setValidators([Validators.required]);
-      } else {
-        this.otpKeyControl.clearValidators();
-      }
-      this.otpKeyControl.updateValueAndValidity();
-    });
+    if (this.authService.checkForceServerGenerateOTPKey("applspec")) {
+      this.generateOnServerControl.disable({ emitEvent: false });
+    } else {
+      this.generateOnServerControl.valueChanges.subscribe((generate) => {
+        if (!generate) {
+          this.otpKeyFormControl.enable({ emitEvent: false });
+          this.otpKeyFormControl.setValidators([Validators.required]);
+        } else {
+          this.otpKeyFormControl.disable({ emitEvent: false });
+          this.otpKeyFormControl.clearValidators();
+        }
+        this.otpKeyFormControl.updateValueAndValidity();
+      });
+    }
   }
 
   onClickEnroll = (
     basicOptions: TokenEnrollmentData
   ): Observable<EnrollmentResponse | null> => {
-    if ((!this.generateOnServerControl.value && this.otpKeyControl.invalid) ||
+    if ((!this.generateOnServerControl.value && this.otpKeyFormControl.invalid) ||
       this.generateOnServerControl.invalid ||
       this.serviceIdControl.invalid) {
       this.applspecForm.markAllAsTouched();
@@ -112,7 +121,7 @@ export class EnrollApplspecComponent implements OnInit {
       generateOnServer: !!this.generateOnServerControl.value
     };
     if (!enrollmentData.generateOnServer) {
-      enrollmentData.otpKey = this.otpKeyControl.value ?? "";
+      enrollmentData.otpKey = this.otpKeyFormControl.value ?? "";
     }
     return this.tokenService.enrollToken({
       data: enrollmentData,

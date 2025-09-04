@@ -6,8 +6,9 @@ import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
 import { BEARER_TOKEN_STORAGE_KEY } from "../../core/constants";
 import { LocalService, LocalServiceInterface } from "../local/local.service";
-import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
 import { VersioningService, VersioningServiceInterface } from "../version/version.service";
+import { tokenTypes } from "../../utils/token.utils";
+import { PolicyAction } from "./policy-actions";
 
 export type AuthResponse = PiResponse<AuthData, AuthDetail>;
 
@@ -99,55 +100,64 @@ export interface AuthServiceInterface {
   authtype: Signal<"cookie" | "none">;
   jwtExpDate: Signal<Date | null>;
 
-  authData: () => AuthData | null;
-  authenticationAccepted: () => boolean;
+  authData: Signal<AuthData | null>;
+  authenticationAccepted: Signal<boolean>;
 
-  isAuthenticated: () => boolean;
+  isAuthenticated: Signal<boolean>;
 
   getHeaders: () => HttpHeaders;
 
-  logLevel: () => number;
-  menus: () => string[];
-  realm: () => string;
-  rights: () => string[];
-  role: () => AuthRole;
-  token: () => string;
-  username: () => string;
-  logoutTimeSeconds: () => number | null;
-  auditPageSize: () => number;
-  tokenPageSize: () => number;
-  userPageSize: () => number;
-  policyTemplateUrl: () => string;
-  defaultTokentype: () => string;
-  defaultContainerType: () => string;
-  userDetails: () => boolean;
-  tokenWizard: () => boolean;
-  tokenWizard2nd: () => boolean;
-  adminDashboard: () => boolean;
-  dialogNoToken: () => boolean;
-  searchOnEnter: () => boolean;
-  timeoutAction: () => string;
-  tokenRollover: () => any;
-  hideWelcome: () => boolean;
-  hideButtons: () => boolean;
-  deletionConfirmation: () => boolean;
-  showSeed: () => boolean;
-  showNode: () => string;
-  subscriptionStatus: () => number;
-  subscriptionStatusPush: () => number;
-  qrImageAndroid: () => string | null;
-  qrImageIOS: () => string | null;
-  qrImageCustom: () => string | null;
-  logoutRedirectUrl: () => string;
-  requireDescription: () => string[];
-  rssAge: () => number;
-  containerWizard: () => { enabled: boolean };
+  logLevel: Signal<number>;
+  menus: Signal<string[]>;
+  realm: Signal<string>;
+  rights: Signal<string[]>;
+  role: Signal<AuthRole>;
+  token: Signal<string>;
+  username: Signal<string>;
+  logoutTimeSeconds: Signal<number | null>;
+  auditPageSize: Signal<number>;
+  tokenPageSize: Signal<number | null>;
+  userPageSize: Signal<number>;
+  policyTemplateUrl: Signal<string>;
+  defaultTokentype: Signal<string>;
+  defaultContainerType: Signal<string>;
+  userDetails: Signal<boolean>;
+  tokenWizard: Signal<boolean>;
+  tokenWizard2nd: Signal<boolean>;
+  adminDashboard: Signal<boolean>;
+  dialogNoToken: Signal<boolean>;
+  searchOnEnter: Signal<boolean>;
+  timeoutAction: Signal<string>;
+  tokenRollover: Signal<any>;
+  hideWelcome: Signal<boolean>;
+  hideButtons: Signal<boolean>;
+  deletionConfirmation: Signal<boolean>;
+  showSeed: Signal<boolean>;
+  showNode: Signal<string>;
+  subscriptionStatus: Signal<number>;
+  subscriptionStatusPush: Signal<number>;
+  qrImageAndroid: Signal<string | null>;
+  qrImageIOS: Signal<string | null>;
+  qrImageCustom: Signal<string | null>;
+  logoutRedirectUrl: Signal<string>;
+  requireDescription: Signal<string[]>;
+  rssAge: Signal<number>;
+  // TODO: When enabled there are more entries in the dict. We need to adapt the type accordingly.
+  containerWizard: Signal<{ enabled: boolean }>;
 
-  isSelfServiceUser: () => boolean;
+  isSelfServiceUser: Signal<boolean>;
   authenticate: (params: any) => Observable<AuthResponse>;
 
   acceptAuthentication: () => void;
   logout: () => void;
+
+  actionAllowed: (action: PolicyAction) => boolean;
+  actionsAllowed: (actions: PolicyAction[]) => boolean;
+  oneActionAllowed: (actions: PolicyAction[]) => boolean;
+  anyContainerActionAllowed: () => boolean;
+  tokenEnrollmentAllowed: () => boolean;
+  anyTokenActionAllowed: () => boolean;
+  checkForceServerGenerateOTPKey: (tokenType: string) => boolean;
 }
 
 @Injectable({
@@ -155,18 +165,24 @@ export interface AuthServiceInterface {
 })
 export class AuthService implements AuthServiceInterface {
   readonly authUrl = environment.proxyUrl + "/auth";
-
-  private readonly http: HttpClient = inject(HttpClient);
-  private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
-  private readonly versioningService: VersioningServiceInterface = inject(VersioningService);
-  private readonly localService: LocalServiceInterface = inject(LocalService);
-
-  authData = signal<AuthData | null>(null);
   jwtData = signal<JwtData | null>(null);
-
+  jwtNonce = computed(() => this.jwtData()?.nonce || "");
+  authtype = computed(() => (this.jwtData()?.authtype || this.jwtData() ? "cookie" : "none"));
+  jwtExpDate = computed(() => {
+    const exp = this.jwtData()?.exp;
+    return exp ? new Date(exp * 1000) : null;
+  });
+  authData = signal<AuthData | null>(null);
   authenticationAccepted = signal<boolean>(false);
 
   isAuthenticated = computed(() => this.authenticationAccepted() && !!this.authData());
+
+  public getHeaders(): HttpHeaders {
+    return new HttpHeaders({
+      "PI-Authorization": this.localService.getData(BEARER_TOKEN_STORAGE_KEY) || ""
+    });
+  }
+
   logLevel = computed(() => this.authData()?.log_level || 0);
   menus = computed(() => this.authData()?.menus || []);
   realm = computed(() => this.jwtData()?.realm || this.authData()?.realm || "");
@@ -174,12 +190,24 @@ export class AuthService implements AuthServiceInterface {
   role = computed(() => this.jwtData()?.role || this.authData()?.role || "");
   token = computed(() => this.authData()?.token || "");
   username = computed(() => this.jwtData()?.username || this.authData()?.username || "");
+  logoutTimeSeconds = computed(() => {
+    const jwtExpDate = this.jwtExpDate()!;
+    let jwtLogoutTime: number | null = null;
+    const authDataLogoutTime = this.authData()?.logout_time || null;
+    if (jwtExpDate) {
+      const now = new Date();
+      jwtLogoutTime = Math.max(0, Math.floor((jwtExpDate.getTime() - now.getTime()) / 1000));
+    }
+    if (jwtLogoutTime === null) return authDataLogoutTime;
+    if (authDataLogoutTime === null) return jwtLogoutTime;
+    return Math.min(jwtLogoutTime, authDataLogoutTime);
+  });
   auditPageSize = computed(() => this.authData()?.audit_page_size || 10);
-  tokenPageSize = computed(() => this.authData()?.token_page_size || 10);
+  tokenPageSize = computed(() => this.authData()?.token_page_size || null);
   userPageSize = computed(() => this.authData()?.user_page_size || 10);
   policyTemplateUrl = computed(() => this.authData()?.policy_template_url || "");
-  defaultTokentype = computed(() => this.authData()?.default_tokentype || "");
-  defaultContainerType = computed(() => this.authData()?.default_container_type || "");
+  defaultTokentype = computed(() => this.authData()?.default_tokentype || "hotp");
+  defaultContainerType = computed(() => this.authData()?.default_container_type || "generic");
   userDetails = computed(() => this.authData()?.user_details || false);
   tokenWizard = computed(() => this.authData()?.token_wizard || false);
   tokenWizard2nd = computed(() => this.authData()?.token_wizard_2nd || false);
@@ -202,33 +230,9 @@ export class AuthService implements AuthServiceInterface {
   requireDescription = computed(() => this.authData()?.require_description || []);
   rssAge = computed(() => this.authData()?.rss_age || 0);
   containerWizard = computed(() => this.authData()?.container_wizard || { enabled: false });
-  jwtNonce = computed(() => this.jwtData()?.nonce || "");
-  authtype = computed(() => (this.jwtData()?.authtype || this.jwtData() ? "cookie" : "none"));
-  jwtExpDate = computed(() => {
-    const exp = this.jwtData()?.exp;
-    return exp ? new Date(exp * 1000) : null;
-  });
-  logoutTimeSeconds = computed(() => {
-    const jwtExpDate = this.jwtExpDate()!;
-    let jwtLogoutTime: number | null = null;
-    const authDataLogoutTime = this.authData()?.logout_time || null;
-    if (jwtExpDate) {
-      const now = new Date();
-      jwtLogoutTime = Math.max(0, Math.floor((jwtExpDate.getTime() - now.getTime()) / 1000));
-    }
-    if (jwtLogoutTime === null) return authDataLogoutTime;
-    if (authDataLogoutTime === null) return jwtLogoutTime;
-    return Math.min(jwtLogoutTime, authDataLogoutTime);
-  });
   isSelfServiceUser = computed(() => {
     return this.role() === "user";
   });
-
-  public getHeaders(): HttpHeaders {
-    return new HttpHeaders({
-      "PI-Authorization": this.localService.getData(BEARER_TOKEN_STORAGE_KEY) || ""
-    });
-  }
 
   authenticate(params: any): Observable<AuthResponse> {
     return this.http
@@ -266,6 +270,41 @@ export class AuthService implements AuthServiceInterface {
     this.localService.removeData(BEARER_TOKEN_STORAGE_KEY);
     this.authenticationAccepted.set(false);
   }
+
+  actionAllowed(action: PolicyAction): boolean {
+    return this.rights().includes(action);
+  }
+
+  actionsAllowed(actions: PolicyAction[]): boolean {
+    return actions.every(action => this.actionAllowed(action));
+  }
+
+  oneActionAllowed(actions: PolicyAction[]): boolean {
+    return actions.some(action => this.actionAllowed(action));
+  }
+
+  anyContainerActionAllowed(): boolean {
+    return this.oneActionAllowed(
+      ["container_list", "container_create", "container_template_list", "container_template_create"]);
+  }
+
+  tokenEnrollmentAllowed(): boolean {
+    const enrollPolicies = tokenTypes.map((type) => "enroll" + type.key.toUpperCase() as PolicyAction);
+    return this.oneActionAllowed(enrollPolicies);
+  }
+
+  anyTokenActionAllowed(): boolean {
+    const allowed = this.oneActionAllowed(["tokenlist", "getchallenges", "getserial", "machinelist"]);
+    return allowed || this.tokenEnrollmentAllowed();
+  }
+
+  checkForceServerGenerateOTPKey(tokenType: string): boolean {
+    return this.actionAllowed(tokenType + "_force_server_generate" as PolicyAction);
+  }
+
+  private readonly http: HttpClient = inject(HttpClient);
+  private readonly versioningService: VersioningServiceInterface = inject(VersioningService);
+  protected readonly localService: LocalServiceInterface = inject(LocalService);
 
   decodeJwtPayload(token: string): JwtData | null {
     try {

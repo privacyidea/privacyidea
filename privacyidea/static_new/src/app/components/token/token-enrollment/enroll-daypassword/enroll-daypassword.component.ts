@@ -12,6 +12,7 @@ import {
 } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
 import { DaypasswordApiPayloadMapper } from "../../../../mappers/token-api-payload/daypassword-token-api-payload.mapper";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
+import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
 
 export interface DaypasswordEnrollmentOptions extends TokenEnrollmentData {
   type: "daypassword";
@@ -43,6 +44,7 @@ export interface DaypasswordEnrollmentOptions extends TokenEnrollmentData {
 export class EnrollDaypasswordComponent implements OnInit {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly enrollmentMapper: DaypasswordApiPayloadMapper = inject(DaypasswordApiPayloadMapper);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
   readonly otpLengthOptions = [6, 8];
   readonly hashAlgorithmOptions = [
     { value: "sha1", viewValue: "SHA1" },
@@ -55,13 +57,15 @@ export class EnrollDaypasswordComponent implements OnInit {
   @Output() clickEnrollChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => Observable<EnrollmentResponse | null>
   >();
-  otpKeyControl = new FormControl<string>("");
+
+  otpKeyFormControl = new FormControl<string>({ value: "", disabled: true });
   hashAlgorithmControl = new FormControl<string>("sha256", [Validators.required]);
   timeStepControl = new FormControl<number | string>(86400, [Validators.required]);
   generateOnServerControl = new FormControl(true);
   otpLengthControl = new FormControl<number>(6, [Validators.required]);
+
   daypasswordForm = new FormGroup({
-    otpKey: this.otpKeyControl,
+    otpKey: this.otpKeyFormControl,
     otpLength: this.otpLengthControl,
     hashAlgorithm: this.hashAlgorithmControl,
     timeStep: this.timeStepControl
@@ -69,7 +73,7 @@ export class EnrollDaypasswordComponent implements OnInit {
 
   ngOnInit(): void {
     this.additionalFormFieldsChange.emit({
-      otpKey: this.otpKeyControl,
+      otpKey: this.otpKeyFormControl,
       otpLength: this.otpLengthControl,
       hashAlgorithm: this.hashAlgorithmControl,
       timeStep: this.timeStepControl,
@@ -79,9 +83,13 @@ export class EnrollDaypasswordComponent implements OnInit {
 
     this.updateOtpKeyControlState(this.generateOnServerControl.value ?? true);
 
-    this.generateOnServerControl.valueChanges.subscribe((generateOnServer) => {
-      this.updateOtpKeyControlState(generateOnServer ?? true);
-    });
+    if (this.authService.checkForceServerGenerateOTPKey("daypassword")) {
+      this.generateOnServerControl.disable({ emitEvent: false });
+    } else {
+      this.generateOnServerControl.valueChanges.subscribe((generateOnServer) => {
+        this.updateOtpKeyControlState(generateOnServer ?? true);
+      });
+    }
   }
 
   onClickEnroll = (basicOptions: TokenEnrollmentData): Observable<EnrollmentResponse | null> => {
@@ -98,10 +106,10 @@ export class EnrollDaypasswordComponent implements OnInit {
         typeof this.timeStepControl.value === "string"
           ? parseInt(this.timeStepControl.value, 10)
           : (this.timeStepControl.value ?? 86400),
-      generateOnServer: !!(this.generateOnServerControl.value ?? true)
+      generateOnServer: (this.generateOnServerControl.value ?? true)
     };
     if (!enrollmentData.generateOnServer) {
-      enrollmentData.otpKey = this.otpKeyControl.value ?? "";
+      enrollmentData.otpKey = this.otpKeyFormControl.value ?? "";
     }
     return this.tokenService.enrollToken({
       data: enrollmentData,
@@ -111,12 +119,12 @@ export class EnrollDaypasswordComponent implements OnInit {
 
   private updateOtpKeyControlState(generateOnServer: boolean): void {
     if (generateOnServer) {
-      this.otpKeyControl.disable({ emitEvent: false });
-      this.otpKeyControl.clearValidators();
+      this.otpKeyFormControl.disable({ emitEvent: false });
+      this.otpKeyFormControl.clearValidators();
     } else {
-      this.otpKeyControl.enable({ emitEvent: false });
-      this.otpKeyControl.setValidators([Validators.required, Validators.minLength(16)]);
+      this.otpKeyFormControl.enable({ emitEvent: false });
+      this.otpKeyFormControl.setValidators([Validators.required, Validators.minLength(16)]);
     }
-    this.otpKeyControl.updateValueAndValidity();
+    this.otpKeyFormControl.updateValueAndValidity();
   }
 }

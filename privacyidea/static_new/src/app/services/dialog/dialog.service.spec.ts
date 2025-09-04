@@ -3,7 +3,9 @@ import { Subject } from "rxjs";
 import { MatDialog } from "@angular/material/dialog";
 import { DialogService } from "./dialog.service";
 import { AuthService } from "../auth/auth.service";
-import { MockAuthService } from "../../../testing/mock-services";
+import { MockAuthService, MockLocalService, MockNotificationService } from "../../../testing/mock-services";
+import { provideHttpClient } from "@angular/common/http";
+import { provideHttpClientTesting } from "@angular/common/http/testing";
 
 jest.mock(
   "../../components/token/token-enrollment/token-enrollment-firtst-step-dialog/token-enrollment-first-step-dialog.component",
@@ -50,18 +52,23 @@ const matDialogStub = {
 
 describe("DialogService", () => {
   let dialogService: DialogService;
-  let authService = new MockAuthService();
+  let authService: MockAuthService;
 
   beforeEach(() => {
     TestBed.resetTestingModule();
     matDialogStub.openDialogs.length = 0;
     TestBed.configureTestingModule({
       providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
         { provide: MatDialog, useValue: matDialogStub },
-        { provide: AuthService, useValue: authService }
+        { provide: AuthService, useClass: MockAuthService },
+        MockLocalService,
+        MockNotificationService
       ]
     });
     dialogService = TestBed.inject(DialogService);
+    authService = TestBed.inject(AuthService) as any;
   });
 
   it("openTokenEnrollmentFirstStepDialog handles multiple opens", () => {

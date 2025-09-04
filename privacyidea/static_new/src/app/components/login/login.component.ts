@@ -8,7 +8,7 @@ import { MatInput } from "@angular/material/input";
 import { Router } from "@angular/router";
 import { catchError, EMPTY, filter, Subscription, switchMap, take, timeout, timer } from "rxjs";
 import { challengesTriggered, isAuthenticationSuccessful } from "../../app.component";
-import { ROUTE_PATHS } from "../../app.routes";
+import { ROUTE_PATHS } from "../../route_paths";
 import { AuthResponse, AuthService, AuthServiceInterface } from "../../services/auth/auth.service";
 import { LocalService, LocalServiceInterface } from "../../services/local/local.service";
 import { NotificationService, NotificationServiceInterface } from "../../services/notification/notification.service";
@@ -204,7 +204,14 @@ export class LoginComponent implements OnDestroy {
       this.showOtpField.set(false);
       this.sessionTimerService.startRefreshingRemainingTime();
       this.sessionTimerService.startTimer();
-      this.router.navigateByUrl(ROUTE_PATHS.TOKENS).then();
+      if (this.authService.role() === "user" || this.authService.anyTokenActionAllowed()) {
+        this.router.navigateByUrl(ROUTE_PATHS.TOKENS).then();
+      } else if (this.authService.anyContainerActionAllowed()) {
+        this.router.navigateByUrl(ROUTE_PATHS.TOKENS_CONTAINERS).then();
+      } else {
+        this.router.navigateByUrl(ROUTE_PATHS.TOKENS).then();
+      }
+
     } else if (challengesTriggered(response)) {
       // Setup depending on what kind of challenges were triggered
       if (response.detail.multi_challenge?.length) {

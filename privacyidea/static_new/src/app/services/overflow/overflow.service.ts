@@ -1,5 +1,5 @@
 import { inject, Injectable } from "@angular/core";
-import { ROUTE_PATHS } from "../../app.routes";
+import { ROUTE_PATHS } from "../../route_paths";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
 
 export interface OverflowServiceInterface {
@@ -33,7 +33,7 @@ export class OverflowService implements OverflowServiceInterface {
       const computedStyle = window.getComputedStyle(thresholdElement);
       const paddingBottom = parseFloat(computedStyle.paddingBottom) || 0;
       const thresholdHeightWithoutPadding = thresholdElement.clientHeight - paddingBottom;
-      return element.clientHeight < thresholdHeightWithoutPadding + 150;
+      return element.clientHeight < thresholdHeightWithoutPadding;
     } else {
       return false;
     }

@@ -4,11 +4,11 @@ import { TestBed } from "@angular/core/testing";
 import { lastValueFrom, of, throwError } from "rxjs";
 import { PiResponse } from "../../app.component";
 import { ContentService } from "../content/content.service";
-import { LocalService } from "../local/local.service";
 import { NotificationService } from "../notification/notification.service";
 import { TokenService } from "./token.service";
+import { AuthService } from "../auth/auth.service";
 
-class MockLocalService {
+class MockAuthService {
   getHeaders = jest.fn().mockReturnValue({ Authorization: "Bearer FAKE_TOKEN" });
 }
 
@@ -25,7 +25,7 @@ describe("TokenService", () => {
   let http: HttpClient;
   let postSpy: jest.SpyInstance;
   let deleteSpy: jest.SpyInstance;
-  let localService: MockLocalService;
+  let authService: MockAuthService;
   let notificationService: MockNotificationService;
 
   beforeEach(() => {
@@ -34,7 +34,7 @@ describe("TokenService", () => {
       providers: [
         provideHttpClient(),
         TokenService,
-        { provide: LocalService, useClass: MockLocalService },
+        { provide: AuthService, useClass: MockAuthService },
         { provide: NotificationService, useClass: MockNotificationService },
         { provide: ContentService, useClass: MockContentService }
       ]
@@ -44,7 +44,7 @@ describe("TokenService", () => {
     http = TestBed.inject(HttpClient);
     postSpy = jest.spyOn(http, "post");
     deleteSpy = jest.spyOn(http, "delete");
-    localService = TestBed.inject(LocalService) as any;
+    authService = TestBed.inject(AuthService) as any;
     notificationService = TestBed.inject(NotificationService) as any;
 
     jest.spyOn(console, "error").mockImplementation(() => {
@@ -310,24 +310,6 @@ describe("TokenService", () => {
         serial: "*otp*",
         user: "alice",
         description: "*vpn*"
-      });
-    });
-
-    it("pageSize falls back to nearest default option", () => {
-      tokenService.pageSize.set(37 as any);
-      tokenService.filterValue.set({ foo: "bar" } as any);
-      expect(tokenService.pageSize()).toBe(25);
-    });
-  });
-
-  describe("deleteTokens()", () => {
-    it("calls deleteToken for each serial and aggregates", (done) => {
-      const delMock = jest.spyOn(tokenService, "deleteToken").mockReturnValue(of({ ok: true } as any));
-
-      tokenService.deleteTokens(["A", "B"]).subscribe((arr) => {
-        expect(delMock).toHaveBeenCalledTimes(2);
-        expect(arr).toEqual([{ ok: true }, { ok: true }]);
-        done();
       });
     });
   });

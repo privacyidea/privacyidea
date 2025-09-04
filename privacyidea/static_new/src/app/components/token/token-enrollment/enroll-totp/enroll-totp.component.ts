@@ -13,6 +13,7 @@ import {
 } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
 import { TotpApiPayloadMapper } from "../../../../mappers/token-api-payload/totp-token-api-payload.mapper";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
+import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
 
 export interface TotpEnrollmentOptions extends TokenEnrollmentData {
   type: "totp";
@@ -36,8 +37,7 @@ export interface TotpEnrollmentOptions extends TokenEnrollmentData {
     MatOption,
     MatSelect,
     MatError,
-    ReactiveFormsModule,
-    NgClass
+    ReactiveFormsModule
   ],
   templateUrl: "./enroll-totp.component.html",
   styleUrl: "./enroll-totp.component.scss"
@@ -45,6 +45,7 @@ export interface TotpEnrollmentOptions extends TokenEnrollmentData {
 export class EnrollTotpComponent implements OnInit {
   protected readonly enrollmentMapper: TotpApiPayloadMapper = inject(TotpApiPayloadMapper);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
   readonly otpLengthOptions = [6, 8];
   readonly hashAlgorithmOptions = [
     { value: "sha1", viewValue: "SHA1" },
@@ -59,14 +60,14 @@ export class EnrollTotpComponent implements OnInit {
     (basicOptions: TokenEnrollmentData) => Observable<EnrollmentResponse | null>
   >();
   generateOnServerFormControl = new FormControl<boolean>(true, [Validators.required]);
-  otpLengthControl = new FormControl<number>(6, [Validators.required]);
-  otpKeyControl = new FormControl<string>("");
+  otpLengthFormControl = new FormControl<number>(6, [Validators.required]);
+  otpKeyFormControl = new FormControl<string>({ value: "", disabled: true });
   hashAlgorithmControl = new FormControl<string>("sha1", [Validators.required]);
   timeStepControl = new FormControl<number | string>(30, [Validators.required]);
   totpForm = new FormGroup({
     generateOnServer: this.generateOnServerFormControl,
-    otpLength: this.otpLengthControl,
-    otpKey: this.otpKeyControl,
+    otpLength: this.otpLengthFormControl,
+    otpKey: this.otpKeyFormControl,
     hashAlgorithm: this.hashAlgorithmControl,
     timeStep: this.timeStepControl
   });
@@ -74,21 +75,27 @@ export class EnrollTotpComponent implements OnInit {
   ngOnInit(): void {
     this.additionalFormFieldsChange.emit({
       generateOnServer: this.generateOnServerFormControl,
-      otpLength: this.otpLengthControl,
-      otpKey: this.otpKeyControl,
+      otpLength: this.otpLengthFormControl,
+      otpKey: this.otpKeyFormControl,
       hashAlgorithm: this.hashAlgorithmControl,
       timeStep: this.timeStepControl
     });
     this.clickEnrollChange.emit(this.onClickEnroll);
 
-    this.generateOnServerFormControl.valueChanges.subscribe((generate) => {
-      if (!generate) {
-        this.otpKeyControl.setValidators([Validators.required, Validators.minLength(16)]);
-      } else {
-        this.otpKeyControl.clearValidators();
-      }
-      this.otpKeyControl.updateValueAndValidity();
-    });
+    if (this.authService.checkForceServerGenerateOTPKey("totp")) {
+      this.generateOnServerFormControl.disable({ emitEvent: false });
+    } else {
+      this.generateOnServerFormControl.valueChanges.subscribe((generate) => {
+        if (!generate) {
+          this.otpKeyFormControl.enable({ emitEvent: false });
+          this.otpKeyFormControl.setValidators([Validators.required, Validators.minLength(16)]);
+        } else {
+          this.otpKeyFormControl.disable({ emitEvent: false });
+          this.otpKeyFormControl.clearValidators();
+        }
+        this.otpKeyFormControl.updateValueAndValidity();
+      });
+    }
   }
 
   onClickEnroll = (basicOptions: TokenEnrollmentData): Observable<EnrollmentResponse | null> => {
@@ -105,12 +112,12 @@ export class EnrollTotpComponent implements OnInit {
       ...basicOptions,
       type: "totp",
       generateOnServer: !!this.generateOnServerFormControl.value,
-      otpLength: this.otpLengthControl.value ?? 6,
+      otpLength: this.otpLengthFormControl.value ?? 6,
       hashAlgorithm: this.hashAlgorithmControl.value ?? "sha1",
       timeStep: timeStepValue
     };
     if (!enrollmentData.generateOnServer) {
-      enrollmentData.otpKey = this.otpKeyControl.value ?? "";
+      enrollmentData.otpKey = this.otpKeyFormControl.value ?? "";
     }
     return this.tokenService.enrollToken({
       data: enrollmentData,

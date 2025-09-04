@@ -4,7 +4,7 @@ import { MatFabAnchor, MatFabButton, MatIconButton } from "@angular/material/but
 
 import { MatIconModule } from "@angular/material/icon";
 import { Router, RouterLink } from "@angular/router";
-import { ROUTE_PATHS } from "../../../app.routes";
+import { ROUTE_PATHS } from "../../../route_paths";
 import { AuditService, AuditServiceInterface } from "../../../services/audit/audit.service";
 import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
 import { ContainerService, ContainerServiceInterface } from "../../../services/container/container.service";
@@ -62,7 +62,9 @@ export class HeaderComponent {
   refreshPage() {
     if (this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_DETAILS)) {
       this.tokenService.tokenDetailResource.reload();
-      this.containerService.containerResource.reload();
+      if(this.authService.anyContainerActionAllowed()) {
+        this.containerService.containerResource.reload();
+      }
     }
     if (this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS)) {
       this.containerService.containerDetailResource.reload();

@@ -41,7 +41,7 @@ import { MatInput } from "@angular/material/input";
 import { MatListItem } from "@angular/material/list";
 import { MatSelectModule } from "@angular/material/select";
 import { NgClass } from "@angular/common";
-import { ROUTE_PATHS } from "../../../app.routes";
+import { ROUTE_PATHS } from "../../../route_paths";
 import { Router } from "@angular/router";
 import { infoDetailsKeyMap } from "../token-details/token-details.component";
 
@@ -335,12 +335,12 @@ export class ContainerDetailsComponent {
   }
 
   isEditableElement(key: string) {
-    const role = this.authService.role();
-    if (role === "admin") {
-      return key === "description" || key === "realms";
-    } else {
-      return key === "description";
+    if (key === "description" && this.authService.actionAllowed("container_description")) {
+      return true;
+    } else if (key === "realms" && this.authService.actionAllowed("container_realms")) {
+      return true;
     }
+    return false;
   }
 
   cancelContainerEdit(element: EditableElement) {

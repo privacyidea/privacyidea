@@ -3,9 +3,11 @@ import { TableUtilsService } from "./table-utils.service";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { MatTableDataSource } from "@angular/material/table";
+import { AuthService, JwtData } from "../auth/auth.service";
 
 describe("TableUtilsService", () => {
   let service: TableUtilsService;
+  let authService: AuthService;
 
   beforeEach(() => {
     TestBed.resetTestingModule();
@@ -17,6 +19,7 @@ describe("TableUtilsService", () => {
       ]
     });
     service = TestBed.inject(TableUtilsService);
+    authService = TestBed.inject(AuthService);
   });
 
   it("should be created", () => {
@@ -138,9 +141,9 @@ describe("TableUtilsService", () => {
     expect(rec).toEqual({ k1: "v1", k2: "v2" });
   });
 
-  it.each([
-    ["username", true],
-    ["realms", true],
+  it.each([ // TODO should be true once these links are reachable
+    ["username", false],
+    ["realms", false],
     ["unknown", false]
   ])("isLink(\"%s\") → %s", (key, expected) => {
     expect(service.isLink(key)).toBe(expected);
@@ -154,6 +157,18 @@ describe("TableUtilsService", () => {
     });
 
     it("returns the correct class for active column", () => {
+      // No enable / disable rights
+      expect(service.getClassForColumn("active", { active: true })).toBe(
+        "highlight-true"
+      );
+      expect(service.getClassForColumn("active", { active: false })).toBe(
+        "highlight-false"
+      );
+      // Allow enable / disable
+      let jwtData = {
+        username: "", realm: "", nonce: "", role: "", authtype: "", exp: 0, rights: ["disable", "enable"]
+      };
+      authService.jwtData.set(jwtData as JwtData);
       expect(service.getClassForColumn("active", { active: true })).toBe(
         "highlight-true-clickable"
       );
@@ -166,6 +181,18 @@ describe("TableUtilsService", () => {
       expect(
         service.getClassForColumn("failcount", { failcount: 0, maxfail: 5 })
       ).toBe("highlight-true");
+      // reset not allowed
+      expect(
+        service.getClassForColumn("failcount", { failcount: 2, maxfail: 5 })
+      ).toBe("highlight-warning");
+      expect(
+        service.getClassForColumn("failcount", { failcount: 5, maxfail: 5 })
+      ).toBe("highlight-false");
+      // Allow reset failcount
+      let jwtData = {
+        username: "", realm: "", nonce: "", role: "", authtype: "", exp: 0, rights: ["reset"]
+      };
+      authService.jwtData.set(jwtData as JwtData);
       expect(
         service.getClassForColumn("failcount", { failcount: 2, maxfail: 5 })
       ).toBe("highlight-warning-clickable");

@@ -2,7 +2,7 @@ import { computed, inject, Injectable, Signal, signal, WritableSignal } from "@a
 import { toSignal } from "@angular/core/rxjs-interop";
 import { NavigationEnd, Router } from "@angular/router";
 import { filter, map, pairwise, startWith } from "rxjs";
-import { ROUTE_PATHS } from "../../app.routes";
+import { ROUTE_PATHS } from "../../route_paths";
 
 export interface ContentServiceInterface {
   router: Router;

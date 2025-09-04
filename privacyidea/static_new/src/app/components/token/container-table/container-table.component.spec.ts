@@ -14,6 +14,7 @@ import { Sort } from "@angular/material/sort";
 import { of } from "rxjs";
 import { TokenService } from "../../../services/token/token.service";
 import { ContentService } from "../../../services/content/content.service";
+import { MockAuthService, MockLocalService, MockNotificationService } from "../../../../testing/mock-services";
 
 function makeResource<T>(initial: T) {
   return {
@@ -23,12 +24,9 @@ function makeResource<T>(initial: T) {
   };
 }
 
-const authServiceMock = {
-  isAuthenticatedUser: jest.fn().mockReturnValue(true)
-};
-
 const tableUtilsMock = {
   // Only the bits used by this component/tests.
+  pageSizeOptions: () => [5, 10, 25, 50],
   recordsFromText: jest.fn().mockReturnValue({}),
   getClassForColumnKey: jest.fn().mockReturnValue(""),
   isLink: jest.fn().mockReturnValue(false),
@@ -97,7 +95,7 @@ describe("ContainerTableComponent (Jest)", () => {
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
-        { provide: AuthService, useValue: authServiceMock },
+        { provide: AuthService, useClass: MockAuthService },
         { provide: ContainerService, useValue: containerServiceMock },
         { provide: TableUtilsService, useValue: tableUtilsMock },
         { provide: NotificationService, useValue: notificationServiceMock },
@@ -109,7 +107,9 @@ describe("ContainerTableComponent (Jest)", () => {
             navigate: jest.fn(),
             events: of(new NavigationEnd(0, "/", "/"))
           }
-        }
+        },
+        MockLocalService,
+        MockNotificationService
       ]
     }).compileComponents();
 

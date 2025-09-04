@@ -14,6 +14,9 @@ such as phishing, credential stuffing, and other remote attacks.
 
 This is a variation of the WebAuthn token, which is also a FIDO2 token supported by privacyIDEA.
 Therefore, it inherits the configuration of the Webauthn token, which is described here: :ref:`webauthn_otp_token`.
+The Passkey token always requests to be created as a resident credential, i.e. the option
+``resident_key`` is always set to ``required``, in contrast to the WebAuthn token, which does not request a resident
+key.
 
 To enroll a passkey, the policies :ref:`policy_webauthn_enroll_relying_party_id` and
 :ref:`policy_webauthn_enroll_relying_party_name` have to be set. Moreover, passkeys always require a user assignment

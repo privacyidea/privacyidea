@@ -2,41 +2,42 @@ import { TestBed } from "@angular/core/testing";
 import { HttpClient, provideHttpClient } from "@angular/common/http";
 import { lastValueFrom, of, throwError } from "rxjs";
 import { ContainerDetails, ContainerService } from "./container.service";
-import { LocalService } from "../local/local.service";
 import { NotificationService } from "../notification/notification.service";
 import { TokenService } from "../token/token.service";
 import { environment } from "../../../environments/environment";
-import {
-  MockContentService,
-  MockLocalService,
-  MockNotificationService,
-  MockTokenService
-} from "../../../testing/mock-services";
-import { ContentService } from "../content/content.service";
+import { MockLocalService, MockNotificationService, MockTokenService } from "../../../testing/mock-services";
+import { AuthService } from "../auth/auth.service";
 
 environment.proxyUrl = "/api";
+
+class MockAuthService implements Partial<AuthService> {
+  getHeaders = jest.fn().mockReturnValue({ Authorization: "Bearer FAKE_TOKEN" });
+}
 
 describe("ContainerService", () => {
   let containerService: ContainerService;
   let http: HttpClient;
-  let localService = new MockLocalService();
-  let notificationService = new MockNotificationService();
-  let tokenService = new MockTokenService();
-  let contentService = new MockContentService();
+  let authService: MockAuthService;
+  let notificationService: MockNotificationService;
+  let tokenService: MockTokenService;
 
   beforeEach(() => {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(),
-        { provide: LocalService, useValue: localService },
-        { provide: NotificationService, useValue: notificationService },
-        { provide: TokenService, useValue: tokenService },
-        { provide: ContentService, useValue: contentService }
+        { provide: AuthService, useClass: MockAuthService },
+        { provide: NotificationService, useClass: MockNotificationService },
+        { provide: TokenService, useClass: MockTokenService },
+        MockLocalService,
+        MockNotificationService
       ]
     });
     containerService = TestBed.inject(ContainerService);
     http = TestBed.inject(HttpClient);
+    authService = TestBed.inject(AuthService) as any;
+    notificationService = TestBed.inject(NotificationService) as any;
+    tokenService = TestBed.inject(TokenService) as any;
   });
 
   it("creates the service", () => {
@@ -51,7 +52,7 @@ describe("ContainerService", () => {
     expect(http.post).toHaveBeenCalledWith(
       "/api/container/cont1/add",
       { serial: "tok1" },
-      { headers: { Authorization: "Bearer x" } }
+      { headers: authService.getHeaders() }
     );
     expect(r).toEqual({ result: true });
   });
@@ -74,7 +75,7 @@ describe("ContainerService", () => {
     expect(http.post).toHaveBeenCalledWith(
       "/api/container/c1/states",
       { states: "disabled" },
-      { headers: { Authorization: "Bearer x" } }
+      { headers: authService.getHeaders() }
     );
   });
 
@@ -86,7 +87,7 @@ describe("ContainerService", () => {
     expect(http.post).toHaveBeenCalledWith(
       "/api/container/c2/states",
       { states: "active" },
-      { headers: { Authorization: "Bearer x" } }
+      { headers: authService.getHeaders() }
     );
   });
 
@@ -97,12 +98,12 @@ describe("ContainerService", () => {
     expect(postSpy).toHaveBeenCalledWith(
       "/api/container/cI/info/k1",
       { value: "v1" },
-      { headers: { Authorization: "Bearer x" } }
+      { headers: authService.getHeaders() }
     );
     expect(postSpy).toHaveBeenCalledWith(
       "/api/container/cI/info/k2",
       { value: "v2" },
-      { headers: { Authorization: "Bearer x" } }
+      { headers: authService.getHeaders() }
     );
   });
 
@@ -182,7 +183,7 @@ describe("ContainerService", () => {
     expect(postSpy).toHaveBeenCalledWith(
       "/api/container/c3/removeall",
       { serial: "t5,t6" },
-      { headers: { Authorization: "Bearer x" } }
+      { headers: authService.getHeaders() }
     );
   });
 
@@ -190,7 +191,7 @@ describe("ContainerService", () => {
     const delSpy = jest.spyOn(http, "delete").mockReturnValue(of({}) as any);
     await lastValueFrom(containerService.deleteContainer("cDel"));
     expect(delSpy).toHaveBeenCalledWith("/api/container/cDel", {
-      headers: { Authorization: "Bearer x" }
+      headers: authService.getHeaders()
     });
   });
 
@@ -216,7 +217,7 @@ describe("ContainerService", () => {
         template: undefined,
         options: undefined
       },
-      { headers: { Authorization: "Bearer x" } }
+      { headers: authService.getHeaders() }
     );
     expect(r.result?.value?.container_serial).toBe("CNEW");
   });
@@ -242,7 +243,7 @@ describe("ContainerService", () => {
         passphrase_prompt: "p?",
         passphrase_response: "r!"
       },
-      { headers: { Authorization: "Bearer x" } }
+      { headers: authService.getHeaders() }
     );
     expect(r.result?.value?.container_url).toBe("u");
   });
@@ -391,7 +392,7 @@ describe("ContainerService", () => {
     expect(http.post).toHaveBeenCalledWith(
       "/api/container/cD/states",
       { states: "active" },
-      { headers: { Authorization: "Bearer x" } }
+      { headers: authService.getHeaders() }
     );
   });
 
@@ -401,7 +402,7 @@ describe("ContainerService", () => {
     expect(http.post).toHaveBeenCalledWith(
       "/api/container/cont1/remove",
       { serial: "tok1" },
-      { headers: { Authorization: "Bearer x" } }
+      { headers: authService.getHeaders() }
     );
 
     jest
@@ -419,14 +420,14 @@ describe("ContainerService", () => {
     expect(post).toHaveBeenCalledWith(
       "/api/container/cX/realms",
       { realms: "r1,r2" },
-      { headers: { Authorization: "Bearer x" } }
+      { headers: authService.getHeaders() }
     );
 
     await lastValueFrom(containerService.setContainerRealm("cX", []));
     expect(post).toHaveBeenLastCalledWith(
       "/api/container/cX/realms",
       { realms: "" },
-      { headers: { Authorization: "Bearer x" } }
+      { headers: authService.getHeaders() }
     );
   });
 
@@ -438,7 +439,7 @@ describe("ContainerService", () => {
     expect(http.post).toHaveBeenCalledWith(
       "/api/container/c7/states",
       { states: "locked,active" },
-      { headers: { Authorization: "Bearer x" } }
+      { headers: authService.getHeaders() }
     );
   });
 

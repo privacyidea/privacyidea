@@ -1,13 +1,18 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MatTableDataSource } from "@angular/material/table";
 import { MatTabsModule } from "@angular/material/tabs";
-import { MockMachineService, MockTableUtilsService } from "../../../../../testing/mock-services";
+import {
+  MockLocalService,
+  MockMachineService,
+  MockNotificationService,
+} from "../../../../../testing/mock-services";
 import { MachineService, TokenApplication } from "../../../../services/machine/machine.service";
-import { TableUtilsService } from "../../../../services/table-utils/table-utils.service";
 import { TokenService } from "../../../../services/token/token.service";
 import { CopyButtonComponent } from "../../../shared/copy-button/copy-button.component";
 import { KeywordFilterComponent } from "../../../shared/keyword-filter/keyword-filter.component";
 import { TokenApplicationsSshComponent } from "./token-applications-ssh.component";
+import { provideHttpClient } from "@angular/common/http";
+import { provideHttpClientTesting } from "@angular/common/http/testing";
 
 describe("TokenApplicationsSshComponent (Jest)", () => {
   let fixture: ComponentFixture<TokenApplicationsSshComponent>;
@@ -15,8 +20,7 @@ describe("TokenApplicationsSshComponent (Jest)", () => {
 
   let mockTokenService: Partial<TokenService> = {};
   let mockKeywordFilterComponent: Partial<KeywordFilterComponent> = {};
-  const machineServiceMock = new MockMachineService();
-  const tableUtilsMock = new MockTableUtilsService();
+  let machineServiceMock: MockMachineService;
 
   beforeEach(async () => {
     TestBed.resetTestingModule();
@@ -28,18 +32,22 @@ describe("TokenApplicationsSshComponent (Jest)", () => {
         CopyButtonComponent
       ],
       providers: [
-        { provide: MachineService, useValue: machineServiceMock },
-        { provide: TableUtilsService, useValue: tableUtilsMock },
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: MachineService, useClass: MockMachineService },
         { provide: TokenService, useValue: mockTokenService },
         {
           provide: KeywordFilterComponent,
           useValue: mockKeywordFilterComponent
-        }
+        },
+        MockLocalService,
+        MockNotificationService
       ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(TokenApplicationsSshComponent);
     component = fixture.componentInstance;
+    machineServiceMock = TestBed.inject(MachineService) as any;
     fixture.detectChanges();
   });
 

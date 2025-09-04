@@ -19,7 +19,7 @@ import { MatSelect } from "@angular/material/select";
 import { MatTooltip } from "@angular/material/tooltip";
 import { Router } from "@angular/router";
 import { PiResponse } from "../../../app.component";
-import { ROUTE_PATHS } from "../../../app.routes";
+import { ROUTE_PATHS } from "../../../route_paths";
 import {
   ContainerRegisterData,
   ContainerService,
@@ -38,6 +38,7 @@ import {
   ContainerCreationDialogData,
   ContainerRegistrationDialogComponent
 } from "./container-registration-dialog/container-registration-dialog.component";
+import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
 
 export type ContainerTypeOption = "generic" | "smartphone" | "yubikey";
 
@@ -81,6 +82,7 @@ export class ContainerCreateComponent {
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly TokenComponent = TokenComponent;
   protected readonly renderer: Renderer2 = inject(Renderer2);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
   private router = inject(Router);
   private observer!: IntersectionObserver;
   containerSerial = this.containerService.containerSerial;
@@ -176,7 +178,6 @@ export class ContainerCreateComponent {
         if (this.generateQRCode()) {
           this.registerContainer(containerSerial);
         } else {
-          this.notificationService.openSnackBar(`Container ${containerSerial} enrolled successfully.`);
           this.router.navigateByUrl(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + containerSerial);
           this.containerSerial.set(containerSerial);
         }
@@ -225,7 +226,6 @@ export class ContainerCreateComponent {
         if (pollResponse.result?.value?.containers[0].info.registration_state !== "client_wait") {
           this.registrationDialog.closeAll();
           this.router.navigateByUrl(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + containerSerial);
-          this.notificationService.openSnackBar(`Container ${this.containerSerial()} enrolled successfully.`);
         }
       }
     });

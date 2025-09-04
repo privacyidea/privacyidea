@@ -87,6 +87,7 @@ import { DialogService, DialogServiceInterface } from "../../../services/dialog/
 import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { TokenEnrollmentLastStepDialogData } from "./token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
+import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
 
 export type ClickEnrollFn = (
   enrollmentOptions: TokenEnrollmentData
@@ -224,13 +225,10 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
 
   protected readonly renderer: Renderer2 = inject(Renderer2);
-  protected readonly QuestionApiPayloadMapper = QuestionApiPayloadMapper;
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
   private observer!: IntersectionObserver;
   timezoneOptions = TIMEZONE_OFFSETS;
-  pollResponse: WritableSignal<any> = linkedSignal({
-    source: this.tokenService.selectedTokenType,
-    computation: () => null
-  });
+
   enrollResponse: WritableSignal<EnrollmentResponse | null> = linkedSignal({
     source: this.tokenService.selectedTokenType,
     computation: () => null
@@ -253,14 +251,6 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
   additionalFormFields: WritableSignal<{
     [key: string]: FormControl<any>;
   }> = signal({});
-  onlyAddToRealm = computed(() => {
-    if (this.tokenService.selectedTokenType()?.key === "4eyes") {
-      const foureyesControls = this.additionalFormFields();
-      const control = foureyesControls["onlyAddToRealm"] as FormControl<boolean>;
-      return !!control?.value;
-    }
-    return false;
-  });
   descriptionControl = new FormControl<string>("", {
     nonNullable: true,
     validators: [Validators.maxLength(80)]
@@ -571,6 +561,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     }
 
     const dialogData: TokenEnrollmentLastStepDialogData = {
+      tokentype: this.tokenService.selectedTokenType(),
       response: response,
       serial: this.serial,
       enrollToken: this.enrollToken.bind(this),
@@ -598,7 +589,6 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
       return;
     }
 
-    this.notificationService.openSnackBar(`Token ${detail.serial} enrolled successfully.`);
     this.openLastStepDialog({ response, user });
   }
 }

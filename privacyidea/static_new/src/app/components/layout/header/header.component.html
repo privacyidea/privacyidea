@@ -14,15 +14,18 @@
   </div>
   <div class="nav-div">
     <nav class="nav-menu">
-      @if (authService.role() === "admin") {
+      @if (authService.menus().includes("tokens")) {
         <a
           [ngClass]="{ active: isActive(ROUTE_PATHS.TOKENS) }"
           extended
           mat-fab
-          routerLink="{{ this.ROUTE_PATHS.TOKENS }}">
+          routerLink="{{authService.anyTokenActionAllowed() ? this.ROUTE_PATHS.TOKENS :
+            (authService.anyContainerActionAllowed() ? this.ROUTE_PATHS.TOKENS_CONTAINERS : this.ROUTE_PATHS.TOKENS)}}">
           <mat-icon>shield</mat-icon>
           <h4 i18n>Tokens</h4>
         </a>
+      }
+      @if (authService.menus().includes("users")) {
         <a
           [ngClass]="{ active: isActive(ROUTE_PATHS.USERS) }"
           extended
@@ -31,6 +34,8 @@
           <mat-icon>supervised_user_circle</mat-icon>
           <h4>{{ authService.role() === "admin" ? "Users" : "User" }}</h4>
         </a>
+      }
+      @if (authService.menus().includes("machines")) {
         <a
           extended
           href="#"
@@ -39,6 +44,8 @@
           <mat-icon>dns</mat-icon>
           <h4 i18n>Machines</h4>
         </a>
+      }
+      @if (authService.menus().includes("config")) {
         <a
           extended
           href="#"
@@ -47,6 +54,8 @@
           <mat-icon>miscellaneous_services</mat-icon>
           <h4 i18n>Configuration</h4>
         </a>
+      }
+      @if (authService.menus().includes("audit")) {
         <a
           [ngClass]="{ active: isActive(ROUTE_PATHS.AUDIT) }"
           extended
@@ -55,6 +64,8 @@
           <mat-icon>manage_search</mat-icon>
           <h4 i18n>Audit</h4>
         </a>
+      }
+      @if (authService.menus().includes("components")) {
         <a
           extended
           href="#"
@@ -88,11 +99,11 @@
         ]"
         class="session-timer">
         @if (sessionTimerService.remainingTime()! < 599500) {
-          {{ sessionTimerService.remainingTime() | date: "m:ss" }}
-        } @else if (sessionTimerService.remainingTime()! >= 599500 && sessionTimerService.remainingTime()! < 6000000) {
-          {{ sessionTimerService.remainingTime() | date: "m" }}min
+          {{ sessionTimerService.remainingTime() | date:'m:ss':'UTC' }}
+        } @else if (sessionTimerService.remainingTime()! < 3600000) {
+          {{ sessionTimerService.remainingTime() | date:'m':'UTC' }}min
         } @else {
-          {{ sessionTimerService.remainingTime() | date: "mm" }}min
+          {{ sessionTimerService.remainingTime() | date:"H'h' mm'min'":"UTC" }}
         }
       </div>
       <div class="profile-logout-div flex-row">

@@ -5,7 +5,7 @@ import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
 import { Router } from "@angular/router";
-import { ROUTE_PATHS } from "../../../app.routes";
+import { ROUTE_PATHS } from "../../../route_paths";
 import { TokenService, TokenServiceInterface } from "../../../services/token/token.service";
 
 @Component({

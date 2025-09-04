@@ -1,7 +1,6 @@
 <div class="tab-list">
   <mat-list>
-    <mat-divider />
-    <br />
+    <mat-divider class="margin-bottom-1" />
     <mat-list-item>
       <button
         [ngClass]="contentService.routeUrl() === ROUTE_PATHS.TOKENS ? 'card-button-active' : 'card-button'"
@@ -15,58 +14,63 @@
 
     <div [@toggleState]="contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_CONTAINERS)">
       @if (!contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_DETAILS)) {
-        <mat-list-item>
-          <button
-            [routerLink]="[ROUTE_PATHS.TOKENS_ENROLLMENT]"
-            [ngClass]="
+        @if (authService.tokenEnrollmentAllowed()) {
+          <mat-list-item>
+            <button
+              [routerLink]="[ROUTE_PATHS.TOKENS_ENROLLMENT]"
+              [ngClass]="
               contentService.routeUrl() === ROUTE_PATHS.TOKENS_ENROLLMENT ? 'card-button-active' : 'card-button'
             "
-            mat-flat-button
-            i18n>
-            <mat-icon>add_moderator</mat-icon>
-            Enrollment
-          </button>
-        </mat-list-item>
-        <mat-list-item>
-          <button
-            [routerLink]="[ROUTE_PATHS.TOKENS_CHALLENGES]"
-            [ngClass]="
-              contentService.routeUrl() === ROUTE_PATHS.TOKENS_CHALLENGES ? 'card-button-active' : 'card-button'
-            "
-            mat-flat-button
-            i18n>
-            <mat-icon>cached</mat-icon>
-            Show Challenges
-          </button>
-        </mat-list-item>
+              mat-flat-button
+              i18n>
+              <mat-icon>add_moderator</mat-icon>
+              Enrollment
+            </button>
+          </mat-list-item>
+        }
+        @if (authService.actionAllowed("getchallenges")) {
+          <mat-list-item>
+            <button
+              [routerLink]="[ROUTE_PATHS.TOKENS_CHALLENGES]"
+              [ngClass]="contentService.routeUrl() === ROUTE_PATHS.TOKENS_CHALLENGES
+                  ? 'card-button-active' : 'card-button'"
+              mat-flat-button
+              i18n>
+              <mat-icon>cached</mat-icon>
+              Show Challenges
+            </button>
+          </mat-list-item>
+        }
 
-        <mat-list-item>
-          <button
-            [routerLink]="[ROUTE_PATHS.TOKENS_APPLICATIONS]"
-            [ngClass]="
-              contentService.routeUrl() === ROUTE_PATHS.TOKENS_APPLICATIONS ? 'card-button-active' : 'card-button'
-            "
-            mat-flat-button
-            i18n>
-            <mat-icon>now_widgets</mat-icon>
-            Applications
-          </button>
-        </mat-list-item>
-        <br />
-        <mat-divider />
-        <br />
-        <mat-list-item>
-          <button
-            [ngClass]="[
-              contentService.routeUrl() === ROUTE_PATHS.TOKENS_GET_SERIAL ? 'card-button-active' : 'card-button'
-            ]"
-            mat-flat-button
-            [routerLink]="[ROUTE_PATHS.TOKENS_GET_SERIAL]"
-            i18n>
-            <mat-icon>help_outline</mat-icon>
-            Get Serial Number
-          </button>
-        </mat-list-item>
+        @if (authService.actionsAllowed(["machinelist", "manage_machine_tokens"])) {
+          <mat-list-item>
+            <button
+              [routerLink]="[ROUTE_PATHS.TOKENS_APPLICATIONS]"
+              [ngClass]="contentService.routeUrl() === ROUTE_PATHS.TOKENS_APPLICATIONS
+                  ? 'card-button-active' : 'card-button'"
+              mat-flat-button
+              i18n>
+              <mat-icon>now_widgets</mat-icon>
+              Applications
+            </button>
+          </mat-list-item>
+        }
+        <mat-divider class="margin-top-1 margin-bottom-1" />
+        @if (authService.actionAllowed("getserial")) {
+          <mat-list-item>
+            <button
+              [ngClass]="[
+              contentService.routeUrl() === ROUTE_PATHS.TOKENS_GET_SERIAL
+                ? 'card-button-active'
+                : 'card-button',]"
+              mat-flat-button
+              [routerLink]="[ROUTE_PATHS.TOKENS_GET_SERIAL]"
+              i18n>
+              <mat-icon>help_outline</mat-icon>
+              Get Serial Number
+            </button>
+          </mat-list-item>
+        }
         <mat-list-item>
           <button
             class="card-button"
@@ -78,68 +82,85 @@
           </button>
         </mat-list-item>
         @if (contentService.routeUrl() === ROUTE_PATHS.TOKENS) {
-          <br />
-          <mat-divider />
-          <br />
-          <mat-list-item>
-            <button
-              [ngClass]="[tokenSelection().length === 0 ? 'card-button-disabled' : 'card-button-delete']"
-              (click)="deleteSelectedTokens()"
-              [disabled]="tokenSelection().length === 0"
-              mat-flat-button
-              i18n>
-              <mat-icon> delete_sweep</mat-icon>
-              Delete Selected
-            </button>
-          </mat-list-item>
-          <mat-list-item>
-            <button
-              [ngClass]="[tokenSelection().length === 0 ? 'card-button-disabled' : 'card-button']"
-              (click)="assignSelectedTokens()"
-              [disabled]="tokenSelection().length === 0"
-              mat-flat-button
-              i18n>
-              <mat-icon> person_add</mat-icon>
-              Assign Selected
-            </button>
-          </mat-list-item>
+          @if (authService.oneActionAllowed(["delete", "assign", "unassign"])) {
+            <mat-divider class="margin-top-1 margin-bottom-1" />
+            @if (authService.actionAllowed("delete")) {
+              <mat-list-item>
+                <button
+                  [ngClass]="[tokenSelection().length === 0 ? 'card-button-disabled' : 'card-button-delete']"
+                  (click)="deleteSelectedTokens()"
+                  [disabled]="tokenSelection().length === 0"
+                  mat-flat-button
+                  i18n>
+                  <mat-icon> delete_sweep</mat-icon>
+                  Delete Selected
+                </button>
+              </mat-list-item>
+            }
+            @if (authService.actionAllowed("assign")) {
+              <mat-list-item>
+                <button
+                  [ngClass]="[tokenSelection().length === 0 ? 'card-button-disabled' : 'card-button']"
+                  (click)="assignSelectedTokens()"
+                  [disabled]="tokenSelection().length === 0"
+                  mat-flat-button
+                  i18n>
+                  <mat-icon> person_add</mat-icon>
+                  Assign Selected
+                </button>
+              </mat-list-item>
+            }
+            @if (authService.actionAllowed("unassign")) {
+              <mat-list-item>
+                <button
+                  [ngClass]="[tokenSelection().length === 0 ? 'card-button-disabled' : 'card-button']"
+                  (click)="unassignSelectedTokens()"
+                  [disabled]="tokenSelection().length === 0"
+                  mat-flat-button>
+                  <mat-icon> person_remove</mat-icon>
+                  Unassign Selected
+                </button>
+              </mat-list-item>
+            }
+          }
         }
       } @else {
         <mat-list-item>
           <button
-            [ngClass]="
-              contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_DETAILS) ? 'card-button-active' : 'card-button'
-            "
+            [ngClass]="contentService.routeUrl()
+                .startsWith(ROUTE_PATHS.TOKENS_DETAILS) ? 'card-button-active' : 'card-button'"
             mat-flat-button
             i18n>
             <mat-icon>health_and_safety</mat-icon>
             Token Details
           </button>
         </mat-list-item>
-        <mat-list-item>
-          <button
-            class="card-button"
-            mat-flat-button
-            [routerLink]="[ROUTE_PATHS.AUDIT]"
-            (click)="auditService.filterValue.set({ serial: tokenSerial() })"
-            i18n>
-            <mat-icon>manage_search</mat-icon>
-            Show in Audit Log
-          </button>
-        </mat-list-item>
-        <br />
-        <mat-divider />
-        <br />
-        <mat-list-item>
-          <button
-            class="card-button"
-            mat-flat-button
-            (click)="openLostTokenDialog()"
-            i18n>
-            <mat-icon>remove_red_eye</mat-icon>
-            Lost Token
-          </button>
-        </mat-list-item>
+        @if (authService.actionAllowed("auditlog")) {
+          <mat-list-item>
+            <button
+              class="card-button"
+              mat-flat-button
+              [routerLink]="[ROUTE_PATHS.AUDIT]"
+              (click)="auditService.filterValue.set({ serial: tokenSerial() })"
+              i18n>
+              <mat-icon>manage_search</mat-icon>
+              Show in Audit Log
+            </button>
+          </mat-list-item>
+        }
+        <mat-divider class="margin-top-1 margin-bottom-1" />
+        @if (authService.actionAllowed("losttoken")) {
+          <mat-list-item>
+            <button
+              class="card-button"
+              mat-flat-button
+              (click)="openLostTokenDialog()"
+              i18n>
+              <mat-icon>remove_red_eye</mat-icon>
+              Lost Token
+            </button>
+          </mat-list-item>
+        }
         <mat-list-item>
           <button
             class="card-button"
@@ -150,47 +171,49 @@
             Help
           </button>
         </mat-list-item>
-        <br />
-        <mat-divider />
-        <br />
-        <mat-list-item>
-          <button
-            (click)="toggleActive()"
-            [disabled]="tokenIsRevoked()"
-            mat-flat-button
-            [ngClass]="[
-              tokenIsRevoked()
-                ? 'card-button-disabled'
-                : tokenIsActive()
-                  ? 'card-button-delete'
-                  : 'card-button-activate'
-            ]"
-            i18n>
-            <mat-icon>{{ tokenIsActive() ? "lock" : "play_circle" }}</mat-icon>
-            {{ tokenIsActive() ? "Deactivate" : "Activate" }}
-          </button>
-        </mat-list-item>
-        <mat-list-item>
-          <button
-            (click)="deleteToken()"
-            class="card-button-delete"
-            mat-flat-button
-            i18n>
-            <mat-icon> delete</mat-icon>
-            Delete
-          </button>
-        </mat-list-item>
-        <mat-list-item>
-          <button
-            (click)="revokeToken()"
-            [disabled]="tokenIsRevoked()"
-            [ngClass]="[tokenIsRevoked() ? 'card-button-disabled' : 'card-button-delete']"
-            mat-flat-button
-            i18n>
-            <mat-icon>undo</mat-icon>
-            Revoke
-          </button>
-        </mat-list-item>
+        @if (authService.oneActionAllowed(["disable", "enable", "delete", "revoke"])) {
+          <mat-divider class="margin-top-1 margin-bottom-1" />
+          @if ((tokenIsActive() && authService.actionAllowed("disable")) ||
+          (!tokenIsActive() && authService.actionAllowed("enable"))) {
+            <mat-list-item>
+              <button
+                (click)="toggleActive()"
+                [disabled]="tokenIsRevoked()"
+                mat-flat-button
+                [ngClass]="[tokenIsRevoked() ? 'card-button-disabled' : tokenIsActive() ? 'card-button-delete':
+                          'card-button-activate']"
+                i18n>
+                <mat-icon>{{ tokenIsActive() ? "lock" : "play_circle" }}</mat-icon>
+                {{ tokenIsActive() ? "Deactivate" : "Activate" }}
+              </button>
+            </mat-list-item>
+          }
+          @if (authService.actionAllowed("delete")) {
+            <mat-list-item>
+              <button
+                (click)="deleteToken()"
+                class="card-button-delete"
+                mat-flat-button
+                i18n>
+                <mat-icon> delete</mat-icon>
+                Delete
+              </button>
+            </mat-list-item>
+          }
+          @if (authService.actionAllowed("revoke")) {
+            <mat-list-item>
+              <button
+                (click)="revokeToken()"
+                [disabled]="tokenIsRevoked()"
+                [ngClass]="[tokenIsRevoked() ? 'card-button-disabled': 'card-button-delete']"
+                mat-flat-button
+                i18n>
+                <mat-icon>undo</mat-icon>
+                Revoke
+              </button>
+            </mat-list-item>
+          }
+        }
       }
     </div>
   </mat-list>

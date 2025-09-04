@@ -4,22 +4,15 @@
     [formControl]="generateOnServerControl"
     class="server-checkbox"
     i18n>
-    Generate OTP key on the server
-    @if (generateOnServerControl.value) {
-      <span class="dot">.</span>
-      <span>
-        <br />
-        The server will create the OTP key and a QR Code will be displayed to you to be scanned.
-      </span>
-    }
+    Generate the OTP key on the server and show a QR code to scan.
   </mat-checkbox>
   <div class="otp-inputs-container">
-    @if (!generateOnServerControl.value) {
+    @if (!this.authService.checkForceServerGenerateOTPKey("motp")) {
       <mat-form-field class="width-33 input-height">
         <mat-label i18n>OTP Key</mat-label>
         <input
           matInput
-          [formControl]="otpKeyControl"
+          [formControl]="otpKeyFormControl"
           i18n-placeholder
           placeholder="Enter OTP key"
           required />
