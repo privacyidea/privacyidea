@@ -10,17 +10,14 @@
   top: -20%;
   border: 0 solid transparent;
   background-color: var(--grey-light-active);
-  color: var(--mat-sys-primary-container);
-  width: 1.6rem;
-  height: 1.6rem;
-  aspect-ratio: 1;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  color: var(--mat-sys-surface-container-lowest);
+  width: 1.1rem;
+  height: 1.1rem;
+  padding: 0;
 }
 
 .input-container button mat-icon {
-  font-size: 18px;
+  font-size: 14px;
   font-weight: 800;
   display: flex;
   align-items: center;
@@ -28,6 +25,6 @@
 }
 
 .input-container button:hover {
-  background-color: var(--grey-light);
+  background-color: var(--red-light);
   cursor: pointer;
 }
