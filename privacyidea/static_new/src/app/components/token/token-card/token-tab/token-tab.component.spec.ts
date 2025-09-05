@@ -247,7 +247,7 @@ describe("TokenTabComponent", () => {
       component.unassignSelectedTokens();
       expect(tokenService.bulkUnassignTokens).toHaveBeenCalledWith(mockTokens);
       expect(tokenService.tokenResource.reload).toHaveBeenCalled();
-      expect(notificationService.openSnackBar).toHaveBeenCalledWith("Successfully unassigned 1 tokens.");
+      expect(notificationService.openSnackBar).toHaveBeenCalledWith("Successfully unassigned 1 token.");
     });
   });
 
