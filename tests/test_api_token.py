@@ -511,7 +511,7 @@ class API000TokenAdminRealmList(MyApiTestCase):
 
         delete_policy("policy")
 
-    def test_05_helpdesk_delete_batch(self):
+    def test_05_helpdesk_bulk_delete(self):
         # helpdesk is allowed to manage realm1
         set_policy(name="policy", scope=SCOPE.ADMIN, action=PolicyAction.DELETE, realm=self.realm1)
 
@@ -524,7 +524,7 @@ class API000TokenAdminRealmList(MyApiTestCase):
         csv_serials = ",".join(token_serials)
         result = self.request_assert_200(f"/token/?serial={csv_serials}", {}, self.at, "DELETE")
         result = result.get("result").get("value")
-        count_deleted = result.get("count_deleted")
+        count_deleted = result.get("count_success")
         self.assertEqual(2, count_deleted)
         failed = result.get("failed")
         self.assertFalse(failed)
@@ -537,7 +537,7 @@ class API000TokenAdminRealmList(MyApiTestCase):
 
         delete_policy("policy")
 
-    def test_06_helpdesk_unassign_batch(self):
+    def test_06_helpdesk_bulk_unassign(self):
         set_policy(name="policy", scope=SCOPE.ADMIN, action=PolicyAction.UNASSIGN, realm=self.realm1)
 
         token1 = init_token({"type": "hotp"}, user=User("cornelius", self.realm1))
@@ -554,7 +554,7 @@ class API000TokenAdminRealmList(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertEqual(200, res.status_code, res.json)
             result = res.json.get("result").get("value")
-            count_unassigned = result.get("count_unassigned")
+            count_unassigned = result.get("count_success")
             self.assertEqual(1, count_unassigned, res.json)
             failed = result.get("failed")
             self.assertEqual(0, len(failed), failed)
@@ -592,7 +592,7 @@ class API000TokenAdminRealmList(MyApiTestCase):
             self.assertEqual(200, res.status_code, res.json)
             result = res.json.get("result").get("value")
             # The only real, processable serial is the one of token1
-            count_unassigned = result.get("count_unassigned")
+            count_unassigned = result.get("count_success")
             self.assertEqual(1, count_unassigned, result)
             failed = result.get("failed")
             self.assertEqual(3, len(failed), failed)
@@ -616,7 +616,7 @@ class API000TokenAdminRealmList(MyApiTestCase):
             self.assertEqual(200, res.status_code, res.json)
             result = res.json.get("result").get("value")
             # The only real, processable serial is the one of token1
-            count_unassigned = result.get("count_unassigned")
+            count_unassigned = result.get("count_success")
             self.assertEqual(1, count_unassigned, result)
             failed = result.get("failed")
             self.assertEqual(3, len(failed), failed)
@@ -1164,7 +1164,7 @@ class APITokenTestCase(MyApiTestCase):
             self.assertEqual(res.status_code, 404)
             self.assertFalse(result.get("status"))
 
-    def test_05b_batch_deletion(self):
+    def test_05b_bulk_deletion(self):
         self._create_temp_token("Token1")
         self._create_temp_token("Token2")
         serial_comma_list = "Token1,Token2"
@@ -1176,7 +1176,7 @@ class APITokenTestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
             value = result.get("value")
-            self.assertEqual(2, value.get("count_deleted"))
+            self.assertEqual(2, value.get("count_success"))
             self.assertFalse(value.get("failed"))
             self.assertFalse(value.get("unauthorized"))
         self.assertRaises(ResourceNotFoundError, get_tokens_from_serial_or_user, "Token1", None)
@@ -1194,7 +1194,7 @@ class APITokenTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             value = res.json.get("result").get("value")
-            self.assertEqual(2, value.get("count_deleted"))
+            self.assertEqual(2, value.get("count_success"))
             self.assertIn("Token1234", value.get("failed"))
             self.assertFalse(value.get("unauthorized"))
         self.assertRaises(ResourceNotFoundError, get_tokens_from_serial_or_user, "Token1", None)
@@ -3459,7 +3459,7 @@ class APITokenTestCase(MyApiTestCase):
         delete_policy("applspec_genkey")
         delete_policy("enroll")
 
-    def test_63_unassign_batch(self):
+    def test_63_bulk_unassign(self):
         set_policy(name="policy", scope=SCOPE.ADMIN, action=PolicyAction.UNASSIGN, realm=self.realm1)
 
         # create tokens
@@ -3479,7 +3479,7 @@ class APITokenTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertEqual(200, res.status_code, res)
             value = res.json.get("result").get("value")
-            self.assertEqual(1, value.get("count_unassigned"))
+            self.assertEqual(1, value.get("count_success"))
             failed = value.get("failed")
             self.assertEqual(1, len(failed))
             self.assertIn("INVALID_SERIAL", failed)
@@ -3498,13 +3498,13 @@ class API00TokenPerformance(MyApiTestCase):
     def test_00_create_some_tokens(self):
         for i in range(0, self.token_count):
             init_token({"genkey": 1, "serial": "perf{0!s:0>3}".format(i)})
-        toks = get_tokens(serial_wildcard="perf*")
-        self.assertEqual(len(toks), self.token_count)
+        tokens = get_tokens(serial_wildcard="perf*")
+        self.assertEqual(len(tokens), self.token_count)
 
         for i in range(0, 10):
             init_token({"genkey": 1, "serial": "TOK{0!s:0>3}".format(i)})
-        toks = get_tokens(serial_wildcard="TOK*")
-        self.assertEqual(len(toks), 10)
+        tokens = get_tokens(serial_wildcard="TOK*")
+        self.assertEqual(len(tokens), 10)
 
         self.setUp_user_realms()
 
@@ -3520,8 +3520,8 @@ class API00TokenPerformance(MyApiTestCase):
             self.assertEqual(result.get("value").get("count"), self.token_count)
 
         init_token({"genkey": 1, "serial": "realmtoken"}, tokenrealms=[self.realm1])
-        toks = get_tokens(realm="*realm1*")
-        self.assertEqual(len(toks), 1)
+        tokens = get_tokens(realm="*realm1*")
+        self.assertEqual(len(tokens), 1)
 
         # Request tokens in tokenrealm
         with self.app.test_request_context('/token/',

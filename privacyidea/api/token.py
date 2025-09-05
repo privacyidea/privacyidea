@@ -573,7 +573,7 @@ def unassign_api():
     :jsonparam realm: Realm of the user to unassign all token from.  Does only work if serial and serials are not
     given and user parameter is also provided.
     :return: In case of success, it returns 1 if only one serial is given.
-            If multiple serials were given, the response will contain "count_unassigned" as int for the number of
+            If multiple serials were given, the response will contain "count_success" as int for the number of
             unassigned token, "failed" with a list of serials for which the operation failed and "unauthorized" with a
             list of serials that were not authorized for the operation.
             If no authorized serials are provided, returns status 403.
@@ -609,7 +609,7 @@ def unassign_api():
             log.error(f"Error unassigning token {serial}: {ex}")
             failed.append(serial)
     res = {
-        "count_unassigned": count_success,
+        "count_success": count_success,
         "failed": failed,
         "unauthorized": not_authorized_serials
     }
@@ -714,7 +714,7 @@ def delete_api(serial=None):
     :jsonparam serials: A list of serial numbers of multiple tokens.
 
      :return: In case of success, it returns 1 if only one serial is given.
-            If multiple serials were given, the response will contain "count_deleted" as int for the number of
+            If multiple serials were given, the response will contain "count_success" as int for the number of
             deleted token, "failed" with a list of serials for which the operation failed and "unauthorized" with a
             list of serials that were not authorized for the operation.
             If no authorized serials are provided, returns status 403.
@@ -745,7 +745,7 @@ def delete_api(serial=None):
             failed.append(serial)
 
     res = {
-        "count_deleted": count_success,
+        "count_success": count_success,
         "failed": failed,
         "unauthorized": not_authorized_serials
     }

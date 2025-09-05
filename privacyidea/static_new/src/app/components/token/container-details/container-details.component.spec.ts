@@ -26,7 +26,7 @@ import { Observable, of, Subject } from "rxjs";
 import { ContainerDetailsComponent } from "./container-details.component";
 import { TokenDetailsComponent } from "../token-details/token-details.component";
 import {
-  BatchResult,
+  BulkResult,
   LostTokenResponse,
   TokenDetails,
   TokenGroup,
