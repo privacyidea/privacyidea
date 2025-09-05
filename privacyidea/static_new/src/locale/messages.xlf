@@ -579,11 +579,11 @@
           <context context-type="linenumber">27,28</context>
         </context-group>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-card/selected-user-assign-dialog/selected-user-assign-dialog.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-card/selected-user-attach-dialog/selected-user-attach-dialog.component.html</context>
           <context context-type="linenumber">94,95</context>
         </context-group>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-details/token-ssh-machine-assign-dialog/token-ssh-machine-assign-dialog.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-details/token-ssh-machine-attach-dialog/token-ssh-machine-attach-dialog.component.html</context>
           <context context-type="linenumber">62,63</context>
         </context-group>
       </trans-unit>
@@ -808,7 +808,7 @@
           <context context-type="linenumber">144</context>
         </context-group>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-card/selected-user-assign-dialog/selected-user-assign-dialog.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-card/selected-user-attach-dialog/selected-user-attach-dialog.component.html</context>
           <context context-type="linenumber">11</context>
         </context-group>
         <context-group purpose="location">
@@ -827,7 +827,7 @@
           <context context-type="linenumber">85</context>
         </context-group>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-card/selected-user-assign-dialog/selected-user-assign-dialog.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-card/selected-user-attach-dialog/selected-user-attach-dialog.component.html</context>
           <context context-type="linenumber">19</context>
         </context-group>
         <context-group purpose="location">
@@ -846,7 +846,7 @@
           <context context-type="linenumber">97,98</context>
         </context-group>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-card/selected-user-assign-dialog/selected-user-assign-dialog.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-card/selected-user-attach-dialog/selected-user-attach-dialog.component.html</context>
           <context context-type="linenumber">35,36</context>
         </context-group>
       </trans-unit>
@@ -1359,7 +1359,7 @@
           <context context-type="linenumber">6</context>
         </context-group>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-card/selected-user-assign-dialog/selected-user-assign-dialog.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-card/selected-user-attach-dialog/selected-user-attach-dialog.component.html</context>
           <context context-type="linenumber">48</context>
         </context-group>
       </trans-unit>
@@ -1370,7 +1370,7 @@
           <context context-type="linenumber">26</context>
         </context-group>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-card/selected-user-assign-dialog/selected-user-assign-dialog.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-card/selected-user-attach-dialog/selected-user-attach-dialog.component.html</context>
           <context context-type="linenumber">69</context>
         </context-group>
       </trans-unit>
@@ -1381,7 +1381,7 @@
           <context context-type="linenumber">43</context>
         </context-group>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-card/selected-user-assign-dialog/selected-user-assign-dialog.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-card/selected-user-attach-dialog/selected-user-attach-dialog.component.html</context>
           <context context-type="linenumber">89</context>
         </context-group>
       </trans-unit>
@@ -1791,42 +1791,42 @@
       <trans-unit id="2206569732824957363" datatype="html">
         <source>Assign Selected Token to User</source>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-card/selected-user-assign-dialog/selected-user-assign-dialog.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-card/selected-user-attach-dialog/selected-user-attach-dialog.component.html</context>
           <context context-type="linenumber">1,2</context>
         </context-group>
       </trans-unit>
       <trans-unit id="3391450224522742153" datatype="html">
         <source> Some token are already assigned to a user. <x id="LINE_BREAK" ctype="lb" equiv-text="&lt;br /&gt;"/> Assigning a token to a user will remove the previous assignment. </source>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-card/selected-user-assign-dialog/selected-user-assign-dialog.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-card/selected-user-attach-dialog/selected-user-attach-dialog.component.html</context>
           <context context-type="linenumber">5,7</context>
         </context-group>
       </trans-unit>
       <trans-unit id="7333239510105550281" datatype="html">
         <source>User Realm is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-card/selected-user-assign-dialog/selected-user-assign-dialog.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-card/selected-user-attach-dialog/selected-user-attach-dialog.component.html</context>
           <context context-type="linenumber">32,33</context>
         </context-group>
       </trans-unit>
       <trans-unit id="2860789850108078707" datatype="html">
         <source>User must be selected from the list.</source>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-card/selected-user-assign-dialog/selected-user-assign-dialog.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-card/selected-user-attach-dialog/selected-user-attach-dialog.component.html</context>
           <context context-type="linenumber">38</context>
         </context-group>
       </trans-unit>
       <trans-unit id="6531442622039246049" datatype="html">
         <source> User does not exist in the selected realm. </source>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-card/selected-user-assign-dialog/selected-user-assign-dialog.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-card/selected-user-attach-dialog/selected-user-attach-dialog.component.html</context>
           <context context-type="linenumber">41</context>
         </context-group>
       </trans-unit>
       <trans-unit id="3185679834587557134" datatype="html">
         <source> Assign to Selected Token </source>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-card/selected-user-assign-dialog/selected-user-assign-dialog.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-card/selected-user-attach-dialog/selected-user-attach-dialog.component.html</context>
           <context context-type="linenumber">102,103</context>
         </context-group>
       </trans-unit>
@@ -2126,42 +2126,42 @@
       <trans-unit id="2708274538532560790" datatype="html">
         <source>Assign SSH Machine</source>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-details/token-ssh-machine-assign-dialog/token-ssh-machine-assign-dialog.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-details/token-ssh-machine-attach-dialog/token-ssh-machine-attach-dialog.component.html</context>
           <context context-type="linenumber">1,2</context>
         </context-group>
       </trans-unit>
       <trans-unit id="5710550455494461439" datatype="html">
         <source>Application</source>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-details/token-ssh-machine-assign-dialog/token-ssh-machine-assign-dialog.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-details/token-ssh-machine-attach-dialog/token-ssh-machine-attach-dialog.component.html</context>
           <context context-type="linenumber">5</context>
         </context-group>
       </trans-unit>
       <trans-unit id="71645768467290546" datatype="html">
         <source> Application is required.</source>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-details/token-ssh-machine-assign-dialog/token-ssh-machine-assign-dialog.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-details/token-ssh-machine-attach-dialog/token-ssh-machine-attach-dialog.component.html</context>
           <context context-type="linenumber">12</context>
         </context-group>
       </trans-unit>
       <trans-unit id="1088161574006703857" datatype="html">
         <source>Machine</source>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-details/token-ssh-machine-assign-dialog/token-ssh-machine-assign-dialog.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-details/token-ssh-machine-attach-dialog/token-ssh-machine-attach-dialog.component.html</context>
           <context context-type="linenumber">18</context>
         </context-group>
       </trans-unit>
       <trans-unit id="1723648290832093758" datatype="html">
         <source> Machine is required.</source>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-details/token-ssh-machine-assign-dialog/token-ssh-machine-assign-dialog.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-details/token-ssh-machine-attach-dialog/token-ssh-machine-attach-dialog.component.html</context>
           <context context-type="linenumber">26</context>
         </context-group>
       </trans-unit>
       <trans-unit id="3742956320137802168" datatype="html">
         <source>Service ID</source>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-details/token-ssh-machine-assign-dialog/token-ssh-machine-assign-dialog.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-details/token-ssh-machine-attach-dialog/token-ssh-machine-attach-dialog.component.html</context>
           <context context-type="linenumber">32</context>
         </context-group>
         <context-group purpose="location">
@@ -2172,28 +2172,28 @@
       <trans-unit id="4368953418142732639" datatype="html">
         <source> Service ID is required.</source>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-details/token-ssh-machine-assign-dialog/token-ssh-machine-assign-dialog.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-details/token-ssh-machine-attach-dialog/token-ssh-machine-attach-dialog.component.html</context>
           <context context-type="linenumber">39</context>
         </context-group>
       </trans-unit>
       <trans-unit id="2392488717875840729" datatype="html">
         <source>User</source>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-details/token-ssh-machine-assign-dialog/token-ssh-machine-assign-dialog.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-details/token-ssh-machine-attach-dialog/token-ssh-machine-attach-dialog.component.html</context>
           <context context-type="linenumber">44</context>
         </context-group>
       </trans-unit>
       <trans-unit id="4572028267157383474" datatype="html">
         <source> User is required.</source>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-details/token-ssh-machine-assign-dialog/token-ssh-machine-assign-dialog.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-details/token-ssh-machine-attach-dialog/token-ssh-machine-attach-dialog.component.html</context>
           <context context-type="linenumber">52</context>
         </context-group>
       </trans-unit>
       <trans-unit id="584754872792429089" datatype="html">
         <source>Assign</source>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-details/token-ssh-machine-assign-dialog/token-ssh-machine-assign-dialog.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-details/token-ssh-machine-attach-dialog/token-ssh-machine-attach-dialog.component.html</context>
           <context context-type="linenumber">61,62</context>
         </context-group>
       </trans-unit>

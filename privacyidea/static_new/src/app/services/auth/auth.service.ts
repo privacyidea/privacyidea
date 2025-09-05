@@ -1,3 +1,21 @@
+/**
+ * (c) NetKnights GmbH 2025,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ **/
 import { HttpClient, HttpHeaders } from "@angular/common/http";
 import { computed, inject, Injectable, Signal, signal, WritableSignal } from "@angular/core";
 import { Observable, throwError } from "rxjs";
@@ -276,20 +294,24 @@ export class AuthService implements AuthServiceInterface {
   }
 
   actionsAllowed(actions: PolicyAction[]): boolean {
-    return actions.every(action => this.actionAllowed(action));
+    return actions.every((action) => this.actionAllowed(action));
   }
 
   oneActionAllowed(actions: PolicyAction[]): boolean {
-    return actions.some(action => this.actionAllowed(action));
+    return actions.some((action) => this.actionAllowed(action));
   }
 
   anyContainerActionAllowed(): boolean {
-    return this.oneActionAllowed(
-      ["container_list", "container_create", "container_template_list", "container_template_create"]);
+    return this.oneActionAllowed([
+      "container_list",
+      "container_create",
+      "container_template_list",
+      "container_template_create"
+    ]);
   }
 
   tokenEnrollmentAllowed(): boolean {
-    const enrollPolicies = tokenTypes.map((type) => "enroll" + type.key.toUpperCase() as PolicyAction);
+    const enrollPolicies = tokenTypes.map((type) => ("enroll" + type.key.toUpperCase()) as PolicyAction);
     return this.oneActionAllowed(enrollPolicies);
   }
 
@@ -299,7 +321,7 @@ export class AuthService implements AuthServiceInterface {
   }
 
   checkForceServerGenerateOTPKey(tokenType: string): boolean {
-    return this.actionAllowed(tokenType + "_force_server_generate" as PolicyAction);
+    return this.actionAllowed((tokenType + "_force_server_generate") as PolicyAction);
   }
 
   private readonly http: HttpClient = inject(HttpClient);

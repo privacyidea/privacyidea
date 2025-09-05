@@ -1,3 +1,21 @@
+/**
+ * (c) NetKnights GmbH 2025,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ **/
 import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
 import { Component, computed, effect, inject, linkedSignal, signal, WritableSignal } from "@angular/core";
 import { ContainerService, ContainerServiceInterface } from "../../../services/container/container.service";
@@ -27,8 +45,13 @@ import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.
 import { TokenDetailsActionsComponent } from "./token-details-actions/token-details-actions.component";
 import { TokenDetailsInfoComponent } from "./token-details-info/token-details-info.component";
 import { TokenDetailsUserComponent } from "./token-details-user/token-details-user.component";
-import { TokenSshMachineAssignDialogComponent } from "./token-ssh-machine-assign-dialog/token-ssh-machine-assign-dialog";
+import {
+  SshMachineAssignDialogData,
+  TokenSshMachineAssignDialogComponent
+} from "./token-machine-attach-dialog/token-ssh-machine-attach-dialog/token-ssh-machine-attach-dialog";
+import { TokenDetailsMachineComponent } from "./token-details-machine/token-details-machine.component";
 import { PolicyAction } from "../../../services/auth/policy-actions";
+import { MachineService, MachineServiceInterface, TokenApplications } from "../../../services/machine/machine.service";
 
 export const tokenDetailsKeyMap = [
   { key: "tokentype", label: "Type" },
@@ -92,7 +115,8 @@ export const infoDetailsKeyMap = [{ key: "info", label: "Information" }];
     ClearableInputComponent,
     CopyButtonComponent,
     ClearableInputComponent,
-    ScrollToTopDirective
+    ScrollToTopDirective,
+    TokenDetailsMachineComponent
   ],
   templateUrl: "./token-details.component.html",
   styleUrls: ["./token-details.component.scss"]
@@ -106,6 +130,7 @@ export class TokenDetailsComponent {
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
+  protected readonly machineService: MachineServiceInterface = inject(MachineService);
   private router = inject(Router);
   tokenIsActive = this.tokenService.tokenIsActive;
   tokenIsRevoked = this.tokenService.tokenIsRevoked;
@@ -116,6 +141,13 @@ export class TokenDetailsComponent {
   isEditingInfo = signal(false);
   setPinValue = signal("");
   repeatPinValue = signal("");
+
+  isAttachedToMachine = computed<boolean>(() => {
+    const tokenApplications = this.machineService.tokenApplications();
+    if (!tokenApplications) return false;
+    if (tokenApplications.length === 0) return false;
+    return true;
+  });
 
   tokenDetailResource = this.tokenService.tokenDetailResource;
   tokenDetails: WritableSignal<TokenDetails> = linkedSignal({
@@ -317,7 +349,7 @@ export class TokenDetailsComponent {
   }
 
   isEditableElement(key: string) {
-    const rightEntry = tokenDetailsRightsMap.find(entry => entry.key === key);
+    const rightEntry = tokenDetailsRightsMap.find((entry) => entry.key === key);
     return !!(rightEntry && this.authService.actionAllowed(rightEntry.right as PolicyAction));
   }
 
@@ -332,13 +364,14 @@ export class TokenDetailsComponent {
   }
 
   openSshMachineAssignDialog() {
+    const data: SshMachineAssignDialogData = {
+      tokenSerial: this.tokenSerial(),
+      tokenDetails: this.tokenDetails(),
+      tokenType: this.tokenType()
+    };
+
     this.matDialog.open(TokenSshMachineAssignDialogComponent, {
-      data: {
-        tokenSerial: this.tokenSerial(),
-        tokenDetails: this.tokenDetails(),
-        containerSerial: this.containerSerial(),
-        tokenType: this.tokenType()
-      }
+      data: data
     });
   }
 

@@ -1,34 +1,23 @@
 @if (overflowService.isWidthOverflowing("body", 1580)) {
-  <br/>
+  <br />
 }
 <div
-  [ngClass]="{'ali-center': overflowService.isWidthOverflowing('body', 1580)}"
+  [ngClass]="{ 'ali-center': overflowService.isWidthOverflowing('body', 1580) }"
   class="actions-otp-container">
   @if (authService.actionAllowed("setpin") || authService.actionsAllowed(["setrandompin", "otp_pin_set_random"])) {
     <div class="user-pin-container">
       <app-set-pin-action
         [setPinValue]="setPinValue"
-        [repeatPinValue]="repeatPinValue"/>
-      <mat-divider class="margin-top-1 margin-bottom-1"/>
+        [repeatPinValue]="repeatPinValue" />
+      <mat-divider class="margin-top-1 margin-bottom-1" />
     </div>
   }
   @if (tokenType() !== "passkey" && authService.actionAllowed("resync")) {
-    <app-resync-token-action/>
-    <mat-divider class="margin-top-1 margin-bottom-1"/>
+    <app-resync-token-action />
+    <mat-divider class="margin-top-1 margin-bottom-1" />
   }
   @if (tokenType() !== "passkey") {
-    <app-test-otp-pin-action/>
-    @if (tokenType() === "sshkey" && authService.actionsAllowed(["manage_machine_tokens", "machinelist"])) {
-      <button
-        (click)="assignSSHMachineDialog()"
-        class="detail-button"
-        extended
-        mat-fab
-        i18n>
-        <mat-icon class="detail-button-icon">computer</mat-icon>
-        Assign SSH Machine
-      </button>
-    }
+    <app-test-otp-pin-action />
   } @else {
     <button
       (click)="testPasskey()"
@@ -39,5 +28,50 @@
       <mat-icon class="detail-button-icon">key</mat-icon>
       Test Passkey
     </button>
+  }
+  @if (authService.actionsAllowed(["manage_machine_tokens", "machinelist"])) {
+    @if (tokenType() === "sshkey") {
+      <button
+        (click)="attachSshToMachineDialog()"
+        class="detail-button"
+        extended
+        mat-fab
+        i18n>
+        <mat-icon class="detail-button-icon">computer</mat-icon>
+        Attach to Machine
+      </button>
+    } @else if (tokenType() === "passkey") {
+      @if (isAttachedToMachine()) {
+        <button
+          (click)="removePasskeyFromMachine()"
+          class="detail-button"
+          extended
+          mat-fab
+          i18n>
+          <mat-icon class="detail-button-icon">computer</mat-icon>
+          Disable Offline
+        </button>
+      } @else {
+        <button
+          (click)="attachPasskeyToMachine()"
+          class="detail-button"
+          extended
+          mat-fab
+          i18n>
+          <mat-icon class="detail-button-icon">computer</mat-icon>
+          Use Offline
+        </button>
+      }
+    } @else if (tokenType() === "hotp" && !isAttachedToMachine()) {
+      <button
+        (click)="attachHotpToMachineDialog()"
+        class="detail-button"
+        extended
+        mat-fab
+        i18n>
+        <mat-icon class="detail-button-icon">computer</mat-icon>
+        Use Offline
+      </button>
+    }
   }
 </div>
