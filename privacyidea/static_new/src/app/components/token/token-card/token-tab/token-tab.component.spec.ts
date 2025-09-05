@@ -198,9 +198,20 @@ describe("TokenTabComponent", () => {
       component.deleteSelectedTokens();
       expect(tokenService.bulkDeleteTokens).toHaveBeenCalledWith(mockTokens);
       expect(tokenService.tokenResource.reload).toHaveBeenCalled();
-      expect(notificationService.openSnackBar).toHaveBeenCalledWith("Successfully deleted 2 tokens.");
-    });
 
+    it("should call batchDeleteTokens and reload on success with singular token", () => {
+      const singleToken = [{ serial: "TOKEN1" }] as TokenDetails[];
+      tokenService.tokenSelection.set(singleToken);
+      const response = new MockPiResponse<BulkResult, any>({
+        detail: {},
+        result: { status: true, value: { count_success: 1, failed: [], unauthorized: [] } }
+      });
+      tokenService.bulkDeleteTokens.mockReturnValue(of(response));
+      component.deleteSelectedTokens();
+      expect(tokenService.bulkDeleteTokens).toHaveBeenCalledWith(singleToken);
+      expect(tokenService.tokenResource.reload).toHaveBeenCalled();
+      expect(notificationService.openSnackBar).toHaveBeenCalledWith("Successfully deleted 1 token.");
+    });
     it("should show a notification if some tokens failed or were unauthorized", () => {
       const response = new MockPiResponse<BulkResult, any>({
         detail: {},
