@@ -139,7 +139,7 @@ export class TokenTabComponent {
                 const count_success = response.result?.value?.count_success || 0;
                 const messages: string[] = [];
                 if (count_success) {
-                  messages.push(`Successfully deleted ${count_success} tokens.`);
+                  messages.push(`Successfully deleted ${count_success} token${count_success === 1 ? '' : 's'}.`);
                 }
 
                 if (failedTokens.length > 0) {
