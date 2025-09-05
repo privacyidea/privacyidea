@@ -243,7 +243,7 @@ export class TokenTabComponent {
                 const messages: string[] = [];
 
                 if (count_success) {
-                  messages.push(`Successfully unassigned ${count_success} tokens.`);
+                  messages.push(`Successfully unassigned ${count_success} token${count_success === 1 ? '' : 's'}.`);
                 }
 
                 if (failedTokens.length > 0) {
