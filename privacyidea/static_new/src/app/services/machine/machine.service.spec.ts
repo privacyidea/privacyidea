@@ -31,6 +31,7 @@ import { MachineService } from "./machine.service";
 import { TableUtilsService } from "../table-utils/table-utils.service";
 import { TestBed } from "@angular/core/testing";
 import { environment } from "../../../environments/environment";
+import { FilterValue } from "../../core/models/filter_value";
 
 environment.proxyUrl = "/api";
 
@@ -64,15 +65,16 @@ describe("MachineService (with mock classes)", () => {
 
   it("postAssignMachineToToken posts args with auth header", async () => {
     httpStub.post.mockReturnValue(of({ ok: true }));
-    const args = {
-      service_id: "svc",
-      user: "alice",
-      serial: "serial",
-      application: "ssh",
-      machineid: "MID",
-      resolver: "RES"
-    };
-    await lastValueFrom(machineService.postAssignMachineToToken(args));
+    await lastValueFrom(
+      machineService.postAssignMachineToToken({
+        service_id: "svc",
+        user: "alice",
+        serial: "serial",
+        application: "ssh",
+        machineid: 0,
+        resolver: "RES"
+      })
+    );
     const [url, body, opts] = (httpStub.post as jest.Mock).mock.calls[0];
     expect(url).toBe("/api/machine/token");
     expect(body).toEqual({
@@ -80,7 +82,7 @@ describe("MachineService (with mock classes)", () => {
       user: "alice",
       serial: "serial",
       application: "ssh",
-      machineid: "MID",
+      machineid: 0,
       resolver: "RES"
     });
     expect(opts.headers instanceof HttpHeaders).toBe(true);
@@ -165,7 +167,7 @@ describe("MachineService (with mock classes)", () => {
   });
 
   it("filterParams produces expected object for ssh", () => {
-    machineService.machineFilter.set({ serial: "abc", hostname: "host" });
+    machineService.machineFilter.set(new FilterValue({ value: "serial:abc hostname:host" }));
     expect(machineService.filterParams()).toEqual({
       serial: "*abc*",
       hostname: "host"
@@ -174,13 +176,10 @@ describe("MachineService (with mock classes)", () => {
 
   it("filterParams handles offline application type", () => {
     machineService.selectedApplicationType.set("offline");
-    machineService.machineFilter.set({
-      serial: "xyz",
-      hostname: "h",
-      count: "5",
-      rounds: "10",
-      service_id: "svc"
-    } as any);
+    machineService.machineFilter.set(
+      new FilterValue({ value: "serial:xyz hostname:h count:5 rounds:10 service_id:svc" })
+    );
+
     expect(machineService.filterParams()).toEqual({
       serial: "*xyz*",
       hostname: "h",

@@ -27,7 +27,7 @@ import { ROUTE_PATHS } from "../../../route_paths";
 import { TokenService, TokenServiceInterface } from "../../../services/token/token.service";
 
 @Component({
-  selector: "app-assign-token-self-service",
+  selector: "app-attach-token-self-service",
   imports: [MatError, MatFormField, MatFormField, MatLabel, MatInput, FormsModule, MatButton, MatIcon],
   templateUrl: "./assign-token-self-service.component.html",
   styleUrl: "./assign-token-self-service.component.scss"

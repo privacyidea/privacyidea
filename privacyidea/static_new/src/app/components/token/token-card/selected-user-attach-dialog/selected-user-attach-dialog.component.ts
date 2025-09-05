@@ -38,7 +38,7 @@ export interface SelectedUserAssignResult {
 }
 
 @Component({
-  selector: "app-selected-user-assign-dialog",
+  selector: "app-selected-user-attach-dialog",
   imports: [
     FormsModule,
     MatAutocomplete,
@@ -57,8 +57,8 @@ export interface SelectedUserAssignResult {
     MatDialogContent,
     ClearableInputComponent
   ],
-  templateUrl: "./selected-user-assign-dialog.component.html",
-  styleUrl: "./selected-user-assign-dialog.component.scss"
+  templateUrl: "./selected-user-attach-dialog.component.html",
+  styleUrl: "./selected-user-attach-dialog.component.scss"
 })
 export class SelectedUserAssignDialogComponent {
   protected readonly userService: UserServiceInterface = inject(UserService);

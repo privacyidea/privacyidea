@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { NgClass } from "@angular/common";
-import { Component, inject, Input, WritableSignal } from "@angular/core";
+import { Component, computed, inject, Input, signal, WritableSignal } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { MatFabButton } from "@angular/material/button";
 import { MatDialog } from "@angular/material/dialog";
@@ -30,11 +30,24 @@ import {
 import { OverflowService, OverflowServiceInterface } from "../../../../services/overflow/overflow.service";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 import { ValidateService, ValidateServiceInterface } from "../../../../services/validate/validate.service";
-import { TokenSshMachineAssignDialogComponent } from "../token-ssh-machine-assign-dialog/token-ssh-machine-assign-dialog";
+import {
+  SshMachineAssignDialogData,
+  TokenSshMachineAssignDialogComponent
+} from "../token-machine-attach-dialog/token-ssh-machine-attach-dialog/token-ssh-machine-attach-dialog";
 import { ResyncTokenActionComponent } from "./resync-token-action/resync-token-action.component";
 import { SetPinActionComponent } from "./set-pin-action/set-pin-action.component";
 import { TestOtpPinActionComponent } from "./test-otp-pin-action/test-otp-pin-action.component";
 import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
+import {
+  MachineService,
+  MachineServiceInterface,
+  TokenApplications
+} from "../../../../services/machine/machine.service";
+import {
+  HotpMachineAssignDialogData,
+  TokenHotpMachineAssignDialogComponent
+} from "../token-machine-attach-dialog/token-hotp-machine-attach-dialog/token-hotp-machine-attach-dialog";
+import { lastValueFrom } from "rxjs";
 
 @Component({
   selector: "app-token-details-actions",
@@ -54,7 +67,8 @@ import { AuthService, AuthServiceInterface } from "../../../../services/auth/aut
 })
 export class TokenDetailsActionsComponent {
   private readonly matDialog: MatDialog = inject(MatDialog);
-  private readonly tokenService: TokenServiceInterface = inject(TokenService);
+  protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+  private readonly machineService: MachineServiceInterface = inject(MachineService);
   protected readonly validateService: ValidateServiceInterface = inject(ValidateService);
   protected readonly overflowService: OverflowServiceInterface = inject(OverflowService);
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
@@ -63,6 +77,13 @@ export class TokenDetailsActionsComponent {
   @Input() repeatPinValue!: WritableSignal<string>;
   @Input() tokenType!: WritableSignal<string>;
   tokenSerial = this.tokenService.tokenSerial;
+
+  isAttachedToMachine = computed<boolean>(() => {
+    const tokenApplications = this.machineService.tokenApplications();
+    if (!tokenApplications) return false;
+    if (tokenApplications.length === 0) return false;
+    return true;
+  });
 
   testPasskey() {
     this.validateService.authenticatePasskey({ isTest: true }).subscribe({
@@ -78,16 +99,80 @@ export class TokenDetailsActionsComponent {
     });
   }
 
-  assignSSHMachineDialog() {
-    this.matDialog.open(TokenSshMachineAssignDialogComponent, {
-      width: "600px",
-      data: {
-        tokenSerial: this.tokenSerial(),
-        tokenDetails: this.tokenService.getTokenDetails(this.tokenSerial()),
-        tokenType: this.tokenType()
-      },
-      autoFocus: false,
-      restoreFocus: false
-    });
+  attachSshToMachineDialog() {
+    const data: SshMachineAssignDialogData = {
+      tokenSerial: this.tokenSerial(),
+      tokenType: this.tokenType(),
+      tokenDetails: this.tokenService.getTokenDetails(this.tokenSerial())
+    };
+    this.matDialog
+      .open(TokenSshMachineAssignDialogComponent, {
+        width: "600px",
+        data: data,
+        autoFocus: false,
+        restoreFocus: false
+      })
+      .afterClosed()
+      .subscribe((request) => {
+        lastValueFrom(request).then(() => {
+          this.machineService.tokenApplicationResource.reload();
+        });
+      });
+  }
+  attachHotpToMachineDialog() {
+    const data: HotpMachineAssignDialogData = {
+      tokenSerial: this.tokenSerial()
+    };
+    this.matDialog
+      .open(TokenHotpMachineAssignDialogComponent, {
+        width: "600px",
+        data: data,
+        autoFocus: false,
+        restoreFocus: false
+      })
+      .afterClosed()
+      .subscribe((request) => {
+        if (request) {
+          lastValueFrom(request).then(() => {
+            this.machineService.tokenApplicationResource.reload();
+          });
+        }
+      });
+  }
+
+  attachPasskeyToMachine() {
+    this.machineService
+      .postAssignMachineToToken({
+        serial: this.tokenSerial(),
+        application: "offline",
+        machineid: 0,
+        resolver: ""
+      })
+      .subscribe({
+        next: (_) => {
+          this.machineService.tokenApplicationResource.reload();
+        },
+        error: (error) => {
+          console.error("Error during assignment request:", error);
+        }
+      });
+  }
+
+  removePasskeyFromMachine() {
+    const mtid = this.machineService.tokenApplications()?.[0]?.id;
+    this.machineService
+      .deleteAssignMachineToToken({
+        serial: this.tokenSerial(),
+        application: "offline",
+        mtid: `${mtid}`
+      })
+      .subscribe({
+        next: (_) => {
+          this.machineService.tokenApplicationResource.reload();
+        },
+        error: (error) => {
+          console.error("Error during unassignment request:", error);
+        }
+      });
   }
 }

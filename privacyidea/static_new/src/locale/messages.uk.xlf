@@ -621,11 +621,11 @@
           <context context-type="linenumber">27,28</context>
         </context-group>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-card/selected-user-assign-dialog/selected-user-assign-dialog.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-card/selected-user-attach-dialog/selected-user-attach-dialog.component.html</context>
           <context context-type="linenumber">94,95</context>
         </context-group>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-details/token-ssh-machine-assign-dialog/token-ssh-machine-assign-dialog.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-details/token-ssh-machine-attach-dialog/token-ssh-machine-attach-dialog.component.html</context>
           <context context-type="linenumber">62,63</context>
         </context-group>
       </trans-unit>
@@ -873,7 +873,7 @@
           <context context-type="linenumber">144</context>
         </context-group>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-card/selected-user-assign-dialog/selected-user-assign-dialog.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-card/selected-user-attach-dialog/selected-user-attach-dialog.component.html</context>
           <context context-type="linenumber">11</context>
         </context-group>
         <context-group purpose="location">
@@ -893,7 +893,7 @@
           <context context-type="linenumber">85</context>
         </context-group>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-card/selected-user-assign-dialog/selected-user-assign-dialog.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-card/selected-user-attach-dialog/selected-user-attach-dialog.component.html</context>
           <context context-type="linenumber">19</context>
         </context-group>
         <context-group purpose="location">
@@ -913,7 +913,7 @@
           <context context-type="linenumber">97,98</context>
         </context-group>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-card/selected-user-assign-dialog/selected-user-assign-dialog.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-card/selected-user-attach-dialog/selected-user-attach-dialog.component.html</context>
           <context context-type="linenumber">35,36</context>
         </context-group>
       </trans-unit>
@@ -1481,7 +1481,7 @@
           <context context-type="linenumber">6</context>
         </context-group>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-card/selected-user-assign-dialog/selected-user-assign-dialog.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-card/selected-user-attach-dialog/selected-user-attach-dialog.component.html</context>
           <context context-type="linenumber">48</context>
         </context-group>
       </trans-unit>
@@ -1493,7 +1493,7 @@
           <context context-type="linenumber">26</context>
         </context-group>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-card/selected-user-assign-dialog/selected-user-assign-dialog.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-card/selected-user-attach-dialog/selected-user-attach-dialog.component.html</context>
           <context context-type="linenumber">69</context>
         </context-group>
       </trans-unit>
@@ -1505,7 +1505,7 @@
           <context context-type="linenumber">43</context>
         </context-group>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-card/selected-user-assign-dialog/selected-user-assign-dialog.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-card/selected-user-attach-dialog/selected-user-attach-dialog.component.html</context>
           <context context-type="linenumber">89</context>
         </context-group>
       </trans-unit>
@@ -1953,7 +1953,7 @@
         <source>Assign Selected Token to User</source>
         <target state="translated">Призначити вибраний токен користувачеві</target>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-card/selected-user-assign-dialog/selected-user-assign-dialog.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-card/selected-user-attach-dialog/selected-user-attach-dialog.component.html</context>
           <context context-type="linenumber">1,2</context>
         </context-group>
       </trans-unit>
@@ -1961,7 +1961,7 @@
         <source>Some token are already assigned to a user. <x id="LINE_BREAK" ctype="lb" equiv-text="&lt;br /&gt;"></x> Assigning a token to a user will remove the previous assignment. </source>
         <target state="translated">Деякі токени вже призначено користувачеві. <x id="LINE_BREAK" ctype="lb" equiv-text="&lt;br /&gt;"></x> Призначення токена користувачеві призведе до скасування попереднього призначення. </target>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-card/selected-user-assign-dialog/selected-user-assign-dialog.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-card/selected-user-attach-dialog/selected-user-attach-dialog.component.html</context>
           <context context-type="linenumber">5,7</context>
         </context-group>
       </trans-unit>
@@ -1969,7 +1969,7 @@
         <source>User Realm is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"></x>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"></x></source>
         <target state="translated">Користувацький світ <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"></x>обов'язковий<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"></x></target>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-card/selected-user-assign-dialog/selected-user-assign-dialog.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-card/selected-user-attach-dialog/selected-user-attach-dialog.component.html</context>
           <context context-type="linenumber">32,33</context>
         </context-group>
       </trans-unit>
@@ -1977,7 +1977,7 @@
         <source>User must be selected from the list.</source>
         <target state="translated">Користувача потрібно вибрати зі списку.</target>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-card/selected-user-assign-dialog/selected-user-assign-dialog.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-card/selected-user-attach-dialog/selected-user-attach-dialog.component.html</context>
           <context context-type="linenumber">38</context>
         </context-group>
       </trans-unit>
@@ -1985,7 +1985,7 @@
         <source>User does not exist in the selected realm.</source>
         <target state="translated">Користувач не існує у вибраній області.</target>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-card/selected-user-assign-dialog/selected-user-assign-dialog.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-card/selected-user-attach-dialog/selected-user-attach-dialog.component.html</context>
           <context context-type="linenumber">41</context>
         </context-group>
       </trans-unit>
@@ -1993,7 +1993,7 @@
         <source>Assign to Selected Token</source>
         <target state="translated">Призначити вибраному токену</target>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-card/selected-user-assign-dialog/selected-user-assign-dialog.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-card/selected-user-attach-dialog/selected-user-attach-dialog.component.html</context>
           <context context-type="linenumber">102,103</context>
         </context-group>
       </trans-unit>
@@ -2333,7 +2333,7 @@
         <source>Assign SSH Machine</source>
         <target state="translated">Призначити SSH-машину</target>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-details/token-ssh-machine-assign-dialog/token-ssh-machine-assign-dialog.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-details/token-ssh-machine-attach-dialog/token-ssh-machine-attach-dialog.component.html</context>
           <context context-type="linenumber">1,2</context>
         </context-group>
       </trans-unit>
@@ -2341,7 +2341,7 @@
         <source>Application</source>
         <target state="translated">Застосування</target>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-details/token-ssh-machine-assign-dialog/token-ssh-machine-assign-dialog.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-details/token-ssh-machine-attach-dialog/token-ssh-machine-attach-dialog.component.html</context>
           <context context-type="linenumber">5</context>
         </context-group>
       </trans-unit>
@@ -2349,7 +2349,7 @@
         <source>Application is required.</source>
         <target state="translated">Потрібна заявка.</target>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-details/token-ssh-machine-assign-dialog/token-ssh-machine-assign-dialog.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-details/token-ssh-machine-attach-dialog/token-ssh-machine-attach-dialog.component.html</context>
           <context context-type="linenumber">12</context>
         </context-group>
       </trans-unit>
@@ -2357,7 +2357,7 @@
         <source>Machine</source>
         <target state="translated">Машина</target>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-details/token-ssh-machine-assign-dialog/token-ssh-machine-assign-dialog.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-details/token-ssh-machine-attach-dialog/token-ssh-machine-attach-dialog.component.html</context>
           <context context-type="linenumber">18</context>
         </context-group>
       </trans-unit>
@@ -2365,7 +2365,7 @@
         <source>Machine is required.</source>
         <target state="translated">Потрібна машина.</target>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-details/token-ssh-machine-assign-dialog/token-ssh-machine-assign-dialog.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-details/token-ssh-machine-attach-dialog/token-ssh-machine-attach-dialog.component.html</context>
           <context context-type="linenumber">26</context>
         </context-group>
       </trans-unit>
@@ -2373,7 +2373,7 @@
         <source>Service ID</source>
         <target state="translated">Ідентифікатор служби</target>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-details/token-ssh-machine-assign-dialog/token-ssh-machine-assign-dialog.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-details/token-ssh-machine-attach-dialog/token-ssh-machine-attach-dialog.component.html</context>
           <context context-type="linenumber">32</context>
         </context-group>
         <context-group purpose="location">
@@ -2385,7 +2385,7 @@
         <source>Service ID is required.</source>
         <target state="translated">Потрібен ідентифікатор служби.</target>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-details/token-ssh-machine-assign-dialog/token-ssh-machine-assign-dialog.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-details/token-ssh-machine-attach-dialog/token-ssh-machine-attach-dialog.component.html</context>
           <context context-type="linenumber">39</context>
         </context-group>
       </trans-unit>
@@ -2393,7 +2393,7 @@
         <source>User</source>
         <target state="translated">Користувач</target>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-details/token-ssh-machine-assign-dialog/token-ssh-machine-assign-dialog.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-details/token-ssh-machine-attach-dialog/token-ssh-machine-attach-dialog.component.html</context>
           <context context-type="linenumber">44</context>
         </context-group>
       </trans-unit>
@@ -2401,7 +2401,7 @@
         <source>User is required.</source>
         <target state="translated">Потрібно вказати користувача.</target>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-details/token-ssh-machine-assign-dialog/token-ssh-machine-assign-dialog.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-details/token-ssh-machine-attach-dialog/token-ssh-machine-attach-dialog.component.html</context>
           <context context-type="linenumber">52</context>
         </context-group>
       </trans-unit>
@@ -2409,7 +2409,7 @@
         <source>Assign</source>
         <target state="translated">Призначити</target>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-details/token-ssh-machine-assign-dialog/token-ssh-machine-assign-dialog.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-details/token-ssh-machine-attach-dialog/token-ssh-machine-attach-dialog.component.html</context>
           <context context-type="linenumber">61,62</context>
         </context-group>
       </trans-unit>

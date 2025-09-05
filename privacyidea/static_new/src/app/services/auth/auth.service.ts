@@ -294,20 +294,24 @@ export class AuthService implements AuthServiceInterface {
   }
 
   actionsAllowed(actions: PolicyAction[]): boolean {
-    return actions.every(action => this.actionAllowed(action));
+    return actions.every((action) => this.actionAllowed(action));
   }
 
   oneActionAllowed(actions: PolicyAction[]): boolean {
-    return actions.some(action => this.actionAllowed(action));
+    return actions.some((action) => this.actionAllowed(action));
   }
 
   anyContainerActionAllowed(): boolean {
-    return this.oneActionAllowed(
-      ["container_list", "container_create", "container_template_list", "container_template_create"]);
+    return this.oneActionAllowed([
+      "container_list",
+      "container_create",
+      "container_template_list",
+      "container_template_create"
+    ]);
   }
 
   tokenEnrollmentAllowed(): boolean {
-    const enrollPolicies = tokenTypes.map((type) => "enroll" + type.key.toUpperCase() as PolicyAction);
+    const enrollPolicies = tokenTypes.map((type) => ("enroll" + type.key.toUpperCase()) as PolicyAction);
     return this.oneActionAllowed(enrollPolicies);
   }
 
@@ -317,7 +321,7 @@ export class AuthService implements AuthServiceInterface {
   }
 
   checkForceServerGenerateOTPKey(tokenType: string): boolean {
-    return this.actionAllowed(tokenType + "_force_server_generate" as PolicyAction);
+    return this.actionAllowed((tokenType + "_force_server_generate") as PolicyAction);
   }
 
   private readonly http: HttpClient = inject(HttpClient);

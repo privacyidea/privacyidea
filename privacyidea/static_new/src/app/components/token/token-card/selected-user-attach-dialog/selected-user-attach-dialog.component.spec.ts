@@ -17,38 +17,27 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
+
+import { SelectedUserAssignDialogComponent } from "./selected-user-attach-dialog.component";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { TokenSshMachineAssignDialogComponent } from "./token-ssh-machine-assign-dialog";
-import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from "@angular/material/dialog";
+import { MatDialogRef } from "@angular/material/dialog";
 
-describe("TokenSshMachineAssignDialogComponent", () => {
-  let component: TokenSshMachineAssignDialogComponent;
-  let fixture: ComponentFixture<TokenSshMachineAssignDialogComponent>;
+describe("SelectedUserAssignDialogComponent", () => {
+  let component: SelectedUserAssignDialogComponent;
+  let fixture: ComponentFixture<SelectedUserAssignDialogComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [
-        TokenSshMachineAssignDialogComponent,
-        BrowserAnimationsModule,
-        MatDialogModule
-      ],
+      imports: [SelectedUserAssignDialogComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
-        { provide: MAT_DIALOG_DATA, useValue: {} },
-        {
-          provide: MatDialogRef,
-          useValue: {
-            close: () => {
-            }
-          }
-        }
+        { provide: MatDialogRef, useValue: { close: jest.fn() } }
       ]
     }).compileComponents();
 
-    fixture = TestBed.createComponent(TokenSshMachineAssignDialogComponent);
+    fixture = TestBed.createComponent(SelectedUserAssignDialogComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

@@ -7,6 +7,9 @@
     <div class="details-header">
       <h3 i18n>Details for Token:</h3>
       <h3 style="color: var(--mat-sys-primary)">{{ tokenSerial() }}</h3>
+      @if ((tokenType() === "passkey" || tokenType() === "hotp") && isAttachedToMachine()) {
+        <h3 i18n>{{ " (Offline)" }}</h3>
+      }
       <app-copy-button [copyText]="tokenSerial()"></app-copy-button>
     </div>
     <div
@@ -194,8 +197,9 @@
               class="edit-column-cell"
               mat-cell>
               <div class="ali-center">
-                @if (element.keyMap.key === "failcount" && !isAnyEditingOrRevoked() &&
-                authService.actionAllowed("reset")) {
+                @if (
+                  element.keyMap.key === "failcount" && !isAnyEditingOrRevoked() && authService.actionAllowed("reset")
+                ) {
                   <div class="edit-button-container">
                     <button
                       mat-icon-button
@@ -204,8 +208,12 @@
                       <mat-icon> lock_reset</mat-icon>
                     </button>
                   </div>
-                } @else if (element.keyMap.key === "container_serial" && !isAnyEditingOrRevoked() &&
-                element.value && authService.actionAllowed("container_remove_token")) {
+                } @else if (
+                  element.keyMap.key === "container_serial" &&
+                  !isAnyEditingOrRevoked() &&
+                  element.value &&
+                  authService.actionAllowed("container_remove_token")
+                ) {
                   <div class="edit-button-container">
                     <button
                       mat-icon-button
@@ -249,6 +257,9 @@
             [isAnyEditingOrRevoked]="isAnyEditingOrRevoked"
             [isEditingInfo]="isEditingInfo"
             [isEditingUser]="isEditingUser"></app-token-details-info>
+          @if (tokenType() === "sshkey" || tokenType() === "hotp") {
+            <app-token-details-machine />
+          }
         </div>
         <app-token-details-actions
           [repeatPinValue]="repeatPinValue"

@@ -1,0 +1,77 @@
+@for (machine of machineData(); track machine.id) {
+  <div
+    [ngClass]="{
+      'pad-0': overflowService.isWidthOverflowing('body', 1310)
+    }"
+    class="info-container">
+    <span
+      class="info-title details-key-row"
+      i18n>
+      Offline Parameter
+    </span>
+    <table
+      [dataSource]="dataSourceFromMachine(machine)"
+      aria-label="Token Details Data Table"
+      class="info-table"
+      i18n-aria-label
+      mat-table>
+      <ng-container matColumnDef="value">
+        <td
+          *matCellDef="let machine"
+          class="height-52 fix-width-20-padr-0"
+          mat-cell>
+          <div class="info-value-container">
+            <mat-list>
+              @for (key of Object.keys(machine); track key) {
+                @if (key === "serial" || key === "application" || key === "type" || key === "id") {
+                } @else if (key === "options") {
+                  @if (machine[key] && Object.keys(machine[key]).length > 0) {
+                    @for (optionsKey of Object.keys(machine[key]); track optionsKey) {
+                      @if (machine[key][optionsKey]) {
+                        <mat-list-item class="height-auto info-row">
+                          <div class="info-span">
+                            <span class="info-span-title"> {{ optionsKey }}: </span>
+                            <span class="info-span-value">{{ machine[key][optionsKey] }}</span>
+                            <mat-divider class="info-divider" />
+                          </div>
+                        </mat-list-item>
+                      }
+                    }
+                  }
+                } @else if (machine[key] !== null && machine[key] !== undefined && machine[key] !== "") {
+                  <mat-list-item class="height-auto info-row">
+                    <div class="info-span">
+                      <span class="info-span-title"> {{ key }}: </span>
+                      <span class="info-span-value">{{ machine[key] }}</span>
+                      <mat-divider class="info-divider" />
+                    </div>
+                  </mat-list-item>
+                }
+              }
+            </mat-list>
+          </div>
+        </td>
+      </ng-container>
+      <ng-container matColumnDef="delete">
+        <td
+          *matCellDef="let element"
+          class="height-52 edit-column-cell"
+          mat-cell>
+          <div class="edit-button-container">
+            <button
+              mat-icon-button
+              class="delete-info-button"
+              (click)="unassignMachine(element.id, element.type)"
+              i18n-aria-label="Delete Information">
+              <mat-icon>delete_outlined</mat-icon>
+            </button>
+          </div>
+        </td>
+      </ng-container>
+      <tr
+        *matRowDef="let row; columns: ['value', 'delete']"
+        class="height-52"
+        mat-row></tr>
+    </table>
+  </div>
+}
