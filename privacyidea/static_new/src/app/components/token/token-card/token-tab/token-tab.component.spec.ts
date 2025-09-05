@@ -198,6 +198,8 @@ describe("TokenTabComponent", () => {
       component.deleteSelectedTokens();
       expect(tokenService.bulkDeleteTokens).toHaveBeenCalledWith(mockTokens);
       expect(tokenService.tokenResource.reload).toHaveBeenCalled();
+      expect(notificationService.openSnackBar).toHaveBeenCalledWith("Successfully deleted 2 tokens.");
+    });
 
     it("should call batchDeleteTokens and reload on success with singular token", () => {
       const singleToken = [{ serial: "TOKEN1" }] as TokenDetails[];
