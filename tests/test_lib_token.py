@@ -896,7 +896,7 @@ class TokenTestCase(MyTestCase):
         r, reply = check_serial_pass("hotptoken", "hotppin481090")
         self.assertTrue(r)
         # the same OTP value  must not match!
-        r, reply = check_serial_pass("hotptoken", "hotppin481090")
+        r, reply = check_serial_pass("hotptoken", passw="hotppin481090")
         self.assertFalse(r)
         log_msg = str(capture)
         self.assertIn('HIDDEN', log_msg, log_msg)

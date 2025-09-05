@@ -111,12 +111,10 @@
         <button ng-click="createPolicy()"
                 id="topSavePolicyButton"
                 ng-disabled="formPolicyAdd.$invalid || selectedScope.length === 0"
-                class="btn btn-primary"
-                style="width: 121.667px">
+                class="btn btn-primary">
             <span class="glyphicon glyphicon-plus"></span>
-            <span ng-style="{'margin-left': (!existingPolicyname || policyname === existingPolicyname ? '4.667px' : '0px')}"
-                  translate>
-                 {{ (!existingPolicyname || policyname === existingPolicyname ? 'Save' : 'Clone') | translate }} Policy</span>
+            <span>
+                 {{ (!existingPolicyname || policyname === existingPolicyname ? 'Save Policy' : 'Clone Policy') | translate }}</span>
         </button>
         <button class="btn btn-primary"
                 ng-disabled="!existingPolicyname
