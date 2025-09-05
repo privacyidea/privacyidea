@@ -458,7 +458,8 @@ class RadiusTokenClass(RemoteTokenClass):
         radius_identifier = self.get_tokeninfo("radius.identifier")
         radius_user = self.get_tokeninfo("radius.user")
         system_radius_settings = self.get_tokeninfo("radius.system_settings")
-        radius_server = radius_secret = None
+        system_radius_dictfile = get_from_config("radius.dictfile",
+                                                 default="/etc/privacyidea/dictionary")
         if radius_identifier:
             # New configuration
             radius_server_object = get_radius(radius_identifier)
@@ -469,7 +470,8 @@ class RadiusTokenClass(RemoteTokenClass):
             radius_server_object = get_temporary_radius_server(
                 server=radius_server[0],
                 secret=radius_secret,
-                port=int(radius_server[1]) if len(radius_server) > 1 else 1812
+                port=int(radius_server[1]) if len(radius_server) > 1 else 1812,
+                dictionary=system_radius_dictfile
             )
         else:
             # individual token settings
@@ -480,7 +482,8 @@ class RadiusTokenClass(RemoteTokenClass):
             radius_server_object = get_temporary_radius_server(
                 server=radius_server[0],
                 secret=str(radius_secret),
-                port=int(radius_server[1]) if len(radius_server) > 1 else 1812
+                port=int(radius_server[1]) if len(radius_server) > 1 else 1812,
+                dictionary=system_radius_dictfile
             )
 
         # here we also need to check for radius.user
@@ -495,7 +498,7 @@ class RadiusTokenClass(RemoteTokenClass):
             response = radius_server_object.request(user=radius_user,
                                                     password=otpval,
                                                     radius_state=radius_state)
-            if not response:
+            if response is None:
                 # This happens when a timeout occurs
                 return AccessReject
 

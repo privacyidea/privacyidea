@@ -301,7 +301,7 @@ def auth_user_passthru(wrapped_function, user_object, passw, options=None):
                 radius = get_radius(pass_thru_action)
                 # TODO: Handle challenge-response from RADIUS server (#2587)
                 r = radius.request(user_object.login, passw)
-                if r and r.code == pyrad.packet.AccessAccept:
+                if r is not None and r.code == pyrad.packet.AccessAccept:
                     log.debug("Successful RADIUS authentication in passthru with server %r" % pass_thru_action)
                     passthru_assign = Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.PASSTHRU_ASSIGN,
                                                  user_object=user_object).action_values(unique=True)

@@ -4960,6 +4960,9 @@ class AChallengeResponse(MyApiTestCase):
         user_obj = User("cornelius", self.realm1)
         remove_token(user=user_obj)
 
+        # We need the Challenge-Response policy
+        set_policy(name="radius_chal_resp", scope=SCOPE.AUTH, action=f"{PolicyAction.CHALLENGERESPONSE}=radius")
+
         r = add_radius(identifier="myserver", server="1.2.3.4",
                        secret="testing123", dictionary=DICT_FILE)
         self.assertTrue(r > 0)
@@ -4979,7 +4982,9 @@ class AChallengeResponse(MyApiTestCase):
             data = res.json
             self.assertTrue(data.get("result").get("status"))
             self.assertFalse(data.get("result").get("value"))
+            self.assertEqual(AUTH_RESPONSE.CHALLENGE, data.get("result").get("authentication"))
             transaction_id = data.get("detail").get("transaction_id")
+            self.assertIsNotNone(transaction_id)
 
         # Now we send the response to this request but the wrong response!
         radiusmock.setdata(timeout=False, response=radiusmock.AccessReject)
@@ -4993,9 +4998,9 @@ class AChallengeResponse(MyApiTestCase):
             data = res.json
             self.assertTrue(data.get("result").get("status"))
             self.assertFalse(data.get("result").get("value"))
-            t = data.get("detail").get("transaction_id")
+            self.assertEqual(AUTH_RESPONSE.REJECT, data.get("result").get("authentication"))
             # No transaction_id
-            self.assertIsNone(t)
+            self.assertNotIn("transaction_id", data.get("detail"))
 
         # Finally we succeed
         radiusmock.setdata(timeout=False, response=radiusmock.AccessAccept)
@@ -5009,9 +5014,9 @@ class AChallengeResponse(MyApiTestCase):
             data = res.json
             self.assertTrue(data.get("result").get("status"))
             self.assertTrue(data.get("result").get("value"))
-            t = data.get("detail").get("transaction_id")
+            self.assertEqual(AUTH_RESPONSE.ACCEPT, data.get("result").get("authentication"))
             # No transaction_id
-            self.assertIsNone(t)
+            self.assertNotIn("transaction_id", data.get("detail"))
 
         # A second request tries to use the same transaction_id, but the RADIUS server
         # responds with a Reject
@@ -5026,6 +5031,7 @@ class AChallengeResponse(MyApiTestCase):
             data = res.json
             self.assertTrue(data.get("result").get("status"))
             self.assertFalse(data.get("result").get("value"))
+            self.assertEqual(AUTH_RESPONSE.REJECT, data.get("result").get("authentication"))
 
         # And finally a single shot authentication, no chal resp, no transaction_id
         radiusmock.setdata(timeout=False, response=radiusmock.AccessAccept)
@@ -5038,7 +5044,9 @@ class AChallengeResponse(MyApiTestCase):
             data = res.json
             self.assertTrue(data.get("result").get("status"))
             self.assertTrue(data.get("result").get("value"))
+            self.assertEqual(AUTH_RESPONSE.ACCEPT, data.get("result").get("authentication"))
         remove_token("rad1")
+        delete_policy("radius_chal_resp")
 
     def test_12_polltransaction(self):
         # Assign token to user:

@@ -72,6 +72,7 @@ class RADIUSServer(object):
     def get_secret(self):
         return decryptPassword(self.config.secret)
 
+    @log_with(log, hide_kwargs=["password"])
     def request(self, user: str, password: str, radius_state: bytes = None) -> pyrad.packet | None:
         """
         Perform a RADIUS request to a RADIUS server.
@@ -89,19 +90,19 @@ class RADIUSServer(object):
         :param radius_state: Challenge attribute for the RADIUS request
         :return: The response object from the RADIUS request
         """
+        # TODO: Identifier and dictionary should be part of the server configuration
+        #       and not initialized when running the request
         nas_identifier = get_from_config("radius.nas_identifier",
                                          "privacyIDEA")
         radius_dictionary = self.config.dictionary or get_from_config("radius.dictfile",
                                                                       "/etc/privacyidea/dictionary")
-        message_authenticator = False
+        verify_message_authenticator = False
         if self.config.options:
-            message_authenticator = self.config.options.get("message_authenticator", False)
-        log.debug("NAS Identifier: %r, "
-                  "Dictionary: %r" % (nas_identifier, radius_dictionary))
-        log.debug("Constructing client object "
-                  "with server: %r, port: %r, secret: %r" %
-                  (self.config.server, self.config.port, self.config.secret))
-        log.debug("Using Message-Authenticator: %r", message_authenticator)
+            verify_message_authenticator = self.config.options.get("message_authenticator", False)
+        log.debug("NAS Identifier: %r, Dictionary: %r" % (nas_identifier, radius_dictionary))
+        log.debug("Constructing client object with server: %r, port: %r" %
+                  (self.config.server, self.config.port))
+        log.debug("Using Message-Authenticator: %r", verify_message_authenticator)
 
         srv = Client(server=self.config.server,
                      authport=self.config.port,
@@ -115,7 +116,7 @@ class RADIUSServer(object):
         req = srv.CreateAuthPacket(code=pyrad.packet.AccessRequest,
                                    User_Name=user.encode('utf-8'),
                                    NAS_Identifier=nas_identifier.encode('ascii'),
-                                   message_authenticator=message_authenticator)
+                                   message_authenticator=verify_message_authenticator)
 
         # PwCrypt encodes unicode strings to UTF-8
         req["User-Password"] = req.PwCrypt(password)
@@ -128,21 +129,26 @@ class RADIUSServer(object):
             # The authenticator is available after the call to PwCrypt
             request_authenticator = req.authenticator
             response = srv.SendPacket(req)
-
-            # Check the Message-Authenticator attribute in the Response
-            if not response.verify_message_authenticator(original_authenticator=request_authenticator):
-                if not message_authenticator:
-                    log.warning("Failed to verify Message-Authenticator Attribute")
-                else:
-                    raise privacyIDEAError("Failed to verify Message-Authenticator Attribute")
         except Timeout:
-            log.warning("Received timeout from remote radius server {0!s}".format(self.config.server))
-            response = None
+            log.warning("Timeout while contacting remote radius server {0!s}".format(self.config.server))
+            return None
+
+        # Check the Message-Authenticator attribute in the Response
+        try:
+            if not response.verify_message_authenticator(original_authenticator=request_authenticator):
+                log.warning("Verification of Message-Authenticator Attribute in response failed!")
+                if verify_message_authenticator:
+                    raise privacyIDEAError("Verification of Message-Authenticator Attribute in response failed!")
+        except Exception as e:
+            # Either there was no Message-Authenticator Attribute in the response or the secret is missing
+            log.warning(f"Unable to verify Message-Authenticator Attribute in response: {e}")
+            if verify_message_authenticator:
+                raise privacyIDEAError("Unable to verify Message-Authenticator Attribute in response!")
 
         return response
 
 
-@log_with(log, hide_args=[1])
+@log_with(log, hide_kwargs=["secret"])
 def get_temporary_radius_server(server: str, secret: str, port: int = 1812,
                                 timeout: int = 5, retries: int = 3,
                                 dictionary: str = "/etc/privacyidea/dictionary") -> RADIUSServer:
@@ -220,7 +226,7 @@ def list_radiusservers(identifier=None, server=None):
     return res
 
 
-@log_with(log)
+@log_with(log, hide_kwargs=["secret"])
 def add_radius(identifier: str, server: str = None, secret: str = None,
                port: int = 1812, description: str = "",
                dictionary: str = '/etc/privacyidea/dictionary',
@@ -265,7 +271,7 @@ def add_radius(identifier: str, server: str = None, secret: str = None,
     return r
 
 
-@log_with(log)
+@log_with(log, hide_kwargs=["secret", "password"])
 def test_radius(identifier, server, secret, user, password, port=1812, description="",
                 dictionary='/etc/privacyidea/dictionary', retries=3, timeout=5,
                 options=None):
@@ -309,7 +315,7 @@ def test_radius(identifier, server, secret, user, password, port=1812, descripti
                        description=description, options=options)
     radius_server = RADIUSServer(s)
     response = radius_server.request(user, password)
-    if response:
+    if response is not None:
         # TODO: Add message to Audit info
         if response.code == pyrad.packet.AccessAccept:
             log.info("RADIUS Server test successful!")

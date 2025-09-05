@@ -1,4 +1,5 @@
 """Base test configuration to set up/teardown tests."""
+import pathlib
 import unittest
 import mock
 from sqlalchemy.orm.session import close_all_sessions
@@ -65,7 +66,9 @@ class MyTestCase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.app = create_app('testing', "")
+        # Avoid warning when creating Flask-App without path to a config file
+        # (And do not use the default config file here).
+        cls.app = create_app('testing', pathlib.Path.cwd() / "tests/testdata/test_pi.cfg")
         cls.app_context = cls.app.app_context()
         cls.app_context.push()
         db.create_all()
