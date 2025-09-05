@@ -34,7 +34,7 @@
     :target: https://www.codacy.com/app/cornelius-koelbel/privacyidea
 
 privacyIDEA: Open-Source Multi-Factor Authentication
-==================================================
+====================================================
 
 privacyIDEA is an open-source MFA platform for orchestrating all your multi-factor authentication needs. Secure your entire stack with a flexible, self-hosted solution that puts you in control. As an on-premise platform, your sensitive user data always remains within your infrastructure.
 
@@ -47,7 +47,7 @@ Key Features
 * **Truly Open:** Licensed under AGPLv3 to guarantee your software freedom, always.
 
 Supported Authentication Factors
-------------------------------
+--------------------------------
 
 * 🔑 **Passkeys & Hardware:** FIDO2/WebAuthn devices (like YubiKey, Plug-Up).
 * 💳 **Smartcards (PIV/x509):** Connect to a Microsoft CA using the `ms-ca-service <https://github.com/privacyidea/ms-ca-service>`_ and enroll certificates directly to PIV-compatible devices with our `enrollment client for Windows <https://github.com/privacyidea/smartcard-client-windows>`_.
