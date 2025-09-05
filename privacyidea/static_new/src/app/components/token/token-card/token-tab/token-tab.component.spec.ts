@@ -220,7 +220,7 @@ describe("TokenTabComponent", () => {
       tokenService.bulkDeleteTokens.mockReturnValue(of(response));
       component.deleteSelectedTokens();
       expect(notificationService.openSnackBar).toHaveBeenCalledWith(
-        "Successfully deleted 1 tokens.\nThe following tokens failed to delete: TOKEN1\nYou are not authorized to delete the following tokens: TOKEN2"
+        "Successfully deleted 1 token.\nThe following tokens failed to delete: TOKEN1\nYou are not authorized to delete the following tokens: TOKEN2"
       );
     });
 
