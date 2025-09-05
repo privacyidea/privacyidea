@@ -4,7 +4,7 @@ import "@angular/localize/init";
 
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { BrowserAnimationsModule, provideNoopAnimations } from "@angular/platform-browser/animations";
+import { provideNoopAnimations } from "@angular/platform-browser/animations";
 
 import { signal } from "@angular/core";
 import { of, throwError } from "rxjs";
@@ -15,7 +15,7 @@ import {
   NotificationServiceInterface
 } from "../../../../services/notification/notification.service";
 import {
-  BatchResult,
+  BulkResult,
   TokenDetails,
   TokenService,
   TokenServiceInterface
@@ -26,6 +26,7 @@ import { ConfirmationDialogComponent } from "../../../shared/confirmation-dialog
 import { ActivatedRoute, NavigationEnd, Router } from "@angular/router";
 import { MockPiResponse } from "../../../../../testing/mock-services";
 import { ContentService } from "../../../../services/content/content.service";
+import { AuthService } from "../../../../services/auth/auth.service";
 import { AuditService } from "../../../../services/audit/audit.service";
 
 describe("TokenTabComponent", () => {
@@ -47,9 +48,9 @@ describe("TokenTabComponent", () => {
       toggleActive: jest.fn().mockReturnValue(of(null)),
       revokeToken: jest.fn().mockReturnValue(of(null)),
       deleteToken: jest.fn().mockReturnValue(of(null)),
-      getTokenDetails: jest.fn().mockReturnValue(of({})),
-      batchDeleteTokens: jest.fn().mockReturnValue(of({})),
-      batchUnassignTokens: jest.fn().mockReturnValue(of({})),
+      getTokenDetails: jest.fn().mockReturnValue(of(new MockPiResponse({ detail: {} }))),
+      bulkDeleteTokens: jest.fn().mockReturnValue(of({})),
+      bulkUnassignTokens: jest.fn().mockReturnValue(of({})),
       assignUser: jest.fn().mockReturnValue(of({})),
       unassignUser: jest.fn().mockReturnValue(of({}))
     };
@@ -81,11 +82,19 @@ describe("TokenTabComponent", () => {
     };
 
     const auditServiceMock = {
-      filterValue: signal({})
+      auditFilter: signal({})
+    };
+
+    const authServiceMock = {
+      hasPermission: jest.fn().mockReturnValue(true),
+      tokenEnrollmentAllowed: jest.fn().mockReturnValue(true),
+      actionAllowed: jest.fn().mockReturnValue(true),
+      actionsAllowed: jest.fn().mockReturnValue(true),
+      oneActionAllowed: jest.fn().mockReturnValue(true)
     };
 
     await TestBed.configureTestingModule({
-      imports: [TokenTabComponent, BrowserAnimationsModule],
+      imports: [TokenTabComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
@@ -102,7 +111,8 @@ describe("TokenTabComponent", () => {
         { provide: VersioningService, useValue: versioningServiceMock },
         { provide: NotificationService, useValue: notificationServiceMock },
         { provide: ContentService, useValue: contentServiceMock },
-        { provide: AuditService, useValue: auditServiceMock }
+        { provide: AuditService, useValue: auditServiceMock },
+        { provide: AuthService, useValue: authServiceMock }
       ]
     }).compileComponents();
 
@@ -176,35 +186,35 @@ describe("TokenTabComponent", () => {
     it("should do nothing if dialog is cancelled", () => {
       (dialog.open as jest.Mock).mockReturnValue({ afterClosed: () => of(false) });
       component.deleteSelectedTokens();
-      expect(tokenService.batchDeleteTokens).not.toHaveBeenCalled();
+      expect(tokenService.bulkDeleteTokens).not.toHaveBeenCalled();
     });
 
     it("should call batchDeleteTokens and reload on success", () => {
-      const response = new MockPiResponse<BatchResult, any>({
+      const response = new MockPiResponse<BulkResult, any>({
         detail: {},
-        result: { status: true, value: { failed: [], unauthorized: [] } }
+        result: { status: true, value: { count_success: 2, failed: [], unauthorized: [] } }
       });
-      tokenService.batchDeleteTokens.mockReturnValue(of(response));
+      tokenService.bulkDeleteTokens.mockReturnValue(of(response));
       component.deleteSelectedTokens();
-      expect(tokenService.batchDeleteTokens).toHaveBeenCalledWith(mockTokens);
+      expect(tokenService.bulkDeleteTokens).toHaveBeenCalledWith(mockTokens);
       expect(tokenService.tokenResource.reload).toHaveBeenCalled();
-      expect(notificationService.openSnackBar).not.toHaveBeenCalled();
+      expect(notificationService.openSnackBar).toHaveBeenCalledWith("Successfully deleted 2 tokens.");
     });
 
     it("should show a notification if some tokens failed or were unauthorized", () => {
-      const response = new MockPiResponse<BatchResult, any>({
+      const response = new MockPiResponse<BulkResult, any>({
         detail: {},
-        result: { status: true, value: { failed: ["TOKEN1"], unauthorized: ["TOKEN2"] } }
+        result: { status: true, value: { count_success: 1, failed: ["TOKEN1"], unauthorized: ["TOKEN2"] } }
       });
-      tokenService.batchDeleteTokens.mockReturnValue(of(response));
+      tokenService.bulkDeleteTokens.mockReturnValue(of(response));
       component.deleteSelectedTokens();
       expect(notificationService.openSnackBar).toHaveBeenCalledWith(
-        "The following tokens failed to delete: TOKEN1\nYou are not authorized to delete the following tokens: TOKEN2"
+        "Successfully deleted 1 tokens.\nThe following tokens failed to delete: TOKEN1\nYou are not authorized to delete the following tokens: TOKEN2"
       );
     });
 
     it("should handle API errors gracefully", () => {
-      tokenService.batchDeleteTokens.mockReturnValue(throwError(() => new Error("API Error")));
+      tokenService.bulkDeleteTokens.mockReturnValue(throwError(() => new Error("API Error")));
       component.deleteSelectedTokens();
       expect(notificationService.openSnackBar).toHaveBeenCalledWith("An error occurred while deleting tokens.");
     });
@@ -218,14 +228,15 @@ describe("TokenTabComponent", () => {
     });
 
     it("should call batchUnassignTokens and reload on success", () => {
-      const response = new MockPiResponse<BatchResult, any>({
+      const response = new MockPiResponse<BulkResult, any>({
         detail: {},
-        result: { status: true, value: { failed: [], unauthorized: [] } }
+        result: { status: true, value: { count_success: 1, failed: [], unauthorized: [] } }
       });
-      tokenService.batchUnassignTokens.mockReturnValue(of(response));
+      tokenService.bulkUnassignTokens.mockReturnValue(of(response));
       component.unassignSelectedTokens();
-      expect(tokenService.batchUnassignTokens).toHaveBeenCalledWith(mockTokens);
+      expect(tokenService.bulkUnassignTokens).toHaveBeenCalledWith(mockTokens);
       expect(tokenService.tokenResource.reload).toHaveBeenCalled();
+      expect(notificationService.openSnackBar).toHaveBeenCalledWith("Successfully unassigned 1 tokens.");
     });
   });
 

@@ -114,9 +114,10 @@ export interface LostTokenData {
   valid_to: string;
 }
 
-export interface BatchResult {
+export interface BulkResult {
   failed: string[];
   unauthorized: string[];
+  count_success: number;
 }
 
 export interface TokenServiceInterface {
@@ -127,8 +128,11 @@ export interface TokenServiceInterface {
   selectedTokenType: Signal<TokenType>;
   showOnlyTokenNotInContainer: WritableSignal<boolean>;
   tokenFilter: WritableSignal<FilterValue>;
+
   clearFilter(): void;
+
   handleFilterInput($event: Event): void;
+
   tokenDetailResource: HttpResourceRef<PiResponse<Tokens> | undefined>;
   tokenTypesResource: HttpResourceRef<PiResponse<{}> | undefined>;
   tokenTypeOptions: Signal<TokenType[]>;
@@ -153,13 +157,13 @@ export interface TokenServiceInterface {
   getSerial(
     otp: string,
     params: HttpParams
-  ): Observable<PiResponse<{ count: number; serial?: string | undefined }, unknown>>;
+  ): Observable<PiResponse<{ count: number; serial?: string | undefined }>>;
 
   setTokenInfos(tokenSerial: string, infos: any): Observable<PiResponse<boolean>[]>;
 
   deleteToken(tokenSerial: string): Observable<Object>;
 
-  batchDeleteTokens(selectedTokens: TokenDetails[]): Observable<PiResponse<BatchResult, any>>;
+  bulkDeleteTokens(selectedTokens: TokenDetails[]): Observable<PiResponse<BulkResult, any>>;
 
   revokeToken(tokenSerial: string): Observable<any>;
 
@@ -169,7 +173,7 @@ export interface TokenServiceInterface {
 
   unassignUser(tokenSerial: string): Observable<PiResponse<boolean>>;
 
-  batchUnassignTokens(tokenDetails: TokenDetails[]): Observable<PiResponse<BatchResult, any>>;
+  bulkUnassignTokens(tokenDetails: TokenDetails[]): Observable<PiResponse<BulkResult, any>>;
 
   assignUserToAll(args: {
     tokenSerials: string[];
@@ -366,7 +370,7 @@ export class TokenService implements TokenServiceInterface {
     let filterPairsMap = filterPairs
       .filter(([key]) => allowedFilters.includes(key))
       .map(([key, value]) => ({ key, value }));
-    const mopdifiedmap = filterPairsMap.reduce(
+    return filterPairsMap.reduce(
       (acc, { key, value }) => ({
         ...acc,
         [key]: ["user", "infokey", "infovalue", "active", "assigned", "container_serial"].includes(key)
@@ -375,7 +379,6 @@ export class TokenService implements TokenServiceInterface {
       }),
       {} as Record<string, string>
     );
-    return mopdifiedmap;
   });
 
   tokenResource = httpResource<PiResponse<Tokens>>(() => {
@@ -407,10 +410,10 @@ export class TokenService implements TokenServiceInterface {
     computation: () => []
   });
 
-  batchUnassignTokens(tokenDetails: TokenDetails[]): Observable<PiResponse<BatchResult, any>> {
+  bulkUnassignTokens(tokenDetails: TokenDetails[]): Observable<PiResponse<BulkResult, any>> {
     const headers = this.authService.getHeaders();
     return this.http
-      .post<PiResponse<BatchResult, any>>(
+      .post<PiResponse<BulkResult, any>>(
         this.tokenBaseUrl + "unassign",
         {
           serials: tokenDetails.map((token) => token.serial)
@@ -427,11 +430,11 @@ export class TokenService implements TokenServiceInterface {
       );
   }
 
-  batchDeleteTokens(selectedTokens: TokenDetails[]): Observable<PiResponse<BatchResult, any>> {
+  bulkDeleteTokens(selectedTokens: TokenDetails[]): Observable<PiResponse<BulkResult, any>> {
     const headers = this.authService.getHeaders();
     const body = { serials: selectedTokens.map((t) => t.serial) };
 
-    return this.http.delete<PiResponse<BatchResult, any>>(this.tokenBaseUrl, { headers, body }).pipe(
+    return this.http.delete<PiResponse<BulkResult, any>>(this.tokenBaseUrl, { headers, body }).pipe(
       catchError((error) => {
         console.error("Failed to delete tokens.", error);
         const message = error.result?.error?.message || "";

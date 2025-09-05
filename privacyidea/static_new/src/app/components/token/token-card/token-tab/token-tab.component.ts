@@ -10,7 +10,7 @@ import { catchError, concatMap, EMPTY, filter, from, reduce, switchMap } from "r
 import { tabToggleState } from "../../../../../styles/animations/animations";
 import { AuditService, AuditServiceInterface } from "../../../../services/audit/audit.service";
 import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
-import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
+import { BulkResult, TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 import { VersioningService, VersioningServiceInterface } from "../../../../services/version/version.service";
 import { ConfirmationDialogComponent } from "../../../shared/confirmation-dialog/confirmation-dialog.component";
 import { SelectedUserAssignDialogComponent } from "../selected-user-assign-dialog/selected-user-assign-dialog.component";
@@ -24,11 +24,6 @@ import {
 } from "../../../../services/notification/notification.service";
 import { PiResponse } from "../../../../app.component";
 import { FilterValue } from "../../../../core/models/filter_value";
-
-interface BatchResult {
-  failed: string[];
-  unauthorized: string[];
-}
 
 @Component({
   selector: "app-token-tab",
@@ -137,11 +132,15 @@ export class TokenTabComponent {
       .subscribe({
         next: (result) => {
           if (result) {
-            this.tokenService.batchDeleteTokens(selectedTokens).subscribe({
-              next: (response: PiResponse<BatchResult, any>) => {
+            this.tokenService.bulkDeleteTokens(selectedTokens).subscribe({
+              next: (response: PiResponse<BulkResult, any>) => {
                 const failedTokens = response.result?.value?.failed || [];
                 const unauthorizedTokens = response.result?.value?.unauthorized || [];
+                const count_success = response.result?.value?.count_success || 0;
                 const messages: string[] = [];
+                if (count_success) {
+                  messages.push(`Successfully deleted ${count_success} tokens.`);
+                }
 
                 if (failedTokens.length > 0) {
                   messages.push(`The following tokens failed to delete: ${failedTokens.join(", ")}`);
@@ -219,6 +218,7 @@ export class TokenTabComponent {
   onClickManageSearch(): void {
     this.auditService.auditFilter.set(new FilterValue({ value: `serial: ${this.tokenSerial()}` }));
   }
+
   unassignSelectedTokens() {
     const selectedTokens = this.tokenSelection();
     this.dialog
@@ -235,11 +235,16 @@ export class TokenTabComponent {
       .subscribe({
         next: (result) => {
           if (result) {
-            this.tokenService.batchUnassignTokens(selectedTokens).subscribe({
-              next: (response: PiResponse<BatchResult, any>) => {
+            this.tokenService.bulkUnassignTokens(selectedTokens).subscribe({
+              next: (response: PiResponse<BulkResult, any>) => {
                 const failedTokens = response.result?.value?.failed || [];
                 const unauthorizedTokens = response.result?.value?.unauthorized || [];
+                const count_success = response.result?.value?.count_success || 0;
                 const messages: string[] = [];
+
+                if (count_success) {
+                  messages.push(`Successfully unassigned ${count_success} tokens.`);
+                }
 
                 if (failedTokens.length > 0) {
                   messages.push(`The following tokens failed to unassign: ${failedTokens.join(", ")}`);

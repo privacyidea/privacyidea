@@ -16,7 +16,7 @@ import {
 } from "../app/mappers/token-api-payload/_token-api-payload.mapper";
 import { HttpHeaders, HttpParams, HttpProgressEvent, HttpResourceRef } from "@angular/common/http";
 import {
-  BatchResult,
+  BulkResult,
   LostTokenResponse,
   TokenDetails,
   TokenGroups,
@@ -783,7 +783,7 @@ export class MockTokenService implements TokenServiceInterface {
     throw new Error("Method not implemented.");
   }
 
-  batchDeleteTokens(selectedTokens: TokenDetails[]): Observable<PiResponse<BatchResult, any>> {
+  bulkDeleteTokens(selectedTokens: TokenDetails[]): Observable<PiResponse<BulkResult, any>> {
     throw new Error("Method not implemented.");
   }
 
@@ -801,7 +801,7 @@ export class MockTokenService implements TokenServiceInterface {
 
   unassignUser = jest.fn().mockReturnValue(of(null));
 
-  batchUnassignTokens(tokenDetails: TokenDetails[]): Observable<PiResponse<BatchResult, any>> {
+  bulkUnassignTokens(tokenDetails: TokenDetails[]): Observable<PiResponse<BulkResult, any>> {
     throw new Error("Method not implemented.");
   }
 
