@@ -64,7 +64,6 @@ This is the middleware/glue between the HTTP API and the database
 """
 import base64
 import datetime
-import json
 import logging
 import os
 import random
@@ -148,6 +147,12 @@ class TokenImportResult:
     successful_tokens: list[str]
     updated_tokens: list[str]
     failed_tokens: list[str]
+
+
+@dataclass(frozen=True)
+class TokenExportResult:
+    successful_tokens: list[str] # The serialized tokens for which the export succeeded
+    failed_tokens: list[str] # The serial of tokens for which the export failed
 
 
 @compiles(clob_to_varchar, 'oracle')
@@ -2510,7 +2515,8 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
             # This is a challenge request
             challenge_request_token_list.append(token_object)
         else:
-            if not (PolicyAction.FORCE_CHALLENGE_RESPONSE in options and is_true(options[PolicyAction.FORCE_CHALLENGE_RESPONSE])):
+            if not (PolicyAction.FORCE_CHALLENGE_RESPONSE in options and is_true(
+                    options[PolicyAction.FORCE_CHALLENGE_RESPONSE])):
                 # This is a normal authentication attempt
                 try:
                     # Pass the length of the valid_token_list to ``authenticate`` so that
@@ -2980,22 +2986,30 @@ def regenerate_enroll_url(serial: str, request: Request, g) -> Union[str, None]:
     return enroll_url
 
 
-def export_tokens(tokens: list[TokenClass]) -> list[dict]:
+def export_tokens(tokens: list[TokenClass], export_user: bool = True) -> TokenExportResult:
     """
-    Takes a list of tokens and returns an dict with all infos.
-
-    :param tokens: list of token objects
-    :return: list of dict with token information
+    Export a list of tokens.
     """
-    exported_tokens = [token.export_token() for token in tokens]
-    return exported_tokens
+    success = []
+    failed = []
+    for token in tokens:
+        try:
+            exported = token.export_token(export_user=export_user)
+            success.append(exported)
+        except Exception as ex:
+            log.error(f"Failed to export token {token.get_serial()}: {ex}")
+            failed.append(token.get_serial())
+    return TokenExportResult(successful_tokens=success, failed_tokens=failed)
 
 
-def import_tokens(tokens: list[dict], update_existing_tokens: bool = True) -> TokenImportResult:
+def import_tokens(tokens: list[dict], update_existing_tokens: bool = True,
+                  assign_to_user: bool = True) -> TokenImportResult:
     """
     Import a list of token dictionaries.
 
     :param tokens: list of dict with token information
+    :param update_existing_tokens: If True, existing tokens will be updated with the new data.
+    :param assign_to_user: If True, the user from the token data will be assigned to the token.
     :return: list of token objects
     """
     successful_tokens = []
@@ -3004,23 +3018,52 @@ def import_tokens(tokens: list[dict], update_existing_tokens: bool = True) -> To
 
     for token_info_dict in tokens:
         serial = token_info_dict.get("serial")
-        try:
-            existing_token = get_one_token(serial=serial, silent_fail=True)
+        existing_token = get_one_token(serial=serial, silent_fail=True)
+        # We check if there is no existing token or if we want to update existing tokens
+        if not existing_token or update_existing_tokens:
+            # We create a new token, if there is no existing token
             if not existing_token:
-                token_type = token_info_dict.get("type")
-                db_token = Token(serial, tokentype=token_type.lower())
-                token = create_tokenclass_object(db_token)
-                token.import_token(token_info_dict)
-                successful_tokens.append(serial)
-            elif update_existing_tokens:
-                existing_token.import_token(token_info_dict)
-                updated_tokens.append(serial)
+                try:
+                    token_type = token_info_dict.get("type")
+                    db_token = Token(serial, tokentype=token_type.lower())
+                    db_token.save()
+                    token = create_tokenclass_object(db_token)
+                except Exception as e:
+                    log.error(f"Could not create token {serial}: {e}")
+                    failed_tokens.append(serial)
+                    continue
+            # We use the existing token and update it
             else:
-                log.info(f"Token with serial {serial} already exists. "
-                         f"Set update_existing=True to update the token.")
+                token = existing_token
+
+            # Assign the user, if wanted and if there is a user in the token info dict
+            if assign_to_user and token_info_dict.get("user"):
+                try:
+                    owner = User(login=token_info_dict.get("user").get("login"),
+                                 resolver=token_info_dict.get("user").get("resolver"),
+                                 realm=token_info_dict.get("user").get("realm"),
+                                 uid=token_info_dict.get("user").get("uid"))
+                    token.add_user(owner, override=True)
+                except Exception as e:
+                    log.error(f"Could not assign user to token {serial}: {e}. "
+                              f"The token will not be imported.")
+                    failed_tokens.append(serial)
+                    token.delete_token()
+                    continue
+            try:
+                token.import_token(token_info_dict)
+            except Exception as e:
+                log.exception(f"Could not import token {serial}: {e}")
                 failed_tokens.append(serial)
-        except Exception as e:
-            log.error(f"Could not import token {serial}: {e}")
+                token.delete_token()
+                continue
+
+            if not existing_token:
+                successful_tokens.append(serial)
+            else:
+                updated_tokens.append(serial)
+        else:
+            log.info(f"Token with serial {serial} already exists.")
             failed_tokens.append(serial)
     return TokenImportResult(successful_tokens=successful_tokens, updated_tokens=updated_tokens,
                              failed_tokens=failed_tokens)

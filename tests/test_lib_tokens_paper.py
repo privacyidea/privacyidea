@@ -5,10 +5,11 @@ This depends on lib.tokenclass
 import logging
 
 from testfixtures import LogCapture
-from .base import MyTestCase
-from privacyidea.lib.tokens.papertoken import PaperTokenClass
+
 from privacyidea.lib.token import init_token, remove_token, import_tokens, get_tokens
+from privacyidea.lib.tokens.papertoken import PaperTokenClass
 from privacyidea.models import Token
+from .base import MyTestCase
 
 OTPKEY = "3132333435363738393031323334353637383930"
 
@@ -94,15 +95,15 @@ class PaperTokenTestCase(MyTestCase):
         self.assertTrue(set(expected_keys).issubset(exported_data.keys()))
 
         expected_tokeninfo_keys = ["hashlib", "tokenkind"]
-        self.assertTrue(set(expected_tokeninfo_keys).issubset(exported_data["tokeninfo"].keys()))
+        self.assertTrue(set(expected_tokeninfo_keys).issubset(exported_data["info_list"].keys()))
 
         # Test that the exported values match the token's data
         self.assertEqual(exported_data["serial"], "PAPER12345678")
         self.assertEqual(exported_data["type"], "paper")
         self.assertEqual(exported_data["description"], "this is a paper token export test")
-        self.assertEqual(exported_data["tokeninfo"]["hashlib"], "sha256")
+        self.assertEqual(exported_data["info_list"]["hashlib"], "sha256")
         self.assertEqual(exported_data["otpkey"], papertoken.token.get_otpkey().getKey().decode("utf-8"))
-        self.assertEqual(exported_data["tokeninfo"]["tokenkind"], "software")
+        self.assertEqual(exported_data["info_list"]["tokenkind"], "software")
         self.assertEqual(exported_data["issuer"], "privacyIDEA")
 
         # Clean up
@@ -115,7 +116,7 @@ class PaperTokenTestCase(MyTestCase):
             "type": "paper",
             "description": "this is a paper token import test",
             "otpkey": OTPKEY,
-            "tokeninfo": {"hashlib": "sha512", "tokenkind": "software"},
+            "info_list": {"hashlib": "sha512", "tokenkind": "software"},
             "issuer": "privacyIDEA"
         }]
 
@@ -130,8 +131,8 @@ class PaperTokenTestCase(MyTestCase):
         self.assertEqual(papertoken.type, token_data[0]["type"])
         self.assertEqual(papertoken.token.description, token_data[0]["description"])
         self.assertEqual(papertoken.token.get_otpkey().getKey().decode("utf-8"), token_data[0]["otpkey"])
-        self.assertEqual(papertoken.get_tokeninfo("hashlib"), token_data[0]["tokeninfo"]["hashlib"])
-        self.assertEqual(papertoken.get_tokeninfo("tokenkind"), token_data[0]["tokeninfo"]["tokenkind"])
+        self.assertEqual(papertoken.get_tokeninfo("hashlib"), token_data[0]["info_list"]["hashlib"])
+        self.assertEqual(papertoken.get_tokeninfo("tokenkind"), token_data[0]["info_list"]["tokenkind"])
 
         # Check that the token works
         r = papertoken.check_otp('125165')
