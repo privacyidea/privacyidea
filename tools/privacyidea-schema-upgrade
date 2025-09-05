@@ -1,5 +1,8 @@
 #!/bin/sh
 
+# SPDX-FileCopyrightText: (C) 2028 NetKnights GmbH <https://netknights.it>
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 MIGRATION_DIR=""
 FIRST_VERSION="4f32a4e1bf33"
 SKIP_STAMP=NO
@@ -15,7 +18,7 @@ usage()
   exit "$1"
 }
 
-while [[ $# -gt 0 ]]; do
+while [ "$#" -gt 0 ]; do
   case $1 in
     -d|--migration_dir)
       MIGRATION_DIR="$2"
