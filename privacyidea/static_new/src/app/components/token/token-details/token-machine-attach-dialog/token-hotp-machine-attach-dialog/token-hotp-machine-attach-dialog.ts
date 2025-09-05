@@ -52,12 +52,12 @@ export class TokenHotpMachineAssignDialogComponent {
   public data: HotpMachineAssignDialogData = inject(MAT_DIALOG_DATA);
   public tokenSerial = this.data.tokenSerial;
 
-  countControl = new FormControl<number | null>(3, {
+  countControl = new FormControl<number | null>(100, {
     nonNullable: true,
     validators: [Validators.required, Validators.min(1), Validators.max(100)]
   });
 
-  roundsControl = new FormControl<number | null>(150, {
+  roundsControl = new FormControl<number | null>(10000, {
     nonNullable: true,
     validators: [Validators.required, Validators.min(1), Validators.max(1000)]
   });
