@@ -54,12 +54,12 @@ export class TokenHotpMachineAssignDialogComponent {
 
   countControl = new FormControl<number | null>(100, {
     nonNullable: true,
-    validators: [Validators.required, Validators.min(1), Validators.max(100)]
+    validators: [Validators.required, Validators.min(10)]
   });
 
   roundsControl = new FormControl<number | null>(10000, {
     nonNullable: true,
-    validators: [Validators.required, Validators.min(1), Validators.max(1000)]
+    validators: [Validators.required, Validators.min(1000)]
   });
 
   formGroup = new FormGroup({
