@@ -12,8 +12,8 @@ msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: translations@privacyidea.org\n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2025-04-10 22:38+0000\n"
-"Last-Translator: Paul Lettich <paul.lettich@netknights.it>\n"
+"PO-Revision-Date: 2025-09-08 12:00+0000\n"
+"Last-Translator: Nils Behlen <nils.behlen@netknights.it>\n"
 "Language-Team: German <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-webui/de/>\n"
 "Language: de\n"
@@ -21,7 +21,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 5.11-dev\n"
+"X-Generator: Weblate 5.14-dev\n"
 
 # This is the level in the subscriptions
 #. level of subscription
@@ -117,38 +117,6 @@ msgstr ""
 "unabhängiger <b>Code-Audits</b>, sicher.</li>"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:45
-#, fuzzy
-#| msgid ""
-#| "<p>\n"
-#| "                    You are reading books, which do not belong to you "
-#| "anymore. Your ebook reader\n"
-#| "                    only provides them for the time of reading. You are "
-#| "using software as a service\n"
-#| "                    and you do not have any control, when the software "
-#| "will be updated,\n"
-#| "                    which features will be added or removed or if the "
-#| "service might even be stopped.\n"
-#| "                    You only get a legal right of time limited use.\n"
-#| "                </p>\n"
-#| "                <p>\n"
-#| "                    You could install proprietary software on your own "
-#| "server, but you also have only\n"
-#| "                    limited rights in regards to this installation. You "
-#| "are not allowed to modify or pass along\n"
-#| "                    this proprietary software.\n"
-#| "                </p>\n"
-#| "                <p>\n"
-#| "                    The open source software privacyIDEA now is <b>your "
-#| "property</b>! No one can take away this software\n"
-#| "                    or this installation. According to the license AGPLv3 "
-#| "you can modify or distribute this software.\n"
-#| "                    You do not have to worry about end-of-life.\n"
-#| "                </p>\n"
-#| "                <p>\n"
-#| "                    <b>Using open source is not about spending no money, "
-#| "but is is about full control you get over\n"
-#| "                        your own system! Forever!</b>\n"
-#| "                </p>"
 msgid ""
 "<p>\n"
 "                    You are reading books, which do not belong to you "
@@ -419,10 +387,8 @@ msgid "Administrator"
 msgstr "Administrator"
 
 #: privacyidea/static/components/config/views/config.resolvers.http.html:10
-#, fuzzy
-#| msgid "Hide Settings"
 msgid "Advanced Settings"
-msgstr "Einstellungen verbergen"
+msgstr "Erweiterte Einstellungen"
 
 #: privacyidea/static/components/config/views/config.system.html:202
 msgid "All CA Connectors"
@@ -542,10 +508,9 @@ msgid "Assign the Container to a User"
 msgstr "Container einem Benutzer zuweisen"
 
 #: privacyidea/static/components/directives/views/directive.registerContainer.html:39
-#, fuzzy
-#| msgid "Assign the Container to a User"
 msgid "Assign the container to a user to enable this option."
-msgstr "Container einem Benutzer zuweisen"
+msgstr ""
+"Weisen Sie den Container einem Benutzer zu, um diese Option zu aktivieren."
 
 #: privacyidea/static/components/directives/views/directive.selectorcreatecontainer.html:53
 msgid ""
@@ -587,8 +552,6 @@ msgid "Attach to a new Machine"
 msgstr "An eine neue Maschine anhängen"
 
 #: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:44
-#, fuzzy
-#| msgid "Attribute mapping"
 msgid "Attribute Mapping"
 msgstr "Attributszuordnung"
 
@@ -618,7 +581,7 @@ msgstr "Authentifizierungen in den letzten 24 Stunden"
 
 #: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:166
 msgid "Authority"
-msgstr ""
+msgstr "Authorität"
 
 #: privacyidea/static/components/config/views/config.system.edit.html:80
 msgid "Auto resync timeout"
@@ -643,16 +606,12 @@ msgid "Base DN"
 msgstr "Base-DN"
 
 #: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:20
-#, fuzzy
-#| msgid "Base DN"
 msgid "Base URL"
-msgstr "Base-DN"
+msgstr "Basis URL"
 
 #: privacyidea/static/components/config/views/config.resolvers.http.html:13
-#, fuzzy
-#| msgid "Edit Settings"
 msgid "Basic Settings"
-msgstr "Einstellungen bearbeiten"
+msgstr "Grundeinstellungen"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:92
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:151
@@ -862,10 +821,8 @@ msgid "Client Configuration is not supported."
 msgstr "Die Client-Konfiguration wird nicht unterstützt."
 
 #: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:189
-#, fuzzy
-#| msgid "Login with credentials"
 msgid "Client Credential"
-msgstr "Als anderer Benutzer anmelden"
+msgstr "Client-Anmeldeinformation"
 
 #: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:181
 #: privacyidea/static/components/config/views/config.token.yubikey.html:20
@@ -941,6 +898,9 @@ msgid ""
 "Configure the endpoint to authenticate the user with its username/userid and "
 "password."
 msgstr ""
+"Konfigurieren Sie den Endpunkt so, dass der Benutzer mit seinem "
+"Benutzernamen/seiner Benutzerkennung und seinem Passwort authentifiziert "
+"wird."
 
 #: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:320
 msgid ""
@@ -951,12 +911,18 @@ msgid ""
 "                be specified in the request mapping using the tag "
 "<code>\"{password}\"</code>."
 msgstr ""
+"Konfigurieren Sie den Endpunkt, um einen neuen Benutzer im Benutzerspeicher "
+"anzulegen. \n"
+"Die oben definierten Attribute können in der Benutzeroberfläche festgelegt "
+"werden und werden dem Request Body hinzugefügt. \n"
+"Zusätzlich können Sie ein Passwort definieren, das im Request-Mapping mit "
+"dem Tag <code>\"{password}\"</code> angegeben werden muss."
 
 #: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:332
-#, fuzzy
-#| msgid "Do you really want to delete the user in the user store?"
 msgid "Configure the endpoint to delete an existing user from the user store."
-msgstr "Wollen Sie wirklich den Benutzer in der Benutzerquelle löschen?"
+msgstr ""
+"Konfigurieren Sie den Endpunkt, um einen bestehenden Benutzer aus dem "
+"Benutzerspeicher zu löschen."
 
 #: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:326
 msgid ""
@@ -966,6 +932,11 @@ msgid ""
 "Additionally, you can define custom request\n"
 "                parameters in the request mapping."
 msgstr ""
+"Konfigurieren Sie den Endpunkt, um einen bestehenden Benutzer im "
+"Benutzerspeicher zu bearbeiten. Die oben definierten Attribute können in der "
+"Benutzeroberfläche festgelegt werden und werden dem Request Body "
+"hinzugefügt. Zusätzlich können Sie im Request-Mapping benutzerdefinierte "
+"Anfrageparameter definieren."
 
 #: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:304
 msgid ""
@@ -974,6 +945,10 @@ msgid ""
 "                are added to the request as search parameters if they are "
 "available in the request."
 msgstr ""
+"Konfigurieren Sie den Endpunkt, um eine Liste von Benutzern aus dem "
+"Benutzerspeicher abzurufen.\n"
+"Die oben definierten Attribute werden der Anfrage als Suchparameter "
+"hinzugefügt, sofern sie in der Anfrage verfügbar sind."
 
 #: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:309
 msgid ""
@@ -982,6 +957,10 @@ msgid ""
 "                the UID of the token owner. To resolve the complete user, "
 "this endpoint is used."
 msgstr ""
+"Konfigurieren Sie den Endpunkt, um einen einzelnen Benutzer anhand seiner "
+"UID abzurufen. privacyIDEA speichert beispielsweise nur die UID des Token-"
+"Inhabers. Um den vollständigen Benutzer aufzulösen, wird dieser Endpunkt "
+"verwendet."
 
 #: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:314
 msgid ""
@@ -991,6 +970,11 @@ msgid ""
 "provided. To resolve the complete user and\n"
 "                evaluate if the user exists, this endpoint is used."
 msgstr ""
+"Konfigurieren Sie den Endpunkt, um einen einzelnen Benutzer anhand des "
+"Benutzernamens abzurufen. Wenn ein Benutzer beispielsweise versucht, sich an "
+"privacyIDEA zu authentifizieren, wird nur der Benutzername angegeben. Um den "
+"vollständigen Benutzer aufzulösen und zu prüfen, ob der Benutzer existiert, "
+"wird dieser Endpunkt verwendet."
 
 #: privacyidea/static/components/config/views/config.resolvers.sql.html:196
 msgid "Connection Parameters"
@@ -1023,6 +1007,9 @@ msgid ""
 "                <pi-filter ng-model=\"filter.realm\" ng-change=\"get()\" ng-"
 "keypress=\"($event.which==13)?get():return\"></pi-filter>"
 msgstr ""
+"Container Realms\n"
+"                <pi-filter ng-model=\"filter.realm\" ng-change=\"get()\" ng-"
+"keypress=\"($event.which==13)?get():return\"></pi-filter>"
 
 #: privacyidea/static/components/audit/views/audit.log.html:82
 msgid "Container Serial"
@@ -1053,13 +1040,11 @@ msgstr "Container des Benutzers {{ username }}"
 
 #: privacyidea/static/components/token/controllers/tokenChallengesController.js:56
 msgid "Could not delete expired challenges."
-msgstr ""
+msgstr "Abgelaufene Challenges konnten nicht gelöscht werden."
 
 #: privacyidea/static/components/config/controllers/configControllers.js:811
-#, fuzzy
-#| msgid "Failed to delete user."
 msgid "Could not delete user cache."
-msgstr "Löschen des Benutzers fehlgeschlagen."
+msgstr "Benutzer-Cache konnte nicht gelöscht werden."
 
 #: privacyidea/static/components/token/views/token.applications.offline.html:35
 #: privacyidea/static/components/token/views/token.details.html:123
@@ -1188,10 +1173,8 @@ msgid "Create a new privacyIDEA server {{ params.identifier }}"
 msgstr "Einen neuen Remote privacyIDEA Server anlegen {{ params.identifier }}"
 
 #: privacyidea/static/components/config/views/config.resolvers.http.html:7
-#, fuzzy
-#| msgid "Create a new Tokengroup {{ params.groupname }}"
 msgid "Create a new {{ typeMapping[params.type] }}"
-msgstr "Eine neue Tokengruppe anlegen {{ params.groupname }}"
+msgstr "Neuen {{ typeMapping[params.type] }} erstellen"
 
 #: privacyidea/static/components/dialogs/views/dialog.autocreate_realm.html:11
 msgid "Create default realm"
@@ -1328,10 +1311,8 @@ msgid "Delete Container and Tokens"
 msgstr "Container und Tokens löschen"
 
 #: privacyidea/static/components/token/views/token.challenges.html:5
-#, fuzzy
-#| msgid "Delete all tokens?"
 msgid "Delete Expired Challenges"
-msgstr "Alle Token löschen?"
+msgstr "Abgelaufene Challenges löschen"
 
 #: privacyidea/static/components/token/views/dialog.ask_token_delete.html:11
 #: privacyidea/static/components/token/views/dialog.ask_token_delete.html:31
@@ -1346,10 +1327,8 @@ msgid "Delete User"
 msgstr "Benutzer löschen"
 
 #: privacyidea/static/components/config/views/config.system.edit.html:99
-#, fuzzy
-#| msgid "Delete User"
 msgid "Delete User Cache"
-msgstr "Benutzer löschen"
+msgstr "Benutzer-Cache löschen"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:465
 msgid "Delete all tokens?"
@@ -1502,10 +1481,8 @@ msgid "Do you really want to delete this resolver?"
 msgstr "Wollen Sie diesen Benutzer-Resolver wirklich löschen?"
 
 #: privacyidea/static/components/config/views/config.serviceid.list.html:29
-#, fuzzy
-#| msgid "Do you really want to delete this event?"
 msgid "Do you really want to delete this service ID?"
-msgstr "Wollen Sie wirklich diese Ereignisdefinition löschen?"
+msgstr "Möchten Sie diese Service-ID wirklich löschen?"
 
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:148
 msgid "Domain CA"
@@ -1697,10 +1674,8 @@ msgid "End Date before Start Date!"
 msgstr "Enddatum vor dem Startdatum!"
 
 #: privacyidea/static/components/directives/views/directive.httpResolverEndpointConfig.html:29
-#, fuzzy
-#| msgid "Endpoint (URL)"
 msgid "Endpoint"
-msgstr "Endpunkt (URL)"
+msgstr "Endpunkt"
 
 #: privacyidea/static/components/config/views/config.resolvers.http.basic.html:19
 msgid "Endpoint (URL)"
@@ -1868,6 +1843,9 @@ msgid ""
 "                                <code>{username}</code>, and all attribute "
 "mapping keys."
 msgstr ""
+"Filter, um die Gruppen eines einzelnen Benutzers abzurufen. Mögliche Tags: "
+"<code>{base_dn}</code>, <code>{username}</code> und alle Schlüssel des "
+"Attribut-Mappings."
 
 #: privacyidea/static/components/token/views/token.import.html:121
 msgid "Fingerprint"
@@ -2011,10 +1989,8 @@ msgid "Given name"
 msgstr "Vorname"
 
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:365
-#, fuzzy
-#| msgid "Hostname Attribute"
 msgid "Group Name Attribute"
-msgstr "Attribut für Hostnamen"
+msgstr "Gruppennamenattribut"
 
 #: privacyidea/static/components/config/views/config.token.hotp.html:1
 msgid "HOTP Token settings"
@@ -2028,7 +2004,7 @@ msgstr ""
 
 #: privacyidea/static/components/directives/views/directive.policyconditions.html:10
 msgid "Handle Missing Data"
-msgstr ""
+msgstr "Umgang mit fehlenden Daten"
 
 #: privacyidea/static/components/config/views/config.events.details.html:62
 #: privacyidea/static/components/config/views/config.events.list.html:18
@@ -2299,6 +2275,8 @@ msgstr "Bezeichner"
 #: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:93
 msgid "If no custom headers are defined this header is used for all endpoints."
 msgstr ""
+"Wenn keine benutzerdefinierten Header definiert sind, wird dieser Header für "
+"alle Endpunkte verwendet."
 
 #: privacyidea/static/components/config/views/config.smtp.edit.html:79
 msgid ""
@@ -2753,7 +2731,7 @@ msgstr "Referrals werden nicht (anonym) verfolgt"
 
 #: privacyidea/static/components/token/controllers/tokenChallengesController.js:50
 msgid "No expired challenges were deleted."
-msgstr ""
+msgstr "Keine abgelaufenen Challenges wurden gelöscht."
 
 #: privacyidea/static/components/directives/views/directive.attachmachine.html:17
 msgid "No machine found"
@@ -2770,7 +2748,7 @@ msgstr "Keine Seriennummer gefunden"
 
 #: privacyidea/static/components/config/controllers/configControllers.js:806
 msgid "No user cache entries were deleted."
-msgstr ""
+msgstr "Keine Benutzer-Cache-Einträge wurden gelöscht."
 
 #: privacyidea/static/components/directives/views/directive.assignuser.html:33
 msgid "No user found"
@@ -3037,10 +3015,8 @@ msgid "Password Hash for editable users"
 msgstr "Passwort Hash für neu angelegte Benutzer"
 
 #: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:242
-#, fuzzy
-#| msgid "Password of encrypted client private key"
 msgid "Password for the private key"
-msgstr "Passwort des verschlüsselten privaten Schlüssels des Clients"
+msgstr "Passwort für den privaten Schlüssel"
 
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:121
 msgid "Password of encrypted client private key"
@@ -3055,10 +3031,8 @@ msgid "Paste the ssh PUBLIC key"
 msgstr "Fügen Sie hier den öffentlichen SSH-Schlüssel ein"
 
 #: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:231
-#, fuzzy
-#| msgid "Client private key (filename)"
 msgid "Path to the private key file"
-msgstr "Privater Schlüssel des Clients (Dateiname)"
+msgstr "Pfad zur privaten Schlüsseldatei"
 
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:234
 msgid "Per-process server pool"
@@ -3199,7 +3173,7 @@ msgstr "Position"
 #: privacyidea/static/components/directives/views/directive.httpResolverEndpointConfig.html:34
 #: privacyidea/static/components/directives/views/directive.httpResolverEndpointConfig.html:54
 msgid "Possible tags:"
-msgstr ""
+msgstr "Mögliche Tags:"
 
 #: privacyidea/static/components/token/views/token.import.html:71
 msgid "Pre Shared Key"
@@ -3256,10 +3230,8 @@ msgid "Privacy Statement"
 msgstr "Datenschutzhinweis"
 
 #: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:50
-#, fuzzy
-#| msgid "Machine ID Attribute"
 msgid "PrivacyIDEA Attribute"
-msgstr "Attribut für Maschinen-ID"
+msgstr "privacyIDEA Attribut"
 
 #: privacyidea/static/components/token/views/token.import.html:136
 msgid "Progress"
@@ -3307,8 +3279,6 @@ msgid "RADIUS Config saved."
 msgstr "RADIUS-Konfiguration erfolgreich gespeichert."
 
 #: privacyidea/static/components/config/views/config.radius.edit.html:84
-#, fuzzy
-#| msgid "RADIUS dictionary file"
 msgid "RADIUS Dictionary"
 msgstr "RADIUS dictionary Datei"
 
@@ -3401,7 +3371,7 @@ msgstr "Letzte Ausführung"
 
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:346
 msgid "Recursive Search of User Groups"
-msgstr ""
+msgstr "Rekursive Suche von Benutzergruppen"
 
 #: privacyidea/static/components/token/controllers/tokenDetailController.js:164
 msgid "Refilltoken copied to clipboard!"
@@ -3486,10 +3456,8 @@ msgid "Remove from Container"
 msgstr "Aus dem Container entfernen"
 
 #: privacyidea/static/components/config/views/config.policies.details.html:125
-#, fuzzy
-#| msgid "Save Policy"
 msgid "Rename Policy"
-msgstr "Richtlinie speichern"
+msgstr "Richtlinie umbenennen"
 
 #: privacyidea/static/components/directives/views/directive.assigntoken.html:39
 #: privacyidea/static/components/directives/views/directive.assignuser.html:51
@@ -3508,16 +3476,12 @@ msgid "Repeat password"
 msgstr "Passwort wiederholen"
 
 #: privacyidea/static/components/config/views/config.resolvers.http.basic.html:38
-#, fuzzy
-#| msgid "Request Mapping (JSON format)"
 msgid ""
 "Request Mapping (JSON\n"
 "                format)"
 msgstr "Anfrage Mapping (JSON Format)"
 
 #: privacyidea/static/components/directives/views/directive.httpResolverEndpointConfig.html:48
-#, fuzzy
-#| msgid "Request Mapping (JSON format)"
 msgid ""
 "Request Mapping (JSON\n"
 "            format)"
@@ -3530,10 +3494,8 @@ msgstr ""
 "beantwortet."
 
 #: privacyidea/static/components/config/views/config.radius.edit.html:75
-#, fuzzy
-#| msgid "Challenge Response Authentication."
 msgid "Require Message-Authenticator"
-msgstr "Challenge-Response Anmeldung."
+msgstr "Message-Authenticator erforderlich"
 
 #: privacyidea/static/components/token/views/token.enroll.4eyes.html:22
 msgid "Required Realms"
@@ -3602,26 +3564,18 @@ msgid ""
 msgstr "Antwort Mapping (JSON Format)"
 
 #: privacyidea/static/components/directives/views/directive.httpResolverEndpointConfig.html:60
-#, fuzzy
-#| msgid ""
-#| "Response Mapping\n"
-#| "                (JSON format)"
 msgid ""
 "Response Mapping\n"
 "            (JSON format)"
 msgstr "Antwort Mapping (JSON Format)"
 
 #: privacyidea/static/components/config/views/config.resolvers.http.basic.html:72
-#, fuzzy
-#| msgid "Response contains (JSON format):"
 msgid ""
 "Response contains (JSON\n"
 "                format):"
 msgstr "Antwort beinhaltet (JSON Format):"
 
 #: privacyidea/static/components/directives/views/directive.httpResolverEndpointConfig.html:77
-#, fuzzy
-#| msgid "Response contains (JSON format):"
 msgid ""
 "Response contains (JSON\n"
 "            format):"
@@ -3847,10 +3801,8 @@ msgid "Search Filter"
 msgstr "Suchfilter"
 
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:350
-#, fuzzy
-#| msgid "Search Filter"
 msgid "Search Filter for User Groups"
-msgstr "Suchfilter"
+msgstr "Suchfilter für Benutzergruppen"
 
 #: privacyidea/static/components/token/views/token.getserial.html:89
 msgid "Searching token..."
@@ -3868,10 +3820,8 @@ msgid "Section"
 msgstr "Bereich"
 
 #: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:73
-#, fuzzy
-#| msgid "Save privacyIDEA server"
 msgid "Select PrivacyIDEA Attribute"
-msgstr "privacyIDEA Server speichern"
+msgstr "privacyIDEA Attribut auswählen"
 
 #: privacyidea/static/components/user/views/user.html:24
 msgid "Select Realm"
@@ -3932,10 +3882,8 @@ msgid "Selection"
 msgstr "Auswahl"
 
 #: privacyidea/static/components/config/views/config.radius.edit.html:121
-#, fuzzy
-#| msgid "Send test RADIUS request"
 msgid "Send RADIUS test request"
-msgstr "RADIUS-Anfrage senden"
+msgstr "RADIUS-Testanfrage senden"
 
 #: privacyidea/static/components/recovery/views/recovery.html:38
 msgid "Send Reset Code"
@@ -4127,10 +4075,8 @@ msgid "Some nice words..."
 msgstr "Ein paar nette Worte..."
 
 #: privacyidea/static/components/token/controllers/containerControllers.js:919
-#, fuzzy
-#| msgid "Skip tokens that can not be verified"
 msgid "Some tokens could not be deleted:"
-msgstr "Token überspringen, die nicht verifiziert werden können"
+msgstr "Manche Token konnten nicht gelöscht werden:"
 
 #: privacyidea/static/components/login/controllers/loginControllers.js:364
 msgid "Something went wrong!"
@@ -4143,10 +4089,6 @@ msgid ""
 msgstr "Spezielle Fehlerbehandlung"
 
 #: privacyidea/static/components/directives/views/directive.httpResolverEndpointConfig.html:69
-#, fuzzy
-#| msgid ""
-#| "Special Error\n"
-#| "                Handling"
 msgid ""
 "Special Error\n"
 "            Handling"
@@ -4161,6 +4103,11 @@ msgid ""
 "                                        certificate must be uploaded in "
 "Entra's app registration as client credential."
 msgstr ""
+"Geben Sie den Pfad zur privaten Schlüsseldatei des Serverzertifikats an. "
+"Wenn Sie einen verschlüsselten Schlüssel verwenden, fügen Sie hier das "
+"Passwort hinzu, andernfalls lassen Sie das Feld leer. Das Serverzertifikat "
+"muss in der App-Registrierung von Entra als Client-Anmeldeinformation "
+"hochgeladen werden."
 
 #: privacyidea/static/components/directives/views/directive.assigntoken.html:8
 msgid "Start typing a serial number of a token that is not yet assigned"
@@ -4293,7 +4240,7 @@ msgstr "Vorlagen"
 
 #: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:174
 msgid "Tenant"
-msgstr ""
+msgstr "Mandant"
 
 #: privacyidea/static/components/config/controllers/smtpServerController.js:79
 msgid "Test Email sent successfully."
@@ -4317,10 +4264,8 @@ msgid "Test Passkey."
 msgstr "Passkey testen."
 
 #: privacyidea/static/components/config/views/config.radius.edit.html:103
-#, fuzzy
-#| msgid "RADIUS Server"
 msgid "Test RADIUS Server"
-msgstr "RADIUS-Server"
+msgstr "RADIUS-Server testen"
 
 #: privacyidea/static/components/config/views/config.resolvers.scim.html:83
 msgid "Test SCIM Resolver"
@@ -4339,16 +4284,12 @@ msgid "Test token"
 msgstr "Token testen"
 
 #: privacyidea/static/components/config/views/config.resolvers.http.html:46
-#, fuzzy
-#| msgid "Delete user"
 msgid "Test user ID"
-msgstr "Benutzer löschen"
+msgstr "Benutzer ID testen"
 
 #: privacyidea/static/components/config/views/config.resolvers.http.html:45
-#, fuzzy
-#| msgid "username"
 msgid "Test username"
-msgstr "Benutzername"
+msgstr "Benutzername testen"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:128
 msgid "Thank you for improving your security!"
@@ -4835,6 +4776,8 @@ msgid ""
 "the user endpoints defined\n"
 "                below."
 msgstr ""
+"Die Basis-URL der API des Benutzerspeichers, die mit den unten definierten "
+"Benutzer-Endpunkten verkettet wird."
 
 #: privacyidea/static/components/token/views/token.enrolled.certificate.html:1
 msgid "The certificate was enrolled successfully."
@@ -4867,10 +4810,6 @@ msgid "The container contains the following offline tokens:"
 msgstr "Der Container beinhaltet die folgenden Offline-Token:"
 
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:102
-#, fuzzy
-#| msgid ""
-#| "The file containing the CA certificate which signed the\n"
-#| "                    LDAP TLS certificate."
 msgid ""
 "The file containing the CA certificate which signed the\n"
 "                        LDAP TLS certificate."
@@ -4887,10 +4826,6 @@ msgstr ""
 "signiert wurde."
 
 #: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:120
-#, fuzzy
-#| msgid ""
-#| "The file containing the CA certificate which signed the\n"
-#| "                    LDAP TLS certificate."
 msgid ""
 "The file containing the CA certificate which signed the TLS certificate of "
 "the server."
@@ -4909,6 +4844,8 @@ msgid ""
 "The group attribute defining the group's name, which should be stored in the "
 "user info."
 msgstr ""
+"Das Gruppenattribut, das den Gruppennamen definiert, welcher in den "
+"Benutzerinformationen gespeichert werden soll."
 
 #: privacyidea/static/components/config/views/config.resolvers.sql.html:114
 msgid ""
@@ -4936,6 +4873,8 @@ msgstr ""
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:387
 msgid "The key to store the groups in the user info (attribute mapping key)."
 msgstr ""
+"Der Schlüssel, unter dem die Gruppen in den Benutzerinformationen "
+"gespeichert werden (Schlüssel des Attribut-Mappings)."
 
 #: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:81
 msgid ""
@@ -4943,6 +4882,8 @@ msgid ""
 "right column the equivalent\n"
 "                attribute in the user store."
 msgstr ""
+"Die linke Spalte definiert die in privacyIDEA verwendeten Benutzerattribute "
+"und die rechte Spalte das entsprechende Attribut im Benutzerspeicher."
 
 #: privacyidea/static/components/token/views/token.enroll.motp.html:35
 msgid "The mOTP PIN is the PIN that needs to be entered on the mobile device."
@@ -4965,6 +4906,8 @@ msgid ""
 "The name of the user realm in keycloak. It can be used as tag in the urls of "
 "the endpoints."
 msgstr ""
+"Der Name des User-Realms in Keycloak. Er kann als Tag in den URLs der "
+"Endpunkte verwendet werden."
 
 #: privacyidea/static/components/token/views/token.getserial.html:57
 msgid "The number of lookahead OTP values. Default 10."
@@ -5293,15 +5236,11 @@ msgstr ""
 "werden."
 
 #: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:104
-#, fuzzy
-#| msgid ""
-#| "The user data in this database can be modified from within\n"
-#| "                privacyIDEA."
 msgid ""
 "The user data in this user store can be modified from within privacyIDEA."
 msgstr ""
 "Die Benutzerdaten in der Datenbank können von \n"
-"          privacyIDEA aus verwaltet werden."
+" privacyIDEA aus verwaltet werden."
 
 #: privacyidea/static/components/token/views/token.lost.html:12
 msgid ""
@@ -5361,6 +5300,8 @@ msgstr ""
 #: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:220
 msgid "This credential type does not support to check the user's password."
 msgstr ""
+"Dieser Anmeldeinformationstyp unterstützt die Überprüfung des "
+"Benutzerpassworts nicht."
 
 #: privacyidea/static/components/config/views/config.system.doc.html:2
 msgid ""
@@ -5552,6 +5493,10 @@ msgid ""
 "                to receive an access token. This token can then be used to "
 "access the user store API."
 msgstr ""
+"In diesem Abschnitt kann ein Endpunkt konfiguriert werden, an dem sich der "
+"privacyIDEA-Server authentifizieren muss, um ein Zugriffstoken zu erhalten. "
+"Dieses Token kann dann für den Zugriff auf die Benutzerspeicher-API "
+"verwendet werden."
 
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:241
 msgid ""
@@ -5576,10 +5521,8 @@ msgstr ""
 "mit dem während des Ausrollens die Token überprüft werden können."
 
 #: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:251
-#, fuzzy
-#| msgid "Verify the certificate"
 msgid "Thumbprint of the certificate"
-msgstr "Zertifikat verifizieren"
+msgstr "Fingerabdruck des Zertifikats"
 
 #: privacyidea/static/components/config/views/config.token.tiqr.html:21
 msgid "TiQR Authentication Server"
@@ -5614,6 +5557,8 @@ msgstr "TiQR Token Einstellungen"
 #: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:135
 msgid "Time in seconds privacyIDEA tries to reach the user store server."
 msgstr ""
+"Zeitüberschreitung in Sekunden für die Verbindung zum Benutzerspeicher-"
+"Server."
 
 #: privacyidea/static/components/config/views/config.radius.edit.html:46
 #: privacyidea/static/components/config/views/config.smtp.edit.html:47
@@ -5781,14 +5726,12 @@ msgid "Total Templates: {{ templatedata.count }}"
 msgstr "Anzahl der Vorlagen: {{ templatedata.count }}"
 
 #: privacyidea/static/components/token/controllers/tokenChallengesController.js:46
-#, fuzzy
-#| msgid "Total Challenges:"
 msgid "Total expired challenges deleted:"
-msgstr "Alle Challenges:"
+msgstr "Anzahl der gelöschten abgelaufenen Challenges:"
 
 #: privacyidea/static/components/config/controllers/configControllers.js:802
 msgid "Total user cache entries deleted:"
-msgstr ""
+msgstr "Anzahl der gelöschten Benutzer-Cache-Einträge:"
 
 #: privacyidea/static/components/token/views/token.challenges.html:42
 msgid "Transaction ID"
@@ -5926,8 +5869,6 @@ msgid "User"
 msgstr "Benutzer"
 
 #: privacyidea/static/components/config/views/config.policies.details.html:303
-#, fuzzy
-#| msgid "user agent"
 msgid "User Agent"
 msgstr "User-Agent"
 
@@ -5943,16 +5884,12 @@ msgid "User Id"
 msgstr "Benutzer-ID"
 
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:379
-#, fuzzy
-#| msgid "User Store"
 msgid "User Info Key"
-msgstr "Benutzer Quelle"
+msgstr "Benutzerinfo-Schlüssel"
 
 #: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:51
-#, fuzzy
-#| msgid "Hostname Attribute"
 msgid "User Store Attribute"
-msgstr "Attribut für Hostnamen"
+msgstr "Attribut des Benutzerspeichers"
 
 #: privacyidea/static/components/register/controllers/registerControllers.js:17
 msgid "User account created. An Email has been sent to you."
@@ -6024,10 +5961,8 @@ msgstr "Gültigkeitszeitraum"
 
 #: privacyidea/static/components/directives/views/directive.registerContainer.html:30
 #: privacyidea/static/components/directives/views/directive.registerContainer.html:34
-#, fuzzy
-#| msgid "Use the passphrase of the user from the AD."
 msgid "Validate the passphrase against the user store."
-msgstr "AD Passwort verwenden."
+msgstr "Überprüfe die Passphrase gegen den Benutzerspeicher."
 
 #: privacyidea/static/components/token/views/token.details.html:280
 #: privacyidea/static/components/token/views/token.enroll.html:124
@@ -6069,8 +6004,6 @@ msgstr "Das TLS Zertifikat des LDAP Servers wird verifiziert."
 
 #: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:115
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:98
-#, fuzzy
-#| msgid "Verify the TLS cerificate of the server."
 msgid "Verify the TLS certificate of the server."
 msgstr "Das TLS Zertifikat des LDAP Servers wird verifiziert."
 
@@ -6195,6 +6128,8 @@ msgid ""
 "Admin Center or you also\n"
 "                    have to add them there."
 msgstr ""
+"Sie finden die meisten dieser Einstellungen in der App-Registrierung im "
+"Entra Admin Center oder müssen sie dort ebenfalls hinzufügen."
 
 #: privacyidea/static/components/user/views/user.add.html:54
 msgid ""
