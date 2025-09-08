@@ -3,13 +3,14 @@
 # This file is distributed under the same license as the PROJECT project.
 # FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
 # Максим Горпиніч <maksimgorpinic2005a@gmail.com>, 2025.
+# Максим Горпиніч <gorpinicmaksim0@gmail.com>, 2025.
 msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: translations@privacyidea.org\n"
 "POT-Creation-Date: 2025-09-05 15:12+0200\n"
-"PO-Revision-Date: 2025-04-10 12:05+0000\n"
-"Last-Translator: Максим Горпиніч <maksimgorpinic2005a@gmail.com>\n"
+"PO-Revision-Date: 2025-09-08 08:58+0000\n"
+"Last-Translator: Максим Горпиніч <gorpinicmaksim0@gmail.com>\n"
 "Language-Team: Ukrainian <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/uk/>\n"
 "Language: uk\n"
@@ -18,7 +19,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
 "n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
-"X-Generator: Weblate 5.11-dev\n"
+"X-Generator: Weblate 5.14-dev\n"
 "Generated-By: Babel 2.16.0\n"
 
 #: api/auth.py:256
@@ -36,7 +37,7 @@ msgstr "Помилка автентифікації. Токен не має ко
 #: api/auth.py:277
 #, python-brace-format
 msgid "Authentication failure. The token type {token_type} is disabled."
-msgstr ""
+msgstr "Помилка автентифікації. Тип токена {token_type} вимкнено."
 
 #: api/auth.py:282
 #, python-brace-format
@@ -44,6 +45,8 @@ msgid ""
 "Authentication failure. Last authentication policy check failed for token "
 "{serial}"
 msgstr ""
+"Помилка автентифікації. Остання перевірка політики автентифікації для токена "
+"{serial} не вдалася"
 
 #: api/auth.py:294
 msgid "Authentication failure using passkey."
@@ -71,24 +74,25 @@ msgstr "Не вдалося перевірити дані в запиті!"
 
 #: api/validate.py:443
 msgid "Cancelled enrollment via multichallenge"
-msgstr ""
+msgstr "Скасовано реєстрацію через мультичелендж"
 
 #: api/validate.py:445
 msgid "Cancelled enrollment via multichallenge for transaction_id "
-msgstr ""
+msgstr "Скасовано реєстрацію через мультичелендж для transaction_id "
 
 #: api/validate.py:448
 msgid "Failed to cancel enrollment via multichallenge"
-msgstr ""
+msgstr "Не вдалося скасувати реєстрацію через мультичелендж"
 
 #: api/validate.py:450
 msgid "Failed to cancel enrollment via multichallenge for transaction_id "
-msgstr ""
+msgstr "Не вдалося скасувати реєстрацію через мультичелендж для transaction_id "
 
 #: api/validate.py:500
 #, python-brace-format
 msgid "Last authentication policy check failed for token {serial}"
 msgstr ""
+"Остання перевірка політики автентифікації для токена {serial} не вдалася"
 
 #: api/validate.py:519 lib/token.py:2636
 msgid "Found matching challenge"
@@ -106,16 +110,25 @@ msgid ""
 "Subscriber: {subscriber_name}\n"
 "Subscriptions: {subscriptions}\n"
 msgstr ""
+"\n"
+"<--- Детально опишіть свою проблему --->\n"
+"\n"
+"<--- Надайте якомога більше додаткової інформації --->\n"
+"\n"
+"privacyIDEA Версія: {version}\n"
+"Абонент: {subscriber_name}\n"
+"Підписки: {subscriptions}\n"
 
 #: api/lib/postpolicy.py:911
 msgid "Please scan the QR code to register the container."
-msgstr ""
+msgstr "Будь ласка, проскануйте QR-код, щоб зареєструвати контейнер."
 
 #: api/lib/prepolicy.py:2884
 msgid ""
 "Authentication failure. The account has exceeded the authentication time "
 "limit!"
 msgstr ""
+"Помилка автентифікації. Обліковий запис перевищив ліміт часу автентифікації!"
 
 #: api/lib/utils.py:401
 msgid "Authentication failure. Missing Authorization header."
@@ -206,11 +219,11 @@ msgstr ""
 
 #: lib/policy.py:1209
 msgid "Policy does not exist:"
-msgstr ""
+msgstr "Політика не існує:"
 
 #: lib/policy.py:1211
 msgid "Policy already exists:"
-msgstr ""
+msgstr "Політика вже існує:"
 
 #: lib/policy.py:1374
 msgid "Invalid client definition!"
@@ -713,6 +726,8 @@ msgid ""
 "A whitespace-separated list of container info keys that shall not be "
 "displayed to the admin."
 msgstr ""
+"Список ключів інформації про контейнер, розділених пробілами, які не будуть "
+"відображатися адміністратору."
 
 #: lib/policy.py:2142
 msgid ""
@@ -913,6 +928,8 @@ msgid ""
 "A whitespace-separated list of container info keys that shall not be "
 "displayed to the users."
 msgstr ""
+"Список ключів інформації про контейнер, розділених пробілами, які не повинні "
+"відображатися користувачам."
 
 #: lib/policy.py:2327
 msgid "Limit the number of allowed tokens in a realm."
@@ -1117,6 +1134,8 @@ msgstr ""
 msgid ""
 "Specify the list of token types, that can not be used for authentication."
 msgstr ""
+"Вкажіть список типів токенів, які не можна використовувати для "
+"автентифікації."
 
 #: lib/policy.py:2504
 msgid ""
@@ -1132,6 +1151,8 @@ msgid ""
 "In case of a successful authentication the following token or container type "
 "is enrolled. The maximum number of tokens for a user is checked."
 msgstr ""
+"У разі успішної автентифікації реєструється наступний тип токена або "
+"контейнера. Перевіряється максимальна кількість токенів для користувача."
 
 #: lib/policy.py:2515
 msgid "Change the default text that is shown during enrolling a token."
@@ -1143,6 +1164,8 @@ msgid ""
 "Select the template to use for the enrollment of a smartphone container via "
 "multichallenge."
 msgstr ""
+"Виберіть шаблон, який буде використано для реєстрації контейнера смартфона "
+"через багатозапит."
 
 #: lib/policy.py:2526
 msgid ""
@@ -1150,6 +1173,9 @@ msgid ""
 "authentication. If disabled, the user must enroll a token. This is also the "
 "default behavior."
 msgstr ""
+"Якщо ввімкнено, користувач може пропустити реєстрацію токена під час "
+"автентифікації. Якщо вимкнено, користувач повинен зареєструвати токен. Це "
+"також поведінка за замовчуванням."
 
 #: lib/policy.py:2532
 msgid ""
@@ -1369,6 +1395,9 @@ msgid ""
 "The sending of an API Auth Key is required during authentication. This "
 "avoids rogue authenticate requests against the /validate/check interface."
 msgstr ""
+"Під час автентифікації потрібне надсилання ключа автентифікації API. Це "
+"дозволяє уникнути шахрайських запитів автентифікації до інтерфейсу /validate/"
+"check."
 
 #: lib/policy.py:2701
 msgid ""
@@ -1723,6 +1752,8 @@ msgid ""
 "This action makes the description required for all selected tokentypes, "
 "during the editing process."
 msgstr ""
+"Ця дія робить опис обов'язковим для всіх вибраних типів токенів під час "
+"процесу редагування."
 
 #: lib/policy.py:3007
 msgid ""
@@ -1765,18 +1796,23 @@ msgid ""
 "The policy only matches if certain conditions on the container attributes "
 "are fulfilled."
 msgstr ""
+"Політика відповідає вимогам, лише якщо виконано певні умови атрибутів "
+"контейнера."
 
 #: lib/policy.py:3025
 msgid ""
 "The policy only matches if certain conditions on the container info are "
 "fulfilled."
 msgstr ""
+"Політика відповідає вимогам, лише якщо виконано певні умови щодо інформації "
+"про контейнер."
 
 #: lib/policy.py:3028
 msgid ""
 "The policy only matches if certain conditions on the request data are "
 "fulfilled."
 msgstr ""
+"Політика відповідає лише за умови виконання певних умов щодо даних запиту."
 
 #: lib/radiusserver.py:265
 msgid "The RADIUS secret is too long"
@@ -1941,6 +1977,8 @@ msgid ""
 "Specify the required PIN contents of the {0!s} token. (c)haracters, "
 "(n)umeric, (s)pecial, (o)thers. [+/-]!"
 msgstr ""
+"Вкажіть обов'язковий вміст PIN-коду для токена {0!s}. (с)имволи, (цифрові) "
+"символи, (с)пеціальні значення, (інші) [+/-]!"
 
 #: lib/token.py:2852 lib/token.py:2868
 msgid "The tokengroup does not exist."
@@ -2075,6 +2113,8 @@ msgid ""
 "Action is triggered if the user has this number of tokens assigned. > and < "
 "can be used, like <8."
 msgstr ""
+"Дія спрацьовує, якщо користувачеві призначено певну кількість токенів. Можна "
+"використовувати > та <, наприклад <8."
 
 #: lib/eventhandler/base.py:307
 msgid ""
@@ -2082,6 +2122,9 @@ msgid ""
 "the condition. The condition should start with a comparator such as '==', "
 "'<', '>', followed by a number, e.g. '==0', '>3'."
 msgstr ""
+"Дія спрацьовує, якщо кількість контейнерів, призначених користувачеві, "
+"відповідає умові. Умова повинна починатися з порівняльного знака, такого як "
+"'==', '<', '>', а потім число, наприклад, '==0', '>3'."
 
 #: lib/eventhandler/base.py:315
 msgid ""
@@ -2778,18 +2821,23 @@ msgid ""
 "Raise an error if the data that is required to check the condition is not "
 "available."
 msgstr ""
+"Викликати помилку, якщо дані, необхідні для перевірки умови, недоступні."
 
 #: lib/policies/conditions.py:102
 msgid ""
 "If the required data is not available, the condition is considered to be "
 "true. Hence, the policy is applied."
 msgstr ""
+"Якщо необхідні дані недоступні, умова вважається істинною. Отже, "
+"застосовується політика."
 
 #: lib/policies/conditions.py:108
 msgid ""
 "If the required data is not available, the condition is considered to be "
 "false. Hence, the policy is not applied."
 msgstr ""
+"Якщо необхідні дані недоступні, умова вважається хибною. Отже, політика не "
+"застосовується."
 
 #: lib/resolvers/LDAPIdResolver.py:1209
 #, python-brace-format
@@ -3505,6 +3553,8 @@ msgid ""
 "Use the privacyIDEA app URL scheme 'pia' in the enroll URL for push tokens "
 "to open the privacyIDEA app."
 msgstr ""
+"Використовуйте схему URL-адреси застосунку privacyIDEA «pia» в URL-адресі "
+"реєстрації для push-токенів, щоб відкрити застосунок privacyIDEA."
 
 #: lib/tokens/pushtoken.py:438
 #, python-brace-format
@@ -4113,67 +4163,82 @@ msgstr ""
 
 #: lib/utils/compare.py:373
 msgid "True if the value of the left attribute is equal to the right value"
-msgstr ""
+msgstr "Істина, якщо значення лівого атрибута дорівнює значенню правого"
 
 #: lib/utils/compare.py:375
 msgid "False if the value of the left attribute is equal to the right value"
-msgstr ""
+msgstr "Хибність, якщо значення лівого атрибута дорівнює значенню правого"
 
 #: lib/utils/compare.py:377
 msgid "True if the list of the left attribute contains the right value"
-msgstr ""
+msgstr "Істина, якщо список лівого атрибута містить праве значення"
 
 #: lib/utils/compare.py:379
 msgid "False if the list of the left attribute contains the right value"
-msgstr ""
+msgstr "False, якщо список лівого атрибута містить праве значення"
 
 #: lib/utils/compare.py:381
 msgid ""
 "True if the value of the left attribute completely matches the given regular "
 "expression pattern on the right"
 msgstr ""
+"Істина, якщо значення атрибута left повністю відповідає заданому шаблону "
+"регулярного виразу праворуч"
 
 #: lib/utils/compare.py:384
 msgid ""
 "False if the value of the left attribute completely matches the given "
 "regular expression pattern on the right"
 msgstr ""
+"Хибність, якщо значення атрибута left повністю відповідає заданому шаблону "
+"регулярного виразу праворуч"
 
 #: lib/utils/compare.py:387
 msgid ""
 "True if the value of the left attribute is contained in the comma-separated "
 "list on the right"
 msgstr ""
+"Істина, якщо значення атрибута left міститься у списку, розділеному комами, "
+"праворуч"
 
 #: lib/utils/compare.py:390
 msgid ""
 "False if the value of the left attribute is contained in the comma-separated "
 "list on the right"
 msgstr ""
+"Хибність, якщо значення атрибута left міститься у списку, розділеному "
+"комами, праворуч"
 
 #: lib/utils/compare.py:393
 msgid ""
 "True if the integer value of the left attribute is smaller than the right "
 "integer value"
 msgstr ""
+"Істина, якщо цілочисельне значення лівого атрибута менше за цілочисельне "
+"значення правого"
 
 #: lib/utils/compare.py:398
 msgid ""
 "True if the integer value of the left attribute is bigger than the right "
 "integer value"
 msgstr ""
+"Істина, якщо цілочисельне значення лівого атрибута більше, ніж цілочисельне "
+"значення правого"
 
 #: lib/utils/compare.py:402
 msgid ""
 "True if the date and time of the left attribute is before the date and time "
 "of the right attribute"
 msgstr ""
+"Істина, якщо дата та час лівого атрибута передують даті та часу правого "
+"атрибута"
 
 #: lib/utils/compare.py:405
 msgid ""
 "True if the date and time of the left attribute is after the date and time "
 "of the right attribute"
 msgstr ""
+"Істина, якщо дата та час лівого атрибута після дати та часу правого атрибута"
 
 #: lib/utils/compare.py:408
 msgid ""
@@ -4181,6 +4246,9 @@ msgid ""
 "of the right attribute. The right attribute should be a duration such as "
 "'1y', '7d', '6h', '15m'."
 msgstr ""
+"Істина, якщо дата та час лівого атрибута знаходяться в межах минулої "
+"тривалості правого атрибута. Правий атрибут має бути тривалістю, наприклад, «"
+"1 рік», «7 днів», «6 годин», «15 хвилин»."
 
 #: lib/utils/compare.py:412
 msgid ""
@@ -4188,18 +4256,25 @@ msgid ""
 "of the right attribute. The right attribute should be a duration such as "
 "'1y', '7d', '6h', '15m'."
 msgstr ""
+"Хибність, якщо дата та час лівого атрибута знаходяться в межах минулої "
+"тривалості правого атрибута. Правий атрибут має бути тривалістю, наприклад, «"
+"1 рік», «7 днів», «6 годин», «15 хвилин»."
 
 #: lib/utils/compare.py:416
 msgid ""
 "True if the value of the left attribute contains the right value (case-"
 "insensitive)"
 msgstr ""
+"Істина, якщо значення атрибута left містить значення right (без урахування "
+"регістру)"
 
 #: lib/utils/compare.py:419
 msgid ""
 "False if the value of the left attribute contains the right value (case-"
 "insensitive)"
 msgstr ""
+"False, якщо значення атрибута left містить значення right (без урахування "
+"регістру)"
 
 #, python-brace-format
 #~ msgid ""
