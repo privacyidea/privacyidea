@@ -5,17 +5,34 @@ Revises: 3ba618f6b820
 Create Date: 2021-05-18 23:29:59.273457
 
 """
-
-# revision identifiers, used by Alembic.
-revision = 'fa07bd604a75'
-down_revision = '3ba618f6b820'
+from alembic import op
+import sqlalchemy as sa
 
 from privacyidea.lib.smsprovider.SMSProvider import get_smsgateway, delete_smsgateway_option
 from privacyidea.lib.tokens.pushtoken import GWTYPE, PUSH_ACTION
 from privacyidea.lib.policy import PolicyClass, set_policy, SCOPE
 
+# revision identifiers, used by Alembic.
+revision = 'fa07bd604a75'
+down_revision = '3ba618f6b820'
+
 
 def upgrade():
+    # Check if we even have Firebase-Gateways configured
+    conn = op.get_bind()
+    sms_gw = sa.table("smsgateway",
+                      sa.column("id", sa.Integer),
+                      sa.column("identifier", sa.Unicode(255)),
+                      sa.column("description", sa.Unicode(1024)),
+                      sa.column("providermodule", sa.Unicode(1024)))
+    res = conn.execute(
+        sms_gw.select().where(sms_gw.c.providermodule == GWTYPE)
+    )
+    if res.rowcount == 0:
+        print(f"Rev. {revision}: No Firebase-Provider detected. Skipping migration.")
+        return
+    print(f"Rev. {revision}: Firebase-Provider detected. Check that the migration was successful")
+
     # 1. Read the push_registration_url and ttl from the Firebase Config
     fb_gateways = get_smsgateway(gwtype=GWTYPE)
     print(fb_gateways)
