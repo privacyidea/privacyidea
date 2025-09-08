@@ -26,6 +26,7 @@ Version 3.12, 2025-09-09
   * Different URL scheme can be used for push token (#2882)
   * Add distinct policy condition 'user-agent', with plugin user-agents or custom as predefined options (#4501)
   * Extended the new tokenjanitor with import and export of token and optionally user assignments (#4000)
+  * Add Message-Authenticator attribute to RADIUS server requests (#4650)
 
   Fixes:
   * 'max_auth_fail' and 'max_auth_success' are also applied to local admins and evaluated before checking the password (#4340)
