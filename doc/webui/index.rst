@@ -10,6 +10,21 @@ the privacyIDEA server. It is also used a self-service portal for the average us
 manages his own tokens. This section gives an overview on the interface and links the
 respective sections in the documentation.
 
+.. _new_webui:
+
+New WebUI
+---------
+
+.. index:: new webui
+
+To enable the new WebUI, edit the configuration file `pi.cfg` and add the following lines:
+
+.. code-block:: ini
+    PI_STATIC_FOLDER = "static_new/"
+
+    PI_TEMPLATE_FOLDER = "static_new/dist/privacyidea-webui/browser/"
+
+
 .. _dashboard:
 
 Dashboard
