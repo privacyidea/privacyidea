@@ -11,8 +11,8 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: translations@privacyidea.org\n"
 "POT-Creation-Date: 2025-09-05 15:12+0200\n"
-"PO-Revision-Date: 2025-04-10 12:05+0000\n"
-"Last-Translator: Paul Lettich <paul.lettich@netknights.it>\n"
+"PO-Revision-Date: 2025-09-08 12:00+0000\n"
+"Last-Translator: Nils Behlen <nils.behlen@netknights.it>\n"
 "Language-Team: German <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/de/>\n"
 "Language: de\n"
@@ -20,7 +20,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 5.11-dev\n"
+"X-Generator: Weblate 5.14-dev\n"
 "Generated-By: Babel 2.12.1\n"
 
 #: api/auth.py:256
@@ -39,6 +39,7 @@ msgstr "Authentifizierungsfehler. Der Token ist keinem Benutzer zugewiesen."
 #, python-brace-format
 msgid "Authentication failure. The token type {token_type} is disabled."
 msgstr ""
+"Authentisierung fehlgeschlagen. Der Tokentyp {token_type} ist deaktiviert."
 
 #: api/auth.py:282
 #, python-brace-format
@@ -46,6 +47,8 @@ msgid ""
 "Authentication failure. Last authentication policy check failed for token "
 "{serial}"
 msgstr ""
+"Authentisierung fehlgeschlagen. Richtlinienüberprüfung für die letzte "
+"Authentisierung des Token {serial} fehlgeschlagen"
 
 #: api/auth.py:294
 msgid "Authentication failure using passkey."
@@ -73,24 +76,28 @@ msgstr "Die Daten in der Anfrage können nicht verifiziert werden!"
 
 #: api/validate.py:443
 msgid "Cancelled enrollment via multichallenge"
-msgstr ""
+msgstr "Ausrollen via multichallenge abgebrochen"
 
 #: api/validate.py:445
 msgid "Cancelled enrollment via multichallenge for transaction_id "
-msgstr ""
+msgstr "Ausrollen via multichallenge abgebrochen für transaction_id "
 
 #: api/validate.py:448
 msgid "Failed to cancel enrollment via multichallenge"
-msgstr ""
+msgstr "Ausrollen via multichallenge konnte nicht abgebrochen werden"
 
 #: api/validate.py:450
 msgid "Failed to cancel enrollment via multichallenge for transaction_id "
 msgstr ""
+"Ausrollen via multichallenge konnte nicht abgebrochen werden für "
+"transaction_id "
 
 #: api/validate.py:500
 #, python-brace-format
 msgid "Last authentication policy check failed for token {serial}"
 msgstr ""
+"Richtlinienüberprüfung der letzten Authentisierung fehlgeschlagen für token "
+"{serial}"
 
 #: api/validate.py:519 lib/token.py:2636
 msgid "Found matching challenge"
@@ -108,16 +115,26 @@ msgid ""
 "Subscriber: {subscriber_name}\n"
 "Subscriptions: {subscriptions}\n"
 msgstr ""
+"\n"
+"<--- Bitte beschreiben Sie ihr Problem im Detail --->\n"
+"\n"
+"<--- Bitte geben Sie zusätzliche Informationen an wenn möglich--->\n"
+"\n"
+"privacyIDEA Version: {version}\n"
+"Subscriber: {subscriber_name}\n"
+"Subscriptions: {subscriptions}\n"
 
 #: api/lib/postpolicy.py:911
 msgid "Please scan the QR code to register the container."
-msgstr ""
+msgstr "Bitte scannen Sie den QR Code um den Container zu registrieren."
 
 #: api/lib/prepolicy.py:2884
 msgid ""
 "Authentication failure. The account has exceeded the authentication time "
 "limit!"
 msgstr ""
+"Authentisierung fehlgeschlagen. Der Account hat das Zeitlimit für "
+"Authentisierungen überschritten!"
 
 #: api/lib/utils.py:401
 msgid "Authentication failure. Missing Authorization header."
@@ -209,11 +226,11 @@ msgstr ""
 
 #: lib/policy.py:1209
 msgid "Policy does not exist:"
-msgstr ""
+msgstr "Richtlinie existiert nicht:"
 
 #: lib/policy.py:1211
 msgid "Policy already exists:"
-msgstr ""
+msgstr "Richtlinie existiert bereits:"
 
 #: lib/policy.py:1374
 msgid "Invalid client definition!"
@@ -724,6 +741,8 @@ msgid ""
 "A whitespace-separated list of container info keys that shall not be "
 "displayed to the admin."
 msgstr ""
+"Eine mit Leerzeichen getrennte Liste von Container Info Werten, die dem "
+"Admin nicht angezeigt werden soll."
 
 #: lib/policy.py:2142
 msgid ""
@@ -927,6 +946,8 @@ msgid ""
 "A whitespace-separated list of container info keys that shall not be "
 "displayed to the users."
 msgstr ""
+"Eine mit Leerzeichen getrennte Liste von Container Info Werten, die dem "
+"Benutzer nicht angezeigt werden soll."
 
 #: lib/policy.py:2327
 msgid "Limit the number of allowed tokens in a realm."
@@ -1138,6 +1159,8 @@ msgstr ""
 msgid ""
 "Specify the list of token types, that can not be used for authentication."
 msgstr ""
+"Geben Sie eine Liste von Tokentypen an, welche nicht für die Authentisierung "
+"verwendet werden dürfen."
 
 #: lib/policy.py:2504
 msgid ""
@@ -1153,6 +1176,9 @@ msgid ""
 "In case of a successful authentication the following token or container type "
 "is enrolled. The maximum number of tokens for a user is checked."
 msgstr ""
+"Im Falle einer erfolgreichen Authentisierung wird der folgende Token oder "
+"Containertyp ausgerollt. Die maximale Anzahl von Token pro Benutzer wird "
+"dabei geprüft."
 
 #: lib/policy.py:2515
 msgid "Change the default text that is shown during enrolling a token."
@@ -1165,6 +1191,8 @@ msgid ""
 "Select the template to use for the enrollment of a smartphone container via "
 "multichallenge."
 msgstr ""
+"Wählen Sie die Vorlage aus, welche für das Ausrollen des Smartphone "
+"Containers via multichallenge verwendet werden soll."
 
 #: lib/policy.py:2526
 msgid ""
@@ -1172,6 +1200,9 @@ msgid ""
 "authentication. If disabled, the user must enroll a token. This is also the "
 "default behavior."
 msgstr ""
+"Wenn aktiviert, können Benutzer das Ausrollen eines Token bei der "
+"Authentisierung überspringen. Wenn nicht aktiviert, ist das Ausrollen "
+"zwingend erforderlich, was auch das Standardverhalten ist."
 
 #: lib/policy.py:2532
 msgid ""
@@ -1394,6 +1425,8 @@ msgid ""
 "The sending of an API Auth Key is required during authentication. This "
 "avoids rogue authenticate requests against the /validate/check interface."
 msgstr ""
+"Ein API Auth Key muss für die Authentisierung mitgesendet werden. Dies "
+"sichert die Authentisierungsschnittstelle zusätzlich."
 
 #: lib/policy.py:2701
 msgid ""
@@ -1742,6 +1775,8 @@ msgid ""
 "This action makes the description required for all selected tokentypes, "
 "during the editing process."
 msgstr ""
+"Eine Beschreibung ist für alle ausgewählten Tokentypen notwendig, wenn diese "
+"bearbeitet werden."
 
 #: lib/policy.py:3007
 msgid ""
@@ -1786,18 +1821,24 @@ msgid ""
 "The policy only matches if certain conditions on the container attributes "
 "are fulfilled."
 msgstr ""
+"Die Richtlinie wird nur angewandt, wenn die Bedingungen an die Container "
+"Eigenschaften erfüllt sind."
 
 #: lib/policy.py:3025
 msgid ""
 "The policy only matches if certain conditions on the container info are "
 "fulfilled."
 msgstr ""
+"Die Richtlinie wird nur angewandt, wenn die Bedingungen an die Container "
+"Info erfüllt sind."
 
 #: lib/policy.py:3028
 msgid ""
 "The policy only matches if certain conditions on the request data are "
 "fulfilled."
 msgstr ""
+"Die Richtlinie wird nur angewandt, wenn die Bedingungen an die Anfragedaten "
+"erfüllt sind."
 
 #: lib/radiusserver.py:265
 msgid "The RADIUS secret is too long"
@@ -1966,6 +2007,8 @@ msgid ""
 "Specify the required PIN contents of the {0!s} token. (c)haracters, "
 "(n)umeric, (s)pecial, (o)thers. [+/-]!"
 msgstr ""
+"Geben Sie die Anforderungen an die PIN des token {0!s} an. (c)haracters, (n)"
+"umeric, (s)pecial, (o)thers. [+/-]!"
 
 #: lib/token.py:2852 lib/token.py:2868
 msgid "The tokengroup does not exist."
@@ -2105,6 +2148,8 @@ msgid ""
 "Action is triggered if the user has this number of tokens assigned. > and < "
 "can be used, like <8."
 msgstr ""
+"Die Aktion wird ausgeführt, wenn der Benutzer die definierte Anzahl Token "
+"zugewiesen hat. > und < können verwendet werden."
 
 #: lib/eventhandler/base.py:307
 msgid ""
@@ -2112,6 +2157,9 @@ msgid ""
 "the condition. The condition should start with a comparator such as '==', "
 "'<', '>', followed by a number, e.g. '==0', '>3'."
 msgstr ""
+"Die Aktion wird ausgeführt, wenn die Anzahl der zum Benutzer zugewiesenen "
+"Container die Bedingung erfüllt. Die Bedingung besteht aus einem Komparator ("
+"==, <, >) und einer Zahl, z.B. ==0 oder >3."
 
 #: lib/eventhandler/base.py:315
 msgid ""
@@ -2828,18 +2876,24 @@ msgid ""
 "Raise an error if the data that is required to check the condition is not "
 "available."
 msgstr ""
+"Gib einen Fehler aus, wenn die für die Bedingungsprüfung erforderlichen "
+"Daten nicht verfügbar sind."
 
 #: lib/policies/conditions.py:102
 msgid ""
 "If the required data is not available, the condition is considered to be "
 "true. Hence, the policy is applied."
 msgstr ""
+"Wenn die erforderlichen Daten nicht verfügbar sind, wird die Bedingung als "
+"erfüllt betrachtet. Daher wird die Richtlinie angewendet."
 
 #: lib/policies/conditions.py:108
 msgid ""
 "If the required data is not available, the condition is considered to be "
 "false. Hence, the policy is not applied."
 msgstr ""
+"Wenn die erforderlichen Daten nicht verfügbar sind, wird die Bedingung als "
+"erfüllt betrachtet. Daher wird die Richtlinie nicht angewendet."
 
 #: lib/resolvers/LDAPIdResolver.py:1209
 #, python-brace-format
@@ -3561,6 +3615,8 @@ msgid ""
 "Use the privacyIDEA app URL scheme 'pia' in the enroll URL for push tokens "
 "to open the privacyIDEA app."
 msgstr ""
+"Verwende das URL-Schema 'pia' der privacyIDEA App in der Registrierungs-URL "
+"für Push-Token, um die App zu öffnen."
 
 #: lib/tokens/pushtoken.py:438
 #, python-brace-format
@@ -4181,66 +4237,87 @@ msgstr ""
 #: lib/utils/compare.py:373
 msgid "True if the value of the left attribute is equal to the right value"
 msgstr ""
+"Trifft zu, wenn der Wert des linken Attributs dem rechten Wert entspricht"
 
 #: lib/utils/compare.py:375
 msgid "False if the value of the left attribute is equal to the right value"
 msgstr ""
+"Trifft nicht zu, wenn der Wert des linken Attributs dem rechten Wert "
+"entspricht"
 
 #: lib/utils/compare.py:377
 msgid "True if the list of the left attribute contains the right value"
-msgstr ""
+msgstr "Trifft zu, wenn die Liste des linken Attributes den rechten Wert enhält"
 
 #: lib/utils/compare.py:379
 msgid "False if the list of the left attribute contains the right value"
 msgstr ""
+"Trifft nicht zu, wenn die Liste des rechten Attributes den rechten Wert "
+"enthält"
 
 #: lib/utils/compare.py:381
 msgid ""
 "True if the value of the left attribute completely matches the given regular "
 "expression pattern on the right"
 msgstr ""
+"Trifft zu, wenn der Wert des linken Attributs vollständig mit dem "
+"angegebenen regulären Ausdruck auf der rechten Seite übereinstimmt"
 
 #: lib/utils/compare.py:384
 msgid ""
 "False if the value of the left attribute completely matches the given "
 "regular expression pattern on the right"
 msgstr ""
+"Trifft nicht zu, wenn der Wert des linken Attributs vollständig mit dem "
+"angegebenen regulären Ausdruck auf der rechten Seite übereinstimmt"
 
 #: lib/utils/compare.py:387
 msgid ""
 "True if the value of the left attribute is contained in the comma-separated "
 "list on the right"
 msgstr ""
+"Trifft zu, wenn der Wert des linken Attributs in der kommaseparierten Liste "
+"auf der rechten Seite enthalten ist"
 
 #: lib/utils/compare.py:390
 msgid ""
 "False if the value of the left attribute is contained in the comma-separated "
 "list on the right"
 msgstr ""
+"Trifft nicht zu, wenn der Wert des linken Attributs in der kommaseparierten "
+"Liste auf der rechten Seite enthalten ist"
 
 #: lib/utils/compare.py:393
 msgid ""
 "True if the integer value of the left attribute is smaller than the right "
 "integer value"
 msgstr ""
+"Trifft zu, wenn der Ganzzahlwert des linken Attributs kleiner ist als der "
+"rechte Ganzzahlwert"
 
 #: lib/utils/compare.py:398
 msgid ""
 "True if the integer value of the left attribute is bigger than the right "
 "integer value"
 msgstr ""
+"Trifft zu, wenn der Ganzzahlwert des linken Attributs größer ist als der "
+"rechte Ganzzahlwert"
 
 #: lib/utils/compare.py:402
 msgid ""
 "True if the date and time of the left attribute is before the date and time "
 "of the right attribute"
 msgstr ""
+"Trifft zu, wenn das Datum und die Uhrzeit des linken Attributs vor dem Datum "
+"und der Uhrzeit des rechten Attributs liegt"
 
 #: lib/utils/compare.py:405
 msgid ""
 "True if the date and time of the left attribute is after the date and time "
 "of the right attribute"
 msgstr ""
+"Trifft zu, wenn das Datum und die Uhrzeit des linken Attributs nach dem "
+"Datum und der Uhrzeit des rechten Attributs liegt"
 
 #: lib/utils/compare.py:408
 msgid ""
@@ -4248,6 +4325,9 @@ msgid ""
 "of the right attribute. The right attribute should be a duration such as "
 "'1y', '7d', '6h', '15m'."
 msgstr ""
+"Trifft zu, wenn der Zeitstempel des linken Attributs innerhalb der "
+"vergangenen Zeitdauer liegt, die auf der rechten Seite angegeben ist. Das "
+"rechte Attribut sollte eine Dauer wie '1y', '7d', '6h' oder '15m' sein."
 
 #: lib/utils/compare.py:412
 msgid ""
@@ -4255,18 +4335,25 @@ msgid ""
 "of the right attribute. The right attribute should be a duration such as "
 "'1y', '7d', '6h', '15m'."
 msgstr ""
+"Trifft nicht zu, wenn der Zeitstempel des linken Attributs innerhalb der "
+"vergangenen Zeitdauer liegt, die auf der rechten Seite angegeben ist. Das "
+"rechte Attribut sollte eine Dauer wie '1y', '7d', '6h' oder '15m' sein."
 
 #: lib/utils/compare.py:416
 msgid ""
 "True if the value of the left attribute contains the right value (case-"
 "insensitive)"
 msgstr ""
+"Trifft zu, wenn der Wert des linken Attributs den rechten Wert enthält ("
+"unabhängig von der Groß- und Kleinschreibung)"
 
 #: lib/utils/compare.py:419
 msgid ""
 "False if the value of the left attribute contains the right value (case-"
 "insensitive)"
 msgstr ""
+"Trifft nicht zu, wenn der Wert des linken Attributs den rechten Wert enthält "
+"(unabhängig von der Groß- und Kleinschreibung)"
 
 #, python-brace-format
 #~ msgid ""
