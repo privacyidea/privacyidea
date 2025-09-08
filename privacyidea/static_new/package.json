@@ -22,6 +22,7 @@
     "@angular/platform-browser-dynamic": "^19.0.3",
     "@angular/router": "^19.0.3",
     "crypto-js": "^4.2.0",
+    "material-icons": "^1.13.14",
     "rxjs": "^7.8.1",
     "ts-node": "^10.9.2",
     "tslib": "^2.3.0",
