@@ -17,11 +17,9 @@ New WebUI
 
 .. index:: new webui
 
-To enable the new WebUI, edit the configuration file `pi.cfg` and add the following lines:
+To enable the new WebUI, edit the configuration file `pi.cfg` and add the following lines::
 
-.. code-block:: ini
     PI_STATIC_FOLDER = "static_new/"
-
     PI_TEMPLATE_FOLDER = "static_new/dist/privacyidea-webui/browser/"
 
 
