@@ -2,8 +2,6 @@
 This test file tests the lib.tokens.spasstoken
 This depends on lib.tokenclass
 """
-import json
-
 from privacyidea.lib.token import init_token, get_tokens, import_tokens
 from .base import MyTestCase
 from privacyidea.lib.tokens.motptoken import MotpTokenClass
@@ -203,6 +201,6 @@ class MotpTokenTestCase(MyTestCase):
             "issuer": "privacyIDEA",
         }]
         before_import = get_tokens()
-        import_tokens(json.dumps(token_data))
+        import_tokens(token_data)
         after_import = get_tokens()
         self.assertEqual(len(before_import), len(after_import))

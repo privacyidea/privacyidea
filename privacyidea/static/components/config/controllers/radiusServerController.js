@@ -45,7 +45,8 @@ myApp.controller("radiusServerController", ["$scope", "$stateParams", "inform",
                 $scope.params["identifier"] = $scope.identifier;
             }
             else {
-                $scope.params = {};
+                // Set message-authenticator option default to true
+                $scope.params = {'options': {'message_authenticator': true}};
             }
         });
     };

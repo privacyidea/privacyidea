@@ -25,6 +25,8 @@ like RADIUS-Token or RADIUS-passthru policies.
 The code of this module is tested in tests/test_api_radiusserver.py
 """
 from flask import (Blueprint, request)
+
+from privacyidea.lib.resolver import CENSORED
 from .lib.utils import (getParam,
                         required,
                         send_result)
@@ -65,10 +67,11 @@ def create(identifier=None):
     description = getParam(param, "description", default="")
     dictionary = getParam(param, "dictionary",
                           default="/etc/privacyidea/dictionary")
+    options = getParam(param, "options", default=None)
 
     r = add_radius(identifier, server, secret, port=port,
                    description=description, dictionary=dictionary,
-                   retries=retries, timeout=timeout)
+                   retries=retries, timeout=timeout, options=options)
 
     g.audit_object.log({'success': r > 0,
                         'info':  r})
@@ -85,7 +88,7 @@ def list_radius():
     res = list_radiusservers()
     # We do not add the secret!
     for identifier, data in res.items():
-        data.pop("password")
+        data["secret"] = CENSORED
     g.audit_object.log({'success': True})
     return send_result(res)
 
@@ -125,9 +128,10 @@ def test():
     password = getParam(param, "password", required)
     dictionary = getParam(param, "dictionary",
                           default="/etc/privacyidea/dictionary")
+    options = getParam(param, "options", default=None)
 
     r = test_radius(identifier, server, secret, user, password, port=port,
-                    dictionary=dictionary, retries=retries, timeout=timeout)
+                    dictionary=dictionary, retries=retries, timeout=timeout, options=options)
     g.audit_object.log({'success': r > 0,
                         'info':  r})
     return send_result(r > 0)

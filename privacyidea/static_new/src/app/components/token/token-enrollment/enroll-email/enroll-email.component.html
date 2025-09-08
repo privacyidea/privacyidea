@@ -1,23 +1,24 @@
 <div class="flex-column">
-  <div class="token-type-paragraph">
-    <p>{{ text }}</p>
-  </div>
   <h4 class="enroll-h4">Token Configuration</h4>
   @if (!defaultSMTPisSet) {
-    <span class="inline-warning">For Email tokens to work properly you need to set the
-      <a href="#">Email Token Config</a>!</span><!-- TODO: Link -->
+    <span
+      i18n
+      class="inline-warning">For Email tokens to work properly you need to set the <a href="#">Email Token Config</a>!</span><!-- TODO: Link -->
   }
-  <mat-checkbox [formControl]="readEmailDynamicallyControl">
+  <mat-checkbox
+    [formControl]="readEmailDynamicallyControl"
+    i18n>
     Read number dynamically from user source on each request
   </mat-checkbox>
   <div class="flex-row gap-1">
     @if (!readEmailDynamicallyControl.value) {
       <mat-form-field class="input-height width-33">
-        <mat-label>Email Address</mat-label>
-        <input [formControl]="emailAddressControl"
-               matInput
-               required />
-        <mat-error>Email Address is <strong>required</strong></mat-error>
+        <mat-label i18n>Email Address</mat-label>
+        <input
+          [formControl]="emailAddressControl"
+          matInput
+          required />
+        <mat-error i18n>Email Address is <strong>required</strong></mat-error>
       </mat-form-field>
     } @else {
       <span class="width-33"></span>

@@ -1,4 +1,8 @@
-Version 3.12dev1, 2025-07-16
+Version 3.12, 2025-09-09
+
+  Features:
+  * Entra ID and Keycloak resolver (#4217)
+  * Preview for the WebUI 2.0 can be enabled (#4102)
 
   Enhancements:
   * Add 'force_server_generate' policies for HOTP, TOTP, mOTP, and Password tokens (#4410)
@@ -6,20 +10,7 @@ Version 3.12dev1, 2025-07-16
   * Add policy condition comparators to compare dates and check for substrings (#4380)
   * Add policy 'require_description_on_edit' in the new scope 'Token' (#4117)
   * Remove 'u2f' from the enrollable token types (#4107)
-
-  Fixes:
-  * 'max_auth_fail' and 'max_auth_success' are also applied to local admins and evaluated before checking the password (#4340)
-  * Allow to unassign non-existing users from containers (#4208)
-  * Extended policy conditions on user info also works for web UI policies (#4016)
-  * Close LDAP connection after each request (#4148)
-
-Version 3.12dev0, 2025-07-09
-
-  Features:
-  * Entra ID and Keycloak resolver (#4217)
-
-  Enhancements:
-  * Remember last used token type per user and application for multi-challenge (#4179)
+  * Remember last used token type per user and application for multi-challenge as preferred token type (#4179)
   * Add option 'handle_missing_data' to the extended policy conditions (#4339)
   * Move project description and building metadata into pyproject.toml (#3525)
   * Policy to disable specific token types for authentication (#4371)
@@ -32,11 +23,26 @@ Version 3.12dev0, 2025-07-09
   * Secure container registration with user store password (#4208)
   * Allow wildcards in container search query (#4208)
   * Add endpoint for batch deletions of tokens (#4208)
+  * Different URL scheme can be used for push token (#2882)
+  * Add distinct policy condition 'user-agent', with plugin user-agents or custom as predefined options (#4501)
+  * Extended the new tokenjanitor with import and export of token and optionally user assignments (#4000)
 
   Fixes:
+  * 'max_auth_fail' and 'max_auth_success' are also applied to local admins and evaluated before checking the password (#4340)
+  * Allow to unassign non-existing users from containers (#4208)
+  * Extended policy conditions on user info also works for web UI policies (#4016)
+  * Close LDAP connection after each request (#4148)
+  * List containers with users from deleted realms and allow to unassign them (#4530)
   * Reduce PyOpenSSL dependencies for certificate token (#4212)
   * Consistent handling of whitespaces in usernames for policy checks (#4385)
   * Increase column sizes in policy and audit table (#4353)
+  * Close Database connections on exit to prevent "aborted connection" warnings in MySQL (#4496)
+  * 'last_auth' policy works for fido2 token (#4543)
+  * 'challenge_text' policy is loaded correctly for HOTP/TOTP token (#4640)
+  * A disabled passkey can no longer be used for authentication (#4612)
+  * Fixed log messages that were redacted by SecureFormatter (#4576)
+  * Improved policy condition checks with user objects (#4509, #4482)
+
 
 Version 3.11.4, 2025-06-26
 
@@ -126,7 +132,6 @@ Version 3.11, 2025-02-17
   * Fix that deleting a policy results in a 'failed' audit log entry (#1720)
   * Max token policy ignored with enroll via multi challenge (#4146)
   * Better error checking in ScriptEventHandler (#4250)
-
 
 Version 3.10.2, 2024-11-26
 
@@ -341,7 +346,6 @@ Version 3.8.1, 2023-02-06
   * Fix ca-parameter policy during enrollment (#3479)
   * Fix removing node from a policy (#3500)
 
-
 Version 3.8, 2022-12-20
 
   Features:
@@ -406,7 +410,6 @@ Version 3.8, 2022-12-20
   WebUI:
   * Disable realm button in case of reasolverread (UI) (#3149)
   * Add missing translation for PSKC import (#3129)
-
 
 Version 3.8dev3, 2022-12-07
 
@@ -490,7 +493,6 @@ Version 3.7.4, 2022-10-18
   * Fix the PassOnNoToken and passthru in Offline mode with Credential
   Provider (#3333)
   * URLencode password and username for remote token (#3337)
-
 
 Version 3.7.3, 2022-08-01
 
@@ -654,7 +656,6 @@ Version 3.6.3, 2021-11-18
   * Fix endianness for certain GUID bytestrings in LDAP resolver returned from AD
   * Fix problem with old OTP values of TOTP tokens in autoresync
 
-
 Version 3.7dev2, 2021-10-08
 
   Enhancements:
@@ -692,7 +693,6 @@ Version 3.7dev1, 2021-08-25
   * Fix AD little endian in objectGUID
   * Fix upper case realm names in policy check (#2869)
   * Fix deleting expired auth_cache entries (#2481)
-
 
 Version 3.6.2, 2021-07-22
 
@@ -763,7 +763,6 @@ Version 3.6, 2021-06-07
   * Save fractions of seconds in the audit log #2706
   * Fix pi-manage restore #2728
 
-
 Version 3.5.2, 2021-03-23
 
   Fixes:
@@ -781,7 +780,6 @@ Version 3.5.1, 2021-01-28
   * Fix the internal interface of container audit module (#2562)
   * Add missing headers to /auth request (#2599)
   * Fix tokeninfo value filter with Oracle db (#2602)
-
 
 Version 3.5, 2020-12-22
 
@@ -845,7 +843,6 @@ Version 3.5, 2020-12-22
   * Disable browser autocomplete fields that clash with
     search fields in the UI (#2401)
   * Fix challenge response with multiple FIDO2 tokens (#2092)
-
 
 Version 3.4.1, 2020-10-09
 
@@ -937,7 +934,6 @@ Version 3.4, 2020-09-08
    * Fix admin/scope in import/export of policies with pi-manage (#2359)
    * Fix url_decode (#2360)
    * Fix token settings for Yubikey in UI enrollment (#2365, #2366)
-
 
 Version 3.3.3, 2020-05-19
 
@@ -1093,7 +1089,6 @@ Version 3.2, 2019-12-02
   * Make the policy creation at the command line with pi-manage more
     consistent (#1807)
 
-
 Version 3.1.2, 2019-11-15
 
   Fixes:
@@ -1105,7 +1100,6 @@ Version 3.1.1, 2019-09-25
   Fixes:
   * Fix the wrong token_type key in the audit log which caused the tokentype
     to not be contained in the audit (#1846)
-
 
 Version 3.1, 2019-09-04
 
@@ -1177,7 +1171,6 @@ Version 3.1, 2019-09-04
   * Fix double listing in policy list (#1132)
   * Remove additional empty line in audit log in case of an error (#1707)
   * Fix enrollment of certificate tokens under Python 3 (#1799)
-
 
 Version 3.0.2, 2019-06-17
 
@@ -1266,13 +1259,11 @@ Version 3.0, 2019-04-10
     of the generic event handler based statistics (#1314)
   * Deterministic installation with pinned dependencies on all distributions (#1127)
 
-
 Version 2.23.5, 2019-03-04
 
   Fixes:
   * Fix authcache
   * Fix correct syncwindow for manually resyncing TOTP tokens
-
 
 Version 2.23.4, 2019-02-06
 
@@ -1289,7 +1280,7 @@ Version 2.23.3, 2018-10-26
   Fixes:
   * Performance: avoid using wildcard serials in functions like
     get_tokens, get_realms_of_token and copy_token
-  * Performance: avoid reload of static configuration
+  * Performance: avoid reload of static configuration (#1523)
   * Performance: Clean up LDAP cache, so that it will not grow to big and
     further LDAP cache usage optimization (#1246)
   * Performance: Make signing the audit log configurable (#1262)
@@ -1305,6 +1296,10 @@ Version 2.23.3, 2018-10-26
     the SQL Audit module.
   * Cast userid to string to avoid casts problems with PostgreSQL
   * Update pyopenssl dependency.
+  * Allow SQL audit signing to be deactivated
+  * Allow token auth counter to be deactivated
+  * Remove double "get" of Token challenges in UI
+  * Fix performance issue with wildcard serials (#1225)
 
 Version 2.23.2, 2018-09-07
 
@@ -1379,7 +1374,6 @@ Version 2.23, 2018-08-29
   * Shorten audit information to fit into the database column (#1037)
   * Fix the RADIUS configuration test (#1042)
 
-
 Version 2.22.1, 2018-04-20
 
   Fixes in WebUI:
@@ -1399,7 +1393,6 @@ Version 2.22.1, 2018-04-20
   * Fix validation of OCRA and TiQR token (#1008)
   * Add retry to cope with HSM issues (#1003)
   * Fix unicode in resolverconf database table with Oracle (#999)
-
 
 Version 2.22, 2018-03-27
 
@@ -1445,13 +1438,11 @@ Version 2.22, 2018-03-27
   * Fix Editing SMTP Server definition clears the password (#923)
   * Fix pi-manage backup crash (Thanks to Pavol Ipoth for this contribution!)
 
-
 Version 2.21.4, 2018-01-24
 
   Fixes:
   * HTTP Timeout of HTTP SMS Gateway (#889)
   * Remove console.log from webui
-
 
 Version 2.21.1, 2018-01-09
 
@@ -1461,13 +1452,11 @@ Version 2.21.1, 2018-01-09
 Version 2.21, 2017-12-20
 
   Features:
-
-   * Allow export of tokens to PKSC file (#790)
+   * Allow export of tokens to PSKC file (#790)
    * Implement two-step enrollment of HOTP/TOTP tokens (#797, #863, #865, #866)
    * Allow WebUI customization via policies (#795)
 
   Enhancements:
-
    * Add script to decrypt safeword tokens
    * Allow using tags in the tokenissuer of smartphone tokens
    * Try to re-establish lost HSM connections (#787)
@@ -1486,7 +1475,6 @@ Version 2.21, 2017-12-20
    * Allow to configure length of generated serial numbers (#583)
 
   Fixes:
-
    * Fix handling of only_realm option in token event handler (#809)
    * Fix scrollbar issues in WebUI (#806, #823)
    * Fix OTP counter of offline token (#840)
@@ -1511,7 +1499,6 @@ Version 2.20.1, 2017-10-30
 Version 2.20, 2017-09-27
 
   Features:
-
    * New Token-Type OCRA and DisplayTAN to support
      transaction signing for online banking (#767)
    * Federation Handler allows to forward authentication
@@ -1522,7 +1509,6 @@ Version 2.20, 2017-09-27
    * Authentication Cache policy (#729)
 
   Enhancements:
-
    * !!!NOTE!!! following policies now also honor the resolvers,
     which they did not previously:
     (AUTH, challenge_response), (AUTH, otppin),
@@ -1553,7 +1539,6 @@ Version 2.20, 2017-09-27
      email text and SMS text.
 
   Fixes:
-
    * Set default loglevel from DEBUG to INFO (#765)
    * Fixed PIN logging, which could lead to exceptions
    * Fixed unicode handling in log messages
@@ -1564,26 +1549,22 @@ Version 2.20, 2017-09-27
    * Allow multiple tries for challenge/response (#708)
    * Fix problem with certificate serial number (#737)
 
-
 Version 2.19.1, 2017-07-02
 
   Enhancements:
-
   * Add "pi-manage policy load" and "pi-manage policy export". (#721)
   * Allow customization via pi.cfg file.
   * Add {username} and {realm} as tags for the tokenhandler. (#735)
 
  Fixes:
-
   * Fix pi-manage file permission for backup
   * Fix search for resolver in audit log
   * Allow to read old legacy time from validity period
-  * Fix wrong enddate with lost_token
+  * Fix wrong end date with lost_token
   * Fix typos
   * Improve documentation for yubikey
   * Improve documentation for cache decorator
   * Improve documentation for webui policy
-
 
 Version 2.19, 2017-05-25
 
@@ -1602,7 +1583,6 @@ Version 2.19, 2017-05-25
     HTTP return codes. (#703)
 
   Enhancements:
-
   * Allow to unset token validity period and other tokeninfo
     fields (#691)
   * Add a quick-resolver test for LDAP resolvers (#688)
@@ -1714,7 +1694,6 @@ Version 2.18, 2017-03-09
   * Remove unused policy action "motp_webprovision"
   * Allow emailtext policy in triggerchallenge API (#642)
 
-
 Version 2.17, 2016-12-29
 
   Features
@@ -1757,7 +1736,6 @@ Version 2.17, 2016-12-29
   * Add documentation for SMS provider (#566)
   * Remove 301 redirects from WebUI (#576)
 
-
 Version 2.16, 2016-11-10
 
   Features
@@ -1781,7 +1759,6 @@ Version 2.16, 2016-11-10
   * Catch error in case of faulty overrideClient definition (#526)
   * Truncate Audit lines, that are too long for the DB table (#525)
 
-
 Version 2.15, 2016-10-06
 
   Features
@@ -1804,7 +1781,6 @@ Version 2.15, 2016-10-06
   * Fixing RemoteUser fails to display WebUI (#499)
   * String comparison in HOSTS resolver (#484)
 
-
 Version 2.14, 2016-08-17
 
   Features
@@ -1824,7 +1800,6 @@ Version 2.14, 2016-08-17
 
   Fixes
   * Restrict GET /user for corresponding admins #460
-
 
 Version 2.13, 2016-06-30
 
@@ -1852,8 +1827,6 @@ Version 2.13, 2016-06-30
   * Display token count in web UI. #437
   * Use correct default_tokentype in token enrollment. #427
   * Fix HOTP resync problems. #412
-
-
 
 Version 2.12, 2016-05-24
 
@@ -1887,7 +1860,6 @@ Version 2.12, 2016-05-24
   * Authentication with active token not possible if
     the user has a disabled token #339
 
-
 Version 2.11, 2016-03-29
 
   Features
@@ -1914,7 +1886,6 @@ Version 2.11, 2016-03-29
   * Fix Enrollment Wizard for non-default realm users
   * Registration process: If an email can not be delivered,
     the token is deleted, since it can not be used.
-
 
 Version 2.10, 2016-02-11
 
@@ -1992,7 +1963,8 @@ Version 2.8, 2015-11-26
   * Fix email token TLS checkbox saving
   * Fix TOTP testing in Web UI
   * Fix SMS config loading in Web UI
-
+  * Add Challenge Response support to SAML
+  * Add U2F support to SAML
 
 Version 2.7, 2015-10-03
 
@@ -2043,8 +2015,8 @@ Version 2.6, 2015-09-09
   * Fix link to privacyIDEA logo in Web UI
   * Fixed bug, that user was not able to resync his own tokens.
 
-
 Version 2.5, 2015-07-23
+
   Features
   * Add statistics
   * Add German translation
@@ -2055,7 +2027,7 @@ Version 2.5, 2015-07-23
   Enhancements
   * Preset Email and SMS of a user when enrolling token
   * Enable LDAP anonymous bind
-  * Add Hashalgorithms and digits to QR Code
+  * Add Hash algorithms and digits to QR Code
   * Add support for CentOS 6 and 7
 
   Fixes
@@ -2081,7 +2053,7 @@ Version 2.4, 2015-06-24
   * Improve RADIUS module
   * WebUI: Fix download of audit log
   * Fix missing access right of user to GET /caconnector
-
+  * Fix SMS token
 
 Version 2.3, 2015-05-22
 
@@ -2103,8 +2075,8 @@ Version 2.3, 2015-05-22
 
 Version 2.2, 2015-04-09
 
-  * pi-manage.py: create resolvers and realms
-  * pi-manage.py: manage policies
+  * pi-manage: create resolvers and realms
+  * pi-manage: manage policies
   * Add LostToken UI
   * Add Offline Application
   * Add PAM authentication module with offline support
@@ -2115,7 +2087,6 @@ Version 2.2, 2015-04-09
   * Add bash script for ssh key fetching
   * Make WebUI logout time configurable via webui policy.
   * Add NTLM authentication to the LDAP resolver.
-
 
 Version 2.1, 2015-03-10
 
@@ -2128,7 +2099,6 @@ Version 2.1, 2015-03-10
   * Fix logout problem of user #92
   * Fix user list for AD (referrals) #99
   * Fix max_token_per_user policy #101
-
 
 Version 2.0, 2015-02-21
 
@@ -2144,11 +2114,9 @@ Version 2.0, 2015-02-21
     have a minimum code impact. No all policies are migrated, yet.
   * OCRA token and Email token is not migrated, yet.
 
-
 Version 1.5.1, 2015-01-12
 
   * Fix splitting the @-sign to allow users like user@email.com@realm1
-
 
 Version 1.5, 2014-12-25
 
@@ -2160,7 +2128,6 @@ Version 1.5, 2014-12-25
   * Fix the empty result audit search problem
   * Fix the port problem with SQL resolver
 
-
 Version 1.4, 2014-10-06
 
   * Add "wrong password" message on login screen
@@ -2170,7 +2137,6 @@ Version 1.4, 2014-10-06
   * Add admin/checkserial policy
   * Add help on logon screen
   * Fixed the session timeout bug in the management UI
-
 
 Version 1.3.2, 2014-09-22
 

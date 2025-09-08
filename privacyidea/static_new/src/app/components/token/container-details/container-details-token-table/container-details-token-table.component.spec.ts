@@ -1,40 +1,59 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-import { provideHttpClient } from '@angular/common/http';
-import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { of, Subject } from 'rxjs';
-import { signal } from '@angular/core';
-import { MatTableDataSource } from '@angular/material/table';
-import { NavigationEnd, Router } from '@angular/router';
+/**
+ * (c) NetKnights GmbH 2025,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ **/
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
+import { provideHttpClient } from "@angular/common/http";
+import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { of, Subject } from "rxjs";
+import { signal } from "@angular/core";
+import { MatTableDataSource } from "@angular/material/table";
+import { NavigationEnd, Router } from "@angular/router";
 
-import { ContainerDetailsTokenTableComponent } from './container-details-token-table.component';
+import { ContainerDetailsTokenTableComponent } from "./container-details-token-table.component";
 import {
   MockAuthService,
   MockContainerService,
   MockContentService,
+  MockLocalService,
   MockNotificationService,
   MockOverflowService,
   MockTableUtilsService,
   MockTokenService,
-  MockUserService,
-} from '../../../../../testing/mock-services';
-import { AuthService } from '../../../../services/auth/auth.service';
-import { ContainerService } from '../../../../services/container/container.service';
-import { TokenService } from '../../../../services/token/token.service';
-import { TableUtilsService } from '../../../../services/table-utils/table-utils.service';
-import { OverflowService } from '../../../../services/overflow/overflow.service';
-import { NotificationService } from '../../../../services/notification/notification.service';
-import { MatDialog } from '@angular/material/dialog';
-import { UserService } from '../../../../services/user/user.service';
-import { ConfirmationDialogComponent } from '../../../shared/confirmation-dialog/confirmation-dialog.component';
-import { ContentService } from '../../../../services/content/content.service';
+  MockUserService
+} from "../../../../../testing/mock-services";
+import { AuthService } from "../../../../services/auth/auth.service";
+import { ContainerService } from "../../../../services/container/container.service";
+import { TokenService } from "../../../../services/token/token.service";
+import { TableUtilsService } from "../../../../services/table-utils/table-utils.service";
+import { OverflowService } from "../../../../services/overflow/overflow.service";
+import { NotificationService } from "../../../../services/notification/notification.service";
+import { MatDialog } from "@angular/material/dialog";
+import { UserService } from "../../../../services/user/user.service";
+import { ConfirmationDialogComponent } from "../../../shared/confirmation-dialog/confirmation-dialog.component";
+import { ContentService } from "../../../../services/content/content.service";
 
 const routerEvents$ = new Subject<NavigationEnd>();
-routerEvents$.next(new NavigationEnd(1, '/', '/'));
+routerEvents$.next(new NavigationEnd(1, "/", "/"));
 const routerMock = {
   navigate: jest.fn().mockResolvedValue(true),
-  url: '/',
-  events: routerEvents$,
+  url: "/",
+  events: routerEvents$
 } as unknown as jest.Mocked<Router>;
 
 function makeDialogResult(result: boolean) {
@@ -42,10 +61,10 @@ function makeDialogResult(result: boolean) {
 }
 
 const matDialogMock = {
-  open: jest.fn().mockReturnValue(makeDialogResult(true)),
+  open: jest.fn().mockReturnValue(makeDialogResult(true))
 };
 
-describe('ContainerDetailsTokenTableComponent', () => {
+describe("ContainerDetailsTokenTableComponent", () => {
   let fixture: ComponentFixture<ContainerDetailsTokenTableComponent>;
   let component: ContainerDetailsTokenTableComponent;
 
@@ -53,7 +72,6 @@ describe('ContainerDetailsTokenTableComponent', () => {
   const tokenServiceMock = new MockTokenService();
   const overflowServiceMock = new MockOverflowService();
   const tableUtilsMock = new MockTableUtilsService();
-  const authServiceMock = new MockAuthService();
   const notificationServiceMock = new MockNotificationService();
 
   beforeEach(async () => {
@@ -63,7 +81,7 @@ describe('ContainerDetailsTokenTableComponent', () => {
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
-        { provide: AuthService, useValue: authServiceMock },
+        { provide: AuthService, useClass: MockAuthService },
         { provide: ContainerService, useValue: containerServiceMock },
         { provide: TokenService, useValue: tokenServiceMock },
         { provide: TableUtilsService, useValue: tableUtilsMock },
@@ -73,7 +91,9 @@ describe('ContainerDetailsTokenTableComponent', () => {
         { provide: MatDialog, useValue: matDialogMock },
         { provide: UserService, useClass: MockUserService },
         { provide: ContentService, useClass: MockContentService },
-      ],
+        MockLocalService,
+        MockNotificationService
+      ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(ContainerDetailsTokenTableComponent);
@@ -82,18 +102,18 @@ describe('ContainerDetailsTokenTableComponent', () => {
     component.containerTokenData = signal(
       new MatTableDataSource<any>([
         {
-          serial: 'Mock serial',
-          tokentype: 'hotp',
+          serial: "Mock serial",
+          tokentype: "hotp",
           active: true,
-          username: 'userA',
+          username: "userA"
         },
         {
-          serial: 'Another serial',
-          tokentype: 'totp',
+          serial: "Another serial",
+          tokentype: "totp",
           active: false,
-          username: 'userB',
-        },
-      ]),
+          username: "userB"
+        }
+      ])
     );
 
     fixture.detectChanges();
@@ -101,66 +121,66 @@ describe('ContainerDetailsTokenTableComponent', () => {
 
   afterEach(() => jest.clearAllMocks());
 
-  it('creates the component', () => {
+  it("creates the component", () => {
     expect(component).toBeTruthy();
   });
 
-  it('sets paginator and sort on the dataSource', () => {
+  it("sets paginator and sort on the dataSource", () => {
     const ds = component.containerTokenData();
     expect(ds.paginator).toBe(component.paginator);
     expect(ds.sort).toBe(component.sort);
   });
 
-  it('updates filterValue and MatTableDataSource.filter', () => {
-    const mockEvent = { target: { value: ' testFilter ' } } as unknown as Event;
+  it("updates filterValue and MatTableDataSource.filter", () => {
+    const mockEvent = { target: { value: " testFilter " } } as unknown as Event;
 
     component.handleFilterInput(mockEvent);
 
-    expect(component.filterValue).toBe('testFilter');
-    expect(component.containerTokenData().filter).toBe('testfilter');
+    expect(component.filterValue).toBe("testFilter");
+    expect(component.containerTokenData().filter).toBe("testfilter");
   });
 
-  it('delegates to toggleActive when columnKey === "active"', () => {
-    const toggleSpy = jest.spyOn(component, 'toggleActive');
-    const row = { serial: 'Mock serial', active: true };
+  it("delegates to toggleActive when columnKey === \"active\"", () => {
+    const toggleSpy = jest.spyOn(component, "toggleActive");
+    const row = { serial: "Mock serial", active: true };
 
-    component.handleColumnClick('active', row as any);
+    component.handleColumnClick("active", row as any);
 
     expect(toggleSpy).toHaveBeenCalledWith(row);
   });
 
-  it('does nothing when columnKey !== "active"', () => {
-    const toggleSpy = jest.spyOn(component, 'toggleActive');
+  it("does nothing when columnKey !== \"active\"", () => {
+    const toggleSpy = jest.spyOn(component, "toggleActive");
 
-    component.handleColumnClick('username', {} as any);
+    component.handleColumnClick("username", {} as any);
 
     expect(toggleSpy).not.toHaveBeenCalled();
   });
 
-  describe('deleteAllTokens()', () => {
-    it('opens confirm dialog and deletes on confirm', () => {
+  describe("deleteAllTokens()", () => {
+    it("opens confirm dialog and deletes on confirm", () => {
       component.deleteAllTokens();
 
       expect(matDialogMock.open).toHaveBeenCalledWith(
         ConfirmationDialogComponent,
         {
           data: {
-            serial_list: ['Mock serial', 'Another serial'],
-            title: 'Delete All Tokens',
-            type: 'token',
-            action: 'delete',
-            numberOfTokens: 2,
-          },
-        },
+            serialList: ["Mock serial", "Another serial"],
+            title: "Delete All Tokens",
+            type: "token",
+            action: "delete",
+            numberOfTokens: 2
+          }
+        }
       );
 
       expect(containerServiceMock.deleteAllTokens).toHaveBeenCalledWith({
-        containerSerial: 'CONT-1',
-        serialList: 'Mock serial,Another serial',
+        containerSerial: "CONT-1",
+        serialList: "Mock serial,Another serial"
       });
     });
 
-    it('does NOT delete if dialog returns false', () => {
+    it("does NOT delete if dialog returns false", () => {
       matDialogMock.open.mockReturnValueOnce(makeDialogResult(false));
 
       component.deleteAllTokens();

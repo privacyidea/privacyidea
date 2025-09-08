@@ -71,7 +71,7 @@ from privacyidea.lib import _
 from privacyidea.lib.container import find_container_by_serial, get_container_realms
 from privacyidea.lib.containers.container_info import CHALLENGE_TTL, REGISTRATION_TTL, SERVER_URL
 from privacyidea.lib.error import (PolicyError, RegistrationError,
-                                   TokenAdminError, ResourceNotFoundError, AuthError)
+                                   TokenAdminError, ResourceNotFoundError, AuthError, ParameterError)
 from flask import g, current_app, Request
 
 from privacyidea.lib.policies.helper import check_max_auth_fail, check_max_auth_success, DEFAULT_JWT_VALIDITY
@@ -990,7 +990,8 @@ def required_email(request=None, action=None):
     """
     email = getParam(request.all_data, "email")
     email_found = False
-    email_pols = Match.action_only(g, scope=SCOPE.REGISTER, action=PolicyAction.REQUIREDEMAIL).action_values(unique=False)
+    email_pols = Match.action_only(g, scope=SCOPE.REGISTER, action=PolicyAction.REQUIREDEMAIL).action_values(
+        unique=False)
     if email and email_pols:
         for email_pol in email_pols:
             # The policy is only "/regularexpr/".
@@ -1078,7 +1079,10 @@ def auditlog_age(request=None, action=None):
     :type action: basestring
     :returns: Always true. Modified the parameter request
     """
-    audit_age = Match.admin_or_user(g, action=PolicyAction.AUDIT_AGE, user_obj=request.User).action_values(unique=True)
+    user = request.User
+    if g.logged_in_user.get("role") == ROLE.ADMIN:
+        user = None
+    audit_age = Match.admin_or_user(g, action=PolicyAction.AUDIT_AGE, user_obj=user).action_values(unique=True)
     timelimit = None
     timelimit_s = None
     for aa in audit_age:
@@ -1283,7 +1287,10 @@ def check_base_action(request=None, action=None, anonymous=False):
 def check_token_action(request: Request = None, action: str = None):
     """
     This decorator function takes the request and verifies the given action for the SCOPE ADMIN or USER. This decorator
-    is used for api calls that perform actions on a single token.
+    is used for api calls that perform actions on a single token or a list of tokens in the request. The action is
+    verified for each token in the list. In case of a list of tokens it does not throw an exception if the action is
+    not allowed for a token, but removes the token from the list and writes it to the log. Additionally, a list of the
+    not authorized serials is added to the request with the key 'not_authorized_serials'.
 
     If a serial is passed in the request and the logged-in user is an admin, the user attributes (username, realm,
     resolver) are determined from the token. Otherwise, they are determined from the request parameters.
@@ -1307,11 +1314,78 @@ def check_token_action(request: Request = None, action: str = None):
     (role, username, realm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user, params)
     user_attributes = UserAttributes(role, username, realm, resolver, adminuser, adminrealm)
     user_attributes.user = user if user else None
-    serial = params.get("serial")
 
-    action_allowed = check_token_action_allowed(g, action, serial, user_attributes)
-    if not action_allowed:
+    # Unify serial collection from 'serial' (single or CSV) and 'serials' (list/str) parameters.
+    all_serials = set()
+    serials = params.get("serials") or []
+    if isinstance(serials, str):
+        serials = serials.replace("[", "").replace("]", "").split(",")
+        for s in serials:
+            stripped = s.strip()
+            all_serials.add(stripped)
+    elif isinstance(serials, list):
+        for s in serials:
+            all_serials.add(s)
+
+    serial_param = params.get("serial")
+    if serial_param:
+        for s in serial_param.split(','):
+            stripped = s.strip()
+            if stripped:
+                all_serials.add(stripped)
+
+    # Check if a user is given in the params, which would mean that the operation should be done on all the users token
+    if not all_serials and user:
+        tokens = get_tokens(user=user)
+        for token in tokens:
+            all_serials.add(token.token.serial)
+
+    if not all_serials:
+        raise ParameterError("Missing parameter: 'serial' or 'serials'")
+
+    # Process the collected serials
+    authorized_serials = []
+    not_authorized_serials = []
+    not_found_serials = []
+    for serial in all_serials:
+        try:
+            allowed = check_token_action_allowed(g, action, serial, replace(user_attributes))
+        except ResourceNotFoundError:
+            not_found_serials.append(serial)
+            continue
+        except Exception as ex:  # pragma: no cover
+            allowed = False
+            log.error(f"Error while checking action '{action}' on token {serial}: {ex}")
+
+        if allowed:
+            authorized_serials.append(serial)
+        else:
+            not_authorized_serials.append(serial)
+
+    # If any serial was not authorized, and it was the only one provided, raise an error.
+    # This preserves the behavior of failing hard on single-token operations.
+    if not_authorized_serials and len(all_serials) == 1 and len(not_found_serials) == 0:
         raise PolicyError(f"{role.capitalize()} actions are defined, but the action {action} is not allowed!")
+
+    # All serials were unauthorized
+    if not authorized_serials and not not_found_serials and not_authorized_serials:
+        raise PolicyError(f"{role.capitalize()} actions are defined, but the action {action} is not allowed for any "
+                          f"of the serials provided!")
+
+    # None of the serials was found
+    if not authorized_serials and not not_authorized_serials and not_found_serials:
+        raise ResourceNotFoundError(f"No token found for serials: {','.join(not_found_serials)}")
+
+    # For multi-token operations, log the ones that were skipped.
+    for serial in not_authorized_serials:
+        log.info(f"User {g.logged_in_user} is not allowed to manage token {serial}. "
+                 f"It is removed from the token list and will not be further processed in the request.")
+
+    # Update the request with the list of serials the user is authorized to act on.
+    request.all_data["serials"] = authorized_serials
+    request.all_data["serial"] = ",".join(authorized_serials)
+    request.all_data["not_authorized_serials"] = not_authorized_serials
+    request.all_data["not_found_serials"] = not_found_serials
     return True
 
 
@@ -2083,6 +2157,16 @@ def webauthntoken_authz(request, action):
     return True
 
 
+def load_challenge_text(request, action):
+    """
+    Checks if the policy CHALLENGE_TEXT is active, and if so, add the value to the request data.
+    """
+    user = request.User if hasattr(request, "User") else None
+    text = get_first_policy_value(PolicyAction.CHALLENGETEXT, "", scope=SCOPE.AUTH, user=user)
+    if text:
+        request.all_data[PolicyAction.CHALLENGETEXT] = text
+    return True
+
 def fido2_auth(request, action):
     """
     Add policy values for FIDO2 tokens to the request.
@@ -2528,11 +2612,12 @@ def require_description(request=None, action=None):
         serial = get_optional(params, "serial")
         if serial:
             token = (get_one_token(serial=serial, rollout_state=ROLLOUTSTATE.VERIFYPENDING, silent_fail=True)
-                   or get_one_token(serial=serial, rollout_state=ROLLOUTSTATE.CLIENTWAIT, silent_fail=True))
+                     or get_one_token(serial=serial, rollout_state=ROLLOUTSTATE.CLIENTWAIT, silent_fail=True))
         # only if no token exists, yet, we need to check the description
         if not token and not request.all_data.get("description"):
             log.error(f"Missing description for {type_value} token.")
             raise PolicyError(_(f"Description required for {type_value} token."))
+
 
 def require_description_on_edit(request=None, action=None):
     """

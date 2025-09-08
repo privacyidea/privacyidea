@@ -1,47 +1,18 @@
-import {
-  TokenApiPayloadMapper,
-  TokenEnrollmentData,
-  TokenEnrollmentPayload,
-} from './_token-api-payload.mapper';
-import { Injectable } from '@angular/core';
-
-// Interface for Papertoken-specific enrollment data
-export interface PaperTokenEnrollmentData extends TokenEnrollmentData {
-  type: 'papertoken';
-  otpLength?: number;
-  otpCount?: number; // Number of OTPs to generate for the paper token
-}
-
-export interface PaperTokenEnrollmentPayload extends TokenEnrollmentPayload {
-  otplen?: number; // Assuming API field name if different from otpLength
-  otpcount?: number; // Assuming API field name if different from otpCount
-}
-
-@Injectable({ providedIn: 'root' })
-export class PaperTokenApiPayloadMapper
-  implements TokenApiPayloadMapper<PaperTokenEnrollmentData>
-{
-  toApiPayload(data: PaperTokenEnrollmentData): PaperTokenEnrollmentPayload {
-    // 'papertoken' type is not in the main switch statement.
-    // Mapping based on defined interfaces.
-    const payload: PaperTokenEnrollmentPayload = {
-      type: data.type,
-      description: data.description,
-      container_serial: data.containerSerial,
-      validity_period_start: data.validityPeriodStart,
-      validity_period_end: data.validityPeriodEnd,
-      user: data.user,
-      pin: data.pin,
-      otplen: data.otpLength,
-      otpcount: data.otpCount,
-    };
-    if (payload.otplen === undefined) delete payload.otplen;
-    if (payload.otpcount === undefined) delete payload.otpcount;
-    return payload;
-  }
-
-  fromApiPayload(payload: any): PaperTokenEnrollmentData {
-    // Placeholder: Implement transformation from API payload. We will replace this later.
-    return payload as PaperTokenEnrollmentData;
-  }
-}
+/**
+ * (c) NetKnights GmbH 2025,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ **/

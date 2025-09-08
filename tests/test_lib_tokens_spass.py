@@ -3,18 +3,17 @@ This test file tests the lib.tokens.spasstoken
 This depends on lib.tokenclass
 """
 import logging
+
 from testfixtures import log_capture
-import json
 
 from privacyidea.lib.token import init_token, remove_token, import_tokens, get_tokens
-from .base import MyTestCase
 from privacyidea.lib.tokens.spasstoken import SpassTokenClass
 from privacyidea.lib.tokens.spasstoken import log as spass_log
 from privacyidea.models import Token
+from .base import MyTestCase
 
 
 class SpassTokenTestCase(MyTestCase):
-
     otppin = "topsecret"
     serial1 = "ser1"
 
@@ -76,15 +75,15 @@ class SpassTokenTestCase(MyTestCase):
         self.assertTrue(set(expected_keys).issubset(exported_data.keys()))
 
         expected_tokeninfo_keys = ["hashlib", "tokenkind"]
-        self.assertTrue(set(expected_tokeninfo_keys).issubset(exported_data["tokeninfo"].keys()))
+        self.assertTrue(set(expected_tokeninfo_keys).issubset(exported_data["info_list"].keys()))
 
         # Test that the exported values match the token's data
         self.assertEqual(exported_data["serial"], "SPASS12345678")
         self.assertEqual(exported_data["type"], "spass")
         self.assertEqual(exported_data["description"], "this is a spass token export test")
-        self.assertEqual(exported_data["tokeninfo"]["hashlib"], "sha256")
+        self.assertEqual(exported_data["info_list"]["hashlib"], "sha256")
         self.assertEqual(exported_data["otpkey"], '12345')
-        self.assertEqual(exported_data["tokeninfo"]["tokenkind"], "software")
+        self.assertEqual(exported_data["info_list"]["tokenkind"], "software")
         self.assertEqual(exported_data["issuer"], "privacyIDEA")
 
         # Clean up
@@ -98,11 +97,11 @@ class SpassTokenTestCase(MyTestCase):
             "description": "this is an spass token import test",
             "otpkey": "12345",
             "issuer": "privacyIDEA",
-            "tokeninfo": {"hashlib": "sha256", "tokenkind": "software"}
+            "info_list": {"hashlib": "sha256", "tokenkind": "software"}
         }]
 
         # Import the token
-        result = import_tokens(json.dumps(token_data))
+        result = import_tokens(token_data)
         self.assertIn("SPASS12345678", result.successful_tokens, result)
 
         # Retrieve the imported token
@@ -113,8 +112,8 @@ class SpassTokenTestCase(MyTestCase):
         self.assertEqual(spasstoken.type, token_data[0]["type"])
         self.assertEqual(spasstoken.token.description, token_data[0]["description"])
         self.assertEqual(spasstoken.token.get_otpkey().getKey().decode("utf-8"), token_data[0]["otpkey"])
-        self.assertEqual(spasstoken.get_tokeninfo("hashlib"), token_data[0]["tokeninfo"]["hashlib"])
-        self.assertEqual(spasstoken.get_tokeninfo("tokenkind"), token_data[0]["tokeninfo"]["tokenkind"])
+        self.assertEqual(spasstoken.get_tokeninfo("hashlib"), token_data[0]["info_list"]["hashlib"])
+        self.assertEqual(spasstoken.get_tokeninfo("tokenkind"), token_data[0]["info_list"]["tokenkind"])
         self.assertEqual(spasstoken.export_token()["issuer"], token_data[0]["issuer"])
 
         # Check that the token works

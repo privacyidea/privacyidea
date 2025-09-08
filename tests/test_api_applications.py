@@ -3,7 +3,6 @@ This test case test the REST API
 api/applications.py
 """
 
-import json
 from .base import MyApiTestCase
 
 

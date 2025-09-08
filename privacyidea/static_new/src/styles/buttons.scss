@@ -13,15 +13,15 @@ $button-border-radius: var(--border-radius);
 $profile-bg: var(--background-yellow);
 $profile-hover-bg: var(--background-yellow-inset);
 $background-low-contrast: linear-gradient(
-    145deg,
-    var(--mat-sys-surface-container-highest),
-    var(--mat-sys-surface-container-low)
+  145deg,
+  var(--mat-sys-surface-container-highest),
+  var(--mat-sys-surface-container-low)
 );
 
 $button-low-contrast-variant: linear-gradient(
-    145deg,
-    var(--mat-sys-surface-container-low),
-    var(--mat-sys-surface-container-highest)
+  145deg,
+  var(--mat-sys-surface-container-low),
+  var(--mat-sys-surface-container-highest)
 );
 
 // Mixins for common button styles
@@ -34,13 +34,13 @@ $button-low-contrast-variant: linear-gradient(
   $background: var(--mat-sys-primary),
   $cursor: pointer
 ) {
-  color: $color;
+  color: $color !important;
   height: $height;
   width: $width;
   border: none;
   justify-content: start;
   border-radius: $border-radius;
-  background: $background;
+  background: $background !important;
   box-shadow: $box-shadow;
   cursor: $cursor;
 }
@@ -49,8 +49,9 @@ $button-low-contrast-variant: linear-gradient(
   &:hover {
     background: $background;
     box-shadow: $box-shadow;
-    transition: background 400ms,
-    box-shadow 400ms;
+    transition:
+      background 400ms,
+      box-shadow 400ms;
   }
 }
 
@@ -68,24 +69,48 @@ $button-low-contrast-variant: linear-gradient(
   }
 }
 
+.login-actions {
+  display: flex;
+  gap: 16px; // Sets the space between the buttons
+  width: 100%;
+
+  > .login-btn {
+    // When both buttons are shown, this one takes ~70% of the space.
+    // When only this button is shown, it takes 100% of the space.
+    flex: 7;
+    min-width: 0; // Prevents buttons from overflowing when the container is narrow
+  }
+
+  > .reset-btn {
+    flex: 3; // Takes ~30% of the space when shown.
+    min-width: 0;
+  }
+}
+
 .passkey-btn {
   text-decoration: none;
   color: var(--mat-sys-on-surface-variant);
   padding: 10px;
   border-radius: $button-border-radius;
-  background: linear-gradient(
-      145deg,
-      var(--mat-sys-surface-container),
-      var(--mat-sys-surface-container-low)
-  );
+  background: linear-gradient(145deg, var(--mat-sys-surface-container), var(--mat-sys-surface-container-low));
 
   &:hover {
     box-shadow: var(--box-shadow-inset);
-    background: linear-gradient(
-        145deg,
-        var(--mat-sys-surface-container-lowest),
-        var(--mat-sys-surface-container-low)
-    );
+    background: linear-gradient(145deg, var(--mat-sys-surface-container-lowest), var(--mat-sys-surface-container-low));
+    transform: translateY(2px);
+  }
+}
+
+.reset-btn {
+  text-decoration: none;
+  color: var(--mat-sys-on-surface-variant);
+  padding: 10px;
+  border-radius: $button-border-radius;
+  background: linear-gradient(145deg, var(--mat-sys-surface-container), var(--mat-sys-surface-container-low));
+
+  &:hover {
+    box-shadow: var(--box-shadow-inset);
+    background: linear-gradient(145deg, var(--mat-sys-surface-container-lowest), var(--mat-sys-surface-container-low));
     transform: translateY(2px);
   }
 }
@@ -116,10 +141,7 @@ $button-low-contrast-variant: linear-gradient(
     $border-radius: $button-border-radius,
     $box-shadow: var(--box-shadow-blue)
   );
-  @include button-hover(
-      var(--background-blue-inset),
-      var(--box-shadow-blue-inset)
-  );
+  @include button-hover(var(--background-blue-inset), var(--box-shadow-blue-inset));
 }
 
 .card-button-reset {
@@ -151,9 +173,9 @@ $button-low-contrast-variant: linear-gradient(
     $width: $button-width,
     $border-radius: $button-border-radius,
     $background: var(--background-gray),
+    $color: var(--mat-sys-on-surface),
     $box-shadow: var(--box-shadow-gray)
   );
-  color: #5b5b5b;
 }
 
 .card-button-delete {
@@ -171,8 +193,9 @@ $button-low-contrast-variant: linear-gradient(
   &:hover {
     background: var(--background-red-inset);
     box-shadow: var(--box-shadow-red-inset);
-    transition: background 400ms,
-    box-shadow 400ms;
+    transition:
+      background 400ms,
+      box-shadow 400ms;
   }
 }
 
@@ -191,8 +214,9 @@ $button-low-contrast-variant: linear-gradient(
   &:hover {
     background: var(--background-green-inset);
     box-shadow: var(--box-shadow-green-inset);
-    transition: background 400ms,
-    box-shadow 400ms;
+    transition:
+      background 400ms,
+      box-shadow 400ms;
   }
 }
 
@@ -206,10 +230,7 @@ $button-low-contrast-variant: linear-gradient(
     $background: var(--background-blue),
     $box-shadow: var(--box-shadow-blue)
   );
-  @include button-hover(
-      var(--background-blue-inset),
-      var(--box-shadow-blue-inset)
-  );
+  @include button-hover(var(--background-blue-inset), var(--box-shadow-blue-inset));
 }
 
 .detail-button-icon {
@@ -302,7 +323,8 @@ $button-low-contrast-variant: linear-gradient(
   display: flex;
   flex-direction: row;
   justify-content: left;
-  gap: calc(var(--global-padding) / 2);
+  gap: var(--global-gap);
+  flex: 1;
 }
 
 .enroll-button-spacer {

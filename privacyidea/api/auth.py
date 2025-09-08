@@ -70,10 +70,11 @@ from privacyidea.api.lib.postpolicy import (postpolicy, add_user_detail_to_respo
 from privacyidea.api.lib.prepolicy import (is_remote_user_allowed, prepolicy,
                                            pushtoken_disable_wait, webauthntoken_authz, webauthntoken_request,
                                            fido2_auth, increase_failcounter_on_challenge,
-                                           disabled_token_types, auth_timelimit)
+                                           disabled_token_types, auth_timelimit, load_challenge_text)
 from privacyidea.api.lib.utils import (send_result, get_all_params,
                                        verify_auth_token, getParam, get_optional, get_required)
-from privacyidea.lib.utils import get_client_ip, hexlify_and_unicode, to_unicode, get_plugin_info_from_useragent
+from privacyidea.lib.utils import (get_client_ip, hexlify_and_unicode, to_unicode, get_plugin_info_from_useragent,
+                                   AUTH_RESPONSE)
 from privacyidea.lib.config import get_from_config, SYSCONF, ensure_no_config_object, get_privacyidea_node
 from privacyidea.lib.event import event, EventConfiguration
 from privacyidea.lib import _
@@ -154,6 +155,7 @@ def before_request():
 @prepolicy(webauthntoken_request, request=request)
 @prepolicy(webauthntoken_authz, request=request)
 @prepolicy(disabled_token_types, request=request)
+@prepolicy(load_challenge_text, request=request)
 @prepolicy(fido2_auth, request=request)
 @postpolicy(get_webui_settings, request=request)
 @postpolicy(no_detail_on_success, request=request)
@@ -258,12 +260,22 @@ def get_auth_token():
         if not token:
             raise AuthError(_("Authentication failure. The passkey is not registered."),
                             id=ERROR.AUTHENTICATE_WRONG_CREDENTIALS)
+        if not token.is_active():
+            log.debug(f"Authentication attempted with disabled token {token.get_serial()}")
+            g.audit_object.log({"info": log_used_user(user, "Token is disabled"),
+                                "success": False,
+                                "authentication": AUTH_RESPONSE.REJECT,
+                                "serial": token.get_serial(),
+                                "token_type": details.get("type")})
+            return send_result(False, rid=2, details={"message": "Token is disabled"})
+
         if not token.user:
             raise AuthError(_("Authentication failure. Token has no user."),
                             id=ERROR.AUTHENTICATE_MISSING_USERNAME)
         if token.get_type() in request.all_data.get("disabled_token_types", []):
-            raise AuthError(_("Authentication failure. The token type {token_type} is disabled.").format(token.get_type()),
-                            id=ERROR.AUTHENTICATE_WRONG_CREDENTIALS)
+            raise AuthError(
+                _("Authentication failure. The token type {token_type} is disabled.").format(token.get_type()),
+                id=ERROR.AUTHENTICATE_WRONG_CREDENTIALS)
         if not check_last_auth_policy(g, token):
             log.debug(f"Last authentication policy check failed for token {token.get_serial()}.")
             raise AuthError(
@@ -323,11 +335,14 @@ def get_auth_token():
         if user.realm in superuser_realms:
             role = ROLE.ADMIN
             admin_auth = True
-            g.audit_object.log({"user": user.login, "realm": user.realm, "info": log_used_user(user)})
         else:
             user_auth = True
-            g.audit_object.log({"user": user.login, "realm": user.realm, "info": log_used_user(user)})
-
+        g.audit_object.log({
+            "user": user.login,
+            "realm": user.realm,
+            "resolver": user.resolver,
+            "info": log_used_user(user)
+        })
     # Check if the remote user is allowed
     elif (request.remote_user == username) and is_remote_user_allowed(request) != REMOTE_USER.DISABLE:
         # Authenticated by the Web Server

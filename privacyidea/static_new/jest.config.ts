@@ -3,7 +3,7 @@
  * https://jestjs.io/docs/configuration
  */
 
-import type { Config } from 'jest';
+import type { Config } from "jest";
 
 const config: Config = {
   // All imported modules in your tests should be mocked automatically
@@ -23,14 +23,14 @@ const config: Config = {
 
   // An array of glob patterns indicating a set of files for which coverage information should be collected
   collectCoverageFrom: [
-    'src/**/**/*.ts',
-    'src/**/*.ts',
-    '!src/**/*.spec.ts',
-    '!src/environments/**',
+    "src/**/**/*.ts",
+    "src/**/*.ts",
+    "!src/**/*.spec.ts",
+    "!src/environments/**"
   ],
 
   // The directory where Jest should output its coverage files
-  coverageDirectory: 'coverage',
+  coverageDirectory: "coverage",
 
   // An array of regexp pattern strings used to skip coverage collection
   // coveragePathIgnorePatterns: [
@@ -38,15 +38,15 @@ const config: Config = {
   // ],
 
   // Indicates which provider should be used to instrument code for coverage
-  coverageProvider: 'babel',
+  coverageProvider: "babel",
 
   // A list of reporter names that Jest uses when writing coverage reports
   coverageReporters: [
     //   "json",
-    'text',
+    "text",
     //   "lcov",
     //   "clover"
-    'html',
+    "html"
   ],
 
   // An object that configures minimum threshold enforcement for coverage results
@@ -108,7 +108,7 @@ const config: Config = {
   // notifyMode: "failure-change",
 
   // A preset that is used as a base for Jest's configuration
-  preset: 'jest-preset-angular',
+  preset: "jest-preset-angular",
 
   // Run tests from one or more projects
   // projects: undefined,
@@ -140,10 +140,10 @@ const config: Config = {
   // runner: "jest-runner",
 
   // The paths to modules that run some code to configure or set up the testing environment before each test
-  setupFiles: ['<rootDir>/src/jest.setup.ts'],
+  // setupFiles: [],
 
   // A list of paths to modules that run some code to configure or set up the testing framework before each test
-  // setupFilesAfterEnv: [],
+  setupFilesAfterEnv: ["<rootDir>/src/jest.setup.ts"],
 
   // The number of seconds after which a test is considered as slow and reported as such in the results.
   // slowTestThreshold: 5,
@@ -152,7 +152,7 @@ const config: Config = {
   // snapshotSerializers: [],
 
   // The test environment that will be used for testing
-  testEnvironment: 'jsdom',
+  testEnvironment: "jsdom"
 
   // Options that will be passed to the testEnvironment
   // testEnvironmentOptions: {},

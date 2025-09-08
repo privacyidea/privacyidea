@@ -24,7 +24,7 @@ from flask import Blueprint, request, g
 
 from privacyidea.api.auth import admin_required
 from privacyidea.api.lib.prepolicy import (check_base_action, prepolicy, check_user_params, check_token_action,
-                                           check_admin_tokenlist, check_container_action, check_token_list_action,
+                                           check_admin_tokenlist, check_container_action,
                                            check_container_register_rollover, container_registration_config,
                                            smartphone_config, check_client_container_action, hide_tokeninfo,
                                            check_client_container_disabled_action, hide_container_info)
@@ -327,7 +327,7 @@ def add_token(container_serial):
 
 @container_blueprint.route('<string:container_serial>/addall', methods=['POST'])
 @prepolicy(check_container_action, request, action=PolicyAction.CONTAINER_ADD_TOKEN)
-@prepolicy(check_token_list_action, request, action=PolicyAction.CONTAINER_ADD_TOKEN)
+@prepolicy(check_token_action, request, action=PolicyAction.CONTAINER_ADD_TOKEN)
 @event('container_add_token', request, g)
 @log_with(log)
 def add_all_tokens(container_serial):
@@ -396,7 +396,7 @@ def remove_token(container_serial):
 
 @container_blueprint.route('<string:container_serial>/removeall', methods=['POST'])
 @prepolicy(check_container_action, request, action=PolicyAction.CONTAINER_REMOVE_TOKEN)
-@prepolicy(check_token_list_action, request, action=PolicyAction.CONTAINER_REMOVE_TOKEN)
+@prepolicy(check_token_action, request, action=PolicyAction.CONTAINER_REMOVE_TOKEN)
 @event('container_remove_token', request, g)
 @log_with(log)
 def remove_all_tokens(container_serial):
