@@ -68,6 +68,7 @@ import { PiResponse } from "../app/app.component";
 import { Router } from "@angular/router";
 import { Sort } from "@angular/material/sort";
 import { TableUtilsServiceInterface } from "../app/services/table-utils/table-utils.service";
+import { TokenEnrollmentLastStepDialogData } from "../app/components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
 
 export function makeResource<T>(initial: T) {
   return {
@@ -347,20 +348,27 @@ export class MockAuthService extends AuthService {
 export class MockUserService implements UserServiceInterface {
   usersOfRealmResource: HttpResourceRef<PiResponse<UserData[], undefined> | undefined> = new MockHttpResourceRef(
     MockPiResponse.fromValue([])
-  );  resetFilter = jest.fn().mockImplementation(() => {
+  );
+  selectedUsername = signal("");  resetFilter = jest.fn().mockImplementation(() => {
     this.apiUserFilter.set(new FilterValue());
   });
-  selectedUsername = signal("");  handleFilterInput = jest.fn().mockImplementation(($event: Event) => {
+  setDefaultRealm = jest.fn();
+  selectedUser = signal<UserData | null>(null);  handleFilterInput = jest.fn().mockImplementation(($event: Event) => {
     const inputElement = $event.target as HTMLInputElement;
     this.apiUserFilter.set(new FilterValue({ value: inputElement.value }));
   });
-  setDefaultRealm = jest.fn();  apiUserFilter: WritableSignal<FilterValue> = signal(new FilterValue());
-  selectedUser = signal<UserData | null>(null);  pageIndex: WritableSignal<number> = signal(0);
 
   resetUserSelection() {
     this.selectionFilter.set("");
     this.selectedUserRealm.set("");
-  }  pageSize: WritableSignal<number> = signal(10);
+  }
+  apiUserFilter: WritableSignal<FilterValue> = signal(new FilterValue());
+
+  pageIndex: WritableSignal<number> = signal(0);
+
+
+
+  pageSize: WritableSignal<number> = signal(10);
   apiFilterOptions: string[] = [];
   advancedApiFilterOptions: string[] = [];
   userResource: HttpResourceRef<PiResponse<UserData[]> | undefined> = new MockHttpResourceRef(
@@ -1079,4 +1087,13 @@ export class MockSessionTimerService {
 
 export class MockChallengesService {
   challengesResource = { reload: jest.fn() };
+}
+
+
+export class MockDialogService {
+  openTokenEnrollmentLastStepDialog = jest.fn(
+    (_args: { data: TokenEnrollmentLastStepDialogData }) => {
+      // optionally return a fake dialogRef if your code ever awaits it
+      // return { close: jest.fn(), afterClosed: () => of(null) };
+    });
 }
