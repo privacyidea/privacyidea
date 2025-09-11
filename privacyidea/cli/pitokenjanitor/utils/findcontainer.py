@@ -62,17 +62,6 @@ def findcontainer(ctx, serial, ctype, token_serial, realm, template, description
         ctx.invoke(list_containers)
 
 
-@findcontainer.command('test')
-@click.pass_context
-def test(ctx):
-    try:
-        for clist in ctx.obj['containers']:
-            for container in clist:
-                click.echo(container)
-    except Exception as e:
-        click.echo(e)
-
-
 @findcontainer.command('list')
 @click.option('--key', '-k', type=str, multiple=True, help='The key of the information to display.')
 @click.pass_context
