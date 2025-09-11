@@ -1,0 +1,42 @@
+<h2 class="form-signin-heading">Assign Risk Scores to User Groups</h2>
+<div class="table-responsive">
+    <table class="table table-bordered table-striped">
+        <thead>
+            <tr>
+                <th>User Group</th>
+                <th>Risk Score</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr ng-repeat="element in form['user_risk']"
+                ng-if="hasDefinedUserRisks()">
+                <td>{{element.group}}</td>
+                <td>{{element.risk_score}}</td>
+                <td>
+                    <button class="btn btn-danger"
+                            ng-click="deleteRisk('user',element.group)">
+                        Delete
+                    </button>
+                </td>
+            </tr>
+            <tr ng-show="hasUserTypesWithoutRisk() && checkRight('policywrite')">
+                <td>
+                    <select class="form-control"
+                        ng-model="$parent.newUserType" name="userType"
+                        ng-options="select for select in typesWithoutScore">
+                    </select>
+                </td>
+                <td>
+                    <input type="number" class="form-control"
+                            ng-model="$parent.newUserRiskScore" name="riskScore"/>
+                </td>
+                <td>
+                    <button class="btn btn-default"
+                            ng-click="addUserRisk()">
+                        Add new user risk score
+                    </button>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
