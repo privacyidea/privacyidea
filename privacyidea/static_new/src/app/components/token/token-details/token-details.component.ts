@@ -359,8 +359,7 @@ export class TokenDetailsComponent {
 
   containerSelected(containerSerial: string) {
     this.isProgrammaticTabChange.set(true);
-    this.router.navigateByUrl(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + containerSerial);
-    this.containerSerial.set(containerSerial);
+    this.contentService.containerSelected(containerSerial);
   }
 
   openSshMachineAssignDialog() {

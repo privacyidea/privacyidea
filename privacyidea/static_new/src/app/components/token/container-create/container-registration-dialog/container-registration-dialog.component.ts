@@ -22,13 +22,13 @@ import { MAT_DIALOG_DATA, MatDialogContent, MatDialogRef, MatDialogTitle } from 
 import { MatIcon } from "@angular/material/icon";
 import { Router } from "@angular/router";
 import { PiResponse } from "../../../../app.component";
-import { ROUTE_PATHS } from "../../../../route_paths";
 import {
   ContainerRegisterData,
   ContainerService,
   ContainerServiceInterface
 } from "../../../../services/container/container.service";
 import { LostTokenComponent } from "../../token-card/token-tab/lost-token/lost-token.component";
+import { ContentService } from "../../../../services/content/content.service";
 
 export type ContainerCreationDialogData = {
   response: PiResponse<ContainerRegisterData>;
@@ -46,6 +46,7 @@ export class ContainerRegistrationDialogComponent {
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
   public readonly data: ContainerCreationDialogData = inject(MAT_DIALOG_DATA);
   private router = inject(Router);
+  private contentService = inject(ContentService);
 
   constructor(private dialogRef: MatDialogRef<LostTokenComponent>) {
     this.dialogRef.afterClosed().subscribe(() => {
@@ -55,8 +56,7 @@ export class ContainerRegistrationDialogComponent {
 
   containerSelected(containerSerial: string) {
     this.dialogRef.close();
-    this.router.navigateByUrl(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + containerSerial);
-    this.data.containerSerial.set(containerSerial);
+    this.contentService.containerSelected(containerSerial);
   }
 
   regenerateQRCode() {

@@ -21,8 +21,24 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { CopyButtonComponent } from "./copy-button.component";
 
 describe("CopyButtonComponent", () => {
-  let component: CopyButtonComponent;
   let fixture: ComponentFixture<CopyButtonComponent>;
+  let component: CopyButtonComponent;
+
+  beforeAll(() => {
+    Object.defineProperty(window, "matchMedia", {
+      writable: true,
+      value: (q: string) => ({
+        matches: false,
+        media: q,
+        onchange: null,
+        addListener: jest.fn(),
+        removeListener: jest.fn(),
+        addEventListener: jest.fn(),
+        removeEventListener: jest.fn(),
+        dispatchEvent: jest.fn()
+      })
+    });
+  });
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -31,10 +47,30 @@ describe("CopyButtonComponent", () => {
 
     fixture = TestBed.createComponent(CopyButtonComponent);
     component = fixture.componentInstance;
+    component.copyText = "hello";
     fixture.detectChanges();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
   });
 
   it("should create", () => {
     expect(component).toBeTruthy();
+  });
+
+  it("onCopy toggles copied to true, then back to false after 1600ms", () => {
+    jest.useFakeTimers();
+
+    expect(component.copied()).toBe(false);
+
+    component.onCopy();
+    expect(component.copied()).toBe(true);
+
+    jest.advanceTimersByTime(1599);
+    expect(component.copied()).toBe(true);
+
+    jest.advanceTimersByTime(1);
+    expect(component.copied()).toBe(false);
   });
 });
