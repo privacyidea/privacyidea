@@ -55,7 +55,7 @@ import {
   signal,
   WritableSignal
 } from "@angular/core";
-import { UserData, UserServiceInterface } from "../app/services/user/user.service";
+import { UserData, UserService, UserServiceInterface } from "../app/services/user/user.service";
 import { ValidateCheckResponse, ValidateServiceInterface } from "../app/services/validate/validate.service";
 
 import { ContentServiceInterface } from "../app/services/content/content.service";
@@ -69,6 +69,7 @@ import { Router } from "@angular/router";
 import { Sort } from "@angular/material/sort";
 import { TableUtilsServiceInterface } from "../app/services/table-utils/table-utils.service";
 import { TokenEnrollmentLastStepDialogData } from "../app/components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
+import { TokenTypeOption } from "../app/components/token/token.component";
 
 export function makeResource<T>(initial: T) {
   return {
@@ -349,23 +350,28 @@ export class MockUserService implements UserServiceInterface {
   usersOfRealmResource: HttpResourceRef<PiResponse<UserData[], undefined> | undefined> = new MockHttpResourceRef(
     MockPiResponse.fromValue([])
   );
-  selectedUsername = signal("");  resetFilter = jest.fn().mockImplementation(() => {
-    this.apiUserFilter.set(new FilterValue());
-  });
+  selectedUsername = signal("");
   setDefaultRealm = jest.fn();
-  selectedUser = signal<UserData | null>(null);  handleFilterInput = jest.fn().mockImplementation(($event: Event) => {
-    const inputElement = $event.target as HTMLInputElement;
-    this.apiUserFilter.set(new FilterValue({ value: inputElement.value }));
+  selectedUser = signal<UserData | null>(null);  resetFilter = jest.fn().mockImplementation(() => {
+    this.apiUserFilter.set(new FilterValue());
   });
 
   resetUserSelection() {
     this.selectionFilter.set("");
     this.selectedUserRealm.set("");
   }
+
+
+
+  handleFilterInput = jest.fn().mockImplementation(($event: Event) => {
+    const inputElement = $event.target as HTMLInputElement;
+    this.apiUserFilter.set(new FilterValue({ value: inputElement.value }));
+  });
+
+
   apiUserFilter: WritableSignal<FilterValue> = signal(new FilterValue());
 
   pageIndex: WritableSignal<number> = signal(0);
-
 
 
   pageSize: WritableSignal<number> = signal(10);
@@ -399,12 +405,12 @@ export class MockUserService implements UserServiceInterface {
     source: this.selectedUserRealm,
     computation: () => ""
   });
-  selectionUsernameFilter = computed<string>(() => {
+  selectionUsernameFilter = linkedSignal<string>(() => {
     const filter = this.selectionFilter();
     if (typeof filter === "string") {
       return filter;
     }
-    return filter?.username ?? "asdasd";
+    return filter?.username ?? "";
   });
 
   selectionFilteredUsers = signal([]);
@@ -416,8 +422,6 @@ export class MockUserService implements UserServiceInterface {
     const user = this.users().find((u) => u.username === username && u.resolver === realm) || null;
     this.selectedUser.set(user);
   });
-
-
 }
 
 export class MockNotificationService implements NotificationServiceInterface {
@@ -701,6 +705,51 @@ export class MockOverflowService implements OverflowServiceInterface {
   }
 }
 
+function makeTokenDetailResponse(tokentype: TokenTypeOption): PiResponse<Tokens> {
+  return {
+    id: 0,
+    jsonrpc: "2.0",
+    signature: "",
+    time: Date.now(),
+    version: "1.0",
+    versionnumber: "1.0",
+    detail: {},
+    result: {
+      status: true,
+      value: {
+        count: 1,
+        current: 1,
+        tokens: [
+          {
+            tokentype,
+            active: true,
+            revoked: false,
+            container_serial: "",
+            realms: [],
+            count: 0,
+            count_window: 0,
+            description: "",
+            failcount: 0,
+            id: 0,
+            info: {},
+            locked: false,
+            maxfail: 0,
+            otplen: 0,
+            resolver: "",
+            rollout_state: "",
+            serial: "X",
+            sync_window: 0,
+            tokengroup: [],
+            user_id: "",
+            user_realm: "",
+            username: ""
+          }
+        ]
+      }
+    }
+  };
+}
+
 export class MockTokenService implements TokenServiceInterface {
   hiddenApiFilter: string[] = [];
   stopPolling$: Subject<void> = new Subject<void>();
@@ -723,37 +772,8 @@ export class MockTokenService implements TokenServiceInterface {
     throw new Error("Method not implemented.");
   }
 
-  tokenDetailResource = new MockHttpResourceRef(
-    MockPiResponse.fromValue<Tokens>({
-      count: 1,
-      current: 1,
-      tokens: [
-        {
-          tokentype: "hotp",
-          active: true,
-          revoked: false,
-          container_serial: "CONT-1",
-          realms: [],
-          count: 0,
-          count_window: 0,
-          description: "",
-          failcount: 0,
-          id: 0,
-          info: {},
-          locked: false,
-          maxfail: 0,
-          otplen: 0,
-          resolver: "",
-          rollout_state: "",
-          serial: "",
-          sync_window: 0,
-          tokengroup: [],
-          user_id: "",
-          user_realm: "",
-          username: ""
-        }
-      ]
-    })
+  tokenDetailResource = new MockHttpResourceRef<PiResponse<Tokens>>(
+    makeTokenDetailResponse("hotp")
   );
   tokenTypesResource: HttpResourceRef<PiResponse<{}, unknown> | undefined> = new MockHttpResourceRef(
     MockPiResponse.fromValue({})
@@ -783,13 +803,7 @@ export class MockTokenService implements TokenServiceInterface {
   advancedApiFilter: string[] = [];
   sort: WritableSignal<Sort> = signal({ active: "serial", direction: "asc" });
   pageIndex = signal(0);
-  tokenResource = new MockHttpResourceRef(
-    MockPiResponse.fromValue<Tokens>({
-      count: 0,
-      current: 0,
-      tokens: []
-    })
-  );
+  tokenResource = new MockHttpResourceRef<PiResponse<Tokens> | undefined>(undefined as any);
   tokenSelection: WritableSignal<TokenDetails[]> = signal<TokenDetails[]>([]);
   toggleActive = jest.fn().mockReturnValue(of({}));
   resetFailCount = jest.fn().mockReturnValue(of(null));
@@ -882,6 +896,9 @@ export class MockTokenService implements TokenServiceInterface {
     throw new Error("Method not implemented.");
   }
 
+  tokenDetailSignal: WritableSignal<PiResponse<Tokens>> = signal(
+    makeTokenDetailResponse("hotp")
+  );
   filterParams: Signal<Record<string, string>> = signal({});
 
   deleteTokens(tokenSerials: string[]): Observable<Object[]> {
@@ -1093,7 +1110,6 @@ export class MockChallengesService {
 export class MockDialogService {
   openTokenEnrollmentLastStepDialog = jest.fn(
     (_args: { data: TokenEnrollmentLastStepDialogData }) => {
-      // optionally return a fake dialogRef if your code ever awaits it
       // return { close: jest.fn(), afterClosed: () => of(null) };
     });
 }

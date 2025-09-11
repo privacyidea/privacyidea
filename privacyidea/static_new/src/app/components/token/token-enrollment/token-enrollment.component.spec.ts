@@ -199,7 +199,7 @@ describe("TokenEnrollmentComponent", () => {
 
   describe("enrollToken()", () => {
     it("snacks and returns when no token type selected", async () => {
-      (tokenSvc.selectedTokenType as any).set(undefined);
+      (tokenSvc.selectedTokenType as any).set('');
 
       await (component as any).enrollToken();
 
@@ -251,7 +251,7 @@ describe("TokenEnrollmentComponent", () => {
       );
     });
 
-    it("happy path: calls clickEnroll, sets enrollResponse, opens last step dialog", async () => {
+    it("calls clickEnroll, sets enrollResponse, opens last step dialog", async () => {
       tokenSvc.selectedTokenType.set({ key: "hotp", info: "", text: "" });
       component.descriptionControl.setValue("desc");
       component.setPinControl.setValue("0000");
