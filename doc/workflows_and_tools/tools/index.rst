@@ -661,6 +661,33 @@ Remove a tokeninfo from the found tokens.
 
         pi-tokenjanitor find --tokenattribute 'serial=OATH0004C934' remove_tokeninfo --tokeninfo_key 'import_time'
 
+list_containers
+***************
+List all token containers of the found tokens.
+
+Example::
+
+    pi-tokenjanitor find --tokenattribute 'serial=OATH0004C934' list_containers
+
+add_to_container
+****************
+Add the found tokens to a token container.
+
+``--container_serial``
+    The serial of the token container to add the tokens to.
+
+    Example::
+
+        pi-tokenjanitor find --tokenattribute 'serial=OATH0004C934' add_to_container --container_serial 'SMPH00009272'
+
+remove_from_container
+*********************
+Remove the found tokens from their token container.
+
+    Example::
+
+        pi-tokenjanitor find --tokenattribute 'serial=OATH0004C934' remove_from_container
+
 Import
 ~~~~~~
 This command can be used to import token data from a file.
@@ -713,3 +740,180 @@ Example::
 
     pi-tokenjanitor update /path/to/yamlfile.yaml
 
+
+Findcontainer
+~~~~~~~~~~~~~
+With the **findcontainer** command you can search for container in the database.
+You can use several options to filter the container.
+
+``--serial``
+    Find containers with a specific serial.
+
+    Example::
+
+        pi-tokenjanitor findcontainer --serial 'SMPH00009272'
+
+``--type``
+    Find containers with a specific type.
+
+    Example::
+
+        pi-tokenjanitor findcontainer --type 'smartphone'
+
+``--token-serial``
+    Find containers that contain a token with a specific serial.
+
+    Example::
+
+        pi-tokenjanitor findcontainer --token-serial 'HOTP123456'
+
+``--realm``
+    Find containers that belong to a specific realm.
+
+    Example::
+
+        pi-tokenjanitor findcontainer --realm 'defrealm'
+
+``--template``
+    Find containers that are based on a specific template.
+
+    Example::
+
+        pi-tokenjanitor findcontainer --template 'default_smartphone'
+
+``--description``
+    Find containers with a specific description.
+
+    Example::
+
+        pi-tokenjanitor findcontainer --description 'My smartphone container'
+
+``--assigned``
+    Find containers that are either assigned to a user or unassigned.
+
+    Example::
+
+        pi-tokenjanitor findcontainer --assigned true
+
+``--resolver``
+    Find containers that belong to a specific resolver.
+
+    Example::
+
+        pi-tokenjanitor findcontainer --resolver 'my_ldap_resolver'
+
+``--info``
+    Find containers with specific info key-value pairs. Give the key and value in the format key=value.
+    This option can be used multiple times.
+
+    Example::
+
+        pi-tokenjanitor findcontainer --info 'os=android'
+
+``--last-auth-delta``
+    Find containers where the last authentication of any token in the container happened longer ago than the given value.
+    You can use the tags *h* (hours), *d* (day) and *y* (year).
+
+    Example::
+
+        pi-tokenjanitor findcontainer --last-auth-delta '90d'
+
+``--last-sync-delta``
+    Find containers where the last sync of any token in the container happened longer ago than the given value.
+    You can use the tags *h* (hours), *d* (day) and *y* (year).
+
+    Example::
+
+        pi-tokenjanitor findcontainer --last-sync-delta '90d'
+
+``--chunksize``
+    The number of containers to fetch in one database request (default: 100).
+    This is useful if you have a lot of containers in your database.
+
+    Example::
+
+        pi-tokenjanitor findcontainer --chunksize 500
+
+list
+****
+List all found containers.
+Example::
+
+    pi-tokenjanitor findcontainer --type 'smartphone' list
+
+``--key``
+    Can be used to select the displayed information about the container.
+    This option can be used multiple times.
+    The default: ``serial``, ``type``, ``description``, ``realm``, ``user``.
+
+    Example::
+
+        pi-tokenjanitor findcontainer --type 'smartphone' list --key serial --key user --key last_sync
+
+delete
+******
+Delete the found containers.
+
+Example::
+
+    pi-tokenjanitor findcontainer --type 'smartphone' delete
+
+set_info
+********
+Set the info for all found containers. The old info value will be overwritten.
+
+``key``
+    The info key to set.
+
+``value``
+    The info value to set.
+
+Example::
+    pi-tokenjanitor findcontainer --type 'smartphone' set_info 'os' 'android'
+
+update_info
+***********
+Set the info for all found containers. The old info value will be updated.
+
+``key``
+    The info key to set.
+
+``value``
+    The info value to set.
+
+Example::
+    pi-tokenjanitor findcontainer --type 'smartphone' update_info 'os' 'android'
+
+delete_info
+***********
+Delete the info key from all found containers.
+
+``key``
+    The info key to delete.
+
+Example::
+    pi-tokenjanitor findcontainer --type 'smartphone' delete_info 'os'
+
+set_description
+***************
+Sets a description for all found containers.
+
+``--description``
+    The description to set.
+
+Example::
+    pi-tokenjanitor findcontainer --type 'smartphone' set_description --description 'example description'
+
+set_realm
+*********
+Sets a realm for all found containers.
+
+``realm``
+    The realm to set.
+
+``--add``
+    If this option is set, the realm will be added to the existing realms.
+    If not set, the existing realms will be overwritten.
+
+Example::
+    pi-tokenjanitor findcontainer --type 'smartphone' set_realm 'defrealm' --add

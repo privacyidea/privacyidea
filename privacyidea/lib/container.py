@@ -23,7 +23,7 @@ import json
 import logging
 import os
 from datetime import timezone, datetime
-from typing import Union
+from typing import Union, Generator
 
 from flask import g
 from sqlalchemy import func
@@ -375,6 +375,26 @@ def get_all_containers(user: User = None, serial: str = None, ctype: str = None,
     ret["containers"] = container_list
 
     return ret
+
+
+def container_page_generator(pagesize: int = 10, **kwargs) -> Generator[list[TokenContainerClass], None, None]:
+    """
+    Generator that yields pages of containers.
+
+    :param page_size: Number of containers per page
+    :param kwargs: Filter arguments for get_all_containers
+    :yield: List of TokenContainerClass objects for each page
+    """
+    page = 1
+    while True:
+        result = get_all_containers(page=page, pagesize=pagesize, **kwargs)
+        containers = result.get("containers", [])
+        if not containers:
+            break
+        yield containers
+        if not result.get("next"):
+            break
+        page += 1
 
 
 def create_pagination(page: int, pagesize: int, sql_query: Query,
