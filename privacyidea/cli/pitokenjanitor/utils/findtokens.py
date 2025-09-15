@@ -746,14 +746,10 @@ def list_containers(ctx, key):
                 output.append(f"Token_Serial: {token_obj.token.serial}")
                 output.append(f"Container_Serial: {container.serial}")
                 container_dict = container.get_as_dict()
-                if key:
-                    for key in key:
-                        output.append(f"{key}: {container_dict.get(key, 'N/A')}")
-                else:
-                    output.append(f"Type: {container.type}")
-                    output.append(f"User: {token_obj.user.login if token_obj.user else 'N/A'}")
-                    output.append(f"Realm: {container_dict.get('realms', 'N/A')}")
-                    output.append(f"Description: {container_dict.get('description', 'N/A')}")
+                if not key:
+                    key = ['type', 'tokens', 'users', 'realms', 'description']
+                for k in key:
+                    output.append(f"{k}: {container_dict.get(k, 'N/A')}")
             else:
                 output.append(f"Token {token_obj.token.serial} is in no container.")
             click.echo(", ".join(output))
