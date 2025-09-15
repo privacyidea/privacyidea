@@ -5,10 +5,11 @@ from flask.cli import AppGroup
 
 from privacyidea.lib.container import container_page_generator
 from privacyidea.lib.containerclass import TokenContainerClass
+from privacyidea.lib.containers.container_info import TokenContainerInfoData, PI_EXTERNAL
 
 
 def _get_container_list(serial: str = None, ctype: str = None, token_serial: str = None,
-                        realm: str = None, template: str = None, description: str = None, assigned: bool = False,
+                        realm: str = None, template: str = None, description: str = None, assigned: bool = None,
                         resolver: str = None, info: str = None, last_auth_delta: str = None,
                         last_sync_delta: str = None, pagesize: int = 1000) -> Generator[
     list[TokenContainerClass], None, None]:
@@ -31,7 +32,7 @@ def _get_container_list(serial: str = None, ctype: str = None, token_serial: str
 @click.option('--realm', '-r', help='Realm of the container.')
 @click.option('--template', '-T', help='The name of the template the container was created with.')
 @click.option('--description', '-d', help='Description of the container.')
-@click.option('--assigned', '-a', is_flag=True, help='Only show containers that are assigned to a user.')
+@click.option('--assigned', '-a', type=bool, default=None, help='Only show containers that are assigned to a user.')
 @click.option('--resolver', '-R', type=str, help='The resolver of the user.')
 @click.option('--info', '-i', type=str,
               help='An additional information from the container info table, given as "key=value".')
@@ -41,7 +42,7 @@ def _get_container_list(serial: str = None, ctype: str = None, token_serial: str
 @click.option('--last-sync-delta', '-L', type=str,
               help='The maximum time difference the last synchronization may have to now, e.g. "1y", "14d", "1h" '
                    'The following units are supported: y (years), d (days), h (hours), m (minutes), s (seconds)"')
-@click.option('--chunksize', '-p', type=int, default=100,
+@click.option('--chunksize', '-c', type=int, default=100,
               help='The number of containers to return per page.')
 @click.pass_context
 def findcontainer(ctx, serial, ctype, token_serial, realm, template, description,
@@ -73,16 +74,12 @@ def list_containers(ctx, key):
         for container in clist:
             output = []
             if container:
-                if key:
-                    output.append(f"Serial: {container.serial}")
-                    for key in ctx.obj['key']:
-                        output.append(f"{key}: {container.get(key, 'N/A')}")
-                else:
-                    output.append(f"Serial: {container.get('serial', 'N/A')}")
-                    output.append(f"Type: {container.get('type', 'N/A')}")
-                    output.append(f"User: {container.get('user', 'N/A')}")
-                    output.append(f"Realm: {container.get('realm', 'N/A')}")
-                    output.append(f"Description: {container.get('description', 'N/A')}")
+                container_dict = container.get_as_dict()
+                output.append(f"Serial: {container.serial}")
+                if not key:
+                    key = ['type', 'tokens', 'users', 'realms', 'description']
+                for k in key:
+                    output.append(f"{k}: {container_dict.get(k, 'N/A')}")
             click.echo(", ".join(output))
 
 
@@ -94,7 +91,7 @@ def delete_containers(ctx):
     """
     for clist in ctx.obj['containers']:
         for container in clist:
-            serial = container.get('serial')
+            serial = container.serial
             container.delete()
             click.echo(f"Deleted token {serial}")
 
@@ -113,7 +110,7 @@ def set_info(ctx, key, value):
     for clist in ctx.obj['containers']:
         for container in clist:
             container.set_container_info({key: value})
-            click.echo(f"Set info {key}={value} for container {container.get('serial')}")
+            click.echo(f"Set info {key}={value} for container {container.serial}")
 
 
 @findcontainer.command('update_info')
@@ -129,8 +126,8 @@ def update_info(ctx, key, value):
     """
     for clist in ctx.obj['containers']:
         for container in clist:
-            container.update_container_info([{key: value}])
-            click.echo(f"Updated info {key}={value} for container {container.get('serial')}")
+            container.update_container_info([TokenContainerInfoData(key=key, value=value, info_type=PI_EXTERNAL)])
+            click.echo(f"Updated info {key}={value} for container {container.serial}")
 
 
 @findcontainer.command('delete_info')
@@ -145,7 +142,7 @@ def delete_info(ctx, key):
     for clist in ctx.obj['containers']:
         for container in clist:
             container.delete_container_info(key=key)
-            click.echo(f"Deleted info {key} for container {container.get('serial')}")
+            click.echo(f"Deleted info {key} for container {container.serial}")
 
 
 @findcontainer.command('set_description')
@@ -160,20 +157,21 @@ def set_description(ctx, description):
     for clist in ctx.obj['containers']:
         for container in clist:
             container.description = description
-            click.echo(f"Set description '{description}' for container {container.get('serial')}")
+            click.echo(f"Set description '{description}' for container {container.serial}")
 
 
 @findcontainer.command('set_realm')
-@click.argument('realm', type=str)
-@click.option('--add', '-a', is_flag=True, help='The realm will be added to the existing realms.')
+@click.argument('realms', type=str)
+@click.option('--add', '-a', is_flag=True, help='The realm(s) will be added to the existing realms.')
 @click.pass_context
-def set_realm(ctx, realm, add):
+def set_realm(ctx, realms, add):
     """
-    Set the realm for the containers.
+    Set the realm(s) for the containers. For multiple realms, separate them with a comma.
 
     REALM is the realm to set.
     """
+    realms_list = [r.strip() for r in realms.split(',')]
     for clist in ctx.obj['containers']:
         for container in clist:
-            container.set_realm(realm, add=add)
-            click.echo(f"Set realm '{realm}' for container {container.get('serial')}")
+            container.set_realms(realms_list, add=add)
+            click.echo(f"Set realm(s) '{realms}' for container {container.serial}")

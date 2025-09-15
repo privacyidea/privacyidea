@@ -362,8 +362,8 @@ def get_all_containers(user: User = None, serial: str = None, ctype: str = None,
     sql_query = _create_container_query(user=user, serial=serial, ctype=ctype, token_serial=token_serial, realm=realm,
                                         allowed_realms=allowed_realms, template=template, description=description,
                                         assigned=assigned, resolver=resolver, info=info,
-                                        last_auth_delta=last_auth_delta, last_sync_delta=last_sync_delta, state=state,
-                                        sortby=sortby, sortdir=sortdir)
+                                        last_auth_delta=last_auth_delta,
+                                        last_sync_delta=last_sync_delta, state=state, sortby=sortby, sortdir=sortdir)
     ret = {}
     # Paginate if requested
     if page > 0 or pagesize > 0:
