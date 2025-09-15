@@ -27,11 +27,6 @@ import {
   ContainerType,
   ContainerTypes
 } from "../app/services/container/container.service";
-import {
-  EnrollmentResponse,
-  TokenApiPayloadMapper,
-  TokenEnrollmentData
-} from "../app/mappers/token-api-payload/_token-api-payload.mapper";
 import { HttpHeaders, HttpParams, HttpProgressEvent, HttpResourceRef } from "@angular/common/http";
 import {
   BulkResult,
@@ -55,7 +50,7 @@ import {
   signal,
   WritableSignal
 } from "@angular/core";
-import { UserData, UserService, UserServiceInterface } from "../app/services/user/user.service";
+import { UserData, UserServiceInterface } from "../app/services/user/user.service";
 import { ValidateCheckResponse, ValidateServiceInterface } from "../app/services/validate/validate.service";
 
 import { ContentServiceInterface } from "../app/services/content/content.service";
@@ -174,6 +169,7 @@ export class MockHttpResourceRef<T> implements HttpResourceRef<T> {
 }
 
 export class MockBase64Service {
+  base64URLToBytes = jest.fn((_: string) => new Uint8Array([1, 2]));
   bytesToBase64 = jest.fn(() => "b64");
 }
 
@@ -352,14 +348,15 @@ export class MockUserService implements UserServiceInterface {
   );
   selectedUsername = signal("");
   setDefaultRealm = jest.fn();
-  selectedUser = signal<UserData | null>(null);  resetFilter = jest.fn().mockImplementation(() => {
-    this.apiUserFilter.set(new FilterValue());
-  });
+  selectedUser = signal<UserData | null>(null);
 
   resetUserSelection() {
     this.selectionFilter.set("");
     this.selectedUserRealm.set("");
-  }
+  }  resetFilter = jest.fn().mockImplementation(() => {
+    this.apiUserFilter.set(new FilterValue());
+  });
+
 
 
 
@@ -817,10 +814,6 @@ export class MockTokenService implements TokenServiceInterface {
     throw new Error("Method not implemented.");
   }
 
-  deleteToken(tokenSerial: string): Observable<Object> {
-    throw new Error("Method not implemented.");
-  }
-
   bulkDeleteTokens(selectedTokens: TokenDetails[]): Observable<PiResponse<BulkResult, any>> {
     throw new Error("Method not implemented.");
   }
@@ -864,25 +857,17 @@ export class MockTokenService implements TokenServiceInterface {
 
   resyncOTPToken = jest.fn().mockReturnValue(of(null));
   getTokenDetails = jest.fn().mockReturnValue(of({}));
-
-  enrollToken<T extends TokenEnrollmentData, R extends EnrollmentResponse>(args: {
-    data: T;
-    mapper: TokenApiPayloadMapper<T>;
-  }): Observable<R> {
-    throw new Error("Method not implemented.");
-  }
+  deleteToken = jest.fn().mockReturnValue(of({}));
+  enrollToken = jest.fn().mockReturnValue(of({ detail: { serial: "X" } } as any));
 
   lostToken(tokenSerial: string): Observable<LostTokenResponse> {
     throw new Error("Method not implemented.");
   }
 
-  stopPolling(): void {
-    throw new Error("Method not implemented.");
-  }
-
-  pollTokenRolloutState(args: { tokenSerial: string; initDelay: number }): Observable<PiResponse<Tokens>> {
-    throw new Error("Method not implemented.");
-  }
+  stopPolling = jest.fn();
+  pollTokenRolloutState = jest
+    .fn()
+    .mockReturnValue(of({ result: { status: true, value: { tokens: [{ rollout_state: "enrolled" }] } } } as any));
 
   setTokenRealm(tokenSerial: string, value: string[]): Observable<PiResponse<boolean, unknown>> {
     throw new Error("Method not implemented.");
@@ -900,10 +885,6 @@ export class MockTokenService implements TokenServiceInterface {
     makeTokenDetailResponse("hotp")
   );
   filterParams: Signal<Record<string, string>> = signal({});
-
-  deleteTokens(tokenSerials: string[]): Observable<Object[]> {
-    throw new Error("Method not implemented.");
-  }
 }
 
 export class MockMachineService implements MachineServiceInterface {
@@ -1108,8 +1089,50 @@ export class MockChallengesService {
 
 
 export class MockDialogService {
-  openTokenEnrollmentLastStepDialog = jest.fn(
-    (_args: { data: TokenEnrollmentLastStepDialogData }) => {
-      // return { close: jest.fn(), afterClosed: () => of(null) };
-    });
+  private _firstStepClosed$ = new Subject<any>();
+  private _lastStepClosed$ = new Subject<any>();
+  isTokenEnrollmentFirstStepDialogOpen = false;
+  openTokenEnrollmentFirstStepDialog = jest.fn((_args: { data: { enrollmentResponse: any } }) => {
+    this.isTokenEnrollmentFirstStepDialogOpen = true;
+
+    const ref = {
+      close: jest.fn((result?: any) => {
+        this.isTokenEnrollmentFirstStepDialogOpen = false;
+        this._firstStepClosed$.next(result);
+        this._firstStepClosed$.complete();
+        this._firstStepClosed$ = new Subject<any>();
+      }),
+      afterClosed: () => this._firstStepClosed$.asObservable()
+    } as any;
+
+    return ref;
+  });
+
+  closeTokenEnrollmentFirstStepDialog = jest.fn(() => {
+    if (this.isTokenEnrollmentFirstStepDialogOpen) {
+      this.isTokenEnrollmentFirstStepDialogOpen = false;
+      this._firstStepClosed$.next(undefined);
+      this._firstStepClosed$.complete();
+      this._firstStepClosed$ = new Subject<any>();
+    }
+  });
+
+  openTokenEnrollmentLastStepDialog = jest.fn((_args: { data: TokenEnrollmentLastStepDialogData }) => {
+    const ref = {
+      close: jest.fn((result?: any) => {
+        this._lastStepClosed$.next(result);
+        this._lastStepClosed$.complete();
+        this._lastStepClosed$ = new Subject<any>();
+      }),
+      afterClosed: () => this._lastStepClosed$.asObservable()
+    } as any;
+
+    return ref;
+  });
+
+  closeTokenEnrollmentLastStepDialog = jest.fn(() => {
+    this._lastStepClosed$.next(undefined);
+    this._lastStepClosed$.complete();
+    this._lastStepClosed$ = new Subject<any>();
+  });
 }
