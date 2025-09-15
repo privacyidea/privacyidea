@@ -1839,6 +1839,7 @@ class TokenTestCase(MyTestCase):
         totptoken.set_description("this will be replaced by the import")
         self.assertEqual(hotptoken.token.description, "this will be replaced by the import")
         self.assertEqual(totptoken.token.description, "this will be replaced by the import")
+        db.session.commit()
 
         updated_tokens = import_tokens(exported_tokens, update_existing_tokens=True)
         self.assertEqual(hotptoken.token.description, "Hotp Token")
@@ -1850,6 +1851,7 @@ class TokenTestCase(MyTestCase):
         totptoken.set_description("this will not be replaced by the import")
         self.assertEqual(hotptoken.token.description, "this will not be replaced by the import")
         self.assertEqual(totptoken.token.description, "this will not be replaced by the import")
+        db.session.commit()
 
         updated_tokens = import_tokens(exported_tokens, update_existing_tokens=False)
         self.assertEqual(hotptoken.token.description, "this will not be replaced by the import")
@@ -1996,6 +1998,7 @@ class TokenFailCounterTestCase(MyTestCase):
         self.assertTrue(res)
         # Set the failcounter to maximum failcount
         token.set_failcount(10)
+        db.session.commit()
         # Authentication must fail, since the failcounter is reached
         res, reply = check_user_pass(user, "test47359152")
         self.assertFalse(res)
@@ -2026,6 +2029,7 @@ class TokenFailCounterTestCase(MyTestCase):
         self.assertTrue(res)
         # Set the failcounter to maximum failcount
         token.set_failcount(10)
+        db.session.commit()
         # Authentication must fail, since the failcounter is reached
         res, reply = check_user_pass(user, pin + "032819",
                                      options={"initTime": 47251648 * 30})
