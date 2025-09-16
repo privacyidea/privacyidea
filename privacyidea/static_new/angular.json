@@ -104,7 +104,8 @@
             "tsConfig": "tsconfig.spec.json",
             "codeCoverageExclude": [
               "src/main.ts",
-              "src/polyfills.ts"
+              "src/polyfills.ts",
+              "src/testing/**"
             ]
           }
         }

@@ -353,11 +353,11 @@ export class MockUserService implements UserServiceInterface {
   resetUserSelection() {
     this.selectionFilter.set("");
     this.selectedUserRealm.set("");
-  }  resetFilter = jest.fn().mockImplementation(() => {
+  }
+
+  resetFilter = jest.fn().mockImplementation(() => {
     this.apiUserFilter.set(new FilterValue());
   });
-
-
 
 
   handleFilterInput = jest.fn().mockImplementation(($event: Event) => {
@@ -810,9 +810,8 @@ export class MockTokenService implements TokenServiceInterface {
     throw new Error("Method not implemented.");
   }
 
-  setTokenInfos(tokenSerial: string, infos: any): Observable<PiResponse<boolean, unknown>[]> {
-    throw new Error("Method not implemented.");
-  }
+  setTokenInfos = jest.fn().mockReturnValue(of({}));
+  deleteToken = jest.fn().mockReturnValue(of({}));
 
   bulkDeleteTokens(selectedTokens: TokenDetails[]): Observable<PiResponse<BulkResult, any>> {
     throw new Error("Method not implemented.");
@@ -822,9 +821,7 @@ export class MockTokenService implements TokenServiceInterface {
     throw new Error("Method not implemented.");
   }
 
-  deleteInfo(tokenSerial: string, infoKey: string): Observable<Object> {
-    throw new Error("Method not implemented.");
-  }
+  deleteInfo = jest.fn().mockReturnValue(of({}));
 
   unassignUserFromAll(tokenSerials: string[]): Observable<PiResponse<boolean, unknown>[]> {
     throw new Error("Method not implemented.");
@@ -857,7 +854,6 @@ export class MockTokenService implements TokenServiceInterface {
 
   resyncOTPToken = jest.fn().mockReturnValue(of(null));
   getTokenDetails = jest.fn().mockReturnValue(of({}));
-  deleteToken = jest.fn().mockReturnValue(of({}));
   enrollToken = jest.fn().mockReturnValue(of({ detail: { serial: "X" } } as any));
 
   lostToken(tokenSerial: string): Observable<LostTokenResponse> {
@@ -1135,4 +1131,9 @@ export class MockDialogService {
     this._lastStepClosed$.complete();
     this._lastStepClosed$ = new Subject<any>();
   });
+}
+
+export class MockLoadingService {
+  addLoading = jest.fn();
+  removeLoading = jest.fn();
 }

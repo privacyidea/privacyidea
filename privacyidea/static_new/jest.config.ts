@@ -29,6 +29,7 @@ const config: Config = {
     "!src/environments/**",
     "!src/main.ts",
     "!src/polyfills.ts",
+    "!src/testing/**",
   ],
 
   // The directory where Jest should output its coverage files
