@@ -18,51 +18,35 @@
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
-import { HttpParams, httpResource, HttpResourceRef, provideHttpClient } from "@angular/common/http";
+import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { Signal, signal, WritableSignal } from "@angular/core";
-import { Observable, of, Subject } from "rxjs";
+import { signal } from "@angular/core";
+import { of } from "rxjs";
 
 import { ContainerDetailsComponent } from "./container-details.component";
 import { TokenDetailsComponent } from "../token-details/token-details.component";
-import {
-  BulkResult,
-  LostTokenResponse,
-  TokenDetails,
-  TokenGroup,
-  TokenGroups,
-  Tokens,
-  TokenService,
-  TokenServiceInterface,
-  TokenType
-} from "../../../services/token/token.service";
+import { TokenService } from "../../../services/token/token.service";
 import { ContainerService, ContainerServiceInterface } from "../../../services/container/container.service";
 import { ValidateService } from "../../../services/validate/validate.service";
 import { NotificationService } from "../../../services/notification/notification.service";
 import { UserService, UserServiceInterface } from "../../../services/user/user.service";
-import { Sort } from "@angular/material/sort";
-import { PiResponse } from "../../../app.component";
-import { FilterValue } from "../../../core/models/filter_value";
-import {
-  TokenEnrollmentData,
-  EnrollmentResponse,
-  TokenApiPayloadMapper
-} from "../../../mappers/token-api-payload/_token-api-payload.mapper";
 import {
   MockContainerService,
   MockNotificationService,
   MockTokenService,
   MockUserService
 } from "../../../../testing/mock-services";
+import { ContainerDetailsSelfServiceComponent } from "./container-details.self-service.component";
 
 class MockValidateService {
   testToken = jest.fn().mockReturnValue(of(null));
 }
 
-describe("ContainerDetailsComponent (Jest)", () => {
+describe("ContainerDetailsComponent", () => {
   let component: ContainerDetailsComponent;
   let fixture: ComponentFixture<ContainerDetailsComponent>;
-
+  let selfComponent: ContainerDetailsSelfServiceComponent;
+  let selfFixture: ComponentFixture<ContainerDetailsSelfServiceComponent>;
   let containerService: ContainerServiceInterface;
   let userService: UserServiceInterface;
 
@@ -83,6 +67,8 @@ describe("ContainerDetailsComponent (Jest)", () => {
 
     fixture = TestBed.createComponent(ContainerDetailsComponent);
     component = fixture.componentInstance;
+    selfFixture = TestBed.createComponent(ContainerDetailsSelfServiceComponent);
+    selfComponent = selfFixture.componentInstance;
 
     component.tokenSerial = signal("Mock serial");
     component.containerSerial = signal("Mock serial");
@@ -113,6 +99,10 @@ describe("ContainerDetailsComponent (Jest)", () => {
 
   it("creates the component", () => {
     expect(component).toBeTruthy();
+  });
+
+  it("creates the self service component", () => {
+    expect(selfComponent).toBeTruthy();
   });
 
   it("addTokenToContainer calls service with correct params", () => {

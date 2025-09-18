@@ -18,7 +18,7 @@
  **/
 import { AsyncPipe, NgClass } from "@angular/common";
 import { HttpClient } from "@angular/common/http";
-import { Component, inject, Renderer2 } from "@angular/core";
+import { Component, inject, signal } from "@angular/core";
 import { FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
 import { MatButton, MatIconButton } from "@angular/material/button";
@@ -132,25 +132,9 @@ export class TokenEnrollmentWizardComponent extends TokenEnrollmentComponent {
   protected override readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   protected override readonly userService: UserServiceInterface = inject(UserService);
   protected override readonly tokenService: TokenServiceInterface = inject(TokenService);
-  protected override readonly contentService: ContentServiceInterface = inject(ContentService);
   protected override readonly versioningService: VersioningServiceInterface = inject(VersioningService);
+  protected override readonly contentService: ContentServiceInterface = inject(ContentService);
   protected override readonly dialogService: DialogServiceInterface = inject(DialogService);
-
-  readonly preTopHtml$ = this.http
-    .get("/customize/token-enrollment.wizard.pre.top.html", {
-      responseType: "text"
-    })
-    .pipe(map((raw) => this.sanitizer.bypassSecurityTrustHtml(raw)));
-
-  readonly preBottomHtml$ = this.http
-    .get("/customize/token-enrollment.wizard.pre.bottom.html", {
-      responseType: "text"
-    })
-    .pipe(map((raw) => this.sanitizer.bypassSecurityTrustHtml(raw)));
-
-  constructor(renderer: Renderer2) {
-    super(renderer);
-  }
 
   protected override openLastStepDialog(args: { response: EnrollmentResponse; user: UserData | null }) {
     const { response, user } = args;
@@ -160,8 +144,25 @@ export class TokenEnrollmentWizardComponent extends TokenEnrollmentComponent {
         enrollToken: this.enrollToken.bind(this),
         user: user,
         userRealm: this.userService.selectedUserRealm(),
-        onlyAddToRealm: this.onlyAddToRealmControl.value
+        onlyAddToRealm: this.onlyAddToRealmControl.value,
+        tokentype: this.tokenService.selectedTokenType(),
+        serial: signal(null)
       }
     });
+  }
+
+  readonly preTopHtml$ = this.http
+    .get("/customize/token-enrollment.wizard.pre.top.html", {
+      responseType: "text"
+    })
+    .pipe(map((raw) => this.sanitizer.bypassSecurityTrustHtml(raw)));
+  readonly preBottomHtml$ = this.http
+    .get("/customize/token-enrollment.wizard.pre.bottom.html", {
+      responseType: "text"
+    })
+    .pipe(map((raw) => this.sanitizer.bypassSecurityTrustHtml(raw)));
+
+  constructor() {
+    super();
   }
 }

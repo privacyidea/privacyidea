@@ -27,7 +27,7 @@ import { TokenEnrollmentSelfServiceComponent } from "./components/token/token-en
 import { TokenTableSelfServiceComponent } from "./components/token/token-table/token-table.self-service.component";
 import { TokenSelfServiceComponent } from "./components/token/token.self-service.component";
 import { UserSelfServiceComponent } from "./components/user/user.self-service.component";
-import { AuditComponentSelfServiceComponent } from "./components/audit/audit.self-service.component";
+import { AuditSelfServiceComponent } from "./components/audit/audit.self-service.component";
 
 export const routes: Routes = [
   {
@@ -61,6 +61,6 @@ export const routes: Routes = [
   },
   {
     path: "audit",
-    component: AuditComponentSelfServiceComponent
+    component: AuditSelfServiceComponent
   }
 ];

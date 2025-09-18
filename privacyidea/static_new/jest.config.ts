@@ -26,7 +26,10 @@ const config: Config = {
     "src/**/**/*.ts",
     "src/**/*.ts",
     "!src/**/*.spec.ts",
-    "!src/environments/**"
+    "!src/environments/**",
+    "!src/main.ts",
+    "!src/polyfills.ts",
+    "!src/testing/**",
   ],
 
   // The directory where Jest should output its coverage files
