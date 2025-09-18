@@ -530,6 +530,17 @@ class SQLResolverTestCase(MyTestCase):
         self.assertTrue(y.checkPass(uid, "test8"))
         self.assertFalse(y.checkPass(uid, "test"))
 
+        # ARGON2ID
+        parameters["Password_Hash_Type"] = "ARGON2ID"
+        y.loadConfig(parameters)
+        self.assertTrue(y.update_user(uid, {"username": "achmed2",
+                                            "password": "test9"}))
+        stored_password = y.session.execute(
+            y.TABLE.select().where(y.TABLE.c.username == "achmed2")).first().password
+        self.assertTrue(stored_password.startswith("$argon2id$"), stored_password)
+        self.assertTrue(y.checkPass(uid, "test9"))
+        self.assertFalse(y.checkPass(uid, "test"))
+
         # TODO: check unknown hash type
         parameters["Password_Hash_Type"] = "UNKNOWN"
         y.loadConfig(parameters)

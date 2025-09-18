@@ -254,9 +254,8 @@ class IdResolver (UserIdResolver):
                              database_pw)
 
         try:
-            # Create a dynamic context that uses the resolver's configured hash type as the default for re-hashing.
-            target_handler_id = hash_type_dict.get(self.password_hash_type.upper())
-            if not target_handler_id:
+            hash_algorithm = hash_type_dict.get(self.password_hash_type.upper())
+            if not hash_algorithm:
                 # This should not happen if config is validated, but as a safeguard:
                 log.error(f"The configured Password_Hash_Type '{self.password_hash_type}' is not a supported handler.")
                 # Fallback to simple verification without re-hashing
@@ -265,7 +264,7 @@ class IdResolver (UserIdResolver):
             else:
                 temp_ctx = CryptContext(
                     schemes=pw_ctx.schemes(),
-                    default=target_handler_id,
+                    default=hash_algorithm,
                     deprecated="auto"
                 )
                 verified, new_hash = temp_ctx.verify_and_update(password, database_pw)
