@@ -45,10 +45,18 @@ import { of, throwError } from "rxjs";
 import { signal } from "@angular/core";
 import { provideHttpClient } from "@angular/common/http";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
+import { TokenEnrollmentSelfServiceComponent } from "./token-enrollment.self-service.component";
+import {
+  NO_QR_CODE_TOKEN_TYPES,
+  NO_REGENERATE_TOKEN_TYPES,
+  REGENERATE_AS_VALUES_TOKEN_TYPES
+} from "./token-enrollment.constants";
 
 describe("TokenEnrollmentComponent", () => {
   let fixture: ComponentFixture<TokenEnrollmentComponent>;
   let component: TokenEnrollmentComponent;
+  let selfFixture: ComponentFixture<TokenEnrollmentSelfServiceComponent>;
+  let selfComponent: TokenEnrollmentSelfServiceComponent;
 
   let tokenSvc: MockTokenService;
   let userSvc: MockUserService;
@@ -106,6 +114,8 @@ describe("TokenEnrollmentComponent", () => {
 
     fixture = TestBed.createComponent(TokenEnrollmentComponent);
     component = fixture.componentInstance;
+    selfFixture = TestBed.createComponent(TokenEnrollmentSelfServiceComponent);
+    selfComponent = selfFixture.componentInstance;
 
     tokenSvc = TestBed.inject(TokenService) as unknown as MockTokenService;
     userSvc = TestBed.inject(UserService) as unknown as MockUserService;
@@ -121,6 +131,10 @@ describe("TokenEnrollmentComponent", () => {
 
   it("creates", () => {
     expect(component).toBeTruthy();
+  });
+
+  it("creates self service", () => {
+    expect(selfComponent).toBeTruthy();
   });
 
   it("formatDateTimeOffset builds the expected ISO-ish string", () => {
@@ -199,7 +213,7 @@ describe("TokenEnrollmentComponent", () => {
 
   describe("enrollToken()", () => {
     it("snacks and returns when no token type selected", async () => {
-      (tokenSvc.selectedTokenType as any).set('');
+      (tokenSvc.selectedTokenType as any).set("");
 
       await (component as any).enrollToken();
 
@@ -402,6 +416,63 @@ describe("TokenEnrollmentComponent", () => {
 
       component.onlyAddToRealmControl.setValue(false);
       expect(component.userFilterControl.disabled).toBe(false);
+    });
+  });
+
+  describe("token-enrollment constants", () => {
+    const hasQr = (type: string) => !NO_QR_CODE_TOKEN_TYPES.includes(type);
+    const canRegenerate = (type: string) => !NO_REGENERATE_TOKEN_TYPES.includes(type);
+    const regenerateLabel = (type: string) =>
+      REGENERATE_AS_VALUES_TOKEN_TYPES.includes(type) ? "Values" : "QR Code";
+
+    it("REGENERATE_AS_VALUES_TOKEN_TYPES is a subset of NO_QR_CODE_TOKEN_TYPES", () => {
+      const allIn = REGENERATE_AS_VALUES_TOKEN_TYPES.every((t) => NO_QR_CODE_TOKEN_TYPES.includes(t));
+      expect(allIn).toBe(true);
+    });
+
+    it("NO_REGENERATE_TOKEN_TYPES contains WebAuthn and Passkey", () => {
+      expect(NO_REGENERATE_TOKEN_TYPES).toEqual(expect.arrayContaining(["webauthn", "passkey"]));
+    });
+
+    it("NO_QR_CODE_TOKEN_TYPES lists paper and tan; does not include hotp", () => {
+      expect(NO_QR_CODE_TOKEN_TYPES).toEqual(expect.arrayContaining(["paper", "tan"]));
+      expect(NO_QR_CODE_TOKEN_TYPES).not.toContain("hotp");
+    });
+
+    it("hotp → shows QR, can regenerate, label is 'QR Code'", () => {
+      expect(hasQr("hotp")).toBe(true);
+      expect(canRegenerate("hotp")).toBe(true);
+      expect(regenerateLabel("hotp")).toBe("QR Code");
+    });
+
+    it("paper → no QR, can regenerate, label is 'Values'", () => {
+      expect(hasQr("paper")).toBe(false);
+      expect(canRegenerate("paper")).toBe(true);
+      expect(regenerateLabel("paper")).toBe("Values");
+    });
+
+    it("tan → no QR, can regenerate, label is 'Values'", () => {
+      expect(hasQr("tan")).toBe(false);
+      expect(canRegenerate("tan")).toBe(true);
+      expect(regenerateLabel("tan")).toBe("Values");
+    });
+
+    it("indexedsecret → no QR and cannot regenerate", () => {
+      expect(hasQr("indexedsecret")).toBe(false);
+      expect(canRegenerate("indexedsecret")).toBe(false);
+      expect(regenerateLabel("indexedsecret")).toBe("QR Code"); // label ignored when cannot regenerate
+    });
+
+    it("webauthn → shows QR but cannot regenerate; label would be 'QR Code'", () => {
+      expect(hasQr("webauthn")).toBe(true);
+      expect(canRegenerate("webauthn")).toBe(false);
+      expect(regenerateLabel("webauthn")).toBe("QR Code");
+    });
+
+    it("passkey → shows QR but cannot regenerate; label would be 'QR Code'", () => {
+      expect(hasQr("passkey")).toBe(true);
+      expect(canRegenerate("passkey")).toBe(false);
+      expect(regenerateLabel("passkey")).toBe("QR Code");
     });
   });
 });

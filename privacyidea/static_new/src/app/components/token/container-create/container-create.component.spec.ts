@@ -43,6 +43,7 @@ import { TokenService } from "../../../services/token/token.service";
 import { UserService } from "../../../services/user/user.service";
 import { VersioningService } from "../../../services/version/version.service";
 import { Renderer2 } from "@angular/core";
+import { ContainerCreateSelfServiceComponent } from "./container-create.self-service.component";
 
 const mockMatDialog = {
   open: () => ({ afterClosed: () => of(null) }),
@@ -102,6 +103,8 @@ const routerMock = { navigateByUrl } as unknown as Router;
 describe("ContainerCreateComponent", () => {
   let fixture: ComponentFixture<ContainerCreateComponent>;
   let component: ContainerCreateComponent;
+  let selfFixture: ComponentFixture<ContainerCreateSelfServiceComponent>;
+  let selfComponent: ContainerCreateSelfServiceComponent;
 
   let containerSvc: MockContainerService;
   let userSvc: MockUserService;
@@ -131,6 +134,8 @@ describe("ContainerCreateComponent", () => {
 
     fixture = TestBed.createComponent(ContainerCreateComponent);
     component = fixture.componentInstance;
+    selfFixture = TestBed.createComponent(ContainerCreateSelfServiceComponent);
+    selfComponent = selfFixture.componentInstance;
 
     containerSvc = TestBed.inject(ContainerService) as unknown as MockContainerService;
     userSvc = TestBed.inject(UserService) as unknown as MockUserService;
@@ -152,6 +157,10 @@ describe("ContainerCreateComponent", () => {
 
   it("creates", () => {
     expect(component).toBeTruthy();
+  });
+
+  it("creates self service", () => {
+    expect(selfComponent).toBeTruthy();
   });
 
   it("non-QR create: navigates and sets containerSerial", () => {
