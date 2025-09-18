@@ -19,8 +19,13 @@
           [ngClass]="{ active: isActive(ROUTE_PATHS.TOKENS) }"
           extended
           mat-fab
-          routerLink="{{authService.anyTokenActionAllowed() ? this.ROUTE_PATHS.TOKENS :
-            (authService.anyContainerActionAllowed() ? this.ROUTE_PATHS.TOKENS_CONTAINERS : this.ROUTE_PATHS.TOKENS)}}">
+          routerLink="{{
+            authService.anyTokenActionAllowed()
+              ? this.ROUTE_PATHS.TOKENS
+              : authService.anyContainerActionAllowed()
+                ? this.ROUTE_PATHS.TOKENS_CONTAINERS
+                : this.ROUTE_PATHS.TOKENS
+          }}">
           <mat-icon>shield</mat-icon>
           <h4 i18n>Tokens</h4>
         </a>
@@ -35,6 +40,14 @@
           <h4>{{ authService.role() === "admin" ? "Users" : "User" }}</h4>
         </a>
       }
+      <a
+        extended
+        href="#"
+        mat-fab
+        routerLink="{{ ROUTE_PATHS.POLICIES }}">
+        <mat-icon>build</mat-icon>
+        <h4 i18n>Policies</h4>
+      </a>
       @if (authService.menus().includes("machines")) {
         <a
           extended
@@ -99,11 +112,11 @@
         ]"
         class="session-timer">
         @if (sessionTimerService.remainingTime()! < 599500) {
-          {{ sessionTimerService.remainingTime() | date:'m:ss':'UTC' }}
+          {{ sessionTimerService.remainingTime() | date: "m:ss" : "UTC" }}
         } @else if (sessionTimerService.remainingTime()! < 3600000) {
-          {{ sessionTimerService.remainingTime() | date:'m':'UTC' }}min
+          {{ sessionTimerService.remainingTime() | date: "m" : "UTC" }}min
         } @else {
-          {{ sessionTimerService.remainingTime() | date:"H'h' mm'min'":"UTC" }}
+          {{ sessionTimerService.remainingTime() | date: "H'h' mm'min'" : "UTC" }}
         }
       </div>
       <div class="profile-logout-div flex-row">
