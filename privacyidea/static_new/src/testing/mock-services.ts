@@ -34,6 +34,7 @@ import {
   TokenDetails,
   TokenGroups,
   Tokens,
+  TokenService,
   TokenServiceInterface,
   TokenType
 } from "../app/services/token/token.service";
@@ -856,9 +857,32 @@ export class MockTokenService implements TokenServiceInterface {
   getTokenDetails = jest.fn().mockReturnValue(of({}));
   enrollToken = jest.fn().mockReturnValue(of({ detail: { serial: "X" } } as any));
 
-  lostToken(tokenSerial: string): Observable<LostTokenResponse> {
-    throw new Error("Method not implemented.");
-  }
+  lostToken = jest.fn<ReturnType<TokenService["lostToken"]>, Parameters<TokenService["lostToken"]>>()
+    .mockImplementation((_serial: string) => {
+      const response: LostTokenResponse = {
+        id: 0,
+        jsonrpc: "2.0",
+        signature: "",
+        time: Date.now(),
+        version: "1.0",
+        versionnumber: "1.0",
+        detail: {},
+        result: {
+          status: true,
+          value: {
+            disable: 1,
+            end_date: "2025-01-31",
+            init: true,
+            password: "****",
+            pin: false,
+            serial: _serial,
+            user: true,
+            valid_to: "2025-02-28"
+          }
+        }
+      };
+      return of(response);
+    });
 
   stopPolling = jest.fn();
   pollTokenRolloutState = jest
@@ -1158,4 +1182,8 @@ export class MockApplicationService {
       }
     }
   });
+}
+
+export class MockVersioningService {
+  version = { set: jest.fn() } as any;
 }

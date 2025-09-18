@@ -39,6 +39,8 @@ import { AuthService } from "../../../../services/auth/auth.service";
 import { TokenTypeOption } from "../../token.component";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { TokenDetailsUserSelfServiceComponent } from "./token-details-user.self-service.component";
+import { TokenTableSelfServiceComponent } from "../../token-table/token-table.self-service.component";
 
 function makeTokenDetailResponse(tokentype: TokenTypeOption): MockPiResponse<Tokens> {
   return {
@@ -88,7 +90,8 @@ function makeTokenDetailResponse(tokentype: TokenTypeOption): MockPiResponse<Tok
 describe("TokenDetailsUserComponent", () => {
   let fixture: ComponentFixture<TokenDetailsUserComponent>;
   let component: TokenDetailsUserComponent;
-
+  let selfFixture: ComponentFixture<TokenDetailsUserSelfServiceComponent>;
+  let selfComponent: TokenDetailsUserSelfServiceComponent;
   let tokenSvc: MockTokenService;
   let userSvc: MockUserService;
   let realmSvc: MockRealmService;
@@ -121,6 +124,8 @@ describe("TokenDetailsUserComponent", () => {
 
     fixture = TestBed.createComponent(TokenDetailsUserComponent);
     component = fixture.componentInstance;
+    selfFixture = TestBed.createComponent(TokenDetailsUserSelfServiceComponent);
+    selfComponent = selfFixture.componentInstance;
 
     tokenSerial = signal("Mock serial");
     isEditingUser = signal(false);
@@ -135,6 +140,10 @@ describe("TokenDetailsUserComponent", () => {
 
   it("creates", () => {
     expect(component).toBeTruthy();
+  });
+
+  it("creates self service", () => {
+    expect(selfComponent).toBeTruthy();
   });
 
   it("tokenType reflects tokenDetailResource tokentype", () => {
