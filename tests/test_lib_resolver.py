@@ -191,10 +191,16 @@ class SQLResolverTestCase(MyTestCase):
         #  add_user) we delete them here.
         y = SQLResolver()
         y.loadConfig(self.parameters)
+        i = 0
         for username in ["achmed", "achmed2", "corneliusReg"]:
-            uid = True
-            while uid:
+            while True:
+                i += 1
                 uid = y.getUserId(username)
+                if not uid:
+                    i = 0
+                    break
+                if i > 25:
+                    self.fail("Could not delete user {username} with uid {uid}")
                 y.delete_user(uid)
 
     def test_01_sqlite_resolver(self):
@@ -336,10 +342,10 @@ class SQLResolverTestCase(MyTestCase):
         self.assertTrue(uid > self.num_users)
         self.assertTrue(y.checkPass(uid, "passw0rd"))
         self.assertFalse(y.checkPass(uid, "password"))
-        # check that we actually store SSHA256
+        # check that we actually store argon2id now since it is the default
         stored_password = y.session.execute(
             y.TABLE.select().where(y.TABLE.c.username == "achmed")).first().password
-        self.assertTrue(stored_password.startswith("{SSHA256}"), stored_password)
+        self.assertTrue(stored_password.startswith("$argon2id$"), stored_password)
 
         # we assume here the uid is of type int
         uid = y.getUserId("achmed")
@@ -347,10 +353,10 @@ class SQLResolverTestCase(MyTestCase):
 
         r = y.update_user(uid, {"username": "achmed2",
                                 "password": "test"})
-        # check that we actually store SSHA256
+        # check that we actually store argon2id now since it is the default
         stored_password = y.session.execute(
             y.TABLE.select().where(y.TABLE.c.username == "achmed2")).first().password
-        self.assertTrue(stored_password.startswith("{SSHA256}"), stored_password)
+        self.assertTrue(stored_password.startswith("$argon2id$"), stored_password)
         uname = y.getUsername(uid)
         self.assertEqual(uname, "achmed2")
         r = y.checkPass(uid, "test")
@@ -532,8 +538,8 @@ class SQLResolverTestCase(MyTestCase):
                                                  "password": "test9"}))
             expected = "Error updating user attributes for user with uid 14: " \
                        "Unsupported password hashtype 'UNKNOWN'. Use one of " \
-                       "dict_keys(['PHPASS', 'SHA', 'SSHA', 'SSHA256', 'SSHA512', " \
-                       "'OTRS', 'SHA256CRYPT', 'SHA512CRYPT', 'MD5CRYPT'])."
+                       "dict_keys(['ARGON2ID', 'PHPASS', 'SHA', 'SSHA', 'SSHA256', "\
+                       "'SSHA512', 'OTRS', 'SHA256CRYPT', 'SHA512CRYPT', 'MD5CRYPT'])."
             mock_log.assert_called_once_with(expected)
 
         # set hash type to default
@@ -555,10 +561,10 @@ class SQLResolverTestCase(MyTestCase):
                           "mobile": "12345"})
         self.assertTrue(y.checkPass(uid, "foo"))
         self.assertFalse(y.checkPass(uid, "bar"))
-        # check that we actually store SSHA265 now since it is the default
+        # check that we actually store argon2id now since it is the default
         stored_password = y.session.execute(
             y.TABLE.select().where(y.TABLE.c.username == "hans")).first().password
-        self.assertTrue(stored_password.startswith("{SSHA256}"), stored_password)
+        self.assertTrue(stored_password.startswith("$argon2id$"), stored_password)
 
         y.delete_user(uid)
 
@@ -601,6 +607,133 @@ class SQLResolverTestCase(MyTestCase):
         user = "cornelius"
         user_info = y.getUserInfo(user)
         self.assertEqual(user_info.get("userid"), "cornelius")
+
+    def test_10_password_rehash_ssha256_to_argon2(self):
+        """
+        Test that a password stored as SSHA256 is re-hashed to argon2 on
+        successful login.
+        """
+        y = SQLResolver()
+        # Load config without a default hash type, so it falls back to ARGON2ID
+        # which we set as the new default in the class
+        params = self.parameters.copy()
+        params.pop("Password_Hash_Type", None)
+        y.loadConfig(params)
+
+        # 1. Add a user with a clear SSHA256 password
+        uid = y.add_user({"username": "rehash_user_1", "password": "password123"})
+
+        # Manually overwrite the password with a known SSHA256 hash
+        from privacyidea.lib.resolvers.SQLIdResolver import hash_password
+        ssha256_hash = hash_password("password123", "SSHA256")
+        self.assertTrue(ssha256_hash.startswith("{SSHA256}"))
+
+        # We need to do this directly, since update_user would hash the password again
+        y.session.execute(y.TABLE.update().where(y.TABLE.c.id == uid).values(password=ssha256_hash))
+        y.session.commit()
+
+        # Verify it's currently SSHA256
+        stored_pw = y.session.execute(
+            y.TABLE.select().where(y.TABLE.c.id == uid)).first().password
+        self.assertTrue(stored_pw.startswith("{SSHA256}"))
+
+        # 2. Check the password, this should trigger the re-hash
+        self.assertTrue(y.checkPass(uid, "password123")),
+
+        # 3. Verify the new hash is Argon2
+        new_stored_pw = y.session.execute(
+            y.TABLE.select().where(y.TABLE.c.id == uid)).first().password
+        self.assertTrue(new_stored_pw.startswith("$argon2id$"), new_stored_pw)
+
+        # 4. Clean up
+        y.delete_user(uid)
+
+    def test_11_password_no_rehash_for_argon2(self):
+        """
+        Test that a password already stored as argon2 is not re-hashed.
+        """
+        y = SQLResolver()
+        params = self.parameters.copy()
+        params["Password_Hash_Type"] = "ARGON2ID"
+        y.loadConfig(params)
+
+        # 1. Add a user with an argon2 password
+        uid = y.add_user({"username": "rehash_user_2", "password": "password123"})
+
+        # Get the hash
+        original_hash = y.session.execute(
+            y.TABLE.select().where(y.TABLE.c.id == uid)).first().password
+        self.assertTrue(original_hash.startswith("$argon2id$"))
+
+        # 2. Check the password
+        self.assertTrue(y.checkPass(uid, "password123")),
+
+        # 3. Verify the hash has not changed
+        new_hash = y.session.execute(
+            y.TABLE.select().where(y.TABLE.c.id == uid)).first().password
+        self.assertEqual(original_hash, new_hash)
+
+        # 4. Clean up
+        y.delete_user(uid)
+
+    def test_12_password_rehash_fail_on_wrong_password(self):
+        """
+        Test that a password is not re-hashed if the login fails.
+        """
+        y = SQLResolver()
+        params = self.parameters.copy()
+        params.pop("Password_Hash_Type", None)
+        y.loadConfig(params)
+
+        # 1. Add user with SSHA256 hash
+        from privacyidea.lib.resolvers.SQLIdResolver import hash_password
+        ssha256_hash = hash_password("password123", "SSHA256")
+        uid = y.add_user({"username": "rehash_user_3", "password": "password123"})
+
+        # We need to do this directly, since update_user would hash the password again
+        y.session.execute(y.TABLE.update().where(y.TABLE.c.id == uid).values(password=ssha256_hash))
+        y.session.commit()
+
+        original_hash = y.session.execute(
+            y.TABLE.select().where(y.TABLE.c.id == uid)).first().password
+        self.assertTrue(original_hash.startswith("{SSHA256}"))
+
+        # 2. Check with wrong password
+        self.assertFalse(y.checkPass(uid, "wrongpassword")),
+
+        # 3. Verify the hash has not changed
+        new_hash = y.session.execute(
+            y.TABLE.select().where(y.TABLE.c.id == uid)).first().password
+        self.assertEqual(original_hash, new_hash)
+        self.assertTrue(new_hash.startswith("{SSHA256}"))
+
+        # 4. Clean up
+        y.delete_user(uid)
+
+    def test_13_checkpass_gracefully_fails_on_unknown_hash(self):
+        """
+        Test that checkPass returns False and does not crash for an unknown
+        hash format.
+        """
+        y = SQLResolver()
+        y.loadConfig(self.parameters)
+
+        # 1. Add a user and then manually set a malformed hash
+        uid = y.add_user({"username": "rehash_user_4", "password": "password123"})
+        malformed_hash = "{UNKNOWN}somehashvalue"
+
+        # We need to do this directly, since update_user would hash the password again
+        y.session.execute(y.TABLE.update().where(y.TABLE.c.id == uid).values(password=malformed_hash))
+        y.session.commit()
+
+        # 2. Verify checkPass returns False and does not raise an exception
+        with LogCapture(level=logging.ERROR) as lc:
+            self.assertFalse(y.checkPass(uid, "password123")),
+            # No errors should be logged, as this is a graceful failure
+            self.assertEqual(len(lc.records), 0)
+
+        # 3. Clean up
+        y.delete_user(uid)
 
     def test_99_testconnection_fail(self):
         y = SQLResolver()
@@ -1567,6 +1700,7 @@ class LDAPResolverTestCase(MyTestCase):
         # different resolvers. Alice is cached as not found in the first
         # resolver but alice will be found in the other resolver.
         ldap3mock.setLDAPDirectory(LDAPDirectory_small)
+        cache_timeout = 120
         y = LDAPResolver()
         # We add :789 to the LDAPURI in order to force a unused resolver ID.
         # If we omit it, the test occasionally fails because of leftover
@@ -1577,7 +1711,7 @@ class LDAPResolverTestCase(MyTestCase):
                       'BINDDN': 'cn=manager,ou=example,o=test',
                       'BINDPW': 'ldaptest',
                       'LOGINNAMEATTRIBUTE': 'cn',
-                      'LDAPSEARCHFILTER': '(cn=*)',
+                     'LDAPSEARCHFILTER': '(&(cn=*))',  # we use this weird search filter to get a unique resolver ID
                       'USERINFO': '{ "username": "cn",'
                                   '"phone" : "telephoneNumber", '
                                   '"mobile" : "mobile"'
@@ -1586,38 +1720,42 @@ class LDAPResolverTestCase(MyTestCase):
                                   '"givenname" : "givenName" }',
                       'UIDTYPE': 'objectGUID',
                       'NOREFERRALS': True,
-                      'CACHE_TIMEOUT': 120
+                      'CACHE_TIMEOUT': cache_timeout
                       })
-
-        # in the small LDAP there is no user "alice"!
-        user_id = y.getUserId("alice")
-        self.assertEqual(user_id, "")
-
-        ldap3mock.setLDAPDirectory(LDAPDirectory)
-        y = LDAPResolver()
-        y.loadConfig({'LDAPURI': 'ldap://localhost',
-                      'LDAPBASE': 'o=test',
-                      'BINDDN': 'cn=manager,ou=example,o=test',
-                      'BINDPW': 'ldaptest',
-                      'LOGINNAMEATTRIBUTE': 'cn',
-                      'LDAPSEARCHFILTER': '(cn=*)',
-                      'USERINFO': '{ "username": "cn",'
-                                  '"mobile" : "mobile"'
-                                  ', "email" : "mail", '
-                                  '"surname" : "sn", '
-                                  '"givenname" : "givenName" }',
-                      'UIDTYPE': 'objectGUID',
-                      'NOREFERRALS': True,
-                      'CACHE_TIMEOUT': 120
-                      })
-
-        # but in the full LDAP there is a "alice". We need to find it, since it
-        # is not cached yet in the new resolver cache
-        user_id = y.getUserId("alice")
-        user_info = y.getUserInfo(user_id)
-        self.assertEqual(user_info.get("username"), "alice")
-        self.assertEqual(user_info.get("surname"), "Cooper")
-        self.assertEqual(user_info.get("givenname"), "Alice")
+        from privacyidea.lib.resolvers.LDAPIdResolver import CACHE
+        # assert that the other tests haven't left anything in the cache
+        self.assertNotIn(y.getResolverId(), CACHE)
+        bob_id = y.getUserId('bob')
+        # assert the cache contains this entry
+        self.assertEqual(CACHE[y.getResolverId()]['getUserId']['bob']['value'], bob_id)
+        # assert subsequent requests for the same data hit the cache
+        with mock.patch.object(ldap3mock.Connection, 'search') as mock_search:
+            bob_id2 = y.getUserId('bob')
+            self.assertEqual(bob_id, bob_id2)
+            mock_search.assert_not_called()
+        self.assertIn('bob', CACHE[y.getResolverId()]['getUserId'])
+        # assert requests later than CACHE_TIMEOUT seconds query the directory again
+        now = datetime.datetime.now(tz=datetime.timezone.utc)
+        with mock.patch('privacyidea.lib.resolvers.LDAPIdResolver.datetime.datetime',
+                        wraps=datetime.datetime) as mock_datetime:
+            # we now live CACHE_TIMEOUT + 2 seconds in the future
+            mock_datetime.now.return_value = now + datetime.timedelta(seconds=cache_timeout + 2)
+            with mock.patch.object(ldap3mock.Connection, 'search', wraps=y.connection.search) as mock_search:
+                bob_id3 = y.getUserId('bob')
+                self.assertEqual(bob_id, bob_id3)
+                mock_search.assert_called_once()
+        # assert the cache contains this entry, with the updated timestamp
+        self.assertEqual(CACHE[y.getResolverId()]['getUserId']['bob'],
+                         {'value': bob_id,
+                          'timestamp': now + datetime.timedelta(seconds=cache_timeout + 2)})
+        # we now go 2 * (CACHE_TIMEOUT + 2) seconds to the future and query for someone else's user ID.
+        # This will cause Bob's cache entry to be evicted.
+        with mock.patch('privacyidea.lib.resolvers.LDAPIdResolver.datetime.datetime',
+                        wraps=datetime.datetime) as mock_datetime:
+            mock_datetime.now.return_value = now + datetime.timedelta(seconds=2 * (cache_timeout + 2))
+            manager_id = y.getUserId('manager')
+            self.assertEqual(manager_id, objectGUIDs[1])
+        self.assertEqual(list(CACHE[y.getResolverId()]['getUserId'].keys()), ['manager'])
 
     @ldap3mock.activate
     def test_23_start_tls(self):

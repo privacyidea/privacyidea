@@ -38,7 +38,7 @@ import re
 from privacyidea.lib.resolvers.UserIdResolver import UserIdResolver
 
 from sqlalchemy import (Integer, cast, String, MetaData, Table, and_,
-                        create_engine, select, insert, delete)
+                        create_engine, select, insert, delete, update)
 from sqlalchemy.orm import sessionmaker, scoped_session
 
 import traceback
@@ -56,7 +56,7 @@ from passlib.utils.compat import unicode as pl_unicode
 from passlib.utils import to_unicode
 import passlib.utils.handlers as uh
 import passlib.exc as exc
-from passlib.registry import register_crypt_handler
+from passlib.registry import register_crypt_handler, get_crypt_handler
 from passlib.handlers.ldap_digests import _SaltedBase64DigestHelper
 
 
@@ -130,7 +130,8 @@ register_crypt_handler(ldap_salted_sha256_pi)
 
 
 # The list of supported password hash types for verification (passlib handler)
-pw_ctx = CryptContext(schemes=['phpass',
+pw_ctx = CryptContext(schemes=['argon2',
+                               'phpass',
                                'phpass_drupal',
                                'ldap_salted_sha1',
                                'ldap_salted_sha256_pi',
@@ -144,7 +145,8 @@ pw_ctx = CryptContext(schemes=['phpass',
                                ])
 
 # List of supported password hash types for hash generation (name to passlib handler id)
-hash_type_dict = {"PHPASS": 'phpass',
+hash_type_dict = {"ARGON2ID": 'argon2',
+                  "PHPASS": 'phpass',
                   "SHA": 'ldap_sha1',
                   "SSHA": 'ldap_salted_sha1',
                   "SSHA256": 'ldap_salted_sha256_pi',
@@ -239,10 +241,8 @@ class IdResolver (UserIdResolver):
         :return: True if password matches the saved password hash, False otherwise
         :rtype: bool
         """
-
         res = False
         userinfo = self.getUserInfo(uid)
-
         database_pw = userinfo.get("password", "XXXXXXX")
 
         # remove owncloud hash format identifier (currently only version 1)
@@ -254,11 +254,47 @@ class IdResolver (UserIdResolver):
                              database_pw)
 
         try:
-            res = pw_ctx.verify(password, database_pw)
-        except ValueError as _e:
+            # Create a dynamic context that uses the resolver's configured hash type as the default for re-hashing.
+            target_handler_id = hash_type_dict.get(self.password_hash_type.upper())
+            if not target_handler_id:
+                # This should not happen if config is validated, but as a safeguard:
+                log.error(f"The configured Password_Hash_Type '{self.password_hash_type}' is not a supported handler.")
+                # Fallback to simple verification without re-hashing
+                verified = pw_ctx.verify(password, database_pw)
+                new_hash = None
+            else:
+                temp_ctx = CryptContext(
+                    schemes=pw_ctx.schemes(),
+                    default=target_handler_id,
+                    deprecated="auto"
+                )
+                verified, new_hash = temp_ctx.verify_and_update(password, database_pw)
+
+            log.info(f"Password verification for user {uid}: {verified}, rehash needed: {bool(new_hash)}")
+            if verified:
+                res = True
+                if new_hash:
+                    log.info(f"Re-hashing password for user {uid}")
+                    try:
+                        userid_column = self.map.get("userid")
+                        password_column = self.map.get("password")
+
+                        # Manually create and execute the update statement
+                        # to store the already hashed password.
+                        stmt = (
+                            update(self.TABLE)
+                            .where(self.TABLE.c[userid_column] == uid)
+                            .values({password_column: new_hash})
+                        )
+                        self.session.execute(stmt)
+                        self.session.commit()
+                        log.info(f"Successfully re-hashed password for user {uid}")
+                    except Exception as e:
+                        log.error(f"Failed to save re-hashed password for user {uid}: {e!r}")
+                        self.session.rollback()
+        except (ValueError, exc.UnknownHashError) as _e:
             # if the hash could not be identified / verified, just return False
             pass
-
         return res
 
     def getUserInfo(self, userId):
@@ -467,7 +503,7 @@ class IdResolver (UserIdResolver):
         self.password = config.get('Password', "")
         self.table = config.get('Table', "")
         self._editable = config.get("Editable", False)
-        self.password_hash_type = config.get("Password_Hash_Type", "SSHA256")
+        self.password_hash_type = config.get("Password_Hash_Type", "ARGON2ID")
         usermap = config.get('Map', {})
         self.map = yaml.safe_load(usermap)
         self.reverse_map = {v: k for k, v in self.map.items()}
@@ -759,7 +795,8 @@ def hash_password(password, hashtype):
     """
     hashtype = hashtype.upper()
     try:
-        password = pw_ctx.handler(hash_type_dict[hashtype]).hash(password)
+        handler = get_crypt_handler(hash_type_dict[hashtype])
+        password = handler.hash(password)
     except KeyError as _e:  # pragma: no cover
         raise Exception("Unsupported password hashtype '{0!s}'. "
                         "Use one of {1!s}.".format(hashtype, hash_type_dict.keys()))
