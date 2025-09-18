@@ -25,7 +25,7 @@ def _get_container_list(serial: str = None, ctype: str = None, token_serial: str
     return container
 
 
-@click.group('find_container', invoke_without_command=True, cls=AppGroup)
+@click.group('container', invoke_without_command=True, cls=AppGroup)
 @click.option('--serial', '-s', help='Serial number of the container.')
 @click.option('--type', '-t', 'ctype', help='Type of the container.')
 @click.option('--token-serial', '-ts', help='Serial number of the token in the container.')
@@ -84,16 +84,24 @@ def list_containers(ctx, key):
 
 
 @findcontainer.command('delete')
+@click.option('--tokens', '-t', 'delete_token', is_flag=True, default=False,
+              help='Also delete the tokens in the container.')
 @click.pass_context
-def delete_containers(ctx):
+def delete_containers(ctx, delete_token):
     """
     Delete containers based on the provided parameters.
     """
     for clist in ctx.obj['containers']:
         for container in clist:
             serial = container.serial
+            tokens = container.get_tokens()
+            for token in tokens:
+                if delete_token:
+                    token.delete_token()
+                else:
+                    container.remove_token(token.get_serial())
             container.delete()
-            click.echo(f"Deleted token {serial}")
+            click.echo(f"Deleted container {serial}")
 
 
 @findcontainer.command('set_info')
