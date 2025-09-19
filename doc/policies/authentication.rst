@@ -245,6 +245,8 @@ an HTML file.
 .. note:: If a message text is supplied directly, the email is sent as plain text.
    If the email template is read from a file, a HTML-only email is sent instead.
 
+.. note:: In the code, commas separated different policy actions. This is why a comma in a policy action-value cannot be used.
+
 emailsubject
 ~~~~~~~~~~~~
 
