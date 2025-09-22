@@ -1,16 +1,18 @@
+import json
 import logging
+
 from testfixtures import LogCapture
 
 from privacyidea.lib.container import create_container_template, get_template_obj
 from privacyidea.lib.error import ParameterError
-from privacyidea.lib.policies.conditions import ConditionSection, ConditionHandleMissingData
-from privacyidea.lib.utils.compare import PrimaryComparators
-from .base import MyApiTestCase
-from privacyidea.lib.policy import (set_policy, SCOPE, delete_policy, rename_policy)
 from privacyidea.lib.policies.actions import PolicyAction
-from privacyidea.lib.token import init_token, remove_token
+from privacyidea.lib.policies.conditions import ConditionSection, ConditionHandleMissingData
+from privacyidea.lib.policy import (set_policy, SCOPE, delete_policy, rename_policy)
+from privacyidea.lib.token import init_token, remove_token, assign_token
 from privacyidea.lib.user import User
+from privacyidea.lib.utils.compare import PrimaryComparators
 from privacyidea.models import db, NodeName
+from .base import MyApiTestCase
 
 
 class APIPolicyTestCase(MyApiTestCase):
@@ -435,6 +437,42 @@ class APIPolicyTestCase(MyApiTestCase):
             result = data.get("result")
             status = result.get("status")
             self.assertTrue(status)
+
+    def test_3a_admin_with_two_realms(self):
+        # Testing that an admin can see tokens of two realms, if the policy allows him to see token of one realm
+        self.setUp_user_realm4_with_2_resolvers()
+        self.setUp_user_realm3()
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.TOKENLIST, realm=self.realm4,
+                   resolver=self.resolvername1)
+        user1 = User("cornelius", self.realm4, self.resolvername1)
+        user3 = User("cornelius", self.realm3)
+
+        # create some tokens
+        # token in realm4 and no user
+        spass_token1 = init_token(param={'serial': 'SPAS01', 'type': 'spass', 'realm': self.realm4})
+        # user in realm4, token in default realm
+        spass_token2 = init_token(param={'serial': 'SPAS02', 'type': 'spass'})
+        # user in realm3, token in default realm
+        spass_token3 = init_token(param={'serial': 'SPAS03', 'type': 'spass'})
+        # user in realm3, token in realm 4
+        spass_token4 = init_token(param={'serial': 'SPAS04', 'type': 'spass', 'realm': self.realm4})
+        assign_token(user=user1, serial="SPAS02")
+        assign_token(user=user3, serial="SPAS03")
+        assign_token(user=user3, serial="SPAS04")
+        with self.app.test_request_context('/token/',
+                                           method='GET',
+                                           data={"genkey": 1},
+                                           headers={
+                                               'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            data = json.loads(res.data.decode("utf-8"))
+            self.assertTrue(res.status_code == 200, res)
+            self.assertEqual(3, len(data['result']['value']['tokens']), data)
+            # The admin is allowed to see the tokens in realm4
+            self.assertIn("SPAS01", [t['serial'] for t in data['result']['value']['tokens']], data)
+            self.assertIn("SPAS02", [t['serial'] for t in data['result']['value']['tokens']], data)
+            self.assertIn("SPAS04", [t['serial'] for t in data['result']['value']['tokens']], data)
+            self.assertNotIn("SPAS03", [t['serial'] for t in data['result']['value']['tokens']], data)
 
     def test_04_policy_defs(self):
         node1 = NodeName(id="8e4272a9-9037-40df-8aa3-976e4a04b5a9", name="Node1")
