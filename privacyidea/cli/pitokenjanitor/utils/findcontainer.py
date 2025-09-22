@@ -110,7 +110,8 @@ def delete_containers(ctx, delete_token):
 @click.pass_context
 def set_info(ctx, key, value):
     """
-    Set information for the containers. The old information will be overwritten.
+    Set information for the containers. All old info entries will be deleted. Only internally used entries remain and
+    the new one is added.
 
     KEY is the key of the information to set.
     VALUE is the value of the information to set.
@@ -127,7 +128,8 @@ def set_info(ctx, key, value):
 @click.pass_context
 def update_info(ctx, key, value):
     """
-    Update information for the containers. The old information will be updated.
+    Update information for the containers. A non-existing key is added and the value for an existing key is
+    overwritten. All other entries remain unchanged.
 
     KEY is the key of the information to update.
     VALUE is the value of the information to update.

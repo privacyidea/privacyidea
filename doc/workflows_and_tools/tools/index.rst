@@ -743,8 +743,8 @@ Example::
 
 Findcontainer
 ~~~~~~~~~~~~~
-With the **findcontainer** command you can search for container in the database.
-You can use several options to filter the container.
+With the **findcontainer** command you can search for containers in the database.
+You can use several options to filter the containers.
 
 ``--serial``
     Find containers with a specific serial.
@@ -860,7 +860,8 @@ Example::
 
 set_info
 ********
-Set the info for all found containers. The old info value will be overwritten.
+Overwrites the info for all found containers. All old info entries will be deleted. Only internally used entries
+remain and the new one is added.
 
 ``key``
     The info key to set.
@@ -873,7 +874,8 @@ Example::
 
 update_info
 ***********
-Set the info for all found containers. The old info value will be updated.
+Updates the info for all found containers. A non-existing key is added and the value for an existing key is
+overwritten. All other entries remain unchanged.
 
 ``key``
     The info key to set.
