@@ -466,6 +466,48 @@ class API000TokenAdminRealmList(MyApiTestCase):
 
         delete_policy("pol-reso1")
 
+    def test_3a_admin_with_two_realms(self):
+        # Testing that an admin can see tokens of two realms, if the policy allows him to see token of one realm
+        self.setUp_user_realm4_with_2_resolvers()
+        self.setUp_user_realm3()
+        set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.TOKENLIST, realm=self.realm4,
+                   resolver=self.resolvername1)
+        user1 = User("cornelius", self.realm4, self.resolvername1)
+        user3 = User("cornelius", self.realm3)
+
+        # create some tokens
+        # token in realm4 and no user
+        spass_token1 = init_token(param={'serial': 'SPAS01', 'type': 'spass', 'realm': self.realm4})
+        # user in realm4, token in default realm
+        spass_token2 = init_token(param={'serial': 'SPAS02', 'type': 'spass'})
+        # user in realm3, token in default realm
+        spass_token3 = init_token(param={'serial': 'SPAS03', 'type': 'spass'})
+        # user in realm3, token in realm 4
+        spass_token4 = init_token(param={'serial': 'SPAS04', 'type': 'spass', 'realm': self.realm4})
+        assign_token(user=user1, serial="SPAS02")
+        assign_token(user=user3, serial="SPAS03")
+        assign_token(user=user3, serial="SPAS04")
+        with self.app.test_request_context('/token/',
+                                           method='GET',
+                                           data={"genkey": 1},
+                                           headers={
+                                               'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            data = json.loads(res.data.decode("utf-8"))
+            self.assertTrue(res.status_code == 200, res)
+            self.assertEqual(3, len(data['result']['value']['tokens']), data)
+            # The admin is allowed to see the tokens in realm4
+            self.assertIn("SPAS01", [t['serial'] for t in data['result']['value']['tokens']], data)
+            self.assertIn("SPAS02", [t['serial'] for t in data['result']['value']['tokens']], data)
+            self.assertIn("SPAS04", [t['serial'] for t in data['result']['value']['tokens']], data)
+            self.assertNotIn("SPAS03", [t['serial'] for t in data['result']['value']['tokens']], data)
+
+        remove_token("SPAS01")
+        remove_token("SPAS02")
+        remove_token("SPAS03")
+        remove_token("SPAS04")
+        delete_policy("policy")
+
     def test_04_init_token_with_container(self):
         self.setUp_user_realms()
         self.setUp_user_realm3()
