@@ -293,7 +293,7 @@ With **delete** the found tokens can be deleted.
 
 Example::
 
-    privacyidea-token-janitor find --serial OATH0004C934 --action delete
+    privacyidea-token-janitor find --serial OAUTH0004C934 --action delete
 
 The token with the serial ``OAUTH0004C934`` will be deleted.
 
@@ -308,7 +308,7 @@ YAML in theory can export all token types and all tokeninfo.
 
 Example::
 
-    privacyidea-token-janitor find --serial OATH0004C934 --action export > OAUTH0004C934.xml
+    privacyidea-token-janitor find --serial OAUTH0004C934 --action export > OAUTH0004C934.xml
 
 The token with the serial ``OAUTH0004C934`` will be exported and saved in an xml file.
 
@@ -834,6 +834,16 @@ You can use several options to filter the containers.
 
         pi-tokenjanitor findcontainer --chunksize 500
 
+``--orphaned``
+    Find containers that are orphaned. Orphaned containers are assigned to a user, but the user does not
+    exist in the user store anymore. This can happen, for example, if a user is deleted from an LDAP directory.
+
+    Example::
+
+        pi-tokenjanitor findcontainer --orphaned True
+
+    This returns all orphaned containers for later processing.
+
 list
 ****
 List all found containers.
@@ -858,20 +868,6 @@ Example::
 
     pi-tokenjanitor findcontainer --type 'smartphone' delete
 
-set_info
-********
-Overwrites the info for all found containers. All old info entries will be deleted. Only internally used entries
-remain and the new one is added.
-
-``key``
-    The info key to set.
-
-``value``
-    The info value to set.
-
-Example::
-    pi-tokenjanitor findcontainer --type 'smartphone' set_info 'os' 'android'
-
 update_info
 ***********
 Updates the info for all found containers. A non-existing key is added and the value for an existing key is
@@ -884,6 +880,7 @@ overwritten. All other entries remain unchanged.
     The info value to set.
 
 Example::
+
     pi-tokenjanitor findcontainer --type 'smartphone' update_info 'os' 'android'
 
 delete_info
@@ -894,6 +891,7 @@ Delete the info key from all found containers.
     The info key to delete.
 
 Example::
+
     pi-tokenjanitor findcontainer --type 'smartphone' delete_info 'os'
 
 set_description
@@ -904,6 +902,7 @@ Sets a description for all found containers.
     The description to set.
 
 Example::
+
     pi-tokenjanitor findcontainer --type 'smartphone' set_description --description 'example description'
 
 set_realm
@@ -918,4 +917,6 @@ Sets a realm for all found containers.
     If not set, the existing realms will be overwritten.
 
 Example::
+
     pi-tokenjanitor findcontainer --type 'smartphone' set_realm 'defrealm' --add
+

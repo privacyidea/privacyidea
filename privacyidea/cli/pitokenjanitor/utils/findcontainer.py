@@ -5,24 +5,46 @@ from flask.cli import AppGroup
 
 from privacyidea.lib.container import container_page_generator
 from privacyidea.lib.containerclass import TokenContainerClass
-from privacyidea.lib.containers.container_info import TokenContainerInfoData, PI_EXTERNAL
+from privacyidea.lib.containers.container_info import TokenContainerInfoData
+from privacyidea.lib.error import ResolverError
+from privacyidea.lib.utils import is_true
 
 
 def _get_container_list(serial: str = None, ctype: str = None, token_serial: str = None,
                         realm: str = None, template: str = None, description: str = None, assigned: bool = None,
                         resolver: str = None, info: str = None, last_auth_delta: str = None,
-                        last_sync_delta: str = None, pagesize: int = 1000) -> Generator[
+                        last_sync_delta: str = None, pagesize: int = 1000, orphaned: bool = None) -> Generator[
     list[TokenContainerClass], None, None]:
     """
     Helper function to get a list of containers based on the provided parameters.
     """
-    container = container_page_generator(serial=serial, ctype=ctype,
-                                         token_serial=token_serial, realm=realm,
-                                         template=template, description=description,
-                                         assigned=assigned, resolver=resolver,
-                                         info=info, last_auth_delta=last_auth_delta,
-                                         last_sync_delta=last_sync_delta, pagesize=pagesize)
-    return container
+    container_page = container_page_generator(serial=serial, ctype=ctype,
+                                              token_serial=token_serial, realm=realm,
+                                              template=template, description=description,
+                                              assigned=assigned, resolver=resolver,
+                                              info=info, last_auth_delta=last_auth_delta,
+                                              last_sync_delta=last_sync_delta, pagesize=pagesize)
+
+    for containers in container_page:
+        ret = []
+        for container in containers:
+            add = True
+            if orphaned is not None:
+                try:
+                    if is_true(orphaned):
+                        if container.get_users() is [] or all(not user.exist() for user in container.get_users()):
+                            add = False
+                    else:
+                        if container.get_users() is not [] and any(user.exist() for user in container.get_users()):
+                            add = False
+                except ResolverError:
+                    click.secho(
+                        f"ResolverError. Can't check for orphaned container. It will be ignord for container {container.serial}",
+                        fg="red", bold=True, nl=False)
+
+            if add:
+                ret.append(container)
+        yield ret
 
 
 @click.group('container', invoke_without_command=True, cls=AppGroup)
@@ -44,9 +66,11 @@ def _get_container_list(serial: str = None, ctype: str = None, token_serial: str
                    'The following units are supported: y (years), d (days), h (hours), m (minutes), s (seconds)"')
 @click.option('--chunksize', '-c', type=int, default=100,
               help='The number of containers to return per page.')
+@click.option('--orphaned', '-o', type=bool, default=None,
+              help='Whether the token is an orphaned container. Can be "True" or "False"')
 @click.pass_context
 def findcontainer(ctx, serial, ctype, token_serial, realm, template, description,
-                  assigned, resolver, info, last_auth_delta, last_sync_delta, chunksize):
+                  assigned, resolver, info, last_auth_delta, last_sync_delta, chunksize, orphaned):
     """
     Find container.
     """
@@ -57,7 +81,7 @@ def findcontainer(ctx, serial, ctype, token_serial, realm, template, description
                                                 template=template, description=description,
                                                 assigned=assigned, resolver=resolver,
                                                 info=info, last_auth_delta=last_auth_delta,
-                                                last_sync_delta=last_sync_delta, pagesize=chunksize)
+                                                last_sync_delta=last_sync_delta, pagesize=chunksize, orphaned=orphaned)
 
     if ctx.invoked_subcommand is None:
         ctx.invoke(list_containers)
@@ -104,24 +128,6 @@ def delete_containers(ctx, delete_token):
             click.echo(f"Deleted container {serial}")
 
 
-@findcontainer.command('set_info')
-@click.argument('key', type=str)
-@click.argument('value', type=str)
-@click.pass_context
-def set_info(ctx, key, value):
-    """
-    Set information for the containers. All old info entries will be deleted. Only internally used entries remain and
-    the new one is added.
-
-    KEY is the key of the information to set.
-    VALUE is the value of the information to set.
-    """
-    for clist in ctx.obj['containers']:
-        for container in clist:
-            container.set_container_info({key: value})
-            click.echo(f"Set info {key}={value} for container {container.serial}")
-
-
 @findcontainer.command('update_info')
 @click.argument('key', type=str)
 @click.argument('value', type=str)
@@ -136,7 +142,7 @@ def update_info(ctx, key, value):
     """
     for clist in ctx.obj['containers']:
         for container in clist:
-            container.update_container_info([TokenContainerInfoData(key=key, value=value, info_type=PI_EXTERNAL)])
+            container.update_container_info([TokenContainerInfoData(key=key, value=value)])
             click.echo(f"Updated info {key}={value} for container {container.serial}")
 
 

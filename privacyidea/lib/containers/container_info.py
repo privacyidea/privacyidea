@@ -20,7 +20,6 @@ from dataclasses import dataclass
 from enum import Enum
 
 PI_INTERNAL = "pi_internal"
-PI_EXTERNAL = "pi_external"
 INITIALLY_SYNCHRONIZED = "initially_synchronized"
 CHALLENGE_TTL = "challenge_ttl"
 REGISTRATION_TTL = "registration_ttl"
