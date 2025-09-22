@@ -474,6 +474,12 @@ class APIPolicyTestCase(MyApiTestCase):
             self.assertIn("SPAS04", [t['serial'] for t in data['result']['value']['tokens']], data)
             self.assertNotIn("SPAS03", [t['serial'] for t in data['result']['value']['tokens']], data)
 
+        remove_token("SPAS01")
+        remove_token("SPAS02")
+        remove_token("SPAS03")
+        remove_token("SPAS04")
+        delete_policy("policy")
+
     def test_04_policy_defs(self):
         node1 = NodeName(id="8e4272a9-9037-40df-8aa3-976e4a04b5a9", name="Node1")
         node2 = NodeName(id="d1d7fde6-330f-4c12-88f3-58a1752594bf", name="Node2")
