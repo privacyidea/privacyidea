@@ -41,14 +41,14 @@ $button-low-contrast-variant: linear-gradient(
   justify-content: start;
   border-radius: $border-radius;
   background: $background !important;
-  box-shadow: $box-shadow;
+  box-shadow: none;
   cursor: $cursor;
 }
 
 @mixin button-hover($background, $box-shadow) {
   &:hover {
     background: $background;
-    box-shadow: $box-shadow;
+    box-shadow: none;
     transition:
       background 400ms,
       box-shadow 400ms;
@@ -163,6 +163,17 @@ $button-low-contrast-variant: linear-gradient(
     $border-radius: $button-border-radius,
     $background: var(--background-blue-inset),
     $box-shadow: var(--box-shadow-blue-inset)
+  );
+}
+
+.profile-btn {
+  min-width: 240px;
+  @include button-base(
+    $height: $button-height,
+    $width: $button-width,
+    $border-radius: $button-border-radius,
+    $background: $profile-bg,
+    $box-shadow: var(--box-shadow-gray)
   );
 }
 
@@ -330,25 +341,6 @@ $button-low-contrast-variant: linear-gradient(
 .enroll-button-spacer {
   width: 40px;
   height: 40px;
-}
-
-.profile-btn {
-  height: var(--header-height);
-  justify-content: start;
-  border: none;
-  border-radius: 0;
-  background: $profile-bg;
-  cursor: pointer;
-  box-shadow: none;
-  color: white !important;
-
-  &.active,
-  &:hover {
-    box-shadow: none;
-    background: $profile-hover-bg;
-    color: white;
-    transform: translateX(2px);
-  }
 }
 
 .logout-btn {
