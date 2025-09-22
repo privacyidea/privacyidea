@@ -1,16 +1,17 @@
 import logging
+
 from testfixtures import LogCapture
 
 from privacyidea.lib.container import create_container_template, get_template_obj
 from privacyidea.lib.error import ParameterError
-from privacyidea.lib.policies.conditions import ConditionSection, ConditionHandleMissingData
-from privacyidea.lib.utils.compare import PrimaryComparators
-from .base import MyApiTestCase
-from privacyidea.lib.policy import (set_policy, SCOPE, delete_policy, rename_policy)
 from privacyidea.lib.policies.actions import PolicyAction
+from privacyidea.lib.policies.conditions import ConditionSection, ConditionHandleMissingData
+from privacyidea.lib.policy import (set_policy, SCOPE, delete_policy, rename_policy)
 from privacyidea.lib.token import init_token, remove_token
 from privacyidea.lib.user import User
+from privacyidea.lib.utils.compare import PrimaryComparators
 from privacyidea.models import db, NodeName
+from .base import MyApiTestCase
 
 
 class APIPolicyTestCase(MyApiTestCase):

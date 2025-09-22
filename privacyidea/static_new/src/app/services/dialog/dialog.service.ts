@@ -1,3 +1,21 @@
+/**
+ * (c) NetKnights GmbH 2025,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ **/
 import { computed, inject, Injectable } from "@angular/core";
 import { MatDialog, MatDialogConfig, MatDialogRef } from "@angular/material/dialog";
 
@@ -12,6 +30,7 @@ import {
 } from "../../components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
 import { EnrollmentResponse } from "../../mappers/token-api-payload/_token-api-payload.mapper";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
+import { TokenEnrollmentLastStepDialogSelfServiceComponent } from "../../components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.self-service.component";
 
 class MatDialogConfigRequired<D = any> extends MatDialogConfig<D> {
   override data!: D;
@@ -56,10 +75,7 @@ export class DialogService implements DialogServiceInterface {
 
   readonly isSelfServing = computed(() => this.authService.role() === "user");
 
-  private _tokenEnrollmentFirstStepRef: MatDialogRef<
-    TokenEnrollmentFirstStepDialogComponent,
-    any
-  > | null = null;
+  private _tokenEnrollmentFirstStepRef: MatDialogRef<TokenEnrollmentFirstStepDialogComponent, any> | null = null;
 
   get tokenEnrollmentFirstStepRef() {
     return this._tokenEnrollmentFirstStepRef;
@@ -69,10 +85,7 @@ export class DialogService implements DialogServiceInterface {
     return this._tokenEnrollmentFirstStepRef !== null;
   }
 
-  private _tokenEnrollmentLastStepRef: MatDialogRef<
-    TokenEnrollmentLastStepDialogComponent,
-    any
-  > | null = null;
+  private _tokenEnrollmentLastStepRef: MatDialogRef<TokenEnrollmentLastStepDialogComponent, any> | null = null;
 
   get tokenEnrollmentLastStepRef() {
     return this._tokenEnrollmentLastStepRef;
@@ -88,10 +101,7 @@ export class DialogService implements DialogServiceInterface {
     if (this._tokenEnrollmentFirstStepRef) {
       this._tokenEnrollmentFirstStepRef.close();
     }
-    this._tokenEnrollmentFirstStepRef = this.dialog.open(
-      TokenEnrollmentFirstStepDialogComponent,
-      config
-    );
+    this._tokenEnrollmentFirstStepRef = this.dialog.open(TokenEnrollmentFirstStepDialogComponent, config);
 
     this._tokenEnrollmentFirstStepRef.afterClosed().subscribe(() => {
       this._tokenEnrollmentFirstStepRef = null;
@@ -111,17 +121,15 @@ export class DialogService implements DialogServiceInterface {
       this._tokenEnrollmentLastStepRef.close();
     }
 
-    const [
-      { TokenEnrollmentLastStepDialogComponent },
-      { TokenEnrollmentLastStepDialogSelfServiceComponent }
-    ] = await Promise.all([
-      import(
-        "../../components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component"
-        ),
-      import(
-        "../../components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.self-service.component"
-        )
-    ]);
+    const [{ TokenEnrollmentLastStepDialogComponent }, { TokenEnrollmentLastStepDialogSelfServiceComponent }] =
+      await Promise.all([
+        import(
+          "../../components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component"
+          ),
+        import(
+          "../../components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.self-service.component"
+          )
+      ]);
 
     const component = this.isSelfServing()
       ? TokenEnrollmentLastStepDialogSelfServiceComponent
@@ -142,11 +150,10 @@ export class DialogService implements DialogServiceInterface {
 
   confirm(config: MatDialogConfigRequired<ConfirmationDialogData>): Promise<boolean> {
     return new Promise((resolve) => {
-      const dialogRef = this.dialog.open<
+      const dialogRef = this.dialog.open<ConfirmationDialogComponent, ConfirmationDialogData, boolean>(
         ConfirmationDialogComponent,
-        ConfirmationDialogData,
-        boolean
-      >(ConfirmationDialogComponent, config);
+        config
+      );
 
       dialogRef.afterClosed().subscribe((result) => resolve(result ?? false));
     });

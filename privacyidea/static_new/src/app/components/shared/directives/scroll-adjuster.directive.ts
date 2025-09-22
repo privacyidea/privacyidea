@@ -1,3 +1,21 @@
+/**
+ * (c) NetKnights GmbH 2025,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ **/
 // src/app/shared/directives/scroll-adjuster.directive.ts
 import { AfterViewInit, Directive, ElementRef, Input, NgZone, OnDestroy } from "@angular/core";
 import { Subject } from "rxjs"; // fromEvent and debounceTime are not directly used in the directive, but for context if you add back window resize listener.
@@ -16,21 +34,14 @@ export class ScrollAdjusterDirective implements AfterViewInit, OnDestroy {
   constructor(
     private el: ElementRef<HTMLElement>,
     private ngZone: NgZone
-  ) {
-  }
+  ) {}
 
   ngAfterViewInit(): void {
     const container = this.el.nativeElement;
 
     const computedStyle = getComputedStyle(container);
-    if (
-      computedStyle.overflowY !== "scroll" &&
-      computedStyle.overflowY !== "auto"
-    ) {
-      console.warn(
-        "ScrollAdjusterDirective: Element must have overflow-y: scroll or auto.",
-        container
-      );
+    if (computedStyle.overflowY !== "scroll" && computedStyle.overflowY !== "auto") {
+      console.warn("ScrollAdjusterDirective: Element must have overflow-y: scroll or auto.", container);
     }
 
     this.resizeObserver = new ResizeObserver(() => {

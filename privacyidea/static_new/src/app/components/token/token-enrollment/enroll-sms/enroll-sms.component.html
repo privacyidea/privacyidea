@@ -1,34 +1,36 @@
 <div class="flex-column">
-  <div class="token-type-paragraph">
-    <p>{{ text }}</p>
-  </div>
   <h4 class="enroll-h4">Token Configuration</h4>
   @if (!defaultSMSGatewayIsSet()) {
-    <span class="inline-hint">For SMS tokens to work properly you need to set the
-      <a href="#">SMS Token Config</a>!</span><!-- TODO: Link should be dynamic or removed if not applicable -->
+    <span
+      i18n
+      class="inline-hint">
+      For SMS tokens to work properly you need to set the <a href="#">SMS Token Config</a>!
+    </span>
   }
-  <mat-checkbox [formControl]="readNumberDynamicallyControl">
+  <mat-checkbox
+    [formControl]="readNumberDynamicallyControl"
+    i18n>
     Read number dynamically from user source on each request.
   </mat-checkbox>
   <div class="flex-row gap-1">
-    @if (!readNumberDynamicallyControl.value) {
-      <mat-form-field class="width-33 input-height">
-        <mat-label>Phone number</mat-label>
-        <input
-          [formControl]="phoneNumberControl"
-          matInput
-          required/>
-        <mat-error>Phone number is <strong>required</strong></mat-error>
-      </mat-form-field>
-    } @else {
-      <span class="width-33"></span>
-    }
+    <mat-form-field class="width-33 input-height">
+      <mat-label i18n>Phone number</mat-label>
+      <input
+        [formControl]="phoneNumberControl"
+        matInput
+        required />
+      <mat-error i18n>Phone number is <strong>required</strong></mat-error>
+    </mat-form-field>
+
     <mat-form-field class="width-66 input-height">
-      <mat-label> A token specific SMS gateway</mat-label>
-      <mat-hint>If this token should not use the system wide SMS gateway but an individual SMS gateway, you can select
-                the gateway here.
+      <mat-label i18n> A token specific SMS gateway</mat-label>
+      <mat-hint i18n>
+        If this token should not use the system wide SMS gateway but an individual SMS gateway, you can select the
+        gateway here.
       </mat-hint>
-      <mat-select [formControl]="smsGatewayControl">
+      <mat-select
+        [formControl]="smsGatewayControl"
+        [value]="smsGatewayControl.value">
         @for (option of smsGatewayOptions(); track option) {
           <mat-option [value]="option">{{ option }}</mat-option>
         }

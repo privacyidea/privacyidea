@@ -1,3 +1,21 @@
+/**
+ * (c) NetKnights GmbH 2025,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { provideHttpClient } from "@angular/common/http";
@@ -12,6 +30,7 @@ import {
   MockAuthService,
   MockContainerService,
   MockContentService,
+  MockLocalService,
   MockNotificationService,
   MockOverflowService,
   MockTableUtilsService,
@@ -53,7 +72,6 @@ describe("ContainerDetailsTokenTableComponent", () => {
   const tokenServiceMock = new MockTokenService();
   const overflowServiceMock = new MockOverflowService();
   const tableUtilsMock = new MockTableUtilsService();
-  const authServiceMock = new MockAuthService();
   const notificationServiceMock = new MockNotificationService();
 
   beforeEach(async () => {
@@ -63,7 +81,7 @@ describe("ContainerDetailsTokenTableComponent", () => {
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
-        { provide: AuthService, useValue: authServiceMock },
+        { provide: AuthService, useClass: MockAuthService },
         { provide: ContainerService, useValue: containerServiceMock },
         { provide: TokenService, useValue: tokenServiceMock },
         { provide: TableUtilsService, useValue: tableUtilsMock },
@@ -72,7 +90,9 @@ describe("ContainerDetailsTokenTableComponent", () => {
         { provide: Router, useValue: routerMock },
         { provide: MatDialog, useValue: matDialogMock },
         { provide: UserService, useClass: MockUserService },
-        { provide: ContentService, useClass: MockContentService }
+        { provide: ContentService, useClass: MockContentService },
+        MockLocalService,
+        MockNotificationService
       ]
     }).compileComponents();
 
@@ -145,7 +165,7 @@ describe("ContainerDetailsTokenTableComponent", () => {
         ConfirmationDialogComponent,
         {
           data: {
-            serial_list: ["Mock serial", "Another serial"],
+            serialList: ["Mock serial", "Another serial"],
             title: "Delete All Tokens",
             type: "token",
             action: "delete",

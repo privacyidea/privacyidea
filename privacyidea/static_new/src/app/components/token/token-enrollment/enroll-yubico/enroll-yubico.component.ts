@@ -1,3 +1,21 @@
+/**
+ * (c) NetKnights GmbH 2025,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ **/
 import { Component, computed, EventEmitter, inject, OnInit, Output } from "@angular/core";
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { ErrorStateMatcher } from "@angular/material/core";
@@ -21,8 +39,7 @@ export interface YubicoEnrollmentOptions extends TokenEnrollmentData {
 
 export class YubicoErrorStateMatcher implements ErrorStateMatcher {
   isErrorState(control: FormControl | null): boolean {
-    const invalidLength =
-      control && control.value ? control.value.length !== 12 : true;
+    const invalidLength = control && control.value ? control.value.length !== 12 : true;
     return !!(control && invalidLength && (control.dirty || control.touched));
   }
 }
@@ -30,31 +47,18 @@ export class YubicoErrorStateMatcher implements ErrorStateMatcher {
 @Component({
   selector: "app-enroll-yubico",
   standalone: true,
-  imports: [
-    MatFormField,
-    MatInput,
-    MatLabel,
-    ReactiveFormsModule,
-    FormsModule,
-    MatError
-  ],
+  imports: [MatFormField, MatInput, MatLabel, ReactiveFormsModule, FormsModule, MatError],
   templateUrl: "./enroll-yubico.component.html",
   styleUrl: "./enroll-yubico.component.scss"
 })
 export class EnrollYubicoComponent implements OnInit {
-  protected readonly enrollmentMapper: YubicoApiPayloadMapper = inject(
-    YubicoApiPayloadMapper
-  );
-  protected readonly systemService: SystemServiceInterface =
-    inject(SystemService);
+  protected readonly enrollmentMapper: YubicoApiPayloadMapper = inject(YubicoApiPayloadMapper);
+  protected readonly systemService: SystemServiceInterface = inject(SystemService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
 
   yubicoErrorStatematcher = new YubicoErrorStateMatcher();
-  text = this.tokenService
-    .tokenTypeOptions()
-    .find((type) => type.key === "yubico")?.text;
 
-  @Output() aditionalFormFieldsChange = new EventEmitter<{
+  @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
   @Output() clickEnrollChange = new EventEmitter<
@@ -73,23 +77,18 @@ export class EnrollYubicoComponent implements OnInit {
 
   yubicoIsConfigured = computed(() => {
     const cfg = this.systemService.systemConfigResource.value()?.result?.value;
-    return !!(
-      cfg?.["yubico.id"] &&
-      cfg?.["yubico.url"] &&
-      cfg?.["yubico.secret"]
-    );
+    return !!(cfg?.["yubico.id"] && cfg?.["yubico.url"] && cfg?.["yubico.secret"]);
   });
 
   ngOnInit(): void {
-    this.aditionalFormFieldsChange.emit({
+    this.additionalFormFieldsChange.emit({
       yubikeyIdentifier: this.yubikeyIdentifierControl
     });
     this.clickEnrollChange.emit(this.onClickEnroll);
   }
 
-  onClickEnroll = (
-    basicOptions: TokenEnrollmentData
-  ): Observable<EnrollmentResponse | null> => {
+  onClickEnroll = (basicOptions: TokenEnrollmentData): Observable<EnrollmentResponse | null> => {
+    this.yubicoForm.updateValueAndValidity();
     if (this.yubicoForm.invalid) {
       this.yubicoForm.markAllAsTouched();
       return of(null);

@@ -1,5 +1,25 @@
-import { Injectable, signal, WritableSignal } from "@angular/core";
+/**
+ * (c) NetKnights GmbH 2025,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ **/
+import { inject, Injectable, signal, WritableSignal } from "@angular/core";
 import { MatTableDataSource } from "@angular/material/table";
+import { FilterValue } from "../../core/models/filter_value";
+import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 
 export interface FilterPair {
   key: string;
@@ -9,54 +29,20 @@ export interface FilterPair {
 export interface TableUtilsServiceInterface {
   pageSizeOptions: WritableSignal<number[]>;
 
-  emptyDataSource<T>(
-    pageSize: number,
-    columnsKeyMap: { key: string; label: string }[]
-  ): MatTableDataSource<T>;
-
-  parseFilterString(
-    filterValue: string,
-    apiFilter: string[]
-  ): {
-    filterPairs: FilterPair[];
-    remainingFilterText: string;
-  };
-
-  toggleKeywordInFilter(currentValue: string, keyword: string): string;
-
-  toggleBooleanInFilter(args: {
-    keyword: string;
-    currentValue: string;
-  }): string;
-
-  recordsFromText(textValue: string): Record<string, string>;
-
+  emptyDataSource<T>(pageSize: number, columnsKeyMap: { key: string; label: string }[]): MatTableDataSource<T>;
+  toggleKeywordInFilter(args: { keyword: string; currentValue: FilterValue }): FilterValue;
+  toggleBooleanInFilter(args: { keyword: string; currentValue: FilterValue }): FilterValue;
   isLink(columnKey: string): boolean;
-
   getClassForColumn(columnKey: string, element: any): string;
-
   getTooltipForColumn(columnKey: string, element: any): string;
-
   getDisplayText(columnKey: string, element: any): string;
-
   getSpanClassForKey(args: { key: string; value?: any; maxfail?: any }): string;
-
   getDivClassForKey(key: string): string;
-
   getClassForColumnKey(columnKey: string): string;
-
   getChildClassForColumnKey(columnKey: string): string;
-
-  getDisplayTextForKeyAndRevoked(
-    key: string,
-    value: any,
-    revoked: boolean
-  ): string;
-
+  getDisplayTextForKeyAndRevoked(key: string, value: any, revoked: boolean): string;
   getTdClassForKey(key: string): string[];
-
   getSpanClassForState(state: string, clickable: boolean): string;
-
   getDisplayTextForState(state: string): string;
 }
 
@@ -64,12 +50,10 @@ export interface TableUtilsServiceInterface {
   providedIn: "root"
 })
 export class TableUtilsService implements TableUtilsServiceInterface {
+  private readonly authService: AuthServiceInterface = inject(AuthService);
   pageSizeOptions = signal([5, 10, 25, 50]);
 
-  emptyDataSource<T>(
-    pageSize: number,
-    columnsKeyMap: { key: string; label: string }[]
-  ): MatTableDataSource<T> {
+  emptyDataSource<T>(pageSize: number, columnsKeyMap: { key: string; label: string }[]): MatTableDataSource<T> {
     return new MatTableDataSource(
       Array.from({ length: pageSize }, () => {
         const emptyRow: any = {};
@@ -81,161 +65,41 @@ export class TableUtilsService implements TableUtilsServiceInterface {
     );
   }
 
-  parseFilterString(
-    filterValue: string,
-    apiFilter: string[]
-  ): {
-    filterPairs: FilterPair[];
-    remainingFilterText: string;
-  } {
-    const lowerFilterValue = filterValue.trim().toLowerCase();
-    const filterLabels = apiFilter.flatMap((column) => {
-      if (column === "infokey & infovalue") {
-        return ["infokey:", "infovalue:"];
-      }
-      if (column === "machineid & resolver") {
-        return ["machineid:", "resolver:"];
-      }
-      return column.toLowerCase() + ":";
-    });
-    const filterValueSplit = lowerFilterValue.split(" ");
-    const filterPairs: FilterPair[] = [];
+  toggleKeywordInFilter(args: { keyword: string; currentValue: FilterValue }): FilterValue {
+    const { keyword, currentValue } = args;
 
-    let currentLabel = "";
-    let currentValue = "";
-    let remainingFilterText = "";
-
-    const findMatchingLabel = (parts: string[]): string | null => {
-      for (let i = 1; i <= parts.length; i++) {
-        const possibleLabel = parts.slice(0, i).join(" ");
-        if (filterLabels.includes(possibleLabel)) {
-          return possibleLabel;
-        }
-      }
-      return null;
-    };
-
-    let i = 0;
-    while (i < filterValueSplit.length) {
-      const parts = filterValueSplit.slice(i);
-      let matchingLabel = findMatchingLabel(parts);
-
-      if (!matchingLabel) {
-        const token = parts[0];
-        for (const label of filterLabels) {
-          if (token.startsWith(label)) {
-            matchingLabel = label;
-            if (currentLabel && currentValue) {
-              filterPairs.push({
-                key: currentLabel.slice(0, -1),
-                value: currentValue.trim()
-              });
-            }
-            currentLabel = matchingLabel;
-            currentValue = token.slice(label.length) + " ";
-            i += 1;
-            break;
-          }
-        }
-        if (matchingLabel === currentLabel) {
-          continue;
-        }
-      }
-
-      if (matchingLabel) {
-        if (currentLabel && currentValue) {
-          filterPairs.push({
-            key: currentLabel.slice(0, -1),
-            value: currentValue.trim()
-          });
-        }
-        currentLabel = matchingLabel;
-        currentValue = "";
-        i += matchingLabel.split(" ").length;
-      } else if (currentLabel) {
-        currentValue += filterValueSplit[i] + " ";
-        i++;
-      } else {
-        remainingFilterText += filterValueSplit[i] + " ";
-        i++;
-      }
-    }
-    if (currentLabel) {
-      filterPairs.push({
-        key: currentLabel.slice(0, -1),
-        value: currentValue.trim()
-      });
-    }
-
-    return { filterPairs, remainingFilterText: remainingFilterText.trim() };
-  }
-
-  toggleKeywordInFilter(currentValue: string, keyword: string): string {
     if (keyword.includes("&")) {
       const keywords = keyword.split("&").map((k) => k.trim());
       let newValue = currentValue;
       for (const key of keywords) {
-        newValue = this.toggleKeywordInFilter(newValue, key);
+        newValue = this.toggleKeywordInFilter({ keyword: key, currentValue: newValue });
       }
       return newValue;
     }
-    const keywordPattern = new RegExp(
-      `\\b${keyword}:.*?(?=(\\s+\\w+:|$))`,
-      "i"
-    );
-    if (keywordPattern.test(currentValue)) {
-      return currentValue
-        .replace(keywordPattern, " ")
-        .trimStart()
-        .replace(/\s{2,}/g, " ");
+    if (currentValue.hasKey(keyword)) {
+      return currentValue.removeKey(keyword);
     } else {
-      if (currentValue.length > 0) {
-        return (currentValue + ` ${keyword}: `).replace(/\s{2,}/g, " ");
-      } else {
-        return `${keyword}: `;
-      }
+      return currentValue.addKey(keyword);
     }
   }
 
-  public toggleBooleanInFilter(args: {
-    keyword: string;
-    currentValue: string;
-  }): string {
+  public toggleBooleanInFilter(args: { keyword: string; currentValue: FilterValue }): FilterValue {
     const { keyword, currentValue } = args;
-    const regex = new RegExp(
-      `\\b${keyword}:\\s?([\\w\\d]*)(?![\\w\\d]*:)`,
-      "i"
-    );
-    const match = currentValue.match(regex);
+    const booleanValue = currentValue.getValueOfKey(keyword)?.toLowerCase();
 
-    if (!match) {
-      return (currentValue.trim() + ` ${keyword}: true`).trim();
+    if (!booleanValue) {
+      return currentValue.addEntry(keyword, "true");
     } else {
-      const existingValue = match[1].toLowerCase();
+      const existingValue = booleanValue;
 
       if (existingValue === "true") {
-        return currentValue.replace(regex, keyword + ": false");
+        return currentValue.addEntry(keyword, "false");
       } else if (existingValue === "false") {
-        const removed = currentValue.replace(regex, "").trim();
-        return removed.replace(/\s{2,}/g, " ");
+        return currentValue.removeKey(keyword);
       } else {
-        return currentValue.replace(regex, keyword + ": true");
+        return currentValue.addEntry(keyword, "true");
       }
     }
-  }
-
-  public recordsFromText(textValue: string): Record<string, string> {
-    const mapValue = {} as Record<string, string>;
-    const regex = /(\w+):\s*([^:]*?)(?=\s+\w+:|$)/g;
-    let match;
-    while ((match = regex.exec(textValue)) !== null) {
-      const key = match[1].trim();
-      const value = match[2].trim();
-      if (key) {
-        mapValue[key] = value;
-      }
-    }
-    return mapValue;
   }
 
   isLink(columnKey: string): boolean {
@@ -253,17 +117,25 @@ export class TableUtilsService implements TableUtilsServiceInterface {
 
     switch (columnKey) {
       case "active":
-        if (element["active"]) return "highlight-true-clickable";
-        if (element["active"] === false) return "highlight-false-clickable";
+        if (element["active"]) {
+          if (this.authService.actionAllowed("disable")) return "highlight-true-clickable";
+          else return "highlight-true";
+        }
+        if (element["active"] === false) {
+          if (this.authService.actionAllowed("enable")) return "highlight-false-clickable";
+          else return "highlight-false";
+        }
         return "";
 
       case "failcount":
         if (element["failcount"] === "") return "";
         if (element["failcount"] <= 0) return "highlight-true";
         if (element["failcount"] < element["maxfail"]) {
-          return "highlight-warning-clickable";
+          if (this.authService.actionAllowed("reset")) return "highlight-warning-clickable";
+          else return "highlight-warning";
         }
-        return "highlight-false-clickable";
+        if (this.authService.actionAllowed("reset")) return "highlight-false-clickable";
+        else return "highlight-false";
     }
     return "";
   }
@@ -296,11 +168,7 @@ export class TableUtilsService implements TableUtilsServiceInterface {
     return element[columnKey];
   }
 
-  getSpanClassForKey(args: {
-    key: string;
-    value?: any;
-    maxfail?: any;
-  }): string {
+  getSpanClassForKey(args: { key: string; value?: any; maxfail?: any }): string {
     const { key, value, maxfail } = args;
     if (key === "success") {
       if (value === "" || value === null || value === undefined) {
@@ -335,11 +203,7 @@ export class TableUtilsService implements TableUtilsServiceInterface {
   getDivClassForKey(key: string) {
     if (key === "description") {
       return "details-scrollable-container";
-    } else if (
-      key === "maxfail" ||
-      key === "count_window" ||
-      key === "sync_window"
-    ) {
+    } else if (key === "maxfail" || key === "count_window" || key === "sync_window") {
       return "details-value";
     }
 
@@ -362,19 +226,13 @@ export class TableUtilsService implements TableUtilsServiceInterface {
   }
 
   getChildClassForColumnKey(columnKey: string): string {
-    if (
-      this.getClassForColumnKey(columnKey).includes("table-scroll-container")
-    ) {
+    if (this.getClassForColumnKey(columnKey).includes("table-scroll-container")) {
       return "scroll-item";
     }
     return "";
   }
 
-  getDisplayTextForKeyAndRevoked(
-    key: string,
-    value: any,
-    revoked: boolean
-  ): string {
+  getDisplayTextForKeyAndRevoked(key: string, value: any, revoked: boolean): string {
     if (value === "") {
       return "";
     }

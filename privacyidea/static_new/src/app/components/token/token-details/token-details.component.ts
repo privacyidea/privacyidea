@@ -1,30 +1,57 @@
-import { NgClass } from "@angular/common";
-import { Component, computed, effect, inject, linkedSignal, signal, WritableSignal } from "@angular/core";
-import { FormsModule, ReactiveFormsModule } from "@angular/forms";
-import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
-import { MatIconButton } from "@angular/material/button";
-import { MatDialog } from "@angular/material/dialog";
-import { MatFormFieldModule } from "@angular/material/form-field";
-import { MatIcon } from "@angular/material/icon";
-import { MatInput } from "@angular/material/input";
-import { MatListItem } from "@angular/material/list";
-import { MatSelectModule } from "@angular/material/select";
-import { MatCell, MatColumnDef, MatRow, MatTable, MatTableModule } from "@angular/material/table";
+/**
+ * (c) NetKnights GmbH 2025,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ **/
 import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
+import { Component, computed, effect, inject, linkedSignal, signal, WritableSignal } from "@angular/core";
 import { ContainerService, ContainerServiceInterface } from "../../../services/container/container.service";
 import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
+import { EditableElement, EditButtonsComponent } from "../../shared/edit-buttons/edit-buttons.component";
+import { FormsModule, ReactiveFormsModule } from "@angular/forms";
+import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
+import { MatCell, MatColumnDef, MatRow, MatTable, MatTableModule } from "@angular/material/table";
 import { OverflowService, OverflowServiceInterface } from "../../../services/overflow/overflow.service";
 import { RealmService, RealmServiceInterface } from "../../../services/realm/realm.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "../../../services/table-utils/table-utils.service";
 import { TokenDetails, TokenService, TokenServiceInterface } from "../../../services/token/token.service";
+
+import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
 import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
-import { EditableElement, EditButtonsComponent } from "../../shared/edit-buttons/edit-buttons.component";
+import { MatDialog } from "@angular/material/dialog";
+import { MatFormFieldModule } from "@angular/material/form-field";
+import { MatIcon } from "@angular/material/icon";
+import { MatIconButton } from "@angular/material/button";
+import { MatInput } from "@angular/material/input";
+import { MatListItem } from "@angular/material/list";
+import { MatSelectModule } from "@angular/material/select";
+import { NgClass } from "@angular/common";
+import { ROUTE_PATHS } from "../../../route_paths";
+import { Router } from "@angular/router";
+import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { TokenDetailsActionsComponent } from "./token-details-actions/token-details-actions.component";
 import { TokenDetailsInfoComponent } from "./token-details-info/token-details-info.component";
 import { TokenDetailsUserComponent } from "./token-details-user/token-details-user.component";
-import { TokenSshMachineAssignDialogComponent } from "./token-ssh-machine-assign-dialog/token-ssh-machine-assign-dialog";
-import { Router } from "@angular/router";
-import { ROUTE_PATHS } from "../../../app.routes";
+import {
+  SshMachineAssignDialogData,
+  TokenSshMachineAssignDialogComponent
+} from "./token-machine-attach-dialog/token-ssh-machine-attach-dialog/token-ssh-machine-attach-dialog";
+import { TokenDetailsMachineComponent } from "./token-details-machine/token-details-machine.component";
+import { PolicyAction } from "../../../services/auth/policy-actions";
+import { MachineService, MachineServiceInterface, TokenApplications } from "../../../services/machine/machine.service";
 
 export const tokenDetailsKeyMap = [
   { key: "tokentype", label: "Type" },
@@ -42,6 +69,16 @@ export const tokenDetailsKeyMap = [
   { key: "container_serial", label: "Container Serial" }
 ];
 
+export const tokenDetailsRightsMap = [
+  { key: "maxfail", right: "set" },
+  { key: "count_window", right: "set" },
+  { key: "sync_window", right: "set" },
+  { key: "description", right: "setdescription" },
+  { key: "realms", right: "tokenrealms" },
+  { key: "tokengroup", right: "tokengroups" },
+  { key: "container_serial", right: "container_add_token" }
+];
+
 export const userDetailsKeyMap = [
   { key: "user_realm", label: "User Realm" },
   { key: "username", label: "User" },
@@ -52,8 +89,6 @@ export const userDetailsKeyMap = [
 export const infoDetailsKeyMap = [{ key: "info", label: "Information" }];
 
 @Component({
-  selector: "app-token-details",
-  standalone: true,
   imports: [
     MatCell,
     MatTableModule,
@@ -75,7 +110,13 @@ export const infoDetailsKeyMap = [{ key: "info", label: "Information" }];
     TokenDetailsInfoComponent,
     TokenDetailsActionsComponent,
     EditButtonsComponent,
-    CopyButtonComponent
+    CopyButtonComponent,
+    ScrollToTopDirective,
+    ClearableInputComponent,
+    CopyButtonComponent,
+    ClearableInputComponent,
+    ScrollToTopDirective,
+    TokenDetailsMachineComponent
   ],
   templateUrl: "./token-details.component.html",
   styleUrls: ["./token-details.component.scss"]
@@ -83,16 +124,13 @@ export const infoDetailsKeyMap = [{ key: "info", label: "Information" }];
 export class TokenDetailsComponent {
   protected readonly matDialog: MatDialog = inject(MatDialog);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
-  protected readonly containerService: ContainerServiceInterface =
-    inject(ContainerService);
+  protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
   protected readonly realmService: RealmServiceInterface = inject(RealmService);
-  protected readonly overflowService: OverflowServiceInterface =
-    inject(OverflowService);
-  protected readonly tableUtilsService: TableUtilsServiceInterface =
-    inject(TableUtilsService);
-  protected readonly contentService: ContentServiceInterface =
-    inject(ContentService);
-  private readonly authService: AuthServiceInterface = inject(AuthService);
+  protected readonly overflowService: OverflowServiceInterface = inject(OverflowService);
+  protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
+  protected readonly contentService: ContentServiceInterface = inject(ContentService);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
+  protected readonly machineService: MachineServiceInterface = inject(MachineService);
   private router = inject(Router);
   tokenIsActive = this.tokenService.tokenIsActive;
   tokenIsRevoked = this.tokenService.tokenIsRevoked;
@@ -104,6 +142,13 @@ export class TokenDetailsComponent {
   setPinValue = signal("");
   repeatPinValue = signal("");
 
+  isAttachedToMachine = computed<boolean>(() => {
+    const tokenApplications = this.machineService.tokenApplications();
+    if (!tokenApplications) return false;
+    if (tokenApplications.length === 0) return false;
+    return true;
+  });
+
   tokenDetailResource = this.tokenService.tokenDetailResource;
   tokenDetails: WritableSignal<TokenDetails> = linkedSignal({
     source: this.tokenDetailResource.value,
@@ -111,29 +156,29 @@ export class TokenDetailsComponent {
       return res && res.result?.value?.tokens[0]
         ? (res.result?.value.tokens[0] as TokenDetails)
         : {
-          active: false,
-          container_serial: "",
-          count: 0,
-          count_window: 0,
-          description: "",
-          failcount: 0,
-          id: 0,
-          info: {},
-          locked: false,
-          maxfail: 0,
-          otplen: 0,
-          realms: [],
-          resolver: "",
-          revoked: false,
-          rollout_state: "",
-          serial: "",
-          sync_window: 0,
-          tokengroup: [],
-          tokentype: "hotp",
-          user_id: "",
-          user_realm: "",
-          username: ""
-        };
+            active: false,
+            container_serial: "",
+            count: 0,
+            count_window: 0,
+            description: "",
+            failcount: 0,
+            id: 0,
+            info: {},
+            locked: false,
+            maxfail: 0,
+            otplen: 0,
+            realms: [],
+            resolver: "",
+            revoked: false,
+            rollout_state: "",
+            serial: "",
+            sync_window: 0,
+            tokengroup: [],
+            tokentype: "hotp",
+            user_id: "",
+            user_realm: "",
+            username: ""
+          };
     }
   });
   tokenDetailData = linkedSignal({
@@ -216,13 +261,9 @@ export class TokenDetailsComponent {
       this.tokenIsActive.set(this.tokenDetails().active);
       this.tokenIsRevoked.set(this.tokenDetails().revoked);
       this.maxfail = this.tokenDetails().maxfail;
-      this.containerService.selectedContainer.set(
-        this.tokenDetails().container_serial
-      );
+      this.containerService.selectedContainer.set(this.tokenDetails().container_serial);
       this.realmService.selectedRealms.set(this.tokenDetails().realms);
-      this.userRealm =
-        this.userData().find((detail) => detail.keyMap.key === "user_realm")
-          ?.value || "";
+      this.userRealm = this.userData().find((detail) => detail.keyMap.key === "user_realm")?.value || "";
     });
   }
 
@@ -242,9 +283,7 @@ export class TokenDetailsComponent {
   saveTokenEdit(element: EditableElement<string>) {
     switch (element.keyMap.key) {
       case "container_serial":
-        this.containerService.selectedContainer.set(
-          this.containerService.selectedContainer().trim() ?? null
-        );
+        this.containerService.selectedContainer.set(this.containerService.selectedContainer()?.trim() ?? null);
         this.saveContainer();
         break;
       case "tokengroup":
@@ -269,9 +308,7 @@ export class TokenDetailsComponent {
               const tokengroups = response.result?.value || {};
               this.tokengroupOptions.set(Object.keys(tokengroups));
               this.selectedTokengroup.set(
-                this.tokenDetailData().find(
-                  (detail) => detail.keyMap.key === "tokengroup"
-                )?.value
+                this.tokenDetailData().find((detail) => detail.keyMap.key === "tokengroup")?.value
               );
             }
           });
@@ -282,57 +319,38 @@ export class TokenDetailsComponent {
   }
 
   saveTokenDetail(key: string, value: string): void {
-    this.tokenService
-      .saveTokenDetail(this.tokenSerial(), key, value)
-      .subscribe({
-        next: () => {
-          this.tokenDetailResource.reload();
-        }
-      });
+    this.tokenService.saveTokenDetail(this.tokenSerial(), key, value).subscribe({
+      next: () => {
+        this.tokenDetailResource.reload();
+      }
+    });
   }
 
   saveContainer() {
-    this.containerService
-      .assignContainer(
-        this.tokenSerial(),
-        this.containerService.selectedContainer()
-      )
-      .subscribe({
+    const selectedContainer = this.containerService.selectedContainer();
+    if (selectedContainer) {
+      this.containerService.assignContainer(this.tokenSerial(), selectedContainer).subscribe({
         next: () => {
           this.tokenDetailResource.reload();
         }
       });
+    }
   }
 
   deleteContainer() {
-    this.containerService
-      .unassignContainer(
-        this.tokenSerial(),
-        this.containerService.selectedContainer()
-      )
-      .subscribe({
+    const selectedContainer = this.containerService.selectedContainer();
+    if (selectedContainer) {
+      this.containerService.unassignContainer(this.tokenSerial(), selectedContainer).subscribe({
         next: () => {
           this.tokenDetailResource.reload();
         }
       });
+    }
   }
 
   isEditableElement(key: string) {
-    const role = this.authService.role();
-    if (role === "admin") {
-      return (
-        key === "maxfail" ||
-        key === "count_window" ||
-        key === "sync_window" ||
-        key === "description" ||
-        key === "info" ||
-        key === "realms" ||
-        key === "tokengroup" ||
-        key === "container_serial"
-      );
-    } else {
-      return key === "description" || key === "container_serial";
-    }
+    const rightEntry = tokenDetailsRightsMap.find((entry) => entry.key === key);
+    return !!(rightEntry && this.authService.actionAllowed(rightEntry.right as PolicyAction));
   }
 
   isNumberElement(key: string) {
@@ -341,20 +359,19 @@ export class TokenDetailsComponent {
 
   containerSelected(containerSerial: string) {
     this.isProgrammaticTabChange.set(true);
-    this.router.navigateByUrl(
-      ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + containerSerial
-    );
+    this.router.navigateByUrl(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + containerSerial);
     this.containerSerial.set(containerSerial);
   }
 
   openSshMachineAssignDialog() {
+    const data: SshMachineAssignDialogData = {
+      tokenSerial: this.tokenSerial(),
+      tokenDetails: this.tokenDetails(),
+      tokenType: this.tokenType()
+    };
+
     this.matDialog.open(TokenSshMachineAssignDialogComponent, {
-      data: {
-        tokenSerial: this.tokenSerial(),
-        tokenDetails: this.tokenDetails(),
-        containerSerial: this.containerSerial(),
-        tokenType: this.tokenType()
-      }
+      data: data
     });
   }
 
@@ -364,17 +381,11 @@ export class TokenDetailsComponent {
         this.containerService.selectedContainer.set("");
         break;
       case "tokengroup":
-        this.selectedTokengroup.set(
-          this.tokenDetailData().find(
-            (detail) => detail.keyMap.key === "tokengroup"
-          )?.value
-        );
+        this.selectedTokengroup.set(this.tokenDetailData().find((detail) => detail.keyMap.key === "tokengroup")?.value);
         break;
       case "realms":
         this.realmService.selectedRealms.set(
-          this.tokenDetailData().find(
-            (detail) => detail.keyMap.key === "realms"
-          )?.value
+          this.tokenDetailData().find((detail) => detail.keyMap.key === "realms")?.value
         );
         break;
       default:
@@ -384,13 +395,11 @@ export class TokenDetailsComponent {
   }
 
   private saveRealms() {
-    this.tokenService
-      .setTokenRealm(this.tokenSerial(), this.realmService.selectedRealms())
-      .subscribe({
-        next: () => {
-          this.tokenDetailResource.reload();
-        }
-      });
+    this.tokenService.setTokenRealm(this.tokenSerial(), this.realmService.selectedRealms()).subscribe({
+      next: () => {
+        this.tokenDetailResource.reload();
+      }
+    });
   }
 
   private saveTokengroup(value: string[]) {

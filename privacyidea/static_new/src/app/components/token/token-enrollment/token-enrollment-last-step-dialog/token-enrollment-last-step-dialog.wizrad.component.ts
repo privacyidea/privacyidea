@@ -1,3 +1,21 @@
+/**
+ * (c) NetKnights GmbH 2025,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ **/
 import { AsyncPipe } from "@angular/common";
 import { HttpClient } from "@angular/common/http";
 import { Component, inject } from "@angular/core";
@@ -58,14 +76,10 @@ export class TokenEnrollmentSecondStepDialogWizardComponent extends TokenEnrollm
   private readonly http: HttpClient = inject(HttpClient);
   private readonly sanitizer: DomSanitizer = inject(DomSanitizer);
 
-  protected override readonly dialogRef: MatDialogRef<TokenEnrollmentLastStepDialogComponent> =
-    inject(MatDialogRef);
-  public override readonly data: TokenEnrollmentLastStepDialogData =
-    inject(MAT_DIALOG_DATA);
-  protected override readonly tokenService: TokenServiceInterface =
-    inject(TokenService);
-  protected override readonly contentService: ContentServiceInterface =
-    inject(ContentService);
+  protected override readonly dialogRef: MatDialogRef<TokenEnrollmentLastStepDialogComponent> = inject(MatDialogRef);
+  public override readonly data: TokenEnrollmentLastStepDialogData = inject(MAT_DIALOG_DATA);
+  protected override readonly tokenService: TokenServiceInterface = inject(TokenService);
+  protected override readonly contentService: ContentServiceInterface = inject(ContentService);
 
   readonly postTopHtml$ = this.http
     .get("/customize/token-enrollment.wizard.post.top.html", {

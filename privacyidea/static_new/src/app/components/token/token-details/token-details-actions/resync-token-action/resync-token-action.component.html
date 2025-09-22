@@ -1,0 +1,23 @@
+<div class="actions-pin-input">
+  <input
+    [(ngModel)]="fristOTPValue"
+    class="input"
+    i18n-placeholder
+    placeholder="First OTP" />
+  <input
+    [(ngModel)]="secondOTPValue"
+    class="input"
+    i18n-placeholder
+    placeholder="Second OTP" />
+</div>
+<div class="actions-pin-input-button">
+  <button
+    (click)="resyncOTPToken()"
+    class="detail-button"
+    extended
+    i18n
+    mat-fab>
+    <mat-icon class="detail-button-icon">sync</mat-icon>
+    Resync Token
+  </button>
+</div>

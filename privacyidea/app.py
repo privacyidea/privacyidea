@@ -269,9 +269,10 @@ def create_app(config_name="development",
     @app.errorhandler(404)
     def fallback(error):
         if request.path.startswith("/app/v2/"):
+            index_html = app.config.get("PI_INDEX_HTML") or "index.html"
             return send_html(
                 render_template(
-                    "index.html"))
+                    index_html))
         return jsonify(error="Not found"), 404
 
     # Overwrite default config with environment setting

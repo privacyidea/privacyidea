@@ -1,3 +1,21 @@
+/**
+ * (c) NetKnights GmbH 2025,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { TokenDetailsUserComponent } from "./token-details-user.component";
 import { TokenService } from "../../../../services/token/token.service";
@@ -40,8 +58,6 @@ describe("TokenDetailsUserComponent", () => {
 
     component.tokenSerial = signal("Mock serial");
     component.isEditingUser = signal(false);
-    component.setPinValue = signal("");
-    component.repeatPinValue = signal("");
 
     fixture.detectChanges();
   });
@@ -53,29 +69,15 @@ describe("TokenDetailsUserComponent", () => {
   it("should assign user", () => {
     userService.selectedUsername.set("testUser");
     userService.selectedUserRealm.set("testRealm");
-    component.setPinValue.set("1234");
-    component.repeatPinValue.set("1234");
 
     const assignSpy = jest.spyOn(tokenService, "assignUser");
 
     component.saveUser();
 
     expect(assignSpy).toHaveBeenCalledWith({
-      pin: "1234",
       realm: "testRealm",
       tokenSerial: "Mock serial",
       username: ""
     });
-  });
-
-  it("should not assign user if PINs do not match", () => {
-    component.setPinValue.set("1234");
-    component.repeatPinValue.set("5678");
-
-    const assignSpy = jest.spyOn(tokenService, "assignUser");
-
-    component.saveUser();
-
-    expect(assignSpy).not.toHaveBeenCalled();
   });
 });

@@ -1,113 +1,70 @@
+/**
+ * (c) NetKnights GmbH 2025,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
-import { provideHttpClient } from "@angular/common/http";
+import { HttpParams, httpResource, HttpResourceRef, provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { signal, WritableSignal } from "@angular/core";
-import { of } from "rxjs";
+import { Signal, signal, WritableSignal } from "@angular/core";
+import { Observable, of, Subject } from "rxjs";
 
 import { ContainerDetailsComponent } from "./container-details.component";
 import { TokenDetailsComponent } from "../token-details/token-details.component";
-import { TokenService } from "../../../services/token/token.service";
-import { ContainerService } from "../../../services/container/container.service";
+import {
+  BulkResult,
+  LostTokenResponse,
+  TokenDetails,
+  TokenGroup,
+  TokenGroups,
+  Tokens,
+  TokenService,
+  TokenServiceInterface,
+  TokenType
+} from "../../../services/token/token.service";
+import { ContainerService, ContainerServiceInterface } from "../../../services/container/container.service";
 import { ValidateService } from "../../../services/validate/validate.service";
 import { NotificationService } from "../../../services/notification/notification.service";
-import { UserService } from "../../../services/user/user.service";
-
-function makeResource<T>(initial: T) {
-  return {
-    value: signal(initial) as WritableSignal<T>,
-    reload: jest.fn(),
-    error: jest.fn().mockReturnValue(null)
-  };
-}
-
-class MockTokenService {
-  showOnlyTokenNotInContainer = signal(false);
-  tokenSerial = signal("");
-  filterValue = signal<Record<string, string>>({});
-  pageIndex = signal(0);
-  pageSize = signal(10);
-  eventPageSize = 10;
-
-  tokenResource = makeResource({
-    result: { value: { tokens: [], count: 0 } }
-  });
-
-  getTokenDetails = jest.fn().mockReturnValue(of({}));
-  getRealms = jest.fn().mockReturnValue(of({ result: { value: [] } }));
-  resetFailCount = jest.fn().mockReturnValue(of(null));
-  assignUser = jest.fn().mockReturnValue(of(null));
-  unassignUser = jest.fn().mockReturnValue(of(null));
-  getTokenData = this.getTokenDetails;
-}
-
-export class MockContainerService {
-  states = signal<string[]>([]);
-  containerSerial = signal("Mock serial");
-
-  containerDetailResource = makeResource({
-    result: { value: { containers: [] } }
-  });
-
-  containerDetail = signal({
-    containers: [
-      {
-        serial: "Mock serial",
-        users: [
-          {
-            user_realm: "realmUser",
-            user_name: "bob",
-            user_resolver: "",
-            user_id: ""
-          }
-        ],
-        realms: [],
-        tokens: [],
-        type: "",
-        states: [],
-        description: "",
-        select: ""
-      }
-    ],
-    count: 1
-  });
-
-  /* methods touched in tests */
-  addTokenToContainer = jest.fn().mockReturnValue(of(null));
-  assignUser = jest.fn().mockReturnValue(of(null));
-  unassignUser = jest.fn().mockReturnValue(of(null));
-  setContainerRealm = jest.fn().mockReturnValue(of(null));
-  setContainerDescription = jest.fn().mockReturnValue(of(null));
-  deleteAllTokens = jest.fn().mockReturnValue(of(null));
-}
+import { UserService, UserServiceInterface } from "../../../services/user/user.service";
+import { Sort } from "@angular/material/sort";
+import { PiResponse } from "../../../app.component";
+import { FilterValue } from "../../../core/models/filter_value";
+import {
+  TokenEnrollmentData,
+  EnrollmentResponse,
+  TokenApiPayloadMapper
+} from "../../../mappers/token-api-payload/_token-api-payload.mapper";
+import {
+  MockContainerService,
+  MockNotificationService,
+  MockTokenService,
+  MockUserService
+} from "../../../../testing/mock-services";
 
 class MockValidateService {
   testToken = jest.fn().mockReturnValue(of(null));
-}
-
-class MockNotificationService {
-  openSnackBar = jest.fn();
-}
-
-class MockUserService {
-  selectedUserRealm = signal("");
-  userFilter = signal("");
-
-  userNameFilter = jest.fn().mockReturnValue("alice");
-
-  setDefaultRealm = jest.fn();
-  resetUserSelection = () => {
-    this.userFilter.set("");
-    this.selectedUserRealm.set("");
-  };
 }
 
 describe("ContainerDetailsComponent (Jest)", () => {
   let component: ContainerDetailsComponent;
   let fixture: ComponentFixture<ContainerDetailsComponent>;
 
-  let containerService: ContainerService;
-  let userService: UserService;
+  let containerService: ContainerServiceInterface;
+  let userService: UserServiceInterface;
 
   beforeEach(async () => {
     TestBed.resetTestingModule();
@@ -117,9 +74,9 @@ describe("ContainerDetailsComponent (Jest)", () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: TokenService, useClass: MockTokenService },
-        { provide: ContainerService, useClass: MockContainerService },
         { provide: ValidateService, useClass: MockValidateService },
         { provide: NotificationService, useClass: MockNotificationService },
+        { provide: ContainerService, useClass: MockContainerService },
         { provide: UserService, useClass: MockUserService }
       ]
     }).compileComponents();
@@ -168,10 +125,7 @@ describe("ContainerDetailsComponent (Jest)", () => {
       username: "username"
     });
 
-    expect(containerService.addTokenToContainer).toHaveBeenCalledWith(
-      "container1",
-      "Mock Serial"
-    );
+    expect(containerService.addTokenToContainer).toHaveBeenCalledWith("container1", "Mock Serial");
   });
 
   it("toggles realm edit and saves via setContainerRealm()", () => {
@@ -192,17 +146,12 @@ describe("ContainerDetailsComponent (Jest)", () => {
     component.selectedRealms.set(["realm1", "realm2"]);
     component.saveContainerEdit(element);
 
-    expect(containerService.setContainerRealm).toHaveBeenCalledWith(
-      "Mock serial",
-      ["realm1", "realm2"]
-    );
+    expect(containerService.setContainerRealm).toHaveBeenCalledWith("Mock serial", ["realm1", "realm2"]);
     expect(element.isEditing()).toBe(false);
   });
 
   it("edits description and calls setContainerDescription()", () => {
-    jest
-      .spyOn(containerService, "setContainerDescription")
-      .mockReturnValue(of({}));
+    jest.spyOn(containerService, "setContainerDescription").mockReturnValue(of({}));
 
     component.containerDetailData.set([
       {
@@ -225,10 +174,7 @@ describe("ContainerDetailsComponent (Jest)", () => {
     ]);
 
     component.saveContainerEdit(element);
-    expect(containerService.setContainerDescription).toHaveBeenCalledWith(
-      "Mock serial",
-      "New description from UI"
-    );
+    expect(containerService.setContainerDescription).toHaveBeenCalledWith("Mock serial", "New description from UI");
     expect(element.isEditing()).toBe(false);
   });
 
@@ -248,8 +194,10 @@ describe("ContainerDetailsComponent (Jest)", () => {
 
     component.toggleContainerEdit(element);
     expect(component.isEditingUser()).toBe(true);
-
     userService.selectedUserRealm.set("realmUser");
+    fixture.detectChanges();
+    userService.selectionFilter.set("alice");
+    fixture.detectChanges();
 
     component.saveUser();
 
@@ -294,10 +242,6 @@ describe("ContainerDetailsComponent (Jest)", () => {
 
     component.unassignUser();
 
-    expect(containerService.unassignUser).toHaveBeenCalledWith(
-      "Mock serial",
-      "bob",
-      "realmUser"
-    );
+    expect(containerService.unassignUser).toHaveBeenCalledWith("Mock serial", "bob", "realmUser");
   });
 });

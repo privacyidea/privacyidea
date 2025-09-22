@@ -1,18 +1,20 @@
 <div
   [ngClass]="{
-    'pad-0': overflowService.isWidthOverflowing('body', 1310),
+    'pad-0': overflowService.isWidthOverflowing('body', 1310)
   }"
   class="user-container">
   <table
     [dataSource]="userData()"
     aria-label="User Detail Data Table"
     class="user-details-table"
+    i18n-aria-label
     mat-table>
     <ng-container matColumnDef="key">
       <td
         *matCellDef="let element"
         class="details-key-row"
-        mat-cell>{{ element.keyMap.label }}
+        mat-cell>
+        {{ element.keyMap.label }}
       </td>
     </ng-container>
     <ng-container matColumnDef="value">
@@ -24,34 +26,45 @@
           @case ("username") {
             @if (isEditingUser() && userService.selectedUserRealm() !== "") {
               <mat-form-field>
-                <mat-label>Enter User</mat-label>
-                <input
-                  matInput
-                  [(ngModel)]="userService.userFilter"
-                  [matAutocomplete]="userAuto"/>
+                <mat-label i18n>Enter User</mat-label>
+                <app-clearable-input
+                  (onClick)="userService.selectionFilter.set('')"
+                  [showClearButton]="userService.selectionFilter() !== ''">
+                  <input
+                    matInput
+                    [(ngModel)]="userService.selectionFilter"
+                    [matAutocomplete]="userAuto" />
+                </app-clearable-input>
                 <mat-autocomplete #userAuto="matAutocomplete">
-                  @for (option of userService.filteredUsernames();
-                    track option) {
+                  @for (option of userService.selectionFilteredUsernames(); track option) {
                     <mat-option [value]="option">{{ option }}</mat-option>
                   }
                 </mat-autocomplete>
               </mat-form-field>
             } @else {
-              <a href="#">{{ element.value }}</a>
+              <span
+                i18n-aria-label="{{ element.keyMap.label }} Link">
+                {{ element.value }}
+              </span>
             }
           }
           @case ("user_realm") {
             @if (isEditingUser()) {
               <mat-form-field>
-                <mat-label>Select Realm of User</mat-label>
-                <mat-select [(ngModel)]="userService.selectedUserRealm">
+                <mat-label i18n>Select Realm of User</mat-label>
+                <mat-select
+                  [(ngModel)]="userService.selectedUserRealm"
+                  [value]="userService.selectedUserRealm()">
                   @for (option of realmService.realmOptions(); track option) {
                     <mat-option value="{{ option }}">{{ option }}</mat-option>
                   }
                 </mat-select>
               </mat-form-field>
             } @else {
-              <a href="#">{{ element.value }}</a>
+              <span
+                i18n-aria-label="{{ element.keyMap.label }} Link">
+                {{ element.value }}
+              </span>
             }
           }
           @default {
@@ -68,16 +81,17 @@
         @switch (element.keyMap.key) {
           @case ("username") {
             @if (!(isAnyEditingOrRevoked() && !isEditingUser())) {
-              @if (element.value) {
+              @if (element.value && authService.actionAllowed("unassign")) {
                 <div class="edit-button-container">
                   <button
                     mat-icon-button
                     class="yellow"
-                    (click)="unassignUser()">
+                    (click)="unassignUser()"
+                    i18n-aria-label="Unassign User">
                     <mat-icon>person_remove</mat-icon>
                   </button>
                 </div>
-              } @else {
+              } @else if (authService.actionAllowed("assign")) {
                 <app-edit-buttons
                   [toggleEdit]="toggleUserEdit.bind(this)"
                   [saveEdit]="saveUser.bind(this)"

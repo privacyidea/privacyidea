@@ -1,13 +1,18 @@
 <div
   [ngClass]="{
-    'pad-0': overflowService.isWidthOverflowing('body', 1310),
+    'pad-0': overflowService.isWidthOverflowing('body', 1310)
   }"
   class="info-container">
-  <span class="info-title details-key-row">Information</span>
+  <span
+    class="info-title details-key-row"
+    i18n>
+    Information
+  </span>
   <table
     [dataSource]="infoData()"
     aria-label="Token Details Data Table"
     class="info-table"
+    i18n-aria-label
     mat-table>
     <ng-container matColumnDef="value">
       <td
@@ -32,7 +37,8 @@
                       <button
                         mat-icon-button
                         class="delete-info-button"
-                        (click)="deleteInfo(key)">
+                        (click)="deleteInfo(key)"
+                        i18n-aria-label="Delete Information">
                         <mat-icon>delete_outlined</mat-icon>
                       </button>
                     </div>
@@ -43,7 +49,7 @@
                   <div class="info-span">
                     <span class="info-span-title"> {{ key }}: </span>
                     <span class="info-span-value">{{ element.value[key] }}</span>
-                    <mat-divider class="info-divider"/>
+                    <mat-divider class="info-divider" />
                   </div>
                 </mat-list-item>
               }
@@ -54,7 +60,8 @@
                   <input
                     matInput
                     [(ngModel)]="newInfo().key"
-                    placeholder="Add new key"/>
+                    i18n-placeholder
+                    placeholder="Add new key" />
                 </mat-form-field>
                 :
                 <mat-form-field style="width: 47%">
@@ -63,6 +70,7 @@
                     rows="1"
                     [(ngModel)]="newInfo().value"
                     style="width: 105%"
+                    i18n-placeholder
                     placeholder="Add new info"></textarea>
                 </mat-form-field>
               </mat-list-item>
@@ -76,7 +84,7 @@
         *matCellDef="let element"
         class="height-52 edit-column-cell"
         mat-cell>
-        @if (authService.role() === "admin") {
+        @if (authService.actionAllowed("settokeninfo")) {
           <app-edit-buttons
             [cancelEdit]="toggleInfoEdit.bind(this)"
             [element]="element"

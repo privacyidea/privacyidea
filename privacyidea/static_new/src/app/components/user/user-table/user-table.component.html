@@ -1,18 +1,28 @@
 <div
   aria-label="User Layout"
-  class="user-layout">
-  <div class="user-table-container">
+  class="user-layout"
+  i18n-aria-label>
+  <div
+    appScrollToTop
+    class="user-table-container">
     <div class="filter-paginator-container">
       <mat-form-field
         class="token-table-filter"
         subscriptSizing="dynamic">
-        <mat-label>Enter Filter</mat-label>
-        <input
-          #filterHTMLInputElement
-          [(ngModel)]="filterValueString"
-          aria-label="Filter Input"
-          matInput
-          placeholder="Example query: 'type: hotp userid: 1000'"/>
+        <mat-label i18n>Enter Filter</mat-label>
+        <app-clearable-input
+          (onClick)="userService.resetFilter()"
+          [showClearButton]="filterHTMLInputElement.value.length > 0">
+          <input
+            #filterHTMLInputElement
+            (input)="userService.handleFilterInput($event)"
+            [value]="userService.apiUserFilter().filterString"
+            aria-label="Filter Input"
+            i18n-aria-label
+            i18n-placeholder
+            matInput
+            placeholder="Example query: 'type: hotp userid: 1000'" />
+        </app-clearable-input>
       </mat-form-field>
       <mat-paginator
         [length]="totalLength()"
@@ -21,10 +31,10 @@
         showFirstLastButtons></mat-paginator>
     </div>
     <app-keyword-filter
-      [advancedApiFilter]="userService.advancedApiFilter"
-      [apiFilter]="userService.apiFilter"
+      [advancedApiFilter]="userService.advancedApiFilterOptions"
+      [apiFilter]="userService.apiFilterOptions"
       [filterHTMLInputElement]="filterHTMLInputElement"
-      [filterValue]="userService.filterValue"></app-keyword-filter>
+      [filterValue]="userService.apiUserFilter"></app-keyword-filter>
     <div class="audit-table-overflow">
       <table
         [dataSource]="usersDataSource()"
@@ -47,15 +57,15 @@
               mat-cell
               [ngClass]="{
                 'width-18rem': column.key === 'description',
-                'table-checkbox': column.key === 'select',
+                'table-checkbox': column.key === 'select'
               }">
               <div>
                 @switch (column.key) {
                   @case ("username") {
-                    <a
-                      attr.aria-label="{{ column.label }} Link"
-                      [routerLink]="['#', element.username]"> {{ element[column.key] }}
-                    </a>
+                    <span
+                      attr.aria-label="{{ column.label }} Link">
+                      {{ element[column.key] }}
+                    </span>
                   }
                   @default {
                     <span>

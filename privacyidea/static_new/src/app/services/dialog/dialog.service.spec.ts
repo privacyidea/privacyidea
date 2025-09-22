@@ -1,9 +1,29 @@
+/**
+ * (c) NetKnights GmbH 2025,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ **/
 import { TestBed } from "@angular/core/testing";
 import { Subject } from "rxjs";
 import { MatDialog } from "@angular/material/dialog";
 import { DialogService } from "./dialog.service";
 import { AuthService } from "../auth/auth.service";
-import { MockAuthService } from "../../../testing/mock-services";
+import { MockAuthService, MockLocalService, MockNotificationService } from "../../../testing/mock-services";
+import { provideHttpClient } from "@angular/common/http";
+import { provideHttpClientTesting } from "@angular/common/http/testing";
 
 jest.mock(
   "../../components/token/token-enrollment/token-enrollment-firtst-step-dialog/token-enrollment-first-step-dialog.component",
@@ -50,18 +70,23 @@ const matDialogStub = {
 
 describe("DialogService", () => {
   let dialogService: DialogService;
-  let authService = new MockAuthService();
+  let authService: MockAuthService;
 
   beforeEach(() => {
     TestBed.resetTestingModule();
     matDialogStub.openDialogs.length = 0;
     TestBed.configureTestingModule({
       providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
         { provide: MatDialog, useValue: matDialogStub },
-        { provide: AuthService, useValue: authService }
+        { provide: AuthService, useClass: MockAuthService },
+        MockLocalService,
+        MockNotificationService
       ]
     });
     dialogService = TestBed.inject(DialogService);
+    authService = TestBed.inject(AuthService) as any;
   });
 
   it("openTokenEnrollmentFirstStepDialog handles multiple opens", () => {

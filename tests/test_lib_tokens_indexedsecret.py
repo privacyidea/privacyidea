@@ -1,15 +1,14 @@
 """
 This test file tests the lib.tokens.smstoken
 """
-from .base import MyTestCase, FakeFlaskG, FakeAudit
-from privacyidea.lib.resolver import (save_resolver)
-from privacyidea.lib.realm import (set_realm)
-from privacyidea.lib.user import (User)
-from privacyidea.lib.tokens.indexedsecrettoken import IndexedSecretTokenClass, PIIXACTION
 from privacyidea.lib.policy import set_policy, delete_policy, SCOPE, PolicyClass
-from privacyidea.lib.policies.actions import PolicyAction
-from privacyidea.models import Token
+from privacyidea.lib.realm import (set_realm)
+from privacyidea.lib.resolver import (save_resolver)
 from privacyidea.lib.token import init_token, remove_token, import_tokens, get_tokens
+from privacyidea.lib.tokens.indexedsecrettoken import IndexedSecretTokenClass, PIIXACTION
+from privacyidea.lib.user import (User)
+from privacyidea.models import Token
+from .base import MyTestCase, FakeFlaskG, FakeAudit
 
 PWFILE = "tests/testdata/passwords"
 
@@ -152,16 +151,16 @@ class IndexedSecretTokenTestCase(MyTestCase):
         self.assertTrue(set(expected_keys).issubset(exported_data.keys()))
 
         expected_tokeninfo_keys = ["hashlib", "tokenkind"]
-        self.assertTrue(set(expected_tokeninfo_keys).issubset(exported_data["tokeninfo"].keys()))
+        self.assertTrue(set(expected_tokeninfo_keys).issubset(exported_data["info_list"].keys()))
 
         # Test that the exported values match the token's data
         exported_data = token.export_token()
         self.assertEqual(exported_data["serial"], 'SE123456')
         self.assertEqual(exported_data["type"], "indexedsecret")
         self.assertEqual(exported_data["description"], "this is a indexedsecret token export test")
-        self.assertEqual(exported_data["tokeninfo"]["hashlib"], "sha256")
+        self.assertEqual(exported_data["info_list"]["hashlib"], "sha256")
         self.assertEqual(exported_data["otpkey"], self.otpkey)
-        self.assertEqual(exported_data["tokeninfo"]["tokenkind"], "software")
+        self.assertEqual(exported_data["info_list"]["tokenkind"], "software")
         self.assertEqual(exported_data["issuer"], "privacyIDEA")
 
         # Clean up
@@ -175,7 +174,7 @@ class IndexedSecretTokenTestCase(MyTestCase):
             "description": "this is a indexedsecret token import test",
             "otpkey": self.otpkey,
             "issuer": "privacyIDEA",
-            "tokeninfo": {"hashlib": "sha256", "tokenkind": "software"}
+            "info_list": {"hashlib": "sha256", "tokenkind": "software"}
         }]
 
         # Import the token

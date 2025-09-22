@@ -356,7 +356,7 @@ def no_detail_on_success(request, response):
         #  since they contain a dictionary in result->value
         content.pop("detail", None)
         response.set_data(json.dumps(content))
-        g.audit_object.add_policy([p.get("name") for p in policy])
+        g.audit_object.add_policy({p.get("name") for p in policy})
 
     return response
 
@@ -453,7 +453,7 @@ def add_user_detail_to_response(request, response):
             if isinstance(value, datetime.datetime):
                 ui[key] = str(value)
         content.setdefault("detail", {})["user"] = ui
-        g.audit_object.add_policy([p.get("name") for p in policy])
+        g.audit_object.add_policy({p.get("name") for p in policy})
 
     # Check for ADD RESOLVER IN RESPONSE
     policy = (Match.user(g, scope=SCOPE.AUTHZ, action=PolicyAction.ADDRESOLVERINRESPONSE, user_object=request.User)
@@ -462,7 +462,7 @@ def add_user_detail_to_response(request, response):
         # The policy was set, we need to add the resolver and the realm
         content.setdefault("detail", {})["user-resolver"] = request.User.resolver
         content["detail"]["user-realm"] = request.User.realm
-        g.audit_object.add_policy([p.get("name") for p in policy])
+        g.audit_object.add_policy({p.get("name") for p in policy})
 
     response.set_data(json.dumps(content))
     return response
@@ -492,7 +492,7 @@ def no_detail_on_fail(request, response):
         #  result->authentication entry and only strip away possible user information
         del content["detail"]
         response.set_data(json.dumps(content))
-        g.audit_object.add_policy([p.get("name") for p in detail_policy])
+        g.audit_object.add_policy({p.get("name") for p in detail_policy})
 
     return response
 
@@ -1215,11 +1215,13 @@ def check_verify_enrollment(request, response):
             # ["hotp totp", "hotp email"]
             # The key is the token type(s)
             do_verify_enrollment = False
+            audit_policies = set()
             for policy_key in verify_pol_dict:
                 if token.get_tokentype().upper() in [x.upper() for x in policy_key.split(" ")]:
                     # This token is supposed to do verify enrollment
                     do_verify_enrollment = True
-                    g.audit_object.add_policy(verify_pol_dict.get(policy_key))
+                    audit_policies.add(policy_key)
+            g.audit_object.add_policy(audit_policies)
             if do_verify_enrollment:
                 content = response.json
                 options = {"g": g, "user": request.User, "exception": request.all_data.get("exception", 0)}

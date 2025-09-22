@@ -1,3 +1,21 @@
+/**
+ * (c) NetKnights GmbH 2025,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ **/
 import { AsyncPipe } from "@angular/common";
 import { HttpClient } from "@angular/common/http";
 import { Component, inject } from "@angular/core";
@@ -25,6 +43,7 @@ import { RealmService, RealmServiceInterface } from "../../../services/realm/rea
 import { TokenService, TokenServiceInterface } from "../../../services/token/token.service";
 import { UserService, UserServiceInterface } from "../../../services/user/user.service";
 import { VersioningService, VersioningServiceInterface } from "../../../services/version/version.service";
+import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { ContainerCreateComponent } from "./container-create.component";
 
 @Component({
@@ -45,26 +64,20 @@ import { ContainerCreateComponent } from "./container-create.component";
     MatExpansionPanel,
     MatExpansionPanelTitle,
     MatExpansionPanelHeader,
-    AsyncPipe
+    AsyncPipe,
+    ScrollToTopDirective
   ],
   templateUrl: "./container-create.wizard.component.html",
   styleUrl: "./container-create.component.scss"
 })
 export class ContainerCreateWizardComponent extends ContainerCreateComponent {
-  protected override readonly versioningService: VersioningServiceInterface =
-    inject(VersioningService);
-  protected override readonly userService: UserServiceInterface =
-    inject(UserService);
-  protected override readonly realmService: RealmServiceInterface =
-    inject(RealmService);
-  protected override readonly containerService: ContainerServiceInterface =
-    inject(ContainerService);
-  protected override readonly notificationService: NotificationServiceInterface =
-    inject(NotificationService);
-  protected override readonly tokenService: TokenServiceInterface =
-    inject(TokenService);
-  protected override readonly contentService: ContentServiceInterface =
-    inject(ContentService);
+  protected override readonly versioningService: VersioningServiceInterface = inject(VersioningService);
+  protected override readonly userService: UserServiceInterface = inject(UserService);
+  protected override readonly realmService: RealmServiceInterface = inject(RealmService);
+  protected override readonly containerService: ContainerServiceInterface = inject(ContainerService);
+  protected override readonly notificationService: NotificationServiceInterface = inject(NotificationService);
+  protected override readonly tokenService: TokenServiceInterface = inject(TokenService);
+  protected override readonly contentService: ContentServiceInterface = inject(ContentService);
 
   readonly preTopHtml$ = this.http
     .get("/customize/container-create.wizard.pre.top.html", {

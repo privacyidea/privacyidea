@@ -1,11 +1,31 @@
-import { httpResource, HttpResourceRef } from "@angular/common/http";
-import { computed, inject, Injectable, linkedSignal, signal, WritableSignal } from "@angular/core";
-import { Sort } from "@angular/material/sort";
-import { PiResponse } from "../../../app.component";
+/**
+ * (c) NetKnights GmbH 2025,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ **/
+import { AuthService, AuthServiceInterface } from "../../auth/auth.service";
 import { ContentService, ContentServiceInterface } from "../../content/content.service";
-import { LocalService, LocalServiceInterface } from "../../local/local.service";
+import { HttpResourceRef, httpResource } from "@angular/common/http";
+import { Injectable, WritableSignal, computed, inject, linkedSignal, signal } from "@angular/core";
 import { TokenService, TokenServiceInterface } from "../token.service";
-import { ROUTE_PATHS } from "../../../app.routes";
+
+import { FilterValue } from "../../../core/models/filter_value";
+import { PiResponse } from "../../../app.component";
+import { Sort } from "@angular/material/sort";
+import { ROUTE_PATHS } from "../../../route_paths";
 
 const apiFilter = ["serial", "transaction_id"];
 const advancedApiFilter: string[] = [];
@@ -34,11 +54,13 @@ export interface Challenge {
 export interface ChallengesServiceInterface {
   apiFilter: string[];
   advancedApiFilter: string[];
-  filterValue: WritableSignal<Record<string, string>>;
+  challengesFilter: WritableSignal<FilterValue>;
   pageSize: WritableSignal<number>;
   pageIndex: WritableSignal<number>;
   sort: WritableSignal<Sort>;
   challengesResource: HttpResourceRef<PiResponse<Challenges> | undefined>;
+  clearFilter(): void;
+  handleFilterInput($event: Event): void;
 }
 
 @Injectable({
@@ -46,19 +68,32 @@ export interface ChallengesServiceInterface {
 })
 export class ChallengesService implements ChallengesServiceInterface {
   private readonly tokenService: TokenServiceInterface = inject(TokenService);
-  private readonly localService: LocalServiceInterface = inject(LocalService);
+  private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
 
   readonly apiFilter = apiFilter;
   readonly advancedApiFilter = advancedApiFilter;
   tokenBaseUrl = this.tokenService.tokenBaseUrl;
-  filterValue = linkedSignal({
+  challengesFilter = linkedSignal({
     source: this.contentService.routeUrl,
-    computation: () => ({}) as Record<string, string>
+    computation: () => new FilterValue()
   });
+  pageSize = linkedSignal({
+    source: this.contentService.routeUrl,
+    computation: () => 10
+  });
+  pageIndex = linkedSignal({
+    source: () => ({
+      filterValue: this.challengesFilter(),
+      pageSize: this.pageSize(),
+      routeUrl: this.contentService.routeUrl()
+    }),
+    computation: () => 0
+  });
+  sort = signal({ active: "timestamp", direction: "asc" } as Sort);
   private filterParams = computed(() => {
     const allowedFilters = [...this.apiFilter, ...this.advancedApiFilter];
-    const filterPairs = Object.entries(this.filterValue())
+    const filterPairs = Array.from(this.challengesFilter().filterMap.entries())
       .map(([key, value]) => ({ key, value }))
       .filter(({ key }) => allowedFilters.includes(key));
     return filterPairs.reduce(
@@ -73,31 +108,16 @@ export class ChallengesService implements ChallengesServiceInterface {
       { params: {} as Record<string, string>, serial: "" }
     );
   });
-  pageSize = linkedSignal({
-    source: this.contentService.routeUrl,
-    computation: () => 10
-  });
-  pageIndex = linkedSignal({
-    source: () => ({
-      filterValue: this.filterValue(),
-      pageSize: this.pageSize(),
-      routeUrl: this.contentService.routeUrl()
-    }),
-    computation: () => 0
-  });
-  sort = signal({ active: "timestamp", direction: "asc" } as Sort);
   challengesResource = httpResource<PiResponse<Challenges>>(() => {
     if (this.contentService.routeUrl() !== ROUTE_PATHS.TOKENS_CHALLENGES) {
       return undefined;
     }
     const { params: filterParams, serial } = this.filterParams();
-    const url = serial
-      ? `${this.tokenBaseUrl}challenges/${serial}`
-      : `${this.tokenBaseUrl}challenges/`;
+    const url = serial ? `${this.tokenBaseUrl}challenges/${serial}` : `${this.tokenBaseUrl}challenges/`;
     return {
       url,
       method: "GET",
-      headers: this.localService.getHeaders(),
+      headers: this.authService.getHeaders(),
       params: {
         pagesize: this.pageSize(),
         page: this.pageIndex() + 1,
@@ -109,4 +129,13 @@ export class ChallengesService implements ChallengesServiceInterface {
       }
     };
   });
+
+  clearFilter(): void {
+    this.challengesFilter.set(new FilterValue());
+  }
+  handleFilterInput($event: Event): void {
+    const input = $event.target as HTMLInputElement;
+    const newFilter = this.challengesFilter().copyWith({ value: input.value });
+    this.challengesFilter.set(newFilter);
+  }
 }

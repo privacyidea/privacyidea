@@ -1,3 +1,21 @@
+/**
+ * (c) NetKnights GmbH 2025,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ **/
 import { TestBed } from "@angular/core/testing";
 import { VersioningService } from "./version.service";
 
@@ -62,7 +80,7 @@ describe("versioningService", () => {
 
       jest.spyOn(global, "fetch").mockImplementation(() => mockFetchWithHTML(VALID_HTML));
 
-      versioningService.openDocumentation("/tokens/enroll");
+      versioningService.openDocumentation("/tokens/enrollment");
       await flushPromises();
 
       const expectedUrl =
@@ -81,12 +99,12 @@ describe("versioningService", () => {
         .mockImplementationOnce(() => mockFetchWithHTML(NOT_FOUND_HTML))
         .mockImplementationOnce(() => mockFetchWithHTML(VALID_HTML));
 
-      versioningService.openDocumentation("/tokens/enroll");
+      versioningService.openDocumentation("/tokens/enrollment");
       await flushPromises();
       await flushPromises();
 
       const fallbackUrl =
-        "https://privacyidea.readthedocs.io/en/latest/webui/token_details.html#enroll-token";
+        "https://privacyidea.readthedocs.io/en/stable/webui/token_details.html#enroll-token";
 
       expect(window.open).toHaveBeenCalledWith(fallbackUrl, "_blank");
       expect(window.alert).not.toHaveBeenCalled();

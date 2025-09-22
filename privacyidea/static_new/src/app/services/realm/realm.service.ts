@@ -1,12 +1,29 @@
+/**
+ * (c) NetKnights GmbH 2025,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ **/
 import { HttpErrorResponse, httpResource, HttpResourceRef } from "@angular/common/http";
 import { computed, effect, inject, Injectable, Signal, signal, WritableSignal } from "@angular/core";
 import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
+import { ROUTE_PATHS } from "../../route_paths";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
-import { LocalService, LocalServiceInterface } from "../local/local.service";
-import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
-import { ROUTE_PATHS } from "../../app.routes";
+import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
 
 export type Realms = Map<string, Realm>;
 
@@ -38,9 +55,8 @@ export interface RealmServiceInterface {
   providedIn: "root"
 })
 export class RealmService implements RealmServiceInterface {
-  private readonly localService: LocalServiceInterface = inject(LocalService);
-  private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly authService: AuthServiceInterface = inject(AuthService);
+  private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
   selectedRealms = signal<string[]>([]);
 
@@ -61,7 +77,7 @@ export class RealmService implements RealmServiceInterface {
     return {
       url: environment.proxyUrl + "/realm/",
       method: "GET",
-      headers: this.localService.getHeaders()
+      headers: this.authService.getHeaders()
     };
   });
   realmOptions = computed(() => {
@@ -86,7 +102,7 @@ export class RealmService implements RealmServiceInterface {
     return {
       url: environment.proxyUrl + "/defaultrealm",
       method: "GET",
-      headers: this.localService.getHeaders()
+      headers: this.authService.getHeaders()
     };
   });
   defaultRealm = computed<string>(() => {
@@ -111,8 +127,7 @@ export class RealmService implements RealmServiceInterface {
       if (this.defaultRealmResource.error()) {
         const defaultRealmError = this.defaultRealmResource.error() as HttpErrorResponse;
         console.error("Failed to get default realm.", defaultRealmError.message);
-        const message =
-          defaultRealmError.error?.result?.error?.message || defaultRealmError.message;
+        const message = defaultRealmError.error?.result?.error?.message || defaultRealmError.message;
         this.notificationService.openSnackBar("Failed to get default realm. " + message);
       }
     });

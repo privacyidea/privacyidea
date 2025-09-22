@@ -1,3 +1,21 @@
+/**
+ * (c) NetKnights GmbH 2025,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ **/
 import { HttpClient, HttpErrorResponse, HttpParams, httpResource, HttpResourceRef } from "@angular/common/http";
 import { computed, effect, inject, Injectable, linkedSignal, Signal, signal, WritableSignal } from "@angular/core";
 import { Sort } from "@angular/material/sort";
@@ -5,16 +23,18 @@ import { forkJoin, Observable, Subject, switchMap, throwError, timer } from "rxj
 import { catchError, shareReplay, takeUntil, takeWhile } from "rxjs/operators";
 import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
-import { TokenComponent, TokenTypeOption as TokenTypeKey } from "../../components/token/token.component";
+import { ROUTE_PATHS } from "../../route_paths";
+import { TokenTypeOption as TokenTypeKey } from "../../components/token/token.component";
 import {
   EnrollmentResponse,
   TokenApiPayloadMapper,
   TokenEnrollmentData
 } from "../../mappers/token-api-payload/_token-api-payload.mapper";
-import { ContentService, ContentServiceInterface } from "../content/content.service";
-import { LocalService, LocalServiceInterface } from "../local/local.service";
 import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
-import { ROUTE_PATHS } from "../../app.routes";
+import { tokenTypes } from "../../utils/token.utils";
+import { FilterValue } from "../../core/models/filter_value";
+import { AuthService, AuthServiceInterface } from "../auth/auth.service";
+import { ContentService, ContentServiceInterface } from "../content/content.service";
 
 const apiFilter = [
   "serial",
@@ -112,6 +132,12 @@ export interface LostTokenData {
   valid_to: string;
 }
 
+export interface BulkResult {
+  failed: string[];
+  unauthorized: string[];
+  count_success: number;
+}
+
 export interface TokenServiceInterface {
   stopPolling$: Subject<void>;
   tokenBaseUrl: string;
@@ -119,7 +145,12 @@ export interface TokenServiceInterface {
   tokenSerial: WritableSignal<string>;
   selectedTokenType: Signal<TokenType>;
   showOnlyTokenNotInContainer: WritableSignal<boolean>;
-  filterValue: WritableSignal<Record<string, string>>;
+  tokenFilter: WritableSignal<FilterValue>;
+
+  clearFilter(): void;
+
+  handleFilterInput($event: Event): void;
+
   tokenDetailResource: HttpResourceRef<PiResponse<Tokens> | undefined>;
   tokenTypesResource: HttpResourceRef<PiResponse<{}> | undefined>;
   tokenTypeOptions: Signal<TokenType[]>;
@@ -132,7 +163,6 @@ export interface TokenServiceInterface {
 
   sort: WritableSignal<Sort>;
   pageIndex: WritableSignal<number>;
-  filterParams: Signal<Record<string, string>>;
   tokenResource: HttpResourceRef<PiResponse<Tokens> | undefined>;
   tokenSelection: WritableSignal<TokenDetails[]>;
 
@@ -145,13 +175,13 @@ export interface TokenServiceInterface {
   getSerial(
     otp: string,
     params: HttpParams
-  ): Observable<PiResponse<{ count: number; serial?: string | undefined }, unknown>>;
+  ): Observable<PiResponse<{ count: number; serial?: string | undefined }>>;
 
   setTokenInfos(tokenSerial: string, infos: any): Observable<PiResponse<boolean>[]>;
 
   deleteToken(tokenSerial: string): Observable<Object>;
 
-  deleteTokens(tokenSerials: string[]): Observable<Object[]>;
+  bulkDeleteTokens(selectedTokens: TokenDetails[]): Observable<PiResponse<BulkResult, any>>;
 
   revokeToken(tokenSerial: string): Observable<any>;
 
@@ -160,6 +190,8 @@ export interface TokenServiceInterface {
   unassignUserFromAll(tokenSerials: string[]): Observable<PiResponse<boolean>[]>;
 
   unassignUser(tokenSerial: string): Observable<PiResponse<boolean>>;
+
+  bulkUnassignTokens(tokenDetails: TokenDetails[]): Observable<PiResponse<BulkResult, any>>;
 
   assignUserToAll(args: {
     tokenSerials: string[];
@@ -179,11 +211,7 @@ export interface TokenServiceInterface {
 
   setRandomPin(tokenSerial: string): Observable<any>;
 
-  resyncOTPToken(
-    tokenSerial: string,
-    fristOTPValue: string,
-    secondOTPValue: string
-  ): Observable<Object>;
+  resyncOTPToken(tokenSerial: string, firstOTPValue: string, secondOTPValue: string): Observable<Object>;
 
   getTokenDetails(tokenSerial: string): Observable<PiResponse<Tokens>>;
 
@@ -196,10 +224,7 @@ export interface TokenServiceInterface {
 
   stopPolling(): void;
 
-  pollTokenRolloutState(args: {
-    tokenSerial: string;
-    initDelay: number;
-  }): Observable<PiResponse<Tokens>>;
+  pollTokenRolloutState(args: { tokenSerial: string; initDelay: number }): Observable<PiResponse<Tokens>>;
 
   setTokenRealm(tokenSerial: string, value: string[]): Observable<PiResponse<boolean>>;
 
@@ -213,162 +238,15 @@ export interface TokenServiceInterface {
 })
 export class TokenService implements TokenServiceInterface {
   private readonly http: HttpClient = inject(HttpClient);
-  private readonly localService: LocalServiceInterface = inject(LocalService);
+
+  private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
-
-  readonly apiFilter = apiFilter;
-  readonly advancedApiFilter = advancedApiFilter;
   readonly hiddenApiFilter = hiddenApiFilter;
-  readonly defaultSizeOptions = [5, 10, 25, 50];
-
+  stopPolling$ = new Subject<void>();
   tokenBaseUrl = environment.proxyUrl + "/token/";
   eventPageSize = 10;
-  stopPolling$ = new Subject<void>();
-  tokenIsActive = signal(true);
-  tokenIsRevoked = signal(true);
   tokenSerial = this.contentService.tokenSerial;
-  showOnlyTokenNotInContainer = linkedSignal({
-    source: this.contentService.routeUrl,
-    computation: (routeUrl) => {
-      return routeUrl.startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS);
-    }
-  });
-  filterValue: WritableSignal<Record<string, string>> = linkedSignal({
-    source: () => ({
-      showOnlyTokenNotInContainer: this.showOnlyTokenNotInContainer(),
-      routeUrl: this.contentService.routeUrl()
-    }),
-    computation: (source, previous) => {
-      if (source.routeUrl.startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS)) {
-        if (!previous || source.routeUrl !== previous.source.routeUrl) {
-          return { container_serial: "" };
-        } else {
-          const current = { ...previous.value };
-          if (source.showOnlyTokenNotInContainer) {
-            current["container_serial"] = "";
-          } else {
-            delete current["container_serial"];
-          }
-          return current;
-        }
-      } else {
-        return {};
-      }
-    }
-  });
-  tokenDetailResource = httpResource<PiResponse<Tokens>>(() => {
-    if (!this.contentService.routeUrl().includes(ROUTE_PATHS.TOKENS_DETAILS, 0)) {
-      return undefined;
-    }
-    return {
-      url: this.tokenBaseUrl,
-      method: "GET",
-      headers: this.localService.getHeaders(),
-      params: { serial: this.tokenSerial() }
-    };
-  });
-  tokenTypesResource = httpResource<PiResponse<{}>>(() => {
-    if (this.contentService.routeUrl() !== ROUTE_PATHS.TOKENS_ENROLLMENT) {
-      return undefined;
-    }
-    return {
-      url: environment.proxyUrl + "/auth/rights",
-      method: "GET",
-      headers: this.localService.getHeaders()
-    };
-  });
-  tokenTypeOptions = computed<TokenType[]>(() => {
-    const obj = this.tokenTypesResource?.value()?.result?.value;
-    if (!obj) return [];
-    return Object.entries(obj).map(([key, info]) => ({
-      key: key as TokenTypeKey,
-      info: String(info),
-      text: TokenComponent.tokenTypeTexts.find((t) => t.key === key)?.text || ""
-    }));
-  });
-  selectedTokenType = linkedSignal({
-    source: () => ({
-      tokenTypeOptions: this.tokenTypeOptions(),
-      routeUrl: this.contentService.routeUrl()
-    }),
-    computation: (source) =>
-      source.tokenTypeOptions.find((type) => type.key === "hotp") ||
-      source.tokenTypeOptions[0] ||
-      ({ key: "hotp", info: "", text: "" } as TokenType)
-  });
-  pageSize = linkedSignal<Record<string, string>, number>({
-    source: this.filterValue,
-    computation: (_, previous) => {
-      const previousValue = previous?.value ?? 10;
-
-      if (!this.defaultSizeOptions.includes(previousValue)) {
-        return (
-          this.defaultSizeOptions
-            .slice()
-            .reverse()
-            .find((size) => size <= previousValue) ?? 10
-        );
-      }
-      return previousValue;
-    }
-  });
-  sort = signal({ active: "serial", direction: "asc" } as Sort);
-  pageIndex = linkedSignal({
-    source: () => ({
-      filterValue: this.filterValue(),
-      pageSize: this.pageSize(),
-      routeUrl: this.contentService.routeUrl(),
-      sort: this.sort()
-    }),
-    computation: () => 0
-  });
-  filterParams = computed<Record<string, string>>(() => {
-    const allowedFilters = [...this.apiFilter, ...this.advancedApiFilter, ...this.hiddenApiFilter];
-    const filterPairs = Object.entries(this.filterValue())
-      .filter(([key]) => allowedFilters.includes(key))
-      .map(([key, value]) => ({ key, value }));
-
-    return filterPairs.reduce(
-      (acc, { key, value }) => ({
-        ...acc,
-        [key]: ["user", "infokey", "infovalue", "active", "assigned", "container_serial"].includes(
-          key
-        )
-          ? `${value}`
-          : `*${value}*`
-      }),
-      {} as Record<string, string>
-    );
-  });
-  tokenResource = httpResource<PiResponse<Tokens>>(() => {
-    if (
-      this.contentService.routeUrl() !== ROUTE_PATHS.TOKENS &&
-      !this.contentService.routeUrl().includes(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS)
-    ) {
-      return undefined;
-    }
-    return {
-      url: this.tokenBaseUrl,
-      method: "GET",
-      headers: this.localService.getHeaders(),
-      params: {
-        page: this.pageIndex() + 1,
-        pagesize: this.pageSize(),
-        sortby: this.sort()?.active || "serial",
-        sortdir: this.sort()?.direction || "asc",
-        ...this.filterParams()
-      }
-    };
-  });
-
-  tokenSelection: WritableSignal<TokenDetails[]> = linkedSignal({
-    source: () => ({
-      routeUrl: this.contentService.routeUrl(),
-      tokenResource: this.tokenResource.value()
-    }),
-    computation: () => []
-  });
 
   constructor() {
     effect(() => {
@@ -387,13 +265,208 @@ export class TokenService implements TokenServiceInterface {
     });
   }
 
+  readonly apiFilter = apiFilter;
+  readonly advancedApiFilter = advancedApiFilter;
+  readonly defaultSizeOptions = [5, 10, 25, 50];
+  tokenIsActive = signal(true);
+  tokenIsRevoked = signal(true);
+
+  showOnlyTokenNotInContainer = linkedSignal({
+    source: this.contentService.routeUrl,
+    computation: (routeUrl) => {
+      return routeUrl.startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS);
+    }
+  });
+  tokenFilter: WritableSignal<FilterValue> = linkedSignal({
+    source: () => ({
+      showOnlyTokenNotInContainer: this.showOnlyTokenNotInContainer(),
+      routeUrl: this.contentService.routeUrl()
+    }),
+    computation: (source, previous) => {
+      if (!source.routeUrl.startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS)) {
+        return new FilterValue();
+      }
+      if (!previous || source.routeUrl !== previous.source.routeUrl) {
+        return new FilterValue({ hiddenValue: source.showOnlyTokenNotInContainer ? "container_serial:" : " " });
+      }
+      const filterValue = previous.value;
+      if (source.showOnlyTokenNotInContainer) {
+        return filterValue.addHiddenKey("container_serial");
+      } else {
+        return filterValue.removeHiddenKey("container_serial");
+      }
+    }
+  });
+
+  clearFilter(): void {
+    this.tokenFilter.set(new FilterValue());
+  }
+
+  handleFilterInput($event: Event): void {
+    const input = $event.target as HTMLInputElement;
+    const newFilter = this.tokenFilter().copyWith({ value: input.value.trim() });
+    this.tokenFilter.set(newFilter);
+  }
+
+  tokenDetailResource = httpResource<PiResponse<Tokens>>(() => {
+    if (!this.contentService.routeUrl().includes(ROUTE_PATHS.TOKENS_DETAILS, 0)) {
+      return undefined;
+    }
+    return {
+      url: this.tokenBaseUrl,
+      method: "GET",
+      headers: this.authService.getHeaders(),
+      params: { serial: this.tokenSerial() }
+    };
+  });
+
+  tokenTypesResource = httpResource<PiResponse<{}>>(() => {
+    if (![ROUTE_PATHS.TOKENS_ENROLLMENT, ROUTE_PATHS.TOKENS_GET_SERIAL].includes(this.contentService.routeUrl())) {
+      return undefined;
+    }
+    return {
+      url: environment.proxyUrl + "/auth/rights",
+      method: "GET",
+      headers: this.authService.getHeaders()
+    };
+  });
+
+  tokenTypeOptions = computed<TokenType[]>(() => {
+    const obj = this.tokenTypesResource?.value()?.result?.value;
+    if (!obj) return [];
+    return Object.entries(obj).map(([key, info]) => ({
+      key: key as TokenTypeKey,
+      info: String(info),
+      text: tokenTypes.find((t) => t.key === key)?.text || ""
+    }));
+  });
+
+  selectedTokenType = linkedSignal({
+    source: () => ({
+      tokenTypeOptions: this.tokenTypeOptions(),
+      routeUrl: this.contentService.routeUrl()
+    }),
+    computation: (source) =>
+      source.tokenTypeOptions.find((type) => type.key === this.authService.defaultTokentype()) ||
+      source.tokenTypeOptions[0] ||
+      ({ key: "hotp", info: "", text: "" } as TokenType)
+  });
+
+  pageSize = linkedSignal<{ role: string }, number>({
+    source: () => ({
+      role: this.authService.role()
+    }),
+    computation: (source, previous) => {
+      if (previous && source.role === previous.source.role) {
+        return previous.value;
+      }
+      if (this.authService.tokenPageSize() != null && this.authService.tokenPageSize()! > 0) {
+        return this.authService.tokenPageSize()!;
+      }
+      return source.role === "user" ? 5 : 10;
+    }
+  });
+  sort = signal({ active: "serial", direction: "asc" } as Sort);
+
+  pageIndex = linkedSignal({
+    source: () => ({
+      filterValue: this.tokenFilter(),
+      pageSize: this.pageSize(),
+      routeUrl: this.contentService.routeUrl(),
+      sort: this.sort()
+    }),
+    computation: () => 0
+  });
+
+  filterParams = computed<Record<string, string>>(() => {
+    const allowedFilters = [...this.apiFilter, ...this.advancedApiFilter, ...this.hiddenApiFilter];
+
+    let filterPairs = [
+      ...Array.from(this.tokenFilter().filterMap.entries()),
+      ...Array.from(this.tokenFilter().hiddenFilterMap.entries())
+    ];
+    let filterPairsMap = filterPairs
+      .filter(([key]) => allowedFilters.includes(key))
+      .map(([key, value]) => ({ key, value }));
+    return filterPairsMap.reduce(
+      (acc, { key, value }) => ({
+        ...acc,
+        [key]: ["user", "infokey", "infovalue", "active", "assigned", "container_serial"].includes(key)
+          ? `${value}`
+          : `*${value}*`
+      }),
+      {} as Record<string, string>
+    );
+  });
+
+  tokenResource = httpResource<PiResponse<Tokens>>(() => {
+    if (
+      this.contentService.routeUrl() !== ROUTE_PATHS.TOKENS &&
+      !this.contentService.routeUrl().includes(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS)
+    ) {
+      return undefined;
+    }
+    return {
+      url: this.tokenBaseUrl,
+      method: "GET",
+      headers: this.authService.getHeaders(),
+      params: {
+        page: this.pageIndex() + 1,
+        pagesize: this.pageSize(),
+        sortby: this.sort()?.active || "serial",
+        sortdir: this.sort()?.direction || "asc",
+        ...this.filterParams()
+      }
+    };
+  });
+
+  tokenSelection: WritableSignal<TokenDetails[]> = linkedSignal({
+    source: () => ({
+      routeUrl: this.contentService.routeUrl(),
+      tokenResource: this.tokenResource.value()
+    }),
+    computation: () => []
+  });
+
+  bulkUnassignTokens(tokenDetails: TokenDetails[]): Observable<PiResponse<BulkResult, any>> {
+    const headers = this.authService.getHeaders();
+    return this.http
+      .post<PiResponse<BulkResult, any>>(
+        this.tokenBaseUrl + "unassign",
+        {
+          serials: tokenDetails.map((token) => token.serial)
+        },
+        { headers }
+      )
+      .pipe(
+        catchError((error) => {
+          console.error("Failed to unassign tokens.", error);
+          const message = error.error?.result?.error?.message || "";
+          this.notificationService.openSnackBar("Failed to unassign tokens. " + message);
+          return throwError(() => error);
+        })
+      );
+  }
+
+  bulkDeleteTokens(selectedTokens: TokenDetails[]): Observable<PiResponse<BulkResult, any>> {
+    const headers = this.authService.getHeaders();
+    const body = { serials: selectedTokens.map((t) => t.serial) };
+
+    return this.http.delete<PiResponse<BulkResult, any>>(this.tokenBaseUrl, { headers, body }).pipe(
+      catchError((error) => {
+        console.error("Failed to delete tokens.", error);
+        const message = error.result?.error?.message || "";
+        this.notificationService.openSnackBar("Failed to delete tokens. " + message);
+        return throwError(() => error);
+      })
+    );
+  }
+
   toggleActive(tokenSerial: string, active: boolean): Observable<PiResponse<boolean>> {
-    const headers = this.localService.getHeaders();
+    const headers = this.authService.getHeaders();
     const action = active ? "disable" : "enable";
     return this.http
-      .post<
-        PiResponse<boolean>
-      >(`${this.tokenBaseUrl}${action}`, { serial: tokenSerial }, { headers })
+      .post<PiResponse<boolean>>(`${this.tokenBaseUrl}${action}`, { serial: tokenSerial }, { headers })
       .pipe(
         catchError((error) => {
           console.error("Failed to toggle active.", error);
@@ -405,27 +478,23 @@ export class TokenService implements TokenServiceInterface {
   }
 
   resetFailCount(tokenSerial: string): Observable<PiResponse<boolean>> {
-    const headers = this.localService.getHeaders();
-    return this.http
-      .post<PiResponse<boolean>>(this.tokenBaseUrl + "reset", { serial: tokenSerial }, { headers })
-      .pipe(
-        catchError((error) => {
-          console.error("Failed to reset fail count.", error);
-          const message = error.error?.result?.error?.message || "";
-          this.notificationService.openSnackBar("Failed to reset fail count. " + message);
-          return throwError(() => error);
-        })
-      );
+    const headers = this.authService.getHeaders();
+    return this.http.post<PiResponse<boolean>>(this.tokenBaseUrl + "reset", { serial: tokenSerial }, { headers }).pipe(
+      catchError((error) => {
+        console.error("Failed to reset fail count.", error);
+        const message = error.error?.result?.error?.message || "";
+        this.notificationService.openSnackBar("Failed to reset fail count. " + message);
+        return throwError(() => error);
+      })
+    );
   }
 
   saveTokenDetail(tokenSerial: string, key: string, value: any): Observable<PiResponse<boolean>> {
-    const headers = this.localService.getHeaders();
+    const headers = this.authService.getHeaders();
     const set_url = `${this.tokenBaseUrl}set`;
 
     const params =
-      key === "maxfail"
-        ? { serial: tokenSerial, max_failcount: value }
-        : { serial: tokenSerial, [key]: value };
+      key === "maxfail" ? { serial: tokenSerial, max_failcount: value } : { serial: tokenSerial, [key]: value };
 
     return this.http.post<PiResponse<boolean>>(set_url, params, { headers }).pipe(
       catchError((error) => {
@@ -438,7 +507,7 @@ export class TokenService implements TokenServiceInterface {
   }
 
   setTokenInfos(tokenSerial: string, infos: any): Observable<PiResponse<boolean>[]> {
-    const headers = this.localService.getHeaders();
+    const headers = this.authService.getHeaders();
     const set_url = `${this.tokenBaseUrl}set`;
     const info_url = `${this.tokenBaseUrl}info`;
 
@@ -476,17 +545,12 @@ export class TokenService implements TokenServiceInterface {
   }
 
   deleteToken(tokenSerial: string): Observable<Object> {
-    const headers = this.localService.getHeaders();
+    const headers = this.authService.getHeaders();
     return this.http.delete(this.tokenBaseUrl + tokenSerial, { headers });
   }
 
-  deleteTokens(tokenSerials: string[]): Observable<Object[]> {
-    const observables = tokenSerials.map((tokenSerial) => this.deleteToken(tokenSerial));
-    return forkJoin(observables);
-  }
-
   revokeToken(tokenSerial: string): Observable<any> {
-    const headers = this.localService.getHeaders();
+    const headers = this.authService.getHeaders();
     return this.http.post(`${this.tokenBaseUrl}revoke`, { serial: tokenSerial }, { headers }).pipe(
       catchError((error) => {
         console.error("Failed to revoke token.", error);
@@ -498,7 +562,7 @@ export class TokenService implements TokenServiceInterface {
   }
 
   deleteInfo(tokenSerial: string, infoKey: string): Observable<Object> {
-    const headers = this.localService.getHeaders();
+    const headers = this.authService.getHeaders();
     return this.http
       .delete(`${this.tokenBaseUrl}info/` + tokenSerial + "/" + infoKey, {
         headers
@@ -525,20 +589,16 @@ export class TokenService implements TokenServiceInterface {
       catchError((error) => {
         console.error("Failed to unassign user from all tokens.", error);
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar(
-          "Failed to unassign user from all tokens. " + message
-        );
+        this.notificationService.openSnackBar("Failed to unassign user from all tokens. " + message);
         return throwError(() => error);
       })
     );
   }
 
   unassignUser(tokenSerial: string): Observable<PiResponse<boolean>> {
-    const headers = this.localService.getHeaders();
+    const headers = this.authService.getHeaders();
     return this.http
-      .post<
-        PiResponse<boolean>
-      >(`${this.tokenBaseUrl}unassign`, { serial: tokenSerial }, { headers })
+      .post<PiResponse<boolean>>(`${this.tokenBaseUrl}unassign`, { serial: tokenSerial }, { headers })
       .pipe(
         catchError((error) => {
           console.error("Failed to unassign user.", error);
@@ -581,7 +641,7 @@ export class TokenService implements TokenServiceInterface {
     pin?: string;
   }): Observable<PiResponse<boolean>> {
     const { tokenSerial, username, realm, pin } = args;
-    const headers = this.localService.getHeaders();
+    const headers = this.authService.getHeaders();
     return this.http
       .post<PiResponse<boolean>>(
         `${this.tokenBaseUrl}assign`,
@@ -604,7 +664,7 @@ export class TokenService implements TokenServiceInterface {
   }
 
   setPin(tokenSerial: string, userPin: string): Observable<any> {
-    const headers = this.localService.getHeaders();
+    const headers = this.authService.getHeaders();
     return this.http
       .post(
         `${this.tokenBaseUrl}setpin`,
@@ -625,7 +685,7 @@ export class TokenService implements TokenServiceInterface {
   }
 
   setRandomPin(tokenSerial: string): Observable<any> {
-    const headers = this.localService.getHeaders();
+    const headers = this.authService.getHeaders();
     return this.http
       .post(
         `${this.tokenBaseUrl}setrandompin`,
@@ -644,12 +704,8 @@ export class TokenService implements TokenServiceInterface {
       );
   }
 
-  resyncOTPToken(
-    tokenSerial: string,
-    fristOTPValue: string,
-    secondOTPValue: string
-  ): Observable<Object> {
-    const headers = this.localService.getHeaders();
+  resyncOTPToken(tokenSerial: string, fristOTPValue: string, secondOTPValue: string): Observable<Object> {
+    const headers = this.authService.getHeaders();
     return this.http
       .post(
         `${this.tokenBaseUrl}resync`,
@@ -671,7 +727,8 @@ export class TokenService implements TokenServiceInterface {
   }
 
   setTokenRealm(tokenSerial: string, value: string[]): Observable<PiResponse<boolean>> {
-    const headers = this.localService.getHeaders();
+    const headers = this.authService.getHeaders();
+
     return this.http
       .post<PiResponse<boolean>>(
         `${this.tokenBaseUrl}realm/` + tokenSerial,
@@ -691,7 +748,8 @@ export class TokenService implements TokenServiceInterface {
   }
 
   setTokengroup(tokenSerial: string, value: string | string[]): Observable<Object> {
-    const headers = this.localService.getHeaders();
+    const headers = this.authService.getHeaders();
+
     const valueArray: string[] = Array.isArray(value)
       ? value
       : typeof value === "object" && value !== null
@@ -716,17 +774,15 @@ export class TokenService implements TokenServiceInterface {
   }
 
   lostToken(tokenSerial: string): Observable<LostTokenResponse> {
-    const headers = this.localService.getHeaders();
-    return this.http
-      .post<LostTokenResponse>(`${this.tokenBaseUrl}lost/` + tokenSerial, {}, { headers })
-      .pipe(
-        catchError((error) => {
-          console.error("Failed to mark token as lost.", error);
-          const message = error.error?.result?.error?.message || "";
-          this.notificationService.openSnackBar("Failed to mark token as lost. " + message);
-          return throwError(() => error);
-        })
-      );
+    const headers = this.authService.getHeaders();
+    return this.http.post<LostTokenResponse>(`${this.tokenBaseUrl}lost/` + tokenSerial, {}, { headers }).pipe(
+      catchError((error) => {
+        console.error("Failed to mark token as lost.", error);
+        const message = error.error?.result?.error?.message || "";
+        this.notificationService.openSnackBar("Failed to mark token as lost. " + message);
+        return throwError(() => error);
+      })
+    );
   }
 
   enrollToken<T extends TokenEnrollmentData, R extends EnrollmentResponse>(args: {
@@ -734,7 +790,7 @@ export class TokenService implements TokenServiceInterface {
     mapper: TokenApiPayloadMapper<T>;
   }): Observable<R> {
     const { data, mapper } = args;
-    const headers = this.localService.getHeaders();
+    const headers = this.authService.getHeaders();
     const params = mapper.toApiPayload(data);
 
     return this.http
@@ -752,7 +808,7 @@ export class TokenService implements TokenServiceInterface {
   }
 
   getTokenDetails(tokenSerial: string): Observable<PiResponse<Tokens>> {
-    const headers = this.localService.getHeaders();
+    const headers = this.authService.getHeaders();
     let params = new HttpParams().set("serial", tokenSerial);
     return this.http.get<PiResponse<Tokens>>(this.tokenBaseUrl, {
       headers,
@@ -761,24 +817,22 @@ export class TokenService implements TokenServiceInterface {
   }
 
   getTokengroups(): Observable<PiResponse<TokenGroups>> {
-    const headers = this.localService.getHeaders();
-    return this.http
-      .get<PiResponse<TokenGroups>>(environment.proxyUrl + `/tokengroup/`, { headers })
-      .pipe(
-        catchError((error) => {
-          console.error("Failed to get token groups.", error);
-          const message = error.error?.result?.error?.message || "";
-          this.notificationService.openSnackBar("Failed to get tokengroups. " + message);
-          return throwError(() => error);
-        })
-      );
+    const headers = this.authService.getHeaders();
+    return this.http.get<PiResponse<TokenGroups>>(environment.proxyUrl + `/tokengroup/`, { headers }).pipe(
+      catchError((error) => {
+        console.error("Failed to get token groups.", error);
+        const message = error.error?.result?.error?.message || "";
+        this.notificationService.openSnackBar("Failed to get tokengroups. " + message);
+        return throwError(() => error);
+      })
+    );
   }
 
   getSerial(
     otp: string,
     params: HttpParams
   ): Observable<PiResponse<{ count: number; serial?: string | undefined }, unknown>> {
-    const headers = this.localService.getHeaders();
+    const headers = this.authService.getHeaders();
     return this.http
       .get<PiResponse<{ count: number; serial?: string }>>(`${this.tokenBaseUrl}getserial/${otp}`, {
         params: params,
@@ -794,10 +848,7 @@ export class TokenService implements TokenServiceInterface {
       );
   }
 
-  pollTokenRolloutState(args: {
-    tokenSerial: string;
-    initDelay: number;
-  }): Observable<PiResponse<Tokens>> {
+  pollTokenRolloutState(args: { tokenSerial: string; initDelay: number }): Observable<PiResponse<Tokens>> {
     const { tokenSerial, initDelay } = args;
     this.tokenSerial.set(tokenSerial);
     return timer(initDelay, 2000).pipe(
@@ -805,10 +856,7 @@ export class TokenService implements TokenServiceInterface {
       switchMap(() => {
         return this.getTokenDetails(this.tokenSerial());
       }),
-      takeWhile(
-        (response: any) => response.result?.value.tokens[0].rollout_state === "clientwait",
-        true
-      ),
+      takeWhile((response: any) => response.result?.value.tokens[0].rollout_state === "clientwait", true),
       catchError((error) => {
         console.error("Failed to poll token state.", error);
         const message = error.error?.result?.error?.message || "";

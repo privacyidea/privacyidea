@@ -26,9 +26,8 @@
     <div class="form-group">
         <label for="server" class="col-sm-3 control-label" translate>
             IP or FQDN</label>
-
         <div class="col-sm-9">
-            <input name="server" class="form-control"
+            <input id="server" name="server" class="form-control"
                    ng-model="params.server" required
                    placeholder="1.2.3.4"/>
         </div>
@@ -36,50 +35,56 @@
     <div class="form-group">
         <label for="port" class="col-sm-3 control-label" translate>
             Port</label>
-
         <div class="col-sm-9">
-            <input name="port" class="form-control"
+            <input id="port" name="port" class="form-control"
                    ng-model="params.port"
+                   type="number"
                    placeholder="1812"/>
         </div>
     </div>
-
     <div class="form-group">
         <label for="timeout" class="col-sm-3 control-label" translate>
             Timeout</label>
-
         <div class="col-sm-3">
-            <input name="timeout" class="form-control"
+            <input id="timeout" name="timeout" class="form-control"
                    ng-model="params.timeout"
+                   type="number"
                    placeholder="5"/>
         </div>
         <label for="retries" class="col-sm-3 control-label" translate>
             Retries</label>
-
         <div class="col-sm-3">
-            <input name="retries" class="form-control"
+            <input id="retries" name="retries" class="form-control"
                    ng-model="params.retries"
+                   type="number"
                    placeholder="3"/>
         </div>
     </div>
-
-
     <div class="form-group">
         <label for="secret" class="col-sm-3 control-label"
                translate>Secret</label>
         <div class="col-sm-9">
-            <input name="secret" class="form-control"
-                   type="secret"
+            <input id="secret" name="secret" class="form-control"
+                   type="password"
                    ng-model="params.secret"
                    required
                    placeholder="testing123"/>
         </div>
     </div>
     <div class="form-group">
+        <label for="message-authenticator" class="col-sm-3 control-label"
+               translate>Require Message-Authenticator</label>
+        <div class="col-sm-9" style="padding-top: 6px;">
+            <input id="message-authenticator"
+                   type="checkbox"
+                   ng-model="params.options.message_authenticator"/>
+        </div>
+    </div>
+    <div class="form-group">
         <label for="dictionary" class="col-sm-3 control-label"
-               translate>Dictionary</label>
+               translate>RADIUS Dictionary</label>
         <div class="col-sm-9">
-            <input name="dictionary" class="form-control"
+            <input id="dictionary" name="dictionary" class="form-control"
                    ng-model="params.dictionary"
                    placeholder="/etc/privacyidea/dictionary"/>
         </div>
@@ -88,33 +93,38 @@
         <label for="description" class="col-sm-3 control-label"
                translate>Description</label>
         <div class="col-sm-9">
-            <input name="description" class="form-control"
+            <input id="description" name="description" class="form-control"
                    ng-model="params.description"
                    placeholder="some wise words"/>
         </div>
     </div>
-
+    <hr/>
     <div class="form-group">
-        <div class="col-sm-3">
-            <label for="username" translate>User</label>
-            <input type="text" class="form-control" class="col"
-               ng-model="params.username" name="username">
+        <div class="col-sm-3 text-right"
+             style="margin-top: 7px; font-weight: 700;" translate>
+            Test RADIUS Server
         </div>
-
         <div class="col-sm-3">
-            <label for="password" translate>Password</label>
-            <input type="password" class="form-control" class="col"
+            <label for="username" class="sr-only" translate>Username</label>
+            <input id="username" type="text" class="form-control"
+               ng-model="params.username" name="username"
+                placeholder="{{ 'Username' | translate }}">
+        </div>
+        <div class="col-sm-3">
+            <label for="password" class="sr-only" translate>Password</label>
+            <input id="password" type="password" class="form-control"
                    autocomplete="new-password"
-                   ng-model="params.password" name="password">
+                   ng-model="params.password" name="password"
+                    placeholder="{{ 'Password' | translate }}">
         </div>
         <div class="col-sm-3">
             <button class="btn btn-default" translate
                     ng-click="testRadiusRequest()">
-                Send test RADIUS request
+                Send RADIUS test request
             </button>
         </div>
     </div>
-
+    <hr/>
     <div class="text-center"
          ng-show="checkRight('radiusserver_write')">
         <button ng-click="saveRadiusServer()"
@@ -125,4 +135,3 @@
     </div>
 
 </form>
-

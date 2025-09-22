@@ -1,4 +1,22 @@
-import { NgClass } from "@angular/common";
+/**
+ * (c) NetKnights GmbH 2025,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ **/
+import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
 import {
   Component,
   computed,
@@ -10,19 +28,6 @@ import {
   ViewChild,
   WritableSignal
 } from "@angular/core";
-import { FormsModule, ReactiveFormsModule } from "@angular/forms";
-import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
-import { MatIconButton } from "@angular/material/button";
-import { MatCheckbox } from "@angular/material/checkbox";
-import { MatDivider } from "@angular/material/divider";
-import { MatFormField } from "@angular/material/form-field";
-import { MatIcon } from "@angular/material/icon";
-import { MatInput } from "@angular/material/input";
-import { MatListItem } from "@angular/material/list";
-import { MatPaginator, PageEvent } from "@angular/material/paginator";
-import { MatSelectModule } from "@angular/material/select";
-import { MatCell, MatColumnDef, MatTableDataSource, MatTableModule } from "@angular/material/table";
-import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
 import {
   ContainerDetailData,
   ContainerDetailToken,
@@ -30,18 +35,34 @@ import {
   ContainerServiceInterface
 } from "../../../services/container/container.service";
 import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
+import { EditableElement, EditButtonsComponent } from "../../shared/edit-buttons/edit-buttons.component";
+import { FormsModule, ReactiveFormsModule } from "@angular/forms";
+import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
+import { MatCell, MatColumnDef, MatTableDataSource, MatTableModule } from "@angular/material/table";
+import { MatPaginator, PageEvent } from "@angular/material/paginator";
 import { OverflowService, OverflowServiceInterface } from "../../../services/overflow/overflow.service";
 import { RealmService, RealmServiceInterface } from "../../../services/realm/realm.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "../../../services/table-utils/table-utils.service";
 import { TokenDetails, TokenService, TokenServiceInterface } from "../../../services/token/token.service";
 import { UserService, UserServiceInterface } from "../../../services/user/user.service";
-import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
-import { EditableElement, EditButtonsComponent } from "../../shared/edit-buttons/edit-buttons.component";
-import { infoDetailsKeyMap } from "../token-details/token-details.component";
+
+import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
 import { ContainerDetailsInfoComponent } from "./container-details-info/container-details-info.component";
 import { ContainerDetailsTokenTableComponent } from "./container-details-token-table/container-details-token-table.component";
+import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
+import { FilterValue } from "../../../core/models/filter_value";
+import { MatCheckbox } from "@angular/material/checkbox";
+import { MatDivider } from "@angular/material/divider";
+import { MatFormField } from "@angular/material/form-field";
+import { MatIcon } from "@angular/material/icon";
+import { MatIconButton } from "@angular/material/button";
+import { MatInput } from "@angular/material/input";
+import { MatListItem } from "@angular/material/list";
+import { MatSelectModule } from "@angular/material/select";
+import { NgClass } from "@angular/common";
+import { ROUTE_PATHS } from "../../../route_paths";
 import { Router } from "@angular/router";
-import { ROUTE_PATHS } from "../../../app.routes";
+import { infoDetailsKeyMap } from "../token-details/token-details.component";
 
 export const containerDetailsKeyMap = [
   { key: "type", label: "Type" },
@@ -58,10 +79,7 @@ const containerUserDetailsKeyMap = [
 ];
 
 const allowedTokenTypesMap = new Map<string, string | string[]>([
-  [
-    "yubikey",
-    ["certificate", "hotp", "passkey", "webauthn", "yubico", "yubikey"]
-  ],
+  ["yubikey", ["certificate", "hotp", "passkey", "webauthn", "yubico", "yubikey"]],
   ["smartphone", ["daypassword", "hotp", "push", "sms", "totp"]],
   ["generic", "all"]
 ]);
@@ -97,24 +115,21 @@ interface TokenOption {
     MatPaginator,
     MatDivider,
     MatCheckbox,
-    CopyButtonComponent
+    CopyButtonComponent,
+    ClearableInputComponent
   ],
   templateUrl: "./container-details.component.html",
   styleUrls: ["./container-details.component.scss"]
 })
 export class ContainerDetailsComponent {
-  protected readonly overflowService: OverflowServiceInterface =
-    inject(OverflowService);
-  protected readonly containerService: ContainerServiceInterface =
-    inject(ContainerService);
-  protected readonly tableUtilsService: TableUtilsServiceInterface =
-    inject(TableUtilsService);
+  protected readonly overflowService: OverflowServiceInterface = inject(OverflowService);
+  protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
+  protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly realmService: RealmServiceInterface = inject(RealmService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly userService: UserServiceInterface = inject(UserService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
-  protected readonly contentService: ContentServiceInterface =
-    inject(ContentService);
+  protected readonly contentService: ContentServiceInterface = inject(ContentService);
   private router = inject(Router);
   states = this.containerService.states;
   isEditingUser = signal(false);
@@ -122,33 +137,19 @@ export class ContainerDetailsComponent {
   tokenSerial = this.tokenService.tokenSerial;
   containerSerial = this.containerService.containerSerial;
   showOnlyTokenNotInContainer = this.tokenService.showOnlyTokenNotInContainer;
-  filterValue = this.tokenService.filterValue;
-  filterValueString: WritableSignal<string> = linkedSignal(() => {
-    const _filterValue: Record<string, string> = { ...this.filterValue() };
-    delete _filterValue["container_serial"];
-    delete _filterValue["type_list"];
-    if (Object.keys(_filterValue).length === 0) {
-      return "";
-    }
-    const filterEntries = Object.entries(_filterValue);
-    return filterEntries
-      .map(([key, value]: [string, string]) => `${key}: ${value}`)
-      .join(" ");
-  });
 
   tokenResource = this.tokenService.tokenResource;
   pageIndex = this.tokenService.pageIndex;
   pageSize = this.tokenService.pageSize;
-  tokenDataSource: WritableSignal<MatTableDataSource<TokenDetails>> =
-    linkedSignal({
-      source: this.tokenResource.value,
-      computation: (tokenResource, previous) => {
-        if (tokenResource && tokenResource.result?.value) {
-          return new MatTableDataSource(tokenResource.result?.value.tokens);
-        }
-        return previous?.value ?? new MatTableDataSource();
+  tokenDataSource: WritableSignal<MatTableDataSource<TokenDetails>> = linkedSignal({
+    source: this.tokenResource.value,
+    computation: (tokenResource, previous) => {
+      if (tokenResource && tokenResource.result?.value) {
+        return new MatTableDataSource(tokenResource.result?.value.tokens);
       }
-    });
+      return previous?.value ?? new MatTableDataSource();
+    }
+  });
   total: WritableSignal<number> = linkedSignal({
     source: this.tokenResource.value,
     computation: (tokenResource, previous) => {
@@ -227,20 +228,13 @@ export class ContainerDetailsComponent {
         .filter((detail) => detail.value !== undefined);
     }
   });
-  containerTokenData: WritableSignal<
-    MatTableDataSource<ContainerDetailToken, MatPaginator>
-  > = linkedSignal({
+  containerTokenData: WritableSignal<MatTableDataSource<ContainerDetailToken, MatPaginator>> = linkedSignal({
     source: this.containerDetails,
     computation: (containerDetails, previous) => {
       if (!containerDetails) {
-        return (
-          previous?.value ??
-          new MatTableDataSource<ContainerDetailToken, MatPaginator>([])
-        );
+        return previous?.value ?? new MatTableDataSource<ContainerDetailToken, MatPaginator>([]);
       }
-      return new MatTableDataSource<ContainerDetailToken, MatPaginator>(
-        containerDetails.tokens ?? []
-      );
+      return new MatTableDataSource<ContainerDetailToken, MatPaginator>(containerDetails.tokens ?? []);
     }
   });
   selectedRealms = linkedSignal({
@@ -250,11 +244,7 @@ export class ContainerDetailsComponent {
   rawUserData = linkedSignal({
     source: this.containerDetails,
     computation: (containerDetails) => {
-      if (
-        !containerDetails ||
-        !Array.isArray(containerDetails.users) ||
-        containerDetails.users.length === 0
-      ) {
+      if (!containerDetails || !Array.isArray(containerDetails.users) || containerDetails.users.length === 0) {
         return {
           user_realm: "",
           user_name: "",
@@ -284,9 +274,7 @@ export class ContainerDetailsComponent {
 
   isAnyEditing = computed(() => {
     return (
-      this.containerDetailData().some((element) => element.isEditing()) ||
-      this.isEditingUser() ||
-      this.isEditingInfo()
+      this.containerDetailData().some((element) => element.isEditing()) || this.isEditingUser() || this.isEditingInfo()
     );
   });
 
@@ -310,61 +298,40 @@ export class ContainerDetailsComponent {
         });
       }
     });
-    effect(() => {
-      const currentFilter = this.filterValue();
-
-      let recordsFromText = this.tableUtilsService.recordsFromText(
-        this.filterValueString()
-      );
-      if (this.showOnlyTokenNotInContainer()) {
-        recordsFromText["container_serial"] = "";
-      }
-      recordsFromText = this._addTypeListToFilter(recordsFromText);
-      const objValueFromText: Record<string, string> = {};
-      Object.entries(recordsFromText).forEach(([key, value]) => {
-        objValueFromText[key] = value as string;
-      });
-      if (JSON.stringify(currentFilter) !== JSON.stringify(objValueFromText)) {
-        this.filterValue.set(objValueFromText);
-      }
-    });
   }
 
-  _addTypeListToFilter(
-    currentFilter: Record<string, string>
-  ): Record<string, string> {
+  _addTypeListToFilter(currentFilter: FilterValue): FilterValue {
     const containerDetails = this.containerDetails();
     const containerType = containerDetails?.type;
     const allowedTokenTypes = allowedTokenTypesMap.get(containerType);
-    const _currentFilter = { ...currentFilter } as Record<string, string>;
+    const _currentFilter = currentFilter.copyWith();
     if (
       !allowedTokenTypes ||
       allowedTokenTypes === "all" ||
       !Array.isArray(allowedTokenTypes) ||
       allowedTokenTypes.length === 0
     ) {
-      delete _currentFilter["type"];
-      delete _currentFilter["type_list"];
+      _currentFilter.removeKey("type");
+      _currentFilter.removeKey("type_list");
       return _currentFilter;
     }
     if (allowedTokenTypes.length === 1) {
-      _currentFilter["type"] = allowedTokenTypes[0];
-      delete _currentFilter["type_list"];
+      _currentFilter.addEntry("type", allowedTokenTypes[0]);
+      _currentFilter.removeKey("type_list");
     } else {
-      _currentFilter["type_list"] = allowedTokenTypes.join(",");
-
-      delete _currentFilter["type"];
+      _currentFilter.addEntry("type_list", allowedTokenTypes.join(","));
+      _currentFilter.removeKey("type");
     }
     return _currentFilter;
   }
 
   isEditableElement(key: string) {
-    const role = this.authService.role();
-    if (role === "admin") {
-      return key === "description" || key === "realms";
-    } else {
-      return key === "description";
+    if (key === "description" && this.authService.actionAllowed("container_description")) {
+      return true;
+    } else if (key === "realms" && this.authService.actionAllowed("container_realms")) {
+      return true;
     }
+    return false;
   }
 
   cancelContainerEdit(element: EditableElement) {
@@ -411,12 +378,12 @@ export class ContainerDetailsComponent {
     this.containerService
       .assignUser({
         containerSerial: this.containerSerial(),
-        username: this.userService.userNameFilter(),
+        username: this.userService.selectionUsernameFilter(),
         userRealm: this.userService.selectedUserRealm()
       })
       .subscribe({
         next: () => {
-          this.userService.userFilter.set("");
+          this.userService.selectionFilter.set("");
           this.userService.selectedUserRealm.set("");
           this.isEditingUser.update((b) => !b);
           this.containerDetailResource.reload();
@@ -425,19 +392,13 @@ export class ContainerDetailsComponent {
   }
 
   unassignUser() {
-    const userName = this.userData().find(
-      (d) => d.keyMap.key === "user_name"
-    )?.value;
-    const userRealm = this.userData().find(
-      (d) => d.keyMap.key === "user_realm"
-    )?.value;
-    this.containerService
-      .unassignUser(this.containerSerial(), userName ?? "", userRealm ?? "")
-      .subscribe({
-        next: () => {
-          this.containerDetailResource.reload();
-        }
-      });
+    const userName = this.userData().find((d) => d.keyMap.key === "user_name")?.value;
+    const userRealm = this.userData().find((d) => d.keyMap.key === "user_realm")?.value;
+    this.containerService.unassignUser(this.containerSerial(), userName ?? "", userRealm ?? "").subscribe({
+      next: () => {
+        this.containerDetailResource.reload();
+      }
+    });
   }
 
   onPageEvent(event: PageEvent) {
@@ -450,36 +411,28 @@ export class ContainerDetailsComponent {
   }
 
   addTokenToContainer(option: TokenOption) {
-    this.containerService
-      .addTokenToContainer(this.containerSerial(), option["serial"])
-      .subscribe({
-        next: () => {
-          this.containerDetailResource.reload();
-          this.tokenService.tokenResource.reload();
-        }
-      });
+    this.containerService.addTokenToContainer(this.containerSerial(), option["serial"]).subscribe({
+      next: () => {
+        this.containerDetailResource.reload();
+        this.tokenService.tokenResource.reload();
+      }
+    });
   }
 
   saveRealms() {
-    this.containerService
-      .setContainerRealm(this.containerSerial(), this.selectedRealms())
-      .subscribe({
-        next: () => {
-          this.containerDetailResource.reload();
-        }
-      });
+    this.containerService.setContainerRealm(this.containerSerial(), this.selectedRealms()).subscribe({
+      next: () => {
+        this.containerDetailResource.reload();
+      }
+    });
   }
 
   saveDescription() {
-    const description = this.containerDetailData().find(
-      (detail) => detail.keyMap.key === "description"
-    )?.value;
-    this.containerService
-      .setContainerDescription(this.containerSerial(), description)
-      .subscribe({
-        next: () => {
-          this.containerDetailResource.reload();
-        }
-      });
+    const description = this.containerDetailData().find((detail) => detail.keyMap.key === "description")?.value;
+    this.containerService.setContainerDescription(this.containerSerial(), description).subscribe({
+      next: () => {
+        this.containerDetailResource.reload();
+      }
+    });
   }
 }

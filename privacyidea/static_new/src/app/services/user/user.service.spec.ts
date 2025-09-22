@@ -1,3 +1,21 @@
+/**
+ * (c) NetKnights GmbH 2025,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ **/
 import { TestBed } from "@angular/core/testing";
 import { signal } from "@angular/core";
 import { UserData, UserService } from "./user.service";
@@ -78,18 +96,18 @@ describe("UserService", () => {
     });
 
     it("selectedUser returns the matching user when userNameFilter is set", () => {
-      userService.userFilter.set("Alice");
+      userService.selectionFilter.set("Alice");
       expect(userService.selectedUser()).toEqual(alice);
     });
 
     it("filteredUsers narrows the list by the string in userFilter (case-insensitive)", () => {
-      userService.userFilter.set("aL"); // any case
-      expect(userService.filteredUsers()).toEqual([users[0]]);
+      userService.selectionFilter.set("aL"); // any case
+      expect(userService.selectionFilteredUsers()).toEqual([users[0]]);
     });
 
     it("should return all users when filter is empty", () => {
-      userService.userFilter.set("");
-      expect(userService.filteredUsers()).toEqual(users);
+      userService.selectionFilter.set("");
+      expect(userService.selectionFilteredUsers()).toEqual(users);
     });
   });
 });

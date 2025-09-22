@@ -1,3 +1,21 @@
+/**
+ * (c) NetKnights GmbH 2025,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { TokenApplicationsComponent } from "./token-applications.component";
 import { TokenApplicationsSshComponent } from "./token-applications-ssh/token-applications-ssh.component";
@@ -5,12 +23,12 @@ import { TokenApplicationsOfflineComponent } from "./token-applications-offline/
 import { MatSelectModule } from "@angular/material/select";
 import { MachineService } from "../../../services/machine/machine.service";
 import { provideHttpClient } from "@angular/common/http";
-import { MockMachineService } from "../../../../testing/mock-services";
+import { MockLocalService, MockMachineService, MockNotificationService } from "../../../../testing/mock-services";
 
 describe("TokenApplicationsComponent (Jest)", () => {
   let fixture: ComponentFixture<TokenApplicationsComponent>;
   let component: TokenApplicationsComponent;
-  const machineServiceMock = new MockMachineService();
+  let machineServiceMock: MockMachineService;
 
   beforeEach(async () => {
     TestBed.resetTestingModule();
@@ -24,12 +42,15 @@ describe("TokenApplicationsComponent (Jest)", () => {
       ],
       providers: [
         provideHttpClient(),
-        { provide: MachineService, useValue: machineServiceMock }
+        { provide: MachineService, useClass: MockMachineService },
+        MockLocalService,
+        MockNotificationService
       ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(TokenApplicationsComponent);
     component = fixture.componentInstance;
+    machineServiceMock = TestBed.inject(MachineService) as any;
     fixture.detectChanges();
   });
 

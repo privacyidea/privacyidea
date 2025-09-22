@@ -2,14 +2,12 @@
 
 .container-table-container {
   @include styles.table-container-styles;
-  @include styles.base-table-structure(
-                  ".container-table",
-                  ".container-table-filter",
-                  ".table-scroll-container"
-  );
+  @include styles.base-table-structure(".container-table", ".container-table-filter", ".table-scroll-container");
   overflow-y: auto;
   overflow-x: hidden;
   max-height: calc(var(--main-height) - var(--global-padding) * 5);
+  max-width: calc(100vw - var(--global-padding) * 5 - 48px);
+  display: grid;
 }
 
 .filter-paginator-container-selfservice {
@@ -71,4 +69,13 @@ tr.example-detail-row td {
   border: solid 1px var(--mat-sys-outline-variant);
   border-radius: var(--border-radius);
   background: var(--mat-sys-surface-container-low);
+}
+
+.table-container {
+  width: 1430px;
+}
+
+.selfservice-paginator-container {
+  justify-content: end;
+  display: flex;
 }

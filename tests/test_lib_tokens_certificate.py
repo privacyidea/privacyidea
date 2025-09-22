@@ -2,32 +2,31 @@
 This test file tests the lib.tokens.certificatetoken
 """
 import base64
+import unittest
 
+import mock
+import pytest
 from cryptography import x509
 from cryptography.hazmat.primitives.serialization import pkcs12
-import pytest
 from testfixtures import LogCapture
 
-from .base import MyTestCase, FakeFlaskG, FakeAudit
-from privacyidea.models import Token
 from privacyidea.lib.caconnector import save_caconnector
-from privacyidea.lib.token import get_tokens, remove_token, import_tokens
+from privacyidea.lib.caconnectors.baseca import AvailableCAConnectors
+from privacyidea.lib.caconnectors.msca import ATTR as MS_ATTR
+from privacyidea.lib.caconnectors.msca import MSCAConnector
 from privacyidea.lib.error import ParameterError, privacyIDEAError
-from privacyidea.lib.utils import int_to_hex
+from privacyidea.lib.policy import set_policy, delete_policy, PolicyClass, SCOPE
+from privacyidea.lib.token import get_tokens, remove_token, import_tokens
+from privacyidea.lib.token import init_token
+from privacyidea.lib.tokenclass import ROLLOUTSTATE
 from privacyidea.lib.tokens.certificatetoken import (parse_chainfile, ACTION,
                                                      verify_certificate_path,
                                                      CertificateTokenClass)
-from privacyidea.lib.policy import set_policy, delete_policy, PolicyClass, SCOPE
-
-import unittest
-import mock
-from privacyidea.lib.caconnectors.baseca import AvailableCAConnectors
-from privacyidea.lib.caconnectors.msca import MSCAConnector
-from .mscamock import CAServiceMock
-from privacyidea.lib.caconnectors.msca import ATTR as MS_ATTR
-from privacyidea.lib.token import init_token
-from privacyidea.lib.tokenclass import ROLLOUTSTATE
 from privacyidea.lib.user import User
+from privacyidea.lib.utils import int_to_hex
+from privacyidea.models import Token
+from .base import MyTestCase, FakeFlaskG, FakeAudit
+from .mscamock import CAServiceMock
 
 CERT = """-----BEGIN CERTIFICATE-----
 MIIGXDCCBUSgAwIBAgITYwAAAA27DqXl0fVdOAAAAAAADTANBgkqhkiG9w0BAQsF
@@ -254,7 +253,6 @@ ub8B4Q4BtcXwyX1IjkSRVGhpmBKc+cykTR1GGR0L0JihMK85qWF/8vyYiwBq3z08
 TdIfRtrzkM5Zw/U/p2/LWzbe/fCkqSC6SheI+/FDR7Bjz7xNxIZHonk=
 -----END CERTIFICATE-----"""
 
-
 # Mock for certificate from MSCA
 MY_CA_NAME = "192.168.47.11"
 
@@ -297,7 +295,6 @@ VBC5Qos8/IabJpV5Bvqq4/7ZmVeAOXRQCVPomugzU1L6cs7GWCZpmuB7WG5VT+hL
 WYx05kOaYFFvb1u8ub+qSExyHGX9Lh6w32RCoM8kJP7F6YCepKJRboka1/BY3GbF
 17qsUVtb+0YLznMdHEFtWc51SpzA0h3a7w==
 -----END CERTIFICATE-----"""
-
 
 CONF = {
     MS_ATTR.HOSTNAME: MY_CA_NAME,
@@ -588,7 +585,7 @@ class CertificateTokenTestCase(MyTestCase):
         self.assertTrue(set(expected_keys).issubset(exported_data.keys()))
 
         expected_tokeninfo_keys = ["tokenkind", "certificate"]
-        self.assertTrue(set(expected_tokeninfo_keys).issubset(exported_data["tokeninfo"].keys()))
+        self.assertTrue(set(expected_tokeninfo_keys).issubset(exported_data["info_list"].keys()))
 
         # Test that the exported values match the token's data
         exported_data = token.export_token()
@@ -596,9 +593,9 @@ class CertificateTokenTestCase(MyTestCase):
         self.assertEqual(exported_data["type"], "certificate")
         self.assertEqual(exported_data["description"], "this is a certificate token export test")
         self.assertEqual(exported_data["otpkey"], '')
-        self.assertEqual(exported_data["tokeninfo"]["tokenkind"], "software")
+        self.assertEqual(exported_data["info_list"]["tokenkind"], "software")
         self.assertEqual(exported_data["issuer"], "privacyIDEA")
-        self.assertEqual(exported_data["tokeninfo"]["certificate"], CERT)
+        self.assertEqual(exported_data["info_list"]["certificate"], CERT)
 
         # Clean up
         remove_token(token.token.serial)
@@ -610,7 +607,7 @@ class CertificateTokenTestCase(MyTestCase):
             "type": "certificate",
             "description": "this is a certificate token export test",
             "issuer": "privacyIDEA",
-            "tokeninfo": {"certificate": CERT, "tokenkind": "software"}
+            "info_list": {"certificate": CERT, "tokenkind": "software"}
         }]
 
         # Import the token

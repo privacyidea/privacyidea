@@ -1,3 +1,21 @@
+/**
+ * (c) NetKnights GmbH 2025,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ **/
 import { Component, EventEmitter, inject, OnInit, Output, signal } from "@angular/core";
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { Tokens, TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
@@ -27,18 +45,14 @@ export interface PushEnrollmentOptions extends TokenEnrollmentData {
 })
 export class EnrollPushComponent implements OnInit {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
-  protected readonly dialogService: DialogServiceInterface =
-    inject(DialogService);
-  protected readonly enrollmentMapper: PushApiPayloadMapper =
-    inject(PushApiPayloadMapper);
+  protected readonly dialogService: DialogServiceInterface = inject(DialogService);
+  protected readonly enrollmentMapper: PushApiPayloadMapper = inject(PushApiPayloadMapper);
 
   pollResponse = signal<PiResponse<Tokens> | undefined>(undefined);
 
-  text = this.tokenService
-    .tokenTypeOptions()
-    .find((type) => type.key === "push")?.text;
+  text = this.tokenService.tokenTypeOptions().find((type) => type.key === "push")?.text;
 
-  @Output() aditionalFormFieldsChange = new EventEmitter<{
+  @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
   @Output() clickEnrollChange = new EventEmitter<
@@ -49,13 +63,11 @@ export class EnrollPushComponent implements OnInit {
   pushForm = new FormGroup({});
 
   ngOnInit(): void {
-    this.aditionalFormFieldsChange.emit({});
+    this.additionalFormFieldsChange.emit({});
     this.clickEnrollChange.emit(this.onClickEnroll);
   }
 
-  onClickEnroll = async (
-    basicOptions: TokenEnrollmentData
-  ): Promise<EnrollmentResponse | null> => {
+  onClickEnroll = async (basicOptions: TokenEnrollmentData): Promise<EnrollmentResponse | null> => {
     const enrollmentData: PushEnrollmentOptions = {
       ...basicOptions,
       type: "push"
@@ -71,10 +83,7 @@ export class EnrollPushComponent implements OnInit {
     if (!initResponse) {
       return null;
     }
-    const pollResponse = await this.pollTokenRolloutState(
-      initResponse,
-      5000
-    ).catch(() => {
+    const pollResponse = await this.pollTokenRolloutState(initResponse, 5000).catch(() => {
       return null;
     });
     if (!pollResponse) {
@@ -101,9 +110,7 @@ export class EnrollPushComponent implements OnInit {
     observable.subscribe({
       next: (pollResponse) => {
         this.pollResponse.set(pollResponse);
-        if (
-          pollResponse.result?.value?.tokens[0].rollout_state !== "clientwait"
-        ) {
+        if (pollResponse.result?.value?.tokens[0].rollout_state !== "clientwait") {
           this.dialogService.closeTokenEnrollmentFirstStepDialog();
         }
       }

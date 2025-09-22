@@ -1,3 +1,21 @@
+/**
+ * (c) NetKnights GmbH 2025,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ **/
 import { NgClass } from "@angular/common";
 import { Component, inject } from "@angular/core";
 import { FormsModule } from "@angular/forms";
@@ -16,6 +34,7 @@ import { TableUtilsService, TableUtilsServiceInterface } from "../../../services
 import { TokenService, TokenServiceInterface } from "../../../services/token/token.service";
 import { ConfirmationDialogComponent } from "../../shared/confirmation-dialog/confirmation-dialog.component";
 import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
+import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { ContainerTableComponent } from "./container-table.component";
 
 @Component({
@@ -32,21 +51,18 @@ import { ContainerTableComponent } from "./container-table.component";
     MatCheckboxModule,
     FormsModule,
     MatIcon,
-    MatIconButton
+    MatIconButton,
+    ScrollToTopDirective
   ],
   templateUrl: "./container-table.self-service.component.html",
   styleUrl: "./container-table.component.scss"
 })
 export class ContainerTableSelfServiceComponent extends ContainerTableComponent {
   private readonly dialog = inject(MatDialog);
-  protected override readonly containerService: ContainerServiceInterface =
-    inject(ContainerService);
-  protected override readonly tokenService: TokenServiceInterface =
-    inject(TokenService);
-  protected override readonly tableUtilsService: TableUtilsServiceInterface =
-    inject(TableUtilsService);
-  protected override readonly contentService: ContentServiceInterface =
-    inject(ContentService);
+  protected override readonly containerService: ContainerServiceInterface = inject(ContainerService);
+  protected override readonly tokenService: TokenServiceInterface = inject(TokenService);
+  protected override readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
+  protected override readonly contentService: ContentServiceInterface = inject(ContentService);
 
   readonly columnKeysMapSelfService = [
     { key: "serial", label: "Serial" },
@@ -67,7 +83,7 @@ export class ContainerTableSelfServiceComponent extends ContainerTableComponent 
     this.dialog
       .open(ConfirmationDialogComponent, {
         data: {
-          serial_list: [serial],
+          serialList: [serial],
           title: "Delete Container",
           type: "container",
           action: "delete",

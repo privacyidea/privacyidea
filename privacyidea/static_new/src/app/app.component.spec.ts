@@ -1,20 +1,38 @@
-import { TestBed } from "@angular/core/testing";
-import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
-import { provideRouter, Router } from "@angular/router";
+/**
+ * (c) NetKnights GmbH 2025,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ **/
 import { APP_BASE_HREF, Location } from "@angular/common";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { TestBed } from "@angular/core/testing";
+import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
+import { provideRouter, Router } from "@angular/router";
 
 import { AppComponent } from "./app.component";
-import { routes } from "./app.routes";
 import { appConfig } from "./app.config";
+import { routes } from "./app.routes";
+import { AuthGuard } from "./guards/auth.guard";
 import { AuthService } from "./services/auth/auth.service";
 import { NotificationService } from "./services/notification/notification.service";
 import { SessionTimerService } from "./services/session-timer/session-timer.service";
-import { AuthGuard } from "./guards/auth.guard";
 
 class MockAuthService {
-  isAuthenticatedUser = jest.fn(() => false);
+  isAuthenticated = jest.fn(() => false);
   role = jest.fn(() => "admin");
 }
 
@@ -62,28 +80,20 @@ describe("AppComponent", () => {
 
   it("starts timer and shows snackbar when user already authenticated", () => {
     const auth = TestBed.inject(AuthService) as unknown as MockAuthService;
-    const timer = TestBed.inject(
-      SessionTimerService
-    ) as unknown as MockSessionTimerService;
-    const note = TestBed.inject(
-      NotificationService
-    ) as unknown as MockNotificationService;
+    const timer = TestBed.inject(SessionTimerService) as unknown as MockSessionTimerService;
+    const note = TestBed.inject(NotificationService) as unknown as MockNotificationService;
 
-    auth.isAuthenticatedUser.mockReturnValue(true);
+    auth.isAuthenticated.mockReturnValue(true);
 
     TestBed.createComponent(AppComponent).detectChanges();
 
     expect(timer.startTimer).toHaveBeenCalled();
-    expect(auth.isAuthenticatedUser).toHaveBeenCalled();
-    expect(note.openSnackBar).toHaveBeenCalledWith(
-      "User is already logged in."
-    );
+    expect(auth.isAuthenticated).toHaveBeenCalled();
+    expect(note.openSnackBar).toHaveBeenCalledWith("User is already logged in.");
   });
 
   it("resets & restarts timer on user interaction", () => {
-    const timer = TestBed.inject(
-      SessionTimerService
-    ) as unknown as MockSessionTimerService;
+    const timer = TestBed.inject(SessionTimerService) as unknown as MockSessionTimerService;
 
     const fixture = TestBed.createComponent(AppComponent);
     fixture.detectChanges();
@@ -99,12 +109,10 @@ describe("AppComponent", () => {
       expect(Array.isArray(appConfig.providers)).toBe(true);
     });
 
-    it("contains APP_BASE_HREF set to /ui/", () => {
-      const p = appConfig.providers.find(
-        (x: any) => x.provide === APP_BASE_HREF
-      );
+    it("contains APP_BASE_HREF set to /app/v2/", () => {
+      const p = appConfig.providers.find((x: any) => x.provide === APP_BASE_HREF);
       if (p && "useValue" in p) {
-        expect(p?.useValue).toBe("/ui/");
+        expect(p?.useValue).toBe("/app/v2/");
       }
     });
   });
@@ -119,7 +127,7 @@ describe("AppComponent", () => {
       location = TestBed.inject(Location);
       auth = TestBed.inject(AuthService) as unknown as MockAuthService;
 
-      auth.isAuthenticatedUser.mockReturnValue(true);
+      auth.isAuthenticated.mockReturnValue(true);
       auth.role.mockReturnValue("admin");
 
       await router.navigateByUrl("/");

@@ -1,14 +1,37 @@
-import { TestBed } from "@angular/core/testing";
-import { HttpClient, HttpParams } from "@angular/common/http";
+/**
+ * (c) NetKnights GmbH 2025,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ **/
+import { HttpClient, HttpHeaders, HttpParams } from "@angular/common/http";
+import {
+  MockContentService,
+  MockLocalService,
+  MockNotificationService,
+  MockTableUtilsService
+} from "../../../testing/mock-services";
 import { lastValueFrom, of } from "rxjs";
 
-import { MachineService } from "./machine.service";
-
-import { LocalService } from "../local/local.service";
-import { TableUtilsService } from "../table-utils/table-utils.service";
 import { ContentService } from "../content/content.service";
+import { LocalService } from "../local/local.service";
+import { MachineService } from "./machine.service";
+import { TableUtilsService } from "../table-utils/table-utils.service";
+import { TestBed } from "@angular/core/testing";
 import { environment } from "../../../environments/environment";
-import { MockContentService, MockLocalService, MockTableUtilsService } from "../../../testing/mock-services";
+import { FilterValue } from "../../core/models/filter_value";
 
 environment.proxyUrl = "/api";
 
@@ -29,7 +52,9 @@ describe("MachineService (with mock classes)", () => {
         { provide: LocalService, useClass: MockLocalService },
         { provide: TableUtilsService, useClass: MockTableUtilsService },
         { provide: ContentService, useClass: MockContentService },
-        MachineService
+        MachineService,
+        MockLocalService,
+        MockNotificationService
       ]
     });
 
@@ -40,53 +65,58 @@ describe("MachineService (with mock classes)", () => {
 
   it("postAssignMachineToToken posts args with auth header", async () => {
     httpStub.post.mockReturnValue(of({ ok: true }));
-    const args = {
+    await lastValueFrom(
+      machineService.postAssignMachineToToken({
+        service_id: "svc",
+        user: "alice",
+        serial: "serial",
+        application: "ssh",
+        machineid: 0,
+        resolver: "RES"
+      })
+    );
+    const [url, body, opts] = (httpStub.post as jest.Mock).mock.calls[0];
+    expect(url).toBe("/api/machine/token");
+    expect(body).toEqual({
       service_id: "svc",
       user: "alice",
       serial: "serial",
       application: "ssh",
-      machineid: "MID",
+      machineid: 0,
       resolver: "RES"
-    };
-    await lastValueFrom(machineService.postAssignMachineToToken(args));
-    expect(httpStub.post).toHaveBeenCalledWith("/api/machine/token", args, {
-      headers: { Authorization: "Bearer x" }
     });
+    expect(opts.headers instanceof HttpHeaders).toBe(true);
   });
 
   it("postTokenOption builds correct request body", async () => {
     httpStub.post.mockReturnValue(of({}));
-    await lastValueFrom(
-      machineService.postTokenOption("host", "mid", "res", "serial", "ssh", "mtid")
-    );
-    expect(httpStub.post).toHaveBeenCalledWith(
-      "/api/machine/tokenoption",
-      {
-        hostname: "host",
-        machineid: "mid",
-        resolver: "res",
-        serial: "serial",
-        application: "ssh",
-        mtid: "mtid"
-      },
-      { headers: { Authorization: "Bearer x" } }
-    );
+    await lastValueFrom(machineService.postTokenOption("host", "mid", "res", "serial", "ssh", "mtid"));
+    const [url, body, opts] = (httpStub.post as jest.Mock).mock.calls[0];
+    expect(url).toBe("/api/machine/tokenoption");
+    expect(body).toEqual({
+      hostname: "host",
+      machineid: "mid",
+      resolver: "res",
+      serial: "serial",
+      application: "ssh",
+      mtid: "mtid"
+    });
+    expect(opts.headers instanceof HttpHeaders).toBe(true);
   });
 
   it("postToken hits /token endpoint", async () => {
     httpStub.post.mockReturnValue(of({}));
     await lastValueFrom(machineService.postToken("host", "mid", "res", "serial", "offline"));
-    expect(httpStub.post).toHaveBeenCalledWith(
-      "/api/machine/token",
-      {
-        hostname: "host",
-        machineid: "mid",
-        resolver: "res",
-        serial: "serial",
-        application: "offline"
-      },
-      { headers: { Authorization: "Bearer x" } }
-    );
+    const [url, body, opts] = (httpStub.post as jest.Mock).mock.calls[0];
+    expect(url).toBe("/api/machine/token");
+    expect(body).toEqual({
+      hostname: "host",
+      machineid: "mid",
+      resolver: "res",
+      serial: "serial",
+      application: "offline"
+    });
+    expect(opts.headers instanceof HttpHeaders).toBe(true);
   });
 
   it("getAuthItem chooses URL with and without application", () => {
@@ -129,17 +159,15 @@ describe("MachineService (with mock classes)", () => {
   it("deleteToken & deleteTokenMtid craft correct URLs", async () => {
     httpStub.delete.mockReturnValue(of({}));
     await lastValueFrom(machineService.deleteToken("S", "M", "R", "ssh"));
-    expect(httpStub.delete).toHaveBeenCalledWith("/api/machine/token/S/M/R/ssh", {
-      headers: { Authorization: "Bearer x" }
-    });
+    const [url] = (httpStub.delete as jest.Mock).mock.calls[0];
+    expect(url).toBe("/api/machine/token/S/M/R/ssh");
     await lastValueFrom(machineService.deleteTokenMtid("S2", "offline", "MT"));
-    expect(httpStub.delete).toHaveBeenCalledWith("/api/machine/token/S2/offline/MT", {
-      headers: { Authorization: "Bearer x" }
-    });
+    const [url2] = (httpStub.delete as jest.Mock).mock.calls[1];
+    expect(url2).toBe("/api/machine/token/S2/offline/MT");
   });
 
   it("filterParams produces expected object for ssh", () => {
-    machineService.filterValue.set({ serial: "abc", hostname: "host" });
+    machineService.machineFilter.set(new FilterValue({ value: "serial:abc hostname:host" }));
     expect(machineService.filterParams()).toEqual({
       serial: "*abc*",
       hostname: "host"
@@ -148,13 +176,10 @@ describe("MachineService (with mock classes)", () => {
 
   it("filterParams handles offline application type", () => {
     machineService.selectedApplicationType.set("offline");
-    machineService.filterValue.set({
-      serial: "xyz",
-      hostname: "h",
-      count: "5",
-      rounds: "10",
-      service_id: "svc"
-    } as any);
+    machineService.machineFilter.set(
+      new FilterValue({ value: "serial:xyz hostname:h count:5 rounds:10 service_id:svc" })
+    );
+
     expect(machineService.filterParams()).toEqual({
       serial: "*xyz*",
       hostname: "h",

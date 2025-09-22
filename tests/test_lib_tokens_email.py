@@ -1,28 +1,29 @@
 """
 This test file tests the lib.tokens.smstoken
 """
+import datetime
 import logging
+
+import mock
+from dateutil.tz import tzlocal
 from testfixtures import log_capture
 
-from .base import MyTestCase, FakeFlaskG, FakeAudit
-from privacyidea.lib.resolver import save_resolver
-from privacyidea.lib.realm import set_realm
-from privacyidea.lib.user import User
-from privacyidea.lib.utils import is_true
-from privacyidea.lib.tokenclass import DATE_FORMAT
-from privacyidea.lib.tokens.emailtoken import EmailTokenClass, EMAILACTION
-from privacyidea.lib.tokens.emailtoken import log as email_log
-from privacyidea.lib.token import remove_token, get_tokens, import_tokens, init_token
-from privacyidea.models import Token, Config
+from privacyidea.lib import _
 from privacyidea.lib.config import (set_privacyidea_config, set_prepend_pin,
                                     delete_privacyidea_config)
 from privacyidea.lib.policy import set_policy, SCOPE, PolicyClass
+from privacyidea.lib.realm import set_realm
+from privacyidea.lib.resolver import save_resolver
 from privacyidea.lib.smtpserver import add_smtpserver, delete_smtpserver
-from privacyidea.lib import _
-import datetime
-from dateutil.tz import tzlocal
+from privacyidea.lib.token import remove_token, get_tokens, import_tokens, init_token
+from privacyidea.lib.tokenclass import DATE_FORMAT
+from privacyidea.lib.tokens.emailtoken import EmailTokenClass, EMAILACTION
+from privacyidea.lib.tokens.emailtoken import log as email_log
+from privacyidea.lib.user import User
+from privacyidea.lib.utils import is_true
+from privacyidea.models import Token, Config
 from . import smtpmock
-import mock
+from .base import MyTestCase, FakeFlaskG, FakeAudit
 
 PWFILE = "tests/testdata/passwords"
 TEMPLATE_FILE = "tests/testdata/emailtemplate.html"
@@ -399,7 +400,6 @@ class EmailTokenTestCase(MyTestCase):
             mock_user_info.return_value = new_user_info
             self.assertEqual(token._email_address, 'email1@example.com')
 
-
     @smtpmock.activate
     def test_19_emailtext(self):
         # create a EMAILTEXT policy:
@@ -544,17 +544,17 @@ class EmailTokenTestCase(MyTestCase):
         self.assertTrue(set(expected_keys).issubset(exported_data.keys()))
 
         expected_tokeninfo_keys = ["email", "hashlib", "tokenkind"]
-        self.assertTrue(set(expected_tokeninfo_keys).issubset(exported_data["tokeninfo"].keys()))
+        self.assertTrue(set(expected_tokeninfo_keys).issubset(exported_data["info_list"].keys()))
 
         # Test that the exported values match the token's data
         exported_data = emailtoken.export_token()
         self.assertEqual(exported_data["serial"], "PIEM12345678")
         self.assertEqual(exported_data["type"], "email")
-        self.assertEqual(exported_data["tokeninfo"]["email"], "test@example.com")
+        self.assertEqual(exported_data["info_list"]["email"], "test@example.com")
         self.assertEqual(exported_data["description"], "this is a email token export test")
-        self.assertEqual(exported_data["tokeninfo"]["hashlib"], "sha512")
+        self.assertEqual(exported_data["info_list"]["hashlib"], "sha512")
         self.assertEqual(exported_data["otpkey"], '12345')
-        self.assertEqual(exported_data["tokeninfo"]["tokenkind"], "software")
+        self.assertEqual(exported_data["info_list"]["tokenkind"], "software")
         self.assertEqual(exported_data["issuer"], "privacyIDEA")
 
         # Clean up
@@ -572,7 +572,7 @@ class EmailTokenTestCase(MyTestCase):
             "hashlib": "sha512",
             "tokenkind": "software",
             "issuer": "privacyIDEA",
-            "tokeninfo": {"hashlib": "sha512", "timeWindow": 180, "email": self.email,
+            "info_list": {"hashlib": "sha512", "timeWindow": 180, "email": self.email,
                           "tokenkind": "software"}
         }]
 
@@ -588,9 +588,9 @@ class EmailTokenTestCase(MyTestCase):
         self.assertEqual(emailtoken.type, token_data[0]["type"])
         self.assertEqual(emailtoken.token.description, token_data[0]["description"])
         self.assertEqual(emailtoken.token.get_otpkey().getKey().decode("utf-8"), token_data[0]["otpkey"])
-        self.assertEqual(emailtoken.get_tokeninfo("email"), token_data[0]["tokeninfo"]["email"])
-        self.assertEqual(emailtoken.get_tokeninfo("hashlib"), token_data[0]["tokeninfo"]["hashlib"])
-        self.assertEqual(emailtoken.get_tokeninfo("tokenkind"), token_data[0]["tokeninfo"]["tokenkind"])
+        self.assertEqual(emailtoken.get_tokeninfo("email"), token_data[0]["info_list"]["email"])
+        self.assertEqual(emailtoken.get_tokeninfo("hashlib"), token_data[0]["info_list"]["hashlib"])
+        self.assertEqual(emailtoken.get_tokeninfo("tokenkind"), token_data[0]["info_list"]["tokenkind"])
 
         # Check that token works
         self.assertEqual(0, emailtoken.check_otp('125165'))

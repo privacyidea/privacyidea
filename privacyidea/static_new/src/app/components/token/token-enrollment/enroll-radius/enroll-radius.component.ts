@@ -1,3 +1,21 @@
+/**
+ * (c) NetKnights GmbH 2025,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ **/
 import { Component, computed, effect, EventEmitter, inject, OnInit, Output } from "@angular/core";
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatCheckbox } from "@angular/material/checkbox";
@@ -45,20 +63,12 @@ export interface RadiusEnrollmentOptions extends TokenEnrollmentData {
   styleUrl: "./enroll-radius.component.scss"
 })
 export class EnrollRadiusComponent implements OnInit {
-  protected readonly enrollmentMapper: RadiusApiPayloadMapper = inject(
-    RadiusApiPayloadMapper
-  );
-  protected readonly radiusServerService: RadiusServerServiceInterface =
-    inject(RadiusServerService);
-  protected readonly systemService: SystemServiceInterface =
-    inject(SystemService);
+  protected readonly enrollmentMapper: RadiusApiPayloadMapper = inject(RadiusApiPayloadMapper);
+  protected readonly radiusServerService: RadiusServerServiceInterface = inject(RadiusServerService);
+  protected readonly systemService: SystemServiceInterface = inject(SystemService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
 
-  text = this.tokenService
-    .tokenTypeOptions()
-    .find((type) => type.key === "radius")?.text;
-
-  @Output() aditionalFormFieldsChange = new EventEmitter<{
+  @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
   @Output() clickEnrollChange = new EventEmitter<
@@ -66,12 +76,8 @@ export class EnrollRadiusComponent implements OnInit {
   >();
 
   radiusUserControl = new FormControl<string>("");
-  radiusServerConfigurationControl = new FormControl<string>("", [
-    Validators.required
-  ]);
-  checkPinLocallyControl = new FormControl<boolean>(false, [
-    Validators.required
-  ]);
+  radiusServerConfigurationControl = new FormControl<string>("", [Validators.required]);
+  checkPinLocallyControl = new FormControl<boolean>(false, [Validators.required]);
 
   radiusForm = new FormGroup({
     radiusUser: this.radiusUserControl,
@@ -80,10 +86,7 @@ export class EnrollRadiusComponent implements OnInit {
   });
 
   radiusServerConfigurationOptions = computed(
-    () =>
-      this.radiusServerService
-        .radiusServerConfigurations()
-        ?.map((config) => config.name) ?? []
+    () => this.radiusServerService.radiusServerConfigurations()?.map((config) => config.name) ?? []
   );
 
   defaultRadiusServerIsSet = computed(() => {
@@ -93,10 +96,7 @@ export class EnrollRadiusComponent implements OnInit {
 
   constructor() {
     effect(() => {
-      const id =
-        this.systemService.systemConfigResource.value()?.result?.value?.[
-          "radius.identifier"
-          ];
+      const id = this.systemService.systemConfigResource.value()?.result?.value?.["radius.identifier"];
       if (id && this.radiusServerConfigurationControl.pristine) {
         this.radiusServerConfigurationControl.setValue(id);
       }
@@ -104,7 +104,7 @@ export class EnrollRadiusComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.aditionalFormFieldsChange.emit({
+    this.additionalFormFieldsChange.emit({
       radiusUser: this.radiusUserControl,
       radiusServerConfiguration: this.radiusServerConfigurationControl,
       checkPinLocally: this.checkPinLocallyControl
@@ -112,10 +112,12 @@ export class EnrollRadiusComponent implements OnInit {
     this.clickEnrollChange.emit(this.onClickEnroll);
   }
 
-  onClickEnroll = (
-    basicOptions: TokenEnrollmentData
-  ): Observable<EnrollmentResponse | null> => {
-    if (this.radiusForm.invalid) {
+  onClickEnroll = (basicOptions: TokenEnrollmentData): Observable<EnrollmentResponse | null> => {
+    if (
+      this.radiusUserControl.invalid ||
+      this.radiusServerConfigurationControl.invalid ||
+      this.checkPinLocallyControl.invalid
+    ) {
       this.radiusForm.markAllAsTouched();
       return of(null);
     }
@@ -124,8 +126,7 @@ export class EnrollRadiusComponent implements OnInit {
       ...basicOptions,
       type: "radius",
       radiusUser: this.radiusUserControl.value ?? "",
-      radiusServerConfiguration:
-        this.radiusServerConfigurationControl.value ?? "",
+      radiusServerConfiguration: this.radiusServerConfigurationControl.value ?? "",
       checkPinLocally: !!this.checkPinLocallyControl.value
     };
 

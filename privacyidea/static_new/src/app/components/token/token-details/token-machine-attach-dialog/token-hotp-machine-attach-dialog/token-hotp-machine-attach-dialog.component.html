@@ -1,0 +1,57 @@
+<h2
+  i18n
+  mat-dialog-title>
+  Attach Offline Machine
+</h2>
+<mat-dialog-content class="full-width">
+  <!-- number input field for countControl and roundsControl -->
+  <form [formGroup]="formGroup">
+    <mat-form-field
+      appearance="fill"
+      class="full-width">
+      <mat-label i18n>Count</mat-label>
+      <input
+        matInput
+        type="number"
+        min="1"
+        [formControl]="countControl" />
+      @if (countControl.touched && countControl.invalid) {
+        <mat-error i18n> Count must be a positive integer.</mat-error>
+      }
+    </mat-form-field>
+    <br />
+    <mat-form-field
+      appearance="fill"
+      class="full-width">
+      <mat-label i18n>Rounds</mat-label>
+      <input
+        matInput
+        type="number"
+        min="1"
+        [formControl]="roundsControl" />
+      @if (roundsControl.touched && roundsControl.invalid) {
+        <mat-error i18n> Rounds must be a positive integer.</mat-error>
+      }
+    </mat-form-field>
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions>
+  <div class="form-actions">
+    <button
+      (click)="onAssign()"
+      [disabled]="formGroup.invalid"
+      i18n
+      mat-button
+      type="button">
+      Assign
+    </button>
+    <button
+      (click)="onCancel()"
+      i18n
+      mat-button
+      type="button">
+      Cancel
+    </button>
+  </div>
+</mat-dialog-actions>

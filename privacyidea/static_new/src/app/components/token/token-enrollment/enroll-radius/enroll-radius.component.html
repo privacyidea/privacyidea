@@ -1,38 +1,40 @@
 <div class="flex-column">
-  <div class="token-type-paragraph">
-    <p>{{ text }}</p>
-  </div>
   <h4 class="enroll-h4">Token Configuration</h4>
   @if (!defaultRadiusServerIsSet()) {
-    <span class="inline-hint">To ease the enrolling of RADIUS tokens you can set default values in the
+    <span
+      i18n
+      class="inline-hint">To ease the enrolling of RADIUS tokens you can set default values in the
       <a href="#">RADIUS Token Config</a>.</span>
   }
-  <mat-checkbox [formControl]="checkPinLocallyControl">
+  <mat-checkbox
+    [formControl]="checkPinLocallyControl"
+    i18n>
     Check the PIN locally
   </mat-checkbox>
   <div class="flex-row gap-1">
     <mat-form-field class="width-66">
-      <mat-label>RADIUS server configuration</mat-label>
-      <mat-hint>
+      <mat-label i18n>RADIUS server configuration</mat-label>
+      <mat-hint i18n>
         Select a predefined
         <a href="#">RADIUS server configuration</a>
         . The RADIUS request will be forwarded to this RADIUS server.
       </mat-hint>
       <mat-select
         [formControl]="radiusServerConfigurationControl"
+        [value]="radiusServerConfigurationControl.value"
         required>
         @for (option of radiusServerConfigurationOptions(); track option) {
           <mat-option [value]="option">{{ option }}</mat-option>
         }
       </mat-select>
-      <mat-error>RADIUS Server is <strong>required</strong></mat-error>
+      <mat-error i18n>RADIUS Server is <strong>required</strong></mat-error>
     </mat-form-field>
     <mat-form-field class="input-height width-33">
-      <mat-label>RADIUS User</mat-label>
+      <mat-label i18n>RADIUS User</mat-label>
       <input
         [formControl]="radiusUserControl"
-        matInput/>
-      <mat-error>RADIUS User is <strong>required</strong></mat-error>
+        matInput />
+      <mat-error i18n>RADIUS User is <strong>required</strong></mat-error>
     </mat-form-field>
   </div>
 </div>

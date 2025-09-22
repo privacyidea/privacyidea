@@ -44,6 +44,7 @@ The functions of this module are tested in tests/test_lib_policy_decorator.py
 import datetime
 import functools
 import logging
+import pyrad
 import re
 
 from dateutil.tz import tzlocal
@@ -56,7 +57,7 @@ from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import Match
 from privacyidea.lib.radiusserver import get_radius
 from privacyidea.lib.user import User
-from privacyidea.lib.utils import parse_timelimit, parse_timedelta, split_pin_pass
+from privacyidea.lib.utils import parse_timedelta, split_pin_pass
 
 log = logging.getLogger(__name__)
 
@@ -222,7 +223,7 @@ def auth_user_has_no_token(wrapped_function, user_object, passw,
             # Now we need to check, if the user really has no token.
             token_count = get_tokens(user=user_object, count=True)
             if token_count == 0:
-                g.audit_object.add_policy([p.get("name") for p in pass_no_token])
+                g.audit_object.add_policy({p.get("name") for p in pass_no_token})
                 return True, {"message": f"user has no token, accepted due to '{pass_no_token[0].get('name')}'"}
 
     # If nothing else returned, we return the wrapped function
@@ -250,7 +251,7 @@ def auth_user_does_not_exist(wrapped_function, user_object, passw, options=None)
                                   user_object=user_object).policies(write_to_audit_log=False)
         if not user_object.exist():
             if pass_no_user:
-                g.audit_object.add_policy([p.get("name") for p in pass_no_user])
+                g.audit_object.add_policy({p.get("name") for p in pass_no_user})
                 return True, {"message": f"user does not exist, accepted due to '{pass_no_user[0].get('name')}'"}
             else:
                 raise UserError(f"User {user_object} does not exist.")
@@ -288,7 +289,7 @@ def auth_user_passthru(wrapped_function, user_object, passw, options=None):
             policy_object.check_for_conflicts(pass_thru, "passthru")
             pass_thru_action = pass_thru[0].get("action").get("passthru")
             policy_name = pass_thru[0].get("name")
-            g.audit_object.add_policy([p.get("name") for p in pass_thru])
+            g.audit_object.add_policy({p.get("name") for p in pass_thru})
             if pass_thru_action in ["userstore", True]:
                 # Now we need to check the userstore password
                 if user_object.check_password(passw):
@@ -298,9 +299,10 @@ def auth_user_passthru(wrapped_function, user_object, passw, options=None):
                 log.info("Forwarding the authentication request to the radius "
                          "server %s" % pass_thru_action)
                 radius = get_radius(pass_thru_action)
-                r = radius.request(radius.config, user_object.login, passw)
-                if r:
-                    # TODO: here we can check, if the token should be assigned.
+                # TODO: Handle challenge-response from RADIUS server (#2587)
+                r = radius.request(user_object.login, passw)
+                if r is not None and r.code == pyrad.packet.AccessAccept:
+                    log.debug("Successful RADIUS authentication in passthru with server %r" % pass_thru_action)
                     passthru_assign = Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.PASSTHRU_ASSIGN,
                                                  user_object=user_object).action_values(unique=True)
                     messages = []
@@ -328,6 +330,8 @@ def auth_user_passthru(wrapped_function, user_object, passw, options=None):
                             log.warning(f"Wrong value in passthru_assign policy: {passthru_assign}")
                     messages.append(f"against RADIUS server {pass_thru_action} due to '{policy_name}'")
                     return True, {'message': ",".join(messages)}
+                else:
+                    log.debug("Passthru authentication failed with RADIUS server %r" % pass_thru_action)
 
     # If nothing else returned, we return the wrapped function
     return wrapped_function(user_object, passw, options)

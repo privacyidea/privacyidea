@@ -102,16 +102,31 @@ def pskc(pskc_file, preshared_key, validate_mac):
 
 @importtokens_cli.command('privacyidea')
 @click.argument('file', nargs=1, type=click.File())
-@click.option('--key', required=True, type=str,
+@click.option('--key', required=False, type=str,
               help='The encryption key given by PrivacyIDEA during token export.')
+@click.option("--keyfile", required=False, type=click.File(),
+              help="The file that contains the encryption key.")
+@click.option('--user/--no-user', default=False)
 @click.pass_context
-def import_token_from_privacyidea(ctx, file, key):
+def import_token_from_privacyidea(ctx, file, key, keyfile, user):
     """
     Import tokens from a PrivacyIDEA token file.
 
     FILE is the file containing the tokens to be imported.
     KEY is the encryption key used to decrypt the tokens.
+    KEYFILE is the file that contains the encryption key.
     """
+    if not key and keyfile:
+        try:
+            key = keyfile.read().strip()
+        except Exception as e:
+            click.echo(f"Error reading keyfile: {e}")
+            ctx.exit(1)
+
+    if not key:
+        click.echo("You must provide either --key or --keyfile.")
+        ctx.exit(1)
+
     try:
         f = Fernet(key)
     except Exception as e:
@@ -143,10 +158,14 @@ def import_token_from_privacyidea(ctx, file, key):
         ctx.exit(1)
 
     try:
-        ret = import_tokens(token_list)
-        click.echo(f"{len(ret.successful_tokens)} tokens imported successfully.\n"
-                   f"{len(ret.failed_tokens)} tokens failed to import.\n"
-                   f"{len(ret.updated_tokens)} tokens updated.\n")
+        ret = import_tokens(token_list, assign_to_user=user)
+        if ret.successful_tokens:
+            click.echo(f"{len(ret.successful_tokens)} tokens imported successfully.")
+        if ret.updated_tokens:
+            click.echo(f"{len(ret.updated_tokens)} tokens updated.")
+        if ret.failed_tokens:
+            click.echo(f"{len(ret.failed_tokens)} tokens failed to import.")
+            click.echo(f"Check the logfile for the cause of failure.")
     except Exception as e:
         click.echo(f"Error importing tokens: {e}")
         ctx.exit(1)

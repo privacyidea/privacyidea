@@ -604,6 +604,15 @@ Example::
 
         pi-tokenjanitor find --tokenattribute 'serial=OATH0004C934' export --file /path/to/export
 
+``--user/--no-user``
+    If set, the user will be exported as well. If not set, only the tokens will be exported. Default: ``--user``.
+
+    Example::
+
+        pi-tokenjanitor find --tokenattribute 'serial=OATH0004C934' export --file /path/to/export --user
+
+
+
 
 set_tokenrealms
 ***************
@@ -731,6 +740,13 @@ Imports token data from a privacyIDEA created with pi-tokenjanitor export_for_pr
     Example::
 
         pi-tokenjanitor import privacyidea /path/to/privacyidea.txt --key myencryptionkey
+
+``--user/--no-user``
+    If set, the user will be imported as well. If not set, only the tokens will be imported. Default: ``--no-user``.
+
+    Example::
+
+        pi-tokenjanitor import privacyidea /path/to/privacyidea.txt --key myencryptionkey --user
 
 Update
 ~~~~~~

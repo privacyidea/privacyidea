@@ -1,3 +1,21 @@
+/**
+ * (c) NetKnights GmbH 2025,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ **/
 import { AsyncPipe, NgClass } from "@angular/common";
 import { HttpClient } from "@angular/common/http";
 import { Component, inject, Renderer2 } from "@angular/core";
@@ -10,6 +28,7 @@ import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/for
 import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
 import { MatOption, MatSelect } from "@angular/material/select";
+import { MatTooltip } from "@angular/material/tooltip";
 import { DomSanitizer } from "@angular/platform-browser";
 import { map } from "rxjs";
 import { EnrollmentResponse } from "../../../mappers/token-api-payload/_token-api-payload.mapper";
@@ -21,6 +40,8 @@ import { RealmService, RealmServiceInterface } from "../../../services/realm/rea
 import { TokenService, TokenServiceInterface } from "../../../services/token/token.service";
 import { UserData, UserService, UserServiceInterface } from "../../../services/user/user.service";
 import { VersioningService, VersioningServiceInterface } from "../../../services/version/version.service";
+import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
+import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { EnrollApplspecComponent } from "./enroll-asp/enroll-applspec.component";
 import { EnrollCertificateComponent } from "./enroll-certificate/enroll-certificate.component";
 import { EnrollDaypasswordComponent } from "./enroll-daypassword/enroll-daypassword.component";
@@ -48,7 +69,6 @@ import { EnrollWebauthnComponent } from "./enroll-webauthn/enroll-webauthn.compo
 import { EnrollYubicoComponent } from "./enroll-yubico/enroll-yubico.component";
 import { EnrollYubikeyComponent } from "./enroll-yubikey/enroll-yubikey.component";
 import { TokenEnrollmentComponent } from "./token-enrollment.component";
-import { MatTooltip } from "@angular/material/tooltip";
 
 @Component({
   selector: "app-token-enrollment-wizard",
@@ -97,7 +117,9 @@ import { MatTooltip } from "@angular/material/tooltip";
     EnrollPasskeyComponent,
     AsyncPipe,
     MatError,
-    MatTooltip
+    MatTooltip,
+    ScrollToTopDirective,
+    ClearableInputComponent
   ],
   templateUrl: "./token-enrollment.wizard.component.html",
   styleUrl: "./token-enrollment.component.scss"
@@ -105,22 +127,14 @@ import { MatTooltip } from "@angular/material/tooltip";
 export class TokenEnrollmentWizardComponent extends TokenEnrollmentComponent {
   protected readonly http: HttpClient = inject(HttpClient);
   protected readonly sanitizer: DomSanitizer = inject(DomSanitizer);
-  protected override readonly containerService: ContainerServiceInterface =
-    inject(ContainerService);
-  protected override readonly realmService: RealmServiceInterface =
-    inject(RealmService);
-  protected override readonly notificationService: NotificationServiceInterface =
-    inject(NotificationService);
-  protected override readonly userService: UserServiceInterface =
-    inject(UserService);
-  protected override readonly tokenService: TokenServiceInterface =
-    inject(TokenService);
-  protected override readonly contentService: ContentServiceInterface =
-    inject(ContentService);
-  protected override readonly versioningService: VersioningServiceInterface =
-    inject(VersioningService);
-  protected override readonly dialogService: DialogServiceInterface =
-    inject(DialogService);
+  protected override readonly containerService: ContainerServiceInterface = inject(ContainerService);
+  protected override readonly realmService: RealmServiceInterface = inject(RealmService);
+  protected override readonly notificationService: NotificationServiceInterface = inject(NotificationService);
+  protected override readonly userService: UserServiceInterface = inject(UserService);
+  protected override readonly tokenService: TokenServiceInterface = inject(TokenService);
+  protected override readonly contentService: ContentServiceInterface = inject(ContentService);
+  protected override readonly versioningService: VersioningServiceInterface = inject(VersioningService);
+  protected override readonly dialogService: DialogServiceInterface = inject(DialogService);
 
   readonly preTopHtml$ = this.http
     .get("/customize/token-enrollment.wizard.pre.top.html", {
@@ -138,10 +152,7 @@ export class TokenEnrollmentWizardComponent extends TokenEnrollmentComponent {
     super(renderer);
   }
 
-  protected override openLastStepDialog(args: {
-    response: EnrollmentResponse;
-    user: UserData | null;
-  }) {
+  protected override openLastStepDialog(args: { response: EnrollmentResponse; user: UserData | null }) {
     const { response, user } = args;
     this.dialogService.openTokenEnrollmentLastStepDialog({
       data: {
@@ -149,7 +160,7 @@ export class TokenEnrollmentWizardComponent extends TokenEnrollmentComponent {
         enrollToken: this.enrollToken.bind(this),
         user: user,
         userRealm: this.userService.selectedUserRealm(),
-        onlyAddToRealm: this.onlyAddToRealm()
+        onlyAddToRealm: this.onlyAddToRealmControl.value
       }
     });
   }

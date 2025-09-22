@@ -1,6 +1,22 @@
-import { Component, effect, inject, linkedSignal, ViewChild, WritableSignal } from "@angular/core";
-import { FormsModule } from "@angular/forms";
-import { KeywordFilterComponent } from "../../shared/keyword-filter/keyword-filter.component";
+/**
+ * (c) NetKnights GmbH 2025,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ **/
+import { Component, ViewChild, WritableSignal, inject, linkedSignal } from "@angular/core";
 import {
   MatCell,
   MatCellDef,
@@ -15,15 +31,18 @@ import {
   MatTable,
   MatTableDataSource
 } from "@angular/material/table";
-import { MatFormField, MatLabel } from "@angular/material/form-field";
-import { TableUtilsService, TableUtilsServiceInterface } from "../../../services/table-utils/table-utils.service";
-import { MatPaginator } from "@angular/material/paginator";
-import { MatSort, MatSortModule } from "@angular/material/sort";
 import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
+import { TableUtilsService, TableUtilsServiceInterface } from "../../../services/table-utils/table-utils.service";
 import { UserData, UserService, UserServiceInterface } from "../../../services/user/user.service";
-import { MatInput } from "@angular/material/input";
+
+import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
+import { FormsModule } from "@angular/forms";
+import { KeywordFilterComponent } from "../../shared/keyword-filter/keyword-filter.component";
+import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
+import { MatPaginator } from "@angular/material/paginator";
 import { NgClass } from "@angular/common";
-import { RouterLink } from "@angular/router";
+import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
+import { MatSort, MatSortModule } from "@angular/material/sort";
 
 const columnKeysMap = [
   { key: "username", label: "Username" },
@@ -59,29 +78,22 @@ const columnKeysMap = [
     MatRow,
     MatNoDataRow,
     MatHeaderCellDef,
-    RouterLink
+    ScrollToTopDirective,
+    ClearableInputComponent
   ],
   templateUrl: "./user-table.component.html",
   styleUrl: "./user-table.component.scss"
 })
 export class UserTableComponent {
   protected readonly columnKeysMap = columnKeysMap;
-  readonly columnKeys: string[] = this.columnKeysMap.map(
-    (column) => column.key
-  );
-  private readonly tableUtilsService: TableUtilsServiceInterface =
-    inject(TableUtilsService);
-  protected readonly contentService: ContentServiceInterface =
-    inject(ContentService);
+  readonly columnKeys: string[] = this.columnKeysMap.map((column) => column.key);
+  private readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
+  protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly userService: UserServiceInterface = inject(UserService);
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
   pageSizeOptions = this.tableUtilsService.pageSizeOptions;
-  filterValueString: WritableSignal<string> = linkedSignal(() =>
-    Object.entries(this.userService.filterValue())
-      .map(([key, value]) => `${key}: ${value}`)
-      .join(" ")
-  );
+
   totalLength: WritableSignal<number> = linkedSignal({
     source: this.userService.usersResource.value,
     computation: (userResource, previous) => {
@@ -95,9 +107,7 @@ export class UserTableComponent {
     source: this.userService.pageSize,
     computation: (pageSize: number) =>
       Array.from({ length: pageSize }, () =>
-        Object.fromEntries(
-          this.columnKeysMap.map((c) => [{ key: c.key, username: "" }])
-        )
+        Object.fromEntries(this.columnKeysMap.map((c) => [{ key: c.key, username: "" }]))
       )
   });
   usersDataSource: WritableSignal<MatTableDataSource<UserData>> = linkedSignal({
@@ -112,14 +122,4 @@ export class UserTableComponent {
       return previous?.value ?? new MatTableDataSource(this.emptyResource());
     }
   });
-
-  constructor() {
-    effect(() => {
-      const recordsFromText = this.tableUtilsService.recordsFromText(
-        this.filterValueString()
-      );
-      this.userService.filterValue.set(recordsFromText);
-      this.userService.pageIndex.set(0);
-    });
-  }
 }

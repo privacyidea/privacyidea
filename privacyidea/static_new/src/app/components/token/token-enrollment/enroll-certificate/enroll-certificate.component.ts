@@ -1,3 +1,21 @@
+/**
+ * (c) NetKnights GmbH 2025,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ **/
 import { Component, EventEmitter, inject, linkedSignal, OnInit, Output } from "@angular/core";
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatButtonToggle, MatButtonToggleGroup } from "@angular/material/button-toggle";
@@ -51,18 +69,11 @@ export class CaConnectorErrorStateMatcher implements ErrorStateMatcher {
   styleUrl: "./enroll-certificate.component.scss"
 })
 export class EnrollCertificateComponent implements OnInit {
-  protected readonly enrollmentMapper: CertificateApiPayloadMapper = inject(
-    CertificateApiPayloadMapper
-  );
-  protected readonly caConnectorService: CaConnectorServiceInterface =
-    inject(CaConnectorService);
+  protected readonly enrollmentMapper: CertificateApiPayloadMapper = inject(CertificateApiPayloadMapper);
+  protected readonly caConnectorService: CaConnectorServiceInterface = inject(CaConnectorService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
 
-  text = this.tokenService
-    .tokenTypeOptions()
-    .find((type) => type.key === "certificate")?.text;
-
-  @Output() aditionalFormFieldsChange = new EventEmitter<{
+  @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
   @Output() clickEnrollChange = new EventEmitter<
@@ -72,9 +83,9 @@ export class EnrollCertificateComponent implements OnInit {
   caConnectorControl = new FormControl<string>("", [Validators.required]);
   certTemplateControl = new FormControl<string>("");
   pemControl = new FormControl<string>("");
-  intentionToggleControl = new FormControl<
-    "generate" | "uploadRequest" | "uploadCert"
-  >("generate", [Validators.required]);
+  intentionToggleControl = new FormControl<"generate" | "uploadRequest" | "uploadCert">("generate", [
+    Validators.required
+  ]);
 
   certificateForm = new FormGroup({
     caConnector: this.caConnectorControl,
@@ -87,9 +98,7 @@ export class EnrollCertificateComponent implements OnInit {
     source: this.caConnectorService.caConnectors,
     computation: (caConnectors) =>
       typeof caConnectors === "object"
-        ? Object.values(caConnectors).map(
-          (caConnector) => caConnector.connectorname
-        )
+        ? Object.values(caConnectors).map((caConnector) => caConnector.connectorname)
         : []
   });
 
@@ -97,19 +106,15 @@ export class EnrollCertificateComponent implements OnInit {
     source: this.caConnectorService.caConnectors,
     computation: (caConnectors) => {
       const selectedConnectorName = this.caConnectorControl.value;
-      const selectedConnector = Object.values(caConnectors).find(
-        (c) => c.connectorname === selectedConnectorName
-      );
-      return selectedConnector && selectedConnector.templates
-        ? Object.keys(selectedConnector.templates)
-        : [];
+      const selectedConnector = Object.values(caConnectors).find((c) => c.connectorname === selectedConnectorName);
+      return selectedConnector && selectedConnector.templates ? Object.keys(selectedConnector.templates) : [];
     }
   });
 
   caConnectorErrorStateMatcher = new CaConnectorErrorStateMatcher();
 
   ngOnInit(): void {
-    this.aditionalFormFieldsChange.emit({
+    this.additionalFormFieldsChange.emit({
       caConnector: this.caConnectorControl,
       certTemplate: this.certTemplateControl,
       pem: this.pemControl,
@@ -133,9 +138,7 @@ export class EnrollCertificateComponent implements OnInit {
     });
   }
 
-  onClickEnroll = (
-    basicOptions: TokenEnrollmentData
-  ): Observable<EnrollmentResponse | null> => {
+  onClickEnroll = (basicOptions: TokenEnrollmentData): Observable<EnrollmentResponse | null> => {
     if (this.certificateForm.invalid) {
       this.certificateForm.markAllAsTouched();
       return of(null);
@@ -146,10 +149,7 @@ export class EnrollCertificateComponent implements OnInit {
       caConnector: this.caConnectorControl.value ?? "",
       certTemplate: this.certTemplateControl.value ?? ""
     };
-    if (
-      this.intentionToggleControl.value === "uploadRequest" ||
-      this.intentionToggleControl.value === "uploadCert"
-    ) {
+    if (this.intentionToggleControl.value === "uploadRequest" || this.intentionToggleControl.value === "uploadCert") {
       enrollmentData.pem = this.pemControl.value ?? "";
     }
     return this.tokenService.enrollToken({
