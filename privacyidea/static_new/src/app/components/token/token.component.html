@@ -9,17 +9,22 @@
       <div class="drawer-div">
         <div class="brand">
           <div class="brand-row">
-            <img
-              alt="logo"
-              aria-label="Logo"
-              class="logo"
-              height="307"
-              i18n-alt
-              i18n-aria-label
-              ngSrc="assets/privacyIDEA1.png"
-              ngSrcset="1x"
-              sizes="(max-width: 307px) 100vw, 307px"
-              width="307" />
+            <a
+              [routerLink]="[ROUTE_PATHS.TOKENS]"
+              aria-label="Go to Token Overview"
+              class="clickable-logo">
+              <img
+                alt="logo"
+                aria-label="Logo"
+                class="logo"
+                height="307"
+                i18n-alt
+                i18n-aria-label
+                ngSrc="assets/privacyIDEA1.png"
+                ngSrcset="1x"
+                sizes="(max-width: 307px) 100vw, 307px"
+                width="307" />
+            </a>
 
             <div
               [ngClass]="[
@@ -40,17 +45,22 @@
             </div>
           </div>
 
-          <img
-            alt="logo-text"
-            aria-label="Logo Text"
-            class="logo-text"
-            height="109"
-            i18n-alt
-            i18n-aria-label
-            ngSrc="assets/logo-text.png"
-            ngSrcset="1x"
-            sizes="(max-width: 575px) 100vw, 575px"
-            width="575" />
+          <a
+            [routerLink]="[ROUTE_PATHS.TOKENS]"
+            aria-label="Go to Token Overview"
+            class="clickable-logo-text">
+            <img
+              alt="logo-text"
+              aria-label="Logo Text"
+              class="logo-text"
+              height="109"
+              i18n-alt
+              i18n-aria-label
+              ngSrc="assets/logo-text.png"
+              ngSrcset="1x"
+              sizes="(max-width: 575px) 100vw, 575px"
+              width="575" />
+          </a>
 
           <p class="font-14">
             Open-source project

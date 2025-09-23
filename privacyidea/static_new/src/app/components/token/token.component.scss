@@ -161,15 +161,14 @@ $margin-bottom-main: 136px;
   width: 100%;
 }
 
-.brand-row .logo {
+.brand-row > a.clickable-logo {
   grid-column: 2;
   justify-self: center;
 }
 
-.brand-row .session-timer {
+.brand-row > .session-timer {
   grid-column: 3;
   justify-self: end;
-  margin-left: 0;
 }
 
 .logo {
@@ -178,6 +177,11 @@ $margin-bottom-main: 136px;
   width: 80px;
   border-radius: 50%;
   @include mat.elevation(5);
+}
+
+.clickable-logo {
+  display: inline-grid;
+  line-height: 0;
 }
 
 .logo-text {
