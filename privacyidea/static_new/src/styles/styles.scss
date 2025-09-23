@@ -311,9 +311,35 @@ body {
 .overflow {
   overflow: auto;
 }
-
+.padding-2 {
+  padding: 2px;
+}
+.padding-4 {
+  padding: 4px;
+}
+.padding-8 {
+  padding: 8px;
+}
+.padding-16 {
+  padding: 16px;
+}
 .padding-32 {
   padding: 32px;
+}
+.margin-2 {
+  margin: 2px;
+}
+.margin-4 {
+  margin: 4px;
+}
+.margin-8 {
+  margin: 8px;
+}
+.margin-16 {
+  margin: 16px;
+}
+.margin-32 {
+  margin: 32px;
 }
 
 .max-width-96 {

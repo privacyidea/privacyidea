@@ -1,18 +1,42 @@
 <div
-  aria-label="Policies Layout"
-  class="policies-layout">
-  <data class="colum"></data>
-  This is the expansion title
-  <mat-expansion-panel>
-    <mat-panel-title> This is the expansion title </mat-panel-title>
-    <mat-panel-description> This is a summary of the content </mat-panel-description></mat-expansion-panel
-  >
-  <mat-expansion-panel>
-    <mat-panel-title> This is the expansion title </mat-panel-title>
-    <mat-panel-description> This is a summary of the content </mat-panel-description></mat-expansion-panel
-  >
-  <mat-expansion-panel>
-    <mat-panel-title> This is the expansion title </mat-panel-title>
-    <mat-panel-description> This is a summary of the content </mat-panel-description></mat-expansion-panel
-  >
+  class="max-width-96 padding-32"
+  aria-label="Policies Layout">
+  <div class="policies-layout">
+    @for (policy of allPoliciesList(); track policy.name) {
+      <div class="policy-card">
+        <mat-expansion-panel
+          class="margin-4"
+          [expanded]="isPanelExpanded(policy.name)">
+          <mat-expansion-panel-header>
+            <mat-panel-title>
+              {{ policy.name }}
+            </mat-panel-title>
+            <mat-panel-description class="header-description">
+              <span class="policy-scope-label">
+                {{ policy.scope.toLocaleUpperCase() }}
+              </span>
+              <div class="policy-actions">
+                <button
+                  mat-icon-button
+                  (click)="$event.stopPropagation(); toggleEditMode(policy.name)">
+                  <mat-icon>edit</mat-icon>
+                </button>
+                <button
+                  mat-icon-button
+                  (click)="$event.stopPropagation(); deletePolicy(policy.name)">
+                  <mat-icon>delete</mat-icon>
+                </button>
+              </div>
+            </mat-panel-description>
+          </mat-expansion-panel-header>
+          @if (!isEditMode(policy.name)) {
+            <!-- <app-policy-view [policy]="policy"></app-policy-view> -->
+          }
+          @if (isEditMode(policy.name)) {
+            <!-- <app-policy-edit [policy]="policy"></app-policy-edit> -->
+          }
+        </mat-expansion-panel>
+      </div>
+    }
+  </div>
 </div>

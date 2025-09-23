@@ -16,25 +16,19 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import 'jest-preset-angular/setup-jest';
+import { TestBed } from "@angular/core/testing";
 
-global.console = {
-  ...global.console,
-  log: jest.fn(),
-  error: jest.fn(),
-  warn: jest.fn(),
-  info: jest.fn(),
-  debug: jest.fn()
-};
+import { PoliciesService } from "./policies.service";
 
-const realConsoleError = console.error;
+describe("NotificationService", () => {
+  let policiesService: PoliciesService;
 
-console.error = (...args: unknown[]) => {
-  if (
-    typeof args[0] === "string" &&
-    args[0].includes("Error: Could not parse CSS stylesheet")
-  ) {
-    return;
-  }
-  realConsoleError(...args);
-};
+  beforeEach(() => {
+    TestBed.configureTestingModule({});
+    policiesService = TestBed.inject(PoliciesService);
+  });
+
+  it("should be created", () => {
+    expect(policiesService).toBeTruthy();
+  });
+});

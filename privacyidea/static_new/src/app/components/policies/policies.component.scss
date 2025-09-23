@@ -1,4 +1,4 @@
-@use "../../../styles";
+@use "../../../styles" as styles;
 @use "@angular/material" as mat;
 
 .policies-layout {
@@ -7,5 +7,50 @@
   max-height: calc(var(--main-height) - var(--global-padding) * 5);
   max-width: calc(100vw - var(--global-padding) * 5 - 48px);
   overflow: auto;
-  display: grid;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  .policy-card {
+    border-radius: 4px;
+    box-shadow:
+      0px 2px 4px -1px rgba(0, 0, 0, 0.2),
+      0px 4px 5px 0px rgba(0, 0, 0, 0.14),
+      0px 1px 10px 0px rgba(0, 0, 0, 0.12);
+
+    mat-expansion-panel {
+      border-radius: 4px;
+    }
+
+    mat-expansion-panel-header {
+      padding: 0 16px;
+    }
+
+    .header-description {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+    }
+
+    .policy-scope-label {
+      color: var(--sys-material-on-surface-variant);
+      font-size: 0.85rem;
+      font-weight: 400;
+      text-align: center;
+      margin-left: -50px; // Negative margin to shift it left
+    }
+
+    .policy-actions {
+      display: flex;
+      align-items: center;
+      flex-shrink: 0;
+
+      button {
+        background: transparent;
+        border: none;
+        cursor: pointer;
+      }
+    }
+  }
 }

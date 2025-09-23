@@ -1,0 +1,15 @@
+<div class="wheel-scene">
+  <div
+    class="wheel-container"
+    (mousedown)="onMouseDown($event)">
+    @for (value of values(); track $index) {
+      <div
+        class="wheel-item"
+        [class.active]="value === selectedValue()"
+        #item
+        (click)="onItemClick($event, $index)">
+        {{ value }}
+      </div>
+    }
+  </div>
+</div>
