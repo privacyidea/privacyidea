@@ -41,14 +41,14 @@ $button-low-contrast-variant: linear-gradient(
   justify-content: start;
   border-radius: $border-radius;
   background: $background !important;
-  box-shadow: none;
+  box-shadow: $box-shadow;
   cursor: $cursor;
 }
 
 @mixin button-hover($background, $box-shadow) {
   &:hover {
     background: $background;
-    box-shadow: none;
+    box-shadow: $box-shadow;
     transition:
       background 400ms,
       box-shadow 400ms;
@@ -144,8 +144,16 @@ $button-low-contrast-variant: linear-gradient(
   @include button-hover(var(--background-blue-inset), var(--box-shadow-blue-inset));
 }
 
-.card-button-reset {
+.mat-unthemed.mat-mdc-button-base[class^="card-button"],
+.mat-unthemed.mat-mdc-button-base[class*=" card-button"] {
   min-width: 240px;
+
+  mat-icon.mat-icon.notranslate.material-icons {
+    font-size: 18px;
+  }
+}
+
+.card-button-reset {
   @include button-base(
     $height: $button-height,
     $width: $button-width,
@@ -156,7 +164,6 @@ $button-low-contrast-variant: linear-gradient(
 }
 
 .card-button-active {
-  min-width: 240px;
   @include button-base(
     $height: $button-height,
     $width: $button-width,
@@ -167,7 +174,6 @@ $button-low-contrast-variant: linear-gradient(
 }
 
 .profile-btn {
-  min-width: 240px;
   @include button-base(
     $height: $button-height,
     $width: $button-width,
@@ -178,7 +184,6 @@ $button-low-contrast-variant: linear-gradient(
 }
 
 .card-button-disabled {
-  min-width: 240px;
   @include button-base(
     $height: $button-height,
     $width: $button-width,
@@ -190,7 +195,6 @@ $button-low-contrast-variant: linear-gradient(
 }
 
 .card-button-delete {
-  min-width: 240px;
   @include button-base(
     $height: $button-height,
     $width: $button-width,
@@ -211,7 +215,6 @@ $button-low-contrast-variant: linear-gradient(
 }
 
 .card-button-activate {
-  min-width: 240px;
   @include button-base(
     $height: $button-height,
     $width: $button-width,
@@ -232,7 +235,6 @@ $button-low-contrast-variant: linear-gradient(
 }
 
 .detail-button {
-  min-width: 240px;
   color: white;
   @include button-base(
     $height: $button-height,
@@ -316,10 +318,10 @@ $button-low-contrast-variant: linear-gradient(
 }
 
 .refresh-btn {
-  width: var(--header-height);
-  height: var(--header-height);
+  height: 40px;
+  width: 40px;
   cursor: pointer;
-  border-radius: 0;
+  border-radius: 50%;
   background-color: transparent;
   color: var(--mat-sys-on-surface-variant);
   box-shadow: none !important;

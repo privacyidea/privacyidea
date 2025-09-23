@@ -1,0 +1,36 @@
+<div class="flex-row margin-bottom-1 gap-8">
+  @if (authService.oneActionAllowed(["delete", "assign", "unassign"])) {
+    @if (authService.actionAllowed("delete")) {
+        <button
+          [ngClass]="[tokenSelection().length === 0 ? 'card-button-disabled' : 'card-button-delete']"
+          (click)="deleteSelectedTokens()"
+          [disabled]="tokenSelection().length === 0"
+          mat-flat-button
+          i18n>
+          <mat-icon> delete_sweep</mat-icon>
+          Delete Selected
+        </button>
+    }
+    @if (authService.actionAllowed("assign")) {
+        <button
+          [ngClass]="[tokenSelection().length === 0 ? 'card-button-disabled' : 'card-button']"
+          (click)="assignSelectedTokens()"
+          [disabled]="tokenSelection().length === 0"
+          mat-flat-button
+          i18n>
+          <mat-icon> person_add</mat-icon>
+          Assign Selected
+        </button>
+    }
+    @if (authService.actionAllowed("unassign")) {
+        <button
+          [ngClass]="[tokenSelection().length === 0 ? 'card-button-disabled' : 'card-button']"
+          (click)="unassignSelectedTokens()"
+          [disabled]="tokenSelection().length === 0"
+          mat-flat-button>
+          <mat-icon> person_remove</mat-icon>
+          Unassign Selected
+        </button>
+    }
+  }
+</div>
