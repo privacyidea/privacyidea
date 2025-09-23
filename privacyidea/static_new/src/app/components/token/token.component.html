@@ -9,6 +9,12 @@
       <div class="drawer-div">
         <div class="brand">
           <div class="brand-row">
+            <button
+              (click)="refreshPage()"
+              class="refresh-btn"
+              mat-fab>
+              <mat-icon>refresh</mat-icon>
+            </button>
             <a
               [routerLink]="[ROUTE_PATHS.TOKENS]"
               aria-label="Go to Token Overview"
