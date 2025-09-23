@@ -116,7 +116,7 @@
           </button>
         </div>
 
-        <mat-divider class="width-100"/>
+        <mat-divider class="width-100" />
 
         <form class="width-100">
           <mat-form-field class="width-100">
@@ -127,7 +127,9 @@
         </form>
 
         <mat-accordion>
-          <mat-expansion-panel>
+          <mat-expansion-panel
+            (opened)="router.navigate([ROUTE_PATHS.TOKENS])"
+            [expanded]="router.url.startsWith(ROUTE_PATHS.TOKENS)">
             <mat-expansion-panel-header>
               <mat-panel-title>
                 <mat-icon>shield</mat-icon>
@@ -161,7 +163,8 @@
               @if (authService.actionAllowed("getchallenges")) {
                 <mat-list-item>
                   <button
-                    class="card-button"
+                    [ngClass]="
+                      contentService.routeUrl() === ROUTE_PATHS.TOKENS_CHALLENGES ? 'card-button-active' : 'card-button'"
                     [routerLink]="[ROUTE_PATHS.TOKENS_CHALLENGES]"
                     mat-flat-button
                     i18n>
@@ -173,7 +176,9 @@
               @if (authService.actionsAllowed(["machinelist", "manage_machine_tokens"])) {
                 <mat-list-item>
                   <button
-                    class="card-button"
+                    [ngClass]="
+                      contentService.routeUrl() === ROUTE_PATHS.TOKENS_APPLICATIONS ? 'card-button-active' :
+                      'card-button'"
                     [routerLink]="[ROUTE_PATHS.TOKENS_APPLICATIONS]"
                     mat-flat-button
                     i18n>
@@ -185,17 +190,21 @@
             </mat-list>
           </mat-expansion-panel>
 
-          <mat-expansion-panel>
+          <mat-expansion-panel
+            (opened)="router.navigate([ROUTE_PATHS.TOKENS_CONTAINERS])"
+            [expanded]="router.url.startsWith(ROUTE_PATHS.TOKENS_CONTAINERS)">
             <mat-expansion-panel-header>
               <mat-panel-title>
                 <mat-icon>folder</mat-icon>
                 Container
               </mat-panel-title>
             </mat-expansion-panel-header>
+
             <mat-list>
               <mat-list-item>
                 <button
-                  [ngClass]="contentService.routeUrl() === ROUTE_PATHS.TOKENS ? 'card-button-active' : 'card-button'"
+                  [ngClass]="contentService.routeUrl() === ROUTE_PATHS.TOKENS_CONTAINERS ? 'card-button-active' :
+                  'card-button'"
                   [routerLink]="[ROUTE_PATHS.TOKENS_CONTAINERS]"
                   i18n
                   mat-flat-button>

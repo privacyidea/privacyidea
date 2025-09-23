@@ -141,7 +141,6 @@ export class TokenComponent {
     });
   }
 
-
   refreshPage() {
     if (this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_DETAILS)) {
       this.tokenService.tokenDetailResource.reload();

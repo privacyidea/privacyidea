@@ -203,17 +203,14 @@ $margin-bottom-main: 136px;
   border-radius: 0;
 }
 
-/* remove header padding so the button aligns perfectly */
 .no-expansion .mat-expansion-panel-header {
   padding: 0;
 }
 
-/* remove extra content spacing inside the header */
 .no-expansion .mat-expansion-panel-header .mat-content {
   margin: 0;
 }
 
-/* ensure hover state doesn’t show expansion affordances */
 .no-expansion .mat-expansion-indicator,
 .no-expansion .mat-expansion-panel-header:before {
   display: none;
