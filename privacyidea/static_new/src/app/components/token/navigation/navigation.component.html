@@ -1,12 +1,15 @@
 <div class="drawer-div">
   <div class="brand">
     <div class="brand-row">
-      <button
-        (click)="refreshPage()"
-        class="refresh-btn"
-        mat-fab>
-        <mat-icon>refresh</mat-icon>
-      </button>
+      <div class="flex-column">
+        <button
+          (click)="refreshPage()"
+          class="refresh-btn"
+          mat-fab>
+          <mat-icon>refresh</mat-icon>
+        </button>
+        <app-theme-switcher></app-theme-switcher>
+      </div>
       <a
         [routerLink]="[ROUTE_PATHS.TOKENS]"
         aria-label="Go to Token Overview"
@@ -24,6 +27,7 @@
           width="307" />
       </a>
 
+      <div class="flex-column ali-end">
       <div
         [ngClass]="[
                 sessionTimerService.remainingTime()! < 31000
@@ -40,6 +44,15 @@
         } @else {
           {{ sessionTimerService.remainingTime() | date:"H'h' mm'min'":"UTC" }}
         }
+      </div>
+      <button
+        (click)="logout()"
+        aria-label="Logout"
+        class="logout-btn"
+        i18n-aria-label
+        mat-icon-button>
+        <mat-icon>logout</mat-icon>
+      </button>
       </div>
     </div>
 
@@ -60,7 +73,7 @@
         width="575" />
     </a>
 
-    <p class="font-14">
+    <p style="font-size: 12px">
       Open-source project
       <a
         href="https://netknights.it/"
@@ -75,54 +88,39 @@
     </p>
   </div>
 
-  <div class="flex-row gap-8 support-spacer">
-    <a
-      aria-label="Support"
-      class="card-button-reset"
-      extended
-      href="https://netknights.it/support_link_admin"
-      i18n-aria-label
-      mat-fab
-      target="_blank">
-      <mat-icon>support_agent</mat-icon>
-      <h4 i18n>Support</h4>
-    </a>
-  </div>
+  <a
+    aria-label="Support"
+    class="card-button-reset"
+    extended
+    href="https://netknights.it/support_link_admin"
+    i18n-aria-label
+    mat-fab
+    target="_blank">
+    <mat-icon>support_agent</mat-icon>
+    <h4 i18n>Support</h4>
+  </a>
 
-  <div class="flex-row gap-8">
-    <a
-      aria-label="Support"
-      class="card-button"
-      extended
-      href="https://netknights.it/support_link_admin"
-      i18n-aria-label
-      mat-fab
-      target="_blank">
-      <mat-icon>info_outline</mat-icon>
-      <h4 i18n>Documentation</h4>
-    </a>
-    <app-theme-switcher></app-theme-switcher>
-  </div>
+  <a
+    aria-label="Support"
+    class="card-button"
+    extended
+    href="https://netknights.it/support_link_admin"
+    i18n-aria-label
+    mat-fab
+    target="_blank">
+    <mat-icon>info_outline</mat-icon>
+    <h4 i18n>Documentation</h4>
+  </a>
 
-  <div class="flex-row gap-8">
-    <button
-      class="profile-btn"
-      disabled
-      extended
-      href="#"
-      mat-fab>
-      <mat-icon>account_box</mat-icon>
-      <h4>{{ profileText }}</h4>
-    </button>
-    <button
-      (click)="logout()"
-      aria-label="Logout"
-      class="logout-btn"
-      i18n-aria-label
-      mat-icon-button>
-      <mat-icon>logout</mat-icon>
-    </button>
-  </div>
+  <button
+    class="profile-btn"
+    disabled
+    extended
+    href="#"
+    mat-fab>
+    <mat-icon>account_box</mat-icon>
+    <h4>{{ profileText }}</h4>
+  </button>
 
   <mat-divider class="width-100" />
 

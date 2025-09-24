@@ -20,12 +20,6 @@
   justify-self: center;
 }
 
-.brand-row > .session-timer {
-  grid-column: 3;
-  justify-self: end;
-  margin-top: 8px;
-}
-
 .logo {
   margin-bottom: 16px;
   height: 80px;
@@ -54,6 +48,9 @@
   width: 70px;
   height: 19px;
   text-align: right;
+  margin-bottom: 13px;
+  margin-top: 8px;
+  margin-right: 8px;
 }
 
 .no-expansion.mat-expansion-panel {
@@ -82,4 +79,8 @@
   justify-content: center;
   margin: 16px;
   gap: 8px;
+
+  ::ng-deep .mat-expansion-panel-body {
+    padding: 0 8px 8px;
+  }
 }
