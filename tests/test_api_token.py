@@ -2925,7 +2925,7 @@ class APITokenTestCase(MyApiTestCase):
             result = res.json.get("result")
             detail = res.json.get("detail")
             self.assertFalse(result.get("value"))
-            self.assertEqual(detail.get("message"), "matching 1 tokens, Token is not yet enrolled")
+            self.assertEqual("Token is not yet enrolled", detail.get("message"))
 
         # Now run the second step: verify enrollment, but fail with a wrong OTP value
         with self.app.test_request_context('/token/init',
@@ -3170,8 +3170,7 @@ class APITokenTestCase(MyApiTestCase):
             result = res.json.get("result")
             detail = res.json.get("detail")
             self.assertFalse(result.get("value"), result)
-            self.assertEqual(detail.get("message"),
-                             "matching 1 tokens, Token is not yet enrolled", detail)
+            self.assertEqual("Token is not yet enrolled", detail.get("message"),detail)
 
         # Now run the second step: verify enrollment, but fail with a wrong OTP value
         with self.app.test_request_context('/token/init',
@@ -3239,8 +3238,7 @@ class APITokenTestCase(MyApiTestCase):
             result = res.json.get("result")
             detail = res.json.get("detail")
             self.assertFalse(result.get("value"), result)
-            self.assertEqual(detail.get("message"),
-                             "matching 1 tokens, Token is not yet enrolled", detail)
+            self.assertEqual("Token is not yet enrolled", detail.get("message"),detail)
 
         # Now run the second step: verify enrollment, but fail with a wrong OTP value
         with self.app.test_request_context('/token/init',

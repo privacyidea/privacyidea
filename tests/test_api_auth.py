@@ -3,10 +3,12 @@ import datetime
 import json
 import logging
 
+from dateutil.tz import tzlocal
 from testfixtures import log_capture, LogCapture
 
 from privacyidea.api.lib.utils import verify_auth_token
 from privacyidea.lib.challenge import get_challenges
+from privacyidea.lib.tokenclass import FAILCOUNTER_EXCEEDED, DATE_FORMAT, FAILCOUNTER_CLEAR_TIMEOUT
 from privacyidea.models import Realm
 from .base import MyApiTestCase, OverrideConfigTestCase
 import mock
@@ -831,6 +833,102 @@ class AuthApiTestCase(MyApiTestCase):
         token.delete_token()
         token_realm1.delete_token()
         delete_policy("pi-login")
+        Realm.query.filter_by(name=self.realm3).first().delete()
+
+    def test_11_failcounter_exceeded(self):
+        set_policy("pi-login", scope=SCOPE.WEBUI, action=f"{PolicyAction.LOGINMODE}=privacyIDEA")
+        self.setUp_user_realms()
+        user = User("hans", self.realm1)
+        token = init_token({"pin": "123456", "type": "spass"}, user=user)
+        token.set_maxfail(5)
+        token.set_failcount(5)
+        past = datetime.datetime.now(tzlocal()) - datetime.timedelta(minutes=10)
+        token.add_tokeninfo(FAILCOUNTER_EXCEEDED, past.strftime(DATE_FORMAT))
+        # a valid authentication will fail
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": user.login,
+                                                 "password": "123456"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 401, res)
+            result = res.json.get("result")
+            detail = res.json.get("detail")
+            self.assertFalse(result.get("status"))
+            self.assertEqual("Failcounter exceeded", detail.get("message"))
+        self.assertEqual(5, token.get_failcount())
+        # invalid authentication fails with same message
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": user.login,
+                                                 "password": "000000"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 401, res)
+            result = res.json.get("result")
+            detail = res.json.get("detail")
+            self.assertFalse(result.get("status"))
+            self.assertEqual("Failcounter exceeded", detail.get("message"))
+        self.assertEqual(5, token.get_failcount())
+
+        # set timeout
+        set_privacyidea_config(FAILCOUNTER_CLEAR_TIMEOUT, 30)
+        # timeout not expired: same behaviour
+        # a valid authentication will fail
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": user.login,
+                                                 "password": "123456"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 401, res)
+            result = res.json.get("result")
+            detail = res.json.get("detail")
+            self.assertFalse(result.get("status"))
+            self.assertEqual("Failcounter exceeded", detail.get("message"))
+        self.assertEqual(5, token.get_failcount())
+        # invalid authentication fails with same message
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": user.login,
+                                                 "password": "000000"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 401, res)
+            result = res.json.get("result")
+            detail = res.json.get("detail")
+            self.assertFalse(result.get("status"))
+            self.assertEqual("Failcounter exceeded", detail.get("message"))
+        self.assertEqual(5, token.get_failcount())
+
+        # timeout expired
+        set_privacyidea_config(FAILCOUNTER_CLEAR_TIMEOUT, 5)
+        # a valid authentication succeeds and resets failcount to 0
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": user.login,
+                                                 "password": "123456"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            detail = res.json.get("detail")
+            self.assertTrue(result.get("value"))
+            self.assertEqual("matching 1 tokens", detail.get("message"))
+        self.assertEqual(0, token.get_failcount())
+        # an invalid auth also resets the failcount and increase it directly to one due to the invalid auth
+        token.set_failcount(5)
+        token.add_tokeninfo(FAILCOUNTER_EXCEEDED, past.strftime(DATE_FORMAT))
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": user.login,
+                                                 "password": "000000"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 401, res)
+            result = res.json.get("result")
+            detail = res.json.get("detail")
+            self.assertFalse(result.get("status"))
+            self.assertEqual("wrong otp pin", detail.get("message"))
+        self.assertEqual(1, token.get_failcount())
+
+        token.delete_token()
+        delete_policy("pi-login")
+        set_privacyidea_config(FAILCOUNTER_CLEAR_TIMEOUT, 0)
 
 
 class AdminFromUserstore(OverrideConfigTestCase):

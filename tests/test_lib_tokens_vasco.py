@@ -247,13 +247,17 @@ class VascoTokenTest(MyTestCase):
 
         self.assertTrue(token.check_failcount())
         # fail 10 times
-        for _ in range(10 + 1):
+        for _ in range(10):
             r = _step1()
             self.assertEqual(r[0], False)
-            self.assertEqual(r[1].get('message'), 'wrong otp value')
+            self.assertEqual("wrong otp value", r[1].get('message'))
+            key = token.token.get_otpkey().getKey()
+        r = _step1()
+        self.assertFalse(r[0])
+        self.assertEqual("Failcounter exceeded", r[1].get('message'))
 
         key = token.token.get_otpkey().getKey()
-        self.assertEqual(key, b"A" * 24 + b"L" * 224)
+        self.assertEqual(key, b"A" * 24 + b"K" * 224)
         # fail counter has been exceeded
         self.assertFalse(token.check_failcount())
 
@@ -265,10 +269,10 @@ class VascoTokenTest(MyTestCase):
         # subsequent authentication attempt fails due to fail counter
         r = _step2()
         self.assertEqual(r[0], False)
-        self.assertEqual(r[1].get('message'), 'matching 1 tokens, Failcounter exceeded')
+        self.assertEqual("Failcounter exceeded", r[1].get('message'))
         # this actually does update the OTP key
         key = token.token.get_otpkey().getKey()
-        self.assertEqual(key, b"A" * 24 + b"M" * 224)
+        self.assertEqual(key, b"A" * 24 + b"K" * 224)
 
         # reset the failcounter
         token.reset()
@@ -278,7 +282,7 @@ class VascoTokenTest(MyTestCase):
         self.assertEqual(r[0], True)
         self.assertEqual(r[1].get('message'), 'matching 1 tokens')
         key = token.token.get_otpkey().getKey()
-        self.assertEqual(key, b"A" * 24 + b"N" * 224)
+        self.assertEqual(key, b"A" * 24 + b"L" * 224)
 
         token.delete_token()
 
