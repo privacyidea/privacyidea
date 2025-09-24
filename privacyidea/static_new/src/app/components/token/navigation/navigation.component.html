@@ -28,31 +28,31 @@
       </a>
 
       <div class="flex-column ali-end">
-      <div
-        [ngClass]="[
+        <div
+          [ngClass]="[
                 sessionTimerService.remainingTime()! < 31000
                   ? 'red-light'
                   : sessionTimerService.remainingTime()! < 60000
                     ? 'yellow-light'
                     : 'surface-highest'
               ]"
-        class="session-timer">
-        @if (sessionTimerService.remainingTime()! < 599500) {
-          {{ sessionTimerService.remainingTime() | date:'m:ss':'UTC' }}
-        } @else if (sessionTimerService.remainingTime()! < 3600000) {
-          {{ sessionTimerService.remainingTime() | date:'m':'UTC' }}min
-        } @else {
-          {{ sessionTimerService.remainingTime() | date:"H'h' mm'min'":"UTC" }}
-        }
-      </div>
-      <button
-        (click)="logout()"
-        aria-label="Logout"
-        class="logout-btn"
-        i18n-aria-label
-        mat-icon-button>
-        <mat-icon>logout</mat-icon>
-      </button>
+          class="session-timer">
+          @if (sessionTimerService.remainingTime()! < 599500) {
+            {{ sessionTimerService.remainingTime() | date:'m:ss':'UTC' }}
+          } @else if (sessionTimerService.remainingTime()! < 3600000) {
+            {{ sessionTimerService.remainingTime() | date:'m':'UTC' }}min
+          } @else {
+            {{ sessionTimerService.remainingTime() | date:"H'h' mm'min'":"UTC" }}
+          }
+        </div>
+        <button
+          (click)="logout()"
+          aria-label="Logout"
+          class="logout-btn"
+          i18n-aria-label
+          mat-icon-button>
+          <mat-icon>logout</mat-icon>
+        </button>
       </div>
     </div>
 
@@ -259,22 +259,42 @@
       </mat-list>
     </mat-expansion-panel>
 
-    <mat-expansion-panel>
+    <mat-expansion-panel
+      (opened)="router.navigate([ROUTE_PATHS.USERS])"
+      [expanded]="router.url.startsWith(ROUTE_PATHS.USERS)">
       <mat-expansion-panel-header>
         <mat-panel-title>
           <mat-icon>supervised_user_circle</mat-icon>
-          User
+          Users
         </mat-panel-title>
       </mat-expansion-panel-header>
       <mat-list>
         <mat-list-item>
           <button
-            [ngClass]="contentService.routeUrl() === ROUTE_PATHS.TOKENS ? 'card-button-active' : 'card-button'"
+            [ngClass]="contentService.routeUrl() === ROUTE_PATHS.USERS ? 'card-button-active' : 'card-button'"
             [routerLink]="[ROUTE_PATHS.USERS]"
             i18n
             mat-flat-button>
             <mat-icon>policy</mat-icon>
             Overview
+          </button>
+        </mat-list-item>
+        <mat-list-item>
+          <button
+            class="card-button-disabled"
+            mat-flat-button
+            disabled>
+            <mat-icon>hub</mat-icon>
+            Sources
+          </button>
+        </mat-list-item>
+        <mat-list-item>
+          <button
+            class="card-button-disabled"
+            mat-flat-button
+            disabled>
+            <mat-icon>public</mat-icon>
+            Realms
           </button>
         </mat-list-item>
       </mat-list>

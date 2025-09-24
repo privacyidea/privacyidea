@@ -55,7 +55,7 @@ export const routes: Routes = [
   },
   {
     path: "users",
-    component: UserComponent,
+    component: TokenComponent,
     children: [
       { path: "", component: UserTableComponent },
       { path: "details/:username", component: UserDetailsComponent }

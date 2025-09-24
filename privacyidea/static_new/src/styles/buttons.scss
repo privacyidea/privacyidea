@@ -179,7 +179,7 @@ $button-low-contrast-variant: linear-gradient(
 }
 
 .profile-btn {
-  @include card-button-variant($profile-bg, var(--box-shadow-gray));
+  @include card-button-variant($profile-bg, none);
 }
 
 .card-button-disabled {
