@@ -300,7 +300,7 @@
       </mat-list>
     </mat-expansion-panel>
 
-    <mat-expansion-panel>
+    <mat-expansion-panel disabled>
       <mat-expansion-panel-header>
         <mat-panel-title>
           <mat-icon>gavel</mat-icon>
@@ -312,7 +312,7 @@
       </mat-list>
     </mat-expansion-panel>
 
-    <mat-expansion-panel>
+    <mat-expansion-panel disabled>
       <mat-expansion-panel-header>
         <mat-panel-title>
           <mat-icon>flag</mat-icon>
@@ -324,7 +324,9 @@
       </mat-list>
     </mat-expansion-panel>
 
-    <mat-expansion-panel>
+    <mat-expansion-panel
+      (opened)="router.navigate([ROUTE_PATHS.AUDIT])"
+      [expanded]="router.url.startsWith(ROUTE_PATHS.AUDIT)">
       <mat-expansion-panel-header>
         <mat-panel-title>
           <mat-icon>manage_search</mat-icon>
@@ -332,6 +334,15 @@
         </mat-panel-title>
       </mat-expansion-panel-header>
       <mat-list>
+        <mat-list-item>
+          <button
+            [ngClass]="contentService.routeUrl() === ROUTE_PATHS.AUDIT ? 'card-button-active' : 'card-button'"
+            [routerLink]="[ROUTE_PATHS.AUDIT]"
+            mat-flat-button>
+            <mat-icon>list_alt</mat-icon>
+            Log
+          </button>
+        </mat-list-item>
         <mat-list-item>
           <button
             class="card-button-disabled"

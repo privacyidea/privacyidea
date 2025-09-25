@@ -80,7 +80,13 @@
   margin: 16px;
   gap: 8px;
 
-  ::ng-deep .mat-expansion-panel-body {
-    padding: 0 8px 8px;
+  ::ng-deep {
+    .mat-expansion-panel-body {
+      padding: 0 8px 8px;
+    }
+
+    .mat-mdc-form-field-subscript-wrapper, .mat-mdc-form-field-bottom-align::before {
+      height: 8px;
+    }
   }
 }
