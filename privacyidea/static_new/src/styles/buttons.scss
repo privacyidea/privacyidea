@@ -352,6 +352,22 @@ $button-low-contrast-variant: linear-gradient(
   mask-size: 100% 100%;
 }
 
+.mdi--pi-logo {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  background-color: currentColor;
+
+  --svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 -25 85 50'%3E%3Cpath fill='%23000' d='M 0 0 A 2 2 0 0 0 80 0 A 2 2 0 0 0 0 0 M 40 -20 L 40 -13 L 18 -16 L 18 -23 Z M 61 -23 L 61 -16 L 40 -13 L 40 -20 Z M 58 -9 C 60 -9 61 -8 61 -5 L 61 9 C 60 23 45 23 40 23 C 36 23 19 23 18 9 L 18 -5 C 18 -8 19 -9 21 -9 Z M 55 -2 L 55 1 C 55 11 57 17 40 17 C 24 17 25 11 25 1 L 25 -2 Z'/%3E%3C/svg%3E");
+
+  -webkit-mask-image: var(--svg);
+  mask-image: var(--svg);
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+}
+
 .theme-mode-button {
   display: flex;
   justify-content: center;

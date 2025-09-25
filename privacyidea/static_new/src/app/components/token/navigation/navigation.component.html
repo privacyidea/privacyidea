@@ -275,15 +275,15 @@
             [routerLink]="[ROUTE_PATHS.USERS]"
             i18n
             mat-flat-button>
-            <mat-icon>policy</mat-icon>
+            <mat-icon>person_search</mat-icon>
             Overview
           </button>
         </mat-list-item>
         <mat-list-item>
           <button
             class="card-button-disabled"
-            mat-flat-button
-            disabled>
+            disabled
+            mat-flat-button>
             <mat-icon>hub</mat-icon>
             Sources
           </button>
@@ -291,8 +291,8 @@
         <mat-list-item>
           <button
             class="card-button-disabled"
-            mat-flat-button
-            disabled>
+            disabled
+            mat-flat-button>
             <mat-icon>public</mat-icon>
             Realms
           </button>
@@ -332,7 +332,15 @@
         </mat-panel-title>
       </mat-expansion-panel-header>
       <mat-list>
-        <mat-list-item></mat-list-item>
+        <mat-list-item>
+          <button
+            class="card-button-disabled"
+            disabled
+            mat-flat-button>
+            <mat-icon>recent_actors</mat-icon>
+            Known Clients
+          </button>
+        </mat-list-item>
       </mat-list>
     </mat-expansion-panel>
 
@@ -344,19 +352,116 @@
         </mat-panel-title>
       </mat-expansion-panel-header>
       <mat-list>
-        <mat-list-item></mat-list-item>
+        <mat-list-item>
+          <button
+            class="card-button-disabled"
+            disabled
+            mat-flat-button>
+            <mat-icon>email</mat-icon>
+            SMTP Servers
+          </button>
+        </mat-list-item>
+        <mat-list-item>
+          <button
+            class="card-button-disabled"
+            disabled
+            mat-flat-button>
+            <mat-icon>power_settings_new</mat-icon>
+            RADIUS Servers
+          </button>
+        </mat-list-item>
+        <mat-list-item>
+          <button
+            class="card-button-disabled"
+            disabled
+            mat-flat-button>
+            <mat-icon>sms</mat-icon>
+            SMS Gateways
+          </button>
+        </mat-list-item>
+        <mat-list-item>
+          <button
+            class="card-button-disabled"
+            disabled
+            mat-flat-button>
+            <mat-icon>receipt_long</mat-icon>
+            CAs
+          </button>
+        </mat-list-item>
+        <mat-list-item>
+          <button
+            class="card-button-disabled"
+            disabled
+            mat-flat-button>
+            <mat-icon class="mdi--pi-logo"></mat-icon>
+            PrivacyIDEA Servers
+          </button>
+        </mat-list-item>
+        <mat-list-item>
+          <button
+            class="card-button-disabled"
+            disabled
+            mat-flat-button>
+            <mat-icon>local_police</mat-icon>
+            Tokengroups
+          </button>
+        </mat-list-item>
+        <mat-list-item>
+          <button
+            class="card-button-disabled"
+            disabled
+            mat-flat-button>
+            <mat-icon>storage</mat-icon>
+            Service IDs
+          </button>
+        </mat-list-item>
       </mat-list>
     </mat-expansion-panel>
 
     <mat-expansion-panel>
       <mat-expansion-panel-header>
         <mat-panel-title>
-          <mat-icon>build</mat-icon>
+          <mat-icon>miscellaneous_services</mat-icon>
           Configuration
         </mat-panel-title>
       </mat-expansion-panel-header>
       <mat-list>
-        <mat-list-item></mat-list-item>
+        <mat-list-item>
+          <button
+            class="card-button-disabled"
+            disabled
+            mat-flat-button>
+            <mat-icon>build</mat-icon>
+            System
+          </button>
+        </mat-list-item>
+        <mat-list-item>
+          <button
+            class="card-button-disabled"
+            disabled
+            mat-flat-button>
+            <mat-icon>privacy_tip</mat-icon>
+            Tokentypes
+          </button>
+        </mat-list-item>
+        <mat-list-item>
+          <button
+            class="card-button-disabled"
+            disabled
+            mat-flat-button>
+            <mat-icon>point_of_sale</mat-icon>
+            Machines
+          </button>
+        </mat-list-item>
+        <mat-list-item>
+          <button
+            class="card-button-disabled"
+            disabled
+            mat-flat-button>
+            <mat-icon>lan</mat-icon>
+            Machine Resolver
+          </button>
+        </mat-list-item>
       </mat-list>
     </mat-expansion-panel>
   </mat-accordion>
