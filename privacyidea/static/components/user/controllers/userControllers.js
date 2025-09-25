@@ -410,9 +410,9 @@ angular.module("privacyideaApp")
 
 angular.module("privacyideaApp")
     .controller("userController", ['$scope', '$location', 'userUrl', 'realmUrl',
-        '$rootScope', 'ConfigFactory', 'UserFactory', 'gettextCatalog', 'AuthFactory',
+        '$rootScope', 'ConfigFactory', 'UserFactory', 'gettextCatalog', 'AuthFactory', 'TokenFactory',
         function ($scope, $location, userUrl, realmUrl, $rootScope, ConfigFactory, UserFactory, gettextCatalog,
-                  AuthFactory) {
+                  AuthFactory, TokenFactory) {
 
             $scope.usersPerPage = $scope.user_page_size;
             $scope.params = {
@@ -457,8 +457,22 @@ angular.module("privacyideaApp")
                             const stop = start + $scope.usersPerPage;
                             $scope.userlist = userList.slice(start, stop);
                             //debug: console.log($scope.userlist);
+                            $scope.getUsersTokens();
                         });
                 }
+            };
+
+            $scope.getUsersTokens = function () {
+                angular.forEach($scope.userlist, function (user) {
+                    TokenFactory.getTokensNoCancel(function (data) {
+                        let token = {"failcount": 0, "info": {"count_auth_success": 0, "count_auth": 0}};
+                        if (data.result.value.count > 0)
+                            token = data.result.value.tokens[0];
+                        user["failed_auth"] = token.failcount || 0;
+                        user["success_auth"] = token.info.count_auth_success || 0;
+                        user["total_auth"] = token.info.count_auth || 0;
+                    }, {"user": user.username, "realm": $scope.selectedRealm});
+                });
             };
 
             $scope.getRealms = function () {

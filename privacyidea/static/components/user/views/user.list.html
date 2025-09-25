@@ -18,7 +18,10 @@
                            ng-keypress="($event.which==13)?_getUsers():return"
                            ></pi-filter>
             </th>
-            <th class="pifilter"><translate>surname</translate>
+            <th>Failed Auth</th>
+            <th>Successful Auth</th>
+            <th>Total Auth</th>
+<!--            <th class="pifilter"><translate>surname</translate>
                 <pi-filter ng-model="params.surnameFilter"
                            ng-change="_getUsers('livesearch')"
                            ng-keypress="($event.which==13)?_getUsers():return"
@@ -39,7 +42,7 @@
             <th translate>phone</th>
             <th translate>mobile</th>
             <th translate>description</th>
-            <th translate>id</th>
+            <th translate>id</th>-->
         </tr>
         </thead>
         <tbody>
@@ -49,14 +52,17 @@
                     resolvername:user.resolver,
                     editable:user.editable})">
                 {{ user.username }}</a></td>
-            <td>{{ user.surname }}</td>
+            <td>{{ user.failed_auth }}</td>
+            <td>{{ user.success_auth }}</td>
+            <td>{{ user.total_auth }}</td>
+<!--            <td>{{ user.surname }}</td>
             <td>{{ user.givenname }}</td>
             <td><a href="mailto:{{ user.email }}">
                 {{ user.email }}</a></td>
             <td>{{ user.phone }}</td>
             <td>{{ user.mobile }}</td>
             <td>{{ user.description }}</td>
-            <td>{{ user.userid }}</td>
+            <td>{{ user.userid }}</td> -->
         </tr>
         </tbody>
     </table>
