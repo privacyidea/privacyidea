@@ -17,12 +17,10 @@ type Tab = "actions" | "conditions";
   styleUrl: "./policy-panel.component.scss"
 })
 export class PolicyPanelComponent {
-  editAction(arg0: string) {
-    throw new Error("Method not implemented.");
-  }
+  editAction(arg0: string) {}
   policy = input.required<PolicyDetail>();
   activeTab: WritableSignal<Tab> = signal("actions");
-  @Input({ required: true }) isEditMode = signal(false);
+  @Input({ required: true }) isEditMode!: boolean;
   addActionValue: any;
 
   getActionsOfPolicy(): [string, unknown][] {

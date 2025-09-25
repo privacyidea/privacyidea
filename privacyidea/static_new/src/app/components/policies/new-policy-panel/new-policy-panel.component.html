@@ -1,29 +1,63 @@
-<div class="policy-details">
-  <div class="tab-buttons">
-    <button
-      mat-flat-button
-      [ngClass]="activeTab() === 'actions' ? 'tab-button-active' : 'tab-button'"
-      (click)="setActiveTab('actions')">
-      ACTIONS
-    </button>
-    <button
-      mat-flat-button
-      [ngClass]="activeTab() === 'conditions' ? 'tab-button-active' : 'tab-button'"
-      (click)="setActiveTab('conditions')">
-      CONDITIONS
-    </button>
-  </div>
+<mat-expansion-panel
+  #panel
+  [disabled]="panel.expanded">
+  <mat-expansion-panel-header>
+    <mat-panel-title> New Policy </mat-panel-title>
+    <mat-panel-description class="header-description">
+      <div class="policy-scope-label">
+        @if (actions().length === 0 && panel.expanded) {
+          <app-horizontal-wheel
+            [initialValue]="scope()"
+            [values]="policiesService.getPolicyScopes()"
+            (onSelect)="onScopeSelect($event)" />
+        } @else {
+          <span>
+            {{ scope().toLocaleUpperCase() }}
+          </span>
+        }
+      </div>
+      <div class="policy-actions">
+        @if (panel.expanded) {
+          <button
+            mat-icon-button
+            (click)="$event.stopPropagation(); savePolicy()">
+            <mat-icon>save</mat-icon>
+          </button>
+          <button
+            mat-icon-button
+            (click)="$event.stopPropagation(); resetPolicy(panel)">
+            <mat-icon>close</mat-icon>
+          </button>
+        }
+      </div>
+    </mat-panel-description>
+  </mat-expansion-panel-header>
 
-  <div class="selected-content">
-    @if (activeTab() === "actions") {
-      <div class="actions-list">
-        <h4>Actions of this policy:</h4>
-        @for (entry of getActionsOfPolicy(); track entry[0]) {
-          <div class="action-card">
-            <div class="detail-row">
-              <span class="detail-label">{{ entry[0] }}</span>
-              <span class="detail-value">{{ entry[1] }}</span>
-              @if (isEditMode) {
+  <div class="policy-details">
+    <div class="tab-buttons">
+      <button
+        mat-flat-button
+        [ngClass]="activeTab() === 'actions' ? 'tab-button-active' : 'tab-button'"
+        (click)="setActiveTab('actions')">
+        ACTIONS
+      </button>
+      <button
+        mat-flat-button
+        [ngClass]="activeTab() === 'conditions' ? 'tab-button-active' : 'tab-button'"
+        (click)="setActiveTab('conditions')">
+        CONDITIONS
+      </button>
+    </div>
+
+    <div class="selected-content">
+      @if (activeTab() === "actions") {
+        <div class="actions-list">
+          <h4>Actions of this policy:</h4>
+          @for (entry of actions(); track entry[0]) {
+            <div class="action-card">
+              <div class="detail-row">
+                <span class="detail-label">{{ entry[0] }}</span>
+                <span class="detail-value">{{ entry[1] }}</span>
                 <button
                   mat-icon-button
                   class="edit-action-button"
@@ -36,12 +70,10 @@
                   (click)="deleteAction(entry[0])">
                   <mat-icon>delete</mat-icon>
                 </button>
-              }
+              </div>
             </div>
-          </div>
-        }
-      </div>
-      @if (isEditMode) {
+          }
+        </div>
         <h4>Add new action:</h4>
         <div class="add-action-section">
           <input
@@ -71,9 +103,8 @@
           </button>
         </div>
       }
-    }
 
-    @if (activeTab() === "conditions") {
+      <!-- @if (activeTab() === "conditions") {
       <div class="conditions-list">
         <div class="detail-row">
           <span class="detail-label">Active:</span>
@@ -108,8 +139,9 @@
           <span class="detail-value">{{ policy().user }}</span>
         </div>
       </div>
-    }
-  </div>
+    } -->
+    </div>
 
-  <div class="placeholder-for-right-column"></div>
-</div>
+    <div class="placeholder-for-right-column"></div>
+  </div>
+</mat-expansion-panel>

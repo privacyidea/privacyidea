@@ -8,9 +8,11 @@ import {
   ElementRef,
   AfterViewInit,
   viewChildren,
-  Input
+  Input,
+  WritableSignal
 } from "@angular/core";
 import { CommonModule } from "@angular/common";
+import { assert } from "../../../utils/assert";
 
 @Component({
   selector: "app-horizontal-wheel",
@@ -21,10 +23,16 @@ import { CommonModule } from "@angular/common";
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class HorizontalWheelComponent implements AfterViewInit {
+  selectedValue!: WritableSignal<any>;
   @Input({ required: true }) values!: any[];
-  @Output() onSelect = new EventEmitter<string>();
+  @Output() onSelect: EventEmitter<any> = new EventEmitter<any>();
 
-  selectedValue = signal<any | null>(null);
+  @Input({ required: true })
+  set initialValue(value: any) {
+    console.log("Initial value set to:", value);
+    this.selectedValue = signal(value);
+    console.log("Selected value initialized to:", this.selectedValue());
+  }
 
   isDragging = false;
   startX = 0;
@@ -35,21 +43,22 @@ export class HorizontalWheelComponent implements AfterViewInit {
 
   constructor(private elementRef: ElementRef) {}
 
+  ngOnInit() {
+    assert(this.values.length > 0, "The 'values' input cannot be empty.");
+  }
+
   ngAfterViewInit(): void {
     this.containerElement = this.elementRef.nativeElement.querySelector(".wheel-container");
     if (this.containerElement) {
       this.containerElement.addEventListener("scroll", () => this.onScroll());
       this.setDynamicPadding();
 
-      // Findet das Element in der Mitte und zentriert es beim Start.
       setTimeout(() => {
-        this._transformItemsOnScroll();
-        if (this.selectedValue()) {
-          const selectedIndex = this.values.indexOf(this.selectedValue()!);
-          if (selectedIndex !== -1) {
-            this.centerElementByIndex(selectedIndex);
-          }
+        const initialIndex = this.values.indexOf(this.selectedValue());
+        if (initialIndex !== -1) {
+          this.centerElementByIndex(initialIndex);
         }
+        this._transformItemsOnScroll();
       }, 0);
     }
   }
@@ -118,11 +127,26 @@ export class HorizontalWheelComponent implements AfterViewInit {
   }
 
   onItemClick(e: MouseEvent, index: number) {
+    const walk = e.pageX - this.startX;
+    if (this.isDragging && Math.abs(walk) > 10) return;
     e.preventDefault();
     this.centerElementByIndex(index);
   }
 
   private centerElementByIndex(index: number) {
+    if (!this.containerElement || !this.items()) return;
+    const itemElement = this.items()[index].nativeElement;
+
+    const targetScrollLeft =
+      itemElement.offsetLeft - this.containerElement.offsetWidth / 2 + itemElement.offsetWidth / 2;
+
+    this.containerElement.scrollTo({
+      left: targetScrollLeft,
+      behavior: "smooth"
+    });
+  }
+  private centerSelectedElement() {
+    const index = this.values.indexOf(this.selectedValue());
     if (!this.containerElement || !this.items()) return;
     const itemElement = this.items()[index].nativeElement;
 
@@ -145,29 +169,12 @@ export class HorizontalWheelComponent implements AfterViewInit {
   @HostListener("window:mouseup", ["$event"])
   onMouseUp(e: MouseEvent) {
     if (this.isDragging) {
-      this.isDragging = false;
+      // delay is dragging false for better UX
+      setTimeout(() => {
+        this.isDragging = false;
+      }, 100);
 
-      // Findet das am nächsten liegende Element basierend auf der Scroll-Position
-      const containerScrollLeft = this.containerElement!.scrollLeft;
-      const containerMidpoint = containerScrollLeft + this.containerElement!.offsetWidth / 2;
-      let closestIndex = -1;
-      let minDistance = Infinity;
-
-      this.items().forEach((itemRef, index) => {
-        const itemElement = itemRef.nativeElement;
-        const itemMidpoint = itemElement.offsetLeft + itemElement.offsetWidth / 2;
-        const distance = Math.abs(containerMidpoint - itemMidpoint);
-
-        if (distance < minDistance) {
-          minDistance = distance;
-          closestIndex = index;
-        }
-      });
-
-      // Zentriert das am nächsten liegende Element
-      if (closestIndex !== -1) {
-        this.centerElementByIndex(closestIndex);
-      }
+      this.centerSelectedElement();
     }
   }
 

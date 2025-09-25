@@ -88,8 +88,33 @@ export interface PoliciesServiceInterface {}
   providedIn: "root"
 })
 export class PoliciesService implements PoliciesServiceInterface {
+  selectedPolicy = signal<PolicyDetail | null>(null);
+  selectedScope = signal<string>("");
+
+  // GET /policy/defs/(scope)
+  // GET /policy/defs
+  //     This is a helper function that returns the POSSIBLE policy definitions, that can be used to define your policies.
+  //     If the given scope is “conditions”, this returns a dictionary with the following keys:
+  //             "sections", containing a dictionary mapping each condition section name to a dictionary with the following keys:
+  //                     "description", a human-readable description of the section
+  //             "comparators", containing a dictionary mapping each comparator to a dictionary with the following keys:
+  //                     "description", a human-readable description of the comparator
+  //     if the scope is “pinodes”, it returns a list of the configured privacyIDEA nodes.
+  //     Query Parameters:
+  //             scope – if given, the function will only return policy definitions for the given scope.
+  //     Return:
+  //         The policy definitions of the allowed scope with the actions and action types. The top level key is the scope.
+  //     Rtype:
+  //         dict
+  allPossibleActionsResource = httpResource<PiResponse<any>>(() => ({
+    url: `${this.policyBaseUrl}defs/${this.selectedScope()}`,
+    method: "GET",
+    headers: this.authService.getHeaders()
+  }));
+
   getPolicyScopes(): string[] {
-    throw new Error("Method not implemented.");
+    console.debug("Not implemented: getPolicyScopes");
+    return ["admin", "system", "authentication", "enrollment", "selfservice"];
   }
   readonly policyBaseUrl = environment.proxyUrl + "/policy/";
 
@@ -158,5 +183,9 @@ export class PoliciesService implements PoliciesServiceInterface {
 
   deletePolicy(name: string): Promise<PiResponse<number>> {
     return lastValueFrom(this.http.delete<PiResponse<number>>(`${environment.proxyUrl}${name}`));
+  }
+
+  isScopeChangeable(policy: PolicyDetail): boolean {
+    return !policy.action;
   }
 }

@@ -5,7 +5,7 @@
   @include styles.table-container-styles;
   @include styles.base-table-structure(".token-table", ".token-table-filter", ".table-scroll-container");
   max-height: calc(var(--main-height) - var(--global-padding) * 5);
-  max-width: calc(70vw - var(--global-padding) * 5 - 48px);
+  max-width: 1000px;
   overflow: auto;
   display: flex;
   flex-direction: column;
@@ -34,6 +34,7 @@
       font-size: 0.85rem;
       font-weight: 400;
       text-align: center;
+      width: 300px;
       // margin-left: -50px; // Negative margin to shift it left
     }
 
