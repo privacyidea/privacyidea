@@ -1,5 +1,5 @@
 import { Component, inject, signal } from "@angular/core";
-import { MatButton } from "@angular/material/button";
+import { MatButtonModule } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
 import { NgClass } from "@angular/common";
@@ -24,7 +24,7 @@ import { Router } from "@angular/router";
 @Component({
   selector: "app-token-table-actions",
   imports: [
-    MatButton,
+    MatButtonModule,
     MatIcon,
     NgClass
   ],

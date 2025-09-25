@@ -383,3 +383,31 @@ $button-low-contrast-variant: linear-gradient(
   width: calc(var(--header-height) / 3 - 2px);
   height: calc(var(--header-height) / 3 - 2px);
 }
+
+%action-button-base {
+  background-color: var(--mat-sys-surface-container-lowest);
+  border-radius: var(--border-radius);
+
+  mat-icon.mat-icon.notranslate.material-icons {
+    font-size: $detail-icon-font-size;
+  }
+}
+
+@mixin action-button-variant($color) {
+  color: $color;
+  border-color: $color;
+}
+
+.action-button {
+  @extend %action-button-base;
+  @include action-button-variant(var(--mat-sys-primary));
+}
+
+.action-button-delete {
+  @extend %action-button-base;
+  @include action-button-variant(var(--red-base));
+}
+
+.action-button-disabled {
+  @extend %action-button-base;
+}
