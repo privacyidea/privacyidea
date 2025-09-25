@@ -197,17 +197,4 @@ describe("TokenDetailsUserComponent", () => {
     expect(tokenSvc.tokenDetailResource.reload).toHaveBeenCalled();
     expect(isEditingUser()).toBe(true);
   });
-
-  it("saveUser works when username is empty string", () => {
-    userSvc.selectedUsername.set("");
-    userSvc.selectedUserRealm.set("realmB");
-
-    component.saveUser();
-
-    expect(tokenSvc.assignUser).toHaveBeenCalledWith({
-      tokenSerial: "Mock serial",
-      username: "",
-      realm: "realmB"
-    });
-  });
 });

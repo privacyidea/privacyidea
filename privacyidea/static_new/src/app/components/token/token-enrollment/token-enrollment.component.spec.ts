@@ -463,16 +463,16 @@ describe("TokenEnrollmentComponent", () => {
       expect(regenerateLabel("indexedsecret")).toBe("QR Code"); // label ignored when cannot regenerate
     });
 
-    it("webauthn → shows QR but cannot regenerate; label would be 'QR Code'", () => {
-      expect(hasQr("webauthn")).toBe(true);
+    it("webauthn → no QR, cannot regenerate; label would be 'QR Code'", () => {
+      expect(hasQr("webauthn")).toBe(false);
       expect(canRegenerate("webauthn")).toBe(false);
-      expect(regenerateLabel("webauthn")).toBe("QR Code");
+      expect(regenerateLabel("webauthn")).toBe("QR Code"); // label ignored when cannot regenerate
     });
 
-    it("passkey → shows QR but cannot regenerate; label would be 'QR Code'", () => {
-      expect(hasQr("passkey")).toBe(true);
+    it("passkey → no QR, cannot regenerate; label would be 'QR Code'", () => {
+      expect(hasQr("passkey")).toBe(false);
       expect(canRegenerate("passkey")).toBe(false);
-      expect(regenerateLabel("passkey")).toBe("QR Code");
+      expect(regenerateLabel("passkey")).toBe("QR Code"); // label ignored when cannot regenerate
     });
   });
 });

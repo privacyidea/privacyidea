@@ -29,7 +29,9 @@ export const NO_QR_CODE_TOKEN_TYPES = [
   "yubikey",
   "sms",
   "applspec",
-  "indexedsecret"
+  "indexedsecret",
+  "webauthn",
+  "passkey"
 ];
 
 /**
