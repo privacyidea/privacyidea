@@ -66,7 +66,7 @@ from privacyidea.lib.policy import PolicyClass, REMOTE_USER
 from privacyidea.lib.realm import get_default_realm, realm_is_defined
 from privacyidea.api.lib.postpolicy import (postpolicy, add_user_detail_to_response, check_tokentype,
                                             check_tokeninfo, check_serial, no_detail_on_success,
-                                            get_webui_settings)
+                                            get_webui_settings, hide_specific_error_message)
 from privacyidea.api.lib.prepolicy import (is_remote_user_allowed, prepolicy,
                                            pushtoken_disable_wait, webauthntoken_authz, webauthntoken_request,
                                            fido2_auth, increase_failcounter_on_challenge,
@@ -157,6 +157,7 @@ def before_request():
 @prepolicy(disabled_token_types, request=request)
 @prepolicy(load_challenge_text, request=request)
 @prepolicy(fido2_auth, request=request)
+@postpolicy(hide_specific_error_message)
 @postpolicy(get_webui_settings, request=request)
 @postpolicy(no_detail_on_success, request=request)
 @postpolicy(add_user_detail_to_response, request=request)

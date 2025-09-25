@@ -126,7 +126,7 @@ OTPs = ["755224",
 
 class AuthorizationPolicyTestCase(MyApiTestCase):
     """
-    This tests the catch all resolvers and resolvers which also contain the
+    This tests the catch-all resolvers and resolvers which also contain the
     user.
     A user may authenticate with the default resolver, but the user may also
     be contained in other resolver. we check these other resolvers, too.
@@ -3274,7 +3274,8 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertEqual(result["authentication"], "CHALLENGE")
 
         # Disable the spass and hotp token for authentication
-        set_policy(name="disable_some_token", scope=SCOPE.AUTH, action=f"{PolicyAction.DISABLED_TOKEN_TYPES}=spass hotp")
+        set_policy(name="disable_some_token", scope=SCOPE.AUTH,
+                   action=f"{PolicyAction.DISABLED_TOKEN_TYPES}=spass hotp")
 
         # The very same auth attempt must now be rejected
         with self.app.test_request_context(
@@ -3345,7 +3346,8 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertEqual(400, res.status_code, res)
             error = res.json.get("result").get("error")
             self.assertEqual(904, error.get("code"), error)
-            self.assertEqual(f"ERR904: User <eve.{self.resolvername1}@{self.realm3}> does not exist.", error.get("message"),
+            self.assertEqual(f"ERR904: User <eve.{self.resolvername1}@{self.realm3}> does not exist.",
+                             error.get("message"),
                              error)
 
         # Pass username, realm, and resolver
@@ -3356,7 +3358,8 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertEqual(400, res.status_code, res)
             error = res.json.get("result").get("error")
             self.assertEqual(904, error.get("code"), error)
-            self.assertEqual(f"ERR904: User <eve.{self.resolvername1}@{self.realm1}> does not exist.", error.get("message"),
+            self.assertEqual(f"ERR904: User <eve.{self.resolvername1}@{self.realm1}> does not exist.",
+                             error.get("message"),
                              error)
 
         # --- Realm of user was deleted ---
@@ -3423,6 +3426,43 @@ class ValidateAPITestCase(MyApiTestCase):
 
         token.delete_token()
         token_realm1.delete_token()
+
+    def test_40_hide_specific_error_message(self):
+        set_policy(name="hide_error_message", scope=SCOPE.AUTH, action=f"{PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE}")
+        # User does not exist
+        with self.app.test_request_context('/validate/check', method="POST",
+                                           data={
+                                               "user": "cornelius",
+                                               "pass": "1234"
+                                           }):
+            res = self.app.full_dispatch_request()
+            self._assert_unspecific_message(res)
+
+        # User cornelius is in the realm that will be created
+        self.setUp_user_realms()
+
+        # Wrong OTP
+        with self.app.test_request_context('/validate/check', method="POST",
+                                           data={
+                                               "user": "cornelius",
+                                               "pass": "1234"
+                                           }):
+            res = self.app.full_dispatch_request()
+            self._assert_unspecific_message(res)
+
+        delete_policy("hide_error_message")
+
+    def _assert_unspecific_message(self, response):
+        self.assertEqual(401, response.status_code, response.json)
+        result = response.json.get("result")
+        error = result.get("error")
+        self.assertEqual(4031, error.get("code"))
+        self.assertEqual("Authentication failed.", error.get("message"))
+        self.assertEqual(2, len(error))
+        detail = response.json.get("detail")
+        self.assertEqual("Authentication failed.", detail.get("message"))
+        self.assertIn("threadid", detail)
+        self.assertEqual(2, len(detail))
 
 
 class RegistrationValidity(MyApiTestCase):

@@ -346,7 +346,8 @@ def no_detail_on_success(request, response):
     content = response.json
 
     # get the serials from a policy definition
-    policy = Match.action_only(g, scope=SCOPE.AUTHZ, action=PolicyAction.NODETAILSUCCESS).policies(write_to_audit_log=False)
+    policy = Match.action_only(g, scope=SCOPE.AUTHZ, action=PolicyAction.NODETAILSUCCESS).policies(
+        write_to_audit_log=False)
     if policy and content.get("result", {}).get("value"):
         # The policy was set, we need to strip the details, if the
         # authentication was successful. (value=true)
@@ -616,10 +617,12 @@ def get_webui_settings(request, response):
         user_page_size_pol = Match.generic(g, scope=SCOPE.WEBUI, action=PolicyAction.USERPAGESIZE, user_object=user,
                                            user=username, realm=realm).action_values(unique=True)
         token_wizard_2nd = bool(role == ROLE.USER
-                                and Match.generic(g, scope=SCOPE.WEBUI, action=PolicyAction.TOKENWIZARD2ND, user_object=user,
+                                and Match.generic(g, scope=SCOPE.WEBUI, action=PolicyAction.TOKENWIZARD2ND,
+                                                  user_object=user,
                                                   user=username, realm=realm).policies())
         admin_dashboard = (role == ROLE.ADMIN
-                           and Match.generic(g, scope=SCOPE.WEBUI, action=PolicyAction.ADMIN_DASHBOARD, user_object=user,
+                           and Match.generic(g, scope=SCOPE.WEBUI, action=PolicyAction.ADMIN_DASHBOARD,
+                                             user_object=user,
                                              user=username, realm=realm).any())
         token_rollover = Match.generic(g, scope=SCOPE.WEBUI, action=PolicyAction.TOKENROLLOVER, user_object=user,
                                        user=username, realm=realm).action_values(unique=False)
@@ -647,7 +650,8 @@ def get_webui_settings(request, response):
                                                           user_object=user).action_values(unique=True)
                 if container_wizard_type_policy:
                     container_wizard_type = list(container_wizard_type_policy.keys())[0]
-                    container_wizard_template_policy = Match.user(g, SCOPE.WEBUI, PolicyAction.CONTAINER_WIZARD_TEMPLATE,
+                    container_wizard_template_policy = Match.user(g, SCOPE.WEBUI,
+                                                                  PolicyAction.CONTAINER_WIZARD_TEMPLATE,
                                                                   user_object=user).action_values(unique=True)
                     if container_wizard_template_policy:
                         template = list(container_wizard_template_policy.keys())[0]
@@ -672,14 +676,16 @@ def get_webui_settings(request, response):
                                      user=username, realm=realm).any()
         deletion_confirmation = Match.generic(g, scope=SCOPE.WEBUI, action=PolicyAction.DELETION_CONFIRMATION,
                                               user_object=user, user=username, realm=realm).any()
-        default_tokentype_pol = Match.generic(g, scope=SCOPE.WEBUI, action=PolicyAction.DEFAULT_TOKENTYPE, user_object=user,
+        default_tokentype_pol = Match.generic(g, scope=SCOPE.WEBUI, action=PolicyAction.DEFAULT_TOKENTYPE,
+                                              user_object=user,
                                               user=username, realm=realm).action_values(unique=True)
         default_container_type_pol = Match.generic(g, scope=SCOPE.WEBUI, action=PolicyAction.DEFAULT_CONTAINER_TYPE,
                                                    user_object=user, user=username,
                                                    realm=realm).action_values(unique=True)
         show_seed = Match.generic(g, scope=SCOPE.WEBUI, action=PolicyAction.SHOW_SEED, user_object=user,
                                   user=username, realm=realm).any()
-        show_node = Match.generic(g, scope=SCOPE.WEBUI, action=PolicyAction.SHOW_NODE, realm=realm, user_object=user).any()
+        show_node = Match.generic(g, scope=SCOPE.WEBUI, action=PolicyAction.SHOW_NODE, realm=realm,
+                                  user_object=user).any()
         qr_ios_authenticator = Match.generic(g, scope=SCOPE.WEBUI, action=PolicyAction.SHOW_IOS_AUTHENTICATOR,
                                              user_object=user, user=username, realm=realm).any()
         qr_android_authenticator = Match.generic(g, scope=SCOPE.WEBUI, action=PolicyAction.SHOW_ANDROID_AUTHENTICATOR,
@@ -687,9 +693,11 @@ def get_webui_settings(request, response):
         qr_custom_authenticator_url = Match.generic(g, scope=SCOPE.WEBUI, action=PolicyAction.SHOW_CUSTOM_AUTHENTICATOR,
                                                     user_object=user, user=username,
                                                     realm=realm).action_values(unique=True)
-        logout_redirect_url_pol = Match.generic(g, scope=SCOPE.WEBUI, action=PolicyAction.LOGOUT_REDIRECT, user_object=user,
+        logout_redirect_url_pol = Match.generic(g, scope=SCOPE.WEBUI, action=PolicyAction.LOGOUT_REDIRECT,
+                                                user_object=user,
                                                 user=username, realm=realm).action_values(unique=True)
-        require_description = Match.generic(g, scope=SCOPE.ENROLL, action=PolicyAction.REQUIRE_DESCRIPTION, user_object=user,
+        require_description = Match.generic(g, scope=SCOPE.ENROLL, action=PolicyAction.REQUIRE_DESCRIPTION,
+                                            user_object=user,
                                             user=username, realm=realm).action_values(unique=False)
 
         qr_image_android = create_img(DEFAULT_ANDROID_APP_URL) if qr_android_authenticator else None
@@ -957,6 +965,21 @@ def container_create_via_multichallenge(request: Request, content: dict, contain
         result["value"] = False
         result["authentication"] = AUTH_RESPONSE.CHALLENGE
     return content
+
+
+def hide_specific_error_message(request, response):
+    """
+    """
+    result = response.json.get("result")
+    if not result.get("value") and result.get("authentication") == AUTH_RESPONSE.REJECT:
+        hide_message = Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE,
+                                  user_object=request.User if hasattr(request, 'User') else None).any()
+        if hide_message:
+            content = response.json
+            content["detail"]["message"] = _("Authentication failed.")
+            response.set_data(json.dumps(content))
+
+    return response
 
 
 def multichallenge_enroll_via_validate(request, response):
