@@ -2,7 +2,7 @@
   <div
     class="wheel-container"
     (mousedown)="onMouseDown($event)">
-    @for (value of values(); track $index) {
+    @for (value of values; track $index) {
       <div
         class="wheel-item"
         [class.active]="value === selectedValue()"

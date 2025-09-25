@@ -88,6 +88,9 @@ export interface PoliciesServiceInterface {}
   providedIn: "root"
 })
 export class PoliciesService implements PoliciesServiceInterface {
+  getPolicyScopes(): string[] {
+    throw new Error("Method not implemented.");
+  }
   readonly policyBaseUrl = environment.proxyUrl + "/policy/";
 
   private readonly http: HttpClient = inject(HttpClient);

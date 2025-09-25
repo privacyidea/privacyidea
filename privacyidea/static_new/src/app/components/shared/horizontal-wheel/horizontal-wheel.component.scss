@@ -27,8 +27,8 @@
 
 .wheel-item {
   flex-shrink: 0;
-  height: 50px;
-  padding: 0 15px;
+  // height: 50px;
+  padding: 8px;
   display: grid;
   place-items: center;
   border: 1px solid #ccc;
@@ -42,9 +42,8 @@
 }
 
 .wheel-item.active {
-  background-color: #007bff;
-  color: white;
-  border-color: #007bff;
+  color: var(--mat-sys-on-background);
+  border-color: var(--mat-sys-on-background);
   transform: rotateY(0deg) scale(1) !important;
   opacity: 1 !important;
 }

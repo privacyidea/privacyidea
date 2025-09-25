@@ -5,7 +5,7 @@
   @include styles.table-container-styles;
   @include styles.base-table-structure(".token-table", ".token-table-filter", ".table-scroll-container");
   max-height: calc(var(--main-height) - var(--global-padding) * 5);
-  max-width: calc(100vw - var(--global-padding) * 5 - 48px);
+  max-width: calc(70vw - var(--global-padding) * 5 - 48px);
   overflow: auto;
   display: flex;
   flex-direction: column;
@@ -13,10 +13,6 @@
 
   .policy-card {
     border-radius: 4px;
-    box-shadow:
-      0px 2px 4px -1px rgba(0, 0, 0, 0.2),
-      0px 4px 5px 0px rgba(0, 0, 0, 0.14),
-      0px 1px 10px 0px rgba(0, 0, 0, 0.12);
 
     mat-expansion-panel {
       border-radius: 4px;
@@ -38,7 +34,7 @@
       font-size: 0.85rem;
       font-weight: 400;
       text-align: center;
-      margin-left: -50px; // Negative margin to shift it left
+      // margin-left: -50px; // Negative margin to shift it left
     }
 
     .policy-actions {

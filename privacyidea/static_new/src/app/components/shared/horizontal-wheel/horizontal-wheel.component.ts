@@ -21,20 +21,10 @@ import { CommonModule } from "@angular/common";
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class HorizontalWheelComponent implements AfterViewInit {
-  @Input({ required: false }) values = signal<string[]>([
-    "AAAAAAAAAAAA",
-    "BBBBBBBBBBBB",
-    "CCCCCCCCCCCC",
-    "DDDDDDDDDDDD",
-    "EEEEEEEEEEEE",
-    "FFFFFFFFFFFF",
-    "GGGGGGGGGGGG",
-    "HHHHHHHHHHHH",
-    "IIIIIIIIIIII",
-    "JJJJJJJJJJJJ",
-    "KKKKKKKKKKKK"
-  ]);
-  selectedValue = signal<string | null>(null);
+  @Input({ required: true }) values!: any[];
+  @Output() onSelect = new EventEmitter<string>();
+
+  selectedValue = signal<any | null>(null);
 
   isDragging = false;
   startX = 0;
@@ -42,8 +32,6 @@ export class HorizontalWheelComponent implements AfterViewInit {
 
   private containerElement: HTMLElement | null = null;
   private items = viewChildren<ElementRef<HTMLElement>>("item");
-
-  @Output() onSelect = new EventEmitter<string>();
 
   constructor(private elementRef: ElementRef) {}
 
@@ -57,7 +45,7 @@ export class HorizontalWheelComponent implements AfterViewInit {
       setTimeout(() => {
         this._transformItemsOnScroll();
         if (this.selectedValue()) {
-          const selectedIndex = this.values().indexOf(this.selectedValue()!);
+          const selectedIndex = this.values.indexOf(this.selectedValue()!);
           if (selectedIndex !== -1) {
             this.centerElementByIndex(selectedIndex);
           }
@@ -123,9 +111,9 @@ export class HorizontalWheelComponent implements AfterViewInit {
       }
     });
 
-    if (closestIndex !== -1 && this.values()[closestIndex] !== this.selectedValue()) {
-      this.selectedValue.set(this.values()[closestIndex]);
-      this.onSelect.emit(this.values()[closestIndex]);
+    if (closestIndex !== -1 && this.values[closestIndex] !== this.selectedValue()) {
+      this.selectedValue.set(this.values[closestIndex]);
+      this.onSelect.emit(this.values[closestIndex]);
     }
   }
 
