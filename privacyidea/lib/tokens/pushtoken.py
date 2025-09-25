@@ -19,7 +19,7 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-__doc__ = """The pushtoken sends a push notification via Firebase service
+"""The pushtoken sends a push notification via Firebase service
 to the registered smartphone.
 The token is a challenge response token. The smartphone will sign the challenge
 and send it back to the authentication endpoint.
@@ -32,6 +32,7 @@ from binascii import Error as BinasciiError
 from datetime import datetime, timedelta, timezone
 from dateutil.parser import isoparse
 import random
+import secrets
 import string
 from typing import Optional, Union
 from urllib.parse import quote
@@ -90,7 +91,8 @@ UPDATE_FB_TOKEN_WINDOW = 5
 POLL_ONLY = "poll only"
 AVAILABLE_PRESENCE_OPTIONS_ALPHABETIC = list(string.ascii_uppercase)
 AVAILABLE_PRESENCE_OPTIONS_NUMERIC = [f'{x:02}' for x in range(100)]
-ALLOWED_NUMBER_OF_OPTIONS = [f"{i}" for i in range(2, 11)]
+ALLOWED_NUMBER_OF_OPTIONS = list(range(2, 11))
+DEFAULT_NUMBER_OF_PRESENCE_OPTIONS = 3
 
 
 class PUSH_ACTION(object):
@@ -477,7 +479,7 @@ class PushTokenClass(TokenClass):
                                'group': 'PUSH'
                            },
                            PUSH_ACTION.PRESENCE_NUM_OPTIONS: {
-                               'type': 'str',
+                               'type': 'int',
                                'desc': _('The number of options the user is presented with to confirm the login. '
                                          'Does only apply if <em>{0!s}</em> is set.').format(
                                    PUSH_ACTION.REQUIRE_PRESENCE),
@@ -1024,13 +1026,14 @@ class PushTokenClass(TokenClass):
                 current_presence_options = []
 
                 available_presence_options = _get_presence_options(options)
-                num_options = get_action_values_from_options(
-                    SCOPE.AUTH, PUSH_ACTION.PRESENCE_NUM_OPTIONS, options)
-                num_options = getParam({"num_options": num_options}, "num_options",
-                                       allowed_values=ALLOWED_NUMBER_OF_OPTIONS, default="3")
+                num_option = int(get_action_values_from_options(
+                    SCOPE.AUTH, PUSH_ACTION.PRESENCE_NUM_OPTIONS,
+                    options) or DEFAULT_NUMBER_OF_PRESENCE_OPTIONS)
+                num_option = num_option if num_option in ALLOWED_NUMBER_OF_OPTIONS \
+                    else DEFAULT_NUMBER_OF_PRESENCE_OPTIONS
                 current_presence_options = random.sample(available_presence_options,
-                                                         int(num_options))
-                correct_presence_option = random.choice(current_presence_options)
+                                                         num_option)
+                correct_presence_option = secrets.choice(current_presence_options)
                 # The data contains all selected options and the correct option at the end.
                 data = ",".join(current_presence_options + [correct_presence_option])
             reply_dict.update({"presence_answer": correct_presence_option})

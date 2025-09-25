@@ -24,8 +24,8 @@ from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway
 from privacyidea.lib.smsprovider.FirebaseProvider import FirebaseConfig
 from privacyidea.lib.utils import to_bytes, to_unicode, AUTH_RESPONSE
 from privacyidea.lib.policies.actions import PolicyAction
-from privacyidea.lib.realm import set_realm, set_default_realm
-from privacyidea.lib.resolver import save_resolver
+from privacyidea.lib.realm import set_realm, set_default_realm, delete_realm
+from privacyidea.lib.resolver import save_resolver, delete_resolver
 from . import ldap3mock
 
 
@@ -522,6 +522,8 @@ class PushAPITestCase(MyApiTestCase):
         delete_policy("pol_multienroll")
         delete_policy("pol_push2")
         remove_token(serial)
+        delete_realm("ldaprealm")
+        delete_resolver("catchall")
 
     def test_15_push_with_require_presence(self):
         self.setUp_user_realms()
@@ -565,7 +567,7 @@ class PushAPITestCase(MyApiTestCase):
             self.assertEqual(ROLLOUTSTATE.ENROLLED, detail.get("rollout_state"), detail)
 
         #############################################################
-        # Run authentication with push token and without push_wait
+        # Run authentication with push token
         with self.app.test_request_context('/validate/check',
                                            method='POST',
                                            data={"user": "selfservice",
@@ -745,7 +747,7 @@ class PushAPITestCase(MyApiTestCase):
             self.assertEqual(ROLLOUTSTATE.ENROLLED, detail.get("rollout_state"), detail)
 
         #############################################################
-        # Run authentication with push token and without push_wait
+        # Run authentication with push token and with push_wait
         with LogCapture(level=logging.WARNING) as lc:
             with self.app.test_request_context('/validate/check',
                                                method='POST',

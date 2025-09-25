@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2019 NetKnights GmbH <https://netknights.it>
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 import json
 import time
 from base64 import b32decode, b32encode
@@ -1122,6 +1125,9 @@ class PushTokenTestCase(MyTestCase):
                    action=f"{PolicyAction.LOGINMODE}={LOGINMODE.PRIVACYIDEA}")
         # Set a policy to require presence
         set_policy("push_require_presence", scope=SCOPE.AUTH, action=f"{PUSH_ACTION.REQUIRE_PRESENCE}=1")
+        # Test that the default value of presence options is 3 if it was configured > 10
+        set_policy("push_presence_num_opts", scope=SCOPE.AUTH,
+                   action=f"{PUSH_ACTION.PRESENCE_NUM_OPTIONS}=15")
         with mock.patch('privacyidea.lib.smsprovider.FirebaseProvider.service_account.Credentials'
                         '.from_service_account_file') as fb_service_account:
             # Alternative: side_effect instead of return_value
@@ -1153,6 +1159,8 @@ class PushTokenTestCase(MyTestCase):
                 transaction_id = response_json.get("detail").get("transaction_id")
                 challenges = get_challenges(serial=token_object.token.serial, transaction_id=transaction_id)
                 challenge_object = challenges[0]
+                # Check that we have 4 entries in the challenge data, 3 options and the correct answer
+                self.assertEqual(4, len(challenge_object.get_data().split(",")))
                 # The correct answer is always appended to the available options
                 presence_answer = challenge_object.get_data().split(',').pop()
                 challenge_text = DEFAULT_CHALLENGE_TEXT + f" Please press: {presence_answer}"
@@ -1208,6 +1216,7 @@ class PushTokenTestCase(MyTestCase):
         delete_policy("webui")
         delete_policy("push_require_presence")
         delete_policy("push_numeric")
+        delete_policy("push_presence_num_opts")
 
     @responses.activate
     def test_06d_api_auth_presence_custom(self):
