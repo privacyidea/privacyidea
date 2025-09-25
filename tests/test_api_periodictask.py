@@ -295,10 +295,12 @@ class APIPeriodicTasksTestCase(MyApiTestCase):
             self.assertEqual(data['result']['value'], options)
 
     def test_03_nodes(self):
-        db.session.add(NodeName(id="8e4272a9-9037-40df-8aa3-976e4a04b5a9", name="Node1"))
-        db.session.add(NodeName(id="d1d7fde6-330f-4c12-88f3-58a1752594bf", name="Node2"))
-        db.session.commit()
+        node1 = NodeName(id="8e4272a9-9037-40df-8aa3-976e4a04b5a9", name="Node1")
+        node2 = NodeName(id="d1d7fde6-330f-4c12-88f3-58a1752594bf", name="Node2")
+        db.session.add_all([node1, node2])
         status_code, data = self.simulate_request('/periodictask/nodes/', method='GET')
         self.assertEqual(status_code, 200)
         self.assertTrue(data['result']['status'])
         self.assertEqual({'Node2', 'Node1'}, set(data['result']['value']), data)
+        db.session.delete(node1)
+        db.session.delete(node2)

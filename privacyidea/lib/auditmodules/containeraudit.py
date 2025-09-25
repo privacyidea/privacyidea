@@ -31,6 +31,8 @@ You also have to provide the configuration parameters for the referenced audit m
 """
 
 import logging
+from typing import Union
+
 from privacyidea.lib.auditmodules.base import (Audit as AuditBase)
 from privacyidea.lib.utils import get_module_class
 
@@ -74,12 +76,12 @@ class Audit(AuditBase):
         for module in self.write_modules:
             module.add_to_log(param, add_with_comma)
 
-    def add_policy(self, policyname):
+    def add_policy(self, policy_names: Union[set, list, str]):
         """
         Call the add_policy method for all writeable modules
         """
         for module in self.write_modules:
-            module.add_policy(policyname)
+            module.add_policy(policy_names)
 
     def search(self, search_dict, page_size=15, page=1, sortorder="asc",
                timelimit=None):

@@ -17,10 +17,10 @@
 
 .otp-value {
   min-width: 96px;
-  border: 1px solid #e2e2e2;
+  border: 1px solid var(--mat-sys-outline);
   padding: 6px;
   border-radius: var(--border-radius);
-  background: #f3f3f3;
+  background: var(--mat-sys-surface-container);
 }
 
 .max-width-600 {

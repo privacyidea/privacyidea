@@ -1173,12 +1173,12 @@ def prepare_result(obj, rid=1, details=None):
     """
     This is used to preformat the dictionary to be sent by the API response
 
-    :param obj: simple result object like dict, sting or list
-    :type obj: dict or list or string/unicode
+    :param obj: simple result object like dict, string or list
+    :type obj: dict or list or string/Unicode
     :param rid: id value, for future versions
     :type rid: int
     :param details: optional parameter, which allows to provide more detail
-    :type  details: None or simple type like dict, list or string/unicode
+    :type  details: None or simple type like dict, list or string/Unicode
 
     :return: json rendered sting result
     :rtype: string

@@ -69,7 +69,6 @@ def before_request():
     This is executed before the request
     """
     g.policy_object = PolicyClass()
-    g.audit_object = None
     # access_route contains the ip addresses of all clients, hops and proxies.
     g.client_ip = get_client_ip(request, get_from_config(SYSCONF.OVERRIDECLIENT))
 

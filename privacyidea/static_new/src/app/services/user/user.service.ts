@@ -1,37 +1,35 @@
-import { httpResource, HttpResourceRef } from '@angular/common/http';
-import {
-  computed,
-  inject,
-  Injectable,
-  linkedSignal,
-  signal,
-  Signal,
-  WritableSignal,
-} from '@angular/core';
-import { environment } from '../../../environments/environment';
-import { PiResponse } from '../../app.component';
-import { AuthService, AuthServiceInterface } from '../auth/auth.service';
-import {
-  ContentService,
-  ContentServiceInterface,
-} from '../content/content.service';
-import { LocalService, LocalServiceInterface } from '../local/local.service';
-import { RealmService, RealmServiceInterface } from '../realm/realm.service';
-import { TokenService, TokenServiceInterface } from '../token/token.service';
-import { Sort } from '@angular/material/sort';
-import { ROUTE_PATHS } from '../../app.routes';
+/**
+ * (c) NetKnights GmbH 2025,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ **/
+import { AuthService, AuthServiceInterface } from "../auth/auth.service";
+import { ContentService, ContentServiceInterface } from "../content/content.service";
+import { HttpResourceRef, httpResource } from "@angular/common/http";
+import { Injectable, Signal, WritableSignal, computed, inject, linkedSignal, signal } from "@angular/core";
+import { RealmService, RealmServiceInterface } from "../realm/realm.service";
+import { TokenService, TokenServiceInterface } from "../token/token.service";
 
-const apiFilter = [
-  'description',
-  'email',
-  'givenname',
-  'mobile',
-  'phone',
-  'resolver',
-  'surname',
-  'userid',
-  'username',
-];
+import { FilterValue } from "../../core/models/filter_value";
+import { PiResponse } from "../../app.component";
+import { Sort } from "@angular/material/sort";
+import { environment } from "../../../environments/environment";
+import { ROUTE_PATHS } from "../../route_paths";
+
+const apiFilter = ["description", "email", "givenname", "mobile", "phone", "resolver", "surname", "userid", "username"];
 const advancedApiFilter: string[] = [];
 
 export interface UserData {
@@ -48,43 +46,47 @@ export interface UserData {
 }
 
 export interface UserServiceInterface {
-  selectedUserRealm: WritableSignal<string>;
   selectedUser: Signal<UserData | null>;
-  userFilter: WritableSignal<string | UserData>;
-  userNameFilter: Signal<string>;
+  selectionFilter: WritableSignal<string | UserData | null>;
+  selectionFilteredUsers: Signal<UserData[]>;
+
+  allUsernames: Signal<string[]>;
+  selectionUsernameFilter: Signal<string>;
+  selectionFilteredUsernames: Signal<string[]>;
+
+  selectedUserRealm: WritableSignal<string>;
+
   userResource: HttpResourceRef<PiResponse<UserData[]> | undefined>;
   user: WritableSignal<UserData>;
   usersResource: HttpResourceRef<PiResponse<UserData[]> | undefined>;
   users: WritableSignal<UserData[]>;
-  allUsernames: Signal<string[]>;
-  filteredUsernames: Signal<string[]>;
-  filteredUsers: Signal<UserData[]>;
-  filterValue: WritableSignal<Record<string, string>>;
+
+  apiUserFilter: WritableSignal<FilterValue>;
   pageIndex: WritableSignal<number>;
   pageSize: WritableSignal<number>;
-  apiFilter: string[];
-  advancedApiFilter: string[];
+  apiFilterOptions: string[];
+  advancedApiFilterOptions: string[];
+  resetFilter(): void;
+  handleFilterInput($event: Event): void;
 
   displayUser(user: UserData | string): string;
 }
 
 @Injectable({
-  providedIn: 'root',
+  providedIn: "root"
 })
 export class UserService implements UserServiceInterface {
-  private readonly localService: LocalServiceInterface = inject(LocalService);
   private readonly realmService: RealmServiceInterface = inject(RealmService);
-  private readonly contentService: ContentServiceInterface =
-    inject(ContentService);
+  private readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly tokenService: TokenServiceInterface = inject(TokenService);
   private readonly authService: AuthServiceInterface = inject(AuthService);
-  readonly apiFilter = apiFilter;
-  readonly advancedApiFilter = advancedApiFilter;
-  private baseUrl = environment.proxyUrl + '/user/';
-  filterValue = signal({} as Record<string, string>);
+  readonly apiFilterOptions = apiFilter;
+  readonly advancedApiFilterOptions = advancedApiFilter;
+  private baseUrl = environment.proxyUrl + "/user/";
+  apiUserFilter = signal(new FilterValue());
   filterParams = computed<Record<string, string>>(() => {
-    const allowedFilters = [...this.apiFilter, ...this.advancedApiFilter];
-    const filterPairs = Object.entries(this.filterValue())
+    const allowedFilters = [...this.apiFilterOptions, ...this.advancedApiFilterOptions];
+    const filterPairs = Array.from(this.apiUserFilter().filterMap.entries())
       .map(([key, value]) => ({ key, value }))
       .filter(({ key }) => allowedFilters.includes(key));
     if (filterPairs.length === 0) {
@@ -93,22 +95,28 @@ export class UserService implements UserServiceInterface {
     return filterPairs.reduce(
       (acc, { key, value }) => ({
         ...acc,
-        [key]: `*${value}*`,
+        [key]: `*${value}*`
       }),
-      {} as Record<string, string>,
+      {} as Record<string, string>
     );
   });
+
+  readonly apiFilter = apiFilter;
+  readonly advancedApiFilter = advancedApiFilter;
+
+  filterValue = signal({} as Record<string, string>);
+
   pageSize = linkedSignal({
-    source: this.filterValue,
-    computation: () => 10,
+    source: () => this.authService.userPageSize(),
+    computation: (pageSize) => (pageSize > 0 ? pageSize : 10)
   });
   pageIndex = linkedSignal({
     source: () => ({
-      filterValue: this.filterValue(),
+      filterValue: this.apiUserFilter(),
       pageSize: this.pageSize(),
-      routeUrl: this.contentService.routeUrl(),
+      routeUrl: this.contentService.routeUrl()
     }),
-    computation: () => 0,
+    computation: () => 0
   });
   selectedUserRealm = linkedSignal({
     source: () => ({
@@ -116,34 +124,34 @@ export class UserService implements UserServiceInterface {
       defaultRealm: this.realmService.defaultRealm(),
       selectedTokenType: this.tokenService.selectedTokenType(),
       authRole: this.authService.role(),
-      authRealm: this.authService.realm(),
+      authRealm: this.authService.realm()
     }),
     computation: (source) => {
-      if (source.authRole === 'user') {
+      if (source.authRole === "user") {
         return source.authRealm;
       }
       return source.defaultRealm;
-    },
+    }
   });
-  userFilter = linkedSignal<string, UserData | string>({
+  selectionFilter = linkedSignal<string, UserData | string>({
     source: this.selectedUserRealm,
-    computation: () => '',
+    computation: () => ""
   });
-  userNameFilter = computed<string>(() => {
-    const filter = this.userFilter();
-    if (typeof filter === 'string') {
+  selectionUsernameFilter = computed<string>(() => {
+    const filter = this.selectionFilter();
+    if (typeof filter === "string") {
       return filter;
     }
-    return filter?.username ?? '';
+    return filter?.username ?? "";
   });
   userResource = httpResource<PiResponse<UserData[]>>(() => {
-    if (this.authService.role() !== 'user') {
+    if (!this.authService.actionAllowed("userlist")) {
       return undefined;
     }
     return {
       url: this.baseUrl,
-      method: 'GET',
-      headers: this.localService.getHeaders(),
+      method: "GET",
+      headers: this.authService.getHeaders()
     };
   });
   user: WritableSignal<UserData> = linkedSignal({
@@ -152,59 +160,57 @@ export class UserService implements UserServiceInterface {
       return (
         source?.result?.value?.[0] ??
         previous?.value ?? {
-          description: '',
+          description: "",
           editable: false,
-          email: '',
-          givenname: '',
-          mobile: '',
-          phone: '',
-          resolver: '',
-          surname: '',
-          userid: '',
-          username: '',
+          email: "",
+          givenname: "",
+          mobile: "",
+          phone: "",
+          resolver: "",
+          surname: "",
+          userid: "",
+          username: ""
         }
       );
-    },
+    }
   });
   usersResource = httpResource<PiResponse<UserData[]>>(() => {
     const selectedUserRealm = this.selectedUserRealm();
     if (
-      selectedUserRealm === '' ||
-      this.authService.role() === 'user' ||
+      selectedUserRealm === "" ||
+      !this.authService.actionAllowed("userlist") ||
       (!this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_DETAILS) &&
-        !this.contentService
-          .routeUrl()
-          .startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS) &&
+        !this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS) &&
         ![
+          ROUTE_PATHS.TOKENS,
           ROUTE_PATHS.USERS,
           ROUTE_PATHS.TOKENS_CONTAINERS_CREATE,
-          ROUTE_PATHS.TOKENS_ENROLLMENT,
+          ROUTE_PATHS.TOKENS_ENROLLMENT
         ].includes(this.contentService.routeUrl()))
     ) {
       return undefined;
     }
     return {
       url: this.baseUrl,
-      method: 'GET',
-      headers: this.localService.getHeaders(),
+      method: "GET",
+      headers: this.authService.getHeaders(),
       params: {
         realm: selectedUserRealm,
-        ...this.filterParams(),
-      },
+        ...this.filterParams()
+      }
     };
   });
-  sort = signal({ active: 'serial', direction: 'asc' } as Sort);
+
   users: WritableSignal<UserData[]> = linkedSignal({
     source: this.usersResource.value,
-    computation: (source, previous) =>
-      source?.result?.value ?? previous?.value ?? [],
+    computation: (source, previous) => source?.result?.value ?? previous?.value ?? []
   });
   selectedUser = computed<UserData | null>(() => {
-    var userName = '';
-    if (this.authService.role() === 'user') {
-      userName = this.authService.user();
+    var userName = "";
+    if (this.authService.role() === "user") {
+      userName = this.authService.username();
     } else {
-      userName = this.userNameFilter();
+      userName = this.selectionUsernameFilter();
     }
     if (!userName) {
       return null;
@@ -217,27 +223,30 @@ export class UserService implements UserServiceInterface {
       return null;
     }
   });
-  allUsernames = computed<string[]>(() =>
-    this.users().map((user) => user.username),
-  );
-  filteredUsers = computed<UserData[]>(() => {
-    var userFilter = this.userFilter();
-    if (typeof userFilter !== 'string' || userFilter.trim() === '') {
+  allUsernames = computed<string[]>(() => this.users().map((user) => user.username));
+  selectionFilteredUsers = computed<UserData[]>(() => {
+    var userFilter = this.selectionFilter();
+    if (typeof userFilter !== "string" || userFilter.trim() === "") {
       return this.users();
     }
     const filterValue = userFilter.toLowerCase().trim();
-    return this.users().filter((user) =>
-      user.username.toLowerCase().includes(filterValue),
-    );
+    return this.users().filter((user) => user.username.toLowerCase().includes(filterValue));
   });
-  filteredUsernames = computed<string[]>(() =>
-    this.filteredUsers().map((user) => user.username),
-  );
+  selectionFilteredUsernames = computed<string[]>(() => this.selectionFilteredUsers().map((user) => user.username));
 
   displayUser(user: UserData | string): string {
-    if (typeof user === 'string') {
+    if (typeof user === "string") {
       return user;
     }
-    return user ? user.username : '';
+    return user ? user.username : "";
+  }
+
+  resetFilter(): void {
+    this.apiUserFilter.set(new FilterValue());
+  }
+  handleFilterInput($event: Event): void {
+    const input = $event.target as HTMLInputElement;
+    const newFilter = this.apiUserFilter().copyWith({ value: input.value });
+    this.apiUserFilter.set(newFilter);
   }
 }

@@ -1396,17 +1396,16 @@ class APISelfserviceTestCase(MyApiTestCase):
                              "Only 2 failed authentications per 0:00:20 allowed.",
                              details)
 
-        # and even /validate/check does not work
-        # (since it counts /auth *and* /validate/check )
+        # /validate/check does not work anyway, as the user does not exist
         with self.app.test_request_context('/validate/check',
                                            method='POST',
                                            data={"user": "eve",
                                                  "pass": pin}):
             res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, 200)
-            result = res.json.get("result")
-            self.assertTrue(result["status"], result)
-            self.assertFalse(result["value"], result)
+            self.assertEqual(res.status_code, 400)
+            error = res.json.get("result").get("error")
+            self.assertEqual(904, error.get("code"), error)
+            self.assertEqual("ERR904: User <eve@realm1> does not exist.", error.get("message"), error)
 
         delete_policy("pol_time1")
         delete_policy("pol_loginmode")

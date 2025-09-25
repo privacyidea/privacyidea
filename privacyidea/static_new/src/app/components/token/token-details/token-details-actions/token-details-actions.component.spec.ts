@@ -1,27 +1,33 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { TokenDetailsActionsComponent } from './token-details-actions.component';
-import { TokenService } from '../../../../services/token/token.service';
-import { ValidateService } from '../../../../services/validate/validate.service';
-import { provideHttpClient } from '@angular/common/http';
-import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { of } from 'rxjs';
-import { signal } from '@angular/core';
+/**
+ * (c) NetKnights GmbH 2025,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ **/
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { TokenDetailsActionsComponent } from "./token-details-actions.component";
+import { TokenService } from "../../../../services/token/token.service";
+import { ValidateService } from "../../../../services/validate/validate.service";
+import { provideHttpClient } from "@angular/common/http";
+import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { signal } from "@angular/core";
+import { MockTokenService } from "../../../../../testing/mock-services";
 
-class MockTokenService {
-  resyncOTPToken() {
-    return of(null);
-  }
-
-  testToken() {
-    return of(null);
-  }
-}
-
-describe('TokenDetailsActionsComponent', () => {
+describe("TokenDetailsActionsComponent", () => {
   let component: TokenDetailsActionsComponent;
   let fixture: ComponentFixture<TokenDetailsActionsComponent>;
-  let tokenService: TokenService;
-  let validateService: ValidateService;
 
   beforeEach(async () => {
     jest.clearAllMocks();
@@ -32,57 +38,19 @@ describe('TokenDetailsActionsComponent', () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: TokenService, useClass: MockTokenService },
-        ValidateService,
-      ],
+        ValidateService
+      ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(TokenDetailsActionsComponent);
     component = fixture.componentInstance;
-    component.tokenSerial = signal('Mock serial');
-    component.refreshTokenDetails = signal(false);
-    component.tokenType = signal('Mock type');
-
-    tokenService = TestBed.inject(TokenService);
-    validateService = TestBed.inject(ValidateService);
+    component.tokenSerial = signal("Mock serial");
+    component.tokenType = signal("Mock type");
 
     fixture.detectChanges();
   });
 
-  it('should create', () => {
+  it("should create", () => {
     expect(component).toBeTruthy();
-  });
-
-  it('should test and verify token', () => {
-    const testSpy = jest.spyOn(validateService, 'testToken');
-    component.otpOrPinToTest = '1234';
-
-    component.testToken();
-    component.verifyOTPValue();
-
-    expect(testSpy).toHaveBeenCalledWith('Mock serial', '1234');
-  });
-
-  it('should resync OTP token', () => {
-    component.fristOTPValue = 'otp1';
-    component.secondOTPValue = 'otp2';
-
-    const resyncSpy = jest.spyOn(tokenService, 'resyncOTPToken');
-    component.resyncOTPToken();
-
-    expect(resyncSpy).toHaveBeenCalledWith('Mock serial', 'otp1', 'otp2');
-  });
-
-  it('should resync OTP token on button click', () => {
-    component.fristOTPValue = 'otp1';
-    component.secondOTPValue = 'otp2';
-
-    const resyncSpy = jest.spyOn(tokenService, 'resyncOTPToken');
-
-    const btn: HTMLButtonElement = fixture.nativeElement.querySelector(
-      '.actions-pin-input-button button',
-    );
-    btn.click();
-
-    expect(resyncSpy).toHaveBeenCalledWith('Mock serial', 'otp1', 'otp2');
   });
 });

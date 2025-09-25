@@ -58,7 +58,7 @@ from flask import (Blueprint, request, g, current_app)
 
 from ..lib.container import find_container_by_serial, add_token_to_container, add_not_authorized_tokens_result
 from ..lib.log import log_with
-from .lib.utils import optional, send_result, send_csv_result, required, getParam
+from .lib.utils import optional, send_result, send_csv_result, required, getParam, get_optional, get_required
 from ..lib.tokenclass import ROLLOUTSTATE
 from ..lib.tokens.passkeytoken import PasskeyTokenClass
 from ..lib.tokens.webauthntoken import WebAuthnTokenClass
@@ -106,7 +106,7 @@ from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action, check_t
                                            webauthntoken_request, required_piv_attestation,
                                            hide_tokeninfo, init_ca_connector, init_ca_template,
                                            init_subject_components, require_description_on_edit, require_description,
-                                           check_container_action, check_user_params, check_token_list_action,
+                                           check_container_action, check_user_params,
                                            force_server_generate_key)
 from privacyidea.api.lib.postpolicy import (save_pin_change, check_verify_enrollment,
                                             postpolicy)
@@ -387,6 +387,7 @@ def get_challenges_api(serial=None):
     g.audit_object.log({"success": True})
     return send_result(challenges)
 
+
 @token_blueprint.route("/challenges/expired", methods=['DELETE'])
 @admin_required
 @log_with(log)
@@ -559,18 +560,59 @@ def assign_api():
 @log_with(log)
 def unassign_api():
     """
-    Unassign a token from a user.
-    You can either provide "serial" as an argument to unassign this very
-    token, or you can provide user and realm, to unassign all tokens of a user.
+    Unassign token(s) from a user.
+    You can either provide "serial" or "serials" as an argument to unassign token(s), or you can provide user and
+    realm, to unassign all tokens of a user. (old API behavior, TODO this should be split)
+    All errors during the unassignment of multiple tokens are fetched to be able to unassign the remaining tokens.
 
-    :return: In case of success it returns the number of unassigned tokens in "value".
+    :jsonparam serial: The serial number of a single token, or comma-separated list of serials.
+    :jsonparam serials: A list of serial numbers of multiple tokens.
+    authorized to manage.
+    :jsonparam user: Username of the user to unassign all token from. Does only work if serial and serials are not
+    given and realm parameter is also provided.
+    :jsonparam realm: Realm of the user to unassign all token from.  Does only work if serial and serials are not
+    given and user parameter is also provided.
+    :return: In case of success, it returns 1 if only one serial is given.
+            If multiple serials were given, the response will contain "count_success" as int for the number of
+            unassigned token, "failed" with a list of serials for which the operation failed and "unauthorized" with a
+            list of serials that were not authorized for the operation.
+            If no authorized serials are provided, returns status 403.
+            If none of the serials could be found, returns status 404.
+            For mixed results, the data described above is returned with status 200.
     :rtype: JSON object
     """
     user = request.User
-    serial = getParam(request.all_data, "serial", optional)
-    g.audit_object.log({"serial": serial})
+    serial_list = get_optional(request.all_data, "serials")
 
-    res = unassign_token(serial, user=user)
+    # check_token_action will raise an error if no processable token are given. So at this point we can assume that
+    # serial_list at least contains one serial.
+    # check_token_action will also put the serials of all token of the users in the serial_list
+    # if just the user was given as parameter, so we do not need to check that here - just use the serial_list
+
+    g.audit_object.log({"serial": serial_list if len(serial_list) != 1 else serial_list[0]})
+
+    not_authorized_serials = get_optional(request.all_data, "not_authorized_serials", [])
+    not_found_serials = get_optional(request.all_data, "not_found_serials", [])
+    # If only one serial is given, the value in the send result is expected to be a boolean (old API behavior).
+    if len(serial_list) == 1 and not not_authorized_serials and not not_found_serials:
+        res = unassign_token(serial_list[0], user=user)
+        g.audit_object.log({"success": True})
+        return send_result(res)
+
+    count_success = 0
+    failed = get_optional(request.all_data, "not_found_serials", [])
+    for serial in serial_list:
+        try:
+            tmp = unassign_token(serial, user=user)
+            count_success += tmp
+        except Exception as ex:
+            log.error(f"Error unassigning token {serial}: {ex}")
+            failed.append(serial)
+    res = {
+        "count_success": count_success,
+        "failed": failed,
+        "unauthorized": not_authorized_serials
+    }
     g.audit_object.log({"success": True})
     return send_result(res)
 
@@ -585,11 +627,10 @@ def revoke_api(serial=None):
     Revoke a single token or all the tokens of a user.
     A revoked token will usually be locked. A locked token can not be used
     anymore.
-    For certain token types additional actions might occur when revoking a
+    For certain token types, additional actions might occur when revoking a
     token.
 
-    :jsonparam basestring serial: the serial number of the single token to
-        revoke
+    :jsonparam basestring serial: the serial number of the single token to revoke
     :jsonparam basestring user: The login name of the user
     :jsonparam basestring realm: the realm name of the user
     :return: In case of success it returns the number of revoked
@@ -660,56 +701,55 @@ def disable_api(serial=None):
     return send_result(res)
 
 
+@token_blueprint.route('/', methods=['DELETE'])
 @token_blueprint.route('/<serial>', methods=['DELETE'])
 @prepolicy(check_token_action, request, action=PolicyAction.DELETE)
 @event("token_delete", request, g)
 @log_with(log)
-def delete_api(serial):
+def delete_api(serial=None):
     """
-    Delete a token by its serial number.
+    Delete tokens by their serial number.
 
-    :jsonparam serial: The serial number of a single token.
+    :jsonparam serial: The serial number of a single token, or comma-separated list of serials.
+    :jsonparam serials: A list of serial numbers of multiple tokens.
 
-    :return: In case of success it return the number of deleted tokens in
-        "value"
+     :return: In case of success, it returns 1 if only one serial is given.
+            If multiple serials were given, the response will contain "count_success" as int for the number of
+            deleted token, "failed" with a list of serials for which the operation failed and "unauthorized" with a
+            list of serials that were not authorized for the operation.
+            If no authorized serials are provided, returns status 403.
+            If none of the serials could be found, returns status 404.
+            For mixed results, the data described above is returned with status 200.
     :rtype: json object
     """
-    # If the API is called by a user, we pass the User Object to the function
-    g.audit_object.log({"serial": serial})
     user = request.User
-    res = remove_token(serial, user=user)
-    g.audit_object.log({"success": True})
-    return send_result(res)
+    serial_list = get_optional(request.all_data, "serials")
+    not_authorized_serials = get_optional(request.all_data, "not_authorized_serials") or []
 
+    g.audit_object.log({"serial": serial_list[0] if len(serial_list) == 1 else serial_list})
 
-@token_blueprint.route('/batchdeletion', methods=['POST'])
-@prepolicy(check_token_list_action, request, action=PolicyAction.DELETE)
-@event("token_delete", request, g)
-@log_with(log)
-def batch_deletion():
-    """
-    Delete all passed tokens, e.g. all tokens of a container
-    All errors during the deletion of a token are fetched to be able to delete the remaining tokens.
+    # If only one serial is given, the value in the send result is expected to be a boolean (old API behavior).
+    if len(serial_list) == 1 and not not_authorized_serials:
+        res = remove_token(serial_list[0], user=user)
+        g.audit_object.log({"success": True})
+        return send_result(res)
 
-    :jsonparam serial: A comma separated list of token serials to delete
-    :return: Dictionary with the serials as keys and the success status of the deletion as values
-    """
-    serial_list = getParam(request.all_data, "serial", required)
-    serial_list = serial_list.replace(" ", "").split(",")
-    g.audit_object.log({"serial": serial_list})
-    ret = {}
+    count_success = 0
+    failed = get_optional(request.all_data, "not_found_serials", [])
     for serial in serial_list:
         try:
-            success = remove_token(serial)
+            tmp = remove_token(serial, user=user)
+            count_success += tmp
         except Exception as ex:
-            # We are catching the exception here to be able to delete the remaining tokens
-            log.error(f"Error deleting token {serial}: {ex}")
-            success = False
-        ret[serial] = success
+            log.exception(f"Error deleting token {serial}: {ex}")
+            failed.append(serial)
 
-    not_authorized_serials = getParam(request.all_data, "not_authorized_serials", optional=True)
-    res = add_not_authorized_tokens_result(ret, not_authorized_serials)
-
+    res = {
+        "count_success": count_success,
+        "failed": failed,
+        "unauthorized": not_authorized_serials
+    }
+    g.audit_object.log({"success": True})
     return send_result(res)
 
 
@@ -842,7 +882,8 @@ def setrandompin_api(serial=None):
     encrypt_pin_param = getParam(request.all_data, "encryptpin")
     pin = getParam(request.all_data, "pin")
     if not pin:
-        raise TokenAdminError("We have an empty PIN. Please check your policy 'otp_pin_set_random'.")
+        raise TokenAdminError(
+            "We have an empty PIN. Please check your policy 'otp_pin_set_random'.")
 
     g.audit_object.add_to_log({'action_detail': "otppin, "})
     res = set_pin(serial, pin, user=user, encrypt_pin=encrypt_pin_param)
@@ -1116,7 +1157,8 @@ def loadtokens_api(filename=None):
                         'serial': ', '.join(import_tokens),
                         'success': True})
 
-    return send_result({'n_imported': len(import_tokens), 'n_not_imported': len(not_imported_serials)})
+    return send_result(
+        {'n_imported': len(import_tokens), 'n_not_imported': len(not_imported_serials)})
 
 
 @token_blueprint.route('/copypin', methods=['POST'])

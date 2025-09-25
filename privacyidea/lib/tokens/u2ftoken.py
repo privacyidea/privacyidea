@@ -25,28 +25,29 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-from privacyidea.api.lib.utils import getParam, attestation_certificate_allowed
-from privacyidea.lib.config import get_from_config
-from privacyidea.lib.tokenclass import TokenClass, CLIENTMODE, ROLLOUTSTATE
-from privacyidea.lib.token import get_tokens
-from privacyidea.lib.log import log_with
+import binascii
+import json
 import logging
-from privacyidea.models import Challenge
+
+from privacyidea.api.lib.utils import getParam, attestation_certificate_allowed
 from privacyidea.lib import _
-from privacyidea.lib.decorators import check_token_locked
+from privacyidea.lib.challenge import get_challenges
+from privacyidea.lib.config import get_from_config
 from privacyidea.lib.crypto import geturandom
+from privacyidea.lib.decorators import check_token_locked
+from privacyidea.lib.error import ValidateError, PolicyError, ParameterError
+from privacyidea.lib.log import log_with
+from privacyidea.lib.policies.actions import PolicyAction
+from privacyidea.lib.policy import (SCOPE, GROUP, comma_escape_text,
+                                    get_action_values_from_options, Match)
+from privacyidea.lib.token import get_tokens
+from privacyidea.lib.tokenclass import TokenClass, CLIENTMODE, ROLLOUTSTATE
 from privacyidea.lib.tokens.u2f import (check_registration_data, url_decode,
                                         parse_registration_data, url_encode,
                                         parse_response_data, check_response,
                                         x509name_to_string)
-from privacyidea.lib.error import ValidateError, PolicyError, ParameterError
-from privacyidea.lib.policy import (SCOPE, GROUP, comma_escape_text,
-                                    get_action_values_from_options, Match)
-from privacyidea.lib.policies.actions import PolicyAction
-from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.utils import is_true, hexlify_and_unicode, to_unicode, convert_imagefile_to_dataimage
-import binascii
-import json
+from privacyidea.models import Challenge
 
 __doc__ = """
 U2F is the "Universal 2nd Factor" specified by the FIDO Alliance.
@@ -249,7 +250,7 @@ class U2fTokenClass(TokenClass):
                'description': _('U2F: Enroll a U2F token.'),
                'init': {},
                'config': {},
-               'user':  ['enroll'],
+               'user': ['enroll'],
                # This tokentype is enrollable in the UI for...
                'ui_enroll': ["admin", "user"],
                'policy': {
@@ -543,17 +544,17 @@ class U2fTokenClass(TokenClass):
                     # certificate is authorized.
                     # If not, we can raise a policy exception
                     if not attestation_certificate_allowed(
-                        {
-                            "attestation_issuer": self.get_tokeninfo("attestation_issuer"),
-                            "attestation_serial": self.get_tokeninfo("attestation_serial"),
-                            "attestation_subject": self.get_tokeninfo("attestation_subject")
-                        },
-                        Match
-                            .user(options.get("g"),
-                                  scope=SCOPE.AUTHZ,
-                                  action=U2FACTION.REQ,
-                                  user_object=self.user if self.user else None)
-                            .action_values(unique=False)
+                            {
+                                "attestation_issuer": self.get_tokeninfo("attestation_issuer"),
+                                "attestation_serial": self.get_tokeninfo("attestation_serial"),
+                                "attestation_subject": self.get_tokeninfo("attestation_subject")
+                            },
+                            Match
+                                    .user(options.get("g"),
+                                          scope=SCOPE.AUTHZ,
+                                          action=U2FACTION.REQ,
+                                          user_object=self.user if self.user else None)
+                                    .action_values(unique=False)
                     ):
                         log.warning("The U2F device {0!s} is not allowed to authenticate "
                                     "due to policy restriction".format(self.token.serial))
@@ -566,7 +567,7 @@ class U2fTokenClass(TokenClass):
                                 "an old counter." % self.token.serial)
             else:
                 log.warning("Checking response for token {0!s} failed.".format(
-                            self.token.serial))
+                    self.token.serial))
 
         return ret
 
@@ -612,4 +613,5 @@ class U2fTokenClass(TokenClass):
         """
         Import for this token is not supported.
         """
+        self.token.delete()
         raise NotImplementedError("Import for U2F token is not supported.")

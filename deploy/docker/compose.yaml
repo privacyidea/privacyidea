@@ -1,0 +1,85 @@
+# SPDX-FileCopyrightText: (C) 2025 NetKnights GmbH <https://netknights.it>
+# SPDX-License-Identifier: CC0-1.0
+
+name: privacyIDEA
+
+services:
+  db:
+    image: mariadb:10.6
+    environment:
+      MARIADB_USER: pi
+      MARIADB_PASSWORD_FILE: /run/secrets/mariadb_password
+      MARIADB_DATABASE: pi
+      MARIADB_RANDOM_ROOT_PASSWORD: true
+    secrets:
+      - mariadb_password
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      retries: 5
+      start_period: 30s
+
+  pi:
+    depends_on:
+      db:
+        # The healthcheck attribute must be set for the db service for this to work
+        condition: service_healthy
+    build:
+      context: "../../"
+      dockerfile: ./deploy/docker/Dockerfile
+      network: host
+#    image: pi:latest
+    ports:
+      - "8080:8080"
+    secrets:
+      # To automatically detect the encryption key, the secret must be named "enckey"
+      - enckey
+      - secret_key
+      - pi_pepper
+      - mariadb_password
+      - audit_key_private
+      - audit_key_public
+    environment:
+      # Construct the database uri from variables/secrets
+      PI_DB_PASSWORD_FILE: /run/secrets/mariadb_password
+      PI_DB_USER: pi
+      PI_DB_HOST: db
+      PI_DB_NAME: pi
+      # Alternatively use SQLALCHEMY_DATABASE_URI or SQLALCHEMY_DATABASE_URI_FILE
+#      SQLALCHEMY_DATABASE_URI: mysql+pymysql://pi:test123@db:3306/pi
+
+      # The encryption key is automatically detected if configured as the "enckey" secret
+      # Alternatively, if the encryption key is mounted elsewhere, set the environment
+      # variable PI_ENCFILE to point to the file.
+
+      # Secrets that can be passed into the container as files:
+      SECRET_KEY_FILE: /run/secrets/secret_key
+      PI_PEPPER_FILE: /run/secrets/pi_pepper
+
+      # To test the setup of the container, set FLASK_DEBUG to "true".
+      # Note: This also sets the log-level of privacyIDEA to "DEBUG"
+#      FLASK_DEBUG: true
+    env_file:
+      # Additional environment variables can be loaded from an .env file
+      - ./example.env
+
+# Example secrets definition. The environment secrets must be made available when executing "docker-compose up"
+secrets:
+  enckey:
+    # Create a random encryption key with "head -c 96 /dev/urandom > encKey"
+    file: ./encKey
+  secret_key:
+    # Create a suitable secret key with "SECRET_KEY=$(python -c 'import secrets;print(secrets.token_hex())')"
+    environment: SECRET_KEY
+  pi_pepper:
+    # Create a suitable pepper with "PI_PEPPER=$(python -c 'import secrets;print(secrets.token_urlsafe())')"
+    environment: PI_PEPPER
+  mariadb_password:
+    # Create a random password i.e. with "pwgen 20 1 > db_password.txt"
+    file: ./db_password.txt
+  # Generate audit key-pair with "openssl genrsa -out audit_key_private.pem 2048"
+  #  and "openssl rsa -in audit_key_private.pem -pubout -out audit_key_public.pem"
+  audit_key_private:
+    file: ./audit_key_private.pem
+  audit_key_public:
+    file: ./audit_key_public.pem

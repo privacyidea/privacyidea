@@ -305,7 +305,9 @@ class User(object):
         Check if the user object exists in the user store
         :return: True or False
         """
-        return bool(self.uid)
+        # TODO: really check if user exist (ask user store and maybe re-evaluate realm)
+        exist = self.uid and self.realm_id
+        return exist
 
     @property
     def info(self):
@@ -591,6 +593,21 @@ class User(object):
             log.debug("{0!s}".format(traceback.format_exc()))
 
         return success
+
+    def user_export_dict(self) -> dict:
+        """
+        Returns a dictionary with the user identifiers, which can be used to
+        assign a token to the same user after import.
+
+        :return: A dictionary with the user identifiers
+        """
+        return {
+            "login": self.login,
+            "realm": self.realm,
+            "resolver": self.resolver,
+            "uid": self.uid,
+            "custom_attributes": self.attributes
+        }
 
 
 @log_with(log, hide_kwargs=["password"])

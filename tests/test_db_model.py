@@ -1153,8 +1153,9 @@ class ResolverRealmTestCase(MyTestCase):
     def test_01_resolver_realm_with_nodes(self):
         nd1_uuid = "8e4272a9-9037-40df-8aa3-976e4a04b5a9"
         nd2_uuid = "d1d7fde6-330f-4c12-88f3-58a1752594bf"
-        NodeName(id=nd1_uuid, name="Node1").save()
-        NodeName(id=nd2_uuid, name="Node2").save()
+        node1 = NodeName(id=nd1_uuid, name="Node1")
+        node2 = NodeName(id=nd2_uuid, name="Node2")
+        db.session.add_all([node1, node2])
 
         res = Resolver("resolver1", "passwdresolver")
         res.save()
@@ -1179,6 +1180,9 @@ class ResolverRealmTestCase(MyTestCase):
         self.assertIn(res.id, [x.resolver.id for x in re2.resolver_list])
         self.assertEqual(re2.resolver_list[0].node_uuid, nd1_uuid, re1.resolver_list[0])
         re2.delete()
+
+        db.session.delete(node1)
+        db.session.delete(node2)
 
     # TODO: add resolver realm config with ids and different nodes
     # TODO: same nodes with different timestamps

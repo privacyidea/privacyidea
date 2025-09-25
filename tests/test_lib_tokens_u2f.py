@@ -2,8 +2,6 @@
 This test file tests the lib.tokens.u2ftoken
 This depends on lib.tokenclass
 """
-import json
-
 from .base import MyTestCase
 from privacyidea.lib.tokens.u2ftoken import U2fTokenClass
 from privacyidea.lib.tokens.u2f import (check_registration_data,
@@ -281,7 +279,7 @@ class U2FTokenTestCase(MyTestCase):
             "issuer": "privacyIDEA",
         }]
         before_import = get_tokens()
-        import_tokens(json.dumps(token_data))
+        import_tokens(token_data)
         after_import = get_tokens()
         self.assertEqual(len(before_import), len(after_import))
 

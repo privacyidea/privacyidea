@@ -1,0 +1,131 @@
+<h1
+  i18n
+  mat-dialog-title>
+  Assign Selected Token to User
+</h1>
+<mat-dialog-content>
+  @if (selectionContainsAssignedToken()) {
+    <p
+      i18n
+      class="inline-warning">
+      Some token are already assigned to a user.
+      <br />
+      Assigning a token to a user will remove the previous assignment.
+    </p>
+  }
+  <div class="selected-user-attach-container">
+    <mat-form-field class="width-50 input-height">
+      <mat-label i18n>Select Realm of User</mat-label>
+      <mat-select
+        [formControl]="selectedUserRealmControl"
+        [value]="selectedUserRealmControl.value"
+        required>
+        @for (option of realmService.realmOptions(); track option) {
+          <mat-option [value]="option">{{ option }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+    <mat-form-field class="width-50 input-height">
+      <mat-label i18n>Enter User</mat-label>
+      <app-clearable-input
+        (onClick)="userService.selectionFilter.set('')"
+        [showClearButton]="userService.selectionFilter() !== ''">
+        <input
+          [formControl]="userFilterControl"
+          [matAutocomplete]="userAuto"
+          matInput
+          required />
+        <mat-autocomplete
+          #userAuto="matAutocomplete"
+          [displayWith]="userService.displayUser">
+          @for (user of userService.selectionFilteredUsers(); track user) {
+            <mat-option [value]="user">{{ user.username }}</mat-option>
+          }
+        </mat-autocomplete>
+      </app-clearable-input>
+      @if (selectedUserRealmControl.hasError("required")) {
+        <mat-error i18n>User Realm is <strong>required</strong></mat-error>
+      }
+      @if (userFilterControl.hasError("required")) {
+        <mat-error i18n>User is <strong>required</strong></mat-error>
+      }
+      @if (userFilterControl.hasError("userNotInOptions")) {
+        <mat-error i18n>User must be selected from the list.</mat-error>
+      }
+      @if (userFilterControl.hasError("userNotInRealm")) {
+        <mat-error i18n> User does not exist in the selected realm.</mat-error>
+      }
+    </mat-form-field>
+  </div>
+  @if (authService.actionAllowed("setpin")) {
+    <div class="selected-user-attach-container">
+      <mat-form-field
+        appearance="fill"
+        class="pin-field">
+        <input
+          style="display: none"
+          type="text" />
+        <input
+          style="display: none"
+          type="password" />
+        <mat-label i18n>PIN (optional)</mat-label>
+        <input
+          (ngModelChange)="pin.set($event)"
+          [ngModel]="pin()"
+          [type]="hidePin() ? 'password' : 'text'"
+          autocomplete="new-password"
+          matInput />
+        <button
+          (click)="togglePinVisibility()"
+          [attr.aria-label]="'Show PIN'"
+          [attr.aria-pressed]="!hidePin()"
+          mat-icon-button
+          matSuffix
+          type="button">
+          <mat-icon>{{ hidePin() ? "visibility_off" : "visibility" }}</mat-icon>
+          Show PIN
+        </button>
+      </mat-form-field>
+      <mat-form-field
+        appearance="fill"
+        class="pin-field">
+        <mat-label i18n>PIN (repeat)</mat-label>
+        <input
+          (ngModelChange)="pinRepeat.set($event)"
+          [ngModel]="pinRepeat()"
+          [type]="hidePin() ? 'password' : 'text'"
+          autocomplete="new-password"
+          matInput />
+        <button
+          (click)="togglePinVisibility()"
+          [attr.aria-label]="'Show PIN Repeat'"
+          [attr.aria-pressed]="!hidePin()"
+          mat-icon-button
+          matSuffix
+          type="button">
+          <mat-icon>{{ hidePin() ? "visibility_off" : "visibility" }}</mat-icon>
+          Show PIN Repeat
+        </button>
+        @if (pinRepeat() && !pinsMatch()) {
+          <mat-error i18n>PINs do not match</mat-error>
+        }
+      </mat-form-field>
+    </div>
+  }
+</mat-dialog-content>
+<mat-dialog-actions>
+  <button
+    (click)="onCancel()"
+    i18n
+    mat-button>
+    Cancel
+  </button>
+  <button
+    (click)="onConfirm()"
+    [disabled]="!pinsMatch() || selectedUserRealmControl.invalid || userFilterControl.invalid"
+    color="primary"
+    i18n
+    mat-button>
+    Assign to Selected Token
+  </button>
+</mat-dialog-actions>

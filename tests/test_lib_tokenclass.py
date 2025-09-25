@@ -16,7 +16,7 @@ from privacyidea.lib.utils import hexlify_and_unicode, to_unicode
 from privacyidea.lib.error import TokenAdminError
 from privacyidea.models import (Token,
                                 Config,
-                                Challenge)
+                                Challenge, Realm, Resolver)
 from datetime import datetime, timezone, timedelta
 from dateutil.tz import tzlocal
 
@@ -779,14 +779,14 @@ class TokenBaseTestCase(MyTestCase):
         db_token.save()
 
         # delete the realm
-        delete_realm(realm)
+        Realm.query.filter_by(name=realm).delete()
         # token is orphaned
         token_obj = TokenClass(db_token)
         orph = token_obj.is_orphaned()
         self.assertTrue(orph)
 
         # delete the resolver
-        delete_resolver(resolver)
+        Resolver.query.filter_by(name=resolver).delete()
         # token is orphaned
         token_obj = TokenClass(db_token)
         orph = token_obj.is_orphaned()
@@ -936,3 +936,19 @@ class TokenBaseTestCase(MyTestCase):
         token_obj = TokenClass(db_token)
         self.assertFalse(token_obj.has_further_challenge())
         token_obj.delete_token()
+
+    def test_43_remove_token_owner(self):
+        # Create a token and assign a user to it
+        db_token = Token.query.filter_by(serial=self.serial1).first()
+        token = TokenClass(db_token)
+        token.add_user(User(login="cornelius", realm=self.realm1))
+
+        # Check that the user is assigned
+        user_object = token.user
+        self.assertTrue(user_object.login == "cornelius", user_object)
+        self.assertTrue(user_object.resolver == self.resolvername1, user_object)
+
+        # Remove the user from the token
+        removed_user = token.remove_user()
+        self.assertEqual(removed_user.login, "cornelius", removed_user)
+        self.assertEqual(token.user, None, token.user)

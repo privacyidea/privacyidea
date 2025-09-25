@@ -114,7 +114,7 @@ class Config(TimestampMethodsMixin, db.Model):
         return ret
 
 
-class NodeName(db.Model, TimestampMethodsMixin):
+class NodeName(db.Model):
     __tablename__ = "nodename"
     # TODO: we can use the UUID type here when switching to SQLAlchemy 2.0
     #  <https://docs.sqlalchemy.org/en/20/core/custom_types.html#backend-agnostic-guid-type>
@@ -128,7 +128,7 @@ class Admin(db.Model):
     The administrators for managing the system.
     To manage the administrators use the command pi-manage.
 
-    In addition certain realms can be defined to be administrative realms.
+    In addition, certain realms can be defined to be administrative realms.
 
     :param username: The username of the admin
     :type username: basestring

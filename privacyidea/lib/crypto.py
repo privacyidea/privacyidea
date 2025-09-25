@@ -190,6 +190,7 @@ def hash(val, seed, algo=None):
 def pass_hash(password):
     """
     Hash password with crypt context
+
     :param password: The password to hash
     :type password: str
     :return: The hash string of the password
@@ -207,6 +208,7 @@ def pass_hash(password):
 def verify_pass_hash(password, hvalue):
     """
     Verify the hashed password value
+
     :param password: The plaintext password to verify
     :type password: str
     :param hvalue: The hashed password
@@ -1034,7 +1036,7 @@ def b64url_str_key_pair_to_ecc_obj(public_key_str: str = None, private_key_str: 
     return ecc_keys
 
 
-def get_hash_algorithm_object(algorithm_name: str, default: HashAlgorithm = None) -> type[HashAlgorithm]:
+def get_hash_algorithm_object(algorithm_name: str, default: HashAlgorithm = None) -> HashAlgorithm:
     """
     Returns the HashAlgorithm object for the given algorithm name.
 

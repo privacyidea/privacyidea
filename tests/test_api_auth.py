@@ -3,10 +3,11 @@ import datetime
 import json
 import logging
 
-from testfixtures import log_capture
+from testfixtures import log_capture, LogCapture
 
 from privacyidea.api.lib.utils import verify_auth_token
 from privacyidea.lib.challenge import get_challenges
+from privacyidea.models import Realm
 from .base import MyApiTestCase, OverrideConfigTestCase
 import mock
 from privacyidea.lib.config import set_privacyidea_config, SYSCONF
@@ -534,7 +535,7 @@ class AuthApiTestCase(MyApiTestCase):
         aentry = self.find_most_recent_audit_entry(action='POST /auth')
         self.assertEqual(aentry['action'], 'POST /auth', aentry)
         self.assertEqual(aentry['success'], 0, aentry)
-        self.assertEqual(None, aentry['policies'], aentry)
+        self.assertEqual("", aentry['policies'], aentry)
 
         # check split@sign is working correctly
         set_policy(name="remote", scope=SCOPE.WEBUI, realm=self.realm1,
@@ -770,6 +771,66 @@ class AuthApiTestCase(MyApiTestCase):
         remove_token(serial=serial)
         delete_policy("disable_spass_token")
         delete_policy("piLogin")
+
+    def test_10_auth_with_deleted_realm(self):
+        self.setUp_user_realms()
+        self.setUp_user_realm3()
+        set_default_realm(self.realm3)
+        # User exist in realm1 and realm3 (default realm)
+        user = User("cornelius", self.realm1)
+        token = init_token({"type": "spass", "pin": "1234"}, user=user)
+        user_realm1 = User("hans", self.realm1)
+        token_realm1 = init_token({"type": "spass", "pin": "1234"}, user=user_realm1)
+
+        set_policy(name="pi-login", scope=SCOPE.WEBUI, action=f"{PolicyAction.LOGINMODE}=privacyIDEA")
+
+        # successful authentication
+        with self.app.test_request_context('/auth', method="POST",
+                                           data={"username": user.login, "realm": user.realm, "password": "1234"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+
+        # Delete realm of user
+        Realm.query.filter_by(name=self.realm1).first().delete()
+
+        with self.app.test_request_context('/auth', method="POST",
+                                           data={"username": user.login, "realm": user.realm, "password": "1234"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(401, res.status_code, res.json)
+            error = res.json.get("result").get("error")
+            self.assertEqual(4031, error.get("code"), error)
+            self.assertEqual(f"Authentication failure. Unknown realm: {user.realm}.", error.get("message"), error)
+
+        # only passing username will set the default realm (realm3), in which a user with the same name exist.
+        # But credentials for this user are wrong (has no token assigned), hence authentication fails
+        with self.app.test_request_context('/auth', method="POST",
+                                           data={"username": user.login, "password": "1234"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(401, res.status_code, res.json)
+            error = res.json.get("result").get("error")
+            self.assertEqual(4031, error.get("code"), error)
+            self.assertEqual(f"Authentication failure. Wrong credentials", error.get("message"), error)
+            details = res.json.get("detail")
+            self.assertEqual("The user has no tokens assigned", details.get("message"), details)
+
+        # Only passing username will set the default realm, but the user does not exist in that realm.
+        # Hence, authentication fails.
+        with LogCapture() as capture:
+            logging.getLogger("privacyidea.lib.auth").setLevel(logging.DEBUG)
+            with self.app.test_request_context('/auth', method="POST",
+                                               data={"username": user_realm1.login, "password": "1234"}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(401, res.status_code, res.json)
+                error = res.json.get("result").get("error")
+                self.assertEqual(4031, error.get("code"), error)
+                self.assertEqual(f"Authentication failure. Wrong credentials", error.get("message"), error)
+            log_msg = ("Error authenticating user against privacyIDEA: UserError(description='User <hans@realm3> does "
+                       "not exist.', id=904)")
+            capture.check_present(("privacyidea.lib.auth", "DEBUG", log_msg))
+
+        token.delete_token()
+        token_realm1.delete_token()
+        delete_policy("pi-login")
 
 
 class AdminFromUserstore(OverrideConfigTestCase):

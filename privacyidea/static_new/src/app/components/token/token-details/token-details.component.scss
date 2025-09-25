@@ -2,6 +2,7 @@
 @use "@angular/material" as mat;
 
 .details-container {
+  display: grid;
   border-radius: var(--border-radius);
   @include mat.elevation(5);
   background-color: var(--table-color);

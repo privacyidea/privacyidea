@@ -88,6 +88,7 @@ class RADIUSServer(MethodsMixin, db.Model):
     description = db.Column(db.Unicode(2000), default='')
     timeout = db.Column(db.Integer, default=5)
     retries = db.Column(db.Integer, default=3)
+    options = db.Column(db.JSON)
 
     def save(self):
         """
@@ -116,6 +117,8 @@ class RADIUSServer(MethodsMixin, db.Model):
                 values["timeout"] = int(self.timeout)
             if self.retries is not None:
                 values["retries"] = int(self.retries)
+            if self.options is not None:
+                values["options"] = self.options
             RADIUSServer.query.filter(RADIUSServer.identifier ==
                                       self.identifier).update(values)
             ret = radius.id

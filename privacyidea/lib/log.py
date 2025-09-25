@@ -100,11 +100,12 @@ class SecureFormatter(Formatter):
             record.msg += f" (called from {record.filename}:{record.lineno})"
             record.lineno = record.__dict__["s_line"]
             record._called = True
-        message = super(SecureFormatter, self).format(record)
-        if not message.isprintable():
-            message = ''.join(map(lambda x: x if x.isprintable() else '.', message))
+        # Check for printable characters in output, unicode should be fine
+        if not record.msg.isprintable():
+            message = ''.join(map(lambda x: x if x.isprintable() else '.', record.msg))
             message = "!!Log Entry Secured by SecureFormatter!! " + message
-        return message
+            record.msg = message
+        return super(SecureFormatter, self).format(record)
 
 
 class log_with(object):

@@ -5,7 +5,7 @@
   display: flex;
 }
 
-.token-drawer {
+.user-drawer {
   border: solid 2px var(--mat-sys-outline-variant);
   height: fit-content;
   @include mat.elevation(5);
@@ -14,7 +14,7 @@
   margin-top: 94px;
 }
 
-.token-drawer-overflow {
+.user-drawer-overflow {
   border: solid 2px var(--mat-sys-outline-variant);
   height: auto;
   @include mat.elevation(5);
@@ -22,7 +22,6 @@
   position: fixed;
   margin-top: 94px;
   overflow: auto;
-  padding-bottom: 64px;
 }
 
 $margin-bottom-main: 136px;

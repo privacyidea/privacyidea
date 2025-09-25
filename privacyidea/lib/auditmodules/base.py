@@ -1,3 +1,5 @@
+# (c) NetKnights GmbH 2025,  https://netknights.it
+#
 #  privacyIDEA is a fork of LinOTP
 #  May 08, 2014 Cornelius Kölbel
 #  License:  AGPLv3
@@ -25,20 +27,23 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-__doc__="""This is the BaseClass for audit trails
+# SPDX-FileCopyrightText: 2025 Paul Lettich <paul.lettich@netknights.it>
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
+"""This is the BaseClass for audit trails
 
 The audit is supposed to work like this. First we need to create an audit
-object. E.g. this can be done in the before_request:
+object. E.g. this can be done in the before_request::
 
     g.audit_object = getAudit(file_config)
 
-During the request, the g.audit_object can be used to add audit information:
+During the request, the g.audit_object can be used to add audit information::
 
     g.audit_object.log({"client": "123.2.3.4", "action": "validate/check"})
 
-Thus at many different places in the code, audit information can be added to
+Thus, at many different places in the code, audit information can be added to
 the audit object.
-Finally the audit_object needs to be stored to the audit storage. So we call:
+Finally, the audit_object needs to be stored to the audit storage. So we call::
 
     g.audit_object.finalize_log()
 
@@ -48,6 +53,8 @@ storage.
 
 import logging
 import traceback
+from typing import Union
+
 from privacyidea.lib.log import log_with
 import datetime
 
@@ -90,8 +97,8 @@ class Audit(object):  # pragma: no cover
         self.name = "AuditBase"
         self.audit_data = {'startdate': startdate or datetime.datetime.now()}
         self.config = config or {}
-        self.private = ""
-        self.public = ""
+        self.private = b""
+        self.public = b""
 
     def log_token_num(self, count):
         """
@@ -190,20 +197,21 @@ class Audit(object):  # pragma: no cover
                     self.audit_data[k] += ","
                 self.audit_data[k] += v
 
-    def add_policy(self, policyname):
+    def add_policy(self, policy_names: Union[set, list, str]):
         """
-        This method adds a triggered policyname to the list of triggered policies.
+        This method adds triggered policy names to the list of triggered policies.
 
-        :param policyname: A string or a list of strings as policynames
+        :param policy_names: A set, list or single policy name(s)
         :return:
         """
-        if "policies" not in self.audit_data:
-            self.audit_data["policies"] = []
-        if isinstance(policyname, list):
-            for p in policyname:
-                self.audit_data["policies"].append(p)
-        else:
-            self.audit_data["policies"].append(policyname)
+        audit_policies = set(self.audit_data.get('policies', []))
+        if isinstance(policy_names, str):
+            audit_policies.add(policy_names)
+        elif isinstance(policy_names, list):
+            policy_names = set(policy_names)
+        if isinstance(policy_names, set):
+            audit_policies.update(policy_names)
+        self.audit_data["policies"] = list(audit_policies)
 
     def finalize_log(self):
         """

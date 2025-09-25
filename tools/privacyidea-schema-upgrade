@@ -1,22 +1,64 @@
 #!/bin/sh
 
-MIGRATION_PATH=$1
-FIRST_VERSION="4f32a4e1bf33"
-SKIP_STAMP=$2
+# SPDX-FileCopyrightText: (C) 2028 NetKnights GmbH <https://netknights.it>
+# SPDX-License-Identifier: AGPL-3.0-or-later
 
-if [ ! -d "$MIGRATION_PATH" ]; then
-	echo "Please specify the path with the migration files."
-	exit 1
+MIGRATION_DIR=""
+FIRST_VERSION="4f32a4e1bf33"
+SKIP_STAMP=NO
+
+usage()
+{
+  echo "Usage: $0 [OPTIONS]"
+  echo ""
+  echo "OPTIONS:"
+  echo "    -h, --help           Show this help text"
+  echo "    -d, --migration_dir  The path to the directory with the scripts for the database migration"
+  echo "    -s, --skipstamp      Skip stamping of the database if no stamp was detected"
+  exit "$1"
+}
+
+while [ "$#" -gt 0 ]; do
+  case $1 in
+    -d|--migration_dir)
+      MIGRATION_DIR="$2"
+      shift # past argument
+      shift # past value
+      ;;
+    -s|--skipstamp)
+      SKIP_STAMP=YES
+      shift # past argument
+      ;;
+    -h|--help)
+      usage 0
+      ;;
+    -*|--*)
+      echo "Unknown option $1"
+      usage 1
+      ;;
+  esac
+done
+
+if [ "${MIGRATION_DIR}" ] && [ -d "${MIGRATION_DIR}" ]; then
+	echo "Using path '${MIGRATION_DIR}' for the migration."
+	migration_param="-d ${MIGRATION_DIR}"
+else
+  migration_param=""
 fi
 
 # check if we do not have DB versioning, yet.
-if [ -z "$(pi-manage db current -v -d $MIGRATION_PATH | grep "^Rev:")" ]; then
-    if [ "$SKIP_STAMP" != "--skipstamp" ]; then
+if [ -z "$(pi-manage db current -v ${migration_param} | grep "^Rev:")" ]; then
+    echo "WARNING: The Database is not stamped!"
+    echo "  All migrations since version v2.0 will be applied to the Database."
+    echo "  Please check that the migration was applied successfully"
+    if [ "$SKIP_STAMP" = "NO" ]; then
         # Set the version to the first PI 2.0 version
         echo "++ Stamping DB to $FIRST_VERSION"
-        pi-manage db stamp $FIRST_VERSION -d $MIGRATION_PATH > /dev/null
+        pi-manage db stamp $FIRST_VERSION ${migration_param}
+      else
+        echo "++ Not stamping Database as requested."
     fi
 fi
 # Upgrade the database
 echo "++ Upgrading DB schema."
-pi-manage db upgrade -d $MIGRATION_PATH
+pi-manage db upgrade ${migration_param}

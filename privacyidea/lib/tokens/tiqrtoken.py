@@ -36,7 +36,7 @@ with your smartphone by scanning a QR code.
 
 The TiQR token is enrolled via /token/init, but it requires no otpkey, since
 the otpkey is generated on the smartphone and pushed to the privacyIDEA
-server in a seconds step.
+server in a second step.
 
 Enrollment
 ----------

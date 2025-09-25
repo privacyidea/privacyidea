@@ -1,24 +1,40 @@
-import { WebAuthnRegisterRequest } from '../../services/token/token.service';
+/**
+ * (c) NetKnights GmbH 2025,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ **/
+import { Injectable } from "@angular/core";
+import { WebAuthnRegisterRequest } from "../../services/token/token.service";
 import {
   EnrollmentResponse,
   EnrollmentResponseDetail,
   TokenApiPayloadMapper,
   TokenEnrollmentData,
-  TokenEnrollmentPayload,
-} from './_token-api-payload.mapper';
-import { Injectable } from '@angular/core';
+  TokenEnrollmentPayload
+} from "./_token-api-payload.mapper";
 
-export interface WebauthnEnrollmentResponse
-  extends EnrollmentResponse<WebauthnEnrollmentResponseDetail> {}
+export interface WebauthnEnrollmentResponse extends EnrollmentResponse<WebauthnEnrollmentResponseDetail> {}
 
-export interface WebauthnEnrollmentResponseDetail
-  extends EnrollmentResponseDetail {
+export interface WebauthnEnrollmentResponseDetail extends EnrollmentResponseDetail {
   webAuthnRegisterRequest: WebAuthnRegisterRequest;
 }
 
 // Interface for the initialization options of the WebAuthn token (init step)
 export interface WebAuthnEnrollmentData extends TokenEnrollmentData {
-  type: 'webauthn';
+  type: "webauthn";
   credential_id?: string;
 }
 
@@ -39,10 +55,19 @@ export interface WebAuthnEnrollmentPayload extends TokenEnrollmentPayload {
   credential_id?: string; // If present, all fields from WebAuthnEnrollmentData are part of payload
 }
 
-@Injectable({ providedIn: 'root' })
-export class WebAuthnApiPayloadMapper
-  implements TokenApiPayloadMapper<WebAuthnEnrollmentData>
-{
+export interface WebAuthnFinalizePayload extends TokenEnrollmentPayload {
+  credential_id: string;
+  regdata: string;
+  clientdata: string;
+  transaction_id: string;
+  serial: string;
+  rawId: string;
+  authenticatorAttachment: string | null;
+  credProps?: any;
+}
+
+@Injectable({ providedIn: "root" })
+export class WebAuthnApiPayloadMapper implements TokenApiPayloadMapper<WebAuthnEnrollmentData> {
   toApiPayload(data: WebAuthnEnrollmentData): WebAuthnEnrollmentPayload {
     const payload: WebAuthnEnrollmentPayload = {
       type: data.type,
@@ -51,8 +76,14 @@ export class WebAuthnApiPayloadMapper
       validity_period_start: data.validityPeriodStart,
       validity_period_end: data.validityPeriodEnd,
       user: data.user,
-      pin: data.pin,
+      realm: data.user ? data.realm : null,
+      pin: data.pin
     };
+
+    if (data.onlyAddToRealm) {
+      payload.realm = data.realm;
+      payload.user = null;
+    }
 
     if (data.credential_id) {
       // Switch logic copies all of `data` if credential_id is present.
@@ -67,5 +98,30 @@ export class WebAuthnApiPayloadMapper
   fromApiPayload(payload: any): WebAuthnEnrollmentData {
     // Placeholder: Implement transformation from API payload. We will replace this later.
     return payload as WebAuthnEnrollmentData;
+  }
+}
+
+@Injectable({ providedIn: "root" })
+export class WebAuthnFinalizeApiPayloadMapper implements TokenApiPayloadMapper<WebauthnFinalizeData> {
+  toApiPayload(data: WebauthnFinalizeData): WebAuthnFinalizePayload {
+    const payload: WebAuthnFinalizePayload = {
+      type: data.type,
+      serial: data.serial,
+      credential_id: data.credential_id,
+      regdata: data.regdata,
+      clientdata: data.clientdata,
+      transaction_id: data.transaction_id,
+      rawId: data.rawId,
+      authenticatorAttachment: data.authenticatorAttachment || null
+    };
+
+    if (data.credProps) payload.credProps = data.credProps;
+
+    return payload;
+  }
+
+  fromApiPayload(payload: any): WebauthnFinalizeData {
+    // Placeholder: Implement transformation from API payload. We will replace this later.
+    return payload as WebauthnFinalizeData;
   }
 }

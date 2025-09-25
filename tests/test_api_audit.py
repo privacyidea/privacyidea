@@ -1,6 +1,6 @@
 import mock
 from contextlib import contextmanager
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from .base import MyApiTestCase
 from privacyidea.lib.policy import set_policy, SCOPE, delete_policy
@@ -393,3 +393,71 @@ class APIAuditTestCase(MyApiTestCase):
 
         # delete policy
         delete_policy("audit01")
+
+    def test_05_audit_age(self):
+        # Check that audit age policy is applied correctly
+        Audit.query.delete()
+        self.setUp_user_realms()
+        date = datetime.now(timezone.utc)
+        three_days = timedelta(days=3)
+        # enroll policies are within last day and enable policies not
+        audit = Audit(action="enroll", success=1, realm=self.realm1a)
+        audit.date = date - timedelta(minutes=5)
+        audit.save()
+        audit = Audit(action="enable", success=1, realm=self.realm1a)
+        audit.date = date - three_days
+        audit.save()
+        audit = Audit(action="enroll", success=1, realm=self.realm2b)
+        audit.date = date - timedelta(minutes=2)
+        audit.save()
+        audit = Audit(action="enable", success=1, realm=self.realm2b)
+        audit.date = date - three_days
+        audit.save()
+        audit = Audit(action="enroll", success=1, realm=self.realm2b)
+        audit.date = date
+        audit.save()
+
+        # check that we see all audit entries
+        with self.app.test_request_context('/audit/',
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            json_response = res.json
+            self.assertTrue(json_response.get("result").get("status"), res)
+            self.assertEqual(5, json_response.get("result").get("value").get("count"))
+
+        # Set audit age policy
+        set_policy("audit_age", scope=SCOPE.ADMIN, action=f"{PolicyAction.AUDIT},{PolicyAction.AUDIT_AGE}=1d")
+        # Now we should only get audit entries within the last day
+        with self.app.test_request_context('/audit/',
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            json_response = res.json
+            self.assertTrue(json_response.get("result").get("status"), res)
+            audit_result = json_response.get("result").get("value")
+            self.assertEqual(4, audit_result.get("count"))
+            for audit in audit_result.get("auditdata"):
+                self.assertNotEqual("enable", audit.get("action"), audit)
+
+        # Set audit policy for helpdesk
+        set_policy("audit_age", scope=SCOPE.ADMIN, action=f"{PolicyAction.AUDIT},{PolicyAction.AUDIT_AGE}=1d",
+                   realm=self.realm2b)
+        with self.app.test_request_context('/audit/',
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            json_response = res.json
+            self.assertTrue(json_response.get("result").get("status"), res)
+            audit_result = json_response.get("result").get("value")
+            # TODO: This should also contain my own auth audit entries, but currently the audit entries are filtered
+            # TODO: by the real which excludes the own auth entry.
+            self.assertEqual(2, audit_result.get("count"))
+            for audit in audit_result.get("auditdata"):
+                self.assertNotEqual("enable", audit.get("action"), audit)
+                self.assertNotEqual(self.realm1a, audit.get("realm"), audit)
+
+        delete_policy("audit_age")

@@ -410,7 +410,8 @@ def get_default_realm_api():
 @prepolicy(check_base_action, request, PolicyAction.RESOLVERDELETE)
 def delete_realm_api(realm=None):
     """
-    This call deletes the given realm.
+    This call deletes the given realm. A realm can only be deleted if no user of this realm is assigned to a token or
+    container.
 
     :param realm: The name of the realm to delete
     :>json bool status: Status of the request

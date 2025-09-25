@@ -1,22 +1,54 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { NoopAnimationsModule } from '@angular/platform-browser/animations';
-import { of } from 'rxjs';
+/**
+ * (c) NetKnights GmbH 2025,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ **/
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { NoopAnimationsModule } from "@angular/platform-browser/animations";
+import { of } from "rxjs";
 
-import { ContainerCreateComponent } from './container-create.component';
-import { MatDialog } from '@angular/material/dialog';
-import { NotificationService } from '../../../services/notification/notification.service';
-import { provideHttpClient } from '@angular/common/http';
+import { ContainerCreateComponent } from "./container-create.component";
+import { MatDialog } from "@angular/material/dialog";
+import { NotificationService } from "../../../services/notification/notification.service";
+import { provideHttpClient } from "@angular/common/http";
 
 const mockMatDialog = {
   open: () => ({ afterClosed: () => of(null) }),
-  closeAll: () => {},
+  closeAll: () => {
+  }
 };
 
 const mockNotificationService = {
-  openSnackBar: () => {},
+  openSnackBar: () => {
+  }
 };
 
-describe('ContainerCreateComponent', () => {
+class MockIntersectionObserver {
+  constructor(private callback: any, private options?: any) {}
+  observe = jest.fn();
+  disconnect = jest.fn();
+}
+
+Object.defineProperty(global, 'IntersectionObserver', {
+  writable: true,
+  configurable: true,
+  value: MockIntersectionObserver
+});
+
+describe("ContainerCreateComponent", () => {
   let component: ContainerCreateComponent;
   let fixture: ComponentFixture<ContainerCreateComponent>;
 
@@ -26,8 +58,8 @@ describe('ContainerCreateComponent', () => {
       providers: [
         provideHttpClient(),
         { provide: MatDialog, useValue: mockMatDialog },
-        { provide: NotificationService, useValue: mockNotificationService },
-      ],
+        { provide: NotificationService, useValue: mockNotificationService }
+      ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(ContainerCreateComponent);
@@ -35,7 +67,7 @@ describe('ContainerCreateComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create', () => {
+  it("should create", () => {
     expect(component).toBeTruthy();
   });
 });

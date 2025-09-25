@@ -32,28 +32,27 @@
 #
 # You should have received a copy of the GNU Affero General Public
 # License along with this program. If not, see <http://www.gnu.org/licenses/>.
-
-import sys
-
-from datetime import datetime
-from dateutil import parser
+import json
 import re
-from flask.cli import AppGroup
+import sys
+from collections import defaultdict
+from datetime import datetime
+from typing import Generator, Callable, Union
 
 import click
-from collections import defaultdict
+from cryptography.fernet import Fernet
+from dateutil import parser
 from dateutil.tz import tzlocal
-from typing import Generator, Callable, Union
+from flask.cli import AppGroup
 from yaml import safe_dump as yaml_safe_dump
 
 from privacyidea.lib.container import find_container_for_token
 from privacyidea.lib.error import ResolverError
 from privacyidea.lib.importotp import export_pskc
-from privacyidea.lib.utils import parse_legacy_time, is_true
-
-from privacyidea.models import Token, TokenContainer
-from privacyidea.lib.token import unassign_token, remove_token, get_tokens_paginated_generator
+from privacyidea.lib.token import unassign_token, remove_token, get_tokens_paginated_generator, export_tokens
 from privacyidea.lib.tokenclass import TokenClass
+from privacyidea.lib.utils import parse_legacy_time, is_true
+from privacyidea.models import Token, TokenContainer
 
 allowed_tokenattributes = [col.key for col in Token.__table__.columns]
 
@@ -141,11 +140,13 @@ def _compare_after(given_value: datetime) -> Callable[[str], bool]:
     :return: a function which returns True if its parameter (converted to a datetime) occurs after
              given_value.
     """
+
     def comparator(value: str):
         try:
             return parse_legacy_time(value, return_date=True) > given_value
         except ValueError:
             return False
+
     return comparator
 
 
@@ -154,6 +155,7 @@ def _compare_before(given_value: datetime) -> Callable[[str], bool]:
     :return: a function which returns True if its parameter (converted to a datetime) occurs before
              given_value.
     """
+
     def comparator(value: str):
         try:
             return parse_legacy_time(value, return_date=True) < given_value
@@ -541,49 +543,96 @@ def list_cmd(ctx, user_attributes, token_attributes, sum_tokens):
 
 @findtokens.command('export')
 @click.option('--format', 'export_format',
-              type=click.Choice(['csv', 'yaml', 'pskc'], case_sensitive=False),
-              default='pskc', show_default=True,
-              help='The output format of the token export. CSV export only '
-                   'allows TOTP and HOTP token types')
+              type=click.Choice(['csv', 'yaml', 'pskc', 'pi'], case_sensitive=False),
+              default='pi', show_default=True,
+              help="The output format of the token export. CSV export only "
+                   "allows TOTP and HOTP token types")
 @click.option('--b32', is_flag=True,
-              help='In case of exporting tokens to CSV or YAML, the seed is '
-                   'written as base32 encoded instead of hex.')
-# TODO: check if there is a better way
+              help="In case of exporting tokens to CSV or YAML, the seed is "
+                   "written as base32 encoded instead of hex.")
+@click.option('--file', required=False, type=click.File('w'), default=sys.stdout,
+              show_default="<stdout>",
+              help='The file to export the tokens to.')
+@click.option('--user/--no-user', default=True,
+              help='Include user information.')
 @click.pass_context
-def export(ctx, export_format, b32):
+def export(ctx, export_format, b32, file, user):
     """
     Export found tokens.
     """
-    for tlist in ctx.obj['tokens']:
-        if export_format == "csv":
-            for tokenobj in tlist:
-                if tokenobj.type.lower() not in ["totp", "hotp"]:
+    if export_format == "pskc":
+        all_tokens = []
+        for token_list in ctx.obj['tokens']:
+            all_tokens.extend(token_list)
+        key, token_num, soup = export_pskc(all_tokens)
+        sys.stderr.write(f"\n{token_num} tokens exported.\n")
+        sys.stderr.write(f"\nThis is the AES encryption key of the token seeds.\n"
+                         f"You need this key to import the "
+                         f"tokens again:\n\n\t{key}\n\n")
+        file.write(str(soup))
+
+    elif export_format == "csv":
+        exported_tokens = []
+        for token_list in ctx.obj['tokens']:
+            for token in token_list:
+                if token.type.lower() not in ["totp", "hotp"]:
                     continue
-                token_dict = tokenobj._to_dict(b32=b32)
-                owner = f"{tokenobj.user.login}@{tokenobj.user.realm}" if tokenobj.user else "n/a"
+                token_dict = token._to_dict(b32=b32)
+                owner = f"{token.user.login}@{token.user.realm}" if (token.user and user) else "n/a"
                 export_string = (f"{owner}, {token_dict.get('serial')}, {token_dict.get('otpkey')}, "
                                  f"{token_dict.get('type')}, {token_dict.get('otplen')}")
-                if tokenobj.type.lower() == "totp":
-                    click.echo(export_string + f", {token_dict.get('info_list', {}).get('timeStep')}")
+                if token.type.lower() == "totp":
+                    exported_tokens.append(
+                        export_string + f", {token_dict.get('info_list', {}).get('timeStep')}")
                 else:
-                    click.echo(export_string)
-        elif export_format == "yaml":
-            token_list = []
-            for tokenobj in tlist:
+                    exported_tokens.append(export_string)
+        file.write('\n'.join(exported_tokens))
+
+    elif export_format == "yaml":
+        token_list = []
+        for token_list in ctx.obj['tokens']:
+            for token in token_list:
                 try:
-                    token_dict = tokenobj._to_dict(b32=b32)
-                    token_dict["owner"] = f"{tokenobj.user.login}@{tokenobj.user.realm}" if tokenobj.user else "n/a"
+                    token_dict = token._to_dict(b32=b32)
+                    token_dict["owner"] = f"{token.user.login}@{token.user.realm}" if (
+                            token.user and user) else "n/a"
                     token_list.append(token_dict)
                 except Exception as e:
-                    sys.stderr.write(f"\nFailed to export token {tokenobj.get_serial()} ({e}).\n")
-            click.echo(yaml_safe_dump(token_list))
-        else:
-            key, token_num, soup = export_pskc(tlist)
-            sys.stderr.write(f"\n{token_num} tokens exported.\n")
-            sys.stderr.write(f"\nThis is the AES encryption key of the token seeds.\n"
-                             f"You need this key to import the "
-                             f"tokens again:\n\n\t{key}\n\n")
-            click.echo(f"{soup}")
+                    sys.stderr.write(f"\nFailed to export token {token.get_serial()} ({e}).\n")
+        file.write(yaml_safe_dump(token_list))
+
+    elif export_format == "pi":
+        key = Fernet.generate_key().decode()
+        exported_tokens = []
+        failed_exports = []
+        for token_list in ctx.obj['tokens']:
+            result = export_tokens(token_list, export_user=user)
+            exported_tokens.extend(result.successful_tokens)
+            failed_exports.extend(result.failed_tokens)
+        list_of_exported_tokens = json.dumps(exported_tokens, default=repr, indent=2)
+        f = Fernet(key)
+        file.write(f.encrypt(list_of_exported_tokens.encode()).decode())
+        if file == sys.stdout:
+            click.echo("\n\n")
+        click.echo(f"Successfully exported {len(exported_tokens)} tokens.")
+        if failed_exports:
+            click.echo(f"Failed to export {len(failed_exports)} tokens:")
+            for serial in failed_exports:
+                click.echo(f"{serial}")
+            click.echo(f"Check the logfile for the cause of the failures.")
+
+        click.secho(f'\nThe key to import the tokens is:\n\n\t{key}\n\n', fg='red', err=True)
+        if file != sys.stdout:
+            click.echo(f'You can use this key to import the tokens with the command:\n'
+                       f'pi-tokenjanitor import privacyidea {file.name} --key {key}\n', err=True)
+        if click.confirm('Do you want to save the key to a file?', default=False, err=True):
+            key_file = click.prompt('Please enter the file name to save the key to',
+                                    type=click.File('w'), err=True)
+            key_file.write(key)
+            click.echo(f'The export encryption key has been saved to "{key_file.name}"', err=True)
+
+    if file != sys.stdout:
+        click.echo(f'The tokens have been exported to "{file.name}".\n')
 
 
 @findtokens.command('set_tokenrealms')

@@ -1,6 +1,12 @@
 # Update Notes
 
 ## Update from 3.11 to 3.12
+* To enable the preview of the new WebUI, edit `pi.cfg` and add the following two lines:
+  
+  `PI_STATIC_FOLDER = "static_new/"`
+  
+  `PI_TEMPLATE_FOLDER = "static_new/dist/privacyidea-webui/browser/"`
+
 * The behaviour of the Certificate Token changes when the certificate key-pair is created by privacyIDEA.
   The secret key will not be saved to the tokeninfo anymore. Instead, only the PKCS12 container will contain
   the secret key. The PKCS12 container will be available in the tokeninfo and will be encrypted either with

@@ -91,7 +91,7 @@ from privacyidea.api.lib.prepolicy import (prepolicy, set_realm,
                                            webauthntoken_authz,
                                            webauthntoken_request, check_application_tokentype,
                                            increase_failcounter_on_challenge, get_first_policy_value, fido2_enroll,
-                                           disabled_token_types)
+                                           disabled_token_types, load_challenge_text)
 from privacyidea.api.lib.utils import get_all_params, get_optional_one_of, get_optional
 from privacyidea.api.recover import recover_blueprint
 from privacyidea.api.register import register_blueprint
@@ -102,7 +102,7 @@ from privacyidea.lib.config import (return_saml_attributes, get_from_config,
                                     return_saml_attributes_on_fail,
                                     SYSCONF, ensure_no_config_object, get_privacyidea_node)
 from privacyidea.lib.container import find_container_for_token, find_container_by_serial, check_container_challenge
-from privacyidea.lib.error import ParameterError, PolicyError
+from privacyidea.lib.error import ParameterError, PolicyError, ResourceNotFoundError
 from privacyidea.lib.event import EventConfiguration
 from privacyidea.lib.event import event
 from privacyidea.lib.machine import list_machine_tokens
@@ -118,7 +118,7 @@ from ..lib.fido2.challenge import create_fido2_challenge, verify_fido2_challenge
 from privacyidea.lib.token import get_tokens
 from privacyidea.lib.tokenclass import CHALLENGE_SESSION
 from privacyidea.lib.user import get_user_from_param, log_used_user, User
-from privacyidea.lib.utils import get_client_ip, get_plugin_info_from_useragent
+from privacyidea.lib.utils import get_client_ip, get_plugin_info_from_useragent, AUTH_RESPONSE
 from privacyidea.lib.utils import is_true, get_computer_name_from_user_agent
 from .lib.utils import required
 from .lib.utils import send_result, getParam, get_required
@@ -266,6 +266,7 @@ def offlinerefill():
 @prepolicy(webauthntoken_request, request=request)
 @prepolicy(webauthntoken_authz, request=request)
 @prepolicy(disabled_token_types, request=request)
+@prepolicy(load_challenge_text, request=request)
 @prepolicy(fido2_auth, request=request)
 @check_user_serial_or_cred_id_in_request(request)
 @CheckSubscription(request)
@@ -499,8 +500,16 @@ def check():
                 details["message"] = gettext("Last authentication policy check failed for token {serial}").format(
                     serial=token.get_serial())
                 return send_result(False, rid=2, details=details)
-            else:
-                result = verify_fido2_challenge(transaction_id, token, request.all_data) > 0
+            elif not token.is_active():
+                log.debug(f"Authentication attempted with disabled token {token.get_serial()}")
+                g.audit_object.log({"info": log_used_user(user, "Token is disabled"),
+                                    "success": False,
+                                    "authentication": AUTH_RESPONSE.REJECT,
+                                    "serial": token.get_serial(),
+                                    "token_type": details.get("type")})
+                return send_result(False, rid=2, details={"message": "Token is disabled"})
+
+            result = verify_fido2_challenge(transaction_id, token, request.all_data) > 0
         success = result
         if success:
             # If the authentication was successful, return the username of the token owner
@@ -514,7 +523,11 @@ def check():
     elif serial:
         if user:
             # Check if the given token belongs to the user
-            if not get_tokens(user=user, serial=serial, count=True):
+            try:
+                tokens = get_tokens(user=user, serial=serial, count=True)
+            except ResourceNotFoundError:
+                tokens = []
+            if not tokens:
                 raise ParameterError("Given serial does not belong to given user!")
         if not otp_only:
             success, details = check_serial_pass(serial, password, options=options)
@@ -609,6 +622,7 @@ def check():
 @prepolicy(increase_failcounter_on_challenge, request=request)
 @prepolicy(check_base_action, request, action=PolicyAction.TRIGGERCHALLENGE)
 @prepolicy(webauthntoken_request, request=request)
+@prepolicy(load_challenge_text, request=request)
 @prepolicy(fido2_auth, request=request)
 @event("validate_triggerchallenge", request, g)
 def trigger_challenge():

@@ -1,0 +1,11 @@
+<div class="input-container">
+  <ng-content select="input"></ng-content>
+  @if (showClearButton) {
+    <button
+      (click)="clearInput()"
+      type="button"
+      mat-icon-button>
+      <mat-icon>add_circle</mat-icon>
+    </button>
+  }
+</div>

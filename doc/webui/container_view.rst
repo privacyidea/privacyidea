@@ -142,8 +142,9 @@ Container Create
 ~~~~~~~~~~~~~~~~
 
 To create a new container, first of all a type has to be selected. Below the drop-down menu, all token types that are
-supported by the container type are displayed. Additionally, you can set a description and assign the container to a
-user. From version 3.11, you can also assign the container only to a realm.
+supported by the container type are displayed. For more information on the different container types, see
+:ref:`container_types`. Additionally, you can set a description and assign the container to a user. From version 3.11,
+you can also assign the container only to a realm.
 
 .. figure:: images/container_create.png
    :width: 500

@@ -2,7 +2,6 @@
 This test file tests the lib.tokens.yubikeytoken
 
 """
-import json
 import logging
 from testfixtures import log_capture
 
@@ -323,7 +322,7 @@ class YubikeyTokenTestCase(MyTestCase):
         }]
 
         # Import the token
-        result = import_tokens(json.dumps(token_data))
+        result = import_tokens(token_data)
         self.assertIn(self.serial2, result.successful_tokens, result)
 
         # Retrieve the imported token

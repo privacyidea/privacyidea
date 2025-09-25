@@ -1,0 +1,85 @@
+<h2
+  i18n
+  mat-dialog-title>
+  Assign SSH Machine
+</h2>
+<mat-dialog-content class="full-width">
+  <form [formGroup]="formGroup">
+    <mat-form-field
+      appearance="fill"
+      class="full-width">
+      <mat-label i18n>Machine</mat-label>
+      <input
+        [formControl]="selectedMachine"
+        [matAutocomplete]="machineAuto"
+        matInput
+        type="text" />
+      <mat-autocomplete
+        #machineAuto="matAutocomplete"
+        [displayWith]="getFullMachineName">
+        @for (machine of filteredMachines(); track machine) {
+          <mat-option [value]="machine">{{ getFullMachineName(machine) }}</mat-option>
+        }
+      </mat-autocomplete>
+      @if (selectedMachine.touched && selectedMachine.invalid) {
+        <mat-error i18n>Machine is required.</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-divider></mat-divider>
+    <mat-form-field
+      appearance="fill"
+      class="full-width">
+      <mat-label i18n>Service ID</mat-label>
+      <mat-select [formControl]="selectedServiceId">
+        @for (serviceId of availableServiceIds(); track serviceId) {
+          <mat-option [value]="serviceId">{{ serviceId }}</mat-option>
+        }
+      </mat-select>
+      @if (selectedServiceId.touched && selectedServiceId.invalid) {
+        <mat-error i18n> Service ID is required.</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field
+      appearance="fill"
+      class="full-width">
+      <mat-label i18n>User</mat-label>
+      <input
+        matInput
+        type="text"
+        [matAutocomplete]="userAuto"
+        [formControl]="selectedUser" />
+      <mat-autocomplete
+        #userAuto="matAutocomplete"
+        [displayWith]="getFullMachineName">
+        @for (user of filteredUsers(); track user) {
+          <mat-option [value]="user">{{ user }}</mat-option>
+        }
+      </mat-autocomplete>
+      @if (selectedUser.touched && selectedUser.invalid) {
+        <mat-error i18n> User is required.</mat-error>
+      }
+    </mat-form-field>
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions>
+  <div class="form-actions">
+    <button
+      (click)="onAssign()"
+      [disabled]="formGroup.invalid"
+      i18n
+      mat-button
+      type="button">
+      Assign
+    </button>
+    <button
+      (click)="onCancel()"
+      i18n
+      mat-button
+      type="button">
+      Cancel
+    </button>
+  </div>
+</mat-dialog-actions>

@@ -5,7 +5,11 @@ The lib.resolvers.py only depends on the database model.
 """
 import uuid
 
-from privacyidea.models import NodeName
+from privacyidea.lib.container import init_container, unassign_user, delete_container_by_serial
+from privacyidea.lib.error import UserError
+from privacyidea.lib.token import init_token, unassign_token
+from privacyidea.lib.user import User
+from privacyidea.models import NodeName, db
 from .base import MyTestCase
 
 from privacyidea.lib.resolver import (save_resolver,
@@ -99,7 +103,19 @@ class ResolverTestCase(MyTestCase):
         self.assertTrue(realm is None, realm)
 
     def test_10_delete_realm(self):
+        # user of the realm is still assigned to a token
+        token = init_token({"type": "hotp"}, User("root", self.realm1))
+        self.assertRaises(UserError, delete_realm, self.realm1)
+        unassign_token(token.get_serial())
+        # user of the realm is still assigned to a container
+        container_serial = init_container({"type": "generic", "user": "root", "realm": self.realm1})["container_serial"]
+        self.assertRaises(UserError, delete_realm, self.realm1)
+        unassign_user(container_serial, User("root", self.realm1))
+        # Now no user is assigned anymore, deletion is allowed
         delete_realm(self.realm1)
+        token.delete_token()
+        delete_container_by_serial(container_serial)
+
         delete_realm("realm2")
         delete_resolver(self.resolvername1)
         delete_resolver(self.resolvername2)
@@ -109,8 +125,9 @@ class ResolverTestCase(MyTestCase):
     def test_20_realms_with_nodes(self):
         nd1_uuid = "8e4272a9-9037-40df-8aa3-976e4a04b5a9"
         nd2_uuid = "d1d7fde6-330f-4c12-88f3-58a1752594bf"
-        NodeName(id=nd1_uuid, name="Node1").save()
-        NodeName(id=nd2_uuid, name="Node2").save()
+        node1 = NodeName(id=nd1_uuid, name="Node1")
+        node2 = NodeName(id=nd2_uuid, name="Node2")
+        db.session.add_all([node1, node2])
 
         save_resolver({"resolver": self.resolvername1,
                        "type": "passwdresolver",
@@ -194,14 +211,15 @@ class ResolverTestCase(MyTestCase):
             resolver_list)
 
         delete_realm('realm1')
-        NodeName.query.filter_by(id=nd1_uuid).delete()
-        NodeName.query.filter_by(id=nd2_uuid).delete()
+        db.session.delete(node1)
+        db.session.delete(node2)
 
     def test_30_realm_import_export(self):
         nd1_uuid = "8e4272a9-9037-40df-8aa3-976e4a04b5a9"
         nd2_uuid = "d1d7fde6-330f-4c12-88f3-58a1752594bf"
-        NodeName(id=nd1_uuid, name="Node1").save()
-        NodeName(id=nd2_uuid, name="Node2").save()
+        node1 = NodeName(id=nd1_uuid, name="Node1")
+        node2 = NodeName(id=nd2_uuid, name="Node2")
+        db.session.add_all([node1, node2])
 
         save_resolver({"resolver": self.resolvername1,
                        "type": "passwdresolver",
@@ -242,5 +260,5 @@ class ResolverTestCase(MyTestCase):
         delete_realm('realm2')
         delete_resolver("resolver1")
         delete_resolver("Resolver2")
-        NodeName.query.filter_by(id=nd1_uuid).delete()
-        NodeName.query.filter_by(id=nd2_uuid).delete()
+        db.session.delete(node1)
+        db.session.delete(node2)

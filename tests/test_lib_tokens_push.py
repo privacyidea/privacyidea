@@ -23,8 +23,8 @@ from privacyidea.lib.crypto import geturandom
 from privacyidea.lib.error import ConfigAdminError
 from privacyidea.lib.error import ParameterError, privacyIDEAError, PolicyError
 from privacyidea.lib.framework import get_app_local_store
-from privacyidea.lib.policy import (SCOPE, set_policy, delete_policy, LOGINMODE, PolicyClass)
 from privacyidea.lib.policies.actions import PolicyAction
+from privacyidea.lib.policy import (SCOPE, set_policy, delete_policy, LOGINMODE, PolicyClass)
 from privacyidea.lib.smsprovider.FirebaseProvider import FirebaseConfig
 from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway, delete_smsgateway
 from privacyidea.lib.token import get_tokens, remove_token, init_token, import_tokens
@@ -151,7 +151,7 @@ class PushTokenTestCase(MyTestCase):
         self.assertTrue(r > 0)
 
         detail = token.get_init_detail(params={"policies": {"firebase_config": self.firebase_config_name,
-                                               "push_registration_url": "https://privacyidea.com/enroll"}})
+                                                            "push_registration_url": "https://privacyidea.com/enroll"}})
         self.assertTrue(detail['pushurl']['value'].startswith("otpauth"))
 
         # set policy to use pia scheme
@@ -201,7 +201,7 @@ class PushTokenTestCase(MyTestCase):
         token_param.update(FB_CONFIG_VALS)
         token = init_token(param=token_param)
         detail = token.get_init_detail(params={"policies": {PUSH_ACTION.FIREBASE_CONFIG: POLL_ONLY,
-                                               PUSH_ACTION.REGISTRATION_URL: "https://privacyidea.com/enroll"},
+                                                            PUSH_ACTION.REGISTRATION_URL: "https://privacyidea.com/enroll"},
                                                PolicyAction.FORCE_APP_PIN: True})
         self.assertIn("pin=True", detail["pushurl"]["value"])
         remove_token(token.get_serial())
@@ -1911,14 +1911,14 @@ class PushTokenTestCase(MyTestCase):
 
         expected_tokeninfo_keys = ["tokenkind", PUBLIC_KEY_SMARTPHONE, PUBLIC_KEY_SERVER,
                                    "firebase_token", PRIVATE_KEY_SERVER, "push_firebase_configuration"]
-        self.assertTrue(set(expected_tokeninfo_keys).issubset(exported_data["tokeninfo"].keys()))
+        self.assertTrue(set(expected_tokeninfo_keys).issubset(exported_data["info_list"].keys()))
 
         # Test that the exported values match the token's data
         self.assertEqual(exported_data["serial"], pushtoken.token.serial)
         self.assertEqual(exported_data["type"], "push")
         self.assertEqual(exported_data["description"], "this is a push token export test")
         self.assertEqual(exported_data["otpkey"], pushtoken.token.get_otpkey().getKey().decode("utf-8"))
-        self.assertEqual(exported_data["tokeninfo"]["tokenkind"], "software")
+        self.assertEqual(exported_data["info_list"]["tokenkind"], "software")
         self.assertEqual(exported_data["issuer"], "privacyIDEA")
 
         # Clean up
@@ -1932,7 +1932,7 @@ class PushTokenTestCase(MyTestCase):
             "description": "this is a push token import test",
             "otpkey": "12345",
             "issuer": "privacyIDEA",
-            "tokeninfo": {"hashlib": "sha256",
+            "info_list": {"hashlib": "sha256",
                           "tokenkind": "software",
                           PUBLIC_KEY_SMARTPHONE: self.smartphone_public_key_pem_urlsafe,
                           PUBLIC_KEY_SERVER: self.server_public_key_pem,
@@ -1943,7 +1943,7 @@ class PushTokenTestCase(MyTestCase):
         }]
 
         # Import the token
-        import_tokens(json.dumps(token_data))
+        import_tokens(token_data)
 
         # Retrieve the imported token
         pushtoken = get_tokens(serial=token_data[0]["serial"])[0]
@@ -1953,8 +1953,8 @@ class PushTokenTestCase(MyTestCase):
         self.assertEqual(pushtoken.type, token_data[0]["type"])
         self.assertEqual(pushtoken.token.description, token_data[0]["description"])
         self.assertEqual(pushtoken.token.get_otpkey().getKey().decode("utf-8"), token_data[0]["otpkey"])
-        self.assertEqual(pushtoken.get_tokeninfo("hashlib"), token_data[0]["tokeninfo"]["hashlib"])
-        self.assertEqual(pushtoken.get_tokeninfo("tokenkind"), token_data[0]["tokeninfo"]["tokenkind"])
+        self.assertEqual(pushtoken.get_tokeninfo("hashlib"), token_data[0]["info_list"]["hashlib"])
+        self.assertEqual(pushtoken.get_tokeninfo("tokenkind"), token_data[0]["info_list"]["tokenkind"])
 
         # Clean up
         remove_token(pushtoken.token.serial)

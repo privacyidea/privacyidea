@@ -6,8 +6,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
-"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2025-04-09 14:24+0200\n"
+"Report-Msgid-Bugs-To: translations@privacyidea.org\n"
+"POT-Creation-Date: 2025-09-05 15:12+0200\n"
 "PO-Revision-Date: 2025-03-28 09:25+0000\n"
 "Last-Translator: Anonymous <noreply@weblate.org>\n"
 "Language-Team: Spanish <https://hosted.weblate.org/projects/privacyidea/"
@@ -20,82 +20,115 @@ msgstr ""
 "X-Generator: Weblate 5.11-dev\n"
 "Generated-By: Babel 2.12.1\n"
 
-#: api/auth.py:231
+#: api/auth.py:256
 msgid "Authentication with passkey disabled."
 msgstr ""
 
-#: api/auth.py:236
+#: api/auth.py:261
 #, fuzzy
 #| msgid "Authentication failure. Missing Username"
 msgid "Authentication failure. The passkey is not registered."
 msgstr "Fallo la autenticación. Usuario no encontrado"
 
-#: api/auth.py:239
+#: api/auth.py:273
 #, fuzzy
 #| msgid "Authentication failure. Your token has expired: {0!s}"
 msgid "Authentication failure. Token has no user."
 msgstr "Fallo la autenticación. El token ha expirado: {0!s}"
 
-#: api/auth.py:250
+#: api/auth.py:277
+#, python-brace-format
+msgid "Authentication failure. The token type {token_type} is disabled."
+msgstr ""
+
+#: api/auth.py:282
+#, python-brace-format
+msgid ""
+"Authentication failure. Last authentication policy check failed for token "
+"{serial}"
+msgstr ""
+
+#: api/auth.py:294
 #, fuzzy
 #| msgid "Authentication failure. Missing Username"
 msgid "Authentication failure using passkey."
 msgstr "Fallo la autenticación. Usuario no encontrado"
 
-#: api/auth.py:255
+#: api/auth.py:299
 #, fuzzy
 #| msgid "Authentication failure. Unknown realm: {0!s}."
 msgid "Authentication failure. Unknown realm:"
 msgstr "Fallo en la autenticación. Dominio desconocido {0!s}."
 
-#: api/auth.py:259
+#: api/auth.py:303
 msgid "Authentication failure. Missing Username"
 msgstr "Fallo la autenticación. Usuario no encontrado"
 
-#: api/auth.py:378
+#: api/auth.py:437
 msgid "Authentication failure. Wrong credentials"
 msgstr "Fallo la autenticación. Credenciales incorrectas"
 
-#: api/realm.py:528
+#: api/realm.py:530
 msgid "The given node does not exist!"
 msgstr ""
 
-#: api/realm.py:534 api/realm.py:544
+#: api/realm.py:536 api/realm.py:546
 msgid "Could not verify data in request!"
 msgstr ""
 
-#: api/validate.py:467 lib/token.py:2608
+#: api/validate.py:443
+msgid "Cancelled enrollment via multichallenge"
+msgstr ""
+
+#: api/validate.py:445
+msgid "Cancelled enrollment via multichallenge for transaction_id "
+msgstr ""
+
+#: api/validate.py:448
+msgid "Failed to cancel enrollment via multichallenge"
+msgstr ""
+
+#: api/validate.py:450
+msgid "Failed to cancel enrollment via multichallenge for transaction_id "
+msgstr ""
+
+#: api/validate.py:500
+#, python-brace-format
+msgid "Last authentication policy check failed for token {serial}"
+msgstr ""
+
+#: api/validate.py:519 lib/token.py:2636
 msgid "Found matching challenge"
 msgstr ""
 
-#: api/lib/postpolicy.py:90
+#: api/lib/postpolicy.py:100
 #, python-brace-format
 msgid ""
 "\n"
 "<--- Please describe your Problem in detail --->\n"
 "\n"
-"<--- Please provide as many additional information as possible --->\n"
+"<--- Please provide as much additional information as possible --->\n"
 "\n"
 "privacyIDEA Version: {version}\n"
 "Subscriber: {subscriber_name}\n"
 "Subscriptions: {subscriptions}\n"
 msgstr ""
 
-#: api/lib/prepolicy.py:2478
-#, fuzzy, python-brace-format
-msgid "Missing description for {} token."
-msgstr "La nueva descripción del token."
+#: api/lib/postpolicy.py:911
+msgid "Please scan the QR code to register the container."
+msgstr ""
 
-#: api/lib/prepolicy.py:2479
-#, fuzzy, python-brace-format
-msgid "Description required for {} token."
-msgstr "La nueva descripción del token."
+#: api/lib/prepolicy.py:2884
+msgid ""
+"Authentication failure. The account has exceeded the authentication time "
+"limit!"
+msgstr ""
 
-#: api/lib/utils.py:400
+#: api/lib/utils.py:401
 msgid "Authentication failure. Missing Authorization header."
 msgstr "Fallo la autenticación. Falta el header de autenticación."
 
-#: api/lib/utils.py:405 api/lib/utils.py:436
+#: api/lib/utils.py:406 api/lib/utils.py:437
 #, fuzzy
 #| msgid "Authentication failure. Error during decoding your token: {0!s}"
 msgid "Authentication failure. Error decoding the Authorization token:"
@@ -103,13 +136,13 @@ msgstr ""
 "Fallo la autenticación. Hubo un error durante la decodificación de su token: "
 "{0!s}"
 
-#: api/lib/utils.py:429 api/lib/utils.py:439
+#: api/lib/utils.py:430 api/lib/utils.py:440
 #, fuzzy
 #| msgid "Authentication failure. Your token has expired: {0!s}"
 msgid "Authentication failure. Your token has expired:"
 msgstr "Fallo la autenticación. El token ha expirado: {0!s}"
 
-#: api/lib/utils.py:442
+#: api/lib/utils.py:443
 #, fuzzy, python-brace-format
 #| msgid ""
 #| "Authentication failure. The username {0!s} is not allowed to impersonate "
@@ -120,7 +153,7 @@ msgid ""
 msgstr ""
 "Fallo en la autenticación. El usuario {0!s} no puede autenticarse vía JWT."
 
-#: api/lib/utils.py:447
+#: api/lib/utils.py:448
 #, fuzzy, python-brace-format
 #| msgid ""
 #| "Authentication failure. You do not have the necessary role ({0!s}) to "
@@ -132,75 +165,83 @@ msgstr ""
 "Fallo la autenticación. Usted no tiene el rol ({0!s}) necesario para acceder "
 "al recurso!"
 
-#: api/lib/utils.py:464
+#: api/lib/utils.py:465
 #, fuzzy
 #| msgid "'{0!s}' is an invalid policy name."
 msgid "Invalid policy name:"
 msgstr "'{0!s}' es un nombre de política inválido."
 
-#: api/lib/utils.py:467
+#: api/lib/utils.py:468
 msgid "The name of the policy may only contain the characters a-zA-Z0-9_. -"
 msgstr ""
 "El nombre de la política solo puede contener los caracteres a-zA-Z0-9_. -"
 
-#: lib/challengeresponsedecorators.py:149
+#: lib/challengeresponsedecorators.py:150
 msgid "Please enter the new PIN again"
 msgstr "Por favor, ingrese el nuevo PIN otra vez"
 
-#: lib/challengeresponsedecorators.py:163
+#: lib/challengeresponsedecorators.py:164
 msgid "Please enter a new PIN"
 msgstr "Por favor, ingrese un nuevo PIN"
 
-#: lib/challengeresponsedecorators.py:201
+#: lib/challengeresponsedecorators.py:202
 msgid "To resync your token, please enter the next OTP value"
 msgstr "Para volver a sincronizar su token, ingrese el siguiente valor OTP"
 
-#: lib/containerclass.py:802
+#: lib/containerclass.py:868
 msgid ""
 "General purpose container that can hold any type and any number of token."
 msgstr ""
 
-#: lib/decorators.py:43 lib/token.py:2468
+#: lib/decorators.py:44 lib/token.py:2490
 msgid "This action is not possible, since the token is locked"
 msgstr "Esta acción no es posible debido a que el token esta bloqueado"
 
-#: lib/decorators.py:87
+#: lib/decorators.py:88
 msgid "You either need to provide user or serial"
 msgstr "Usted necesita proveer un usuario o un serial"
 
-#: lib/decorators.py:114
+#: lib/decorators.py:117
 #, fuzzy
 #| msgid "You need to specify a serial or a user."
 msgid "You need to specify a serial, user or credential_id."
 msgstr "Usted necesita especificar una secuencia o un usuario."
 
-#: lib/decorators.py:116
+#: lib/decorators.py:119
 msgid "Invalid serial number."
 msgstr "Numero de serial invalido."
 
-#: lib/decorators.py:118
+#: lib/decorators.py:121
 msgid "Invalid user."
 msgstr "Usuario invalido."
 
-#: lib/policy.py:205
+#: lib/policy.py:218
 msgid ""
 "Note: If you use a comma in the message, you need to escape it with a "
 "backslash."
 msgstr ""
 
-#: lib/policy.py:1455
+#: lib/policy.py:1209
+msgid "Policy does not exist:"
+msgstr ""
+
+#: lib/policy.py:1211
+msgid "Policy already exists:"
+msgstr ""
+
+#: lib/policy.py:1374
 msgid "Invalid client definition!"
 msgstr ""
 
-#: lib/policy.py:1650
+#: lib/policy.py:1611
 msgid "Define in which resolver the user should be registered."
 msgstr "Defina en qué almacén debe registrarse el usuario."
 
-#: lib/policy.py:1654
+#: lib/policy.py:1615
 msgid "Define in which realm the user should be registered."
 msgstr "Defina en qué dominio debe registrarse el usuario."
 
-#: lib/policy.py:1658
+#: lib/policy.py:1619
 msgid ""
 "The SMTP server configuration, that should be used to send the registration "
 "email."
@@ -208,7 +249,7 @@ msgstr ""
 "La configuración del servidor SMTP que debe usarse para enviar el correo "
 "electrónico de registro."
 
-#: lib/policy.py:1662
+#: lib/policy.py:1623
 msgid ""
 "Only users with this email address are allowed to register. This is a "
 "regular expression."
@@ -216,7 +257,7 @@ msgstr ""
 "Solo los usuarios con esta dirección de correo electrónico pueden "
 "registrarse. Ésta es una expresión regular."
 
-#: lib/policy.py:1667
+#: lib/policy.py:1628
 #, python-brace-format
 msgid ""
 "The body of the registration email. Use '{regkey}' as tag for the "
@@ -225,86 +266,86 @@ msgstr ""
 "El cuerpo del correo electrónico de registro. Utilice '{regkey}' como "
 "etiqueta para la clave de registro."
 
-#: lib/policy.py:1673
+#: lib/policy.py:1634
 msgid "Admin is allowed to enable tokens."
 msgstr "El administrador puede habilitar tokens."
 
-#: lib/policy.py:1677
+#: lib/policy.py:1638
 msgid "Admin is allowed to disable tokens."
 msgstr "El administrador puede deshabilitar los tokens."
 
-#: lib/policy.py:1682
+#: lib/policy.py:1643
 msgid "Admin is allowed to set token properties."
 msgstr "El administrador puede configurar las propiedades del token."
 
-#: lib/policy.py:1686
+#: lib/policy.py:1647
 #, fuzzy
 msgid "The admin is allowed to set the token description."
 msgstr "El usuario puede configurar la descripción del token."
 
-#: lib/policy.py:1691
+#: lib/policy.py:1652
 msgid "Admin is allowed to set the OTP PIN of tokens."
 msgstr "El administrador puede configurar el PIN OTP de los tokens."
 
-#: lib/policy.py:1696
+#: lib/policy.py:1657
 msgid "Admin is allowed to set a random OTP PIN of tokens."
 msgstr "El administrador puede establecer un PIN OTP aleatorio de tokens."
 
-#: lib/policy.py:1700
+#: lib/policy.py:1661
 msgid "Admin is allowed to manually set and delete token info."
 msgstr ""
 "El administrador puede configurar y eliminar manualmente la información del "
 "token."
 
-#: lib/policy.py:1704
+#: lib/policy.py:1665
 msgid "Admin is allowed to set the OTP PIN during enrollment."
 msgstr ""
 "El administrador puede configurar el PIN de OTP durante la inscripción."
 
-#: lib/policy.py:1709
+#: lib/policy.py:1670
 msgid "Admin is allowed to resync tokens."
 msgstr "El administrador puede resincronizar tokens."
 
-#: lib/policy.py:1714
+#: lib/policy.py:1675
 msgid "Admin is allowed to reset the Failcounter of a token."
 msgstr "El administrador puede restablecer el contador de fallos de un token."
 
-#: lib/policy.py:1719
+#: lib/policy.py:1680
 msgid "Admin is allowed to revoke a token"
 msgstr "El administrador puede revocar un token"
 
-#: lib/policy.py:1724
+#: lib/policy.py:1685
 msgid "Admin is allowed to assign a token to a user."
 msgstr "El administrador puede asignar un token a un usuario."
 
-#: lib/policy.py:1730
+#: lib/policy.py:1691
 msgid ""
 "Admin is allowed to remove the token from a user, i.e. unassign a token."
 msgstr ""
 "El administrador puede eliminar el token de un usuario, es decir, anular la "
 "asignación de un token."
 
-#: lib/policy.py:1736
+#: lib/policy.py:1697
 msgid "Admin is allowed to import token files."
 msgstr "El administrador puede importar archivos con tokens."
 
-#: lib/policy.py:1741
+#: lib/policy.py:1702
 msgid "Admin is allowed to remove tokens from the database."
 msgstr "El administrador puede eliminar tokens de la base de datos."
 
-#: lib/policy.py:1747
+#: lib/policy.py:1708
 msgid "Admin is allowed to view the list of the users."
 msgstr "El administrador puede ver la lista de usuarios."
 
-#: lib/policy.py:1752
+#: lib/policy.py:1713
 msgid "The Admin is allowed to list the machines."
 msgstr "El administrador puede ver la lista de máquinas."
 
-#: lib/policy.py:1757
+#: lib/policy.py:1718
 msgid "The Admin is allowed to attach and detach tokens to machines."
 msgstr "El administrador puede añadir o eliminar tokens a las máquinas."
 
-#: lib/policy.py:1764
+#: lib/policy.py:1725
 msgid ""
 "The Admin is allowed to fetch authentication items of tokens assigned to "
 "machines."
@@ -312,29 +353,29 @@ msgstr ""
 "El administrador puede obtener elementos de autenticación de los tokens "
 "asignados a las máquinas."
 
-#: lib/policy.py:1769
+#: lib/policy.py:1730
 msgid "Admin is allowed to manage the realms of a token."
 msgstr "El administrador puede administrar los dominios de un token."
 
-#: lib/policy.py:1774
+#: lib/policy.py:1735
 msgid "Admin is allowed to list tokens."
 msgstr "El administrador puede ver la lista de tokens."
 
-#: lib/policy.py:1778
+#: lib/policy.py:1739
 msgid "Admin is allowed to retrieve a serial for a given OTP value."
 msgstr ""
 "El administrador puede recuperar una secuencia para un valor de OTP "
 "determinado."
 
-#: lib/policy.py:1783
+#: lib/policy.py:1744
 msgid "Admin is allowed to retrieve random keys from privacyIDEA."
 msgstr "El administrador puede recuperar claves aleatorias de privacyIDEA."
 
-#: lib/policy.py:1788
+#: lib/policy.py:1749
 msgid "Admin is allowed to copy the PIN of one token to another token."
 msgstr "El administrador puede copiar el PIN de un token en otro token."
 
-#: lib/policy.py:1793
+#: lib/policy.py:1754
 msgid ""
 "Admin is allowed to copy the assigned user to another token, i.e. assign a "
 "user to another token."
@@ -342,25 +383,25 @@ msgstr ""
 "El administrador puede copiar el usuario asignado a otro token, es decir, "
 "asignar un usuario a otro token."
 
-#: lib/policy.py:1798
+#: lib/policy.py:1759
 msgid "Admin is allowed to trigger the lost token workflow."
 msgstr "El administrador puede activar el flujo de trabajo del token perdido."
 
-#: lib/policy.py:1804
+#: lib/policy.py:1765
 msgid "Admin is allowed to write and modify the system configuration."
 msgstr ""
 "El administrador puede escribir y modificar la configuración del sistema."
 
-#: lib/policy.py:1809
+#: lib/policy.py:1770
 msgid "Admin is allowed to delete keys in the system configuration."
 msgstr ""
 "El administrador puede eliminar claves en la configuración del sistema."
 
-#: lib/policy.py:1815
+#: lib/policy.py:1776
 msgid "Admin is allowed to read basic system configuration."
 msgstr "El administrador puede ver la configuración básica del sistema."
 
-#: lib/policy.py:1820
+#: lib/policy.py:1781
 msgid ""
 "Admin is allowed to export a documentation of the complete configuration "
 "including resolvers and realm."
@@ -368,34 +409,34 @@ msgstr ""
 "El administrador puede exportar la documentación de la configuración "
 "completa, incluidos los almacenes y el dominio."
 
-#: lib/policy.py:1828
+#: lib/policy.py:1789
 msgid "Admin is allowed to write and modify the policies."
 msgstr "El administrador puede escribir y modificar las políticas."
 
-#: lib/policy.py:1833
+#: lib/policy.py:1794
 msgid "Admin is allowed to delete policies."
 msgstr "El administrador puede eliminar políticas."
 
-#: lib/policy.py:1838
+#: lib/policy.py:1799
 msgid "Admin is allowed to read policies."
 msgstr "El administrador puede ver las políticas."
 
-#: lib/policy.py:1842
+#: lib/policy.py:1803
 msgid ""
 "Admin is allowed to write and modify the resolver and realm configuration."
 msgstr ""
 "El administrador puede escribir y modificar la configuración de almacenes y "
 "dominios."
 
-#: lib/policy.py:1849
+#: lib/policy.py:1810
 msgid "Admin is allowed to delete resolvers and realms."
 msgstr "El administrador puede eliminar almacenes y dominios."
 
-#: lib/policy.py:1854
+#: lib/policy.py:1815
 msgid "Admin is allowed to read resolvers."
 msgstr "El administrador puede ver los almacenes."
 
-#: lib/policy.py:1858
+#: lib/policy.py:1819
 msgid ""
 "Admin is allowed to create new CA Connector definitions and modify existing "
 "ones."
@@ -403,35 +444,35 @@ msgstr ""
 "El administrador puede crear nuevas definiciones del Conector CA y modificar "
 "las existentes."
 
-#: lib/policy.py:1864
+#: lib/policy.py:1825
 msgid "Admin is allowed to delete CA Connector definitions."
 msgstr "El administrador puede eliminar las definiciones del Conector CA."
 
-#: lib/policy.py:1869
+#: lib/policy.py:1830
 msgid "Admin is allowed to read CA Connector definitions."
 msgstr "El administrador puede ver las definiciones del Conector CA."
 
-#: lib/policy.py:1874
+#: lib/policy.py:1835
 msgid "Admin is allowed to write and modify the machine resolvers."
 msgstr "El administrador puede escribir y modificar los almacenes máquinas."
 
-#: lib/policy.py:1880
+#: lib/policy.py:1841
 msgid "Admin is allowed to delete machine resolvers."
 msgstr "El administrador puede ver los almacenes de máquinas."
 
-#: lib/policy.py:1886
+#: lib/policy.py:1847
 msgid "Admin is allowed to read machine resolvers."
 msgstr "El administrador puede ver los almacenes de máquinas."
 
-#: lib/policy.py:1893 lib/policy.py:2231
+#: lib/policy.py:1854 lib/policy.py:2196
 msgid "Set the maximum allowed length of the OTP PIN."
 msgstr "Establezca la longitud máxima permitida del PIN OTP."
 
-#: lib/policy.py:1898 lib/policy.py:2235
+#: lib/policy.py:1859 lib/policy.py:2200
 msgid "Set the minimum required length of the OTP PIN."
 msgstr "Establezca la longitud mínima requerida del PIN OTP."
 
-#: lib/policy.py:1902
+#: lib/policy.py:1863
 msgid ""
 "Specifiy the required contents of the OTP PIN. (c)haracters, (n)umeric, "
 "(s)pecial. Use modifiers +/- or a list of allowed characters [1234567890]"
@@ -440,141 +481,141 @@ msgstr ""
 "e(s)peciales. Utilice modificadores +/- o una lista de caracteres permitidos "
 "[1234567890]"
 
-#: lib/policy.py:1911
+#: lib/policy.py:1872
 msgid "The length of a random PIN set by the administrator."
 msgstr "La longitud de un PIN aleatorio establecido por el administrador."
 
-#: lib/policy.py:1914
+#: lib/policy.py:1875
 msgid "Admin is allowed to view the Audit log."
 msgstr "El administrador puede ver el registro de auditoría."
 
-#: lib/policy.py:1918
+#: lib/policy.py:1879
 msgid "The admin will only see audit entries of the last 10d, 3m or 2y."
 msgstr ""
 "El administrador solo verá las entradas de auditoría de los últimos 10 días, "
 "3 meses o 2 años."
 
-#: lib/policy.py:1923
+#: lib/policy.py:1884
 msgid "The admin will not see the specified columns in the audit."
 msgstr "El administrador no verá las columnas especificadas en la auditoría."
 
-#: lib/policy.py:1928
+#: lib/policy.py:1889
 msgid "The admin is allowed to download the complete auditlog."
 msgstr "El administrador puede descargar el registro completo de auditoría."
 
-#: lib/policy.py:1933
+#: lib/policy.py:1894
 msgid "Admin is allowed to add users in a userstore/UserIdResolver."
 msgstr ""
 "El administrador puede agregar usuarios en un almacén de usuarios / almacén "
 "de UserId."
 
-#: lib/policy.py:1938
+#: lib/policy.py:1899
 msgid "Admin is allowed to update the users data in a userstore."
 msgstr ""
 "El administrador puede actualizar los datos de los usuarios en un almacén de "
 "usuarios."
 
-#: lib/policy.py:1943
+#: lib/policy.py:1904
 msgid "Admin is allowed to delete a user object in a userstore."
 msgstr ""
 "El administrador puede eliminar un objeto de usuario en un almacén de "
 "usuarios."
 
-#: lib/policy.py:1948
+#: lib/policy.py:1909
 msgid "Admin is allowed to set the password of the HSM/Security Module."
 msgstr ""
 "El administrador puede establecer la contraseña del módulo de seguridad HSM."
 
-#: lib/policy.py:1952
+#: lib/policy.py:1913
 msgid "Admin is allowed to retrieve the list of active challenges."
 msgstr "El administrador puede recuperar la lista de desafíos activos."
 
-#: lib/policy.py:1958
+#: lib/policy.py:1919
 msgid "Admin is allowed to write new SMTP server definitions."
 msgstr ""
 "El administrador puede escribir nuevas definiciones de servidores SMTP."
 
-#: lib/policy.py:1963
+#: lib/policy.py:1924
 msgid "Admin is allowed to read SMTP server definitions."
 msgstr ""
 "El administrador puede escribir nuevas definiciones de servidores SMTP."
 
-#: lib/policy.py:1968
+#: lib/policy.py:1929
 msgid "Admin is allowed to write new RADIUS server definitions."
 msgstr ""
 "El administrador puede escribir nuevas definiciones de servidores RADIUS."
 
-#: lib/policy.py:1974
+#: lib/policy.py:1935
 msgid "Admin is allowed to read RADIUS server definitions."
 msgstr "El administrador puede ver las definiciones del servidor RADIUS."
 
-#: lib/policy.py:1979
+#: lib/policy.py:1940
 msgid "Admin is allowed to write remote privacyIDEA server definitions."
 msgstr ""
 "El administrador puede escribir definiciones de servidores PrivacyIDEA "
 "remotos."
 
-#: lib/policy.py:1986
+#: lib/policy.py:1947
 msgid "Admin is allowed to read remote privacyIDEA server definitions."
 msgstr ""
 "El administrador puede ver las definiciones de servidores privacyIDEA "
 "remotos."
 
-#: lib/policy.py:1993
+#: lib/policy.py:1954
 msgid "Admin is allowed to write periodic task definitions."
 msgstr "El administrador puede escribir definiciones de tareas periódicas."
 
-#: lib/policy.py:1998
+#: lib/policy.py:1959
 msgid "Admin is allowed to read periodic task definitions."
 msgstr "El administrador puede ver definiciones de tareas periódicas."
 
-#: lib/policy.py:2003
+#: lib/policy.py:1964
 msgid "Admin is allowed to read statistics data."
 msgstr "El administrador puede ver los datos estadísticos."
 
-#: lib/policy.py:2006
+#: lib/policy.py:1967
 msgid "Admin is allowed to delete statistics data."
 msgstr "El administrador puede borrar los datos estadísticos."
 
-#: lib/policy.py:2009
+#: lib/policy.py:1970
 msgid "Admin is allowed to write and modify the event handling configuration."
 msgstr ""
 "El administrador puede escribir y modificar la configuración de manejo de "
 "eventos."
 
-#: lib/policy.py:2015
+#: lib/policy.py:1976
 msgid "Admin is allowed to read event handling configuration."
 msgstr "El administrador puede ver la configuración de manejo de eventos."
 
-#: lib/policy.py:2020
+#: lib/policy.py:1981
 msgid "Admin is allowed to write and modify SMS gateway definitions."
 msgstr ""
 "El administrador puede escribir y modificar las definiciones de puerta de "
 "enlace SMS."
 
-#: lib/policy.py:2026
+#: lib/policy.py:1987
 msgid "Admin is allowed to read SMS gateway definitions."
 msgstr ""
 "El administrador puede ver las definiciones de la puerta de enlace SMS."
 
-#: lib/policy.py:2031
+#: lib/policy.py:1992
 msgid ""
 "Admin is allowed to get the list of authenticated clients and their types."
 msgstr ""
 "El administrador puede obtener la lista de clientes autenticados y sus tipos."
 
-#: lib/policy.py:2038
+#: lib/policy.py:1999
 msgid "Admin is allowed to add and delete component subscriptions."
 msgstr ""
 "El administrador puede agregar y eliminar suscripciones de componentes."
 
-#: lib/policy.py:2044
+#: lib/policy.py:2005
 msgid "The Admin is allowed to trigger a challenge for e.g. SMS OTP token."
 msgstr ""
 "El administrador puede activar un desafío para, por ejemplo, Token de SMS "
 "OTP."
 
-#: lib/policy.py:2050
+#: lib/policy.py:2011
 msgid ""
 "The Admin is allowed to set certain custom user attributes. If the Admin "
 "should be allowed to set any attribute, set this to '*:*'. For more details, "
@@ -584,7 +625,7 @@ msgstr ""
 "personalizados. Si el administrador puede establecer cualquier atributo, "
 "establézcalo en '*: *'. Para más detalles, consulte la documentación."
 
-#: lib/policy.py:2058
+#: lib/policy.py:2019
 msgid ""
 "The Admin is allowed to delete certain custom user attributes. If the Admin "
 "should be allowed to delete any attribute, set this to '*'. For more "
@@ -594,7 +635,7 @@ msgstr ""
 "Si el administrador puede eliminar cualquier atributo, configúrelo en '*'. "
 "Para más detalles, consulte la documentación."
 
-#: lib/policy.py:2066
+#: lib/policy.py:2027
 msgid ""
 "A whitespace-separated list of tokeninfo fields which are not displayed to "
 "the admin."
@@ -602,115 +643,115 @@ msgstr ""
 "Esta es una lista de tipos de tokens separados por espacios en blanco, para "
 "los cuales se muestra un botón con los detalles del token."
 
-#: lib/policy.py:2071
+#: lib/policy.py:2032
 msgid "The Admin is allowed list the available tokengroups."
 msgstr ""
 
-#: lib/policy.py:2076
+#: lib/policy.py:2037
 msgid "The Admin is allowed to add a new tokengroup."
 msgstr ""
 
-#: lib/policy.py:2081
+#: lib/policy.py:2042
 msgid "The Admin is allowed delete a tokengroup."
 msgstr ""
 
-#: lib/policy.py:2086
+#: lib/policy.py:2047
 #, fuzzy
 msgid "The Admin is allowed list the available service ID definitions."
 msgstr "El administrador puede ver las definiciones del servidor RADIUS."
 
-#: lib/policy.py:2091
+#: lib/policy.py:2052
 #, fuzzy
 msgid "The Admin is allowed to add a new service ID definition."
 msgstr "El administrador puede ver las definiciones del servidor RADIUS."
 
-#: lib/policy.py:2096
+#: lib/policy.py:2057
 #, fuzzy
 msgid "The Admin is allowed delete a service ID definition."
 msgstr "El administrador puede eliminar las definiciones del Conector CA."
 
-#: lib/policy.py:2101
+#: lib/policy.py:2062
 msgid "The Admin is allowed to manage the tokengroups of a token."
 msgstr ""
 
-#: lib/policy.py:2105
+#: lib/policy.py:2066
 #, fuzzy
 #| msgid "Admin is allowed to reset the Failcounter of a token."
 msgid "Admin is allowed to edit the container info."
 msgstr "El administrador puede restablecer el contador de fallos de un token."
 
-#: lib/policy.py:2109
+#: lib/policy.py:2070
 #, fuzzy
 #| msgid "Admin is allowed to reset the Failcounter of a token."
 msgid "Admin is allowed to edit the container state."
 msgstr "El administrador puede restablecer el contador de fallos de un token."
 
-#: lib/policy.py:2113
+#: lib/policy.py:2074
 #, fuzzy
 msgid "Admin is allowed to edit the container description."
 msgstr "El usuario puede configurar la descripción del token."
 
-#: lib/policy.py:2117
+#: lib/policy.py:2078
 #, fuzzy
 #| msgid "Admin is allowed to read policies."
 msgid "Admin is allowed to create containers."
 msgstr "El administrador puede ver las políticas."
 
-#: lib/policy.py:2121
+#: lib/policy.py:2082
 #, fuzzy
 #| msgid "Admin is allowed to delete policies."
 msgid "Admin is allowed to delete containers."
 msgstr "El administrador puede eliminar políticas."
 
-#: lib/policy.py:2125
+#: lib/policy.py:2086
 #, fuzzy
 #| msgid "Admin is allowed to assign a token to a user."
 msgid "Admin is allowed to add tokens to containers."
 msgstr "El administrador puede asignar un token a un usuario."
 
-#: lib/policy.py:2129
+#: lib/policy.py:2090
 #, fuzzy
 #| msgid "Admin is allowed to remove tokens from the database."
 msgid "Admin is allowed to remove tokens from containers."
 msgstr "El administrador puede eliminar tokens de la base de datos."
 
-#: lib/policy.py:2133
+#: lib/policy.py:2094
 #, fuzzy
 #| msgid "Admin is allowed to assign a token to a user."
 msgid "Admin is allowed to assign users to containers."
 msgstr "El administrador puede asignar un token a un usuario."
 
-#: lib/policy.py:2137
+#: lib/policy.py:2098
 #, fuzzy
 #| msgid "Admin is allowed to assign a token to a user."
 msgid "Admin is allowed to unassign users from containers."
 msgstr "El administrador puede asignar un token a un usuario."
 
-#: lib/policy.py:2141
+#: lib/policy.py:2102
 #, fuzzy
 #| msgid "Admin is allowed to manage the realms of a token."
 msgid "Admin is allowed to set the realm of containers."
 msgstr "El administrador puede administrar los dominios de un token."
 
-#: lib/policy.py:2145
+#: lib/policy.py:2106
 #, fuzzy
 #| msgid "Admin is allowed to list tokens."
 msgid "Admin is allowed to list containers."
 msgstr "El administrador puede ver la lista de tokens."
 
-#: lib/policy.py:2149
+#: lib/policy.py:2110
 #, fuzzy
 #| msgid "Admin is allowed to read policies."
 msgid "Admin is allowed to register containers."
 msgstr "El administrador puede ver las políticas."
 
-#: lib/policy.py:2153
+#: lib/policy.py:2114
 #, fuzzy
 #| msgid "Admin is allowed to read policies."
 msgid "Admin is allowed to unregister containers."
 msgstr "El administrador puede ver las políticas."
 
-#: lib/policy.py:2157
+#: lib/policy.py:2118
 #, fuzzy
 #| msgid ""
 #| "Admin is allowed to export a documentation of the complete configuration "
@@ -722,25 +763,31 @@ msgstr ""
 "El administrador puede exportar la documentación de la configuración "
 "completa, incluidos los almacenes y el dominio."
 
-#: lib/policy.py:2162
+#: lib/policy.py:2123
 #, fuzzy
 #| msgid "Admin is allowed to read policies."
 msgid "Admin is allowed to create and edit container templates."
 msgstr "El administrador puede ver las políticas."
 
-#: lib/policy.py:2166
+#: lib/policy.py:2127
 #, fuzzy
 #| msgid "Admin is allowed to delete policies."
 msgid "Admin is allowed to delete templates."
 msgstr "El administrador puede eliminar políticas."
 
-#: lib/policy.py:2170
+#: lib/policy.py:2131
 #, fuzzy
 #| msgid "Admin is allowed to delete resolvers and realms."
 msgid "Admin is allowed to list templates and view their details."
 msgstr "El administrador puede eliminar almacenes y dominios."
 
-#: lib/policy.py:2177
+#: lib/policy.py:2135
+msgid ""
+"A whitespace-separated list of container info keys that shall not be "
+"displayed to the admin."
+msgstr ""
+
+#: lib/policy.py:2142
 msgid ""
 "The user is allowed to assign an existing token that is not yet assigned "
 "using the token serial number."
@@ -748,57 +795,57 @@ msgstr ""
 "El usuario puede asignar un token existente que aún no está asignado "
 "utilizando el número de serie del token."
 
-#: lib/policy.py:2183
+#: lib/policy.py:2148
 msgid "The user is allowed to disable his own tokens."
 msgstr "El usuario puede desactivar sus propios tokens."
 
-#: lib/policy.py:2187
+#: lib/policy.py:2152
 msgid "The user is allowed to enable his own tokens."
 msgstr "El usuario puede habilitar sus propios tokens."
 
-#: lib/policy.py:2191
+#: lib/policy.py:2156
 msgid "The user is allowed to delete his own tokens."
 msgstr "El usuario puede eliminar sus propios tokens."
 
-#: lib/policy.py:2195
+#: lib/policy.py:2160
 msgid "The user is allowed to unassign his own tokens."
 msgstr "El usuario puede anular la asignación de sus propios tokens."
 
-#: lib/policy.py:2199
+#: lib/policy.py:2164
 #, fuzzy
 #| msgid "The user is allowed to resyncronize his tokens."
 msgid "The user is allowed to resynchronize his tokens."
 msgstr "El usuario puede resincronizar sus tokens."
 
-#: lib/policy.py:2203
+#: lib/policy.py:2168
 msgid "The user is allowed to revoke a token"
 msgstr "El usuario puede revocar un token"
 
-#: lib/policy.py:2207
+#: lib/policy.py:2172
 msgid "The user is allowed to reset the failcounter of his tokens."
 msgstr "El usuario puede reiniciar el contador de fallos de sus tokens."
 
-#: lib/policy.py:2211
+#: lib/policy.py:2176
 msgid "The user is allowed to set the OTP PIN of his tokens."
 msgstr "El usuario puede configurar el PIN OTP de sus tokens."
 
-#: lib/policy.py:2215
+#: lib/policy.py:2180
 msgid "The user is allowed to set a random OTP PIN of his tokens."
 msgstr "El usuario puede establecer un PIN OTP aleatorio de sus tokens."
 
-#: lib/policy.py:2220
+#: lib/policy.py:2185
 msgid "The length of a random PIN set by the user."
 msgstr "La longitud de un PIN aleatorio establecido por el usuario."
 
-#: lib/policy.py:2223
+#: lib/policy.py:2188
 msgid "The user is allowed to set the token description."
 msgstr "El usuario puede configurar la descripción del token."
 
-#: lib/policy.py:2227
+#: lib/policy.py:2192
 msgid "The user is allowed to set the OTP PIN during enrollment."
 msgstr "El usuario puede establecer el PIN OTP durante la inscripción."
 
-#: lib/policy.py:2238
+#: lib/policy.py:2203
 #, fuzzy
 #| msgid ""
 #| "Specifiy the required contents of the OTP PIN. (c)haracters, (n)umeric, "
@@ -811,25 +858,25 @@ msgstr ""
 "e(s)peciales. Utilice modificadores +/- o una lista de caracteres permitidos "
 "[1234567890]"
 
-#: lib/policy.py:2244
+#: lib/policy.py:2209
 msgid "Allow the user to view his own token history."
 msgstr "Permite que el usuario vea su historial de tokens."
 
-#: lib/policy.py:2247
+#: lib/policy.py:2212
 msgid "The user will only see audit entries of the last 10d, 3m or 2y."
 msgstr ""
 "El usuario solo verá las entradas de auditoría de los últimos 10 días, 3 "
 "meses o 2 años."
 
-#: lib/policy.py:2250
+#: lib/policy.py:2215
 msgid "The user will not see the specified columns in the audit."
 msgstr "El usuario no verá las columnas especificadas en la auditoría."
 
-#: lib/policy.py:2254
+#: lib/policy.py:2219
 msgid "The user is allowed to view his own user information."
 msgstr "El usuario puede ver su información de usuario."
 
-#: lib/policy.py:2257
+#: lib/policy.py:2222
 msgid ""
 "The user is allowed to update his own user information, like changing his "
 "password."
@@ -837,13 +884,13 @@ msgstr ""
 "El usuario puede actualizar su información de usuario, como cambiar su "
 "contraseña."
 
-#: lib/policy.py:2262
+#: lib/policy.py:2227
 msgid ""
 "The user is allowed to do a password reset in an editable UserIdResolver."
 msgstr ""
 "El usuario puede restablecer la contraseña en un almacén UserId editable."
 
-#: lib/policy.py:2267
+#: lib/policy.py:2232
 msgid ""
 "The user is allowed to set certain custom user attributes. If the user "
 "should be allowed to set any attribute, set this to '*:*'. Use '*' with "
@@ -853,7 +900,7 @@ msgstr ""
 "el usuario puede establecer cualquier atributo, hagalo en '*: *'. ¡Utilice "
 "'*' con PRECAUCIÓN! Para más detalles, consulte la documentación."
 
-#: lib/policy.py:2274
+#: lib/policy.py:2239
 msgid ""
 "The user is allowed to delete certain custom user attributes. If the user "
 "should be allowed to delete any attribute, set this to '*'. Use '*' with "
@@ -863,7 +910,7 @@ msgstr ""
 "usuario puede eliminar cualquier atributo, hágalo con '*'. ¡Utilice '*' con "
 "PRECAUCIÓN! Para más detalles, consulte la documentación."
 
-#: lib/policy.py:2282
+#: lib/policy.py:2247
 msgid ""
 "A whitespace-separated list of tokeninfo fields which are not displayed to "
 "the user."
@@ -871,112 +918,118 @@ msgstr ""
 "Esta es una lista de tipos de tokens separados por espacios en blanco, para "
 "los cuales se muestra un botón con los detalles del token."
 
-#: lib/policy.py:2288
+#: lib/policy.py:2253
 #, fuzzy
 #| msgid "The user is allowed to disable his own tokens."
 msgid "Users are allowed to edit the state of their own containers."
 msgstr "El usuario puede desactivar sus propios tokens."
 
-#: lib/policy.py:2293
+#: lib/policy.py:2258
 #, fuzzy
 #| msgid "The user is allowed to set the token description."
 msgid "Users are allowed to edit the description of their own containers."
 msgstr "El usuario puede configurar la descripción del token."
 
-#: lib/policy.py:2297
+#: lib/policy.py:2262
 #, fuzzy
 #| msgid "The user is allowed to enable his own tokens."
 msgid "Users are allowed to create containers."
 msgstr "El usuario puede habilitar sus propios tokens."
 
-#: lib/policy.py:2301
+#: lib/policy.py:2266
 #, fuzzy
 #| msgid "The user is allowed to delete his own tokens."
 msgid "Users are allowed to delete their own containers."
 msgstr "El usuario puede eliminar sus propios tokens."
 
-#: lib/policy.py:2306
+#: lib/policy.py:2271
 msgid "Users are allowed to add their own tokens to their own containers."
 msgstr ""
 
-#: lib/policy.py:2310
+#: lib/policy.py:2275
 #, fuzzy
 #| msgid "Admin is allowed to remove tokens from the database."
 msgid "Users are allowed to remove their own tokens from their own containers."
 msgstr "El administrador puede eliminar tokens de la base de datos."
 
-#: lib/policy.py:2315
+#: lib/policy.py:2280
 msgid "Users are allowed to assign themselves to containers without an owner."
 msgstr ""
 
-#: lib/policy.py:2320
+#: lib/policy.py:2285
 #, fuzzy
 #| msgid "The user is allowed to unassign his own tokens."
 msgid "Users are allowed to unassign themselves from containers."
 msgstr "El usuario puede anular la asignación de sus propios tokens."
 
-#: lib/policy.py:2324
+#: lib/policy.py:2289
 #, fuzzy
 #| msgid "The user is allowed to delete his own tokens."
 msgid "Users are allowed to list their own containers."
 msgstr "El usuario puede eliminar sus propios tokens."
 
-#: lib/policy.py:2329
+#: lib/policy.py:2294
 #, fuzzy
 #| msgid "The user is allowed to delete his own tokens."
 msgid "Users are allowed to register their own containers."
 msgstr "El usuario puede eliminar sus propios tokens."
 
-#: lib/policy.py:2333
+#: lib/policy.py:2298
 #, fuzzy
 #| msgid "The user is allowed to enable his own tokens."
 msgid "Users are allowed to unregister containers."
 msgstr "El usuario puede habilitar sus propios tokens."
 
-#: lib/policy.py:2337
+#: lib/policy.py:2302
 msgid ""
 "Users are allowed to perform a container rollover of their own containers. "
 "This includes a rollover of all contained tokens even if the user is not the "
 "owner of a contained token."
 msgstr ""
 
-#: lib/policy.py:2343
+#: lib/policy.py:2308
 #, fuzzy
 #| msgid "The user is allowed to enable his own tokens."
 msgid "Users are allowed to create and edit container templates."
 msgstr "El usuario puede habilitar sus propios tokens."
 
-#: lib/policy.py:2347
+#: lib/policy.py:2312
 #, fuzzy
 #| msgid "The user is allowed to delete his own tokens."
 msgid "Users are allowed to delete templates."
 msgstr "El usuario puede eliminar sus propios tokens."
 
-#: lib/policy.py:2351
+#: lib/policy.py:2316
 #, fuzzy
 #| msgid "The user is allowed to disable his own tokens."
 msgid "Users are allowed to list templates and view their details."
 msgstr "El usuario puede desactivar sus propios tokens."
 
-#: lib/policy.py:2358
+#: lib/policy.py:2320
+msgid ""
+"A whitespace-separated list of container info keys that shall not be "
+"displayed to the users."
+msgstr ""
+
+#: lib/policy.py:2327
 msgid "Limit the number of allowed tokens in a realm."
 msgstr "Limita la cantidad de tokens permitidos en un dominio."
 
-#: lib/policy.py:2362
+#: lib/policy.py:2331
 msgid ""
 "During the rollout process, this policy makes the description required for "
 "all selected tokentypes."
 msgstr ""
 
-#: lib/policy.py:2370
+#: lib/policy.py:2339
 msgid "Limit the number of tokens a user may have assigned."
 msgstr "Limita la cantidad de tokens que un usuario puede asignar."
 
-#: lib/policy.py:2375
+#: lib/policy.py:2344
 msgid "Limit the number of active tokens a user may have assigned."
 msgstr "Limita la cantidad de tokens activos que puede asignar un usuario."
 
-#: lib/policy.py:2380
+#: lib/policy.py:2349
 msgid ""
 "Set a random OTP PIN with this length for a token during the enrollment "
 "process."
@@ -984,13 +1037,13 @@ msgstr ""
 "Establezca un PIN OTP aleatorio con esta longitud para un token durante el "
 "proceso de inscripción."
 
-#: lib/policy.py:2385
+#: lib/policy.py:2354
 msgid "In case of a random OTP PIN use this python module to process the PIN."
 msgstr ""
 "En caso de un PIN OTP aleatorio, utilice este módulo de Python para procesar "
 "el PIN."
 
-#: lib/policy.py:2390
+#: lib/policy.py:2359
 msgid ""
 "If the administrator sets the OTP PIN during enrollment or later, the user "
 "will have to change the PIN during first use."
@@ -998,7 +1051,7 @@ msgstr ""
 "Si el administrador establece el PIN de OTP durante la inscripción o más "
 "tarde, el usuario deberá cambiar el PIN tras el primer uso."
 
-#: lib/policy.py:2397
+#: lib/policy.py:2366
 msgid ""
 "The user needs to change his PIN on a regular basis. To change the PIN every "
 "180 days, enter '180d'."
@@ -1006,7 +1059,7 @@ msgstr ""
 "El usuario debe cambiar su PIN de forma periódica. Para cambiar el PIN cada "
 "180 días, ingrese '180d'."
 
-#: lib/policy.py:2404
+#: lib/policy.py:2373
 msgid ""
 "The OTP PIN can be hashed or encrypted. Hashing the PIN is the default "
 "behaviour."
@@ -1014,7 +1067,7 @@ msgstr ""
 "El PIN de OTP puede tener hash o cifrado. Asignar hash al PIN es el "
 "comportamiento predeterminado."
 
-#: lib/policy.py:2409
+#: lib/policy.py:2378
 #, python-brace-format
 msgid ""
 "The label for a new enrolled Smartphone token. Possible tags are <code>{user}"
@@ -1022,7 +1075,7 @@ msgid ""
 "code> and <code>{surname}</code>."
 msgstr ""
 
-#: lib/policy.py:2415
+#: lib/policy.py:2384
 #, python-brace-format
 msgid ""
 "The issuer label for new enrolled Smartphone token.Possible tags are "
@@ -1030,25 +1083,25 @@ msgid ""
 "<code>{givenname}</code> and <code>{surname}</code>."
 msgstr ""
 
-#: lib/policy.py:2422
+#: lib/policy.py:2391
 msgid ""
 "This is the URL to the token image for the privacyIDEA Authenticator and "
 "some other apps like FreeOTP (supported file formats: PNG, JPG and GIF)."
 msgstr ""
 
-#: lib/policy.py:2429
+#: lib/policy.py:2398
 msgid ""
 "Users can assign a token just by using the unassigned token to authenticate."
 msgstr ""
 "Los usuarios pueden asignar un token simplemente usando un token no asignado "
 "para autenticarse."
 
-#: lib/policy.py:2435
+#: lib/policy.py:2404
 msgid "The length of the password in case of temporary token (lost token)."
 msgstr ""
 "La longitud de la contraseña en caso de token temporal (token perdido)."
 
-#: lib/policy.py:2439
+#: lib/policy.py:2408
 msgid ""
 "The contents of the temporary password, described by the characters C, c, n, "
 "s, 8."
@@ -1056,15 +1109,15 @@ msgstr ""
 "El contenido de la contraseña temporal, descrito por los caracteres C, c, n, "
 "s, 8."
 
-#: lib/policy.py:2444
+#: lib/policy.py:2413
 msgid "The length of the validity for the temporary token (in days)."
 msgstr "La validez del token temporal (en días)."
 
-#: lib/policy.py:2449
+#: lib/policy.py:2418
 msgid "Set the length of registration codes."
 msgstr "Establezca la longitud de los códigos de registro."
 
-#: lib/policy.py:2453
+#: lib/policy.py:2422
 msgid ""
 "Specify the required contents of the registration code. (c)haracters, "
 "(n)umeric, (s)pecial. Use modifiers +/- or a list of allowed characters "
@@ -1074,12 +1127,12 @@ msgstr ""
 "(n)uméricos, e(s)peciales. Utilice modificadores +/- o una lista de "
 "caracteres permitidos [1234567890]"
 
-#: lib/policy.py:2462
+#: lib/policy.py:2431
 msgid "Set the length of the password of generated password tokens."
 msgstr ""
 "La longitud de la contraseña en caso de token temporal (token perdido)."
 
-#: lib/policy.py:2466
+#: lib/policy.py:2435
 msgid ""
 "Specify the required contents of the password of a password token. "
 "(c)haracters, (n)umeric, (s)pecial. Use modifiers +/- or a list of allowed "
@@ -1089,7 +1142,7 @@ msgstr ""
 "e(s)peciales. Utilice modificadores +/- o una lista de caracteres permitidos "
 "[1234567890]"
 
-#: lib/policy.py:2474
+#: lib/policy.py:2443
 #, fuzzy
 #| msgid ""
 #| "Specify a white space separated list of token types, that should be "
@@ -1101,7 +1154,7 @@ msgstr ""
 "Esta es una lista de tipos de símbolos separados por espacios en blanco, que "
 "se puede utilizar con la respuesta al desafío."
 
-#: lib/policy.py:2480
+#: lib/policy.py:2449
 #, fuzzy
 #| msgid ""
 #| "Specify a white space separated list of token types, that should be "
@@ -1112,7 +1165,7 @@ msgstr ""
 "Esta es una lista de tipos de símbolos separados por espacios en blanco, que "
 "se puede utilizar con la respuesta al desafío."
 
-#: lib/policy.py:2493
+#: lib/policy.py:2462
 msgid ""
 "Either use the Token PIN , use the Userstore Password or use no fixed "
 "password component."
@@ -1120,7 +1173,7 @@ msgstr ""
 "Utilice el PIN del token, la contraseña del almacén de usuarios o un "
 "componente sin contraseña fija."
 
-#: lib/policy.py:2498
+#: lib/policy.py:2467
 #, fuzzy
 #| msgid ""
 #| "This is a whitespace separated list of tokentypes, that can be used with "
@@ -1131,7 +1184,7 @@ msgstr ""
 "Esta es una lista de tipos de símbolos separados por espacios en blanco, que "
 "se puede utilizar con la respuesta al desafío."
 
-#: lib/policy.py:2506
+#: lib/policy.py:2475
 #, fuzzy
 #| msgid ""
 #| "Use an alternate challenge text for telling the user to enter the code "
@@ -1144,7 +1197,7 @@ msgstr ""
 "Use un texto de desafío alternativo para decirle al usuario que ingrese el "
 "código del correo electrónico."
 
-#: lib/policy.py:2513
+#: lib/policy.py:2482
 msgid ""
 "If there are several different challenges, this text precedes the list of "
 "the challenge texts."
@@ -1152,7 +1205,7 @@ msgstr ""
 "Si hay varios desafíos diferentes, este texto precede a la lista de textos "
 "de desafío."
 
-#: lib/policy.py:2518
+#: lib/policy.py:2487
 msgid ""
 "If there are several different challenges, this text follows the list of the "
 "challenge texts."
@@ -1160,7 +1213,7 @@ msgstr ""
 "Si hay varios desafíos diferentes, este texto sigue a la lista de textos de "
 "desafío."
 
-#: lib/policy.py:2523
+#: lib/policy.py:2492
 msgid ""
 "If the PIN of a token is to be changed, this will allow the user to change "
 "the PIN during a validate/check request via challenge / response."
@@ -1169,7 +1222,12 @@ msgstr ""
 "PIN durante una solicitud de validación / verificación mediante desafío / "
 "respuesta."
 
-#: lib/policy.py:2528
+#: lib/policy.py:2497
+msgid ""
+"Specify the list of token types, that can not be used for authentication."
+msgstr ""
+
+#: lib/policy.py:2504
 msgid ""
 "The autoresync of a token can be done via a challenge response message.You "
 "need to activate 'Automatic resync' in the general settings!"
@@ -1178,17 +1236,30 @@ msgstr ""
 "mensaje de respuesta de desafío. ¡Debe activar 'Resincronización automática' "
 "en la configuración general!"
 
-#: lib/policy.py:2533
+#: lib/policy.py:2509
 msgid ""
-"In case of a successful authentication the following tokentype is enrolled. "
-"The maximum number of tokens for a user is checked."
+"In case of a successful authentication the following token or container type "
+"is enrolled. The maximum number of tokens for a user is checked."
 msgstr ""
 
-#: lib/policy.py:2539
+#: lib/policy.py:2515
 msgid "Change the default text that is shown during enrolling a token."
 msgstr ""
 
-#: lib/policy.py:2544
+#: lib/policy.py:2520
+msgid ""
+"Select the template to use for the enrollment of a smartphone container via "
+"multichallenge."
+msgstr ""
+
+#: lib/policy.py:2526
+msgid ""
+"If enabled, the user can choose to skip enrollment of the token during "
+"authentication. If disabled, the user must enroll a token. This is also the "
+"default behavior."
+msgstr ""
+
+#: lib/policy.py:2532
 msgid ""
 "If set, the user in this realm will be authenticated against the userstore "
 "or against the given RADIUS config, if the user has no tokens assigned."
@@ -1197,7 +1268,7 @@ msgstr ""
 "de usuarios o contra la configuración de RADIUS dada, si el usuario no tiene "
 "tokens asignados."
 
-#: lib/policy.py:2551
+#: lib/policy.py:2539
 msgid ""
 "This allows to automatically assign a Token within privacyIDEA, if the user "
 "was authenticated via passthru against a RADIUS server. The OTP value is "
@@ -1209,7 +1280,7 @@ msgstr ""
 "OTP se utiliza para encontrar el token no asignado en privacyIDEA. Ingrese "
 "la longitud del valor OTP y donde el PIN se establece como 8 o 6."
 
-#: lib/policy.py:2558
+#: lib/policy.py:2546
 msgid ""
 "If the user has no token, the authentication request for this user will "
 "always be true."
@@ -1217,7 +1288,7 @@ msgstr ""
 "Si el usuario no tiene token, la solicitud de autenticación para este "
 "usuario siempre será verdadera."
 
-#: lib/policy.py:2563
+#: lib/policy.py:2551
 msgid ""
 "If the user user does not exist, the authentication request for this non-"
 "existing user will always be true."
@@ -1225,7 +1296,7 @@ msgstr ""
 "Si el usuario no existe, la solicitud de autenticación para este usuario "
 "siempre será verdadera."
 
-#: lib/policy.py:2569
+#: lib/policy.py:2557
 msgid ""
 "Can be used to modify the parameters pass, user and realm in an "
 "authentication request. See the documentation for an example."
@@ -1234,7 +1305,7 @@ msgstr ""
 "dominio en una solicitud de autenticación. Consulte la documentación para "
 "ver un ejemplo."
 
-#: lib/policy.py:2575
+#: lib/policy.py:2563
 msgid ""
 "If a user authenticates successfully reset the failcounter of all of his "
 "tokens."
@@ -1242,13 +1313,13 @@ msgstr ""
 "Si un usuario se autentica correctamente, se inicializa el contador de "
 "errores de todos sus tokens."
 
-#: lib/policy.py:2580
+#: lib/policy.py:2568
 msgid ""
 "Increase the failcounter for all the tokens, for which a challenge has been "
 "triggered."
 msgstr ""
 
-#: lib/policy.py:2584
+#: lib/policy.py:2572
 msgid ""
 "Cache the password used for authentication and allow authentication with the "
 "same credentials for a certain amount of time. Specify timeout like 4h or "
@@ -1258,28 +1329,28 @@ msgstr ""
 "autenticación con las mismas credenciales durante un período de tiempo "
 "determinado. Especifique un tiempo de espera como 4h o 4h / 5m."
 
-#: lib/policy.py:2591
+#: lib/policy.py:2579
 msgid ""
 "You can set the client modes in the order that you prefer. For example: "
 "\"interactive webauthn poll u2f\". Accepted values are: <code>interactive "
 "webauthn poll u2f</code>"
 msgstr ""
 
-#: lib/policy.py:2597
+#: lib/policy.py:2585
 msgid ""
 "When enabled, authentication attempts will be interpreted as either the PIN "
 "or the answer to a challenge. PIN concatenated with OTP can not be used "
 "anymore! Does only work when authenticating with a username."
 msgstr ""
 
-#: lib/policy.py:2603
+#: lib/policy.py:2591
 msgid ""
 "Store the last used token type per user and application in the custom user "
 "attributes. For the next authentication the last used token type is used to "
 "identify the preferred client mode."
 msgstr ""
 
-#: lib/policy.py:2611
+#: lib/policy.py:2599
 #, python-brace-format
 msgid ""
 "Allow the user to authenticate (default). If set to '{0!s}', the "
@@ -1288,7 +1359,7 @@ msgstr ""
 "Permite que el usuario se autentique (predeterminado). Si se establece en "
 "'{0!s}', se denegará la autenticación del usuario."
 
-#: lib/policy.py:2618
+#: lib/policy.py:2606
 msgid ""
 "Allow the application to choose which token types should be used for "
 "authentication. Application may set the parameter 'type' in the request. "
@@ -1299,7 +1370,7 @@ msgstr ""
 "solicitud. Funciona con validate / check, validate / samlcheck y validate / "
 "triggerchallenge."
 
-#: lib/policy.py:2625
+#: lib/policy.py:2613
 msgid ""
 "You can specify how many successful authentication requests a user is "
 "allowed to do in a given time. Specify like 1/5s, 2/10m, 10/1h - s, m, h "
@@ -1309,7 +1380,7 @@ msgstr ""
 "realizar un usuario en un tiempo determinado. Especifique como 1 / 5s, 2 / "
 "10m, 10 / 1h ."
 
-#: lib/policy.py:2633
+#: lib/policy.py:2621
 msgid ""
 "You can specify how many failed authentication requests a user is allowed to "
 "do in a given time. Specify like 1/5s, 2/10m, 10/1h - s, m, h being second, "
@@ -1319,7 +1390,7 @@ msgstr ""
 "realizar un usuario en un tiempo determinado. Especifique como 1 / 5s, 2 / "
 "10m, 10 / 1h."
 
-#: lib/policy.py:2641
+#: lib/policy.py:2629
 msgid ""
 "You can specify in which time frame the user needs to authenticate again "
 "with this token. If the user authenticates later, authentication will fail. "
@@ -1329,11 +1400,11 @@ msgstr ""
 "con este token. Si el usuario se autentica más tarde, la autenticación "
 "fallará. Especifique como 30h, 7d o 1y."
 
-#: lib/policy.py:2649
+#: lib/policy.py:2637
 msgid "The user will only be authenticated with this very tokentype."
 msgstr "El usuario solo se autenticará con este mismo tipo de token."
 
-#: lib/policy.py:2656
+#: lib/policy.py:2644
 msgid ""
 "The user will only be authenticated if the serial number of the token "
 "matches this regexp."
@@ -1341,7 +1412,7 @@ msgstr ""
 "El usuario solo será autenticado si el número de serie del token coincide "
 "con esta expresión regular."
 
-#: lib/policy.py:2662
+#: lib/policy.py:2650
 #, fuzzy
 #| msgid ""
 #| "The user will only be authenticated if the tokeninfo field matches the "
@@ -1353,7 +1424,7 @@ msgstr ""
 "El usuario solo será autenticado si el campo tokeninfo coincide con la "
 "expresión regular. clave/&lt;regexp&gt;/"
 
-#: lib/policy.py:2669
+#: lib/policy.py:2657
 msgid ""
 "The Realm of the user is set to this very realm. This is important if the "
 "user is not contained in the default realm and can not pass his realm."
@@ -1362,7 +1433,7 @@ msgstr ""
 "importante si el usuario no está contenido en el dominio predeterminado y no "
 "puede pasar su dominio."
 
-#: lib/policy.py:2676
+#: lib/policy.py:2664
 msgid ""
 "In case of successful authentication additional no detail information will "
 "be returned."
@@ -1370,7 +1441,7 @@ msgstr ""
 "En caso de autenticación exitosa, no se devolverá información adicional "
 "detallada ."
 
-#: lib/policy.py:2683
+#: lib/policy.py:2671
 msgid ""
 "In case of failed authentication additional no detail information will be "
 "returned."
@@ -1378,7 +1449,7 @@ msgstr ""
 "En caso de autenticación fallida, no se devolverá información adicional "
 "detallada."
 
-#: lib/policy.py:2690
+#: lib/policy.py:2678
 msgid ""
 "In case of successful authentication user data will be added in the detail "
 "branch of the authentication response."
@@ -1386,7 +1457,7 @@ msgstr ""
 "En caso de una autenticación exitosa, los datos del usuario se agregarán en "
 "la rama de detalle de la respuesta de autenticación."
 
-#: lib/policy.py:2697
+#: lib/policy.py:2685
 msgid ""
 "In case of successful authentication the user resolver and realm will be "
 "added in the detail branch of the authentication response."
@@ -1394,16 +1465,13 @@ msgstr ""
 "En caso de una autenticación exitosa, el almacen de usuario y el dominio se "
 "agregarán en la rama de detalle de la respuesta de autenticación."
 
-#: lib/policy.py:2704
+#: lib/policy.py:2692
 msgid ""
-"The sending of an API Auth Key is required duringauthentication. This avoids "
-"rogue authenticate requests against the /validate/check interface."
+"The sending of an API Auth Key is required during authentication. This "
+"avoids rogue authenticate requests against the /validate/check interface."
 msgstr ""
-"Se requiere el envío de una clave de autenticación API durante la "
-"autenticación. Esto evita solicitudes de autenticación fraudulentas contra "
-"la interfaz validate / check."
 
-#: lib/policy.py:2713
+#: lib/policy.py:2701
 msgid ""
 "If set, administrators will see a dashboard as start screen when logging in "
 "to privacyIDEA WebUI."
@@ -1411,7 +1479,7 @@ msgstr ""
 "Si está configurado, los administradores verán un panel como pantalla de "
 "inicio cuando inicien sesión en privacyIDEA WebUI."
 
-#: lib/policy.py:2719
+#: lib/policy.py:2707
 msgid ""
 "If set to \"privacyIDEA\" the users and admins need to authenticate against "
 "privacyIDEA when they log in to the Web UI. Defaults to \"userstore\"."
@@ -1420,7 +1488,7 @@ msgstr ""
 "autenticarse contra privacyIDEA cuando inician sesión en la interfaz de "
 "usuario web. El valor predeterminado es \"almacen de usuarios\"."
 
-#: lib/policy.py:2727
+#: lib/policy.py:2715
 msgid ""
 "An alternative text to display on the WebUI login dialog instead of \"Please "
 "sign in\"."
@@ -1428,7 +1496,7 @@ msgstr ""
 "Un texto alternativo para mostrar en el cuadro de diálogo de inicio de "
 "sesión de WebUI en lugar de \"Inicio de sesión\"."
 
-#: lib/policy.py:2731
+#: lib/policy.py:2719
 msgid ""
 "When searching in the user list, the search will only performed when "
 "pressing enter."
@@ -1436,7 +1504,7 @@ msgstr ""
 "Al buscar en la lista de usuarios, la búsqueda solo se realizará al "
 "presionar INTRO."
 
-#: lib/policy.py:2736
+#: lib/policy.py:2724
 msgid ""
 "The action taken when a user is idle beyond the logout_time limit. Defaults "
 "to \"lockscreen\"."
@@ -1445,7 +1513,7 @@ msgstr ""
 "sobrepasa el tiempo \"logout_time\". El valor predeterminado es \"pantalla "
 "de bloqueo\"."
 
-#: lib/policy.py:2744
+#: lib/policy.py:2732
 msgid ""
 "The REMOTE_USER set by the webserver can be used to login to privacyIDEA or "
 "it will be ignored. Defaults to \"disable\"."
@@ -1454,7 +1522,7 @@ msgstr ""
 "para iniciar sesión en privacyIDEA o se ignorará. El valor predeterminado es "
 "\"deshabilitado\"."
 
-#: lib/policy.py:2750
+#: lib/policy.py:2738
 msgid ""
 "Set the time in seconds after which the user will be logged out from the "
 "WebUI. Default: 120"
@@ -1462,52 +1530,52 @@ msgstr ""
 "Se establece el tiempo en segundos después del cual el usuario cerrará la "
 "sesión de WebUI. Predeterminado: 120"
 
-#: lib/policy.py:2755
+#: lib/policy.py:2743
 msgid ""
 "privacyIDEA issues a JWT when the user or admins logs in to the WebUI. The "
 "default validity is 1 hour. You can specify different validity times in "
 "seconds."
 msgstr ""
 
-#: lib/policy.py:2760
+#: lib/policy.py:2748
 msgid "Set how many tokens should be displayed in the token view on one page."
 msgstr ""
 "Establece cuántos tokens deben mostrarse en la vista de tokens en una página."
 
-#: lib/policy.py:2765
+#: lib/policy.py:2753
 msgid "Set how many users should be displayed in the user view on one page."
 msgstr ""
 "Establece cuántos usuarios deben mostrarse en la vista de usuarios en una "
 "página."
 
-#: lib/policy.py:2770
+#: lib/policy.py:2758
 msgid ""
 "Set how many audit entries should be displayed in the audit view on one page."
 msgstr ""
 
-#: lib/policy.py:2775
+#: lib/policy.py:2763
 msgid "Use your own html template for the web UI menu."
 msgstr ""
 "Utilice su propia plantilla html para el menú de la interfaz de usuario web."
 
-#: lib/policy.py:2779
+#: lib/policy.py:2767
 msgid "Use your own html template for the web UI baseline/footer."
 msgstr ""
 "Utilice su propia plantilla html para el pie de página de la interfaz de "
 "usuario web."
 
-#: lib/policy.py:2783
+#: lib/policy.py:2771
 msgid "Link your privacy statement to be displayed in the baseline/footer."
 msgstr ""
 "Enlaza su declaración de privacidad para que se muestre en el pie de página."
 
-#: lib/policy.py:2787
+#: lib/policy.py:2775
 msgid ""
 "Whether the user ID and the resolver should be displayed in the token list."
 msgstr ""
 "Si el ID de usuario y el almacén deben mostrarse en la lista de tokens."
 
-#: lib/policy.py:2792
+#: lib/policy.py:2780
 msgid ""
 "The URL of a repository, where the policy templates can be found.  (Default "
 "https: //raw.githubusercontent.com/ privacyidea/policy-templates /master/"
@@ -1517,20 +1585,20 @@ msgstr ""
 "políticas. (Por defecto https://raw.githubusercontent.com/privacyidea/policy-"
 "templates/master/templates/)"
 
-#: lib/policy.py:2799
+#: lib/policy.py:2787
 msgid ""
 "The URL of an SSO provider for redirect at logout.(The URL must start with "
 "http:// or https://)"
 msgstr ""
 
-#: lib/policy.py:2804
+#: lib/policy.py:2792
 msgid ""
 "As long as a user has no token, he will only see a token wizard in the UI."
 msgstr ""
 "Si el usuario no tiene tokens, solo se verá un asistente de token en la "
 "interfaz de usuario."
 
-#: lib/policy.py:2810
+#: lib/policy.py:2798
 msgid ""
 "The tokenwizard will be displayed in the token menu, even if the user "
 "already has a token."
@@ -1538,7 +1606,7 @@ msgstr ""
 "El asistente de token se mostrará en el menú de token, incluso si el usuario "
 "ya tiene un token."
 
-#: lib/policy.py:2816
+#: lib/policy.py:2804
 msgid ""
 "This is a whitespace separated list of tokentypes, for which a rollover "
 "button is displayed in the token details."
@@ -1546,20 +1614,20 @@ msgstr ""
 "Esta es una lista de tipos de tokens separados por espacios en blanco, para "
 "los cuales se muestra un botón con los detalles del token."
 
-#: lib/policy.py:2823
+#: lib/policy.py:2811
 msgid ""
 "The welcome dialog will be displayed if the user has no tokens assigned."
 msgstr ""
 "El cuadro de diálogo de bienvenida se mostrará si el usuario no tiene tokens "
 "asignados."
 
-#: lib/policy.py:2827
+#: lib/policy.py:2815
 msgid "This is the default token type in the token enrollment dialog."
 msgstr ""
 "Este es el tipo de token predeterminado en el cuadro de diálogo de "
 "inscripción de token."
 
-#: lib/policy.py:2833
+#: lib/policy.py:2821
 #, fuzzy
 #| msgid "This is the default token type in the token enrollment dialog."
 msgid "This is the default container type in the container create dialog."
@@ -1567,7 +1635,7 @@ msgstr ""
 "Este es el tipo de token predeterminado en el cuadro de diálogo de "
 "inscripción de token."
 
-#: lib/policy.py:2838
+#: lib/policy.py:2826
 msgid ""
 "A list of realm names, which are displayed in a drop down menu in the WebUI "
 "login screen. Realms are separated by white spaces."
@@ -1576,13 +1644,13 @@ msgstr ""
 "la pantalla de inicio de sesión de WebUI. Los dominios están separados por "
 "espacios en blanco."
 
-#: lib/policy.py:2844
+#: lib/policy.py:2832
 msgid ""
 "If this is checked, the administrator will not see the welcome dialog "
 "anymore."
 msgstr ""
 
-#: lib/policy.py:2849
+#: lib/policy.py:2837
 msgid ""
 "Per default disabled actions result in disabled buttons. When checking this "
 "action, buttons of disabled actions are hidden."
@@ -1591,20 +1659,20 @@ msgstr ""
 "deshabilitados. Al marcar esta acción, los botones de las acciones "
 "deshabilitadas están ocultos."
 
-#: lib/policy.py:2854
+#: lib/policy.py:2842
 msgid ""
 "If this is checked, there will be a confirmation prompt when deleting "
 "policies, events, mresolver, resolver or periodic tasks!"
 msgstr ""
 
-#: lib/policy.py:2859
+#: lib/policy.py:2847
 msgid ""
 "If this is checked, the seed will be displayed as text during enrollment."
 msgstr ""
 "Si se marca esta opción, la semilla se mostrará como texto durante la "
 "inscripción."
 
-#: lib/policy.py:2864
+#: lib/policy.py:2852
 msgid ""
 "If this is checked, the privacyIDEA Node name will be displayed in the menu "
 "bar."
@@ -1612,7 +1680,7 @@ msgstr ""
 "Si se marca esta opción, el nombre del nodo privacyIDEA se mostrará en la "
 "barra de menú."
 
-#: lib/policy.py:2869
+#: lib/policy.py:2857
 msgid ""
 "If this is checked, the enrollment page for HOTP, TOTP and Push tokens will "
 "contain a QR code that leads to the privacyIDEA Authenticator in the Google "
@@ -1622,7 +1690,7 @@ msgstr ""
 "TOTP y Push contendrá un código QR que conduce al Autenticador PRIVACYIDEA "
 "en Google Play Store."
 
-#: lib/policy.py:2876
+#: lib/policy.py:2864
 msgid ""
 "If this is checked, the enrollment page for HOTP, TOTP and Push tokens will "
 "contain a QR code that leads to the privacyIDEA Authenticator in the iOS App "
@@ -1632,7 +1700,7 @@ msgstr ""
 "TOTP y Push contendrá un código QR que conduce al autenticador PRIVACYIDEA "
 "en la App Store de iOS."
 
-#: lib/policy.py:2883
+#: lib/policy.py:2871
 msgid ""
 "This action adds a QR code in the enrollment page for HOTP, TOTP and Push "
 "tokens, that lead to this given URL."
@@ -1640,65 +1708,65 @@ msgstr ""
 "Esta acción agrega un código QR en la página de inscripción para los tokens "
 "HOTP, TOTP y Push, que conducen a esta URL determinada."
 
-#: lib/policy.py:2888
+#: lib/policy.py:2876
 msgid ""
 "The RSS feeds fetched for the user defined in the format: "
 "<code>'Title':'URL'-'Title':'URL'</code> "
 msgstr ""
 
-#: lib/policy.py:2891
+#: lib/policy.py:2879
 msgid ""
 "The age of the RSS feed entries in days. Use <code>0</code> to hide the news "
 "feed. For admins the default is 180 days and for users 0 days."
 msgstr ""
 
-#: lib/policy.py:2895
+#: lib/policy.py:2883
 msgid ""
 "Container type to be created with the container wizard. It is required to "
 "set at least this option to enable the container wizard. As long as the user "
 "has no container assigned he will only see the container wizard in the UI."
 msgstr ""
 
-#: lib/policy.py:2902
+#: lib/policy.py:2890
 msgid ""
 "Name of the container template to be used to create a container in the "
 "container wizard (optional). Note that the template must be of the same type "
 "as selected in the container_wizard_type."
 msgstr ""
 
-#: lib/policy.py:2908
+#: lib/policy.py:2896
 msgid ""
 "In the container wizard, a QR code will be generated to register the new "
 "container on the smartphone. (Only applicable for smartphone containers)"
 msgstr ""
 
-#: lib/policy.py:2916
+#: lib/policy.py:2904
 msgid ""
 "The URL of your privacyIDEA server, e.g. <code>https://pi/</code>. It is "
 "used to build URLs the container can contact for registration and "
 "synchronization."
 msgstr ""
 
-#: lib/policy.py:2922
+#: lib/policy.py:2910
 msgid ""
 "The time in minutes the client has to do the second step of the "
 "registration. The default is ten minutes."
 msgstr ""
 
-#: lib/policy.py:2928
+#: lib/policy.py:2916
 msgid ""
 "After the client (a registered container) has challenged an action such as "
 "synchronization or unregistration, this defines the time in minutes the "
 "client has to complete the action. The default is two minutes."
 msgstr ""
 
-#: lib/policy.py:2937
+#: lib/policy.py:2925
 msgid ""
 "The container needs to verify the SSL certificate of the privacyIDEA server "
 "during registration and synchronization. (default True)"
 msgstr ""
 
-#: lib/policy.py:2944
+#: lib/policy.py:2932
 #, fuzzy
 #| msgid "The user is allowed to reset the failcounter of his tokens."
 msgid ""
@@ -1706,7 +1774,7 @@ msgid ""
 "included tokens."
 msgstr "El usuario puede reiniciar el contador de fallos de sus tokens."
 
-#: lib/policy.py:2949
+#: lib/policy.py:2937
 msgid ""
 "During the first synchronization, the server automatically adds the clients "
 "tokens existing in privacyIDEA to the container. This allows to register "
@@ -1714,26 +1782,32 @@ msgid ""
 "tokens on the device to the container."
 msgstr ""
 
-#: lib/policy.py:2956
+#: lib/policy.py:2944
 #, fuzzy
 #| msgid "The user is allowed to delete his own tokens."
 msgid "The user is not allowed to delete tokens locally on the smartphone."
 msgstr "El usuario puede eliminar sus propios tokens."
 
-#: lib/policy.py:2961
+#: lib/policy.py:2949
 msgid ""
 "The client is not allowed to unregister the container. The user can not "
 "delete the container locally on the smartphone."
 msgstr ""
 
-#: lib/policy.py:3006
+#: lib/policy.py:2957
+msgid ""
+"This action makes the description required for all selected tokentypes, "
+"during the editing process."
+msgstr ""
+
+#: lib/policy.py:3007
 msgid ""
 "The policy only matches if certain conditions on the user info are fulfilled."
 msgstr ""
 "La política solo coincide si se cumplen ciertas condiciones en la "
 "información del usuario."
 
-#: lib/policy.py:3009
+#: lib/policy.py:3010
 msgid ""
 "The policy only matches if certain conditions of the token attributes are "
 "fulfilled."
@@ -1741,7 +1815,7 @@ msgstr ""
 "La política solo coincide si se cumplen determinadas condiciones de los "
 "atributos del token."
 
-#: lib/policy.py:3012
+#: lib/policy.py:3013
 msgid ""
 "The policy only matches if certain conditions on the token info are "
 "fulfilled."
@@ -1749,7 +1823,7 @@ msgstr ""
 "La política solo coincide si se cumplen ciertas condiciones en la "
 "información del token."
 
-#: lib/policy.py:3015
+#: lib/policy.py:3016
 msgid ""
 "The policy only matches if certain conditions on the HTTP Request header are "
 "fulfilled."
@@ -1757,7 +1831,7 @@ msgstr ""
 "La política solo coincide si se cumplen determinadas condiciones en el "
 "encabezado de solicitud HTTP."
 
-#: lib/policy.py:3018
+#: lib/policy.py:3019
 msgid ""
 "The policy only matches if certain conditions on the HTTP Environment are "
 "fulfilled."
@@ -1765,7 +1839,25 @@ msgstr ""
 "La política solo coincide si se cumplen ciertas condiciones en el entorno "
 "HTTP."
 
-#: lib/radiusserver.py:223 lib/radiusserver.py:255
+#: lib/policy.py:3022
+msgid ""
+"The policy only matches if certain conditions on the container attributes "
+"are fulfilled."
+msgstr ""
+
+#: lib/policy.py:3025
+msgid ""
+"The policy only matches if certain conditions on the container info are "
+"fulfilled."
+msgstr ""
+
+#: lib/policy.py:3028
+msgid ""
+"The policy only matches if certain conditions on the request data are "
+"fulfilled."
+msgstr ""
+
+#: lib/radiusserver.py:265
 msgid "The RADIUS secret is too long"
 msgstr "El secreto de RADIUS es demasiado largo"
 
@@ -1773,170 +1865,172 @@ msgstr "El secreto de RADIUS es demasiado largo"
 msgid "My subscription has expired."
 msgstr ""
 
-#: lib/token.py:169
+#: lib/token.py:184
 #, python-brace-format
 msgid "create_tokenclass_object failed:  {0!r}"
 msgstr ""
 
-#: lib/token.py:335
+#: lib/token.py:350
 msgid "I can only create SQL filters from tokeninfo of length 1."
 msgstr ""
 
-#: lib/token.py:349
+#: lib/token.py:364
 #, python-brace-format
 msgid "No container with the serial {container_serial} exists."
 msgstr ""
 
-#: lib/token.py:742
+#: lib/token.py:758
 msgid "The requested token could not be found."
 msgstr ""
 
-#: lib/token.py:747
+#: lib/token.py:763
 msgid "More than one matching token was found."
 msgstr ""
 
-#: lib/token.py:1051
+#: lib/token.py:1067
 msgid "multiple tokens are matching this OTP value!"
 msgstr ""
 
-#: lib/token.py:1270
+#: lib/token.py:1286
 msgid "init token failed. Unknown token type:"
 msgstr ""
 
-#: lib/token.py:1290
+#: lib/token.py:1306
 #, python-brace-format
 msgid ""
 "Token {serial} already exists with type {old_type}. Can not initialize token "
 "with new type {token_type}"
 msgstr ""
 
-#: lib/token.py:1294
+#: lib/token.py:1310
 msgid "init token failed:"
 msgstr ""
 
-#: lib/token.py:1470
+#: lib/token.py:1489
 #, python-brace-format
 msgid "Token already assigned to user {old_user!r}"
 msgstr ""
 
-#: lib/token.py:1484
+#: lib/token.py:1503
 #, python-brace-format
 msgid "Token assign failed for {0!r}/{1!s} : {2!r}"
 msgstr ""
 
-#: lib/token.py:1512
+#: lib/token.py:1531
 msgid "Token unassign failed for"
 msgstr ""
 
-#: lib/token.py:1592
+#: lib/token.py:1611
 msgid "Parameter user must not be a string:"
 msgstr ""
 
-#: lib/token.py:2148
+#: lib/token.py:2166
 msgid "You can only define a lost token for an assigned token."
 msgstr ""
 
-#: lib/token.py:2174
+#: lib/token.py:2192
 #, python-brace-format
 msgid "temporary replacement for {0!s}"
 msgstr ""
 
-#: lib/token.py:2230
+#: lib/token.py:2247
 msgid "There is no active and assigned token in this realm"
 msgstr ""
 
-#: lib/token.py:2242
+#: lib/token.py:2259
 #, python-brace-format
 msgid ""
 "There is no active and assigned token in this realm, included types: {0!s}, "
 "excluded types: {1!s}"
 msgstr ""
 
-#: lib/token.py:2295
+#: lib/token.py:2312
 msgid "OTP verification failed."
 msgstr ""
 
-#: lib/token.py:2329
+#: lib/token.py:2346
 msgid "The user has no tokens assigned"
 msgstr ""
 
-#: lib/token.py:2550
+#: lib/token.py:2578
 #, python-brace-format
 msgid "matching {0:d} tokens"
 msgstr ""
 
-#: lib/token.py:2598
+#: lib/token.py:2626
 msgid "Challenge matches, but token is not fit for challenge"
 msgstr ""
 
-#: lib/token.py:2647
+#: lib/token.py:2674
 msgid "Response did not match the challenge."
 msgstr ""
 
-#: lib/token.py:2649
+#: lib/token.py:2676
 #, python-brace-format
 msgid "Response did not match for {0!s} tokens."
 msgstr ""
 
-#: lib/token.py:2656
+#: lib/token.py:2683
 msgid "No active challenge response token found"
 msgstr ""
 
-#: lib/token.py:2672
+#: lib/token.py:2699
 msgid "wrong otp value"
 msgstr ""
 
-#: lib/token.py:2679
+#: lib/token.py:2706
 msgid ". previous otp used again"
 msgstr ""
 
-#: lib/token.py:2693
+#: lib/token.py:2720
 msgid "wrong otp pin"
 msgstr ""
 
-#: lib/token.py:2701
+#: lib/token.py:2728
 msgid "No suitable token found for authentication."
 msgstr ""
 
-#: lib/token.py:2726
+#: lib/token.py:2756
 #, fuzzy, python-brace-format
 msgid "Admin is allowed to initialize {0!s} tokens."
 msgstr "El administrador puede inicializar {0!s} tokens."
 
-#: lib/token.py:2734
+#: lib/token.py:2765
 #, python-brace-format
 msgid "The user is allowed to enroll a {0!s} token."
 msgstr "El usuario puede inscribir un token {0!s}."
 
-#: lib/token.py:2765
+#: lib/token.py:2797
 #, python-brace-format
 msgid "Set the maximum allowed PIN length of the {0!s} token."
 msgstr "Establezca la longitud máxima permitida del PIN del token {0!s}."
 
-#: lib/token.py:2772
+#: lib/token.py:2803
 #, python-brace-format
 msgid "Set the minimum required PIN length of the {0!s} token."
 msgstr "Establezca la longitud mínima requerida del PIN del token {0!s}."
 
-#: lib/token.py:2778
+#: lib/token.py:2808
 #, python-brace-format
 msgid ""
-"Specifiy the required PIN contents of the {0!s} token. (c)haracters, "
+"Specify the required PIN contents of the {0!s} token. (c)haracters, "
 "(n)umeric, (s)pecial, (o)thers. [+/-]!"
 msgstr ""
-"Especifique el contenido del PIN requerido del token {0!s}. (c)aracteres, "
-"(n)uméricos, e(s)peciales, (o)tros. [+/-]!"
 
-#: lib/token.py:2823 lib/token.py:2839
+#: lib/token.py:2852 lib/token.py:2868
 msgid "The tokengroup does not exist."
 msgstr ""
 
-#: lib/token.py:2976
+#: lib/token.py:2927
 #, python-brace-format
 msgid " Please press: {presence_answer}"
 msgstr ""
 
-#: lib/tokenclass.py:1698
+#: lib/tokenclass.py:170
+msgid "Force the key to be generated on the server."
+msgstr "Fuerzar la generación de la clave en el servidor."
+
+#: lib/tokenclass.py:1708
 msgid "please enter otp: "
 msgstr "por favor ingrese otp: "
 
@@ -1951,11 +2045,11 @@ msgid ""
 "ID."
 msgstr ""
 
-#: lib/containers/smartphone.py:123
+#: lib/containers/smartphone.py:126
 msgid "A smartphone that uses an authenticator app."
 msgstr ""
 
-#: lib/containers/smartphone.py:219
+#: lib/containers/smartphone.py:239
 #, fuzzy
 #| msgid "URL for privacyIDEA Push Token"
 msgid "URL for privacyIDEA Container Registration"
@@ -1966,17 +2060,17 @@ msgid ""
 "Yubikey hardware device that can hold HOTP, certificate and webauthn token"
 msgstr ""
 
-#: lib/eventhandler/base.py:175
+#: lib/eventhandler/base.py:167
 msgid ""
 "The challenge session matches the string or regular expression (like "
 "'challenge_declined' or 'enrollment')"
 msgstr ""
 
-#: lib/eventhandler/base.py:182
+#: lib/eventhandler/base.py:174
 msgid "The challenge of a token during the authentication process is expired."
 msgstr ""
 
-#: lib/eventhandler/base.py:190
+#: lib/eventhandler/base.py:182
 msgid ""
 "The rollout_state of the token has a certain value like 'clientwait' or "
 "'enrolled'."
@@ -1984,53 +2078,53 @@ msgstr ""
 "El rollout_state del token tiene un cierto valor como 'clientwait' o "
 "'enrolled'."
 
-#: lib/eventhandler/base.py:196
+#: lib/eventhandler/base.py:188
 msgid "The realm of the user, for which this event should apply."
 msgstr "El dominio del usuario, para el que se debe aplicar este evento."
 
-#: lib/eventhandler/base.py:203
+#: lib/eventhandler/base.py:195
 msgid "The resolver of the user, for which this event should apply."
 msgstr "El almacén de usuarios, al que se debe aplicar este evento."
 
-#: lib/eventhandler/base.py:210
+#: lib/eventhandler/base.py:202
 msgid "The realm of the token, for which this event should apply."
 msgstr "El dominio del token, al que se debe aplicar este evento."
 
-#: lib/eventhandler/base.py:218
+#: lib/eventhandler/base.py:210
 msgid "The resolver of the token, for which this event should apply."
 msgstr "El almacén del token, al que se debe aplicar este evento."
 
-#: lib/eventhandler/base.py:226
+#: lib/eventhandler/base.py:218
 msgid "The type of the token."
 msgstr "El tipo de token."
 
-#: lib/eventhandler/base.py:233
+#: lib/eventhandler/base.py:225
 msgid "The logged in user is of the following type."
 msgstr "El usuario que ha iniciado sesión es del siguiente tipo."
 
-#: lib/eventhandler/base.py:240
+#: lib/eventhandler/base.py:232
 msgid "The result.value within the response is True or False."
 msgstr "El resultado de la respuesta es Verdadero o Falso."
 
-#: lib/eventhandler/base.py:248
+#: lib/eventhandler/base.py:240
 msgid "The result.status within the response is True or False."
 msgstr "El \"estado\" de la respuesta es Verdadero o Falso."
 
-#: lib/eventhandler/base.py:256
+#: lib/eventhandler/base.py:248
 #, fuzzy
 #| msgid "The result.value within the response is True or False."
 msgid "The result.authentication within the response is the given value."
 msgstr "El resultado de la respuesta es Verdadero o Falso."
 
-#: lib/eventhandler/base.py:264
+#: lib/eventhandler/base.py:256
 msgid "Check if the max failcounter of the token is reached."
 msgstr "Compruebe si se alcanza el contador máximo de fallos del token."
 
-#: lib/eventhandler/base.py:272
+#: lib/eventhandler/base.py:264
 msgid "The token has a user assigned."
 msgstr "El token tiene un usuario asignado."
 
-#: lib/eventhandler/base.py:279
+#: lib/eventhandler/base.py:271
 msgid ""
 "The token has a user assigned, but the user does not exist in the userstore "
 "anymore."
@@ -2038,39 +2132,35 @@ msgstr ""
 "El token tiene un usuario asignado, pero el usuario ya no existe en el "
 "almacén de usuarios."
 
-#: lib/eventhandler/base.py:287
+#: lib/eventhandler/base.py:279
 msgid "Check if the token is within its validity period."
 msgstr "Compruebe si el token está dentro de su período de validez."
 
-#: lib/eventhandler/base.py:294
+#: lib/eventhandler/base.py:286
 msgid "Action is triggered, if the serial matches this regular expression."
 msgstr ""
 "La acción se activa si la secuencia coincide con esta expresión regular."
 
-#: lib/eventhandler/base.py:301
+#: lib/eventhandler/base.py:293
 #, fuzzy
 #| msgid "The token has a user assigned."
 msgid "The token is in a container."
 msgstr "El token tiene un usuario asignado."
 
-#: lib/eventhandler/base.py:308
-#, fuzzy
-#| msgid "Action is triggered, if the user has this number of tokens assigned."
+#: lib/eventhandler/base.py:300
 msgid ""
-"Action is triggered, if the user has this number of tokens assigned. > and < "
+"Action is triggered if the user has this number of tokens assigned. > and < "
 "can be used, like <8."
 msgstr ""
-"La acción se activa si el usuario tiene este número de tokens asignados."
+
+#: lib/eventhandler/base.py:307
+msgid ""
+"Action is triggered if the number of containers assigned to the user matches "
+"the condition. The condition should start with a comparator such as '==', "
+"'<', '>', followed by a number, e.g. '==0', '>3'."
+msgstr ""
 
 #: lib/eventhandler/base.py:315
-#, fuzzy
-#| msgid "Action is triggered, if the user has this number of tokens assigned."
-msgid ""
-"Action is triggered, if the user has this number of containers assigned."
-msgstr ""
-"La acción se activa si el usuario tiene este número de tokens asignados."
-
-#: lib/eventhandler/base.py:322
 msgid ""
 "Action is triggered, if the counter of the token equals this setting. Can "
 "also be '>100' or '<99' for no exact match."
@@ -2078,7 +2168,7 @@ msgstr ""
 "La acción se activa si el contador del token es igual a esta configuración. "
 "También puede ser '> 100' o '<99' si no hay una coincidencia exacta."
 
-#: lib/eventhandler/base.py:330
+#: lib/eventhandler/base.py:323
 msgid ""
 "Action is triggered, if the last authentication of the token is older than "
 "7h, 10d or 1y."
@@ -2086,7 +2176,7 @@ msgstr ""
 "Se activa la acción si la última autenticación del token es anterior a 7h, "
 "10d o 1y."
 
-#: lib/eventhandler/base.py:337
+#: lib/eventhandler/base.py:330
 msgid ""
 "This can be '>100', '<99', or '=100', to trigger the action, if the "
 "tokeninfo field 'count_auth' is bigger than 100, less than 99 or exactly 100."
@@ -2095,7 +2185,7 @@ msgstr ""
 "información de token 'count_auth' es mayor que 100, menor que 99 o "
 "exactamente 100."
 
-#: lib/eventhandler/base.py:345
+#: lib/eventhandler/base.py:338
 msgid ""
 "This can be '>100', '<99', or '=100', to trigger the action, if the "
 "tokeninfo field 'count_auth_success' is bigger than 100, less than 99 or "
@@ -2105,7 +2195,7 @@ msgstr ""
 "información de token 'count_auth_success' es mayor que 100, menor que 99 o "
 "exactamente 100."
 
-#: lib/eventhandler/base.py:354
+#: lib/eventhandler/base.py:347
 msgid ""
 "This can be '>100', '<99', or '=100', to trigger the action, if the "
 "difference between the tokeninfo field 'count_auth' and 'count_auth_success "
@@ -2115,7 +2205,7 @@ msgstr ""
 "entre el campo tokeninfo 'count_auth' y 'count_auth_success es mayor que "
 "100, menor que 99 o exactamente 100."
 
-#: lib/eventhandler/base.py:363
+#: lib/eventhandler/base.py:356
 msgid ""
 "This can be '>9', '<9', or '=10', to trigger the action, if the failcounter "
 "of a token matches this value. Note that the failcounter stops increasing, "
@@ -2125,7 +2215,7 @@ msgstr ""
 "fallos de un token coincide con este valor. Tenga en cuenta que el contador "
 "de fallos deja de aumentar si se alcanza el número máximo de fallos."
 
-#: lib/eventhandler/base.py:372
+#: lib/eventhandler/base.py:365
 msgid ""
 "This condition can check any arbitrary tokeninfo field. You need to enter "
 "something like '<fieldname> == <fieldvalue>', '<fieldname> > <fieldvalue>' "
@@ -2135,7 +2225,7 @@ msgstr ""
 "ser algo como '<nombre de campo> == <valor de campo>', '<nombre de campo> > "
 "<valor de campo>' o '<nombre de campo> < <valor de campo>'."
 
-#: lib/eventhandler/base.py:381
+#: lib/eventhandler/base.py:374
 msgid ""
 "This condition can check the value of an arbitrary event counter and compare "
 "it like 'myCounter == 1000', 'myCounter > 1000' or 'myCounter < 1000'."
@@ -2143,7 +2233,7 @@ msgstr ""
 "Esta condición puede verificar el valor de un contador de eventos arbitrario "
 "y compararlo como 'myCounter == 1000', 'myCounter> 1000' o 'myCounter <1000'."
 
-#: lib/eventhandler/base.py:389
+#: lib/eventhandler/base.py:382
 msgid ""
 "Here you can enter a regular expression. The condition only applies if the "
 "regular expression matches the detail->error->message in the response."
@@ -2151,7 +2241,7 @@ msgstr ""
 "Aquí puede ingresar una expresión regular. La condición solo se aplica si la "
 "expresión regular coincide con: detalle-> error->mensaje en la respuesta."
 
-#: lib/eventhandler/base.py:397
+#: lib/eventhandler/base.py:390
 msgid ""
 "Here you can enter a regular expression. The condition only applies if the "
 "regular expression matches the detail->message in the response."
@@ -2159,41 +2249,41 @@ msgstr ""
 "Aquí puede teclear una expresión regular. La condición solo se aplica si la "
 "expresión regular coincide con: detalle-> mensaje en la respuesta."
 
-#: lib/eventhandler/base.py:405
+#: lib/eventhandler/base.py:398
 msgid "Trigger the action, if the client IP matches."
 msgstr "Activa la acción, si la IP del cliente coincide."
 
-#: lib/eventhandler/base.py:411
+#: lib/eventhandler/base.py:404
 msgid ""
 "The container is in the specified states, but can additionally be in other "
 "states."
 msgstr ""
 
-#: lib/eventhandler/base.py:418
+#: lib/eventhandler/base.py:411
 #, fuzzy
 #| msgid "The admin will not see the specified columns in the audit."
 msgid "The container is only in the specified states."
 msgstr "El administrador no verá las columnas especificadas en la auditoría."
 
-#: lib/eventhandler/base.py:425
+#: lib/eventhandler/base.py:418
 #, fuzzy
 #| msgid "The token has a user assigned."
 msgid "The container has a user assigned."
 msgstr "El token tiene un usuario asignado."
 
-#: lib/eventhandler/base.py:432
+#: lib/eventhandler/base.py:425
 #, fuzzy
 #| msgid "The token has a user assigned."
 msgid "The container has at least one token assigned."
 msgstr "El token tiene un usuario asignado."
 
-#: lib/eventhandler/base.py:439
+#: lib/eventhandler/base.py:432
 #, fuzzy
 #| msgid "The logged in user is of the following type."
 msgid "The container is of a certain type."
 msgstr "El usuario que ha iniciado sesión es del siguiente tipo."
 
-#: lib/eventhandler/base.py:446
+#: lib/eventhandler/base.py:439
 msgid ""
 "The container is in this realm or in no realm at all. If multiple realms are "
 "selected, the condition is fulfilled if the container is in at least one "
@@ -2201,7 +2291,7 @@ msgid ""
 "realm, hence the action would be triggered."
 msgstr ""
 
-#: lib/eventhandler/base.py:456
+#: lib/eventhandler/base.py:449
 msgid ""
 "An owner of the container is in this resolver. If multiple resolvers are "
 "selected, the condition is fulfilled if at least one owner is in one "
@@ -2209,7 +2299,7 @@ msgid ""
 "the action would be triggered."
 msgstr ""
 
-#: lib/eventhandler/base.py:465
+#: lib/eventhandler/base.py:458
 #, fuzzy
 #| msgid ""
 #| "This condition can check any arbitrary tokeninfo field. You need to enter "
@@ -2224,7 +2314,7 @@ msgstr ""
 "ser algo como '<nombre de campo> == <valor de campo>', '<nombre de campo> > "
 "<valor de campo>' o '<nombre de campo> < <valor de campo>'."
 
-#: lib/eventhandler/base.py:474
+#: lib/eventhandler/base.py:467
 msgid ""
 "Action is triggered, if the last authentication of the container is older "
 "than the specified time. The time value has to be an integer followed by a "
@@ -2233,7 +2323,7 @@ msgid ""
 "'7d', '1y'"
 msgstr ""
 
-#: lib/eventhandler/base.py:485
+#: lib/eventhandler/base.py:478
 msgid ""
 "Action is triggered, if the last synchronization of the container is older "
 "than the specified time. The time value has to be an integer followed by a "
@@ -2296,23 +2386,23 @@ msgstr "El identificador / clave del contador."
 msgid "Don't stop counter if it reaches zero."
 msgstr "No se para el contador si llega a cero."
 
-#: lib/eventhandler/customuserattributeshandler.py:61
+#: lib/eventhandler/customuserattributeshandler.py:80
 msgid "The user for whom the custom attribute should be set."
 msgstr ""
 
-#: lib/eventhandler/customuserattributeshandler.py:68
+#: lib/eventhandler/customuserattributeshandler.py:87
 msgid "The key of the custom user attribute that should be set."
 msgstr ""
 
-#: lib/eventhandler/customuserattributeshandler.py:71
+#: lib/eventhandler/customuserattributeshandler.py:90
 msgid "The value of the custom user attribute."
 msgstr ""
 
-#: lib/eventhandler/customuserattributeshandler.py:77
+#: lib/eventhandler/customuserattributeshandler.py:96
 msgid "The user from which the custom attribute should be deleted."
 msgstr "El parámetro que debe eliminarse."
 
-#: lib/eventhandler/customuserattributeshandler.py:84
+#: lib/eventhandler/customuserattributeshandler.py:103
 msgid "The key of the custom user attribute that should be deleted."
 msgstr "El parámetro que debe eliminarse."
 
@@ -2743,7 +2833,25 @@ msgstr ""
 msgid "Your LDAP config seems to be OK, %i machine objects found."
 msgstr "Su configuración LDAP parece estar bien, %i máquinas encontradas."
 
-#: lib/resolvers/LDAPIdResolver.py:1158
+#: lib/policies/conditions.py:97
+msgid ""
+"Raise an error if the data that is required to check the condition is not "
+"available."
+msgstr ""
+
+#: lib/policies/conditions.py:102
+msgid ""
+"If the required data is not available, the condition is considered to be "
+"true. Hence, the policy is applied."
+msgstr ""
+
+#: lib/policies/conditions.py:108
+msgid ""
+"If the required data is not available, the condition is considered to be "
+"false. Hence, the policy is not applied."
+msgstr ""
+
+#: lib/resolvers/LDAPIdResolver.py:1209
 #, fuzzy, python-brace-format
 #| msgid ""
 #| "Your LDAP config found {0!s} user objects, but only {1!s} with the "
@@ -2755,14 +2863,14 @@ msgstr ""
 "Su configuración LDAP encontró {0!s} usuarios, pero solo {1!s} con el tipo "
 "de uid especificado"
 
-#: lib/resolvers/LDAPIdResolver.py:1162
+#: lib/resolvers/LDAPIdResolver.py:1213
 #, fuzzy, python-brace-format
 #| msgid "Your LDAP config seems to be OK, {0!s} user objects found."
 msgid "Your LDAP config seems to be OK, {0!s} user objects found in {1:.4f}s."
 msgstr ""
 "Su configuración de LDAP parece estar bien, se encontraron {0!s} usuarios."
 
-#: lib/smsprovider/FirebaseProvider.py:199
+#: lib/smsprovider/FirebaseProvider.py:204
 msgid ""
 "The filename of the JSON config file, that allows privacyIDEA to talk to the "
 "Firebase REST API."
@@ -2770,7 +2878,7 @@ msgstr ""
 "El nombre del archivo de configuración JSON que permite a privacyIDEA "
 "comunicarse con la API REST de Firebase."
 
-#: lib/smsprovider/FirebaseProvider.py:204
+#: lib/smsprovider/FirebaseProvider.py:209
 msgid "Proxy setting for HTTPS connections to googleapis.com."
 msgstr "Configuración proxy para conexiones HTTPS a \"googleapis.com\"."
 
@@ -2931,13 +3039,13 @@ msgstr "Número de tokens asignados a los usuarios"
 msgid "Number of users with tokens assigned"
 msgstr "Número de usuarios con tokens asignados"
 
-#: lib/tokens/applicationspecificpasswordtoken.py:74
+#: lib/tokens/applicationspecificpasswordtoken.py:75
 msgid ""
 "Application Specific Password: A token with a fixed password. Can be used "
 "for certain applications or services."
 msgstr ""
 
-#: lib/tokens/applicationspecificpasswordtoken.py:85
+#: lib/tokens/applicationspecificpasswordtoken.py:94
 #, fuzzy
 msgid ""
 "The user may only have this maximum number of application specific password "
@@ -2946,7 +3054,7 @@ msgstr ""
 "El usuario solo puede tener asignado este número máximo de \"tokens de "
 "contraseña\" activos."
 
-#: lib/tokens/applicationspecificpasswordtoken.py:91
+#: lib/tokens/applicationspecificpasswordtoken.py:100
 #, fuzzy
 msgid ""
 "The user may only have this maximum number of active application specific "
@@ -2955,23 +3063,23 @@ msgstr ""
 "El usuario solo puede tener asignado este número máximo de \"tokens de "
 "contraseña\" activos."
 
-#: lib/tokens/certificatetoken.py:287
+#: lib/tokens/certificatetoken.py:291
 msgid "Certificate: Enroll an x509 Certificate Token."
 msgstr "Certificado: registre un token de certificado x509."
 
-#: lib/tokens/certificatetoken.py:298
+#: lib/tokens/certificatetoken.py:302
 msgid "The user may only have this maximum number of certificates assigned."
 msgstr ""
 "El usuario solo puede tener asignado este máximo número de certificados."
 
-#: lib/tokens/certificatetoken.py:303
+#: lib/tokens/certificatetoken.py:307
 msgid ""
 "The user may only have this maximum number of active certificates assigned."
 msgstr ""
 "El usuario solo puede tener asignado este número máximo de certificados "
 "activos."
 
-#: lib/tokens/certificatetoken.py:308
+#: lib/tokens/certificatetoken.py:312
 msgid ""
 "Enrolling a certificate token can require an attestation certificate. "
 "(Default: ignore)"
@@ -2979,62 +3087,62 @@ msgstr ""
 "La inscripción de un token de certificado puede requerir una certificación "
 "de certificado. (Predeterminado: ignorar)"
 
-#: lib/tokens/certificatetoken.py:317
+#: lib/tokens/certificatetoken.py:321
 msgid "The CA connector that should be used during certificate enrollment."
 msgstr ""
 
-#: lib/tokens/certificatetoken.py:323
+#: lib/tokens/certificatetoken.py:327
 msgid "The template that should be used to issue a certificate."
 msgstr ""
 
-#: lib/tokens/certificatetoken.py:328
+#: lib/tokens/certificatetoken.py:332
 msgid ""
 "This takes a space separated list of elements to be added to the subject. "
 "Can be 'email' and 'realm'."
 msgstr ""
 
-#: lib/tokens/certificatetoken.py:336 lib/tokens/certificatetoken.py:343
+#: lib/tokens/certificatetoken.py:340 lib/tokens/certificatetoken.py:347
 msgid "The directory containing attestation certificate chains."
 msgstr ""
 "El directorio que contiene las cadenas de las El directorio que contiene las "
 "cadenas las certificaciones de certificados."
 
-#: lib/tokens/daplugtoken.py:124
+#: lib/tokens/daplugtoken.py:126
 msgid "event based OTP token using the HOTP algorithm"
 msgstr "Token OTP basado en eventos usando el algoritmo HOTP"
 
-#: lib/tokens/daplugtoken.py:130
+#: lib/tokens/daplugtoken.py:132
 msgid "The user may only have this maximum number of daplug tokens assigned."
 msgstr ""
 "El usuario solo puede tener asignado este número máximo de tokens daplug."
 
-#: lib/tokens/daplugtoken.py:135
+#: lib/tokens/daplugtoken.py:137
 msgid ""
 "The user may only have this maximum number of active daplug tokens assigned."
 msgstr ""
 "El usuario solo puede tener asignado este número máximo de tokens daplug "
 "activos."
 
-#: lib/tokens/daypasswordtoken.py:35
+#: lib/tokens/daypasswordtoken.py:36
 #, fuzzy
 msgid "Specify the time step of the DayPassword token. For example: \"24h\""
 msgstr ""
 "La longitud de la contraseña en caso de token temporal (token perdido)."
 
-#: lib/tokens/daypasswordtoken.py:83
+#: lib/tokens/daypasswordtoken.py:84
 msgid ""
 "DayPassword: A time-based token with a variable timestep and the possibility "
 "to use the OTP more than once."
 msgstr ""
 
-#: lib/tokens/daypasswordtoken.py:120 lib/tokens/hotptoken.py:173
-#: lib/tokens/totptoken.py:158
+#: lib/tokens/daypasswordtoken.py:121 lib/tokens/hotptoken.py:173
+#: lib/tokens/totptoken.py:161
 msgid "Enforce setting an app pin for the privacyIDEA Authenticator App"
 msgstr ""
 "Es necesaria la configuración del pin para la aplicación PrivacyIDEA "
 "Authenticator"
 
-#: lib/tokens/daypasswordtoken.py:125
+#: lib/tokens/daypasswordtoken.py:126
 #, fuzzy
 msgid ""
 "The user may only have this maximum number of daypassword tokens assigned."
@@ -3042,7 +3150,7 @@ msgstr ""
 "El usuario solo puede tener asignado este número máximo de \"tokens de "
 "contraseña\"."
 
-#: lib/tokens/daypasswordtoken.py:131
+#: lib/tokens/daypasswordtoken.py:132
 #, fuzzy
 msgid ""
 "The user may only have this maximum number of active daypassword tokens "
@@ -3051,17 +3159,17 @@ msgstr ""
 "El usuario solo puede tener asignado este número máximo de \"tokens de "
 "contraseña\" activos."
 
-#: lib/tokens/emailtoken.py:156
+#: lib/tokens/emailtoken.py:157
 msgid "EMail Token"
 msgstr "Token de correo electrónico"
 
-#: lib/tokens/emailtoken.py:158
+#: lib/tokens/emailtoken.py:159
 msgid "EMail: Send a One Time Password to the users email address."
 msgstr ""
 "Correo electrónico: envíe una contraseña de un solo uso a la dirección de "
 "correo electrónico de los usuarios."
 
-#: lib/tokens/emailtoken.py:166
+#: lib/tokens/emailtoken.py:167
 #, python-brace-format
 msgid ""
 "The text that will be sent via EMail for an EMail-token. Several tags like "
@@ -3073,7 +3181,7 @@ msgstr ""
 "especificar un nombre de archivo como plantilla de correo electrónico que "
 "comience con \"file:\"."
 
-#: lib/tokens/emailtoken.py:175
+#: lib/tokens/emailtoken.py:176
 #, python-brace-format
 msgid ""
 "The subject of the EMail for an EMail token. Use tags like {otp} and "
@@ -3082,7 +3190,7 @@ msgstr ""
 "El \"subject\" del correo electrónico para un token de correo electrónico. "
 "Utilice {otp} y {serial} como parámetros."
 
-#: lib/tokens/emailtoken.py:180
+#: lib/tokens/emailtoken.py:181
 msgid ""
 "If set, a new EMail OTP will be sent after successful authentication with "
 "one EMail OTP."
@@ -3090,7 +3198,7 @@ msgstr ""
 "Si se establece, se enviará una nueva OTP de correo electrónico después de "
 "una autenticación exitosa por correo electrónico."
 
-#: lib/tokens/emailtoken.py:185
+#: lib/tokens/emailtoken.py:186
 #, fuzzy
 #| msgid ""
 #| "Use an alternate challenge text for telling the user to enter the code "
@@ -3103,73 +3211,69 @@ msgstr ""
 "Use un texto de desafío alternativo para decirle al usuario que ingrese el "
 "código del correo electrónico."
 
-#: lib/tokens/emailtoken.py:195
+#: lib/tokens/emailtoken.py:196
 msgid "The user may only have this maximum number of email tokens assigned."
 msgstr ""
 "El usuario solo puede tener asignado este número máximo de tokens de correo "
 "electrónico."
 
-#: lib/tokens/emailtoken.py:200
+#: lib/tokens/emailtoken.py:201
 msgid ""
 "The user may only have this maximum number of active email tokens assigned."
 msgstr ""
 "El usuario solo puede tener asignado este número máximo de tokens de correo "
 "electrónico activos."
 
-#: lib/tokens/emailtoken.py:282
+#: lib/tokens/emailtoken.py:283
 #, fuzzy
 #| msgid "Enter the OTP from the Email:"
 msgid "Enter the OTP from the Email"
 msgstr "Teclee el OTP del correo electrónico:"
 
-#: lib/tokens/emailtoken.py:324
+#: lib/tokens/emailtoken.py:325
 msgid "The PIN was correct, but the EMail could not be sent!"
 msgstr ""
 
-#: lib/tokens/emailtoken.py:561
+#: lib/tokens/emailtoken.py:562
 msgid "Please enter your new email address!"
 msgstr ""
 
-#: lib/tokens/emailtoken.py:601
+#: lib/tokens/emailtoken.py:602
 msgid "The email address is not valid!"
 msgstr ""
 
-#: lib/tokens/foureyestoken.py:130
+#: lib/tokens/foureyestoken.py:131
 msgid "4Eyes Token: Use tokens of two or more users to authenticate"
 msgstr "Token 4Eyes: utilice tokens de dos o más usuarios para autenticarse"
 
-#: lib/tokens/foureyestoken.py:141
+#: lib/tokens/foureyestoken.py:142
 msgid "The user may only have this maximum number of 4eyes tokens assigned."
 msgstr ""
 "El usuario solo puede tener asignado este número máximo de tokens de "
 "\"4eyes\"."
 
-#: lib/tokens/foureyestoken.py:146
+#: lib/tokens/foureyestoken.py:147
 msgid ""
 "The user may only have this maximum number of active 4eyes tokens assigned."
 msgstr ""
 "El usuario solo puede tener asignado este número máximo de tokens \"4eyes\" "
 "activos."
 
-#: lib/tokens/hotptoken.py:84
+#: lib/tokens/hotptoken.py:85
 msgid "Please enter a valid OTP value of the new token."
 msgstr ""
 
-#: lib/tokens/hotptoken.py:97
+#: lib/tokens/hotptoken.py:98
 msgid "Specify the hashing function to be used. Can be SHA1, SHA256 or SHA512."
 msgstr ""
 "Especifique el \"hashlib\" que se utilizará. Puede ser \"SHA-1\", "
 "\"SHA-256\" o \"SHA-512\"."
 
-#: lib/tokens/hotptoken.py:99
+#: lib/tokens/hotptoken.py:100
 msgid "Specify the OTP length to be used. Can be 6 or 8 digits."
 msgstr ""
 "Especifique la longitud del \"otp\" que se utilizará. Puede tener 6 u 8 "
 "dígitos."
-
-#: lib/tokens/hotptoken.py:100
-msgid "Force the key to be generated on the server."
-msgstr "Fuerzar la generación de la clave en el servidor."
 
 #: lib/tokens/hotptoken.py:101
 msgid "Specify whether users are allowed or forced to use two-step enrollment."
@@ -3200,15 +3304,15 @@ msgstr ""
 "El usuario solo puede tener asignado este número máximo de tokens HOTP "
 "activos."
 
-#: lib/tokens/hotptoken.py:158 lib/tokens/totptoken.py:147
+#: lib/tokens/hotptoken.py:158 lib/tokens/totptoken.py:150
 msgid "The size of the OTP seed part contributed by the client (in bytes)"
 msgstr "El tamaño de la semilla de OTP aportada por el cliente (en bytes)"
 
-#: lib/tokens/hotptoken.py:163 lib/tokens/totptoken.py:150
+#: lib/tokens/hotptoken.py:163 lib/tokens/totptoken.py:153
 msgid "The size of the OTP seed part contributed by the server (in bytes)"
 msgstr "El tamaño de la semilla de OTP aportada por el cliente (en bytes)"
 
-#: lib/tokens/hotptoken.py:168 lib/tokens/totptoken.py:153
+#: lib/tokens/hotptoken.py:168 lib/tokens/totptoken.py:156
 msgid ""
 "The difficulty factor used for the OTP seed generation (should be at least "
 "10000)"
@@ -3216,37 +3320,37 @@ msgstr ""
 "El factor de fortaleza utilizado para la generación de semillas de OTP (debe "
 "ser al menos 10000)"
 
-#: lib/tokens/hotptoken.py:279
+#: lib/tokens/hotptoken.py:281
 msgid "URL for google Authenticator"
 msgstr "URL de la aplicación \"google Authenticator\""
 
-#: lib/tokens/hotptoken.py:291
+#: lib/tokens/hotptoken.py:293
 msgid "URL for OATH token"
 msgstr "URL del token OATH"
 
-#: lib/tokens/hotptoken.py:840
+#: lib/tokens/hotptoken.py:844
 #, fuzzy
 #| msgid "Please scan the QR code!"
 msgid "Please scan the QR code and enter the OTP value!"
 msgstr "Escanee el código QR"
 
-#: lib/tokens/indexedsecrettoken.py:50
+#: lib/tokens/indexedsecrettoken.py:51
 #, python-brace-format
 msgid "Please enter the positions {0!s} from your secret."
 msgstr "Introduzca las posiciones {0!s} de su secreto."
 
-#: lib/tokens/indexedsecrettoken.py:99
+#: lib/tokens/indexedsecrettoken.py:100
 msgid "Indexed Secret Token"
 msgstr "Token secreto indexado"
 
-#: lib/tokens/indexedsecrettoken.py:101
+#: lib/tokens/indexedsecrettoken.py:102
 msgid ""
 "IndexedSecret: Request certain positions of a shared secret from the user."
 msgstr ""
 "Indexed Secret Token: Solicita al usuario determinadas posiciones de un "
 "secreto compartido."
 
-#: lib/tokens/indexedsecrettoken.py:109
+#: lib/tokens/indexedsecrettoken.py:110
 #, fuzzy
 #| msgid ""
 #| "Use an alternate challenge text for telling the user which positions of "
@@ -3259,26 +3363,26 @@ msgstr ""
 "Utilice un texto de desafío alternativo para decirle al usuario qué "
 "posiciones del secreto debe ingresar."
 
-#: lib/tokens/indexedsecrettoken.py:117
+#: lib/tokens/indexedsecrettoken.py:118
 msgid "Number of necessary positions to be answered by the user."
 msgstr "Número de posiciones necesarias para ser respondidas por el usuario."
 
-#: lib/tokens/indexedsecrettoken.py:124
+#: lib/tokens/indexedsecrettoken.py:125
 msgid "Preset the enrollment with the value of the given attribute."
 msgstr "Establezca la inscripción con el valor del atributo dado."
 
-#: lib/tokens/indexedsecrettoken.py:131 lib/tokens/indexedsecrettoken.py:138
+#: lib/tokens/indexedsecrettoken.py:132 lib/tokens/indexedsecrettoken.py:139
 msgid "The attribute whose value should be force set during enrollment."
 msgstr "El atributo cuyo valor debe forzarse durante la inscripción."
 
-#: lib/tokens/indexedsecrettoken.py:145
+#: lib/tokens/indexedsecrettoken.py:146
 msgid ""
 "The user may only have this maximum number of indexed secret tokens assigned."
 msgstr ""
 "El usuario solo puede tener asignado este número máximo de Token \"Indexed "
 "Secret\"."
 
-#: lib/tokens/indexedsecrettoken.py:150
+#: lib/tokens/indexedsecrettoken.py:151
 msgid ""
 "The user may only have this maximum number of active indexed secret tokens "
 "assigned."
@@ -3286,71 +3390,71 @@ msgstr ""
 "El usuario solo puede tener asignado este número máximo de tokens \"Indexed "
 "Secret\" activos."
 
-#: lib/tokens/motptoken.py:84
+#: lib/tokens/motptoken.py:87
 #, fuzzy
 #| msgid "TOTP: Time based One Time Passwords."
 msgid "mOTP: Classical mobile One Time Passwords."
 msgstr "TOTP: Contraseñas de un solo uso basadas en el tiempo."
 
-#: lib/tokens/motptoken.py:102
+#: lib/tokens/motptoken.py:113
 msgid "The user may only have this maximum number of mOTP tokens assigned."
 msgstr ""
 "El usuario solo puede tener asignado este número máximo de tokens mOTP."
 
-#: lib/tokens/motptoken.py:107
+#: lib/tokens/motptoken.py:118
 msgid ""
 "The user may only have this maximum number of active mOTP tokens assigned."
 msgstr ""
 "El usuario solo puede tener asignado este número máximo de tokens mOTP "
 "activos."
 
-#: lib/tokens/motptoken.py:149
+#: lib/tokens/motptoken.py:160
 #, fuzzy
 #| msgid "URL for MOTP token"
 msgid "URL for mOTP token"
 msgstr "URL del token MOTP"
 
-#: lib/tokens/ocratoken.py:89
+#: lib/tokens/ocratoken.py:90
 msgid "OCRA: Enroll an OCRA token."
 msgstr "OCRA: inscribe un token OCRA."
 
-#: lib/tokens/ocratoken.py:99
+#: lib/tokens/ocratoken.py:100
 msgid "The user may only have this maximum number of OCRA tokens assigned."
 msgstr ""
 "El usuario solo puede tener asignado este número máximo de tokens OCRA."
 
-#: lib/tokens/ocratoken.py:104
+#: lib/tokens/ocratoken.py:105
 msgid ""
 "The user may only have this maximum number of active OCRA tokens assigned."
 msgstr ""
 "El usuario solo puede tener asignado este número máximo de tokens OCRA "
 "activos."
 
-#: lib/tokens/papertoken.py:93
+#: lib/tokens/papertoken.py:94
 msgid "PPR: One Time Passwords printed on a sheet of paper."
 msgstr ""
 
-#: lib/tokens/papertoken.py:104 lib/tokens/tantoken.py:106
+#: lib/tokens/papertoken.py:105 lib/tokens/tantoken.py:107
 msgid "The number of OTP values, which are printed on the paper."
 msgstr "El número de valores OTP, que están impresos en el papel."
 
-#: lib/tokens/papertoken.py:109
+#: lib/tokens/papertoken.py:110
 msgid "The user may only have this maximum number of paper tokens assigned."
 msgstr ""
 "El usuario solo puede tener asignado este número máximo de \"paper tokens\"."
 
-#: lib/tokens/papertoken.py:114
+#: lib/tokens/papertoken.py:115
 msgid ""
 "The user may only have this maximum number of active paper tokens assigned."
 msgstr ""
 "El usuario solo puede tener asignado este número máximo de \"paper tokens\" "
 "activos."
 
-#: lib/tokens/passkeytoken.py:95
+#: lib/tokens/passkeytoken.py:94
 msgid "Passkey: A secret stored on a device, unlocked with biometrics."
 msgstr ""
 
-#: lib/tokens/passkeytoken.py:104
+#: lib/tokens/passkeytoken.py:103
 #, fuzzy
 #| msgid ""
 #| "Use an alternate challenge text for telling the user to enter the code "
@@ -3362,7 +3466,7 @@ msgstr ""
 "Use un texto de desafío alternativo para decirle al usuario que ingrese el "
 "código del correo electrónico."
 
-#: lib/tokens/passkeytoken.py:110
+#: lib/tokens/passkeytoken.py:109
 msgid ""
 "When enabled, passkey token can be triggered with the PIN or via the /"
 "validate/triggerchallenge endpoint. For privacyIDEA plugins, this is not "
@@ -3370,24 +3474,24 @@ msgid ""
 "with this policy."
 msgstr ""
 
-#: lib/tokens/passkeytoken.py:119
+#: lib/tokens/passkeytoken.py:118
 msgid ""
 "Request attestation from the authenticator during the registration. The "
 "attestation certificate will be saved in the token info. The default value "
 "is 'none'."
 msgstr ""
 
-#: lib/tokens/passkeytoken.py:400
+#: lib/tokens/passkeytoken.py:399
 msgid "Please authenticate with your passkey!"
 msgstr ""
 
-#: lib/tokens/passkeytoken.py:404
+#: lib/tokens/passkeytoken.py:403
 #, fuzzy
 #| msgid "Please confirm the authentication on your mobile device!"
 msgid "Please confirm the registration with your passkey!"
 msgstr "¡Confirme la autenticación en su dispositivo móvil!"
 
-#: lib/tokens/passwordtoken.py:113
+#: lib/tokens/passwordtoken.py:115
 msgid ""
 "A token with a fixed password. Can be combined  with the OTP PIN. Is used "
 "for the lost token scenario."
@@ -3395,13 +3499,13 @@ msgstr ""
 "Un token con una contraseña fija. Se puede combinar con el PIN OTP. Se "
 "utiliza para el escenario de la ficha perdida."
 
-#: lib/tokens/passwordtoken.py:125
+#: lib/tokens/passwordtoken.py:127
 msgid "The user may only have this maximum number of password tokens assigned."
 msgstr ""
 "El usuario solo puede tener asignado este número máximo de \"tokens de "
 "contraseña\"."
 
-#: lib/tokens/passwordtoken.py:130
+#: lib/tokens/passwordtoken.py:132
 msgid ""
 "The user may only have this maximum number of active password tokens "
 "assigned."
@@ -3409,33 +3513,33 @@ msgstr ""
 "El usuario solo puede tener asignado este número máximo de \"tokens de "
 "contraseña\" activos."
 
-#: lib/tokens/pushtoken.py:72
+#: lib/tokens/pushtoken.py:74
 msgid "Please confirm the authentication on your mobile device!"
 msgstr "¡Confirme la autenticación en su dispositivo móvil!"
 
-#: lib/tokens/pushtoken.py:73
+#: lib/tokens/pushtoken.py:75
 msgid ""
 "Use the polling feature of your privacyIDEA Authenticator App to check for a "
 "new Login request."
 msgstr ""
 
-#: lib/tokens/pushtoken.py:75
+#: lib/tokens/pushtoken.py:77
 msgid "Do you want to confirm the login?"
 msgstr "¿Quieres confirmar el inicio de sesión?"
 
-#: lib/tokens/pushtoken.py:372
+#: lib/tokens/pushtoken.py:379
 msgid "PUSH Token"
 msgstr "PUSH Token"
 
-#: lib/tokens/pushtoken.py:374
+#: lib/tokens/pushtoken.py:381
 msgid "PUSH: Send a push notification to a smartphone."
 msgstr "PUSH: envía una notificación de inserción a un \"Smartphone\"."
 
-#: lib/tokens/pushtoken.py:383
+#: lib/tokens/pushtoken.py:390
 msgid "The configuration of your Firebase application."
 msgstr "La configuración de tu aplicación Firebase."
 
-#: lib/tokens/pushtoken.py:391
+#: lib/tokens/pushtoken.py:398
 msgid ""
 "The URL the Push App should contact in the second enrollment step. Usually "
 "it is the endpoint /ttype/push of the privacyIDEA server."
@@ -3444,57 +3548,63 @@ msgstr ""
 "inscripción. Por lo general, es el \"endpoint/ttype/push\" del servidor "
 "privacyIDEA."
 
-#: lib/tokens/pushtoken.py:397
+#: lib/tokens/pushtoken.py:404
 msgid ""
 "The second enrollment step must be completed within this time (in minutes)."
 msgstr ""
 "El segundo paso de inscripción debe completarse en este intervalo de tiempo "
 "(en minutos)."
 
-#: lib/tokens/pushtoken.py:401
+#: lib/tokens/pushtoken.py:408
 msgid "The smartphone needs to verify SSL during the enrollment. (default 1)"
 msgstr ""
 "El \"smartphone\" debe verificar SSL durante la inscripción. (predeterminado "
 "1)"
 
-#: lib/tokens/pushtoken.py:407
+#: lib/tokens/pushtoken.py:414
 msgid "The user may only have this maximum number of Push tokens assigned."
 msgstr ""
 "El usuario solo puede tener asignado este número máximo de \"tokens Push\"."
 
-#: lib/tokens/pushtoken.py:412
+#: lib/tokens/pushtoken.py:419
 msgid ""
 "The user may only have this maximum number of active Push tokens assigned."
 msgstr ""
 "El usuario solo puede tener asignado este número máximo de \"tokens Push\" "
 "activos."
 
-#: lib/tokens/pushtoken.py:418
+#: lib/tokens/pushtoken.py:425
 msgid "Require to unlock the Smartphone before Push requests can be accepted"
 msgstr ""
 
-#: lib/tokens/pushtoken.py:425
+#: lib/tokens/pushtoken.py:429
+msgid ""
+"Use the privacyIDEA app URL scheme 'pia' in the enroll URL for push tokens "
+"to open the privacyIDEA app."
+msgstr ""
+
+#: lib/tokens/pushtoken.py:438
 #, python-brace-format
 msgid ""
 "The question the user sees on his mobile phone. Several tags like {serial} "
 "and {client_ip} can be used as parameters."
 msgstr ""
 
-#: lib/tokens/pushtoken.py:431
+#: lib/tokens/pushtoken.py:444
 msgid "The title of the notification, the user sees on his mobile phone."
 msgstr "El título de la notificación que el usuario ve en su teléfono móvil."
 
-#: lib/tokens/pushtoken.py:436
+#: lib/tokens/pushtoken.py:449
 msgid "The smartphone needs to verify SSL during authentication. (default 1)"
 msgstr ""
 "El \"smarthphone\" debe verificar SSL durante la autenticación. "
 "(predeterminado 1)"
 
-#: lib/tokens/pushtoken.py:442
+#: lib/tokens/pushtoken.py:455
 msgid "Require the user to confirm the login with a presence check."
 msgstr ""
 
-#: lib/tokens/pushtoken.py:447
+#: lib/tokens/pushtoken.py:460
 #, python-brace-format
 msgid ""
 "The options that can be presented to the user to confirm the login. "
@@ -3502,7 +3612,7 @@ msgid ""
 "code>: user defined. Does only apply if <em>{0!s}</em> is set."
 msgstr ""
 
-#: lib/tokens/pushtoken.py:457
+#: lib/tokens/pushtoken.py:470
 #, python-brace-format
 msgid ""
 "Custom options that can be presented to the user to confirm the login. The "
@@ -3511,14 +3621,14 @@ msgid ""
 "apply if <em>{0!s}</em> is set to <code>CUSTOM</code>."
 msgstr ""
 
-#: lib/tokens/pushtoken.py:467
+#: lib/tokens/pushtoken.py:480
 #, python-brace-format
 msgid ""
 "The number of options the user is presented with to confirm the login. Does "
 "only apply if <em>{0!s}</em> is set."
 msgstr ""
 
-#: lib/tokens/pushtoken.py:475
+#: lib/tokens/pushtoken.py:488
 msgid ""
 "Wait for number of seconds for the user to confirm the challenge in the "
 "first request."
@@ -3526,37 +3636,37 @@ msgstr ""
 "Espere unos segundos para que el usuario confirme el desafío de la primera "
 "solicitud."
 
-#: lib/tokens/pushtoken.py:481
+#: lib/tokens/pushtoken.py:494
 msgid "Configure whether to allow push tokens to poll for challenges"
 msgstr ""
 "Configure si desea permitir que los \"tokens push\" sondeen los desafíos"
 
-#: lib/tokens/pushtoken.py:616
+#: lib/tokens/pushtoken.py:634
 msgid "URL for privacyIDEA Push Token"
 msgstr "URL para el \"Push Token\" de privacyIDEA"
 
-#: lib/tokens/pushtoken.py:1195
+#: lib/tokens/pushtoken.py:1213
 msgid "Please scan the QR code!"
 msgstr "Escanee el código QR"
 
-#: lib/tokens/questionnairetoken.py:96
+#: lib/tokens/questionnairetoken.py:97
 msgid "Questionnaire: Enroll Questions for the user."
 msgstr "Cuestionario: Preguntas de inscripción para el usuario."
 
-#: lib/tokens/questionnairetoken.py:107
+#: lib/tokens/questionnairetoken.py:108
 msgid "The user has to answer this number of questions during authentication."
 msgstr ""
 "El usuario debe responder a esta cantidad de preguntas durante la "
 "autenticación."
 
-#: lib/tokens/questionnairetoken.py:115
+#: lib/tokens/questionnairetoken.py:116
 msgid ""
 "The user may only have this maximum number of questionaire tokens assigned."
 msgstr ""
 "El usuario solo puede tener asignado este número máximo de \"tokens de "
 "cuestionario\"."
 
-#: lib/tokens/questionnairetoken.py:120
+#: lib/tokens/questionnairetoken.py:121
 msgid ""
 "The user may only have this maximum number of active questionaire tokens "
 "assigned."
@@ -3564,28 +3674,28 @@ msgstr ""
 "El usuario solo puede tener asignado este número máximo de \"tokens de "
 "cuestionario\" activos."
 
-#: lib/tokens/questionnairetoken.py:164
+#: lib/tokens/questionnairetoken.py:165
 #, python-format
 msgid "You need to provide at least %s answers."
 msgstr "Debes proporcionar al menos %s respuestas."
 
-#: lib/tokens/radiustoken.py:106
+#: lib/tokens/radiustoken.py:105
 msgid "RADIUS: Forward authentication request to a RADIUS server."
 msgstr "RADIUS: reenvíe la solicitud de autenticación a un servidor RADIUS."
 
-#: lib/tokens/radiustoken.py:115
+#: lib/tokens/radiustoken.py:114
 msgid "The user may only have this maximum number of RADIUS tokens assigned."
 msgstr ""
 "El usuario solo puede tener asignado este número máximo de \"tokens RADIUS\"."
 
-#: lib/tokens/radiustoken.py:121
+#: lib/tokens/radiustoken.py:120
 msgid ""
 "The user may only have this maximum number of active RADIUS tokens assigned."
 msgstr ""
 "El usuario solo puede tener asignado este número máximo de \"tokens RADIUS\" "
 "activos."
 
-#: lib/tokens/registrationtoken.py:127
+#: lib/tokens/registrationtoken.py:128
 msgid ""
 "Registration: A token that creates a registration code that can be used as a "
 "second factor once."
@@ -3593,14 +3703,14 @@ msgstr ""
 "Registro: un token que crea un código de registro que se puede utilizar como "
 "segundo factor."
 
-#: lib/tokens/registrationtoken.py:139
+#: lib/tokens/registrationtoken.py:140
 msgid ""
 "The user may only have this maximum number of registration tokens assigned."
 msgstr ""
 "El usuario solo puede tener asignado este número máximo de \"tokens de "
 "registro\"."
 
-#: lib/tokens/registrationtoken.py:145
+#: lib/tokens/registrationtoken.py:146
 msgid ""
 "The user may only have this maximum number of active registration tokens "
 "assigned."
@@ -3608,33 +3718,33 @@ msgstr ""
 "El usuario solo puede tener asignado este número máximo de \"tokens de "
 "registro\" activos."
 
-#: lib/tokens/remotetoken.py:112
+#: lib/tokens/remotetoken.py:113
 msgid "Remote Token: Forward authentication request to another server."
 msgstr "Token remoto: reenviar la solicitud de autenticación a otro servidor."
 
-#: lib/tokens/remotetoken.py:121 lib/tokens/totptoken.py:163
+#: lib/tokens/remotetoken.py:122 lib/tokens/totptoken.py:166
 msgid "The user may only have this maximum number of remote tokens assigned."
 msgstr ""
 "El usuario solo puede tener asignado este número máximo de \"tokens "
 "remotos\"."
 
-#: lib/tokens/remotetoken.py:127 lib/tokens/totptoken.py:169
+#: lib/tokens/remotetoken.py:128 lib/tokens/totptoken.py:172
 msgid ""
 "The user may only have this maximum number of active remote tokens assigned."
 msgstr ""
 "El usuario solo puede tener asignado este número máximo de \"tokens "
 "remotos\" activos."
 
-#: lib/tokens/smstoken.py:195
+#: lib/tokens/smstoken.py:196
 msgid "SMS Token"
 msgstr "Token SMS"
 
-#: lib/tokens/smstoken.py:197
+#: lib/tokens/smstoken.py:198
 msgid "SMS: Send a One Time Password to the users mobile phone."
 msgstr ""
 "SMS: envíe una contraseña de un solo uso al teléfono móvil de los usuarios."
 
-#: lib/tokens/smstoken.py:206
+#: lib/tokens/smstoken.py:207
 #, python-brace-format
 msgid ""
 "The text that will be send via SMS for an SMS token. Use tags like {otp} and "
@@ -3643,7 +3753,7 @@ msgstr ""
 "El texto que se enviará por SMS para un token de SMS. Utilice {otp} y "
 "{serial} como parámetros."
 
-#: lib/tokens/smstoken.py:213
+#: lib/tokens/smstoken.py:214
 msgid ""
 "If set, a new SMS OTP will be sent after successful authentication with one "
 "SMS OTP."
@@ -3651,7 +3761,7 @@ msgstr ""
 "Si está configurado, se enviará una nueva OTP por SMS después de una "
 "autenticación exitosa por SMS."
 
-#: lib/tokens/smstoken.py:218
+#: lib/tokens/smstoken.py:219
 #, fuzzy
 #| msgid ""
 #| "Use an alternate challenge text for telling the user to enter the code "
@@ -3664,129 +3774,129 @@ msgstr ""
 "Use un texto de desafío alternativo para decirle al usuario que ingrese el "
 "código del correo electrónico."
 
-#: lib/tokens/smstoken.py:229
+#: lib/tokens/smstoken.py:230
 msgid "Choose the gateways the administrator is allowed to set."
 msgstr "Elija las puertas de enlace que el administrador puede configurar."
 
-#: lib/tokens/smstoken.py:237
+#: lib/tokens/smstoken.py:238
 msgid "Choose the gateways the user is allowed to set."
 msgstr "Elija las puertas de enlace que el usuario tiene permitido establecer."
 
-#: lib/tokens/smstoken.py:244
+#: lib/tokens/smstoken.py:245
 msgid "The user may only have this maximum number of SMS tokens assigned."
 msgstr ""
 "El usuario solo puede tener asignado este número máximo de \"tokens SMS\"."
 
-#: lib/tokens/smstoken.py:250
+#: lib/tokens/smstoken.py:251
 msgid ""
 "The user may only have this maximum number of active SMS tokens assigned."
 msgstr ""
 "El usuario solo puede tener asignado este número máximo de \"tokens SMS\" "
 "activos."
 
-#: lib/tokens/smstoken.py:326
+#: lib/tokens/smstoken.py:327
 msgid "Enter the OTP from the SMS:"
 msgstr "Ingrese la OTP del SMS:"
 
-#: lib/tokens/smstoken.py:360
+#: lib/tokens/smstoken.py:361
 msgid "The PIN was correct, but the SMS could not be sent!"
 msgstr ""
 
-#: lib/tokens/smstoken.py:611
+#: lib/tokens/smstoken.py:612
 msgid "Please enter your new phone number!"
 msgstr ""
 
-#: lib/tokens/spasstoken.py:86
+#: lib/tokens/spasstoken.py:87
 msgid "SPass: Simple Pass token. Static passwords."
 msgstr "SPass: Token de paso simple. Contraseñas estáticas."
 
-#: lib/tokens/spasstoken.py:98
+#: lib/tokens/spasstoken.py:99
 msgid "The user may only have this maximum number of SPASS tokens assigned."
 msgstr ""
 "El usuario solo puede tener asignado este número máximo de \"tokens SPASS\"."
 
-#: lib/tokens/spasstoken.py:104
+#: lib/tokens/spasstoken.py:105
 msgid ""
 "The user may only have this maximum number of active SPASS tokens assigned."
 msgstr ""
 "El usuario solo puede tener asignado este número máximo de \"tokens SPASS\" "
 "activos."
 
-#: lib/tokens/sshkeytoken.py:82
+#: lib/tokens/sshkeytoken.py:83
 msgid "SSH Public Key: The public SSH key."
 msgstr "Clave pública SSH: la clave SSH pública."
 
-#: lib/tokens/sshkeytoken.py:91
+#: lib/tokens/sshkeytoken.py:92
 msgid "The user may only have this maximum number of SSH keys assigned."
 msgstr "El usuario solo puede tener asignado este número máximo de claves SSH."
 
-#: lib/tokens/sshkeytoken.py:97
+#: lib/tokens/sshkeytoken.py:98
 msgid "The user may only have this maximum number of active SSH keys assigned."
 msgstr ""
 "El usuario solo puede tener asignado este número máximo de claves SSH "
 "activas."
 
-#: lib/tokens/tantoken.py:96
+#: lib/tokens/tantoken.py:97
 msgid "TAN: TANs printed on a sheet of paper."
 msgstr ""
 
-#: lib/tokens/tantoken.py:111
+#: lib/tokens/tantoken.py:112
 msgid "The user may only have this maximum number of TAN tokens assigned."
 msgstr ""
 "El usuario solo puede tener asignado este número máximo de \"tokens TAN\"."
 
-#: lib/tokens/tantoken.py:117
+#: lib/tokens/tantoken.py:118
 msgid ""
 "The user may only have this maximum number of active TAN tokens assigned."
 msgstr ""
 "El usuario solo puede tener asignado este número máximo de \"tokens TAN\" "
 "activos."
 
-#: lib/tokens/tiqrtoken.py:156
+#: lib/tokens/tiqrtoken.py:157
 msgid "TiQR: Enroll a TiQR token."
 msgstr "TiQR: inscribe un token TiQR."
 
-#: lib/tokens/tiqrtoken.py:166
+#: lib/tokens/tiqrtoken.py:167
 msgid "The user may only have this maximum number of TiQR tokens assigned."
 msgstr ""
 "El usuario solo puede tener asignado este número máximo de \"tokens TiQR\"."
 
-#: lib/tokens/tiqrtoken.py:172
+#: lib/tokens/tiqrtoken.py:173
 msgid ""
 "The user may only have this maximum number of active TiQR tokens assigned."
 msgstr ""
 "El usuario solo puede tener asignado este número máximo de \"tokens TiQR\" "
 "activos."
 
-#: lib/tokens/tiqrtoken.py:236
+#: lib/tokens/tiqrtoken.py:237
 msgid "URL for TiQR enrollment"
 msgstr "URL para la inscripción TiQR"
 
-#: lib/tokens/tiqrtoken.py:394
+#: lib/tokens/tiqrtoken.py:395
 msgid "Please scan the QR Code"
 msgstr "Escanee el código QR"
 
-#: lib/tokens/totptoken.py:59
+#: lib/tokens/totptoken.py:60
 msgid "Specify the time step of the time-based OTP token."
 msgstr ""
 
-#: lib/tokens/totptoken.py:106
+#: lib/tokens/totptoken.py:107
 msgid "TOTP: Time based One Time Passwords."
 msgstr "TOTP: Contraseñas de un solo uso basadas en el tiempo."
 
-#: lib/tokens/u2ftoken.py:248
+#: lib/tokens/u2ftoken.py:250
 #, fuzzy
 #| msgid "TiQR: Enroll a TiQR token."
 msgid "U2F: Enroll a U2F token."
 msgstr "TiQR: inscribe un token TiQR."
 
-#: lib/tokens/u2ftoken.py:258
+#: lib/tokens/u2ftoken.py:260
 msgid "This is a list of FQDN hostnames trusting the registered U2F tokens."
 msgstr ""
 "Esta es una lista de nombres de host FQDN que confían en los tokens U2F "
 "registrados."
 
-#: lib/tokens/u2ftoken.py:262
+#: lib/tokens/u2ftoken.py:264
 #, fuzzy
 #| msgid ""
 #| "Use an alternate challenge text for telling the user to confirm with his "
@@ -3799,73 +3909,73 @@ msgstr ""
 "Utilice un texto de desafío alternativo para decirle al usuario que confirme "
 "con su dispositivo U2F."
 
-#: lib/tokens/u2ftoken.py:272
+#: lib/tokens/u2ftoken.py:274
 msgid "Only specified U2F tokens are authorized."
 msgstr "Solo se autorizan los tokens U2F especificados."
 
-#: lib/tokens/u2ftoken.py:280
+#: lib/tokens/u2ftoken.py:282
 msgid "Only specified U2F tokens are allowed to be registered."
 msgstr "Solo se permite registrar los tokens U2F especificados."
 
-#: lib/tokens/u2ftoken.py:285
+#: lib/tokens/u2ftoken.py:287
 msgid "Do not verify the U2F attestation certificate."
 msgstr "No verifique la certificación de certificado U2F."
 
-#: lib/tokens/u2ftoken.py:290
+#: lib/tokens/u2ftoken.py:292
 msgid "The user may only have this maximum number of U2F tokens assigned."
 msgstr ""
 "El usuario solo puede tener asignado este número máximo de \"tokens U2F\"."
 
-#: lib/tokens/u2ftoken.py:296
+#: lib/tokens/u2ftoken.py:298
 msgid ""
 "The user may only have this maximum number of active U2F tokens assigned."
 msgstr ""
 "El usuario solo puede tener asignado este número máximo de \"tokens U2F\" "
 "activos."
 
-#: lib/tokens/u2ftoken.py:380
+#: lib/tokens/u2ftoken.py:382
 msgid "You need to define the appId in the token config!"
 msgstr "¡Debe definir el \"appId\" en la configuración del token!"
 
-#: lib/tokens/u2ftoken.py:444
+#: lib/tokens/u2ftoken.py:446
 #, python-brace-format
 msgid "Please confirm with your U2F token ({0!s})"
 msgstr "Confirme con su token U2F ({0!s})"
 
-#: lib/tokens/vascotoken.py:99
+#: lib/tokens/vascotoken.py:100
 msgid "VASCO Token: Authentication using VASCO tokens"
 msgstr "Token VASCO: autenticación mediante tokens VASCO"
 
-#: lib/tokens/vascotoken.py:108
+#: lib/tokens/vascotoken.py:109
 msgid "The user may only have this maximum number of Vasco tokens assigned."
 msgstr ""
 "El usuario solo puede tener asignado este número máximo de \"tokens Vasco\"."
 
-#: lib/tokens/vascotoken.py:114
+#: lib/tokens/vascotoken.py:115
 msgid ""
 "The user may only have this maximum number of active Vasco tokens assigned."
 msgstr ""
 "El usuario solo puede tener asignado este número máximo de \"tokens Vasco\" "
 "activos."
 
-#: lib/tokens/webauthntoken.py:462
+#: lib/tokens/webauthntoken.py:463
 msgid "Generic WebAuthn Token"
 msgstr "Token genérico WebAuthn"
 
-#: lib/tokens/webauthntoken.py:472
+#: lib/tokens/webauthntoken.py:473
 #, python-brace-format
 msgid "Please confirm with your WebAuthn token ({0!s})"
 msgstr "Confirme con su \"token WebAuthn\" ({0!s})"
 
-#: lib/tokens/webauthntoken.py:473
+#: lib/tokens/webauthntoken.py:474
 msgid "Please confirm with your WebAuthn token"
 msgstr "Confirme con su \"token WebAuthn\""
 
-#: lib/tokens/webauthntoken.py:554
+#: lib/tokens/webauthntoken.py:555
 msgid "WebAuthn: Enroll a Web Authentication token."
 msgstr ""
 
-#: lib/tokens/webauthntoken.py:564
+#: lib/tokens/webauthntoken.py:565
 msgid ""
 "A list of transports to prefer to communicate with WebAuthn tokens. Default: "
 "usb ble nfc internal (All standard transports)"
@@ -3874,7 +3984,7 @@ msgstr ""
 "WebAuthn\". Predeterminado: usb ble nfc internal (todos los transportes "
 "estándar)"
 
-#: lib/tokens/webauthntoken.py:569
+#: lib/tokens/webauthntoken.py:570
 msgid ""
 "The time in seconds the user has to confirm authorization on his WebAuthn "
 "token. Note: You will want to increase the ChallengeValidityTime along with "
@@ -3884,7 +3994,7 @@ msgstr ""
 "su \"token WebAuthn\". Nota: querrá aumentar ChallengeValidityTime junto con "
 "esto. Predeterminado: 60"
 
-#: lib/tokens/webauthntoken.py:575
+#: lib/tokens/webauthntoken.py:576
 msgid ""
 "Whether the user's identity should be verified when authenticating with a "
 "WebAuthn token. Default: preferred (verify the user if supported by the "
@@ -3894,7 +4004,7 @@ msgstr ""
 "de WebAuthn\". Predeterminado: \"preferred\" (verifique al usuario si el "
 "token lo admite)"
 
-#: lib/tokens/webauthntoken.py:585
+#: lib/tokens/webauthntoken.py:586
 #, fuzzy
 #| msgid ""
 #| "Use an alternative challenge text for telling the user to confirm with "
@@ -3907,7 +4017,7 @@ msgstr ""
 "Utilice un texto de desafío alternativo para decirle al usuario que confirme "
 "con su \"token de WebAuthn\"."
 
-#: lib/tokens/webauthntoken.py:594
+#: lib/tokens/webauthntoken.py:595
 msgid ""
 "A list of WebAuthn authenticators acceptable for authorization, given as a "
 "space-separated list of AAGUIDs. Per default all authenticators are "
@@ -3917,22 +4027,22 @@ msgstr ""
 "proporcionada como una lista separada por espacios de AAGUID. De forma "
 "predeterminada, todos los autenticadores son aceptables."
 
-#: lib/tokens/webauthntoken.py:600
+#: lib/tokens/webauthntoken.py:601
 msgid "Only the specified WebAuthn-tokens are authorized."
 msgstr "Solo los \"tokens WebAuthn\" especificados están autorizados."
 
-#: lib/tokens/webauthntoken.py:607
+#: lib/tokens/webauthntoken.py:608
 msgid "One webauthn token can not be registered to a user more than once."
 msgstr ""
 
-#: lib/tokens/webauthntoken.py:612
+#: lib/tokens/webauthntoken.py:613
 #, fuzzy
 msgid "A human-readable name for the organization rolling out WebAuthn tokens."
 msgstr ""
 "Un nombre legible por humanos para la organización que implementa \"tokens "
 "WebAuthn\"."
 
-#: lib/tokens/webauthntoken.py:617
+#: lib/tokens/webauthntoken.py:618
 msgid ""
 "A domain name that is a subset of the respective FQDNs for all the "
 "webservices the users should be able to sign in to using WebAuthn tokens."
@@ -3941,7 +4051,7 @@ msgstr ""
 "todos los servicios web en los que los usuarios deberían poder iniciar "
 "sesión utilizando tokens de WebAuthn."
 
-#: lib/tokens/webauthntoken.py:623
+#: lib/tokens/webauthntoken.py:624
 msgid ""
 "The time in seconds the user has to confirm enrollment on his WebAuthn "
 "token. Note: You will want to increase the ChallengeValidityTime along with "
@@ -3951,7 +4061,7 @@ msgstr ""
 "su \"token de WebAuthn\". Nota: querrá aumentar \"ChallengeValidityTime\" "
 "junto con este parámetro. Predeterminado: 60"
 
-#: lib/tokens/webauthntoken.py:630
+#: lib/tokens/webauthntoken.py:631
 msgid ""
 "Whether to limit roll out of WebAuthn tokens to either only platform "
 "authenticators, or only cross-platform authenticators. Default: either"
@@ -3960,7 +4070,7 @@ msgstr ""
 "autenticadores de plataforma o solo a autenticadores de plataforma cruzada. "
 "Predeterminado: \"either\""
 
-#: lib/tokens/webauthntoken.py:641
+#: lib/tokens/webauthntoken.py:642
 msgid ""
 "A list of WebAuthn authenticators acceptable for enrollment, given as a "
 "space-separated list of AAGUIDs. Per default all authenticators are "
@@ -3970,7 +4080,7 @@ msgstr ""
 "proporcionada como una lista separada por espacios de AAGUID. De forma "
 "predeterminada, todos los autenticadores son aceptables."
 
-#: lib/tokens/webauthntoken.py:647
+#: lib/tokens/webauthntoken.py:648
 msgid ""
 "Whether the user's identity should be verified when rolling out a new "
 "WebAuthn token. Default: preferred (verify the user if supported by the "
@@ -3980,7 +4090,7 @@ msgstr ""
 "\"token de WebAuthn\". Predeterminado: \"preferred\" (verifique al usuario "
 "si el token lo admite)"
 
-#: lib/tokens/webauthntoken.py:658
+#: lib/tokens/webauthntoken.py:659
 #, fuzzy, python-brace-format
 msgid ""
 "Which algorithm are available to use for creating public key credentials for "
@@ -3989,7 +4099,7 @@ msgstr ""
 "Qué algoritmo se debe usar para crear credenciales de clave pública para "
 "\"tokens WebAuthn\". Predeterminado: [{0!s}], Orden: [{1!s}]"
 
-#: lib/tokens/webauthntoken.py:668
+#: lib/tokens/webauthntoken.py:669
 msgid ""
 "Whether to request attestation data when enrolling a new WebAuthn token. "
 "Note: for u2f_req to work with WebAuthn, this cannot be set to none. "
@@ -4000,7 +4110,7 @@ msgstr ""
 "puede establecer en ninguno. Predeterminado: \"direct\" (solicite datos de "
 "atestación no anonimizados)"
 
-#: lib/tokens/webauthntoken.py:680
+#: lib/tokens/webauthntoken.py:681
 msgid ""
 "Whether and how strictly to check authenticator attestation data. Note: If "
 "the attestation form is none, the attestation level needs to also be none. "
@@ -4012,22 +4122,22 @@ msgstr ""
 "certificación también debe ser ninguno. Predeterminado: \"untrusted\" (se "
 "requiere certificación, pero puede ser desconocida o autofirmada)"
 
-#: lib/tokens/webauthntoken.py:692
+#: lib/tokens/webauthntoken.py:693
 msgid "Only the specified WebAuthn-tokens are allowed to be registered."
 msgstr "Solo se permite registrar los \"tokens WebAuthn\" especificados."
 
-#: lib/tokens/webauthntoken.py:697
+#: lib/tokens/webauthntoken.py:698
 msgid "The user may only have this number of WebAuthn tokens assigned."
 msgstr ""
 "El usuario solo puede tener asignado este número de \"tokens WebAuthn\"."
 
-#: lib/tokens/webauthntoken.py:702
+#: lib/tokens/webauthntoken.py:703
 msgid "The user may only have this number of active WebAuthn tokens assigned."
 msgstr ""
 "El usuario solo puede tener asignado este número de \"tokens WebAuthn\" "
 "activos."
 
-#: lib/tokens/webauthntoken.py:707
+#: lib/tokens/webauthntoken.py:708
 #, fuzzy
 #| msgid ""
 #| "Use an alternative challenge text for telling the user to confirm with "
@@ -4040,17 +4150,17 @@ msgstr ""
 "Utilice un texto de desafío alternativo para decirle al usuario que confirme "
 "con su \"token de WebAuthn\"."
 
-#: lib/tokens/yubicotoken.py:101
+#: lib/tokens/yubicotoken.py:105
 msgid "Yubikey Cloud mode: Forward authentication request to YubiCloud."
 msgstr ""
 "Modo Yubikey Cloud: reenviar la solicitud de autenticación a YubiCloud."
 
-#: lib/tokens/yubicotoken.py:110
+#: lib/tokens/yubicotoken.py:114
 msgid "The user may only have this maximum number of Yubico tokens assigned."
 msgstr ""
 "El usuario solo puede tener asignado este número máximo de \"tokens Yubico\"."
 
-#: lib/tokens/yubicotoken.py:116
+#: lib/tokens/yubicotoken.py:120
 msgid ""
 "The user may only have this maximum number of active Yubico tokens assigned."
 msgstr ""
@@ -4080,77 +4190,198 @@ msgid ""
 "Yubikeys."
 msgstr "El código de acceso de Yubikey utilizado para inicializar Yubikeys."
 
-#: lib/utils/compare.py:189
-msgid "true if the value of the left attribute contains the right value"
+#: lib/utils/compare.py:373
+msgid "True if the value of the left attribute is equal to the right value"
 msgstr ""
-"verdadero si el valor del atributo de la izquierda contiene el valor de la "
-"derecha"
 
-#: lib/utils/compare.py:190
-msgid "false if the value of the left attribute contains the right value"
+#: lib/utils/compare.py:375
+msgid "False if the value of the left attribute is equal to the right value"
 msgstr ""
-"falso si el valor del atributo de la izquierda contiene el valor de la "
-"derecha"
 
-#: lib/utils/compare.py:192
-msgid "true if the value of the left attribute equals the right value"
+#: lib/utils/compare.py:377
+msgid "True if the list of the left attribute contains the right value"
 msgstr ""
-"Verdadero si el valor del atributo de la izquierda es igual al valor de la "
-"derecha"
 
-#: lib/utils/compare.py:193
-msgid "false if the value of the left attribute equals the right value"
+#: lib/utils/compare.py:379
+msgid "False if the list of the left attribute contains the right value"
 msgstr ""
-"falso si el valor del atributo de la izquierda es igual al valor de la "
-"derecha"
 
-#: lib/utils/compare.py:195
+#: lib/utils/compare.py:381
 msgid ""
-"true if the value of the left attribute completely matches the given regular "
+"True if the value of the left attribute completely matches the given regular "
 "expression pattern on the right"
 msgstr ""
-"Verdadero si el valor del atributo de la izquierda coincide exactamente con "
-"el patrón de expresión regular de la derecha"
 
-#: lib/utils/compare.py:196
+#: lib/utils/compare.py:384
 msgid ""
-"false if the value of the left attribute completely matches the given "
+"False if the value of the left attribute completely matches the given "
 "regular expression pattern on the right"
 msgstr ""
-"falso si el valor del atributo de la izquierda coincide exactamente con el "
-"patrón de expresión regular de la derecha"
 
-#: lib/utils/compare.py:198
+#: lib/utils/compare.py:387
 msgid ""
-"true if the value of the left attribute is contained in the comma-separated "
-"values on the right"
+"True if the value of the left attribute is contained in the comma-separated "
+"list on the right"
 msgstr ""
-"verdadero si el valor del atributo de la izquierda está contenido en los "
-"valores separados por comas de la derecha"
 
-#: lib/utils/compare.py:199
+#: lib/utils/compare.py:390
 msgid ""
-"false if the value of the left attribute is contained in the comma-separated "
-"values on the right"
+"False if the value of the left attribute is contained in the comma-separated "
+"list on the right"
 msgstr ""
-"falso si el valor del atributo de la izquierda está contenido en los valores "
-"separados por comas de la derecha"
 
-#: lib/utils/compare.py:201
+#: lib/utils/compare.py:393
 msgid ""
-"true if the integer value of the left attribute is smaller than the right "
+"True if the integer value of the left attribute is smaller than the right "
 "integer value"
 msgstr ""
-"Verdadero si el valor entero del atributo izquierdo es menor que el valor "
-"entero derecho"
 
-#: lib/utils/compare.py:202
+#: lib/utils/compare.py:398
 msgid ""
-"true if the integer value of the left attribute is bigger than the right "
+"True if the integer value of the left attribute is bigger than the right "
 "integer value"
 msgstr ""
-"Verdadero si el valor entero del atributo izquierdo es mayor que el valor "
-"entero derecho"
+
+#: lib/utils/compare.py:402
+msgid ""
+"True if the date and time of the left attribute is before the date and time "
+"of the right attribute"
+msgstr ""
+
+#: lib/utils/compare.py:405
+msgid ""
+"True if the date and time of the left attribute is after the date and time "
+"of the right attribute"
+msgstr ""
+
+#: lib/utils/compare.py:408
+msgid ""
+"True if the date and time of the left attribute is within the past duration "
+"of the right attribute. The right attribute should be a duration such as "
+"'1y', '7d', '6h', '15m'."
+msgstr ""
+
+#: lib/utils/compare.py:412
+msgid ""
+"False if the date and time of the left attribute is within the past duration "
+"of the right attribute. The right attribute should be a duration such as "
+"'1y', '7d', '6h', '15m'."
+msgstr ""
+
+#: lib/utils/compare.py:416
+msgid ""
+"True if the value of the left attribute contains the right value (case-"
+"insensitive)"
+msgstr ""
+
+#: lib/utils/compare.py:419
+msgid ""
+"False if the value of the left attribute contains the right value (case-"
+"insensitive)"
+msgstr ""
+
+#, fuzzy, python-brace-format
+#~ msgid "Missing description for {} token."
+#~ msgstr "La nueva descripción del token."
+
+#, fuzzy, python-brace-format
+#~ msgid "Description required for {} token."
+#~ msgstr "La nueva descripción del token."
+
+#~ msgid ""
+#~ "The sending of an API Auth Key is required duringauthentication. This "
+#~ "avoids rogue authenticate requests against the /validate/check interface."
+#~ msgstr ""
+#~ "Se requiere el envío de una clave de autenticación API durante la "
+#~ "autenticación. Esto evita solicitudes de autenticación fraudulentas "
+#~ "contra la interfaz validate / check."
+
+#, python-brace-format
+#~ msgid ""
+#~ "Specifiy the required PIN contents of the {0!s} token. (c)haracters, "
+#~ "(n)umeric, (s)pecial, (o)thers. [+/-]!"
+#~ msgstr ""
+#~ "Especifique el contenido del PIN requerido del token {0!s}. (c)aracteres, "
+#~ "(n)uméricos, e(s)peciales, (o)tros. [+/-]!"
+
+#, fuzzy
+#~| msgid ""
+#~| "Action is triggered, if the user has this number of tokens assigned."
+#~ msgid ""
+#~ "Action is triggered, if the user has this number of tokens assigned. > "
+#~ "and < can be used, like <8."
+#~ msgstr ""
+#~ "La acción se activa si el usuario tiene este número de tokens asignados."
+
+#, fuzzy
+#~| msgid ""
+#~| "Action is triggered, if the user has this number of tokens assigned."
+#~ msgid ""
+#~ "Action is triggered, if the user has this number of containers assigned."
+#~ msgstr ""
+#~ "La acción se activa si el usuario tiene este número de tokens asignados."
+
+#~ msgid "true if the value of the left attribute contains the right value"
+#~ msgstr ""
+#~ "verdadero si el valor del atributo de la izquierda contiene el valor de "
+#~ "la derecha"
+
+#~ msgid "false if the value of the left attribute contains the right value"
+#~ msgstr ""
+#~ "falso si el valor del atributo de la izquierda contiene el valor de la "
+#~ "derecha"
+
+#~ msgid "true if the value of the left attribute equals the right value"
+#~ msgstr ""
+#~ "Verdadero si el valor del atributo de la izquierda es igual al valor de "
+#~ "la derecha"
+
+#~ msgid "false if the value of the left attribute equals the right value"
+#~ msgstr ""
+#~ "falso si el valor del atributo de la izquierda es igual al valor de la "
+#~ "derecha"
+
+#~ msgid ""
+#~ "true if the value of the left attribute completely matches the given "
+#~ "regular expression pattern on the right"
+#~ msgstr ""
+#~ "Verdadero si el valor del atributo de la izquierda coincide exactamente "
+#~ "con el patrón de expresión regular de la derecha"
+
+#~ msgid ""
+#~ "false if the value of the left attribute completely matches the given "
+#~ "regular expression pattern on the right"
+#~ msgstr ""
+#~ "falso si el valor del atributo de la izquierda coincide exactamente con "
+#~ "el patrón de expresión regular de la derecha"
+
+#~ msgid ""
+#~ "true if the value of the left attribute is contained in the comma-"
+#~ "separated values on the right"
+#~ msgstr ""
+#~ "verdadero si el valor del atributo de la izquierda está contenido en los "
+#~ "valores separados por comas de la derecha"
+
+#~ msgid ""
+#~ "false if the value of the left attribute is contained in the comma-"
+#~ "separated values on the right"
+#~ msgstr ""
+#~ "falso si el valor del atributo de la izquierda está contenido en los "
+#~ "valores separados por comas de la derecha"
+
+#~ msgid ""
+#~ "true if the integer value of the left attribute is smaller than the right "
+#~ "integer value"
+#~ msgstr ""
+#~ "Verdadero si el valor entero del atributo izquierdo es menor que el valor "
+#~ "entero derecho"
+
+#~ msgid ""
+#~ "true if the integer value of the left attribute is bigger than the right "
+#~ "integer value"
+#~ msgstr ""
+#~ "Verdadero si el valor entero del atributo izquierdo es mayor que el valor "
+#~ "entero derecho"
 
 #~ msgid ""
 #~ "If this checked, the administrator will not see the welcome dialog "

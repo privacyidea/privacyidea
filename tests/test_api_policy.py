@@ -1,16 +1,17 @@
 import logging
+
 from testfixtures import LogCapture
 
 from privacyidea.lib.container import create_container_template, get_template_obj
 from privacyidea.lib.error import ParameterError
-from privacyidea.lib.policies.conditions import ConditionSection, ConditionHandleMissingData
-from privacyidea.lib.utils.compare import PrimaryComparators
-from .base import MyApiTestCase
-from privacyidea.lib.policy import (set_policy, SCOPE, delete_policy, rename_policy)
 from privacyidea.lib.policies.actions import PolicyAction
+from privacyidea.lib.policies.conditions import ConditionSection, ConditionHandleMissingData
+from privacyidea.lib.policy import (set_policy, SCOPE, delete_policy, rename_policy)
 from privacyidea.lib.token import init_token, remove_token
 from privacyidea.lib.user import User
+from privacyidea.lib.utils.compare import PrimaryComparators
 from privacyidea.models import db, NodeName
+from .base import MyApiTestCase
 
 
 class APIPolicyTestCase(MyApiTestCase):
@@ -125,7 +126,8 @@ class APIPolicyTestCase(MyApiTestCase):
 
         delete_policy("pol1")
 
-        db.session.add(NodeName(id="8e4272a9-9037-40df-8aa3-976e4a04b5a8", name="Node1"))
+        node1 = NodeName(id="8e4272a9-9037-40df-8aa3-976e4a04b5a8", name="Node1")
+        db.session.add(node1)
         with self.app.test_request_context('/policy/polpinode',
                                            method='POST',
                                            data={"action": PolicyAction.NODETAILFAIL,
@@ -141,7 +143,7 @@ class APIPolicyTestCase(MyApiTestCase):
             result = data.get("result")
             self.assertTrue("setPolicy polpinode" in result.get("value"),
                             result.get("value"))
-        NodeName.query.filter_by(name="Node1").first().delete()
+        db.session.delete(node1)
 
         # get the policies and see if the pinode was set
         with self.app.test_request_context('/policy/',
@@ -436,9 +438,9 @@ class APIPolicyTestCase(MyApiTestCase):
             self.assertTrue(status)
 
     def test_04_policy_defs(self):
-        db.session.add(NodeName(id="8e4272a9-9037-40df-8aa3-976e4a04b5a9", name="Node1"))
-        db.session.add(NodeName(id="d1d7fde6-330f-4c12-88f3-58a1752594bf", name="Node2"))
-        db.session.commit()
+        node1 = NodeName(id="8e4272a9-9037-40df-8aa3-976e4a04b5a9", name="Node1")
+        node2 = NodeName(id="d1d7fde6-330f-4c12-88f3-58a1752594bf", name="Node2")
+        db.session.add_all([node1, node2])
         with self.app.test_request_context('/policy/defs/conditions',
                                            method='GET',
                                            headers={
@@ -466,6 +468,9 @@ class APIPolicyTestCase(MyApiTestCase):
             value = result.get("value")
             self.assertIn("Node1", value)
             self.assertIn("Node2", value)
+
+        db.session.delete(node1)
+        db.session.delete(node2)
 
     def test_05_invalid_client(self):
         with self.app.test_request_context('/policy/condFalse',

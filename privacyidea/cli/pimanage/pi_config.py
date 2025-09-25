@@ -25,7 +25,6 @@ import click
 from flask import current_app
 from flask.cli import AppGroup
 import json
-import traceback
 import yaml
 
 from privacyidea.lib.authcache import cleanup
@@ -627,11 +626,10 @@ importer_cmd.name = "importer"
 importer_cmd.epilog = "This command is deprecated. Please use 'pi-manage config import' instead."
 config_cli.add_command(importer_cmd)
 
-
 exp_fmt_dict = {
-    'python': str,
     'json': partial(json.dumps, indent=2),
-    'yaml': yaml.safe_dump}
+    'yaml': yaml.safe_dump
+}
 
 
 @config_cli.command("export")
@@ -639,7 +637,7 @@ exp_fmt_dict = {
               default=sys.stdout,
               help='The filename to export the data to. Write to '
                    '<stdout> if this argument is not given or is \'-\'.')
-@click.option('-f', '--format', "fmt", default='python', show_default=True,
+@click.option('-f', '--format', "fmt", default='json', show_default=True,
               type=click.Choice(exp_fmt_dict.keys(), case_sensitive=False),
               help='Output format, default is \'python\'')
 # TODO: we need to have an eye on the help output, it might get less readable

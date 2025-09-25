@@ -1,3 +1,5 @@
+# (c) NetKnights GmbH 2024,  https://netknights.it
+#
 #  privacyIDEA is a fork of LinOTP
 #  May 08, 2014 Cornelius Kölbel
 #  License:  AGPLv3
@@ -27,7 +29,10 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-__doc__="""This is the BaseClass for audit trails
+# SPDX-FileCopyrightText: 2025 Paul Lettich <paul.lettich@netknights.it>
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
+"""This is the BaseClass for audit trails
 
 The audit is supposed to work like this. First we need to create an audit
 object. E.g. this can be done in the before_request:
@@ -38,9 +43,9 @@ During the request, the g.audit_object can be used to add audit information:
 
     g.audit_object.log({"client": "123.2.3.4", "action": "validate/check"})
 
-Thus at many different places in the code, audit information can be added to
+Thus, at many different places in the code, audit information can be added to
 the audit object.
-Finally the audit_object needs to be stored to the audit storage. So we call:
+Finally, the audit_object needs to be stored to the audit storage. So we call::
 
     g.audit_object.finalize_log()
 
@@ -51,9 +56,11 @@ storage.
 import logging
 from collections import OrderedDict
 
-log = logging.getLogger(__name__)
+from privacyidea.config import ConfigKey
 from privacyidea.lib.log import log_with
 from privacyidea.lib.utils import parse_timedelta, get_module_class
+
+log = logging.getLogger(__name__)
 
 
 @log_with(log, log_entry=False)
@@ -71,7 +78,7 @@ def getAudit(config, startdate=None):
     :param startdate: The datetime startdate of the request
     :return: Audit Object
     """
-    audit_module = config.get("PI_AUDIT_MODULE")
+    audit_module = config.get(ConfigKey.AUDIT_MODULE)
     audit = get_module_class(audit_module, "Audit", "log")(config, startdate)
     return audit
 

@@ -18,7 +18,6 @@
 # License along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import base64
-import os
 import pathlib
 import sys
 import click
@@ -29,13 +28,12 @@ from flask.cli import AppGroup
 from flask import current_app
 from flask_migrate import stamp as fm_stamp
 import gnupg
-from importlib import metadata
 
 from privacyidea.models import db
 from privacyidea.lib.security.default import DefaultSecurityModule
 
 setup_cli = AppGroup("setup", short_help="privacyIDEA server setup",
-                     help="Commands to setup the privacyIDEA server for production")
+                     help="Commands to set up the privacyIDEA server for production")
 
 
 @setup_cli.command("encrypt_enckey", short_help="Additionally encrypt the encryption key")
@@ -120,7 +118,7 @@ def create_pgp_keys(ctx, keysize, force):
         except IOError as e:
             click.secho(f"Could not create PGP directory {gpg_home}: {e}", fg="red")
             ctx.exit(1)
-    gpg = gnupg.GPG(gnupghome=gpg_home)
+    gpg = gnupg.GPG(gnupghome=gpg_home.as_posix())
     keys = gpg.list_keys(True)
     if len(keys) and not force:
         click.secho("There are already private keys. If you want to generate a "
@@ -199,11 +197,8 @@ def create_tables(no_stamp, stamp):
                     "to prevent this.", fg="yellow")
     db.create_all()
     if not no_stamp:
-        # get the path to the migration directory from the distribution
-        p = [x.locate() for x in metadata.files('privacyidea') if
-             'migrations/env.py' in str(x)]
-        migration_dir = os.path.dirname(os.path.abspath(p[0]))
-        fm_stamp(directory=migration_dir)
+        # The migration directory is already configured during the app creation
+        fm_stamp()
     db.session.commit()
 
 

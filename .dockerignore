@@ -6,6 +6,7 @@
 **/__pycache__
 **/.dockerignore
 **/Dockerfile*
+**/node_modules
 venv*
 .github*
 .circleci*

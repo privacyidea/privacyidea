@@ -22,7 +22,7 @@ from privacyidea.lib.user import (User, create_user,
                                   UserError)
 from privacyidea.lib.framework import get_app_config
 from privacyidea.lib.user import log as user_log
-from privacyidea.models import NodeName
+from privacyidea.models import NodeName, db
 from privacyidea.config import TestingConfig
 from . import ldap3mock
 from .test_lib_resolver import LDAPDirectory_small
@@ -484,8 +484,9 @@ class UserTestCase(MyTestCase):
         # Now check with nodes given
         nd1_uuid = "8e4272a9-9037-40df-8aa3-976e4a04b5a9"
         nd2_uuid = "d1d7fde6-330f-4c12-88f3-58a1752594bf"
-        NodeName(id=nd1_uuid, name="Node1").save()
-        NodeName(id=nd2_uuid, name="Node2").save()
+        node1 = NodeName(id=nd1_uuid, name="Node1")
+        node2 = NodeName(id=nd2_uuid, name="Node2")
+        db.session.add_all([node1, node2])
 
         (added, failed) = set_realm("sort_node_realm",
                                     [
@@ -560,6 +561,8 @@ class UserTestCase(MyTestCase):
         delete_resolver("resolver2")
         delete_resolver("reso3")
         delete_resolver("reso4")
+        db.session.delete(node1)
+        db.session.delete(node2)
 
     def test_17_check_nonascii_user(self):
         realm = "sqlrealm"
