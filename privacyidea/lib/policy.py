@@ -2594,7 +2594,7 @@ def get_static_policy_definitions(scope=None):
             },
             PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE: {
                 'type': 'bool',
-                'desc': _('Enable to return a unspecific error message for failed authentications.')
+                'desc': _('Enable to return an unspecific error message for failed authentications.')
             }
         },
         SCOPE.AUTHZ: {
