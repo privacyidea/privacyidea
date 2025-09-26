@@ -119,37 +119,37 @@ describe("TokenDetailsComponent", () => {
 
     component.saveContainer();
 
-    expect(containerSvc.assignContainer).toHaveBeenCalledWith("Mock serial", "container1");
+    expect(containerSvc.addToken).toHaveBeenCalledWith("Mock serial", "container1");
     expect(reloadSpy).toHaveBeenCalled();
   });
 
   it("saveContainer does nothing when no container selected", () => {
     containerSvc.selectedContainer.set("");
-    (containerSvc.assignContainer as jest.Mock).mockClear();
+    (containerSvc.addToken as jest.Mock).mockClear();
 
     component.saveContainer();
 
-    expect(containerSvc.assignContainer).not.toHaveBeenCalled();
+    expect(containerSvc.addToken).not.toHaveBeenCalled();
   });
 
-  it("deleteContainer unassigns and reloads when selected", () => {
+  it("removeFromContainer removes token and reloads when selected", () => {
     containerSvc.selectedContainer.set("container1");
     const reloadSpy = tokenSvc.tokenDetailResource.reload as jest.Mock;
     reloadSpy.mockClear();
 
-    component.deleteContainer();
+    component.removeFromContainer();
 
-    expect(containerSvc.unassignContainer).toHaveBeenCalledWith("Mock serial", "container1");
+    expect(containerSvc.removeToken).toHaveBeenCalledWith("Mock serial", "container1");
     expect(reloadSpy).toHaveBeenCalled();
   });
 
-  it("deleteContainer does nothing when no container selected", () => {
+  it("removeFromContainer does nothing when no container selected", () => {
     containerSvc.selectedContainer.set("");
-    (containerSvc.unassignContainer as jest.Mock).mockClear();
+    (containerSvc.removeToken as jest.Mock).mockClear();
 
-    component.deleteContainer();
+    component.removeFromContainer();
 
-    expect(containerSvc.unassignContainer).not.toHaveBeenCalled();
+    expect(containerSvc.removeToken).not.toHaveBeenCalled();
   });
 
   it("toggleTokenEdit('tokengroup') loads tokengroups once and toggles editing", () => {

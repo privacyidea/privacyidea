@@ -177,8 +177,8 @@ export interface ContainerServiceInterface {
   containerDetail: WritableSignal<ContainerDetails>;
   templatesResource: HttpResourceRef<PiResponse<{ templates: ContainerTemplate[] }> | undefined>;
   templates: Signal<ContainerTemplate[]>;
-  assignContainer: (tokenSerial: string, containerSerial: string) => Observable<any>;
-  unassignContainer: (tokenSerial: string, containerSerial: string) => Observable<any>;
+  addToken: (tokenSerial: string, containerSerial: string) => Observable<any>;
+  removeToken: (tokenSerial: string, containerSerial: string) => Observable<any>;
   setContainerRealm: (containerSerial: string, value: string[]) => Observable<any>;
   setContainerDescription: (containerSerial: string, value: string) => Observable<any>;
 
@@ -459,7 +459,7 @@ export class ContainerService implements ContainerServiceInterface {
     this.containerFilter.set(new FilterValue());
   }
 
-  assignContainer(tokenSerial: string, containerSerial: string): Observable<any> {
+  addToken(tokenSerial: string, containerSerial: string): Observable<any> {
     const headers = this.authService.getHeaders();
     return this.http
       .post<PiResponse<boolean>>(`${this.containerBaseUrl}${containerSerial}/add`, { serial: tokenSerial }, { headers })
@@ -473,7 +473,7 @@ export class ContainerService implements ContainerServiceInterface {
       );
   }
 
-  unassignContainer(tokenSerial: string, containerSerial: string): Observable<any> {
+  removeToken(tokenSerial: string, containerSerial: string): Observable<any> {
     const headers = this.authService.getHeaders();
     return this.http
       .post<

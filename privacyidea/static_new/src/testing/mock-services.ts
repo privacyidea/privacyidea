@@ -596,8 +596,8 @@ export class MockContainerService implements ContainerServiceInterface {
       })
     );
   templates: WritableSignal<ContainerTemplate[]> = signal([]);
-  assignContainer = jest.fn().mockReturnValue(of(null));
-  unassignContainer = jest.fn().mockReturnValue(of(null));
+  addToken = jest.fn().mockReturnValue(of(null));
+  removeToken = jest.fn().mockReturnValue(of(null));
   setContainerRealm = jest.fn().mockReturnValue(of(null));
   setContainerDescription = jest.fn().mockReturnValue(of(null));
   toggleActive = jest.fn().mockReturnValue(of({}));
