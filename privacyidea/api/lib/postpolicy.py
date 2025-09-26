@@ -969,14 +969,25 @@ def container_create_via_multichallenge(request: Request, content: dict, contain
 
 def hide_specific_error_message(request, response):
     """
+    If `hide_specific_error_message` policy is enabled and response contains a rejected authentication,
+    overwrite the `detail.message` with a generic failure message.
+    # TODO this does not solve the problem that we do not consistently return 401 for failed authentications.
     """
+    if not response or not response.json:
+        return response
+
     result = response.json.get("result")
     if not result.get("value") and result.get("authentication") == AUTH_RESPONSE.REJECT:
         hide_message = Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE,
                                   user_object=request.User if hasattr(request, 'User') else None).any()
         if hide_message:
             content = response.json
-            content["detail"]["message"] = _("Authentication failed.")
+            detail = {
+                "message": _("Authentication failed."),
+                "threadid": content["detail"]["threadid"]
+            }
+            # Overwrite the whole detail object so that it always has the same content
+            content["detail"] = detail
             response.set_data(json.dumps(content))
 
     return response
