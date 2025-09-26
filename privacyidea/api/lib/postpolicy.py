@@ -970,7 +970,7 @@ def container_create_via_multichallenge(request: Request, content: dict, contain
 def hide_specific_error_message(request, response):
     """
     If `hide_specific_error_message` policy is enabled and response contains a rejected authentication,
-    overwrite the `detail.message` with a generic failure message.
+    overwrite the `detail` object to contain a generic message and the threadid.
     # TODO this does not solve the problem that we do not consistently return 401 for failed authentications.
     """
     if not response or not response.json:
