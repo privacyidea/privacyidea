@@ -24,8 +24,9 @@ from dateutil import parser
 from dateutil.tz import tzlocal
 from testfixtures import log_capture, LogCapture
 
+from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.config import (set_privacyidea_config, get_token_types,
-                                    delete_privacyidea_config, SYSCONF)
+                                    delete_privacyidea_config)
 from privacyidea.lib.container import (init_container, add_token_to_container,
                                        find_container_by_serial)
 from privacyidea.lib.error import PolicyError, UserError
@@ -66,7 +67,7 @@ from privacyidea.lib.token import (create_tokenclass_object,
                                    get_tokens_paginated_generator, assign_tokengroup, unassign_tokengroup)
 from privacyidea.lib.token import log as token_log
 from privacyidea.lib.token import weigh_token_type, import_tokens, export_tokens
-from privacyidea.lib.tokenclass import DATE_FORMAT
+from privacyidea.lib.tokenclass import DATE_FORMAT, ROLLOUTSTATE
 from privacyidea.lib.tokenclass import (TokenClass, TOKENKIND,
                                         FAILCOUNTER_EXCEEDED,
                                         FAILCOUNTER_CLEAR_TIMEOUT)
@@ -832,13 +833,12 @@ class TokenTestCase(MyTestCase):
 
         # Now we disable the hotp_tokenobject. If the token is disabled,
         # we must not be able to authenticate anymore with this very token.
-        # But if the OTP value is valid, the counter is increased, anyway!
         old_counter = hotp_tokenobject.token.count
         hotp_tokenobject.enable(False)
         res, reply = check_token_list(tokenobject_list, "hotppin403154")
         self.assertFalse(res)
         self.assertTrue("Token is disabled" in reply.get("message"))
-        self.assertEqual(old_counter + 1, hotp_tokenobject.token.count)
+        self.assertEqual(old_counter, hotp_tokenobject.token.count)
         # enable the token again
         hotp_tokenobject.enable(True)
 
@@ -876,11 +876,145 @@ class TokenTestCase(MyTestCase):
         res, reply = check_token_list(tokenobject_list, "hotppin")
         self.assertFalse(res)
         self.assertFalse("multi_challenge" in reply)
-        self.assertEqual(reply.get("message"), "No active challenge response token found")
+        self.assertEqual("Token is disabled", reply.get("message"))
 
         hotp_tokenobject.enable()
         hotp_tokenobject.save()
         delete_policy("check_token_list_CR")
+
+    def test_34a_check_token_list_invalid_tokens(self):
+        # User has different invalid tokens
+        pin = "1234"
+        disabled_token = init_token({"type": "hotp", "pin": pin})
+        failcounter_token = init_token({"type": "hotp", "pin": pin})
+        invalid_token = init_token({"type": "hotp", "pin": pin})
+        clientwait_token = init_token({"type": "hotp", "pin": pin})
+        auth_max_token = init_token({"type": "hotp", "pin": pin})
+        valid_token = init_token({"type": "hotp", "pin": pin})
+
+        messages = {"Token is disabled", "Failcounter exceeded", "Outside validity period", "Token is not yet enrolled",
+                    "Authentication counter exceeded"}
+
+        tokens = [disabled_token, failcounter_token, invalid_token, clientwait_token, auth_max_token]
+        tokens_with_valid = [disabled_token, failcounter_token, invalid_token, clientwait_token, auth_max_token,
+                             valid_token]
+
+        # Tokens are all valid
+        # wrong pin
+        success, reply = check_token_list(tokens, "invalid123456")
+        self.assertFalse(success)
+        self.assertEqual("wrong otp pin", reply.get("message"))
+        # correct pin but invalid otp
+        success, reply = check_token_list(tokens, "1234123456")
+        self.assertFalse(success)
+        self.assertEqual("wrong otp value", reply.get("message"))
+        # correct authentication
+        for token in tokens:
+            success, reply = check_token_list(tokens, "1234" + token.get_otp()[2])
+            self.assertTrue(success)
+
+        # Create challenge for all tokens
+        set_policy("challenge_response", scope=SCOPE.AUTH, action=f"{PolicyAction.CHALLENGERESPONSE}=hotp")
+        success, reply = check_token_list(tokens_with_valid, "1234")
+        self.assertFalse(success)
+        self.assertEqual("please enter otp: ", reply.get("message"))
+        transaction_id = reply.get("transaction_id")
+
+        # Invalidate tokens
+        disabled_token.enable(False)
+        for i in range(10):
+            failcounter_token.inc_failcount()
+        start = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=10)
+        end = start + datetime.timedelta(days=5)
+        invalid_token.set_validity_period_start(start.isoformat())
+        invalid_token.set_validity_period_end(end.isoformat())
+        clientwait_token.token.rollout_state = ROLLOUTSTATE.CLIENTWAIT
+        auth_max_token.set_count_auth(100)
+        auth_max_token.set_count_auth_max(100)
+
+        # Challenge response fails even with correct challenge
+        for token in tokens:
+            success, reply = check_token_list(tokens, token.get_otp()[2], options={"transaction_id": transaction_id})
+            self.assertFalse(success)
+            reply_messages = reply.get("message").split(", ")
+            self.assertSetEqual(messages, set(reply_messages))
+        # Same response for wrong challenge
+        success, reply = check_token_list(tokens, "000999", options={"transaction_id": transaction_id})
+        self.assertFalse(success)
+        reply_messages = reply.get("message").split(", ")
+        self.assertSetEqual(messages, set(reply_messages))
+
+        # Using valid token only contains response for this token
+        success, reply = check_token_list(tokens_with_valid, "000999", options={"transaction_id": transaction_id})
+        self.assertFalse(success)
+        self.assertEqual("Response did not match the challenge.", reply.get("message"))
+        success, reply = check_token_list(tokens_with_valid, valid_token.get_otp()[2],
+                                          options={"transaction_id": transaction_id})
+        self.assertTrue(success)
+        self.assertEqual("Found matching challenge", reply.get("message"))
+
+        # Request challenge
+        # wrong pin
+        success, reply = check_token_list(tokens, "invalid")
+        self.assertFalse(success)
+        reply_messages = reply.get("message").split(", ")
+        self.assertSetEqual(messages, set(reply_messages))
+        # right pin
+        success, reply = check_token_list(tokens, "1234")
+        self.assertFalse(success)
+        reply_messages = reply.get("message").split(", ")
+        self.assertSetEqual(messages, set(reply_messages))
+        self.assertIsNone(reply.get("transaction_id"))
+        # Request challenge with valid token only contains response and only triggers challenge for this token
+        # wrong pin
+        success, reply = check_token_list(tokens_with_valid, "invalid")
+        self.assertFalse(success)
+        self.assertEqual("wrong otp pin", reply.get("message"))
+        # correct pin
+        success, reply = check_token_list(tokens_with_valid, "1234")
+        self.assertFalse(success)
+        self.assertEqual("please enter otp: ", reply.get("message"))
+        transaction_id = reply.get("transaction_id")
+        challenges = get_challenges(transaction_id=transaction_id)
+        self.assertEqual(1, len(challenges))
+        self.assertEqual(valid_token.get_serial(), challenges[0].serial)
+
+        delete_policy("challenge_response")
+
+        # Authentication pw+pin
+        # wrong pin
+        success, reply = check_token_list(tokens, "invalid123456")
+        self.assertFalse(success)
+        reply_messages = reply.get("message").split(", ")
+        self.assertSetEqual(messages, set(reply_messages))
+        # right pin
+        success, reply = check_token_list(tokens, "1234123456")
+        self.assertFalse(success)
+        reply_messages = reply.get("message").split(", ")
+        self.assertSetEqual(messages, set(reply_messages))
+        # correct authentication
+        for token in tokens:
+            success, reply = check_token_list(tokens, "1234" + token.get_otp()[2])
+            self.assertFalse(success)
+            reply_messages = reply.get("message").split(", ")
+            self.assertSetEqual(messages, set(reply_messages))
+        # passing also valid token
+        # wrong pin
+        success, reply = check_token_list(tokens_with_valid, "invalid123456")
+        self.assertFalse(success)
+        self.assertEqual("wrong otp pin", reply.get("message"))
+        # right pin
+        success, reply = check_token_list(tokens_with_valid, "1234123456")
+        self.assertFalse(success)
+        self.assertEqual("wrong otp value", reply.get("message"))
+        # correct authentication
+        success, reply = check_token_list(tokens_with_valid, "1234" + valid_token.get_otp()[2])
+        self.assertTrue(success)
+        self.assertEqual("matching 1 tokens", reply.get("message"))
+
+        # Clean up
+        for token in tokens_with_valid:
+            token.delete_token()
 
     @log_capture(level=logging.DEBUG)
     def test_35_check_serial_pass(self, capture):
@@ -1342,15 +1476,14 @@ class TokenTestCase(MyTestCase):
         # disable token_b
         enable_token("CR2B", False)
         # Allow HOTP for chalresp
-        set_policy("test48", scope=SCOPE.AUTH, action="{0!s}=HOTP".format(
-            PolicyAction.CHALLENGERESPONSE))
+        set_policy("test48", scope=SCOPE.AUTH, action=f"{PolicyAction.CHALLENGERESPONSE}=HOTP")
         r, r_dict = check_token_list([token_a, token_b], pin, user)
         self.assertFalse(r)
         self.assertTrue("message" in r_dict)
         self.assertTrue("transaction_id" in r_dict)
         transaction_id = r_dict.get("transaction_id")
 
-        # Now we try authenticate:
+        # Now we try to authenticate:
         r, r_dict = check_token_list([token_a, token_b], self.valid_otp_values[1], user,
                                      options={"transaction_id": transaction_id})
         self.assertTrue(r)
@@ -1362,15 +1495,20 @@ class TokenTestCase(MyTestCase):
 
         # Now we run a bunch of failing responses to the challenge
         for i in range(0, 10):
-            r, r_dict = check_token_list([token_a, token_b], self.valid_otp_values[1], user,
+            r, r_dict = check_token_list([token_a, token_b], "123456789", user,
                                          options={"transaction_id": transaction_id})
             self.assertFalse(r)
-        # Now we try the next value, which fails
+            self.assertEqual("Response did not match the challenge.", r_dict.get("message"))
+        # Fail counter exceeded: Failing authentication
+        r, r_dict = check_token_list([token_a, token_b], "123456789", user,
+                                     options={"transaction_id": transaction_id})
+        self.assertFalse(r)
+        self.assertEqual(", ".join({"Failcounter exceeded", "Token is disabled"}), r_dict.get("message"))
+        # Now we try the next valid value, which fails
         r, r_dict = check_token_list([token_a, token_b], self.valid_otp_values[2], user,
                                      options={"transaction_id": transaction_id})
         self.assertFalse(r)
-        self.assertEqual(r_dict.get("message"),
-                         "Challenge matches, but token is not fit for challenge. Failcounter exceeded")
+        self.assertEqual(", ".join({"Failcounter exceeded", "Token is disabled"}), r_dict.get("message"))
 
         remove_token("CR2A")
         remove_token("CR2B")
@@ -1388,6 +1526,9 @@ class TokenTestCase(MyTestCase):
                               "type": "hotp",
                               "otpkey": self.otpkey,
                               "pin": pin}, user)
+        token_c = init_token({"type": "hotp", "otpkey": self.otpkey, "pin": pin}, user)
+        for i in range(0, 10):
+            token_c.inc_failcount()
         set_policy("test49", scope=SCOPE.AUTH, action="{0!s}=HOTP".format(
             PolicyAction.CHALLENGERESPONSE))
         # both tokens will be a valid challenge response token!
@@ -1410,7 +1551,7 @@ class TokenTestCase(MyTestCase):
 
         # Check the second response to the challenge, the second step in
         # challenge response:
-        r, r_dict = check_token_list([token_a, token_b], "287082", user,
+        r, r_dict = check_token_list([token_a, token_b, token_c], "287082", user,
                                      options={"transaction_id": transaction_id})
         # The response is successfull
         self.assertTrue(r)
@@ -1419,12 +1560,11 @@ class TokenTestCase(MyTestCase):
         # All challenges of the transaction_id have been deleted on
         # successful authentication
         r = Challenge.query.filter(Challenge.transaction_id == transaction_id).all()
-        r = Challenge.query.filter(Challenge.transaction_id ==
-                                   transaction_id).all()
         self.assertEqual(len(r), 0)
 
         remove_token("CR2A")
         remove_token("CR2B")
+        token_c.delete_token()
         delete_policy("test49")
 
     def test_50_otpkeyformat(self):
@@ -1999,8 +2139,7 @@ class TokenFailCounterTestCase(MyTestCase):
         # Authentication must fail, since the failcounter is reached
         res, reply = check_user_pass(user, "test47359152")
         self.assertFalse(res)
-        self.assertEqual(reply.get("message"), "matching 1 tokens, "
-                                               "Failcounter exceeded")
+        self.assertEqual("Failcounter exceeded", reply.get("message"))
 
         remove_token("test47")
 
@@ -2030,8 +2169,7 @@ class TokenFailCounterTestCase(MyTestCase):
         res, reply = check_user_pass(user, pin + "032819",
                                      options={"initTime": 47251648 * 30})
         self.assertFalse(res)
-        self.assertEqual(reply.get("message"), "matching 1 tokens, "
-                                               "Failcounter exceeded")
+        self.assertEqual("Failcounter exceeded", reply.get("message"))
 
         remove_token(pin)
 
@@ -2172,7 +2310,7 @@ class TokenFailCounterTestCase(MyTestCase):
         delete_privacyidea_config("AutoResync")
         remove_token("test06")
 
-    def test_07_reset_failcounter_on_pin_only(self):
+    def test_07_reset_failcounter_failed_auth(self):
         tok = init_token({"type": "hotp",
                           "serial": "test07",
                           "otpkey": self.otpkey})
@@ -2184,20 +2322,37 @@ class TokenFailCounterTestCase(MyTestCase):
         exceeded_timestamp = datetime.datetime.now(tzlocal()) - datetime.timedelta(minutes=1)
         tok.add_tokeninfo(FAILCOUNTER_EXCEEDED, exceeded_timestamp.strftime(DATE_FORMAT))
 
-        # by default, correct PIN + wrong OTP value does not reset the failcounter
-        res, reply = check_token_list([tok], "hotppin123456")
-        self.assertEqual(tok.get_failcount(), 10)
+        # correct PIN + wrong OTP value resets the failcounter
+        res, _ = check_token_list([tok], "hotppin123456")
         self.assertFalse(res)
-        # with the corresponding config option ...
-        set_privacyidea_config(SYSCONF.RESET_FAILCOUNTER_ON_PIN_ONLY, "True")
-        # ... correct PIN + wrong OTP resets the failcounter ...
-        res, reply = check_token_list([tok], "hotppin123456")
-        self.assertEqual(tok.get_failcount(), 0)
-        # ... but authentication still fails
+        self.assertEqual(1, tok.get_failcount())
+        self.assertIsNone(tok.get_tokeninfo(FAILCOUNTER_EXCEEDED))
+
+        # also completely invalid auth resets the failcounter
+        tok.set_failcount(10)
+        tok.add_tokeninfo(FAILCOUNTER_EXCEEDED, exceeded_timestamp.strftime(DATE_FORMAT))
+        res, _ = check_token_list([tok], "hotppin123456")
         self.assertFalse(res)
+        self.assertEqual(1, tok.get_failcount())
+        self.assertIsNone(tok.get_tokeninfo(FAILCOUNTER_EXCEEDED))
+
+        # after nine more invalid auth requests, the token is locked again
+        for i in range(2, 11):
+            res, reply = check_token_list([tok], "pin123456")
+            self.assertFalse(res)
+            self.assertEqual(i, tok.get_failcount())
+            self.assertEqual("wrong otp pin", reply.get("message"))
+        otp = tok.get_otp()[2]
+        res, reply = check_token_list([tok], "hotppin" + otp)
+        self.assertFalse(res)
+        self.assertEqual(10, tok.get_failcount())
+        self.assertEqual("Failcounter exceeded", reply.get("message"))
 
         set_privacyidea_config(FAILCOUNTER_CLEAR_TIMEOUT, 0)
-        delete_privacyidea_config(SYSCONF.RESET_FAILCOUNTER_ON_PIN_ONLY)
+
+        res, reply = check_token_list([tok], "hotppin" + otp)
+        self.assertFalse(res)
+
         remove_token("test07")
 
 

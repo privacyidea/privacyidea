@@ -49,7 +49,7 @@ from privacyidea.api.lib.prepolicy import (check_token_upload,
                                            check_external, api_key_required,
                                            mangle, is_remote_user_allowed,
                                            required_email, auditlog_age, hide_audit_columns,
-                                           papertoken_count, allowed_audit_realm,
+                                           papertoken_count,
                                            u2ftoken_verify_cert,
                                            tantoken_count, sms_identifiers,
                                            pushtoken_add_config, pushtoken_validate,
@@ -1731,55 +1731,6 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         # finally delete policy
         delete_policy("tanpol")
-
-    def test_20_allowed_audit_realm(self):
-        g.logged_in_user = {"username": "admin1",
-                            "realm": "",
-                            "role": "admin"}
-        builder = EnvironBuilder(method='POST',
-                                 headers={})
-        env = builder.get_environ()
-        # Set the remote address so that we can filter for it
-        env["REMOTE_ADDR"] = "10.0.0.1"
-        g.client_ip = env["REMOTE_ADDR"]
-        req = Request(env)
-        #
-        set_policy(name="auditrealm1",
-                   scope=SCOPE.ADMIN,
-                   action=PolicyAction.AUDIT,
-                   user="admin1",
-                   realm="realm1")
-        set_policy(name="auditrealm2",
-                   scope=SCOPE.ADMIN,
-                   action=PolicyAction.AUDIT,
-                   user="admin1",
-                   realm=["realm2", "realm3"])
-        g.policy_object = PolicyClass()
-
-        # request, that matches the policy
-        req.all_data = {}
-        req.User = User()
-        allowed_audit_realm(req)
-
-        # Check if the allowed_audit_realm is set
-        self.assertTrue("realm1" in req.all_data.get("allowed_audit_realm"))
-        self.assertTrue("realm2" in req.all_data.get("allowed_audit_realm"))
-        self.assertTrue("realm3" in req.all_data.get("allowed_audit_realm"))
-
-        # check that the policy is not honored if inactive
-        set_policy(name="auditrealm2",
-                   active=False)
-        g.policy_object = PolicyClass()
-
-        # request, that matches the policy
-        req.all_data = {}
-        req.User = User()
-        allowed_audit_realm(req)
-        self.assertEqual(req.all_data.get("allowed_audit_realm"), ["realm1"])
-
-        # finally delete policy
-        delete_policy("auditrealm1")
-        delete_policy("auditrealm2")
 
     def test_21_u2f_verify_cert(self):
         # Usually the attestation certificate gets verified during enrollment unless
