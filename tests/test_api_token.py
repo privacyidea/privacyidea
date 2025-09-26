@@ -138,7 +138,8 @@ class API000TokenAdminRealmList(MyApiTestCase):
 
         # admin is allowed to only init, not list
         set_policy(name="pol-only-init",
-                   scope=SCOPE.ADMIN)
+                   scope=SCOPE.ADMIN,
+                   action="enrollHOTP")
 
         with self.app.test_request_context('/token/',
                                            method='GET',
@@ -175,6 +176,10 @@ class API000TokenAdminRealmList(MyApiTestCase):
             result = res.json.get("result")
             # we have two tokens
             self.assertEqual(0, result.get("value").get("count"))
+
+        delete_policy("pol-realm1")
+        delete_policy("pol-all-realms")
+        delete_policy("pol-only-init")
 
     def test_02_two_resolver_in_realm_policy_condition(self):
         self.setUp_user_realms()
