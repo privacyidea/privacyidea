@@ -11,7 +11,7 @@ msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: translations@privacyidea.org\n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2025-09-05 10:41+0000\n"
+"PO-Revision-Date: 2025-09-27 14:01+0000\n"
 "Last-Translator: LS_Grand <lsg@lsgrand.com>\n"
 "Language-Team: Russian <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-webui/ru/>\n"
@@ -21,7 +21,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
 "n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
-"X-Generator: Weblate 5.13.1-rc\n"
+"X-Generator: Weblate 5.14-dev\n"
 
 #. level of subscription
 #: privacyidea/static/components/components/views/component.subscriptions.html:27
@@ -825,7 +825,7 @@ msgid ""
 "Check all possible resolvers of a user to match the resolver\n"
 "                        in this policy."
 msgstr ""
-"Проверить все возможные распознаватели пользователя на соответствие "
+"Проверить все возможные resolvers пользователя на соответствие "
 "распознавателю\n"
 "                        в этой политике."
 
@@ -998,11 +998,9 @@ msgid ""
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:332
-#, fuzzy
-#| msgid "Do you really want to delete the user in the user store?"
 msgid "Configure the endpoint to delete an existing user from the user store."
 msgstr ""
-"Вы действительно хотите удалить пользователя из библиотеки пользователей?"
+"Настройте endpoint для удаления существующих пользователей из user store."
 
 #: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:326
 msgid ""
@@ -1012,6 +1010,12 @@ msgid ""
 "Additionally, you can define custom request\n"
 "                parameters in the request mapping."
 msgstr ""
+"Настройте endpoint для редактирования существующих пользователей в user "
+"store. Вышеопределённые атрибуты\n"
+"                можно задать в пользовательском интерфейсе, и они будут "
+"добавлены в тело запроса.\n"
+"                Кроме того, вы можете определить собственные параметры "
+"запроса в сопоставлении запроса."
 
 #: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:304
 msgid ""
@@ -1238,10 +1242,8 @@ msgid "Create a new privacyIDEA server {{ params.identifier }}"
 msgstr "Создать новый сервер privacyIDEA {{ params.identifier }}"
 
 #: privacyidea/static/components/config/views/config.resolvers.http.html:7
-#, fuzzy
-#| msgid "Create a new Tokengroup {{ params.groupname }}"
 msgid "Create a new {{ typeMapping[params.type] }}"
-msgstr "Создать новую группу токенов {{ params.groupname }}"
+msgstr "Создать новый {{ typeMapping[params.type] }}"
 
 #: privacyidea/static/components/dialogs/views/dialog.autocreate_realm.html:11
 msgid "Create default realm"
@@ -1301,7 +1303,7 @@ msgstr "Дата"
 
 #: privacyidea/static/components/config/views/config.token.daypassword.html:1
 msgid "DayPassword Token settings"
-msgstr "Настройка HOTP токена"
+msgstr "Настройка DayPassword токена"
 
 #: privacyidea/static/components/config/views/config.realms.list.html:19
 msgid "Default"
@@ -1378,10 +1380,8 @@ msgid "Delete Container and Tokens"
 msgstr "Удалить контейнер и токены"
 
 #: privacyidea/static/components/token/views/token.challenges.html:5
-#, fuzzy
-#| msgid "Delete all tokens?"
 msgid "Delete Expired Challenges"
-msgstr "Удалить все токены?"
+msgstr "Удалить истекшие запросы аутентификации"
 
 #: privacyidea/static/components/token/views/dialog.ask_token_delete.html:11
 #: privacyidea/static/components/token/views/dialog.ask_token_delete.html:31
@@ -1522,8 +1522,7 @@ msgstr "Вы действительно хотите удалить токен {
 
 #: privacyidea/static/components/user/views/dialog.ask_user_delete.html:14
 msgid "Do you really want to delete the user in the user store?"
-msgstr ""
-"Вы действительно хотите удалить пользователя из библиотеки пользователей?"
+msgstr "Вы действительно хотите удалить пользователя из user store?"
 
 #: privacyidea/static/components/config/views/config.events.details.html:17
 #: privacyidea/static/components/config/views/config.events.list.html:81
@@ -1720,7 +1719,7 @@ msgstr "Редактировать пользователя"
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:247
 #: privacyidea/static/components/config/views/config.resolvers.sql.html:90
 msgid "Edit user store"
-msgstr "Редактировать хранилище пользователей"
+msgstr "Редактировать user store"
 
 #: privacyidea/static/components/recovery/views/recovery.html:28
 #: privacyidea/static/components/recovery/views/recovery.html:32
@@ -5394,15 +5393,10 @@ msgstr ""
 "privacyIDEA."
 
 #: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:104
-#, fuzzy
-#| msgid ""
-#| "The user data in this database can be modified from within\n"
-#| "                privacyIDEA."
 msgid ""
 "The user data in this user store can be modified from within privacyIDEA."
 msgstr ""
-"Данные пользователя в этой базе данных могут быть изменены из\n"
-"privacyIDEA."
+"Данные пользователя в этом user store могут быть изменены через privacyIDEA."
 
 #: privacyidea/static/components/token/views/token.lost.html:12
 msgid ""
@@ -5702,11 +5696,13 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.token.tiqr.html:1
 msgid "TiQR Token settings"
-msgstr ""
+msgstr "Настройка токена TiQR"
 
 #: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:135
 msgid "Time in seconds privacyIDEA tries to reach the user store server."
 msgstr ""
+"Время в секундах, в течение которого privacyIDEA пытается обратиться к "
+"серверу user store."
 
 #: privacyidea/static/components/config/views/config.radius.edit.html:46
 #: privacyidea/static/components/config/views/config.smtp.edit.html:47
@@ -5906,7 +5902,7 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.token.u2f.html:1
 msgid "U2F Token settings"
-msgstr ""
+msgstr "Настройка U2F токена"
 
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:330
 msgid "UID Type"
@@ -6035,10 +6031,8 @@ msgid "User Info Key"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:51
-#, fuzzy
-#| msgid "Hostname Attribute"
 msgid "User Store Attribute"
-msgstr "Атрибут имени хоста"
+msgstr "User Store атрибут"
 
 #: privacyidea/static/components/register/controllers/registerControllers.js:17
 msgid "User account created. An Email has been sent to you."
@@ -6111,7 +6105,7 @@ msgstr ""
 #: privacyidea/static/components/directives/views/directive.registerContainer.html:30
 #: privacyidea/static/components/directives/views/directive.registerContainer.html:34
 msgid "Validate the passphrase against the user store."
-msgstr ""
+msgstr "Проверить passphrase через user store."
 
 #: privacyidea/static/components/token/views/token.details.html:280
 #: privacyidea/static/components/token/views/token.enroll.html:124
@@ -6175,7 +6169,7 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.token.webauthn.html:1
 msgid "WebAuthn Token settings"
-msgstr ""
+msgstr "Настройка WebAuthn токена"
 
 #: privacyidea/static/components/login/factories/webauthn.js:42
 #: privacyidea/static/components/login/factories/webauthn.js:71
@@ -6270,6 +6264,14 @@ msgid ""
 "                (like SQLResolver) and check the\n"
 "                box \"Edit user store\"."
 msgstr ""
+"У вас нет редактируемых resolvers. Поэтому вы не можете выполнять запись\n"
+"                ни в один user store. Если вы хотите добавлять пользователей "
+"необходимо\n"
+"                <a ui-sref=\"config.resolvers.list\">определить "
+"редактируемый\n"
+"                    resolver</a>\n"
+"                (например, SQLResolver) и установить\n"
+"                флажок \"Редактировать user store\"."
 
 #: privacyidea/static/components/token/views/token.enrolled.registration.html:16
 msgid "You may pass this registration code to the user."
@@ -6378,7 +6380,7 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.token.yubico.html:1
 msgid "Yubico Token settings"
-msgstr ""
+msgstr "Настройка токена Yubico"
 
 #: privacyidea/static/components/config/views/config.token.yubico.html:34
 msgid "Yubico URL"
@@ -6390,7 +6392,7 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.token.yubikey.html:1
 msgid "Yubikey Token settings"
-msgstr ""
+msgstr "Настройка токена Yubikey"
 
 #: privacyidea/static/components/audit/views/audit.log.html:45
 msgid "action"
