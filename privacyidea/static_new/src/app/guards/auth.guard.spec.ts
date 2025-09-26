@@ -66,6 +66,15 @@ describe("AuthGuard — CanMatch helpers", () => {
     auth.role.set("admin");
     expect(runMatch(selfServiceMatch)).toBe(false);
   });
+
+
+  it("adminMatch/selfServiceMatch are false for unknown role", () => {
+    const auth = TestBed.inject(AuthService) as unknown as MockAuthService;
+
+    auth.role.set("" as any);
+    expect(runMatch(adminMatch)).toBe(false);
+    expect(runMatch(selfServiceMatch)).toBe(false);
+  });
 });
 
 describe("AuthGuard class", () => {
@@ -118,5 +127,38 @@ describe("AuthGuard class", () => {
 
     await flushPromises();
     expect(notificationService.openSnackBar).toHaveBeenCalledWith("Navigation blocked by AuthGuard!");
+  });
+
+  it("calls navigate and shows snackbar twice when both canActivate + canActivateChild deny access", async () => {
+    authService.isAuthenticated.set(false);
+    (routerMock.navigate as jest.Mock).mockResolvedValue(true);
+
+    expect(guard.canActivate()).toBe(false);
+    expect(guard.canActivateChild()).toBe(false);
+
+    expect(routerMock.navigate).toHaveBeenCalledTimes(2);
+    expect(routerMock.navigate).toHaveBeenNthCalledWith(1, ["/login"]);
+    expect(routerMock.navigate).toHaveBeenNthCalledWith(2, ["/login"]);
+
+    await flushPromises(); // resolve both .then handlers
+
+    expect(notificationService.openSnackBar).toHaveBeenCalledTimes(2);
+    expect(notificationService.openSnackBar).toHaveBeenNthCalledWith(1, "Navigation blocked by AuthGuard!");
+    expect(notificationService.openSnackBar).toHaveBeenNthCalledWith(2, "Navigation blocked by AuthGuard!");
+  });
+
+  it("does not show snackbar if router.navigate never resolves (simulates failure without unhandled rejection)", async () => {
+    authService.isAuthenticated.set(false);
+
+    (routerMock.navigate as jest.Mock).mockImplementationOnce(
+      () => new Promise<boolean>(() => {})
+    );
+
+    expect(guard.canActivate()).toBe(false);
+    expect(routerMock.navigate).toHaveBeenCalledWith(["/login"]);
+
+    await flushPromises();
+
+    expect(notificationService.openSnackBar).not.toHaveBeenCalled();
   });
 });

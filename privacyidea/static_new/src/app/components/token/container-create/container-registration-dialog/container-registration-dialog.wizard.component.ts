@@ -35,6 +35,7 @@ import { ContainerRegistrationDialogComponent } from "./container-registration-d
 export class ContainerRegistrationDialogWizardComponent extends ContainerRegistrationDialogComponent {
   protected override readonly containerService: ContainerServiceInterface = inject(ContainerService);
   public override readonly data: {
+    registerContainer: WritableSignal<string>;
     response: any;
     containerSerial: WritableSignal<string>;
   } = inject(MAT_DIALOG_DATA);
