@@ -832,6 +832,70 @@ class AuthApiTestCase(MyApiTestCase):
         token_realm1.delete_token()
         delete_policy("pi-login")
 
+    def test_11_hide_specific_error_message(self):
+        # Wrong password results in 401 with error 4301
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "testadmin",
+                                                 "password": "23423"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(401, res.status_code, res)
+            result = res.json.get("result")
+            error = result.get("error")
+            self.assertEqual(4031, error.get("code"))
+            self.assertEqual("Authentication failure. Wrong credentials", error.get("message"))
+
+        # With the hide_specific_error_message_policy set, the response contains the fields defined
+        # in _assert_unspecific_message. It should be the same for every wrong input param
+        # Wrong password
+        set_policy(name="hide_error_message", scope=SCOPE.AUTH, action=f"{PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE}")
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "testadmin",
+                                                 "password": "4321234"}):
+            res = self.app.full_dispatch_request()
+            self._assert_unspecific_message(res)
+
+        # Wrong user
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "ttestadmin",
+                                                 "password": "1234"}):
+            res = self.app.full_dispatch_request()
+            self._assert_unspecific_message(res)
+
+        # Enable loginmode=privacyIDEA
+        set_policy(name="pi_login", scope=SCOPE.WEBUI, action=f"{PolicyAction.LOGINMODE}=privacyIDEA")
+        # Wrong password/OTP/PIN
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "testadmin",
+                                                 "password": "4321234"}):
+            res = self.app.full_dispatch_request()
+            self._assert_unspecific_message(res)
+        # Wrong username
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "ttestadmin",
+                                                 "password": "1234"}):
+            res = self.app.full_dispatch_request()
+            self._assert_unspecific_message(res)
+
+        delete_policy("hide_error_message")
+        delete_policy("pi_login")
+
+    def _assert_unspecific_message(self, response):
+        self.assertEqual(401, response.status_code, response)
+        result = response.json.get("result")
+        error = result.get("error")
+        self.assertEqual(4031, error.get("code"))
+        self.assertEqual("Authentication failed.", error.get("message"))
+        self.assertEqual(2, len(error))
+        detail = response.json.get("detail")
+        self.assertEqual("Authentication failed.", detail.get("message"))
+        self.assertIn("threadid", detail)
+        self.assertEqual(2, len(detail))
+
 
 class AdminFromUserstore(OverrideConfigTestCase):
     class Config(TestingConfig):

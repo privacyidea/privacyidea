@@ -18,26 +18,21 @@
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { ThemeSwitcherComponent } from "./theme-switcher.component";
+import { signal } from "@angular/core";
+import { ThemeService } from "../../../services/theme/theme.service";
 
 
 describe("ThemeSwitcherComponent", () => {
-  let component: ThemeSwitcherComponent;
-  let fixture: ComponentFixture<ThemeSwitcherComponent>;
+  let mockThemeService: {
+    currentTheme: ReturnType<typeof signal<"light" | "dark" | "system">>;
+    setTheme: jest.Mock;
+  };
 
-  beforeEach(async () => {
-    await TestBed.configureTestingModule({
-      imports: [ThemeSwitcherComponent]
-    }).compileComponents();
-    fixture = TestBed.createComponent(ThemeSwitcherComponent);
-    component = fixture.componentInstance;
-    fixture.detectChanges();
-  });
-
-  beforeAll(() => {
+  const setMatchMedia = (prefersDark: boolean) => {
     Object.defineProperty(window, "matchMedia", {
       writable: true,
-      value: jest.fn().mockImplementation(query => ({
-        matches: false,
+      value: (query: string) => ({
+        matches: prefersDark && query.includes("prefers-color-scheme: dark"),
         media: query,
         onchange: null,
         addListener: jest.fn(),
@@ -45,11 +40,83 @@ describe("ThemeSwitcherComponent", () => {
         addEventListener: jest.fn(),
         removeEventListener: jest.fn(),
         dispatchEvent: jest.fn()
-      }))
+      })
     });
+  };
+
+  const create = (systemPrefersDark: boolean, theme: "light" | "dark" | "system") => {
+    setMatchMedia(systemPrefersDark);
+    mockThemeService.currentTheme.set(theme);
+
+    const fixture: ComponentFixture<ThemeSwitcherComponent> =
+      TestBed.createComponent(ThemeSwitcherComponent);
+    const component = fixture.componentInstance;
+    fixture.detectChanges();
+    return { fixture, component };
+  };
+
+  beforeEach(async () => {
+    mockThemeService = {
+      currentTheme: signal<"light" | "dark" | "system">("light"),
+      setTheme: jest.fn()
+    };
+
+    await TestBed.configureTestingModule({
+      imports: [ThemeSwitcherComponent],
+      providers: [{ provide: ThemeService, useValue: mockThemeService }]
+    }).compileComponents();
   });
 
-  it("should create", () => {
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("creates", () => {
+    const { component } = create(false, "light");
     expect(component).toBeTruthy();
+  });
+
+  it("icon is 'dark_mode' when light theme; 'light_mode' when dark theme", () => {
+    let ctx = create(false, "light");
+    expect(ctx.component.isDark()).toBe(false);
+    expect(ctx.component.icon()).toBe("dark_mode");
+
+    ctx = create(false, "dark");
+    expect(ctx.component.isDark()).toBe(true);
+    expect(ctx.component.icon()).toBe("light_mode");
+  });
+
+  it("system theme follows systemPrefersDark", () => {
+    let ctx = create(true, "system");
+    expect(ctx.component.isDark()).toBe(true);
+    expect(ctx.component.icon()).toBe("light_mode");
+
+    ctx = create(false, "system");
+    expect(ctx.component.isDark()).toBe(false);
+    expect(ctx.component.icon()).toBe("dark_mode");
+  });
+
+  it("toggleTheme sets opposite theme relative to isDark()", () => {
+    let ctx = create(false, "dark");
+    ctx.component.toggleTheme();
+    expect(mockThemeService.setTheme).toHaveBeenCalledWith("light");
+
+    jest.clearAllMocks();
+
+    ctx = create(false, "light");
+    ctx.component.toggleTheme();
+    expect(mockThemeService.setTheme).toHaveBeenCalledWith("dark");
+
+    jest.clearAllMocks();
+
+    ctx = create(true, "system");
+    ctx.component.toggleTheme();
+    expect(mockThemeService.setTheme).toHaveBeenCalledWith("light");
+
+    jest.clearAllMocks();
+
+    ctx = create(false, "system");
+    ctx.component.toggleTheme();
+    expect(mockThemeService.setTheme).toHaveBeenCalledWith("dark");
   });
 });

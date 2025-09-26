@@ -127,4 +127,69 @@ describe("versioningService", () => {
       expect(global.fetch).toHaveBeenCalledTimes(2);
     });
   });
+
+  describe("openDocumentation() – more cases", () => {
+    const mockRejectedFetch = (msg = "network"): Promise<Response> =>
+      Promise.reject(new Error(msg)) as any;
+
+    beforeEach(() => {
+      (window.open as jest.Mock).mockClear();
+      (window.alert as jest.Mock).mockClear();
+      (global.fetch as jest.Mock).mockReset();
+    });
+
+    it("falls back to latest when the version page request rejects (network error)", async () => {
+      versioningService.version.set("3.12");
+
+      (global.fetch as jest.Mock)
+        .mockImplementationOnce(() => mockRejectedFetch("net-err"))
+        .mockImplementationOnce(() => mockFetchWithHTML(VALID_HTML));
+
+      versioningService.openDocumentation("/tokens/enrollment");
+
+      await flushPromises();
+      await flushPromises();
+
+      const fallbackUrl =
+        "https://privacyidea.readthedocs.io/en/stable/webui/token_details.html#enroll-token";
+
+      expect(window.open).toHaveBeenCalledWith(fallbackUrl, "_blank");
+      expect(window.alert).not.toHaveBeenCalled();
+      expect(global.fetch).toHaveBeenCalledTimes(2);
+    });
+
+    it("shows an alert when both versioned and latest checks reject (network errors)", async () => {
+      versioningService.version.set("3.12");
+
+      (global.fetch as jest.Mock)
+        .mockImplementationOnce(() => mockRejectedFetch("v-fail"))
+        .mockImplementationOnce(() => mockRejectedFetch("stable-fail"));
+
+      versioningService.openDocumentation("/tokens/enrollment");
+
+      await flushPromises();
+      await flushPromises();
+
+      expect(window.alert).toHaveBeenCalledWith("The documentation page is currently not available.");
+      expect(window.open).not.toHaveBeenCalled();
+      expect(global.fetch).toHaveBeenCalledTimes(2);
+    });
+
+    it("normalizes patch versions (e.g., 3.12.4) when building the docs URL", async () => {
+      versioningService.version.set("3.12.4");
+
+      (global.fetch as jest.Mock).mockImplementation(() => mockFetchWithHTML(VALID_HTML));
+
+      versioningService.openDocumentation("/tokens/enrollment");
+      await flushPromises();
+
+      const openedUrl = (window.open as jest.Mock).mock.calls[0][0] as string;
+      expect(openedUrl).toBe(
+        "https://privacyidea.readthedocs.io/en/v3.12.4/webui/token_details.html#enroll-token"
+      );
+      expect(openedUrl).toContain("webui/token_details.html#enroll-token");
+      expect(window.alert).not.toHaveBeenCalled();
+      expect(global.fetch).toHaveBeenCalledTimes(1);
+    });
+  });
 });

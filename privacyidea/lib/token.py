@@ -154,8 +154,8 @@ class TokenImportResult:
 
 @dataclass(frozen=True)
 class TokenExportResult:
-    successful_tokens: list[str] # The serialized tokens for which the export succeeded
-    failed_tokens: list[str] # The serial of tokens for which the export failed
+    successful_tokens: list[str]  # The serialized tokens for which the export succeeded
+    failed_tokens: list[str]  # The serial of tokens for which the export failed
 
 
 @compiles(clob_to_varchar, 'oracle')
@@ -1385,7 +1385,7 @@ def import_token(serial, token_dict, tokenrealms=None):
 
 
 @log_with(log, hide_args_keywords={'param': 'pin'})
-def init_token(param, user=None, tokenrealms=None, tokenkind=None):
+def init_token(param: dict, user: User = None, tokenrealms: list[str] = None, tokenkind: str = None) -> TokenClass:
     """
     Create a new token or update an existing token with the specified parameters.
 
@@ -1422,15 +1422,15 @@ def init_token(param, user=None, tokenrealms=None, tokenkind=None):
 
     # Check if a token with this serial already exists and
     # create a list of the found tokens
-    tokenobject_list = get_tokens(serial=serial)
-    token_count = len(tokenobject_list)
+    tokens = get_tokens(serial=serial)
+    token_count = len(tokens)
     if token_count == 0:
         # A token with the serial was not found, so we create a new one
         db_token = Token(serial, tokentype=token_type.lower())
 
     else:
         # The token already exist, so we update the token
-        db_token = tokenobject_list[0].token
+        db_token = tokens[0].token
         # Make sure the type is not changed between the initialization and the update
         old_type = db_token.tokentype
         if old_type.lower() != token_type.lower():

@@ -1,6 +1,7 @@
 @use "sass:meta";
 @use "@angular/material" as mat;
 @use "theme";
+@use "material-icons/iconfont/material-icons.scss";
 
 @include meta.load-css("table.scss");
 @include meta.load-css("buttons.scss");

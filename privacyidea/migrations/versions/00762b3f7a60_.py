@@ -5,15 +5,14 @@ Revises: 86f40f535d7c
 Create Date: 2022-08-31 11:24:12.226997
 
 """
+import re
+from alembic import op
+import sqlalchemy as sa
+from sqlalchemy import orm
 
 # revision identifiers, used by Alembic.
 revision = '00762b3f7a60'
 down_revision = '86f40f535d7c'
-
-import re
-from alembic import op
-from sqlalchemy import orm
-from privacyidea.models import Policy
 
 old_policy_action = 'webauthn_public_key_credential_algorithm_preference'
 new_policy_action = 'webauthn_public_key_credential_algorithms'
@@ -22,6 +21,16 @@ cred_alg_map = {
     'ecdsa_only': 'ecdsa',
     'rsassa-pss_preferred': 'ecdsa rsassa-pss',
     'rsassa-pss_only': 'rsassa-pss'}
+
+
+Base = orm.declarative_base()
+
+
+class Policy(Base):
+    # We only need the action column of the policy table
+    __tablename__ = "policy"
+    id = sa.Column(sa.Integer, sa.Sequence("policy_seq"), primary_key=True)
+    action = sa.Column(sa.Text, default="")
 
 
 def upgrade():
@@ -34,7 +43,8 @@ def upgrade():
 
     regex = re.compile('^{0!s}'.format(old_policy_action))
     try:
-        for row in session.query(Policy).filter(Policy.action.like('%{0!s}%'.format(old_policy_action))):
+        for row in session.scalars(
+                sa.select(Policy).where(Policy.action.like(f"%{old_policy_action}%"))):
             # get the current setting
             pol_actions = [x.strip() for x in row.action.split(',')]
             for pol_action in filter(regex.match, pol_actions):
@@ -46,6 +56,7 @@ def upgrade():
     except Exception as e:
         session.rollback()
         print('Error updating the enrollment policy {0!s}: {1!s}'.format(old_policy_action, e))
+        raise
 
 
 def downgrade():
@@ -65,4 +76,4 @@ def downgrade():
     except Exception as e:
         session.rollback()
         print('Error downgrading the enrollment policy {0!s}: {1!s}'.format(new_policy_action, e))
-    pass
+        raise
