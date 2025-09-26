@@ -3436,8 +3436,6 @@ class ValidateAPITestCase(MyApiTestCase):
         This test checks that the message is generic, but the status code checks are not worth much currently.
         """
         set_policy(name="hide_error_message", scope=SCOPE.AUTH, action=f"{PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE}")
-
-
         # User does not exist: 401
         with self.app.test_request_context('/validate/check', method="POST",
                                            data={
