@@ -1,3 +1,9 @@
+Version 3.12.1
+
+  Fixes:
+  * 'push_require_presence' policy does not work when 'push_wait' is set (#4702)
+  * Show the own audit logs of helpdesk admins (#4637)
+
 Version 3.12, 2025-09-09
 
   Features:

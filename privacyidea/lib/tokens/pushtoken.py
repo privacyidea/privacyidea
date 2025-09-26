@@ -31,6 +31,7 @@ from base64 import b32decode
 from binascii import Error as BinasciiError
 from datetime import datetime, timedelta, timezone
 from dateutil.parser import isoparse
+from enum import Enum
 import random
 import secrets
 import string
@@ -93,6 +94,12 @@ AVAILABLE_PRESENCE_OPTIONS_ALPHABETIC = list(string.ascii_uppercase)
 AVAILABLE_PRESENCE_OPTIONS_NUMERIC = [f'{x:02}' for x in range(100)]
 ALLOWED_NUMBER_OF_OPTIONS = list(range(2, 11))
 DEFAULT_NUMBER_OF_PRESENCE_OPTIONS = 3
+
+
+class PushPresenceOptions(Enum):
+    ALPHABETIC = "ALPHABETIC"
+    NUMERIC = "NUMERIC"
+    CUSTOM = "CUSTOM"
 
 
 class PUSH_ACTION(object):
@@ -195,12 +202,15 @@ def _get_presence_options(options) -> list:
     :type options: dict
     :return: The list of available presence characters/numbers
     """
-    push_presence_option = get_action_values_from_options(
-        SCOPE.AUTH, PUSH_ACTION.PRESENCE_OPTIONS, options) or "ALPHABETIC"
+    try:
+        push_presence_option = PushPresenceOptions(get_action_values_from_options(
+            SCOPE.AUTH, PUSH_ACTION.PRESENCE_OPTIONS, options))
+    except ValueError:
+        push_presence_option = PushPresenceOptions.ALPHABETIC
 
-    if push_presence_option == "NUMERIC":
+    if push_presence_option == PushPresenceOptions.NUMERIC:
         available_presence_options = list(AVAILABLE_PRESENCE_OPTIONS_NUMERIC)
-    elif push_presence_option == "CUSTOM":
+    elif push_presence_option == PushPresenceOptions.CUSTOM:
         custom_presence_options = get_action_values_from_options(
             SCOPE.AUTH, PUSH_ACTION.PRESENCE_CUSTOM_OPTIONS, options)
         available_presence_options = custom_presence_options.split(":")
@@ -466,7 +476,7 @@ class PushTokenClass(TokenClass):
                                          'Does only apply if <em>{0!s}</em> is set.').format(
                                    PUSH_ACTION.REQUIRE_PRESENCE),
                                'group': 'PUSH',
-                               'value': ["ALPHABETIC", "NUMERIC", "CUSTOM"],
+                               'value': PushPresenceOptions._member_names_,
                            },
                            PUSH_ACTION.PRESENCE_CUSTOM_OPTIONS: {
                                'type': 'str',
@@ -669,9 +679,10 @@ class PushTokenClass(TokenClass):
         # We don't know if the passed timestamp is timezone aware. If no
         # timezone is passed, we assume UTC
         if ts.tzinfo:
-            # We honor the timezone of the timestamp, ideally it should be UTC
+            # We consider the timezone of the given timestamp
             now = datetime.now(ts.tzinfo)
         else:
+            # If a timestamp without timezone is given, we assume it is UTC
             now = datetime.now(timezone.utc)
             # We need to add the timezone UTC to the naive timestamp
             ts = ts.replace(tzinfo=timezone.utc)
@@ -1029,8 +1040,10 @@ class PushTokenClass(TokenClass):
                 num_option = int(get_action_values_from_options(
                     SCOPE.AUTH, PUSH_ACTION.PRESENCE_NUM_OPTIONS,
                     options) or DEFAULT_NUMBER_OF_PRESENCE_OPTIONS)
-                num_option = num_option if num_option in ALLOWED_NUMBER_OF_OPTIONS \
-                    else DEFAULT_NUMBER_OF_PRESENCE_OPTIONS
+                num_option = (num_option if num_option in ALLOWED_NUMBER_OF_OPTIONS
+                              else DEFAULT_NUMBER_OF_PRESENCE_OPTIONS)
+                num_option = (num_option if num_option < len(available_presence_options)
+                              else len(available_presence_options))
                 current_presence_options = random.sample(available_presence_options,
                                                          num_option)
                 correct_presence_option = secrets.choice(current_presence_options)
