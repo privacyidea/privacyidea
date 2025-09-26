@@ -63,7 +63,7 @@ describe("ContainerService", () => {
 
   it("assignContainer posts payload and returns result", async () => {
     jest.spyOn(http, "post").mockReturnValue(of({ result: true } as any));
-    const r = await lastValueFrom(containerService.assignContainer("tok1", "cont1"));
+    const r = await lastValueFrom(containerService.addToken("tok1", "cont1"));
     expect(http.post).toHaveBeenCalledWith(
       `${containerService.containerBaseUrl}cont1/add`,
       { serial: "tok1" },
@@ -74,7 +74,7 @@ describe("ContainerService", () => {
 
   it("assignContainer propagates error and shows snackbar", async () => {
     jest.spyOn(http, "post").mockReturnValue(throwError(() => ({ status: 400, error: {} })));
-    await expect(lastValueFrom(containerService.assignContainer("tokX", "contX"))).rejects.toBeDefined();
+    await expect(lastValueFrom(containerService.addToken("tokX", "contX"))).rejects.toBeDefined();
     expect(notificationService.openSnackBar).toHaveBeenCalled();
   });
 
@@ -363,9 +363,9 @@ describe("ContainerService", () => {
     );
   });
 
-  it("unassignContainer posts payload & propagates errors", async () => {
+  it("removeToken posts payload & propagates errors", async () => {
     jest.spyOn(http, "post").mockReturnValue(of({ result: true } as any));
-    await lastValueFrom(containerService.unassignContainer("tok1", "cont1"));
+    await lastValueFrom(containerService.removeToken("tok1", "cont1"));
     expect(http.post).toHaveBeenCalledWith(
       `${containerService.containerBaseUrl}cont1/remove`,
       { serial: "tok1" },
@@ -373,7 +373,7 @@ describe("ContainerService", () => {
     );
 
     jest.spyOn(http, "post").mockReturnValueOnce(throwError(() => ({ status: 500, error: {} })));
-    await expect(lastValueFrom(containerService.unassignContainer("tokX", "contX"))).rejects.toBeDefined();
+    await expect(lastValueFrom(containerService.removeToken("tokX", "contX"))).rejects.toBeDefined();
     expect(notificationService.openSnackBar).toHaveBeenCalled();
   });
 
