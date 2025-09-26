@@ -12,7 +12,7 @@ $gap-small: 8px;
   @include mat.elevation(5);
   background-color: var(--table-color);
   padding: var(--global-padding);
-  max-height: calc(var(--main-height) - var(--global-padding) * 5);
+  max-height: var(--max-height);
   overflow: auto;
 
   .details-table {

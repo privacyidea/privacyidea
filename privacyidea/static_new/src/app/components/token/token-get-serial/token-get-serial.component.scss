@@ -3,7 +3,7 @@
 .token-get-serial {
   @include styles.table-container-styles;
 
-  max-height: calc(var(--main-height) - var(--global-padding) * 5);
+  max-height: var(--max-height);
   width: 56rem;
   overflow: auto;
   display: grid;
