@@ -160,7 +160,6 @@ def before_create_user_request():
         #  If the admin tries to view realms, he is not allowed to, we need to
         #  raise an exception.
 
-
 @user_blueprint.before_request
 @user_required
 def before_userendpoint_request():
