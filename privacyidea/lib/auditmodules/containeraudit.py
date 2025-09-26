@@ -31,7 +31,8 @@ You also have to provide the configuration parameters for the referenced audit m
 """
 
 import logging
-from typing import Union
+from datetime import timedelta
+from typing import Union, Optional
 
 from privacyidea.lib.auditmodules.base import (Audit as AuditBase)
 from privacyidea.lib.utils import get_module_class
@@ -83,12 +84,12 @@ class Audit(AuditBase):
         for module in self.write_modules:
             module.add_policy(policy_names)
 
-    def search(self, search_dict, page_size=15, page=1, sortorder="asc",
-               timelimit=None):
+    def search(self, search_dict: dict, admin_params: Optional[dict] = None, page_size: int = 15, page: int = 1,
+               sortorder: str = "asc", timelimit: Optional[timedelta] = None):
         """
         Call the search method for the one readable module
         """
-        return self.read_module.search(search_dict, page_size=page_size, page=page,
+        return self.read_module.search(search_dict, admin_params=admin_params, page_size=page_size, page=page,
                                        sortorder=sortorder, timelimit=timelimit)
 
     def get_count(self, search_dict, timedelta=None, success=None):
@@ -97,18 +98,20 @@ class Audit(AuditBase):
         """
         return self.read_module.get_count(search_dict, timedelta=timedelta, success=success)
 
-    def csv_generator(self, param=None, user=None, timelimit=None):
+    def csv_generator(self, param: Optional[dict] = None, admin_params: Optional[dict] = None, user=None,
+                      timelimit: Optional[timedelta] = None):
         """
         Call the csv_generator method for the one readable module
         """
-        return self.read_module.csv_generator(param=param, user=user,
-                                              timelimit=timelimit)
+        return self.read_module.csv_generator(param=param, admin_params=admin_params, user=user, timelimit=timelimit)
 
-    def get_total(self, param, AND=True, display_error=True, timelimit=None):
+    def get_total(self, param:dict, admin_params: Optional[dict] = None, AND: bool = True, display_error: bool = True,
+                  timelimit: Optional[timedelta] = None) -> int:
         """
         Call the total method for the one readable module
         """
-        return self.read_module.get_total(param, AND=AND, display_error=display_error, timelimit=timelimit)
+        return self.read_module.get_total(param, admin_params=admin_params, AND=AND, display_error=display_error,
+                                          timelimit=timelimit)
 
     def finalize_log(self):
         """

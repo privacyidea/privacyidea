@@ -42,24 +42,27 @@ If the PI_AUDIT_SQL_URI is omitted the Audit data is written to the
 token database.
 """
 
+import datetime
 import logging
+import traceback
 from collections import OrderedDict
+from typing import Optional
+
+from sqlalchemy import asc, desc, and_, or_
+from sqlalchemy import create_engine
+from sqlalchemy.ext.compiler import compiles
+from sqlalchemy.orm import sessionmaker, scoped_session
+from sqlalchemy.sql.expression import FunctionElement
+
 from privacyidea.config import ConfigKey
 from privacyidea.lib.auditmodules.base import Audit as AuditBase, Paginate
 from privacyidea.lib.crypto import Sign
+from privacyidea.lib.lifecycle import register_finalizer
 from privacyidea.lib.pooling import get_engine
 from privacyidea.lib.utils import censor_connect_string
-from privacyidea.lib.lifecycle import register_finalizer
 from privacyidea.lib.utils import truncate_comma_list, is_true
-from sqlalchemy import asc, desc, and_, or_
-from sqlalchemy.sql.expression import FunctionElement
-from sqlalchemy.ext.compiler import compiles
-import datetime
-import traceback
-from privacyidea.models import audit_column_length as column_length
 from privacyidea.models import Audit as LogEntry
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, scoped_session
+from privacyidea.models import audit_column_length as column_length
 
 log = logging.getLogger(__name__)
 
@@ -210,12 +213,41 @@ class Audit(AuditBase):
                 self.audit_data[column] = data
 
     @staticmethod
-    def _create_filter(param, timelimit=None):
+    def _create_filter(param: dict, admin_params: Optional[dict] = None, timelimit: Optional[datetime.timedelta] = None):
         """
         create a filter condition for the logentry
+
+        :param param: Filter parameters that are concatenated with a logical AND
+        :param admin_params: Optional admin parameters containing the admin name, admin realm and a list of realms the
+            admin is allowed to see, such as ::
+
+                {"admin": "admin_name",
+                 "admin_realm": "realm_of_the_admin",
+                 "allowed_audit_realms": ["realm1", "realm2"]}
+
+        :param timelimit: Only audit entries newer than this timedelta
         """
         conditions = []
         param = param or {}
+
+        # For admins only get audit entries of the allowed realms and its own
+        filter_realm = None
+        if admin_params:
+            admin = admin_params.get("admin")
+            admin_realm = admin_params.get("admin_realm")
+            allowed_audit_realms = admin_params.get("allowed_audit_realms", [])
+            if allowed_audit_realms:
+                # search condition
+                realm_conditions = []
+                for realm in allowed_audit_realms:
+                    realm_conditions.append(LogEntry.realm == realm)
+                # If the admin is limited to some realms, we need to additionally filter for its own audit entries
+                if admin and admin_realm:
+                    realm_conditions.append(and_(LogEntry.administrator == admin, LogEntry.realm == admin_realm))
+                elif admin:
+                    realm_conditions.append(LogEntry.administrator == admin)
+                filter_realm = or_(*realm_conditions)
+
         for search_key in param.keys():
             search_value = param.get(search_key)
             if search_key == "allowed_audit_realm":
@@ -262,9 +294,12 @@ class Audit(AuditBase):
                               timelimit)
         # Combine them with or to a BooleanClauseList
         filter_condition = and_(*conditions)
+        if filter_realm is not None:
+            filter_condition = and_(filter_condition, filter_realm)
         return filter_condition
 
-    def get_total(self, param, AND=True, display_error=True, timelimit=None):
+    def get_total(self, param:dict, admin_params: Optional[dict] = None, AND: bool = True, display_error: bool = True,
+                  timelimit: Optional[datetime.timedelta] = None) -> int:
         """
         This method returns the total number of audit entries
         in the audit store
@@ -272,12 +307,10 @@ class Audit(AuditBase):
         count = 0
         # if param contains search filters, we build the search filter
         # to only return the number of those entries
-        filter_condition = self._create_filter(param, timelimit=timelimit)
+        filter_condition = self._create_filter(param, admin_params, timelimit=timelimit)
 
         try:
-            count = self.session.query(LogEntry.id) \
-                .filter(filter_condition) \
-                .count()
+            count = self.session.query(LogEntry.id).filter(filter_condition).count()
         finally:
             self.session.close()
         return count
@@ -450,19 +483,24 @@ class Audit(AuditBase):
                     'container_type': LogEntry.container_type}
         return sortname.get(key)
 
-    def csv_generator(self, param=None, user=None, timelimit=None):
+    def csv_generator(self, param: Optional[dict] = None, admin_params: Optional[dict] = None, user=None,
+                      timelimit: Optional[datetime.timedelta] = None):
         """
         Returns the audit log as csv file.
 
         :param timelimit: Limit the number of dumped entries by time
-        :type timelimit: datetime.timedelta
         :param param: The request parameters
-        :type param: dict
+        :param admin_params: Optional admin parameters containing the admin name, admin realm and a list of realms the
+            admin is allowed to see, such as ::
+
+                {"admin": "admin_name",
+                 "admin_realm": "realm_of_the_admin",
+                 "allowed_audit_realms": ["realm1", "realm2"]}
+
         :param user: The user, who issued the request
         :return: None. It yields results as a generator
         """
-        filter_condition = self._create_filter(param,
-                                               timelimit=timelimit)
+        filter_condition = self._create_filter(param, admin_params=admin_params, timelimit=timelimit)
         logentries = self.session.query(LogEntry).filter(filter_condition).order_by(LogEntry.date).all()
 
         for le in logentries:
@@ -485,26 +523,35 @@ class Audit(AuditBase):
 
         return log_count
 
-    def search(self, search_dict, page_size=15, page=1, sortorder="asc",
-               timelimit=None):
+    def search(self, search_dict: dict, admin_params: Optional[dict] = None, page_size: int = 15, page: int = 1,
+               sortorder: str = "asc", timelimit: Optional[datetime.timedelta] = None):
         """
         This function returns the audit log as a Pagination object.
 
-        :param timelimit: Only audit entries newer than this timedelta will
-            be searched
-        :type timelimit: timedelta
+        :param search_dict: Filter parameters that are concatenated with a logical AND
+        :param admin_params: Optional admin parameters containing the admin name, admin realm and a list of realms the
+            admin is allowed to see, such as ::
+
+                {"admin": "admin_name",
+                 "admin_realm": "realm_of_the_admin",
+                 "allowed_audit_realms": ["realm1", "realm2"]}
+
+        :param page_size: Number of entries per page
+        :param page: The page number
+        :param sortorder: "asc" - ascending or "desc" - descending
+        :param timelimit: Only audit entries newer than this timedelta will be searched
         """
         page = int(page)
         page_size = int(page_size)
         paging_object = Paginate()
         paging_object.page = page
-        paging_object.total = self.get_total(search_dict, timelimit=timelimit)
+        paging_object.total = self.get_total(search_dict, admin_params=admin_params, timelimit=timelimit)
         if page > 1:
             paging_object.prev = page - 1
         if paging_object.total > (page_size * page):
             paging_object.next = page + 1
 
-        auditIter = self.search_query(search_dict, page_size=page_size,
+        auditIter = self.search_query(search_dict, admin_params=admin_params, page_size=page_size,
                                       page=page, sortorder=sortorder,
                                       timelimit=timelimit)
         while True:
@@ -526,11 +573,23 @@ class Audit(AuditBase):
 
         return paging_object
 
-    def search_query(self, search_dict, page_size=15, page=1, sortorder="asc",
-                     sortname="number", timelimit=None):
+    def search_query(self, search_dict: dict, admin_params: Optional[dict] = None, page_size: int = 15, page: int = 1,
+                     sortorder: str = "asc", sortname: str = "number", timelimit: Optional[datetime.timedelta] = None):
         """
         This function returns the audit log as an iterator on the result
 
+        :param search_dict: Filter parameters that are concatenated with a logical AND
+        :param admin_params: Optional admin parameters containing the admin name, admin realm and a list of realms the
+            admin is allowed to see, such as ::
+
+                {"admin": "admin_name",
+                 "admin_realm": "realm_of_the_admin",
+                 "allowed_audit_realms": ["realm1", "realm2"]}
+
+        :param page_size: Number of entries per page
+        :param page: The page number
+        :param sortorder: "asc" - ascending or "desc" - descending
+        :param sortname: The column name to sort after. E.g. "number", "date", "user", ...
         :param timelimit: Only audit entries newer than this timedelta will
             be searched
         :type timelimit: timedelta
@@ -541,8 +600,7 @@ class Audit(AuditBase):
             offset = (int(page) - 1) * limit
 
             # create filter condition
-            filter_condition = self._create_filter(search_dict,
-                                                   timelimit=timelimit)
+            filter_condition = self._create_filter(search_dict, admin_params, timelimit=timelimit)
 
             if sortorder == "desc":
                 logentries = self.session.query(LogEntry).filter(

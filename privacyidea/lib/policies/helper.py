@@ -126,3 +126,28 @@ def get_jwt_validity(user: User) -> timedelta:
 
     validity_time = timedelta(seconds=int(validity_time))
     return validity_time
+
+def get_admin_audit_params() -> dict:
+    """
+    Checks if a policy is set which limits the audit log access for admins to certain realms.
+    If such a policy is set, the admin's username, realm and the allowed realms are returned in a dictionary, otherwise
+    an empty dictionary is returned. The admins should still be possible to their own audit log entries, that is why
+    the admin's username and realm are also returned.
+
+    :return: A dictionary with the keys "admin", "admin_realm" and "allowed_audit_realms" or an empty dictionary.
+    """
+    from privacyidea.lib.auth import ROLE
+    admin_params = {}
+    if g.logged_in_user["role"] == ROLE.ADMIN:
+        pols = Match.admin(g, action=PolicyAction.AUDIT).policies()
+        if pols:
+            # get all values in realm:
+            allowed_audit_realms = []
+            for pol in pols:
+                if pol.get("realm"):
+                    allowed_audit_realms += pol.get("realm")
+            if allowed_audit_realms:
+                admin_params["admin"] = g.logged_in_user["username"]
+                admin_params["admin_realm"] = g.logged_in_user["realm"]
+                admin_params["allowed_audit_realms"] = list(set(allowed_audit_realms))
+    return admin_params
