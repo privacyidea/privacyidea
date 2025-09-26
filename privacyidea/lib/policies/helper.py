@@ -129,10 +129,10 @@ def get_jwt_validity(user: User) -> timedelta:
 
 def get_admin_audit_params() -> dict:
     """
-    Checks if a policy is set which limits the audit log access for admins to certain realms.
-    If such a policy is set, the admin's username, realm and the allowed realms are returned in a dictionary, otherwise
-    an empty dictionary is returned. The admins should still be possible to their own audit log entries, that is why
-    the admin's username and realm are also returned.
+    Checks if a policy is set, which limits the audit log access for admins to certain realms.
+    If such a policy is set, the admin's username, realm and the allowed realms are returned in a dictionary. Otherwise,
+    an empty dictionary is returned. For admins, it should still be possible to see their own audit log entries, which
+    is why the admin's username and realm are also returned.
 
     :return: A dictionary with the keys "admin", "admin_realm" and "allowed_audit_realms" or an empty dictionary.
     """

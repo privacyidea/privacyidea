@@ -230,7 +230,7 @@ class Audit(AuditBase):
         conditions = []
         param = param or {}
 
-        # For admins only get audit entries of the allowed realms and its own
+        # For admins, only get audit entries of their allowed realms and their own realm
         filter_realm = None
         if admin_params:
             admin = admin_params.get("admin")
@@ -241,7 +241,7 @@ class Audit(AuditBase):
                 realm_conditions = []
                 for realm in allowed_audit_realms:
                     realm_conditions.append(LogEntry.realm == realm)
-                # If the admin is limited to some realms, we need to additionally filter for its own audit entries
+                # If the admin is limited to some realms, we need to additionally filter for their own audit entries
                 if admin and admin_realm:
                     realm_conditions.append(and_(LogEntry.administrator == admin, LogEntry.realm == admin_realm))
                 elif admin:
@@ -251,8 +251,7 @@ class Audit(AuditBase):
         for search_key in param.keys():
             search_value = param.get(search_key)
             if search_key == "allowed_audit_realm":
-                # Add each realm in the allowed_audit_realm list to the
-                # search condition
+                # Add each realm in the allowed_audit_realm list to the search condition
                 realm_conditions = []
                 for realm in search_value:
                     realm_conditions.append(LogEntry.realm == realm)
