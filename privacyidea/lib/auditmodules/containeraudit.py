@@ -105,7 +105,7 @@ class Audit(AuditBase):
         """
         return self.read_module.csv_generator(param=param, admin_params=admin_params, user=user, timelimit=timelimit)
 
-    def get_total(self, param:dict, admin_params: Optional[dict] = None, AND: bool = True, display_error: bool = True,
+    def get_total(self, param: dict, admin_params: Optional[dict] = None, AND: bool = True, display_error: bool = True,
                   timelimit: Optional[timedelta] = None) -> int:
         """
         Call the total method for the one readable module

@@ -298,7 +298,7 @@ class Audit(AuditBase):
             filter_condition = and_(filter_condition, filter_realm)
         return filter_condition
 
-    def get_total(self, param:dict, admin_params: Optional[dict] = None, AND: bool = True, display_error: bool = True,
+    def get_total(self, param: dict, admin_params: Optional[dict] = None, AND: bool = True, display_error: bool = True,
                   timelimit: Optional[datetime.timedelta] = None) -> int:
         """
         This method returns the total number of audit entries

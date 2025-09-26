@@ -151,7 +151,7 @@ class Audit(object):  # pragma: no cover
                 'log_level', 'policies', 'clearance_level', 'sig_check',
                 'missing_line', 'resolver', 'thread_id', 'container_serial', 'container_type']
 
-    def get_total(self, param:dict, admin_params: Optional[dict] = None, AND: bool = True, display_error: bool = True,
+    def get_total(self, param: dict, admin_params: Optional[dict] = None, AND: bool = True, display_error: bool = True,
                   timelimit: Optional[datetime.timedelta] = None) -> int:
         """
         This method returns the total number of audit entries
