@@ -476,7 +476,7 @@ class PushTokenClass(TokenClass):
                                          'Does only apply if <em>{0!s}</em> is set.').format(
                                    PUSH_ACTION.REQUIRE_PRESENCE),
                                'group': 'PUSH',
-                               'value': PushPresenceOptions._member_names_,
+                               'value': [x for x in PushPresenceOptions.__members__],
                            },
                            PUSH_ACTION.PRESENCE_CUSTOM_OPTIONS: {
                                'type': 'str',
@@ -1042,8 +1042,11 @@ class PushTokenClass(TokenClass):
                     options) or DEFAULT_NUMBER_OF_PRESENCE_OPTIONS)
                 num_option = (num_option if num_option in ALLOWED_NUMBER_OF_OPTIONS
                               else DEFAULT_NUMBER_OF_PRESENCE_OPTIONS)
-                num_option = (num_option if num_option < len(available_presence_options)
-                              else len(available_presence_options))
+                if num_option > len(available_presence_options):
+                    log.warning(f"The required number of presence options exceeds "
+                                f"the number of available presence options ({num_option} "
+                                f"!= {len(available_presence_options)})")
+                    num_option = len(available_presence_options)
                 current_presence_options = random.sample(available_presence_options,
                                                          num_option)
                 correct_presence_option = secrets.choice(current_presence_options)
