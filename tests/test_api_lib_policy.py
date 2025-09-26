@@ -2032,7 +2032,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         # Admin1 is allowed to only init, not list
         set_policy(name="pol-only-init",
-                   scope=SCOPE.ADMIN)
+                   scope=SCOPE.ADMIN,
+                   action="enrollHOTP")
 
         g.policy_object = PolicyClass()
         builder = EnvironBuilder(method='POST',
@@ -2167,12 +2168,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         self.assertEqual(request.all_data.get(WebAuthnTokenClass.get_class_type() + '_' + PolicyAction.CHALLENGETEXT),
                          challengetext)
 
-        # Reset policies
-        set_policy(
-            name="WebAuthn",
-            scope=SCOPE.AUTH,
-            action=''
-        )
+        # Delete policy
+        delete_policy("WebAuthn")
 
     def test_26b_webauthn_auth_validate_check(self):
         class RequestMock(object):
@@ -2236,12 +2233,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         self.assertEqual(request.all_data.get(WebAuthnTokenClass.get_class_type() + '_' + PolicyAction.CHALLENGETEXT),
                          challengetext)
 
-        # Reset policies
-        set_policy(
-            name="WebAuthn",
-            scope=SCOPE.AUTH,
-            action=''
-        )
+        # Delete policy
+        delete_policy("WebAuthn")
 
     def test_26c_webauthn_auth_auth(self):
         class RequestMock(object):
@@ -2279,12 +2272,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         self.assertEqual(request.all_data.get(WebAuthnTokenClass.get_class_type() + '_' + PolicyAction.CHALLENGETEXT),
                          challengetext)
 
-        # Reset policies
-        set_policy(
-            name="WebAuthn",
-            scope=SCOPE.AUTH,
-            action=''
-        )
+        # Delete policy
+        delete_policy("WebAuthn")
 
     def test_27a_webauthn_authz_validate_check(self):
         class RequestMock(object):
@@ -2336,12 +2325,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         self.assertEqual(request.all_data.get(FIDO2PolicyAction.REQ),
                          [allowed_certs])
 
-        # Reset policies.
-        set_policy(
-            name="WebAuthn",
-            scope=SCOPE.AUTHZ,
-            action=''
-        )
+        # Delete policy
+        delete_policy("WebAuthn")
 
     def test_27b_webauthn_authz_auth(self):
         class RequestMock(object):
@@ -2393,12 +2378,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         self.assertEqual(request.all_data.get(FIDO2PolicyAction.REQ),
                          [allowed_certs])
 
-        # Reset policies
-        set_policy(
-            name="WebAuthn",
-            scope=SCOPE.AUTHZ,
-            action=''
-        )
+        # Delete policy
+        delete_policy("WebAuthn")
 
     def test_28_webauthn_enroll(self):
         class RequestMock(object):
@@ -2545,17 +2526,9 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         with self.assertRaises(PolicyError):
             fido2_enroll(request, None)
 
-        # Reset policies
-        set_policy(
-            name="WebAuthn1",
-            scope=SCOPE.ENROLL,
-            action=''
-        )
-        set_policy(
-            name="WebAuthn2",
-            scope=SCOPE.ENROLL,
-            action=''
-        )
+        # Delete policy
+        delete_policy("WebAuthn1")
+        delete_policy("WebAuthn2")
 
     def test_29a_webauthn_request_token_init(self):
         class RequestMock(object):
@@ -2639,12 +2612,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         with self.assertRaises(PolicyError):
             webauthntoken_request(request, None)
 
-        # Reset policies
-        set_policy(
-            name="WebAuthn",
-            scope=SCOPE.ENROLL,
-            action=''
-        )
+        # Delete policy
+        delete_policy("WebAuthn")
 
     def test_29b_webauthn_request_validate_triggerchallenge(self):
         class RequestMock(object):
@@ -2720,12 +2689,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         self.assertEqual(request.all_data.get(FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT),
                          user_verification_requirement)
 
-        # Reset policies
-        set_policy(
-            name="WebAuthn",
-            scope=SCOPE.AUTH,
-            action=''
-        )
+        # Delete policy
+        delete_policy("WebAuthn")
 
     def test_29c_webauthn_request_auth_authn(self):
         class RequestMock(object):
@@ -2771,12 +2736,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         self.assertEqual(request.all_data.get(FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT),
                          user_verification_requirement)
 
-        # Reset policies
-        set_policy(
-            name="WebAuthn",
-            scope=SCOPE.AUTH,
-            action=''
-        )
+        # Delete policy
+        delete_policy("WebAuthn")
 
     def test_29d_webauthn_request_auth_authz(self):
         class RequestMock(object):
@@ -2826,12 +2787,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         self.assertEqual(set(request.all_data.get(FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST)),
                          set(authenticator_selection_list.split()))
 
-        # Reset policies
-        set_policy(
-            name="WebAuthn",
-            scope=SCOPE.AUTHZ,
-            action=''
-        )
+        # Delete policy
+        delete_policy("WebAuthn")
 
     def test_29e_webauthn_request_validate_check_authn(self):
         class RequestMock(object):
@@ -2877,12 +2834,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         self.assertEqual(request.all_data.get(FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT),
                          user_verification_requirement)
 
-        # Reset policies
-        set_policy(
-            name="WebAuthn",
-            scope=SCOPE.AUTH,
-            action=''
-        )
+        # Delete policy
+        delete_policy("WebAuthn")
 
     def test_29f_webauthn_request_validate_check_authz(self):
         class RequestMock(object):
@@ -2932,12 +2885,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         self.assertEqual(set(request.all_data.get(FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST)),
                          set(authenticator_selection_list.split()))
 
-        # Reset policies
-        set_policy(
-            name="WebAuthn",
-            scope=SCOPE.AUTHZ,
-            action=''
-        )
+        # Delete policy
+        delete_policy("WebAuthn")
 
     def test_30_webauthn_allowed_req(self):
         class RequestMock(object):
@@ -2969,11 +2918,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
                                'due to a policy restriction.',
                                webauthntoken_allowed, request, None)
 
-        set_policy(
-            name="WebAuthn",
-            scope=SCOPE.ENROLL,
-            action=''
-        )
+        # Delete policy
+        delete_policy("WebAuthn")
 
     def test_31_webauthn_disallowed_req(self):
         class RequestMock(object):
@@ -2997,11 +2943,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         with self.assertRaises(PolicyError):
             webauthntoken_allowed(request, None)
 
-        set_policy(
-            name="WebAuthn",
-            scope=SCOPE.ENROLL,
-            action=''
-        )
+        # Delete policy
+        delete_policy("WebAuthn")
 
     def test_32_webauthn_allowed_aaguid(self):
         class RequestMock(object):
@@ -3038,11 +2981,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         with self.assertRaises(PolicyError):
             webauthntoken_allowed(request, None)
 
-        set_policy(
-            name="WebAuthn",
-            scope=SCOPE.ENROLL,
-            action=''
-        )
+        # Delete policy
+        delete_policy("WebAuthn")
 
     def test_34_application_tokentype(self):
         builder = EnvironBuilder(method='POST',
