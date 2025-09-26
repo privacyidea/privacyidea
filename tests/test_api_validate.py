@@ -3194,7 +3194,7 @@ class ValidateAPITestCase(MyApiTestCase):
         token.set_failcount(5)
 
         # set a chalresp policy for HOTP
-        set_policy("policy", scope=SCOPE.AUTH, action={PolicyAction.CHALLENGERESPONSE: 'hotp'})
+        set_policy("policy", scope=SCOPE.AUTH, action=f"{PolicyAction.CHALLENGERESPONSE}=hotp")
 
         # create the challenge by authenticating with the OTP PIN
         with self.app.test_request_context('/validate/check',
@@ -3437,10 +3437,11 @@ class ValidateAPITestCase(MyApiTestCase):
         """
         set_policy(name="hide_error_message", scope=SCOPE.AUTH, action=f"{PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE}")
 
+
         # User does not exist: 401
         with self.app.test_request_context('/validate/check', method="POST",
                                            data={
-                                               "user": "cornelius",
+                                               "user": "cornelius2",
                                                "pass": "1234"
                                            }):
             res = self.app.full_dispatch_request()
@@ -3448,7 +3449,8 @@ class ValidateAPITestCase(MyApiTestCase):
 
         # User cornelius is in the realm that will be created
         self.setUp_user_realms()
-
+        # Undo changes from other tests...
+        set_default_realm(self.realm1)
         # User has no tokens assigned, currently returns 200 should be 401
         with self.app.test_request_context('/validate/check', method="POST",
                                            data={
