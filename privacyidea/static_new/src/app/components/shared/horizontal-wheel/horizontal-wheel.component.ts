@@ -9,7 +9,9 @@ import {
   AfterViewInit,
   viewChildren,
   Input,
-  WritableSignal
+  WritableSignal,
+  Signal,
+  effect
 } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { assert } from "../../../utils/assert";
@@ -24,7 +26,7 @@ import { assert } from "../../../utils/assert";
 })
 export class HorizontalWheelComponent implements AfterViewInit {
   selectedValue!: WritableSignal<any>;
-  @Input({ required: true }) values!: any[];
+  @Input({ required: true }) values!: Signal<any[]>;
   @Output() onSelect: EventEmitter<any> = new EventEmitter<any>();
 
   @Input({ required: true })
@@ -41,10 +43,13 @@ export class HorizontalWheelComponent implements AfterViewInit {
   private containerElement: HTMLElement | null = null;
   private items = viewChildren<ElementRef<HTMLElement>>("item");
 
-  constructor(private elementRef: ElementRef) {}
-
-  ngOnInit() {
-    assert(this.values.length > 0, "The 'values' input cannot be empty.");
+  constructor(private elementRef: ElementRef) {
+    effect(() => {
+      console.log("Items changed:", this.items());
+      this.items();
+      this.setDynamicPadding();
+      this.centerSelectedElement();
+    });
   }
 
   ngAfterViewInit(): void {
@@ -54,7 +59,7 @@ export class HorizontalWheelComponent implements AfterViewInit {
       this.setDynamicPadding();
 
       setTimeout(() => {
-        const initialIndex = this.values.indexOf(this.selectedValue());
+        const initialIndex = this.values().indexOf(this.selectedValue());
         if (initialIndex !== -1) {
           this.centerElementByIndex(initialIndex);
         }
@@ -120,9 +125,9 @@ export class HorizontalWheelComponent implements AfterViewInit {
       }
     });
 
-    if (closestIndex !== -1 && this.values[closestIndex] !== this.selectedValue()) {
-      this.selectedValue.set(this.values[closestIndex]);
-      this.onSelect.emit(this.values[closestIndex]);
+    if (closestIndex !== -1 && this.values()[closestIndex] !== this.selectedValue()) {
+      this.selectedValue.set(this.values()[closestIndex]);
+      this.onSelect.emit(this.values()[closestIndex]);
     }
   }
 
@@ -146,7 +151,9 @@ export class HorizontalWheelComponent implements AfterViewInit {
     });
   }
   private centerSelectedElement() {
-    const index = this.values.indexOf(this.selectedValue());
+    const index = this.values().indexOf(this.selectedValue());
+    console.log("Centering selected element at index:", index, "with value:", this.selectedValue());
+    if (index === -1) return;
     if (!this.containerElement || !this.items()) return;
     const itemElement = this.items()[index].nativeElement;
 

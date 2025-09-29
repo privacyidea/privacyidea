@@ -1,10 +1,16 @@
-import { Component, inject, Input, input, signal, WritableSignal } from "@angular/core";
+import { Component, computed, inject, Input, input, linkedSignal, Signal, signal, WritableSignal } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { MatCardModule } from "@angular/material/card";
 import { MatIconModule } from "@angular/material/icon";
 import { MatButtonModule } from "@angular/material/button";
 import { MatButtonToggleModule } from "@angular/material/button-toggle";
-import { PoliciesService, PolicyDetail } from "../../../services/policies/policies.service";
+import {
+  PoliciesService as PolicyService,
+  PolicyDetail,
+  PoliciesServiceInterface as PolicyServiceInterface,
+  PolicyActionGroups,
+  PolicyAction
+} from "../../../services/policies/policies.service";
 import { FormsModule } from "@angular/forms";
 import { MatExpansionModule, MatExpansionPanel } from "@angular/material/expansion";
 import { HorizontalWheelComponent } from "../../shared/horizontal-wheel/horizontal-wheel.component";
@@ -28,15 +34,40 @@ type Tab = "actions" | "conditions";
   styleUrl: "./new-policy-panel.component.scss"
 })
 export class NewPolicyPanelComponent {
-  scope = signal<"" | "admin" | "system" | "authentication" | "selfservice">("");
+  selectAction(actionName: string) {
+    console.log(`Selected action: ${actionName}`);
+  }
+  policyActionGroupNames: Signal<string[]> = computed(() => {
+    if (!this.scope()) return [];
+    return Object.keys(this.policyService.policyActionsByGroupFiltered()[this.scope()]);
+  });
+  selectedActionGroup: WritableSignal<string> = linkedSignal({
+    source: this.policyActionGroupNames,
+    computation: (source, previous) => {
+      if (source.length < 1) return "";
+      if (previous && source.includes(previous.value)) return previous.value;
+      return source[0];
+    }
+  });
+
+  getActionNamesOfGroup(group: string): string[] {
+    if (this.scope() && this.policyService.policyActionsByGroupFiltered()[this.scope()]) {
+      return Object.keys(this.policyService.policyActionsByGroupFiltered()[this.scope()][group] || {});
+    }
+    return [];
+  }
+
+  name = signal("");
+  scope = signal<string>("");
   actions = signal([]);
 
-  policiesService = inject(PoliciesService);
+  policyService: PolicyService = inject(PolicyService); // PolicyServiceInterface = inject(PolicyService); // <- use the interface later
 
   editAction(arg0: string) {}
   activeTab: WritableSignal<Tab> = signal("actions");
 
-  addActionValue: any;
+  actionFilter = this.policyService.actionFilter;
+  policyActionsByGroupFiltered = this.policyService.policyActionsByGroupFiltered;
 
   setActiveTab(tab: Tab): void {
     this.activeTab.set(tab);
@@ -51,6 +82,7 @@ export class NewPolicyPanelComponent {
     return false;
   }
   onScopeSelect($event: any) {
+    this.policyService.selectedScope.set($event);
     this.scope.set($event);
   }
   addAction(action: string) {
@@ -61,12 +93,15 @@ export class NewPolicyPanelComponent {
     console.log("Resetting policy");
     this.scope.set("");
     this.actions.set([]);
+    this.name.set("");
     // Implementiere hier die Logik, um das Policy-Objekt zurückzusetzen
 
     matExpansionPanel.close();
   }
-  savePolicy() {
+  savePolicy(matExpansionPanel: MatExpansionPanel) {
     console.log("Saving new policy");
     // Implementiere hier die Logik, um das neue Policy zu speichern
+
+    this.resetPolicy(matExpansionPanel);
   }
 }

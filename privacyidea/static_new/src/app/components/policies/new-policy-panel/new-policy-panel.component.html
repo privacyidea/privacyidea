@@ -2,13 +2,29 @@
   #panel
   [disabled]="panel.expanded">
   <mat-expansion-panel-header>
-    <mat-panel-title> New Policy </mat-panel-title>
+    <mat-panel-title>
+      @if (panel.expanded) {
+        <input
+          type="text"
+          placeholder="Policy Name"
+          [(ngModel)]="name"
+          (click)="$event.stopPropagation(); panel.expanded = true"
+          (keydown)="$event.stopPropagation()"
+          class="policy-name-input" />
+      } @else {
+        @if (!name()) {
+          <p i18n>New Policy</p>
+        } @else {
+          {{ name() }}
+        }
+      }
+    </mat-panel-title>
     <mat-panel-description class="header-description">
       <div class="policy-scope-label">
         @if (actions().length === 0 && panel.expanded) {
           <app-horizontal-wheel
             [initialValue]="scope()"
-            [values]="policiesService.getPolicyScopes()"
+            [values]="policyService.allPolicyScopes"
             (onSelect)="onScopeSelect($event)" />
         } @else {
           <span>
@@ -20,7 +36,7 @@
         @if (panel.expanded) {
           <button
             mat-icon-button
-            (click)="$event.stopPropagation(); savePolicy()">
+            (click)="$event.stopPropagation(); savePolicy(panel)">
             <mat-icon>save</mat-icon>
           </button>
           <button
@@ -79,20 +95,31 @@
           <input
             type="text"
             placeholder="Search action..."
-            [(ngModel)]="addActionValue"
+            [(ngModel)]="actionFilter"
             class="search-input" />
           <div class="add-action-details">
-            <div class="policy-action-item">
-              <span class="detail-label">policy_action_1</span>
-              <span class="detail-value">type: str</span>
-            </div>
-            <div class="policy-action-item">
-              <span class="detail-label">policy_action_2</span>
-              <span class="detail-value">type: list (multiselect)</span>
-            </div>
-            <div class="policy-action-item">
-              <span class="detail-label">policy_action_3</span>
-              <span class="detail-value">type: bool</span>
+            @if (policyActionGroupNames().length > 1) {
+              <div class="button-row">
+                @for (group of policyActionGroupNames(); track $index) {
+                  <button
+                    class="button-item"
+                    [class.first-button]="$index === 0"
+                    [class.last-button]="$index === policyActionGroupNames().length - 1"
+                    [class.selected-button]="selectedActionGroup() === group"
+                    (click)="selectedActionGroup.set(group)">
+                    {{ group }}
+                  </button>
+                }
+              </div>
+            }
+            <div class="policy-action-items">
+              @for (actionName of getActionNamesOfGroup(selectedActionGroup()); track actionName) {
+                <div
+                  class="policy-action-item"
+                  (click)="selectAction(actionName)">
+                  <span class="detail-label">{{ actionName }}</span>
+                </div>
+              }
             </div>
           </div>
           <button

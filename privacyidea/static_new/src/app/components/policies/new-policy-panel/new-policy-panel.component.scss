@@ -44,10 +44,12 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
+  min-width: 0; /* Korrektur zur Begrenzung der Spaltenbreite */
 }
 
 .placeholder-for-right-column {
   grid-area: right-column;
+  min-width: 0; /* Korrektur zur Begrenzung der Spaltenbreite */
 }
 
 // --- Tab Buttons ---
@@ -106,7 +108,7 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
-  padding: 16px;
+  padding: 12px;
   border-radius: 4px;
   box-shadow:
     0px 2px 4px -1px rgba(0, 0, 0, 0.2),
@@ -118,12 +120,51 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  max-height: 200px;
+  max-height: 32rem;
+  overflow-y: none;
+  padding-right: 8px;
+}
+
+.policy-action-items {
+  overflow: auto;
+  flex: 1;
+  overflow-x: hidden;
   overflow-y: auto;
-  padding-right: 8px; /* Adds space for the scrollbar to prevent content from touching the edge */
+}
+
+.policy-action-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  margin: 8px;
+  border-radius: 4px;
+  font-weight: 500;
+  box-shadow:
+    0px 1px 2px 0px rgba(0, 0, 0, 0.1),
+    0px 1px 3px 0px rgba(0, 0, 0, 0.08),
+    0px 0px 0px 0px rgba(0, 0, 0, 0);
+}
+
+.policy-action-item:hover {
+  background-color: var(--mat-sys-primary-light);
+  color: var(--mat-sys-on-primary) !important;
+  font-size: 600;
+  cursor: pointer;
 }
 
 .search-input {
+  border: none;
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 0;
+  padding: 8px 0;
+  font-size: 1rem;
+  background-color: transparent;
+  width: 100%;
+  box-sizing: border-box;
+}
+.policy-name-input {
+  margin-left: 2px;
   border: none;
   border-bottom: 1px solid var(--mat-sys-outline-variant);
   border-radius: 0;
@@ -159,12 +200,6 @@
   padding-top: 8px;
 }
 
-.detail-label {
-  font-weight: 500;
-  margin-right: 16px;
-  color: var(--mat-sys-on-surface);
-}
-
 .detail-value {
   color: var(--mat-sys-on-surface-variant);
   text-align: right;
@@ -174,4 +209,53 @@
 .delete-action-button {
   margin-left: 8px;
   flex-shrink: 0;
+}
+
+// --- Custom Button Group ---
+
+.button-row {
+  display: flex;
+  width: 100%;
+  padding: 0;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  overflow: auto;
+  scrollbar-width: thin;
+}
+
+.button-item {
+  flex: 1;
+  padding: 10px 15px;
+  text-align: center;
+  cursor: pointer;
+  background-color: #f0f0f0;
+  border: none;
+  margin: 0;
+  border-radius: 0;
+}
+
+.button-item:hover {
+  background-color: var(--mat-sys-primary-light);
+  color: var(--mat-sys-on-primary);
+  font-size: 600;
+}
+
+.first-button {
+  border-top-left-radius: 8px;
+  border-bottom-left-radius: 8px;
+}
+
+.last-button {
+  border-top-right-radius: 8px;
+  border-bottom-right-radius: 8px;
+}
+
+.selected-button {
+  background-color: var(--mat-sys-primary-base);
+  color: var(--mat-sys-on-primary);
+  font-weight: 600;
+}
+
+.button-item:not(.last-button) {
+  border-right: 1px solid #ccc;
 }

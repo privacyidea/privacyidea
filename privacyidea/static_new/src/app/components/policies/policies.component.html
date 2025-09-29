@@ -19,7 +19,7 @@
                   @if (isEditMode(policy.name) && policiesService.isScopeChangeable(policy)) {
                     <app-horizontal-wheel
                       [initialValue]="policy.scope"
-                      [values]="policiesService.getPolicyScopes()"
+                      [values]="policiesService.allPolicyScopes"
                       (onSelect)="onSelect(policy, $event)" />
                   } @else {
                     <span>

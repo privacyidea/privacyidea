@@ -24,6 +24,28 @@ import { PiResponse } from "../../app.component";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { environment } from "../../../environments/environment";
 
+export type PolicyAction = {
+  desc: string;
+  type: string;
+  group?: string;
+  mainmenu?: string[];
+  value?: string[] | number[];
+};
+
+export type PolicyActions = {
+  [scopeName: string]: {
+    [actionName: string]: PolicyAction;
+  };
+};
+
+export type PolicyActionGroups = {
+  [scopeName: string]: {
+    [group: string]: {
+      [actionName: string]: PolicyAction;
+    };
+  };
+};
+
 // JSON Parameters:
 //         name (basestring) – name of the policy
 //         scope – the scope of the policy like “admin”, “system”, “authentication” or “selfservice”
@@ -106,16 +128,89 @@ export class PoliciesService implements PoliciesServiceInterface {
   //         The policy definitions of the allowed scope with the actions and action types. The top level key is the scope.
   //     Rtype:
   //         dict
-  allPossibleActionsResource = httpResource<PiResponse<any>>(() => ({
-    url: `${this.policyBaseUrl}defs/${this.selectedScope()}`,
+
+  // GET /policy/defs
+
+  policyActionResource = httpResource<PiResponse<PolicyActions>>(() => ({
+    url: `${this.policyBaseUrl}defs`,
     method: "GET",
     headers: this.authService.getHeaders()
   }));
 
-  getPolicyScopes(): string[] {
-    console.debug("Not implemented: getPolicyScopes");
-    return ["admin", "system", "authentication", "enrollment", "selfservice"];
-  }
+  allPolicyScopes = computed(() => {
+    //     export type PolicyAction = {
+    //   [actionName: string]: {
+    //     desc: string;
+    //     type: string;
+    //     group?: string;
+    //     mainmenu?: string[];
+    //     value?: string[] | number[];
+    //   };
+    // };
+    // export type PolicyActions = {
+    //   [scopeName: string]: PolicyAction;
+    // };
+    const policyActions = this.policyActionResource.value()?.result?.value;
+    if (!policyActions) return [];
+    return Object.keys(policyActions);
+  });
+
+  policyActionsByGroup = computed<PolicyActionGroups>(() => {
+    const policyActions = this.policyActionResource.value()?.result?.value;
+    if (!policyActions) return {};
+    const grouped: PolicyActionGroups = {};
+    for (const scope in policyActions) {
+      const actions = policyActions[scope];
+      grouped[scope] = {};
+      for (const actionName in actions) {
+        const action = actions[actionName];
+        const group = action.group || "Other";
+        if (!grouped[scope][group]) {
+          grouped[scope][group] = {};
+        }
+        grouped[scope][group][actionName] = action;
+      }
+    }
+    return grouped;
+  });
+
+  actionFilter = signal<string>("");
+  alreadyAddedActions = signal<string[]>([]);
+
+  policyActionsByGroupFiltered = computed<PolicyActionGroups>(() => {
+    // Also filter out already added actions
+    if (!this.actionFilter()) {
+      return this.policyActionsByGroup();
+    }
+    const policyActions = this.policyActionResource.value()?.result?.value;
+    if (!policyActions) return {};
+    const grouped: PolicyActionGroups = {};
+    const filterValue = this.actionFilter().toLowerCase();
+    for (const scope in policyActions) {
+      const actions = policyActions[scope];
+      grouped[scope] = {};
+      for (const actionName in actions) {
+        if (this.alreadyAddedActions().includes(actionName)) {
+          continue;
+        }
+        const action = actions[actionName];
+        if (!actionName.toLowerCase().includes(filterValue)) {
+          continue;
+        }
+        const group = action.group || "Other";
+        if (!grouped[scope][group]) {
+          grouped[scope][group] = {};
+        }
+        grouped[scope][group][actionName] = action;
+      }
+    }
+    return grouped;
+  });
+
+  // getPolicyScopes(): string[] {
+  //   console.debug("Not implemented: getPolicyScopes");
+  //   return ["admin", "system", "authentication", "enrollment", "selfservice"];
+  // }
   readonly policyBaseUrl = environment.proxyUrl + "/policy/";
 
   private readonly http: HttpClient = inject(HttpClient);
@@ -154,6 +249,10 @@ export class PoliciesService implements PoliciesServiceInterface {
     // });
     effect(() => {
       console.log(this.allPolicies());
+    });
+
+    effect(() => {
+      console.log(this.selectedScope());
     });
   }
 
