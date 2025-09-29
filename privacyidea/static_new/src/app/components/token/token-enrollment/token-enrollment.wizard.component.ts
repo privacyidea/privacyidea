@@ -18,16 +18,16 @@
  **/
 import { AsyncPipe, NgClass } from "@angular/common";
 import { HttpClient } from "@angular/common/http";
-import { Component, inject, Renderer2 } from "@angular/core";
+import { Component, inject, signal } from "@angular/core";
 import { FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
 import { MatButton, MatIconButton } from "@angular/material/button";
 import { MatNativeDateModule } from "@angular/material/core";
 import { MatDatepickerModule } from "@angular/material/datepicker";
-import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
+import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
-import { MatOption, MatSelect } from "@angular/material/select";
+import { MatOption } from "@angular/material/select";
 import { MatTooltip } from "@angular/material/tooltip";
 import { DomSanitizer } from "@angular/platform-browser";
 import { map } from "rxjs";
@@ -41,7 +41,6 @@ import { TokenService, TokenServiceInterface } from "../../../services/token/tok
 import { UserData, UserService, UserServiceInterface } from "../../../services/user/user.service";
 import { VersioningService, VersioningServiceInterface } from "../../../services/version/version.service";
 import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
-import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { EnrollApplspecComponent } from "./enroll-asp/enroll-applspec.component";
 import { EnrollCertificateComponent } from "./enroll-certificate/enroll-certificate.component";
 import { EnrollDaypasswordComponent } from "./enroll-daypassword/enroll-daypassword.component";
@@ -74,11 +73,9 @@ import { TokenEnrollmentComponent } from "./token-enrollment.component";
   selector: "app-token-enrollment-wizard",
   imports: [
     MatFormField,
-    MatSelect,
     MatOption,
     ReactiveFormsModule,
     FormsModule,
-    MatHint,
     EnrollHotpComponent,
     MatInput,
     MatLabel,
@@ -118,7 +115,6 @@ import { TokenEnrollmentComponent } from "./token-enrollment.component";
     AsyncPipe,
     MatError,
     MatTooltip,
-    ScrollToTopDirective,
     ClearableInputComponent
   ],
   templateUrl: "./token-enrollment.wizard.component.html",
@@ -148,8 +144,8 @@ export class TokenEnrollmentWizardComponent extends TokenEnrollmentComponent {
     })
     .pipe(map((raw) => this.sanitizer.bypassSecurityTrustHtml(raw)));
 
-  constructor(renderer: Renderer2) {
-    super(renderer);
+  constructor() {
+    super();
   }
 
   protected override openLastStepDialog(args: { response: EnrollmentResponse; user: UserData | null }) {
@@ -160,7 +156,9 @@ export class TokenEnrollmentWizardComponent extends TokenEnrollmentComponent {
         enrollToken: this.enrollToken.bind(this),
         user: user,
         userRealm: this.userService.selectedUserRealm(),
-        onlyAddToRealm: this.onlyAddToRealmControl.value
+        onlyAddToRealm: this.onlyAddToRealmControl.value,
+        tokentype: this.tokenService.selectedTokenType(),
+        serial: signal(null)
       }
     });
   }

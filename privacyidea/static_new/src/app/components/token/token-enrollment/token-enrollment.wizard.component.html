@@ -1,15 +1,16 @@
-<div aria-label="Token Enrollment"
-     class="token-enrollment-container">
-  <div [innerHTML]="preTopHtml$ | async"
-       class="margin-top-1"></div>
+<div
+  aria-label="Token Enrollment"
+  class="token-enrollment-container">
+  <div
+    [innerHTML]="preTopHtml$ | async"
+    class="margin-top-1"></div>
   <h3 class="margin-left-1">Enroll a New {{ tokenService.selectedTokenType().info.split(":")[0] }} Token</h3>
   <form (ngSubmit)="formGroupSignal()">
     <div class="enroll-button-container">
       <button
         (click)="reopenEnrollmentDialog()"
-        [disabled]="!canReopenEnrollmentDialog()"
         [matTooltip]="'Reopen enrollment dialog'"
-        i18n-matTooltip
+        [ngClass]="{ hidden: !canReopenEnrollmentDialog() }"
         mat-icon-button
         type="button">
         <mat-icon>open_in_new</mat-icon>
@@ -17,7 +18,7 @@
       <button
         (click)="enrollToken()"
         [ngClass]="{
-          'card-button-disabled': formGroup.invalid,
+          'card-button-disabled': formGroupSignal().invalid,
           'card-button': true
         }"
         i18n
@@ -199,34 +200,32 @@
           </mat-autocomplete>
         </mat-form-field>
       </div>
+
       @if (tokenService.selectedTokenType().key !== "passkey") {
         <div class="flex-column user-pin-container">
-          <h4
-            i18n
-            class="enroll-h4">
-            Set PIN
-          </h4>
-          <div class="user-pin-input">
+          <h4 class="enroll-h4">Set PIN</h4>
+          <input
+            style="display: none"
+            type="text" />
+          <input
+            style="display: none"
+            type="password" />
+          <div class="user-pin-input margin-bottom-1">
             <input
               [formControl]="setPinControl"
               [type]="'password'"
               class="input"
-              i18n-placeholder
               placeholder="PIN" />
+
             <input
               [formControl]="repeatPinControl"
               [type]="'password'"
               class="input"
-              i18n-placeholder
               placeholder="Repeat PIN" />
           </div>
-          @if (formGroup.hasError("pinMismatch") &&
-          (formGroup.get("setPin")?.touched || formGroup.get("repeatPin")?.touched)) {
-            <mat-error
-              i18n
-              class="pin-error">
-              PINs do not match.
-            </mat-error>
+          @if (formGroupSignal().hasError("pinMismatch") &&
+          (formGroupSignal().get("setPin")?.touched || formGroupSignal().get("repeatPin")?.touched)) {
+            <mat-error class="pin-error">PINs do not match.</mat-error>
           }
         </div>
       } @else {
