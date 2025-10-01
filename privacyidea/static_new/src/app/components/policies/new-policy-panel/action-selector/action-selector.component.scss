@@ -1,0 +1,112 @@
+.action-selector-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 12px;
+  border-radius: 4px;
+  box-shadow: var(--mat-sys-level2);
+  min-width: 0;
+}
+
+.search-input {
+  border: none;
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 0;
+  padding: 8px 0;
+  font-size: 1rem;
+  background-color: transparent;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.search-input:focus {
+  outline: none;
+  border-bottom-color: var(--mat-sys-primary);
+}
+
+.button-row {
+  display: flex;
+  width: 100%;
+  padding: 0;
+  border: 1px solid var(--mat-sys-outline);
+  border-radius: 8px;
+  overflow: auto;
+  scrollbar-width: thin;
+}
+
+.button-item {
+  flex: 1;
+  padding: 10px 15px;
+  text-align: center;
+  cursor: pointer;
+  background-color: var(--mat-sys-surface-container);
+  border: none;
+  margin: 0;
+  border-radius: 0;
+}
+
+.button-item:hover {
+  background-color: var(--mat-sys-primary-light);
+  color: var(--mat-sys-on-primary);
+  font-size: 600;
+}
+
+.first-button {
+  border-top-left-radius: 8px;
+  border-bottom-left-radius: 8px;
+}
+
+.last-button {
+  border-top-right-radius: 8px;
+  border-bottom-right-radius: 8px;
+}
+
+.selected-button {
+  background-color: var(--mat-sys-primary-base);
+  color: var(--mat-sys-on-primary);
+  font-weight: 600;
+}
+
+.button-item:not(.last-button) {
+  border-right: 1px solid var(--mat-sys-outline);
+}
+
+.add-action-details {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 32rem;
+  overflow-y: none;
+  padding-right: 8px;
+}
+
+.policy-action-items {
+  overflow: auto;
+  flex: 1;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.policy-action-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  margin: 8px;
+  border-radius: 4px;
+  font-weight: 500;
+  box-shadow: var(--mat-sys-level1);
+}
+
+.policy-action-item:hover {
+  background-color: var(--mat-sys-primary-light);
+  color: var(--mat-sys-on-primary);
+  font-size: 600;
+  cursor: pointer;
+}
+
+.policy-action-item-selected {
+  background-color: var(--mat-sys-primary-base);
+  color: var(--mat-sys-on-primary);
+  font-weight: 600;
+}

@@ -34,52 +34,35 @@
 // ===================================
 // 2. MAIN GRID LAYOUT
 // ===================================
-.policy-details {
+.policy-grid-container {
   display: grid;
   gap: 16px;
   grid-template-columns: 2fr 1fr;
   grid-template-rows: auto auto 1fr;
   grid-template-areas:
     "buttons buttons"
-    "current-actions detail-header"
-    "select-action action-detail";
+    "content-header detail-header"
+    "content-body detail-body";
 }
 
-.selected-content-header {
-  grid-area: current-actions;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+.grid-area-buttons {
+  grid-area: buttons;
   min-width: 0;
 }
-
-.select-action-column {
-  grid-area: select-action;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  padding: 12px;
-  border-radius: 4px;
-  box-shadow: var(--mat-sys-level2);
+.grid-area-content-header {
+  grid-area: content-header;
   min-width: 0;
 }
-
-.action-detail-column-header {
+.grid-area-content-body {
+  grid-area: content-body;
+  min-width: 0;
+}
+.grid-area-detail-header {
   grid-area: detail-header;
-  // min-width: 0;
-  // padding-left: 16px;
-  // padding-bottom: 8px;
-  // border-bottom: 1px solid var(--mat-sys-outline);
+  min-width: 0;
 }
-
-.action-detail-column {
-  grid-area: action-detail;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  padding: 12px;
-  border-radius: 4px;
-  box-shadow: var(--mat-sys-level2);
+.grid-area-detail-body {
+  grid-area: detail-body;
   min-width: 0;
 }
 
@@ -112,85 +95,7 @@
   color: var(--mat-sys-on-primary);
 }
 
-// ===================================
-// 4. CONTENT CARDS / SECTIONS
-// ===================================
-.actions-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.action-card {
-  padding: 4px 16px;
-  border-radius: 4px;
-  box-shadow: var(--mat-sys-level2);
-}
-
-.conditions-list {
-  padding: 16px;
-  border-radius: 4px;
-  box-shadow: var(--mat-sys-level2);
-}
-
-.add-action-details {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  max-height: 32rem;
-  overflow-y: none;
-  padding-right: 8px;
-}
-
-// ===================================
-// 5. ACTION ITEMS LIST
-// ===================================
-.policy-action-items {
-  overflow: auto;
-  flex: 1;
-  overflow-x: hidden;
-  overflow-y: auto;
-}
-
-.policy-action-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 12px;
-  margin: 8px;
-  border-radius: 4px;
-  font-weight: 500;
-  box-shadow: var(--mat-sys-level1);
-}
-
-.policy-action-item:hover {
-  background-color: var(--mat-sys-primary-light);
-  color: var(--mat-sys-on-primary);
-  font-size: 600;
-  cursor: pointer;
-}
-
-.policy-action-item-selected {
-  background-color: var(--mat-sys-primary-base);
-  color: var(--mat-sys-on-primary);
-  font-weight: 600;
-}
-
-// ===================================
-// 6. INPUT FIELDS
-// ===================================
-.search-input {
-  border: none;
-  border-bottom: 1px solid var(--mat-sys-outline-variant);
-  border-radius: 0;
-  padding: 8px 0;
-  font-size: 1rem;
-  background-color: transparent;
-  width: 100%;
-  box-sizing: border-box;
-}
-
-.policy-name-input {
+.policy-name-.policy-name-input {
   margin-left: 2px;
   border: none;
   border-bottom: 1px solid var(--mat-sys-outline-variant);
@@ -200,92 +105,4 @@
   background-color: transparent;
   width: 100%;
   box-sizing: border-box;
-}
-
-.search-input:focus {
-  outline: none;
-  border-bottom-color: var(--mat-sys-primary);
-}
-
-// ===================================
-// 7. DETAIL ROWS & BUTTONS
-// ===================================
-.detail-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.detail-row:not(:last-child) {
-  padding-bottom: 8px;
-}
-
-.detail-row:not(:first-child) {
-  padding-top: 8px;
-}
-
-.detail-value {
-  color: var(--mat-sys-on-surface-variant);
-  text-align: right;
-  flex-grow: 1;
-}
-
-.delete-action-button {
-  margin-left: 8px;
-  flex-shrink: 0;
-}
-
-.add-action-button {
-  align-self: flex-end;
-  color: var(--mat-sys-primary);
-}
-
-// ===================================
-// 8. CUSTOM BUTTON GROUP
-// ===================================
-.button-row {
-  display: flex;
-  width: 100%;
-  padding: 0;
-  border: 1px solid var(--mat-sys-outline);
-  border-radius: 8px;
-  overflow: auto;
-  scrollbar-width: thin;
-}
-
-.button-item {
-  flex: 1;
-  padding: 10px 15px;
-  text-align: center;
-  cursor: pointer;
-  background-color: var(--mat-sys-surface-container);
-  border: none;
-  margin: 0;
-  border-radius: 0;
-}
-
-.button-item:hover {
-  background-color: var(--mat-sys-primary-light);
-  color: var(--mat-sys-on-primary);
-  font-size: 600;
-}
-
-.first-button {
-  border-top-left-radius: 8px;
-  border-bottom-left-radius: 8px;
-}
-
-.last-button {
-  border-top-right-radius: 8px;
-  border-bottom-right-radius: 8px;
-}
-
-.selected-button {
-  background-color: var(--mat-sys-primary-base);
-  color: var(--mat-sys-on-primary);
-  font-weight: 600;
-}
-
-.button-item:not(.last-button) {
-  border-right: 1px solid var(--mat-sys-outline);
 }

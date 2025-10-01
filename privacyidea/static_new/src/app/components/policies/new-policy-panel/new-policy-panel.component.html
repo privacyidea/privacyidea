@@ -49,8 +49,8 @@
     </mat-panel-description>
   </mat-expansion-panel-header>
 
-  <div class="policy-details">
-    <div class="tab-buttons">
+  <div class="policy-grid-container">
+    <div class="tab-buttons grid-area-buttons">
       <button
         mat-flat-button
         [ngClass]="activeTab() === 'actions' ? 'tab-button-active' : 'tab-button'"
@@ -65,93 +65,30 @@
       </button>
     </div>
 
-    <div class="selected-content-header">
-      @if (activeTab() === "actions") {
-        @for (entry of policyService.currentActions(); track entry.actionName) {
-          <div class="action-card">
-            <div class="detail-row">
-              <span class="detail-label">{{ entry.actionName }}</span>
-              <span class="detail-value">{{ entry.value }}</span>
-              <button
-                mat-icon-button
-                class="edit-action-button"
-                (click)="editAction(entry.actionName)">
-                <mat-icon>edit</mat-icon>
-              </button>
-              <button
-                mat-icon-button
-                class="delete-action-button"
-                (click)="deleteAction(entry.actionName)">
-                <mat-icon>delete</mat-icon>
-              </button>
-            </div>
-          </div>
-        }
-      }
-    </div>
-    <div class="select-action-column">
-      @if (activeTab() === "actions") {
-        <input
-          type="text"
-          placeholder="Search action..."
-          [(ngModel)]="policyService.actionFilter"
-          class="search-input" />
-        @if (policyActionGroupNames().length > 1) {
-          <div class="button-row">
-            @for (group of policyActionGroupNames(); track $index) {
-              <button
-                class="button-item"
-                [class.first-button]="$index === 0"
-                [class.last-button]="$index === policyActionGroupNames().length - 1"
-                [class.selected-button]="selectedActionGroup() === group"
-                (click)="selectedActionGroup.set(group)">
-                {{ group }}
-              </button>
-            }
-          </div>
-        }
-        <div class="add-action-details">
-          <div class="policy-action-items">
-            @for (actionName of getActionNamesOfGroup(selectedActionGroup()); track actionName) {
-              <div
-                class="policy-action-item"
-                [class.policy-action-item-selected]="selectedActionName() === actionName"
-                (click)="selectedActionName.set(actionName)">
-                <span class="detail-label">{{ actionName }}</span>
-                <mat-icon>add_circle_outline</mat-icon>
-              </div>
-            }
-          </div>
-        </div>
-      }
-    </div>
+    <app-selected-actions-list
+      class="grid-area-content-header"
+      [actions]="policyService.currentActions()"
+      (editAction)="editAction($event)"
+      (deleteAction)="deleteAction($event)" />
 
-    <div class="action-detail-column-header">
-      @if (activeTab() === "actions" && selectedActionName() !== "") {
-        <!-- <h4>Details-header for action: {{ selectedAction() }}</h4> -->
-      }
-    </div>
-    <div class="action-detail-column">
-      @if (activeTab() === "actions" && selectedActionName() !== "") {
-        <h3>{{ selectedActionName() }}</h3>
-        <div class="action-detail-card">
-          <span class="detail-row">
-            {{ selectedAction()?.desc }}
-          </span>
-        </div>
-        <input
-          type="text"
-          [placeholder]="inputPlaceholder()"
-          [(ngModel)]="actionValue"
-          class="action-value-input" />
-        <button
-          mat-raised-button
-          color="primary"
-          (click)="addAction()"
-          [disabled]="!inputIsValid()">
-          Add Action
-        </button>
-      }
-    </div>
+    @if (activeTab() === "actions") {
+      <app-action-selector
+        class="grid-area-content-body"
+        [policyActionGroupNames]="policyActionGroupNames()"
+        [selectedActionGroup]="selectedActionGroup()"
+        [actionFilter]="policyService.actionFilter()"
+        [getActionNamesOfGroup]="getActionNamesOfGroup.bind(this)"
+        [selectedActionName]="selectedActionName()"
+        (actionFilterChange)="policyService.actionFilter.set($event)"
+        (selectedActionGroupChange)="selectedActionGroup.set($event)"
+        (selectedActionNameChange)="selectedActionName.set($event)" />
+    }
+    <div class="grid-area-detail-header"></div>
+
+    <app-action-detail
+      class="grid-area-detail-body"
+      [selectedAction]="selectedAction()"
+      [selectedActionName]="selectedActionName()"
+      (addAction)="onAddAction($event)" />
   </div>
 </mat-expansion-panel>

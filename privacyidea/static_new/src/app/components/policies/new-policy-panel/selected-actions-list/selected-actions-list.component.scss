@@ -1,0 +1,37 @@
+.selected-actions-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.action-card {
+  padding: 4px 16px;
+  border-radius: 4px;
+  box-shadow: var(--mat-sys-level2);
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.detail-row:not(:last-child) {
+  padding-bottom: 8px;
+}
+
+.detail-row:not(:first-child) {
+  padding-top: 8px;
+}
+
+.detail-value {
+  color: var(--mat-sys-on-surface-variant);
+  text-align: right;
+  flex-grow: 1;
+}
+
+.delete-action-button {
+  margin-left: 8px;
+  flex-shrink: 0;
+}

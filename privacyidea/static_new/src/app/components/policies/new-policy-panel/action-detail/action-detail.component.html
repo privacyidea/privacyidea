@@ -1,0 +1,28 @@
+<div class="action-detail-container">
+  @if (selectedActionName !== "") {
+    <!-- <h4>Details-header for action: {{ selectedAction() }}</h4> -->
+  }
+</div>
+<div class="action-detail-column">
+  @if (selectedActionName !== "") {
+    <h3>{{ selectedActionName }}</h3>
+    <div class="action-detail-card">
+      <span class="detail-row">
+        {{ selectedAction?.desc }}
+      </span>
+    </div>
+    <input
+      type="text"
+      [placeholder]="inputPlaceholder()"
+      [ngModel]="actionValue()"
+      (ngModelChange)="actionValue.set($event)"
+      class="action-value-input" />
+    <button
+      mat-raised-button
+      color="primary"
+      (click)="onAddAction()"
+      [disabled]="!inputIsValid()">
+      Add Action
+    </button>
+  }
+</div>
