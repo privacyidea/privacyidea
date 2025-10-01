@@ -2959,6 +2959,10 @@ def get_static_policy_definitions(scope=None):
                 'desc': _('The client is not allowed to unregister the container. The user can not delete the '
                           'container locally on the smartphone.'),
                 'group': GROUP.SMARTPHONE
+            },
+            PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE: {
+                'type': 'bool',
+                'desc': _('Enable to return an unspecific error message for failures in the authentication-free container endpoints.')
             }
         },
         SCOPE.TOKEN: {
