@@ -468,10 +468,41 @@ angular.module("privacyideaApp")
                         let token = {"failcount": 0, "info": {"count_auth_success": 0, "count_auth": 0}};
                         if (data.result.value.count > 0)
                             token = data.result.value.tokens[0];
-                        user["failed_auth"] = token.failcount || 0;
                         user["success_auth"] = token.info.count_auth_success || 0;
                         user["total_auth"] = token.info.count_auth || 0;
+                        user["failed_auth"] = user["total_auth"] - user["success_auth"];
+                        user["token_serial"] = token.serial || "";
                     }, {"user": user.username, "realm": $scope.selectedRealm});
+                });
+            };
+
+            // Reset counter functions
+            $scope.resetFailCounter = function () {
+                angular.forEach($scope.userlist, function (user) {
+                    TokenFactory.reset(user.token_serial, function () { });
+                });
+            };
+
+            $scope.resetInfoCounters = function () {
+                angular.forEach($scope.userlist, function (user) {
+                    TokenFactory.updateTokenInfo(user.token_serial, "count_auth_success", {"value": 0},
+                        function () {
+                            user.success_auth = 0;
+                        })
+                    TokenFactory.updateTokenInfo(user.token_serial, "count_auth", {"value": 0},
+                        function () {
+                            user.total_auth = 0;
+                            user.failed_auth = 0;
+                        })
+                });
+            };
+
+            $scope.resetTotalCounter = function () {
+                angular.forEach($scope.userlist, function (user) {
+                    TokenFactory.updateTokenInfo(user.token_serial, "count_auth", {"value": 0},
+                        function () {
+                            user.total_auth = 0;
+                        })
                 });
             };
 
