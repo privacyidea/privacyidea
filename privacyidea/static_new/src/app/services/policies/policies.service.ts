@@ -179,22 +179,31 @@ export class PoliciesService implements PoliciesServiceInterface {
   });
 
   actionFilter = signal<string>("");
-  alreadyAddedActions = signal<string[]>([]);
+  currentActions = signal<{ actionName: string; value: string }[]>([]);
+  alreadyAddedActionNames = computed(() => {
+    console.info("Computing alreadyAddedActions from currentActions");
+    console.info("Current actions:", this.currentActions());
+    return this.currentActions().map((a) => a.actionName);
+  });
 
   policyActionsByGroupFiltered = computed<PolicyActionGroups>(() => {
     // Also filter out already added actions
-    if (!this.actionFilter()) {
+    const alreadyAddedActionNames = this.alreadyAddedActionNames();
+    if (!this.actionFilter() && alreadyAddedActionNames.length === 0) {
       return this.policyActionsByGroup();
     }
     const policyActions = this.policyActionResource.value()?.result?.value;
     if (!policyActions) return {};
     const grouped: PolicyActionGroups = {};
     const filterValue = this.actionFilter().toLowerCase();
+    console.info("Filtering policy actions with filter:", filterValue);
+    console.info("Filtering: Already added action names:", alreadyAddedActionNames);
     for (const scope in policyActions) {
       const actions = policyActions[scope];
       grouped[scope] = {};
       for (const actionName in actions) {
-        if (this.alreadyAddedActions().includes(actionName)) {
+        if (alreadyAddedActionNames.includes(actionName)) {
+          console.info(`Skipping already added action: ${actionName}`);
           continue;
         }
         const action = actions[actionName];
@@ -246,17 +255,17 @@ export class PoliciesService implements PoliciesServiceInterface {
 
   constructor() {
     // effect(() => {
-    //   console.log(this.selectedPolicy());
+    //   console.info(this.selectedPolicy());
     // });
     // effect(() => {
-    //   console.log(this.selectedPolicyDetails.value());
+    //   console.info(this.selectedPolicyDetails.value());
     // });
     effect(() => {
-      console.log(this.allPolicies());
+      console.info(this.allPolicies());
     });
 
     effect(() => {
-      console.log(this.selectedScope());
+      console.info(this.selectedScope());
     });
   }
 

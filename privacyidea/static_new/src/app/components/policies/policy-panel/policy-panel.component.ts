@@ -32,7 +32,7 @@ export class PolicyPanelComponent {
   }
 
   deleteAction(actionName: string): void {
-    console.log(`Deleting action: ${actionName}`);
+    console.info(`Deleting action: ${actionName}`);
     // Implementiere hier die Logik, um die Aktion aus dem Policy-Objekt zu entfernen
   }
 

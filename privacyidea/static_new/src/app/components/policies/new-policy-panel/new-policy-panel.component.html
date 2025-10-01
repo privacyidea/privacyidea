@@ -21,7 +21,7 @@
     </mat-panel-title>
     <mat-panel-description class="header-description">
       <div class="policy-scope-label">
-        @if (currentActions().length === 0 && panel.expanded) {
+        @if (policyService.currentActions().length === 0 && panel.expanded) {
           <app-horizontal-wheel
             [initialValue]="selectedScope()"
             [values]="policyService.allPolicyScopes"
@@ -67,21 +67,21 @@
 
     <div class="selected-content-header">
       @if (activeTab() === "actions") {
-        @for (entry of currentActions(); track entry[0]) {
+        @for (entry of policyService.currentActions(); track entry.actionName) {
           <div class="action-card">
             <div class="detail-row">
-              <span class="detail-label">{{ entry[0] }}</span>
-              <span class="detail-value">{{ entry[1] }}</span>
+              <span class="detail-label">{{ entry.actionName }}</span>
+              <span class="detail-value">{{ entry.value }}</span>
               <button
                 mat-icon-button
                 class="edit-action-button"
-                (click)="editAction(entry[0])">
+                (click)="editAction(entry.actionName)">
                 <mat-icon>edit</mat-icon>
               </button>
               <button
                 mat-icon-button
                 class="delete-action-button"
-                (click)="deleteAction(entry[0])">
+                (click)="deleteAction(entry.actionName)">
                 <mat-icon>delete</mat-icon>
               </button>
             </div>
@@ -94,7 +94,7 @@
         <input
           type="text"
           placeholder="Search action..."
-          [(ngModel)]="actionFilter"
+          [(ngModel)]="policyService.actionFilter"
           class="search-input" />
         @if (policyActionGroupNames().length > 1) {
           <div class="button-row">
@@ -141,15 +141,14 @@
         </div>
         <input
           type="text"
-          [placeholder]="getInputPlaceholder()"
-          y
+          [placeholder]="inputPlaceholder()"
           [(ngModel)]="actionValue"
           class="action-value-input" />
         <button
           mat-raised-button
           color="primary"
           (click)="addAction()"
-          [disabled]="!isAddActionValueProvided()">
+          [disabled]="!inputIsValid()">
           Add Action
         </button>
       }

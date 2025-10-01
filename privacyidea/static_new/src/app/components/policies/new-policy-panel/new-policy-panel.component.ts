@@ -40,19 +40,12 @@ export class NewPolicyPanelComponent {
 
   policyName = signal("");
   selectedScope = signal<string>("");
-  currentActions = signal<any[]>([]);
+
   activeTab: WritableSignal<Tab> = signal("actions");
   actionValue: WritableSignal<string> = signal("");
 
   // ===================================
-  // 3. SERVICE PROPERTIES / READONLY SIGNALS
-  // ===================================
-
-  actionFilter = this.policyService.actionFilter;
-  policyActionsByGroupFiltered = this.policyService.policyActionsByGroupFiltered;
-
-  // ===================================
-  // 4. COMPUTED SIGNALS (DERIVED STATE)
+  // 3. COMPUTED SIGNALS (DERIVED STATE)
   // ===================================
 
   policyActionGroupNames: Signal<string[]> = computed(() => {
@@ -73,15 +66,38 @@ export class NewPolicyPanelComponent {
   transformedActionValue = computed(() => {
     const action = this.selectedActionName();
     const value = this.actionValue();
-    console.log(`Transforming action value for action: ${action} with value: ${value}`);
+    console.info(`Transforming action value for action: ${action} with value: ${value}`);
   });
 
-  isAddActionValueProvided: Signal<boolean> = computed(() => {
-    return true;
+  inputIsValid: Signal<boolean> = computed(() => {
+    const action = this.selectedAction();
+    const value = this.actionValue();
+
+    if (!action) return false;
+    const actionType = action.type;
+    if (!actionType) return false;
+
+    if (actionType === "bool") {
+      return value.toLowerCase() === "true" || value.toLowerCase() === "false";
+    } else if (actionType === "int") {
+      return !isNaN(Number(value)) && Number.isInteger(Number(value));
+    } else if (actionType === "str") {
+      return value.trim().length > 0;
+    }
+    return false;
+  });
+
+  inputPlaceholder: Signal<string> = computed(() => {
+    const type = this.selectedAction()?.type;
+    if (!type) return "Value";
+    if (type === "bool") return "true/false";
+    if (type === "str") return "Text";
+    if (type === "int") return "Number";
+    return "Value";
   });
 
   // ===================================
-  // 5. LINKED SIGNALS
+  // 4. LINKED SIGNALS
   // ===================================
 
   selectedActionGroup: WritableSignal<string> = linkedSignal({
@@ -103,7 +119,7 @@ export class NewPolicyPanelComponent {
   });
 
   // ===================================
-  // 6. HELPER METHODS
+  // 5. HELPER METHODS
   // ===================================
 
   getActionNamesOfGroup(group: string): string[] {
@@ -116,17 +132,8 @@ export class NewPolicyPanelComponent {
     return [];
   }
 
-  getInputPlaceholder(): string {
-    const type = this.selectedAction()?.type;
-    if (!type) return "Value";
-    if (type === "bool") return "true/false";
-    if (type === "str") return "Text";
-    if (type === "int") return "Number";
-    return "Value";
-  }
-
   // ===================================
-  // 7. EVENT HANDLERS / ACTIONS
+  // 6. EVENT HANDLERS / ACTIONS
   // ===================================
 
   setActiveTab(tab: Tab): void {
@@ -139,21 +146,33 @@ export class NewPolicyPanelComponent {
   }
 
   addAction() {
-    console.log("Selected Action: ", this.selectedAction());
+    console.info("Selected Action: ", this.selectedAction());
+    if (!this.selectedAction()) return;
+    if (!this.inputIsValid()) return;
+    if (this.policyService.alreadyAddedActionNames().includes(this.selectedActionName())) return;
 
-    // Implementiere hier die Logik, um die Aktion zum Policy-Objekt hinzuzufügen
+    const newAction = {
+      actionName: this.selectedActionName(),
+      value: this.actionValue()
+    };
+
+    const updatedActions = [...this.policyService.currentActions(), newAction];
+    this.policyService.currentActions.set(updatedActions);
+
+    // Reset action value input after adding
+    this.actionValue.set("");
   }
 
   editAction(arg0: string) {}
 
   deleteAction(actionName: string): void {
-    console.log(`Deleting action: ${actionName}`);
+    console.info(`Deleting action: ${actionName}`);
 
     // Implementiere hier die Logik, um die Aktion aus dem Policy-Objekt zu entfernen
   }
 
   savePolicy(matExpansionPanel: MatExpansionPanel) {
-    console.log("Saving new policy");
+    console.info("Saving new policy");
     const selectedActionName = this.selectedActionName();
     const allActions = this.policyService.policyActions();
 
@@ -165,11 +184,11 @@ export class NewPolicyPanelComponent {
   }
 
   resetPolicy(matExpansionPanel: MatExpansionPanel) {
-    console.log("Resetting policy");
+    console.info("Resetting policy");
     this.selectedScope.set("");
-    this.currentActions.set([]);
+    this.policyService.currentActions.set([]);
     this.policyName.set("");
-
+    Object.entries(this.policyService.currentActions());
     // Implementiere hier die Logik, um das Policy-Objekt zurückzusetzen
 
     matExpansionPanel.close();

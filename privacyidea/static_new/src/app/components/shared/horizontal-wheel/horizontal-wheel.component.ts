@@ -31,9 +31,9 @@ export class HorizontalWheelComponent implements AfterViewInit {
 
   @Input({ required: true })
   set initialValue(value: any) {
-    console.log("Initial value set to:", value);
+    console.info("Initial value set to:", value);
     this.selectedValue.set(value);
-    console.log("Selected value initialized to:", this.selectedValue());
+    console.info("Selected value initialized to:", this.selectedValue());
   }
 
   isDragging = false;
@@ -51,12 +51,12 @@ export class HorizontalWheelComponent implements AfterViewInit {
     effect(
       () => {
         const currentValues = this.values();
-        console.log("Effect triggered: values changed.");
-        console.log("Available source values:", currentValues);
+        console.info("Effect triggered: values changed.");
+        console.info("Available source values:", currentValues);
 
         // Initialize selectedValue with the first item if currentValues exist and no value is set yet.
         if (currentValues.length > 0 && !this.selectedValue()) {
-          console.log("Setting initial value from first item:", currentValues[0]);
+          console.info("Setting initial value from first item:", currentValues[0]);
           this.selectedValue.set(currentValues[0]);
         }
       },
@@ -66,7 +66,7 @@ export class HorizontalWheelComponent implements AfterViewInit {
     effect(() => {
       this.items();
       this.selectedValue();
-      console.log("Effect triggered: items or selectedValue changed.");
+      console.info("Effect triggered: items or selectedValue changed.");
 
       // Only execute UI side-effects if view elements exist.
       if (this.items().length > 0) {
@@ -179,7 +179,7 @@ export class HorizontalWheelComponent implements AfterViewInit {
 
   private centerSelectedElement() {
     const index = this.values().indexOf(this.selectedValue());
-    console.log("Centering selected element at index:", index, "with value:", this.selectedValue());
+    console.info("Centering selected element at index:", index, "with value:", this.selectedValue());
 
     // Check for valid index and item existence before accessing nativeElement.
     if (index === -1 || !this.containerElement || !this.items() || index >= this.items().length) return;
