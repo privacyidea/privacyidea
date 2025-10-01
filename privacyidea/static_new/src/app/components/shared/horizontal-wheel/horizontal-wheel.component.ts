@@ -14,7 +14,6 @@ import {
   effect
 } from "@angular/core";
 import { CommonModule } from "@angular/common";
-import { assert } from "../../../utils/assert";
 
 @Component({
   selector: "app-horizontal-wheel",
@@ -25,14 +24,15 @@ import { assert } from "../../../utils/assert";
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class HorizontalWheelComponent implements AfterViewInit {
-  selectedValue!: WritableSignal<any>;
   @Input({ required: true }) values!: Signal<any[]>;
   @Output() onSelect: EventEmitter<any> = new EventEmitter<any>();
+
+  selectedValue: WritableSignal<any> = signal(undefined);
 
   @Input({ required: true })
   set initialValue(value: any) {
     console.log("Initial value set to:", value);
-    this.selectedValue = signal(value);
+    this.selectedValue.set(value);
     console.log("Selected value initialized to:", this.selectedValue());
   }
 
@@ -45,10 +45,34 @@ export class HorizontalWheelComponent implements AfterViewInit {
 
   constructor(private elementRef: ElementRef) {
     effect(() => {
-      console.log("Items changed:", this.items());
+      this.onSelect.emit(this.selectedValue());
+    });
+
+    effect(
+      () => {
+        const currentValues = this.values();
+        console.log("Effect triggered: values changed.");
+        console.log("Available source values:", currentValues);
+
+        // Initialize selectedValue with the first item if currentValues exist and no value is set yet.
+        if (currentValues.length > 0 && !this.selectedValue()) {
+          console.log("Setting initial value from first item:", currentValues[0]);
+          this.selectedValue.set(currentValues[0]);
+        }
+      },
+      { allowSignalWrites: true }
+    );
+
+    effect(() => {
       this.items();
-      this.setDynamicPadding();
-      this.centerSelectedElement();
+      this.selectedValue();
+      console.log("Effect triggered: items or selectedValue changed.");
+
+      // Only execute UI side-effects if view elements exist.
+      if (this.items().length > 0) {
+        this.setDynamicPadding();
+        this.centerSelectedElement();
+      }
     });
   }
 
@@ -58,6 +82,7 @@ export class HorizontalWheelComponent implements AfterViewInit {
       this.containerElement.addEventListener("scroll", () => this.onScroll());
       this.setDynamicPadding();
 
+      // Timeout to ensure view rendering and stability after initial setup.
       setTimeout(() => {
         const initialIndex = this.values().indexOf(this.selectedValue());
         if (initialIndex !== -1) {
@@ -85,7 +110,7 @@ export class HorizontalWheelComponent implements AfterViewInit {
   }
 
   _transformItemsOnScroll() {
-    if (!this.containerElement) return;
+    if (!this.containerElement || this.items().length === 0) return;
     const items = this.items();
     const containerRect = this.containerElement.getBoundingClientRect();
     const containerMidpointX = containerRect.left + containerRect.width / 2;
@@ -127,19 +152,20 @@ export class HorizontalWheelComponent implements AfterViewInit {
 
     if (closestIndex !== -1 && this.values()[closestIndex] !== this.selectedValue()) {
       this.selectedValue.set(this.values()[closestIndex]);
-      this.onSelect.emit(this.values()[closestIndex]);
     }
   }
 
   onItemClick(e: MouseEvent, index: number) {
     const walk = e.pageX - this.startX;
+    // Check if a drag movement occurred to prevent click event.
     if (this.isDragging && Math.abs(walk) > 10) return;
     e.preventDefault();
     this.centerElementByIndex(index);
   }
 
   private centerElementByIndex(index: number) {
-    if (!this.containerElement || !this.items()) return;
+    // Check for container, items, and valid index before accessing nativeElement.
+    if (!this.containerElement || !this.items() || index < 0 || index >= this.items().length) return;
     const itemElement = this.items()[index].nativeElement;
 
     const targetScrollLeft =
@@ -150,11 +176,14 @@ export class HorizontalWheelComponent implements AfterViewInit {
       behavior: "smooth"
     });
   }
+
   private centerSelectedElement() {
     const index = this.values().indexOf(this.selectedValue());
     console.log("Centering selected element at index:", index, "with value:", this.selectedValue());
-    if (index === -1) return;
-    if (!this.containerElement || !this.items()) return;
+
+    // Check for valid index and item existence before accessing nativeElement.
+    if (index === -1 || !this.containerElement || !this.items() || index >= this.items().length) return;
+
     const itemElement = this.items()[index].nativeElement;
 
     const targetScrollLeft =
@@ -176,7 +205,7 @@ export class HorizontalWheelComponent implements AfterViewInit {
   @HostListener("window:mouseup", ["$event"])
   onMouseUp(e: MouseEvent) {
     if (this.isDragging) {
-      // delay is dragging false for better UX
+      // Delay isDragging false to prevent click event after dragging.
       setTimeout(() => {
         this.isDragging = false;
       }, 100);

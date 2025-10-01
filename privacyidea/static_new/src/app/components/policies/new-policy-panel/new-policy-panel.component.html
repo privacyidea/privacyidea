@@ -7,28 +7,28 @@
         <input
           type="text"
           placeholder="Policy Name"
-          [(ngModel)]="name"
+          [(ngModel)]="policyName"
           (click)="$event.stopPropagation(); panel.expanded = true"
           (keydown)="$event.stopPropagation()"
           class="policy-name-input" />
       } @else {
-        @if (!name()) {
+        @if (!policyName()) {
           <p i18n>New Policy</p>
         } @else {
-          {{ name() }}
+          {{ policyName() }}
         }
       }
     </mat-panel-title>
     <mat-panel-description class="header-description">
       <div class="policy-scope-label">
-        @if (actions().length === 0 && panel.expanded) {
+        @if (currentActions().length === 0 && panel.expanded) {
           <app-horizontal-wheel
-            [initialValue]="scope()"
+            [initialValue]="selectedScope()"
             [values]="policyService.allPolicyScopes"
             (onSelect)="onScopeSelect($event)" />
         } @else {
           <span>
-            {{ scope().toLocaleUpperCase() }}
+            {{ selectedScope().toLocaleUpperCase() }}
           </span>
         }
       </div>
@@ -65,110 +65,94 @@
       </button>
     </div>
 
-    <div class="selected-content">
+    <div class="selected-content-header">
       @if (activeTab() === "actions") {
-        <div class="actions-list">
-          <h4>Actions of this policy:</h4>
-          @for (entry of actions(); track entry[0]) {
-            <div class="action-card">
-              <div class="detail-row">
-                <span class="detail-label">{{ entry[0] }}</span>
-                <span class="detail-value">{{ entry[1] }}</span>
-                <button
-                  mat-icon-button
-                  class="edit-action-button"
-                  (click)="editAction(entry[0])">
-                  <mat-icon>edit</mat-icon>
-                </button>
-                <button
-                  mat-icon-button
-                  class="delete-action-button"
-                  (click)="deleteAction(entry[0])">
-                  <mat-icon>delete</mat-icon>
-                </button>
-              </div>
-            </div>
-          }
-        </div>
-        <h4>Add new action:</h4>
-        <div class="add-action-section">
-          <input
-            type="text"
-            placeholder="Search action..."
-            [(ngModel)]="actionFilter"
-            class="search-input" />
-          <div class="add-action-details">
-            @if (policyActionGroupNames().length > 1) {
-              <div class="button-row">
-                @for (group of policyActionGroupNames(); track $index) {
-                  <button
-                    class="button-item"
-                    [class.first-button]="$index === 0"
-                    [class.last-button]="$index === policyActionGroupNames().length - 1"
-                    [class.selected-button]="selectedActionGroup() === group"
-                    (click)="selectedActionGroup.set(group)">
-                    {{ group }}
-                  </button>
-                }
-              </div>
-            }
-            <div class="policy-action-items">
-              @for (actionName of getActionNamesOfGroup(selectedActionGroup()); track actionName) {
-                <div
-                  class="policy-action-item"
-                  (click)="selectAction(actionName)">
-                  <span class="detail-label">{{ actionName }}</span>
-                </div>
-              }
+        @for (entry of currentActions(); track entry[0]) {
+          <div class="action-card">
+            <div class="detail-row">
+              <span class="detail-label">{{ entry[0] }}</span>
+              <span class="detail-value">{{ entry[1] }}</span>
+              <button
+                mat-icon-button
+                class="edit-action-button"
+                (click)="editAction(entry[0])">
+                <mat-icon>edit</mat-icon>
+              </button>
+              <button
+                mat-icon-button
+                class="delete-action-button"
+                (click)="deleteAction(entry[0])">
+                <mat-icon>delete</mat-icon>
+              </button>
             </div>
           </div>
-          <button
-            mat-icon-button
-            class="add-action-button"
-            [hidden]="!isAddActionValueProvided()">
-            <mat-icon>add_circle_outline</mat-icon>
-          </button>
+        }
+      }
+    </div>
+    <div class="select-action-column">
+      @if (activeTab() === "actions") {
+        <input
+          type="text"
+          placeholder="Search action..."
+          [(ngModel)]="actionFilter"
+          class="search-input" />
+        @if (policyActionGroupNames().length > 1) {
+          <div class="button-row">
+            @for (group of policyActionGroupNames(); track $index) {
+              <button
+                class="button-item"
+                [class.first-button]="$index === 0"
+                [class.last-button]="$index === policyActionGroupNames().length - 1"
+                [class.selected-button]="selectedActionGroup() === group"
+                (click)="selectedActionGroup.set(group)">
+                {{ group }}
+              </button>
+            }
+          </div>
+        }
+        <div class="add-action-details">
+          <div class="policy-action-items">
+            @for (actionName of getActionNamesOfGroup(selectedActionGroup()); track actionName) {
+              <div
+                class="policy-action-item"
+                [class.policy-action-item-selected]="selectedActionName() === actionName"
+                (click)="selectedActionName.set(actionName)">
+                <span class="detail-label">{{ actionName }}</span>
+                <mat-icon>add_circle_outline</mat-icon>
+              </div>
+            }
+          </div>
         </div>
       }
-
-      <!-- @if (activeTab() === "conditions") {
-      <div class="conditions-list">
-        <div class="detail-row">
-          <span class="detail-label">Active:</span>
-          <span class="detail-value">{{ policy().active }}</span>
-        </div>
-        <div class="detail-row">
-          <span class="detail-label">Client:</span>
-          <span class="detail-value">{{ policy().client }}</span>
-        </div>
-        <div class="detail-row">
-          <span class="detail-label">Name:</span>
-          <span class="detail-value">{{ policy().name }}</span>
-        </div>
-        <div class="detail-row">
-          <span class="detail-label">Realm:</span>
-          <span class="detail-value">{{ policy().realm }}</span>
-        </div>
-        <div class="detail-row">
-          <span class="detail-label">Resolver:</span>
-          <span class="detail-value">{{ policy().resolver }}</span>
-        </div>
-        <div class="detail-row">
-          <span class="detail-label">Scope:</span>
-          <span class="detail-value">{{ policy().scope }}</span>
-        </div>
-        <div class="detail-row">
-          <span class="detail-label">Time:</span>
-          <span class="detail-value">{{ policy().time }}</span>
-        </div>
-        <div class="detail-row">
-          <span class="detail-label">User:</span>
-          <span class="detail-value">{{ policy().user }}</span>
-        </div>
-      </div>
-    } -->
     </div>
 
-    <div class="placeholder-for-right-column"></div>
+    <div class="action-detail-column-header">
+      @if (activeTab() === "actions" && selectedActionName() !== "") {
+        <!-- <h4>Details-header for action: {{ selectedAction() }}</h4> -->
+      }
+    </div>
+    <div class="action-detail-column">
+      @if (activeTab() === "actions" && selectedActionName() !== "") {
+        <h3>{{ selectedActionName() }}</h3>
+        <div class="action-detail-card">
+          <span class="detail-row">
+            {{ selectedAction()?.desc }}
+          </span>
+        </div>
+        <input
+          type="text"
+          [placeholder]="getInputPlaceholder()"
+          y
+          [(ngModel)]="actionValue"
+          class="action-value-input" />
+        <button
+          mat-raised-button
+          color="primary"
+          (click)="addAction()"
+          [disabled]="!isAddActionValueProvided()">
+          Add Action
+        </button>
+      }
+    </div>
   </div>
 </mat-expansion-panel>

@@ -32,7 +32,7 @@ export type PolicyAction = {
   value?: string[] | number[];
 };
 
-export type PolicyActions = {
+export type ScopedPolicyActions = {
   [scopeName: string]: {
     [actionName: string]: PolicyAction;
   };
@@ -131,11 +131,15 @@ export class PoliciesService implements PoliciesServiceInterface {
 
   // GET /policy/defs
 
-  policyActionResource = httpResource<PiResponse<PolicyActions>>(() => ({
+  policyActionResource = httpResource<PiResponse<ScopedPolicyActions>>(() => ({
     url: `${this.policyBaseUrl}defs`,
     method: "GET",
     headers: this.authService.getHeaders()
   }));
+
+  policyActions = computed(() => {
+    return this.policyActionResource.value()?.result?.value ?? {};
+  });
 
   allPolicyScopes = computed(() => {
     //     export type PolicyAction = {
