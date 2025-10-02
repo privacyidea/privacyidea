@@ -6,15 +6,26 @@
         {{ selectedAction?.desc }}
       </span>
     </div>
-    @if (selectedAction?.type === "bool") {
-      <app-bool-select-buttons (onSelectString)="actionValue.set($event)" />
-    } @else {
-      <input
-        type="text"
-        [placeholder]="inputPlaceholder()"
-        [ngModel]="actionValue()"
-        (ngModelChange)="actionValue.set($event)"
-        class="action-value-input" />
+    @switch (selectedAction?.type) {
+      @case ("bool") {
+        <app-bool-select-buttons (onSelectString)="actionValue.set($event)" />
+      }
+      @case ("str") {
+        <input
+          type="text"
+          placeholder="Text"
+          [ngModel]="actionValue()"
+          (ngModelChange)="actionValue.set($event)"
+          class="action-value-input" />
+      }
+      @case ("int") {
+        <input
+          type="number"
+          placeholder="Number"
+          [ngModel]="actionValue()"
+          (ngModelChange)="actionValue.set($event)"
+          class="action-value-input" />
+      }
     }
     <button
       mat-raised-button

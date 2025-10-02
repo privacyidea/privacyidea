@@ -169,8 +169,6 @@ export class PoliciesService implements PoliciesServiceInterface {
   actionFilter = signal<string>("");
   currentActions = signal<{ actionName: string; value: string }[]>([]);
   alreadyAddedActionNames = computed(() => {
-    console.info("Computing alreadyAddedActions from currentActions");
-    console.info("Current actions:", this.currentActions());
     return this.currentActions().map((a) => a.actionName);
   });
 
@@ -184,14 +182,11 @@ export class PoliciesService implements PoliciesServiceInterface {
     if (!policyActions) return {};
     const grouped: PolicyActionGroups = {};
     const filterValue = this.actionFilter().toLowerCase();
-    console.info("Filtering policy actions with filter:", filterValue);
-    console.info("Filtering: Already added action names:", alreadyAddedActionNames);
     for (const scope in policyActions) {
       const actions = policyActions[scope];
       grouped[scope] = {};
       for (const actionName in actions) {
         if (alreadyAddedActionNames.includes(actionName)) {
-          console.info(`Skipping already added action: ${actionName}`);
           continue;
         }
         const action = actions[actionName];

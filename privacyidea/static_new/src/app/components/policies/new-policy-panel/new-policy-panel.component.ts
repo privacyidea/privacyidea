@@ -53,8 +53,12 @@ export class NewPolicyPanelComponent {
   // ===================================
 
   policyActionGroupNames: Signal<string[]> = computed(() => {
-    if (!this.policyService.selectedScope()) return [];
-    return Object.keys(this.policyService.policyActionsByGroupFiltered()[this.policyService.selectedScope()]);
+    const selectedScope = this.policyService.selectedScope();
+    if (!selectedScope) return [];
+    const policyActionGroupFiltered =
+      this.policyService.policyActionsByGroupFiltered()[this.policyService.selectedScope()];
+    if (!policyActionGroupFiltered) return [];
+    return Object.keys(policyActionGroupFiltered);
   });
 
   selectedAction: Signal<PolicyAction | null> = computed(() => {
@@ -130,19 +134,16 @@ export class NewPolicyPanelComponent {
   editAction(arg0: string) {}
 
   deleteAction(actionName: string): void {
-    console.info(`Deleting action: ${actionName}`);
     const updatedActions = this.policyService.currentActions().filter((a) => a.actionName !== actionName);
     this.policyService.currentActions.set(updatedActions);
   }
 
   savePolicy(matExpansionPanel: MatExpansionPanel) {
-    console.info("Saving new policy");
     // Implementiere hier die Logik, um das neue Policy zu speichern
     this.resetPolicy(matExpansionPanel);
   }
 
   resetPolicy(matExpansionPanel: MatExpansionPanel) {
-    console.info("Resetting policy");
     this.policyService.selectedScope.set("");
     this.policyService.currentActions.set([]);
     this.policyName.set("");

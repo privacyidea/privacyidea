@@ -11,7 +11,8 @@ import {
   Input,
   WritableSignal,
   Signal,
-  effect
+  effect,
+  linkedSignal
 } from "@angular/core";
 import { CommonModule } from "@angular/common";
 
@@ -25,28 +26,22 @@ import { CommonModule } from "@angular/common";
 })
 export class HorizontalWheelComponent implements AfterViewInit {
   @Input({ required: true }) values!: Signal<any[]>;
-  @Output() onSelect: EventEmitter<any> = new EventEmitter<any>();
+  @Input({ required: true }) initialValue!: any;
+  @Output() onSelect: EventEmitter<string> = new EventEmitter<string>();
 
-  selectedValue: WritableSignal<any> = signal(null); // Please check the effect where this will get updated when values change.
+  // selectedValue: WritableSignal<any> = signal(null); // Please check the effect where this will get updated when values change.
 
   // // Linked signal will not work here. Computiton will not be called when values change.
-  // selectedValue: WritableSignal<any> = linkedSignal({
-  //   source: this.values,
-  //   computation: (source, previous) => {
-  //     console.info("Computing selectedValue from source:", source, "previous:", previous);
-  //     if (source.length === 0 && !previous) return null;
-  //     if (previous) return previous;
-  //     return source[0];
-  //   }
-  // });
+  selectedValue: WritableSignal<string> = linkedSignal<string[], string>({
+    source: () => this.values(),
+    computation: (source, previous) => {
+      if (source.length === 0 && !previous) return null;
+      if (previous) return previous.value;
+      return this.initialValue || source[0];
+    }
+  });
 
-  @Input({ required: true })
-  set initialValue(value: any) {
-    console.info("Initial value set to:", value);
-    this.selectedValue.set(value);
-    console.info("Selected value initialized to:", this.selectedValue());
-  }
-
+  isMouseDown = false;
   isDragging = false;
   startX = 0;
   scrollLeft = 0;
@@ -56,7 +51,8 @@ export class HorizontalWheelComponent implements AfterViewInit {
 
   constructor(private elementRef: ElementRef) {
     effect(() => {
-      this.onSelect.emit(this.selectedValue());
+      const selected = this.selectedValue();
+      this.onSelect.emit(selected);
     });
 
     effect(
@@ -66,12 +62,9 @@ export class HorizontalWheelComponent implements AfterViewInit {
         // When there is a fix or improvement for linkedSignal, please remove this effect.
 
         const currentValues = this.values();
-        console.info("Effect triggered: values changed.");
-        console.info("Available source values:", currentValues);
 
         // Initialize selectedValue with the first item if currentValues exist and no value is set yet.
         if (currentValues.length > 0 && !this.selectedValue()) {
-          console.info("Setting initial value from first item:", currentValues[0]);
           this.selectedValue.set(currentValues[0]);
         }
       },
@@ -81,7 +74,6 @@ export class HorizontalWheelComponent implements AfterViewInit {
     effect(() => {
       this.items();
       this.selectedValue();
-      console.info("Effect triggered: items or selectedValue changed.");
 
       // Only execute UI side-effects if view elements exist.
       if (this.items().length > 0) {
@@ -165,7 +157,7 @@ export class HorizontalWheelComponent implements AfterViewInit {
       }
     });
 
-    if (closestIndex !== -1 && this.values()[closestIndex] !== this.selectedValue()) {
+    if (this.isDragging && closestIndex !== -1 && this.values()[closestIndex] !== this.selectedValue()) {
       this.selectedValue.set(this.values()[closestIndex]);
     }
   }
@@ -175,6 +167,7 @@ export class HorizontalWheelComponent implements AfterViewInit {
     // Check if a drag movement occurred to prevent click event.
     if (this.isDragging && Math.abs(walk) > 10) return;
     e.preventDefault();
+    this.selectedValue.set(this.values()[index]);
     this.centerElementByIndex(index);
   }
 
@@ -194,7 +187,6 @@ export class HorizontalWheelComponent implements AfterViewInit {
 
   private centerSelectedElement() {
     const index = this.values().indexOf(this.selectedValue());
-    console.info("Centering selected element at index:", index, "with value:", this.selectedValue());
 
     // Check for valid index and item existence before accessing nativeElement.
     if (index === -1 || !this.containerElement || !this.items() || index >= this.items().length) return;
@@ -211,7 +203,7 @@ export class HorizontalWheelComponent implements AfterViewInit {
   }
 
   onMouseDown(e: MouseEvent) {
-    this.isDragging = true;
+    this.isMouseDown = true;
     this.containerElement = e.currentTarget as HTMLElement;
     this.startX = e.pageX;
     this.scrollLeft = this.containerElement.scrollLeft;
@@ -219,11 +211,12 @@ export class HorizontalWheelComponent implements AfterViewInit {
 
   @HostListener("window:mouseup", ["$event"])
   onMouseUp(e: MouseEvent) {
+    this.isMouseDown = false;
     if (this.isDragging) {
       // Delay isDragging false to prevent click event after dragging.
       setTimeout(() => {
         this.isDragging = false;
-      }, 100);
+      }, 50);
 
       this.centerSelectedElement();
     }
@@ -231,9 +224,12 @@ export class HorizontalWheelComponent implements AfterViewInit {
 
   @HostListener("window:mousemove", ["$event"])
   onMouseMove(e: MouseEvent) {
+    const walk = e.pageX - this.startX;
+    if (this.isMouseDown && Math.abs(walk) > 2) {
+      this.isDragging = true;
+    }
     if (!this.isDragging || !this.containerElement) return;
     e.preventDefault();
-    const walk = e.pageX - this.startX;
     this.containerElement.scrollLeft = this.scrollLeft - walk;
   }
 }

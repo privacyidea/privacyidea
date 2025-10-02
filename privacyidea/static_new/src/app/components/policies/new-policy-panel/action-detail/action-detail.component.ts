@@ -38,15 +38,6 @@ export class ActionDetailComponent {
     return false;
   });
 
-  inputPlaceholder: Signal<string> = computed(() => {
-    const type = this.selectedAction?.type;
-    if (!type) return "Value";
-    if (type === "bool") return "true/false";
-    if (type === "str") return "Text";
-    if (type === "int") return "Number";
-    return "Value";
-  });
-
   onAddAction() {
     if (!this.inputIsValid()) return;
 

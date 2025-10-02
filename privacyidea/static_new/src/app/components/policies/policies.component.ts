@@ -39,16 +39,13 @@ export class PoliciesComponent {
   }
 
   savePolicy(arg0: string) {
-    console.info(`Saving policy: ${arg0}`);
     this.editPolicyName.set(null);
   }
 
   deletePolicy(policyName: string): void {
     // Implement delete logic here
-    console.info(`Deleting policy: ${policyName}`);
   }
   onSelect(policy: PolicyDetail, scope: string) {
-    console.info(`Selected policy: ${policy.name} with scope: ${scope}`);
     // Implement selection logic here
   }
 }
