@@ -28,6 +28,7 @@ import { TokenTableSelfServiceComponent } from "./components/token/token-table/t
 import { TokenSelfServiceComponent } from "./components/token/token.self-service.component";
 import { UserSelfServiceComponent } from "./components/user/user.self-service.component";
 import { AuditSelfServiceComponent } from "./components/audit/audit.self-service.component";
+import { TokenEnrollmentWizardComponent } from "./components/token/token-enrollment/token-enrollment.wizard.component";
 
 export const routes: Routes = [
   {
@@ -52,7 +53,8 @@ export const routes: Routes = [
           }
         ]
       },
-      { path: "details/:serial", component: TokenDetailsSelfServiceComponent }
+      { path: "details/:serial", component: TokenDetailsSelfServiceComponent },
+      { path: "wizard", component: TokenEnrollmentWizardComponent }
     ]
   },
   {

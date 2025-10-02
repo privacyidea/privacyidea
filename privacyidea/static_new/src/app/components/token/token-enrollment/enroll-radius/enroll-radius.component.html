@@ -1,6 +1,6 @@
 <div class="flex-column">
   <h4 class="enroll-h4">Token Configuration</h4>
-  @if (!defaultRadiusServerIsSet()) {
+  @if (!defaultRadiusServerIsSet() && authService.role() === "admin") {
     <span
       i18n
       class="inline-hint">To ease the enrolling of RADIUS tokens you can set default values in the

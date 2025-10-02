@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, EventEmitter, inject, OnInit, Output } from "@angular/core";
+import { Component, EventEmitter, inject, Input, OnInit, Output } from "@angular/core";
 import {
   AbstractControl,
   FormControl,
@@ -57,6 +57,7 @@ export class EnrollMotpComponent implements OnInit {
   protected readonly enrollmentMapper: MotpApiPayloadMapper = inject(MotpApiPayloadMapper);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
 
+  @Input() wizard: boolean = false;
   @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();

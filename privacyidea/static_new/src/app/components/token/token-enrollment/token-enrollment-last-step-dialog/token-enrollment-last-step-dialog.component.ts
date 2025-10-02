@@ -16,8 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, inject, WritableSignal } from "@angular/core";
-import { MatButton, MatIconButton } from "@angular/material/button";
+import { Component, inject, WritableSignal } from "@angular/core";
+import { MatButton } from "@angular/material/button";
 import {
   MAT_DIALOG_DATA,
   MatDialogActions,
@@ -26,23 +26,21 @@ import {
   MatDialogRef,
   MatDialogTitle
 } from "@angular/material/dialog";
-import {
-  MatAccordion,
-  MatExpansionPanel,
-  MatExpansionPanelHeader,
-  MatExpansionPanelTitle
-} from "@angular/material/expansion";
 import { MatIcon } from "@angular/material/icon";
 import { EnrollmentResponse } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
 import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
-import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
+import { TokenService, TokenServiceInterface, TokenType } from "../../../../services/token/token.service";
 import { UserData } from "../../../../services/user/user.service";
-import { TokenType } from "../../../../services/token/token.service";
 import {
   NO_QR_CODE_TOKEN_TYPES,
   NO_REGENERATE_TOKEN_TYPES,
   REGENERATE_AS_VALUES_TOKEN_TYPES
 } from "../token-enrollment.constants";
+import { QrCodeTextComponent } from "./qr-code-text/qr-code-text.component";
+import { OtpKeyComponent } from "./otp-key/otp-key.component";
+import { TiqrEnrollUrlComponent } from "./tiqr-enroll-url/tiqr-enroll-url.component";
+import { RegistrationCodeComponent } from "./registration-code/registration-code.component";
+import { OtpValuesComponent } from "./otp-values/otp-values.component";
 
 export type TokenEnrollmentLastStepDialogData = {
   tokentype: TokenType;
@@ -62,12 +60,12 @@ export type TokenEnrollmentLastStepDialogData = {
     MatDialogClose,
     MatDialogContent,
     MatDialogTitle,
-    MatAccordion,
-    MatExpansionPanel,
-    MatExpansionPanelHeader,
-    MatExpansionPanelTitle,
     MatIcon,
-    MatIconButton
+    QrCodeTextComponent,
+    OtpKeyComponent,
+    TiqrEnrollUrlComponent,
+    RegistrationCodeComponent,
+    OtpValuesComponent
   ],
   templateUrl: "./token-enrollment-last-step-dialog.component.html",
   styleUrl: "./token-enrollment-last-step-dialog.component.scss"
@@ -80,6 +78,17 @@ export class TokenEnrollmentLastStepDialogComponent {
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
 
   protected readonly Object = Object;
+
+  protected readonly serial = this.data.response.detail?.serial;
+  protected readonly containerSerial = this.data.response.detail?.["container-serial"] ?? "";
+  protected readonly qrCode = this.data.response.detail.googleurl?.img ??
+    this.data.response.detail.motpurl?.img ??
+    this.data.response.detail.otpkey?.img ??
+    this.data.response.detail.tiqrenroll?.img ?? "";
+  protected readonly url = this.data.response.detail?.googleurl?.value ??
+    this.data.response.detail?.motpurl?.value ??
+    this.data.response.detail?.otpkey?.value ??
+    this.data.response.detail?.tiqrenroll?.value ?? "";
 
   showQRCode(): boolean {
     return !NO_QR_CODE_TOKEN_TYPES.includes(this.data.tokentype?.key);
@@ -114,37 +123,5 @@ export class TokenEnrollmentLastStepDialogComponent {
   containerSelected(containerSerial: string) {
     this.dialogRef.close();
     this.contentService.containerSelected(containerSerial);
-  }
-
-  printOtps(): void {
-    const printContents = document.getElementById("otp-values")?.innerHTML;
-    if (printContents) {
-      const printWindow = window.open("", "_blank", "width=800,height=600");
-      if (printWindow) {
-        printWindow.document.open();
-        printWindow.document.write(`
-          <html lang="en">
-              <style>
-                .otp-values {
-                  display: flex;
-                  flex-wrap: wrap;
-                  gap: 8px;
-                }
-                .otp-value {
-                  min-width: 6rem;
-                  border: 1px solid #e2e2e2;
-                  padding: 6px;
-                  border-radius: 6px;
-                }
-              </style>
-              ${printContents}
-          </html>
-        `);
-        printWindow.document.close();
-        printWindow.focus();
-        printWindow.print();
-        printWindow.close();
-      }
-    }
   }
 }

@@ -247,6 +247,8 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
   private observer!: IntersectionObserver;
   timezoneOptions = TIMEZONE_OFFSETS;
 
+  protected wizard = false;
+
   enrollResponse: WritableSignal<EnrollmentResponse | null> = linkedSignal({
     source: this.tokenService.selectedTokenType,
     computation: () => null

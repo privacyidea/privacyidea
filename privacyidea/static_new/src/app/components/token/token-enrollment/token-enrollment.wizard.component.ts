@@ -18,16 +18,12 @@
  **/
 import { AsyncPipe, NgClass } from "@angular/common";
 import { HttpClient } from "@angular/common/http";
-import { Component, inject, signal } from "@angular/core";
+import { Component, computed, inject } from "@angular/core";
 import { FormsModule, ReactiveFormsModule } from "@angular/forms";
-import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
 import { MatButton, MatIconButton } from "@angular/material/button";
 import { MatNativeDateModule } from "@angular/material/core";
 import { MatDatepickerModule } from "@angular/material/datepicker";
-import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
-import { MatInput } from "@angular/material/input";
-import { MatOption, MatSelect } from "@angular/material/select";
 import { MatTooltip } from "@angular/material/tooltip";
 import { DomSanitizer } from "@angular/platform-browser";
 import { map } from "rxjs";
@@ -37,10 +33,9 @@ import { ContentService, ContentServiceInterface } from "../../../services/conte
 import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
 import { NotificationService, NotificationServiceInterface } from "../../../services/notification/notification.service";
 import { RealmService, RealmServiceInterface } from "../../../services/realm/realm.service";
-import { TokenService, TokenServiceInterface } from "../../../services/token/token.service";
+import { TokenService, TokenServiceInterface, TokenType } from "../../../services/token/token.service";
 import { UserData, UserService, UserServiceInterface } from "../../../services/user/user.service";
 import { VersioningService, VersioningServiceInterface } from "../../../services/version/version.service";
-import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { EnrollApplspecComponent } from "./enroll-asp/enroll-applspec.component";
 import { EnrollCertificateComponent } from "./enroll-certificate/enroll-certificate.component";
@@ -69,21 +64,15 @@ import { EnrollWebauthnComponent } from "./enroll-webauthn/enroll-webauthn.compo
 import { EnrollYubicoComponent } from "./enroll-yubico/enroll-yubico.component";
 import { EnrollYubikeyComponent } from "./enroll-yubikey/enroll-yubikey.component";
 import { TokenEnrollmentComponent } from "./token-enrollment.component";
+import { AuthService } from "../../../services/auth/auth.service";
+import { TokenEnrollmentLastStepDialogData } from "./token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
 
 @Component({
   selector: "app-token-enrollment-wizard",
   imports: [
-    MatFormField,
-    MatSelect,
-    MatOption,
     ReactiveFormsModule,
     FormsModule,
-    MatHint,
     EnrollHotpComponent,
-    MatInput,
-    MatLabel,
-    MatAutocomplete,
-    MatAutocompleteTrigger,
     MatNativeDateModule,
     MatDatepickerModule,
     MatButton,
@@ -116,10 +105,8 @@ import { TokenEnrollmentComponent } from "./token-enrollment.component";
     EnrollWebauthnComponent,
     EnrollPasskeyComponent,
     AsyncPipe,
-    MatError,
     MatTooltip,
-    ScrollToTopDirective,
-    ClearableInputComponent
+    ScrollToTopDirective
   ],
   templateUrl: "./token-enrollment.wizard.component.html",
   styleUrl: "./token-enrollment.component.scss"
@@ -135,19 +122,31 @@ export class TokenEnrollmentWizardComponent extends TokenEnrollmentComponent {
   protected override readonly versioningService: VersioningServiceInterface = inject(VersioningService);
   protected override readonly contentService: ContentServiceInterface = inject(ContentService);
   protected override readonly dialogService: DialogServiceInterface = inject(DialogService);
+  protected override readonly authService: AuthService = inject(AuthService);
+  protected override wizard = true;
+  protected readonly tokenType = computed(() =>
+    this.authService.defaultTokentype() || "hotp"
+  );
 
-  protected override openLastStepDialog(args: { response: EnrollmentResponse; user: UserData | null }) {
+  protected override openLastStepDialog(args: { response: EnrollmentResponse | null; user: UserData | null }): void {
     const { response, user } = args;
+    if (!response) {
+      this.notificationService.openSnackBar("No enrollment response available.");
+      return;
+    }
+
+    const dialogData: TokenEnrollmentLastStepDialogData = {
+      tokentype: { key: this.tokenType(), info: "", text: "" } as TokenType,
+      response: response,
+      serial: this.serial,
+      enrollToken: this.enrollToken.bind(this),
+      user: user,
+      userRealm: this.userService.selectedUserRealm(),
+      onlyAddToRealm: this.onlyAddToRealmControl.value
+    };
+    this._lastTokenEnrollmentLastStepDialogData.set(dialogData);
     this.dialogService.openTokenEnrollmentLastStepDialog({
-      data: {
-        response,
-        enrollToken: this.enrollToken.bind(this),
-        user: user,
-        userRealm: this.userService.selectedUserRealm(),
-        onlyAddToRealm: this.onlyAddToRealmControl.value,
-        tokentype: this.tokenService.selectedTokenType(),
-        serial: signal(null)
-      }
+      data: dialogData
     });
   }
 
