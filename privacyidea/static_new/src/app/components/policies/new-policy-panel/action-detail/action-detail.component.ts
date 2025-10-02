@@ -1,16 +1,16 @@
-
 import { Component, computed, EventEmitter, Input, Output, Signal, signal, WritableSignal } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
 import { PolicyAction } from "../../../../services/policies/policies.service";
+import { BoolSelectButtonsComponent } from "../bool-select-buttons/bool-select-buttons.component";
 
 @Component({
   selector: "app-action-detail",
   standalone: true,
-  imports: [CommonModule, FormsModule, MatButtonModule],
+  imports: [CommonModule, FormsModule, MatButtonModule, BoolSelectButtonsComponent],
   templateUrl: "./action-detail.component.html",
-  styleUrls: ["./action-detail.component.scss"],
+  styleUrls: ["./action-detail.component.scss"]
 })
 export class ActionDetailComponent {
   @Input() selectedAction: PolicyAction | null = null;

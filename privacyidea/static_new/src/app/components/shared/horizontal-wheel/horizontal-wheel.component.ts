@@ -27,7 +27,18 @@ export class HorizontalWheelComponent implements AfterViewInit {
   @Input({ required: true }) values!: Signal<any[]>;
   @Output() onSelect: EventEmitter<any> = new EventEmitter<any>();
 
-  selectedValue: WritableSignal<any> = signal(undefined);
+  selectedValue: WritableSignal<any> = signal(null); // Please check the effect where this will get updated when values change.
+
+  // // Linked signal will not work here. Computiton will not be called when values change.
+  // selectedValue: WritableSignal<any> = linkedSignal({
+  //   source: this.values,
+  //   computation: (source, previous) => {
+  //     console.info("Computing selectedValue from source:", source, "previous:", previous);
+  //     if (source.length === 0 && !previous) return null;
+  //     if (previous) return previous;
+  //     return source[0];
+  //   }
+  // });
 
   @Input({ required: true })
   set initialValue(value: any) {
@@ -50,6 +61,10 @@ export class HorizontalWheelComponent implements AfterViewInit {
 
     effect(
       () => {
+        // Unfortunately, linkedSignal's computation does not run on source changes.
+        // So we need to manually check for changes here and set the initial value if needed.
+        // When there is a fix or improvement for linkedSignal, please remove this effect.
+
         const currentValues = this.values();
         console.info("Effect triggered: values changed.");
         console.info("Available source values:", currentValues);

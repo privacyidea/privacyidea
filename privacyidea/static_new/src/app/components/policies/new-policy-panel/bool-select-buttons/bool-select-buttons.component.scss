@@ -1,0 +1,47 @@
+.bool-select-container {
+  display: flex;
+  width: 100%;
+  padding: 0;
+  border: 1px solid var(--mat-sys-outline);
+  border-radius: 8px;
+  overflow: auto;
+  scrollbar-width: thin;
+}
+
+.false-button {
+  grid-area: false-button;
+  min-width: 0;
+  border-top-left-radius: 8px;
+  border-bottom-left-radius: 8px;
+}
+
+.true-button {
+  grid-area: true-button;
+  min-width: 0;
+  border-top-right-radius: 8px;
+  border-bottom-right-radius: 8px;
+  border-right: 1px solid var(--mat-sys-outline) !important;
+}
+
+.bool-select-button {
+  flex: 1;
+  padding: 10px 15px;
+  text-align: center;
+  cursor: pointer;
+  background-color: var(--mat-sys-surface-container);
+  border: none;
+  margin: 0;
+  border-radius: 0;
+}
+
+.bool-select-button:hover {
+  background-color: var(--mat-sys-primary-light);
+  color: var(--mat-sys-on-primary);
+  font-size: 600;
+}
+
+.selected-button {
+  background-color: var(--mat-sys-primary-base);
+  color: var(--mat-sys-on-primary);
+  font-weight: 600;
+}

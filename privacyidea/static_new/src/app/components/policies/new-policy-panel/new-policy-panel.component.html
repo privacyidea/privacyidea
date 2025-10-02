@@ -6,11 +6,11 @@
       @if (panel.expanded) {
         <input
           type="text"
+          class="policy-name-input"
           placeholder="Policy Name"
           [(ngModel)]="policyName"
           (click)="$event.stopPropagation(); panel.expanded = true"
-          (keydown)="$event.stopPropagation()"
-          class="policy-name-input" />
+          (keydown)="$event.stopPropagation()" />
       } @else {
         @if (!policyName()) {
           <p i18n>New Policy</p>
