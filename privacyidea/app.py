@@ -27,6 +27,7 @@ import atexit
 import datetime
 from importlib import metadata
 from importlib.metadata import PackageNotFoundError
+import json
 import os
 import os.path
 import logging
@@ -345,6 +346,14 @@ def create_app(config_name="development",
             init_hsm()
 
     _setup_node_configuration(app)
+
+    # SQLAlchemy Oracle dialect does not (yet) support JSON serializers
+    with app.app_context():
+        engine = db.session.get_bind()
+        sys.stderr.write("DEBUG: " + engine.name)
+        if engine.name == "oracle":
+            engine.dialect._json_serializer=lambda obj: json.dumps(obj, ensure_ascii=False)
+            engine.dialect._json_deserializer=lambda obj: json.loads(obj)
 
     log.debug(f"Reading application from the static folder {app.static_folder} "
               f"and the template folder {app.template_folder}")
