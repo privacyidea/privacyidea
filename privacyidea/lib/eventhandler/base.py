@@ -690,6 +690,7 @@ class BaseEventHandler(object):
         response = options.get("response")
         e_handler_def = options.get("handler_def")
         if not e_handler_def:
+            options["context"] = EventHandlerContext()
             # options is the handler definition
             return True
         # conditions can be corresponding to the property conditions

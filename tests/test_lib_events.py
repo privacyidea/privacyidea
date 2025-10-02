@@ -3930,6 +3930,7 @@ class TokenEventTestCase(MyTestCase):
                    }
 
         t_handler = TokenEventHandler()
+        self.assertTrue(t_handler.check_condition(options))
         res = t_handler.do("unknown_tokenhandler_action", options=options)
         self.assertFalse(res)
         capture.check_present(
