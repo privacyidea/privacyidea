@@ -45,7 +45,6 @@ export class NewPolicyPanelComponent {
   // ===================================
 
   policyName = signal("");
-  selectedScope = signal<string>("");
 
   activeTab: WritableSignal<Tab> = signal("actions");
 
@@ -54,14 +53,14 @@ export class NewPolicyPanelComponent {
   // ===================================
 
   policyActionGroupNames: Signal<string[]> = computed(() => {
-    if (!this.selectedScope()) return [];
-    return Object.keys(this.policyService.policyActionsByGroupFiltered()[this.selectedScope()]);
+    if (!this.policyService.selectedScope()) return [];
+    return Object.keys(this.policyService.policyActionsByGroupFiltered()[this.policyService.selectedScope()]);
   });
 
   selectedAction: Signal<PolicyAction | null> = computed(() => {
     const actions = this.policyService.policyActions();
     const actionName = this.selectedActionName();
-    const scope = this.selectedScope(); // Only check for actions[scope][actionName] if actions[scope] exists
+    const scope = this.policyService.selectedScope(); // Only check for actions[scope][actionName] if actions[scope] exists
     if (actionName && actions && actions[scope]) {
       return actions[scope][actionName] ?? null;
     }
@@ -96,7 +95,7 @@ export class NewPolicyPanelComponent {
 
   getActionNamesOfGroup(group: string): string[] {
     const actionsByGroup = this.policyService.policyActionsByGroupFiltered();
-    const scope = this.selectedScope();
+    const scope = this.policyService.selectedScope();
 
     if (scope && actionsByGroup[scope]) {
       return Object.keys(actionsByGroup[scope][group] || {});
@@ -114,7 +113,6 @@ export class NewPolicyPanelComponent {
 
   onScopeSelect($event: string) {
     this.policyService.selectedScope.set($event);
-    this.selectedScope.set($event);
   }
 
   onAddAction(event: { actionName: string; value: string }) {
@@ -145,7 +143,7 @@ export class NewPolicyPanelComponent {
 
   resetPolicy(matExpansionPanel: MatExpansionPanel) {
     console.info("Resetting policy");
-    this.selectedScope.set("");
+    this.policyService.selectedScope.set("");
     this.policyService.currentActions.set([]);
     this.policyName.set("");
     Object.entries(this.policyService.currentActions());

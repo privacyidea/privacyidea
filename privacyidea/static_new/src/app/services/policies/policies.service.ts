@@ -142,18 +142,6 @@ export class PoliciesService implements PoliciesServiceInterface {
   });
 
   allPolicyScopes = computed(() => {
-    //     export type PolicyAction = {
-    //   [actionName: string]: {
-    //     desc: string;
-    //     type: string;
-    //     group?: string;
-    //     mainmenu?: string[];
-    //     value?: string[] | number[];
-    //   };
-    // };
-    // export type PolicyActions = {
-    //   [scopeName: string]: PolicyAction;
-    // };
     const policyActions = this.policyActionResource.value()?.result?.value;
     if (!policyActions) return [];
     return Object.keys(policyActions);
@@ -220,17 +208,10 @@ export class PoliciesService implements PoliciesServiceInterface {
     return grouped;
   });
 
-  // getPolicyScopes(): string[] {
-  //   console.debug("Not implemented: getPolicyScopes");
-  //   return ["admin", "system", "authentication", "enrollment", "selfservice"];
-  // }
   readonly policyBaseUrl = environment.proxyUrl + "/policy/";
 
   private readonly http: HttpClient = inject(HttpClient);
   private readonly authService: AuthServiceInterface = inject(AuthService);
-
-  // selectedPolicy = signal<string>("");
-  selectedPolicyScope = signal<string>("");
 
   policyDefinitions = httpResource(() => ({
     url: `${this.policyBaseUrl}defs`,
@@ -241,33 +222,12 @@ export class PoliciesService implements PoliciesServiceInterface {
   allPolicies = computed(() => {
     return this.allPoliciesRecource.value()?.result?.value ?? [];
   });
-  // selectedPolicyRecource = httpResource<PiResponse<PolicyDetail[]>>(() => ({
-  //   url: `${this.policyBaseUrl}/${this.selectedPolicy()}`,
-  //   method: "GET",
-  //   headers: this.authService.getHeaders()
-  // }));
+
   allPoliciesRecource = httpResource<PiResponse<PolicyDetail[]>>(() => ({
     url: `${this.policyBaseUrl}`,
     method: "GET",
     headers: this.authService.getHeaders()
   }));
-  // `/policy/${this.selectedPolicy()}`
-
-  constructor() {
-    // effect(() => {
-    //   console.info(this.selectedPolicy());
-    // });
-    // effect(() => {
-    //   console.info(this.selectedPolicyDetails.value());
-    // });
-    effect(() => {
-      console.info(this.allPolicies());
-    });
-
-    effect(() => {
-      console.info(this.selectedScope());
-    });
-  }
 
   enablePolicy(name: string): Promise<PiResponse<any>> {
     return lastValueFrom(this.http.post<PiResponse<any>>(`${environment.proxyUrl}enable/${name}`, {}));

@@ -1,13 +1,4 @@
-.action-detail-container {
-  grid-area: detail-header;
-  min-width: 0;
-  padding-left: 16px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--mat-sys-outline);
-}
-
 .action-detail-column {
-  grid-area: action-detail;
   display: flex;
   flex-direction: column;
   gap: 16px;

@@ -23,12 +23,12 @@
       <div class="policy-scope-label">
         @if (policyService.currentActions().length === 0 && panel.expanded) {
           <app-horizontal-wheel
-            [initialValue]="selectedScope()"
+            [initialValue]="policyService.selectedScope()"
             [values]="policyService.allPolicyScopes"
             (onSelect)="onScopeSelect($event)" />
         } @else {
           <span>
-            {{ selectedScope().toLocaleUpperCase() }}
+            {{ policyService.selectedScope().toLocaleUpperCase() }}
           </span>
         }
       </div>
