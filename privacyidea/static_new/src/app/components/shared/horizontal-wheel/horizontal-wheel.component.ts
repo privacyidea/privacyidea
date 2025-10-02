@@ -35,8 +35,12 @@ export class HorizontalWheelComponent implements AfterViewInit {
   selectedValue: WritableSignal<string> = linkedSignal<string[], string>({
     source: () => this.values(),
     computation: (source, previous) => {
-      if (source.length === 0 && !previous) return null;
-      if (previous) return previous.value;
+      if (source.length === 0 && !previous) {
+        return null;
+      }
+      if (previous?.value) {
+        return previous.value;
+      }
       return this.initialValue || source[0];
     }
   });
@@ -50,26 +54,7 @@ export class HorizontalWheelComponent implements AfterViewInit {
   private items = viewChildren<ElementRef<HTMLElement>>("item");
 
   constructor(private elementRef: ElementRef) {
-    effect(() => {
-      const selected = this.selectedValue();
-      this.onSelect.emit(selected);
-    });
-
-    effect(
-      () => {
-        // Unfortunately, linkedSignal's computation does not run on source changes.
-        // So we need to manually check for changes here and set the initial value if needed.
-        // When there is a fix or improvement for linkedSignal, please remove this effect.
-
-        const currentValues = this.values();
-
-        // Initialize selectedValue with the first item if currentValues exist and no value is set yet.
-        if (currentValues.length > 0 && !this.selectedValue()) {
-          this.selectedValue.set(currentValues[0]);
-        }
-      },
-      { allowSignalWrites: true }
-    );
+    effect(() => this.onSelect.emit(this.selectedValue()));
 
     effect(() => {
       this.items();
@@ -86,17 +71,13 @@ export class HorizontalWheelComponent implements AfterViewInit {
   ngAfterViewInit(): void {
     this.containerElement = this.elementRef.nativeElement.querySelector(".wheel-container");
     if (this.containerElement) {
+      this.onScroll();
       this.containerElement.addEventListener("scroll", () => this.onScroll());
       this.setDynamicPadding();
 
       // Timeout to ensure view rendering and stability after initial setup.
-      setTimeout(() => {
-        const initialIndex = this.values().indexOf(this.selectedValue());
-        if (initialIndex !== -1) {
-          this.centerElementByIndex(initialIndex);
-        }
-        this._transformItemsOnScroll();
-      }, 0);
+      const initialIndex = this.values().indexOf(this.selectedValue());
+      this.centerElementByIndex(initialIndex, { retrys: 3 }); // 3 retrys to ensure centering after potential layout shifts.
     }
   }
 
@@ -165,41 +146,34 @@ export class HorizontalWheelComponent implements AfterViewInit {
   onItemClick(e: MouseEvent, index: number) {
     const walk = e.pageX - this.startX;
     // Check if a drag movement occurred to prevent click event.
-    if (this.isDragging && Math.abs(walk) > 10) return;
+    if (this.isDragging) return;
     e.preventDefault();
     this.selectedValue.set(this.values()[index]);
     this.centerElementByIndex(index);
   }
 
-  private centerElementByIndex(index: number) {
-    // Check for container, items, and valid index before accessing nativeElement.
-    if (!this.containerElement || !this.items() || index < 0 || index >= this.items().length) return;
-    const itemElement = this.items()[index].nativeElement;
+  private centerElementByIndex(index: number, args: { retrys: number } = { retrys: 0 }) {
+    let retrys = args.retrys;
+    for (; retrys > -1; retrys--) {
+      setTimeout(() => {
+        // Check for valid index and item existence before accessing nativeElement.
+        if (index === -1 || !this.containerElement || !this.items() || index >= this.items().length) return;
 
-    const targetScrollLeft =
-      itemElement.offsetLeft - this.containerElement.offsetWidth / 2 + itemElement.offsetWidth / 2;
+        const itemElement = this.items()[index].nativeElement;
 
-    this.containerElement.scrollTo({
-      left: targetScrollLeft,
-      behavior: "smooth"
-    });
+        const targetScrollLeft =
+          itemElement.offsetLeft - this.containerElement.offsetWidth / 2 + itemElement.offsetWidth / 2;
+        this.containerElement.scrollTo({
+          left: targetScrollLeft,
+          behavior: "smooth"
+        });
+      }, retrys * 100);
+    }
   }
 
   private centerSelectedElement() {
     const index = this.values().indexOf(this.selectedValue());
-
-    // Check for valid index and item existence before accessing nativeElement.
-    if (index === -1 || !this.containerElement || !this.items() || index >= this.items().length) return;
-
-    const itemElement = this.items()[index].nativeElement;
-
-    const targetScrollLeft =
-      itemElement.offsetLeft - this.containerElement.offsetWidth / 2 + itemElement.offsetWidth / 2;
-
-    this.containerElement.scrollTo({
-      left: targetScrollLeft,
-      behavior: "smooth"
-    });
+    this.centerElementByIndex(index);
   }
 
   onMouseDown(e: MouseEvent) {

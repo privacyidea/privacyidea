@@ -1,29 +1,29 @@
 <div class="action-detail-column">
-  @if (selectedActionName !== "") {
-    <h3>{{ selectedActionName }}</h3>
+  @if (policyService.selectedActionName() !== "") {
+    <h3>{{ policyService.selectedActionName() }}</h3>
     <div class="action-detail-card">
       <span class="detail-row">
-        {{ selectedAction?.desc }}
+        {{ policyService.selectedAction()?.desc }}
       </span>
     </div>
-    @switch (selectedAction?.type) {
+    @switch (policyService.selectedAction()?.type) {
       @case ("bool") {
-        <app-bool-select-buttons (onSelectString)="actionValue.set($event)" />
+        <app-bool-select-buttons (onSelectString)="newActionValue.set($event)" />
       }
       @case ("str") {
         <input
           type="text"
           placeholder="Text"
-          [ngModel]="actionValue()"
-          (ngModelChange)="actionValue.set($event)"
+          [ngModel]="newActionValue()"
+          (ngModelChange)="newActionValue.set($event)"
           class="action-value-input" />
       }
       @case ("int") {
         <input
           type="number"
           placeholder="Number"
-          [ngModel]="actionValue()"
-          (ngModelChange)="actionValue.set($event)"
+          [ngModel]="newActionValue()"
+          (ngModelChange)="newActionValue.set($event)"
           class="action-value-input" />
       }
     }

@@ -1,7 +1,7 @@
 import { Component, inject, signal, WritableSignal } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { MatExpansionModule } from "@angular/material/expansion";
-import { PoliciesService, PolicyDetail } from "../../services/policies/policies.service";
+import { PolicyService, PolicyDetail } from "../../services/policies/policies.service";
 import { MatIconModule } from "@angular/material/icon";
 import { PolicyPanelComponent } from "./policy-panel/policy-panel.component";
 import { HorizontalWheelComponent } from "../shared/horizontal-wheel/horizontal-wheel.component";
@@ -22,7 +22,7 @@ import { NewPolicyPanelComponent } from "./new-policy-panel/new-policy-panel.com
   styleUrl: "./policies.component.scss"
 })
 export class PoliciesComponent {
-  policiesService: PoliciesService = inject(PoliciesService);
+  policiesService: PolicyService = inject(PolicyService);
   allPoliciesList = this.policiesService.allPolicies;
   editPolicyName: WritableSignal<string | null> = signal(null);
 

@@ -1,35 +1,35 @@
 <div class="action-selector-container">
-<input
-  type="text"
-  placeholder="Search action..."
-  [ngModel]="actionFilter"
-  (ngModelChange)="actionFilterChange.emit($event)"
-  class="search-input" />
-@if (policyActionGroupNames.length > 1) {
-  <div class="button-row">
-    @for (group of policyActionGroupNames; track $index) {
-      <button
-        class="button-item"
-        [class.first-button]="$index === 0"
-        [class.last-button]="$index === policyActionGroupNames.length - 1"
-        [class.selected-button]="selectedActionGroup === group"
-        (click)="selectedActionGroupChange.emit(group)">
-        {{ group }}
-      </button>
-    }
+  <input
+    type="text"
+    placeholder="Search action..."
+    [ngModel]="policyService.actionFilter()"
+    (ngModelChange)="policyService.actionFilter.set($event)"
+    class="search-input" />
+  @if (policyService.policyActionGroupNames().length > 1) {
+    <div class="button-row">
+      @for (group of policyService.policyActionGroupNames(); track $index) {
+        <button
+          class="button-item"
+          [class.first-button]="$index === 0"
+          [class.last-button]="$index === policyService.policyActionGroupNames().length - 1"
+          [class.selected-button]="policyService.selectedActionGroup() === group"
+          (click)="policyService.selectedActionGroup.set(group)">
+          {{ group }}
+        </button>
+      }
+    </div>
+  }
+  <div class="add-action-details">
+    <div class="policy-action-items">
+      @for (actionName of policyService.getActionNamesOfSelectedGroup(); track actionName) {
+        <div
+          class="policy-action-item"
+          [class.policy-action-item-selected]="policyService.selectedActionName() === actionName"
+          (click)="policyService.selectedActionName.set(actionName)">
+          <span class="detail-label">{{ actionName }}</span>
+          <mat-icon>add_circle_outline</mat-icon>
+        </div>
+      }
+    </div>
   </div>
-}
-<div class="add-action-details">
-  <div class="policy-action-items">
-    @for (actionName of getActionNamesOfGroup(selectedActionGroup); track actionName) {
-      <div
-        class="policy-action-item"
-        [class.policy-action-item-selected]="selectedActionName === actionName"
-        (click)="selectedActionNameChange.emit(actionName)">
-        <span class="detail-label">{{ actionName }}</span>
-        <mat-icon>add_circle_outline</mat-icon>
-      </div>
-    }
-  </div>
-</div>
 </div>

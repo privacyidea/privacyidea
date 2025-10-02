@@ -18,7 +18,7 @@
  **/
 
 import { HttpClient, httpResource } from "@angular/common/http";
-import { computed, effect, inject, Injectable, signal } from "@angular/core";
+import { computed, effect, inject, Injectable, linkedSignal, Signal, signal, WritableSignal } from "@angular/core";
 import { lastValueFrom } from "rxjs";
 import { PiResponse } from "../../app.component";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
@@ -109,7 +109,7 @@ export interface PoliciesServiceInterface {}
 @Injectable({
   providedIn: "root"
 })
-export class PoliciesService implements PoliciesServiceInterface {
+export class PolicyService implements PoliciesServiceInterface {
   selectedPolicy = signal<PolicyDetail | null>(null);
   selectedScope = signal<string>("");
 
@@ -254,5 +254,68 @@ export class PoliciesService implements PoliciesServiceInterface {
 
   isScopeChangeable(policy: PolicyDetail): boolean {
     return !policy.action;
+  }
+
+  // ===================================
+  // 3. COMPUTED SIGNALS (DERIVED STATE)
+  // ===================================
+
+  policyActionGroupNames: Signal<string[]> = computed(() => {
+    const selectedScope = this.selectedScope();
+    if (!selectedScope) return [];
+    const policyActionGroupFiltered = this.policyActionsByGroupFiltered()[this.selectedScope()];
+    if (!policyActionGroupFiltered) return [];
+    return Object.keys(policyActionGroupFiltered);
+  });
+
+  selectedAction: Signal<PolicyAction | null> = computed(() => {
+    const actions = this.policyActions();
+    const actionName = this.selectedActionName();
+    const scope = this.selectedScope(); // Only check for actions[scope][actionName] if actions[scope] exists
+    if (actionName && actions && actions[scope]) {
+      return actions[scope][actionName] ?? null;
+    }
+    return null;
+  });
+
+  selectedActionGroup: WritableSignal<string> = linkedSignal({
+    source: this.policyActionGroupNames,
+    computation: (source, previous) => {
+      if (source.length < 1) return "";
+      if (previous && source.includes(previous.value)) return previous.value;
+      return source[0];
+    }
+  });
+
+  selectedActionName: WritableSignal<string> = linkedSignal({
+    source: computed(() => this.getActionNamesOfSelectedGroup() ?? []),
+    computation: (source, previous) => {
+      if (source.length < 1) return "";
+      if (previous && source.includes(previous.value)) return previous.value;
+      return source[0];
+    }
+  });
+
+  getActionNamesOfSelectedGroup(): string[] {
+    const group: string = this.selectedActionGroup();
+    const actionsByGroup = this.policyActionsByGroupFiltered();
+    const scope = this.selectedScope();
+
+    if (scope && actionsByGroup[scope]) {
+      return Object.keys(actionsByGroup[scope][group] || {});
+    }
+    return [];
+  }
+
+  addAction(event: { actionName: string; value: string }) {
+    if (this.alreadyAddedActionNames().includes(event.actionName)) return;
+
+    const newAction = {
+      actionName: event.actionName,
+      value: event.value
+    };
+
+    const updatedActions = [...this.currentActions(), newAction];
+    this.currentActions.set(updatedActions);
   }
 }

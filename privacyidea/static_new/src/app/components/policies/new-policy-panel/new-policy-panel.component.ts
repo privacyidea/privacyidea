@@ -7,7 +7,7 @@ import { MatCardModule } from "@angular/material/card";
 import { MatExpansionModule, MatExpansionPanel } from "@angular/material/expansion";
 import { MatIconModule } from "@angular/material/icon";
 
-import { PoliciesService as PolicyService, PolicyAction } from "../../../services/policies/policies.service";
+import { PolicyService as PolicyService, PolicyAction } from "../../../services/policies/policies.service";
 import { HorizontalWheelComponent } from "../../shared/horizontal-wheel/horizontal-wheel.component";
 import { ActionSelectorComponent } from "./action-selector/action-selector.component";
 import { ActionDetailComponent } from "./action-detail/action-detail.component";
@@ -38,6 +38,7 @@ export class NewPolicyPanelComponent {
   // ===================================
   // 1. SERVICES
   // ===================================
+
   policyService: PolicyService = inject(PolicyService);
 
   // ===================================
@@ -49,66 +50,7 @@ export class NewPolicyPanelComponent {
   activeTab: WritableSignal<Tab> = signal("actions");
 
   // ===================================
-  // 3. COMPUTED SIGNALS (DERIVED STATE)
-  // ===================================
-
-  policyActionGroupNames: Signal<string[]> = computed(() => {
-    const selectedScope = this.policyService.selectedScope();
-    if (!selectedScope) return [];
-    const policyActionGroupFiltered =
-      this.policyService.policyActionsByGroupFiltered()[this.policyService.selectedScope()];
-    if (!policyActionGroupFiltered) return [];
-    return Object.keys(policyActionGroupFiltered);
-  });
-
-  selectedAction: Signal<PolicyAction | null> = computed(() => {
-    const actions = this.policyService.policyActions();
-    const actionName = this.selectedActionName();
-    const scope = this.policyService.selectedScope(); // Only check for actions[scope][actionName] if actions[scope] exists
-    if (actionName && actions && actions[scope]) {
-      return actions[scope][actionName] ?? null;
-    }
-    return null;
-  });
-
-  // ===================================
-  // 4. LINKED SIGNALS
-  // ===================================
-
-  selectedActionGroup: WritableSignal<string> = linkedSignal({
-    source: this.policyActionGroupNames,
-    computation: (source, previous) => {
-      if (source.length < 1) return "";
-      if (previous && source.includes(previous.value)) return previous.value;
-      return source[0];
-    }
-  });
-
-  selectedActionName: WritableSignal<string> = linkedSignal({
-    source: computed(() => this.getActionNamesOfGroup(this.selectedActionGroup()) ?? []),
-    computation: (source, previous) => {
-      if (source.length < 1) return "";
-      if (previous && source.includes(previous.value)) return previous.value;
-      return source[0];
-    }
-  });
-
-  // ===================================
-  // 5. HELPER METHODS
-  // ===================================
-
-  getActionNamesOfGroup(group: string): string[] {
-    const actionsByGroup = this.policyService.policyActionsByGroupFiltered();
-    const scope = this.policyService.selectedScope();
-
-    if (scope && actionsByGroup[scope]) {
-      return Object.keys(actionsByGroup[scope][group] || {});
-    }
-    return [];
-  }
-
-  // ===================================
-  // 6. EVENT HANDLERS / ACTIONS
+  // 3. EVENT HANDLERS / ACTIONS
   // ===================================
 
   setActiveTab(tab: Tab): void {
@@ -117,18 +59,6 @@ export class NewPolicyPanelComponent {
 
   onScopeSelect($event: string) {
     this.policyService.selectedScope.set($event);
-  }
-
-  onAddAction(event: { actionName: string; value: string }) {
-    if (this.policyService.alreadyAddedActionNames().includes(event.actionName)) return;
-
-    const newAction = {
-      actionName: event.actionName,
-      value: event.value
-    };
-
-    const updatedActions = [...this.policyService.currentActions(), newAction];
-    this.policyService.currentActions.set(updatedActions);
   }
 
   editAction(arg0: string) {}

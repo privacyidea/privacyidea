@@ -1,8 +1,18 @@
-import { Component, computed, EventEmitter, Input, Output, Signal, signal, WritableSignal } from "@angular/core";
+import {
+  Component,
+  computed,
+  EventEmitter,
+  inject,
+  Input,
+  Output,
+  Signal,
+  signal,
+  WritableSignal
+} from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
-import { PolicyAction } from "../../../../services/policies/policies.service";
+import { PolicyAction, PolicyService } from "../../../../services/policies/policies.service";
 import { BoolSelectButtonsComponent } from "../bool-select-buttons/bool-select-buttons.component";
 
 @Component({
@@ -13,16 +23,15 @@ import { BoolSelectButtonsComponent } from "../bool-select-buttons/bool-select-b
   styleUrls: ["./action-detail.component.scss"]
 })
 export class ActionDetailComponent {
-  @Input() selectedAction: PolicyAction | null = null;
-  @Input() selectedActionName: string = "";
+  policyService = inject(PolicyService);
 
   @Output() addAction = new EventEmitter<{ actionName: string; value: string }>();
 
-  actionValue: WritableSignal<string> = signal("");
+  newActionValue: WritableSignal<string> = signal("");
 
   inputIsValid: Signal<boolean> = computed(() => {
-    const action = this.selectedAction;
-    const value = this.actionValue();
+    const action = this.policyService.selectedAction();
+    const value = this.newActionValue();
 
     if (!action) return false;
     const actionType = action.type;
@@ -40,8 +49,7 @@ export class ActionDetailComponent {
 
   onAddAction() {
     if (!this.inputIsValid()) return;
-
-    this.addAction.emit({ actionName: this.selectedActionName, value: this.actionValue() });
-    this.actionValue.set("");
+    this.policyService.addAction({ actionName: this.policyService.selectedActionName(), value: this.newActionValue() });
+    this.newActionValue.set("");
   }
 }

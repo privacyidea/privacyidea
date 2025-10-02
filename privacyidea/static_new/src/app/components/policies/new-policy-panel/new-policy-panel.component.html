@@ -72,23 +72,10 @@
       (deleteAction)="deleteAction($event)" />
 
     @if (activeTab() === "actions") {
-      <app-action-selector
-        class="grid-area-content-body"
-        [policyActionGroupNames]="policyActionGroupNames()"
-        [selectedActionGroup]="selectedActionGroup()"
-        [actionFilter]="policyService.actionFilter()"
-        [getActionNamesOfGroup]="getActionNamesOfGroup.bind(this)"
-        [selectedActionName]="selectedActionName()"
-        (actionFilterChange)="policyService.actionFilter.set($event)"
-        (selectedActionGroupChange)="selectedActionGroup.set($event)"
-        (selectedActionNameChange)="selectedActionName.set($event)" />
+      <app-action-selector class="grid-area-content-body" />
     }
     <div class="grid-area-detail-header"></div>
 
-    <app-action-detail
-      class="grid-area-detail-body"
-      [selectedAction]="selectedAction()"
-      [selectedActionName]="selectedActionName()"
-      (addAction)="onAddAction($event)" />
+    <app-action-detail class="grid-area-detail-body" />
   </div>
 </mat-expansion-panel>

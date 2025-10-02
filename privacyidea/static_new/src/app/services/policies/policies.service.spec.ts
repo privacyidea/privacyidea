@@ -18,14 +18,14 @@
  **/
 import { TestBed } from "@angular/core/testing";
 
-import { PoliciesService } from "./policies.service";
+import { PolicyService } from "./policies.service";
 
 describe("NotificationService", () => {
-  let policiesService: PoliciesService;
+  let policiesService: PolicyService;
 
   beforeEach(() => {
     TestBed.configureTestingModule({});
-    policiesService = TestBed.inject(PoliciesService);
+    policiesService = TestBed.inject(PolicyService);
   });
 
   it("should be created", () => {
