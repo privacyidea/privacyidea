@@ -2,15 +2,6 @@
   [ngClass]="!this.authService.isSelfServiceUser() ? 'layout' : 'layout-self-service'"
   aria-label="Layout"
   i18n-aria-label>
-  <header
-    aria-label="Header"
-    i18n-aria-label>
-    @if (!this.authService.isSelfServiceUser()) {
-      <app-header></app-header>
-    } @else {
-      <app-header-self-service></app-header-self-service>
-    }
-  </header>
   <main
     aria-label="Main Router Outlet"
     i18n-aria-label>
