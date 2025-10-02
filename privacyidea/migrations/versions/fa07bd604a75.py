@@ -31,11 +31,11 @@ def upgrade():
     if res.rowcount == 0:
         print(f"Rev. {revision}: No Firebase-Provider detected. Skipping migration.")
         return
-    print(f"Rev. {revision}: Firebase-Provider detected. Check that the migration was successful")
+    print(f"(Rev. {revision}) WARNING: Firebase-Provider detected. Check that the "
+          f"migration was successful")
 
     # 1. Read the push_registration_url and ttl from the Firebase Config
     fb_gateways = get_smsgateway(gwtype=GWTYPE)
-    print(fb_gateways)
     # 2. Check which policy contains this Firebase Config
     P = PolicyClass()
     pols = P.list_policies(scope=SCOPE.ENROLL,
