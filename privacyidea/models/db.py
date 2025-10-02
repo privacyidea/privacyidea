@@ -22,12 +22,10 @@ from sqlalchemy.schema import CreateSequence
 
 db = SQLAlchemy()
 
-
 # Add fractions to the MySQL DataTime column type
 @compiles(db.DateTime, "mysql")
 def compile_datetime_mysql(type_, compiler, **kw):  # pragma: no cover
     return "DATETIME(6)"
-
 
 # Fix creation of sequences on MariaDB (and MySQL, which does not support
 # sequences anyway) with galera by adding INCREMENT BY 0 to CREATE SEQUENCE
@@ -37,3 +35,8 @@ def increment_by_zero(element, compiler, **kw):  # pragma: no cover
     text = compiler.visit_create_sequence(element, **kw)
     text = text + " INCREMENT BY 0"
     return text
+
+# Compile JSON type to CLOB for Oracle
+@compiles(db.JSON, 'oracle')
+def compile_json_oracle(type_, compiler, **kw):  # pragma: no cover
+    return "CLOB"
