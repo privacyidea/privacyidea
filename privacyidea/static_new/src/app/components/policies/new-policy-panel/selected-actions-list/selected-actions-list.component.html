@@ -4,12 +4,21 @@
       <div class="detail-row">
         <span class="detail-label">{{ entry.actionName }}</span>
         <span class="detail-value">{{ entry.value }}</span>
-        <button
-          mat-icon-button
-          class="edit-action-button"
-          (click)="editAction.emit(entry.actionName)">
-          <mat-icon>edit</mat-icon>
-        </button>
+        @if (!policyService.selectedActionName()) {
+          <button
+            mat-icon-button
+            class="edit-action-button"
+            (click)="policyService.selectedActionName.set(entry.actionName)">
+            <mat-icon>edit</mat-icon>
+          </button>
+        } @else if (policyService.selectedActionName() === entry.actionName) {
+          <button
+            mat-icon-button
+            class="cancel-edit-action-button"
+            (click)="policyService.updateAction()">
+            <mat-icon>save</mat-icon>
+          </button>
+        }
         <button
           mat-icon-button
           class="delete-action-button"

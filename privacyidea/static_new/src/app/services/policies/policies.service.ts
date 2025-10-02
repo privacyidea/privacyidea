@@ -23,6 +23,7 @@ import { lastValueFrom } from "rxjs";
 import { PiResponse } from "../../app.component";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { environment } from "../../../environments/environment";
+import { assert } from "../../utils/assert";
 
 export type PolicyAction = {
   desc: string;
@@ -296,6 +297,8 @@ export class PolicyService implements PoliciesServiceInterface {
     }
   });
 
+  selectedActionValue: WritableSignal<string> = signal("");
+
   getActionNamesOfSelectedGroup(): string[] {
     const group: string = this.selectedActionGroup();
     const actionsByGroup = this.policyActionsByGroupFiltered();
@@ -307,15 +310,46 @@ export class PolicyService implements PoliciesServiceInterface {
     return [];
   }
 
-  addAction(event: { actionName: string; value: string }) {
-    if (this.alreadyAddedActionNames().includes(event.actionName)) return;
+  addAction() {
+    const actionName = this.selectedActionName();
+    const selectedAction = this.selectedAction();
+    const actionValue = this.selectedActionValue();
+    if (this.alreadyAddedActionNames().includes(actionName) || selectedAction === null) return;
+    if (!this.actionValueIsValid(selectedAction, actionValue)) return;
 
     const newAction = {
-      actionName: event.actionName,
-      value: event.value
+      actionName: actionName,
+      value: actionValue
     };
 
-    const updatedActions = [...this.currentActions(), newAction];
+    this.currentActions.set([...this.currentActions(), newAction]);
+  }
+
+  updateAction() {
+    const actionName = this.selectedActionName();
+    const selectedAction = this.selectedAction();
+    const actionValue = this.selectedActionValue();
+    if (!this.alreadyAddedActionNames().includes(actionName) || selectedAction === null) return;
+    if (!this.actionValueIsValid(selectedAction, actionValue)) return;
+    const updatedActions = this.currentActions().map((a) =>
+      a.actionName === actionName ? { actionName: a.actionName, value: actionValue } : a
+    );
     this.currentActions.set(updatedActions);
+  }
+
+  actionValueIsValid(action: PolicyAction, value: string): boolean {
+    assert(typeof value === "string", "Value must be a string");
+    if (!action) return false;
+    const actionType = action.type;
+    if (!actionType) return false;
+
+    if (actionType === "bool") {
+      return value.toLowerCase() === "true" || value.toLowerCase() === "false";
+    } else if (actionType === "int") {
+      return !isNaN(Number(value)) && Number.isInteger(Number(value));
+    } else if (actionType === "str") {
+      return value.trim().length > 0;
+    }
+    return false;
   }
 }

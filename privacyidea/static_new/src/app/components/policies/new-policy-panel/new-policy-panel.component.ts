@@ -61,8 +61,6 @@ export class NewPolicyPanelComponent {
     this.policyService.selectedScope.set($event);
   }
 
-  editAction(arg0: string) {}
-
   deleteAction(actionName: string): void {
     const updatedActions = this.policyService.currentActions().filter((a) => a.actionName !== actionName);
     this.policyService.currentActions.set(updatedActions);

@@ -8,29 +8,29 @@
     </div>
     @switch (policyService.selectedAction()?.type) {
       @case ("bool") {
-        <app-bool-select-buttons (onSelectString)="newActionValue.set($event)" />
+        <app-bool-select-buttons (onSelectString)="this.policyService.selectedActionValue.set($event)" />
       }
       @case ("str") {
         <input
           type="text"
           placeholder="Text"
-          [ngModel]="newActionValue()"
-          (ngModelChange)="newActionValue.set($event)"
+          [ngModel]="this.policyService.selectedActionValue()"
+          (ngModelChange)="this.policyService.selectedActionValue.set($event)"
           class="action-value-input" />
       }
       @case ("int") {
         <input
           type="number"
           placeholder="Number"
-          [ngModel]="newActionValue()"
-          (ngModelChange)="newActionValue.set($event)"
+          [ngModel]="this.policyService.selectedActionValue()"
+          (ngModelChange)="this.policyService.selectedActionValue.set($event)"
           class="action-value-input" />
       }
     }
     <button
       mat-raised-button
       color="primary"
-      (click)="onAddAction()"
+      (click)="this.policyService.addAction()"
       [disabled]="!inputIsValid()">
       Add Action
     </button>

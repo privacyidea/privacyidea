@@ -68,14 +68,13 @@
     <app-selected-actions-list
       class="grid-area-content-header"
       [actions]="policyService.currentActions()"
-      (editAction)="editAction($event)"
       (deleteAction)="deleteAction($event)" />
 
     @if (activeTab() === "actions") {
       <app-action-selector class="grid-area-content-body" />
     }
-    <div class="grid-area-detail-header"></div>
+    <!-- <div class="grid-area-detail-header"></div> -->
 
-    <app-action-detail class="grid-area-detail-body" />
+    <app-action-detail class="grid-area-detail-header grid-area-detail-body" />
   </div>
 </mat-expansion-panel>
