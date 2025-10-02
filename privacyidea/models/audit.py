@@ -24,7 +24,7 @@ from privacyidea.models import db
 from privacyidea.models.utils import MethodsMixin
 from privacyidea.lib.utils import convert_column_to_unicode
 
-audit_column_length = {"signature": 620,
+audit_column_length = {"signature": 1100,
                        "action": 200,
                        "serial": 40,
                        "token_type": 12,
