@@ -27,11 +27,13 @@ The event handler module is bound to an event together with
 import datetime
 import logging
 import re
+from typing import Optional
 
 from dateutil.tz import tzlocal
 
 from privacyidea.lib import _
 from privacyidea.lib.auth import ROLE
+from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.config import get_token_types
 from privacyidea.lib.container import (find_container_by_serial, find_container_for_token, get_all_containers,
                                        get_container_classes, get_container_realms)
@@ -40,11 +42,11 @@ from privacyidea.lib.counter import read as counter_read
 from privacyidea.lib.realm import get_realms
 from privacyidea.lib.resolver import get_resolver_list
 from privacyidea.lib.token import get_token_owner, get_tokens
+from privacyidea.lib.tokenclass import DATE_FORMAT
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import parse_time_offset_from_now, is_true, check_ip_in_policy, AUTH_RESPONSE
 from privacyidea.lib.utils.compare import compare_time, compare_ints, compare_generic
-from privacyidea.lib.tokenclass import DATE_FORMAT
-from privacyidea.lib.challenge import get_challenges
+from privacyidea.models import TokenContainer
 
 log = logging.getLogger(__name__)
 
@@ -106,6 +108,18 @@ class GROUP(object):
     COUNTER = "counter"
     CHALLENGE = "challenge"
     CONTAINER = "container"
+
+
+class EventHandlerContext:
+    """
+    Context to pass information from the check condition function to the do action function.
+    """
+
+    def __init__(self, user: Optional[User] = None, token_serials: Optional[list[str]] = None,
+                 container: Optional[TokenContainer] = None):
+        self.user = user
+        self.token_serials = token_serials
+        self.container = container
 
 
 class BaseEventHandler(object):
@@ -567,9 +581,8 @@ class BaseEventHandler(object):
         :return: Comma separated string of token serials
         """
         # Get single token serial
-        serial = request.all_data.get("serial") or \
-                 content.get("detail", {}).get("serial") or \
-                 g.audit_object.audit_data.get("serial")
+        serial = (request.all_data.get("serial") or content.get("detail", {}).get("serial") or
+                  g.audit_object.audit_data.get("serial"))
 
         return serial
 
@@ -684,7 +697,7 @@ class BaseEventHandler(object):
         content = self._get_response_content(response)
         user = self._get_tokenowner(request)
 
-        serial = request.all_data.get("serial") or content.get("detail", {}).get("serial")
+        serial = self._get_token_serials(request, content, g)
         transaction_id = request.all_data.get("transaction_id")
         tokenrealms = []
         tokenresolvers = []
@@ -705,6 +718,7 @@ class BaseEventHandler(object):
             token_obj = token_obj_list[0]
             tokenrealms = token_obj.get_realms()
             tokentype = token_obj.get_tokentype()
+            serial = token_obj.get_serial()
 
             all_realms = get_realms()
             for tokenrealm in tokenrealms:
@@ -719,6 +733,10 @@ class BaseEventHandler(object):
             container = find_container_by_serial(container_serial)
         elif serial and token_obj:
             container = find_container_for_token(serial)
+
+        # context to pass information to the action
+        token_serials = serial.replace(" ", "").split(",") if serial else None
+        options["context"] = EventHandlerContext(user=user, token_serials=token_serials, container=container)
 
         if CONDITION.CLIENT_IP in conditions:
             if g and g.client_ip:
