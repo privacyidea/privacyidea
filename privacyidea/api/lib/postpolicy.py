@@ -55,8 +55,8 @@ from urllib.parse import quote
 
 from flask import g, current_app, make_response, Request
 
-from privacyidea.config import ConfigKey
 from privacyidea.api.lib.utils import get_all_params
+from privacyidea.config import ConfigKey
 from privacyidea.lib import _, lazy_gettext
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.config import get_multichallenge_enrollable_types, get_token_class, get_privacyidea_node
@@ -66,7 +66,6 @@ from privacyidea.lib.info.rss import FETCH_DAYS
 from privacyidea.lib.machine import get_auth_items
 from privacyidea.lib.policy import (DEFAULT_ANDROID_APP_URL, DEFAULT_IOS_APP_URL, DEFAULT_PREFERRED_CLIENT_MODE_LIST,
                                     SCOPE, AUTOASSIGNVALUE, AUTHORIZED, Match)
-from ...lib.policies.actions import PolicyAction
 from privacyidea.lib.realm import get_default_realm
 from privacyidea.lib.subscriptions import (subscription_status,
                                            get_subscription,
@@ -83,6 +82,7 @@ from ...lib.challenge import get_challenges
 from ...lib.container import (get_all_containers, init_container, init_registration, find_container_by_serial,
                               create_container_tokens_from_template)
 from ...lib.containers.container_info import SERVER_URL, CHALLENGE_TTL, REGISTRATION_TTL, SSL_VERIFY, RegistrationState
+from ...lib.policies.actions import PolicyAction
 from ...lib.users.custom_user_attributes import InternalCustomUserAttributes
 
 log = logging.getLogger(__name__)
@@ -222,7 +222,7 @@ def sign_response(request, response):
             content["nonce"] = nonce
 
         content["signature"] = sign_object.sign(json.dumps(content, sort_keys=True))
-        response_object.set_data(json.dumps(content))
+        response_object.set_data(json.dumps(content, sort_keys=True))
     else:
         # The response.data is no JSON (but CSV or policy export)
         # We do no signing in this case.
