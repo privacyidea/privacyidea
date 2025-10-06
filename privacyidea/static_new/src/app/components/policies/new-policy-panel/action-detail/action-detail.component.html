@@ -8,7 +8,9 @@
     </div>
     @switch (policyService.selectedActionDetail()?.type) {
       @case ("bool") {
-        <app-bool-select-buttons (onSelectString)="policyService.updateSelectedActionValue($event)" />
+        <app-bool-select-buttons
+          (onSelectString)="policyService.updateSelectedActionValue($event)"
+          [initialValue]="policyService.selectedAction()?.value ?? 'true'" />
       }
       @case ("str") {
         <input

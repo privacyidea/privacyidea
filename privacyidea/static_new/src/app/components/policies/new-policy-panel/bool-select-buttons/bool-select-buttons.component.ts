@@ -16,9 +16,10 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, EventEmitter, Output, signal } from "@angular/core";
+import { Component, EventEmitter, input, Output, signal, OnInit, linkedSignal, WritableSignal } from "@angular/core";
 
 import { MatButtonModule } from "@angular/material/button";
+import { assert } from "../../../../utils/assert";
 
 @Component({
   selector: "app-bool-select-buttons",
@@ -27,14 +28,53 @@ import { MatButtonModule } from "@angular/material/button";
   templateUrl: "./bool-select-buttons.component.html",
   styleUrl: "./bool-select-buttons.component.scss"
 })
-export class BoolSelectButtonsComponent {
+// Implement OnInit to use the hook
+export class BoolSelectButtonsComponent implements OnInit {
+  // Input definition is correct
+  initialValue = input.required<string | number | boolean>();
+
   @Output() onSelect = new EventEmitter<boolean>();
   @Output() onSelectString = new EventEmitter<string>();
   @Output() onSelectNumber = new EventEmitter<Number>();
-  selectedValue = signal<boolean>(true);
+
+  // 1. Initialize selectedValue with a placeholder or default boolean value
+  // The actual value will be set in ngOnInit
+  selectedValue: WritableSignal<boolean> = linkedSignal({
+    source: () => this.initialValue(),
+    computation: (source) => {
+      return this._parseBoolean(source);
+    }
+  });
 
   ngOnInit() {
-    this.selectBoolean(this.selectedValue());
+    const parsedValue = this._parseBoolean(this.initialValue());
+    this.selectedValue.set(parsedValue);
+  }
+
+  _parseBoolean(initialValue: string | number | boolean): boolean {
+    console.log("Parsing initialValue:", initialValue);
+    const typeofInitialValue = typeof initialValue;
+    if (typeofInitialValue === "boolean") {
+      return !!initialValue;
+    }
+    if (typeofInitialValue === "number") {
+      if (initialValue === 1) return true;
+      if (initialValue === 0) return false;
+      assert(false, `Initial value for BoolSelectButtonsComponent must be 0 or 1 if number, but was ${initialValue}`);
+    }
+    if (typeofInitialValue === "string") {
+      if (String(initialValue).toLowerCase() === "true") return true;
+      if (String(initialValue).toLowerCase() === "false") return false;
+      assert(
+        false,
+        `Initial value for BoolSelectButtonsComponent must be "true" or "false" if string, but was ${initialValue}`
+      );
+    }
+    assert(
+      false,
+      `Initial value for BoolSelectButtonsComponent must be boolean, 0, 1, "true" or "false", but was ${initialValue}`
+    );
+    return false;
   }
 
   selectBoolean(bool: boolean): void {

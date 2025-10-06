@@ -25,7 +25,7 @@
         <div
           class="policy-action-item"
           [class.policy-action-item-selected]="policyService.selectedAction()?.name === actionName"
-          (click)="policyService.selectedAction.set({ name: actionName, value: null })">
+          (click)="policyService.selectActionByName(actionName)">
           <span class="detail-label">{{ actionName }}</span>
           <mat-icon>add_circle_outline</mat-icon>
         </div>

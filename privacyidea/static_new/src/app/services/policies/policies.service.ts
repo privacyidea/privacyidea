@@ -244,6 +244,9 @@ export class PolicyService implements PoliciesServiceInterface {
   // Signals for selecting and editing selected policy
   selectedPolicy = signal<PolicyDetail | null>(null);
 
+  //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  //!!!!!!!!!!!!!!!!!!!!!!!!!!!!! TODO: registration_body !!!!!!!!!!!!!!!!!!!!!!!!!!!
+  //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   // Signals for action handling
   actionFilter = signal<string>("");
   selectedActionGroup: WritableSignal<string> = linkedSignal({
@@ -256,14 +259,24 @@ export class PolicyService implements PoliciesServiceInterface {
   });
 
   selectedAction: WritableSignal<{ name: string; value: any } | null> = linkedSignal({
-    source: computed(() => this.getActionNamesOfSelectedGroup() ?? []),
+    source: () => this.getActionNamesOfSelectedGroup() ?? [],
     computation: (source, previous) => {
       const previousValue = previous?.value;
       if (source.length < 1) return null;
       if (previousValue && source.includes(previousValue.name)) return previous.value;
-      return { name: source[0], value: "" };
+      const firstActionName = source[0];
+      const defaultValue = this._getActionDetail(firstActionName)?.type === "bool" ? "true" : "";
+      return { name: firstActionName, value: defaultValue };
     }
   });
+
+  selectActionByName(actionName: string) {
+    const actionNames = this.getActionNamesOfSelectedGroup();
+    if (actionNames.includes(actionName)) {
+      const defaultValue = this._getActionDetail(actionName)?.type === "bool" ? "true" : "";
+      this.selectedAction.set({ name: actionName, value: defaultValue });
+    }
+  }
 
   updateSelectedActionValue(value: string | number) {
     const selectedAction = this.selectedAction();
@@ -355,15 +368,20 @@ export class PolicyService implements PoliciesServiceInterface {
     return Object.keys(policyActionGroupFiltered);
   });
 
-  selectedActionDetail: Signal<PolicyActionDetail | null> = computed(() => {
+  _getActionDetail = (actionName: string): PolicyActionDetail | null => {
     const actions = this.policyActions();
-    const action = this.selectedAction();
-    const scope = this.selectedPolicy()?.scope; // Only check for actions[scope][actionName] if actions[scope] exists
-    if (!scope || !action) return null;
-    if (action && actions && actions[scope]) {
-      return actions[scope][action.name] ?? null;
+    const scope = this.selectedPolicy()?.scope;
+    if (!scope) return null;
+    if (actionName && actions && actions[scope]) {
+      return actions[scope][actionName] ?? null;
     }
     return null;
+  };
+
+  selectedActionDetail: Signal<PolicyActionDetail | null> = computed(() => {
+    const actionName = this.selectedAction()?.name;
+    if (!actionName) return null;
+    return this._getActionDetail(actionName);
   });
 
   // ===================================
