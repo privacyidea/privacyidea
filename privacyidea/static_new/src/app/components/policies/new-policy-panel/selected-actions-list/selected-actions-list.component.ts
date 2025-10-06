@@ -13,8 +13,9 @@ import { PolicyService } from "../../../../services/policies/policies.service";
 })
 export class SelectedActionsListComponent {
   policyService = inject(PolicyService);
-
-  @Input() actions: { actionName: string; value: string }[] = [];
-
-  @Output() deleteAction = new EventEmitter<string>();
+  actions = this.policyService.currentActions();
+  deleteAction(actionName: string): void {
+    const updatedActions = this.policyService.currentActions().filter((a) => a.actionName !== actionName);
+    this.policyService.currentActions.set(updatedActions);
+  }
 }

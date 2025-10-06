@@ -1,6 +1,8 @@
 <mat-expansion-panel
   #panel
-  [disabled]="panel.expanded">
+  [disabled]="panel.expanded"
+  (opened)="policyService.selectEmptypolicy()"
+  (closed)="policyService.deselectPolicy()">
   <mat-expansion-panel-header>
     <mat-panel-title>
       @if (panel.expanded) {
@@ -23,12 +25,12 @@
       <div class="policy-scope-label">
         @if (policyService.currentActions().length === 0 && panel.expanded) {
           <app-horizontal-wheel
-            [initialValue]="policyService.selectedScope()"
+            [initialValue]="policyScope()"
             [values]="policyService.allPolicyScopes"
             (onSelect)="onScopeSelect($event)" />
         } @else {
           <span>
-            {{ policyService.selectedScope().toLocaleUpperCase() }}
+            {{ policyScope()?.toLocaleUpperCase() }}
           </span>
         }
       </div>
@@ -64,17 +66,11 @@
         CONDITIONS
       </button>
     </div>
-
-    <app-selected-actions-list
-      class="grid-area-content-header"
-      [actions]="policyService.currentActions()"
-      (deleteAction)="deleteAction($event)" />
-
     @if (activeTab() === "actions") {
+      <app-selected-actions-list class="grid-area-content-header" />
       <app-action-selector class="grid-area-content-body" />
+      <app-policy-description class="grid-area-detail-header" />
+      <app-action-detail class="grid-area-detail-body" />
     }
-    <!-- <div class="grid-area-detail-header"></div> -->
-
-    <app-action-detail class="grid-area-detail-header grid-area-detail-body" />
   </div>
 </mat-expansion-panel>

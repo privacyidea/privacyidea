@@ -12,6 +12,7 @@ import { HorizontalWheelComponent } from "../../shared/horizontal-wheel/horizont
 import { ActionSelectorComponent } from "./action-selector/action-selector.component";
 import { ActionDetailComponent } from "./action-detail/action-detail.component";
 import { SelectedActionsListComponent } from "./selected-actions-list/selected-actions-list.component";
+import { PolicyDescriptionComponent } from "./policy-description/policy-description.component";
 
 type Tab = "actions" | "conditions";
 
@@ -29,7 +30,8 @@ type Tab = "actions" | "conditions";
     HorizontalWheelComponent,
     ActionSelectorComponent,
     ActionDetailComponent,
-    SelectedActionsListComponent
+    SelectedActionsListComponent,
+    PolicyDescriptionComponent
   ],
   templateUrl: "./new-policy-panel.component.html",
   styleUrl: "./new-policy-panel.component.scss"
@@ -42,15 +44,20 @@ export class NewPolicyPanelComponent {
   policyService: PolicyService = inject(PolicyService);
 
   // ===================================
-  // 2. WRITABLE SIGNALS (STATE)
+  // 2. COMPUTED SIGNALS
   // ===================================
 
-  policyName = signal("");
+  policyName = computed(() => this.policyService.selectedPolicy()?.name);
+  policyScope = computed(() => this.policyService.selectedPolicy()?.scope);
+
+  // ===================================
+  // 3. WRITABLE SIGNALS (STATE)
+  // ===================================
 
   activeTab: WritableSignal<Tab> = signal("actions");
 
   // ===================================
-  // 3. EVENT HANDLERS / ACTIONS
+  // 4. EVENT HANDLERS / ACTIONS
   // ===================================
 
   setActiveTab(tab: Tab): void {
@@ -58,7 +65,14 @@ export class NewPolicyPanelComponent {
   }
 
   onScopeSelect($event: string) {
-    this.policyService.selectedScope.set($event);
+    const selectedPolicy = this.policyService.selectedPolicy();
+    if (!selectedPolicy) return;
+    const updatedPolicy = {
+      ...selectedPolicy,
+      "scope": $event
+    };
+    console.log("onScopeSelect: ", $event);
+    this.policyService.selectedPolicy.set(updatedPolicy);
   }
 
   deleteAction(actionName: string): void {
@@ -72,9 +86,13 @@ export class NewPolicyPanelComponent {
   }
 
   resetPolicy(matExpansionPanel: MatExpansionPanel) {
-    this.policyService.selectedScope.set("");
+    let selectedPolicy = this.policyService.selectedPolicy();
+    if (!selectedPolicy) return;
+    selectedPolicy.scope = "";
+    selectedPolicy.name = "";
+    this.policyService.selectedPolicy.set(selectedPolicy);
     this.policyService.currentActions.set([]);
-    this.policyName.set("");
+
     Object.entries(this.policyService.currentActions());
     // Implementiere hier die Logik, um das Policy-Objekt zurückzusetzen
 

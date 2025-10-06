@@ -16,7 +16,8 @@
           placeholder="Text"
           [ngModel]="this.policyService.selectedActionValue()"
           (ngModelChange)="this.policyService.selectedActionValue.set($event)"
-          class="action-value-input" />
+          class="action-value-input"
+          (keydown.enter)="this.policyService.addAction()" />
       }
       @case ("int") {
         <input
@@ -24,7 +25,8 @@
           placeholder="Number"
           [ngModel]="this.policyService.selectedActionValue()"
           (ngModelChange)="this.policyService.selectedActionValue.set($event)"
-          class="action-value-input" />
+          class="action-value-input"
+          (keydown.enter)="this.policyService.addAction()" />
       }
     }
     <button

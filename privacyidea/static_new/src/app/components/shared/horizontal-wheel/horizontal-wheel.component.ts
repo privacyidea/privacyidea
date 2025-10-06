@@ -63,6 +63,7 @@ export class HorizontalWheelComponent implements AfterViewInit {
       // Only execute UI side-effects if view elements exist.
       if (this.items().length > 0) {
         this.setDynamicPadding();
+        this._transformItemsOnScroll();
         this.centerSelectedElement();
       }
     });

@@ -23,8 +23,9 @@ export class PolicyPanelComponent {
   @Input({ required: true }) isEditMode!: boolean;
   addActionValue: any;
 
-  getActionsOfPolicy(): [string, unknown][] {
-    return Object.entries(this.policy().action);
+  getActionsOfPolicy(policy: PolicyDetail): [string, unknown][] {
+    if (!policy.action) return [];
+    return Object.entries(policy.action);
   }
 
   setActiveTab(tab: Tab): void {

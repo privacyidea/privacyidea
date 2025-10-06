@@ -31,6 +31,7 @@ export class PoliciesComponent {
   }
 
   getActionsOfPolicy(policy: PolicyDetail): [string, unknown][] {
+    if (!policy.action) return [];
     return Object.entries(policy.action);
   }
 

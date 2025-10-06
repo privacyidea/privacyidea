@@ -31,7 +31,11 @@ export class BoolSelectButtonsComponent {
   @Output() onSelect = new EventEmitter<boolean>();
   @Output() onSelectString = new EventEmitter<string>();
   @Output() onSelectNumber = new EventEmitter<Number>();
-  selectedValue = signal<boolean | null>(null);
+  selectedValue = signal<boolean>(true);
+
+  ngOnInit() {
+    this.selectBoolean(this.selectedValue());
+  }
 
   selectBoolean(bool: boolean): void {
     this.selectedValue.set(bool);

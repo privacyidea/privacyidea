@@ -23,7 +23,6 @@ import { lastValueFrom } from "rxjs";
 import { PiResponse } from "../../app.component";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { environment } from "../../../environments/environment";
-import { assert } from "../../utils/assert";
 
 export type PolicyAction = {
   desc: string;
@@ -63,7 +62,9 @@ export type PolicyActionGroups = {
 //         client (IP address with subnet) – for which requesting client this should be
 //         active – bool, whether this policy is active or not
 //         check_all_resolvers – bool, whether all all resolvers in which the user exists should be checked with this policy.
-//         conditions – a (possibly empty) list of conditions of the policy. Each condition is encoded as a list with 5 elements: [section (string), key (string), comparator (string), value (string), active (boolean)] Hence, the conditions parameter expects a list of lists. When privacyIDEA checks if a defined policy should take effect, all conditions of the policy must be fulfilled for the policy to match. Note that the order of conditions is not guaranteed to be preserved.
+//         conditions – a (possibly empty) list of conditions of the policy.
+//                     Each condition is encoded as a list with 5 elements: [section (string), key (string), comparator (string), value (string), active (boolean)] Hence, the conditions parameter expects a list of lists.
+//                     When privacyIDEA checks if a defined policy should take effect, all conditions of the policy must be fulfilled for the policy to match. Note that the order of conditions is not guaranteed to be preserved.
 
 // Return:
 
@@ -72,37 +73,55 @@ export type PolicyActionGroups = {
 //         200 OK – Policy created or modified.
 //         401 Unauthorized – Authentication failed
 
-export interface PolicyCreateData {
-  name: string; // name of the policy
-  scope: "admin" | "system" | "authentication" | "selfservice"; // the scope of the policy like “admin”, “system”, “authentication” or “selfservice”
-  priority: number; // the priority of the policy
-  description?: string; // a description of the policy
-  adminrealm?: string; // Realm of the administrator. (only for admin scope)
-  adminuser?: string; // Username of the administrator. (only for admin scope)
-  action?: string | string[]; // which action may be executed
-  realm?: string; // For which realm this policy is valid
-  resolver?: string; // This policy is valid for this resolver
-  user?: string | string[]; // The policy is valid for these users. string with wild cards or list of strings
-  time?: string; // on which time does this policy hold
-  pinode?: string | string[]; // The privacyIDEA node (or list of nodes) for which this policy is valid
-  client?: string; // (IP address with subnet) – for which requesting client this should be
-  active?: boolean; // whether this policy is active or not
-  check_all_resolvers?: boolean; // whether all all resolvers in which the user exists should be checked with this policy.
-  conditions?: [string, string, string, string, boolean][]; // a (possibly empty) list of conditions of the policy. Each condition is encoded as a list with 5 elements: [section (string), key (string), comparator (string), value (string), active (boolean)] Hence, the conditions parameter expects a list of lists. When privacyIDEA checks if a defined policy should take effect, all conditions of the policy must be fulfilled for the policy to match. Note that the order of conditions is not guaranteed to be preserved.
-}
-
 export type PoliciesList = PolicyDetail[];
 
+/*
+{
+	"1": {
+		"action": {
+			"push_registration_url": "http://192.168.178.139:5000/ttype/push",
+			"push_ssl_verify": "0"
+		},
+		"active": true,
+		"adminrealm": [],
+		"adminuser": [],
+		"check_all_resolvers": false,
+		"client": [],
+		"conditions": [],
+		"description": null,
+		"name": "push_token1",
+		"pinode": [],
+		"priority": 1,
+		"realm": [],
+		"resolver": [],
+		"scope": "enrollment",
+		"time": "",
+		"user": [],
+		"user_agents": [],
+		"user_case_insensitive": false
+	}
+}
+*/
+
 export type PolicyDetail = {
-  action: Object;
+  action: { [actionName: string]: string } | null;
   active: boolean;
-  client: string;
+  adminrealm: string[];
+  adminuser: string[];
+  check_all_resolvers: boolean;
+  client: string[];
+  conditions: [string, string, string, string, boolean][];
+  description: string | null;
   name: string;
-  realm: string;
-  resolver: string;
+  pinode: string[];
+  priority: number;
+  realm: string[];
+  resolver: string[];
   scope: string;
   time: string;
-  user: string | string[];
+  user: string[];
+  user_agents: string[];
+  user_case_insensitive: boolean;
 };
 
 export interface PoliciesServiceInterface {}
@@ -111,32 +130,113 @@ export interface PoliciesServiceInterface {}
   providedIn: "root"
 })
 export class PolicyService implements PoliciesServiceInterface {
-  selectedPolicy = signal<PolicyDetail | null>(null);
-  selectedScope = signal<string>("");
+  deselectPolicy() {
+    this.selectedPolicy.set(null);
+  }
+  selectEmptypolicy() {
+    this.selectedPolicy.set({
+      action: null,
+      active: true,
+      adminrealm: [],
+      adminuser: [],
+      check_all_resolvers: false,
+      client: [],
+      conditions: [],
+      description: null,
+      name: "",
+      pinode: [],
+      priority: 100,
+      realm: [],
+      resolver: [],
+      scope: this.allPolicyScopes()[0] || "admin",
+      time: "",
+      user: [],
+      user_agents: [],
+      user_case_insensitive: false
+    });
+  }
 
-  // GET /policy/defs/(scope)
+  updateSelectedPolicy(args: { key: keyof PolicyDetail; value: any }) {
+    const { key, value } = args;
+    const selectedPolicy = this.selectedPolicy();
+    if (!selectedPolicy) return;
+    const updatedPolicy = {
+      ...selectedPolicy,
+      key: value
+    };
+    console.log(`updated key ${key} to value ${value} in selectedPolicy`);
+    this.selectedPolicy.set(updatedPolicy);
+  }
+
+  // ===================================
+  // 1. PROPERTIES & INJECTED SERVICES
+  // ===================================
+
+  readonly policyBaseUrl = environment.proxyUrl + "/policy/";
+
+  private readonly http: HttpClient = inject(HttpClient);
+  private readonly authService: AuthServiceInterface = inject(AuthService);
+
+  // ===================================
+  // 2. STATE (RESOURCES & SIGNALS)
+  // ===================================
+
+  // -----------------------------------
+  // 2.1 API Resources
+  // -----------------------------------
+
   // GET /policy/defs
-  //     This is a helper function that returns the POSSIBLE policy definitions, that can be used to define your policies.
-  //     If the given scope is “conditions”, this returns a dictionary with the following keys:
-  //             "sections", containing a dictionary mapping each condition section name to a dictionary with the following keys:
-  //                     "description", a human-readable description of the section
-  //             "comparators", containing a dictionary mapping each comparator to a dictionary with the following keys:
-  //                     "description", a human-readable description of the comparator
-  //     if the scope is “pinodes”, it returns a list of the configured privacyIDEA nodes.
-  //     Query Parameters:
-  //             scope – if given, the function will only return policy definitions for the given scope.
-  //     Return:
-  //         The policy definitions of the allowed scope with the actions and action types. The top level key is the scope.
-  //     Rtype:
-  //         dict
-
-  // GET /policy/defs
-
   policyActionResource = httpResource<PiResponse<ScopedPolicyActions>>(() => ({
     url: `${this.policyBaseUrl}defs`,
     method: "GET",
     headers: this.authService.getHeaders()
   }));
+
+  policyDefinitions = httpResource(() => ({
+    url: `${this.policyBaseUrl}defs`,
+    method: "GET",
+    headers: this.authService.getHeaders()
+  }));
+
+  allPoliciesRecource = httpResource<PiResponse<PolicyDetail[]>>(() => ({
+    url: `${this.policyBaseUrl}`,
+    method: "GET",
+    headers: this.authService.getHeaders()
+  }));
+
+  // -----------------------------------
+  // 2.2 Writable Signals (State)
+  // -----------------------------------
+
+  // Signals for selecting and editing selected policy
+  selectedPolicy = signal<PolicyDetail | null>(null);
+
+  // Signals for action handling
+  actionFilter = signal<string>("");
+  currentActions = signal<{ actionName: string; value: string }[]>([]);
+  selectedActionGroup: WritableSignal<string> = linkedSignal({
+    source: () => this.policyActionGroupNames(),
+    computation: (source, previous) => {
+      if (source.length < 1) return "";
+      if (previous && source.includes(previous.value)) return previous.value;
+      return source[0];
+    }
+  });
+
+  selectedActionName: WritableSignal<string> = linkedSignal({
+    source: computed(() => this.getActionNamesOfSelectedGroup() ?? []),
+    computation: (source, previous) => {
+      if (source.length < 1) return "";
+      if (previous && source.includes(previous.value)) return previous.value;
+      return source[0];
+    }
+  });
+
+  selectedActionValue = signal("");
+
+  // -----------------------------------
+  // 2.3 Computed Signals (Derived State)
+  // -----------------------------------
 
   policyActions = computed(() => {
     return this.policyActionResource.value()?.result?.value ?? {};
@@ -167,8 +267,6 @@ export class PolicyService implements PoliciesServiceInterface {
     return grouped;
   });
 
-  actionFilter = signal<string>("");
-  currentActions = signal<{ actionName: string; value: string }[]>([]);
   alreadyAddedActionNames = computed(() => {
     return this.currentActions().map((a) => a.actionName);
   });
@@ -204,36 +302,40 @@ export class PolicyService implements PoliciesServiceInterface {
     return grouped;
   });
 
-  readonly policyBaseUrl = environment.proxyUrl + "/policy/";
-
-  private readonly http: HttpClient = inject(HttpClient);
-  private readonly authService: AuthServiceInterface = inject(AuthService);
-
-  policyDefinitions = httpResource(() => ({
-    url: `${this.policyBaseUrl}defs`,
-    method: "GET",
-    headers: this.authService.getHeaders()
-  }));
-
   allPolicies = computed(() => {
     return this.allPoliciesRecource.value()?.result?.value ?? [];
   });
 
-  allPoliciesRecource = httpResource<PiResponse<PolicyDetail[]>>(() => ({
-    url: `${this.policyBaseUrl}`,
-    method: "GET",
-    headers: this.authService.getHeaders()
-  }));
+  policyActionGroupNames: Signal<string[]> = computed(() => {
+    const selectedScope = this.selectedPolicy()?.scope;
+    console.log("selectedScope: ", selectedScope);
+    if (!selectedScope) return [];
+    const policyActionGroupFiltered = this.policyActionsByGroupFiltered()[selectedScope];
+    console.log("policyActionGroupFiltered: ", policyActionGroupFiltered);
+    if (!policyActionGroupFiltered) return [];
+    return Object.keys(policyActionGroupFiltered);
+  });
 
-  enablePolicy(name: string): Promise<PiResponse<any>> {
-    return lastValueFrom(this.http.post<PiResponse<any>>(`${environment.proxyUrl}enable/${name}`, {}));
-  }
+  selectedAction: Signal<PolicyAction | null> = computed(() => {
+    const actions = this.policyActions();
+    const actionName = this.selectedActionName();
+    const scope = this.selectedPolicy()?.scope; // Only check for actions[scope][actionName] if actions[scope] exists
+    if (!scope) return null;
+    if (actionName && actions && actions[scope]) {
+      return actions[scope][actionName] ?? null;
+    }
+    return null;
+  });
 
-  disablePolicy(name: string): Promise<PiResponse<any>> {
-    return lastValueFrom(this.http.post<PiResponse<any>>(`${environment.proxyUrl}disable/${name}`, {}));
-  }
+  // ===================================
+  // 3. PUBLIC METHODS
+  // ===================================
 
-  createPolicy(data: PolicyCreateData): Promise<PiResponse<any>> {
+  // -----------------------------------
+  // 3.1 API Methods
+  // -----------------------------------
+
+  createPolicy(data: PolicyDetail): Promise<PiResponse<any>> {
     // Example request:
     // In this example a policy “pol1” is created.
     // ******************************
@@ -253,62 +355,17 @@ export class PolicyService implements PoliciesServiceInterface {
     return lastValueFrom(this.http.delete<PiResponse<number>>(`${environment.proxyUrl}${name}`));
   }
 
-  isScopeChangeable(policy: PolicyDetail): boolean {
-    return !policy.action;
+  enablePolicy(name: string): Promise<PiResponse<any>> {
+    return lastValueFrom(this.http.post<PiResponse<any>>(`${environment.proxyUrl}enable/${name}`, {}));
   }
 
-  // ===================================
-  // 3. COMPUTED SIGNALS (DERIVED STATE)
-  // ===================================
-
-  policyActionGroupNames: Signal<string[]> = computed(() => {
-    const selectedScope = this.selectedScope();
-    if (!selectedScope) return [];
-    const policyActionGroupFiltered = this.policyActionsByGroupFiltered()[this.selectedScope()];
-    if (!policyActionGroupFiltered) return [];
-    return Object.keys(policyActionGroupFiltered);
-  });
-
-  selectedAction: Signal<PolicyAction | null> = computed(() => {
-    const actions = this.policyActions();
-    const actionName = this.selectedActionName();
-    const scope = this.selectedScope(); // Only check for actions[scope][actionName] if actions[scope] exists
-    if (actionName && actions && actions[scope]) {
-      return actions[scope][actionName] ?? null;
-    }
-    return null;
-  });
-
-  selectedActionGroup: WritableSignal<string> = linkedSignal({
-    source: this.policyActionGroupNames,
-    computation: (source, previous) => {
-      if (source.length < 1) return "";
-      if (previous && source.includes(previous.value)) return previous.value;
-      return source[0];
-    }
-  });
-
-  selectedActionName: WritableSignal<string> = linkedSignal({
-    source: computed(() => this.getActionNamesOfSelectedGroup() ?? []),
-    computation: (source, previous) => {
-      if (source.length < 1) return "";
-      if (previous && source.includes(previous.value)) return previous.value;
-      return source[0];
-    }
-  });
-
-  selectedActionValue: WritableSignal<string> = signal("");
-
-  getActionNamesOfSelectedGroup(): string[] {
-    const group: string = this.selectedActionGroup();
-    const actionsByGroup = this.policyActionsByGroupFiltered();
-    const scope = this.selectedScope();
-
-    if (scope && actionsByGroup[scope]) {
-      return Object.keys(actionsByGroup[scope][group] || {});
-    }
-    return [];
+  disablePolicy(name: string): Promise<PiResponse<any>> {
+    return lastValueFrom(this.http.post<PiResponse<any>>(`${environment.proxyUrl}disable/${name}`, {}));
   }
+
+  // -----------------------------------
+  // 3.2 Local State Methods
+  // -----------------------------------
 
   addAction() {
     const actionName = this.selectedActionName();
@@ -337,11 +394,28 @@ export class PolicyService implements PoliciesServiceInterface {
     this.currentActions.set(updatedActions);
   }
 
-  actionValueIsValid(action: PolicyAction, value: string): boolean {
-    assert(typeof value === "string", "Value must be a string");
+  // -----------------------------------
+  // 3.3 Helper Methods
+  // -----------------------------------
+
+  isScopeChangeable(policy: PolicyDetail): boolean {
+    return !policy.action;
+  }
+
+  getActionNamesOfSelectedGroup(): string[] {
+    const group: string = this.selectedActionGroup();
+    const actionsByGroup = this.policyActionsByGroupFiltered();
+    const scope = this.selectedPolicy()?.scope;
+    if (!scope || !actionsByGroup[scope]) return [];
+    return Object.keys(actionsByGroup[scope][group] || {});
+  }
+
+  actionValueIsValid(action: PolicyAction, value: string | number): boolean {
     if (!action) return false;
     const actionType = action.type;
     if (!actionType) return false;
+    if (actionType === "int" && typeof value === "number") return Number.isInteger(value);
+    if (typeof value !== "string") return false;
 
     if (actionType === "bool") {
       return value.toLowerCase() === "true" || value.toLowerCase() === "false";

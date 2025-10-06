@@ -21,5 +21,7 @@ export class ActionDetailComponent {
     return this.policyService.actionValueIsValid(action, actionValue);
   });
 
+  console = console;
+
   @Output() addAction = new EventEmitter<{ actionName: string; value: string }>();
 }
