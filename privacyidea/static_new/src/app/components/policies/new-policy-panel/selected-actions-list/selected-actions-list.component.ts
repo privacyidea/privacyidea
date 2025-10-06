@@ -1,4 +1,4 @@
-import { Component, EventEmitter, inject, Input, Output } from "@angular/core";
+import { Component, computed, EventEmitter, inject, Input, Output, Signal, WritableSignal } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { MatIconModule } from "@angular/material/icon";
 import { MatButtonModule } from "@angular/material/button";
@@ -13,9 +13,10 @@ import { PolicyService } from "../../../../services/policies/policies.service";
 })
 export class SelectedActionsListComponent {
   policyService = inject(PolicyService);
-  actions = this.policyService.currentActions();
-  deleteAction(actionName: string): void {
-    const updatedActions = this.policyService.currentActions().filter((a) => a.actionName !== actionName);
-    this.policyService.currentActions.set(updatedActions);
-  }
+  actions: Signal<{ name: string; value: string }[]> = computed(() => {
+    // this.policyService.selectedPolicy()?.action ?? [];
+    const policy = this.policyService.selectedPolicy();
+    if (!policy || !policy.action) return [];
+    return Object.entries(policy.action).map(([name, value]) => ({ name: name, value }));
+  });
 }

@@ -23,7 +23,7 @@
     </mat-panel-title>
     <mat-panel-description class="header-description">
       <div class="policy-scope-label">
-        @if (policyService.currentActions().length === 0 && panel.expanded) {
+        @if (!selectedPolicyHasActions() && panel.expanded) {
           <app-horizontal-wheel
             [initialValue]="policyScope()"
             [values]="policyService.allPolicyScopes"

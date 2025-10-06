@@ -24,8 +24,8 @@
       @for (actionName of policyService.getActionNamesOfSelectedGroup(); track actionName) {
         <div
           class="policy-action-item"
-          [class.policy-action-item-selected]="policyService.selectedActionName() === actionName"
-          (click)="policyService.selectedActionName.set(actionName)">
+          [class.policy-action-item-selected]="policyService.selectedAction()?.name === actionName"
+          (click)="policyService.selectedAction.set({ name: actionName, value: null })">
           <span class="detail-label">{{ actionName }}</span>
           <mat-icon>add_circle_outline</mat-icon>
         </div>

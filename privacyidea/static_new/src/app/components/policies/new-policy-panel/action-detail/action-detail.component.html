@@ -1,38 +1,38 @@
 <div class="action-detail-column">
-  @if (policyService.selectedActionName() !== "") {
-    <h3>{{ policyService.selectedActionName() }}</h3>
+  @if (policyService.selectedAction() !== null) {
+    <h3>{{ policyService.selectedAction()?.name }}</h3>
     <div class="action-detail-card">
       <span class="detail-row">
-        {{ policyService.selectedAction()?.desc }}
+        {{ policyService.selectedActionDetail()?.desc }}
       </span>
     </div>
-    @switch (policyService.selectedAction()?.type) {
+    @switch (policyService.selectedActionDetail()?.type) {
       @case ("bool") {
-        <app-bool-select-buttons (onSelectString)="this.policyService.selectedActionValue.set($event)" />
+        <app-bool-select-buttons (onSelectString)="policyService.updateSelectedActionValue($event)" />
       }
       @case ("str") {
         <input
           type="text"
           placeholder="Text"
-          [ngModel]="this.policyService.selectedActionValue()"
-          (ngModelChange)="this.policyService.selectedActionValue.set($event)"
+          [ngModel]="policyService.selectedAction()?.value"
+          (ngModelChange)="policyService.updateSelectedActionValue($event)"
           class="action-value-input"
-          (keydown.enter)="this.policyService.addAction()" />
+          (keydown.enter)="policyService.addActionToSelectedPolicy()" />
       }
       @case ("int") {
         <input
           type="number"
           placeholder="Number"
-          [ngModel]="this.policyService.selectedActionValue()"
-          (ngModelChange)="this.policyService.selectedActionValue.set($event)"
+          [ngModel]="policyService.selectedAction()?.value"
+          (ngModelChange)="policyService.updateSelectedActionValue($event)"
           class="action-value-input"
-          (keydown.enter)="this.policyService.addAction()" />
+          (keydown.enter)="policyService.addActionToSelectedPolicy()" />
       }
     }
     <button
       mat-raised-button
       color="primary"
-      (click)="this.policyService.addAction()"
+      (click)="policyService.addActionToSelectedPolicy()"
       [disabled]="!inputIsValid()">
       Add Action
     </button>

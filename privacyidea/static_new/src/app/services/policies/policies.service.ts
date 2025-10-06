@@ -24,7 +24,7 @@ import { PiResponse } from "../../app.component";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { environment } from "../../../environments/environment";
 
-export type PolicyAction = {
+export type PolicyActionDetail = {
   desc: string;
   type: string;
   group?: string;
@@ -34,14 +34,14 @@ export type PolicyAction = {
 
 export type ScopedPolicyActions = {
   [scopeName: string]: {
-    [actionName: string]: PolicyAction;
+    [actionName: string]: PolicyActionDetail;
   };
 };
 
 export type PolicyActionGroups = {
   [scopeName: string]: {
     [group: string]: {
-      [actionName: string]: PolicyAction;
+      [actionName: string]: PolicyActionDetail;
     };
   };
 };
@@ -168,6 +168,39 @@ export class PolicyService implements PoliciesServiceInterface {
     this.selectedPolicy.set(updatedPolicy);
   }
 
+  // addActionToSelectedPolicy() {
+
+  //   const selectedAction = this.selectedAction();
+  //   const actionValue = this.selectedActionValue();
+  //   const selectedPolicy = this.selectedPolicy();
+  //   if (!selectedPolicy || !selectedAction) return;
+  //   const currentAction = selectedPolicy.action || {};
+  //   const updatedAction = {
+  //     ...currentAction,
+  //     [selectedAction.]: action.value
+  //   };
+  //   const updatedPolicy = {
+  //     ...selectedPolicy,
+  //     action: updatedAction
+  //   };
+  //   console.log(`added action ${action.actionName} to selectedPolicy`);
+  //   this.selectedPolicy.set(updatedPolicy);
+  // }
+
+  // removeActionFromSelectedPolicy(actionName: string) {
+  //   const selectedPolicy = this.selectedPolicy();
+  //   if (!selectedPolicy || !selectedPolicy.action) return;
+  //   const currentAction = selectedPolicy.action;
+  //   if (!(actionName in currentAction)) return;
+  //   const { [actionName]: _, ...updatedAction } = currentAction; // Omit the action to be removed
+  //   const updatedPolicy = {
+  //     ...selectedPolicy,
+  //     action: Object.keys(updatedAction).length > 0 ? updatedAction : null // Set to null if no actions left
+  //   };
+  //   console.log(`removed action ${actionName} from selectedPolicy`);
+  //   this.selectedPolicy.set(updatedPolicy);
+  // }
+
   // ===================================
   // 1. PROPERTIES & INJECTED SERVICES
   // ===================================
@@ -213,7 +246,6 @@ export class PolicyService implements PoliciesServiceInterface {
 
   // Signals for action handling
   actionFilter = signal<string>("");
-  currentActions = signal<{ actionName: string; value: string }[]>([]);
   selectedActionGroup: WritableSignal<string> = linkedSignal({
     source: () => this.policyActionGroupNames(),
     computation: (source, previous) => {
@@ -223,16 +255,21 @@ export class PolicyService implements PoliciesServiceInterface {
     }
   });
 
-  selectedActionName: WritableSignal<string> = linkedSignal({
+  selectedAction: WritableSignal<{ name: string; value: any } | null> = linkedSignal({
     source: computed(() => this.getActionNamesOfSelectedGroup() ?? []),
     computation: (source, previous) => {
-      if (source.length < 1) return "";
-      if (previous && source.includes(previous.value)) return previous.value;
-      return source[0];
+      const previousValue = previous?.value;
+      if (source.length < 1) return null;
+      if (previousValue && source.includes(previousValue.name)) return previous.value;
+      return { name: source[0], value: "" };
     }
   });
 
-  selectedActionValue = signal("");
+  updateSelectedActionValue(value: string | number) {
+    const selectedAction = this.selectedAction();
+    if (!selectedAction) return;
+    this.selectedAction.set({ name: selectedAction.name, value: value });
+  }
 
   // -----------------------------------
   // 2.3 Computed Signals (Derived State)
@@ -268,7 +305,9 @@ export class PolicyService implements PoliciesServiceInterface {
   });
 
   alreadyAddedActionNames = computed(() => {
-    return this.currentActions().map((a) => a.actionName);
+    const currentActions = this.selectedPolicy()?.action;
+    if (!currentActions) return [];
+    return Object.keys(currentActions);
   });
 
   policyActionsByGroupFiltered = computed<PolicyActionGroups>(() => {
@@ -316,13 +355,13 @@ export class PolicyService implements PoliciesServiceInterface {
     return Object.keys(policyActionGroupFiltered);
   });
 
-  selectedAction: Signal<PolicyAction | null> = computed(() => {
+  selectedActionDetail: Signal<PolicyActionDetail | null> = computed(() => {
     const actions = this.policyActions();
-    const actionName = this.selectedActionName();
+    const action = this.selectedAction();
     const scope = this.selectedPolicy()?.scope; // Only check for actions[scope][actionName] if actions[scope] exists
-    if (!scope) return null;
-    if (actionName && actions && actions[scope]) {
-      return actions[scope][actionName] ?? null;
+    if (!scope || !action) return null;
+    if (action && actions && actions[scope]) {
+      return actions[scope][action.name] ?? null;
     }
     return null;
   });
@@ -367,31 +406,40 @@ export class PolicyService implements PoliciesServiceInterface {
   // 3.2 Local State Methods
   // -----------------------------------
 
-  addAction() {
-    const actionName = this.selectedActionName();
+  addActionToSelectedPolicy() {
     const selectedAction = this.selectedAction();
-    const actionValue = this.selectedActionValue();
-    if (this.alreadyAddedActionNames().includes(actionName) || selectedAction === null) return;
-    if (!this.actionValueIsValid(selectedAction, actionValue)) return;
+    const selectedActionDetail = this.selectedActionDetail();
+    if (!selectedAction || !selectedActionDetail) return;
+    if (this.alreadyAddedActionNames().includes(selectedAction.name)) return;
+    if (!this.actionValueIsValid(selectedActionDetail, selectedAction.value)) return;
 
-    const newAction = {
-      actionName: actionName,
-      value: actionValue
+    const selectedPolicy = this.selectedPolicy();
+    if (!selectedPolicy) return;
+    const currentAction = selectedPolicy.action || {};
+    const updatedAction = {
+      ...currentAction,
+      [selectedAction.name]: selectedAction.value
     };
-
-    this.currentActions.set([...this.currentActions(), newAction]);
+    const updatedPolicy = {
+      ...selectedPolicy,
+      action: updatedAction
+    };
+    console.log(`added action ${selectedAction.name} to selectedPolicy`);
+    this.selectedPolicy.set(updatedPolicy);
   }
 
-  updateAction() {
-    const actionName = this.selectedActionName();
-    const selectedAction = this.selectedAction();
-    const actionValue = this.selectedActionValue();
-    if (!this.alreadyAddedActionNames().includes(actionName) || selectedAction === null) return;
-    if (!this.actionValueIsValid(selectedAction, actionValue)) return;
-    const updatedActions = this.currentActions().map((a) =>
-      a.actionName === actionName ? { actionName: a.actionName, value: actionValue } : a
-    );
-    this.currentActions.set(updatedActions);
+  removeActionFromSelectedPolicy(actionName: string) {
+    const selectedPolicy = this.selectedPolicy();
+    if (!selectedPolicy || !selectedPolicy.action) return;
+    const currentAction = selectedPolicy.action;
+    if (!(actionName in currentAction)) return;
+    const { [actionName]: _, ...updatedAction } = currentAction;
+    const updatedPolicy = {
+      ...selectedPolicy,
+      action: Object.keys(updatedAction).length > 0 ? updatedAction : null
+    };
+    console.log(`removed action ${actionName} from selectedPolicy`);
+    this.selectedPolicy.set(updatedPolicy);
   }
 
   // -----------------------------------
@@ -410,7 +458,7 @@ export class PolicyService implements PoliciesServiceInterface {
     return Object.keys(actionsByGroup[scope][group] || {});
   }
 
-  actionValueIsValid(action: PolicyAction, value: string | number): boolean {
+  actionValueIsValid(action: PolicyActionDetail, value: string | number): boolean {
     if (!action) return false;
     const actionType = action.type;
     if (!actionType) return false;

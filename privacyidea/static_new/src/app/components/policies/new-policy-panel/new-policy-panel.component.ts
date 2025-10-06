@@ -6,8 +6,7 @@ import { MatButtonToggleModule } from "@angular/material/button-toggle";
 import { MatCardModule } from "@angular/material/card";
 import { MatExpansionModule, MatExpansionPanel } from "@angular/material/expansion";
 import { MatIconModule } from "@angular/material/icon";
-
-import { PolicyService as PolicyService, PolicyAction } from "../../../services/policies/policies.service";
+import { PolicyService } from "../../../services/policies/policies.service";
 import { HorizontalWheelComponent } from "../../shared/horizontal-wheel/horizontal-wheel.component";
 import { ActionSelectorComponent } from "./action-selector/action-selector.component";
 import { ActionDetailComponent } from "./action-detail/action-detail.component";
@@ -49,6 +48,11 @@ export class NewPolicyPanelComponent {
 
   policyName = computed(() => this.policyService.selectedPolicy()?.name);
   policyScope = computed(() => this.policyService.selectedPolicy()?.scope);
+  selectedPolicyHasActions = computed(() => {
+    const policy = this.policyService.selectedPolicy();
+    if (!policy) return false;
+    return policy?.action && Object.keys(policy.action).length > 0;
+  });
 
   // ===================================
   // 3. WRITABLE SIGNALS (STATE)
@@ -69,33 +73,19 @@ export class NewPolicyPanelComponent {
     if (!selectedPolicy) return;
     const updatedPolicy = {
       ...selectedPolicy,
-      "scope": $event
+      scope: $event
     };
     console.log("onScopeSelect: ", $event);
     this.policyService.selectedPolicy.set(updatedPolicy);
   }
 
-  deleteAction(actionName: string): void {
-    const updatedActions = this.policyService.currentActions().filter((a) => a.actionName !== actionName);
-    this.policyService.currentActions.set(updatedActions);
-  }
-
   savePolicy(matExpansionPanel: MatExpansionPanel) {
     // Implementiere hier die Logik, um das neue Policy zu speichern
-    this.resetPolicy(matExpansionPanel);
+    this.policyService.deselectPolicy();
+    matExpansionPanel.close();
   }
-
   resetPolicy(matExpansionPanel: MatExpansionPanel) {
-    let selectedPolicy = this.policyService.selectedPolicy();
-    if (!selectedPolicy) return;
-    selectedPolicy.scope = "";
-    selectedPolicy.name = "";
-    this.policyService.selectedPolicy.set(selectedPolicy);
-    this.policyService.currentActions.set([]);
-
-    Object.entries(this.policyService.currentActions());
-    // Implementiere hier die Logik, um das Policy-Objekt zurückzusetzen
-
+    this.policyService.deselectPolicy();
     matExpansionPanel.close();
   }
 }
