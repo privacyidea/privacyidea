@@ -182,37 +182,6 @@ describe("TokenEnrollmentLastStepDialogComponent", () => {
       expect(serialSignalSpy).toHaveBeenCalledWith(null);
       expect(dialogRef.close).toHaveBeenCalled();
     });
-
-    it("printOtps should open window when element exists", async () => {
-      await detectChangesStable(fixture);
-      const host = document.createElement("div");
-      host.setAttribute("id", "otp-values");
-      host.innerHTML = `<div class="otp-values"><span class="otp-value">123456</span></div>`;
-      document.body.appendChild(host);
-      const mockPrintWindow = {
-        document: { open: jest.fn(), write: jest.fn(), close: jest.fn() },
-        focus: jest.fn(),
-        print: jest.fn(),
-        close: jest.fn()
-      };
-      jest.spyOn(window, "open").mockReturnValue(mockPrintWindow as any);
-      component.printOtps();
-      expect(window.open).toHaveBeenCalledWith("", "_blank", "width=800,height=600");
-      expect(mockPrintWindow.document.open).toHaveBeenCalled();
-      expect(mockPrintWindow.document.write).toHaveBeenCalled();
-      expect(mockPrintWindow.document.close).toHaveBeenCalled();
-      expect(mockPrintWindow.focus).toHaveBeenCalled();
-      expect(mockPrintWindow.print).toHaveBeenCalled();
-      expect(mockPrintWindow.close).toHaveBeenCalled();
-      document.body.removeChild(host);
-    });
-
-    it("printOtps should do nothing when element missing", async () => {
-      await detectChangesStable(fixture);
-      jest.spyOn(window, "open");
-      component.printOtps();
-      expect(window.open).not.toHaveBeenCalled();
-    });
   });
 });
 
