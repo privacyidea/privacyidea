@@ -72,6 +72,8 @@ export class LoginComponent implements OnDestroy {
   pushTriggered = signal<boolean>(false);
   webAuthnTriggered = signal<any | null>(null);
 
+  hidePassword = true;
+
   isLoginButtonDisabled = computed(() => {
     if (this.showOtpField()) {
       // Disable if OTP field is shown but empty
@@ -294,5 +296,9 @@ export class LoginComponent implements OnDestroy {
         setTimeout(() => this.otpInput?.nativeElement.focus(), 0);
       }
     }
+  }
+
+  togglePasswordVisibility() {
+    this.hidePassword = !this.hidePassword;
   }
 }

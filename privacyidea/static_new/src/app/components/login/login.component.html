@@ -59,7 +59,7 @@
       }
 
       @if (!showOtpField()) {
-        <mat-form-field appearance="outline">
+        <mat-form-field appearance="outline" class="password-field">
           <mat-label i18n="Login password label">Password</mat-label>
           <input
             [(ngModel)]="password"
@@ -67,7 +67,15 @@
             matInput
             name="password"
             required
-            type="password" />
+            [type]="hidePassword ? 'password' : 'text'" />
+          <button
+            mat-icon-button
+            type="button"
+            (click)="togglePasswordVisibility()"
+            aria-label="Toggle password visibility"
+            class="password-toggle-button">
+            <mat-icon>{{ hidePassword ? "visibility" : "visibility_off" }}</mat-icon>
+          </button>
         </mat-form-field>
       }
 
