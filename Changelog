@@ -12,7 +12,8 @@ Version 3.12.1, 2025-10-07
   * Config option to clear exceeded fail counters after a certain time: If the timeout is reached, any authentication
     attempt clears the exceeded fail counter to restrict the number of new authentication attempts (#4706)
   * Fail counter is not increased for disabled tokens (#4706)
-  * Fixed bulk deletion of tokens in the WebUI (#4706)
+  * Fixed bulk deletion of tokens in the WebUI (#4690)
+  * Fix error when import json configuration file with pi-manage (#4733)
 
 Version 3.12, 2025-09-09
 
