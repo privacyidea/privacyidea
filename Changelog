@@ -1,8 +1,18 @@
-Version 3.12.1
+Version 3.12.1, 2025-10-07
+
+  Enhancements:
+  * Apply the token event handler action also to the users token (#4730)
 
   Fixes:
   * 'push_require_presence' policy does not work when 'push_wait' is set (#4702)
   * Show the own audit logs of helpdesk admins (#4637)
+  * Allow empty user policies to revoke all user rights (#4721)
+  * Fixed saving basic HTTP resolver (#4728)
+  * Fixed database migrations for oracle (#4732)
+  * Config option to clear exceeded fail counters after a certain time: If the timeout is reached, any authentication
+    attempt clears the exceeded fail counter to restrict the number of new authentication attempts (#4706)
+  * Fail counter is not increased for disabled tokens (#4706)
+  * Fixed bulk deletion of tokens in the WebUI (#4706)
 
 Version 3.12, 2025-09-09
 
@@ -23,7 +33,6 @@ Version 3.12, 2025-09-09
   * Dedicated functions to rename and clone policies (#4293)
   * Clean up user cache and expired challenges via API/WebUI (#4280)
   * Allow to enroll smartphone containers via multi-challenge (#4361)
-  * Add comparators for extended policy conditions to compare dates and check for substrings (#4470)
   * Add 'container' and 'container_info' sections to the extended policy conditions (#4208)
   * Add 'hide_container_info' policy (#4208)
   * Secure container registration with user store password (#4208)
