@@ -350,7 +350,6 @@ def create_app(config_name="development",
     # SQLAlchemy Oracle dialect does not (yet) support JSON serializers
     with app.app_context():
         engine = db.session.get_bind()
-        sys.stderr.write("DEBUG: " + engine.name)
         if engine.name == "oracle":
             engine.dialect._json_serializer=lambda obj: json.dumps(obj, ensure_ascii=False)
             engine.dialect._json_deserializer=lambda obj: json.loads(obj)

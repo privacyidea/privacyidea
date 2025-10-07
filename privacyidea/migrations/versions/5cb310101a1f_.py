@@ -37,8 +37,8 @@ def upgrade():
                 if isinstance(seq, Sequence):
                     seq_name = seq.name
                 else:
-                    # do we have tables with "id" columns which isn't a sequence?
-                    print(f"Table {tbl.name} has an 'id' column which isn't a sequence!")
+                    # do we have tables with "id" columns, which isn't a sequence?
+                    print(f"Table {tbl.name} has an 'id' column which isn't a sequence. Skipping...")
                     continue
 
                 # check if the table exists in the database (newer tables might not exist yet)
@@ -48,17 +48,14 @@ def upgrade():
                     continue
                 # Create the sequence with the correct next_id!
                 current_id = session.query(func.max(tbl.c.id)).one()[0] or 0
-                print(f"CurrentID in Table {tbl.name}: {current_id}")
                 try:
                     seq = Sequence(seq_name, start=(current_id + 1))
-                    print(f" +++ Creating Sequence: {seq_name}")
                     op.execute(CreateSequence(seq, if_not_exists=True))
+                    print(f" +++ Created Sequence '{seq_name}' for table '{tbl.name}' "
+                          f"with current id={current_id + 1}")
                 except DatabaseError as e:
-                    if hasattr(e.orig.args[0], "code") and e.orig.args[0].code == 955:
-                        # ORA-00955: name is already used by an existing object
-                        pass
-                    elif any([x in e.orig.args[1] for x in ["already exists"]]):
-                        pass
+                    if any([x in str(e.orig) for x in ["already exists", "ORA-00955: name is already used"]]):
+                        print(f"Sequence {seq_name} already exists. Skipping...")
                     else:
                         raise
                 except Exception as e:
