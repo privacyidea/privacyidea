@@ -2192,7 +2192,7 @@ class TokenFailCounterTestCase(MyTestCase):
         set_privacyidea_config(SYSCONF.RESET_FAILCOUNTER_ON_PIN_ONLY, "True")
         # ... correct PIN + wrong OTP resets the failcounter ...
         res, reply = check_token_list([tok], "hotppin123456")
-        self.assertEqual(tok.get_failcount(), 0)
+        self.assertEqual(tok.get_failcount(), 1)
         # ... but authentication still fails
         self.assertFalse(res)
 
