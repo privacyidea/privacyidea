@@ -45,7 +45,7 @@
         </div>
       }
 
-      @if (!showOtpField()) {
+      @if (!showSecondStep()) {
         <mat-form-field appearance="outline">
           <mat-label i18n="Login username label">Username</mat-label>
           <input
@@ -58,7 +58,7 @@
         </mat-form-field>
       }
 
-      @if (!showOtpField()) {
+      @if (!showSecondStep()) {
         <mat-form-field appearance="outline" class="password-field">
           <mat-label i18n="Login password label">Password</mat-label>
           <input
@@ -79,7 +79,7 @@
         </mat-form-field>
       }
 
-      @if (showOtpField()) {
+      @if (showSecondStep() && showOtpField()) {
         <mat-form-field appearance="outline">
           <mat-label i18n="Login OTP label">One-Time-Password</mat-label>
           <input
@@ -107,7 +107,7 @@
           <mat-icon iconPositionEnd>login</mat-icon>
         </button>
 
-        @if (showOtpField()) {
+        @if (showSecondStep()) {
           <button
             (click)="resetLogin()"
             i18n-aria-label
@@ -136,7 +136,7 @@
         </button>
       }
     </form>
-    @if (!showOtpField()) {
+    @if (!showSecondStep()) {
       <div class="passkey-form">
         <button
           (click)="passkeyLogin()"

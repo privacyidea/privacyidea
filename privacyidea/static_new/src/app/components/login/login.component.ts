@@ -68,6 +68,7 @@ export class LoginComponent implements OnDestroy {
   loginMessage = signal<string[]>([]);
   errorMessage = signal<string>("");
 
+  showSecondStep = signal<boolean>(false);
   showOtpField = signal<boolean>(false);
   pushTriggered = signal<boolean>(false);
   webAuthnTriggered = signal<any | null>(null);
@@ -75,7 +76,7 @@ export class LoginComponent implements OnDestroy {
   hidePassword = true;
 
   isLoginButtonDisabled = computed(() => {
-    if (this.showOtpField()) {
+    if (this.showSecondStep()) {
       // Disable if OTP field is shown but empty
       return !this.otp();
     }
@@ -88,11 +89,11 @@ export class LoginComponent implements OnDestroy {
       console.warn("User is already logged in.");
       this.notificationService.openSnackBar("User is already logged in.");
     } else {
-      this.showOtpField.set(false);
+      this.showSecondStep.set(false);
     }
 
     effect(() => {
-      if (this.showOtpField()) {
+      if (this.showSecondStep()) {
         // Use a timeout to ensure the element is rendered before trying to focus it.
         setTimeout(() => this.otpInput?.nativeElement.focus(), 0);
       }
@@ -101,7 +102,7 @@ export class LoginComponent implements OnDestroy {
 
   onSubmit() {
     const username = this.username();
-    const isChallengeResponse = this.showOtpField();
+    const isChallengeResponse = this.showSecondStep();
     const password = isChallengeResponse ? this.otp() : this.password();
 
     const params: any = { username, password };
@@ -155,6 +156,7 @@ export class LoginComponent implements OnDestroy {
 
   resetLogin(): void {
     this.resetChallengeState();
+    this.showSecondStep.set(false);
     this.showOtpField.set(false);
     this.otp.set("");
     this.password.set("");
@@ -221,6 +223,7 @@ export class LoginComponent implements OnDestroy {
     if (isAuthenticationSuccessful(response)) {
       // Successful auth -> log in
       this.localService.saveData("bearer_token", response.result.value.token);
+      this.showSecondStep.set(false);
       this.showOtpField.set(false);
       this.sessionTimerService.startRefreshingRemainingTime();
       this.sessionTimerService.startTimer();
@@ -247,6 +250,7 @@ export class LoginComponent implements OnDestroy {
       }
       // A password login can result in an OTP challenge, but a passkey login failing just fails.
       if (context === "password") {
+        this.showSecondStep.set(true);
         this.showOtpField.set(true);
       }
       const defaultMessages = {
@@ -255,10 +259,16 @@ export class LoginComponent implements OnDestroy {
         webauthn: "Login with WebAuthn failed."
       };
       if (response.detail.multi_challenge?.length) {
+        if (response.detail.multi_challenge?.length == 1 && response.detail.client_mode !== "interactive"){
+          this.showOtpField.set(false);
+        }
         this.loginMessage.set([...new Set(response.detail.multi_challenge.map((c) => c.message))]);
       } else {
         const message = response.detail.message || defaultMessages[context];
         this.loginMessage.set([message]);
+        if (response.detail.client_mode !== "interactive") {
+          this.showOtpField.set(false);
+        }
       }
     } else {
       // fail
@@ -290,7 +300,7 @@ export class LoginComponent implements OnDestroy {
 
     if (context === "password") {
       this.password.set("");
-      if (this.showOtpField()) {
+      if (this.showSecondStep()) {
         // Empty the value and focus again
         this.otp.set("");
         setTimeout(() => this.otpInput?.nativeElement.focus(), 0);

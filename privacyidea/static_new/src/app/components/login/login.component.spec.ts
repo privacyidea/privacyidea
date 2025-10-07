@@ -175,7 +175,7 @@ describe("LoginComponent", () => {
       component.onSubmit();
       // "please enter otp:" is not duplicated
       expect(component.loginMessage()).toEqual(["please enter otp: ", "Please confirm with your WebAuthn token (Generic WebAuthn Token)"]);
-      expect(component.showOtpField()).toBe(true);
+      expect(component.showSecondStep()).toBe(true);
       expect(component.webAuthnTriggered()).toEqual(webAuthnSignRequestData);
       expect((component as any).transactionId).toBe("02247192477167467513");
       expect(component.pushTriggered()).toBe(false); // No push challenge in this specific multi_challenge
@@ -196,7 +196,7 @@ describe("LoginComponent", () => {
       component.onSubmit();
 
       expect(component.loginMessage()).toEqual(["Please enter OTP"]); // Now this assertion is correct
-      expect(component.showOtpField()).toBe(true);
+      expect(component.showSecondStep()).toBe(true);
       expect(localService.saveData).not.toHaveBeenCalled();
       expect(sessionTimerService.startRefreshingRemainingTime).not.toHaveBeenCalled();
       expect(sessionTimerService.startTimer).not.toHaveBeenCalled();
@@ -205,7 +205,7 @@ describe("LoginComponent", () => {
 
     it("should submit otp and transaction_id on challenge response", () => {
       // GIVEN: The component is in a challenge state
-      component.showOtpField.set(true);
+      component.showSecondStep.set(true);
       component.otp.set("654321");
       (component as any).transactionId = "tx123";
 
