@@ -37,7 +37,7 @@ def upgrade():
     # we need to change the enrollment policy action from
     # "webauthn_public_key_credential_algorithm_preference" to
     # "webauthn_public_key_credential_algorithms" and also change the value
-    # to directly use the (space separated) algorithms.
+    # to directly use the (space-separated) algorithms.
     bind = op.get_bind()
     session = orm.Session(bind=bind)
 
