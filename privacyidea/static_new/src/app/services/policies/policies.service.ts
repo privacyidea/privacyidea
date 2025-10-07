@@ -46,62 +46,7 @@ export type PolicyActionGroups = {
   };
 };
 
-// JSON Parameters:
-//         name (basestring) – name of the policy
-//         scope – the scope of the policy like “admin”, “system”, “authentication” or “selfservice”
-//         priority – the priority of the policy
-//         description – a description of the policy
-//         adminrealm – Realm of the administrator. (only for admin scope)
-//         adminuser – Username of the administrator. (only for admin scope)
-//         action – which action may be executed
-//         realm – For which realm this policy is valid
-//         resolver – This policy is valid for this resolver
-//         user – The policy is valid for these users. string with wild cards or list of strings
-//         time – on which time does this policy hold
-//         pinode – The privacyIDEA node (or list of nodes) for which this policy is valid
-//         client (IP address with subnet) – for which requesting client this should be
-//         active – bool, whether this policy is active or not
-//         check_all_resolvers – bool, whether all all resolvers in which the user exists should be checked with this policy.
-//         conditions – a (possibly empty) list of conditions of the policy.
-//                     Each condition is encoded as a list with 5 elements: [section (string), key (string), comparator (string), value (string), active (boolean)] Hence, the conditions parameter expects a list of lists.
-//                     When privacyIDEA checks if a defined policy should take effect, all conditions of the policy must be fulfilled for the policy to match. Note that the order of conditions is not guaranteed to be preserved.
-
-// Return:
-
-//     a json result with success or error
-// Status Codes:
-//         200 OK – Policy created or modified.
-//         401 Unauthorized – Authentication failed
-
 export type PoliciesList = PolicyDetail[];
-
-/*
-{
-	"1": {
-		"action": {
-			"push_registration_url": "http://192.168.178.139:5000/ttype/push",
-			"push_ssl_verify": "0"
-		},
-		"active": true,
-		"adminrealm": [],
-		"adminuser": [],
-		"check_all_resolvers": false,
-		"client": [],
-		"conditions": [],
-		"description": null,
-		"name": "push_token1",
-		"pinode": [],
-		"priority": 1,
-		"realm": [],
-		"resolver": [],
-		"scope": "enrollment",
-		"time": "",
-		"user": [],
-		"user_agents": [],
-		"user_case_insensitive": false
-	}
-}
-*/
 
 export type PolicyDetail = {
   action: { [actionName: string]: string } | null;
@@ -130,6 +75,13 @@ export interface PoliciesServiceInterface {}
   providedIn: "root"
 })
 export class PolicyService implements PoliciesServiceInterface {
+  getDetailsOfAction(actionName: string): PolicyActionDetail | null {
+    const actions = this.allPolicyActionsFlat();
+    if (actionName && actions) {
+      return actions[actionName] ?? null;
+    }
+    return null;
+  }
   deselectPolicy() {
     this.selectedPolicy.set(null);
   }
@@ -167,39 +119,6 @@ export class PolicyService implements PoliciesServiceInterface {
     console.log(`updated key ${key} to value ${value} in selectedPolicy`);
     this.selectedPolicy.set(updatedPolicy);
   }
-
-  // addActionToSelectedPolicy() {
-
-  //   const selectedAction = this.selectedAction();
-  //   const actionValue = this.selectedActionValue();
-  //   const selectedPolicy = this.selectedPolicy();
-  //   if (!selectedPolicy || !selectedAction) return;
-  //   const currentAction = selectedPolicy.action || {};
-  //   const updatedAction = {
-  //     ...currentAction,
-  //     [selectedAction.]: action.value
-  //   };
-  //   const updatedPolicy = {
-  //     ...selectedPolicy,
-  //     action: updatedAction
-  //   };
-  //   console.log(`added action ${action.actionName} to selectedPolicy`);
-  //   this.selectedPolicy.set(updatedPolicy);
-  // }
-
-  // removeActionFromSelectedPolicy(actionName: string) {
-  //   const selectedPolicy = this.selectedPolicy();
-  //   if (!selectedPolicy || !selectedPolicy.action) return;
-  //   const currentAction = selectedPolicy.action;
-  //   if (!(actionName in currentAction)) return;
-  //   const { [actionName]: _, ...updatedAction } = currentAction; // Omit the action to be removed
-  //   const updatedPolicy = {
-  //     ...selectedPolicy,
-  //     action: Object.keys(updatedAction).length > 0 ? updatedAction : null // Set to null if no actions left
-  //   };
-  //   console.log(`removed action ${actionName} from selectedPolicy`);
-  //   this.selectedPolicy.set(updatedPolicy);
-  // }
 
   // ===================================
   // 1. PROPERTIES & INJECTED SERVICES
@@ -244,9 +163,6 @@ export class PolicyService implements PoliciesServiceInterface {
   // Signals for selecting and editing selected policy
   selectedPolicy = signal<PolicyDetail | null>(null);
 
-  //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  //!!!!!!!!!!!!!!!!!!!!!!!!!!!!! TODO: registration_body !!!!!!!!!!!!!!!!!!!!!!!!!!!
-  //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   // Signals for action handling
   actionFilter = signal<string>("");
   selectedActionGroup: WritableSignal<string> = linkedSignal({
@@ -290,6 +206,19 @@ export class PolicyService implements PoliciesServiceInterface {
 
   policyActions = computed(() => {
     return this.policyActionResource.value()?.result?.value ?? {};
+  });
+
+  allPolicyActionsFlat = computed(() => {
+    const policyActions = this.policyActionResource.value()?.result?.value;
+    if (!policyActions) return {};
+    const flat: { [actionName: string]: PolicyActionDetail } = {};
+    for (const scope in policyActions) {
+      const actions = policyActions[scope];
+      for (const actionName in actions) {
+        flat[actionName] = actions[actionName];
+      }
+    }
+    return flat;
   });
 
   allPolicyScopes = computed(() => {
@@ -488,6 +417,8 @@ export class PolicyService implements PoliciesServiceInterface {
     } else if (actionType === "int") {
       return !isNaN(Number(value)) && Number.isInteger(Number(value));
     } else if (actionType === "str") {
+      return value.trim().length > 0;
+    } else if (actionType === "text") {
       return value.trim().length > 0;
     }
     return false;

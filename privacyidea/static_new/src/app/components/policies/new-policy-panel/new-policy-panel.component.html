@@ -10,7 +10,8 @@
           type="text"
           class="policy-name-input"
           placeholder="Policy Name"
-          [(ngModel)]="policyName"
+          [ngModel]="policyName()"
+          (ngModelChange)="onNameChange($event)"
           (click)="$event.stopPropagation(); panel.expanded = true"
           (keydown)="$event.stopPropagation()" />
       } @else {

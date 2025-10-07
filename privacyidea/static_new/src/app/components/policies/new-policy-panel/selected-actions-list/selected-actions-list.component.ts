@@ -2,7 +2,7 @@ import { Component, computed, EventEmitter, inject, Input, Output, Signal, Writa
 import { CommonModule } from "@angular/common";
 import { MatIconModule } from "@angular/material/icon";
 import { MatButtonModule } from "@angular/material/button";
-import { PolicyService } from "../../../../services/policies/policies.service";
+import { PolicyActionDetail, PolicyService } from "../../../../services/policies/policies.service";
 
 @Component({
   selector: "app-selected-actions-list",
@@ -19,4 +19,7 @@ export class SelectedActionsListComponent {
     if (!policy || !policy.action) return [];
     return Object.entries(policy.action).map(([name, value]) => ({ name: name, value }));
   });
+  typeOfAction(actionName: string): string | null {
+    return this.policyService.getDetailsOfAction(actionName)?.type ?? null;
+  }
 }

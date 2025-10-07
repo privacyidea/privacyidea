@@ -3,6 +3,7 @@
     <div class="action-card">
       <div class="detail-row">
         <span class="detail-label">{{ action.name }}</span>
+        @if (typeOfAction(action.name)) {}
         <span class="detail-value">{{ action.value }}</span>
         @if (!policyService.selectedAction()) {
           <button

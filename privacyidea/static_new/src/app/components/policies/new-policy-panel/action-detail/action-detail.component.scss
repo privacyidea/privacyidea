@@ -31,6 +31,19 @@
   box-sizing: border-box;
 }
 
+.action-value-textarea {
+  border: none;
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 0;
+  padding: 8px 0;
+  font-size: 1rem;
+  background-color: transparent;
+  width: 100%;
+  box-sizing: border-box;
+  resize: vertical;
+  min-height: 80px;
+}
+
 .action-value-input:focus {
   outline: none;
   border-bottom-color: var(--mat-sys-primary);

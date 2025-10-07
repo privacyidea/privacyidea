@@ -1,5 +1,5 @@
-<div class="action-detail-column">
-  @if (policyService.selectedAction() !== null) {
+@if (policyService.selectedAction() !== null) {
+  <div class="action-detail-column">
     <h3>{{ policyService.selectedAction()?.name }}</h3>
     <div class="action-detail-card">
       <span class="detail-row">
@@ -30,6 +30,16 @@
           class="action-value-input"
           (keydown.enter)="policyService.addActionToSelectedPolicy()" />
       }
+      @case ("text") {
+        <textarea
+          placeholder="Text"
+          [ngModel]="policyService.selectedAction()?.value"
+          (ngModelChange)="policyService.updateSelectedActionValue($event)"
+          class="action-value-textarea"></textarea>
+      }
+      @default {
+        <p i18n>Unknown action type: {{ policyService.selectedActionDetail()?.type }}</p>
+      }
     }
     <button
       mat-raised-button
@@ -38,5 +48,5 @@
       [disabled]="!inputIsValid()">
       Add Action
     </button>
-  }
-</div>
+  </div>
+}

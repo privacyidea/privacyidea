@@ -15,9 +15,6 @@ import { PolicyService } from "../../../../services/policies/policies.service";
 export class PolicyDescriptionComponent {
   policyService = inject(PolicyService);
   updatePolicyDescription($event: string) {
-    let selectedPolicy = this.policyService.selectedPolicy();
-    if (!selectedPolicy) return;
-    selectedPolicy.description = $event;
-    this.policyService.selectedPolicy.set(selectedPolicy);
+    this.policyService.updateSelectedPolicy({ key: "description", value: $event });
   }
 }

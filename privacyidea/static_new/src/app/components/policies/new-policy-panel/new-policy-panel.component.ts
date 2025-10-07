@@ -79,6 +79,10 @@ export class NewPolicyPanelComponent {
     this.policyService.selectedPolicy.set(updatedPolicy);
   }
 
+  onNameChange($event: string) {
+    this.policyService.updateSelectedPolicy({ key: "name", value: $event });
+  }
+
   savePolicy(matExpansionPanel: MatExpansionPanel) {
     // Implementiere hier die Logik, um das neue Policy zu speichern
     this.policyService.deselectPolicy();
