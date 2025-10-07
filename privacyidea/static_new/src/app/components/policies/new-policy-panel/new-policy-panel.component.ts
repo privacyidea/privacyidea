@@ -80,16 +80,25 @@ export class NewPolicyPanelComponent {
   }
 
   onNameChange($event: string) {
+    console.log("onNameChange: ", $event);
     this.policyService.updateSelectedPolicy({ key: "name", value: $event });
   }
 
   savePolicy(matExpansionPanel: MatExpansionPanel) {
     // Implementiere hier die Logik, um das neue Policy zu speichern
+    this.policyService.saveSelectedPolicy();
     this.policyService.deselectPolicy();
     matExpansionPanel.close();
   }
   resetPolicy(matExpansionPanel: MatExpansionPanel) {
-    this.policyService.deselectPolicy();
-    matExpansionPanel.close();
+    if (this.policyService.newPolicyEdited()) {
+      if (confirm("Are you sure you want to discard the new policy? All changes will be lost.")) {
+        this.policyService.deselectPolicy();
+        matExpansionPanel.close();
+      }
+    } else {
+      this.policyService.deselectPolicy();
+      matExpansionPanel.close();
+    }
   }
 }

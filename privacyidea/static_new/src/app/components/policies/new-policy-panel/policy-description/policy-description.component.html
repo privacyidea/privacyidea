@@ -1,10 +1,14 @@
-<mat-form-field class="w-full">
-  <mat-label i18n>Description</mat-label>
+<div class="action-detail-column">
+  <div
+    i18n
+    class="description-header">
+    Description
+  </div>
   <textarea
-    matInput
+    class="description-textarea"
     [ngModel]="policyService.selectedPolicy()?.description"
     (ngModelChange)="updatePolicyDescription($event)"
     cdkTextareaAutosize
     cdkAutosizeMinRows="2"
     cdkAutosizeMaxRows="5"></textarea>
-</mat-form-field>
+</div>

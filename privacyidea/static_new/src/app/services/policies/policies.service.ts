@@ -75,6 +75,19 @@ export interface PoliciesServiceInterface {}
   providedIn: "root"
 })
 export class PolicyService implements PoliciesServiceInterface {
+  saveSelectedPolicy() {
+    const selectedPolicy = this.selectedPolicy();
+    if (!selectedPolicy) return;
+    this.createPolicy(selectedPolicy)
+      .then((response) => {
+        console.log("Policy created successfully: ", response);
+        // Refresh the policies list
+        this.allPoliciesRecource.reload();
+      })
+      .catch((error) => {
+        console.error("Error creating policy: ", error);
+      });
+  }
   getDetailsOfAction(actionName: string): PolicyActionDetail | null {
     const actions = this.allPolicyActionsFlat();
     if (actionName && actions) {
@@ -85,28 +98,37 @@ export class PolicyService implements PoliciesServiceInterface {
   deselectPolicy() {
     this.selectedPolicy.set(null);
   }
-  selectEmptypolicy() {
-    this.selectedPolicy.set({
-      action: null,
-      active: true,
-      adminrealm: [],
-      adminuser: [],
-      check_all_resolvers: false,
-      client: [],
-      conditions: [],
-      description: null,
-      name: "",
-      pinode: [],
-      priority: 100,
-      realm: [],
-      resolver: [],
-      scope: this.allPolicyScopes()[0] || "admin",
-      time: "",
-      user: [],
-      user_agents: [],
-      user_case_insensitive: false
-    });
+  emptyPolicy: PolicyDetail = {
+    action: null,
+    active: true,
+    adminrealm: [],
+    adminuser: [],
+    check_all_resolvers: false,
+    client: [],
+    conditions: [],
+    description: null,
+    name: "",
+    pinode: [],
+    priority: 100,
+    realm: [],
+    resolver: [],
+    scope: "admin",
+    time: "",
+    user: [],
+    user_agents: [],
+    user_case_insensitive: false
+  };
+  initializeEmptyPolicy() {
+    const newPolicy = { ...this.emptyPolicy };
+    this.selectedPolicy.set(newPolicy);
   }
+
+  newPolicyEdited = computed(() => {
+    const selectedPolicy = this.selectedPolicy();
+    if (!selectedPolicy) return false;
+    // Check if selectedPolicy differs from emptyPolicy
+    return JSON.stringify(selectedPolicy) !== JSON.stringify(this.emptyPolicy);
+  });
 
   updateSelectedPolicy(args: { key: keyof PolicyDetail; value: any }) {
     const { key, value } = args;
@@ -114,9 +136,10 @@ export class PolicyService implements PoliciesServiceInterface {
     if (!selectedPolicy) return;
     const updatedPolicy = {
       ...selectedPolicy,
-      key: value
+      [key]: value
     };
     console.log(`updated key ${key} to value ${value} in selectedPolicy`);
+    console.log("updatedPolicy: ", updatedPolicy);
     this.selectedPolicy.set(updatedPolicy);
   }
 
@@ -322,31 +345,23 @@ export class PolicyService implements PoliciesServiceInterface {
   // -----------------------------------
 
   createPolicy(data: PolicyDetail): Promise<PiResponse<any>> {
-    // Example request:
-    // In this example a policy “pol1” is created.
-    // ******************************
-    // * POST /policy/pol1 HTTP/1.1 *
-    // * Host: example.com          *
-    // * Accept: application/json   *
-    // *                            *
-    // * scope=admin                *
-    // * realm=realm1               *
-    // * action=enroll, disable     *
-    // ******************************
-
-    return lastValueFrom(this.http.post<PiResponse<any>>(`${environment.proxyUrl}${data.name}`, data));
+    const headers = this.authService.getHeaders();
+    return lastValueFrom(this.http.post<PiResponse<any>>(`${this.policyBaseUrl}${data.name}`, data, { headers }));
   }
 
   deletePolicy(name: string): Promise<PiResponse<number>> {
-    return lastValueFrom(this.http.delete<PiResponse<number>>(`${environment.proxyUrl}${name}`));
+    const headers = this.authService.getHeaders();
+    return lastValueFrom(this.http.delete<PiResponse<number>>(`${this.policyBaseUrl}${name}`, { headers }));
   }
 
   enablePolicy(name: string): Promise<PiResponse<any>> {
-    return lastValueFrom(this.http.post<PiResponse<any>>(`${environment.proxyUrl}enable/${name}`, {}));
+    const headers = this.authService.getHeaders();
+    return lastValueFrom(this.http.post<PiResponse<any>>(`${this.policyBaseUrl}enable/${name}`, { headers }));
   }
 
   disablePolicy(name: string): Promise<PiResponse<any>> {
-    return lastValueFrom(this.http.post<PiResponse<any>>(`${environment.proxyUrl}disable/${name}`, {}));
+    const headers = this.authService.getHeaders();
+    return lastValueFrom(this.http.post<PiResponse<any>>(`${this.policyBaseUrl}disable/${name}`, { headers }));
   }
 
   // -----------------------------------
@@ -415,7 +430,8 @@ export class PolicyService implements PoliciesServiceInterface {
     if (actionType === "bool") {
       return value.toLowerCase() === "true" || value.toLowerCase() === "false";
     } else if (actionType === "int") {
-      return !isNaN(Number(value)) && Number.isInteger(Number(value));
+      console.log("Validating int: ", value, !isNaN(Number(value)), Number.isInteger(Number(value)));
+      return value.trim().length > 0 && !isNaN(Number(value)) && Number.isInteger(Number(value));
     } else if (actionType === "str") {
       return value.trim().length > 0;
     } else if (actionType === "text") {

@@ -1,7 +1,7 @@
 <mat-expansion-panel
   #panel
   [disabled]="panel.expanded"
-  (opened)="policyService.selectEmptypolicy()"
+  (opened)="policyService.initializeEmptyPolicy()"
   (closed)="policyService.deselectPolicy()">
   <mat-expansion-panel-header>
     <mat-panel-title>

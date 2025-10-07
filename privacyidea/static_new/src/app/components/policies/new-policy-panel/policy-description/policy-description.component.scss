@@ -1,8 +1,28 @@
-:host {
-  display: block;
-  padding: 0 16px;
+.description-header {
+  font-size: 1.17em;
+  font-weight: bold;
+  margin: 0;
 }
 
-.w-full {
+.action-detail-column {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 12px;
+  border-radius: 4px;
+  box-shadow: var(--mat-sys-level2);
+  min-width: 0;
+}
+
+.description-textarea {
+  border: none;
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 0;
+  padding: 8px 0;
+  font-size: 1rem;
+  background-color: transparent;
   width: 100%;
+  box-sizing: border-box;
+  resize: vertical;
+  // min-height: 80px;
 }
