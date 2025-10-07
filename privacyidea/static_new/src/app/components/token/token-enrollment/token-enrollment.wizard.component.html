@@ -33,13 +33,13 @@
     @switch (authService.defaultTokentype() || "hotp") {
       @case ("hotp") {
         <app-enroll-hotp
-          [wizard]="true"
+          [wizard]="wizard"
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
           (clickEnrollChange)="updateClickEnroll($event)" />
       }
       @case ("totp") {
         <app-enroll-totp
-          [wizard]="true"
+          [wizard]="wizard"
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
           (clickEnrollChange)="updateClickEnroll($event)" />
       }
@@ -50,7 +50,7 @@
       }
       @case ("motp") {
         <app-enroll-motp
-          [wizard]="true"
+          [wizard]="wizard"
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
           (clickEnrollChange)="updateClickEnroll($event)" />
       }
@@ -76,6 +76,7 @@
       }
       @case ("radius") {
         <app-enroll-radius
+          [wizard]="wizard"
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
           (clickEnrollChange)="updateClickEnroll($event)" />
       }
@@ -91,13 +92,13 @@
       }
       @case ("applspec") {
         <app-enroll-applspec
-          [wizard]="true"
+          [wizard]="wizard"
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
           (clickEnrollChange)="updateClickEnroll($event)" />
       }
       @case ("daypassword") {
         <app-enroll-daypassword
-          [wizard]="true"
+          [wizard]="wizard"
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
           (clickEnrollChange)="updateClickEnroll($event)" />
       }
@@ -118,13 +119,13 @@
       }
       @case ("paper") {
         <app-enroll-paper
-          [wizard]="true"
+          [wizard]="wizard"
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
           (clickEnrollChange)="updateClickEnroll($event)" />
       }
       @case ("push") {
         <app-enroll-push
-          [wizard]="true"
+          [wizard]="wizard"
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
           (clickEnrollChange)="updateClickEnroll($event)"
           (reopenDialogChange)="updateReopenDialog($event)" />
@@ -141,13 +142,13 @@
       }
       @case ("tan") {
         <app-enroll-tan
-          [wizard]="true"
+          [wizard]="wizard"
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
           (clickEnrollChange)="updateClickEnroll($event)" />
       }
       @case ("tiqr") {
         <app-enroll-tiqr
-          [wizard]="true"
+          [wizard]="wizard"
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
           (clickEnrollChange)="updateClickEnroll($event)" />
       }
@@ -163,13 +164,13 @@
       }
       @case ("webauthn") {
         <app-enroll-webauthn
-          [wizard]="true"
+          [wizard]="wizard"
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
           (clickEnrollChange)="updateClickEnroll($event)" />
       }
       @case ("passkey") {
         <app-enroll-passkey
-          [wizard]="true"
+          [wizard]="wizard"
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
           (clickEnrollChange)="updateClickEnroll($event)"
           (reopenDialogChange)="updateReopenDialog($event)" />

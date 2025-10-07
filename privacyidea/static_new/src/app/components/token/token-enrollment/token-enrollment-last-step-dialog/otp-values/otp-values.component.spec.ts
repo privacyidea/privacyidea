@@ -30,6 +30,10 @@ describe("OtpValuesComponent", () => {
     component = fixture.componentInstance;
   })
 
+  it("should create", () => {
+    expect(component).toBeTruthy();
+  });
+
   it("printOtps should open window", async () => {
       const mockPrintWindow = {
         document: { open: jest.fn(), write: jest.fn(), close: jest.fn() },
