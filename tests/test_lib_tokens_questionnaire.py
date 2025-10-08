@@ -74,8 +74,14 @@ class QuestionnaireTokenTestCase(MyTestCase):
         token.delete_token()
 
     def test_03_get_setting_type(self):
-        r = QuestionnaireTokenClass.get_setting_type("question.question.1")
-        self.assertEqual(r, "public")
+        setting_type = QuestionnaireTokenClass.get_setting_type("question.question.1")
+        self.assertEqual("public", setting_type)
+
+        setting_type = QuestionnaireTokenClass.get_setting_type("question.num_answers")
+        self.assertEqual("public", setting_type)
+
+        setting_type = QuestionnaireTokenClass.get_setting_type("question")
+        self.assertEqual("", setting_type)
 
     def test_04_dumb_question(self):
         set_privacyidea_config("question.num_answers", 1)
