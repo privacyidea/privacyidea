@@ -355,5 +355,6 @@ class QuestionnaireTokenClass(TokenClass):
         :param key: The key of the setting
         :return: "public" string
         """
-        if key.startswith("question.question."):
+        if key.startswith("question.question.") or key == "question.num_answers":
             return "public"
+        return ""

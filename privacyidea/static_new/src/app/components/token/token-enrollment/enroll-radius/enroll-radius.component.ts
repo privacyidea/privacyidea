@@ -23,10 +23,6 @@ import { MatOption } from "@angular/material/core";
 import { MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { MatError, MatSelect } from "@angular/material/select";
-import {
-  RadiusServerService,
-  RadiusServerServiceInterface
-} from "../../../../services/radius-server/radius-server.service";
 import { SystemService, SystemServiceInterface } from "../../../../services/system/system.service";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 
@@ -66,7 +62,6 @@ export interface RadiusEnrollmentOptions extends TokenEnrollmentData {
 })
 export class EnrollRadiusComponent implements OnInit {
   protected readonly enrollmentMapper: RadiusApiPayloadMapper = inject(RadiusApiPayloadMapper);
-  protected readonly radiusServerService: RadiusServerServiceInterface = inject(RadiusServerService);
   protected readonly systemService: SystemServiceInterface = inject(SystemService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
@@ -90,7 +85,7 @@ export class EnrollRadiusComponent implements OnInit {
   });
 
   radiusServerConfigurationOptions = computed(
-    () => this.radiusServerService.radiusServerConfigurations()?.map((config) => config.name) ?? []
+    () => this.systemService.radiusServerResource.value()?.result?.value
   );
 
   defaultRadiusServerIsSet = computed(() => {
