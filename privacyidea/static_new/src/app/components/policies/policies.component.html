@@ -9,6 +9,7 @@
           <mat-expansion-panel
             #panel
             class="margin-4"
+            (opened)="selectPolicy(policy.name)"
             [disabled]="editPolicyName()">
             <mat-expansion-panel-header>
               <mat-panel-title>
@@ -38,7 +39,7 @@
                     } @else {
                       <button
                         mat-icon-button
-                        (click)="$event.stopPropagation(); selectPolicy(policy.name)">
+                        (click)="$event.stopPropagation(); enableEditMode()">
                         <mat-icon>edit</mat-icon>
                       </button>
                     }

@@ -75,6 +75,7 @@ export interface PoliciesServiceInterface {}
   providedIn: "root"
 })
 export class PolicyService implements PoliciesServiceInterface {
+  editModeEnabled: WritableSignal<boolean> = signal(false);
   selectPolicyByName(policyName: string) {
     const policy = this.allPolicies().find((p) => p.name === policyName);
     if (policy) {

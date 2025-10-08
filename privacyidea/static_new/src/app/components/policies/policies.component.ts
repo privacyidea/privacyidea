@@ -24,7 +24,10 @@ import { NewPolicyPanelComponent } from "./new-policy-panel/new-policy-panel.com
 export class PoliciesComponent {
   policiesService: PolicyService = inject(PolicyService);
   allPoliciesList = this.policiesService.allPolicies;
-  editPolicyName = computed(() => this.policiesService.getSelectedPolicy()?.name || null);
+  editPolicyName = computed(() => {
+    if (!this.policiesService.editModeEnabled()) return null;
+    return this.policiesService.getSelectedPolicy()?.name || null;
+  });
 
   isEditMode(policyName: string): boolean {
     return this.editPolicyName() === policyName;
@@ -53,6 +56,10 @@ export class PoliciesComponent {
       return;
     }
     this.policiesService.deselectPolicy();
+  }
+
+  enableEditMode(): void {
+    this.policiesService.editModeEnabled.set(true);
   }
 
   savePolicy(arg0: string) {

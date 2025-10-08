@@ -2,13 +2,37 @@
 @use "@angular/material" as mat;
 
 // --- Main Layout ---
-.policy-details {
+
+.policy-grid-container {
   display: grid;
+  gap: 16px;
   grid-template-columns: 2fr 1fr;
-  grid-template-rows: auto 1fr;
+  grid-template-rows: auto auto 1fr;
   grid-template-areas:
     "buttons buttons"
-    "content right-column";
+    "content-header detail-header"
+    "content-body detail-body";
+}
+
+.grid-area-buttons {
+  grid-area: buttons;
+  min-width: 0;
+}
+.grid-area-content-header {
+  grid-area: content-header;
+  min-width: 0;
+}
+.grid-area-content-body {
+  grid-area: content-body;
+  min-width: 0;
+}
+.grid-area-detail-header {
+  grid-area: detail-header;
+  min-width: 0;
+}
+.grid-area-detail-body {
+  grid-area: detail-body;
+  min-width: 0;
 }
 
 .selected-content {
