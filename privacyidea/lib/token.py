@@ -2693,9 +2693,9 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
         # But there are tokens, with a matching pin.
         # So we increase the failcounter. Return failure.
         for token_object in pin_matching_token_list:
-            token_object.inc_failcount()
             if get_from_config(SYSCONF.RESET_FAILCOUNTER_ON_PIN_ONLY, False, return_bool=True):
                 token_object.check_reset_failcount()
+            token_object.inc_failcount()
             reply_dict["message"] = _("wrong otp value")
             if len(pin_matching_token_list) == 1:
                 # If there is only one pin matching token, we look if it was
