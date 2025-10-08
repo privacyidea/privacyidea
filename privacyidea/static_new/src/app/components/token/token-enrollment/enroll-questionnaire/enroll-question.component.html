@@ -1,6 +1,8 @@
 <div class="flex-column">
   <h4 class="enroll-h4">Token Configuration</h4>
-  <span> Please answer at least {{ configMinNumberOfAnswers() }} of the following questions. </span>
+  @if (configMinNumberOfAnswers() > 0) {
+    <span> Please answer at least {{ configMinNumberOfAnswers() }} of the following questions. </span>
+  }
   <div
     [formGroup]="questionForm()"
     class="margin-top-1 form-group">
