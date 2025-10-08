@@ -75,6 +75,12 @@ export interface PoliciesServiceInterface {}
   providedIn: "root"
 })
 export class PolicyService implements PoliciesServiceInterface {
+  selectPolicyByName(policyName: string) {
+    const policy = this.allPolicies().find((p) => p.name === policyName);
+    if (policy) {
+      this.selectPolicy(policy);
+    }
+  }
   canSaveSelectedPolicy(): boolean {
     const policy = this._selectedPolicy();
     if (!policy) return false;
@@ -134,8 +140,8 @@ export class PolicyService implements PoliciesServiceInterface {
     user_case_insensitive: false
   };
   initializeEmptyPolicy() {
-    const newPolicy = { ...this.emptyPolicy };
-    this._selectedPolicy.set(newPolicy);
+    this._selectedPolicy.set({ ...this.emptyPolicy });
+    this._selectedPolicyOriginal.set({ ...this.emptyPolicy });
   }
 
   isPolicyEdited = computed(() => {
@@ -149,15 +155,14 @@ export class PolicyService implements PoliciesServiceInterface {
     this._selectedPolicyOriginal.set({ ...policy });
   }
 
-  updateSelectedPolicy(args: { key: keyof PolicyDetail; value: any }) {
-    const { key, value } = args;
+  updateSelectedPolicy(args: { [key: string]: any }) {
     const selectedPolicy = this._selectedPolicy();
     if (!selectedPolicy) return;
     const updatedPolicy = {
       ...selectedPolicy,
-      [key]: value
+      ...args
     };
-    console.log(`updated key ${key} to value ${value} in selectedPolicy`);
+    console.log(`updated key/s ${Object.keys(args)} to value/s ${Object.values(args)} in selectedPolicy`);
     console.log("updatedPolicy: ", updatedPolicy);
     this._selectedPolicy.set(updatedPolicy);
   }

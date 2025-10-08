@@ -10,7 +10,17 @@
   border-radius: 4px;
   box-shadow: var(--mat-sys-level2);
 }
-
+.action-card:hover {
+  background-color: var(--mat-sys-primary-light);
+  color: var(--mat-sys-on-primary) !important;
+  --mdc-icon-button-icon-color: currentColor;
+  cursor: pointer;
+}
+.action-card-selected {
+  background-color: var(--mat-sys-primary-base);
+  color: var(--mat-sys-on-primary) !important;
+  --mdc-icon-button-icon-color: currentColor;
+}
 .detail-row {
   display: flex;
   justify-content: space-between;
@@ -26,7 +36,6 @@
 }
 
 .detail-value {
-  color: var(--mat-sys-on-surface-variant);
   text-align: right;
   flex-grow: 1;
 }

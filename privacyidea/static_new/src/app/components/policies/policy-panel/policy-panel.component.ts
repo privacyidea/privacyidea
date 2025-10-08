@@ -7,6 +7,9 @@ import { MatButtonToggleModule } from "@angular/material/button-toggle";
 import { PolicyDetail } from "../../../services/policies/policies.service";
 import { FormsModule } from "@angular/forms";
 import { ActionSelectorComponent } from "../new-policy-panel/action-selector/action-selector.component";
+import { ActionDetailComponent } from "../new-policy-panel/action-detail/action-detail.component";
+import { PolicyDescriptionComponent } from "../new-policy-panel/policy-description/policy-description.component";
+import { SelectedActionsListComponent } from "../new-policy-panel/selected-actions-list/selected-actions-list.component";
 
 type Tab = "actions" | "conditions";
 
@@ -20,7 +23,10 @@ type Tab = "actions" | "conditions";
     MatButtonModule,
     MatButtonToggleModule,
     FormsModule,
-    ActionSelectorComponent
+    ActionSelectorComponent,
+    ActionDetailComponent,
+    PolicyDescriptionComponent,
+    SelectedActionsListComponent
   ],
   templateUrl: "./policy-panel.component.html",
   styleUrl: "./policy-panel.component.scss"

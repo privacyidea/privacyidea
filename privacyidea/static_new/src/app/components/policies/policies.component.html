@@ -38,7 +38,7 @@
                     } @else {
                       <button
                         mat-icon-button
-                        (click)="$event.stopPropagation(); activateEditMode(policy.name)">
+                        (click)="$event.stopPropagation(); selectPolicy(policy.name)">
                         <mat-icon>edit</mat-icon>
                       </button>
                     }

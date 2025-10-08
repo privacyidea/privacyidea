@@ -1,4 +1,4 @@
-import { Component, inject, signal, WritableSignal } from "@angular/core";
+import { Component, computed, inject, signal, WritableSignal } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { PolicyService, PolicyDetail } from "../../services/policies/policies.service";
@@ -24,7 +24,7 @@ import { NewPolicyPanelComponent } from "./new-policy-panel/new-policy-panel.com
 export class PoliciesComponent {
   policiesService: PolicyService = inject(PolicyService);
   allPoliciesList = this.policiesService.allPolicies;
-  editPolicyName: WritableSignal<string | null> = signal(null);
+  editPolicyName = computed(() => this.policiesService.getSelectedPolicy()?.name || null);
 
   isEditMode(policyName: string): boolean {
     return this.editPolicyName() === policyName;
@@ -35,12 +35,28 @@ export class PoliciesComponent {
     return Object.entries(policy.action);
   }
 
-  activateEditMode(policyName: string): void {
-    this.editPolicyName.set(policyName);
+  selectPolicy(policyName: string): void {
+    if (
+      this.policiesService.isPolicyEdited() &&
+      !confirm("Are you sure you want to discard the changes? All changes will be lost.")
+    ) {
+      return;
+    }
+    this.policiesService.selectPolicyByName(policyName);
+  }
+
+  deselectPolicy() {
+    if (
+      this.policiesService.isPolicyEdited() &&
+      !confirm("Are you sure you want to discard the changes? All changes will be lost.")
+    ) {
+      return;
+    }
+    this.policiesService.deselectPolicy();
   }
 
   savePolicy(arg0: string) {
-    this.editPolicyName.set(null);
+    this.policiesService.saveSelectedPolicy();
   }
 
   deletePolicy(policyName: string): void {

@@ -16,7 +16,7 @@
 
   <div class="selected-content">
     @if (activeTab() === "actions") {
-      <div class="actions-list">
+      <!-- <div class="actions-list">
         @for (entry of getActionsOfPolicy(policy()); track entry[0]) {
           <div class="action-card">
             <div class="detail-row">
@@ -39,9 +39,12 @@
             </div>
           </div>
         }
-      </div>
+      </div> -->
       @if (isEditMode) {
+        <app-selected-actions-list />
+        <app-policy-description />
         <app-action-selector />
+        <app-action-detail />
       }
     }
 

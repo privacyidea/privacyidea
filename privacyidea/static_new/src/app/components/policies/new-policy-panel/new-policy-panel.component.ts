@@ -76,7 +76,7 @@ export class NewPolicyPanelComponent {
 
   onNameChange($event: string) {
     console.log("onNameChange: ", $event);
-    this.policyService.updateSelectedPolicy({ key: "name", value: $event });
+    this.policyService.updateSelectedPolicy({ name: $event });
   }
 
   savePolicy(matExpansionPanel: MatExpansionPanel) {

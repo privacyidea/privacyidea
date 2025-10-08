@@ -1,23 +1,26 @@
 <div class="selected-actions-container">
   @for (action of actions(); track action.name) {
-    <div class="action-card">
+    <div
+      class="action-card"
+      [class.action-card-selected]="policyService.selectedAction()?.name === action.name"
+      (click)="policyService.selectActionByName(action.name)">
       <div class="detail-row">
         <span class="detail-label">{{ action.name }}</span>
         @if (typeOfAction(action.name)) {}
         <span class="detail-value">{{ action.value }}</span>
-        @if (!policyService.selectedAction()) {
-          <button
-            mat-icon-button
-            class="edit-action-button"
-            (click)="policyService.selectedAction.set(action)">
-            <mat-icon>edit</mat-icon>
-          </button>
-        } @else if (policyService.selectedAction()?.name === action.name) {
+        @if (policyService.selectedAction()?.name === action.name) {
           <button
             mat-icon-button
             class="cancel-edit-action-button"
             (click)="policyService.addActionToSelectedPolicy()">
             <mat-icon>save</mat-icon>
+          </button>
+        } @else {
+          <button
+            mat-icon-button
+            class="edit-action-button"
+            (click)="policyService.selectedAction.set(action)">
+            <mat-icon>edit</mat-icon>
           </button>
         }
         <button
