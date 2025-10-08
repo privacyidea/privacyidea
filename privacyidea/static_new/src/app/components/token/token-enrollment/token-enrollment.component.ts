@@ -447,7 +447,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
 
   userExistsValidator: ValidatorFn = (control: AbstractControl<string | UserData | null>): ValidationErrors | null => {
     const value = control.value;
-    // logged-in users always exists, no need for an additional check (and also not possible)
+    // logged-in users always exist, no need for an additional check (and also not possible)
     if (typeof value === "string" && value !== "" && this.authService.role() == "admin") {
       const users = this.userService.users();
       const userFound = users.some((user) => user.username === value);
