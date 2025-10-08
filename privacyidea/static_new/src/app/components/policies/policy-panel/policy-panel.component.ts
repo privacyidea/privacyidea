@@ -6,13 +6,22 @@ import { MatButtonModule } from "@angular/material/button";
 import { MatButtonToggleModule } from "@angular/material/button-toggle";
 import { PolicyDetail } from "../../../services/policies/policies.service";
 import { FormsModule } from "@angular/forms";
+import { ActionSelectorComponent } from "../new-policy-panel/action-selector/action-selector.component";
 
 type Tab = "actions" | "conditions";
 
 @Component({
   selector: "app-policy-panel",
   standalone: true,
-  imports: [CommonModule, MatCardModule, MatIconModule, MatButtonModule, MatButtonToggleModule, FormsModule],
+  imports: [
+    CommonModule,
+    MatCardModule,
+    MatIconModule,
+    MatButtonModule,
+    MatButtonToggleModule,
+    FormsModule,
+    ActionSelectorComponent
+  ],
   templateUrl: "./policy-panel.component.html",
   styleUrl: "./policy-panel.component.scss"
 })

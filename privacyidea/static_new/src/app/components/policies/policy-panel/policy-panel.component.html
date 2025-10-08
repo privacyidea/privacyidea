@@ -17,7 +17,6 @@
   <div class="selected-content">
     @if (activeTab() === "actions") {
       <div class="actions-list">
-        <h4>Actions of this policy:</h4>
         @for (entry of getActionsOfPolicy(policy()); track entry[0]) {
           <div class="action-card">
             <div class="detail-row">
@@ -42,34 +41,7 @@
         }
       </div>
       @if (isEditMode) {
-        <h4>Add new action:</h4>
-        <div class="add-action-section">
-          <input
-            type="text"
-            placeholder="Search action..."
-            [(ngModel)]="addActionValue"
-            class="search-input" />
-          <div class="add-action-details">
-            <div class="policy-action-item">
-              <span class="detail-label">policy_action_1</span>
-              <span class="detail-value">type: str</span>
-            </div>
-            <div class="policy-action-item">
-              <span class="detail-label">policy_action_2</span>
-              <span class="detail-value">type: list (multiselect)</span>
-            </div>
-            <div class="policy-action-item">
-              <span class="detail-label">policy_action_3</span>
-              <span class="detail-value">type: bool</span>
-            </div>
-          </div>
-          <button
-            mat-icon-button
-            class="add-action-button"
-            [hidden]="!isAddActionValueProvided()">
-            <mat-icon>add_circle_outline</mat-icon>
-          </button>
-        </div>
+        <app-action-selector />
       }
     }
 

@@ -24,7 +24,7 @@
     </mat-panel-title>
     <mat-panel-description class="header-description">
       <div class="policy-scope-label">
-        @if (!selectedPolicyHasActions() && panel.expanded) {
+        @if (!this.policyService.selectedPolicyHasActions() && panel.expanded) {
           <app-horizontal-wheel
             [initialValue]="policyScope()"
             [values]="policyService.allPolicyScopes"
@@ -39,6 +39,7 @@
         @if (panel.expanded) {
           <button
             mat-icon-button
+            [disabled]="!canSavePolicy()"
             (click)="$event.stopPropagation(); savePolicy(panel)">
             <mat-icon>save</mat-icon>
           </button>

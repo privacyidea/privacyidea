@@ -15,7 +15,7 @@ export class SelectedActionsListComponent {
   policyService = inject(PolicyService);
   actions: Signal<{ name: string; value: string }[]> = computed(() => {
     // this.policyService.selectedPolicy()?.action ?? [];
-    const policy = this.policyService.selectedPolicy();
+    const policy = this.policyService._selectedPolicy();
     if (!policy || !policy.action) return [];
     return Object.entries(policy.action).map(([name, value]) => ({ name: name, value }));
   });

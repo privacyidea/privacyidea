@@ -44,7 +44,12 @@ export class PoliciesComponent {
   }
 
   deletePolicy(policyName: string): void {
-    // Implement delete logic here
+    if (confirm(`Are you sure you want to delete the policy "${policyName}"? This action cannot be undone.`)) {
+      this.policiesService.deletePolicy(policyName).then((response) => {
+        console.log("Policy deleted successfully: ", response);
+        this.policiesService.allPoliciesRecource.reload();
+      });
+    }
   }
   onSelect(policy: PolicyDetail, scope: string) {
     // Implement selection logic here
