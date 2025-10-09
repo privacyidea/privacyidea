@@ -41,12 +41,22 @@
         <p i18n>Unknown action type: {{ policyService.selectedActionDetail()?.type }}</p>
       }
     }
-    <button
-      mat-raised-button
-      color="primary"
-      (click)="policyService.addActionToSelectedPolicy()"
-      [disabled]="!inputIsValid()">
-      Add Action
-    </button>
+    @if (actionIsAlreadyAdded()) {
+      <button
+        mat-raised-button
+        color="primary"
+        (click)="applyChanges()"
+        [disabled]="!inputIsValid()">
+        Apply Changes
+      </button>
+    } @else {
+      <button
+        mat-raised-button
+        color="primary"
+        (click)="policyService.addActionToSelectedPolicy()"
+        [disabled]="!inputIsValid()">
+        Add Action
+      </button>
+    }
   </div>
 }

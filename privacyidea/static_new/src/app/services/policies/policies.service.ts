@@ -25,9 +25,10 @@ import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { environment } from "../../../environments/environment";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
 
+export type ActionType = "bool" | "int" | "str" | "text";
 export type PolicyActionDetail = {
   desc: string;
-  type: string;
+  type: ActionType;
   group?: string;
   mainmenu?: string[];
   value?: string[] | number[];
@@ -76,6 +77,21 @@ export interface PoliciesServiceInterface {}
   providedIn: "root"
 })
 export class PolicyService implements PoliciesServiceInterface {
+  updateActionInSelectedPolicy() {
+    const selectedPolicy = this._selectedPolicy();
+    const selectedAction = this.selectedAction();
+    const actionName = selectedAction?.name;
+    const actionValue = selectedAction?.value;
+    if (!selectedPolicy || !actionName || actionValue === undefined) return;
+    if (!selectedPolicy || !selectedPolicy.action) return;
+    const currentAction = selectedPolicy.action;
+    if (!(actionName in currentAction)) return;
+    const updatedAction = {
+      ...currentAction,
+      [actionName]: actionValue
+    };
+    this.updateSelectedPolicy({ action: updatedAction });
+  }
   private readonly contentService: ContentServiceInterface = inject(ContentService);
 
   updateActionValue(actionName: string, newValue: boolean) {
@@ -230,13 +246,9 @@ export class PolicyService implements PoliciesServiceInterface {
 
   // Signals for selecting and editing selected policy
   _selectedPolicy = signal<PolicyDetail | null>(null);
-  getSelectedPolicy(): PolicyDetail | null {
-    return this._selectedPolicy();
-  }
+  getSelectedPolicy = computed(() => this._selectedPolicy());
   _selectedPolicyOriginal = signal<PolicyDetail | null>(null);
-  getSelectedPolicyOriginal(): PolicyDetail | null {
-    return this._selectedPolicyOriginal();
-  }
+  getSelectedPolicyOriginal = computed(() => this._selectedPolicyOriginal());
 
   // Signals for action handling
   actionFilter = signal<string>("");

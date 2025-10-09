@@ -16,10 +16,10 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, EventEmitter, input, Output, signal, OnInit, linkedSignal, WritableSignal } from "@angular/core";
+import { Component, EventEmitter, input, Output, OnInit, linkedSignal, WritableSignal } from "@angular/core";
 
 import { MatButtonModule } from "@angular/material/button";
-import { assert } from "../../../../utils/assert";
+import { parseBooleanValue } from "../../../../utils/parse-boolean-value";
 
 @Component({
   selector: "app-bool-select-buttons",
@@ -42,39 +42,13 @@ export class BoolSelectButtonsComponent implements OnInit {
   selectedValue: WritableSignal<boolean> = linkedSignal({
     source: () => this.initialValue(),
     computation: (source) => {
-      return this._parseBoolean(source);
+      return parseBooleanValue(source);
     }
   });
 
   ngOnInit() {
-    const parsedValue = this._parseBoolean(this.initialValue());
+    const parsedValue = parseBooleanValue(this.initialValue());
     this.selectedValue.set(parsedValue);
-  }
-
-  _parseBoolean(initialValue: string | number | boolean): boolean {
-    console.log("Parsing initialValue:", initialValue);
-    const typeofInitialValue = typeof initialValue;
-    if (typeofInitialValue === "boolean") {
-      return !!initialValue;
-    }
-    if (typeofInitialValue === "number") {
-      if (initialValue === 1) return true;
-      if (initialValue === 0) return false;
-      assert(false, `Initial value for BoolSelectButtonsComponent must be 0 or 1 if number, but was ${initialValue}`);
-    }
-    if (typeofInitialValue === "string") {
-      if (String(initialValue).toLowerCase() === "true") return true;
-      if (String(initialValue).toLowerCase() === "false") return false;
-      assert(
-        false,
-        `Initial value for BoolSelectButtonsComponent must be "true" or "false" if string, but was ${initialValue}`
-      );
-    }
-    assert(
-      false,
-      `Initial value for BoolSelectButtonsComponent must be boolean, 0, 1, "true" or "false", but was ${initialValue}`
-    );
-    return false;
   }
 
   selectBoolean(bool: boolean): void {

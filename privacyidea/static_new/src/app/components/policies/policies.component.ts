@@ -80,6 +80,12 @@ export class PoliciesComponent {
   }
 
   cancelEditMode() {
+    if (
+      this.policiesService.isPolicyEdited() &&
+      !confirm("Are you sure you want to discard the changes? All changes will be lost.")
+    ) {
+      return;
+    }
     this.policiesService.cancelEditMode();
   }
 }
