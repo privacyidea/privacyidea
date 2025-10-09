@@ -3,32 +3,47 @@
     <div
       class="action-card"
       [class.action-card-selected]="policyService.selectedAction()?.name === action.name"
-      (click)="policyService.selectedAction.set(action)">
-      <div class="detail-row">
-        <span class="detail-label">{{ action.name }}</span>
-        @if (typeOfAction(action.name)) {}
-        <span class="detail-value">{{ action.value }}</span>
-        @if (policyService.selectedAction()?.name === action.name) {
-          <button
-            mat-icon-button
-            class="cancel-edit-action-button"
-            (click)="policyService.addActionToSelectedPolicy()">
-            <mat-icon>save</mat-icon>
-          </button>
-        } @else {
-          <button
-            mat-icon-button
-            class="edit-action-button"
-            (click)="policyService.selectedAction.set(action)">
-            <mat-icon>edit</mat-icon>
-          </button>
+      [class.action-card-editmode]="
+        policyService.editModeEnabled() &&
+        policyService.selectedAction()?.name !== action.name &&
+        !isBooleanAction(action.name)
+      "
+      (click)="onActionClick(action)">
+      <div class="action-row">
+        <span class="action-label">{{ action.name }}</span>
+        <span class="action-value">{{ action.value }}</span>
+        @if (policyService.editModeEnabled()) {
+          <div class="gap-div-8px"></div>
+
+          @if (isBooleanAction(action.name)) {
+            <mat-slide-toggle
+              [checked]="action.value"
+              (change)="onToggleChange(action.name, $event.checked)">
+            </mat-slide-toggle>
+          } @else {
+            @if (policyService.selectedAction()?.name === action.name) {
+              <button
+                mat-icon-button
+                class="action-button"
+                (click)="policyService.addActionToSelectedPolicy()">
+                <mat-icon>save</mat-icon>
+              </button>
+            } @else {
+              <button
+                mat-icon-button
+                class="action-button"
+                (click)="policyService.selectedAction.set(action)">
+                <mat-icon>edit</mat-icon>
+              </button>
+            }
+            <button
+              mat-icon-button
+              class="action-button"
+              (click)="policyService.removeActionFromSelectedPolicy(action.name)">
+              <mat-icon>delete</mat-icon>
+            </button>
+          }
         }
-        <button
-          mat-icon-button
-          class="delete-action-button"
-          (click)="policyService.removeActionFromSelectedPolicy(action.name)">
-          <mat-icon>delete</mat-icon>
-        </button>
       </div>
     </div>
   }

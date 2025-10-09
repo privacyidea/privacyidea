@@ -21,7 +21,7 @@
                     <app-horizontal-wheel
                       [initialValue]="policy.scope"
                       [values]="policiesService.allPolicyScopes"
-                      (onSelect)="onSelect(policy, $event)" />
+                      (onSelect)="selectPolicyScope($event)" />
                   } @else {
                     <span>
                       {{ policy.scope.toLocaleUpperCase() }}
@@ -35,6 +35,12 @@
                         mat-icon-button
                         (click)="$event.stopPropagation(); savePolicy(policy.name)">
                         <mat-icon>save</mat-icon>
+                      </button>
+                      <button
+                        mat-icon-button
+                        class="action-button"
+                        (click)="$event.stopPropagation(); cancelEditMode()">
+                        <mat-icon>cancel</mat-icon>
                       </button>
                     } @else {
                       <button

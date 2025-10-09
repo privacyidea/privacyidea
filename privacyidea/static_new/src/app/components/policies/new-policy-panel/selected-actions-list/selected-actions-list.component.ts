@@ -1,13 +1,14 @@
-import { Component, computed, EventEmitter, inject, Input, Output, Signal, WritableSignal } from "@angular/core";
+import { Component, computed, inject, Signal } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { MatIconModule } from "@angular/material/icon";
 import { MatButtonModule } from "@angular/material/button";
-import { PolicyActionDetail, PolicyService } from "../../../../services/policies/policies.service";
+import { MatSlideToggleModule } from "@angular/material/slide-toggle";
+import { PolicyService } from "../../../../services/policies/policies.service";
 
 @Component({
   selector: "app-selected-actions-list",
   standalone: true,
-  imports: [CommonModule, MatIconModule, MatButtonModule],
+  imports: [CommonModule, MatIconModule, MatButtonModule, MatSlideToggleModule],
   templateUrl: "./selected-actions-list.component.html",
   styleUrls: ["./selected-actions-list.component.scss"]
 })
@@ -19,7 +20,22 @@ export class SelectedActionsListComponent {
     if (!policy || !policy.action) return [];
     return Object.entries(policy.action).map(([name, value]) => ({ name: name, value }));
   });
+  onActionClick(action: { name: string; value: string }) {
+    if (this.policyService.editModeEnabled()) {
+      this.policyService.selectedAction.set(action);
+    }
+  }
+
   typeOfAction(actionName: string): string | null {
     return this.policyService.getDetailsOfAction(actionName)?.type ?? null;
+  }
+
+  isBooleanAction(actionName: string): boolean {
+    return this.typeOfAction(actionName) === "boolean";
+  }
+  onToggleChange(actionName: string, newValue: boolean): void {
+    // Update the action's value in your state management/signal here.
+    // Example (adjust this to your specific state logic):
+    this.policyService.updateActionValue(actionName, newValue);
   }
 }

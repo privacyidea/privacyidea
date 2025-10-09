@@ -74,7 +74,12 @@ export class PoliciesComponent {
       });
     }
   }
-  onSelect(policy: PolicyDetail, scope: string) {
-    // Implement selection logic here
+
+  selectPolicyScope(scope: string) {
+    this.policiesService.updateSelectedPolicy({ scope: scope });
+  }
+
+  cancelEditMode() {
+    this.policiesService.cancelEditMode();
   }
 }

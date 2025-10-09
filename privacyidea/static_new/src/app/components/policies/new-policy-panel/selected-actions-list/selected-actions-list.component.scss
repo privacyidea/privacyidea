@@ -1,46 +1,67 @@
 .selected-actions-container {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 8px;
   min-width: 0;
 }
 
 .action-card {
-  padding: 4px 16px;
+  padding: 8px 16px;
   border-radius: 4px;
+  background-color: var(--mat-sys-surface);
+  color: var(--mat-sys-on-surface);
   box-shadow: var(--mat-sys-level2);
 }
-.action-card:hover {
+
+.action-card-editmode:hover {
   background-color: var(--mat-sys-primary-light);
   color: var(--mat-sys-on-primary) !important;
   --mdc-icon-button-icon-color: currentColor;
   cursor: pointer;
 }
+
 .action-card-selected {
   background-color: var(--mat-sys-primary-base);
   color: var(--mat-sys-on-primary) !important;
   --mdc-icon-button-icon-color: currentColor;
 }
-.detail-row {
+
+.action-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
-.detail-row:not(:last-child) {
+.action-row:not(:last-child) {
   padding-bottom: 8px;
 }
 
-.detail-row:not(:first-child) {
+.action-row:not(:first-child) {
   padding-top: 8px;
 }
 
-.detail-value {
+.action-label {
+  font-weight: 500;
+}
+
+.action-value {
   text-align: right;
   flex-grow: 1;
 }
 
-.delete-action-button {
-  margin-left: 8px;
+.gap-div-8px {
+  width: 8px;
+  height: 8px;
+}
+
+.action-button {
   flex-shrink: 0;
+  margin: auto -6px;
+  --mat-icon-button-state-layer-color: currentColor;
+}
+.mat-mdc-button-ripple {
+  top: 1px;
+  left: 1px;
+  width: 36px;
+  height: 36px;
 }

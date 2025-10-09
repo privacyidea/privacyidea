@@ -4,8 +4,10 @@
   gap: 16px;
   padding: 12px;
   border-radius: 4px;
-  box-shadow: var(--mat-sys-level2);
   min-width: 0;
+  background-color: var(--mat-sys-surface);
+  color: var(--mat-sys-on-surface);
+  box-shadow: var(--mat-sys-level2);
 }
 
 .search-input {

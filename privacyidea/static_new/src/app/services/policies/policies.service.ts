@@ -23,6 +23,7 @@ import { lastValueFrom } from "rxjs";
 import { PiResponse } from "../../app.component";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { environment } from "../../../environments/environment";
+import { ContentService, ContentServiceInterface } from "../content/content.service";
 
 export type PolicyActionDetail = {
   desc: string;
@@ -75,7 +76,25 @@ export interface PoliciesServiceInterface {}
   providedIn: "root"
 })
 export class PolicyService implements PoliciesServiceInterface {
-  editModeEnabled: WritableSignal<boolean> = signal(false);
+  private readonly contentService: ContentServiceInterface = inject(ContentService);
+
+  updateActionValue(actionName: string, newValue: boolean) {
+    const selectedPolicy = this._selectedPolicy();
+    if (!selectedPolicy || !selectedPolicy.action) return;
+    const currentAction = selectedPolicy.action;
+    if (!(actionName in currentAction)) return;
+    const updatedAction = {
+      ...currentAction,
+      [actionName]: newValue.toString()
+    };
+    this.updateSelectedPolicy({ action: updatedAction });
+  }
+  editModeEnabled: WritableSignal<boolean> = linkedSignal({
+    source: () => {
+      this._selectedPolicyOriginal(), this.allPoliciesRecource.value(), this.contentService.routeUrl();
+    },
+    computation: () => false
+  });
   selectPolicyByName(policyName: string) {
     const policy = this.allPolicies().find((p) => p.name === policyName);
     if (policy) {
@@ -120,6 +139,7 @@ export class PolicyService implements PoliciesServiceInterface {
   deselectPolicy() {
     this._selectedPolicy.set(null);
   }
+
   emptyPolicy: PolicyDetail = {
     action: null,
     active: true,
@@ -156,7 +176,7 @@ export class PolicyService implements PoliciesServiceInterface {
     this._selectedPolicyOriginal.set({ ...policy });
   }
 
-  updateSelectedPolicy(args: { [key: string]: any }) {
+  updateSelectedPolicy(args: Partial<PolicyDetail>) {
     const selectedPolicy = this._selectedPolicy();
     if (!selectedPolicy) return;
     const updatedPolicy = {
@@ -470,5 +490,13 @@ export class PolicyService implements PoliciesServiceInterface {
       return value.trim().length > 0;
     }
     return false;
+  }
+
+  cancelEditMode() {
+    const originalPolicy = this._selectedPolicyOriginal();
+    if (originalPolicy) {
+      this._selectedPolicy.set({ ...originalPolicy });
+    }
+    this.editModeEnabled.set(false);
   }
 }
