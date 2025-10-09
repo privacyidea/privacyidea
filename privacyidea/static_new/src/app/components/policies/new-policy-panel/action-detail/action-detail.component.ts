@@ -2,13 +2,24 @@ import { Component, computed, EventEmitter, inject, Output, Signal } from "@angu
 import { CommonModule } from "@angular/common";
 import { FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
-import { PolicyActionDetail, PolicyService } from "../../../../services/policies/policies.service";
+import { PolicyService } from "../../../../services/policies/policies.service";
 import { BoolSelectButtonsComponent } from "../bool-select-buttons/bool-select-buttons.component";
+import { MatInputModule } from "@angular/material/input";
+import { MatAutocompleteModule } from "@angular/material/autocomplete";
+import { MatSelectModule } from "@angular/material/select";
 
 @Component({
   selector: "app-action-detail",
   standalone: true,
-  imports: [CommonModule, FormsModule, MatButtonModule, BoolSelectButtonsComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    MatButtonModule,
+    BoolSelectButtonsComponent,
+    MatInputModule,
+    MatAutocompleteModule,
+    MatSelectModule
+  ],
   templateUrl: "./action-detail.component.html",
   styleUrls: ["./action-detail.component.scss"]
 })

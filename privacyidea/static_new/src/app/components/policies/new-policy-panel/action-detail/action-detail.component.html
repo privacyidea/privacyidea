@@ -6,39 +6,56 @@
         {{ policyService.selectedActionDetail()?.desc }}
       </span>
     </div>
-    @switch (policyService.selectedActionDetail()?.type) {
-      @case ("bool") {
-        <app-bool-select-buttons
-          (onSelectString)="policyService.updateSelectedActionValue($event)"
-          [initialValue]="policyService.selectedAction()?.value ?? 'true'" />
-      }
-      @case ("str") {
-        <input
-          type="text"
-          placeholder="Text"
-          [ngModel]="policyService.selectedAction()?.value"
-          (ngModelChange)="policyService.updateSelectedActionValue($event)"
-          class="action-value-input"
-          (keydown.enter)="policyService.addActionToSelectedPolicy()" />
-      }
-      @case ("int") {
-        <input
-          type="number"
-          placeholder="Number"
-          [ngModel]="policyService.selectedAction()?.value"
-          (ngModelChange)="policyService.updateSelectedActionValue($event)"
-          class="action-value-input"
-          (keydown.enter)="policyService.addActionToSelectedPolicy()" />
-      }
-      @case ("text") {
-        <textarea
-          placeholder="Text"
-          [ngModel]="policyService.selectedAction()?.value"
-          (ngModelChange)="policyService.updateSelectedActionValue($event)"
-          class="action-value-textarea"></textarea>
-      }
-      @default {
-        <p i18n>Unknown action type: {{ policyService.selectedActionDetail()?.type }}</p>
+    @if (policyService.selectedActionDetail()?.value) {
+      <!-- add dropdown to select value from list -->
+
+      <mat-form-field
+        appearance="fill"
+        class="full-width">
+        <mat-label i18n>Value</mat-label>
+        <mat-select
+          [value]="policyService.selectedAction()?.value"
+          (selectionChange)="policyService.updateSelectedActionValue($event.value)">
+          @for (option of policyService.selectedActionDetail()?.value; track option) {
+            <mat-option [value]="option">{{ option }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+    } @else {
+      @switch (policyService.selectedActionDetail()?.type) {
+        @case ("bool") {
+          <app-bool-select-buttons
+            (onSelectString)="policyService.updateSelectedActionValue($event)"
+            [initialValue]="policyService.selectedAction()?.value ?? 'true'" />
+        }
+        @case ("str") {
+          <input
+            type="text"
+            placeholder="Text"
+            [ngModel]="policyService.selectedAction()?.value"
+            (ngModelChange)="policyService.updateSelectedActionValue($event)"
+            class="action-value-input"
+            (keydown.enter)="policyService.addActionToSelectedPolicy()" />
+        }
+        @case ("int") {
+          <input
+            type="number"
+            placeholder="Number"
+            [ngModel]="policyService.selectedAction()?.value"
+            (ngModelChange)="policyService.updateSelectedActionValue($event)"
+            class="action-value-input"
+            (keydown.enter)="policyService.addActionToSelectedPolicy()" />
+        }
+        @case ("text") {
+          <textarea
+            placeholder="Text"
+            [ngModel]="policyService.selectedAction()?.value"
+            (ngModelChange)="policyService.updateSelectedActionValue($event)"
+            class="action-value-textarea"></textarea>
+        }
+        @default {
+          <p i18n>Unknown action type: {{ policyService.selectedActionDetail()?.type }}</p>
+        }
       }
     }
     @if (actionIsAlreadyAdded()) {
