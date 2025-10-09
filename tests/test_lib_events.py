@@ -32,7 +32,7 @@ from privacyidea.lib.eventhandler.tokenhandler import (TokenEventHandler,
 from privacyidea.lib.eventhandler.scripthandler import ScriptEventHandler, SCRIPT_WAIT
 from privacyidea.lib.eventhandler.counterhandler import CounterEventHandler
 from privacyidea.lib.eventhandler.responsemangler import ResponseManglerEventHandler
-from privacyidea.models import EventCounter, TokenOwner
+from privacyidea.models import EventCounter, TokenOwner, db
 from privacyidea.lib.eventhandler.federationhandler import FederationEventHandler
 from privacyidea.lib.eventhandler.requestmangler import RequestManglerEventHandler
 from privacyidea.lib.eventhandler.base import BaseEventHandler, CONDITION
@@ -272,6 +272,7 @@ class BaseEventHandlerTestCase(MyTestCase):
 
         # check for failcounter
         tok.set_failcount(8)
+        db.session.commit()
         options["handler_def"] = {"conditions": {CONDITION.FAILCOUNTER: "<9"}}
         r = uhandler.check_condition(options)
         self.assertTrue(r)
@@ -3553,6 +3554,7 @@ class TokenEventTestCase(MyTestCase):
             options["handler_def"] = {"options": {"change fail counter": diff}}
             res = t_handler.do(ACTION_TYPE.CHANGE_FAILCOUNTER, options=options)
             self.assertTrue(res)
+            db.session.commit()
             # Check if the token has the correct fail counter
             t = get_tokens(serial="SPASS01")
             tw = t[0].get_failcount()
