@@ -26,7 +26,7 @@ import { MatDatepickerModule } from "@angular/material/datepicker";
 import { MatIcon } from "@angular/material/icon";
 import { MatTooltip } from "@angular/material/tooltip";
 import { DomSanitizer } from "@angular/platform-browser";
-import { map } from "rxjs";
+import { catchError, map, of } from "rxjs";
 import { EnrollmentResponse } from "../../../mappers/token-api-payload/_token-api-payload.mapper";
 import { ContainerService, ContainerServiceInterface } from "../../../services/container/container.service";
 import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
@@ -66,6 +66,8 @@ import { EnrollYubikeyComponent } from "./enroll-yubikey/enroll-yubikey.componen
 import { TokenEnrollmentComponent } from "./token-enrollment.component";
 import { AuthService } from "../../../services/auth/auth.service";
 import { TokenEnrollmentLastStepDialogData } from "./token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
+import { tokenTypes } from "../../../utils/token.utils";
+import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
 
 @Component({
   selector: "app-token-enrollment-wizard",
@@ -106,7 +108,11 @@ import { TokenEnrollmentLastStepDialogData } from "./token-enrollment-last-step-
     EnrollPasskeyComponent,
     AsyncPipe,
     MatTooltip,
-    ScrollToTopDirective
+    ScrollToTopDirective,
+    MatFormField,
+    MatInput,
+    MatLabel,
+    MatFormField
   ],
   templateUrl: "./token-enrollment.wizard.component.html",
   styleUrl: "./token-enrollment.component.scss"
@@ -124,9 +130,12 @@ export class TokenEnrollmentWizardComponent extends TokenEnrollmentComponent {
   protected override readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected override readonly authService: AuthService = inject(AuthService);
   protected override wizard = true;
-  protected readonly tokenType = computed(() =>
-    this.authService.defaultTokentype() || "hotp"
-  );
+  protected readonly tokenType = computed(() => {
+    const defaultType = this.authService.defaultTokentype() || "hotp";
+    return tokenTypes.find((type) => type.key === defaultType) ||
+      {key: defaultType, name: defaultType, info: "", text: ""} as TokenType;
+  });
+
 
   protected override openLastStepDialog(args: { response: EnrollmentResponse | null; user: UserData | null }): void {
     const { response, user } = args;
@@ -136,7 +145,7 @@ export class TokenEnrollmentWizardComponent extends TokenEnrollmentComponent {
     }
 
     const dialogData: TokenEnrollmentLastStepDialogData = {
-      tokentype: { key: this.tokenType(), info: "", text: "" } as TokenType,
+      tokentype: this.tokenType(),
       response: response,
       serial: this.serial,
       enrollToken: this.enrollToken.bind(this),
@@ -151,10 +160,15 @@ export class TokenEnrollmentWizardComponent extends TokenEnrollmentComponent {
   }
 
   readonly preTopHtml$ = this.http
-    .get("/customize/token-enrollment.wizard.pre.top.html", {
-      responseType: "text"
-    })
-    .pipe(map((raw) => this.sanitizer.bypassSecurityTrustHtml(raw)));
+  .get("/customize/token-enrollment.wizard.pre.top.html", {
+    responseType: "text"
+  })
+  .pipe(
+    map((raw) => this.sanitizer.bypassSecurityTrustHtml(raw)),
+    catchError(() =>
+      of(this.sanitizer.bypassSecurityTrustHtml("<div>No custom content available.</div>"))
+    )
+  );
   readonly preBottomHtml$ = this.http
     .get("/customize/token-enrollment.wizard.pre.bottom.html", {
       responseType: "text"

@@ -91,6 +91,7 @@ export interface TokenGroup {
 
 export interface TokenType {
   key: TokenTypeKey;
+  name: string;
   info: string;
   text: string;
 }
@@ -336,6 +337,7 @@ export class TokenService implements TokenServiceInterface {
     if (!obj) return [];
     return Object.entries(obj).map(([key, info]) => ({
       key: key as TokenTypeKey,
+      name: tokenTypes.find((t) => t.key === key)?.name || key,
       info: String(info),
       text: tokenTypes.find((t) => t.key === key)?.text || ""
     }));

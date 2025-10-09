@@ -11,24 +11,24 @@
     [formGroup]="formGroupSignal()">
     <div class="enroll-button-container margin-bottom-1">
       <button
-            [disabled]="formGroupSignal().invalid"
-            [ngClass]="{
+        [disabled]="formGroupSignal().invalid"
+        [ngClass]="{
               'card-button-disabled': formGroupSignal().invalid,
               'card-button': true
             }"
-            mat-flat-button
-            type="submit">
-            <mat-icon>add</mat-icon>
-            Enroll {{ tokenType() }} Token
-          </button>
-          <button
-            (click)="reopenEnrollmentDialog()"
-            [matTooltip]="'Reopen enrollment dialog'"
-            [ngClass]="{ hidden: !canReopenEnrollmentDialog() }"
-            mat-icon-button
-            type="button">
-            <mat-icon>open_in_new</mat-icon>
-          </button>
+        mat-flat-button
+        type="submit">
+        <mat-icon>add</mat-icon>
+        Enroll {{ tokenType().name }} Token
+      </button>
+      <button
+        (click)="reopenEnrollmentDialog()"
+        [matTooltip]="'Reopen enrollment dialog'"
+        [ngClass]="{ hidden: !canReopenEnrollmentDialog() }"
+        mat-icon-button
+        type="button">
+        <mat-icon>open_in_new</mat-icon>
+      </button>
     </div>
     @switch (authService.defaultTokentype() || "hotp") {
       @case ("hotp") {
@@ -45,6 +45,7 @@
       }
       @case ("spass") {
         <app-enroll-spass
+          [wizard]="wizard"
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
           (clickEnrollChange)="updateClickEnroll($event)" />
       }
@@ -82,6 +83,7 @@
       }
       @case ("sms") {
         <app-enroll-sms
+          [wizard]="wizard"
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
           (clickEnrollChange)="updateClickEnroll($event)" />
       }
@@ -175,6 +177,17 @@
           (clickEnrollChange)="updateClickEnroll($event)"
           (reopenDialogChange)="updateReopenDialog($event)" />
       }
+    }
+    @if (authService.requireDescription().includes(tokenType().key)) {
+      <mat-form-field class="description-form">
+        <mat-label>Description</mat-label>
+        <textarea
+          [formControl]="descriptionControl"
+          [maxlength]="80"
+          matInput
+          placeholder="Enter description"
+          rows="3"></textarea>
+      </mat-form-field>
     }
   </form>
   <div
