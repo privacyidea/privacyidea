@@ -79,8 +79,8 @@ export class TokenEnrollmentLastStepDialogComponent {
 
   protected readonly Object = Object;
 
-  protected readonly serial = this.data.response.detail?.serial;
-  protected readonly containerSerial = this.data.response.detail?.["container-serial"] ?? "";
+  protected readonly serial = this.data.response.detail?.serial ?? "";
+  protected readonly containerSerial = this.data.response.detail?.["container_serial"] ?? "";
   protected readonly qrCode = this.data.response.detail.googleurl?.img ??
     this.data.response.detail.motpurl?.img ??
     this.data.response.detail.otpkey?.img ??

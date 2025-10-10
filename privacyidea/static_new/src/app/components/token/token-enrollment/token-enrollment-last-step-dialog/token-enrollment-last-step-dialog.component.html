@@ -2,12 +2,12 @@
 <mat-dialog-content>
   <div class="margin-bottom-1">
   <span>The token was successfully enrolled with serial number
-    <a (click)="tokenSelected(data.response.detail.serial)"> {{ data.response.detail.serial }} </a>.</span>
-    @if (data.response.detail["container_serial"]) {
+    <a (click)="tokenSelected(serial)"> {{ serial }} </a>.</span>
+    @if (containerSerial) {
       <br />
       <span>It has been enrolled in the container
-      <a (click)="containerSelected(data.response.detail['container_serial'])">
-        {{ data.response.detail["container_serial"] }} </a>.</span>
+      <a (click)="containerSelected(containerSerial)">
+        {{ containerSerial }} </a>.</span>
     }
     @if (data.user?.username && data.userRealm != "" && !data.onlyAddToRealm) {
       <br />
@@ -20,7 +20,6 @@
     @if (showQRCode() && qrCode) {
       <img
         alt="QR Code"
-        class="qr-code"
         height="300px"
         src="{{ qrCode }}"
         width="300px" />

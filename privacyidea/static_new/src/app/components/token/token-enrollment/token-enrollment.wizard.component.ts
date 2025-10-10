@@ -111,8 +111,7 @@ import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
     ScrollToTopDirective,
     MatFormField,
     MatInput,
-    MatLabel,
-    MatFormField
+    MatLabel
   ],
   templateUrl: "./token-enrollment.wizard.component.html",
   styleUrl: "./token-enrollment.component.scss"
@@ -133,7 +132,7 @@ export class TokenEnrollmentWizardComponent extends TokenEnrollmentComponent {
   protected readonly tokenType = computed(() => {
     const defaultType = this.authService.defaultTokentype() || "hotp";
     return tokenTypes.find((type) => type.key === defaultType) ||
-      {key: defaultType, name: defaultType, info: "", text: ""} as TokenType;
+      { key: defaultType, name: defaultType, info: "", text: "" } as TokenType;
   });
 
 
@@ -160,15 +159,15 @@ export class TokenEnrollmentWizardComponent extends TokenEnrollmentComponent {
   }
 
   readonly preTopHtml$ = this.http
-  .get("/customize/token-enrollment.wizard.pre.top.html", {
-    responseType: "text"
-  })
-  .pipe(
-    map((raw) => this.sanitizer.bypassSecurityTrustHtml(raw)),
-    catchError(() =>
-      of(this.sanitizer.bypassSecurityTrustHtml("<div>No custom content available.</div>"))
-    )
-  );
+    .get("/customize/token-enrollment.wizard.pre.top.html", {
+      responseType: "text"
+    })
+    .pipe(
+      map((raw) => this.sanitizer.bypassSecurityTrustHtml(raw)),
+      catchError(() =>
+        of(this.sanitizer.bypassSecurityTrustHtml("<div>No custom content available.</div>"))
+      )
+    );
   readonly preBottomHtml$ = this.http
     .get("/customize/token-enrollment.wizard.pre.bottom.html", {
       responseType: "text"

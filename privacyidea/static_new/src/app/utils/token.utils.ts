@@ -149,7 +149,7 @@ export const tokenTypes: TokenType[] = [
     info: "",
     text: "The Questionnaire token will let you define answers to questions. When authenticating with this type of " +
       "token, you will be asked a random question and then need to provide the previously defined answer."
-  } as unknown as TokenType,
+  } as TokenType,
   {
     key: "registration",
     name: "Registration",
