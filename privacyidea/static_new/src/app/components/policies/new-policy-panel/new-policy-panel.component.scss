@@ -106,3 +106,43 @@
   width: 100%;
   box-sizing: border-box;
 }
+
+.policy-card {
+  border-radius: 4px;
+
+  mat-expansion-panel {
+    border-radius: 4px;
+  }
+
+  mat-expansion-panel-header {
+    padding: 0 16px;
+  }
+
+  .header-description {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+  }
+
+  .policy-scope-label {
+    color: var(--sys-material-on-surface-variant);
+    font-size: 0.85rem;
+    font-weight: 400;
+    text-align: center;
+    width: 300px;
+    // margin-left: -50px; // Negative margin to shift it left
+  }
+
+  .policy-actions {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+
+    button {
+      background: transparent;
+      border: none;
+      cursor: pointer;
+    }
+  }
+}

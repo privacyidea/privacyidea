@@ -46,8 +46,18 @@ export class NewPolicyPanelComponent {
   // 2. COMPUTED SIGNALS
   // ===================================
 
-  policyName = computed(() => this.policyService._selectedPolicy()?.name);
-  policyScope = computed(() => this.policyService._selectedPolicy()?.scope);
+  newPolicyName = computed(() => {
+    if (this.policyService.viewMode() !== "new") return "";
+    const selectedPolicy = this.policyService.selectedPolicy();
+    if (!selectedPolicy) return "";
+    return selectedPolicy.name;
+  });
+  newPolicyScope = computed(() => {
+    if (this.policyService.viewMode() !== "new") return "";
+    const selectedPolicy = this.policyService.selectedPolicy();
+    if (!selectedPolicy) return "";
+    return selectedPolicy.scope;
+  });
 
   // ===================================
   // 3. WRITABLE SIGNALS (STATE)
@@ -64,14 +74,7 @@ export class NewPolicyPanelComponent {
   }
 
   onScopeSelect($event: string) {
-    const selectedPolicy = this.policyService._selectedPolicy();
-    if (!selectedPolicy) return;
-    const updatedPolicy = {
-      ...selectedPolicy,
-      scope: $event
-    };
-    console.log("onScopeSelect: ", $event);
-    this.policyService._selectedPolicy.set(updatedPolicy);
+    this.policyService.updateSelectedPolicy({ scope: $event });
   }
 
   onNameChange($event: string) {
@@ -82,17 +85,17 @@ export class NewPolicyPanelComponent {
   savePolicy(matExpansionPanel: MatExpansionPanel) {
     // Implementiere hier die Logik, um das neue Policy zu speichern
     this.policyService.saveSelectedPolicy();
-    this.policyService.deselectPolicy();
+    this.policyService.deselectPolicy(this.newPolicyName());
     matExpansionPanel.close();
   }
   resetPolicy(matExpansionPanel: MatExpansionPanel) {
     if (this.policyService.isPolicyEdited()) {
       if (confirm("Are you sure you want to discard the new policy? All changes will be lost.")) {
-        this.policyService.deselectPolicy();
+        this.policyService.deselectPolicy(this.newPolicyName());
         matExpansionPanel.close();
       }
     } else {
-      this.policyService.deselectPolicy();
+      this.policyService.deselectPolicy(this.newPolicyName());
       matExpansionPanel.close();
     }
   }

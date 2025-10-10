@@ -16,14 +16,13 @@ import { parseBooleanValue } from "../../../../utils/parse-boolean-value";
 export class SelectedActionsListComponent {
   policyService = inject(PolicyService);
   actions: Signal<{ name: string; value: string }[]> = computed(() => {
-    // this.policyService.selectedPolicy()?.action ?? [];
-    const policy = this.policyService._selectedPolicy();
+    const policy = this.policyService.selectedPolicy();
     if (!policy || !policy.action) return [];
     return Object.entries(policy.action).map(([name, value]) => ({ name: name, value }));
   });
   onActionClick(action: { name: string; value: string }) {
     if (this.isBooleanAction(action.name)) return;
-    if (this.policyService.editModeEnabled()) {
+    if (this.policyService.viewMode()) {
       this.policyService.selectedAction.set(action);
     }
   }
@@ -34,5 +33,9 @@ export class SelectedActionsListComponent {
   onToggleChange(actionName: string, newValue: boolean): void {
     this.policyService.updateActionValue(actionName, newValue);
   }
+  editModeEnabled(): boolean {
+    return this.policyService.viewMode() === "edit" || this.policyService.viewMode() === "new";
+  }
+
   parseBooleanValue = parseBooleanValue;
 }

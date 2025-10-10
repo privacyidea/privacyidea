@@ -35,7 +35,7 @@ export class ActionDetailComponent {
   actionIsAlreadyAdded(): boolean {
     const selectedAction = this.policyService.selectedAction();
     if (!selectedAction) return false;
-    const policy = this.policyService.getSelectedPolicy();
+    const policy = this.policyService.selectedPolicy();
     if (!policy || !policy.action) return false;
     return Object.prototype.hasOwnProperty.call(policy.action, selectedAction.name);
   }

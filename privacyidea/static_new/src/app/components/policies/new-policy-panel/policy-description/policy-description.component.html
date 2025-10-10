@@ -6,7 +6,7 @@
   </div>
   <textarea
     class="description-textarea"
-    [ngModel]="policyService._selectedPolicy()?.description"
+    [ngModel]="policyService.selectedPolicy()?.description"
     (ngModelChange)="updatePolicyDescription($event)"
     cdkTextareaAutosize
     cdkAutosizeMinRows="2"

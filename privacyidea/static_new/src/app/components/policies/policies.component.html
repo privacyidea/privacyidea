@@ -2,67 +2,12 @@
   class="max-width-96 padding-32"
   aria-label="Policies Layout">
   <div class="policies-layout">
-    <app-new-policy-panel />
     <mat-accordion>
+      <app-new-policy-panel />
       @for (policy of allPoliciesList(); track policy.name) {
-        <div class="policy-card">
-          <mat-expansion-panel
-            #panel
-            class="margin-4"
-            (opened)="selectPolicy(policy.name)"
-            [disabled]="editPolicyName()">
-            <mat-expansion-panel-header>
-              <mat-panel-title>
-                {{ policy.name }}
-              </mat-panel-title>
-              <mat-panel-description class="header-description">
-                <div class="policy-scope-label">
-                  @if (isEditMode(policy.name) && policiesService.isScopeChangeable(policy)) {
-                    <app-horizontal-wheel
-                      [initialValue]="policy.scope"
-                      [values]="policiesService.allPolicyScopes"
-                      (onSelect)="selectPolicyScope($event)" />
-                  } @else {
-                    <span>
-                      {{ policy.scope.toLocaleUpperCase() }}
-                    </span>
-                  }
-                </div>
-                <div class="policy-actions">
-                  @if (panel.expanded) {
-                    @if (isEditMode(policy.name)) {
-                      <button
-                        mat-icon-button
-                        (click)="$event.stopPropagation(); savePolicy(policy.name)">
-                        <mat-icon>save</mat-icon>
-                      </button>
-                      <button
-                        mat-icon-button
-                        class="action-button"
-                        (click)="$event.stopPropagation(); cancelEditMode()">
-                        <mat-icon>cancel</mat-icon>
-                      </button>
-                    } @else {
-                      <button
-                        mat-icon-button
-                        (click)="$event.stopPropagation(); enableEditMode()">
-                        <mat-icon>edit</mat-icon>
-                      </button>
-                    }
-                    <button
-                      mat-icon-button
-                      (click)="$event.stopPropagation(); deletePolicy(policy.name)">
-                      <mat-icon>delete</mat-icon>
-                    </button>
-                  }
-                </div>
-              </mat-panel-description>
-            </mat-expansion-panel-header>
-            <app-policy-panel
-              [policy]="policy"
-              [isEditMode]="isEditMode(policy.name)"></app-policy-panel>
-          </mat-expansion-panel>
-        </div>
+        <app-policy-panel
+          [policy]="policy"
+          [isEditMode]="isEditingPolicy(policy.name)"></app-policy-panel>
       }
     </mat-accordion>
   </div>

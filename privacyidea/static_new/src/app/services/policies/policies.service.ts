@@ -18,7 +18,7 @@
  **/
 
 import { HttpClient, httpResource } from "@angular/common/http";
-import { computed, effect, inject, Injectable, linkedSignal, Signal, signal, WritableSignal } from "@angular/core";
+import { computed, inject, Injectable, linkedSignal, Signal, signal, WritableSignal } from "@angular/core";
 import { lastValueFrom } from "rxjs";
 import { PiResponse } from "../../app.component";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
@@ -105,12 +105,15 @@ export class PolicyService implements PoliciesServiceInterface {
     };
     this.updateSelectedPolicy({ action: updatedAction });
   }
-  editModeEnabled: WritableSignal<boolean> = linkedSignal({
+  viewMode: WritableSignal<"view" | "edit" | "new"> = linkedSignal({
     source: () => {
-      this._selectedPolicyOriginal(), this.allPoliciesRecource.value(), this.contentService.routeUrl();
+      this.contentService.routeUrl();
     },
-    computation: () => false
+    computation: (source, previous) => {
+      return "view";
+    }
   });
+
   selectPolicyByName(policyName: string) {
     const policy = this.allPolicies().find((p) => p.name === policyName);
     if (policy) {
@@ -152,8 +155,11 @@ export class PolicyService implements PoliciesServiceInterface {
     }
     return null;
   }
-  deselectPolicy() {
+  deselectPolicy(name: string) {
+    if (this._selectedPolicy()?.name !== name) return;
     this._selectedPolicy.set(null);
+    this._selectedPolicyOriginal.set(null);
+    this.viewMode.set("view");
   }
 
   emptyPolicy: PolicyDetail = {
@@ -176,20 +182,29 @@ export class PolicyService implements PoliciesServiceInterface {
     user_agents: [],
     user_case_insensitive: false
   };
-  initializeEmptyPolicy() {
+  initializeNewPolicy() {
     this._selectedPolicy.set({ ...this.emptyPolicy });
     this._selectedPolicyOriginal.set({ ...this.emptyPolicy });
+    this.viewMode.set("new");
   }
 
   isPolicyEdited = computed(() => {
     const selectedPolicy = this._selectedPolicy();
     const originalPolicy = this._selectedPolicyOriginal();
     if (!selectedPolicy || !originalPolicy) return false;
-    return JSON.stringify(selectedPolicy) !== JSON.stringify(originalPolicy);
+    if (JSON.stringify(originalPolicy) === JSON.stringify(this.emptyPolicy)) {
+      // remove scope temporarily and then compare to ignore scope changes
+      const { scope: _, ...selectedWithoutScope } = selectedPolicy;
+      const { scope: __, ...originalWithoutScope } = originalPolicy;
+      return JSON.stringify(selectedWithoutScope) !== JSON.stringify(originalWithoutScope);
+    } else {
+      return JSON.stringify(selectedPolicy) !== JSON.stringify(originalPolicy);
+    }
   });
   selectPolicy(policy: PolicyDetail) {
     this._selectedPolicy.set(policy);
     this._selectedPolicyOriginal.set({ ...policy });
+    this.viewMode.set("view");
   }
 
   updateSelectedPolicy(args: Partial<PolicyDetail>) {
@@ -245,10 +260,10 @@ export class PolicyService implements PoliciesServiceInterface {
   // -----------------------------------
 
   // Signals for selecting and editing selected policy
-  _selectedPolicy = signal<PolicyDetail | null>(null);
-  getSelectedPolicy = computed(() => this._selectedPolicy());
-  _selectedPolicyOriginal = signal<PolicyDetail | null>(null);
-  getSelectedPolicyOriginal = computed(() => this._selectedPolicyOriginal());
+  private _selectedPolicy = signal<PolicyDetail | null>(null);
+  selectedPolicy = computed(() => this._selectedPolicy());
+  private _selectedPolicyOriginal = signal<PolicyDetail | null>(null);
+  selectedPolicyOriginal = computed(() => this._selectedPolicyOriginal());
 
   // Signals for action handling
   actionFilter = signal<string>("");
@@ -509,6 +524,6 @@ export class PolicyService implements PoliciesServiceInterface {
     if (originalPolicy) {
       this._selectedPolicy.set({ ...originalPolicy });
     }
-    this.editModeEnabled.set(false);
+    this.viewMode.set("view");
   }
 }
