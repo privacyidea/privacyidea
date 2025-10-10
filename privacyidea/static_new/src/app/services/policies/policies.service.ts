@@ -137,6 +137,15 @@ export class PolicyService implements PoliciesServiceInterface {
     const selectedPolicy = this.selectedPolicy();
     const oldPolicyName = this.selectedPolicyOriginal()?.name;
     if (!selectedPolicy || !oldPolicyName) return;
+
+    const allPolicies = this.allPolicies();
+    if (oldPolicyName) {
+      const index = allPolicies.findIndex((p) => p.name === oldPolicyName);
+      if (index !== -1) {
+        allPolicies[index] = selectedPolicy;
+      }
+    }
+
     if (this.viewMode() === "new") {
       this.createPolicy(selectedPolicy)
         .then((response) => {

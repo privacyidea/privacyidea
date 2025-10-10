@@ -36,19 +36,37 @@ type Tab = "actions" | "conditions";
   styleUrl: "./policy-panel.component.scss"
 })
 export class PolicyPanelComponent {
+  canSavePolicy(): boolean {
+    const policy = this.policyService.selectedPolicy();
+    if (!policy) return false;
+    if (!policy.name || policy.name.trim() === "") return false;
+    if (!this.policyService.isPolicyEdited()) return false;
+    const allPolicies = this.policyService.allPolicies();
+    const originalName = this.policyService.selectedPolicyOriginal()?.name;
+    if (allPolicies.some((p) => p.name === policy.name && (originalName === undefined || p.name !== originalName))) {
+      return false;
+    }
+    return true;
+  }
   @Input({ required: true }) isEditMode!: boolean;
   policy = input.required<PolicyDetail>();
 
   activeTab: WritableSignal<Tab> = signal("actions");
   policyService: PolicyService = inject(PolicyService);
 
-  cancelEditMode() {
+  confirmDiscardChanges(): boolean {
     if (
       this.policyService.isPolicyEdited() &&
+      this.policyService.viewMode() !== "view" &&
       !confirm("Are you sure you want to discard the changes? All changes will be lost.")
     ) {
-      return;
+      return false;
     }
+    return true;
+  }
+
+  cancelEditMode() {
+    if (!this.confirmDiscardChanges()) return;
     this.policyService.cancelEditMode();
   }
 
@@ -61,12 +79,7 @@ export class PolicyPanelComponent {
   }
 
   deselectPolicy(name: string): void {
-    if (
-      this.policyService.isPolicyEdited() &&
-      !confirm("Are you sure you want to discard the changes? All changes will be lost.")
-    ) {
-      return;
-    }
+    if (!this.confirmDiscardChanges()) return;
     this.policyService.deselectPolicy(name);
   }
 
@@ -83,13 +96,7 @@ export class PolicyPanelComponent {
   }
 
   selectPolicy(policyName: string): void {
-    if (
-      this.policyService.isPolicyEdited() &&
-      this.policyService.viewMode() !== "view" &&
-      !confirm("Are you sure you want to discard the changes? All changes will be lost.")
-    ) {
-      return;
-    }
+    if (!this.confirmDiscardChanges()) return;
     this.policyService.selectPolicyByName(policyName);
   }
 

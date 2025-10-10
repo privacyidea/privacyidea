@@ -38,6 +38,7 @@
             @if (isEditingPolicy(policy().name)) {
               <button
                 mat-icon-button
+                [disabled]="!canSavePolicy()"
                 (click)="$event.stopPropagation(); savePolicy()">
                 <mat-icon>save</mat-icon>
               </button>
