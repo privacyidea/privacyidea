@@ -17,7 +17,18 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { CommonModule, NgClass } from "@angular/common";
-import { Component, effect, ElementRef, inject, Renderer2, signal, untracked, ViewChild } from "@angular/core";
+import {
+  Component,
+  effect,
+  ElementRef,
+  inject,
+  linkedSignal,
+  Renderer2,
+  signal,
+  untracked,
+  ViewChild,
+  WritableSignal
+} from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
 import { MatButton, MatIconButton } from "@angular/material/button";
@@ -41,7 +52,8 @@ import { ROUTE_PATHS } from "../../../route_paths";
 import {
   ContainerRegisterData,
   ContainerService,
-  ContainerServiceInterface
+  ContainerServiceInterface,
+  ContainerType
 } from "../../../services/container/container.service";
 import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
 import { NotificationService, NotificationServiceInterface } from "../../../services/notification/notification.service";
@@ -57,6 +69,7 @@ import {
   ContainerRegistrationDialogComponent
 } from "./container-registration-dialog/container-registration-dialog.component";
 import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
+import { ContainerRegistrationDialogWizardComponent } from "./container-registration-dialog/container-registration-dialog.wizard.component";
 
 export type ContainerTypeOption = "generic" | "smartphone" | "yubikey";
 
@@ -108,24 +121,22 @@ export class ContainerCreateComponent {
   selectedTemplate = signal("");
   templateOptions = this.containerService.templates;
   onlyAddToRealm = signal(false);
-  generateQRCode = signal(false);
+  generateQRCode: WritableSignal<boolean> = linkedSignal({
+      source: this.containerService.selectedContainerType,
+      computation: (containerType: ContainerType) => containerType.containerType === "smartphone"
+    }
+  );
   passphrasePrompt = signal("");
   passphraseResponse = signal("");
   registerResponse = signal<PiResponse<ContainerRegisterData> | null>(null);
   pollResponse = signal<any>(null);
+  protected readonly wizard: boolean = false;
 
   @ViewChild("scrollContainer") scrollContainer!: ElementRef<HTMLElement>;
   @ViewChild("stickyHeader") stickyHeader!: ElementRef<HTMLElement>;
   @ViewChild("stickySentinel") stickySentinel!: ElementRef<HTMLElement>;
 
   constructor(protected registrationDialog: MatDialog) {
-    effect(() => {
-      if (this.containerService.selectedContainerType().containerType === "smartphone") {
-        this.generateQRCode.set(true);
-      } else {
-        this.generateQRCode.set(false);
-      }
-    });
     effect(() => {
       this.containerService.selectedContainerType();
       untracked(() => {
@@ -179,7 +190,7 @@ export class ContainerCreateComponent {
     const createData = {
       container_type: this.containerService.selectedContainerType().containerType,
       description: this.description(),
-      template: this.selectedTemplate(),
+      template_name: this.selectedTemplate(),
       user: this.userService.selectionUsernameFilter(),
       realm: ""
     };
@@ -217,7 +228,7 @@ export class ContainerCreateComponent {
       });
   }
 
-  private resetCreateOptions = () => {
+  protected resetCreateOptions = () => {
     this.registerResponse.set(null);
     this.pollResponse.set(null);
     this.passphrasePrompt.set("");
@@ -232,7 +243,11 @@ export class ContainerCreateComponent {
       containerSerial: this.containerSerial,
       registerContainer: this.registerContainer.bind(this)
     };
-    this.registrationDialog.open(ContainerRegistrationDialogComponent, {
+    let dialogComponent: any = ContainerRegistrationDialogComponent;
+    if (this.wizard) {
+      dialogComponent = ContainerRegistrationDialogWizardComponent;
+    }
+    this.registrationDialog.open(dialogComponent, {
       data: dialogData
     });
   }

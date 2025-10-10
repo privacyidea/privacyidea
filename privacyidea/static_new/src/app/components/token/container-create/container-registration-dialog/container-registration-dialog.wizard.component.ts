@@ -28,7 +28,7 @@ import { ContainerRegistrationDialogComponent } from "./container-registration-d
 
 @Component({
   selector: "app-container-registration-dialog",
-  imports: [MatDialogContent, MatDialogTitle, AsyncPipe],
+  imports: [MatDialogContent, AsyncPipe],
   templateUrl: "./container-registration-dialog.wizard.component.html",
   styleUrl: "./container-registration-dialog.component.scss"
 })

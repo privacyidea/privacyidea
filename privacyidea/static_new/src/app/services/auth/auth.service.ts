@@ -68,6 +68,9 @@ export interface AuthData {
   rss_age: number;
   container_wizard: {
     enabled: boolean;
+    type: string;
+    registration: boolean;
+    template: string | null;
   };
 }
 
@@ -160,8 +163,7 @@ export interface AuthServiceInterface {
   logoutRedirectUrl: Signal<string>;
   requireDescription: Signal<string[]>;
   rssAge: Signal<number>;
-  // TODO: When enabled there are more entries in the dict. We need to adapt the type accordingly.
-  containerWizard: Signal<{ enabled: boolean }>;
+  containerWizard: Signal<{ enabled: boolean, type: string | null, registration: boolean, template: string | null }>;
 
   isSelfServiceUser: Signal<boolean>;
   authenticate: (params: any) => Observable<AuthResponse>;
@@ -247,7 +249,12 @@ export class AuthService implements AuthServiceInterface {
   logoutRedirectUrl = computed(() => this.authData()?.logout_redirect_url || "");
   requireDescription = computed(() => this.authData()?.require_description || []);
   rssAge = computed(() => this.authData()?.rss_age || 0);
-  containerWizard = computed(() => this.authData()?.container_wizard || { enabled: false });
+  containerWizard = computed(() => this.authData()?.container_wizard || {
+    enabled: false,
+    type: null,
+    registration: false,
+    template: null
+  });
   isSelfServiceUser = computed(() => {
     return this.role() === "user";
   });

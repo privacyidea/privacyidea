@@ -224,6 +224,8 @@ export class LoginComponent implements OnDestroy {
       this.sessionTimerService.startTimer();
       if (this.authService.tokenWizard()) {
         this.router.navigateByUrl(ROUTE_PATHS.TOKENS_WIZARD).then();
+      } else if (this.authService.containerWizard().enabled) {
+        this.router.navigateByUrl(ROUTE_PATHS.TOKENS_CONTAINERS_WIZARD).then();
       } else if (this.authService.role() === "user" || this.authService.anyTokenActionAllowed()) {
         this.router.navigateByUrl(ROUTE_PATHS.TOKENS).then();
       } else if (this.authService.anyContainerActionAllowed()) {

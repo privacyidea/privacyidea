@@ -1,7 +1,7 @@
 <div
   [@componentFade]
   class="navigation-self-service-column">
-  @if (!authService.tokenWizard()) {
+  @if (!authService.tokenWizard() && !authService.containerWizard().enabled) {
     <app-navigation-self-service-button
       i18n-title
       key="{{ this.ROUTE_PATHS.TOKENS }}"

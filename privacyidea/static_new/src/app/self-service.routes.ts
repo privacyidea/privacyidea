@@ -29,6 +29,7 @@ import { TokenSelfServiceComponent } from "./components/token/token.self-service
 import { UserSelfServiceComponent } from "./components/user/user.self-service.component";
 import { AuditSelfServiceComponent } from "./components/audit/audit.self-service.component";
 import { TokenEnrollmentWizardComponent } from "./components/token/token-enrollment/token-enrollment.wizard.component";
+import { ContainerCreateWizardComponent } from "./components/token/container-create/container-create.wizard.component";
 
 export const routes: Routes = [
   {
@@ -50,7 +51,8 @@ export const routes: Routes = [
           {
             path: "details/:serial",
             component: ContainerDetailsSelfServiceComponent
-          }
+          },
+          { path: "wizard", component: ContainerCreateWizardComponent }
         ]
       },
       { path: "details/:serial", component: TokenDetailsSelfServiceComponent },
