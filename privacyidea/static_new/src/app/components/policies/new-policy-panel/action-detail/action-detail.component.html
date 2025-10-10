@@ -6,7 +6,7 @@
         {{ policyService.selectedActionDetail()?.desc }}
       </span>
     </div>
-    @if (policyService.selectedActionDetail()?.value) {
+    @if (policyService.selectedActionDetail()?.value && policyService.selectedActionDetail()?.type !== "bool") {
       <!-- add dropdown to select value from list -->
 
       <mat-form-field

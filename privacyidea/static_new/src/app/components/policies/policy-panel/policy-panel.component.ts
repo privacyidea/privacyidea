@@ -36,27 +36,28 @@ type Tab = "actions" | "conditions";
   styleUrl: "./policy-panel.component.scss"
 })
 export class PolicyPanelComponent {
-  policyService: PolicyService = inject(PolicyService);
-  policy = input.required<PolicyDetail>();
   @Input({ required: true }) isEditMode!: boolean;
+  policy = input.required<PolicyDetail>();
+
   activeTab: WritableSignal<Tab> = signal("actions");
+  policyService: PolicyService = inject(PolicyService);
 
-  setActiveTab(tab: Tab): void {
-    this.activeTab.set(tab);
-  }
-
-  isEditingPolicy(name: string): boolean {
-    return this.isEditMode && this.policyService.selectedPolicy()?.name === name;
-  }
-
-  selectPolicy(policyName: string): void {
+  cancelEditMode() {
     if (
       this.policyService.isPolicyEdited() &&
       !confirm("Are you sure you want to discard the changes? All changes will be lost.")
     ) {
       return;
     }
-    this.policyService.selectPolicyByName(policyName);
+    this.policyService.cancelEditMode();
+  }
+
+  deletePolicy(policyName: string): void {
+    if (confirm(`Are you sure you want to delete the policy "${policyName}"? This action cannot be undone.`)) {
+      this.policyService.deletePolicy(policyName).then((response) => {
+        this.policyService.allPoliciesRecource.reload();
+      });
+    }
   }
 
   deselectPolicy(name: string): void {
@@ -73,30 +74,34 @@ export class PolicyPanelComponent {
     this.policyService.viewMode.set(editMode);
   }
 
-  savePolicy(arg0: string) {
-    this.policyService.saveSelectedPolicy();
+  isEditingPolicy(name: string): boolean {
+    return this.isEditMode && this.policyService.selectedPolicyOriginal()?.name === name;
   }
 
-  deletePolicy(policyName: string): void {
-    if (confirm(`Are you sure you want to delete the policy "${policyName}"? This action cannot be undone.`)) {
-      this.policyService.deletePolicy(policyName).then((response) => {
-        console.log("Policy deleted successfully: ", response);
-        this.policyService.allPoliciesRecource.reload();
-      });
+  savePolicy() {
+    this.policyService.savePolicyEdits();
+  }
+
+  selectPolicy(policyName: string): void {
+    if (
+      this.policyService.isPolicyEdited() &&
+      this.policyService.viewMode() !== "view" &&
+      !confirm("Are you sure you want to discard the changes? All changes will be lost.")
+    ) {
+      return;
     }
+    this.policyService.selectPolicyByName(policyName);
   }
 
   selectPolicyScope(scope: string) {
     this.policyService.updateSelectedPolicy({ scope: scope });
   }
 
-  cancelEditMode() {
-    if (
-      this.policyService.isPolicyEdited() &&
-      !confirm("Are you sure you want to discard the changes? All changes will be lost.")
-    ) {
-      return;
-    }
-    this.policyService.cancelEditMode();
+  setActiveTab(tab: Tab): void {
+    this.activeTab.set(tab);
+  }
+
+  onNameChange(name: string): void {
+    this.policyService.updateSelectedPolicy({ name: name });
   }
 }

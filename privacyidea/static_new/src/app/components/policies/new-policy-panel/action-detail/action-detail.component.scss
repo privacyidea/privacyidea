@@ -3,56 +3,56 @@
 }
 
 .action-detail-column {
+  background-color: var(--mat-sys-surface);
+  border-radius: 4px;
+  box-shadow: var(--mat-sys-level2);
+  color: var(--mat-sys-on-surface);
   display: flex;
   flex-direction: column;
   gap: 16px;
-  padding: 12px;
-  border-radius: 4px;
   min-width: 0;
-  background-color: var(--mat-sys-surface);
-  color: var(--mat-sys-on-surface);
-  box-shadow: var(--mat-sys-level2);
+  padding: 12px;
 }
 
 .action-detail-card {
-  padding: 16px;
   border-radius: 4px;
   box-shadow: var(--mat-sys-level2);
+  padding: 16px;
 }
 
 .detail-row {
+  align-items: center;
   display: flex;
   justify-content: space-between;
-  align-items: center;
 }
 
 .action-value-input {
+  background-color: transparent;
   border: none;
   border-bottom: 1px solid var(--mat-sys-outline-variant);
   border-radius: 0;
-  padding: 8px 0;
-  font-size: 1rem;
-  background-color: transparent;
-  width: 100%;
   box-sizing: border-box;
+  font-size: 1rem;
+  padding: 8px 0;
+  width: 100%;
 }
 
 .action-value-textarea {
+  background-color: transparent;
   border: none;
   border-bottom: 1px solid var(--mat-sys-outline-variant);
   border-radius: 0;
-  padding: 8px 0;
-  font-size: 1rem;
-  background-color: transparent;
-  width: 100%;
   box-sizing: border-box;
-  resize: vertical;
+  font-size: 1rem;
   min-height: 80px;
+  padding: 8px 0;
+  resize: vertical;
+  width: 100%;
 }
 
 .action-value-input:focus {
-  outline: none;
   border-bottom-color: var(--mat-sys-primary);
+  outline: none;
 }
 
 .add-action-button {

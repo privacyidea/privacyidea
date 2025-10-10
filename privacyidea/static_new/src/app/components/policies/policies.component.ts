@@ -16,6 +16,7 @@ import { NewPolicyPanelComponent } from "./new-policy-panel/new-policy-panel.com
 export class PoliciesComponent {
   policyService: PolicyService = inject(PolicyService);
   allPoliciesList = this.policyService.allPolicies;
+
   isEditMode(): boolean {
     if (this.policyService.viewMode() === "new" && this.policyService.isPolicyEdited()) {
       return true;
@@ -24,6 +25,6 @@ export class PoliciesComponent {
   }
 
   isEditingPolicy(name: string): boolean {
-    return this.isEditMode() && this.policyService.selectedPolicy()?.name === name;
+    return this.isEditMode() && this.policyService.selectedPolicyOriginal()?.name === name;
   }
 }

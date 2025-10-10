@@ -24,13 +24,13 @@ import { MatSelectModule } from "@angular/material/select";
   styleUrls: ["./action-detail.component.scss"]
 })
 export class ActionDetailComponent {
-  policyService = inject(PolicyService);
   inputIsValid: Signal<boolean> = computed(() => {
     const action = this.policyService.selectedActionDetail();
     const actionValue = this.policyService.selectedAction()?.value;
     if (action === null) return false;
     return this.policyService.actionValueIsValid(action, actionValue);
   });
+  policyService = inject(PolicyService);
 
   actionIsAlreadyAdded(): boolean {
     const selectedAction = this.policyService.selectedAction();
@@ -42,9 +42,7 @@ export class ActionDetailComponent {
 
   applyChanges() {
     if (!this.inputIsValid()) return;
-    console.log("Applying changes to action in selected policy");
     this.policyService.updateActionInSelectedPolicy();
     this.policyService.selectedAction.set(null);
-    console.log("Changes applied:", this.policyService.selectedAction());
   }
 }

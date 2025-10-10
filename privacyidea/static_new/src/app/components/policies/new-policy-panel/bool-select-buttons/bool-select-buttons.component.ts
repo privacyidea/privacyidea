@@ -34,8 +34,8 @@ export class BoolSelectButtonsComponent implements OnInit {
   initialValue = input.required<string | number | boolean>();
 
   @Output() onSelect = new EventEmitter<boolean>();
-  @Output() onSelectString = new EventEmitter<string>();
   @Output() onSelectNumber = new EventEmitter<Number>();
+  @Output() onSelectString = new EventEmitter<string>();
 
   // 1. Initialize selectedValue with a placeholder or default boolean value
   // The actual value will be set in ngOnInit

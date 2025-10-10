@@ -48,15 +48,11 @@ export class NewPolicyPanelComponent {
 
   newPolicyName = computed(() => {
     if (this.policyService.viewMode() !== "new") return "";
-    const selectedPolicy = this.policyService.selectedPolicy();
-    if (!selectedPolicy) return "";
-    return selectedPolicy.name;
+    return this.policyService.selectedPolicyOriginal()?.name || "";
   });
   newPolicyScope = computed(() => {
     if (this.policyService.viewMode() !== "new") return "";
-    const selectedPolicy = this.policyService.selectedPolicy();
-    if (!selectedPolicy) return "";
-    return selectedPolicy.scope;
+    return this.policyService.selectedPolicy()?.scope || "";
   });
 
   // ===================================
@@ -69,25 +65,18 @@ export class NewPolicyPanelComponent {
   // 4. EVENT HANDLERS / ACTIONS
   // ===================================
 
-  setActiveTab(tab: Tab): void {
-    this.activeTab.set(tab);
+  canSavePolicy(): boolean {
+    return this.policyService.canSaveSelectedPolicy();
+  }
+
+  onNameChange($event: string) {
+    this.policyService.updateSelectedPolicy({ name: $event });
   }
 
   onScopeSelect($event: string) {
     this.policyService.updateSelectedPolicy({ scope: $event });
   }
 
-  onNameChange($event: string) {
-    console.log("onNameChange: ", $event);
-    this.policyService.updateSelectedPolicy({ name: $event });
-  }
-
-  savePolicy(matExpansionPanel: MatExpansionPanel) {
-    // Implementiere hier die Logik, um das neue Policy zu speichern
-    this.policyService.saveSelectedPolicy();
-    this.policyService.deselectPolicy(this.newPolicyName());
-    matExpansionPanel.close();
-  }
   resetPolicy(matExpansionPanel: MatExpansionPanel) {
     if (this.policyService.isPolicyEdited()) {
       if (confirm("Are you sure you want to discard the new policy? All changes will be lost.")) {
@@ -100,7 +89,14 @@ export class NewPolicyPanelComponent {
     }
   }
 
-  canSavePolicy(): boolean {
-    return this.policyService.canSaveSelectedPolicy();
+  savePolicy(matExpansionPanel: MatExpansionPanel) {
+    // Implementiere hier die Logik, um das neue Policy zu speichern
+    this.policyService.savePolicyEdits();
+    this.policyService.deselectPolicy(this.newPolicyName());
+    matExpansionPanel.close();
+  }
+
+  setActiveTab(tab: Tab): void {
+    this.activeTab.set(tab);
   }
 }

@@ -2,16 +2,27 @@
   <mat-expansion-panel
     #panel
     class="margin-4"
-    (afterCollapse)="deselectPolicy(policy.name)"
-    (opened)="selectPolicy(policy.name)"
-    [disabled]="policyService.isPolicyEdited()">
+    (afterCollapse)="deselectPolicy(policy().name)"
+    (opened)="selectPolicy(policy().name)"
+    [disabled]="policyService.isPolicyEdited() && policyService.viewMode() !== 'view'">
     <mat-expansion-panel-header class="mat-expansion-panel-header">
       <mat-panel-title>
-        {{ policy().name }}
+        @if (isEditingPolicy(policy().name)) {
+          <input
+            type="text"
+            class="policy-name-input"
+            placeholder="Policy Name"
+            [ngModel]="policy().name"
+            (ngModelChange)="onNameChange($event)"
+            (click)="$event.stopPropagation(); panel.expanded = true"
+            (keydown)="$event.stopPropagation()" />
+        } @else {
+          {{ policy().name }}
+        }
       </mat-panel-title>
       <mat-panel-description class="header-description">
         <div class="policy-scope-label">
-          @if (isEditingPolicy(policy.name) && policyService.isScopeChangeable(policy())) {
+          @if (isEditingPolicy(policy().name) && policyService.isScopeChangeable(policy())) {
             <app-horizontal-wheel
               [initialValue]="policy().scope"
               [values]="policyService.allPolicyScopes"
@@ -24,10 +35,10 @@
         </div>
         <div class="policy-actions">
           @if (panel.expanded) {
-            @if (isEditingPolicy(policy.name)) {
+            @if (isEditingPolicy(policy().name)) {
               <button
                 mat-icon-button
-                (click)="$event.stopPropagation(); savePolicy(policy.name)">
+                (click)="$event.stopPropagation(); savePolicy()">
                 <mat-icon>save</mat-icon>
               </button>
               <button
@@ -45,7 +56,7 @@
             }
             <button
               mat-icon-button
-              (click)="$event.stopPropagation(); deletePolicy(policy.name)">
+              (click)="$event.stopPropagation(); deletePolicy(policy().name)">
               <mat-icon>delete</mat-icon>
             </button>
           }

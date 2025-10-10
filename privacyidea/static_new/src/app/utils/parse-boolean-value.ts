@@ -1,7 +1,6 @@
 import { assert } from "./assert";
 
 export function parseBooleanValue(initialValue: string | number | boolean): boolean {
-  console.log("Parsing initialValue:", initialValue);
   const typeofInitialValue = typeof initialValue;
   if (typeofInitialValue === "boolean") {
     return !!initialValue;

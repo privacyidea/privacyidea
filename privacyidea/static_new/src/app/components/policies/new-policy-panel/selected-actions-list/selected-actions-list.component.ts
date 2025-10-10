@@ -14,12 +14,22 @@ import { parseBooleanValue } from "../../../../utils/parse-boolean-value";
   styleUrls: ["./selected-actions-list.component.scss"]
 })
 export class SelectedActionsListComponent {
-  policyService = inject(PolicyService);
   actions: Signal<{ name: string; value: string }[]> = computed(() => {
     const policy = this.policyService.selectedPolicy();
     if (!policy || !policy.action) return [];
     return Object.entries(policy.action).map(([name, value]) => ({ name: name, value }));
   });
+  parseBooleanValue = parseBooleanValue;
+  policyService = inject(PolicyService);
+
+  editModeEnabled(): boolean {
+    return this.policyService.viewMode() === "edit" || this.policyService.viewMode() === "new";
+  }
+
+  isBooleanAction(actionName: string): boolean {
+    return this.policyService.getDetailsOfAction(actionName)?.type === "bool";
+  }
+
   onActionClick(action: { name: string; value: string }) {
     if (this.isBooleanAction(action.name)) return;
     if (this.policyService.viewMode()) {
@@ -27,15 +37,7 @@ export class SelectedActionsListComponent {
     }
   }
 
-  isBooleanAction(actionName: string): boolean {
-    return this.policyService.getDetailsOfAction(actionName)?.type === "bool";
-  }
   onToggleChange(actionName: string, newValue: boolean): void {
     this.policyService.updateActionValue(actionName, newValue);
   }
-  editModeEnabled(): boolean {
-    return this.policyService.viewMode() === "edit" || this.policyService.viewMode() === "new";
-  }
-
-  parseBooleanValue = parseBooleanValue;
 }

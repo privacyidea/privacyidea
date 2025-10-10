@@ -2,7 +2,9 @@
   <mat-expansion-panel
     #panel
     class="margin-4"
-    [disabled]="panel.expanded || policyService.viewMode() !== 'view'"
+    [disabled]="
+      policyService.viewMode() === 'new' || (policyService.isPolicyEdited() && policyService.viewMode() === 'edit')
+    "
     (opened)="policyService.initializeNewPolicy()"
     (closed)="policyService.deselectPolicy(newPolicyName())">
     <mat-expansion-panel-header>

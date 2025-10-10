@@ -1,37 +1,37 @@
 .bool-select-container {
-  display: flex;
-  width: 100%;
-  padding: 0;
   border: 1px solid var(--mat-sys-outline);
   border-radius: 8px;
+  display: flex;
   overflow: auto;
+  padding: 0;
   scrollbar-width: thin;
+  width: 100%;
 }
 
 .false-button {
+  border-bottom-left-radius: 8px;
+  border-top-left-radius: 8px;
   grid-area: false-button;
   min-width: 0;
-  border-top-left-radius: 8px;
-  border-bottom-left-radius: 8px;
 }
 
 .true-button {
-  grid-area: true-button;
-  min-width: 0;
-  border-top-right-radius: 8px;
   border-bottom-right-radius: 8px;
   border-right: 1px solid var(--mat-sys-outline) !important;
+  border-top-right-radius: 8px;
+  grid-area: true-button;
+  min-width: 0;
 }
 
 .bool-select-button {
-  flex: 1;
-  padding: 10px 15px;
-  text-align: center;
-  cursor: pointer;
   background-color: var(--mat-sys-surface-container);
   border: none;
-  margin: 0;
   border-radius: 0;
+  cursor: pointer;
+  flex: 1;
+  margin: 0;
+  padding: 10px 15px;
+  text-align: center;
 }
 
 .bool-select-button:hover {

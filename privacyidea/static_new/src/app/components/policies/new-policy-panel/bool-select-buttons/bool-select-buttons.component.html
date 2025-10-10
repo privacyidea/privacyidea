@@ -1,16 +1,16 @@
 <div class="bool-select-container">
   <button
     i18n
-    (click)="selectBoolean(true)"
-    class="bool-select-button true-button"
-    [class.selected-button]="selectedValue() === true">
-    Yes
-  </button>
-  <button
-    i18n
     (click)="selectBoolean(false)"
     class="bool-select-button false-button"
     [class.selected-button]="selectedValue() === false">
     No
+  </button>
+  <button
+    i18n
+    (click)="selectBoolean(true)"
+    class="bool-select-button true-button"
+    [class.selected-button]="selectedValue() === true">
+    Yes
   </button>
 </div>

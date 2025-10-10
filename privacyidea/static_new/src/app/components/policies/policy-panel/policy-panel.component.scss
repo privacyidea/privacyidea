@@ -73,6 +73,18 @@
   color: var(--mat-sys-on-primary);
 }
 
+.policy-name-input {
+  background-color: transparent;
+  border: none;
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 0;
+  box-sizing: border-box;
+  font-size: 1rem;
+  margin-left: 2px;
+  padding: 8px 0;
+  width: 100%;
+}
+
 // --- Content Sections ---
 .actions-list {
   display: flex;
@@ -156,9 +168,9 @@
 }
 
 .detail-label {
+  color: var(--mat-sys-on-surface);
   font-weight: 500;
   margin-right: 16px;
-  color: var(--mat-sys-on-surface);
 }
 
 .detail-value {

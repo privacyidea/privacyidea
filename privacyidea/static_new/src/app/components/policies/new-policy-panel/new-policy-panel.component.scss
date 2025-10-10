@@ -5,9 +5,9 @@
 // 1. GLOBAL / HEADER LAYOUT
 // ===================================
 .header-description {
+  align-items: center;
   display: flex;
   justify-content: space-between;
-  align-items: center;
   width: 100%;
 }
 
@@ -20,8 +20,8 @@
 }
 
 .policy-actions {
-  display: flex;
   align-items: center;
+  display: flex;
   flex-shrink: 0;
 
   button {
@@ -37,12 +37,12 @@
 .policy-grid-container {
   display: grid;
   gap: 16px;
-  grid-template-columns: 2fr 1fr;
-  grid-template-rows: auto auto 1fr;
   grid-template-areas:
     "buttons buttons"
     "content-header detail-header"
     "content-body detail-body";
+  grid-template-columns: 2fr 1fr;
+  grid-template-rows: auto auto 1fr;
 }
 
 .grid-area-buttons {
@@ -70,20 +70,20 @@
 // 3. TAB BUTTONS
 // ===================================
 .tab-buttons {
-  grid-area: buttons;
   display: flex;
-  justify-content: center;
   gap: 8px;
+  grid-area: buttons;
+  justify-content: center;
 }
 
 .tab-button {
-  font-size: 0.9rem;
-  font-weight: 500;
-  color: var(--mat-sys-on-surface-variant);
   background-color: transparent;
   border: none;
-  cursor: pointer;
   border-radius: 20px;
+  color: var(--mat-sys-on-surface-variant);
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
   padding: 8px 16px;
   transition:
     background-color 0.2s ease-in-out,
@@ -96,15 +96,15 @@
 }
 
 .policy-name-input {
-  margin-left: 2px;
+  background-color: transparent;
   border: none;
   border-bottom: 1px solid var(--mat-sys-outline-variant);
   border-radius: 0;
-  padding: 8px 0;
-  font-size: 1rem;
-  background-color: transparent;
-  width: 100%;
   box-sizing: border-box;
+  font-size: 1rem;
+  margin-left: 2px;
+  padding: 8px 0;
+  width: 100%;
 }
 
 .policy-card {
@@ -119,9 +119,9 @@
   }
 
   .header-description {
+    align-items: center;
     display: flex;
     justify-content: space-between;
-    align-items: center;
     width: 100%;
   }
 
@@ -131,12 +131,11 @@
     font-weight: 400;
     text-align: center;
     width: 300px;
-    // margin-left: -50px; // Negative margin to shift it left
   }
 
   .policy-actions {
-    display: flex;
     align-items: center;
+    display: flex;
     flex-shrink: 0;
 
     button {

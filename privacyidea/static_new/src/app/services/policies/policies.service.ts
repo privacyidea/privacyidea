@@ -78,7 +78,7 @@ export interface PoliciesServiceInterface {}
 })
 export class PolicyService implements PoliciesServiceInterface {
   updateActionInSelectedPolicy() {
-    const selectedPolicy = this._selectedPolicy();
+    const selectedPolicy = this.selectedPolicy();
     const selectedAction = this.selectedAction();
     const actionName = selectedAction?.name;
     const actionValue = selectedAction?.value;
@@ -95,7 +95,7 @@ export class PolicyService implements PoliciesServiceInterface {
   private readonly contentService: ContentServiceInterface = inject(ContentService);
 
   updateActionValue(actionName: string, newValue: boolean) {
-    const selectedPolicy = this._selectedPolicy();
+    const selectedPolicy = this.selectedPolicy();
     if (!selectedPolicy || !selectedPolicy.action) return;
     const currentAction = selectedPolicy.action;
     if (!(actionName in currentAction)) return;
@@ -109,9 +109,7 @@ export class PolicyService implements PoliciesServiceInterface {
     source: () => {
       this.contentService.routeUrl();
     },
-    computation: (source, previous) => {
-      return "view";
-    }
+    computation: (_) => "view"
   });
 
   selectPolicyByName(policyName: string) {
@@ -121,7 +119,7 @@ export class PolicyService implements PoliciesServiceInterface {
     }
   }
   canSaveSelectedPolicy(): boolean {
-    const policy = this._selectedPolicy();
+    const policy = this.selectedPolicy();
     if (!policy) return false;
     if (!policy.name || policy.name.trim() === "") return false;
     if (!policy.scope || policy.scope.trim() === "") return false;
@@ -130,23 +128,36 @@ export class PolicyService implements PoliciesServiceInterface {
   }
 
   selectedPolicyHasActions = computed(() => {
-    const policy = this._selectedPolicy();
+    const policy = this.selectedPolicy();
     if (!policy) return false;
     return policy?.action && Object.keys(policy.action).length > 0;
   });
 
-  saveSelectedPolicy() {
-    const selectedPolicy = this._selectedPolicy();
-    if (!selectedPolicy) return;
-    this.createPolicy(selectedPolicy)
-      .then((response) => {
-        console.log("Policy created successfully: ", response);
-        // Refresh the policies list
-        this.allPoliciesRecource.reload();
-      })
-      .catch((error) => {
-        console.error("Error creating policy: ", error);
-      });
+  savePolicyEdits() {
+    const selectedPolicy = this.selectedPolicy();
+    const oldPolicyName = this.selectedPolicyOriginal()?.name;
+    if (!selectedPolicy || !oldPolicyName) return;
+    if (this.viewMode() === "new") {
+      this.createPolicy(selectedPolicy)
+        .then((response) => {
+          // Refresh the policies list
+          this.allPoliciesRecource.reload();
+        })
+        .catch((error) => {
+          console.error("Error creating policy: ", error);
+        });
+    } else if (this.viewMode() === "edit") {
+      this.updatePolicy(oldPolicyName, selectedPolicy)
+        .then((response) => {
+          // Refresh the policies list
+          this.allPoliciesRecource.reload();
+        })
+        .catch((error) => {
+          console.error("Error updating policy: ", error);
+        });
+    }
+
+    this.viewMode.set("view");
   }
   getDetailsOfAction(actionName: string): PolicyActionDetail | null {
     const actions = this.allPolicyActionsFlat();
@@ -156,7 +167,7 @@ export class PolicyService implements PoliciesServiceInterface {
     return null;
   }
   deselectPolicy(name: string) {
-    if (this._selectedPolicy()?.name !== name) return;
+    if (this.selectedPolicyOriginal()?.name !== name) return;
     this._selectedPolicy.set(null);
     this._selectedPolicyOriginal.set(null);
     this.viewMode.set("view");
@@ -189,8 +200,8 @@ export class PolicyService implements PoliciesServiceInterface {
   }
 
   isPolicyEdited = computed(() => {
-    const selectedPolicy = this._selectedPolicy();
-    const originalPolicy = this._selectedPolicyOriginal();
+    const selectedPolicy = this.selectedPolicy();
+    const originalPolicy = this.selectedPolicyOriginal();
     if (!selectedPolicy || !originalPolicy) return false;
     if (JSON.stringify(originalPolicy) === JSON.stringify(this.emptyPolicy)) {
       // remove scope temporarily and then compare to ignore scope changes
@@ -208,14 +219,12 @@ export class PolicyService implements PoliciesServiceInterface {
   }
 
   updateSelectedPolicy(args: Partial<PolicyDetail>) {
-    const selectedPolicy = this._selectedPolicy();
+    const selectedPolicy = this.selectedPolicy();
     if (!selectedPolicy) return;
     const updatedPolicy = {
       ...selectedPolicy,
       ...args
     };
-    console.log(`updated key/s ${Object.keys(args)} to value/s ${Object.values(args)} in selectedPolicy`);
-    console.log("updatedPolicy: ", updatedPolicy);
     this._selectedPolicy.set(updatedPolicy);
   }
 
@@ -385,16 +394,20 @@ export class PolicyService implements PoliciesServiceInterface {
     return grouped;
   });
 
-  allPolicies = computed(() => {
+  _allPolicies = computed(() => {
     return this.allPoliciesRecource.value()?.result?.value ?? [];
+  });
+  allPolicies = linkedSignal({
+    source: () => this._allPolicies(),
+    computation: (source) => {
+      return source.sort((a, b) => a.priority - b.priority);
+    }
   });
 
   policyActionGroupNames: Signal<string[]> = computed(() => {
     const selectedScope = this._selectedPolicy()?.scope;
-    console.log("selectedScope: ", selectedScope);
     if (!selectedScope) return [];
     const policyActionGroupFiltered = this.policyActionsByGroupFiltered()[selectedScope];
-    console.log("policyActionGroupFiltered: ", policyActionGroupFiltered);
     if (!policyActionGroupFiltered) return [];
     return Object.keys(policyActionGroupFiltered);
   });
@@ -423,12 +436,38 @@ export class PolicyService implements PoliciesServiceInterface {
   // 3.1 API Methods
   // -----------------------------------
 
-  createPolicy(data: PolicyDetail): Promise<PiResponse<any>> {
+  createPolicy(policyData: PolicyDetail): Promise<PiResponse<any>> {
+    const allPolicies = this.allPolicies();
+    allPolicies.push({ ...policyData });
     const headers = this.authService.getHeaders();
-    return lastValueFrom(this.http.post<PiResponse<any>>(`${this.policyBaseUrl}${data.name}`, data, { headers }));
+    return lastValueFrom(
+      this.http.post<PiResponse<any>>(`${this.policyBaseUrl}${policyData.name}`, policyData, { headers })
+    );
+  }
+
+  async updatePolicy(oldPolicyName: String, policyData: PolicyDetail): Promise<PiResponse<any>> {
+    const headers = this.authService.getHeaders();
+    let patchNameRespone: PiResponse<any> | null = null;
+    if (oldPolicyName !== policyData.name) {
+      patchNameRespone = await lastValueFrom(
+        this.http.patch<PiResponse<any>>(`${this.policyBaseUrl}${oldPolicyName}`, policyData, { headers })
+      );
+    }
+    if (patchNameRespone && patchNameRespone.result?.error) {
+      return patchNameRespone;
+    }
+    const response = await lastValueFrom(
+      this.http.post<PiResponse<any>>(`${this.policyBaseUrl}${policyData.name}`, policyData, { headers })
+    );
+    return response;
   }
 
   deletePolicy(name: string): Promise<PiResponse<number>> {
+    const allPolicies = this.allPolicies();
+    if (!allPolicies) return Promise.reject("No policies found");
+    const policy = allPolicies.find((p) => p.name === name);
+    if (!policy) return Promise.reject(`Policy with name ${name} not found`);
+
     const headers = this.authService.getHeaders();
     return lastValueFrom(this.http.delete<PiResponse<number>>(`${this.policyBaseUrl}${name}`, { headers }));
   }
@@ -454,7 +493,7 @@ export class PolicyService implements PoliciesServiceInterface {
     if (this.alreadyAddedActionNames().includes(selectedAction.name)) return;
     if (!this.actionValueIsValid(selectedActionDetail, selectedAction.value)) return;
 
-    const selectedPolicy = this._selectedPolicy();
+    const selectedPolicy = this.selectedPolicy();
     if (!selectedPolicy) return;
     const currentAction = selectedPolicy.action || {};
     const updatedAction = {
@@ -465,12 +504,11 @@ export class PolicyService implements PoliciesServiceInterface {
       ...selectedPolicy,
       action: updatedAction
     };
-    console.log(`added action ${selectedAction.name} to selectedPolicy`);
     this._selectedPolicy.set(updatedPolicy);
   }
 
   removeActionFromSelectedPolicy(actionName: string) {
-    const selectedPolicy = this._selectedPolicy();
+    const selectedPolicy = this.selectedPolicy();
     if (!selectedPolicy || !selectedPolicy.action) return;
     const currentAction = selectedPolicy.action;
     if (!(actionName in currentAction)) return;
@@ -479,7 +517,6 @@ export class PolicyService implements PoliciesServiceInterface {
       ...selectedPolicy,
       action: Object.keys(updatedAction).length > 0 ? updatedAction : null
     };
-    console.log(`removed action ${actionName} from selectedPolicy`);
     this._selectedPolicy.set(updatedPolicy);
   }
 
@@ -509,7 +546,6 @@ export class PolicyService implements PoliciesServiceInterface {
     if (actionType === "bool") {
       return value.toLowerCase() === "true" || value.toLowerCase() === "false";
     } else if (actionType === "int") {
-      console.log("Validating int: ", value, !isNaN(Number(value)), Number.isInteger(Number(value)));
       return value.trim().length > 0 && !isNaN(Number(value)) && Number.isInteger(Number(value));
     } else if (actionType === "str") {
       return value.trim().length > 0;
@@ -520,7 +556,7 @@ export class PolicyService implements PoliciesServiceInterface {
   }
 
   cancelEditMode() {
-    const originalPolicy = this._selectedPolicyOriginal();
+    const originalPolicy = this.selectedPolicyOriginal();
     if (originalPolicy) {
       this._selectedPolicy.set({ ...originalPolicy });
     }
