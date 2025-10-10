@@ -182,7 +182,7 @@ export interface TokenServiceInterface {
 
   deleteToken(tokenSerial: string): Observable<Object>;
 
-  bulkDeleteTokens(selectedTokens: TokenDetails[]): Observable<PiResponse<BulkResult, any>>;
+  bulkDeleteTokens(selectedTokens: string[]): Observable<PiResponse<BulkResult, any>>;
 
   revokeToken(tokenSerial: string): Observable<any>;
 
@@ -450,9 +450,9 @@ export class TokenService implements TokenServiceInterface {
       );
   }
 
-  bulkDeleteTokens(selectedTokens: TokenDetails[]): Observable<PiResponse<BulkResult, any>> {
+  bulkDeleteTokens(selectedTokens: string[]): Observable<PiResponse<BulkResult, any>> {
     const headers = this.authService.getHeaders();
-    const body = { serials: selectedTokens.map((t) => t.serial) };
+    const body = { serials: selectedTokens };
 
     return this.http.delete<PiResponse<BulkResult, any>>(this.tokenBaseUrl, { headers, body }).pipe(
       catchError((error) => {
