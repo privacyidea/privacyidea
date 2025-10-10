@@ -118,7 +118,10 @@ export class MockAuthData implements AuthData {
   require_description = [];
   rss_age = 0;
   container_wizard = {
-    enabled: false
+    enabled: false,
+    type: "",
+    registration: false,
+    template: null
   };
   versionnumber = "";
 }
@@ -290,7 +293,7 @@ export class MockAuthService extends AuthService {
   override requireDescription: WritableSignal<string[]> = signal(MockAuthService.MOCK_AUTH_DATA.require_description);
   override rssAge: WritableSignal<number> = signal(MockAuthService.MOCK_AUTH_DATA.rss_age);
   override containerWizard: WritableSignal<{
-    enabled: boolean;
+    enabled: boolean; type: string; registration: boolean; template: string | null;
   }> = signal(MockAuthService.MOCK_AUTH_DATA.container_wizard);
   override isSelfServiceUser: Signal<boolean> = signal(
     this.role() === "user" && this.menus().includes("token_self-service_menu")
@@ -337,7 +340,10 @@ export class MockAuthService extends AuthService {
     require_description: [],
     rss_age: 0,
     container_wizard: {
-      enabled: false
+      enabled: false,
+      type: "",
+      registration: false,
+      template: null
     }
   };
   isAuthenticatedUser = jest.fn().mockReturnValue(this.isAuthenticated() && this.role() === "user");
@@ -756,6 +762,7 @@ export class MockTokenService implements TokenServiceInterface {
   tokenSerial = signal("");
   selectedTokenType: WritableSignal<TokenType> = signal({
     key: "hotp",
+    name: "HOTP",
     info: "",
     text: "HMAC-based One-Time Password"
   });
@@ -779,16 +786,19 @@ export class MockTokenService implements TokenServiceInterface {
   tokenTypeOptions: WritableSignal<TokenType[]> = signal<TokenType[]>([
     {
       key: "hotp",
+      name: "HOTP",
       info: "",
       text: "HMAC-based One-Time Password"
     },
     {
       key: "totp",
+      name: "TOTP",
       info: "",
       text: "Time-based One-Time Password"
     },
     {
       key: "push",
+      name: "PUSH",
       info: "",
       text: "Push Notification"
     }
@@ -814,9 +824,11 @@ export class MockTokenService implements TokenServiceInterface {
   setTokenInfos = jest.fn().mockReturnValue(of({}));
   deleteToken = jest.fn().mockReturnValue(of({}));
 
-  bulkDeleteTokens(selectedTokens: TokenDetails[]): Observable<PiResponse<BulkResult, any>> {
-    throw new Error("Method not implemented.");
-  }
+  bulkDeleteTokens = jest.fn().mockReturnValue(of(MockPiResponse.fromValue<BulkResult>({
+    failed: [],
+    unauthorized: [],
+    count_success: 1
+  })));
 
   revokeToken(tokenSerial: string): Observable<Object> {
     throw new Error("Method not implemented.");

@@ -276,17 +276,14 @@ describe("ContainerDetailsTokenTableComponent", () => {
         }
       }
     );
-    expect(containerServiceMock.deleteAllTokens).toHaveBeenCalledWith({
-      containerSerial: "CONT-1",
-      serialList: "Mock serial,Another serial"
-    });
+    expect(tokenServiceMock.bulkDeleteTokens).toHaveBeenCalledWith(["Mock serial", "Another serial"]);
     expect(containerServiceMock.containerDetailResource.reload).toHaveBeenCalled();
   });
 
   it("deleteAllTokens does NOT delete when confirm=false", () => {
     matDialogMock.open.mockReturnValueOnce(makeDialogResult(false));
     component.deleteAllTokens();
-    expect(containerServiceMock.deleteAllTokens).not.toHaveBeenCalled();
+    expect(tokenServiceMock.bulkDeleteTokens).not.toHaveBeenCalled();
   });
 
   it("removeAll opens confirm and removes when confirm=true", () => {

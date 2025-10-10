@@ -214,7 +214,7 @@ describe("TokenTabComponent", () => {
       });
       tokenService.bulkDeleteTokens.mockReturnValue(of(response));
       component.deleteSelectedTokens();
-      expect(tokenService.bulkDeleteTokens).toHaveBeenCalledWith(mockTokens);
+      expect(tokenService.bulkDeleteTokens).toHaveBeenCalledWith(mockTokens.map(token => token.serial));
       expect(tokenService.tokenResource.reload).toHaveBeenCalled();
       expect(notificationService.openSnackBar).toHaveBeenCalledWith("Successfully deleted 2 tokens.");
     });
@@ -228,7 +228,7 @@ describe("TokenTabComponent", () => {
       });
       tokenService.bulkDeleteTokens.mockReturnValue(of(response));
       component.deleteSelectedTokens();
-      expect(tokenService.bulkDeleteTokens).toHaveBeenCalledWith(singleToken);
+      expect(tokenService.bulkDeleteTokens).toHaveBeenCalledWith(["TOKEN1"]);
       expect(tokenService.tokenResource.reload).toHaveBeenCalled();
       expect(notificationService.openSnackBar).toHaveBeenCalledWith("Successfully deleted 1 token.");
     });
