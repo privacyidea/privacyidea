@@ -2,7 +2,7 @@ import { Component, inject } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { FormsModule } from "@angular/forms";
 import { MatIconModule } from "@angular/material/icon";
-import { PolicyService as PolicyService } from "../../../../services/policies/policies.service";
+import { PolicyService as PolicyService } from "../../../../../services/policies/policies.service";
 
 @Component({
   selector: "app-action-selector",

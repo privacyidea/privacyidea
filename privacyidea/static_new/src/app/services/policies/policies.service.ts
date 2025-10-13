@@ -483,12 +483,12 @@ export class PolicyService implements PoliciesServiceInterface {
 
   enablePolicy(name: string): Promise<PiResponse<any>> {
     const headers = this.authService.getHeaders();
-    return lastValueFrom(this.http.post<PiResponse<any>>(`${this.policyBaseUrl}enable/${name}`, { headers }));
+    return lastValueFrom(this.http.post<PiResponse<any>>(`${this.policyBaseUrl}enable/${name}`, {}, { headers }));
   }
 
   disablePolicy(name: string): Promise<PiResponse<any>> {
     const headers = this.authService.getHeaders();
-    return lastValueFrom(this.http.post<PiResponse<any>>(`${this.policyBaseUrl}disable/${name}`, { headers }));
+    return lastValueFrom(this.http.post<PiResponse<any>>(`${this.policyBaseUrl}disable/${name}`, {}, { headers }));
   }
 
   // -----------------------------------

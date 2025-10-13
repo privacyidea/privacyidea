@@ -1,0 +1,50 @@
+<div class="action-selector-container">
+  <!-- <input
+    type="text"
+    placeholder="Search action..."
+    [ngModel]="policyService.actionFilter()"
+    (ngModelChange)="policyService.actionFilter.set($event)"
+    class="search-input" /> -->
+  <div class="button-row">
+    User Realm:
+    @for (realmOption of this.realmService.realmOptions(); track $index) {
+      <button
+        class="button-item"
+        [class.first-button]="$index === 0"
+        [class.last-button]="$index === this.realmService.realmOptions().length - 1"
+        [class.selected-button]="selectedRealm() === realmOption"
+        (click)="selectRealm(realmOption)">
+        {{ realmOption }}
+      </button>
+    }
+  </div>
+  @if (selectedRealm()) {
+    <div class="button-row">
+      User Resolver:
+      @for (realmOption of this.realmService.realmOptions(); track $index) {
+        <button
+          class="button-item"
+          [class.first-button]="$index === 0"
+          [class.last-button]="$index === this.realmService.realmOptions().length - 1"
+          [class.selected-button]="selectedRealm() === realmOption"
+          (click)="selectRealm(realmOption)">
+          {{ realmOption }}
+        </button>
+      }
+    </div>
+  }
+
+  <div class="add-action-details">
+    <div class="policy-action-items">
+      @for (actionName of policyService.getActionNamesOfSelectedGroup(); track actionName) {
+        <div
+          class="policy-action-item"
+          [class.policy-action-item-selected]="policyService.selectedAction()?.name === actionName"
+          (click)="policyService.selectActionByName(actionName)">
+          <span class="detail-label">{{ actionName }}</span>
+          <mat-icon>add_circle_outline</mat-icon>
+        </div>
+      }
+    </div>
+  </div>
+</div>

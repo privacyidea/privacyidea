@@ -19,7 +19,7 @@
 import { Component, EventEmitter, input, Output, OnInit, linkedSignal, WritableSignal } from "@angular/core";
 
 import { MatButtonModule } from "@angular/material/button";
-import { parseBooleanValue } from "../../../../utils/parse-boolean-value";
+import { parseBooleanValue } from "../../../../../utils/parse-boolean-value";
 
 @Component({
   selector: "app-bool-select-buttons",

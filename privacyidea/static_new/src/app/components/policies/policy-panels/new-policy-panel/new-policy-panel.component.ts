@@ -6,12 +6,12 @@ import { MatButtonToggleModule } from "@angular/material/button-toggle";
 import { MatCardModule } from "@angular/material/card";
 import { MatExpansionModule, MatExpansionPanel } from "@angular/material/expansion";
 import { MatIconModule } from "@angular/material/icon";
-import { PolicyService } from "../../../services/policies/policies.service";
-import { HorizontalWheelComponent } from "../../shared/horizontal-wheel/horizontal-wheel.component";
-import { ActionSelectorComponent } from "./action-selector/action-selector.component";
-import { ActionDetailComponent } from "./action-detail/action-detail.component";
-import { SelectedActionsListComponent } from "./selected-actions-list/selected-actions-list.component";
-import { PolicyDescriptionComponent } from "./policy-description/policy-description.component";
+import { PolicyService } from "../../../../services/policies/policies.service";
+import { HorizontalWheelComponent } from "../../../shared/horizontal-wheel/horizontal-wheel.component";
+import { ActionSelectorComponent } from "../action-tab/action-selector/action-selector.component";
+import { ActionDetailComponent } from "../action-tab/action-detail/action-detail.component";
+import { SelectedActionsListComponent } from "../action-tab/selected-actions-list/selected-actions-list.component";
+import { PolicyDescriptionComponent } from "../action-tab/policy-description/policy-description.component";
 
 type Tab = "actions" | "conditions";
 

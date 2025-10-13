@@ -1,17 +1,18 @@
-import { Component, computed, inject, Input, input, signal, WritableSignal } from "@angular/core";
+import { Component, inject, Input, input, signal, WritableSignal } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { MatCardModule } from "@angular/material/card";
 import { MatIconModule } from "@angular/material/icon";
 import { MatButtonModule } from "@angular/material/button";
 import { MatButtonToggleModule } from "@angular/material/button-toggle";
-import { PolicyDetail, PolicyService } from "../../../services/policies/policies.service";
+import { PolicyDetail, PolicyService } from "../../../../services/policies/policies.service";
 import { FormsModule } from "@angular/forms";
-import { ActionSelectorComponent } from "../new-policy-panel/action-selector/action-selector.component";
-import { ActionDetailComponent } from "../new-policy-panel/action-detail/action-detail.component";
-import { PolicyDescriptionComponent } from "../new-policy-panel/policy-description/policy-description.component";
-import { SelectedActionsListComponent } from "../new-policy-panel/selected-actions-list/selected-actions-list.component";
+import { ActionSelectorComponent } from "../action-tab/action-selector/action-selector.component";
+import { ActionDetailComponent } from "../action-tab/action-detail/action-detail.component";
+import { PolicyDescriptionComponent } from "../action-tab/policy-description/policy-description.component";
+import { SelectedActionsListComponent } from "../action-tab/selected-actions-list/selected-actions-list.component";
 import { MatExpansionModule } from "@angular/material/expansion";
-import { HorizontalWheelComponent } from "../../shared/horizontal-wheel/horizontal-wheel.component";
+import { HorizontalWheelComponent } from "../../../shared/horizontal-wheel/horizontal-wheel.component";
+import { MatSlideToggleModule } from "@angular/material/slide-toggle";
 
 type Tab = "actions" | "conditions";
 
@@ -30,12 +31,21 @@ type Tab = "actions" | "conditions";
     PolicyDescriptionComponent,
     SelectedActionsListComponent,
     MatExpansionModule,
-    HorizontalWheelComponent
+    HorizontalWheelComponent,
+    MatSlideToggleModule
   ],
   templateUrl: "./policy-panel.component.html",
   styleUrl: "./policy-panel.component.scss"
 })
 export class PolicyPanelComponent {
+  togglePolicyActive(policy: PolicyDetail, activate: boolean) {
+    if (activate) {
+      this.policyService.enablePolicy(policy.name);
+    } else {
+      this.policyService.disablePolicy(policy.name);
+    }
+  }
+
   canSavePolicy(): boolean {
     const policy = this.policyService.selectedPolicy();
     if (!policy) return false;

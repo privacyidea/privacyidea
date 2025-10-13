@@ -3,8 +3,8 @@ import { CommonModule } from "@angular/common";
 import { MatIconModule } from "@angular/material/icon";
 import { MatButtonModule } from "@angular/material/button";
 import { MatSlideToggleModule } from "@angular/material/slide-toggle";
-import { PolicyService } from "../../../../services/policies/policies.service";
-import { parseBooleanValue } from "../../../../utils/parse-boolean-value";
+import { PolicyService } from "../../../../../services/policies/policies.service";
+import { parseBooleanValue } from "../../../../../utils/parse-boolean-value";
 
 @Component({
   selector: "app-selected-actions-list",

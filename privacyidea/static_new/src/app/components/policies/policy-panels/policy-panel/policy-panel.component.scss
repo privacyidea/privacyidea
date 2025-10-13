@@ -1,0 +1,225 @@
+@use "../../../../../styles" as styles;
+@use "@angular/material" as mat;
+
+// --- Main Layout ---
+
+.policy-grid-container {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: 2fr 1fr;
+  grid-template-rows: auto auto 1fr;
+  grid-template-areas:
+    "buttons buttons"
+    "content-header detail-header"
+    "content-body detail-body";
+}
+
+.grid-area-buttons {
+  grid-area: buttons;
+  min-width: 0;
+}
+.grid-area-content-header {
+  grid-area: content-header;
+  min-width: 0;
+}
+.grid-area-content-body {
+  grid-area: content-body;
+  min-width: 0;
+}
+.grid-area-detail-header {
+  grid-area: detail-header;
+  min-width: 0;
+}
+.grid-area-detail-body {
+  grid-area: detail-body;
+  min-width: 0;
+}
+
+.selected-content {
+  grid-area: content;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.placeholder-for-right-column {
+  grid-area: right-column;
+}
+
+// --- Tab Buttons ---
+.tab-buttons {
+  grid-area: buttons;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+.tab-button {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--mat-sys-on-surface-variant);
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  border-radius: 20px;
+  padding: 8px 16px;
+  transition:
+    background-color 0.2s ease-in-out,
+    color 0.2s ease-in-out;
+}
+
+.tab-button-active {
+  background-color: var(--mat-sys-primary);
+  color: var(--mat-sys-on-primary);
+}
+
+.policy-name-input {
+  background-color: transparent;
+  border: none;
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 0;
+  box-sizing: border-box;
+  font-size: 1rem;
+  margin-left: 2px;
+  padding: 8px 0;
+  width: 100%;
+}
+
+// --- Content Sections ---
+.actions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.action-card {
+  padding: 4px 16px;
+  border-radius: 4px;
+  box-shadow:
+    0px 2px 4px -1px rgba(0, 0, 0, 0.2),
+    0px 4px 5px 0px rgba(0, 0, 0, 0.14),
+    0px 1px 10px 0px rgba(0, 0, 0, 0.12);
+}
+
+.conditions-list {
+  padding: 16px;
+  border-radius: 4px;
+  box-shadow:
+    0px 2px 4px -1px rgba(0, 0, 0, 0.2),
+    0px 4px 5px 0px rgba(0, 0, 0, 0.14),
+    0px 1px 10px 0px rgba(0, 0, 0, 0.12);
+}
+
+.add-action-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+  border-radius: 4px;
+  box-shadow:
+    0px 2px 4px -1px rgba(0, 0, 0, 0.2),
+    0px 4px 5px 0px rgba(0, 0, 0, 0.14),
+    0px 1px 10px 0px rgba(0, 0, 0, 0.12);
+}
+
+.add-action-details {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 200px;
+  overflow-y: auto;
+  padding-right: 8px; /* Adds space for the scrollbar to prevent content from touching the edge */
+}
+
+.search-input {
+  border: none;
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 0;
+  padding: 8px 0;
+  font-size: 1rem;
+  background-color: transparent;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.search-input:focus {
+  outline: none;
+  border-bottom-color: var(--mat-sys-primary);
+}
+
+.add-action-button {
+  align-self: flex-end;
+  color: var(--mat-sys-primary);
+}
+
+// --- Detail Rows ---
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.detail-row:not(:last-child) {
+  padding-bottom: 8px;
+}
+
+.detail-row:not(:first-child) {
+  padding-top: 8px;
+}
+
+.detail-label {
+  color: var(--mat-sys-on-surface);
+  font-weight: 500;
+  margin-right: 16px;
+}
+
+.detail-value {
+  color: var(--mat-sys-on-surface-variant);
+  text-align: right;
+  flex-grow: 1;
+}
+
+.delete-action-button {
+  margin-left: 8px;
+  flex-shrink: 0;
+}
+
+.policy-card {
+  border-radius: 4px;
+
+  mat-expansion-panel {
+    border-radius: 4px;
+  }
+
+  mat-expansion-panel-header {
+    padding: 0 16px;
+  }
+
+  .header-description {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+  }
+
+  .policy-scope-label {
+    color: var(--sys-material-on-surface-variant);
+    font-size: 0.85rem;
+    font-weight: 400;
+    text-align: center;
+    width: 300px;
+    // margin-left: -50px; // Negative margin to shift it left
+  }
+
+  .policy-actions {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+
+    button {
+      background: transparent;
+      border: none;
+      cursor: pointer;
+    }
+  }
+}

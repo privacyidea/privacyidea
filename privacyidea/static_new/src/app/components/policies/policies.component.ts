@@ -3,8 +3,8 @@ import { CommonModule } from "@angular/common";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { PolicyService } from "../../services/policies/policies.service";
 import { MatIconModule } from "@angular/material/icon";
-import { PolicyPanelComponent } from "./policy-panel/policy-panel.component";
-import { NewPolicyPanelComponent } from "./new-policy-panel/new-policy-panel.component";
+import { PolicyPanelComponent } from "./policy-panels/policy-panel/policy-panel.component";
+import { NewPolicyPanelComponent } from "./policy-panels/new-policy-panel/new-policy-panel.component";
 
 @Component({
   selector: "app-policies",

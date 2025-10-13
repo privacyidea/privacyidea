@@ -3,7 +3,7 @@ import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { FormsModule } from "@angular/forms";
 import { TextFieldModule } from "@angular/cdk/text-field";
-import { PolicyService } from "../../../../services/policies/policies.service";
+import { PolicyService } from "../../../../../services/policies/policies.service";
 
 @Component({
   selector: "app-policy-description",
