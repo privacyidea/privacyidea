@@ -1,1 +1,11 @@
-<p i18n>user-details works!</p>
+<div
+  appScrollToTop
+  aria-label="Details"
+  class="details-container"
+  i18n-aria-label>
+  <div class="details-header">
+    <h3 i18n>Details for User:</h3>
+    <h3 style="color: var(--mat-sys-primary)">{{ userService.detailsUsername() }}</h3>
+    <h3>in realm: {{ userService.selectedUserRealm() }}</h3>
+  </div>
+</div>

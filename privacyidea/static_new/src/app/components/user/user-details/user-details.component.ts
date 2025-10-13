@@ -16,13 +16,22 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component } from "@angular/core";
+import { Component, inject } from "@angular/core";
+import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
+import { UserService, UserServiceInterface } from "../../../services/user/user.service";
+import { ROUTE_PATHS } from "../../../route_paths";
+import { MatButtonModule } from "@angular/material/button";
 
 @Component({
   selector: "app-user-details",
-  imports: [],
+  imports: [
+    ScrollToTopDirective,
+    MatButtonModule
+  ],
   templateUrl: "./user-details.component.html",
   styleUrl: "./user-details.component.scss"
 })
 export class UserDetailsComponent {
+  protected readonly ROUTE_PATHS = ROUTE_PATHS;
+  protected readonly userService: UserServiceInterface = inject(UserService);
 }

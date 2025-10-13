@@ -47,25 +47,27 @@
             <th
               *matHeaderCellDef
               attr.aria-label="{{ column.label }} Header"
-              mat-sort-header
-              mat-header-cell>
+              mat-header-cell
+              mat-sort-header>
               {{ column.label }}
             </th>
             <td
               *matCellDef="let element; let row"
-              attr.aria-label="{{ column.label }} Cell"
-              mat-cell
               [ngClass]="{
                 'width-18rem': column.key === 'description',
                 'table-checkbox': column.key === 'select'
-              }">
+              }"
+              attr.aria-label="{{ column.label }} Cell"
+              mat-cell>
               <div>
                 @switch (column.key) {
                   @case ("username") {
-                    <span
-                      attr.aria-label="{{ column.label }} Link">
+                    <a
+                      (click)="onClickUsername(element)"
+                      attr.aria-label="{{ column.label }} Link"
+                      routerLink="/users/details/{{ element.username }}">
                       {{ element[column.key] }}
-                    </span>
+                   </a>
                   }
                   @default {
                     <span>

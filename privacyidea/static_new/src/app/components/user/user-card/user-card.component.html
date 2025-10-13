@@ -11,7 +11,7 @@
             [ngClass]="contentService.routeUrl() === ROUTE_PATHS.USERS ? 'card-button-active' : 'card-button'"
             [routerLink]="ROUTE_PATHS.USERS"
             mat-flat-button>
-            <mat-icon>person</mat-icon>
+            <mat-icon>person_search</mat-icon>
             Overview
           </button>
         </mat-list-item>
@@ -57,19 +57,43 @@
         <br />
         <mat-divider />
         <br />
-
-        <mat-list-item class="height-auto">
-          <mat-form-field class="width-100">
-            <mat-label>Select Realm of User</mat-label>
-            <mat-select
-              [(ngModel)]="userService.selectedUserRealm"
-              [value]="userService.selectedUserRealm()">
-              @for (option of realmService.realmOptions(); track option) {
-                <mat-option [value]="option">{{ option }}</mat-option>
-              }
-            </mat-select>
-          </mat-form-field>
-        </mat-list-item>
+        @if (contentService.routeUrl() === ROUTE_PATHS.USERS) {
+          <mat-list-item class="height-auto">
+            <mat-form-field class="width-100">
+              <mat-label>Select Realm of User</mat-label>
+              <mat-select
+                [(ngModel)]="userService.selectedUserRealm"
+                [value]="userService.selectedUserRealm()">
+                @for (option of realmService.realmOptions(); track option) {
+                  <mat-option [value]="option">{{ option }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+          </mat-list-item>
+        } @else {
+          <mat-list-item>
+            <button
+              [ngClass]="contentService.routeUrl().startsWith(ROUTE_PATHS.USERS)
+             && contentService.routeUrl() !== ROUTE_PATHS.USERS
+             ? 'card-button-active' : 'card-button'"
+              [routerLink]="ROUTE_PATHS.USERS"
+              mat-flat-button>
+              <mat-icon>sensor_occupied</mat-icon>
+              User Details
+            </button>
+          </mat-list-item>
+          <mat-list-item>
+            <button
+              (click)="onClickManageSearch()"
+              [routerLink]="[ROUTE_PATHS.AUDIT]"
+              class="card-button"
+              i18n
+              mat-flat-button>
+              <mat-icon>manage_search</mat-icon>
+              Show in Audit Log
+            </button>
+          </mat-list-item>
+        }
       </mat-list>
     </div>
   </mat-card-content>
