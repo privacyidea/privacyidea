@@ -18,7 +18,7 @@ from privacyidea.lib.user import (User)
 from privacyidea.lib.tokens.totptoken import HotpTokenClass
 from privacyidea.lib.tokens.yubikeytoken import YubikeyTokenClass
 from privacyidea.lib.tokens.registrationtoken import RegistrationTokenClass
-from privacyidea.lib.tokenclass import DATE_FORMAT
+from privacyidea.lib.tokenclass import DATE_FORMAT, AUTH_DATE_FORMAT
 from privacyidea.models import (Token, Policy, Challenge, AuthCache, db, TokenOwner, Realm)
 from privacyidea.lib.authcache import _hash_password
 from privacyidea.lib.config import (set_privacyidea_config,
@@ -126,7 +126,7 @@ OTPs = ["755224",
 
 class AuthorizationPolicyTestCase(MyApiTestCase):
     """
-    This tests the catch all resolvers and resolvers which also contain the
+    This tests the catch-all resolvers and resolvers which also contain the
     user.
     A user may authenticate with the default resolver, but the user may also
     be contained in other resolver. we check these other resolvers, too.
@@ -3194,7 +3194,7 @@ class ValidateAPITestCase(MyApiTestCase):
         token.set_failcount(5)
 
         # set a chalresp policy for HOTP
-        set_policy("policy", scope=SCOPE.AUTH, action={PolicyAction.CHALLENGERESPONSE: 'hotp'})
+        set_policy("policy", scope=SCOPE.AUTH, action=f"{PolicyAction.CHALLENGERESPONSE}=hotp")
 
         # create the challenge by authenticating with the OTP PIN
         with self.app.test_request_context('/validate/check',
@@ -3274,7 +3274,8 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertEqual(result["authentication"], "CHALLENGE")
 
         # Disable the spass and hotp token for authentication
-        set_policy(name="disable_some_token", scope=SCOPE.AUTH, action=f"{PolicyAction.DISABLED_TOKEN_TYPES}=spass hotp")
+        set_policy(name="disable_some_token", scope=SCOPE.AUTH,
+                   action=f"{PolicyAction.DISABLED_TOKEN_TYPES}=spass hotp")
 
         # The very same auth attempt must now be rejected
         with self.app.test_request_context(
@@ -3345,7 +3346,8 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertEqual(400, res.status_code, res)
             error = res.json.get("result").get("error")
             self.assertEqual(904, error.get("code"), error)
-            self.assertEqual(f"ERR904: User <eve.{self.resolvername1}@{self.realm3}> does not exist.", error.get("message"),
+            self.assertEqual(f"ERR904: User <eve.{self.resolvername1}@{self.realm3}> does not exist.",
+                             error.get("message"),
                              error)
 
         # Pass username, realm, and resolver
@@ -3356,7 +3358,8 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertEqual(400, res.status_code, res)
             error = res.json.get("result").get("error")
             self.assertEqual(904, error.get("code"), error)
-            self.assertEqual(f"ERR904: User <eve.{self.resolvername1}@{self.realm1}> does not exist.", error.get("message"),
+            self.assertEqual(f"ERR904: User <eve.{self.resolvername1}@{self.realm1}> does not exist.",
+                             error.get("message"),
                              error)
 
         # --- Realm of user was deleted ---
@@ -3423,6 +3426,113 @@ class ValidateAPITestCase(MyApiTestCase):
 
         token.delete_token()
         token_realm1.delete_token()
+
+    def test_40_hide_specific_error_message(self):
+        """
+        Currently, the HTTP Status codes that are returned are mixed 200 and 401.
+        # TODO we need to consistently apply 401 for any kind of authentication failure, 403 for authorization failure
+        # TODO and 200 only for successful requests
+
+        This test checks that the message is generic, but the status code checks are not worth much currently.
+        """
+        set_policy(name="hide_error_message", scope=SCOPE.AUTH, action=f"{PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE}")
+        # User does not exist: 401
+        with self.app.test_request_context('/validate/check', method="POST",
+                                           data={
+                                               "user": "cornelius2",
+                                               "pass": "1234"
+                                           }):
+            res = self.app.full_dispatch_request()
+            self._assert_unspecific_message_with_401(res)
+
+        # User cornelius is in the realm that will be created
+        self.setUp_user_realms()
+        # Undo changes from other tests...
+        set_default_realm(self.realm1)
+        # User has no tokens assigned, currently returns 200 should be 401
+        with self.app.test_request_context('/validate/check', method="POST",
+                                           data={
+                                               "user": "cornelius",
+                                               "pass": "1234"
+                                           }):
+            res = self.app.full_dispatch_request()
+            self._assert_unspecific_message_with_200(res)
+
+        token = init_token({"type": "spass", "pin": "21"}, user=User("cornelius", self.realm1))
+
+        # Wrong OTP: currently 200, should be 401
+        with self.app.test_request_context('/validate/check', method="POST",
+                                           data={
+                                               "user": "cornelius",
+                                               "pass": "1234"
+                                           }):
+            res = self.app.full_dispatch_request()
+            self._assert_unspecific_message_with_200(res)
+
+        token.set_failcount(10)
+        # Failcount exceeded: currently 200, should be 401
+        with self.app.test_request_context('/validate/check', method="POST",
+                                           data={
+                                               "user": "cornelius",
+                                               "pass": "21"
+                                           }):
+            res = self.app.full_dispatch_request()
+            self._assert_unspecific_message_with_200(res)
+
+        token.set_failcount(0)
+
+        # lastauth: currently 200, should be 401
+        now = datetime.datetime.now(datetime.timezone.utc)
+        thirty_days_ago = now - datetime.timedelta(days=30)
+        token.add_tokeninfo(PolicyAction.LASTAUTH, thirty_days_ago.strftime(AUTH_DATE_FORMAT))
+        set_policy("lastauth", scope=SCOPE.AUTHZ, action=f"{PolicyAction.LASTAUTH}=7d")
+        with self.app.test_request_context('/validate/check', method="POST",
+                                           data={
+                                               "user": "cornelius",
+                                               "pass": "21"
+                                           }):
+            res = self.app.full_dispatch_request()
+            self._assert_unspecific_message_with_200(res)
+        delete_policy("lastauth")
+
+        # Successful authentication to double-check: currently 200, should be 200
+        with self.app.test_request_context('/validate/check', method="POST",
+                                           data={
+                                               "user": "cornelius",
+                                               "pass": "21"
+                                           }):
+            res = self.app.full_dispatch_request()
+            result = res.json.get("result")
+            self.assertEqual("ACCEPT", result.get("authentication"))
+            self.assertTrue(result.get("value"))
+
+        delete_policy("hide_error_message")
+
+    def _assert_unspecific_message_with_401(self, response):
+        self.assertEqual(401, response.status_code, response.json)
+        result = response.json.get("result")
+        error = result.get("error")
+        self.assertEqual(4031, error.get("code"))
+        self.assertEqual("Authentication failed.", error.get("message"))
+        self.assertEqual(2, len(error))
+        detail = response.json.get("detail")
+        self.assertEqual("Authentication failed.", detail.get("message"))
+        self.assertIn("threadid", detail)
+        self.assertEqual(2, len(detail))
+
+    def _assert_unspecific_message_with_200(self, response):
+        """
+        Responses with 200 do not contain the error section.
+        """
+        self.assertEqual(200, response.status_code, response.json)
+        detail = response.json.get("detail")
+        self.assertEqual("Authentication failed.", detail.get("message"), detail)
+        self.assertIn("threadid", detail)
+        self.assertEqual(2, len(detail), detail)
+
+        result = response.json.get("result")
+        self.assertEqual("REJECT", result.get("authentication"))
+        self.assertFalse(result.get("value"))
 
 
 class RegistrationValidity(MyApiTestCase):

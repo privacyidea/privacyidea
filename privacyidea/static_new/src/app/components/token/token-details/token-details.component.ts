@@ -329,7 +329,7 @@ export class TokenDetailsComponent {
   saveContainer() {
     const selectedContainer = this.containerService.selectedContainer();
     if (selectedContainer) {
-      this.containerService.assignContainer(this.tokenSerial(), selectedContainer).subscribe({
+      this.containerService.addToken(this.tokenSerial(), selectedContainer).subscribe({
         next: () => {
           this.tokenDetailResource.reload();
         }
@@ -337,10 +337,10 @@ export class TokenDetailsComponent {
     }
   }
 
-  deleteContainer() {
+  removeFromContainer() {
     const selectedContainer = this.containerService.selectedContainer();
     if (selectedContainer) {
-      this.containerService.unassignContainer(this.tokenSerial(), selectedContainer).subscribe({
+      this.containerService.removeToken(this.tokenSerial(), selectedContainer).subscribe({
         next: () => {
           this.tokenDetailResource.reload();
         }
@@ -359,8 +359,7 @@ export class TokenDetailsComponent {
 
   containerSelected(containerSerial: string) {
     this.isProgrammaticTabChange.set(true);
-    this.router.navigateByUrl(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + containerSerial);
-    this.containerSerial.set(containerSerial);
+    this.contentService.containerSelected(containerSerial);
   }
 
   openSshMachineAssignDialog() {

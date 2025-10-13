@@ -18,14 +18,13 @@
  **/
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
-import { HttpResourceRef, httpResource } from "@angular/common/http";
-import { Injectable, Signal, WritableSignal, computed, inject, linkedSignal, signal } from "@angular/core";
+import { httpResource, HttpResourceRef } from "@angular/common/http";
+import { computed, inject, Injectable, linkedSignal, Signal, signal, WritableSignal } from "@angular/core";
 import { RealmService, RealmServiceInterface } from "../realm/realm.service";
 import { TokenService, TokenServiceInterface } from "../token/token.service";
 
 import { FilterValue } from "../../core/models/filter_value";
 import { PiResponse } from "../../app.component";
-import { Sort } from "@angular/material/sort";
 import { environment } from "../../../environments/environment";
 import { ROUTE_PATHS } from "../../route_paths";
 
@@ -66,7 +65,9 @@ export interface UserServiceInterface {
   pageSize: WritableSignal<number>;
   apiFilterOptions: string[];
   advancedApiFilterOptions: string[];
+
   resetFilter(): void;
+
   handleFilterInput($event: Event): void;
 
   displayUser(user: UserData | string): string;
@@ -206,26 +207,35 @@ export class UserService implements UserServiceInterface {
     computation: (source, previous) => source?.result?.value ?? previous?.value ?? []
   });
   selectedUser = computed<UserData | null>(() => {
-    var userName = "";
+    let userName = "";
+    let user = null;
     if (this.authService.role() === "user") {
       userName = this.authService.username();
+      user = {
+        "username": userName,
+        "description": "",
+        "editable": false,
+        "email": "",
+        "givenname": "",
+        "mobile": "",
+        "phone": "",
+        "resolver": "",
+        "surname": "",
+        "userid": ""
+      } as UserData;
     } else {
       userName = this.selectionUsernameFilter();
+      if (!userName) {
+        return null;
+      }
+      const users = this.users();
+      user = users.find((user) => user.username === userName) || null;
     }
-    if (!userName) {
-      return null;
-    }
-    const users = this.users();
-    const user = users.find((user) => user.username === userName);
-    if (user) {
-      return user;
-    } else {
-      return null;
-    }
+    return user;
   });
   allUsernames = computed<string[]>(() => this.users().map((user) => user.username));
   selectionFilteredUsers = computed<UserData[]>(() => {
-    var userFilter = this.selectionFilter();
+    let userFilter = this.selectionFilter();
     if (typeof userFilter !== "string" || userFilter.trim() === "") {
       return this.users();
     }
@@ -244,6 +254,7 @@ export class UserService implements UserServiceInterface {
   resetFilter(): void {
     this.apiUserFilter.set(new FilterValue());
   }
+
   handleFilterInput($event: Event): void {
     const input = $event.target as HTMLInputElement;
     const newFilter = this.apiUserFilter().copyWith({ value: input.value });

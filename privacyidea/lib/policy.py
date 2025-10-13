@@ -2591,6 +2591,10 @@ def get_static_policy_definitions(scope=None):
                 'desc': _('Store the last used token type per user and application in the custom user attributes. '
                           'For the next authentication the last used token type is used to identify the preferred '
                           'client mode.'),
+            },
+            PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE: {
+                'type': 'bool',
+                'desc': _('Enable to return an unspecific error message for failed authentications.')
             }
         },
         SCOPE.AUTHZ: {

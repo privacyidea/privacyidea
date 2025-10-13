@@ -56,8 +56,6 @@ export class EnrollTiqrComponent implements OnInit {
     return !!(cfg?.["tiqr.infoUrl"] && cfg?.["tiqr.logoUrl"] && cfg?.["tiqr.regServer"]);
   });
 
-  tiqrForm = new FormGroup({});
-
   ngOnInit(): void {
     this.additionalFormFieldsChange.emit({});
     this.clickEnrollChange.emit(this.onClickEnroll);

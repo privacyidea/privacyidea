@@ -34,7 +34,7 @@
         </div>
         <div class="enroll-button-container">
           <button
-            [disabled]="formGroupSignal().invalid || !tokenService.selectedTokenType()"
+            [disabled]="!tokenService.selectedTokenType()"
             [ngClass]="{
               'card-button-disabled': formGroupSignal().invalid || !tokenService.selectedTokenType(),
               'card-button': true
