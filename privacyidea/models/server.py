@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from sqlalchemy import Sequence
+from sqlalchemy import Sequence, CheckConstraint
 
 from privacyidea.models import db
 from privacyidea.models.utils import MethodsMixin
@@ -72,10 +72,14 @@ class RADIUSServer(MethodsMixin, db.Model):
     * timeout in seconds (default 5)
     * retries (default 3)
 
-    These RADIUS server definition can be used in RADIUS tokens or in a
+    These RADIUS server definitions can be used in RADIUS tokens or in a
     radius passthru policy.
     """
     __tablename__ = 'radiusserver'
+    __table_args__ = (
+        CheckConstraint("options IS JSON", name="radiusserver_options_is_json",
+                        _create_rule=lambda compiler: compiler.dialect.name == "oracle"),
+    )
     id = db.Column(db.Integer, Sequence("radiusserver_seq"), primary_key=True)
     # This is a name to refer to
     identifier = db.Column(db.Unicode(255), nullable=False, unique=True)

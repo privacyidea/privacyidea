@@ -1,12 +1,12 @@
 import logging
-
 from testfixtures import LogCapture
 
 from privacyidea.lib.container import create_container_template, get_template_obj
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policies.conditions import ConditionSection, ConditionHandleMissingData
-from privacyidea.lib.policy import (set_policy, SCOPE, delete_policy, rename_policy)
+from privacyidea.lib.policy import (set_policy, SCOPE, delete_policy,
+                                    rename_policy, get_policies)
 from privacyidea.lib.token import init_token, remove_token
 from privacyidea.lib.user import User
 from privacyidea.lib.utils.compare import PrimaryComparators
@@ -158,6 +158,54 @@ class APIPolicyTestCase(MyApiTestCase):
             self.assertEqual(pol1.get("pinode"), ["Node1"])
 
         delete_policy("polpinode")
+
+        # Required parameters
+        # set policy without scope fails
+        with self.app.test_request_context('/policy/pol1',
+                                           method='POST',
+                                           data={"action": PolicyAction.NODETAILFAIL,
+                                                 "client": "10.1.2.3",
+                                                 "check_all_resolvers": "true",
+                                                 "realm": self.realm1,
+                                                 "priority": 3,
+                                                 "description": "This is a test policy"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 400, res)
+            error = res.json['result']['error']
+            self.assertEqual(error['code'], 905)
+            self.assertIn("Missing parameter: scope", error['message'])
+
+        # set policy without action fails
+        with self.app.test_request_context('/policy/pol1',
+                                           method='POST',
+                                           data={"scope": SCOPE.ADMIN,
+                                                 "client": "10.1.2.3",
+                                                 "check_all_resolvers": "true",
+                                                 "realm": self.realm1,
+                                                 "priority": 3,
+                                                 "description": "This is a test policy"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 400, res)
+            error = res.json['result']['error']
+            self.assertEqual(error['code'], 905)
+            self.assertIn("Missing parameter: action", error['message'])
+
+        # Only for scope USER not setting an action is allowed to restrict the users to only see their own tokens
+        with self.app.test_request_context('/policy/pol1',
+                                           method='POST',
+                                           data={"scope": SCOPE.USER},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+
+        policy = get_policies(name="pol1")[0]
+        self.assertEqual(policy.get("scope"), SCOPE.USER)
+        self.assertEqual({}, policy.get("action"))
+
+        delete_policy("pol1")
+
 
     def test_02_set_policy_conditions(self):
         self.setUp_user_realms()

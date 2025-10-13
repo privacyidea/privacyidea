@@ -172,12 +172,11 @@ class APIConfigTestCase(MyApiTestCase):
 
         # setting policy with a missing action
         with self.app.test_request_context('/policy/enroll',
-                                           data={'scope': SCOPE.USER,
+                                           data={'scope': SCOPE.AUTH,
                                                  'client': "127.12.12.12",
                                                  'active': True},
                                            method='POST',
                                            headers={'Authorization': self.at}):
-            # An invalid policy name raises an exception
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 400, res)
             error = res.json.get("result").get("error")
