@@ -152,7 +152,9 @@ class Policy(TimestampMethodsMixin, db.Model):
              "priority": self.priority,
              "description": self.get_policy_description(),
              "user_agents": self._split_string(self.user_agents)}
-        action_list = [x.strip().split("=", 1) for x in re.split(r'(?<!\\),', self.action or "")]
+        action_list = []
+        if self.action:
+            action_list = [x.strip().split("=", 1) for x in re.split(r'(?<!\\),', self.action or "")]
         action_dict = {}
         for a in action_list:
             if len(a) > 1:

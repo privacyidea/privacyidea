@@ -3,28 +3,30 @@ import datetime
 import json
 import logging
 
+import mock
+from dateutil.tz import tzlocal
 from testfixtures import log_capture, LogCapture
 
 from privacyidea.api.lib.utils import verify_auth_token
-from privacyidea.lib.challenge import get_challenges
-from privacyidea.models import Realm
-from .base import MyApiTestCase, OverrideConfigTestCase
-import mock
-from privacyidea.lib.config import set_privacyidea_config, SYSCONF
-from privacyidea.lib.policy import (set_policy, SCOPE, REMOTE_USER,
-                                    delete_policy)
-from privacyidea.lib.policies.actions import PolicyAction
+from privacyidea.config import TestingConfig
 from privacyidea.lib.auth import create_db_admin
-from privacyidea.lib.resolver import save_resolver, delete_resolver
-from privacyidea.lib.realm import (set_realm, set_default_realm, delete_realm,
-                                   get_default_realm)
+from privacyidea.lib.challenge import get_challenges
+from privacyidea.lib.config import set_privacyidea_config, SYSCONF
+from privacyidea.lib.error import ResourceNotFoundError
 from privacyidea.lib.event import set_event, delete_event
 from privacyidea.lib.eventhandler.base import CONDITION
+from privacyidea.lib.policies.actions import PolicyAction
+from privacyidea.lib.policy import set_policy, SCOPE, REMOTE_USER, delete_policy
+from privacyidea.lib.realm import (set_realm, set_default_realm, delete_realm,
+                                   get_default_realm)
+from privacyidea.lib.resolver import save_resolver, delete_resolver
 from privacyidea.lib.token import get_tokens, remove_token, init_token, get_one_token
+from privacyidea.lib.tokenclass import FAILCOUNTER_EXCEEDED, DATE_FORMAT, FAILCOUNTER_CLEAR_TIMEOUT
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import to_unicode, AUTH_RESPONSE
-from privacyidea.config import TestingConfig
+from privacyidea.models import Realm
 from . import ldap3mock
+from .base import MyApiTestCase, OverrideConfigTestCase
 
 PWFILE = "tests/testdata/passwd-duplicate-name"
 
@@ -809,7 +811,7 @@ class AuthApiTestCase(MyApiTestCase):
             self.assertEqual(401, res.status_code, res.json)
             error = res.json.get("result").get("error")
             self.assertEqual(4031, error.get("code"), error)
-            self.assertEqual(f"Authentication failure. Wrong credentials", error.get("message"), error)
+            self.assertEqual("Authentication failure. Wrong credentials", error.get("message"), error)
             details = res.json.get("detail")
             self.assertEqual("The user has no tokens assigned", details.get("message"), details)
 
@@ -823,7 +825,7 @@ class AuthApiTestCase(MyApiTestCase):
                 self.assertEqual(401, res.status_code, res.json)
                 error = res.json.get("result").get("error")
                 self.assertEqual(4031, error.get("code"), error)
-                self.assertEqual(f"Authentication failure. Wrong credentials", error.get("message"), error)
+                self.assertEqual("Authentication failure. Wrong credentials", error.get("message"), error)
             log_msg = ("Error authenticating user against privacyIDEA: UserError(description='User <hans@realm3> does "
                        "not exist.', id=904)")
             capture.check_present(("privacyidea.lib.auth", "DEBUG", log_msg))
@@ -831,6 +833,210 @@ class AuthApiTestCase(MyApiTestCase):
         token.delete_token()
         token_realm1.delete_token()
         delete_policy("pi-login")
+        Realm.query.filter_by(name=self.realm3).first().delete()
+
+    def test_11_failcounter_exceeded(self):
+        set_policy("pi-login", scope=SCOPE.WEBUI, action=f"{PolicyAction.LOGINMODE}=privacyIDEA")
+        self.setUp_user_realms()
+        user = User("hans", self.realm1)
+        token = init_token({"pin": "123456", "type": "spass"}, user=user)
+        token.set_maxfail(5)
+        token.set_failcount(5)
+        past = datetime.datetime.now(tzlocal()) - datetime.timedelta(minutes=10)
+        token.add_tokeninfo(FAILCOUNTER_EXCEEDED, past.strftime(DATE_FORMAT))
+        # a valid authentication will fail
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": user.login,
+                                                 "password": "123456"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 401, res)
+            result = res.json.get("result")
+            detail = res.json.get("detail")
+            self.assertFalse(result.get("status"))
+            self.assertEqual("Failcounter exceeded", detail.get("message"))
+        self.assertEqual(5, token.get_failcount())
+        # invalid authentication fails with same message
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": user.login,
+                                                 "password": "000000"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 401, res)
+            result = res.json.get("result")
+            detail = res.json.get("detail")
+            self.assertFalse(result.get("status"))
+            self.assertEqual("Failcounter exceeded", detail.get("message"))
+        self.assertEqual(5, token.get_failcount())
+
+        # set timeout
+        set_privacyidea_config(FAILCOUNTER_CLEAR_TIMEOUT, 30)
+        # timeout not expired: same behaviour
+        # a valid authentication will fail
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": user.login,
+                                                 "password": "123456"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 401, res)
+            result = res.json.get("result")
+            detail = res.json.get("detail")
+            self.assertFalse(result.get("status"))
+            self.assertEqual("Failcounter exceeded", detail.get("message"))
+        self.assertEqual(5, token.get_failcount())
+        # invalid authentication fails with same message
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": user.login,
+                                                 "password": "000000"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 401, res)
+            result = res.json.get("result")
+            detail = res.json.get("detail")
+            self.assertFalse(result.get("status"))
+            self.assertEqual("Failcounter exceeded", detail.get("message"))
+        self.assertEqual(5, token.get_failcount())
+
+        # timeout expired
+        set_privacyidea_config(FAILCOUNTER_CLEAR_TIMEOUT, 5)
+        # a valid authentication succeeds and resets failcount to 0
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": user.login,
+                                                 "password": "123456"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            detail = res.json.get("detail")
+            self.assertTrue(result.get("value"))
+            self.assertEqual("matching 1 tokens", detail.get("message"))
+        self.assertEqual(0, token.get_failcount())
+        # an invalid auth also resets the failcount and increase it directly to one due to the invalid auth
+        token.set_failcount(5)
+        token.add_tokeninfo(FAILCOUNTER_EXCEEDED, past.strftime(DATE_FORMAT))
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": user.login,
+                                                 "password": "000000"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 401, res)
+            result = res.json.get("result")
+            detail = res.json.get("detail")
+            self.assertFalse(result.get("status"))
+            self.assertEqual("wrong otp pin", detail.get("message"))
+        self.assertEqual(1, token.get_failcount())
+
+        token.delete_token()
+        delete_policy("pi-login")
+        set_privacyidea_config(FAILCOUNTER_CLEAR_TIMEOUT, 0)
+
+    def test_12_passthru_token_verify(self):
+        """
+        In case the passthru and verify_enrollment policies are set, but the user does not verify the enrollment,
+        he will not be able to login anymore to complete the enrollment. For this case, an event handler can be used
+        to delete a token in the rollout_state verify before the authentication to allow the enrollment of a new token.
+        """
+        set_policy("passthru", scope=SCOPE.AUTH,
+                   action=f"{PolicyAction.PASSTHRU}=userstore,{PolicyAction.OTPPIN}=userstore")
+        set_policy("login-mode", scope=SCOPE.WEBUI, action=f"{PolicyAction.LOGINMODE}=privacyIDEA")
+        set_policy("verify", scope=SCOPE.ENROLL, action=f"{PolicyAction.VERIFY_ENROLLMENT}=hotp")
+        event_id = set_event("delete_verify", event="auth", handlermodule="Token", action="delete",
+                  conditions={"rollout_state": "verify"}, position="pre")
+        self.setUp_user_realms()
+
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "cornelius",
+                                                 "password": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"), result)
+            auth_token = result.get("value").get("token")
+
+        # Enroll Token
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           headers={"Authorization": auth_token},
+                                           data={"type": "hotp"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"), result)
+            serial = res.json.get("detail").get("serial")
+            self.assertIsNotNone(serial, result)
+
+        first_token = get_one_token(serial=serial)
+        self.assertEqual("verify", first_token.rollout_state)
+
+        # New authentication succeeds
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "cornelius",
+                                                 "password": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"), result)
+            auth_token = result.get("value").get("token")
+
+        # enrolled token is deleted
+        self.assertRaises(ResourceNotFoundError, get_one_token, serial=serial)
+
+        # Enroll new token
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           headers={"Authorization": auth_token},
+                                           data={"type": "hotp"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"), result)
+            serial = res.json.get("detail").get("serial")
+            self.assertIsNotNone(serial, result)
+
+        new_token = get_one_token(serial=serial)
+        self.assertEqual("verify", new_token.rollout_state)
+
+        # verify token
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           headers={"Authorization": auth_token},
+                                           data={"type": "hotp", "serial": serial, "verify": new_token.get_otp()[2]}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"), result)
+
+        self.assertEqual("enrolled", new_token.rollout_state)
+
+        # auth without token now fails
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "cornelius",
+                                                 "password": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 401, res)
+
+        # token still exists
+        self.assertIsNotNone(get_one_token(serial=serial))
+
+        # auth with token succeeds
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "cornelius",
+                                                 "password": "test" + new_token.get_otp()[2]}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"), result)
+
+        # clean up
+        new_token.delete_token()
+        delete_policy("passthru")
+        delete_policy("login-mode")
+        delete_policy("verify")
+        delete_event(event_id)
 
     def test_11_hide_specific_error_message(self):
         # Wrong password results in 401 with error 4301

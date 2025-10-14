@@ -236,6 +236,13 @@ class HTTPResolverTestCase(MyTestCase):
         self.assertTrue("httpresolver" in r_type)
         r_type = instance.getResolverType()
         self.assertEqual("httpresolver", r_type)
+        self.assertEqual(self.ENDPOINT, instance.config_get_user_by_id.get(ENDPOINT))
+        self.assertEqual(self.METHOD, instance.config_get_user_by_id.get(METHOD))
+        self.assertEqual(self.RESPONSE_MAPPING, instance.config_get_user_by_id.get(RESPONSE_MAPPING))
+        self.assertEqual(self.REQUEST_MAPPING, instance.config_get_user_by_id.get(REQUEST_MAPPING))
+        self.assertEqual(self.HEADERS, instance.config_get_user_by_id.get(HEADERS))
+        self.assertTrue(instance.config_get_user_by_id.get(HAS_ERROR_HANDLER))
+        self.assertEqual(self.ERROR_RESPONSE_MAPPING, instance.config_get_user_by_id.get(ERROR_RESPONSE))
 
         # Minimal config
         params = {
@@ -245,6 +252,22 @@ class HTTPResolverTestCase(MyTestCase):
         }
         instance = HTTPResolver()
         instance.loadConfig(params)
+        self.assertEqual(self.ENDPOINT, instance.config_get_user_by_id.get(ENDPOINT))
+        self.assertEqual(self.METHOD, instance.config_get_user_by_id.get(METHOD))
+        self.assertEqual(self.RESPONSE_MAPPING, instance.config_get_user_by_id.get(RESPONSE_MAPPING))
+
+        # Also pass empty advanced parameters should still take the basic params
+        params = {
+            'endpoint': self.ENDPOINT,
+            'method': self.METHOD,
+            'responseMapping': self.RESPONSE_MAPPING,
+            CONFIG_GET_USER_BY_ID: {}
+        }
+        instance = HTTPResolver()
+        instance.loadConfig(params)
+        self.assertEqual(self.ENDPOINT, instance.config_get_user_by_id.get(ENDPOINT))
+        self.assertEqual(self.METHOD, instance.config_get_user_by_id.get(METHOD))
+        self.assertEqual(self.RESPONSE_MAPPING, instance.config_get_user_by_id.get(RESPONSE_MAPPING))
 
     def test_02_load_basic_config_fails(self):
         resolver = HTTPResolver()

@@ -45,7 +45,7 @@ from ..lib.policy import (set_policy, rename_policy,
                           export_policies, import_policies,
                           delete_policy, get_static_policy_definitions,
                           enable_policy, get_policy_condition_sections,
-                          get_policy_condition_comparators, Match, validate_values, get_policies)
+                          get_policy_condition_comparators, Match, validate_values, get_policies, SCOPE)
 from ..lib.token import get_dynamic_policy_definitions
 from ..lib.error import (ParameterError)
 from privacyidea.lib.utils import is_true
@@ -201,8 +201,11 @@ def set_policy_api(name=None):
     param = request.all_data
     check_policy_name(name)
 
-    action = get_required(param, "action")
     scope = get_required(param, "scope")
+    if scope == SCOPE.USER:
+        action = param.get("action")
+    else:
+        action = get_required(param, "action")
     realm = param.get("realm")
     resolver = param.get("resolver")
     pinode = param.get("pinode")

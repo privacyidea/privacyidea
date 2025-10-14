@@ -828,6 +828,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
         """
         set_policy("evm", scope=SCOPE.AUTH, action=f"{PolicyAction.ENROLL_VIA_MULTICHALLENGE}=hotp")
         set_policy("evm_optional", scope=SCOPE.AUTH, action=f"{PolicyAction.ENROLL_VIA_MULTICHALLENGE_OPTIONAL}=true")
+        set_policy("user_in_response", scope=SCOPE.AUTHZ, action=PolicyAction.ADDUSERINRESPONSE)
         serial = self._enroll_static_passkey()
         passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_no_uv)
         transaction_id = passkey_challenge["transaction_id"]
@@ -870,6 +871,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
         remove_token(serial)
         delete_policy("evm")
         delete_policy("evm_optional")
+        delete_policy("user_in_response")
 
     def test_16_cancel_enroll_via_multichallenge_smartphone(self):
         """
@@ -880,6 +882,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
         set_policy("container_enroll", scope=SCOPE.CONTAINER,
                    action=f"{PolicyAction.CONTAINER_SERVER_URL}=https://doesntmatter.com")
         set_policy("evm_optional", scope=SCOPE.AUTH, action=f"{PolicyAction.ENROLL_VIA_MULTICHALLENGE_OPTIONAL}=true")
+        set_policy("user_in_response", scope=SCOPE.AUTHZ, action=PolicyAction.ADDUSERINRESPONSE)
         serial = self._enroll_static_passkey()
         passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_no_uv)
         transaction_id = passkey_challenge["transaction_id"]
@@ -924,6 +927,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
         delete_policy("evm")
         delete_policy("evm_optional")
         delete_policy("container_enroll")
+        delete_policy("user_in_response")
 
     def test_17_cancel_enroll_via_multichallenge_not_allowed(self):
         """

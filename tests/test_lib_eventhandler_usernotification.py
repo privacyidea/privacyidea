@@ -12,6 +12,7 @@ from dateutil.tz import tzlocal
 from flask import Request, Response
 from werkzeug.test import EnvironBuilder
 
+from privacyidea.lib.audit import getAudit
 from privacyidea.lib.eventhandler.base import CONDITION
 from privacyidea.lib.eventhandler.usernotification import (UserNotificationEventHandler,
                                                            NOTIFY_TYPE)
@@ -237,8 +238,10 @@ class UserNotificationTestCase(MyTestCase):
         req = Request(env)
         req.all_data = {}
         req.User = User()
+        fake_g = FakeFlaskG()
+        fake_g.audit_object = getAudit(self.app.config)
         r = uhandler.check_condition(
-            {"g": {},
+            {"g": fake_g,
              "handler_def": {"conditions": {"logged_in_user": "admin"}},
              "response": resp,
              "request": req})
@@ -246,7 +249,7 @@ class UserNotificationTestCase(MyTestCase):
 
         # We expect the result_authentication to be "REJECT" and it is
         r = uhandler.check_condition(
-            {"g": {},
+            {"g": fake_g,
              "handler_def": {"conditions": {"result_authentication": AUTH_RESPONSE.REJECT}},
              "response": resp,
              "request": req})
@@ -254,7 +257,7 @@ class UserNotificationTestCase(MyTestCase):
 
         # We expect the result_authentication to be "ACCEPT" and it is not
         r = uhandler.check_condition(
-            {"g": {},
+            {"g": fake_g,
              "handler_def": {"conditions": {"result_authentication": AUTH_RESPONSE.ACCEPT}},
              "response": resp,
              "request": req})
@@ -262,7 +265,7 @@ class UserNotificationTestCase(MyTestCase):
 
         # We expect the result_value to be True, but it is not.
         r = uhandler.check_condition(
-            {"g": {},
+            {"g": fake_g,
              "handler_def": {"conditions": {"result_value": "True"}},
              "response": resp,
              "request": req})
@@ -270,7 +273,7 @@ class UserNotificationTestCase(MyTestCase):
 
         # We expect the result_value to be False, and it is.
         r = uhandler.check_condition(
-            {"g": {},
+            {"g": fake_g,
              "handler_def": {"conditions": {"result_value": "False"}},
              "response": resp,
              "request": req})
@@ -278,7 +281,7 @@ class UserNotificationTestCase(MyTestCase):
 
         # We expect the result_status to be True, but it is not!
         r = uhandler.check_condition(
-            {"g": {},
+            {"g": fake_g,
              "handler_def": {"conditions": {"result_status": "True"}},
              "response": resp,
              "request": req})
@@ -286,7 +289,7 @@ class UserNotificationTestCase(MyTestCase):
 
         # We expect the result_status to be False, and it is!
         r = uhandler.check_condition(
-            {"g": {},
+            {"g": fake_g,
              "handler_def": {"conditions": {"result_status": "False"}},
              "response": resp,
              "request": req})
@@ -304,7 +307,7 @@ class UserNotificationTestCase(MyTestCase):
         """
         tok = init_token({"serial": "lockedtoken", "type": "spass"})
         r = uhandler.check_condition(
-            {"g": {},
+            {"g": fake_g,
              "handler_def": {"conditions": {"token_locked": "True"}},
              "response": resp,
              "request": req
@@ -315,7 +318,7 @@ class UserNotificationTestCase(MyTestCase):
 
         # lock it
         tok.set_failcount(10)
-        options = {"g": {},
+        options = {"g": fake_g,
                    "handler_def": {"conditions": {"token_locked": "True"}},
                    "response": resp,
                    "request": req
@@ -358,8 +361,10 @@ class UserNotificationTestCase(MyTestCase):
         req.User = User("cornelius", "realm1")
         resp = Response()
         resp.data = """{"result": {"value": false}}"""
+        fake_g = FakeFlaskG()
+        fake_g.audit_object = getAudit(self.app.config)
         r = uhandler.check_condition(
-            {"g": {},
+            {"g": fake_g,
              "handler_def": {"conditions": {"realm": "realm2"}},
              "request": req,
              "response": resp
@@ -370,7 +375,7 @@ class UserNotificationTestCase(MyTestCase):
 
         # Check condition resolver
         r = uhandler.check_condition(
-            {"g": {},
+            {"g": fake_g,
              "handler_def": {"conditions": {"resolver": "resolver1"}},
              "request": req,
              "response": resp
@@ -378,7 +383,7 @@ class UserNotificationTestCase(MyTestCase):
         )
         self.assertTrue(r)
         r = uhandler.check_condition(
-            {"g": {},
+            {"g": fake_g,
              "handler_def": {"conditions": {"resolver": "resolver2"}},
              "request": req,
              "response": resp

@@ -7,18 +7,17 @@ Revises: 4a0aec37e7cf
 Create Date: 2023-09-08 15:59:01.374626
 
 """
-
-# revision identifiers, used by Alembic.
-revision = '5cb310101a1f'
-down_revision = '4a0aec37e7cf'
-
 from alembic import op, context
 from sqlalchemy import inspect
 from sqlalchemy.schema import Sequence, CreateSequence, DropSequence
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.sql.expression import func
-from sqlalchemy.exc import OperationalError, ProgrammingError
+from sqlalchemy.exc import DatabaseError
 from privacyidea.models import db
+
+# revision identifiers, used by Alembic.
+revision = '5cb310101a1f'
+down_revision = '4a0aec37e7cf'
 
 
 Session = sessionmaker()
@@ -38,8 +37,8 @@ def upgrade():
                 if isinstance(seq, Sequence):
                     seq_name = seq.name
                 else:
-                    # do we have tables with "id" columns which isn't a sequence?
-                    print(f"Table {tbl.name} has an 'id' column which isn't a sequence!")
+                    # do we have tables with "id" columns, which isn't a sequence?
+                    print(f"Table {tbl.name} has an 'id' column which isn't a sequence. Skipping...")
                     continue
 
                 # check if the table exists in the database (newer tables might not exist yet)
@@ -49,23 +48,19 @@ def upgrade():
                     continue
                 # Create the sequence with the correct next_id!
                 current_id = session.query(func.max(tbl.c.id)).one()[0] or 0
-                print(f"CurrentID in Table {tbl.name}: {current_id}")
                 try:
                     seq = Sequence(seq_name, start=(current_id + 1))
-                    print(f" +++ Creating Sequence: {seq_name}")
                     op.execute(CreateSequence(seq, if_not_exists=True))
-                except OperationalError as exx:
-                    if exx.orig.args[0] == 1050 or "already exists" in exx.orig.args[1]:
-                        pass
+                    print(f" +++ Created Sequence '{seq_name}' for table '{tbl.name}' "
+                          f"with current id={current_id + 1}")
+                except DatabaseError as e:
+                    if any([x in str(e.orig) for x in ["already exists", "ORA-00955: name is already used"]]):
+                        print(f"Sequence {seq_name} already exists. Skipping...")
                     else:
-                        print(exx)
-                except ProgrammingError as exx:
-                    if "already exists" in exx.orig.args[0]:
-                        pass
-                    else:
-                        print(exx)
-                except Exception as exx:
-                    print(exx)
+                        raise
+                except Exception as e:
+                    print(f"(Rev. {revision}) ERROR: Unable to create Sequences: {e}")
+                    raise
 
 
 def downgrade():
