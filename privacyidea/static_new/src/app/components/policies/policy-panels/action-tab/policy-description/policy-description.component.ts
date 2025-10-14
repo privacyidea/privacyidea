@@ -17,4 +17,7 @@ export class PolicyDescriptionComponent {
   updatePolicyDescription($event: string) {
     this.policyService.updateSelectedPolicy({ description: $event });
   }
+  updatePolicyPriority($event: any) {
+    this.policyService.updateSelectedPolicy({ priority: $event });
+  }
 }

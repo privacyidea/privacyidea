@@ -2,13 +2,38 @@
   <div
     i18n
     class="description-header">
-    Description
+    Priority
   </div>
-  <textarea
-    class="description-textarea"
-    [ngModel]="policyService.selectedPolicy()?.description"
-    (ngModelChange)="updatePolicyDescription($event)"
-    cdkTextareaAutosize
-    cdkAutosizeMinRows="2"
-    cdkAutosizeMaxRows="5"></textarea>
+  @if (this.policyService.viewMode() === "view") {
+    <div class="description-text">
+      {{ policyService.selectedPolicy()?.priority }}
+    </div>
+  } @else {
+    <input
+      type="number"
+      class="description-textarea"
+      [ngModel]="policyService.selectedPolicy()?.priority"
+      (ngModelChange)="updatePolicyPriority($event)" />
+  }
+  @if (policyService.selectedPolicy()?.description || this.policyService.viewMode() !== "view") {
+    <div
+      i18n
+      class="description-header">
+      Description
+    </div>
+    @if (this.policyService.viewMode() === "view") {
+      <div class="description-text">
+        {{ policyService.selectedPolicy()?.description }}
+      </div>
+    } @else {
+      <textarea
+        class="description-textarea"
+        [ngModel]="policyService.selectedPolicy()?.description"
+        (ngModelChange)="updatePolicyDescription($event)"
+        placeholder="(optional) Enter a description for this policy..."
+        cdkTextareaAutosize
+        cdkAutosizeMinRows="3"
+        cdkAutosizeMaxRows="6"></textarea>
+    }
+  }
 </div>

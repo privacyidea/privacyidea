@@ -11,7 +11,7 @@ import { parseBooleanValue } from "../../../../../utils/parse-boolean-value";
   standalone: true,
   imports: [CommonModule, MatIconModule, MatButtonModule, MatSlideToggleModule],
   templateUrl: "./selected-actions-list.component.html",
-  styleUrls: ["./selected-actions-list.component.scss"]
+  styleUrl: "./selected-actions-list.component.scss"
 })
 export class SelectedActionsListComponent {
   actions: Signal<{ name: string; value: string }[]> = computed(() => {

@@ -24,9 +24,9 @@
     } @else {
       @switch (policyService.selectedActionDetail()?.type) {
         @case ("bool") {
-          <app-bool-select-buttons
+          <!-- <app-bool-select-buttons
             (onSelectString)="policyService.updateSelectedActionValue($event)"
-            [initialValue]="policyService.selectedAction()?.value ?? 'true'" />
+            [initialValue]="policyService.selectedAction()?.value ?? 'true'" /> -->
         }
         @case ("str") {
           <input

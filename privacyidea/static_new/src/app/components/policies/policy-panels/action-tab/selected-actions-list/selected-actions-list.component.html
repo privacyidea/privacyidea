@@ -7,19 +7,7 @@
       (click)="onActionClick(action)">
       <div class="action-row">
         <span class="action-label">{{ action.name }}</span>
-        @if (isBooleanAction(action.name)) {
-          @if (editModeEnabled()) {
-            <mat-slide-toggle
-              class="action-value"
-              [checked]="action.value"
-              (change)="onToggleChange(action.name, $event.checked)">
-            </mat-slide-toggle>
-          } @else {
-            <mat-icon class="action-value">
-              {{ parseBooleanValue(action.value) ? "check" : "close" }}
-            </mat-icon>
-          }
-        } @else {
+        @if (!isBooleanAction(action.name)) {
           <span class="action-value">{{ action.value }}</span>
         }
         @if (editModeEnabled()) {

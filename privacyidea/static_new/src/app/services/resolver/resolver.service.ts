@@ -2,7 +2,7 @@ import { httpResource } from "@angular/common/http";
 import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
 import { AuthService } from "../auth/auth.service";
-import { computed, inject, signal } from "@angular/core";
+import { computed, effect, inject, signal } from "@angular/core";
 
 type ResolverType = "ldapresolver" | "sqlresolver" | "passwdresolver" | "scimresolver";
 
@@ -134,6 +134,13 @@ export class ResolverService {
   private readonly authService = inject(AuthService);
 
   selectedResolverName = signal<string>("");
+
+  constructor() {
+    effect(() => {
+      const resolvers = this.resolvers();
+      console.log("Resolvers changed:", resolvers);
+    });
+  }
 
   postResolverTest() {
     const headers = this.authService.getHeaders();

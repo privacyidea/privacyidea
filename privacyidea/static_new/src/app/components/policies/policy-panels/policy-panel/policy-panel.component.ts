@@ -6,13 +6,14 @@ import { MatButtonModule } from "@angular/material/button";
 import { MatButtonToggleModule } from "@angular/material/button-toggle";
 import { PolicyDetail, PolicyService } from "../../../../services/policies/policies.service";
 import { FormsModule } from "@angular/forms";
-import { ActionSelectorComponent } from "../action-tab/action-selector/action-selector.component";
 import { ActionDetailComponent } from "../action-tab/action-detail/action-detail.component";
 import { PolicyDescriptionComponent } from "../action-tab/policy-description/policy-description.component";
 import { SelectedActionsListComponent } from "../action-tab/selected-actions-list/selected-actions-list.component";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { HorizontalWheelComponent } from "../../../shared/horizontal-wheel/horizontal-wheel.component";
 import { MatSlideToggleModule } from "@angular/material/slide-toggle";
+import { ActionSelectorComponent } from "../action-tab/action-selector/action-selector.component";
+import { ConditionsUserComponent } from "../conditions-tab/conditions-user/conditions-user.component";
 
 type Tab = "actions" | "conditions";
 
@@ -32,7 +33,8 @@ type Tab = "actions" | "conditions";
     SelectedActionsListComponent,
     MatExpansionModule,
     HorizontalWheelComponent,
-    MatSlideToggleModule
+    MatSlideToggleModule,
+    ConditionsUserComponent
   ],
   templateUrl: "./policy-panel.component.html",
   styleUrl: "./policy-panel.component.scss"

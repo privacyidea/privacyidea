@@ -94,11 +94,12 @@
           <app-action-detail class="grid-area-detail-body" />
         } @else {
           <app-selected-actions-list class="grid-area-content-header" />
+          <app-policy-description class="grid-area-detail-header" />
         }
       }
 
       @if (activeTab() === "conditions") {
-        <div class="conditions-list">
+        <div class="grid-area-content-header">
           <div class="detail-row">
             <span class="detail-label">Active:</span>
             <span class="detail-value">{{ policy().active }}</span>
@@ -132,6 +133,7 @@
             <span class="detail-value">{{ policy().user }}</span>
           </div>
         </div>
+        <app-conditions-user class="grid-area-content-body"> </app-conditions-user>
       }
     </div>
   </mat-expansion-panel>

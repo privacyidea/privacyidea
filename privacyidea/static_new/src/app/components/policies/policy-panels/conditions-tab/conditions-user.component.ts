@@ -33,8 +33,8 @@ type Tab = "actions" | "conditions";
     MatExpansionModule,
     HorizontalWheelComponent
   ],
-  templateUrl: "./conditions-user.component.html",
-  styleUrl: "./conditions-user.component.scss"
+  templateUrl: "./conditions-tab.component.html",
+  styleUrl: "./conditions-tab.component.scss"
 })
 export class PolicyPanelComponent {
   canSavePolicy(): boolean {
