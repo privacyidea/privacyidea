@@ -314,7 +314,7 @@ export class PolicyService implements PoliciesServiceInterface {
     }
   }
 
-  updateSelectedActionValue(value: string | number) {
+  updateSelectedActionValue(value: any) {
     const selectedAction = this.selectedAction();
     if (!selectedAction) return;
     this.selectedAction.set({ name: selectedAction.name, value: value });

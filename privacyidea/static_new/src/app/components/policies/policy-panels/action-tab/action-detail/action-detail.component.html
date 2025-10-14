@@ -6,21 +6,31 @@
         {{ policyService.selectedActionDetail()?.desc }}
       </span>
     </div>
-    @if (policyService.selectedActionDetail()?.value && policyService.selectedActionDetail()?.type !== "bool") {
+    @if (policyService.selectedActionDetail()?.value) {
       <!-- add dropdown to select value from list -->
 
-      <mat-form-field
-        appearance="fill"
-        class="full-width">
-        <mat-label i18n>Value</mat-label>
-        <mat-select
-          [value]="policyService.selectedAction()?.value"
-          (selectionChange)="policyService.updateSelectedActionValue($event.value)">
-          @for (option of policyService.selectedActionDetail()?.value; track option) {
-            <mat-option [value]="option">{{ option }}</mat-option>
-          }
-        </mat-select>
-      </mat-form-field>
+      @if (policyService.selectedActionDetail()?.value?.length === 2) {
+        <app-bool-select-buttons
+          [valueLeft]="policyService.selectedActionDetail()?.value?.[0]"
+          [valueRight]="policyService.selectedActionDetail()?.value?.[1]"
+          [labelLeft]="`${policyService.selectedActionDetail()?.value?.[0]}`"
+          [labelRight]="`${policyService.selectedActionDetail()?.value?.[1]}`"
+          (onSelect)="policyService.updateSelectedActionValue($event)"
+          [initialValue]="policyService.selectedAction()?.value" />
+      } @else {
+        <mat-form-field
+          appearance="fill"
+          class="full-width">
+          <mat-label i18n>Value</mat-label>
+          <mat-select
+            [value]="policyService.selectedAction()?.value"
+            (selectionChange)="policyService.updateSelectedActionValue($event.value)">
+            @for (option of policyService.selectedActionDetail()?.value; track option) {
+              <mat-option [value]="option">{{ option }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      }
     } @else {
       @switch (policyService.selectedActionDetail()?.type) {
         @case ("bool") {

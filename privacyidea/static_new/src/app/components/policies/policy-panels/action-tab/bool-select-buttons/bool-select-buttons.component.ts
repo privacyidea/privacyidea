@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, EventEmitter, input, Output, OnInit, linkedSignal, WritableSignal } from "@angular/core";
+import { Component, EventEmitter, input, Output, OnInit, linkedSignal, WritableSignal, Input } from "@angular/core";
 
 import { MatButtonModule } from "@angular/material/button";
 import { parseBooleanValue } from "../../../../../utils/parse-boolean-value";
@@ -31,30 +31,28 @@ import { parseBooleanValue } from "../../../../../utils/parse-boolean-value";
 // Implement OnInit to use the hook
 export class BoolSelectButtonsComponent implements OnInit {
   // Input definition is correct
-  initialValue = input.required<string | number | boolean>();
+  initialValue = input.required<any>();
+  @Input() valueLeft: any = false;
+  @Input() valueRight: any = true;
+  @Input() labelLeft: string = $localize`False`;
+  @Input() labelRight: string = $localize`True`;
 
   @Output() onSelect = new EventEmitter<boolean>();
-  @Output() onSelectNumber = new EventEmitter<Number>();
-  @Output() onSelectString = new EventEmitter<string>();
 
   // 1. Initialize selectedValue with a placeholder or default boolean value
   // The actual value will be set in ngOnInit
-  selectedValue: WritableSignal<boolean> = linkedSignal({
+  selectedValue: WritableSignal<any> = linkedSignal({
     source: () => this.initialValue(),
-    computation: (source) => {
-      return parseBooleanValue(source);
-    }
+    computation: (source) => source
   });
 
   ngOnInit() {
-    const parsedValue = parseBooleanValue(this.initialValue());
+    const parsedValue = this.initialValue();
     this.selectedValue.set(parsedValue);
   }
 
-  selectBoolean(bool: boolean): void {
-    this.selectedValue.set(bool);
-    this.onSelect.emit(bool);
-    this.onSelectString.emit(bool.toString());
-    this.onSelectNumber.emit(bool ? 1 : 0);
+  onSelectChange(value: any): void {
+    this.selectedValue.set(value);
+    this.onSelect.emit(value);
   }
 }

@@ -1,16 +1,16 @@
 <div class="bool-select-container">
   <button
     i18n
-    (click)="selectBoolean(false)"
+    (click)="onSelectChange(valueLeft)"
     class="bool-select-button false-button"
-    [class.selected-button]="selectedValue() === false">
-    No
+    [class.selected-button]="selectedValue() === valueLeft">
+    {{ labelLeft }}
   </button>
   <button
     i18n
-    (click)="selectBoolean(true)"
+    (click)="onSelectChange(valueRight)"
     class="bool-select-button true-button"
-    [class.selected-button]="selectedValue() === true">
-    Yes
+    [class.selected-button]="selectedValue() === valueRight">
+    {{ labelRight }}
   </button>
 </div>
