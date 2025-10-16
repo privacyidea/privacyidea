@@ -73,14 +73,16 @@
     <div class="policy-grid-container">
       <div class="tab-buttons">
         <button
-          mat-flat-button
-          [ngClass]="activeTab() === 'actions' ? 'tab-button-active' : 'tab-button'"
+          mat-stroked-button
+          class="button-hover"
+          [class.button-active]="activeTab() === 'actions'"
           (click)="setActiveTab('actions')">
           ACTIONS
         </button>
         <button
-          mat-flat-button
-          [ngClass]="activeTab() === 'conditions' ? 'tab-button-active' : 'tab-button'"
+          mat-stroked-button
+          class="button-hover"
+          [class.button-active]="activeTab() === 'conditions'"
           (click)="setActiveTab('conditions')">
           CONDITIONS
         </button>
@@ -99,41 +101,8 @@
       }
 
       @if (activeTab() === "conditions") {
-        <div class="grid-area-content-header">
-          <div class="detail-row">
-            <span class="detail-label">Active:</span>
-            <span class="detail-value">{{ policy().active }}</span>
-          </div>
-          <div class="detail-row">
-            <span class="detail-label">Client:</span>
-            <span class="detail-value">{{ policy().client }}</span>
-          </div>
-          <div class="detail-row">
-            <span class="detail-label">Name:</span>
-            <span class="detail-value">{{ policy().name }}</span>
-          </div>
-          <div class="detail-row">
-            <span class="detail-label">Realm:</span>
-            <span class="detail-value">{{ policy().realm }}</span>
-          </div>
-          <div class="detail-row">
-            <span class="detail-label">Resolver:</span>
-            <span class="detail-value">{{ policy().resolver }}</span>
-          </div>
-          <div class="detail-row">
-            <span class="detail-label">Scope:</span>
-            <span class="detail-value">{{ policy().scope }}</span>
-          </div>
-          <div class="detail-row">
-            <span class="detail-label">Time:</span>
-            <span class="detail-value">{{ policy().time }}</span>
-          </div>
-          <div class="detail-row">
-            <span class="detail-label">User:</span>
-            <span class="detail-value">{{ policy().user }}</span>
-          </div>
-        </div>
-        <app-conditions-user class="grid-area-content-body"> </app-conditions-user>
+        <app-conditions-user class="grid-area-content-header"></app-conditions-user>
+        <app-conditions-nodes class="grid-area-content-body"></app-conditions-nodes>
       }
     </div>
   </mat-expansion-panel>

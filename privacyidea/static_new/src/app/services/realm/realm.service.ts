@@ -25,7 +25,7 @@ import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
 import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
 
-export type Realms = Map<string, Realm>;
+export type Realms = { [key: string]: Realm };
 
 export interface Realm {
   default: boolean;
@@ -61,17 +61,7 @@ export class RealmService implements RealmServiceInterface {
   selectedRealms = signal<string[]>([]);
 
   realmResource = httpResource<PiResponse<Realms>>(() => {
-    if (
-      this.authService.role() === "user" ||
-      (!this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_DETAILS) &&
-        !this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS) &&
-        ![
-          ROUTE_PATHS.TOKENS,
-          ROUTE_PATHS.USERS,
-          ROUTE_PATHS.TOKENS_CONTAINERS_CREATE,
-          ROUTE_PATHS.TOKENS_ENROLLMENT
-        ].includes(this.contentService.routeUrl()))
-    ) {
+    if (this.authService.role() === "user") {
       return undefined;
     }
     return {
@@ -82,6 +72,9 @@ export class RealmService implements RealmServiceInterface {
   });
   realmOptions = computed(() => {
     const realms = this.realmResource.value()?.result?.value;
+    console.log("Realms in realmOptions computation:", realms);
+    const keys = realms ? Object.keys(realms) : [];
+    console.log("Computed realm options:", keys);
     return realms ? Object.keys(realms) : [];
   });
 
@@ -124,11 +117,37 @@ export class RealmService implements RealmServiceInterface {
     });
 
     effect(() => {
+      if (this.realmResource.value()) {
+        const realms = this.realmResource.value()?.result?.value;
+        /**
+         Realms loaded:
+Object { defrealm: {…}, realm1: {…}, realm2: {…}, realm3: {…}, realm4asdfsadfasdfasdfsadfasdfasfasfdsadfasdfsafdasdfasdfsadfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfsadfasdfasdfasd: {…} }
+defrealm: Object { default: true, id: 1, resolver: (1) […] }​
+realm1: Object { default: false, id: 2, resolver: [] }
+realm2: Object { default: false, id: 3, resolver: [] }
+realm3: Object { default: false, id: 4, resolver: [] }
+realm4asdfsadfasdfasdfsadfasdfasfasfdsadfasdfsafdasdfasdfsadfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfsadfasdfasdfasd: Object { default: false, id: 5, resolver: [] }
+<prototype>: Object { … }
+realm.service.ts:129:17
+
+         */
+        console.log("Realms loaded:", realms);
+      }
+    });
+
+    effect(() => {
       if (this.defaultRealmResource.error()) {
         const defaultRealmError = this.defaultRealmResource.error() as HttpErrorResponse;
-        console.error("Failed to get default realm.", defaultRealmError.message);
+        console.error("Failed to get realm.", defaultRealmError.message);
         const message = defaultRealmError.error?.result?.error?.message || defaultRealmError.message;
         this.notificationService.openSnackBar("Failed to get default realm. " + message);
+      }
+    });
+
+    effect(() => {
+      if (this.defaultRealmResource.value()) {
+        const defaultRealm = this.defaultRealmResource.value()?.result?.value;
+        console.log("Default realm loaded:", defaultRealm);
       }
     });
   }

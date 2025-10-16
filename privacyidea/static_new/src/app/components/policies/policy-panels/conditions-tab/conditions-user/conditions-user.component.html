@@ -1,50 +1,92 @@
 <div class="action-selector-container">
-  <!-- <input
-    type="text"
-    placeholder="Search action..."
-    [ngModel]="policyService.actionFilter()"
-    (ngModelChange)="policyService.actionFilter.set($event)"
-    class="search-input" /> -->
-  <div class="button-row">
-    User Realm:
-    @for (realmOption of this.realmService.realmOptions(); track $index) {
+  <mat-form-field
+    appearance="fill"
+    class="full-width">
+    <mat-label i18n>Select Realms</mat-label>
+    <mat-select
+      #realmSelect
+      [value]="this.selectedRealms()"
+      [multiple]="true"
+      (selectionChange)="selectRealm($event.value)">
       <button
-        class="button-item"
-        [class.first-button]="$index === 0"
-        [class.last-button]="$index === this.realmService.realmOptions().length - 1"
-        [class.selected-button]="selectedRealm() === realmOption"
-        (click)="selectRealm(realmOption)">
-        {{ realmOption }}
+        mat-button
+        class="toggle-all-button"
+        (click)="toggleAllRealms()">
+        {{ isAllRealmsSelected() ? "Deselect all" : "Select all" }}
       </button>
-    }
-  </div>
-  @if (selectedRealm()) {
-    <div class="button-row">
-      User Resolver:
       @for (realmOption of this.realmService.realmOptions(); track $index) {
-        <button
-          class="button-item"
-          [class.first-button]="$index === 0"
-          [class.last-button]="$index === this.realmService.realmOptions().length - 1"
-          [class.selected-button]="selectedRealm() === realmOption"
-          (click)="selectRealm(realmOption)">
-          {{ realmOption }}
-        </button>
+        <mat-option [value]="realmOption">{{ realmOption }}</mat-option>
       }
-    </div>
-  }
+    </mat-select>
+  </mat-form-field>
 
-  <div class="add-action-details">
-    <!-- <div class="policy-action-items">
-      @for (actionName of policyService.getActionNamesOfSelectedGroup(); track actionName) {
-        <div
-          class="policy-action-item"
-          [class.policy-action-item-selected]="policyService.selectedAction()?.name === actionName"
-          (click)="policyService.selectActionByName(actionName)">
-          <span class="detail-label">{{ actionName }}</span>
-          <mat-icon>add_circle_outline</mat-icon>
+  @if (this.realmService.selectedRealms()) {
+    <mat-form-field
+      appearance="fill"
+      class="full-width">
+      <mat-label i18n>Select Resolvers</mat-label>
+      <mat-select
+        #resolverSelect
+        [value]="this.selectedResolvers()"
+        [multiple]="true"
+        (selectionChange)="selectResolver($event.value)">
+        <button
+          mat-button
+          class="toggle-all-button"
+          (click)="toggleAllResolvers()">
+          {{ isAllResolversSelected() ? "Deselect all" : "Select all" }}
+        </button>
+        @for (resolverOption of this.resolverService.resolverOptions(); track $index) {
+          <mat-option [value]="resolverOption">{{ resolverOption }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+  }
+  <div class="user-list-wrapper">
+    <div class="user-list">
+      @for (user of selectedUsers(); track user) {
+        <div class="user-chip">
+          <span>{{ user }}</span>
+          <button
+            mat-icon-button
+            (click)="removeUser(user)"
+            class="remove-user-btn">
+            <mat-icon class="remove-user-icon">close</mat-icon>
+          </button>
         </div>
       }
-    </div> -->
+    </div>
+    @if (selectedUsers().length > 0) {
+      <div class="user-buttons-container">
+        <button
+          mat-stroked-button
+          class="case-insensitive-button button-hover"
+          [class.button-active]="userCaseInsensitive()"
+          (click)="toggleUserCaseInsensitive()">
+          Case insensitive
+        </button>
+        <button
+          mat-stroked-button
+          class="clear-button"
+          (click)="clearUsers()">
+          Clear users
+        </button>
+      </div>
+    }
+  </div>
+  <div class="user-input-container">
+    <mat-form-field class="add-user-input">
+      <mat-label i18n>Add User</mat-label>
+      <input
+        matInput
+        #userInput
+        (keyup.enter)="addUser(userInput.value); userInput.value = ''" />
+    </mat-form-field>
+    <button
+      class="add-user-button button-hover"
+      [disabled]="!userInput.value.trim()"
+      (click)="addUser(userInput.value); userInput.value = ''">
+      <mat-icon>add</mat-icon>
+    </button>
   </div>
 </div>

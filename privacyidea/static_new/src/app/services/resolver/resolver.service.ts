@@ -2,17 +2,32 @@ import { httpResource } from "@angular/common/http";
 import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
 import { AuthService } from "../auth/auth.service";
-import { computed, effect, inject, signal } from "@angular/core";
+import { computed, effect, inject, Injectable, signal } from "@angular/core";
 
 type ResolverType = "ldapresolver" | "sqlresolver" | "passwdresolver" | "scimresolver";
 
+export interface ResolverData {}
+
+/*
+Resolvers changed:
+  deflocal: Object { censor_keys: [], resolvername: "deflocal", type: "passwdresolver", … }
+  censor_keys: Array []
+  data: Object { filename: "/etc/passwd" }
+    filename: "/etc/passwd"
+  resolvername: "deflocal"
+  type: "passwdresolver"
+  */
+
+export type Resolvers = { [key: string]: Resolver };
+
 export interface Resolver {
-  resolver: string;
+  censor_keys: string[];
+  data: ResolverData;
+  resolvername: string;
   type: ResolverType;
 }
 
-export interface LDAPResolver extends Resolver {
-  type: "ldapresolver";
+export interface LDAPResolverData extends ResolverData {
   ldapuri: string;
   ldapbase: string;
   authtype: string;
@@ -35,8 +50,7 @@ export interface LDAPResolver extends Resolver {
   tls_version: string;
 }
 
-export interface SQLResolver extends Resolver {
-  type: "sqlresolver";
+export interface SQLResolverDara extends ResolverData {
   database: string;
   driver: string;
   server: string;
@@ -47,13 +61,11 @@ export interface SQLResolver extends Resolver {
   map: string;
 }
 
-export interface PasswdResolver extends Resolver {
-  type: "passwdresolver";
+export interface PasswdResolverData extends ResolverData {
   filename: string;
 }
 
-export interface SCIMResolver extends Resolver {
-  type: "scimresolver";
+export interface SCIMResolverData extends ResolverData {
   scimurl: string;
   user: string;
   password: string;
@@ -128,9 +140,23 @@ DELETE /resolver/(resolver)
     Return
         json with success or fail
 
+
+        {
+  "deflocal": {
+    "censor_keys": [],
+    "data": ResolverData {
+      "filename": "/etc/passwd"
+    },
+    "resolvername": "deflocal",
+    "type": "passwdresolver"
+  }
+}
 */
+@Injectable({
+  providedIn: "root"
+})
 export class ResolverService {
-  private readonly resolverBaseUrl = environment.proxyUrl + " /resolver/";
+  private readonly resolverBaseUrl = environment.proxyUrl + "/resolver/";
   private readonly authService = inject(AuthService);
 
   selectedResolverName = signal<string>("");
@@ -139,6 +165,11 @@ export class ResolverService {
     effect(() => {
       const resolvers = this.resolvers();
       console.log("Resolvers changed:", resolvers);
+    });
+
+    effect(() => {
+      const resolvers = this.resolversResource.value()?.result?.value;
+      console.log("Resolvers resource changed:", resolvers);
     });
   }
 
@@ -156,7 +187,16 @@ export class ResolverService {
     headers: this.authService.getHeaders()
   });
 
-  resolvers = computed(() => this.resolversResource.value?.() ?? []);
+  resolvers = computed<Resolver[]>(() => {
+    const resolvers = this.resolversResource.value()?.result?.value;
+    console.log("Resolvers:", resolvers);
+    return resolvers ?? [];
+  });
+
+  resolverOptions = computed(() => {
+    const resolvers = this.resolversResource.value()?.result?.value;
+    return resolvers ? Object.keys(resolvers) : [];
+  });
 
   selectedResolverResource = httpResource<PiResponse<any>>({
     url: this.resolverBaseUrl + this.selectedResolverName(),

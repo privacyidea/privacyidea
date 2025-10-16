@@ -14,6 +14,7 @@ import { HorizontalWheelComponent } from "../../../shared/horizontal-wheel/horiz
 import { MatSlideToggleModule } from "@angular/material/slide-toggle";
 import { ActionSelectorComponent } from "../action-tab/action-selector/action-selector.component";
 import { ConditionsUserComponent } from "../conditions-tab/conditions-user/conditions-user.component";
+import { ConditionsNodesComponent } from "../conditions-tab/conditions-nodes/conditions-nodes.component";
 
 type Tab = "actions" | "conditions";
 
@@ -34,7 +35,8 @@ type Tab = "actions" | "conditions";
     MatExpansionModule,
     HorizontalWheelComponent,
     MatSlideToggleModule,
-    ConditionsUserComponent
+    ConditionsUserComponent,
+    ConditionsNodesComponent
   ],
   templateUrl: "./policy-panel.component.html",
   styleUrl: "./policy-panel.component.scss"

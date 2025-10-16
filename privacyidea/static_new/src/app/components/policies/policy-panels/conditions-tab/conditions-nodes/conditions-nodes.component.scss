@@ -14,18 +14,32 @@
   padding: 12px;
 }
 
-.user-input-container {
+.full-width {
+  width: 100%;
+}
+
+.toggle-all-button {
+  width: 100%;
+  border-radius: 0;
+  justify-content: flex-start;
+}
+
+.user-agent-selection-container {
+  margin-top: 16px;
+}
+
+.user-agent-input-container {
   display: flex;
   align-items: center;
 }
 
-.user-list-wrapper {
+.user-agent-list-wrapper {
   display: flex;
   align-items: center;
   margin-top: 8px;
 }
 
-.user-list {
+.user-agent-list {
   display: flex;
   flex-wrap: nowrap;
   overflow-x: auto;
@@ -35,7 +49,7 @@
   scrollbar-width: thin;
 }
 
-.user-chip {
+.user-agent-chip {
   display: flex;
   align-items: center;
   background-color: var(--mat-sys-surface-container-high);
@@ -45,7 +59,7 @@
   flex-shrink: 0;
 }
 
-.remove-user-btn {
+.remove-user-agent-btn {
   width: 20px;
   height: 20px;
   margin-left: 4px;
@@ -55,20 +69,17 @@
   justify-content: center;
 }
 
-.remove-user-icon {
+.remove-user-agent-icon {
   font-size: 16px;
   width: 16px;
   height: 16px;
   line-height: 16px;
 }
 
-.user-buttons-container {
+.clear-user-agents-container {
   display: flex;
   justify-content: flex-end;
-  flex-wrap: nowrap;
   padding-bottom: 12px;
-  flex-shrink: 0;
-  flex-grow: 0;
 }
 
 .clear-button {
@@ -76,13 +87,8 @@
   flex-shrink: 0;
 }
 
-.full-width {
+.add-user-agent-input {
   width: 100%;
-}
-
-.add-user-input {
-  width: 100%;
-  // ecken rechts sollen eckig sein
   border-radius: 12px 0 0 12px;
 
   .mdc-text-field--filled {
@@ -93,13 +99,7 @@
   }
 }
 
-.toggle-all-button {
-  width: 100%;
-  border-radius: 0;
-  justify-content: flex-start;
-}
-
-.add-user-button {
+.add-user-agent-button {
   height: 56px;
   margin-bottom: 20px;
   padding: 0;
@@ -110,4 +110,14 @@
   align-items: center !important;
   justify-content: center !important;
   transition: background-color 0.2s ease-in-out;
+
+  &:hover:not(:disabled) {
+    background-color: var(--mat-sys-surface-container-highest);
+    cursor: pointer;
+  }
+
+  &:disabled {
+    background-color: var(--mat-sys-surface-container-low);
+    cursor: not-allowed;
+  }
 }

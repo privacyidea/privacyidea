@@ -1,4 +1,5 @@
 @use "../../../../../styles" as styles;
+@use "../../policies.component.scss";
 @use "@angular/material" as mat;
 
 // --- Main Layout ---
@@ -34,7 +35,6 @@
   grid-area: detail-body;
   min-width: 0;
 }
-
 .selected-content {
   grid-area: content;
   display: flex;

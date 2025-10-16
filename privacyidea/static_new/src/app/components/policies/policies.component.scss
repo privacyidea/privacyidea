@@ -11,3 +11,24 @@
   max-width: 1000px;
   overflow: auto;
 }
+
+.mat-mdc-outlined-button {
+  border-radius: 8px;
+  padding: 6px 16px;
+  border: 1px solid var(--mat-sys-outline);
+  background-color: var(--mat-sys-surface-container);
+  color: var(--mat-sys-on-surface);
+  transition:
+    background-color 0.2s ease-in-out,
+    color 0.2s ease-in-out;
+}
+.button-active {
+  background-color: var(--mat-sys-primary-base-active);
+  color: var(--mat-sys-on-primary);
+}
+.button-hover:hover:not(:disabled):not(.button-active) {
+  background-color: var(--mat-sys-primary-base-hover);
+  color: var(--mat-sys-on-primary);
+  font-size: 600;
+  cursor: pointer;
+}

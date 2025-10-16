@@ -7,8 +7,10 @@ html {
     --mat-sys-primary-dark: light-dark(hsl(198, 66%, 25%), hsl(198, 66%, 60%));
     --mat-sys-primary-base: light-dark(hsl(198, 66%, 30%), hsl(198, 66%, 55%));
     --mat-sys-primary-base-active: light-dark(hsl(198, 66%, 32.5%), hsl(198, 66%, 52.5%));
+    --mat-sys-primary-base-hover: light-dark(hsl(198, 66%, 42.5%), hsl(198, 66%, 47.5%));
     --mat-sys-primary-light: light-dark(hsl(198, 66%, 35%), hsl(198, 66%, 50%));
     --mat-sys-primary-light-active: light-dark(hsl(198, 66%, 37.5%), hsl(198, 66%, 47.5%));
+    --mat-sys-primary-light-hover: light-dark(hsl(198, 66%, 47.5%), hsl(198, 66%, 42.5%));
 
     --green-dark: light-dark(hsl(120, 39%, 39%), hsl(120, 39%, 69%));
     --green-base: light-dark(hsl(120, 39%, 44%), hsl(120, 39%, 64%));
@@ -48,8 +50,10 @@ html {
     --mat-sys-primary-dark: hsl(198, 66%, 25%);
     --mat-sys-primary-base: hsl(198, 66%, 30%);
     --mat-sys-primary-base-active: hsl(198, 66%, 32.5%);
+    --mat-sys-primary-base-hover: hsl(198, 66%, 40%);
     --mat-sys-primary-light: hsl(198, 66%, 35%);
     --mat-sys-primary-light-active: hsl(198, 66%, 37.5%);
+    --mat-sys-primary-light-hover: hsl(198, 66%, 45%);
 
     --green-dark: hsl(120, 39%, 39%);
     --green-base: hsl(120, 39%, 44%);
@@ -102,8 +106,10 @@ html {
     --mat-sys-primary-dark: hsl(198, 66%, 60%);
     --mat-sys-primary-base: hsl(198, 66%, 55%);
     --mat-sys-primary-base-active: hsl(198, 66%, 52.5%);
+    --mat-sys-primary-base-hover: hsl(198, 66%, 47.5%);
     --mat-sys-primary-light: hsl(198, 66%, 50%);
     --mat-sys-primary-light-active: hsl(198, 66%, 47.5%);
+    --mat-sys-primary-light-hover: hsl(198, 66%, 45%);
 
     --green-dark: hsl(120, 39%, 69%);
     --green-base: hsl(120, 39%, 64%);

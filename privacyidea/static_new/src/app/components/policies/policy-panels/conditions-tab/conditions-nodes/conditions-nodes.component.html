@@ -1,0 +1,93 @@
+<div class="action-selector-container">
+  <!-- privacyIDEA Nodes -->
+  <mat-form-field
+    appearance="fill"
+    class="full-width">
+    <mat-label i18n>privacyIDEA Nodes</mat-label>
+    <mat-select
+      #nodeSelect
+      [value]="selectedNodes()"
+      [multiple]="true"
+      (selectionChange)="selectedNodes.set($event.value)">
+      <button
+        mat-button
+        class="toggle-all-button"
+        (click)="toggleAllNodes()">
+        {{ isAllNodesSelected() ? "Deselect all" : "Select all" }}
+      </button>
+      @for (node of availableNodes(); track node) {
+        <mat-option [value]="node">{{ node }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+
+  <!-- Valid time -->
+  <mat-form-field
+    appearance="fill"
+    class="full-width">
+    <mat-label i18n>Valid time</mat-label>
+    <input
+      matInput
+      [ngModel]="validTime()"
+      (ngModelChange)="setValidTime($event)"
+      placeholder="Mon-Fri: 9-18, Sat: 10-15" />
+  </mat-form-field>
+  @if (!validTimeValidator()) {
+    <mat-error i18n> Please enter a valid time format, e.g., Mon-Fri: 9-18, Sat: 10-15 </mat-error>
+  }
+
+  <!-- Client -->
+  <mat-form-field
+    appearance="fill"
+    class="full-width">
+    <mat-label i18n>Client</mat-label>
+    <input
+      matInput
+      [ngModel]="client()"
+      (ngModelChange)="client.set($event)"
+      placeholder="10.0.0.0/8, !10.0.0.124" />
+  </mat-form-field>
+
+  <!-- User Agent -->
+  <div class="user-agent-selection-container">
+    <div class="user-agent-list-wrapper">
+      <div class="user-agent-list">
+        @for (ua of selectedUserAgents(); track ua) {
+          <div class="user-agent-chip">
+            <span>{{ ua }}</span>
+            <button
+              mat-icon-button
+              (click)="removeUserAgent(ua)"
+              class="remove-user-agent-btn">
+              <mat-icon class="remove-user-agent-icon">close</mat-icon>
+            </button>
+          </div>
+        }
+      </div>
+      @if (selectedUserAgents().length > 0) {
+        <div class="clear-user-agents-container">
+          <button
+            mat-stroked-button
+            class="clear-button"
+            (click)="clearUserAgents()">
+            Clear user agents
+          </button>
+        </div>
+      }
+    </div>
+    <div class="user-agent-input-container">
+      <mat-form-field class="add-user-agent-input">
+        <mat-label i18n>Add User Agent</mat-label>
+        <input
+          matInput
+          #userAgentInput
+          (keyup.enter)="addUserAgent(userAgentInput.value); userAgentInput.value = ''" />
+      </mat-form-field>
+      <button
+        class="add-user-agent-button"
+        (click)="addUserAgent(userAgentInput.value); userAgentInput.value = ''">
+        <mat-icon>add</mat-icon>
+      </button>
+    </div>
+  </div>
+</div>

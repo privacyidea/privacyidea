@@ -17,9 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, EventEmitter, input, Output, OnInit, linkedSignal, WritableSignal, Input } from "@angular/core";
-
 import { MatButtonModule } from "@angular/material/button";
-import { parseBooleanValue } from "../../../../../utils/parse-boolean-value";
 
 @Component({
   selector: "app-bool-select-buttons",
@@ -36,7 +34,6 @@ export class BoolSelectButtonsComponent implements OnInit {
   @Input() valueRight: any = true;
   @Input() labelLeft: string = $localize`False`;
   @Input() labelRight: string = $localize`True`;
-
   @Output() onSelect = new EventEmitter<boolean>();
 
   // 1. Initialize selectedValue with a placeholder or default boolean value
