@@ -83,10 +83,10 @@ export class UserService implements UserServiceInterface {
   private readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly tokenService: TokenServiceInterface = inject(TokenService);
   private readonly authService: AuthServiceInterface = inject(AuthService);
-  readonly apiFilterOptions = apiFilter;
-  readonly advancedApiFilterOptions = advancedApiFilter;
+  readonly apiFilter = apiFilter;  readonly apiFilterOptions = apiFilter;
+  readonly advancedApiFilter = advancedApiFilter;  readonly advancedApiFilterOptions = advancedApiFilter;
   private baseUrl = environment.proxyUrl + "/user/";
-  detailsUsername = signal("");
+  filterValue = signal({} as Record<string, string>);  detailsUsername = this.tokenService.detailsUsername;
   apiUserFilter = signal(new FilterValue());
   filterParams = computed<Record<string, string>>(() => {
     const allowedFilters = [...this.apiFilterOptions, ...this.advancedApiFilterOptions];
@@ -105,10 +105,10 @@ export class UserService implements UserServiceInterface {
     );
   });
 
-  readonly apiFilter = apiFilter;
-  readonly advancedApiFilter = advancedApiFilter;
 
-  filterValue = signal({} as Record<string, string>);
+
+
+
 
   pageSize = linkedSignal({
     source: () => this.authService.userPageSize(),
@@ -155,15 +155,20 @@ export class UserService implements UserServiceInterface {
     return {
       url: this.baseUrl,
       method: "GET",
-      headers: this.authService.getHeaders()
+      headers: this.authService.getHeaders(),
+      params: {
+        ...this.detailsUsername() && { user: this.detailsUsername() }
+      }
     };
   });
   user: WritableSignal<UserData> = linkedSignal({
-    source: this.userResource.value,
+    source: () => ({
+      userResource: this.userResource.value,
+      detailsUsername: this.detailsUsername()
+    }),
     computation: (source, previous) => {
       return (
-        source?.result?.value?.[0] ??
-        previous?.value ?? {
+        source?.userResource()?.result?.value?.[0] ?? {
           description: "",
           editable: false,
           email: "",

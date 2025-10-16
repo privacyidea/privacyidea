@@ -1,0 +1,179 @@
+<div
+  aria-label="User Details Token Table"
+  class="user-details-token-table-layout"
+  i18n-aria-label>
+  <div class="flex-column">
+    <div class="details-header">
+      <h3 i18n>
+        Tokens of user
+      </h3>
+      <h3 style="color: var(--mat-sys-primary)">{{ userService.detailsUsername() }}:</h3>
+    </div>
+    @if (dataSource.data.length > 1) {
+      <mat-form-field
+        class="user-details-token-table-filter"
+        subscriptSizing="dynamic">
+        <mat-label i18n>Enter Filter</mat-label>
+        <input
+          #filterInput
+          (keyup)="handleFilterInput($event)"
+          aria-label="Filter Input"
+          i18n-aria-label
+          i18n-placeholder
+          matInput
+          placeholder="Filter across all columns." />
+      </mat-form-field>
+    }
+    <mat-paginator
+      [pageSizeOptions]="pageSizeOptions()"
+      [pageSize]="pageSize"
+      class="flex-just-start"
+      showFirstLastButtons/>
+    <div [ngClass]="[overflowService.isWidthOverflowing('body', 1580) ? 'flex-column' : 'flex-row']">
+      <table
+        [dataSource]="dataSource"
+        aria-label="Token of Container Data Table"
+        class="user-details-token-table"
+        i18n-aria-label
+        mat-table
+        matSort>
+        @for (column of columnsKeyMap; track column) {
+          <ng-container [matColumnDef]="column.key">
+            <th
+              *matHeaderCellDef
+              attr.aria-label="{{ column.label }} Header"
+              mat-header-cell
+              mat-sort-header>
+              {{ column.label }}
+            </th>
+            <td
+              *matCellDef="let element"
+              [ngClass]="{ 'width-18rem': column.key === 'description' }"
+              attr.aria-label="{{ column.label }} Cell"
+              mat-cell>
+              <ng-container>
+                <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
+                  @switch (column.key) {
+                    @case ("serial") {
+                      @if (element.username === authService.username() || authService.role() === "admin") {
+                        <a
+                          (click)="contentService.tokenSelected(element.serial)"
+                          attr.aria-label="{{ column.label }} Link">
+                          {{ element[column.key] }}
+                        </a>
+                      } @else {
+                        <span> {{ element[column.key] }} </span>
+                      }
+                      <app-copy-button [copyText]="element.serial"></app-copy-button>
+                    }
+                    @case ("active") {
+                      <span
+                        (click)="toggleActive(element)"
+                        [matTooltip]="tableUtilsService.getTooltipForColumn(column.key,element)"
+                        [ngClass]="tableUtilsService.getClassForColumn(column.key, element)">
+                      {{ tableUtilsService.getDisplayText(column.key, element) }}
+                    </span>
+                    }
+                    @case ("failcount") {
+                      <span
+                        [ngClass]="tableUtilsService.getClassForColumn(column.key, element)"
+                        (click)="resetFailCount(element)">
+                      {{ tableUtilsService.getDisplayText(column.key, element) }}
+                    </span>
+                    }
+                    @default {
+                      @if (tableUtilsService.isLink(column.key)) {
+                        <a
+                          attr.aria-label="{{ column.label }} Link"
+                          href="#">
+                          {{ element[column.key] }}
+                        </a>
+                      } @else {
+                        <span> {{ element[column.key] }} </span>
+                      }
+                    }
+                  }
+                </div>
+              </ng-container>
+            </td>
+          </ng-container>
+        }
+        @if (authService.actionAllowed("container_remove_token")) {
+          <ng-container matColumnDef="remove">
+            <th
+              *matHeaderCellDef
+              aria-label="Remove Column Header"
+              i18n
+              i18n-aria-label
+              mat-header-cell>
+              Unassign
+            </th>
+            <td
+              *matCellDef="let element"
+              aria-label="Remove Button Cell"
+              i18n-aria-label
+              mat-cell>
+              <div class="flex just-center">
+                <button
+                  (click)="tokenService.unassignUser(element.serial)"
+                  i18n-matTooltip
+                  mat-icon-button
+                  matTooltip="Remove Token from Container">
+                  <mat-icon> highlight_remove</mat-icon>
+                </button>
+              </div>
+            </td>
+          </ng-container>
+        }
+        @if (authService.actionAllowed("delete")) {
+          <ng-container matColumnDef="delete">
+            <th
+              *matHeaderCellDef
+              aria-label="Delete Column Header"
+              i18n
+              i18n-aria-label
+              mat-header-cell>
+              Delete
+            </th>
+            <td
+              *matCellDef="let element"
+              aria-label="Delete Button Cell"
+              i18n-aria-label
+              mat-cell>
+              <div class="flex just-center">
+                <button
+                  (click)="tokenService.deleteToken(element.serial)"
+                  i18n-matTooltip
+                  mat-icon-button
+                  matTooltip="Delete Token">
+                  <mat-icon> delete</mat-icon>
+                </button>
+              </div>
+            </td>
+          </ng-container>
+        }
+        <tr
+          *matHeaderRowDef="displayedColumns"
+          aria-label="Header Row"
+          i18n-aria-label
+          mat-header-row></tr>
+        <tr
+          *matRowDef="let row; columns: displayedColumns"
+          aria-label="Data Row"
+          i18n-aria-label
+          mat-row></tr>
+        <tr
+          *matNoDataRow
+          aria-label="No Data Row"
+          i18n-aria-label>
+          <td
+            [attr.colspan]="displayedColumns.length"
+            aria-label="No Data Cell"
+            i18n
+            i18n-aria-label>
+            No data matching the filter.
+          </td>
+        </tr>
+      </table>
+    </div>
+  </div>

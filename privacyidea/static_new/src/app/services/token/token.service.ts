@@ -35,6 +35,7 @@ import { tokenTypes } from "../../utils/token.utils";
 import { FilterValue } from "../../core/models/filter_value";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
+import { UserService, UserServiceInterface } from "../user/user.service";
 
 const apiFilter = [
   "serial",
@@ -153,6 +154,8 @@ export interface TokenServiceInterface {
 
   tokenDetailResource: HttpResourceRef<PiResponse<Tokens> | undefined>;
   tokenTypesResource: HttpResourceRef<PiResponse<{}> | undefined>;
+  userTokenResource: HttpResourceRef<PiResponse<Tokens> | undefined>;
+  detailsUsername: WritableSignal<string>;
   tokenTypeOptions: Signal<TokenType[]>;
   pageSize: WritableSignal<number>;
   tokenIsActive: WritableSignal<boolean>;
@@ -247,6 +250,7 @@ export class TokenService implements TokenServiceInterface {
   tokenBaseUrl = environment.proxyUrl + "/token/";
   eventPageSize = 10;
   tokenSerial = this.contentService.tokenSerial;
+  detailsUsername = signal("");
 
   constructor() {
     effect(() => {
@@ -283,6 +287,9 @@ export class TokenService implements TokenServiceInterface {
       routeUrl: this.contentService.routeUrl()
     }),
     computation: (source, previous) => {
+      if (source.routeUrl.includes(ROUTE_PATHS.USERS_DETAILS)) {
+        return new FilterValue({ hiddenValue: `assigned: false` });
+      }
       if (!source.routeUrl.startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS)) {
         return new FilterValue();
       }
@@ -329,6 +336,18 @@ export class TokenService implements TokenServiceInterface {
       method: "GET",
       headers: this.authService.getHeaders()
     };
+  });
+
+  userTokenResource = httpResource<PiResponse<Tokens> | undefined>(() => {
+    if (!this.contentService.routeUrl().includes(ROUTE_PATHS.USERS_DETAILS)) {
+      return undefined
+    }
+    return {
+      url: this.tokenBaseUrl,
+      method: "GET",
+      headers: this.authService.getHeaders(),
+      params: { user: this.detailsUsername() }
+    }
   });
 
   tokenTypeOptions = computed<TokenType[]>(() => {
@@ -402,7 +421,8 @@ export class TokenService implements TokenServiceInterface {
   tokenResource = httpResource<PiResponse<Tokens>>(() => {
     if (
       this.contentService.routeUrl() !== ROUTE_PATHS.TOKENS &&
-      !this.contentService.routeUrl().includes(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS)
+      !this.contentService.routeUrl().includes(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS) &&
+      !this.contentService.routeUrl().includes(ROUTE_PATHS.USERS_DETAILS)
     ) {
       return undefined;
     }
