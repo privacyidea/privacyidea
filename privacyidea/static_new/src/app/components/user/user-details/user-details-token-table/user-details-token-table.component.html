@@ -5,11 +5,11 @@
   <div class="flex-column">
     <div class="details-header">
       <h3 i18n>
-        Tokens of user
+        Tokens of User
       </h3>
-      <h3 style="color: var(--mat-sys-primary)">{{ userService.detailsUsername() }}:</h3>
+      <h3 style="color: var(--mat-sys-primary)">{{ userService.detailsUsername() }}</h3>
+      <h3 class="margin-left--8">:</h3>
     </div>
-    @if (dataSource.data.length > 1) {
       <mat-form-field
         class="user-details-token-table-filter"
         subscriptSizing="dynamic">
@@ -23,7 +23,6 @@
           matInput
           placeholder="Filter across all columns." />
       </mat-form-field>
-    }
     <mat-paginator
       [pageSizeOptions]="pageSizeOptions()"
       [pageSize]="pageSize"
@@ -81,16 +80,18 @@
                       {{ tableUtilsService.getDisplayText(column.key, element) }}
                     </span>
                     }
-                    @default {
-                      @if (tableUtilsService.isLink(column.key)) {
-                        <a
-                          attr.aria-label="{{ column.label }} Link"
-                          href="#">
-                          {{ element[column.key] }}
-                        </a>
-                      } @else {
-                        <span> {{ element[column.key] }} </span>
+                    @case ("container_serial") {
+                      <a
+                        attr.aria-label="{{ column.label }} Link"
+                        (click)="contentService.containerSelected(element[column.key])">
+                        {{ element[column.key] }}
+                      </a>
+                      @if (element.container_serial !== "") {
+                        <app-copy-button [copyText]="element[column.key]" />
                       }
+                    }
+                    @default {
+                        <span> {{ element[column.key] }} </span>
                     }
                   }
                 </div>

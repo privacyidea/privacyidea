@@ -36,8 +36,8 @@ const columnsKeyMap = [
   { key: "active", label: "Active" },
   { key: "description", label: "Description" },
   { key: "failcount", label: "Fail Counter" },
-  { key: "maxfailcount", label: "Maxfail" },
-  { key: "container", label: "Container" }
+  { key: "maxfail", label: "Maxfail" },
+  { key: "container_serial", label: "Container" }
 ];
 
 

@@ -83,10 +83,13 @@ export class UserService implements UserServiceInterface {
   private readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly tokenService: TokenServiceInterface = inject(TokenService);
   private readonly authService: AuthServiceInterface = inject(AuthService);
-  readonly apiFilter = apiFilter;  readonly apiFilterOptions = apiFilter;
-  readonly advancedApiFilter = advancedApiFilter;  readonly advancedApiFilterOptions = advancedApiFilter;
+  readonly apiFilter = apiFilter;
+  readonly advancedApiFilter = advancedApiFilter;  readonly apiFilterOptions = apiFilter;
   private baseUrl = environment.proxyUrl + "/user/";
-  filterValue = signal({} as Record<string, string>);  detailsUsername = this.tokenService.detailsUsername;
+  filterValue = signal({} as Record<string, string>);  readonly advancedApiFilterOptions = advancedApiFilter;
+
+
+  detailsUsername = this.tokenService.detailsUsername;
   apiUserFilter = signal(new FilterValue());
   filterParams = computed<Record<string, string>>(() => {
     const allowedFilters = [...this.apiFilterOptions, ...this.advancedApiFilterOptions];
@@ -104,11 +107,6 @@ export class UserService implements UserServiceInterface {
       {} as Record<string, string>
     );
   });
-
-
-
-
-
 
   pageSize = linkedSignal({
     source: () => this.authService.userPageSize(),
@@ -131,8 +129,8 @@ export class UserService implements UserServiceInterface {
       authRealm: this.authService.realm()
     }),
     computation: (source, previous): string => {
-      if (source.routeUrl.startsWith(ROUTE_PATHS.USERS)) {
-        return previous?.value ?? "";
+      if (source.routeUrl.startsWith(ROUTE_PATHS.USERS) && previous?.value) {
+        return previous.value;
       }
       return source.authRole === "user" ? source.authRealm : source.defaultRealm;
     }

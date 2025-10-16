@@ -114,6 +114,9 @@ export class HeaderComponent {
       case ROUTE_PATHS.USERS:
         this.userService.usersResource.reload();
         break;
+      case ROUTE_PATHS.USERS_DETAILS:
+        this.userService.usersResource.reload();
+        break;
     }
   }
 

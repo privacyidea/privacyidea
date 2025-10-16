@@ -30,6 +30,7 @@ import { MatIcon } from "@angular/material/icon";
 import { TokenDetails, TokenService, TokenServiceInterface } from "../../../services/token/token.service";
 import { MatTableDataSource } from "@angular/material/table";
 import { MatPaginator, PageEvent } from "@angular/material/paginator";
+import { UserDetailsContainerTableComponent } from "./user-details-container-table/user-details-container-table.component";
 
 @Component({
   selector: "app-user-details",
@@ -48,6 +49,7 @@ import { MatPaginator, PageEvent } from "@angular/material/paginator";
     MatFormField,
     NgClass,
     MatPaginator,
+    UserDetailsContainerTableComponent
   ],
   templateUrl: "./user-details.component.html",
   styleUrl: "./user-details.component.scss"
