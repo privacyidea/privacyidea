@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: (C) 2025 NetKnights GmbH <https://netknights.it>
+#
+# SPDX-License-Identifier: CC0-1.0
+
 FROM cgr.dev/chainguard/wolfi-base AS builder
 
 ARG PYTHON_VERSION=3.13
@@ -6,6 +10,10 @@ ARG NODEJS_VERSION=22
 ARG GUNICORN=23.0.0
 # TODO: we should probably create a different container image for use with postgres
 ARG PSYCOPG2=2.9.10
+
+# To override the package version since we copy only part of the repository.
+# See https://setuptools-scm.readthedocs.io/en/latest/usage/#with-dockerpodman
+ARG GIT_VERSION
 
 # TODO: Add build steps for gssapi and PyKCS11
 
@@ -45,7 +53,7 @@ RUN rm -rf node_modules
 
 WORKDIR /build
 
-RUN /opt/privacyidea/bin/pip install --no-cache-dir .
+RUN SETUPTOOLS_SCM_PRETEND_VERSION_FOR_PRIVACYIDEA=${GIT_VERSION} /opt/privacyidea/bin/pip install --no-cache-dir .
 
 # Final Stage: Create a slim image only with necessary files
 FROM cgr.dev/chainguard/wolfi-base
