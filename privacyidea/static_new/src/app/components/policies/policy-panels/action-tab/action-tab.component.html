@@ -1,0 +1,11 @@
+<div class="policy-grid-container">
+  @if (isEditMode) {
+    <app-selected-actions-list class="grid-area-content-header" />
+    <app-policy-description class="grid-area-detail-header" />
+    <app-action-selector class="grid-area-content-body" />
+    <app-action-detail class="grid-area-detail-body" />
+  } @else {
+    <app-selected-actions-list class="grid-area-content-header" />
+    <app-policy-description class="grid-area-detail-header" />
+  }
+</div>

@@ -4,54 +4,19 @@
 
 // --- Main Layout ---
 
-.policy-grid-container {
-  display: grid;
-  gap: 16px;
-  grid-template-columns: 2fr 1fr;
-  grid-template-rows: auto auto 1fr;
-  grid-template-areas:
-    "buttons buttons"
-    "content-header detail-header"
-    "content-body detail-body";
-}
-
-.grid-area-buttons {
-  grid-area: buttons;
-  min-width: 0;
-}
-.grid-area-content-header {
-  grid-area: content-header;
-  min-width: 0;
-}
-.grid-area-content-body {
-  grid-area: content-body;
-  min-width: 0;
-}
-.grid-area-detail-header {
-  grid-area: detail-header;
-  min-width: 0;
-}
-.grid-area-detail-body {
-  grid-area: detail-body;
-  min-width: 0;
-}
-.selected-content {
-  grid-area: content;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
 .placeholder-for-right-column {
   grid-area: right-column;
 }
 
 // --- Tab Buttons ---
 .tab-buttons {
-  grid-area: buttons;
   display: flex;
+  gap: calc(var(--global-gap) / 2);
+  align-items: center;
+  flex-direction: row;
+  flex-wrap: nowrap;
   justify-content: center;
-  gap: 8px;
+  padding: var(--half-global-padding) 0;
 }
 
 .tab-button {
@@ -61,8 +26,8 @@
   background-color: transparent;
   border: none;
   cursor: pointer;
-  border-radius: 20px;
-  padding: 8px 16px;
+  border-radius: var(--global-padding);
+  padding: var(--half-global-padding) var(--global-padding);
   transition:
     background-color 0.2s ease-in-out,
     color 0.2s ease-in-out;
@@ -81,7 +46,7 @@
   box-sizing: border-box;
   font-size: 1rem;
   margin-left: 2px;
-  padding: 8px 0;
+  padding: var(--half-global-padding) 0;
   width: 100%;
 }
 
@@ -89,12 +54,12 @@
 .actions-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: calc(var(--global-gap) / 2);
 }
 
 .action-card {
-  padding: 4px 16px;
-  border-radius: 4px;
+  padding: var(--quarter-global-padding) var(--global-padding);
+  border-radius: var(--quarter-global-padding);
   box-shadow:
     0px 2px 4px -1px rgba(0, 0, 0, 0.2),
     0px 4px 5px 0px rgba(0, 0, 0, 0.14),
@@ -102,8 +67,8 @@
 }
 
 .conditions-list {
-  padding: 16px;
-  border-radius: 4px;
+  padding: var(--global-padding);
+  border-radius: var(--quarter-global-padding);
   box-shadow:
     0px 2px 4px -1px rgba(0, 0, 0, 0.2),
     0px 4px 5px 0px rgba(0, 0, 0, 0.14),
@@ -113,9 +78,9 @@
 .add-action-section {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding: 16px;
-  border-radius: 4px;
+  gap: var(--global-gap);
+  padding: var(--global-padding);
+  border-radius: var(--quarter-global-padding);
   box-shadow:
     0px 2px 4px -1px rgba(0, 0, 0, 0.2),
     0px 4px 5px 0px rgba(0, 0, 0, 0.14),
@@ -125,17 +90,19 @@
 .add-action-details {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: calc(var(--global-gap) / 2);
   max-height: 200px;
   overflow-y: auto;
-  padding-right: 8px; /* Adds space for the scrollbar to prevent content from touching the edge */
+  padding-right: var(
+    --half-global-padding
+  ); /* Adds space for the scrollbar to prevent content from touching the edge */
 }
 
 .search-input {
   border: none;
   border-bottom: 1px solid var(--mat-sys-outline-variant);
   border-radius: 0;
-  padding: 8px 0;
+  padding: var(--half-global-padding) 0;
   font-size: 1rem;
   background-color: transparent;
   width: 100%;
@@ -160,17 +127,17 @@
 }
 
 .detail-row:not(:last-child) {
-  padding-bottom: 8px;
+  padding-bottom: var(--half-global-padding);
 }
 
 .detail-row:not(:first-child) {
-  padding-top: 8px;
+  padding-top: var(--half-global-padding);
 }
 
 .detail-label {
   color: var(--mat-sys-on-surface);
   font-weight: 500;
-  margin-right: 16px;
+  margin-right: var(--half-global-padding);
 }
 
 .detail-value {
@@ -180,19 +147,19 @@
 }
 
 .delete-action-button {
-  margin-left: 8px;
+  margin-left: var(--half-global-padding);
   flex-shrink: 0;
 }
 
 .policy-card {
-  border-radius: 4px;
+  border-radius: var(--quarter-global-padding);
 
   mat-expansion-panel {
-    border-radius: 4px;
+    border-radius: var(--quarter-global-padding);
   }
 
   mat-expansion-panel-header {
-    padding: 0 16px;
+    padding: 0 var(--global-padding);
   }
 
   .header-description {

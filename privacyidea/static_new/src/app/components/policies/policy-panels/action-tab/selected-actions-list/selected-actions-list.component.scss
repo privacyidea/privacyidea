@@ -1,13 +1,13 @@
 .selected-actions-container {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: calc(var(--global-gap) / 2);
   min-width: 0;
 }
 
 .action-card {
-  padding: 8px 16px;
-  border-radius: 4px;
+  padding: var(--half-global-padding) var(--global-padding);
+  border-radius: var(--quarter-global-padding);
   background-color: var(--mat-sys-surface);
   color: var(--mat-sys-on-surface);
   box-shadow: var(--mat-sys-level2);
@@ -33,11 +33,11 @@
 }
 
 .action-row:not(:last-child) {
-  padding-bottom: 8px;
+  padding-bottom: var(--half-global-padding);
 }
 
 .action-row:not(:first-child) {
-  padding-top: 8px;
+  padding-top: var(--half-global-padding);
 }
 
 .action-label {

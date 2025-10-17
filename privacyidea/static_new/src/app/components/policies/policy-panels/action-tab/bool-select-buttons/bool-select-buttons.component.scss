@@ -30,7 +30,7 @@
   cursor: pointer;
   flex: 1;
   margin: 0;
-  padding: 10px 15px;
+  padding: var(--half-global-padding) var(--three-quarters-global-padding);
   text-align: center;
 }
 

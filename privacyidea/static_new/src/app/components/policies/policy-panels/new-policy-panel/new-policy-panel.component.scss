@@ -36,19 +36,14 @@
 // ===================================
 .policy-grid-container {
   display: grid;
-  gap: 16px;
+  gap: var(--global-gap);
   grid-template-areas:
-    "buttons buttons"
     "content-header detail-header"
     "content-body detail-body";
   grid-template-columns: 2fr 1fr;
   grid-template-rows: auto auto 1fr;
 }
 
-.grid-area-buttons {
-  grid-area: buttons;
-  min-width: 0;
-}
 .grid-area-content-header {
   grid-area: content-header;
   min-width: 0;
@@ -71,20 +66,22 @@
 // ===================================
 .tab-buttons {
   display: flex;
-  gap: 8px;
-  grid-area: buttons;
+  gap: calc(var(--global-gap) / 2);
+  align-items: center;
+  flex-direction: row;
+  flex-wrap: nowrap;
   justify-content: center;
 }
 
 .tab-button {
   background-color: transparent;
   border: none;
-  border-radius: 20px;
+  border-radius: var(--global-padding);
   color: var(--mat-sys-on-surface-variant);
   cursor: pointer;
   font-size: 0.9rem;
   font-weight: 500;
-  padding: 8px 16px;
+  padding: var(--half-global-padding) var(--half-global-padding);
   transition:
     background-color 0.2s ease-in-out,
     color 0.2s ease-in-out;
@@ -102,20 +99,20 @@
   border-radius: 0;
   box-sizing: border-box;
   font-size: 1rem;
-  margin-left: 2px;
-  padding: 8px 0;
+  margin-left: var(--eighth-global-padding);
+  padding: var(--half-global-padding) 0;
   width: 100%;
 }
 
 .policy-card {
-  border-radius: 4px;
+  border-radius: var(--quarter-global-padding);
 
   mat-expansion-panel {
-    border-radius: 4px;
+    border-radius: var(--quarter-global-padding);
   }
 
   mat-expansion-panel-header {
-    padding: 0 16px;
+    padding: 0 var(--half-global-padding);
   }
 
   .header-description {

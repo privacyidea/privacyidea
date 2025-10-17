@@ -4,17 +4,13 @@ import { MatCardModule } from "@angular/material/card";
 import { MatIconModule } from "@angular/material/icon";
 import { MatButtonModule } from "@angular/material/button";
 import { MatButtonToggleModule } from "@angular/material/button-toggle";
-import { PolicyDetail, PolicyService } from "../../../../services/policies/policies.service";
 import { FormsModule } from "@angular/forms";
-import { ActionDetailComponent } from "../action-tab/action-detail/action-detail.component";
-import { PolicyDescriptionComponent } from "../action-tab/policy-description/policy-description.component";
-import { SelectedActionsListComponent } from "../action-tab/selected-actions-list/selected-actions-list.component";
 import { MatExpansionModule } from "@angular/material/expansion";
-import { HorizontalWheelComponent } from "../../../shared/horizontal-wheel/horizontal-wheel.component";
 import { MatSlideToggleModule } from "@angular/material/slide-toggle";
-import { ActionSelectorComponent } from "../action-tab/action-selector/action-selector.component";
-import { ConditionsUserComponent } from "../conditions-tab/conditions-user/conditions-user.component";
-import { ConditionsNodesComponent } from "../conditions-tab/conditions-nodes/conditions-nodes.component";
+import { PolicyDetail, PolicyService } from "../../../../services/policies/policies.service";
+import { HorizontalWheelComponent } from "../../../shared/horizontal-wheel/horizontal-wheel.component";
+import { ActionTabComponent } from "../action-tab/action-tab.component";
+import { ConditionsTabComponent } from "../conditions-tab/conditions-tab.component";
 
 type Tab = "actions" | "conditions";
 
@@ -28,15 +24,11 @@ type Tab = "actions" | "conditions";
     MatButtonModule,
     MatButtonToggleModule,
     FormsModule,
-    ActionSelectorComponent,
-    ActionDetailComponent,
-    PolicyDescriptionComponent,
-    SelectedActionsListComponent,
     MatExpansionModule,
     HorizontalWheelComponent,
     MatSlideToggleModule,
-    ConditionsUserComponent,
-    ConditionsNodesComponent
+    ActionTabComponent,
+    ConditionsTabComponent
   ],
   templateUrl: "./policy-panel.component.html",
   styleUrl: "./policy-panel.component.scss"

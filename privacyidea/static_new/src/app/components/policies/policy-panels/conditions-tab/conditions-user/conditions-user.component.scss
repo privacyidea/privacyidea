@@ -9,9 +9,8 @@
   color: var(--mat-sys-on-surface);
   display: flex;
   flex-direction: column;
-  gap: 16px;
   min-width: 0;
-  padding: 12px;
+  padding: var(--half-global-padding);
 }
 
 .user-input-container {
@@ -22,7 +21,6 @@
 .user-list-wrapper {
   display: flex;
   align-items: center;
-  margin-top: 8px;
 }
 
 .user-list {
@@ -39,16 +37,16 @@
   display: flex;
   align-items: center;
   background-color: var(--mat-sys-surface-container-high);
-  border-radius: 8px;
-  padding: 4px 8px;
-  margin-right: 8px;
+  border-radius: var(--half-global-padding);
+  padding: var(--quarter-global-padding) var(--half-global-padding);
+  margin-right: var(--half-global-padding);
   flex-shrink: 0;
 }
 
 .remove-user-btn {
   width: 20px;
   height: 20px;
-  margin-left: 4px;
+  margin-left: var(--quarter-global-padding);
   padding: 0;
   display: flex;
   align-items: center;
@@ -66,13 +64,13 @@
   display: flex;
   justify-content: flex-end;
   flex-wrap: nowrap;
-  padding-bottom: 12px;
+  padding-bottom: var(--three-quarters-global-padding);
   flex-shrink: 0;
   flex-grow: 0;
 }
 
 .clear-button {
-  margin-left: 16px;
+  margin-left: var(--global-padding);
   flex-shrink: 0;
 }
 
@@ -83,7 +81,7 @@
 .add-user-input {
   width: 100%;
   // ecken rechts sollen eckig sein
-  border-radius: 12px 0 0 12px;
+  border-radius: var(--three-quarters-global-padding) 0 0 var(--three-quarters-global-padding);
 
   .mdc-text-field--filled {
     border-top-right-radius: 0 !important;
@@ -101,11 +99,11 @@
 
 .add-user-button {
   height: 56px;
-  margin-bottom: 20px;
+  margin-bottom: var(--global-padding);
   padding: 0;
   border: none;
   background-color: var(--mat-sys-surface-container-high);
-  border-radius: 0 12px 12px 0 !important;
+  border-radius: 0 var(--three-quarters-global-padding) var(--three-quarters-global-padding) 0 !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;

@@ -13,7 +13,7 @@ import { ActionDetailComponent } from "../action-tab/action-detail/action-detail
 import { SelectedActionsListComponent } from "../action-tab/selected-actions-list/selected-actions-list.component";
 import { PolicyDescriptionComponent } from "../action-tab/policy-description/policy-description.component";
 
-type Tab = "actions" | "conditions";
+export type Tab = "actions" | "conditions";
 
 @Component({
   selector: "app-new-policy-panel",

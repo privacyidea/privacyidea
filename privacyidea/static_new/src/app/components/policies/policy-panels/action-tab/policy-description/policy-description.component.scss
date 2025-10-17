@@ -6,14 +6,14 @@
 
 .action-detail-column {
   background-color: var(--mat-sys-surface);
-  border-radius: 4px;
+  border-radius: var(--quarter-global-padding);
   box-shadow: var(--mat-sys-level2);
   color: var(--mat-sys-on-surface);
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--global-gap);
   min-width: 0;
-  padding: 12px;
+  padding: var(--three-quarters-global-padding);
 }
 
 .description-textarea {
@@ -23,8 +23,7 @@
   border-radius: 0;
   box-sizing: border-box;
   font-size: 1rem;
-  padding: 8px 0;
+  padding: var(--half-global-padding) 0;
   resize: vertical;
   width: 100%;
-  // min-height: 80px;
 }

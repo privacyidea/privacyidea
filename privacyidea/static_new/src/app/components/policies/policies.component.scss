@@ -6,15 +6,15 @@
   @include styles.base-table-structure(".token-table", ".token-table-filter", ".table-scroll-container");
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: calc(var(--global-gap) / 2);
   max-height: calc(var(--main-height) - var(--global-padding) * 5);
   max-width: 1000px;
   overflow: auto;
 }
 
 .mat-mdc-outlined-button {
-  border-radius: 8px;
-  padding: 6px 16px;
+  border-radius: var(--half-global-padding);
+  padding: var(--half-global-padding) var(--global-padding);
   border: 1px solid var(--mat-sys-outline);
   background-color: var(--mat-sys-surface-container);
   color: var(--mat-sys-on-surface);

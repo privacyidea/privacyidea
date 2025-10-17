@@ -61,13 +61,20 @@ export class ConditionsNodesComponent {
     this.validTime.set($event);
   }
 
-  validTimeValidator(): boolean {
+  validTimeValidator = computed((): boolean => {
     //Mon-Fri: 9-18, Sat: 10-15
     const regex =
       /^((Mon|Tue|Wed|Thu|Fri|Sat|Sun)(-(Mon|Tue|Wed|Thu|Fri|Sat|Sun))?:\s*(\d{1,2}(-\d{1,2})?)(,\s*(\d{1,2}(-\d{1,2})?))*\s*)+$/;
     return this.validTime() === "" || regex.test(this.validTime());
-  }
+  });
 
+  clientValidator = computed((): boolean => {
+    //Please enter a valid client format, e.g., 10.0.0.0/8, !10.0.0.124
+    const regex = /^(!?\d{1,3}(\.\d{1,3}){3}(\/\d{1,2})?)(,\s*!?\d{1,3}(\.\d{1,3}){3}(\/\d{1,2})?)*$/;
+    const isValid = this.client() === "" || regex.test(this.client());
+    console.log("isValid client:", isValid);
+    return isValid;
+  });
   clearUserAgents() {
     this.selectedUserAgents.set([]);
   }

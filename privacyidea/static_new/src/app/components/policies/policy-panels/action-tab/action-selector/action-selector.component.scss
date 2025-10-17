@@ -1,13 +1,13 @@
 .action-selector-container {
   background-color: var(--mat-sys-surface);
-  border-radius: 4px;
+  border-radius: var(--quarter-global-padding);
   box-shadow: var(--mat-sys-level2);
   color: var(--mat-sys-on-surface);
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--global-gap);
   min-width: 0;
-  padding: 12px;
+  padding: var(--three-quarters-global-padding);
 }
 
 .search-input {
@@ -17,7 +17,7 @@
   border-radius: 0;
   box-sizing: border-box;
   font-size: 1rem;
-  padding: 8px 0;
+  padding: var(--half-global-padding) 0;
   width: 100%;
 }
 
@@ -28,7 +28,7 @@
 
 .button-row {
   border: 1px solid var(--mat-sys-outline);
-  border-radius: 8px;
+  border-radius: var(--half-global-padding);
   display: flex;
   overflow: auto;
   padding: 0;
@@ -43,7 +43,7 @@
   cursor: pointer;
   flex: 1;
   margin: 0;
-  padding: 10px 15px;
+  padding: var(--half-global-padding) var(--global-padding);
   text-align: center;
 }
 
@@ -54,13 +54,13 @@
 }
 
 .first-button {
-  border-bottom-left-radius: 8px;
-  border-top-left-radius: 8px;
+  border-bottom-left-radius: var(--half-global-padding);
+  border-top-left-radius: var(--half-global-padding);
 }
 
 .last-button {
-  border-bottom-right-radius: 8px;
-  border-top-right-radius: 8px;
+  border-bottom-right-radius: var(--half-global-padding);
+  border-top-right-radius: var(--half-global-padding);
 }
 
 .selected-button {
@@ -76,10 +76,10 @@
 .add-action-details {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: calc(var(--global-gap) / 2);
   max-height: 32rem;
   overflow-y: none;
-  padding-right: 8px;
+  padding-right: var(--half-global-padding);
 }
 
 .policy-action-items {
@@ -91,13 +91,13 @@
 
 .policy-action-item {
   align-items: center;
-  border-radius: 4px;
+  border-radius: var(--quarter-global-padding);
   box-shadow: var(--mat-sys-level1);
   display: flex;
   font-weight: 500;
   justify-content: space-between;
-  margin: 8px;
-  padding: 8px 12px;
+  margin: var(--half-global-padding);
+  padding: var(--half-global-padding) var(--three-quarters-global-padding);
 }
 
 .policy-action-item:hover {
