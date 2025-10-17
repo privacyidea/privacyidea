@@ -136,9 +136,8 @@ class AuthorizationPolicyTestCase(MyApiTestCase):
     https://github.com/privacyidea/privacyidea/issues/543
     """
 
-    @ldap3mock.activate
-    def test_00_create_realm(self):
-        ldap3mock.setLDAPDirectory(LDAPDirectory)
+    def setUp(self):
+        super(AuthorizationPolicyTestCase, self).setUp()
         params = {'LDAPURI': 'ldap://localhost',
                   'LDAPBASE': 'o=test',
                   'BINDDN': 'cn=manager,ou=example,o=test',
@@ -155,8 +154,7 @@ class AuthorizationPolicyTestCase(MyApiTestCase):
                   "resolver": "catchall",
                   "type": "ldapresolver"}
 
-        r = save_resolver(params)
-        self.assertTrue(r > 0)
+        save_resolver(params)
 
         params = {'LDAPURI': 'ldap://localhost',
                   'LDAPBASE': 'ou=sales,o=test',
@@ -174,9 +172,15 @@ class AuthorizationPolicyTestCase(MyApiTestCase):
                   "resolver": "sales",
                   "type": "ldapresolver"}
 
-        r = save_resolver(params)
-        self.assertTrue(r > 0)
+        save_resolver(params)
 
+    @ldap3mock.activate
+    def test_00_create_realm(self):
+        """
+        This test verifies that the resolvers created in the setUp method
+        are correctly listed.
+        """
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
         rl = get_resolver_list()
         self.assertTrue("catchall" in rl)
         self.assertTrue("sales" in rl)
