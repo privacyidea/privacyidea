@@ -17,7 +17,17 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
-import { Component, Input, ViewChild, WritableSignal, computed, effect, inject, linkedSignal } from "@angular/core";
+import {
+  Component,
+  Input,
+  ViewChild,
+  WritableSignal,
+  computed,
+  effect,
+  inject,
+  linkedSignal,
+  ElementRef, signal
+} from "@angular/core";
 import {
   ContainerDetailToken,
   ContainerService,
@@ -44,12 +54,13 @@ import { TokenService, TokenServiceInterface } from "../../../../services/token/
 import { ConfirmationDialogComponent } from "../../../shared/confirmation-dialog/confirmation-dialog.component";
 import { CopyButtonComponent } from "../../../shared/copy-button/copy-button.component";
 import { MatDialog } from "@angular/material/dialog";
-import { MatPaginator, MatPaginatorModule } from "@angular/material/paginator";
+import { MatPaginator, MatPaginatorModule, PageEvent } from "@angular/material/paginator";
 import { NgClass } from "@angular/common";
 import { f } from "../../../../../../node_modules/@angular/material/icon-module.d-d06a5620";
 import { MatIconModule } from "@angular/material/icon";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { MatInput } from "@angular/material/input";
+import { MatAutocompleteTrigger } from "@angular/material/autocomplete";
 
 const columnsKeyMap = [
   { key: "serial", label: "Serial" },
@@ -99,7 +110,8 @@ export class ContainerDetailsTokenTableComponent {
   displayedColumns: string[] = [...columnsKeyMap.map((column) => column.key)];
   pageSize = 10;
   pageSizeOptions = this.tableUtilsService.pageSizeOptions;
-  filterValue = "";
+  pageIndex = this.tokenService.pageIndex;
+  filterValue = signal("");
   @Input() containerTokenData!: WritableSignal<MatTableDataSource<ContainerDetailToken, MatPaginator>>;
   dataSource = new MatTableDataSource<ContainerDetailToken>([]);
   containerSerial = this.containerService.containerSerial;
@@ -164,8 +176,9 @@ export class ContainerDetailsTokenTableComponent {
   }
 
   handleFilterInput($event: Event): void {
-    this.filterValue = ($event.target as HTMLInputElement).value.trim();
-    const normalised = this.filterValue.toLowerCase();
+    const value = ($event.target as HTMLInputElement).value.trim();
+    this.filterValue.set(value);
+    const normalised = value.toLowerCase();
     this.dataSource.filter = normalised;
     if (this.containerTokenData) {
       this.containerTokenData().filter = normalised;

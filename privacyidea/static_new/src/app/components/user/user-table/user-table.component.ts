@@ -43,6 +43,7 @@ import { MatPaginator } from "@angular/material/paginator";
 import { NgClass } from "@angular/common";
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { MatSort, MatSortModule } from "@angular/material/sort";
+import { RouterLink } from "@angular/router";
 
 const columnKeysMap = [
   { key: "username", label: "Username" },
@@ -79,7 +80,8 @@ const columnKeysMap = [
     MatNoDataRow,
     MatHeaderCellDef,
     ScrollToTopDirective,
-    ClearableInputComponent
+    ClearableInputComponent,
+    RouterLink
   ],
   templateUrl: "./user-table.component.html",
   styleUrl: "./user-table.component.scss"
@@ -122,4 +124,8 @@ export class UserTableComponent {
       return previous?.value ?? new MatTableDataSource(this.emptyResource());
     }
   });
+
+  onClickUsername(user: UserData): void {
+    this.userService.detailsUsername.set(user.username);
+  }
 }

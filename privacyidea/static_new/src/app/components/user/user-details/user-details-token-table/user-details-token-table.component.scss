@@ -1,0 +1,28 @@
+@use "../../../../../styles";
+
+.user-details-token-table-layout {
+  @include styles.base-table-structure(
+                  ".user-details-token-table",
+                  ".user-details-token-table-filter",
+                  ".table-scroll-container"
+  );
+
+  .user-details-token-table-filter {
+    width: 100%;
+  }
+
+  .user-details-action-row {
+    padding: 0 16px 0 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .user-details-action-column {
+    padding-top: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: center;
+  }
+}

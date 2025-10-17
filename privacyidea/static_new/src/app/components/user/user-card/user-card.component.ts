@@ -37,6 +37,8 @@ import { RealmService, RealmServiceInterface } from "../../../services/realm/rea
 import { UserService, UserServiceInterface } from "../../../services/user/user.service";
 import { ROUTE_PATHS } from "../../../route_paths";
 import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
+import { FilterValue } from "../../../core/models/filter_value";
+import { AuditService, AuditServiceInterface } from "../../../services/audit/audit.service";
 
 @Component({
   selector: "app-user-card",
@@ -72,5 +74,10 @@ export class UserCardComponent {
   protected readonly realmService: RealmServiceInterface = inject(RealmService);
   protected readonly userService: UserServiceInterface = inject(UserService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
+  protected readonly auditService: AuditServiceInterface = inject(AuditService);
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
+
+  onClickManageSearch() {
+    this.auditService.auditFilter.set(new FilterValue({ value: `user: ${this.userService.detailsUsername()}` }));
+  }
 }
