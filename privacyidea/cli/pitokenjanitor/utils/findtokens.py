@@ -46,7 +46,7 @@ from dateutil.tz import tzlocal
 from flask.cli import AppGroup
 from yaml import safe_dump as yaml_safe_dump
 
-from privacyidea.lib.container import find_container_for_token
+from privacyidea.lib.container import find_container_for_token, add_multiple_tokens_to_container
 from privacyidea.lib.error import ResolverError
 from privacyidea.lib.importotp import export_pskc
 from privacyidea.lib.token import unassign_token, remove_token, get_tokens_paginated_generator, export_tokens
@@ -745,3 +745,60 @@ def remove_tokeninfo(ctx, tokeninfo_key):
             token_obj.del_tokeninfo(tokeninfo_key)
             token_obj.save()
             click.echo(f"Removed tokeninfo '{tokeninfo_key}' for token {token_obj.token.serial}")
+
+
+@findtokens.command('list_containers')
+@click.option('--key', '-k', type=str, multiple=True, help='The key of the information to display.')
+@click.pass_context
+def list_containers(ctx, key):
+    """
+    List containers of the found tokens.
+    """
+    for tlist in ctx.obj['tokens']:
+        for token_obj in tlist:
+            container = find_container_for_token(token_obj.token.serial)
+            output = []
+            if container:
+                output.append(f"Token_Serial: {token_obj.token.serial}")
+                output.append(f"Container_Serial: {container.serial}")
+                container_dict = container.get_as_dict()
+                if not key:
+                    key = ['type', 'tokens', 'users', 'realms', 'description']
+                for k in key:
+                    output.append(f"{k}: {container_dict.get(k, 'N/A')}")
+            else:
+                output.append(f"Token {token_obj.token.serial} is in no container.")
+            click.echo(", ".join(output))
+
+
+@findtokens.command('add_to_container')
+@click.argument('container_serial', type=str)
+@click.pass_context
+def add_to_container(ctx, container_serial):
+    """
+    Add the found tokens to the given container.
+    """
+    token_serials = []
+    for tlist in ctx.obj['tokens']:
+        for token_obj in tlist:
+            token_serials.append(token_obj.token.serial)
+    ret = add_multiple_tokens_to_container(container_serial, token_serials)
+    for i in ret:
+        if not i[1]:
+            click.echo(f"Failed to add token {i[0]} to container {container_serial}")
+
+
+@findtokens.command('remove_from_container')
+@click.pass_context
+def remove_from_container(ctx):
+    """
+    Remove the found tokens from their containers.
+    """
+    for tlist in ctx.obj['tokens']:
+        for token_obj in tlist:
+            container = find_container_for_token(token_obj.token.serial)
+            if container:
+                container.remove_token(token_obj.token.serial)
+                click.echo(f"Removed token {token_obj.token.serial} from container {container.serial}")
+            else:
+                click.echo(f"Token {token_obj.token.serial} is in no container.")
