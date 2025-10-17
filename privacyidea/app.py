@@ -269,7 +269,9 @@ def create_app(config_name="development",
     # Routed apps must fall back to index.html
     @app.errorhandler(404)
     def fallback(error):
-        if request.path.startswith("/app/v2/"):
+        if request.path.startswith("/static/public/customize"):
+            return send_html("")
+        elif request.path.startswith("/app/v2/"):
             index_html = app.config.get("PI_INDEX_HTML") or "index.html"
             return send_html(
                 render_template(

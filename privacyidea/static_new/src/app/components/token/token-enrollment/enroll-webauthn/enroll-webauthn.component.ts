@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, EventEmitter, inject, OnInit, Output } from "@angular/core";
+import { Component, EventEmitter, inject, Input, OnInit, Output } from "@angular/core";
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { firstValueFrom, from, lastValueFrom, Observable } from "rxjs";
 import {
@@ -54,6 +54,7 @@ export class EnrollWebauthnComponent implements OnInit {
   protected readonly base64Service: Base64ServiceInterface = inject(Base64Service);
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
 
+  @Input() wizard: boolean = false;
   @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();

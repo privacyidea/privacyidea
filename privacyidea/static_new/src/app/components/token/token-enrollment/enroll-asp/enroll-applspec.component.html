@@ -1,11 +1,13 @@
 <div class="flex-column">
   <h4 class="enroll-h4">Token Configuration</h4>
-  <mat-checkbox
-    [formControl]="generateOnServerControl"
-    class="server-checkbox"
-    i18n>
-    Generate the static password on the Server
-  </mat-checkbox>
+  @if (!wizard) {
+    <mat-checkbox
+      [formControl]="generateOnServerControl"
+      class="server-checkbox"
+      i18n>
+      Generate the static password on the Server
+    </mat-checkbox>
+  }
 
   <div class="flex-row gap-1">
     @if (!authService.checkForceServerGenerateOTPKey("applspec")) {

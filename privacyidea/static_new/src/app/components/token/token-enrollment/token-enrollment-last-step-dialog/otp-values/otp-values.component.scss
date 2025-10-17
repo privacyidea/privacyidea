@@ -1,0 +1,19 @@
+@use "../token-enrollment-last-step-dialog.component";
+
+.otp-values {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.otp-value {
+  min-width: 96px;
+  border: 1px solid var(--mat-sys-outline);
+  padding: 6px;
+  border-radius: var(--border-radius);
+  background: var(--mat-sys-surface-container);
+}
+
+.max-width-600 {
+  max-width: 600px;
+}

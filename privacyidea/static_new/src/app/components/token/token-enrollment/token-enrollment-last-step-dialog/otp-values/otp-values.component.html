@@ -1,0 +1,24 @@
+<mat-accordion>
+  <mat-expansion-panel class="otpkey-expension">
+    <mat-expansion-panel-header>
+      <mat-panel-title>
+        The OTP values
+        @if (otpValues) {
+          <button
+            (click)="printOtps()"
+            mat-icon-button
+            class="margin-left-1">
+            <mat-icon>print</mat-icon>
+          </button>
+        }
+      </mat-panel-title>
+    </mat-expansion-panel-header>
+    <div id="otp-values">
+      <div class="otp-values">
+        @for (otp of Object.entries(otpValues); track otp[0]) {
+          <span class="otp-value"> #{{ otp[0] }}: {{ otp[1] }}</span>
+        }
+      </div>
+    </div>
+  </mat-expansion-panel>
+</mat-accordion>

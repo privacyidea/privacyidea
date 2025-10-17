@@ -1,25 +1,27 @@
 <div class="flex-column">
   <h4 class="enroll-h4">Token Configuration</h4>
-  <mat-checkbox
-    [formControl]="generateOnServerControl"
-    class="server-checkbox"
-    i18n>
-    Generate the OTP key on the server and show a QR code to scan.
-  </mat-checkbox>
-  <div class="otp-inputs-container">
-    @if (!this.authService.checkForceServerGenerateOTPKey("motp")) {
-      <mat-form-field class="width-33 input-height">
-        <mat-label i18n>OTP Key</mat-label>
-        <input
-          matInput
-          [formControl]="otpKeyFormControl"
-          i18n-placeholder
-          placeholder="Enter OTP key"
-          required />
-        <mat-error i18n>OTP key is <strong>required</strong></mat-error>
-      </mat-form-field>
-    }
-  </div>
+  @if (!wizard) {
+    <mat-checkbox
+      [formControl]="generateOnServerControl"
+      class="server-checkbox"
+      i18n>
+      Generate the OTP key on the server and show a QR code to scan.
+    </mat-checkbox>
+    <div class="otp-inputs-container">
+      @if (!this.authService.checkForceServerGenerateOTPKey("motp")) {
+        <mat-form-field class="width-33 input-height">
+          <mat-label i18n>OTP Key</mat-label>
+          <input
+            matInput
+            [formControl]="otpKeyFormControl"
+            i18n-placeholder
+            placeholder="Enter OTP key"
+            required />
+          <mat-error i18n>OTP key is <strong>required</strong></mat-error>
+        </mat-form-field>
+      }
+    </div>
+  }
 </div>
 <div class="flex-column">
   <input

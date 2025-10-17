@@ -30,7 +30,6 @@ import {
 } from "../../components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
 import { EnrollmentResponse } from "../../mappers/token-api-payload/_token-api-payload.mapper";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
-import { TokenEnrollmentLastStepDialogSelfServiceComponent } from "../../components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.self-service.component";
 
 class MatDialogConfigRequired<D = any> extends MatDialogConfig<D> {
   override data!: D;
@@ -121,18 +120,21 @@ export class DialogService implements DialogServiceInterface {
       this._tokenEnrollmentLastStepRef.close();
     }
 
-    const [{ TokenEnrollmentLastStepDialogComponent }, { TokenEnrollmentLastStepDialogSelfServiceComponent }] =
+    const [{ TokenEnrollmentLastStepDialogComponent }, { TokenEnrollmentLastStepDialogSelfServiceComponent }, { TokenEnrollmentSecondStepDialogWizardComponent }] =
       await Promise.all([
         import(
           "../../components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component"
           ),
         import(
           "../../components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.self-service.component"
+          ),
+        import(
+          "../../components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.wizard.component"
           )
       ]);
 
     const component = this.isSelfServing()
-      ? TokenEnrollmentLastStepDialogSelfServiceComponent
+      ? (this.authService.tokenWizard() ? TokenEnrollmentSecondStepDialogWizardComponent : TokenEnrollmentLastStepDialogSelfServiceComponent)
       : TokenEnrollmentLastStepDialogComponent;
 
     this._tokenEnrollmentLastStepRef = this.dialog.open(component as any, config);

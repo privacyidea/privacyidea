@@ -518,7 +518,7 @@ describe("TokenService", () => {
       deleteSpy.mockReturnValue(of(backend));
 
       tokenService
-        .bulkDeleteTokens([{ serial: "S1" } as any, { serial: "S2" } as any])
+        .bulkDeleteTokens(["S1", "S2"])
         .subscribe((r) => {
           expect(deleteSpy).toHaveBeenCalledWith(
             tokenService.tokenBaseUrl,
@@ -539,7 +539,7 @@ describe("TokenService", () => {
       });
       deleteSpy.mockReturnValue(throwError(() => boom));
 
-      tokenService.bulkDeleteTokens([{ serial: "S" } as any]).subscribe({
+      tokenService.bulkDeleteTokens(["S"]).subscribe({
         next: () => fail("expected error"),
         error: (e) => {
           expect(e).toBe(boom);

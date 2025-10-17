@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, EventEmitter, inject, OnInit, Output, signal } from "@angular/core";
+import { Component, EventEmitter, inject, Input, OnInit, Output, signal } from "@angular/core";
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { Tokens, TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 
@@ -52,6 +52,7 @@ export class EnrollPushComponent implements OnInit {
 
   text = this.tokenService.tokenTypeOptions().find((type) => type.key === "push")?.text;
 
+  @Input() wizard: boolean = false;
   @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
@@ -59,8 +60,6 @@ export class EnrollPushComponent implements OnInit {
     (basicOptions: TokenEnrollmentData) => Promise<EnrollmentResponse | null>
   >();
   @Output() reopenDialogChange = new EventEmitter<ReopenDialogFn>();
-
-  pushForm = new FormGroup({});
 
   ngOnInit(): void {
     this.additionalFormFieldsChange.emit({});
@@ -132,10 +131,5 @@ export class EnrollPushComponent implements OnInit {
     return this.dialogService.openTokenEnrollmentFirstStepDialog({
       data: { enrollmentResponse }
     });
-  }
-
-  private _closeStepOneDialog(): void {
-    this.reopenDialogChange.emit(undefined);
-    this.dialogService.closeTokenEnrollmentFirstStepDialog();
   }
 }

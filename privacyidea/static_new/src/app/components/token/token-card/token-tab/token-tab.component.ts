@@ -135,22 +135,22 @@ export class TokenTabComponent {
   }
 
   deleteSelectedTokens(): void {
-    const selectedTokens = this.tokenSelection();
+    const serialList = this.tokenSelection().map((token) => token.serial)
     this.dialog
       .open(ConfirmationDialogComponent, {
         data: {
-          serialList: selectedTokens.map((token) => token.serial),
+          serialList: serialList,
           title: "Delete Selected Tokens",
           type: "token",
           action: "delete",
-          numberOfTokens: selectedTokens.length
+          numberOfTokens: serialList.length
         }
       })
       .afterClosed()
       .subscribe({
         next: (result) => {
           if (result) {
-            this.tokenService.bulkDeleteTokens(selectedTokens).subscribe({
+            this.tokenService.bulkDeleteTokens(serialList).subscribe({
               next: (response: PiResponse<BulkResult, any>) => {
                 const failedTokens = response.result?.value?.failed || [];
                 const unauthorizedTokens = response.result?.value?.unauthorized || [];

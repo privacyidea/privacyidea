@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
-import { Component, Input, ViewChild, WritableSignal, computed, effect, inject, linkedSignal } from "@angular/core";
+import { Component, computed, effect, inject, Input, linkedSignal, ViewChild, WritableSignal } from "@angular/core";
 import {
   ContainerDetailToken,
   ContainerService,
@@ -39,17 +39,21 @@ import { MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatSort, MatSortHeader, MatSortModule } from "@angular/material/sort";
 import { OverflowService, OverflowServiceInterface } from "../../../../services/overflow/overflow.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "../../../../services/table-utils/table-utils.service";
-import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
+import { BulkResult, TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 
 import { ConfirmationDialogComponent } from "../../../shared/confirmation-dialog/confirmation-dialog.component";
 import { CopyButtonComponent } from "../../../shared/copy-button/copy-button.component";
 import { MatDialog } from "@angular/material/dialog";
 import { MatPaginator, MatPaginatorModule } from "@angular/material/paginator";
 import { NgClass } from "@angular/common";
-import { f } from "../../../../../../node_modules/@angular/material/icon-module.d-d06a5620";
 import { MatIconModule } from "@angular/material/icon";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { MatInput } from "@angular/material/input";
+import { PiResponse } from "../../../../app.component";
+import {
+  NotificationService,
+  NotificationServiceInterface
+} from "../../../../services/notification/notification.service";
 
 const columnsKeyMap = [
   { key: "serial", label: "Serial" },
@@ -94,6 +98,7 @@ export class ContainerDetailsTokenTableComponent {
   protected readonly overflowService: OverflowServiceInterface = inject(OverflowService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
+  protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
 
   protected readonly columnsKeyMap = columnsKeyMap;
   displayedColumns: string[] = [...columnsKeyMap.map((column) => column.key)];
@@ -309,33 +314,56 @@ export class ContainerDetailsTokenTableComponent {
   }
 
   deleteAllTokens() {
-    const serialList = this.containerTokenData()
-      .data.map((token) => token.serial)
-      .join(",");
+    const serialList = this.containerTokenData().data.map((token) => token.serial);
     this.dialog
       .open(ConfirmationDialogComponent, {
         data: {
-          serialList: serialList.split(","),
+          serialList: serialList,
           title: "Delete All Tokens",
           type: "token",
           action: "delete",
-          numberOfTokens: serialList.split(",").length
+          numberOfTokens: serialList.length
         }
       })
       .afterClosed()
       .subscribe({
         next: (result) => {
           if (result) {
-            this.containerService
-              .deleteAllTokens({
-                containerSerial: this.containerSerial(),
-                serialList: serialList
-              })
-              .subscribe({
-                next: () => {
-                  this.containerService.containerDetailResource.reload();
+            // TODO: same code used in token-tab (delete selected) -> refactor into service
+            this.tokenService.bulkDeleteTokens(serialList).subscribe({
+              next: (response: PiResponse<BulkResult, any>) => {
+                const failedTokens = response.result?.value?.failed || [];
+                const unauthorizedTokens = response.result?.value?.unauthorized || [];
+                const count_success = response.result?.value?.count_success || 0;
+                const messages: string[] = [];
+                if (count_success) {
+                  messages.push(`Successfully deleted ${count_success} token${count_success === 1 ? "" : "s"}.`);
                 }
-              });
+
+                if (failedTokens.length > 0) {
+                  messages.push(`The following tokens failed to delete: ${failedTokens.join(", ")}`);
+                }
+
+                if (unauthorizedTokens.length > 0) {
+                  messages.push(
+                    `You are not authorized to delete the following tokens: ${unauthorizedTokens.join(", ")}`
+                  );
+                }
+
+                if (messages.length > 0) {
+                  this.notificationService.openSnackBar(messages.join("\n"));
+                }
+
+                this.containerService.containerDetailResource.reload();
+              },
+              error: (err) => {
+                let message = "An error occurred while deleting tokens.";
+                if (err.error?.result?.error?.message) {
+                  message = err.error.result.error.message;
+                }
+                this.notificationService.openSnackBar(message);
+              }
+            });
           }
         }
       });

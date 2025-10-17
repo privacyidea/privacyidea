@@ -231,7 +231,6 @@ def init():
     :jsonparam realm: Optional realm to assign the container to. Requires user param to be present as well.
     :jsonparam template: The template to create the container from (dictionary), optional
     :jsonparam template_name: The name of the template to create the container from, optional
-    :jsonparam options: Options for the container if no template is used (dictionary), optional
     """
     user_role = g.logged_in_user.get("role")
     allowed_realms = getattr(request, "pi_allowed_realms", None)
