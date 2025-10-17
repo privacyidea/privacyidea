@@ -18,17 +18,23 @@
  **/
 import { CommonModule } from "@angular/common";
 import { Component, effect, inject, signal, ViewChild } from "@angular/core";
-import { MatFabButton } from "@angular/material/button";
-import { MatIcon } from "@angular/material/icon";
 import { MatDrawer, MatDrawerContainer, MatSidenavModule } from "@angular/material/sidenav";
-import { RouterOutlet } from "@angular/router";
+import { Router, RouterOutlet } from "@angular/router";
 import { ContentService, ContentServiceInterface } from "../../services/content/content.service";
 import { OverflowService, OverflowServiceInterface } from "../../services/overflow/overflow.service";
 import { ContainerDetailsComponent } from "./container-details/container-details.component";
 import { ContainerTableComponent } from "./container-table/container-table.component";
-import { TokenCardComponent } from "./token-card/token-card.component";
 import { TokenDetailsComponent } from "./token-details/token-details.component";
 import { TokenTableComponent } from "./token-table/token-table.component";
+import { ROUTE_PATHS } from "../../route_paths";
+import { MatExpansionModule } from "@angular/material/expansion";
+import { AuthService, AuthServiceInterface } from "../../services/auth/auth.service";
+import { VersioningService, VersioningServiceInterface } from "../../services/version/version.service";
+import { SessionTimerService, SessionTimerServiceInterface } from "../../services/session-timer/session-timer.service";
+import { LocalService, LocalServiceInterface } from "../../services/local/local.service";
+import { NotificationService, NotificationServiceInterface } from "../../services/notification/notification.service";
+import { MatDividerModule } from "@angular/material/divider";
+import { NavigationComponent } from "./navigation/navigation.component";
 
 export type TokenTypeOption =
   | "hotp"
@@ -63,13 +69,13 @@ export type TokenTypeOption =
   standalone: true,
   imports: [
     CommonModule,
-    TokenCardComponent,
     MatDrawerContainer,
     MatDrawer,
     MatSidenavModule,
-    MatIcon,
-    MatFabButton,
-    RouterOutlet
+    RouterOutlet,
+    MatExpansionModule,
+    MatDividerModule,
+    NavigationComponent
   ],
   templateUrl: "./token.component.html",
   styleUrl: "./token.component.scss"
@@ -77,6 +83,14 @@ export type TokenTypeOption =
 export class TokenComponent {
   protected readonly overflowService: OverflowServiceInterface = inject(OverflowService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
+  protected readonly versioningService: VersioningServiceInterface = inject(VersioningService);
+  protected readonly sessionTimerService: SessionTimerServiceInterface = inject(SessionTimerService);
+  protected readonly localService: LocalServiceInterface = inject(LocalService);
+  protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
+  protected readonly router: Router = inject(Router);
+  protected readonly ROUTE_PATHS = ROUTE_PATHS;
+
   tokenTypeOptions = signal([]);
   isTokenDrawerOverflowing = signal(false);
   @ViewChild("tokenDetailsComponent")
