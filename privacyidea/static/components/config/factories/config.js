@@ -60,14 +60,14 @@ myApp.factory("ConfigFactory", ["AuthFactory", "$http", "$state", "$rootScope",
     "radiusServerUrl", "smsgatewayUrl",
     "defaultRealmUrl", "systemUrl", "periodicTaskUrl",
     "privacyideaServerUrl", "CAConnectorUrl", "tokengroupUrl",
-    "serviceidUrl",
+    "serviceidUrl", "riskUrl",
     function (AuthFactory, $http, $state, $rootScope,
               resolverUrl, realmUrl, machineResolverUrl,
               policyUrl, eventUrl, smtpServerUrl,
               radiusServerUrl, smsgatewayUrl,
               defaultRealmUrl, systemUrl,
               periodicTaskUrl, privacyideaServerUrl,
-              CAConnectorUrl, tokengroupUrl, serviceidUrl) {
+              CAConnectorUrl, tokengroupUrl, serviceidUrl,riskUrl) {
         /**
          Each service - just like this service factory - is a singleton.
          */
@@ -1012,6 +1012,107 @@ myApp.factory("ConfigFactory", ["AuthFactory", "$http", "$state", "$rootScope",
                 }, function (error) {
                     AuthFactory.authError(error.data)
                 });
+            },
+            loadRiskConfig: function(callback) {
+                $http.get(riskUrl + "/", {
+                    headers: {
+                        'PI-Authorization': AuthFactory.getAuthToken(),
+                        'Content-Type': 'application/json'
+                    }
+                }).then(function(response) {
+                    callback(response.data)
+                }, function(error) {
+                    AuthFactory.authError(error.data)
+                });
+            },
+            delRiskScore: function(type,identifier,callback) {
+                $http.post(riskUrl + "/" + type + "/delete",{
+                    "identifier": identifier
+                }, {
+                    headers: {
+                        'PI-Authorization': AuthFactory.getAuthToken(),
+                        'Content-Type': 'application/json'
+                    }
+                }).then(function(response) {
+                    callback(response.data)
+                }, function(error) {
+                    AuthFactory.authError(error.data)
+                });
+            },
+            delGroup: function(user_resolver,group_resolver,callback) {
+                $http.post(riskUrl + "/groups/delete", {
+                    "user_resolver_name": user_resolver,
+                    "group_resolver_name": group_resolver
+                }, {
+                    headers: {
+                        'PI-Authorization': AuthFactory.getAuthToken(),
+                        'Content-Type': 'application/json'
+                    }
+                }).then(function(response) {
+                    callback(response.data)
+                }, function(error) {
+                    AuthFactory.authError(error.data)
+                });
+            },
+            addRiskScore: function(type,params,callback) {
+                $http.post(riskUrl + "/" + type,params, {
+                    headers: {
+                        'PI-Authorization': AuthFactory.getAuthToken(),
+                        'Content-Type': 'application/json'
+                    }
+                }).then(function(response) {
+                    callback(response.data)
+                },function(error) {
+                    AuthFactory.authError(error.data)
+                });
+            },
+            saveGroupResolver: function(params,callback) {
+                $http.post(riskUrl + "/groups", params, {
+                    headers: {
+                        'PI-Authorization': AuthFactory.getAuthToken(),
+                        'Content-Type': 'application/json'
+                    }
+                }).then(function(response) {
+                    callback(response.data)
+                }, function(error) {
+                    AuthFactory.authError(error.data)
+                });
+            },
+            testRisk: function(params,callback) {
+                $http.post(riskUrl + "/check",params, {
+                    headers: {
+                        'PI-Authorization': AuthFactory.getAuthToken(),
+                        'Content-Type': 'application/json'
+                    }
+                }).then(function(response) {
+                    callback(response.data)
+                }, function(error) {
+                    AuthFactory.authError(error.data)
+                });
+            },
+            saveGroupResolver: function(params,callback) {
+                $http.post(riskUrl + "/groups",params, {
+                    headers: {
+                        'PI-Authorization': AuthFactory.getAuthToken(),
+                        'Content-Type': 'application/json'
+                    }
+                }).then(function(response) {
+                    callback(response.data)
+                }, function(error) {
+                    AuthFactory.authError(error.data)
+                });
+            },
+            testGroupResolver: function(params,callback) {
+                $http.post(riskUrl + "/groups/test", params, {
+                    headers: {
+                        'PI-Authorization': AuthFactory.getAuthToken(),
+                        'Content-Type': 'application/json'
+                    }
+                }).then(function(response) {
+                    callback(response.data)
+                }, function(error) {
+                    AuthFactory.authError(error.data)
+                })
             }
         };
     }]);
