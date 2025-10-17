@@ -27,6 +27,8 @@ import { LocalService, LocalServiceInterface } from "../local/local.service";
 import { VersioningService, VersioningServiceInterface } from "../version/version.service";
 import { tokenTypes } from "../../utils/token.utils";
 import { PolicyAction } from "./policy-actions";
+import { Router } from "@angular/router";
+import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
 
 export type AuthResponse = PiResponse<AuthData, AuthDetail>;
 
@@ -184,6 +186,8 @@ export interface AuthServiceInterface {
   providedIn: "root"
 })
 export class AuthService implements AuthServiceInterface {
+  protected readonly router: Router = inject(Router);
+  protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   readonly authUrl = environment.proxyUrl + "/auth";
   jwtData = signal<JwtData | null>(null);
   jwtNonce = computed(() => this.jwtData()?.nonce || "");
@@ -294,6 +298,7 @@ export class AuthService implements AuthServiceInterface {
     this.jwtData.set(null);
     this.localService.removeData(BEARER_TOKEN_STORAGE_KEY);
     this.authenticationAccepted.set(false);
+    this.router.navigate(["login"]).then(() => this.notificationService.openSnackBar("Logout successful."));
   }
 
   actionAllowed(action: PolicyAction): boolean {

@@ -70,6 +70,11 @@ import {
 } from "./container-registration-dialog/container-registration-dialog.component";
 import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
 import { ContainerRegistrationDialogWizardComponent } from "./container-registration-dialog/container-registration-dialog.wizard.component";
+import {
+  ContainerRegistrationCompletedDialogComponent,
+  ContainerRegistrationCompletedDialogData
+} from "./container-registration-completed-dialog/container-registration-completed-dialog.component";
+import { ContainerRegistrationCompletedDialogWizardComponent } from "./container-registration-completed-dialog/container-registration-completed-dialog.wizard.component";
 
 export type ContainerTypeOption = "generic" | "smartphone" | "yubikey";
 
@@ -130,6 +135,7 @@ export class ContainerCreateComponent {
   passphraseResponse = signal("");
   registerResponse = signal<PiResponse<ContainerRegisterData> | null>(null);
   pollResponse = signal<any>(null);
+  protected dialogComponent: any = ContainerRegistrationDialogComponent;
   protected readonly wizard: boolean = false;
 
   @ViewChild("scrollContainer") scrollContainer!: ElementRef<HTMLElement>;
@@ -243,11 +249,10 @@ export class ContainerCreateComponent {
       containerSerial: this.containerSerial,
       registerContainer: this.registerContainer.bind(this)
     };
-    let dialogComponent: any = ContainerRegistrationDialogComponent;
     if (this.wizard) {
-      dialogComponent = ContainerRegistrationDialogWizardComponent;
+      this.dialogComponent = ContainerRegistrationDialogWizardComponent;
     }
-    this.registrationDialog.open(dialogComponent, {
+    this.registrationDialog.open(this.dialogComponent, {
       data: dialogData
     });
   }
@@ -258,7 +263,12 @@ export class ContainerCreateComponent {
         this.pollResponse.set(pollResponse);
         if (pollResponse.result?.value?.containers[0].info.registration_state !== "client_wait") {
           this.registrationDialog.closeAll();
-          this.router.navigateByUrl(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + containerSerial);
+          let registrationCompletedDialogComponent: any = ContainerRegistrationCompletedDialogComponent;
+          if (this.wizard) {
+            registrationCompletedDialogComponent = ContainerRegistrationCompletedDialogWizardComponent;
+          }
+          this.registrationDialog.open(registrationCompletedDialogComponent,
+            { data: { "containerSerial": containerSerial } as ContainerRegistrationCompletedDialogData });
         }
       }
     });

@@ -3,9 +3,16 @@
   aria-label="Create Container"
   class="container-create-container"
   i18n-aria-label>
+  @let preTopHtml = preTopHtml$ | async;
+  @if (preTopHtml?.hasContent) {
   <div
-    [innerHTML]="preTopHtml$ | async"
+    [innerHTML]="preTopHtml?.sanitized"
     class="margin-top-1"></div>
+  } @else {
+    <h3 class="margin-left-1" i18n>
+      Create {{ this.containerService.selectedContainerType().containerType | titlecase }} Container
+    </h3>
+  }
 
   <div class="enroll-button-container">
         <button
@@ -13,7 +20,7 @@
           class="card-button"
           mat-flat-button>
           <mat-icon>add</mat-icon>
-          Create {{ this.containerService.selectedContainerType().containerType | titlecase }} Container
+          Create
         </button>
         <button
           (click)="reopenEnrollmentDialog()"

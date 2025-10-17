@@ -119,6 +119,5 @@ export class HeaderComponent {
 
   logout(): void {
     this.authService.logout();
-    this.router.navigate(["login"]).then(() => this.notificationService.openSnackBar("Logout successful."));
   }
 }

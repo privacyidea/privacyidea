@@ -17,16 +17,17 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, Input } from "@angular/core";
+import { StringUtils } from "./string.utils";
 
-@Component({
-  selector: "app-qr-code-text",
-  imports: [],
-  templateUrl: "./qr-code-text.component.html",
-  styleUrl: "./qr-code-text.component.scss"
-})
-export class QrCodeTextComponent {
-  @Input() tokenType!: string;
-  @Input() url!: string;
-  @Input() showRegenerateText: boolean = true;
-}
+describe("StringUtils", () => {
+
+  it("should replace tags in template string with provided values", () => {
+    const template = "Token with serial {{ serial }} successfully enrolled for user {{user}}.";
+    const tagData = {
+      serial: "1234",
+      user: "alice"
+    };
+    const result = StringUtils.replaceWithTags(template, tagData);
+    expect(result).toBe("Token with serial 1234 successfully enrolled for user alice.");
+  });
+});

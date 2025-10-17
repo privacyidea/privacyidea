@@ -18,17 +18,14 @@
  **/
 import { AsyncPipe, NgClass, TitleCasePipe } from "@angular/common";
 import { HttpClient } from "@angular/common/http";
-import { Component, computed, inject, linkedSignal, signal, WritableSignal } from "@angular/core";
+import { Component, inject, linkedSignal, WritableSignal } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { MatButton, MatIconButton } from "@angular/material/button";
 import { MatDialog } from "@angular/material/dialog";
 import { MatIcon } from "@angular/material/icon";
 import { DomSanitizer } from "@angular/platform-browser";
 import { map } from "rxjs";
-import {
-  ContainerService,
-  ContainerServiceInterface
-} from "../../../services/container/container.service";
+import { ContainerService, ContainerServiceInterface } from "../../../services/container/container.service";
 import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
 import { NotificationService, NotificationServiceInterface } from "../../../services/notification/notification.service";
 import { RealmService, RealmServiceInterface } from "../../../services/realm/realm.service";
@@ -66,8 +63,8 @@ export class ContainerCreateWizardComponent extends ContainerCreateComponent {
   protected override readonly wizard: boolean = true;
 
   override generateQRCode: WritableSignal<boolean> = linkedSignal({
-    source: this.authService.containerWizard,
-    computation: (containerWizard) => containerWizard.registration
+      source: this.authService.containerWizard,
+      computation: (containerWizard) => containerWizard.registration
     }
   );
   override selectedTemplate = linkedSignal({
@@ -84,13 +81,17 @@ export class ContainerCreateWizardComponent extends ContainerCreateComponent {
   };
 
   readonly preTopHtml$ = this.http
-    .get("/customize/container-create.wizard.pre.top.html", {
+    .get("/static/public/customize/container-create.wizard.pre.top.html", {
       responseType: "text"
     })
-    .pipe(map((raw) => this.sanitizer.bypassSecurityTrustHtml(raw)));
+    .pipe(map((raw) => ({
+        hasContent: !!raw && raw.trim().length > 0,
+        sanitized: this.sanitizer.bypassSecurityTrustHtml(raw)
+      }))
+    );
 
   readonly preBottomHtml$ = this.http
-    .get("/customize/container-create.wizard.pre.bottom.html", {
+    .get("/static/public/customize/container-create.wizard.pre.bottom.html", {
       responseType: "text"
     })
     .pipe(map((raw) => this.sanitizer.bypassSecurityTrustHtml(raw)));

@@ -18,13 +18,14 @@
  **/
 import { AsyncPipe } from "@angular/common";
 import { HttpClient } from "@angular/common/http";
-import { Component, inject, WritableSignal } from "@angular/core";
-import { MAT_DIALOG_DATA, MatDialogContent, MatDialogRef, MatDialogTitle } from "@angular/material/dialog";
+import { Component, computed, inject, Signal, WritableSignal } from "@angular/core";
+import { MAT_DIALOG_DATA, MatDialogContent } from "@angular/material/dialog";
 import { DomSanitizer } from "@angular/platform-browser";
 import { map } from "rxjs";
 import { ContainerService, ContainerServiceInterface } from "../../../../services/container/container.service";
-import { LostTokenComponent } from "../../token-card/token-tab/lost-token/lost-token.component";
 import { ContainerRegistrationDialogComponent } from "./container-registration-dialog.component";
+import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
+import { StringUtils } from "../../../../utils/string.utils";
 
 @Component({
   selector: "app-container-registration-dialog",
@@ -39,24 +40,35 @@ export class ContainerRegistrationDialogWizardComponent extends ContainerRegistr
     response: any;
     containerSerial: WritableSignal<string>;
   } = inject(MAT_DIALOG_DATA);
+  public readonly authService: AuthServiceInterface = inject(AuthService);
+  tagData: Signal<Record<string, string>> = computed(() => ({
+    containerSerial: this.data.containerSerial(),
+    containerRegistrationURL: this.data.response.result?.value?.container_url?.value || "",
+    containerRegistrationQR: this.data.response.result?.value?.container_url?.img || ""
+  }));
 
   readonly postTopHtml$ = this.http
-    .get("/customize/container-create.wizard.post.top.html", {
+    .get("/static/public/customize/container-create.wizard.post.top.html", {
       responseType: "text"
     })
-    .pipe(map((raw) => this.sanitizer.bypassSecurityTrustHtml(raw)));
+    .pipe(map((raw) => ({
+        hasContent: !!raw && raw.trim().length > 0,
+        sanitized: this.sanitizer.bypassSecurityTrustHtml(StringUtils.replaceWithTags(raw, this.tagData()))
+      }))
+    );
 
   readonly postBottomHtml$ = this.http
-    .get("/customize/container-create.wizard.post.bottom.html", {
+    .get("/static/public/customize/container-create.wizard.post.bottom.html", {
       responseType: "text"
     })
-    .pipe(map((raw) => this.sanitizer.bypassSecurityTrustHtml(raw)));
+    .pipe(map((raw) => this.sanitizer.bypassSecurityTrustHtml(
+      StringUtils.replaceWithTags(raw, this.tagData()))
+    ));
 
   constructor(
     private http: HttpClient,
-    private sanitizer: DomSanitizer,
-    dialogRef: MatDialogRef<LostTokenComponent>
+    private sanitizer: DomSanitizer
   ) {
-    super(dialogRef);
+    super();
   }
 }

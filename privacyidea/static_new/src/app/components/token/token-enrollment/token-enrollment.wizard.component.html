@@ -3,9 +3,14 @@
   aria-label="Token Enrollment"
   class="token-enrollment-container"
   i18n-aria-label>
-  <div
-    [innerHTML]="preTopHtml$ | async"
-    class="margin-top-1"></div>
+  @let preTopHtml = preTopHtml$ | async;
+  @if (preTopHtml?.hasContent) {
+    <div
+      [innerHTML]="preTopHtml?.sanitized"
+      class="margin-top-1"></div>
+  } @else {
+    <h2>Enroll {{ tokenType().name }} Token</h2>
+  }
   <form
     (ngSubmit)="enrollToken()"
     [formGroup]="formGroupSignal()">
@@ -19,7 +24,7 @@
         mat-flat-button
         type="submit">
         <mat-icon>add</mat-icon>
-        Enroll {{ tokenType().name }} Token
+        Enroll
       </button>
       <button
         (click)="reopenEnrollmentDialog()"

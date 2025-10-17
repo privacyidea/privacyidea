@@ -159,17 +159,18 @@ export class TokenEnrollmentWizardComponent extends TokenEnrollmentComponent {
   }
 
   readonly preTopHtml$ = this.http
-    .get("/customize/token-enrollment.wizard.pre.top.html", {
-      responseType: "text"
+    .get("/static/public/customize/token-enrollment.wizard.pre.top.html", {
+      responseType: "text",
+      headers: {"Cache-Control": "no-cache"}
     })
     .pipe(
-      map((raw) => this.sanitizer.bypassSecurityTrustHtml(raw)),
-      catchError(() =>
-        of(this.sanitizer.bypassSecurityTrustHtml("<div>No custom content available.</div>"))
-      )
+      map((raw) => ({
+        hasContent: !!raw && raw.trim().length > 0,
+        sanitized: this.sanitizer.bypassSecurityTrustHtml(raw)
+      }))
     );
   readonly preBottomHtml$ = this.http
-    .get("/customize/token-enrollment.wizard.pre.bottom.html", {
+    .get("/static/public/customize/token-enrollment.wizard.pre.bottom.html", {
       responseType: "text"
     })
     .pipe(map((raw) => this.sanitizer.bypassSecurityTrustHtml(raw)));

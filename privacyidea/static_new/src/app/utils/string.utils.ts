@@ -17,16 +17,14 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, Input } from "@angular/core";
-
-@Component({
-  selector: "app-qr-code-text",
-  imports: [],
-  templateUrl: "./qr-code-text.component.html",
-  styleUrl: "./qr-code-text.component.scss"
-})
-export class QrCodeTextComponent {
-  @Input() tokenType!: string;
-  @Input() url!: string;
-  @Input() showRegenerateText: boolean = true;
+export class StringUtils {
+  static replaceWithTags(template: string, tagData: Record<string, string>): string {
+    let result = template;
+    Object.entries(tagData).forEach(([tag, value]) => {
+      const regex = new RegExp(`{{\\s*${tag}\\s*}}`, "g");
+      result = result.replace(regex, value);
+    });
+    return result;
+  };
 }
+
