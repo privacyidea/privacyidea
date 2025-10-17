@@ -1,0 +1,16 @@
+@use "../../../../../../styles" as styles;
+@use "../../../policies.component.scss";
+@use "@angular/material" as mat;
+
+.additional-conditions-panel {
+  background-color: var(--mat-sys-surface) !important;
+}
+
+mat-form-field {
+  width: 100%;
+}
+
+mat-checkbox {
+  display: block;
+  margin-bottom: 1rem;
+}

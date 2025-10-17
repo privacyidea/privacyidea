@@ -1,0 +1,50 @@
+<mat-expansion-panel class="additional-conditions-panel">
+  <mat-expansion-panel-header>
+    <mat-panel-title> Additional Conditions </mat-panel-title>
+  </mat-expansion-panel-header>
+
+  @for (def of policyConditionDefs(); track def) {
+    <div>
+      @if (def.type === "string") {
+        <mat-form-field>
+          <mat-label>{{ def.desc }}</mat-label>
+          <input
+            matInput
+            [ngModel]="conditions()[def.name]"
+            (ngModelChange)="updateCondition(def.name, $event)" />
+        </mat-form-field>
+      }
+      @if (def.type === "number") {
+        <mat-form-field>
+          <mat-label>{{ def.desc }}</mat-label>
+          <input
+            matInput
+            type="number"
+            [ngModel]="conditions()[def.name]"
+            (ngModelChange)="updateCondition(def.name, $event)" />
+        </mat-form-field>
+      }
+      @if (def.type === "boolean") {
+        <mat-checkbox
+          [ngModel]="conditions()[def.name]"
+          (ngModelChange)="updateCondition(def.name, $event)">
+          {{ def.desc }}
+        </mat-checkbox>
+      }
+      @if (def.type === "select") {
+        <mat-form-field>
+          <mat-label>{{ def.desc }}</mat-label>
+          <mat-select
+            [ngModel]="conditions()[def.name]"
+            (ngModelChange)="updateCondition(def.name, $event)">
+            @for (option of def.options; track option) {
+              <mat-option [value]="option">
+                {{ option }}
+              </mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      }
+    </div>
+  }
+</mat-expansion-panel>
