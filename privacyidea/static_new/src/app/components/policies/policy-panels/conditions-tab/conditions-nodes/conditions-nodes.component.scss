@@ -2,15 +2,8 @@
 @use "../../../policies.component.scss";
 @use "@angular/material" as mat;
 
-.action-selector-container {
-  background-color: var(--mat-sys-surface);
-  border-radius: var(--quarter-global-padding);
-  box-shadow: var(--mat-sys-level2);
-  color: var(--mat-sys-on-surface);
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  padding: var(--three-quarters-global-padding);
+.nodes-expansion-panel {
+  background-color: var(--mat-sys-surface) !important;
 }
 
 .full-width {
@@ -31,7 +24,6 @@
 .user-agent-list-wrapper {
   display: flex;
   align-items: center;
-  margin-top: var(--half-global-padding);
 }
 
 .user-agent-list {
@@ -103,16 +95,6 @@
   align-items: center !important;
   justify-content: center !important;
   transition: background-color 0.2s ease-in-out;
-
-  &:hover:not(:disabled) {
-    background-color: var(--mat-sys-surface-container-highest);
-    cursor: pointer;
-  }
-
-  &:disabled {
-    background-color: var(--mat-sys-surface-container-low);
-    cursor: not-allowed;
-  }
 }
 
 .custom-error-message {

@@ -1,11 +1,4 @@
-import {
-  Component,
-  computed,
-  inject,
-  signal,
-  ViewChild,
-  ChangeDetectorRef // Hinzugefügt
-} from "@angular/core";
+import { Component, computed, inject, signal, ViewChild } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { FormsModule } from "@angular/forms";
 import { MatIconModule } from "@angular/material/icon";
@@ -14,7 +7,8 @@ import { ResolverService } from "../../../../../services/resolver/resolver.servi
 import { MatInputModule } from "@angular/material/input";
 import { MatAutocompleteModule } from "@angular/material/autocomplete";
 import { MatSelect, MatSelectModule } from "@angular/material/select";
-import { MatButtonModule } from "@angular/material/button"; // Angenommen, Sie verwenden einen mat-button
+import { MatButtonModule } from "@angular/material/button";
+import { MatExpansionModule } from "@angular/material/expansion";
 
 @Component({
   selector: "app-conditions-user",
@@ -26,7 +20,8 @@ import { MatButtonModule } from "@angular/material/button"; // Angenommen, Sie v
     MatInputModule,
     MatAutocompleteModule,
     MatSelectModule,
-    MatButtonModule
+    MatButtonModule,
+    MatExpansionModule
   ],
   templateUrl: "./conditions-user.component.html",
   styleUrl: "./conditions-user.component.scss"

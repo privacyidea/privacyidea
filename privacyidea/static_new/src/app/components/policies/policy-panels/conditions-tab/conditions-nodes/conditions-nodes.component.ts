@@ -6,6 +6,7 @@ import { MatInputModule } from "@angular/material/input";
 import { MatSelect, MatSelectModule } from "@angular/material/select";
 import { MatButtonModule } from "@angular/material/button";
 import { MatFormFieldModule } from "@angular/material/form-field";
+import { MatExpansionModule } from "@angular/material/expansion";
 
 @Component({
   selector: "app-conditions-nodes",
@@ -17,7 +18,8 @@ import { MatFormFieldModule } from "@angular/material/form-field";
     MatInputModule,
     MatSelectModule,
     MatButtonModule,
-    MatFormFieldModule
+    MatFormFieldModule,
+    MatExpansionModule
   ],
   templateUrl: "./conditions-nodes.component.html",
   styleUrl: "./conditions-nodes.component.scss"

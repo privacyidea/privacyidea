@@ -1,4 +1,8 @@
-<div class="action-selector-container">
+<mat-expansion-panel class="nodes-expansion-panel">
+  <mat-expansion-panel-header>
+    <mat-panel-title>Nodes</mat-panel-title>
+  </mat-expansion-panel-header>
+
   <mat-form-field
     appearance="fill"
     class="full-width">
@@ -87,9 +91,10 @@
         (keyup.enter)="addUserAgent(userAgentInput.value); userAgentInput.value = ''" />
     </mat-form-field>
     <button
-      class="add-user-agent-button"
+      class="add-user-agent-button button-hover"
+      [disabled]="userAgentInput.value === ''"
       (click)="addUserAgent(userAgentInput.value); userAgentInput.value = ''">
       <mat-icon>add</mat-icon>
     </button>
   </div>
-</div>
+</mat-expansion-panel>

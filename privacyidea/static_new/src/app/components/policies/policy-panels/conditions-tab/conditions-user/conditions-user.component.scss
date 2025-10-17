@@ -2,15 +2,8 @@
 @use "../../../policies.component.scss";
 @use "@angular/material" as mat;
 
-.action-selector-container {
-  background-color: var(--mat-sys-surface);
-  border-radius: 4px;
-  box-shadow: var(--mat-sys-level2);
-  color: var(--mat-sys-on-surface);
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  padding: var(--half-global-padding);
+.user-expansion-panel {
+  background-color: var(--mat-sys-surface) !important;
 }
 
 .user-input-container {
