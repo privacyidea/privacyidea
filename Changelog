@@ -1,7 +1,7 @@
 Version 3.12.2
 
   Fixes:
-  * Sanitaze 'page' and 'page_size' parameter for querying the Audit-Log (#4758)
+  * Sanitize 'page' and 'page_size' parameter for querying the Audit-Log (#4758)
 
 Version 3.12.1, 2025-10-07
 

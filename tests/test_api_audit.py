@@ -186,7 +186,7 @@ class APIAuditTestCase(MyApiTestCase):
             self.assertEqual(set(BaseAudit().available_audit_columns),
                              set(json_response.get("result").get("value").get("auditcolumns")))
 
-        # Set policy to restrict audit solumns
+        # Set policy to restrict audit columns
         set_policy("audit02", scope=SCOPE.ADMIN, realm=self.realm1a,
                    action=f"{PolicyAction.HIDE_AUDIT_COLUMNS}=serial action")
 
@@ -400,7 +400,7 @@ class APIAuditTestCase(MyApiTestCase):
             for ad in auditdata:
                 self.assertEqual(ad.get("realm"), self.realm1a)
 
-        # Set policy to restrict audit solumns
+        # Set policy to restrict audit columns
         set_policy("audit02", scope=SCOPE.USER, realm=self.realm1a,
                    action=f"{PolicyAction.HIDE_AUDIT_COLUMNS}=serial action")
 
