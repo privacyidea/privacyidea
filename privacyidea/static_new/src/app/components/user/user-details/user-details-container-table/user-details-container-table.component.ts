@@ -108,7 +108,6 @@ export class UserDetailsContainerTableComponent {
   constructor() {
     effect(() => {
       this.dataSource.data = this.userContainers();
-      console.log('User containers updated:', this.dataSource.data);
     });
   }
 

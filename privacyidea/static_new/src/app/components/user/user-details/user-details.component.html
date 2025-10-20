@@ -10,29 +10,55 @@
   </div>
   <div class="user-details">
     <div class="flex-row user-details-grid">
-      <div class="label" i18n>Username</div>
+      <div
+        class="label"
+        i18n>Username
+      </div>
       <div class="value">{{ userData().username || "-" }}</div>
 
-      <div class="label" i18n>Given name</div>
+      <div
+        class="label"
+        i18n>Given name
+      </div>
       <div class="value">{{ userData().givenname || "-" }}</div>
 
-      <div class="label" i18n>Surname</div>
+      <div
+        class="label"
+        i18n>Surname
+      </div>
       <div class="value">{{ userData().surname || "-" }}</div>
 
-      <div class="label" i18n>Description</div>
+      <div
+        class="label"
+        i18n>Description
+      </div>
       <div class="value">{{ userData().description || "-" }}</div>
     </div>
 
     <div class="user-details-column">
-      <div class="label" i18n>Email</div>
+      <div
+        class="label"
+        i18n>Email
+      </div>
       <div class="value">{{ userData().email || "-" }}</div>
 
-      <div class="label" i18n>Phone</div>
+      <div
+        class="label"
+        i18n>Phone
+      </div>
       <div class="value">{{ userData().phone || "-" }}</div>
 
-      <div class="label" i18n>Mobile</div>
+      <div
+        class="label"
+        i18n>Mobile
+      </div>
       <div class="value">{{ userData().mobile || "-" }}</div>
     </div>
+  </div>
+  <div class="details-header">
+    <h3 i18n>Custom Attributes for User</h3>
+    <h3 style="color: var(--mat-sys-primary)">{{ userService.detailsUsername() }}</h3>
+    <h3 class="margin-left--8">:</h3>
   </div>
   <app-user-details-token-table />
   <mat-form-field class="add-token">
@@ -44,8 +70,8 @@
         #filterHTMLInputElement
         #tokenAutoTrigger="matAutocompleteTrigger"
         (input)="tokenService.handleFilterInput($event)"
-        [value]="tokenService.tokenFilter().filterString"
         [matAutocomplete]="tokenAuto"
+        [value]="tokenService.tokenFilter().filterString"
         i18n-placeholder
         matInput
         placeholder="Example query: 'type: hotp serial: 123'" />
@@ -53,16 +79,16 @@
     <mat-autocomplete #tokenAuto="matAutocomplete">
       @for (option of tokenDataSource().data; track option) {
         <mat-option
-          class="token-option"
-          (click)="assignUserToToken(option)">
+          (click)="assignUserToToken(option)"
+          class="token-option">
           <span class="token-option-span"> {{ option["serial"] }} </span>
           <span class="token-option-span">
                     {{ option["tokentype"] }}
                   </span>
           <span
-            i18n
+            [ngClass]="option['active'] ? 'highlight-true' : 'highlight-false'"
             class="token-option-span"
-            [ngClass]="option['active'] ? 'highlight-true' : 'highlight-false'">
+            i18n>
                     {{ option["active"] ? "active" : "deactivated" }}
                   </span>
           <span class="token-option-span">

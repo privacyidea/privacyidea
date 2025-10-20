@@ -167,4 +167,27 @@ export class FilterValue {
     });
     this._value = entries.join(" ");
   }
+
+  /**
+   * Sets the hidden filter value from a map of key-value pairs.
+   * Converts the map to the normalized string format and updates _hiddenValue.
+   */
+  public setHiddenFromMap(map: Map<string, string>): void {
+    const entries: string[] = [];
+    map.forEach((value, key) => {
+      entries.push(`${key}: ${value}`);
+    });
+    this._hiddenValue = entries.join(" ");
+  }
+
+  /**
+   * Adds or updates a hidden (key: value) pair in hiddenValue.
+   */
+  public upsertHiddenEntry(key: string, value: string): FilterValue {
+    const map = this.hiddenFilterMap;
+    map.set(key, value);
+    this.setHiddenFromMap(map);
+    return new FilterValue({ value: this._value, hiddenValue: this._hiddenValue });
+  }
+
 }
