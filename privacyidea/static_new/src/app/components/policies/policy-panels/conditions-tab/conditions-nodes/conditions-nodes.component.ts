@@ -10,7 +10,7 @@ import {
 } from "@angular/forms";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
-import { MatSelect, MatSelectModule } from "@angular/material/select";
+import { MatSelect, MatSelectChange, MatSelectModule } from "@angular/material/select";
 import { MatButtonModule } from "@angular/material/button";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatExpansionModule } from "@angular/material/expansion";
@@ -39,9 +39,12 @@ export class ConditionsNodesComponent {
   selectedPolicy = this.policyService.selectedPolicy;
   selectedPolicyName = computed(() => this.selectedPolicy?.name || "");
 
-  availableNodes = signal<string[]>(["node1", "node2", "node3"]);
+  availablePinodes = signal<string[]>(["node1", "node2", "node3"]);
 
-  selectedNodes = signal<string[]>([]);
+  selectedPinodes = computed<string[]>(() => {
+    console.log("Selected policy nodes:", this.selectedPolicy()?.pinode);
+    return this.selectedPolicy()?.pinode || [];
+  });
 
   validTimeFormControl = new FormControl<string>("", this.validTimeValidator.bind(this));
   // validTime = computed(() => this.selectedPolicy?.time || "");
@@ -66,13 +69,17 @@ export class ConditionsNodesComponent {
     console.log("Selected policy user agents:", this.selectedPolicy()?.user_agents);
     return this.selectedPolicy()?.user_agents || [];
   });
-  isAllNodesSelected = computed(() => this.selectedNodes().length === this.availableNodes().length);
+  isAllNodesSelected = computed(() => this.selectedPinodes().length === this.availablePinodes().length);
 
   toggleAllNodes() {
     if (this.isAllNodesSelected()) {
-      this.selectedNodes.set([]);
+      this.policyService.updateSelectedPolicy({
+        pinode: []
+      });
     } else {
-      this.selectedNodes.set([...this.availableNodes()]);
+      this.policyService.updateSelectedPolicy({
+        pinode: [...this.availablePinodes()]
+      });
     }
     setTimeout(() => {
       this.resolverSelect.close();
@@ -84,7 +91,6 @@ export class ConditionsNodesComponent {
     const oldUserAgents = this.selectedUserAgents();
     if (oldUserAgents.includes(userAgent)) return;
     const newUserAgents = [...oldUserAgents, userAgent];
-    // this.selectedUserAgents.set([...this.selectedUserAgents(), userAgent]);
     console.log("Adding user agent:", newUserAgents);
     this.policyService.updateSelectedPolicy({
       user_agents: newUserAgents
@@ -147,5 +153,11 @@ export class ConditionsNodesComponent {
   _clientIsCorrect(client: string): boolean {
     const regex = /^(!?\d{1,3}(\.\d{1,3}){3}(\/\d{1,2})?)(,\s*!?\d{1,3}(\.\d{1,3}){3}(\/\d{1,2})?)*$/;
     return client === "" || regex.test(client);
+  }
+
+  updateSelectedPinodes($event: MatSelectChange<string[]>) {
+    this.policyService.updateSelectedPolicy({
+      pinode: $event.value
+    });
   }
 }

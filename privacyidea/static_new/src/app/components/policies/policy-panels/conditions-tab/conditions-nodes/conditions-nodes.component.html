@@ -9,16 +9,16 @@
     <mat-label i18n>privacyIDEA Nodes</mat-label>
     <mat-select
       #nodeSelect
-      [value]="selectedNodes()"
+      [value]="selectedPinodes()"
       [multiple]="true"
-      (selectionChange)="selectedNodes.set($event.value)">
+      (selectionChange)="updateSelectedPinodes($event)">
       <button
         mat-button
         class="toggle-all-button"
         (click)="toggleAllNodes()">
         {{ isAllNodesSelected() ? "Deselect all" : "Select all" }}
       </button>
-      @for (node of availableNodes(); track node) {
+      @for (node of availablePinodes(); track node) {
         <mat-option [value]="node">{{ node }}</mat-option>
       }
     </mat-select>
