@@ -31,6 +31,9 @@ import { TokenDetails, TokenService, TokenServiceInterface } from "../../../serv
 import { MatTableDataSource } from "@angular/material/table";
 import { MatPaginator, PageEvent } from "@angular/material/paginator";
 import { UserDetailsContainerTableComponent } from "./user-details-container-table/user-details-container-table.component";
+import { UserDetailsPinDialogComponent } from "./user-details-pin-dialog/user-details-pin-dialog.component";
+import { MatDialog } from "@angular/material/dialog";
+import { filter } from "rxjs";
 
 @Component({
   selector: "app-user-details",
@@ -58,6 +61,7 @@ export class UserDetailsComponent {
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
   protected readonly userService: UserServiceInterface = inject(UserService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+  protected readonly dialog: MatDialog = inject(MatDialog);
   userData = this.userService.user;
   tokenResource = this.tokenService.tokenResource;
   pageIndex = this.tokenService.pageIndex;
@@ -87,14 +91,23 @@ export class UserDetailsComponent {
   });
 
   assignUserToToken(option: TokenDetails) {
-    this.tokenService.assignUser({tokenSerial: option['serial'], username: this.userService.detailsUsername(),
-      realm: this.userService.selectedUserRealm()}).subscribe(
-      {
-        next: () => {
-          this.tokenService.userTokenResource.reload()
-        }
-      }
-    )
+    this.dialog
+      .open(UserDetailsPinDialogComponent)
+      .afterClosed()
+      .pipe(
+        filter((pin): pin is string => pin != null)
+      )
+      .subscribe((pin: string) => {
+        this.tokenService.assignUser({tokenSerial: option['serial'], username: this.userService.detailsUsername(),
+          realm: this.userService.selectedUserRealm(), pin: pin}).subscribe(
+          {
+            next: () => {
+              this.tokenService.userTokenResource.reload()
+              this.tokenService.tokenResource.reload();
+            }
+          }
+        )
+      });
   }
 
   onPageEvent(event: PageEvent) {
