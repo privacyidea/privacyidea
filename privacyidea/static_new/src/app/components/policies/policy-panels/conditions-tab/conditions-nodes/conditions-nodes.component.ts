@@ -1,13 +1,6 @@
-import { Component, computed, inject, Inject, signal, ViewChild } from "@angular/core";
+import { Component, computed, inject, signal, ViewChild } from "@angular/core";
 import { CommonModule } from "@angular/common";
-import {
-  AbstractControl,
-  FormControl,
-  FormsModule,
-  ValidationErrors,
-  ValidatorFn,
-  ReactiveFormsModule
-} from "@angular/forms";
+import { AbstractControl, FormControl, FormsModule, ValidationErrors, ReactiveFormsModule } from "@angular/forms";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 import { MatSelect, MatSelectChange, MatSelectModule } from "@angular/material/select";
@@ -15,6 +8,7 @@ import { MatButtonModule } from "@angular/material/button";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { PolicyService } from "../../../../../services/policies/policies.service";
+import { SystemServiceInterface, SystemService } from "../../../../../services/system/system.service";
 
 @Component({
   selector: "app-conditions-nodes",
@@ -36,20 +30,20 @@ import { PolicyService } from "../../../../../services/policies/policies.service
 export class ConditionsNodesComponent {
   @ViewChild("nodeSelect") resolverSelect!: MatSelect;
   policyService: PolicyService = inject(PolicyService);
+  systemService: SystemServiceInterface = inject(SystemService);
   selectedPolicy = this.policyService.selectedPolicy;
   selectedPolicyName = computed(() => this.selectedPolicy?.name || "");
 
-  availablePinodes = signal<string[]>(["node1", "node2", "node3"]);
-
+  availablePinodesList = computed(() => this.systemService.nodes().map((node) => node.name));
   selectedPinodes = computed<string[]>(() => {
     console.log("Selected policy nodes:", this.selectedPolicy()?.pinode);
     return this.selectedPolicy()?.pinode || [];
   });
 
+  addUserAgentFormControl = new FormControl<string>("");
+
   validTimeFormControl = new FormControl<string>("", this.validTimeValidator.bind(this));
-  // validTime = computed(() => this.selectedPolicy?.time || "");
   clientFormControl = new FormControl<string>("", this.clientValidator.bind(this));
-  // client = computed(() => this.selectedPolicy?.client || "");
 
   constructor() {
     this.validTimeFormControl.valueChanges.subscribe((value) => {
@@ -69,7 +63,7 @@ export class ConditionsNodesComponent {
     console.log("Selected policy user agents:", this.selectedPolicy()?.user_agents);
     return this.selectedPolicy()?.user_agents || [];
   });
-  isAllNodesSelected = computed(() => this.selectedPinodes().length === this.availablePinodes().length);
+  isAllNodesSelected = computed(() => this.selectedPinodes().length === this.availablePinodesList().length);
 
   toggleAllNodes() {
     if (this.isAllNodesSelected()) {
@@ -78,7 +72,7 @@ export class ConditionsNodesComponent {
       });
     } else {
       this.policyService.updateSelectedPolicy({
-        pinode: [...this.availablePinodes()]
+        pinode: [...this.availablePinodesList()]
       });
     }
     setTimeout(() => {
@@ -153,6 +147,21 @@ export class ConditionsNodesComponent {
   _clientIsCorrect(client: string): boolean {
     const regex = /^(!?\d{1,3}(\.\d{1,3}){3}(\/\d{1,2})?)(,\s*!?\d{1,3}(\.\d{1,3}){3}(\/\d{1,2})?)*$/;
     return client === "" || regex.test(client);
+  }
+
+  userAgentValidator(control: AbstractControl): ValidationErrors | null {
+    const userAgent = control.value;
+    if (!userAgent) return null;
+    if (this._userAgentIncludesComma(userAgent)) {
+      return {
+        includesComma: { value: control.value }
+      };
+    }
+    return null;
+  }
+
+  _userAgentIncludesComma(userAgent: string): boolean {
+    return userAgent.includes(",");
   }
 
   updateSelectedPinodes($event: MatSelectChange<string[]>) {

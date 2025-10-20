@@ -9,6 +9,7 @@ import { MatAutocompleteModule } from "@angular/material/autocomplete";
 import { MatSelect, MatSelectModule } from "@angular/material/select";
 import { MatButtonModule } from "@angular/material/button";
 import { MatExpansionModule } from "@angular/material/expansion";
+import { PolicyService } from "../../../../../services/policies/policies.service";
 
 @Component({
   selector: "app-conditions-user",
@@ -31,28 +32,29 @@ export class ConditionsUserComponent {
   @ViewChild("realmSelect") realmSelect!: MatSelect;
   realmService: RealmServiceInterface = inject(RealmService);
   resolverService: ResolverService = inject(ResolverService);
+  policyService = inject(PolicyService);
 
-  selectedRealms = signal<string[]>([]);
-  selectedResolvers = signal<string[]>([]);
-  selectedUsers = signal<string[]>([]);
-  userCaseInsensitive = signal(false);
+  selectedRealms = computed(() => this.policyService.selectedPolicy()?.realm || []);
+  selectedResolvers = computed(() => this.policyService.selectedPolicy()?.resolver || []);
+  selectedUsers = computed(() => this.policyService.selectedPolicy()?.user || []);
+  userCaseInsensitive = computed(() => this.policyService.selectedPolicy()?.user_case_insensitive || false);
 
   selectRealm(realmNames: string[]): void {
-    this.selectedRealms.set(realmNames);
+    this.policyService.updateSelectedPolicy({ realm: realmNames });
     console.log("Selected realm:", realmNames);
   }
 
   selectResolver(resolverNames: string[]): void {
-    this.selectedResolvers.set(resolverNames);
+    this.policyService.updateSelectedPolicy({ resolver: resolverNames });
     console.log("Selected resolver:", resolverNames);
   }
 
   toggleAllRealms() {
     if (this.isAllRealmsSelected()) {
-      this.selectedRealms.set([]);
+      this.policyService.updateSelectedPolicy({ realm: [] });
     } else {
       const allRealms = this.realmService.realmOptions();
-      this.selectedRealms.set([...allRealms]);
+      this.policyService.updateSelectedPolicy({ realm: allRealms });
     }
     setTimeout(() => {
       this.realmSelect.close();
@@ -61,10 +63,10 @@ export class ConditionsUserComponent {
 
   toggleAllResolvers() {
     if (this.isAllResolversSelected()) {
-      this.selectedResolvers.set([]);
+      this.policyService.updateSelectedPolicy({ resolver: [] });
     } else {
       const allResolvers = this.resolverService.resolverOptions();
-      this.selectedResolvers.set([...allResolvers]);
+      this.policyService.updateSelectedPolicy({ resolver: allResolvers });
     }
     setTimeout(() => {
       this.resolverSelect.close();
@@ -79,18 +81,18 @@ export class ConditionsUserComponent {
 
   addUser(user: string) {
     if (user && !this.selectedUsers().includes(user)) {
-      this.selectedUsers.set([...this.selectedUsers(), user]);
+      this.policyService.updateSelectedPolicy({ user: [...this.selectedUsers(), user] });
     }
   }
 
   removeUser(user: string) {
-    this.selectedUsers.set(this.selectedUsers().filter((u) => u !== user));
+    this.policyService.updateSelectedPolicy({ user: this.selectedUsers().filter((u) => u !== user) });
   }
 
   clearUsers() {
-    this.selectedUsers.set([]);
+    this.policyService.updateSelectedPolicy({ user: [] });
   }
   toggleUserCaseInsensitive() {
-    this.userCaseInsensitive.set(!this.userCaseInsensitive());
+    this.policyService.updateSelectedPolicy({ user_case_insensitive: !this.userCaseInsensitive() });
   }
 }

@@ -18,12 +18,11 @@
         (click)="toggleAllNodes()">
         {{ isAllNodesSelected() ? "Deselect all" : "Select all" }}
       </button>
-      @for (node of availablePinodes(); track node) {
+      @for (node of availablePinodesList(); track $index) {
         <mat-option [value]="node">{{ node }}</mat-option>
       }
     </mat-select>
   </mat-form-field>
-
   <div class="flex-row-stretch">
     <mat-form-field
       appearance="fill"
@@ -37,7 +36,6 @@
         <mat-error i18n> Please enter a valid time format, e.g., Mon-Fri: 9-18 or Sat: 10-15 </mat-error>
       }
     </mat-form-field>
-
     <mat-form-field
       appearance="fill"
       class="flex-grow-1">
@@ -81,9 +79,14 @@
       <mat-label i18n>Add User Agent</mat-label>
       <input
         matInput
+        [formControl]="addUserAgentFormControl"
         #userAgentInput
+        pattern="[^,]*"
         (keyup.enter)="addUserAgent(userAgentInput.value); userAgentInput.value = ''" />
     </mat-form-field>
+    @if (addUserAgentFormControl.touched && addUserAgentFormControl.hasError("includesComma")) {
+      <mat-error i18n> User Agent must not contain commas. </mat-error>
+    }
     <button
       class="add-user-agent-button button-hover"
       [disabled]="userAgentInput.value === ''"
