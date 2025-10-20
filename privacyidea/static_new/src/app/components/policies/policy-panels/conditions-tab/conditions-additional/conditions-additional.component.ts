@@ -6,36 +6,7 @@ import { MatInputModule } from "@angular/material/input";
 import { MatSelectModule } from "@angular/material/select";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { FormsModule } from "@angular/forms";
-
-type SectionOptions =
-  | "HTTP Environment"
-  | "HTTP Request Header"
-  | "Requst Data"
-  | "container"
-  | "container_info"
-  | "token"
-  | "tokeninfo"
-  | "userinfo";
-
-type ComporatorOptions =
-  | "!contains"
-  | "!date_within_last"
-  | "!equals"
-  | "!in"
-  | "!matches"
-  | "!string_contains"
-  | "<"
-  | ">"
-  | "contains"
-  | "date_after"
-  | "date_before"
-  | "date_within_last"
-  | "equals"
-  | "in"
-  | "matches"
-  | "string_contains";
-
-type HandleMissigDataOptions = "raise_error" | "condition_is_false" | "condition_is_true";
+import { AdditionalCondition } from "../../../../../services/policies/policies.service";
 
 // Mock data for policy condition definitions
 const mockPolicyConditionDefs = [
@@ -61,15 +32,19 @@ const mockPolicyConditionDefs = [
   styleUrls: ["./conditions-additional.component.scss"]
 })
 export class ConditionsAdditionalComponent {
-  policyConditionDefs = signal<any[]>([]);
-  conditions = signal<{ [key: string]: any }>({});
+  additionalConditions = signal<AdditionalCondition[]>([]);
 
-  constructor() {
-    // In a real implementation, this would be fetched from a service
-    this.policyConditionDefs.set(mockPolicyConditionDefs);
+  updateCondition(index: number, updated: AdditionalCondition) {
+    const conditions = this.additionalConditions();
+    conditions[index] = updated;
+    this.additionalConditions.set([...conditions]);
   }
 
-  updateCondition(name: string, value: any) {
-    this.conditions.update((c) => ({ ...c, [name]: value }));
+  addCondition(condition: AdditionalCondition) {
+    this.additionalConditions.set([...this.additionalConditions(), condition]);
+  }
+
+  removeCondition(condition: AdditionalCondition) {
+    this.additionalConditions.set(this.additionalConditions().filter((cond) => cond !== condition));
   }
 }

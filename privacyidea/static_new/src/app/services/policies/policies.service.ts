@@ -20,9 +20,9 @@
 import { HttpClient, httpResource } from "@angular/common/http";
 import { computed, inject, Injectable, linkedSignal, Signal, signal, WritableSignal } from "@angular/core";
 import { lastValueFrom } from "rxjs";
+import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
-import { environment } from "../../../environments/environment";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
 
 export type ActionType = "bool" | "int" | "str" | "text";
@@ -50,6 +50,49 @@ export type PolicyActionGroups = {
 
 export type PoliciesList = PolicyDetail[];
 
+// const asd = {
+//   action: ["container_challenge_ttl=12"],
+//   scope: "container",
+//   realm: [
+//     "defrealm",
+//     "realm1",
+//     "realm2",
+//     "realm3",
+//     "realm4asdfsadfasdfasdfsadfasdfasfasfdsadfasdfsafdasdfasdfsadfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfsadfasdfasdfasd"
+//   ],
+//   resolver: ["deflocal"],
+//   user: "asd",
+//   active: true,
+//   check_all_resolvers: false,
+//   user_case_insensitive: true,
+//   client: "10.0.0.0/8",
+//   time: "Mon: 1-12",
+//   description: "",
+//   priority: 1,
+//   conditions: [
+//     ["userinfo", "asd", "equals", "asd", true, "raise_error"],
+//     ["userinfo", "asf", "equals", "asd", true, "raise_error"],
+//     ["userinfo", "asd", "equals", "asf", true, "raise_error"],
+//     ["userinfo", "asd", "equals", "asd", true, "raise_error"]
+//   ],
+//   pinode: ["localnode", "localnode", "localnode"],
+//   user_agents: [
+//     "privacyidea-cp",
+//     "privacyIDEA-Keycloak",
+//     "PrivacyIDEA-ADFS",
+//     "simpleSAMLphp",
+//     "PAM",
+//     "privacyIDEA-Shibboleth",
+//     "privacyidea-nextcloud",
+//     "FreeRADIUS",
+//     "privacyIDEA-LDAP-Proxy",
+//     "privacyIDEA-App",
+//     "567"
+//   ],
+//   name: "test",
+//   adminrealm: []
+// };
+
 export type PolicyDetail = {
   action: { [actionName: string]: string } | null;
   active: boolean;
@@ -57,7 +100,7 @@ export type PolicyDetail = {
   adminuser: string[];
   check_all_resolvers: boolean;
   client: string[];
-  conditions: [string, string, string, string, boolean][];
+  conditions: AdditionalCondition[];
   description: string | null;
   name: string;
   pinode: string[];
@@ -70,6 +113,38 @@ export type PolicyDetail = {
   user_agents: string[];
   user_case_insensitive: boolean;
 };
+
+export type AdditionalCondition = [SectionOption, string, ComporatorOption, string, boolean, HandleMissigDataOption];
+
+export type SectionOption =
+  | "HTTP Environment"
+  | "HTTP Request Header"
+  | "Requst Data"
+  | "container"
+  | "container_info"
+  | "token"
+  | "tokeninfo"
+  | "userinfo";
+
+export type ComporatorOption =
+  | "!contains"
+  | "!date_within_last"
+  | "!equals"
+  | "!in"
+  | "!matches"
+  | "!string_contains"
+  | "<"
+  | ">"
+  | "contains"
+  | "date_after"
+  | "date_before"
+  | "date_within_last"
+  | "equals"
+  | "in"
+  | "matches"
+  | "string_contains";
+
+export type HandleMissigDataOption = "raise_error" | "condition_is_false" | "condition_is_true";
 
 export interface PoliciesServiceInterface {}
 
@@ -229,11 +304,14 @@ export class PolicyService implements PoliciesServiceInterface {
 
   updateSelectedPolicy(args: Partial<PolicyDetail>) {
     const selectedPolicy = this.selectedPolicy();
+    console.log("Updating selected policy with args:", args);
+    console.log("Current selected policy before update:", selectedPolicy);
     if (!selectedPolicy) return;
     const updatedPolicy = {
       ...selectedPolicy,
       ...args
     };
+    console.log("Updated selected policy:", updatedPolicy);
     this._selectedPolicy.set(updatedPolicy);
   }
 
@@ -279,7 +357,10 @@ export class PolicyService implements PoliciesServiceInterface {
 
   // Signals for selecting and editing selected policy
   private _selectedPolicy = signal<PolicyDetail | null>(null);
-  selectedPolicy = computed(() => this._selectedPolicy());
+  selectedPolicy = computed(() => {
+    console.log("Selected policy changed:", this._selectedPolicy());
+    return this._selectedPolicy();
+  });
   private _selectedPolicyOriginal = signal<PolicyDetail | null>(null);
   selectedPolicyOriginal = computed(() => this._selectedPolicyOriginal());
 
