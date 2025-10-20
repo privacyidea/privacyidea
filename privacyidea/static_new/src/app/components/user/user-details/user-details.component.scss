@@ -14,7 +14,7 @@
 
 .user-details {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr 1fr 1fr;
   gap: 12px 16px;
   padding: 12px 16px;
   border: 1px solid #c7c5d0;
@@ -42,4 +42,23 @@
     grid-template-columns: 1fr;
   }
   .value { grid-column: 1; }
+}
+
+.token-option {
+  border: 1px solid var(--mat-sys-outline);
+  background: var(--mat-sys-surface-container-low);
+  margin: 0 1px;
+  border-radius: var(--border-radius);
+}
+
+.token-option-span {
+  background: var(--mat-sys-surface-container-lowest);
+  padding: 6px;
+  border-radius: var(--border-radius);
+  margin-right: 8px;
+}
+
+.filter-pageinator-container{
+  margin-top: 16px;
+  justify-content: space-between;
 }

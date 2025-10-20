@@ -7,8 +7,8 @@
                   ".table-scroll-container"
   );
 
-  .user-details-token-table-filter {
-    width: 100%;
+  .user-details-token-table {
+    width: 1069px;
   }
 
   .user-details-action-row {
@@ -24,5 +24,10 @@
     flex-direction: column;
     gap: 8px;
     align-items: center;
+  }
+
+  .filter-pageinator-container{
+    margin-bottom: 16px;
+    justify-content: space-between;
   }
 }

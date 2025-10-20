@@ -10,8 +10,9 @@
       <h3 style="color: var(--mat-sys-primary)">{{ userService.detailsUsername() }}</h3>
       <h3 class="margin-left--8">:</h3>
     </div>
+    <div class="flex-row filter-pageinator-container">
       <mat-form-field
-        class="user-details-token-table-filter"
+        class="width-50"
         subscriptSizing="dynamic">
         <mat-label i18n>Enter Filter</mat-label>
         <input
@@ -23,11 +24,12 @@
           matInput
           placeholder="Filter across all columns." />
       </mat-form-field>
-    <mat-paginator
-      [pageSizeOptions]="pageSizeOptions()"
-      [pageSize]="pageSize"
-      class="flex-just-start"
-      showFirstLastButtons/>
+      <mat-paginator
+        [pageSizeOptions]="pageSizeOptions()"
+        [pageSize]="pageSize"
+        class="flex-just-start"
+        showFirstLastButtons />
+    </div>
     <div [ngClass]="[overflowService.isWidthOverflowing('body', 1580) ? 'flex-column' : 'flex-row']">
       <table
         [dataSource]="dataSource"
@@ -75,15 +77,15 @@
                     }
                     @case ("failcount") {
                       <span
-                        [ngClass]="tableUtilsService.getClassForColumn(column.key, element)"
-                        (click)="resetFailCount(element)">
+                        (click)="resetFailCount(element)"
+                        [ngClass]="tableUtilsService.getClassForColumn(column.key, element)">
                       {{ tableUtilsService.getDisplayText(column.key, element) }}
                     </span>
                     }
                     @case ("container_serial") {
                       <a
-                        attr.aria-label="{{ column.label }} Link"
-                        (click)="contentService.containerSelected(element[column.key])">
+                        (click)="contentService.containerSelected(element[column.key])"
+                        attr.aria-label="{{ column.label }} Link">
                         {{ element[column.key] }}
                       </a>
                       @if (element.container_serial !== "") {
@@ -91,7 +93,7 @@
                       }
                     }
                     @default {
-                        <span> {{ element[column.key] }} </span>
+                      <span> {{ element[column.key] }} </span>
                     }
                   }
                 </div>
@@ -178,3 +180,4 @@
       </table>
     </div>
   </div>
+</div>

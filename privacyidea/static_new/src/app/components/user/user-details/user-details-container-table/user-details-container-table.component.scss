@@ -7,10 +7,6 @@
                   ".table-scroll-container"
   );
 
-  .container-filter {
-    width: 100%;
-  }
-
   .user-details-action-row {
     padding: 0 16px 0 32px;
     display: flex;
@@ -24,5 +20,10 @@
     flex-direction: column;
     gap: 8px;
     align-items: center;
+  }
+
+  .filter-pageinator-container{
+    margin-bottom: 16px;
+    justify-content: space-between;
   }
 }

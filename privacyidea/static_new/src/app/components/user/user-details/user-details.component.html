@@ -54,56 +54,54 @@
       </div>
       <div class="value">{{ userData().mobile || "-" }}</div>
     </div>
-  </div>
-  <div class="details-header">
-    <h3 i18n>Custom Attributes for User</h3>
-    <h3 style="color: var(--mat-sys-primary)">{{ userService.detailsUsername() }}</h3>
-    <h3 class="margin-left--8">:</h3>
+    <h3 class="margin-top-0" i18n>Custom Attributes:</h3>
   </div>
   <app-user-details-token-table />
-  <mat-form-field class="add-token">
-    <mat-label i18n>Assign Token to User</mat-label>
-    <app-clearable-input
-      (onClick)="tokenService.clearFilter()"
-      [showClearButton]="tokenService.tokenFilter().isNotEmpty">
-      <input
-        #filterHTMLInputElement
-        #tokenAutoTrigger="matAutocompleteTrigger"
-        (input)="tokenService.handleFilterInput($event)"
-        [matAutocomplete]="tokenAuto"
-        [value]="tokenService.tokenFilter().filterString"
-        i18n-placeholder
-        matInput
-        placeholder="Example query: 'type: hotp serial: 123'" />
-    </app-clearable-input>
-    <mat-autocomplete #tokenAuto="matAutocomplete">
-      @for (option of tokenDataSource().data; track option) {
-        <mat-option
-          (click)="assignUserToToken(option)"
-          class="token-option">
-          <span class="token-option-span"> {{ option["serial"] }} </span>
-          <span class="token-option-span">
+  <div class="flex-row filter-pageinator-container">
+    <mat-form-field class="width-66">
+      <mat-label i18n>Assign Token to User</mat-label>
+      <app-clearable-input
+        (onClick)="tokenService.clearFilter()"
+        [showClearButton]="tokenService.tokenFilter().isNotEmpty">
+        <input
+          #filterHTMLInputElement
+          #tokenAutoTrigger="matAutocompleteTrigger"
+          (input)="tokenService.handleFilterInput($event)"
+          [matAutocomplete]="tokenAuto"
+          [value]="tokenService.tokenFilter().filterString"
+          i18n-placeholder
+          matInput
+          placeholder="Example query: 'type: hotp serial: 123'" />
+      </app-clearable-input>
+      <mat-autocomplete #tokenAuto="matAutocomplete">
+        @for (option of tokenDataSource().data; track option) {
+          <mat-option
+            (click)="assignUserToToken(option)"
+            class="token-option">
+            <span class="token-option-span"> {{ option["serial"] }} </span>
+            <span class="token-option-span">
                     {{ option["tokentype"] }}
                   </span>
-          <span
-            [ngClass]="option['active'] ? 'highlight-true' : 'highlight-false'"
-            class="token-option-span"
-            i18n>
+            <span
+              [ngClass]="option['active'] ? 'highlight-true' : 'highlight-false'"
+              class="token-option-span"
+              i18n>
                     {{ option["active"] ? "active" : "deactivated" }}
                   </span>
-          <span class="token-option-span">
+            <span class="token-option-span">
                     {{ option["username"] }}
                   </span>
-          <mat-icon>add</mat-icon>
-        </mat-option>
-      }
-    </mat-autocomplete>
-  </mat-form-field>
-  <mat-paginator
-    (page)="onPageEvent($event)"
-    [hidePageSize]="true"
-    [length]="total()"
-    [pageIndex]="pageIndex()"
-    [pageSize]="pageSize()"></mat-paginator>
+            <mat-icon>add</mat-icon>
+          </mat-option>
+        }
+      </mat-autocomplete>
+    </mat-form-field>
+    <mat-paginator
+      (page)="onPageEvent($event)"
+      [hidePageSize]="true"
+      [length]="total()"
+      [pageIndex]="pageIndex()"
+      [pageSize]="pageSize()"/>
+  </div>
   <app-user-details-container-table />
 </div>
