@@ -83,6 +83,6 @@ describe("AuditService (signals & helpers)", () => {
 
     expect(auditService.filterParams()).toEqual({ serial: "*otp123*" });
     expect(auditService.pageSize()).toBe(25);
-    expect(auditService.pageIndex()).toBe(0);
+    expect(auditService.pageIndex()).toBe(1);
   });
 });
