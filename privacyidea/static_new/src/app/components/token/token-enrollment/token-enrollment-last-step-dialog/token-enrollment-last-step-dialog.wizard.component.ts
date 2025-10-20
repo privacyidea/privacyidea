@@ -67,7 +67,7 @@ import { StringUtils } from "../../../../utils/string.utils";
   templateUrl: "./token-enrollment-last-step-dialog.wizard.component.html",
   styleUrl: "./token-enrollment-last-step-dialog.component.scss"
 })
-export class TokenEnrollmentSecondStepDialogWizardComponent extends TokenEnrollmentLastStepDialogComponent {
+export class TokenEnrollmentLastStepDialogWizardComponent extends TokenEnrollmentLastStepDialogComponent {
   protected override readonly Object = Object;
 
   private readonly http: HttpClient = inject(HttpClient);

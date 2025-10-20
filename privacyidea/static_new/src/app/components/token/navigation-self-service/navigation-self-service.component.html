@@ -14,6 +14,13 @@
         matIconName="add_moderator"
         title="Token Enrollment" />
     }
+    @if (authService.tokenWizard2nd()) {
+      <app-navigation-self-service-button
+        i18n-title
+        key="{{ this.ROUTE_PATHS.TOKENS_WIZARD }}"
+        matIconName="auto_awesome"
+        title="Token Enrollment Wizard" />
+    }
     @if (authService.rights().includes("assign")) {
       <app-navigation-self-service-button
         i18n-title

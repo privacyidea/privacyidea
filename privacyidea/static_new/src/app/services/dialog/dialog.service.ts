@@ -30,6 +30,8 @@ import {
 } from "../../components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
 import { EnrollmentResponse } from "../../mappers/token-api-payload/_token-api-payload.mapper";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
+import { Router } from "@angular/router";
+import { ROUTE_PATHS } from "../../route_paths";
 
 class MatDialogConfigRequired<D = any> extends MatDialogConfig<D> {
   override data!: D;
@@ -71,6 +73,7 @@ export interface DialogServiceInterface {
 export class DialogService implements DialogServiceInterface {
   private readonly dialog: MatDialog = inject(MatDialog);
   private readonly authService: AuthServiceInterface = inject(AuthService);
+  private readonly router: Router = inject(Router);
 
   readonly isSelfServing = computed(() => this.authService.role() === "user");
 
@@ -133,8 +136,9 @@ export class DialogService implements DialogServiceInterface {
           )
       ]);
 
+    const isWizardRoute = this.router.url.includes(ROUTE_PATHS.TOKENS_WIZARD);
     const component = this.isSelfServing()
-      ? (this.authService.tokenWizard() ? TokenEnrollmentSecondStepDialogWizardComponent : TokenEnrollmentLastStepDialogSelfServiceComponent)
+      ? (isWizardRoute ? TokenEnrollmentSecondStepDialogWizardComponent : TokenEnrollmentLastStepDialogSelfServiceComponent)
       : TokenEnrollmentLastStepDialogComponent;
 
     this._tokenEnrollmentLastStepRef = this.dialog.open(component as any, config);

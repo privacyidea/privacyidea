@@ -43,7 +43,7 @@ import { DialogService } from "../../../services/dialog/dialog.service";
 import { FormControl, FormGroup } from "@angular/forms";
 import { of, throwError } from "rxjs";
 import { signal } from "@angular/core";
-import { provideHttpClient } from "@angular/common/http";
+import { HttpClient, provideHttpClient } from "@angular/common/http";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { TokenEnrollmentSelfServiceComponent } from "./token-enrollment.self-service.component";
 import {
@@ -65,6 +65,8 @@ describe("TokenEnrollmentComponent", () => {
   let userSvc: MockUserService;
   let notifications: MockNotificationService;
   let dialog: MockDialogService;
+  let authService: MockAuthService;
+  let httpClientMock: any;
 
   beforeAll(() => {
     Object.defineProperty(window, "matchMedia", {
@@ -93,6 +95,8 @@ describe("TokenEnrollmentComponent", () => {
 
   beforeEach(async () => {
     let MockVersioningService;
+    httpClientMock = { get: jest.fn().mockReturnValue(of("")) };
+
     await TestBed.configureTestingModule({
       imports: [TokenEnrollmentComponent],
       providers: [
@@ -111,7 +115,8 @@ describe("TokenEnrollmentComponent", () => {
         { provide: AuthService, useClass: MockAuthService },
 
         { provide: VersioningService, useClass: MockVersioningService },
-        { provide: DialogService, useClass: MockDialogService }
+        { provide: DialogService, useClass: MockDialogService },
+        { provide: HttpClient, useValue: httpClientMock }
       ]
     }).compileComponents();
 
@@ -126,6 +131,7 @@ describe("TokenEnrollmentComponent", () => {
     userSvc = TestBed.inject(UserService) as unknown as MockUserService;
     notifications = TestBed.inject(NotificationService) as unknown as MockNotificationService;
     dialog = TestBed.inject(DialogService) as unknown as MockDialogService;
+    authService = TestBed.inject(AuthService) as unknown as MockAuthService;
 
     fixture.detectChanges();
   });
@@ -484,4 +490,30 @@ describe("TokenEnrollmentComponent", () => {
       expect(regenerateLabel("passkey")).toBe("QR Code"); // label ignored when cannot regenerate
     });
   });
+
+  describe("wizard", () => {
+    it("show custom content if defined", () => {
+      authService.authData.set({
+        ...authService.authData(),
+        token_wizard: true
+      });
+      httpClientMock.get.mockReturnValueOnce(of(""));
+      fixture = TestBed.createComponent(TokenEnrollmentWizardComponent);
+      fixture.detectChanges();
+      expect(fixture.nativeElement.textContent).toContain("Enroll HOTP Token");
+    });
+
+    it("show default content if no custom content is defined", () => {
+      authService.authData.set({
+        ...authService.authData(),
+        token_wizard: true
+      });
+      httpClientMock.get.mockReturnValueOnce(of("Custom Content"));
+      fixture = TestBed.createComponent(TokenEnrollmentWizardComponent);
+      fixture.detectChanges();
+      expect(fixture.nativeElement.textContent).toContain("Custom Content");
+      expect(fixture.nativeElement.textContent).not.toContain("Enroll HOTP Token");
+    });
+  });
 });
+

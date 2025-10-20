@@ -23,7 +23,7 @@ import { of } from "rxjs";
 import { ContainerCreateComponent } from "./container-create.component";
 import { MatDialog } from "@angular/material/dialog";
 import { NotificationService } from "../../../services/notification/notification.service";
-import { provideHttpClient } from "@angular/common/http";
+import { HttpClient, provideHttpClient } from "@angular/common/http";
 import {
   MockAuthService,
   MockContainerService,
@@ -44,6 +44,7 @@ import { UserService } from "../../../services/user/user.service";
 import { VersioningService } from "../../../services/version/version.service";
 import { Renderer2 } from "@angular/core";
 import { ContainerCreateSelfServiceComponent } from "./container-create.self-service.component";
+import { ContainerCreateWizardComponent } from "./container-create.wizard.component";
 
 class MockIntersectionObserver {
   observe = jest.fn();
@@ -99,12 +100,20 @@ describe("ContainerCreateComponent", () => {
   let component: ContainerCreateComponent;
   let selfFixture: ComponentFixture<ContainerCreateSelfServiceComponent>;
   let selfComponent: ContainerCreateSelfServiceComponent;
+  let wizardFixture: ComponentFixture<ContainerCreateComponent>;
+  let wizardComponent: ContainerCreateComponent;
 
   let containerSvc: MockContainerService;
   let userSvc: MockUserService;
+  let authService: MockAuthService;
+  let httpClientMock: any;
 
   beforeEach(async () => {
     jest.clearAllMocks();
+
+    httpClientMock = {
+      get: jest.fn().mockReturnValue(of(""))
+    };
 
     let DummyVersioningService;
     await TestBed.configureTestingModule({
@@ -121,6 +130,7 @@ describe("ContainerCreateComponent", () => {
         { provide: TokenService, useClass: MockTokenService },
         { provide: UserService, useClass: MockUserService },
         { provide: VersioningService, useClass: DummyVersioningService },
+        { provide: HttpClient, useValue: httpClientMock },
         MockLocalService,
         MockNotificationService
       ]
@@ -130,9 +140,12 @@ describe("ContainerCreateComponent", () => {
     component = fixture.componentInstance;
     selfFixture = TestBed.createComponent(ContainerCreateSelfServiceComponent);
     selfComponent = selfFixture.componentInstance;
+    wizardFixture = TestBed.createComponent(ContainerCreateWizardComponent);
+    wizardComponent = wizardFixture.componentInstance;
 
     containerSvc = TestBed.inject(ContainerService) as unknown as MockContainerService;
     userSvc = TestBed.inject(UserService) as unknown as MockUserService;
+    authService = TestBed.inject(AuthService) as unknown as MockAuthService;
 
     jest.spyOn(containerSvc, "createContainer").mockReturnValue(
       of({ result: { value: { container_serial: "C-001" } } } as any)
@@ -155,6 +168,10 @@ describe("ContainerCreateComponent", () => {
 
   it("creates self service", () => {
     expect(selfComponent).toBeTruthy();
+  });
+
+  it("creates wizard", () => {
+    expect(wizardComponent).toBeTruthy();
   });
 
   it("non-QR create: navigates and sets containerSerial", () => {
@@ -277,5 +294,29 @@ describe("ContainerCreateComponent", () => {
 
     lastIO!.trigger([{ rootBounds: { top: 0 }, boundingClientRect: { top: 1 } } as any]);
     expect(removeClass).toHaveBeenCalledWith((component as any).stickyHeader.nativeElement, "is-sticky");
+  });
+
+  describe("wizard", () => {
+    it("show loaded templates if not empty", async () => {
+      authService.authData.set({
+        ...authService.authData(),
+        container_wizard: { enabled: true, type: "generic", registration: false, template: null }
+      });
+      httpClientMock.get.mockReturnValueOnce(of("Mock TOP HTML")).mockReturnValueOnce(of("Mock BOTTOM HTML"));
+      wizardFixture = TestBed.createComponent(ContainerCreateWizardComponent);
+      wizardFixture.detectChanges();
+      expect(wizardFixture.nativeElement.textContent).toContain("Mock TOP HTML");
+      expect(wizardFixture.nativeElement.textContent).toContain("Mock BOTTOM HTML");
+      expect(wizardFixture.nativeElement.textContent).not.toContain("Create Generic Container");
+    });
+
+    it("show default content if customization templates are empty", async () => {
+      authService.authData.set({
+        ...authService.authData(),
+        container_wizard: { enabled: true, type: "generic", registration: false, template: null }
+      });
+      wizardFixture.detectChanges();
+      expect(wizardFixture.nativeElement.textContent).toContain("Create Generic Container");
+    });
   });
 });

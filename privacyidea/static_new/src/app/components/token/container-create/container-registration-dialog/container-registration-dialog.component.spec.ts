@@ -28,6 +28,7 @@ import { ContainerRegistrationDialogComponent } from "./container-registration-d
 import { ContainerRegistrationDialogWizardComponent } from "./container-registration-dialog.wizard.component";
 import { ContainerService } from "../../../../services/container/container.service";
 import { ContentService } from "../../../../services/content/content.service";
+import { MockAuthService } from "../../../../../testing/mock-services";
 
 describe("ContainerRegistrationDialogComponent", () => {
   let fixture: ComponentFixture<ContainerRegistrationDialogComponent>;
@@ -97,6 +98,7 @@ describe("ContainerRegistrationDialogWizardComponent", () => {
   let fixture: ComponentFixture<ContainerRegistrationDialogWizardComponent>;
   let component: ContainerRegistrationDialogWizardComponent;
   let httpMock: HttpTestingController;
+  let authService: MockAuthService;
 
   const stopPolling = jest.fn();
   const containerServiceMock = { stopPolling };
@@ -146,7 +148,6 @@ describe("ContainerRegistrationDialogWizardComponent", () => {
     httpMock = TestBed.inject(HttpTestingController);
 
     fixture.detectChanges();
-    flushInitialWizardRequests();
   });
 
   afterEach(() => {
@@ -154,15 +155,18 @@ describe("ContainerRegistrationDialogWizardComponent", () => {
   });
 
   it("creates", () => {
+    flushInitialWizardRequests();
     expect(component).toBeTruthy();
   });
 
   it("subscribes to dialog close and calls stopPolling", () => {
+    flushInitialWizardRequests();
     expect(dialogAfterClosed).toHaveBeenCalled();
     expect(stopPolling).toHaveBeenCalledTimes(1);
   });
 
   it("exposes postTopHtml$ and postBottomHtml$; new subscriptions issue new GETs", async () => {
+    flushInitialWizardRequests();
     const top$ = firstValueFrom(component.postTopHtml$);
     const topReq2 = httpMock.expectOne("/static/public/customize/container-create.wizard.post.top.html");
     expect(topReq2.request.method).toBe("GET");
@@ -176,6 +180,30 @@ describe("ContainerRegistrationDialogWizardComponent", () => {
     bottomReq2.flush("<div>BOTTOM-AGAIN</div>");
     const bottomVal = await bottom$;
     expect(bottomVal).toBeTruthy();
+  });
+
+  it("show loaded templates if not empty", async () => {
+    // Mock HTTP responses for custom templates;
+    httpMock.expectOne("/static/public/customize/container-create.wizard.post.top.html")
+      .flush("<div>Custom TOP</div>");
+    httpMock.expectOne("/static/public/customize/container-create.wizard.post.bottom.html")
+      .flush("<div>Custom BOTTOM</div>");
+    fixture.detectChanges();
+
+    const html = fixture.nativeElement.textContent;
+    expect(html).toContain("Custom TOP");
+    expect(html).toContain("Custom BOTTOM");
+    // Optionally, check that default content is not present
+    expect(html).not.toContain("Create Generic Container");
+  });
+
+  it("show default content if customization templates are empty", async () => {
+   // Mock HTTP responses for custom templates;
+    httpMock.expectOne("/static/public/customize/container-create.wizard.post.top.html").flush("");
+    httpMock.expectOne("/static/public/customize/container-create.wizard.post.bottom.html").flush("");
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain("Container Successfully Created");
   });
 });
 

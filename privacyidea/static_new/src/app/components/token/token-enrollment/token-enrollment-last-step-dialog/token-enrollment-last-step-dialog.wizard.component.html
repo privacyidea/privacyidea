@@ -67,12 +67,19 @@
       mat-button>
       Create Container
     </button>
-  } @else {
+  } @else if(authService.tokenWizard()) {
     <button
       (click)="authService.logout()"
       mat-dialog-close
       mat-button>
       Logout
     </button>
+  } @else {
+    <!--   Token Wizard 2nd  -->
+    <button
+    mat-button
+    mat-dialog-close>
+    Close
+  </button>
   }
 </mat-dialog-actions>
