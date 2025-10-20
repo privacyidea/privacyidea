@@ -24,7 +24,9 @@ import { provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
 import { LocalService } from "../local/local.service";
 import { VersioningService } from "../version/version.service";
-import { MockLocalService, MockVersioningService } from "../../../testing/mock-services";
+import { MockLocalService, MockNotificationService, MockVersioningService } from "../../../testing/mock-services";
+import { Router } from "@angular/router";
+import { NotificationService } from "../notification/notification.service";
 
 const b64url = (obj: any) =>
   Buffer.from(JSON.stringify(obj))
@@ -44,15 +46,25 @@ describe("AuthService", () => {
   let httpMock: HttpTestingController;
   let mockLocal: MockLocalService;
   let mockVersioning: MockVersioningService;
+  let routerMock: { url: string; navigate: jest.Mock };
+  let notifications: MockNotificationService;
 
   beforeEach(() => {
+    routerMock = {
+      url: "/",
+      navigate: jest.fn().mockResolvedValue(true)
+    };
+
     TestBed.configureTestingModule({
       imports: [AppComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: LocalService, useClass: MockLocalService },
-        { provide: VersioningService, useClass: MockVersioningService }
+        { provide: VersioningService, useClass: MockVersioningService },
+        { provide: Router, useValue: routerMock },
+        MockNotificationService,
+        { provide: NotificationService, useExisting: MockNotificationService }
       ]
     }).compileComponents();
 
@@ -60,6 +72,7 @@ describe("AuthService", () => {
     httpMock = TestBed.inject(HttpTestingController);
     mockLocal = TestBed.inject(LocalService) as any;
     mockVersioning = TestBed.inject(VersioningService) as any;
+    notifications = TestBed.inject(NotificationService) as unknown as MockNotificationService;
     jest.spyOn(console, "error").mockImplementation(() => {});
     ensureAtob();
   });
@@ -204,7 +217,7 @@ describe("AuthService", () => {
     expect(mockLocal.getData).toHaveBeenCalled();
   });
 
-  it("acceptAuthentication + logout lifecycle flips isAuthenticated and clears state", () => {
+  it("acceptAuthentication + logout lifecycle flips isAuthenticated and clears state", async () => {
     expect(authService.isAuthenticated()).toBe(false);
 
     authService.acceptAuthentication();
@@ -255,6 +268,10 @@ describe("AuthService", () => {
     expect((authService as any).authData()).toBeNull();
     expect((authService as any).jwtData()).toBeNull();
     expect(mockLocal.removeData).toHaveBeenCalled();
+    expect(routerMock.navigate).toHaveBeenCalledWith(["login"]);
+    await (routerMock.navigate as jest.Mock).mock.results[0].value;
+    expect(notifications.openSnackBar).toHaveBeenCalledWith("Logout successful.");
+    expect(notifications.openSnackBar).toHaveBeenCalledTimes(1);
   });
 
   it("authtype, jwtExpDate and logoutTimeSeconds compute correctly", () => {
@@ -353,7 +370,7 @@ describe("AuthService", () => {
           logout_redirect_url: "",
           require_description: [],
           rss_age: 0,
-          container_wizard: { enabled: false }
+          container_wizard: { enabled: false, type: "generic", registration: false, template: null }
         }
       }
     };

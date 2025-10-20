@@ -31,7 +31,7 @@ import { TokenService, TokenServiceInterface } from "../../../../services/token/
 import { UserData } from "../../../../services/user/user.service";
 
 const buildBaseData = (): TokenEnrollmentLastStepDialogData => ({
-  tokentype: { key: "hotp", text: "HOTP Token", info: "" },
+  tokentype: { key: "hotp", name: "HOTP", text: "HOTP Token", info: "" },
   response: {
     detail: {
       serial: "HOTP123456",
@@ -126,7 +126,7 @@ describe("TokenEnrollmentLastStepDialogComponent", () => {
     });
 
     it.skip("should NOT show regenerate button for `sms` token", async () => {
-      component.data.tokentype = { key: "sms", text: "SMS Token", info: "" };
+      component.data.tokentype = { key: "sms", name: "SMS", text: "SMS Token", info: "" };
       await detectChangesStable(fixture);
       expect(component.showRegenerateButton()).toBe(false);
     });

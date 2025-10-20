@@ -116,11 +116,11 @@ describe("ContainerRegistrationDialogWizardComponent", () => {
   };
 
   const flushInitialWizardRequests = () => {
-    const topReq = httpMock.expectOne("/customize/container-create.wizard.post.top.html");
+    const topReq = httpMock.expectOne("/static/public/customize/container-create.wizard.post.top.html");
     expect(topReq.request.method).toBe("GET");
     topReq.flush("<div>TOP</div>");
 
-    const bottomReq = httpMock.expectOne("/customize/container-create.wizard.post.bottom.html");
+    const bottomReq = httpMock.expectOne("/static/public/customize/container-create.wizard.post.bottom.html");
     expect(bottomReq.request.method).toBe("GET");
     bottomReq.flush("<div>BOTTOM</div>");
   };
@@ -164,14 +164,14 @@ describe("ContainerRegistrationDialogWizardComponent", () => {
 
   it("exposes postTopHtml$ and postBottomHtml$; new subscriptions issue new GETs", async () => {
     const top$ = firstValueFrom(component.postTopHtml$);
-    const topReq2 = httpMock.expectOne("/customize/container-create.wizard.post.top.html");
+    const topReq2 = httpMock.expectOne("/static/public/customize/container-create.wizard.post.top.html");
     expect(topReq2.request.method).toBe("GET");
     topReq2.flush("<div>TOP-AGAIN</div>");
     const topVal = await top$;
     expect(topVal).toBeTruthy();
 
     const bottom$ = firstValueFrom(component.postBottomHtml$);
-    const bottomReq2 = httpMock.expectOne("/customize/container-create.wizard.post.bottom.html");
+    const bottomReq2 = httpMock.expectOne("/static/public/customize/container-create.wizard.post.bottom.html");
     expect(bottomReq2.request.method).toBe("GET");
     bottomReq2.flush("<div>BOTTOM-AGAIN</div>");
     const bottomVal = await bottom$;

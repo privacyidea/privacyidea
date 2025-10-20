@@ -225,11 +225,17 @@ describe("ContainerCreateComponent", () => {
     expect(pollSpy).toHaveBeenCalledWith("CONT-42", 2000);
   });
 
-  it("pollContainerRolloutState: closes dialog and navigates when state !== 'client_wait'", () => {
+  it("pollContainerRolloutState: closes dialog and opens registered dialog when state !== 'client_wait'", () => {
+    (containerSvc.pollContainerRolloutState as jest.Mock).mockReturnValueOnce(
+      of({
+        result: { value: { containers: [{ info: { registration_state: "registered" } }] } }
+      } as any)
+    );
+
     (component as any)["pollContainerRolloutState"]("C-9", 1000);
 
     expect(matDialogMock.closeAll).toHaveBeenCalled();
-    expect(navigateByUrl).toHaveBeenCalledWith(expect.stringMatching("/tokens/containers/details/C-9"));
+    expect(matDialogMock.open).toHaveBeenCalled();
   });
 
   it("pollContainerRolloutState: keeps dialog open when state == 'client_wait'", () => {
