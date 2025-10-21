@@ -187,7 +187,7 @@ class APIAuditTestCase(MyApiTestCase):
                              set(json_response.get("result").get("value").get("auditcolumns")))
 
         # Set policy to restrict audit columns
-        set_policy("audit02", scope=SCOPE.ADMIN, realm=self.realm1a,
+        set_policy("audit02", scope=SCOPE.ADMIN,
                    action=f"{PolicyAction.HIDE_AUDIT_COLUMNS}=serial action")
 
         # Check, that the normal user can only see the restricted audit columns
@@ -199,8 +199,9 @@ class APIAuditTestCase(MyApiTestCase):
             json_response = res.json
             self.assertTrue(json_response.get("result").get("status"), res)
             # Check that only restricted audit columns are available
-            self.assertNotIn({"serial", "action"},
-                             set(json_response.get("result").get("value").get("auditcolumns")))
+            self.assertTrue({"serial", "action"}.isdisjoint(
+                set(json_response.get("result").get("value").get("auditcolumns"))),
+                json_response.get("result").get("value").get("auditcolumns"))
             self.assertEqual(len(json_response.get("result").get("value").get("auditdata")[0]),
                              len(json_response.get("result").get("value").get("auditcolumns")))
         # delete policy
@@ -401,7 +402,7 @@ class APIAuditTestCase(MyApiTestCase):
                 self.assertEqual(ad.get("realm"), self.realm1a)
 
         # Set policy to restrict audit columns
-        set_policy("audit02", scope=SCOPE.USER, realm=self.realm1a,
+        set_policy("audit02", scope=SCOPE.USER,
                    action=f"{PolicyAction.HIDE_AUDIT_COLUMNS}=serial action")
 
         # Check, that the normal user can only see the restricted audit columns
@@ -413,8 +414,9 @@ class APIAuditTestCase(MyApiTestCase):
             json_response = res.json
             self.assertTrue(json_response.get("result").get("status"), res)
             # Check that only restricted audit columns are available
-            self.assertNotIn({"serial", "action"},
-                             set(json_response.get("result").get("value").get("auditcolumns")))
+            self.assertTrue({"serial", "action"}.isdisjoint(
+                set(json_response.get("result").get("value").get("auditcolumns"))),
+                json_response.get("result").get("value").get("auditcolumns"))
             self.assertEqual(len(json_response.get("result").get("value").get("auditdata")[0]),
                              len(json_response.get("result").get("value").get("auditcolumns")))
 
