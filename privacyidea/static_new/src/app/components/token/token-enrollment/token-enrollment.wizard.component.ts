@@ -160,8 +160,7 @@ export class TokenEnrollmentWizardComponent extends TokenEnrollmentComponent {
 
   readonly preTopHtml$ = this.http
     .get("/static/public/customize/token-enrollment.wizard.pre.top.html", {
-      responseType: "text",
-      headers: {"Cache-Control": "no-cache"}
+      responseType: "text"
     })
     .pipe(
       map((raw) => ({

@@ -35,6 +35,7 @@ import { tokenTypes } from "../../utils/token.utils";
 import { FilterValue } from "../../core/models/filter_value";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
+import { ConfirmationDialogComponent } from "../../components/shared/confirmation-dialog/confirmation-dialog.component";
 
 const apiFilter = [
   "serial",
@@ -183,6 +184,8 @@ export interface TokenServiceInterface {
   deleteToken(tokenSerial: string): Observable<Object>;
 
   bulkDeleteTokens(selectedTokens: string[]): Observable<PiResponse<BulkResult, any>>;
+
+  bulkDeleteWithConfirmDialog(serialList: string[], dialog: any, afterDelete?: () => void): void;
 
   revokeToken(tokenSerial: string): Observable<any>;
 
@@ -462,6 +465,62 @@ export class TokenService implements TokenServiceInterface {
         return throwError(() => error);
       })
     );
+  }
+
+  bulkDeleteWithConfirmDialog(serialList: string[], dialog: any, afterDelete?: () => void) {
+    dialog
+      .open(ConfirmationDialogComponent, {
+        data: {
+          serialList: serialList,
+          title: "Delete Selected Tokens",
+          type: "token",
+          action: "delete",
+          numberOfTokens: serialList.length
+        }
+      })
+      .afterClosed()
+      .subscribe({
+        next: (result: any) => {
+          if (result) {
+            this.bulkDeleteTokens(serialList).subscribe({
+              next: (response: PiResponse<BulkResult, any>) => {
+                const failedTokens = response.result?.value?.failed || [];
+                const unauthorizedTokens = response.result?.value?.unauthorized || [];
+                const count_success = response.result?.value?.count_success || 0;
+                const messages: string[] = [];
+                if (count_success) {
+                  messages.push(`Successfully deleted ${count_success} token${count_success === 1 ? '' : 's'}.`);
+                }
+
+                if (failedTokens.length > 0) {
+                  messages.push(`The following tokens failed to delete: ${failedTokens.join(", ")}`);
+                }
+
+                if (unauthorizedTokens.length > 0) {
+                  messages.push(
+                    `You are not authorized to delete the following tokens: ${unauthorizedTokens.join(", ")}`
+                  );
+                }
+
+                if (messages.length > 0) {
+                  this.notificationService.openSnackBar(messages.join("\n"));
+                }
+
+                if (afterDelete) {
+                  afterDelete();
+                }
+              },
+              error: (err) => {
+                let message = "An error occurred while deleting tokens.";
+                if (err.error?.result?.error?.message) {
+                  message = err.error.result.error.message;
+                }
+                this.notificationService.openSnackBar(message);
+              }
+            });
+          }
+        }
+      });
   }
 
   toggleActive(tokenSerial: string, active: boolean): Observable<PiResponse<boolean>> {

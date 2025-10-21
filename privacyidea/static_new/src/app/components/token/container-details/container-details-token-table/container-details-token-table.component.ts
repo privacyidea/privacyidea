@@ -39,7 +39,7 @@ import { MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatSort, MatSortHeader, MatSortModule } from "@angular/material/sort";
 import { OverflowService, OverflowServiceInterface } from "../../../../services/overflow/overflow.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "../../../../services/table-utils/table-utils.service";
-import { BulkResult, TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
+import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 
 import { ConfirmationDialogComponent } from "../../../shared/confirmation-dialog/confirmation-dialog.component";
 import { CopyButtonComponent } from "../../../shared/copy-button/copy-button.component";
@@ -49,7 +49,6 @@ import { NgClass } from "@angular/common";
 import { MatIconModule } from "@angular/material/icon";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { MatInput } from "@angular/material/input";
-import { PiResponse } from "../../../../app.component";
 import {
   NotificationService,
   NotificationServiceInterface
@@ -315,58 +314,7 @@ export class ContainerDetailsTokenTableComponent {
 
   deleteAllTokens() {
     const serialList = this.containerTokenData().data.map((token) => token.serial);
-    this.dialog
-      .open(ConfirmationDialogComponent, {
-        data: {
-          serialList: serialList,
-          title: "Delete All Tokens",
-          type: "token",
-          action: "delete",
-          numberOfTokens: serialList.length
-        }
-      })
-      .afterClosed()
-      .subscribe({
-        next: (result) => {
-          if (result) {
-            // TODO: same code used in token-tab (delete selected) -> refactor into service
-            this.tokenService.bulkDeleteTokens(serialList).subscribe({
-              next: (response: PiResponse<BulkResult, any>) => {
-                const failedTokens = response.result?.value?.failed || [];
-                const unauthorizedTokens = response.result?.value?.unauthorized || [];
-                const count_success = response.result?.value?.count_success || 0;
-                const messages: string[] = [];
-                if (count_success) {
-                  messages.push(`Successfully deleted ${count_success} token${count_success === 1 ? "" : "s"}.`);
-                }
-
-                if (failedTokens.length > 0) {
-                  messages.push(`The following tokens failed to delete: ${failedTokens.join(", ")}`);
-                }
-
-                if (unauthorizedTokens.length > 0) {
-                  messages.push(
-                    `You are not authorized to delete the following tokens: ${unauthorizedTokens.join(", ")}`
-                  );
-                }
-
-                if (messages.length > 0) {
-                  this.notificationService.openSnackBar(messages.join("\n"));
-                }
-
-                this.containerService.containerDetailResource.reload();
-              },
-              error: (err) => {
-                let message = "An error occurred while deleting tokens.";
-                if (err.error?.result?.error?.message) {
-                  message = err.error.result.error.message;
-                }
-                this.notificationService.openSnackBar(message);
-              }
-            });
-          }
-        }
-      });
+    this.tokenService.bulkDeleteWithConfirmDialog(serialList, this.dialog, this.containerService.containerDetailResource.reload);
   }
 
   deleteTokenFromContainer(tokenSerial: string) {

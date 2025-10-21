@@ -69,7 +69,7 @@ describe("ContainerDetailsTokenTableComponent", () => {
   let component: ContainerDetailsTokenTableComponent;
 
   let containerServiceMock: MockContainerService;
-  const tokenServiceMock = new MockTokenService();
+  let tokenServiceMock: MockTokenService;
   const overflowServiceMock = new MockOverflowService();
   const tableUtilsMock = new MockTableUtilsService();
   const notificationServiceMock = new MockNotificationService();
@@ -83,7 +83,7 @@ describe("ContainerDetailsTokenTableComponent", () => {
         provideHttpClientTesting(),
         { provide: AuthService, useClass: MockAuthService },
         { provide: ContainerService, useClass: MockContainerService },
-        { provide: TokenService, useValue: tokenServiceMock },
+        { provide: TokenService, useClass: MockTokenService },
         { provide: TableUtilsService, useValue: tableUtilsMock },
         { provide: OverflowService, useValue: overflowServiceMock },
         { provide: NotificationService, useValue: notificationServiceMock },
@@ -96,15 +96,11 @@ describe("ContainerDetailsTokenTableComponent", () => {
       ]
     }).compileComponents();
 
-    (tokenServiceMock.unassignUserFromAll as any) = jest.fn().mockReturnValue(of([]));
-    (tokenServiceMock.assignUserToAll as any) = jest.fn().mockReturnValue(of([]));
-    (tokenServiceMock.deleteToken as any) = jest.fn().mockReturnValue(of({}));
-    tokenServiceMock.toggleActive.mockReturnValue(of({}));
-
     fixture = TestBed.createComponent(ContainerDetailsTokenTableComponent);
     component = fixture.componentInstance;
 
     containerServiceMock = TestBed.inject(ContainerService) as unknown as MockContainerService;
+    tokenServiceMock = TestBed.inject(TokenService) as unknown as MockTokenService;
 
     component.containerTokenData = signal(
       new MatTableDataSource<any>([
@@ -223,6 +219,8 @@ describe("ContainerDetailsTokenTableComponent", () => {
 
   it("toggleActive calls service then reloads container details", () => {
     const t = { serial: "Mock serial", active: true } as any;
+    jest.spyOn(tokenServiceMock, "toggleActive");
+
     component.toggleActive(t);
     expect(tokenServiceMock.toggleActive).toHaveBeenCalledWith("Mock serial", true);
     expect(containerServiceMock.containerDetailResource.reload).toHaveBeenCalledTimes(1);
@@ -274,7 +272,7 @@ describe("ContainerDetailsTokenTableComponent", () => {
       {
         data: {
           serialList: ["Mock serial", "Another serial"],
-          title: "Delete All Tokens",
+          title: "Delete Selected Tokens",
           type: "token",
           action: "delete",
           numberOfTokens: 2
@@ -315,6 +313,7 @@ describe("ContainerDetailsTokenTableComponent", () => {
       { serial: "S1", username: "", active: true },
       { serial: "S2", username: "", active: true }
     ] as any;
+    jest.spyOn(tokenServiceMock, "unassignUserFromAll");
 
     component.unassignFromAllToken();
     expect(matDialogMock.open).not.toHaveBeenCalled();
@@ -327,6 +326,7 @@ describe("ContainerDetailsTokenTableComponent", () => {
       { serial: "S1", username: "x", active: true },
       { serial: "S2", username: "", active: true }
     ] as any;
+    jest.spyOn(tokenServiceMock, "unassignUserFromAll");
 
     component.unassignFromAllToken();
     expect(matDialogMock.open).toHaveBeenCalledWith(
@@ -363,6 +363,8 @@ describe("ContainerDetailsTokenTableComponent", () => {
       { serial: "S1", username: "alice", active: true },
       { serial: "S2", username: "alice", active: true }
     ] as any;
+    jest.spyOn(tokenServiceMock, "unassignUserFromAll")
+    jest.spyOn(tokenServiceMock, "assignUserToAll");
 
     component.assignToAllToken();
 
@@ -392,6 +394,9 @@ describe("ContainerDetailsTokenTableComponent", () => {
       { serial: "S2", username: "", active: true },
       { serial: "S3", username: "alice", active: true }
     ] as any;
+    jest.spyOn(tokenServiceMock, "unassignUserFromAll")
+    jest.spyOn(tokenServiceMock, "assignUserToAll");
+    jest.spyOn(containerServiceMock.containerDetailResource, "reload")
 
     component.assignToAllToken();
 

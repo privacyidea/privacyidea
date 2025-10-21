@@ -19,7 +19,7 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { of, Subject, Subscription } from "rxjs";
-import { HttpParams } from "@angular/common/http";
+import { HttpParams, provideHttpClient } from "@angular/common/http";
 import { Router } from "@angular/router";
 
 import { TokenGetSerialComponent } from "./token-get-serial.component";
@@ -71,6 +71,7 @@ describe("TokenGetSerialComponent", () => {
     await TestBed.configureTestingModule({
       imports: [TokenGetSerialComponent, BrowserAnimationsModule],
       providers: [
+        provideHttpClient(),
         { provide: TokenService, useClass: MockTokenService },
         { provide: NotificationService, useClass: MockNotificationService },
         { provide: ContentService, useClass: MockContentService },
