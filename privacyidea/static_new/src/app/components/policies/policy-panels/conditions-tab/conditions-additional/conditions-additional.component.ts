@@ -16,6 +16,8 @@ import {
   PolicyService,
   SectionOption
 } from "../../../../../services/policies/policies.service";
+import { MatButtonModule, MatIconButton } from "@angular/material/button";
+import { MatIconModule } from "@angular/material/icon";
 
 @Component({
   selector: "app-conditions-additional",
@@ -27,7 +29,10 @@ import {
     MatInputModule,
     MatSelectModule,
     MatCheckboxModule,
-    FormsModule
+    FormsModule,
+    MatButtonModule,
+    MatIconModule,
+    MatIconButton
   ],
   templateUrl: "./conditions-additional.component.html",
   styleUrls: ["./conditions-additional.component.scss"]
@@ -42,9 +47,8 @@ export class ConditionsAdditionalComponent {
     return this.policyService.selectedPolicy()?.conditions || [];
   });
   editIndex = signal<number | null>(null);
-  isCreatingNewCondition = computed(
-    () => this.editIndex() !== null && this.editIndex() === this.additionalConditions().length
-  );
+
+  // For editing existing condition
   conditionSection = signal<SectionOption | "">("");
   conditionKey = signal<string>("");
   conditionComparator = signal<ComporatorOption | "">("");
@@ -52,19 +56,17 @@ export class ConditionsAdditionalComponent {
   conditionActive = signal<boolean>(false);
   conditionHandleMissingData = signal<HandleMissigDataOption | "">("");
 
-  initNewCondition() {
-    const newIndex = -1;
-    this.editIndex.set(newIndex);
-    this.conditionSection.set("");
-    this.conditionKey.set("");
-    this.conditionComparator.set("");
-    this.conditionValue.set("");
-    this.conditionActive.set(false);
-    this.conditionHandleMissingData.set("");
-  }
+  // For adding new condition
+  newConditionSection = signal<SectionOption | "">("");
+  newConditionKey = signal<string>("");
+  newConditionComparator = signal<ComporatorOption | "">("");
+  newConditionValue = signal<string>("");
+  newConditionActive = signal<boolean>(false);
+  newConditionHandleMissingData = signal<HandleMissigDataOption | "">("");
 
   startEditCondition(condition: AdditionalCondition, index: number) {
     this.editIndex.set(index);
+    // When starting to edit, copy the values to the editing signals
     this.conditionSection.set(condition[0]);
     this.conditionKey.set(condition[1]);
     this.conditionComparator.set(condition[2]);
@@ -78,44 +80,68 @@ export class ConditionsAdditionalComponent {
     if (index === null) return;
 
     const conditionSection = this.conditionSection();
-    const conditionFirstValue = this.conditionKey();
+    if (conditionSection === "") return;
     const conditionComparator = this.conditionComparator();
-    const conditionSecondValue = this.conditionValue();
+    if (conditionComparator === "") return;
     const conditionHandleMissingData = this.conditionHandleMissingData();
-
-    if (
-      conditionSection === "" ||
-      conditionFirstValue === "" ||
-      conditionComparator === "" ||
-      conditionSecondValue === "" ||
-      conditionHandleMissingData === ""
-    ) {
-      // Incomplete data; do not save
-      return;
-    }
+    if (conditionHandleMissingData === "") return;
 
     const updatedCondition: AdditionalCondition = [
       conditionSection,
-      conditionFirstValue,
+      this.conditionKey(),
       conditionComparator,
-      conditionSecondValue,
+      this.conditionValue(),
       this.conditionActive(),
       conditionHandleMissingData
     ];
 
-    if (this.isCreatingNewCondition()) {
-      this.addCondition(updatedCondition);
-    } else {
-      this.updateCondition(index, updatedCondition);
+    // Basic validation
+    if (updatedCondition.some((v) => v === "")) {
+      return;
     }
+
+    this.updateCondition(index, updatedCondition);
     this.editIndex.set(null);
   }
+
+  saveNewCondition() {
+    const newConditionSection = this.newConditionSection();
+    if (newConditionSection === "") return;
+    const newConditionComparator = this.newConditionComparator();
+    if (newConditionComparator === "") return;
+    const newConditionHandleMissingData = this.newConditionHandleMissingData();
+    if (newConditionHandleMissingData === "") return;
+
+    const newCondition: AdditionalCondition = [
+      newConditionSection,
+      this.newConditionKey(),
+      newConditionComparator,
+      this.newConditionValue(),
+      this.newConditionActive(),
+      newConditionHandleMissingData
+    ];
+
+    if (newCondition.some((v) => v === "")) {
+      return; // Or show some error
+    }
+
+    this.addCondition(newCondition);
+
+    // Reset form
+    this.newConditionSection.set("");
+    this.newConditionKey.set("");
+    this.newConditionComparator.set("");
+    this.newConditionValue.set("");
+    this.newConditionActive.set(false);
+    this.newConditionHandleMissingData.set("");
+  }
+
   cancelEdit() {
     this.editIndex.set(null);
   }
 
   updateCondition(index: number, updated: AdditionalCondition) {
-    const conditions = this.additionalConditions();
+    const conditions = [...this.additionalConditions()];
     conditions[index] = updated;
     this.policyService.updateSelectedPolicy({ conditions });
   }
@@ -124,15 +150,13 @@ export class ConditionsAdditionalComponent {
     this.policyService.updateSelectedPolicy({ conditions: [...this.additionalConditions(), condition] });
   }
 
-  removeCondition(condition: AdditionalCondition) {
-    this.policyService.updateSelectedPolicy({ conditions: this.additionalConditions().filter((c) => c !== condition) });
-  }
-
-  updateAdditionalCondition(index: number, field: number, value: any) {
-    const conditions = this.additionalConditions();
-    const conditionToUpdate = conditions[index];
-    conditionToUpdate[field] = value;
-    conditions[index] = conditionToUpdate;
-    this.policyService.updateSelectedPolicy({ conditions });
+  removeCondition(index: number) {
+    this.policyService.updateSelectedPolicy({
+      conditions: this.additionalConditions().filter((_, i) => i !== index)
+    });
+    // If we remove the row we are editing, we should cancel the edit mode
+    if (this.editIndex() === index) {
+      this.editIndex.set(null);
+    }
   }
 }
