@@ -138,7 +138,7 @@ export class AuditService implements AuditServiceInterface {
       pageSize: this.pageSize(),
       routeUrl: this.contentService.routeUrl()
     }),
-    computation: () => 0
+    computation: () => 1
   });
   auditResource = httpResource<PiResponse<Audit>>(() => {
     if (this.contentService.routeUrl() !== ROUTE_PATHS.AUDIT) {
