@@ -126,6 +126,21 @@ export type SectionOption =
   | "tokeninfo"
   | "userinfo";
 
+/**
+ * Get a list of strings from the SectionOption type.
+ * @returns {string[]} The list of strings.
+ */
+export const allSectionOptions: SectionOption[] = [
+  "HTTP Environment",
+  "HTTP Request Header",
+  "Requst Data",
+  "container",
+  "container_info",
+  "token",
+  "tokeninfo",
+  "userinfo"
+] as SectionOption[];
+
 export type ComporatorOption =
   | "!contains"
   | "!date_within_last"
@@ -144,7 +159,32 @@ export type ComporatorOption =
   | "matches"
   | "string_contains";
 
+export const allComporatorOptions: ComporatorOption[] = [
+  "!contains",
+  "!date_within_last",
+  "!equals",
+  "!in",
+  "!matches",
+  "!string_contains",
+  "<",
+  ">",
+  "contains",
+  "date_after",
+  "date_before",
+  "date_within_last",
+  "equals",
+  "in",
+  "matches",
+  "string_contains"
+];
+
 export type HandleMissigDataOption = "raise_error" | "condition_is_false" | "condition_is_true";
+
+export const allHandleMissingDataOptions: HandleMissigDataOption[] = [
+  "raise_error",
+  "condition_is_false",
+  "condition_is_true"
+];
 
 export interface PoliciesServiceInterface {}
 

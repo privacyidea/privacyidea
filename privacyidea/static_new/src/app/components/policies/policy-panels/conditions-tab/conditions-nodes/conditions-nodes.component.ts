@@ -40,20 +40,17 @@ export class ConditionsNodesComponent {
     return this.selectedPolicy()?.pinode || [];
   });
 
-  addUserAgentFormControl = new FormControl<string>("");
-
+  addUserAgentFormControl = new FormControl<string>("", this.userAgentValidator.bind(this));
   validTimeFormControl = new FormControl<string>("", this.validTimeValidator.bind(this));
   clientFormControl = new FormControl<string>("", this.clientValidator.bind(this));
 
   constructor() {
-    this.validTimeFormControl.valueChanges.subscribe((value) => {
-      if (!value) return;
-      this.setValidTime(value);
+    this.validTimeFormControl.valueChanges.subscribe(() => {
+      this.setValidTime();
     });
 
-    this.clientFormControl.valueChanges.subscribe((value) => {
-      if (!value) return;
-      this.setClients(value);
+    this.clientFormControl.valueChanges.subscribe(() => {
+      this.setClients();
     });
   }
 
@@ -80,7 +77,9 @@ export class ConditionsNodesComponent {
     });
   }
 
-  addUserAgent(userAgent: string) {
+  addUserAgent() {
+    if (this.addUserAgentFormControl.invalid) return;
+    const userAgent = this.addUserAgentFormControl.value;
     if (!userAgent) return;
     const oldUserAgents = this.selectedUserAgents();
     if (oldUserAgents.includes(userAgent)) return;
@@ -101,16 +100,22 @@ export class ConditionsNodesComponent {
     this.policyService.updateSelectedPolicy({ user_agents: [] });
   }
 
-  setValidTime(validTime: string) {
-    // if (!this._validTimeIsCorrect(validTime)) return;
+  setValidTime() {
+    if (this.validTimeFormControl.invalid) return;
+    const validTime = this.validTimeFormControl.value;
+    if (!validTime) return;
+    console.log("Setting valid time:", validTime);
     this.policyService.updateSelectedPolicy({
       time: validTime
     });
   }
 
-  setClients(clients: string) {
-    if (!this._clientIsCorrect(clients)) return;
-    const clientsArray = clients.split(",").map((c) => c.trim());
+  setClients() {
+    if (this.clientFormControl.invalid) return;
+    const client = this.clientFormControl.value;
+    if (!client) return;
+    console.log("Setting clients:", client);
+    const clientsArray = client.split(",").map((c) => c.trim());
     this.policyService.updateSelectedPolicy({
       client: clientsArray
     });
@@ -120,48 +125,37 @@ export class ConditionsNodesComponent {
     const validTime = control.value;
     if (!validTime) return null;
     console.log("Validating valid time:", validTime);
-    if (this._validTimeIsCorrect(validTime)) {
+    const regex =
+      /^((Mon|Tue|Wed|Thu|Fri|Sat|Sun)(-(Mon|Tue|Wed|Thu|Fri|Sat|Sun))?:\s([0-1]?[0-9]|2[0-3])-([0-1]?[0-9]|2[0-3])(,\s)?)+$/;
+    if (validTime === "" || regex.test(validTime)) {
       return null;
     }
     return {
       invalidValidTime: { value: control.value }
     };
   }
-  _validTimeIsCorrect(validTime: string): boolean {
-    //Mon-Fri: 9-18, Sat: 10-15 (2nd number is NOT optional)
-    const regex =
-      /^((Mon|Tue|Wed|Thu|Fri|Sat|Sun)(-(Mon|Tue|Wed|Thu|Fri|Sat|Sun))?:\s([0-1]?[0-9]|2[0-3])-([0-1]?[0-9]|2[0-3])(,\s)?)+$/;
-    return validTime === "" || regex.test(validTime);
-  }
 
   clientValidator(clientControl: AbstractControl): ValidationErrors | null {
     const client = clientControl.value;
     if (!client) return null;
     if (typeof client !== "string") return { invalidClient: { value: clientControl.value } };
-    const isValid = this._clientIsCorrect(client);
+    const regex = /^(!?\d{1,3}(\.\d{1,3}){3}(\/\d{1,2})?)(,\s*!?\d{1,3}(\.\d{1,3}){3}(\/\d{1,2})?)*$/;
+    const isValid = client === "" || regex.test(client);
     if (isValid) return null;
     return {
       invalidClient: { value: clientControl.value }
     };
   }
-  _clientIsCorrect(client: string): boolean {
-    const regex = /^(!?\d{1,3}(\.\d{1,3}){3}(\/\d{1,2})?)(,\s*!?\d{1,3}(\.\d{1,3}){3}(\/\d{1,2})?)*$/;
-    return client === "" || regex.test(client);
-  }
 
   userAgentValidator(control: AbstractControl): ValidationErrors | null {
     const userAgent = control.value;
     if (!userAgent) return null;
-    if (this._userAgentIncludesComma(userAgent)) {
+    if (userAgent.includes(",")) {
       return {
         includesComma: { value: control.value }
       };
     }
     return null;
-  }
-
-  _userAgentIncludesComma(userAgent: string): boolean {
-    return userAgent.includes(",");
   }
 
   updateSelectedPinodes($event: MatSelectChange<string[]>) {

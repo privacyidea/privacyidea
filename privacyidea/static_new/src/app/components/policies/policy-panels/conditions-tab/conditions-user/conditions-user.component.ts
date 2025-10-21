@@ -1,6 +1,13 @@
 import { Component, computed, inject, signal, ViewChild } from "@angular/core";
 import { CommonModule } from "@angular/common";
-import { FormsModule } from "@angular/forms";
+import {
+  AbstractControl,
+  FormControl,
+  FormsModule,
+  ReactiveFormsModule,
+  ValidationErrors,
+  ValidatorFn
+} from "@angular/forms";
 import { MatIconModule } from "@angular/material/icon";
 import { RealmService, RealmServiceInterface } from "../../../../../services/realm/realm.service";
 import { ResolverService } from "../../../../../services/resolver/resolver.service";
@@ -22,7 +29,8 @@ import { PolicyService } from "../../../../../services/policies/policies.service
     MatAutocompleteModule,
     MatSelectModule,
     MatButtonModule,
-    MatExpansionModule
+    MatExpansionModule,
+    ReactiveFormsModule
   ],
   templateUrl: "./conditions-user.component.html",
   styleUrl: "./conditions-user.component.scss"
@@ -38,6 +46,8 @@ export class ConditionsUserComponent {
   selectedResolvers = computed(() => this.policyService.selectedPolicy()?.resolver || []);
   selectedUsers = computed(() => this.policyService.selectedPolicy()?.user || []);
   userCaseInsensitive = computed(() => this.policyService.selectedPolicy()?.user_case_insensitive || false);
+
+  userFormControl = new FormControl<string>("", this.userValidator.bind(this));
 
   selectRealm(realmNames: string[]): void {
     this.policyService.updateSelectedPolicy({ realm: realmNames });
@@ -80,6 +90,9 @@ export class ConditionsUserComponent {
   );
 
   addUser(user: string) {
+    if (this.userFormControl.invalid) {
+      return;
+    }
     if (user && !this.selectedUsers().includes(user)) {
       this.policyService.updateSelectedPolicy({ user: [...this.selectedUsers(), user] });
     }
@@ -94,5 +107,9 @@ export class ConditionsUserComponent {
   }
   toggleUserCaseInsensitive() {
     this.policyService.updateSelectedPolicy({ user_case_insensitive: !this.userCaseInsensitive() });
+  }
+
+  userValidator(control: AbstractControl): ValidationErrors | null {
+    return /[,]/.test(control.value) ? { includesComma: { value: control.value } } : null;
   }
 }

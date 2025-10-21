@@ -49,7 +49,6 @@
       }
     </mat-form-field>
   </div>
-
   <div class="user-agent-list-wrapper">
     <div class="user-agent-list">
       @for (userAgend of selectedUserAgents(); track userAgend) {
@@ -81,16 +80,19 @@
         matInput
         [formControl]="addUserAgentFormControl"
         #userAgentInput
-        pattern="[^,]*"
-        (keyup.enter)="addUserAgent(userAgentInput.value); userAgentInput.value = ''" />
+        (keyup.enter)="
+          addUserAgentFormControl.markAsTouched();
+          addUserAgentFormControl.invalid ? null : (userAgentInput.value = '');
+          addUserAgent()
+        " />
+      @if (addUserAgentFormControl.hasError("includesComma")) {
+        <mat-error i18n> User Agent must not contain commas. </mat-error>
+      }
     </mat-form-field>
-    @if (addUserAgentFormControl.touched && addUserAgentFormControl.hasError("includesComma")) {
-      <mat-error i18n> User Agent must not contain commas. </mat-error>
-    }
     <button
       class="add-user-agent-button button-hover"
-      [disabled]="userAgentInput.value === ''"
-      (click)="addUserAgent(userAgentInput.value); userAgentInput.value = ''">
+      [disabled]="!userAgentInput.value.trim() || addUserAgentFormControl.invalid"
+      (click)="addUserAgent(); userAgentInput.value = ''">
       <mat-icon>add</mat-icon>
     </button>
   </div>
