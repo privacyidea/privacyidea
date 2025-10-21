@@ -68,7 +68,7 @@ describe("ContainerDetailsTokenTableComponent", () => {
   let fixture: ComponentFixture<ContainerDetailsTokenTableComponent>;
   let component: ContainerDetailsTokenTableComponent;
 
-  const containerServiceMock = new MockContainerService();
+  let containerServiceMock: MockContainerService;
   const tokenServiceMock = new MockTokenService();
   const overflowServiceMock = new MockOverflowService();
   const tableUtilsMock = new MockTableUtilsService();
@@ -82,7 +82,7 @@ describe("ContainerDetailsTokenTableComponent", () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: AuthService, useClass: MockAuthService },
-        { provide: ContainerService, useValue: containerServiceMock },
+        { provide: ContainerService, useClass: MockContainerService },
         { provide: TokenService, useValue: tokenServiceMock },
         { provide: TableUtilsService, useValue: tableUtilsMock },
         { provide: OverflowService, useValue: overflowServiceMock },
@@ -103,6 +103,8 @@ describe("ContainerDetailsTokenTableComponent", () => {
 
     fixture = TestBed.createComponent(ContainerDetailsTokenTableComponent);
     component = fixture.componentInstance;
+
+    containerServiceMock = TestBed.inject(ContainerService) as unknown as MockContainerService;
 
     component.containerTokenData = signal(
       new MatTableDataSource<any>([
@@ -227,6 +229,9 @@ describe("ContainerDetailsTokenTableComponent", () => {
   });
 
   it("removeTokenFromContainer confirms and removes on confirm=true", () => {
+    jest.spyOn(containerServiceMock, "removeTokenFromContainer").mockReturnValue(
+      of({ result: { value: true } } as any)
+    );
     component.removeTokenFromContainer("CONT-1", "Mock serial");
     expect(matDialogMock.open).toHaveBeenCalledWith(
       ConfirmationDialogComponent,

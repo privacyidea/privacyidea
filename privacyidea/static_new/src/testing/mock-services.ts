@@ -22,7 +22,7 @@ import {
   ContainerDetailData,
   ContainerDetails,
   ContainerRegisterData,
-  ContainerServiceInterface,
+  ContainerService,
   ContainerTemplate,
   ContainerType,
   ContainerTypes
@@ -249,7 +249,7 @@ export class MockAuthService extends AuthService {
     role: "admin",
     authtype: "cookie",
     exp: 0,
-    rights: []
+    rights: MockAuthService.MOCK_AUTH_DATA.rights
   });
   override jwtNonce: WritableSignal<string> = signal(this.jwtData()?.nonce || "");
   override authtype: Signal<"cookie" | "none"> = signal("cookie");
@@ -261,7 +261,6 @@ export class MockAuthService extends AuthService {
   override isAuthenticated: WritableSignal<boolean> = signal(false);
   override menus: WritableSignal<string[]> = signal(MockAuthService.MOCK_AUTH_DATA.menus);
   override realm: WritableSignal<string> = signal(MockAuthService.MOCK_AUTH_DATA.realm);
-  override rights: WritableSignal<string[]> = signal(MockAuthService.MOCK_AUTH_DATA.rights);
   override role: WritableSignal<AuthRole> = signal(MockAuthService.MOCK_AUTH_DATA.role);
   override token: WritableSignal<string> = signal(MockAuthService.MOCK_AUTH_DATA.token);
   override username: WritableSignal<string> = signal(MockAuthService.MOCK_AUTH_DATA.username);
@@ -483,7 +482,7 @@ export class MockContentService implements ContentServiceInterface {
     url: "/home",
     events: of({} as any)
   } as any;
-  routeUrl: Signal<string> = signal("/home");
+  routeUrl: WritableSignal<string> = signal("/home");
   previousUrl: Signal<string> = signal("/home");
   isProgrammaticTabChange = signal(false);
   tokenSerial: WritableSignal<string> = signal("");
@@ -496,77 +495,45 @@ export class MockContentService implements ContentServiceInterface {
   });
 }
 
-export class MockContainerService implements ContainerServiceInterface {
-  #containerDetailSignal = signal({
-    containers: [
-      {
-        serial: "CONT-1",
-        users: [
-          {
-            user_realm: "",
-            user_name: "",
-            user_resolver: "",
-            user_id: ""
-          }
-        ],
-        tokens: [],
-        realms: [],
-        states: [],
-        type: "",
-        select: "",
-        description: ""
-      }
-    ],
-    count: 1
-  });
-  handleFilterInput = jest.fn().mockReturnValue(of({}));
-  clearFilter = jest.fn().mockReturnValue(of({}));
-  apiFilter: string[] = [];
-  advancedApiFilter: string[] = [];
-  stopPolling$: Subject<void> = new Subject<void>();
-  containerBaseUrl: string = "mockEnvironment.proxyUrl + '/container'";
-  eventPageSize: number = 10;
-  states = signal<string[]>([]);
-  containerSerial = signal("CONT-1");
-  selectedContainer = signal("");
-  sort: WritableSignal<Sort> = signal({ active: "serial", direction: "asc" });
-  containerFilter: WritableSignal<FilterValue> = signal(new FilterValue());
-  filterParams: Signal<Record<string, string>> = computed(() =>
+export class MockContainerService extends ContainerService {
+  override handleFilterInput = jest.fn().mockReturnValue(of({}));
+  override containerBaseUrl: string = "mockEnvironment.proxyUrl + '/container'";
+  override containerSerial = signal("CONT-1");
+  override selectedContainer = signal("");
+  override sort: WritableSignal<Sort> = signal({ active: "serial", direction: "asc" });
+  override containerFilter: WritableSignal<FilterValue> = signal(new FilterValue());
+  override filterParams: Signal<Record<string, string>> = computed(() =>
     Object.fromEntries(
       Object.entries(this.containerFilter()).filter(([key]) =>
         [...this.apiFilter, ...this.advancedApiFilter].includes(key)
       )
     )
   );
-  pageSize: WritableSignal<number> = signal(10);
-  pageIndex: WritableSignal<number> = signal(0);
-  loadAllContainers: Signal<boolean> = signal(false);
-  containerResource: HttpResourceRef<PiResponse<ContainerDetails> | undefined> = new MockHttpResourceRef(
+  override pageSize: WritableSignal<number> = signal(10);
+  override pageIndex: WritableSignal<number> = signal(0);
+  override loadAllContainers: Signal<boolean> = signal(false);
+  override containerResource: HttpResourceRef<PiResponse<ContainerDetails> | undefined> = new MockHttpResourceRef(
     MockPiResponse.fromValue({
       containers: [],
       count: 0
     })
   );
-  containerOptions: WritableSignal<string[]> = signal([]);
-  filteredContainerOptions: Signal<string[]> = computed(() => {
+  override containerOptions: WritableSignal<string[]> = signal([]);
+  override filteredContainerOptions: Signal<string[]> = computed(() => {
     const options = this.containerOptions();
     const filter = this.containerFilter();
     return options.filter((option) => option.includes(filter.value) || option.includes(filter.hiddenValue));
   });
-  containerSelection: WritableSignal<ContainerDetailData[]> = signal([]);
-  containerTypesResource: HttpResourceRef<PiResponse<ContainerTypes, unknown> | undefined> = new MockHttpResourceRef(
+  override containerSelection: WritableSignal<ContainerDetailData[]> = signal([]);
+  override containerTypesResource: HttpResourceRef<PiResponse<ContainerTypes, unknown> | undefined> = new MockHttpResourceRef(
     MockPiResponse.fromValue<ContainerTypes>(new Map())
   );
-  containerTypeOptions: Signal<ContainerType[]> = computed(() => {
-    const types = this.containerTypesResource.value()?.result?.value;
-    return types ? Object.values(types) : [];
+  override containerTypeOptions: Signal<ContainerType[]> = computed(() => {
+    return [{ "containerType": "generic", "description": "", "token_types": [] } as ContainerType,
+      { "containerType": "smartphone", "description": "", "token_types": [] } as ContainerType,
+      { "containerType": "yubikey", "description": "", "token_types": [] } as ContainerType];
   });
-  selectedContainerType: WritableSignal<ContainerType> = signal({
-    containerType: "generic",
-    description: "",
-    token_types: []
-  });
-  containerDetailResource = new MockHttpResourceRef(
+  override containerDetailResource = new MockHttpResourceRef(
     MockPiResponse.fromValue({
       containers: [
         {
@@ -590,31 +557,30 @@ export class MockContainerService implements ContainerServiceInterface {
       count: 1
     })
   );
-  containerDetail = this.#containerDetailSignal;
-  templatesResource: HttpResourceRef<PiResponse<{ templates: ContainerTemplate[] }, unknown> | undefined> =
+  override templatesResource: HttpResourceRef<PiResponse<{ templates: ContainerTemplate[] }, unknown> | undefined> =
     new MockHttpResourceRef(
       MockPiResponse.fromValue<{ templates: ContainerTemplate[] }>({
         templates: []
       })
     );
-  templates: WritableSignal<ContainerTemplate[]> = signal([]);
-  addToken = jest.fn().mockReturnValue(of(null));
-  removeToken = jest.fn().mockReturnValue(of(null));
-  setContainerRealm = jest.fn().mockReturnValue(of(null));
-  setContainerDescription = jest.fn().mockReturnValue(of(null));
-  toggleActive = jest.fn().mockReturnValue(of({}));
-  unassignUser = jest.fn().mockReturnValue(of(null));
-  assignUser = jest.fn().mockReturnValue(of(null));
-  setContainerInfos = jest.fn().mockReturnValue(of({}));
-  deleteInfo = jest.fn().mockReturnValue(of({}));
-  addTokenToContainer = jest.fn().mockReturnValue(of(null));
-  removeTokenFromContainer = jest.fn().mockReturnValue(of(null));
-  toggleAll = jest.fn().mockReturnValue(of(null));
-  removeAll = jest.fn().mockReturnValue(of(null));
-  deleteContainer = jest.fn().mockReturnValue(of({}));
-  deleteAllTokens = jest.fn().mockReturnValue(of(null));
+  override templates: WritableSignal<ContainerTemplate[]> = signal([]);
+  override addToken = jest.fn().mockReturnValue(of(null));
+  override removeToken = jest.fn().mockReturnValue(of(null));
+  override setContainerRealm = jest.fn().mockReturnValue(of(null));
+  override setContainerDescription = jest.fn().mockReturnValue(of(null));
+  override toggleActive = jest.fn().mockReturnValue(of({}));
+  override unassignUser = jest.fn().mockReturnValue(of(null));
+  override assignUser = jest.fn().mockReturnValue(of(null));
+  override setContainerInfos = jest.fn().mockReturnValue(of({}));
+  override deleteInfo = jest.fn().mockReturnValue(of({}));
+  override addTokenToContainer = jest.fn().mockReturnValue(of(null));
+  override removeTokenFromContainer = jest.fn().mockReturnValue(of({}));
+  override toggleAll = jest.fn().mockReturnValue(of(null));
+  override removeAll = jest.fn().mockReturnValue(of(null));
+  override deleteContainer = jest.fn().mockReturnValue(of({}));
+  override deleteAllTokens = jest.fn().mockReturnValue(of(null));
 
-  registerContainer(params: {
+  override registerContainer(params: {
     container_serial: string;
     passphrase_prompt: string;
     passphrase_response: string;
@@ -622,13 +588,13 @@ export class MockContainerService implements ContainerServiceInterface {
     throw new Error("Method not implemented.");
   }
 
-  containerBelongsToUser = jest.fn().mockReturnValue(true);
+  override containerBelongsToUser = jest.fn().mockReturnValue(true);
 
-  stopPolling(): void {
+  override stopPolling(): void {
     throw new Error("Method not implemented.");
   }
 
-  createContainer(param: {
+  override createContainer(param: {
     container_type: string;
     description?: string;
     user_realm?: string;
@@ -640,47 +606,14 @@ export class MockContainerService implements ContainerServiceInterface {
     throw new Error("Method not implemented.");
   }
 
-  pollContainerRolloutState(
+  override pollContainerRolloutState(
     containerSerial: string,
     startTime: number
   ): Observable<PiResponse<ContainerDetails, unknown>> {
     throw new Error("Method not implemented.");
   }
 
-  getContainerData = jest.fn().mockReturnValue(
-    of({
-      result: {
-        value: {
-          containers: [
-            {
-              serial: "CONT-1",
-              users: [],
-              tokens: [],
-              realms: [],
-              states: [],
-              type: "",
-              select: "",
-              description: ""
-            },
-            {
-              serial: "CONT-2",
-              users: [],
-              tokens: [],
-              realms: [],
-              states: [],
-              type: "",
-              select: "",
-              description: ""
-            }
-          ],
-          count: 2
-        }
-      }
-    })
-  );
-  containerDetailFn = () => this.#containerDetailSignal();
-
-  getContainerDetails(containerSerial: string): Observable<PiResponse<ContainerDetails, unknown>> {
+  override getContainerDetails(containerSerial: string): Observable<PiResponse<ContainerDetails, unknown>> {
     throw new Error("Method not implemented.");
   }
 }

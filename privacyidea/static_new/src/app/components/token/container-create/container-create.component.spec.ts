@@ -45,6 +45,7 @@ import { VersioningService } from "../../../services/version/version.service";
 import { Renderer2 } from "@angular/core";
 import { ContainerCreateSelfServiceComponent } from "./container-create.self-service.component";
 import { ContainerCreateWizardComponent } from "./container-create.wizard.component";
+import { ROUTE_PATHS } from "../../../route_paths";
 
 class MockIntersectionObserver {
   observe = jest.fn();
@@ -107,6 +108,7 @@ describe("ContainerCreateComponent", () => {
   let userSvc: MockUserService;
   let authService: MockAuthService;
   let httpClientMock: any;
+  let contentService: MockContentService;
 
   beforeEach(async () => {
     jest.clearAllMocks();
@@ -146,6 +148,7 @@ describe("ContainerCreateComponent", () => {
     containerSvc = TestBed.inject(ContainerService) as unknown as MockContainerService;
     userSvc = TestBed.inject(UserService) as unknown as MockUserService;
     authService = TestBed.inject(AuthService) as unknown as MockAuthService;
+    contentService = TestBed.inject(ContentService) as unknown as MockContentService;
 
     jest.spyOn(containerSvc, "createContainer").mockReturnValue(
       of({ result: { value: { container_serial: "C-001" } } } as any)
@@ -317,6 +320,69 @@ describe("ContainerCreateComponent", () => {
       });
       wizardFixture.detectChanges();
       expect(wizardFixture.nativeElement.textContent).toContain("Create Generic Container");
+    });
+
+    it("container wizard creates smartphone with template and registration", () => {
+      // Arrange: set container_wizard data in authService
+      authService.authData.set({
+        ...authService.authData(),
+        container_wizard: {
+          enabled: true,
+          type: "smartphone",
+          registration: true,
+          template: "custom-template"
+        }
+      });
+      contentService.routeUrl.set(ROUTE_PATHS.TOKENS_CONTAINERS_WIZARD);
+
+      // Spy on createContainer of containerSvc
+      const createSpy = jest.spyOn(containerSvc, "createContainer");
+      const registerSpy = jest.spyOn(containerSvc, "registerContainer");
+
+      // Act: call createContainer on wizardComponent
+      wizardComponent.createContainer();
+
+      // Assert: check that createContainer was called with correct data
+      expect(createSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          container_type: "smartphone",
+          template_name: "custom-template"
+        })
+      );
+      // check registration
+      expect(wizardComponent.generateQRCode()).toBe(true);
+      expect(registerSpy).toHaveBeenCalled();
+    });
+
+    it("container wizard creates generic container without template and without registration", () => {
+      // Arrange: set container_wizard data in authService
+      authService.authData.set({
+        ...authService.authData(),
+        container_wizard: {
+          enabled: true,
+          type: "generic",
+          registration: false,
+          template: null
+        }
+      });
+      contentService.routeUrl.set(ROUTE_PATHS.TOKENS_CONTAINERS_WIZARD);
+
+      // Spy on createContainer of containerSvc
+      const createSpy = jest.spyOn(containerSvc, "createContainer");
+      const registerSpy = jest.spyOn(containerSvc, "registerContainer");
+
+      // Act: call createContainer on wizardComponent
+      wizardComponent.createContainer();
+
+      // Assert: check that createContainer was called with correct data
+      expect(createSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          container_type: "generic"
+        })
+      );
+      // check registration
+      expect(wizardComponent.generateQRCode()).toBe(false);
+      expect(registerSpy).not.toHaveBeenCalled();
     });
   });
 });

@@ -123,7 +123,7 @@ export class DialogService implements DialogServiceInterface {
       this._tokenEnrollmentLastStepRef.close();
     }
 
-    const [{ TokenEnrollmentLastStepDialogComponent }, { TokenEnrollmentLastStepDialogSelfServiceComponent }, { TokenEnrollmentSecondStepDialogWizardComponent }] =
+    const [{ TokenEnrollmentLastStepDialogComponent }, { TokenEnrollmentLastStepDialogSelfServiceComponent }, { TokenEnrollmentLastStepDialogWizardComponent }] =
       await Promise.all([
         import(
           "../../components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component"
@@ -138,7 +138,7 @@ export class DialogService implements DialogServiceInterface {
 
     const isWizardRoute = this.router.url.includes(ROUTE_PATHS.TOKENS_WIZARD);
     const component = this.isSelfServing()
-      ? (isWizardRoute ? TokenEnrollmentSecondStepDialogWizardComponent : TokenEnrollmentLastStepDialogSelfServiceComponent)
+      ? (isWizardRoute ? TokenEnrollmentLastStepDialogWizardComponent : TokenEnrollmentLastStepDialogSelfServiceComponent)
       : TokenEnrollmentLastStepDialogComponent;
 
     this._tokenEnrollmentLastStepRef = this.dialog.open(component as any, config);
