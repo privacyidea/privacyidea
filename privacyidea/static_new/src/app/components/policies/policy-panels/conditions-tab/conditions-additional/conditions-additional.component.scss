@@ -8,10 +8,17 @@
 
 .additional-condition-row {
   display: grid;
-  grid-template-columns: repeat(6, 1fr) auto;
+  grid-template-columns: auto 1fr 1fr 1fr 1fr 1fr;
   gap: 16px;
   align-items: center;
-  padding: 8px 24px;
+  // padding: 8px 24px; // Will be overwritten
+
+  // From policy-action-item
+  border-radius: var(--quarter-global-padding);
+  box-shadow: var(--mat-sys-level1);
+  font-weight: 500;
+  margin: var(--half-global-padding);
+  padding: var(--half-global-padding) var(--three-quarters-global-padding);
 
   &.new-condition-row {
     border-top: 1px solid var(--mat-sys-outline-variant);
@@ -19,9 +26,33 @@
     margin-top: 8px;
   }
 
+  &.edit-mode {
+    grid-template-columns: auto 1fr 1fr 1fr 1fr 1fr auto;
+  }
+
   &.hover-highlight:hover {
-    background-color: var(--mat-sys-surface-container-high);
     cursor: pointer;
+    // From policy-action-item:hover
+    background-color: var(--mat-sys-primary-light);
+    color: var(--mat-sys-on-primary);
+  }
+
+  &.selected {
+    // From policy-action-item-selected
+    background-color: var(--mat-sys-primary-base);
+    color: var(--mat-sys-on-primary);
+    font-weight: 600;
+
+    .mat-mdc-slide-toggle {
+      --mdc-switch-selected-handle-color: var(--mat-sys-on-primary);
+      --mdc-switch-selected-track-color: rgba(var(--mat-sys-on-primary-rgb), 0.5);
+      --mdc-switch-selected-focus-handle-color: var(--mat-sys-on-primary);
+      --mdc-switch-selected-hover-handle-color: var(--mat-sys-on-primary);
+      --mdc-switch-selected-pressed-handle-color: var(--mat-sys-on-primary);
+      --mdc-switch-selected-focus-track-color: rgba(var(--mat-sys-on-primary-rgb), 0.5);
+      --mdc-switch-selected-hover-track-color: rgba(var(--mat-sys-on-primary-rgb), 0.5);
+      --mdc-switch-selected-pressed-track-color: rgba(var(--mat-sys-on-primary-rgb), 0.5);
+    }
   }
 }
 
@@ -36,6 +67,22 @@
     display: flex;
     align-items: center;
     justify-content: center;
+  }
+}
+
+.additional-condition-header {
+  display: grid;
+  grid-template-columns: auto 1fr 1fr 1fr 1fr 1fr;
+  gap: 16px;
+  align-items: center;
+  padding: var(--half-global-padding) var(--three-quarters-global-padding);
+  font-weight: 600;
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+  margin: var(--half-global-padding);
+  margin-bottom: 0;
+
+  &.edit-mode {
+    grid-template-columns: auto 1fr 1fr 1fr 1fr 1fr auto;
   }
 }
 
@@ -54,9 +101,7 @@ mat-checkbox {
 }
 
 .new-condition-form {
-  border-top: 1px solid var(--mat-sys-outline-variant);
   padding: 16px 24px 0 24px;
-  margin-top: 8px;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -75,6 +120,11 @@ mat-checkbox {
 
 .add-condition-button-container {
   padding: 16px 24px;
-  border-top: 1px solid var(--mat-sys-outline-variant);
-  margin-top: 8px;
+  justify-content: end;
+  display: flex;
 }
+
+// .button-icon {
+//   width: 24px;
+//   height: 24px;
+// }

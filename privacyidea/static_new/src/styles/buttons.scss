@@ -443,3 +443,7 @@ $button-low-contrast-variant: linear-gradient(
   width: calc(var(--header-height) / 3 - 2px);
   height: calc(var(--header-height) / 3 - 2px);
 }
+.mat-mdc-outlined-button .mat-icon {
+  height: 24px;
+  width: 24px;
+}

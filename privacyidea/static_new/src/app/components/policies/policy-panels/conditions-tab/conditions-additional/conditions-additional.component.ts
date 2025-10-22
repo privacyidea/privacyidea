@@ -1,4 +1,4 @@
-import { Component, computed, inject, input, Input, signal } from "@angular/core";
+import { Component, computed, inject, input, Input, linkedSignal, signal, WritableSignal } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatFormFieldModule } from "@angular/material/form-field";
@@ -18,6 +18,9 @@ import {
 } from "../../../../../services/policies/policies.service";
 import { MatButtonModule, MatIconButton } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
+import { MatSlideToggleModule } from "@angular/material/slide-toggle";
+
+import { MatDividerModule } from "@angular/material/divider";
 
 @Component({
   selector: "app-conditions-additional",
@@ -32,7 +35,9 @@ import { MatIconModule } from "@angular/material/icon";
     FormsModule,
     MatButtonModule,
     MatIconModule,
-    MatIconButton
+    MatIconButton,
+    MatSlideToggleModule,
+    MatDividerModule
   ],
   templateUrl: "./conditions-additional.component.html",
   styleUrls: ["./conditions-additional.component.scss"]
@@ -50,13 +55,30 @@ export class ConditionsAdditionalComponent {
   });
   editIndex = signal<number | null>(null);
 
-  // For adding/editing new condition
-  conditionSection = signal<SectionOption | "">("");
-  conditionKey = signal<string>("");
-  conditionComparator = signal<ComporatorOption | "">("");
-  conditionValue = signal<string>("");
-  conditionActive = signal<boolean>(false);
-  conditionHandleMissingData = signal<HandleMissigDataOption | "">("");
+  conditionSection = linkedSignal<boolean, SectionOption | "">({
+    source: () => this.isEditMode(),
+    computation: () => ""
+  });
+  conditionKey = linkedSignal<boolean, string>({
+    source: () => this.isEditMode(),
+    computation: () => ""
+  });
+  conditionComparator = linkedSignal<boolean, ComporatorOption | "">({
+    source: () => this.isEditMode(),
+    computation: () => ""
+  });
+  conditionValue = linkedSignal<boolean, string>({
+    source: () => this.isEditMode(),
+    computation: () => ""
+  });
+  conditionActive = linkedSignal<boolean, boolean>({
+    source: () => this.isEditMode(),
+    computation: () => false
+  });
+  conditionHandleMissingData = linkedSignal<boolean, HandleMissigDataOption | "">({
+    source: () => this.isEditMode(),
+    computation: () => ""
+  });
 
   startEditCondition(condition: AdditionalCondition, index: number) {
     if (!this.isEditMode) return;
@@ -68,7 +90,7 @@ export class ConditionsAdditionalComponent {
     this.conditionKey.set(condition[1]);
     this.conditionComparator.set(condition[2]);
     this.conditionValue.set(condition[3]);
-    this.conditionActive.set(condition[4]);
+    this.conditionActive.set(!condition[4]); // Inverted
     this.conditionHandleMissingData.set(condition[5]);
   }
 
@@ -85,7 +107,7 @@ export class ConditionsAdditionalComponent {
       this.conditionKey(),
       conditionComparator,
       this.conditionValue(),
-      this.conditionActive(),
+      !this.conditionActive(), // Inverted
       conditionHandleMissingData
     ];
 
@@ -113,6 +135,21 @@ export class ConditionsAdditionalComponent {
     this.conditionValue.set("");
     this.conditionActive.set(false);
     this.conditionHandleMissingData.set("");
+  }
+
+  updateActiveState(index: number, active: boolean) {
+    const condition = this.additionalConditions()[index];
+    if (!condition) return;
+
+    const updatedCondition: AdditionalCondition = [...condition];
+    updatedCondition[4] = !active; // Store as negate
+
+    this.updateCondition(index, updatedCondition);
+
+    // if we are currently editing this condition, update the signal for the form
+    if (this.editIndex() === index) {
+      this.conditionActive.set(active);
+    }
   }
 
   updateCondition(index: number, updated: AdditionalCondition) {

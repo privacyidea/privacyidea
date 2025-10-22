@@ -379,7 +379,7 @@ body {
   }
 
   .mat-divider {
-    border-top-color: #e0e2ec !important;
+    border-top-color: var(--mat-sys-outline-variant) !important;
   }
 }
 

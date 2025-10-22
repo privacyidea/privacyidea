@@ -3,17 +3,47 @@
     <mat-panel-title> Additional Conditions </mat-panel-title>
   </mat-expansion-panel-header>
 
+  @if (additionalConditions().length > 0) {
+    <div
+      class="additional-condition-header"
+      [class.edit-mode]="isEditMode()">
+      <div>Active</div>
+      <div>Section</div>
+      <div>Key</div>
+      <div>Comparator</div>
+      <div>Value</div>
+      <div>If Data Missing</div>
+      @if (isEditMode()) {
+        <div>Actions</div>
+      }
+    </div>
+  }
   @for (condition of additionalConditions(); track $index) {
     <!-- Display Row -->
     <div
       class="additional-condition-row"
+      [class.edit-mode]="isEditMode()"
       [class.hover-highlight]="isEditMode()"
-      (click)="startEditCondition(condition, $index)">
+      [class.selected]="isEditMode() && editIndex() === $index"
+      (click)="isEditMode() && startEditCondition(condition, $index)">
+      <div>
+        @if (isEditMode()) {
+          <mat-slide-toggle
+            [checked]="!condition[4]"
+            (click)="$event.stopPropagation()"
+            (change)="updateActiveState($index, $event.checked)"></mat-slide-toggle>
+        } @else {
+          @if (!condition[4]) {
+            <mat-icon>check</mat-icon>
+          } @else {
+            <mat-icon>close</mat-icon>
+          }
+        }
+      </div>
       <div>{{ condition[0] }}</div>
       <div>{{ condition[1] }}</div>
       <div>{{ condition[2] }}</div>
       <div>{{ condition[3] }}</div>
-      <div>{{ condition[4] ? "Yes" : "No" }}</div>
       <div>{{ condition[5] }}</div>
       @if (isEditMode()) {
         <div class="action-buttons">
@@ -29,6 +59,9 @@
 
   <!-- Add New/Edit Condition Section -->
   @if (isEditMode()) {
+    @if (additionalConditions().length > 0) {
+      <mat-divider></mat-divider>
+    }
     @if (showAddConditionForm()) {
       <div class="new-condition-form">
         <div class="form-row">
@@ -77,25 +110,27 @@
               [(ngModel)]="conditionValue" />
           </mat-form-field>
         </div>
-        <mat-checkbox
-          [(ngModel)]="conditionActive"
-          [checked]="true"
-          style="display: none"></mat-checkbox>
         <div class="form-actions">
-          <button mat-button (click)="cancelEdit()">Cancel</button>
+          <button
+            mat-button
+            (click)="cancelEdit()">
+            Cancel
+          </button>
           <button
             mat-raised-button
             color="primary"
             (click)="saveCondition()">
-            {{ editIndex() !== null ? 'Save Condition' : 'Add Condition' }}
+            {{ editIndex() !== null ? "Save Condition" : "Add Condition" }}
           </button>
         </div>
       </div>
     } @else {
       <div class="add-condition-button-container">
-        <button mat-stroked-button (click)="showAddConditionForm.set(true)">
+        <button
+          mat-stroked-button
+          (click)="showAddConditionForm.set(true)">
           <mat-icon>add</mat-icon>
-          Add new condition
+          Create new condition
         </button>
       </div>
     }
