@@ -8,40 +8,59 @@
       <!-- Edit Row -->
       <div class="additional-condition-row">
         <div>
-          <mat-select [(ngModel)]="conditionSection">
-            @for (option of allSectionOptions; track option) {
-              <mat-option [value]="option">{{ option }}</mat-option>
-            }
-          </mat-select>
+          <mat-form-field appearance="fill">
+            <mat-label>Section</mat-label>
+            <mat-select
+              [(ngModel)]="conditionSection"
+              panelClass="auto-width-dropdown">
+              @for (option of allSectionOptions; track option) {
+                <mat-option [value]="option">{{ option }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
         </div>
         <div>
-          <input
-            matInput
-            placeholder="Key"
-            [(ngModel)]="conditionKey" />
+          <mat-form-field appearance="fill">
+            <mat-label>Key</mat-label>
+            <input
+              matInput
+              [(ngModel)]="conditionKey" />
+          </mat-form-field>
         </div>
         <div>
-          <mat-select [(ngModel)]="conditionComparator">
-            @for (comporatorOption of allComporatorOptions; track comporatorOption) {
-              <mat-option [value]="comporatorOption">{{ comporatorOption }}</mat-option>
-            }
-          </mat-select>
+          <mat-form-field appearance="fill">
+            <mat-label>Comparator</mat-label>
+            <mat-select
+              [(ngModel)]="conditionComparator"
+              panelClass="auto-width-dropdown">
+              @for (comporatorOption of allComporatorOptions; track comporatorOption) {
+                <mat-option [value]="comporatorOption">{{ comporatorOption }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
         </div>
         <div>
-          <input
-            matInput
-            placeholder="Value"
-            [(ngModel)]="conditionValue" />
+          <mat-form-field appearance="fill">
+            <mat-label>Value</mat-label>
+            <input
+              matInput
+              [(ngModel)]="conditionValue" />
+          </mat-form-field>
         </div>
         <div>
           <mat-checkbox [(ngModel)]="conditionActive">Negate</mat-checkbox>
         </div>
         <div>
-          <mat-select [(ngModel)]="conditionHandleMissingData">
-            @for (handleMissingDataOption of allHandleMissingDataOptions; track handleMissingDataOption) {
-              <mat-option [value]="handleMissingDataOption">{{ handleMissingDataOption }}</mat-option>
-            }
-          </mat-select>
+          <mat-form-field appearance="fill">
+            <mat-label>If Data Missing</mat-label>
+            <mat-select
+              [(ngModel)]="conditionHandleMissingData"
+              panelClass="auto-width-dropdown">
+              @for (handleMissingDataOption of allHandleMissingDataOptions; track handleMissingDataOption) {
+                <mat-option [value]="handleMissingDataOption">{{ handleMissingDataOption }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
         </div>
         <div class="action-buttons">
           <button
@@ -79,54 +98,64 @@
   }
 
   <!-- Add New Condition Row -->
-  <div class="additional-condition-row new-condition-row">
-    <div>
-      <mat-select
-        [(ngModel)]="newConditionSection"
-        placeholder="Section">
-        @for (option of allSectionOptions; track option) {
-          <mat-option [value]="option">{{ option }}</mat-option>
-        }
-      </mat-select>
+  <div class="new-condition-form">
+    <div class="form-row">
+      <mat-form-field appearance="fill">
+        <mat-label>Section</mat-label>
+        <mat-select
+          [(ngModel)]="newConditionSection"
+          panelClass="auto-width-dropdown">
+          @for (option of allSectionOptions; track option) {
+            <mat-option [value]="option">{{ option }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+      <mat-form-field appearance="fill">
+        <mat-label>If Data Missing</mat-label>
+        <mat-select
+          [(ngModel)]="newConditionHandleMissingData"
+          panelClass="auto-width-dropdown">
+          @for (handleMissingDataOption of allHandleMissingDataOptions; track handleMissingDataOption) {
+            <mat-option [value]="handleMissingDataOption">{{ handleMissingDataOption }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
     </div>
-    <div>
-      <input
-        matInput
-        placeholder="Key"
-        [(ngModel)]="newConditionKey" />
+    <div class="form-row">
+      <mat-form-field appearance="fill">
+        <mat-label>Key</mat-label>
+        <input
+          matInput
+          [(ngModel)]="newConditionKey" />
+      </mat-form-field>
+      <mat-form-field appearance="fill">
+        <mat-label>Comparator</mat-label>
+        <mat-select
+          [(ngModel)]="newConditionComparator"
+          panelClass="auto-width-dropdown">
+          @for (comporatorOption of allComporatorOptions; track comporatorOption) {
+            <mat-option [value]="comporatorOption">{{ comporatorOption }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+      <mat-form-field appearance="fill">
+        <mat-label>Value</mat-label>
+        <input
+          matInput
+          [(ngModel)]="newConditionValue" />
+      </mat-form-field>
     </div>
-    <div>
-      <mat-select
-        [(ngModel)]="newConditionComparator"
-        placeholder="Comparator">
-        @for (comporatorOption of allComporatorOptions; track comporatorOption) {
-          <mat-option [value]="comporatorOption">{{ comporatorOption }}</mat-option>
-        }
-      </mat-select>
+    <mat-checkbox
+      [(ngModel)]="newConditionActive"
+      [checked]="true"
+      style="display: none"></mat-checkbox>
+    <div class="form-actions">
+      <button
+        mat-raised-button
+        color="primary"
+        (click)="saveNewCondition()">
+        Add Condition
+      </button>
     </div>
-    <div>
-      <input
-        matInput
-        placeholder="Value"
-        [(ngModel)]="newConditionValue" />
-    </div>
-    <div>
-      <mat-checkbox [(ngModel)]="newConditionActive">Negate</mat-checkbox>
-    </div>
-    <div>
-      <mat-select
-        [(ngModel)]="newConditionHandleMissingData"
-        placeholder="If Data Missing">
-        @for (handleMissingDataOption of allHandleMissingDataOptions; track handleMissingDataOption) {
-          <mat-option [value]="handleMissingDataOption">{{ handleMissingDataOption }}</mat-option>
-        }
-      </mat-select>
-    </div>
-    <button
-      mat-icon-button
-      class="action-buttons"
-      (click)="saveNewCondition()">
-      <mat-icon>add</mat-icon>
-    </button>
   </div>
 </mat-expansion-panel>

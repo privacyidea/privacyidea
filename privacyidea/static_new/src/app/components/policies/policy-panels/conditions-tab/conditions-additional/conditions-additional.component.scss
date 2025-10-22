@@ -28,10 +28,15 @@
 .action-buttons {
   display: flex;
   justify-content: flex-end;
-  padding: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+
+  .mat-mdc-icon-button {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
 }
 
 mat-form-field {
@@ -41,4 +46,29 @@ mat-form-field {
 mat-checkbox {
   display: flex;
   align-items: center;
+}
+
+::ng-deep .auto-width-dropdown {
+  width: auto !important;
+  min-width: fit-content !important;
+}
+
+.new-condition-form {
+  border-top: 1px solid var(--mat-sys-outline-variant);
+  padding: 16px 24px 0 24px;
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-row {
+  display: flex;
+  gap: 16px;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
 }
