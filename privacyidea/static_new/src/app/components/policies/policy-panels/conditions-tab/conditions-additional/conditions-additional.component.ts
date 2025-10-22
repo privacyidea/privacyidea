@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from "@angular/core";
+import { Component, computed, inject, input, Input, signal } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatFormFieldModule } from "@angular/material/form-field";
@@ -38,6 +38,7 @@ import { MatIconModule } from "@angular/material/icon";
   styleUrls: ["./conditions-additional.component.scss"]
 })
 export class ConditionsAdditionalComponent {
+  isEditMode = input.required<boolean>();
   policyService = inject(PolicyService);
 
   allSectionOptions = allSectionOptions;
@@ -65,6 +66,7 @@ export class ConditionsAdditionalComponent {
   newConditionHandleMissingData = signal<HandleMissigDataOption | "">("");
 
   startEditCondition(condition: AdditionalCondition, index: number) {
+    if (!this.isEditMode) return;
     this.editIndex.set(index);
     // When starting to edit, copy the values to the editing signals
     this.conditionSection.set(condition[0]);
