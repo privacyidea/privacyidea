@@ -39,6 +39,7 @@ import { MatIconModule } from "@angular/material/icon";
 })
 export class ConditionsAdditionalComponent {
   isEditMode = input.required<boolean>();
+  showAddConditionForm = signal(false);
   policyService = inject(PolicyService);
 
   allSectionOptions = allSectionOptions;
@@ -128,6 +129,8 @@ export class ConditionsAdditionalComponent {
     }
 
     this.addCondition(newCondition);
+
+    this.showAddConditionForm.set(false);
 
     // Reset form
     this.newConditionSection.set("");

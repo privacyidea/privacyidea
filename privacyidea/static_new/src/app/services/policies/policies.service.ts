@@ -118,7 +118,7 @@ export type AdditionalCondition = [SectionOption, string, ComporatorOption, stri
 
 export type SectionOption =
   | "HTTP Environment"
-  | "HTTP Request Header"
+  | "HTTP Request header"
   | "Requst Data"
   | "container"
   | "container_info"
@@ -132,7 +132,7 @@ export type SectionOption =
  */
 export const allSectionOptions: SectionOption[] = [
   "HTTP Environment",
-  "HTTP Request Header",
+  "HTTP Request header",
   "Requst Data",
   "container",
   "container_info",

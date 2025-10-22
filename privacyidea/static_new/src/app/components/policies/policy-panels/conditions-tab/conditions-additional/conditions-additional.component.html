@@ -100,67 +100,77 @@
     }
   }
 
-  <!-- Add New Condition Row -->
+  <!-- Add New Condition Section -->
   @if (isEditMode()) {
-    <div class="new-condition-form">
-      <div class="form-row">
-        <mat-form-field appearance="fill">
-          <mat-label>Section</mat-label>
-          <mat-select
-            [(ngModel)]="newConditionSection"
-            panelClass="auto-width-dropdown">
-            @for (option of allSectionOptions; track option) {
-              <mat-option [value]="option">{{ option }}</mat-option>
-            }
-          </mat-select>
-        </mat-form-field>
-        <mat-form-field appearance="fill">
-          <mat-label>If Data Missing</mat-label>
-          <mat-select
-            [(ngModel)]="newConditionHandleMissingData"
-            panelClass="auto-width-dropdown">
-            @for (handleMissingDataOption of allHandleMissingDataOptions; track handleMissingDataOption) {
-              <mat-option [value]="handleMissingDataOption">{{ handleMissingDataOption }}</mat-option>
-            }
-          </mat-select>
-        </mat-form-field>
+    @if (showAddConditionForm()) {
+      <div class="new-condition-form">
+        <div class="form-row">
+          <mat-form-field appearance="fill">
+            <mat-label>Section</mat-label>
+            <mat-select
+              [(ngModel)]="newConditionSection"
+              panelClass="auto-width-dropdown">
+              @for (option of allSectionOptions; track option) {
+                <mat-option [value]="option">{{ option }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+          <mat-form-field appearance="fill">
+            <mat-label>If Data Missing</mat-label>
+            <mat-select
+              [(ngModel)]="newConditionHandleMissingData"
+              panelClass="auto-width-dropdown">
+              @for (handleMissingDataOption of allHandleMissingDataOptions; track handleMissingDataOption) {
+                <mat-option [value]="handleMissingDataOption">{{ handleMissingDataOption }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        </div>
+        <div class="form-row">
+          <mat-form-field appearance="fill">
+            <mat-label>Key</mat-label>
+            <input
+              matInput
+              [(ngModel)]="newConditionKey" />
+          </mat-form-field>
+          <mat-form-field appearance="fill">
+            <mat-label>Comparator</mat-label>
+            <mat-select
+              [(ngModel)]="newConditionComparator"
+              panelClass="auto-width-dropdown">
+              @for (comporatorOption of allComporatorOptions; track comporatorOption) {
+                <mat-option [value]="comporatorOption">{{ comporatorOption }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+          <mat-form-field appearance="fill">
+            <mat-label>Value</mat-label>
+            <input
+              matInput
+              [(ngModel)]="newConditionValue" />
+          </mat-form-field>
+        </div>
+        <mat-checkbox
+          [(ngModel)]="newConditionActive"
+          [checked]="true"
+          style="display: none"></mat-checkbox>
+        <div class="form-actions">
+          <button mat-button (click)="showAddConditionForm.set(false)">Cancel</button>
+          <button
+            mat-raised-button
+            color="primary"
+            (click)="saveNewCondition()">
+            Add Condition
+          </button>
+        </div>
       </div>
-      <div class="form-row">
-        <mat-form-field appearance="fill">
-          <mat-label>Key</mat-label>
-          <input
-            matInput
-            [(ngModel)]="newConditionKey" />
-        </mat-form-field>
-        <mat-form-field appearance="fill">
-          <mat-label>Comparator</mat-label>
-          <mat-select
-            [(ngModel)]="newConditionComparator"
-            panelClass="auto-width-dropdown">
-            @for (comporatorOption of allComporatorOptions; track comporatorOption) {
-              <mat-option [value]="comporatorOption">{{ comporatorOption }}</mat-option>
-            }
-          </mat-select>
-        </mat-form-field>
-        <mat-form-field appearance="fill">
-          <mat-label>Value</mat-label>
-          <input
-            matInput
-            [(ngModel)]="newConditionValue" />
-        </mat-form-field>
-      </div>
-      <mat-checkbox
-        [(ngModel)]="newConditionActive"
-        [checked]="true"
-        style="display: none"></mat-checkbox>
-      <div class="form-actions">
-        <button
-          mat-raised-button
-          color="primary"
-          (click)="saveNewCondition()">
-          Add Condition
+    } @else {
+      <div class="add-condition-button-container">
+        <button mat-stroked-button (click)="showAddConditionForm.set(true)">
+          <mat-icon>add</mat-icon>
+          Add new condition
         </button>
       </div>
-    </div>
+    }
   }
 </mat-expansion-panel>
