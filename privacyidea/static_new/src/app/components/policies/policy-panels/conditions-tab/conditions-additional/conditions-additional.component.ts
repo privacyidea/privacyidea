@@ -50,7 +50,7 @@ export class ConditionsAdditionalComponent {
   });
   editIndex = signal<number | null>(null);
 
-  // For editing existing condition
+  // For adding/editing new condition
   conditionSection = signal<SectionOption | "">("");
   conditionKey = signal<string>("");
   conditionComparator = signal<ComporatorOption | "">("");
@@ -58,17 +58,11 @@ export class ConditionsAdditionalComponent {
   conditionActive = signal<boolean>(false);
   conditionHandleMissingData = signal<HandleMissigDataOption | "">("");
 
-  // For adding new condition
-  newConditionSection = signal<SectionOption | "">("");
-  newConditionKey = signal<string>("");
-  newConditionComparator = signal<ComporatorOption | "">("");
-  newConditionValue = signal<string>("");
-  newConditionActive = signal<boolean>(false);
-  newConditionHandleMissingData = signal<HandleMissigDataOption | "">("");
-
   startEditCondition(condition: AdditionalCondition, index: number) {
     if (!this.isEditMode) return;
     this.editIndex.set(index);
+    this.showAddConditionForm.set(true);
+
     // When starting to edit, copy the values to the editing signals
     this.conditionSection.set(condition[0]);
     this.conditionKey.set(condition[1]);
@@ -78,10 +72,7 @@ export class ConditionsAdditionalComponent {
     this.conditionHandleMissingData.set(condition[5]);
   }
 
-  saveEditedCondition() {
-    const index = this.editIndex();
-    if (index === null) return;
-
+  saveCondition() {
     const conditionSection = this.conditionSection();
     if (conditionSection === "") return;
     const conditionComparator = this.conditionComparator();
@@ -89,7 +80,7 @@ export class ConditionsAdditionalComponent {
     const conditionHandleMissingData = this.conditionHandleMissingData();
     if (conditionHandleMissingData === "") return;
 
-    const updatedCondition: AdditionalCondition = [
+    const condition: AdditionalCondition = [
       conditionSection,
       this.conditionKey(),
       conditionComparator,
@@ -98,51 +89,30 @@ export class ConditionsAdditionalComponent {
       conditionHandleMissingData
     ];
 
-    // Basic validation
-    if (updatedCondition.some((v) => v === "")) {
-      return;
-    }
-
-    this.updateCondition(index, updatedCondition);
-    this.editIndex.set(null);
-  }
-
-  saveNewCondition() {
-    const newConditionSection = this.newConditionSection();
-    if (newConditionSection === "") return;
-    const newConditionComparator = this.newConditionComparator();
-    if (newConditionComparator === "") return;
-    const newConditionHandleMissingData = this.newConditionHandleMissingData();
-    if (newConditionHandleMissingData === "") return;
-
-    const newCondition: AdditionalCondition = [
-      newConditionSection,
-      this.newConditionKey(),
-      newConditionComparator,
-      this.newConditionValue(),
-      this.newConditionActive(),
-      newConditionHandleMissingData
-    ];
-
-    if (newCondition.some((v) => v === "")) {
+    if (condition.some((v) => v === "")) {
       return; // Or show some error
     }
 
-    this.addCondition(newCondition);
+    const index = this.editIndex();
+    if (index !== null) {
+      this.updateCondition(index, condition);
+    } else {
+      this.addCondition(condition);
+    }
 
-    this.showAddConditionForm.set(false);
-
-    // Reset form
-    this.newConditionSection.set("");
-    this.newConditionKey.set("");
-    this.newConditionComparator.set("");
-    this.newConditionValue.set("");
-    this.newConditionActive.set(false);
-    this.newConditionHandleMissingData.set("");
+    this.cancelEdit();
   }
 
   cancelEdit() {
     this.editIndex.set(null);
+    this.showAddConditionForm.set(false);
+    // Reset form
+    this.conditionSection.set("");
+    this.conditionKey.set("");
+    this.conditionComparator.set("");
+    this.conditionValue.set("");
+    this.conditionActive.set(false);
+    this.conditionHandleMissingData.set("");
   }
 
   updateCondition(index: number, updated: AdditionalCondition) {
