@@ -1,14 +1,14 @@
 <div
   class="max-width-96 padding-32"
   aria-label="Policies Layout">
-  <div class="policies-layout">
-    <mat-accordion>
+  <mat-accordion>
+    <div class="policies-layout">
       <app-new-policy-panel />
       @for (policy of allPoliciesList(); track policy.name) {
         <app-policy-panel
           [policy]="policy"
           [isEditMode]="isEditingPolicy(policy.name)"></app-policy-panel>
       }
-    </mat-accordion>
-  </div>
+    </div>
+  </mat-accordion>
 </div>

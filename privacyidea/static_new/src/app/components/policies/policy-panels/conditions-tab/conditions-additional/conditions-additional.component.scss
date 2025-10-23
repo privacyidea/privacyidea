@@ -2,8 +2,26 @@
 @use "../../../policies.component.scss";
 @use "@angular/material" as mat;
 
-.additional-conditions-panel {
-  background-color: var(--mat-sys-surface) !important;
+.additional-conditions-container {
+  background-color: var(--mat-sys-surface);
+  border: 1px solid var(--mat-sys-outline-variant);
+  box-shadow: var(--mat-sys-level1);
+  border-radius: var(--quarter-global-padding);
+  padding: var(--half-global-padding) var(--three-quarters-global-padding);
+}
+
+.additional-conditions-title {
+  font-size: 1.2em;
+  font-weight: 500;
+  margin: 0;
+  margin-bottom: var(--half-global-padding);
+}
+
+.additional-conditions-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--half-global-padding);
+  margin-top: var(--half-global-padding);
 }
 
 .additional-condition-row {
@@ -11,13 +29,11 @@
   grid-template-columns: auto 1fr 1fr 1fr 1fr 1fr;
   gap: 16px;
   align-items: center;
-  // padding: 8px 24px; // Will be overwritten
 
   // From policy-action-item
   border-radius: var(--quarter-global-padding);
   box-shadow: var(--mat-sys-level1);
   font-weight: 500;
-  margin: var(--half-global-padding);
   padding: var(--half-global-padding) var(--three-quarters-global-padding);
 
   &.new-condition-row {
@@ -32,13 +48,11 @@
 
   &.hover-highlight:hover {
     cursor: pointer;
-    // From policy-action-item:hover
     background-color: var(--mat-sys-primary-light);
     color: var(--mat-sys-on-primary);
   }
 
   &.selected {
-    // From policy-action-item-selected
     background-color: var(--mat-sys-primary-base);
     color: var(--mat-sys-on-primary);
     font-weight: 600;
@@ -78,8 +92,6 @@
   padding: var(--half-global-padding) var(--three-quarters-global-padding);
   font-weight: 600;
   border-bottom: 1px solid var(--mat-sys-outline-variant);
-  margin: var(--half-global-padding);
-  margin-bottom: 0;
 
   &.edit-mode {
     grid-template-columns: auto 1fr 1fr 1fr 1fr 1fr auto;
@@ -101,10 +113,9 @@ mat-checkbox {
 }
 
 .new-condition-form {
-  padding: 16px 24px 0 24px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 16px;
 }
 
 .form-row {
@@ -123,8 +134,3 @@ mat-checkbox {
   justify-content: end;
   display: flex;
 }
-
-// .button-icon {
-//   width: 24px;
-//   height: 24px;
-// }

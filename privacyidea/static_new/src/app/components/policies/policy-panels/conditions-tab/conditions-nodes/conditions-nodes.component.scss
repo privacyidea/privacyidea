@@ -2,8 +2,19 @@
 @use "../../../policies.component.scss";
 @use "@angular/material" as mat;
 
-.nodes-expansion-panel {
+.nodes-container {
   background-color: var(--mat-sys-surface) !important;
+  border: 1px solid var(--mat-sys-outline-variant);
+  box-shadow: var(--mat-sys-level1);
+  border-radius: var(--quarter-global-padding);
+  padding: var(--half-global-padding) var(--three-quarters-global-padding);
+}
+
+.nodes-title {
+  font-size: 1.2em;
+  font-weight: 500;
+  margin: 0;
+  margin-bottom: var(--half-global-padding);
 }
 
 .full-width {

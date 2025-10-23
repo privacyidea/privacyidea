@@ -2,8 +2,19 @@
 @use "../../../policies.component.scss";
 @use "@angular/material" as mat;
 
-.user-expansion-panel {
+.user-container {
   background-color: var(--mat-sys-surface) !important;
+  border: 1px solid var(--mat-sys-outline-variant);
+  box-shadow: var(--mat-sys-level1);
+  border-radius: var(--quarter-global-padding);
+  padding: var(--half-global-padding) var(--three-quarters-global-padding);
+}
+
+.user-title {
+  font-size: 1.2em;
+  font-weight: 500;
+  margin: 0;
+  margin-bottom: var(--half-global-padding);
 }
 
 .user-input-container {
@@ -32,7 +43,7 @@
   background-color: var(--mat-sys-surface-container-high);
   border-radius: var(--half-global-padding);
   padding: var(--quarter-global-padding) var(--half-global-padding);
-  margin-right: var(--half-global-padding);
+  // margin-right: var(--half-global-padding);
   flex-shrink: 0;
 }
 
@@ -101,4 +112,30 @@
   align-items: center !important;
   justify-content: center !important;
   transition: background-color 0.2s ease-in-out;
+}
+
+.readonly-user-grid-container {
+  display: grid;
+  grid-template-areas: "label value";
+  gap: calc(var(--half-global-padding) * 1.5);
+  margin: 0 var(--half-global-padding);
+}
+
+.readonly-label {
+  grid-area: "label";
+  font-weight: 500;
+  margin-right: var(--half-global-padding);
+  white-space: nowrap;
+  padding-top: var(--quarter-global-padding);
+}
+
+.readonly-chips-container {
+  grid-area: "value";
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--quarter-global-padding);
+}
+
+.readonly-chip {
+  @extend .user-chip;
 }

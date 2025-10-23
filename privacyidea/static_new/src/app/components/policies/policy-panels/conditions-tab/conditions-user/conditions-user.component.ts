@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal, ViewChild } from "@angular/core";
+import { Component, computed, inject, input, ViewChild } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import {
   AbstractControl,
@@ -38,6 +38,7 @@ import { PolicyService } from "../../../../../services/policies/policies.service
 export class ConditionsUserComponent {
   @ViewChild("resolverSelect") resolverSelect!: MatSelect;
   @ViewChild("realmSelect") realmSelect!: MatSelect;
+  isEditMode = input.required<boolean>();
   realmService: RealmServiceInterface = inject(RealmService);
   resolverService: ResolverService = inject(ResolverService);
   policyService = inject(PolicyService);
@@ -90,6 +91,7 @@ export class ConditionsUserComponent {
   );
 
   addUser(user: string) {
+    console.log("Adding user:", user);
     if (this.userFormControl.invalid) {
       return;
     }

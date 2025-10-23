@@ -6,7 +6,7 @@
   @include styles.base-table-structure(".token-table", ".token-table-filter", ".table-scroll-container");
   display: flex;
   flex-direction: column;
-  gap: calc(var(--global-gap) / 2);
+  gap: calc(var(--global-gap) / 4);
   max-height: calc(var(--main-height) - var(--global-padding) * 5);
   max-width: 1000px;
   overflow: auto;
