@@ -117,3 +117,27 @@
   bottom: -1.25em;
   left: 0;
 }
+
+.readonly-grid-container {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: calc(var(--half-global-padding) * 1.5);
+  margin: 0 var(--half-global-padding);
+}
+
+.readonly-label {
+  font-weight: 500;
+  margin-right: var(--half-global-padding);
+  white-space: nowrap;
+  padding-top: var(--quarter-global-padding);
+}
+
+.readonly-chips-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--quarter-global-padding);
+}
+
+.readonly-chip {
+  @extend .user-agent-chip;
+}

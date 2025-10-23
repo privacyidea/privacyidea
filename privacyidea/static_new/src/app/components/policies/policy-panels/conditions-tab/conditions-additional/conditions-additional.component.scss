@@ -21,14 +21,14 @@
   display: flex;
   flex-direction: column;
   gap: var(--half-global-padding);
-  margin-top: var(--half-global-padding);
 }
 
 .additional-condition-row {
   display: grid;
-  grid-template-columns: auto 1fr 1fr 1fr 1fr 1fr;
+  grid-template-columns: 0.8fr 3fr 2fr 4fr 2fr 3fr;
   gap: 16px;
-  align-items: center;
+  place-items: center;
+  text-align: center;
 
   // From policy-action-item
   border-radius: var(--quarter-global-padding);
@@ -43,7 +43,7 @@
   }
 
   &.edit-mode {
-    grid-template-columns: auto 1fr 1fr 1fr 1fr 1fr auto;
+    grid-template-columns: 1.2fr 3fr 2fr 4fr 2fr 3fr 1fr;
   }
 
   &.hover-highlight:hover {
@@ -86,15 +86,15 @@
 
 .additional-condition-header {
   display: grid;
-  grid-template-columns: auto 1fr 1fr 1fr 1fr 1fr;
+  grid-template-columns: 0.8fr 3fr 2fr 4fr 2fr 3fr;
   gap: 16px;
-  align-items: center;
+  place-items: center;
+  text-align: center;
   padding: var(--half-global-padding) var(--three-quarters-global-padding);
   font-weight: 600;
-  border-bottom: 1px solid var(--mat-sys-outline-variant);
 
   &.edit-mode {
-    grid-template-columns: auto 1fr 1fr 1fr 1fr 1fr auto;
+    grid-template-columns: 1.2fr 3fr 2fr 4fr 2fr 3fr 1fr;
   }
 }
 
@@ -133,4 +133,9 @@ mat-checkbox {
   padding: 16px 24px;
   justify-content: end;
   display: flex;
+}
+
+.divider-margin {
+  margin-top: 16px;
+  margin-bottom: 16px;
 }

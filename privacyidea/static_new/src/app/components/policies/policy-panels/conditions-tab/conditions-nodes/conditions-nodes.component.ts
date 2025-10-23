@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal, ViewChild } from "@angular/core";
+import { Component, computed, inject, input, signal, ViewChild } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { AbstractControl, FormControl, FormsModule, ValidationErrors, ReactiveFormsModule } from "@angular/forms";
 import { MatIconModule } from "@angular/material/icon";
@@ -28,7 +28,8 @@ import { SystemServiceInterface, SystemService } from "../../../../../services/s
   styleUrl: "./conditions-nodes.component.scss"
 })
 export class ConditionsNodesComponent {
-  @ViewChild("nodeSelect") resolverSelect!: MatSelect;
+  @ViewChild("nodeSelect") nodeSelect!: MatSelect;
+  isEditMode = input.required<boolean>();
   policyService: PolicyService = inject(PolicyService);
   systemService: SystemServiceInterface = inject(SystemService);
   selectedPolicy = this.policyService.selectedPolicy;
@@ -40,9 +41,16 @@ export class ConditionsNodesComponent {
     return this.selectedPolicy()?.pinode || [];
   });
 
+  selectedUserAgents = computed(() => this.policyService.selectedPolicy()?.user_agents || []);
   addUserAgentFormControl = new FormControl<string>("", this.userAgentValidator.bind(this));
+  selectedValidTime = computed(() => this.policyService.selectedPolicy()?.time || "");
   validTimeFormControl = new FormControl<string>("", this.validTimeValidator.bind(this));
+  selectedClient = computed(() => this.policyService.selectedPolicy()?.client || "");
   clientFormControl = new FormControl<string>("", this.clientValidator.bind(this));
+
+  // Placeholder for available user agents
+  availableUserAgents = signal<string[]>(["Mozilla Firefox", "Google Chrome", "Microsoft Edge"]);
+  isAllNodesSelected = computed(() => this.selectedPinodes().length === this.availablePinodesList().length);
 
   constructor() {
     this.validTimeFormControl.valueChanges.subscribe(() => {
@@ -53,14 +61,6 @@ export class ConditionsNodesComponent {
       this.setClients();
     });
   }
-
-  // Placeholder for available user agents
-  availableUserAgents = signal<string[]>(["Mozilla Firefox", "Google Chrome", "Microsoft Edge"]);
-  selectedUserAgents = computed(() => {
-    console.log("Selected policy user agents:", this.selectedPolicy()?.user_agents);
-    return this.selectedPolicy()?.user_agents || [];
-  });
-  isAllNodesSelected = computed(() => this.selectedPinodes().length === this.availablePinodesList().length);
 
   toggleAllNodes() {
     if (this.isAllNodesSelected()) {
@@ -73,7 +73,7 @@ export class ConditionsNodesComponent {
       });
     }
     setTimeout(() => {
-      this.resolverSelect.close();
+      this.nodeSelect.close();
     });
   }
 
