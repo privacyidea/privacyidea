@@ -118,11 +118,15 @@
         }
         @if (selectedValidTime() != "") {
           <div class="readonly-label">Valid time:</div>
-          <div>{{ selectedValidTime() }}</div>
+          <div class="readonly-chips-container">
+            <div class="readonly-chip">{{ selectedValidTime() }}</div>
+          </div>
         }
         @if (selectedClient() != "") {
           <div class="readonly-label">Client:</div>
-          <div>{{ selectedClient() }}</div>
+          <div class="readonly-chips-container">
+            <div class="readonly-chip">{{ selectedClient() }}</div>
+          </div>
         }
         @if (selectedUserAgents().length > 0) {
           <div class="readonly-label">User Agents:</div>

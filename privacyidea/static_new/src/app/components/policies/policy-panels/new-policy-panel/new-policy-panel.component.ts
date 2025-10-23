@@ -1,4 +1,4 @@
-import { Component, computed, inject, linkedSignal, Signal, signal, WritableSignal } from "@angular/core";
+import { Component, computed, inject, signal, WritableSignal } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
@@ -8,10 +8,8 @@ import { MatExpansionModule, MatExpansionPanel } from "@angular/material/expansi
 import { MatIconModule } from "@angular/material/icon";
 import { PolicyService } from "../../../../services/policies/policies.service";
 import { HorizontalWheelComponent } from "../../../shared/horizontal-wheel/horizontal-wheel.component";
-import { ActionSelectorComponent } from "../action-tab/action-selector/action-selector.component";
-import { ActionDetailComponent } from "../action-tab/action-detail/action-detail.component";
-import { SelectedActionsListComponent } from "../action-tab/selected-actions-list/selected-actions-list.component";
-import { PolicyDescriptionComponent } from "../action-tab/policy-description/policy-description.component";
+import { ActionTabComponent } from "../action-tab/action-tab.component";
+import { ConditionsTabComponent } from "../conditions-tab/conditions-tab.component";
 
 export type Tab = "actions" | "conditions";
 
@@ -27,10 +25,8 @@ export type Tab = "actions" | "conditions";
     FormsModule,
     MatExpansionModule,
     HorizontalWheelComponent,
-    ActionSelectorComponent,
-    ActionDetailComponent,
-    SelectedActionsListComponent,
-    PolicyDescriptionComponent
+    ActionTabComponent,
+    ConditionsTabComponent
   ],
   templateUrl: "./new-policy-panel.component.html",
   styleUrl: "./new-policy-panel.component.scss"
