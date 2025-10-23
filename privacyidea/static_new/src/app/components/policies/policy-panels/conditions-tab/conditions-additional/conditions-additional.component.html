@@ -32,9 +32,12 @@
           <div>
             @if (isEditMode()) {
               <mat-slide-toggle
+                #slideToggle
                 [checked]="!condition[4]"
                 (click)="$event.stopPropagation()"
-                (change)="updateActiveState($index, $event.checked)"></mat-slide-toggle>
+                (change)="
+                  updateActiveState($index, $event.checked); slideToggle._switchElement.nativeElement.blur()
+                "></mat-slide-toggle>
             } @else {
               @if (!condition[4]) {
                 <mat-icon>check</mat-icon>

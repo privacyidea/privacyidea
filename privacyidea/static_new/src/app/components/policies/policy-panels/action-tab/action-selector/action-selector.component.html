@@ -6,18 +6,10 @@
     (ngModelChange)="policyService.actionFilter.set($event)"
     class="search-input" />
   @if (policyService.policyActionGroupNames().length > 1) {
-    <div class="button-row">
-      @for (group of policyService.policyActionGroupNames(); track $index) {
-        <button
-          class="button-item"
-          [class.first-button]="$index === 0"
-          [class.last-button]="$index === policyService.policyActionGroupNames().length - 1"
-          [class.selected-button]="policyService.selectedActionGroup() === group"
-          (click)="policyService.selectedActionGroup.set(group)">
-          {{ group }}
-        </button>
-      }
-    </div>
+    <app-selector-buttons
+      [values]="policyService.policyActionGroupNames()"
+      [initialValue]="policyService.selectedActionGroup()"
+      (onSelect)="policyService.selectedActionGroup.set($event)" />
   }
   <div class="add-action-details">
     <div class="policy-action-items">

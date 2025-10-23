@@ -9,14 +9,14 @@
     @if (policyService.selectedActionDetail()?.value) {
       <!-- add dropdown to select value from list -->
 
-      @if (policyService.selectedActionDetail()?.value?.length === 2) {
-        <app-bool-select-buttons
-          [valueLeft]="policyService.selectedActionDetail()?.value?.[0]"
-          [valueRight]="policyService.selectedActionDetail()?.value?.[1]"
-          [labelLeft]="`${policyService.selectedActionDetail()?.value?.[0]}`"
-          [labelRight]="`${policyService.selectedActionDetail()?.value?.[1]}`"
-          (onSelect)="policyService.updateSelectedActionValue($event)"
-          [initialValue]="policyService.selectedAction()?.value" />
+      @if (
+        policyService.selectedActionDetail()?.value?.length === 2 ||
+        policyService.selectedActionDetail()?.value?.length === 3
+      ) {
+        <app-selector-buttons
+          [values]="policyService.selectedActionDetail()?.value!"
+          [initialValue]="policyService.selectedAction()?.value"
+          (onSelect)="policyService.updateSelectedActionValue($event)" />
       } @else {
         <mat-form-field
           appearance="fill"

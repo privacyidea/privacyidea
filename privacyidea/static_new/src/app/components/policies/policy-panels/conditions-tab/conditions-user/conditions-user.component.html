@@ -94,8 +94,8 @@
             #userInput
             (keyup.enter)="
               userFormControl.markAsTouched();
-              !userFormControl.invalid && (userInput.value = '');
-              addUser(userInput.value)
+              addUser(userInput.value);
+              !userFormControl.invalid && (userInput.value = '')
             " />
           @if (userFormControl.hasError("includesComma")) {
             <mat-error i18n> User must not contain commas. </mat-error>

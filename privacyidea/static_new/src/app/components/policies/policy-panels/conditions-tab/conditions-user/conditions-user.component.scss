@@ -33,8 +33,9 @@
   overflow-x: auto;
   overflow-y: hidden;
   flex-grow: 1;
-  padding-bottom: 12px;
+  padding-bottom: var(--three-quarters-global-padding);
   scrollbar-width: thin;
+  gap: calc(var(--global-gap) / 2);
 }
 
 .user-chip {

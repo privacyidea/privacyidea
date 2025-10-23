@@ -26,43 +26,6 @@
   outline: none;
 }
 
-.button-row {
-  border: 1px solid var(--mat-sys-outline);
-  border-radius: var(--half-global-padding);
-  display: flex;
-  overflow: auto;
-  padding: 0;
-  scrollbar-width: thin;
-  width: 100%;
-}
-
-.button-item {
-  background-color: var(--mat-sys-surface-container);
-  border: none;
-  border-radius: 0;
-  cursor: pointer;
-  flex: 1;
-  margin: 0;
-  padding: var(--half-global-padding) var(--global-padding);
-  text-align: center;
-}
-
-.button-item:hover {
-  background-color: var(--mat-sys-primary-light);
-  color: var(--mat-sys-on-primary);
-  font-size: 600;
-}
-
-.first-button {
-  border-bottom-left-radius: var(--half-global-padding);
-  border-top-left-radius: var(--half-global-padding);
-}
-
-.last-button {
-  border-bottom-right-radius: var(--half-global-padding);
-  border-top-right-radius: var(--half-global-padding);
-}
-
 .selected-button {
   background-color: var(--mat-sys-primary-base);
   color: var(--mat-sys-on-primary);

@@ -1,0 +1,10 @@
+<div class="button-row">
+  @for (value of values; track $index) {
+    <button
+      class="button-item"
+      [class.selected-button]="selectedValue() === value"
+      (click)="selectValue(value)">
+      {{ labels?.[$index] || value }}
+    </button>
+  }
+</div>

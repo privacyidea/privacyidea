@@ -20,25 +20,23 @@ import { Component, EventEmitter, input, Output, OnInit, linkedSignal, WritableS
 import { MatButtonModule } from "@angular/material/button";
 
 @Component({
-  selector: "app-bool-select-buttons",
+  selector: "app-selector-buttons",
   standalone: true,
   imports: [MatButtonModule],
-  templateUrl: "./bool-select-buttons.component.html",
-  styleUrl: "./bool-select-buttons.component.scss"
+  templateUrl: "./selector-buttons.component.html",
+  styleUrl: "./selector-buttons.component.scss"
 })
 // Implement OnInit to use the hook
-export class BoolSelectButtonsComponent implements OnInit {
+export class BoolSelectButtonsComponent<T> implements OnInit {
   // Input definition is correct
-  initialValue = input.required<any>();
-  @Input() valueLeft: any = false;
-  @Input() valueRight: any = true;
-  @Input() labelLeft: string = $localize`False`;
-  @Input() labelRight: string = $localize`True`;
-  @Output() onSelect = new EventEmitter<boolean>();
+  initialValue = input.required<T>();
+  @Input({ required: true }) values!: T[];
+  @Input() labels?: T[];
+  @Output() onSelect = new EventEmitter<T>();
 
   // 1. Initialize selectedValue with a placeholder or default boolean value
   // The actual value will be set in ngOnInit
-  selectedValue: WritableSignal<any> = linkedSignal({
+  selectedValue: WritableSignal<T> = linkedSignal({
     source: () => this.initialValue(),
     computation: (source) => source
   });
@@ -48,7 +46,7 @@ export class BoolSelectButtonsComponent implements OnInit {
     this.selectedValue.set(parsedValue);
   }
 
-  onSelectChange(value: any): void {
+  selectValue(value: T): void {
     this.selectedValue.set(value);
     this.onSelect.emit(value);
   }

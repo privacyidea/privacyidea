@@ -62,9 +62,11 @@
             </button>
           }
           <mat-slide-toggle
+            #slideToggle
             [checked]="policy().active"
-            (change)="togglePolicyActive(policy(), $event.checked)"
-            (click)="$event.stopPropagation()">
+            (change)="togglePolicyActive(policy(), $event.checked); slideToggle._switchElement.nativeElement.blur()"
+            (click)="$event.stopPropagation()"
+            [disableRipple]="true">
           </mat-slide-toggle>
         </div>
       </mat-panel-description>

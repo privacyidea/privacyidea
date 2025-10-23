@@ -1,0 +1,75 @@
+// .bool-select-container {
+//   border: 1px solid var(--mat-sys-outline);
+//   border-radius: 8px;
+//   display: flex;
+//   overflow: auto;
+//   padding: 0;
+//   scrollbar-width: thin;
+//   width: 100%;
+// }
+
+// .false-button {
+//   border-bottom-left-radius: 8px;
+//   border-top-left-radius: 8px;
+//   grid-area: false-button;
+//   min-width: 0;
+// }
+
+// .true-button {
+//   border-bottom-right-radius: 8px;
+//   border-right: 1px solid var(--mat-sys-outline) !important;
+//   border-top-right-radius: 8px;
+//   grid-area: true-button;
+//   min-width: 0;
+// }
+
+// .bool-select-button {
+//   background-color: var(--mat-sys-surface-container);
+//   border: none;
+//   border-radius: 0;
+//   cursor: pointer;
+//   flex: 1;
+//   margin: 0;
+//   padding: var(--half-global-padding) var(--three-quarters-global-padding);
+//   text-align: center;
+// }
+
+// .bool-select-button:hover {
+//   background-color: var(--mat-sys-primary-light);
+//   color: var(--mat-sys-on-primary);
+//   font-size: 600;
+// }
+
+// .selected-button {
+//   background-color: var(--mat-sys-primary-base);
+//   color: var(--mat-sys-on-primary);
+//   font-weight: 600;
+// }
+
+.button-row {
+  $border-thickness: 1px;
+  border: $border-thickness solid var(--mat-sys-outline);
+  border-radius: calc(var(--half-global-padding) + $border-thickness);
+  display: flex;
+  overflow: auto;
+  padding: 0;
+  scrollbar-width: thin;
+  width: 100%;
+}
+
+.button-item {
+  background-color: var(--mat-sys-surface-container);
+  border: none;
+  border-radius: 0;
+  cursor: pointer;
+  flex: 1;
+  margin: 0;
+  padding: var(--half-global-padding) var(--global-padding);
+  text-align: center;
+}
+
+.button-item:hover {
+  background-color: var(--mat-sys-primary-light);
+  color: var(--mat-sys-on-primary);
+  font-size: 600;
+}
