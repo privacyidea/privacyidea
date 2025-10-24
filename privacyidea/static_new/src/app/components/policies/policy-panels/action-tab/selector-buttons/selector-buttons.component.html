@@ -3,6 +3,7 @@
     <button
       class="button-item"
       [class.selected-button]="selectedValue() === value"
+      [class.last-button]="$index === values.length - 1"
       (click)="selectValue(value)">
       {{ labels?.[$index] || value }}
     </button>

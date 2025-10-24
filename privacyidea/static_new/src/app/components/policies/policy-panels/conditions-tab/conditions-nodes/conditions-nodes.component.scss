@@ -3,7 +3,7 @@
 @use "@angular/material" as mat;
 
 .nodes-container {
-  background-color: var(--mat-sys-surface) !important;
+  background-color: var(--mat-sys-surface-container);
   border: 1px solid var(--mat-sys-outline-variant);
   box-shadow: var(--mat-sys-level1);
   border-radius: var(--quarter-global-padding);

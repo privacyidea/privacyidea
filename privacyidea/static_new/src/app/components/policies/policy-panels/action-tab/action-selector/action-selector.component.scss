@@ -1,5 +1,5 @@
 .action-selector-container {
-  background-color: var(--mat-sys-surface);
+  background-color: var(--mat-sys-surface-container);
   border-radius: var(--quarter-global-padding);
   box-shadow: var(--mat-sys-level2);
   color: var(--mat-sys-on-surface);
@@ -61,7 +61,7 @@
   justify-content: space-between;
   margin: var(--half-global-padding);
   padding: var(--half-global-padding) var(--three-quarters-global-padding);
-  background-color: var(--mat-sys-surface-container-low);
+  background-color: var(--mat-sys-surface-container-high);
 }
 
 .policy-action-item:hover {

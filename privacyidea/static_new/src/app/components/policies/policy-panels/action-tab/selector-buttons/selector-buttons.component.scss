@@ -34,18 +34,6 @@
 //   text-align: center;
 // }
 
-// .bool-select-button:hover {
-//   background-color: var(--mat-sys-primary-light);
-//   color: var(--mat-sys-on-primary);
-//   font-size: 600;
-// }
-
-// .selected-button {
-//   background-color: var(--mat-sys-primary-base);
-//   color: var(--mat-sys-on-primary);
-//   font-weight: 600;
-// }
-
 .button-row {
   $border-thickness: 1px;
   border: $border-thickness solid var(--mat-sys-outline);
@@ -68,8 +56,18 @@
   text-align: center;
 }
 
+.button-item:not(.last-button) {
+  border-right: 1px solid var(--mat-sys-outline);
+}
+
 .button-item:hover {
   background-color: var(--mat-sys-primary-light);
   color: var(--mat-sys-on-primary);
   font-size: 600;
+}
+
+.selected-button {
+  background-color: var(--mat-sys-primary-base);
+  color: var(--mat-sys-on-primary);
+  font-weight: 600;
 }
