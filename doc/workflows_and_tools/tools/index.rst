@@ -268,7 +268,7 @@ Example::
 
     privacyidea-token-janitor find --serial OATH0004C934 --action mark --set-tokeninfo-key unused --set-tokeninfo-value True
 
-A new tokeninfo-key and the associated tokeninfo-value would be added for the token ``OAUTH0004C934``
+A new tokeninfo-key and the associated tokeninfo-value would be added for the token ``OATH0004C934``
 and are now marked for later processing. If the token already containd this tokeninf-key, the value
 would be changed.
 
@@ -283,7 +283,7 @@ Example::
 
     privacyidea-token-janitor find --serial OATH0004C934 --action disable
 
-The token with the serial ``OAUTH0004C934`` will be disabled.
+The token with the serial ``OATH0004C934`` will be disabled.
 
 delete
 ......
@@ -293,9 +293,9 @@ With **delete** the found tokens can be deleted.
 
 Example::
 
-    privacyidea-token-janitor find --serial OAUTH0004C934 --action delete
+    privacyidea-token-janitor find --serial OATH0004C934 --action delete
 
-The token with the serial ``OAUTH0004C934`` will be deleted.
+The token with the serial ``OATH0004C934`` will be deleted.
 
 export
 ......
@@ -308,9 +308,9 @@ YAML in theory can export all token types and all tokeninfo.
 
 Example::
 
-    privacyidea-token-janitor find --serial OAUTH0004C934 --action export > OAUTH0004C934.xml
+    privacyidea-token-janitor find --serial OATH0004C934 --action export > OATH0004C934.xml
 
-The token with the serial ``OAUTH0004C934`` will be exported and saved in an xml file.
+The token with the serial ``OATH0004C934`` will be exported and saved in an xml file.
 
 .. note:: With PSCK you need your encryption key for re-import.
 
@@ -687,7 +687,7 @@ Add the found tokens to a token container.
 
     Example::
 
-        pi-tokenjanitor find --tokenattribute 'serial=OATH0004C934' add_to_container --container_serial 'SMPH00009272'
+        pi-tokenjanitor find --tokenattribute 'serial=OATH0004C934' add_to_container 'SMPH00009272'
 
 remove_from_container
 *********************
@@ -874,7 +874,7 @@ Example::
 
     Example::
 
-        pi-tokenjanitor findcontainer --type 'smartphone' list --key serial --key user --key last_sync
+        pi-tokenjanitor findcontainer --type 'smartphone' list --key user --key last_sync
 
 delete
 ******
@@ -919,7 +919,7 @@ Sets a description for all found containers.
 
 Example::
 
-    pi-tokenjanitor findcontainer --type 'smartphone' set_description --description 'example description'
+    pi-tokenjanitor findcontainer --type 'smartphone' set_description 'example description'
 
 set_realm
 *********

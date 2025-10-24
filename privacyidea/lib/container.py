@@ -377,7 +377,7 @@ def get_all_containers(user: User = None, serial: str = None, ctype: str = None,
     return ret
 
 
-def container_page_generator(pagesize: int = 10, **kwargs) -> Generator[list[TokenContainerClass], None, None]:
+def get_container_generator(pagesize: int = 10, **kwargs) -> Generator[list[TokenContainerClass], None, None]:
     """
     Generator that yields pages of containers.
 

@@ -3,7 +3,7 @@ from typing import Generator
 import click
 from flask.cli import AppGroup
 
-from privacyidea.lib.container import container_page_generator
+from privacyidea.lib.container import get_container_generator
 from privacyidea.lib.containerclass import TokenContainerClass
 from privacyidea.lib.containers.container_info import TokenContainerInfoData
 from privacyidea.lib.error import ResolverError
@@ -18,12 +18,12 @@ def _get_container_list(serial: str = None, ctype: str = None, token_serial: str
     """
     Helper function to get a list of containers based on the provided parameters.
     """
-    container_page = container_page_generator(serial=serial, ctype=ctype,
-                                              token_serial=token_serial, realm=realm,
-                                              template=template, description=description,
-                                              assigned=assigned, resolver=resolver,
-                                              info=info, last_auth_delta=last_auth_delta,
-                                              last_sync_delta=last_sync_delta, pagesize=pagesize)
+    container_page = get_container_generator(serial=serial, ctype=ctype,
+                                             token_serial=token_serial, realm=realm,
+                                             template=template, description=description,
+                                             assigned=assigned, resolver=resolver,
+                                             info=info, last_auth_delta=last_auth_delta,
+                                             last_sync_delta=last_sync_delta, pagesize=pagesize)
 
     for containers in container_page:
         ret = []
@@ -32,7 +32,8 @@ def _get_container_list(serial: str = None, ctype: str = None, token_serial: str
             if orphaned is not None:
                 try:
                     if is_true(orphaned):
-                        if container.get_users() is [] or all(not user.exist() for user in container.get_users()):
+                        users = container.get_users()
+                        if users is [] or all(not user.exist() for user in users):
                             add = False
                     else:
                         if container.get_users() is not [] and any(user.exist() for user in container.get_users()):
@@ -189,5 +190,9 @@ def set_realm(ctx, realms, add):
     realms_list = [r.strip() for r in realms.split(',')]
     for clist in ctx.obj['containers']:
         for container in clist:
-            container.set_realms(realms_list, add=add)
-            click.echo(f"Set realm(s) '{realms}' for container {container.serial}")
+            ret = container.set_realms(realms_list, add=add)
+            for serial, result in ret.items():
+                if not result:
+                    click.echo(f"realm: {serial} could not be set for container {container.serial}")
+                else:
+                    click.echo(f"Set realm '{serial}' for container {container.serial}")
