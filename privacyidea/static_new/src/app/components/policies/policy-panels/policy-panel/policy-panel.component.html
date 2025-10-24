@@ -72,22 +72,24 @@
       </mat-panel-description>
     </mat-expansion-panel-header>
 
-    <div class="tab-buttons">
-      <button
-        mat-stroked-button
-        class="button-hover"
-        [class.button-active]="activeTab() === 'actions'"
-        (click)="setActiveTab('actions')">
-        ACTIONS
-      </button>
-      <button
-        mat-stroked-button
-        class="button-hover"
-        [class.button-active]="activeTab() === 'conditions'"
-        (click)="setActiveTab('conditions')">
-        CONDITIONS
-      </button>
-    </div>
+    @if (isEditingPolicy(policy().name) || policyService.selectedPolicyHasConditions()) {
+      <div class="tab-buttons">
+        <button
+          mat-stroked-button
+          class="button-hover"
+          [class.button-active]="activeTab() === 'actions'"
+          (click)="setActiveTab('actions')">
+          ACTIONS
+        </button>
+        <button
+          mat-stroked-button
+          class="button-hover"
+          [class.button-active]="activeTab() === 'conditions'"
+          (click)="setActiveTab('conditions')">
+          CONDITIONS
+        </button>
+      </div>
+    }
     @if (activeTab() === "actions") {
       <app-action-tab [isEditMode]="isEditingPolicy(policy().name)" />
     }

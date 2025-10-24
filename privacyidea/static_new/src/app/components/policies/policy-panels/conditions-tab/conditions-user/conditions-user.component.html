@@ -1,4 +1,4 @@
-@if (isEditMode() || selectedRealms().length > 0 || selectedResolvers().length > 0 || selectedUsers().length > 0) {
+@if (isEditMode() || policyService.selectedPolicyHasUserConditions()) {
   <div class="user-container">
     <h2
       class="user-title"

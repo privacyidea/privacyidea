@@ -1,4 +1,4 @@
-@if (additionalConditions().length > 0 || isEditMode()) {
+@if (isEditMode() || policyService.selectedPolicyHasAdditionalConditions()) {
   <div class="additional-conditions-container">
     <h2
       class="additional-conditions-title"

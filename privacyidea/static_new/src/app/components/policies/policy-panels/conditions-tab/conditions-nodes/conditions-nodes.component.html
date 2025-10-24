@@ -1,10 +1,4 @@
-@if (
-  isEditMode() ||
-  selectedPinodes().length > 0 ||
-  selectedValidTime() != "" ||
-  selectedClient() != "" ||
-  selectedUserAgents().length > 0
-) {
+@if (isEditMode() || policyService.selectedPolicyHasNodeConditions()) {
   <div class="nodes-container">
     <h2
       class="nodes-title"

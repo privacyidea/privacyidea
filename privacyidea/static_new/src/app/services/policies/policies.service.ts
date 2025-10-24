@@ -248,6 +248,40 @@ export class PolicyService implements PoliciesServiceInterface {
     return policy?.action && Object.keys(policy.action).length > 0;
   });
 
+  selectedPolicyHasUserConditions = computed(() => {
+    const policy = this.selectedPolicy();
+    if (!policy) return false;
+    if (policy.realm && policy.realm.length > 0) return true;
+    if (policy.resolver && policy.resolver.length > 0) return true;
+    if (policy.user && policy.user.length > 0) return true;
+    return false;
+  });
+
+  selectedPolicyHasNodeConditions = computed(() => {
+    const policy = this.selectedPolicy();
+    if (!policy) return false;
+    if (policy.pinode && policy.pinode.length > 0) return true;
+    if (policy.time && policy.time.length > 0) return true;
+    if (policy.client && policy.client.length > 0) return true;
+    if (policy.user_agents && policy.user_agents.length > 0) return true;
+    return false;
+  });
+
+  selectedPolicyHasAdditionalConditions = computed(() => {
+    const policy = this.selectedPolicy();
+    if (!policy) return false;
+    return policy.conditions && policy.conditions.length > 0;
+  });
+
+  selectedPolicyHasConditions = computed(() => {
+    const policy = this.selectedPolicy();
+    if (!policy) return false;
+    if (this.selectedPolicyHasUserConditions()) return true;
+    if (this.selectedPolicyHasNodeConditions()) return true;
+    if (this.selectedPolicyHasAdditionalConditions()) return true;
+    return false;
+  });
+
   savePolicyEdits() {
     const selectedPolicy = this.selectedPolicy();
     const oldPolicyName = this.selectedPolicyOriginal()?.name;

@@ -101,7 +101,12 @@ export class ConditionsNodesComponent {
   }
 
   setValidTime() {
-    if (this.validTimeFormControl.invalid) return;
+    if (this.validTimeFormControl.invalid) {
+      this.policyService.updateSelectedPolicy({
+        time: ""
+      });
+      return;
+    }
     const validTime = this.validTimeFormControl.value;
     if (!validTime) return;
     console.log("Setting valid time:", validTime);
@@ -111,7 +116,12 @@ export class ConditionsNodesComponent {
   }
 
   setClients() {
-    if (this.clientFormControl.invalid) return;
+    if (this.clientFormControl.invalid) {
+      this.policyService.updateSelectedPolicy({
+        client: []
+      });
+      return;
+    }
     const client = this.clientFormControl.value;
     if (!client) return;
     console.log("Setting clients:", client);
