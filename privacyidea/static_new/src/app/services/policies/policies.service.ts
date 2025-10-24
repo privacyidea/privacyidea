@@ -315,6 +315,7 @@ export class PolicyService implements PoliciesServiceInterface {
         });
     }
 
+    this.selectPolicy(selectedPolicy);
     this.viewMode.set("view");
   }
   getDetailsOfAction(actionName: string): PolicyActionDetail | null {

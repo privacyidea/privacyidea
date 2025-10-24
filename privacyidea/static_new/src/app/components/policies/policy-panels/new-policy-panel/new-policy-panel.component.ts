@@ -86,7 +86,6 @@ export class NewPolicyPanelComponent {
   }
 
   savePolicy(matExpansionPanel: MatExpansionPanel) {
-    // Implementiere hier die Logik, um das neue Policy zu speichern
     this.policyService.savePolicyEdits();
     this.policyService.deselectPolicy(this.newPolicyName());
     matExpansionPanel.close();

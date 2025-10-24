@@ -1,4 +1,4 @@
-import { Component, inject, Input, input, signal, WritableSignal } from "@angular/core";
+import { Component, inject, Input, input, linkedSignal, signal, WritableSignal } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { MatCardModule } from "@angular/material/card";
 import { MatIconModule } from "@angular/material/icon";
@@ -12,7 +12,7 @@ import { HorizontalWheelComponent } from "../../../shared/horizontal-wheel/horiz
 import { ActionTabComponent } from "../action-tab/action-tab.component";
 import { ConditionsTabComponent } from "../conditions-tab/conditions-tab.component";
 
-type Tab = "actions" | "conditions";
+type PolicyTab = "actions" | "conditions";
 
 @Component({
   selector: "app-policy-panel",
@@ -54,10 +54,28 @@ export class PolicyPanelComponent {
     }
     return true;
   }
-  @Input({ required: true }) isEditMode!: boolean;
+  isEditMode = input.required<boolean>();
   policy = input.required<PolicyDetail>();
 
-  activeTab: WritableSignal<Tab> = signal("actions");
+  activeTab: WritableSignal<PolicyTab> = linkedSignal<
+    {
+      selectedPolicyHasConditions: boolean;
+      isEditMode: boolean;
+    },
+    PolicyTab
+  >({
+    source: () => ({
+      selectedPolicyHasConditions: this.policyService.selectedPolicyHasConditions(),
+      isEditMode: this.isEditMode()
+    }),
+    computation: (source, previous) => {
+      const { selectedPolicyHasConditions, isEditMode } = source;
+      if (isEditMode) return previous?.value || "actions";
+      if (selectedPolicyHasConditions === true) return previous?.value || "conditions";
+      return "actions";
+    }
+  });
+
   policyService: PolicyService = inject(PolicyService);
 
   confirmDiscardChanges(): boolean {
@@ -94,7 +112,7 @@ export class PolicyPanelComponent {
   }
 
   isEditingPolicy(name: string): boolean {
-    return this.isEditMode && this.policyService.selectedPolicyOriginal()?.name === name;
+    return this.isEditMode() && this.policyService.selectedPolicyOriginal()?.name === name;
   }
 
   savePolicy() {
@@ -110,7 +128,7 @@ export class PolicyPanelComponent {
     this.policyService.updateSelectedPolicy({ scope: scope });
   }
 
-  setActiveTab(tab: Tab): void {
+  setActiveTab(tab: PolicyTab): void {
     this.activeTab.set(tab);
   }
 

@@ -8,8 +8,10 @@
     </div>
     @if (policyService.selectedActionDetail()?.value) {
       <!-- add dropdown to select value from list -->
-
-      @if (
+      @if (policyService.selectedActionDetail()?.value?.length === 0) {
+        <!-- // Warning: No Value Available. Nothing to select not possible to add. NO MAT FORM FIELD -->
+        <p i18n>No values available for this action.</p>
+      } @else if (
         policyService.selectedActionDetail()?.value?.length === 2 ||
         policyService.selectedActionDetail()?.value?.length === 3
       ) {
