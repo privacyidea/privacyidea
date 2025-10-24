@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { CommonModule, NgClass } from "@angular/common";
-import { Component, effect, ElementRef, inject, Renderer2, signal, untracked, ViewChild } from "@angular/core";
+import { Component, computed, effect, ElementRef, inject, Renderer2, signal, untracked, ViewChild } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
 import { MatButton, MatIconButton } from "@angular/material/button";
@@ -30,7 +30,7 @@ import {
   MatExpansionPanelHeader,
   MatExpansionPanelTitle
 } from "@angular/material/expansion";
-import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
+import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
 import { MatSelect } from "@angular/material/select";
@@ -54,9 +54,10 @@ import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.
 import { TokenComponent } from "../token.component";
 import {
   ContainerCreationDialogData,
-  ContainerRegistrationDialogComponent
-} from "./container-registration-dialog/container-registration-dialog.component";
+  ContainerCreatedDialogComponent
+} from "./container-created-dialog/container-created-dialog.component";
 import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
+import { ContainerRegistrationConfigComponent } from "../container-registration/container-registration-config/container-registration-config.component";
 
 export type ContainerTypeOption = "generic" | "smartphone" | "yubikey";
 
@@ -65,7 +66,6 @@ export type ContainerTypeOption = "generic" | "smartphone" | "yubikey";
   imports: [
     MatButton,
     MatFormField,
-    MatHint,
     MatIcon,
     MatOption,
     MatSelect,
@@ -85,7 +85,8 @@ export type ContainerTypeOption = "generic" | "smartphone" | "yubikey";
     ScrollToTopDirective,
     NgClass,
     ClearableInputComponent,
-    CommonModule
+    CommonModule,
+    ContainerRegistrationConfigComponent
   ],
   templateUrl: "./container-create.component.html",
   styleUrl: "./container-create.component.scss"
@@ -111,12 +112,15 @@ export class ContainerCreateComponent {
   generateQRCode = signal(false);
   passphrasePrompt = signal("");
   passphraseResponse = signal("");
+  userStorePassphrase = signal(false);
   registerResponse = signal<PiResponse<ContainerRegisterData> | null>(null);
-  pollResponse = signal<any>(null);
+  userSelected = computed(() => this.userService.selectionUsernameFilter() !== '');
 
   @ViewChild("scrollContainer") scrollContainer!: ElementRef<HTMLElement>;
   @ViewChild("stickyHeader") stickyHeader!: ElementRef<HTMLElement>;
   @ViewChild("stickySentinel") stickySentinel!: ElementRef<HTMLElement>;
+  @ViewChild(ContainerRegistrationConfigComponent)
+  registrationConfigComponent!: ContainerRegistrationConfigComponent;
 
   constructor(protected registrationDialog: MatDialog) {
     effect(() => {
@@ -174,7 +178,6 @@ export class ContainerCreateComponent {
   }
 
   createContainer() {
-    this.pollResponse.set(null);
     this.registerResponse.set(null);
     const createData = {
       container_type: this.containerService.selectedContainerType().containerType,
@@ -207,8 +210,9 @@ export class ContainerCreateComponent {
     this.containerService
       .registerContainer({
         container_serial: serial,
-        passphrase_response: this.passphraseResponse(),
-        passphrase_prompt: this.passphrasePrompt()
+        passphrase_user: false,
+        passphrase_response: this.registrationConfigComponent.passphraseResponse,
+        passphrase_prompt: this.registrationConfigComponent.passphrasePrompt
       })
       .subscribe((registerResponse) => {
         this.registerResponse.set(registerResponse);
@@ -219,9 +223,9 @@ export class ContainerCreateComponent {
 
   private resetCreateOptions = () => {
     this.registerResponse.set(null);
-    this.pollResponse.set(null);
     this.passphrasePrompt.set("");
     this.passphraseResponse.set("");
+    this.userStorePassphrase.set(false);
     this.description.set("");
     this.selectedTemplate.set("");
   };
@@ -232,16 +236,15 @@ export class ContainerCreateComponent {
       containerSerial: this.containerSerial,
       registerContainer: this.registerContainer.bind(this)
     };
-    this.registrationDialog.open(ContainerRegistrationDialogComponent, {
+    this.registrationDialog.open(ContainerCreatedDialogComponent, {
       data: dialogData
     });
   }
 
   private pollContainerRolloutState(containerSerial: string, startTime: number) {
     return this.containerService.pollContainerRolloutState(containerSerial, startTime).subscribe({
-      next: (pollResponse) => {
-        this.pollResponse.set(pollResponse);
-        if (pollResponse.result?.value?.containers[0].info.registration_state !== "client_wait") {
+      next: (response) => {
+        if (response?.result?.value?.containers[0].info.registration_state !== "client_wait") {
           this.registrationDialog.closeAll();
           this.router.navigateByUrl(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + containerSerial);
         }

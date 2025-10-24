@@ -21,6 +21,8 @@ import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { provideNoopAnimations } from "@angular/platform-browser/animations";
 import { of } from "rxjs";
+import { By } from "@angular/platform-browser";
+import { ComponentFixture } from "@angular/core/testing";
 
 import { ContainerTabComponent } from "./container-tab.component";
 import { ROUTE_PATHS } from "../../../../route_paths";
@@ -44,8 +46,10 @@ describe("ContainerTabComponent", () => {
   let containerService: MockContainerService;
   let contentService: MockContentService;
   let router: jest.Mocked<Router>;
-  let dialog: { open: jest.Mock };
+  let dialog: { open: jest.Mock, closeAll: jest.Mock };
   let versioning: { getVersion: jest.Mock };
+  let fixture: ComponentFixture<ContainerTabComponent>;
+  let authService: MockAuthService;
 
   beforeEach(async () => {
     router = {
@@ -53,7 +57,8 @@ describe("ContainerTabComponent", () => {
     } as any;
 
     dialog = {
-      open: jest.fn().mockReturnValue({ afterClosed: () => of(true) })
+      open: jest.fn().mockReturnValue({ afterClosed: () => of(true) }),
+      closeAll: jest.fn().mockReturnValue(undefined)
     };
 
     versioning = {
@@ -83,11 +88,12 @@ describe("ContainerTabComponent", () => {
       ]
     }).compileComponents();
 
-    const fixture = TestBed.createComponent(ContainerTabComponent);
+    fixture = TestBed.createComponent(ContainerTabComponent);
     component = fixture.componentInstance;
 
     containerService = TestBed.inject(ContainerService) as any;
     contentService = TestBed.inject(ContentService) as any;
+    authService = TestBed.inject(AuthService) as MockAuthService;
 
     fixture.detectChanges();
   });
@@ -234,5 +240,281 @@ describe("ContainerTabComponent", () => {
 
     expect(containerService.containerSelection()).toEqual([]);
     expect(listReloadSpy).toHaveBeenCalled();
+  });
+
+  it("openRegisterInitDialog opens dialog with correct data for register", () => {
+    const openSpy = jest.spyOn(dialog, "open");
+    component.openRegisterInitDialog(false);
+    expect(openSpy).toHaveBeenCalledWith(
+      expect.any(Function),
+      expect.objectContaining({
+        data: expect.objectContaining({
+          registerContainer: expect.any(Function),
+          rollover: false,
+          containerHasOwner: expect.any(Boolean)
+        })
+      })
+    );
+  });
+
+  it("openRegisterInitDialog opens dialog with correct data for rollover", () => {
+    const openSpy = jest.spyOn(dialog, "open");
+    component.openRegisterInitDialog(true);
+    expect(openSpy).toHaveBeenCalledWith(
+      expect.any(Function),
+      expect.objectContaining({
+        data: expect.objectContaining({
+          registerContainer: expect.any(Function),
+          rollover: true,
+          containerHasOwner: expect.any(Boolean)
+        })
+      })
+    );
+  });
+
+  it("registerContainer calls service and opens finalize dialog, then polls rollout state", () => {
+    const registerResponse = { result: { value: { container_url: {img: "data:image/123", value: "pia://container/..."} } } } as any;
+    const pollResponse = { result: { value: { containers: [{ info: { registration_state: "registered" } }] } } } as any;
+    const registerSpy = jest.spyOn(containerService, "registerContainer").mockReturnValue(of(registerResponse));
+    const pollSpy = jest.spyOn(containerService, "pollContainerRolloutState").mockReturnValue(of(pollResponse));
+    const openFinalizeSpy = jest.spyOn(component as any, "openRegisterFinalizeDialog");
+    const closeAllSpy = jest.spyOn(dialog, "closeAll");
+
+    component.registerContainer(false, "prompt", "response", false);
+
+    expect(registerSpy).toHaveBeenCalledWith({
+      container_serial: containerService.containerSerial(),
+      passphrase_user: false,
+      passphrase_prompt: "prompt",
+      passphrase_response: "response",
+      rollover: false
+    });
+    expect(openFinalizeSpy).toHaveBeenCalledWith(registerResponse, false);
+    expect(pollSpy).toHaveBeenCalled();
+    expect(closeAllSpy).toHaveBeenCalled();
+  });
+
+  it("registerContainer with rollover=true passes rollover to service and finalize dialog", () => {
+    const registerResponse = { result: { value: { img: "data:image/123", value: "pia://container/..." } } } as any;
+    const pollResponse = { result: { value: { containers: [{ info: { registration_state: "registered" } }] } } } as any;
+    jest.spyOn(containerService, "registerContainer").mockReturnValue(of(registerResponse));
+    jest.spyOn(containerService, "pollContainerRolloutState").mockReturnValue(of(pollResponse));
+    const openFinalizeSpy = jest.spyOn(component as any, "openRegisterFinalizeDialog");
+
+    component.registerContainer(false, "prompt", "response", true);
+
+    expect(openFinalizeSpy).toHaveBeenCalledWith(registerResponse, true);
+    expect(containerService.registerContainer).toHaveBeenCalledWith(
+      expect.objectContaining({ rollover: true })
+    );
+  });
+
+  it("unregisterContainer calls service, shows notification, and reloads details on success", () => {
+    const unregisterResponse = { result: { value: { success: true } } } as any;
+    const unregisterSpy = jest.spyOn(containerService, "unregister").mockReturnValue(of(unregisterResponse));
+    const notificationSpy = jest.spyOn(component["notificationService"], "openSnackBar");
+    const reloadSpy = jest.spyOn(containerService.containerDetailResource, "reload");
+
+    component.unregisterContainer();
+
+    expect(unregisterSpy).toHaveBeenCalledWith(containerService.containerSerial());
+    expect(notificationSpy).toHaveBeenCalledWith("Container unregistered successfully.");
+    expect(reloadSpy).toHaveBeenCalled();
+  });
+
+  it("unregisterContainer shows failure notification if not successful", () => {
+    const unregisterResponse = { result: { value: { success: false } } } as any;
+    jest.spyOn(containerService, "unregister").mockReturnValue(of(unregisterResponse));
+    const notificationSpy = jest.spyOn(component["notificationService"], "openSnackBar");
+
+    component.unregisterContainer();
+
+    expect(notificationSpy).toHaveBeenCalledWith("Failed to unregister container.");
+  });
+
+  describe("Registration button visibility and actions", () => {
+    function setRoute(url: string) {
+      contentService.routeUrl.set(url);
+      fixture.detectChanges();
+    }
+
+    function setContainerType(type: string) {
+      containerService.containerDetailResource.value.update((resp: any) => ({
+        ...resp,
+        result: {
+          ...resp.result,
+          value: {
+            ...resp.result.value,
+            containers: [
+              {
+                ...resp.result.value.containers[0],
+                type
+              }
+            ]
+          }
+        }
+      }));
+      fixture.detectChanges();
+    }
+
+    function setRegistrationState(state: string) {
+      containerService.containerDetailResource.value.update((resp: any) => ({
+        ...resp,
+        result: {
+          ...resp.result,
+          value: {
+            ...resp.result.value,
+            containers: [
+              {
+                ...resp.result.value.containers[0],
+                info: { registration_state: state }
+              }
+            ]
+          }
+        }
+      }));
+      fixture.detectChanges();
+    }
+
+    it("should not display register, unregister, or rollover buttons on overview/list page", () => {
+      authService.rights.set(["container_register", "container_unregister", "container_rollover"]);
+      setRoute(ROUTE_PATHS.TOKENS_CONTAINERS);
+      setContainerType("smartphone");
+      setRegistrationState("client_wait");
+      fixture.detectChanges();
+
+      const html = fixture.nativeElement as HTMLElement;
+      expect(html.textContent).not.toContain("Register");
+      expect(html.textContent).not.toContain("Unregister");
+      expect(html.textContent).not.toContain("Rollover");
+    });
+
+    it("should not display register, unregister, or rollover buttons without rights", () => {
+      setRoute(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + "CONT-1");
+      setContainerType("smartphone");
+      setRegistrationState("client_wait");
+
+      authService.rights.set(["container_unregister", "container_rollover"]);
+      fixture.detectChanges();
+      let html = fixture.nativeElement as HTMLElement;
+      expect(html.textContent).not.toContain("Register");
+      expect(html.textContent).toContain("Unregister");
+      expect(html.textContent).not.toContain("Rollover");
+
+      authService.rights.set(["container_register", "container_rollover"]);
+      fixture.detectChanges();
+      html = fixture.nativeElement as HTMLElement;
+      expect(html.textContent).toContain("Register");
+      expect(html.textContent).not.toContain("Unregister");
+      expect(html.textContent).not.toContain("Rollover");
+
+      setRegistrationState("registered");
+      authService.rights.set(["container_unregister"]);
+      fixture.detectChanges();
+      html = fixture.nativeElement as HTMLElement;
+      expect(html.textContent).not.toContain("Register");
+      expect(html.textContent).toContain("Unregister");
+      expect(html.textContent).not.toContain("Rollover");
+    });
+
+
+    it("should show Register button for smartphone, registration_state=client_wait", async () => {
+      authService.rights.set(["container_register", "container_unregister", "container_rollover"]);
+      setRoute(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + "CONT-1");
+      setContainerType("smartphone");
+      setRegistrationState("client_wait");
+      fixture.detectChanges();
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      const html = fixture.nativeElement as HTMLElement;
+      expect(html.textContent).toContain("Register");
+      expect(html.textContent).not.toContain("Rollover");
+      expect(html.textContent).toContain("Unregister");
+    });
+
+    it("should show Rollover button for smartphone, registration_state=registered", () => {
+      authService.rights.set(["container_register", "container_unregister", "container_rollover"]);
+      setRoute(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + "CONT-1");
+      setContainerType("smartphone");
+      setRegistrationState("registered");
+      fixture.detectChanges();
+
+      const html = fixture.nativeElement as HTMLElement;
+      expect(html.textContent).not.toContain("Register");
+      expect(html.textContent).toContain("Rollover");
+      expect(html.textContent).toContain("Unregister");
+    });
+
+    it("should show Unregister button for smartphone, registration_state=rollover_completed", () => {
+      authService.rights.set(["container_register", "container_unregister", "container_rollover"]);
+      setRoute(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + "CONT-1");
+      setContainerType("smartphone");
+      setRegistrationState("rollover_completed");
+      fixture.detectChanges();
+
+      const html = fixture.nativeElement as HTMLElement;
+      expect(html.textContent).not.toContain("Register");
+      expect(html.textContent).toContain("Rollover");
+      expect(html.textContent).toContain("Unregister");
+    });
+
+    it("should not show Register/Rollover/Unregister for non-smartphone type", () => {
+      authService.rights.set(["container_register", "container_unregister", "container_rollover"]);
+      setRoute(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + "CONT-1");
+      setContainerType("generic");
+      setRegistrationState("client_wait");
+      fixture.detectChanges();
+
+      const html = fixture.nativeElement as HTMLElement;
+      expect(html.textContent).not.toContain("Register");
+      expect(html.textContent).not.toContain("Rollover");
+      expect(html.textContent).not.toContain("Unregister");
+    });
+
+    it("clicking Register button calls openRegisterInitDialog(false)", () => {
+      authService.rights.set(["container_register", "container_unregister", "container_rollover"]);
+      setRoute(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + "CONT-1");
+      setContainerType("smartphone");
+      setRegistrationState("client_wait");
+      fixture.detectChanges();
+
+      const spy = jest.spyOn(component, "openRegisterInitDialog");
+      const registerBtn: HTMLButtonElement = fixture.debugElement.queryAll(By.css("button"))
+        .find(btn => btn.nativeElement.textContent.includes("Register"))?.nativeElement;
+      expect(registerBtn).toBeTruthy();
+      registerBtn.click();
+      expect(spy).toHaveBeenCalledWith(false);
+    });
+
+    it("clicking Rollover button calls openRegisterInitDialog(true)", () => {
+      authService.rights.set(["container_register", "container_unregister", "container_rollover"]);
+      setRoute(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + "CONT-1");
+      setContainerType("smartphone");
+      setRegistrationState("registered");
+      fixture.detectChanges();
+
+      const spy = jest.spyOn(component, "openRegisterInitDialog");
+      const rolloverBtn: HTMLButtonElement = fixture.debugElement.queryAll(By.css("button"))
+        .find(btn => btn.nativeElement.textContent.includes("Rollover"))?.nativeElement;
+      expect(rolloverBtn).toBeTruthy();
+      rolloverBtn.click();
+      expect(spy).toHaveBeenCalledWith(true);
+    });
+
+    it("clicking Unregister button calls unregisterContainer()", () => {
+      authService.rights.set(["container_register", "container_unregister", "container_rollover"]);
+      setRoute(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + "CONT-1");
+      setContainerType("smartphone");
+      setRegistrationState("registered");
+      fixture.detectChanges();
+
+      const spy = jest.spyOn(component, "unregisterContainer");
+      const unregisterBtn: HTMLButtonElement = fixture.debugElement.queryAll(By.css("button"))
+        .find(btn => btn.nativeElement.textContent.includes("Unregister"))?.nativeElement;
+      expect(unregisterBtn).toBeTruthy();
+      unregisterBtn.click();
+      expect(spy).toHaveBeenCalled();
+    });
   });
 });

@@ -24,15 +24,15 @@ import { DomSanitizer } from "@angular/platform-browser";
 import { map } from "rxjs";
 import { ContainerService, ContainerServiceInterface } from "../../../../services/container/container.service";
 import { LostTokenComponent } from "../../token-card/token-tab/lost-token/lost-token.component";
-import { ContainerRegistrationDialogComponent } from "./container-registration-dialog.component";
+import { ContainerCreatedDialogComponent } from "./container-created-dialog.component";
 
 @Component({
-  selector: "app-container-registration-dialog",
+  selector: "app-container-created-wizard-dialog",
   imports: [MatDialogContent, MatDialogTitle, AsyncPipe],
-  templateUrl: "./container-registration-dialog.wizard.component.html",
-  styleUrl: "./container-registration-dialog.component.scss"
+  templateUrl: "./container-created-dialog.wizard.component.html",
+  styleUrl: "./container-created-dialog.component.scss"
 })
-export class ContainerRegistrationDialogWizardComponent extends ContainerRegistrationDialogComponent {
+export class ContainerCreatedDialogWizardComponent extends ContainerCreatedDialogComponent {
   protected override readonly containerService: ContainerServiceInterface = inject(ContainerService);
   public override readonly data: {
     registerContainer: WritableSignal<string>;

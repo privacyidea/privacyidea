@@ -300,31 +300,6 @@ export class ContainerDetailsComponent {
     });
   }
 
-  _addTypeListToFilter(currentFilter: FilterValue): FilterValue {
-    const containerDetails = this.containerDetails();
-    const containerType = containerDetails?.type;
-    const allowedTokenTypes = allowedTokenTypesMap.get(containerType);
-    const _currentFilter = currentFilter.copyWith();
-    if (
-      !allowedTokenTypes ||
-      allowedTokenTypes === "all" ||
-      !Array.isArray(allowedTokenTypes) ||
-      allowedTokenTypes.length === 0
-    ) {
-      _currentFilter.removeKey("type");
-      _currentFilter.removeKey("type_list");
-      return _currentFilter;
-    }
-    if (allowedTokenTypes.length === 1) {
-      _currentFilter.addEntry("type", allowedTokenTypes[0]);
-      _currentFilter.removeKey("type_list");
-    } else {
-      _currentFilter.addEntry("type_list", allowedTokenTypes.join(","));
-      _currentFilter.removeKey("type");
-    }
-    return _currentFilter;
-  }
-
   isEditableElement(key: string) {
     if (key === "description" && this.authService.actionAllowed("container_description")) {
       return true;

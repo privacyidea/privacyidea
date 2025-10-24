@@ -306,7 +306,7 @@ export class MockAuthService extends AuthService {
     realm: "default",
     rights: [],
     role: "admin",
-    token: "",
+    token: "Bearer FAKE_TOKEN",
     username: "alice",
     logout_time: 3600,
     audit_page_size: 25,
@@ -481,7 +481,7 @@ export class MockContentService implements ContentServiceInterface {
     url: "/home",
     events: of({} as any)
   } as any;
-  routeUrl: Signal<string> = signal("/home");
+  routeUrl: WritableSignal<string> = signal("/home");
   previousUrl: Signal<string> = signal("/home");
   isProgrammaticTabChange = signal(false);
   tokenSerial: WritableSignal<string> = signal("");
@@ -582,7 +582,8 @@ export class MockContainerService implements ContainerServiceInterface {
           states: [],
           type: "",
           select: "",
-          description: ""
+          description: "",
+          info: {}
         }
       ],
       count: 1
@@ -619,6 +620,8 @@ export class MockContainerService implements ContainerServiceInterface {
   }): Observable<PiResponse<ContainerRegisterData, unknown>> {
     throw new Error("Method not implemented.");
   }
+
+  unregister = jest.fn().mockReturnValue(of({}));
 
   containerBelongsToUser = jest.fn().mockReturnValue(true);
 

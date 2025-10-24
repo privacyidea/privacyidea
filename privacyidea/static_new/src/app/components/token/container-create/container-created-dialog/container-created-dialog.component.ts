@@ -37,12 +37,12 @@ export type ContainerCreationDialogData = {
 };
 
 @Component({
-  selector: "app-container-registration-dialog",
+  selector: "app-container-created-dialog",
   imports: [MatDialogContent, MatDialogTitle, MatButton, MatIcon],
-  templateUrl: "./container-registration-dialog.component.html",
-  styleUrl: "./container-registration-dialog.component.scss"
+  templateUrl: "./container-created-dialog.component.html",
+  styleUrl: "./container-created-dialog.component.scss"
 })
-export class ContainerRegistrationDialogComponent {
+export class ContainerCreatedDialogComponent {
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
   public readonly data: ContainerCreationDialogData = inject(MAT_DIALOG_DATA);
   private router = inject(Router);

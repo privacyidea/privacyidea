@@ -24,14 +24,14 @@ import { firstValueFrom, of } from "rxjs";
 import { signal } from "@angular/core";
 import { Router } from "@angular/router";
 
-import { ContainerRegistrationDialogComponent } from "./container-registration-dialog.component";
-import { ContainerRegistrationDialogWizardComponent } from "./container-registration-dialog.wizard.component";
+import { ContainerCreatedDialogComponent } from "./container-created-dialog.component";
+import { ContainerCreatedDialogWizardComponent } from "./container-created-dialog.wizard.component";
 import { ContainerService } from "../../../../services/container/container.service";
 import { ContentService } from "../../../../services/content/content.service";
 
 describe("ContainerRegistrationDialogComponent", () => {
-  let fixture: ComponentFixture<ContainerRegistrationDialogComponent>;
-  let component: ContainerRegistrationDialogComponent;
+  let fixture: ComponentFixture<ContainerCreatedDialogComponent>;
+  let component: ContainerCreatedDialogComponent;
 
   const stopPolling = jest.fn();
   const containerServiceMock = { stopPolling };
@@ -54,7 +54,7 @@ describe("ContainerRegistrationDialogComponent", () => {
     jest.clearAllMocks();
 
     await TestBed.configureTestingModule({
-      imports: [ContainerRegistrationDialogComponent],
+      imports: [ContainerCreatedDialogComponent],
       providers: [
         provideHttpClient(),
         { provide: MatDialogRef, useValue: dialogRefMock },
@@ -65,7 +65,7 @@ describe("ContainerRegistrationDialogComponent", () => {
       ]
     }).compileComponents();
 
-    fixture = TestBed.createComponent(ContainerRegistrationDialogComponent);
+    fixture = TestBed.createComponent(ContainerCreatedDialogComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
@@ -94,8 +94,8 @@ describe("ContainerRegistrationDialogComponent", () => {
 });
 
 describe("ContainerRegistrationDialogWizardComponent", () => {
-  let fixture: ComponentFixture<ContainerRegistrationDialogWizardComponent>;
-  let component: ContainerRegistrationDialogWizardComponent;
+  let fixture: ComponentFixture<ContainerCreatedDialogWizardComponent>;
+  let component: ContainerCreatedDialogWizardComponent;
   let httpMock: HttpTestingController;
 
   const stopPolling = jest.fn();
@@ -129,7 +129,7 @@ describe("ContainerRegistrationDialogWizardComponent", () => {
     jest.clearAllMocks();
 
     await TestBed.configureTestingModule({
-      imports: [ContainerRegistrationDialogWizardComponent],
+      imports: [ContainerCreatedDialogWizardComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
@@ -141,7 +141,7 @@ describe("ContainerRegistrationDialogWizardComponent", () => {
       ]
     }).compileComponents();
 
-    fixture = TestBed.createComponent(ContainerRegistrationDialogWizardComponent);
+    fixture = TestBed.createComponent(ContainerCreatedDialogWizardComponent);
     component = fixture.componentInstance;
     httpMock = TestBed.inject(HttpTestingController);
 

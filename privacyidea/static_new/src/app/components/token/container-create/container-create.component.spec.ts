@@ -208,10 +208,16 @@ describe("ContainerCreateComponent", () => {
   it("registerContainer: stores response, opens dialog, and starts polling with 5000", () => {
     const pollSpy = jest.spyOn(containerSvc, "pollContainerRolloutState");
 
+    (component as any).registrationConfigComponent = {
+      passphraseResponse: "",
+      passphrasePrompt: ""
+    };
+
     (component as any).registerContainer("C-001");
 
     expect(containerSvc.registerContainer).toHaveBeenCalledWith({
       container_serial: "C-001",
+      passphrase_user: false,
       passphrase_response: "",
       passphrase_prompt: ""
     });
@@ -231,7 +237,7 @@ describe("ContainerCreateComponent", () => {
     expect(pollSpy).toHaveBeenCalledWith("CONT-42", 2000);
   });
 
-  it("pollContainerRolloutState: closes dialog and navigates when state !== 'client_wait'", () => {
+  it("pollContainerRolloutState: closes dialog and navigates when state === 'registered'", () => {
     (component as any)["pollContainerRolloutState"]("C-9", 1000);
 
     expect(matDialogMock.closeAll).toHaveBeenCalled();

@@ -1,0 +1,52 @@
+<!--
+ (c) NetKnights GmbH 2025,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<mat-checkbox
+  class="width-100 margin-bottom-1"
+  [(ngModel)]="userStorePassphrase"
+  [disabled]="!containerHasOwner"
+  (change)="onUserStorePassphraseChange()">
+  <span>Validate the passphrase against the user store.</span>
+</mat-checkbox>
+<mat-form-field class="width-100 margin-bottom-1">
+  <mat-label i18n>Passphrase Prompt</mat-label>
+  <textarea
+    [(ngModel)]="passphrasePrompt"
+    matInput
+    rows="2"></textarea>
+  <mat-hint
+    align="start"
+    i18n
+    class="font-14">
+    Enter a passphrase prompt that will be displayed to the user. This should indicate which passphrase the user should
+    enter.
+  </mat-hint>
+</mat-form-field>
+<mat-form-field class="width-100 margin-top-2 margin-bottom-1">
+  <mat-label i18n> Passphrase Response</mat-label>
+  <textarea
+    [(ngModel)]="passphraseResponse"
+    matInput
+    rows="2"
+    [disabled]="userStorePassphrase"></textarea>
+  <mat-hint
+    i18n
+    class="font-14">
+    This is the correct answer to the passphrase prompt the user has to enter to successfully register the container.
+  </mat-hint>
+</mat-form-field>
