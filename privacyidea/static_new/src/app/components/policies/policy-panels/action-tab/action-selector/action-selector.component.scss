@@ -26,16 +26,6 @@
   outline: none;
 }
 
-.selected-button {
-  background-color: var(--mat-sys-primary-base);
-  color: var(--mat-sys-on-primary);
-  font-weight: 600;
-}
-
-.button-item:not(.last-button) {
-  border-right: 1px solid var(--mat-sys-outline);
-}
-
 .add-action-details {
   display: flex;
   flex-direction: column;

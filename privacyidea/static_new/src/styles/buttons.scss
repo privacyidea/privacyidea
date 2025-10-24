@@ -443,6 +443,17 @@ $button-low-contrast-variant: linear-gradient(
   width: calc(var(--header-height) / 3 - 2px);
   height: calc(var(--header-height) / 3 - 2px);
 }
+
+.mat-mdc-outlined-button {
+  border-radius: var(--half-global-padding);
+  padding: var(--half-global-padding) var(--global-padding);
+  border: 1px solid var(--mat-sys-outline);
+  background-color: var(--mat-sys-surface);
+  transition:
+    background-color 0.2s ease-in-out,
+    color 0.2s ease-in-out;
+}
+
 .mat-mdc-outlined-button .mat-icon {
   height: 24px;
   width: 24px;

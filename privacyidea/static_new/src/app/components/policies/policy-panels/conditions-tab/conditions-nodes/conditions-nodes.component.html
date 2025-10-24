@@ -61,7 +61,7 @@
       </div>
       <div class="user-agent-list-wrapper">
         <div class="user-agent-list">
-          @for (userAgend of selectedUserAgents(); track userAgend) {
+          @for (userAgend of selectedUserAgents(); track $index) {
             <div class="user-agent-chip">
               <span>{{ userAgend }}</span>
               <button
@@ -111,7 +111,7 @@
         @if (selectedPinodes().length > 0) {
           <div class="readonly-label">privacyIDEA Nodes:</div>
           <div class="readonly-chips-container">
-            @for (node of selectedPinodes(); track node) {
+            @for (node of selectedPinodes(); track $index) {
               <div class="readonly-chip">{{ node }}</div>
             }
           </div>
