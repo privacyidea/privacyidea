@@ -120,7 +120,7 @@
 
 .readonly-grid-container {
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: 1fr 5fr;
   gap: calc(var(--half-global-padding) * 1.5);
   margin: 0 var(--half-global-padding);
 }

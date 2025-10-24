@@ -117,13 +117,12 @@
 
 .readonly-user-grid-container {
   display: grid;
-  grid-template-areas: "label value";
+  grid-template-columns: 1fr 5fr;
   gap: calc(var(--half-global-padding) * 1.5);
   margin: 0 var(--half-global-padding);
 }
 
 .readonly-label {
-  grid-area: "label";
   font-weight: 500;
   margin-right: var(--half-global-padding);
   white-space: nowrap;
@@ -131,12 +130,30 @@
 }
 
 .readonly-chips-container {
-  grid-area: "value";
   display: flex;
   flex-wrap: wrap;
   gap: var(--quarter-global-padding);
+  flex: 1;
 }
 
 .readonly-chip {
   @extend .user-chip;
+}
+
+.users-chip-container {
+  @extend .readonly-chips-container;
+  flex: 1;
+}
+
+.users-container {
+  display: flex;
+  flex-direction: row;
+  gap: calc(var(--global-gap) / 2);
+  margin-bottom: var(--global-padding);
+}
+
+.sensitivity-chip {
+  @extend .user-chip;
+  border: 1px solid var(--mat-sys-outline);
+  background-color: var(--mat-sys-surface);
 }

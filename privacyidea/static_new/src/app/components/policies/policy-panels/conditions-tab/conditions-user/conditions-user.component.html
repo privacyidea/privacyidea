@@ -113,9 +113,9 @@
         @if (selectedRealms().length > 0) {
           <span
             class="readonly-label"
-            i18n
-            >Realms:</span
-          >
+            i18n>
+            Realms:
+          </span>
           <div class="readonly-chips-container">
             @for (realm of selectedRealms(); track realm) {
               <div class="readonly-chip">{{ realm }}</div>
@@ -125,9 +125,9 @@
         @if (selectedResolvers().length > 0) {
           <span
             class="readonly-label"
-            i18n
-            >Resolvers:</span
-          >
+            i18n>
+            Resolvers:
+          </span>
           <div class="readonly-chips-container">
             @for (resolver of selectedResolvers(); track resolver) {
               <div class="readonly-chip">{{ resolver }}</div>
@@ -137,13 +137,22 @@
         @if (selectedUsers().length > 0) {
           <span
             class="readonly-label"
-            i18n
-            >Users:</span
-          >
-          <div class="readonly-chips-container">
-            @for (user of selectedUsers(); track user) {
-              <div class="readonly-chip">{{ user }}</div>
-            }
+            i18n>
+            Users:
+          </span>
+          <div class="users-container">
+            <div class="readonly-chips-container">
+              @for (user of selectedUsers(); track user) {
+                <div class="readonly-chip">{{ user }}</div>
+              }
+            </div>
+            <div class="sensitivity-chip">
+              @if (userCaseInsensitive()) {
+                <span i18n>case-insensitive</span>
+              } @else {
+                <span i18n>case-sensitive</span>
+              }
+            </div>
           </div>
         }
       </div>
