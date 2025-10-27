@@ -77,7 +77,7 @@ export class UserCardComponent {
   protected readonly auditService: AuditServiceInterface = inject(AuditService);
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
 
-  onClickManageSearch() {
+  showUserAuditLog() {
     this.auditService.auditFilter.set(new FilterValue({ value: `user: ${this.userService.detailsUsername()}` }));
   }
 }

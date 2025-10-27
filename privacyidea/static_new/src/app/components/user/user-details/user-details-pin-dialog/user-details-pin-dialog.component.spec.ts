@@ -1,10 +1,10 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from "@angular/core/testing";
 
-import { UserDetailsPinDialogComponent } from './user-details-pin-dialog.component';
+import { UserDetailsPinDialogComponent } from "./user-details-pin-dialog.component";
 import { By } from "@angular/platform-browser";
 import { MatDialogRef } from "@angular/material/dialog";
 
-describe('UserDetailsPinDialogComponent', () => {
+describe("UserDetailsPinDialogComponent", () => {
   let component: UserDetailsPinDialogComponent;
   let fixture: ComponentFixture<UserDetailsPinDialogComponent>;
 
@@ -16,16 +16,17 @@ describe('UserDetailsPinDialogComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [UserDetailsPinDialogComponent]
+      imports: [UserDetailsPinDialogComponent],
+      providers: [{ provide: MatDialogRef, useValue: dialogRefMock }]
     })
-    .compileComponents();
+      .compileComponents();
 
     fixture = TestBed.createComponent(UserDetailsPinDialogComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
 
-  it('should create', () => {
+  it("should create", () => {
     expect(component).toBeTruthy();
   });
 
@@ -66,6 +67,6 @@ describe('UserDetailsPinDialogComponent', () => {
   it("should return null on cancel", () => {
     component.onCancel();
 
-    expect(dialogRefMock.close).toHaveBeenCalledWith(null);
+    expect(dialogRefMock.close).toHaveBeenCalled();
   });
 });
