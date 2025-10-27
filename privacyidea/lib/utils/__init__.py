@@ -28,30 +28,28 @@ This module is tested in tests/test_lib_utils.py
 import base64
 import binascii
 import hashlib
+import html
 import logging
+import mimetypes
 import re
 import string
 import threading
+import time
 import traceback
-from datetime import time as dt_time, timezone
+from datetime import time as dt_time
 from datetime import timedelta, datetime
 from importlib import import_module
+from importlib import metadata
 from typing import Union
 
+import segno
 import sqlalchemy
 from dateutil.parser import parse as parse_date_string
 from dateutil.tz import tzlocal, tzutc
 from netaddr import IPAddress, IPNetwork, AddrFormatError
 
-from privacyidea.lib.framework import get_app_config_value
-
-from importlib import metadata
-import time
-import html
-import segno
-import mimetypes
-
 from privacyidea.lib.error import ParameterError, ResourceNotFoundError, PolicyError
+from privacyidea.lib.framework import get_app_config_value
 
 log = logging.getLogger(__name__)
 
@@ -1486,6 +1484,28 @@ def get_computer_name_from_user_agent(user_agent: str) -> Union[str, None]:
                 return user_agent.split(key + "/")[1].split(" ")[0]
             except Exception as ex:
                 # This exception is likely to happen, because words/parts like "Mac" are common
-                #log.debug(f"Could not extract computer name from user agent: {ex} with key {key}")
+                # log.debug(f"Could not extract computer name from user agent: {ex} with key {key}")
                 pass
     return None
+
+
+def redacted_email(email: str) -> str:
+    """
+    Censors an email address from 'example.mail@test.com' to 'exa*********@t***.com'
+    """
+    try:
+        name, domain = email.split('@')
+        domain_parts = domain.split('.')
+        return f'{name[:2]}********@{domain_parts[0][0]}****.{domain_parts[1]}'
+    except:
+        return '********@****.***'
+
+
+def redacted_phone_number(number: str) -> str:
+    """
+    Censors a phone number from 01234567890 to *********90
+    """
+    try:
+        return f'****-******{number[-2:]}'
+    except:
+        return '****-********'
