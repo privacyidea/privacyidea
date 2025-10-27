@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, inject } from "@angular/core";
+import { Component, inject, Signal } from "@angular/core";
 import {
   MAT_DIALOG_DATA,
   MatDialogActions, MatDialogClose,
@@ -26,6 +26,7 @@ import {
 import { MatButton } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import { ContainerService, ContainerServiceInterface } from "../../../../services/container/container.service";
+import { ContainerRegisterFinalizeDate } from "../../token-card/container-tab/container-tab.component";
 
 @Component({
   selector: "app-container-registration-finalize-dialog",
@@ -41,11 +42,11 @@ import { ContainerService, ContainerServiceInterface } from "../../../../service
   ]
 })
 export class ContainerRegistrationFinalizeDialogComponent {
-  public readonly data = inject(MAT_DIALOG_DATA);
+  public readonly data: Signal<ContainerRegisterFinalizeDate> = inject(MAT_DIALOG_DATA);
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
 
   regenerateQRCode() {
     // other parameters are set by the container tab component to use the previously set values
-    this.data.registerContainer(null, null, null, this.data.rollover);
+    this.data().registerContainer(undefined, undefined, undefined, this.data().rollover, true);
   }
 }

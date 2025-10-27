@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { ContainerRegistrationFinalizeDialogComponent } from "./container-registration-finalize-dialog.component";
 import { MAT_DIALOG_DATA } from "@angular/material/dialog";
 import { By } from "@angular/platform-browser";
-import { NO_ERRORS_SCHEMA } from "@angular/core";
+import { NO_ERRORS_SCHEMA, signal } from "@angular/core";
 import { provideHttpClient } from "@angular/common/http";
 
 const detectChangesStable = async (fixture: ComponentFixture<any>) => {
@@ -17,7 +17,7 @@ describe("ContainerRegistrationFinalizeDialogComponent", () => {
   let fixture: ComponentFixture<ContainerRegistrationFinalizeDialogComponent>;
   let mockRegisterContainer: jest.Mock;
 
-  const mockData = {
+  const mockData = signal({
     rollover: false,
     response: {
       result: {
@@ -30,7 +30,7 @@ describe("ContainerRegistrationFinalizeDialogComponent", () => {
       }
     },
     registerContainer: jest.fn()
-  };
+  });
 
   beforeEach(async () => {
     await TestBed.resetTestingModule();
@@ -46,7 +46,7 @@ describe("ContainerRegistrationFinalizeDialogComponent", () => {
     fixture = TestBed.createComponent(ContainerRegistrationFinalizeDialogComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
-    mockRegisterContainer = mockData.registerContainer;
+    mockRegisterContainer = mockData().registerContainer;
   });
 
   it("should create", () => {
@@ -59,7 +59,7 @@ describe("ContainerRegistrationFinalizeDialogComponent", () => {
   });
 
   it("should render 'Container Rollover' title when rollover is true", async () => {
-    const rolloverData = { ...mockData, rollover: true };
+    const rolloverData = signal({ ...mockData(), rollover: true });
     await TestBed.resetTestingModule();
     await TestBed.configureTestingModule({
       imports: [ContainerRegistrationFinalizeDialogComponent],
@@ -91,7 +91,7 @@ describe("ContainerRegistrationFinalizeDialogComponent", () => {
 
   it("should call registerContainer with correct arguments when regenerateQRCode is called", () => {
     component.regenerateQRCode();
-    expect(mockRegisterContainer).toHaveBeenCalledWith(null, null, null, component.data.rollover);
+    expect(mockRegisterContainer).toHaveBeenCalledWith(undefined, undefined, undefined, false, true);
   });
 
   it("should call regenerateQRCode when button is clicked", () => {

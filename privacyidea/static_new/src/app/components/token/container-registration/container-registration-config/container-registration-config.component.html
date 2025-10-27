@@ -23,7 +23,7 @@
   (change)="onUserStorePassphraseChange()">
   <span>Validate the passphrase against the user store.</span>
 </mat-checkbox>
-<mat-form-field class="width-100 margin-bottom-1">
+<mat-form-field class="width-100">
   <mat-label i18n>Passphrase Prompt</mat-label>
   <textarea
     [(ngModel)]="passphrasePrompt"
@@ -39,14 +39,47 @@
 </mat-form-field>
 <mat-form-field class="width-100 margin-top-2 margin-bottom-1">
   <mat-label i18n> Passphrase Response</mat-label>
-  <textarea
+  <input
     [(ngModel)]="passphraseResponse"
     matInput
-    rows="2"
-    [disabled]="userStorePassphrase"></textarea>
+    [type]="showPassphrase ? 'text' : 'password'"
+    [disabled]="userStorePassphrase()">
+  <button
+    mat-icon-button
+    matSuffix
+    type="button"
+    (click)="toggleShowPassphrase()"
+    [attr.aria-label]="'Toggle passphrase visibility'"
+    [disabled]="userStorePassphrase()">
+    <mat-icon>{{ showPassphrase ? 'visibility_off' : 'visibility' }}</mat-icon>
+  </button>
   <mat-hint
     i18n
     class="font-14">
     This is the correct answer to the passphrase prompt the user has to enter to successfully register the container.
   </mat-hint>
+</mat-form-field>
+<mat-form-field class="width-100 margin-bottom-1">
+  <mat-label i18n> Repeat Passphrase Response</mat-label>
+  <input
+    [(ngModel)]="repeatPassphraseResponse"
+    matInput
+    [type]="showRepeatPassphrase ? 'text' : 'password'"
+    [disabled]="userStorePassphrase()">
+  <button
+    mat-icon-button
+    matSuffix
+    type="button"
+    (click)="showRepeatPassphrase = !showRepeatPassphrase"
+    [attr.aria-label]="'Toggle passphrase visibility'"
+    [disabled]="userStorePassphrase()">
+    <mat-icon>{{ showRepeatPassphrase ? 'visibility_off' : 'visibility' }}</mat-icon>
+  </button>
+  @if (passphraseMismatch) {
+    <ng-container>
+      <mat-error i18n>
+        Passphrases do not match.
+      </mat-error>
+    </ng-container>
+  }
 </mat-form-field>

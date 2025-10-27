@@ -16,11 +16,13 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, Input } from "@angular/core";
-import { MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
+import { Component, computed, EventEmitter, Input, Output, signal, Signal } from "@angular/core";
+import { MatError, MatFormField, MatHint, MatLabel, MatSuffix } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { FormsModule } from "@angular/forms";
 import { MatCheckbox } from "@angular/material/checkbox";
+import { MatIconModule } from "@angular/material/icon";
+import { MatButtonModule } from "@angular/material/button";
 
 @Component({
   selector: "app-container-registration-config",
@@ -32,23 +34,53 @@ import { MatCheckbox } from "@angular/material/checkbox";
     FormsModule,
     MatHint,
     MatLabel,
-    MatCheckbox
+    MatCheckbox,
+    MatIconModule,
+    MatButtonModule,
+    MatSuffix,
+    MatError
   ]
 })
 export class ContainerRegistrationConfigComponent {
-  @Input() passphrasePrompt: string = "";
-  @Input() passphraseResponse: string = "";
-  @Input() userStorePassphrase: boolean = false;
+  @Input() passphrasePrompt= signal("");
+  @Input() passphraseResponse = signal("");
+  @Input() userStorePassphrase = signal(false);
   @Input() containerHasOwner: boolean = false;
 
   defaultPrompt: string = "Please enter your user store passphrase.";
 
+  showPassphrase: boolean = false;
+  showRepeatPassphrase: boolean = false;
+  repeatPassphraseResponse= signal("");
+
+  toggleShowPassphrase() {
+    this.showPassphrase = !this.showPassphrase;
+  }
+
   onUserStorePassphraseChange() {
-    if (this.userStorePassphrase) {
-      this.passphraseResponse = "";
-      if (!this.passphrasePrompt) {
-        this.passphrasePrompt = this.defaultPrompt;
+    if (this.userStorePassphrase()) {
+      this.passphraseResponse.set("");
+      this.repeatPassphraseResponse.set("");
+      if (!this.passphrasePrompt()) {
+        this.passphrasePrompt.set(this.defaultPrompt);
       }
     }
+  }
+
+  validInput: Signal<boolean> = computed(() => {
+    if (this.userStorePassphrase()) {
+      return true;
+    } else if (this.passphrasePrompt()) {
+      return !!this.passphraseResponse() && this.passphraseResponse() === this.repeatPassphraseResponse();
+    } else {
+      return !this.passphraseResponse() && !this.repeatPassphraseResponse();
+    }
+  });
+
+  get passphraseMismatch(): boolean {
+    return (
+      !this.userStorePassphrase() &&
+      this.passphraseResponse() !== this.repeatPassphraseResponse()
+    );
   }
 }

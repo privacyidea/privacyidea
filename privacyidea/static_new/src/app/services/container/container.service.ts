@@ -150,6 +150,10 @@ export interface ContainerRegisterData {
   ttl: number;
 }
 
+export interface ContainerUnregisterData {
+  success: boolean
+}
+
 export interface ContainerServiceInterface {
   handleFilterInput($event: Event): void;
 
@@ -764,9 +768,10 @@ export class ContainerService implements ContainerServiceInterface {
   }
 
   unregister(containerSerial: string) {
+    this.stopPolling();
     const headers = this.authService.getHeaders();
     return this.http
-      .post<PiResponse<ContainerRegisterData>>(
+      .post<PiResponse<ContainerUnregisterData>>(
         `${this.containerBaseUrl}register/${containerSerial}/terminate`,
         {},
         { headers }
@@ -833,7 +838,8 @@ export class ContainerService implements ContainerServiceInterface {
           routeUrl === ROUTE_PATHS.TOKENS_CONTAINERS_CREATE ||
           routeUrl.startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS);
         if (!onAllowedRoute) {
-          return EMPTY; // Stop polling before making a new request
+          this.stopPolling();
+          return EMPTY;
         }
         return this.getContainerDetails(this.containerSerial());
       }),

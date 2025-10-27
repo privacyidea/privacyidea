@@ -29,7 +29,7 @@ import { ContainerCreatedDialogWizardComponent } from "./container-created-dialo
 import { ContainerService } from "../../../../services/container/container.service";
 import { ContentService } from "../../../../services/content/content.service";
 
-describe("ContainerRegistrationDialogComponent", () => {
+describe("ContainerCreatedDialogComponent", () => {
   let fixture: ComponentFixture<ContainerCreatedDialogComponent>;
   let component: ContainerCreatedDialogComponent;
 
@@ -43,12 +43,12 @@ describe("ContainerRegistrationDialogComponent", () => {
   const dialogAfterClosed = jest.fn(() => of(true));
   const dialogRefMock = { close: dialogClose, afterClosed: dialogAfterClosed };
 
-  const registerContainer = jest.fn();
-  const matDialogData = {
+  const registerContainer = jest.fn((containerSerial: string, regenerate: boolean) => {});
+  const matDialogData = signal({
     response: { result: { value: { container_url: { img: "" } } } },
     containerSerial: signal("C-001"),
     registerContainer
-  };
+  });
 
   beforeEach(async () => {
     jest.clearAllMocks();
@@ -85,11 +85,11 @@ describe("ContainerRegistrationDialogComponent", () => {
     expect(containerSelected).toHaveBeenCalledWith("C-777");
   });
 
-  it("regenerateQRCode calls registerContainer with current serial and closes", () => {
-    matDialogData.containerSerial.set("C-123");
+  it("regenerateQRCode calls registerContainer with current serial and regenerate flag", () => {
+    matDialogData.set({...matDialogData(), containerSerial: signal("C-123")});
     component.regenerateQRCode();
-    expect(registerContainer).toHaveBeenCalledWith("C-123");
-    expect(dialogClose).toHaveBeenCalled();
+    expect(registerContainer).toHaveBeenCalledWith("C-123", true);
+    expect(dialogClose).not.toHaveBeenCalled();
   });
 });
 

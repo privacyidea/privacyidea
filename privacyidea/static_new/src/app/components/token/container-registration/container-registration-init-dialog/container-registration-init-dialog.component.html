@@ -18,13 +18,15 @@
   @if (data.rollover) {
     <button
       (click)="onRegister()"
-      mat-button>
+      mat-button
+      [disabled]="!validInput">
       Rollover
     </button>
   } @else {
     <button
       (click)="onRegister()"
-      mat-button>
+      mat-button
+      [disabled]="!validInput">
       Register
     </button>
   }

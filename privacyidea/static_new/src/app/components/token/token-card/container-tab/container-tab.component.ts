@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { NgClass } from "@angular/common";
-import { Component, computed, inject, ViewChild } from "@angular/core";
+import { Component, computed, inject, signal, ViewChild, WritableSignal } from "@angular/core";
 import { MatButton } from "@angular/material/button";
 import { MatDialog } from "@angular/material/dialog";
 import { MatDivider } from "@angular/material/divider";
@@ -28,7 +28,7 @@ import { tabToggleState } from "../../../../../styles/animations/animations";
 import {
   ContainerRegisterData,
   ContainerService,
-  ContainerServiceInterface
+  ContainerServiceInterface, ContainerUnregisterData
 } from "../../../../services/container/container.service";
 import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
 import { VersioningService, VersioningServiceInterface } from "../../../../services/version/version.service";
@@ -41,6 +41,13 @@ import { ContainerRegistrationConfigComponent } from "../../container-registrati
 import { ContainerRegistrationInitDialogComponent } from "../../container-registration/container-registration-init-dialog/container-registration-init-dialog.component";
 import { ContainerRegistrationFinalizeDialogComponent } from "../../container-registration/container-registration-finalize-dialog/container-registration-finalize-dialog.component";
 import { NotificationService } from "../../../../services/notification/notification.service";
+
+export type ContainerRegisterFinalizeDate = {
+  response: PiResponse<ContainerRegisterData>,
+  registerContainer: (userStorePW?: boolean, passphrasePrompt?: string,
+                      passphraseResponse?: string, rollover?: boolean, regenerate?: boolean) => void,
+  rollover: boolean
+};
 
 @Component({
   selector: "app-container-tab",
@@ -77,6 +84,8 @@ export class ContainerTabComponent {
     return containerDetail?.result?.value?.containers[0]?.states ?? [];
   });
   version!: string;
+
+  dialogData: WritableSignal<ContainerRegisterFinalizeDate | null> = signal(null);
 
   ngOnInit(): void {
     this.version = this.versioningService.getVersion();
@@ -183,11 +192,14 @@ export class ContainerTabComponent {
     });
   }
 
-  registerContainer(userStorePW?: boolean, passphrasePrompt?: string, passphraseResponse?: string, rollover?: boolean) {
+  registerContainer(userStorePW?: boolean, passphrasePrompt?: string, passphraseResponse?: string, rollover?: boolean,
+                    regenerate: boolean = false) {
     this.userStorePW = userStorePW ?? this.userStorePW;
     this.passphrasePrompt = passphrasePrompt ?? this.passphrasePrompt;
     this.passphraseResponse = passphraseResponse ?? this.passphraseResponse;
-    this.dialog.closeAll();
+    if (!regenerate) {
+      this.dialog.closeAll();
+    }
     this.containerService
       .registerContainer({
         container_serial: this.containerSerial(),
@@ -197,15 +209,19 @@ export class ContainerTabComponent {
         rollover: rollover ?? false
       })
       .subscribe((registerResponse) => {
-        this.openRegisterFinalizeDialog(registerResponse, rollover);
-        this.pollContainerRolloutState(5000);
+        if (regenerate) {
+          this.dialogData.update(data => data ? { ...data, response: registerResponse } : data);
+        } else {
+          this.openRegisterFinalizeDialog(registerResponse, rollover);
+          this.pollContainerRolloutState(5000);
+        }
       });
   }
 
   unregisterContainer() {
     this.containerService
       .unregister(this.containerSerial())
-      .subscribe((unregisterResponse) => {
+      .subscribe((unregisterResponse: PiResponse<ContainerUnregisterData>) => {
         if (unregisterResponse?.result?.value?.success) {
           this.notificationService.openSnackBar("Container unregistered successfully.");
         } else {
@@ -216,13 +232,16 @@ export class ContainerTabComponent {
   }
 
   private openRegisterFinalizeDialog(response: PiResponse<ContainerRegisterData>, rollover?: boolean) {
-    const dialogData = {
+    this.dialogData.set({
       response: response,
       registerContainer: this.registerContainer.bind(this),
       rollover: rollover || false
-    };
-    this.dialog.open(ContainerRegistrationFinalizeDialogComponent, {
-      data: dialogData
+    });
+    const dialogRef = this.dialog.open(ContainerRegistrationFinalizeDialogComponent, {
+      data: this.dialogData
+    });
+    dialogRef.afterClosed().subscribe(() => {
+      this.containerService.stopPolling();
     });
   }
 

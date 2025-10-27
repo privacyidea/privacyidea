@@ -42,7 +42,7 @@ import { RealmService } from "../../../services/realm/realm.service";
 import { TokenService } from "../../../services/token/token.service";
 import { UserService } from "../../../services/user/user.service";
 import { VersioningService } from "../../../services/version/version.service";
-import { Renderer2 } from "@angular/core";
+import { Renderer2, signal } from "@angular/core";
 import { ContainerCreateSelfServiceComponent } from "./container-create.self-service.component";
 
 const mockMatDialog = {
@@ -209,8 +209,8 @@ describe("ContainerCreateComponent", () => {
     const pollSpy = jest.spyOn(containerSvc, "pollContainerRolloutState");
 
     (component as any).registrationConfigComponent = {
-      passphraseResponse: "",
-      passphrasePrompt: ""
+      passphraseResponse: signal(""),
+      passphrasePrompt: signal("")
     };
 
     (component as any).registerContainer("C-001");

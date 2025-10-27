@@ -17,7 +17,18 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { CommonModule, NgClass } from "@angular/common";
-import { Component, computed, effect, ElementRef, inject, Renderer2, signal, untracked, ViewChild } from "@angular/core";
+import {
+  ChangeDetectorRef,
+  Component,
+  computed,
+  effect,
+  ElementRef,
+  inject,
+  Renderer2,
+  signal,
+  untracked,
+  ViewChild
+} from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
 import { MatButton, MatIconButton } from "@angular/material/button";
@@ -53,8 +64,8 @@ import { ClearableInputComponent } from "../../shared/clearable-input/clearable-
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { TokenComponent } from "../token.component";
 import {
-  ContainerCreationDialogData,
-  ContainerCreatedDialogComponent
+  ContainerCreatedDialogComponent,
+  ContainerCreationDialogData
 } from "./container-created-dialog/container-created-dialog.component";
 import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
 import { ContainerRegistrationConfigComponent } from "../container-registration/container-registration-config/container-registration-config.component";
@@ -104,6 +115,7 @@ export class ContainerCreateComponent {
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   private router = inject(Router);
   private observer!: IntersectionObserver;
+  private cdr = inject(ChangeDetectorRef);
   containerSerial = this.containerService.containerSerial;
   description = signal("");
   selectedTemplate = signal("");
@@ -114,7 +126,9 @@ export class ContainerCreateComponent {
   passphraseResponse = signal("");
   userStorePassphrase = signal(false);
   registerResponse = signal<PiResponse<ContainerRegisterData> | null>(null);
-  userSelected = computed(() => this.userService.selectionUsernameFilter() !== '');
+  userSelected = computed(() => this.userService.selectionUsernameFilter() !== "");
+  public dialogData = signal<ContainerCreationDialogData | null>(null);
+
 
   @ViewChild("scrollContainer") scrollContainer!: ElementRef<HTMLElement>;
   @ViewChild("stickyHeader") stickyHeader!: ElementRef<HTMLElement>;
@@ -139,6 +153,8 @@ export class ContainerCreateComponent {
   }
 
   ngAfterViewInit(): void {
+    this.cdr.detectChanges();
+
     if (!this.scrollContainer || !this.stickyHeader || !this.stickySentinel) {
       return;
     }
@@ -206,18 +222,22 @@ export class ContainerCreateComponent {
     });
   }
 
-  registerContainer(serial: string) {
+  registerContainer(serial: string, regenerate: boolean = false) {
     this.containerService
       .registerContainer({
         container_serial: serial,
         passphrase_user: false,
-        passphrase_response: this.registrationConfigComponent.passphraseResponse,
-        passphrase_prompt: this.registrationConfigComponent.passphrasePrompt
+        passphrase_response: this.registrationConfigComponent.passphraseResponse(),
+        passphrase_prompt: this.registrationConfigComponent.passphrasePrompt()
       })
       .subscribe((registerResponse) => {
         this.registerResponse.set(registerResponse);
-        this.openRegistrationDialog(registerResponse);
-        this.pollContainerRolloutState(serial, 5000);
+        if (regenerate) {
+          this.dialogData.update(data => data ? { ...data, response: registerResponse } : data);
+        } else {
+          this.openRegistrationDialog(registerResponse);
+          this.pollContainerRolloutState(serial, 5000);
+        }
       });
   }
 
@@ -230,14 +250,22 @@ export class ContainerCreateComponent {
     this.selectedTemplate.set("");
   };
 
+  get createButtonDisabled(): boolean {
+    // Only validate for smartphone type
+    if (this.containerService.selectedContainerType().containerType === 'smartphone') {
+      return !this.registrationConfigComponent?.validInput();
+    }
+    return false;
+  }
+
   private openRegistrationDialog(response: PiResponse<ContainerRegisterData>) {
-    const dialogData: ContainerCreationDialogData = {
+    this.dialogData.set({
       response: response,
       containerSerial: this.containerSerial,
       registerContainer: this.registerContainer.bind(this)
-    };
+    });
     this.registrationDialog.open(ContainerCreatedDialogComponent, {
-      data: dialogData
+      data: this.dialogData
     });
   }
 
