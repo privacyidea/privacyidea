@@ -35,7 +35,7 @@
       <div class="enroll-button-container">
         <button
           (click)="createContainer()"
-          [ngClass]="{'card-button-disabled': !validInput, 'card-button': true}"
+          [ngClass]="validInput ? 'card-button' : 'card-button-disabled'"
           i18n
           mat-flat-button
           [disabled]="!validInput">

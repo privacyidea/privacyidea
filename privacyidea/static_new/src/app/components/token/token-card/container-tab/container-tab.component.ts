@@ -42,7 +42,7 @@ import { ContainerRegistrationInitDialogComponent } from "../../container-regist
 import { ContainerRegistrationFinalizeDialogComponent } from "../../container-registration/container-registration-finalize-dialog/container-registration-finalize-dialog.component";
 import { NotificationService } from "../../../../services/notification/notification.service";
 
-export type ContainerRegisterFinalizeDate = {
+export type ContainerRegisterFinalizeData = {
   response: PiResponse<ContainerRegisterData>,
   registerContainer: (userStorePW?: boolean, passphrasePrompt?: string,
                       passphraseResponse?: string, rollover?: boolean, regenerate?: boolean) => void,
@@ -85,7 +85,7 @@ export class ContainerTabComponent {
   });
   version!: string;
 
-  dialogData: WritableSignal<ContainerRegisterFinalizeDate | null> = signal(null);
+  dialogData: WritableSignal<ContainerRegisterFinalizeData | null> = signal(null);
 
   ngOnInit(): void {
     this.version = this.versioningService.getVersion();

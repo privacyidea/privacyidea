@@ -26,7 +26,7 @@ import {
 import { MatButton } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import { ContainerService, ContainerServiceInterface } from "../../../../services/container/container.service";
-import { ContainerRegisterFinalizeDate } from "../../token-card/container-tab/container-tab.component";
+import { ContainerRegisterFinalizeData } from "../../token-card/container-tab/container-tab.component";
 
 @Component({
   selector: "app-container-registration-finalize-dialog",
@@ -42,7 +42,7 @@ import { ContainerRegisterFinalizeDate } from "../../token-card/container-tab/co
   ]
 })
 export class ContainerRegistrationFinalizeDialogComponent {
-  public readonly data: Signal<ContainerRegisterFinalizeDate> = inject(MAT_DIALOG_DATA);
+  public readonly data: Signal<ContainerRegisterFinalizeData> = inject(MAT_DIALOG_DATA);
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
 
   regenerateQRCode() {

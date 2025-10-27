@@ -151,7 +151,7 @@ export interface ContainerRegisterData {
 }
 
 export interface ContainerUnregisterData {
-  success: boolean
+  success: boolean;
 }
 
 export interface ContainerServiceInterface {
