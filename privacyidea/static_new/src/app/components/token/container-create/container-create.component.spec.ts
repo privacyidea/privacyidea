@@ -193,7 +193,7 @@ describe("ContainerCreateComponent", () => {
     expect(navigateByUrl).not.toHaveBeenCalled();
   });
 
-  it("QR path (smartphone): calls registerContainer", () => {
+  it("QR path (smartphone): calls registerContainer", async () => {
     containerSvc.selectedContainerType.set({ containerType: "smartphone", description: "", token_types: [] });
 
     fixture.detectChanges();

@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, EventEmitter, Input, Output, signal, Signal } from "@angular/core";
+import { Component, computed, EventEmitter, Input, Output, signal, Signal, effect } from "@angular/core";
 import { MatError, MatFormField, MatHint, MatLabel, MatSuffix } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { FormsModule } from "@angular/forms";
@@ -42,16 +42,21 @@ import { MatButtonModule } from "@angular/material/button";
   ]
 })
 export class ContainerRegistrationConfigComponent {
-  @Input() passphrasePrompt= signal("");
+  @Input() passphrasePrompt = signal("");
   @Input() passphraseResponse = signal("");
   @Input() userStorePassphrase = signal(false);
   @Input() containerHasOwner: boolean = false;
+  @Output() validInputChange = new EventEmitter<boolean>();
 
   defaultPrompt: string = "Please enter your user store passphrase.";
 
   showPassphrase: boolean = false;
   showRepeatPassphrase: boolean = false;
-  repeatPassphraseResponse= signal("");
+  repeatPassphraseResponse = signal("");
+
+  private validInputEffect = effect(() => {
+    this.validInputChange.emit(this.validInput());
+  });
 
   toggleShowPassphrase() {
     this.showPassphrase = !this.showPassphrase;

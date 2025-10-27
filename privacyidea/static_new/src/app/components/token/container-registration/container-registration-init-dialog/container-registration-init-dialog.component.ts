@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { ChangeDetectorRef, Component, inject, ViewChild } from "@angular/core";
+import { Component, inject, ViewChild } from "@angular/core";
 import {
   MAT_DIALOG_DATA,
   MatDialogActions,
@@ -42,14 +42,9 @@ import { MatButton } from "@angular/material/button";
 })
 export class ContainerRegistrationInitDialogComponent {
   public readonly data = inject(MAT_DIALOG_DATA);
-  private cdr = inject(ChangeDetectorRef);
 
   @ViewChild(ContainerRegistrationConfigComponent)
   registrationConfigComponent!: ContainerRegistrationConfigComponent;
-
-  ngAfterViewInit() {
-    this.cdr.detectChanges();
-  }
 
   onRegister() {
     this.data.registerContainer(
@@ -59,7 +54,9 @@ export class ContainerRegistrationInitDialogComponent {
       this.data.rollover);
   }
 
-  get validInput() {
-    return this.registrationConfigComponent?.validInput();
+  validInput = true;
+
+  onValidInputChange(isValid: boolean) {
+    this.validInput = isValid;
   }
 }

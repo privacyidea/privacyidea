@@ -11,8 +11,8 @@
 }
 <mat-dialog-content>
   <app-container-registration-config
-    [containerHasOwner]="data.containerHasOwner">
-  </app-container-registration-config>
+    [containerHasOwner]="data.containerHasOwner"
+    (validInputChange)="onValidInputChange($event)"></app-container-registration-config>
 </mat-dialog-content>
 <mat-dialog-actions>
   @if (data.rollover) {

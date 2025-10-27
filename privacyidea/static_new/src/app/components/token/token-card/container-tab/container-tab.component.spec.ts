@@ -16,13 +16,12 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { TestBed } from "@angular/core/testing";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { provideNoopAnimations } from "@angular/platform-browser/animations";
 import { of } from "rxjs";
 import { By } from "@angular/platform-browser";
-import { ComponentFixture } from "@angular/core/testing";
 
 import { ContainerTabComponent } from "./container-tab.component";
 import { ROUTE_PATHS } from "../../../../route_paths";
@@ -273,7 +272,16 @@ describe("ContainerTabComponent", () => {
   });
 
   it("registerContainer calls service and opens finalize dialog, then polls rollout state", () => {
-    const registerResponse = { result: { value: { container_url: {img: "data:image/123", value: "pia://container/..."} } } } as any;
+    const registerResponse = {
+      result: {
+        value: {
+          container_url: {
+            img: "data:image/123",
+            value: "pia://container/..."
+          }
+        }
+      }
+    } as any;
     const pollResponse = { result: { value: { containers: [{ info: { registration_state: "registered" } }] } } } as any;
     const registerSpy = jest.spyOn(containerService, "registerContainer").mockReturnValue(of(registerResponse));
     const pollSpy = jest.spyOn(containerService, "pollContainerRolloutState").mockReturnValue(of(pollResponse));
@@ -515,6 +523,55 @@ describe("ContainerTabComponent", () => {
       expect(unregisterBtn).toBeTruthy();
       unregisterBtn.click();
       expect(spy).toHaveBeenCalled();
+    });
+  });
+
+  describe("pollContainerRolloutState snackbar notification", () => {
+    function createPollResponse(info: Record<string, string>) {
+      return {
+        id: 0,
+        jsonrpc: "",
+        detail: {},
+        result: {
+          status: true,
+          value: {
+            containers: [
+              { info: info, realms: [], serial: "SMPH-123", states: [], tokens: [], type: "smartphone", users: [] }
+            ]
+          }
+        },
+        signature: "",
+        time: 0,
+        version: "",
+        versionnumber: ""
+      };
+    }
+
+    it("should open snackbar with registration success text when registration completes", () => {
+      // Arrange
+      const pollResponse = createPollResponse({ registration_state: "registered" });
+
+      jest.spyOn(containerService, "pollContainerRolloutState").mockReturnValue(of(pollResponse));
+      const notificationSpy = jest.spyOn(component["notificationService"], "openSnackBar");
+
+      // Act
+      component["pollContainerRolloutState"](5000, false);
+
+      // Assert
+      expect(notificationSpy).toHaveBeenCalledWith("Container registered successfully.");
+    });
+
+    it("should open snackbar with rollover success text when rollover completes", () => {
+      // Arrange
+      const pollResponse = createPollResponse({ registration_state: "registered" });
+      jest.spyOn(containerService, "pollContainerRolloutState").mockReturnValue(of(pollResponse));
+      const notificationSpy = jest.spyOn(component["notificationService"], "openSnackBar");
+
+      // Act
+      component["pollContainerRolloutState"](5000, true);
+
+      // Assert
+      expect(notificationSpy).toHaveBeenCalledWith("Container rollover completed successfully.");
     });
   });
 });

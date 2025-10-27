@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { NgClass } from "@angular/common";
-import { Component, computed, inject, signal, ViewChild, WritableSignal } from "@angular/core";
+import { Component, computed, inject, signal, WritableSignal } from "@angular/core";
 import { MatButton } from "@angular/material/button";
 import { MatDialog } from "@angular/material/dialog";
 import { MatDivider } from "@angular/material/divider";
@@ -28,7 +28,8 @@ import { tabToggleState } from "../../../../../styles/animations/animations";
 import {
   ContainerRegisterData,
   ContainerService,
-  ContainerServiceInterface, ContainerUnregisterData
+  ContainerServiceInterface,
+  ContainerUnregisterData
 } from "../../../../services/container/container.service";
 import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
 import { VersioningService, VersioningServiceInterface } from "../../../../services/version/version.service";
@@ -37,7 +38,6 @@ import { Router, RouterLink } from "@angular/router";
 import { ROUTE_PATHS } from "../../../../route_paths";
 import { AuthService } from "../../../../services/auth/auth.service";
 import { PiResponse } from "../../../../app.component";
-import { ContainerRegistrationConfigComponent } from "../../container-registration/container-registration-config/container-registration-config.component";
 import { ContainerRegistrationInitDialogComponent } from "../../container-registration/container-registration-init-dialog/container-registration-init-dialog.component";
 import { ContainerRegistrationFinalizeDialogComponent } from "../../container-registration/container-registration-finalize-dialog/container-registration-finalize-dialog.component";
 import { NotificationService } from "../../../../services/notification/notification.service";
@@ -175,8 +175,6 @@ export class ContainerTabComponent {
     // TODO: Missing API endpoint
   }
 
-  @ViewChild(ContainerRegistrationConfigComponent)
-  registrationConfigComponent!: ContainerRegistrationConfigComponent;
   passphrasePrompt: string = "";
   passphraseResponse: string = "";
   userStorePW: boolean = false;
@@ -213,7 +211,7 @@ export class ContainerTabComponent {
           this.dialogData.update(data => data ? { ...data, response: registerResponse } : data);
         } else {
           this.openRegisterFinalizeDialog(registerResponse, rollover);
-          this.pollContainerRolloutState(5000);
+          this.pollContainerRolloutState(5000, rollover);
         }
       });
   }
@@ -245,12 +243,16 @@ export class ContainerTabComponent {
     });
   }
 
-  private pollContainerRolloutState(startTime: number) {
+  private pollContainerRolloutState(startTime: number, rollover: boolean = false) {
     return this.containerService.pollContainerRolloutState(this.containerSerial(), startTime).subscribe({
       next: (response) => {
         if (response?.result?.value?.containers[0].info.registration_state === "registered") {
           this.dialog.closeAll();
-          this.containerService.containerDetailResource.reload();
+          if (rollover) {
+            this.notificationService.openSnackBar("Container rollover completed successfully.");
+          } else {
+            this.notificationService.openSnackBar("Container registered successfully.");
+          }
         }
       }
     });

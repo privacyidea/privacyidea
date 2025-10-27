@@ -18,7 +18,6 @@
  **/
 import { CommonModule, NgClass } from "@angular/common";
 import {
-  ChangeDetectorRef,
   Component,
   computed,
   effect,
@@ -115,7 +114,6 @@ export class ContainerCreateComponent {
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   private router = inject(Router);
   private observer!: IntersectionObserver;
-  private cdr = inject(ChangeDetectorRef);
   containerSerial = this.containerService.containerSerial;
   description = signal("");
   selectedTemplate = signal("");
@@ -128,7 +126,6 @@ export class ContainerCreateComponent {
   registerResponse = signal<PiResponse<ContainerRegisterData> | null>(null);
   userSelected = computed(() => this.userService.selectionUsernameFilter() !== "");
   public dialogData = signal<ContainerCreationDialogData | null>(null);
-
 
   @ViewChild("scrollContainer") scrollContainer!: ElementRef<HTMLElement>;
   @ViewChild("stickyHeader") stickyHeader!: ElementRef<HTMLElement>;
@@ -153,8 +150,6 @@ export class ContainerCreateComponent {
   }
 
   ngAfterViewInit(): void {
-    this.cdr.detectChanges();
-
     if (!this.scrollContainer || !this.stickyHeader || !this.stickySentinel) {
       return;
     }
@@ -184,6 +179,13 @@ export class ContainerCreateComponent {
       this.observer.disconnect();
     }
   }
+
+  validInput = true;
+
+  onValidInputChange(isValid: boolean) {
+    this.validInput = isValid;
+  }
+
 
   reopenEnrollmentDialog() {
     const currentResponse = this.registerResponse();
@@ -249,14 +251,6 @@ export class ContainerCreateComponent {
     this.description.set("");
     this.selectedTemplate.set("");
   };
-
-  get createButtonDisabled(): boolean {
-    // Only validate for smartphone type
-    if (this.containerService.selectedContainerType().containerType === 'smartphone') {
-      return !this.registrationConfigComponent?.validInput();
-    }
-    return false;
-  }
 
   private openRegistrationDialog(response: PiResponse<ContainerRegisterData>) {
     this.dialogData.set({

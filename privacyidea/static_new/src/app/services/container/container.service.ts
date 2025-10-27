@@ -844,6 +844,8 @@ export class ContainerService implements ContainerServiceInterface {
         return this.getContainerDetails(this.containerSerial());
       }),
       takeWhile((response) => {
+        // Update the resource so the UI reflects the latest data
+        this.containerDetailResource.set(response);
         const registrationState = response.result?.value?.containers[0]?.info?.registration_state;
         return registrationState !== "registered";
       }, true),

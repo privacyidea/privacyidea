@@ -35,10 +35,10 @@
       <div class="enroll-button-container">
         <button
           (click)="createContainer()"
-          [ngClass]="{'card-button-disabled': createButtonDisabled, 'card-button': true}"
+          [ngClass]="{'card-button-disabled': !validInput, 'card-button': true}"
           i18n
           mat-flat-button
-          [disabled]="createButtonDisabled">
+          [disabled]="!validInput">
           <mat-icon>add</mat-icon>
           Create
         </button>
@@ -167,7 +167,8 @@
           [containerHasOwner]="userSelected()"
           [userStorePassphrase]="userStorePassphrase"
           [passphrasePrompt]="passphrasePrompt"
-          [passphraseResponse]="passphraseResponse">
+          [passphraseResponse]="passphraseResponse"
+          (validInputChange)="onValidInputChange($event)">
         </app-container-registration-config>
       </mat-expansion-panel>
     </mat-accordion>

@@ -155,6 +155,7 @@ describe("ContainerRegistrationConfigComponent", () => {
     });
 
     it("validInput is true if passphrases are non-empty and match", () => {
+      component.passphrasePrompt.set("Enter passphrase");
       component.passphraseResponse.set("foo");
       component.repeatPassphraseResponse.set("foo");
       expect(component.validInput()).toBe(true);
