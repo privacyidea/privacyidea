@@ -8,53 +8,113 @@
     <h3 style="color: var(--mat-sys-primary)">{{ userService.detailsUsername() }}</h3>
     <h3>in Realm {{ userService.selectedUserRealm() }}</h3>
   </div>
-  <div class="user-details">
-    <div class="flex-row user-details-grid">
-      <div
-        class="label"
-        i18n>Username
-      </div>
-      <div class="value">{{ userData().username || "-" }}</div>
+  <div class="user-details three-col">
+    <div class="user-details-column">
+      <div class="flex-row user-details-grid">
+        <div class="label" i18n>Username</div>
+        <div class="value">{{ userData().username || "-" }}</div>
 
-      <div
-        class="label"
-        i18n>Given name
-      </div>
-      <div class="value">{{ userData().givenname || "-" }}</div>
+        <div class="label" i18n>Given name</div>
+        <div class="value">{{ userData().givenname || "-" }}</div>
 
-      <div
-        class="label"
-        i18n>Surname
-      </div>
-      <div class="value">{{ userData().surname || "-" }}</div>
+        <div class="label" i18n>Surname</div>
+        <div class="value">{{ userData().surname || "-" }}</div>
 
-      <div
-        class="label"
-        i18n>Description
+        <div class="label" i18n>Description</div>
+        <div class="value">{{ userData().description || "-" }}</div>
       </div>
-      <div class="value">{{ userData().description || "-" }}</div>
     </div>
 
     <div class="user-details-column">
-      <div
-        class="label"
-        i18n>Email
-      </div>
+      <div class="label" i18n>Email</div>
       <div class="value">{{ userData().email || "-" }}</div>
 
-      <div
-        class="label"
-        i18n>Phone
-      </div>
+      <div class="label" i18n>Phone</div>
       <div class="value">{{ userData().phone || "-" }}</div>
 
-      <div
-        class="label"
-        i18n>Mobile
-      </div>
+      <div class="label" i18n>Mobile</div>
       <div class="value">{{ userData().mobile || "-" }}</div>
     </div>
-    <h3 class="margin-top-0" i18n>Custom Attributes:</h3>
+
+    <div class="flex-column">
+      <h3 class="margin-top-0" i18n>Custom Attributes:</h3>
+      <div class="add-attr-row">
+        <mat-form-field class="width-13rem">
+          <mat-label i18n>Attribute Key</mat-label>
+          @if (keyMode() === 'select') {
+            <mat-select
+              [(ngModel)]="selectedKey">
+              @for (k of keyOptions(); track k) {
+                <mat-option [value]="k">{{ k }}</mat-option>
+              }
+              @if (hasWildcardKey()) {
+                <mat-option (onSelectionChange)="switchToCustomKey()" [value]="'__CUSTOM__'">
+                  <i i18n>Custom…</i>
+                </mat-option>
+              }
+            </mat-select>
+          } @else {
+            <input matInput [(ngModel)]="addKeyInput" i18n-placeholder placeholder="Enter key" />
+            @if (keyOptions().length > 0) {
+              <button
+                type="button"
+                mat-icon-button
+                class="ml-4"
+                (click)="switchToSelectKey()"
+                i18n-aria-label="Back to key select"
+                aria-label="Back to key select">
+                <mat-icon>arrow_back</mat-icon>
+              </button>
+            }
+          }
+        </mat-form-field>
+
+        <mat-form-field class="width-13rem">
+          <mat-label i18n>Attribute Value</mat-label>
+
+          @if (isValueInput()) {
+            <input matInput [(ngModel)]="addValueInput" i18n-placeholder placeholder="Enter value" />
+          } @else {
+            <mat-select [(ngModel)]="selectedValue">
+              @for (v of valueOptions(); track v) {
+                <mat-option [value]="v">{{ v }}</mat-option>
+              }
+            </mat-select>
+          }
+        </mat-form-field>
+
+        <button
+          class="ml-8"
+          mat-icon-button
+          color="primary"
+          [disabled]="!canAddAttribute()"
+          (click)="addCustomAttribute()"
+          i18n>
+          <mat-icon>save</mat-icon>
+        </button>
+      </div>
+
+      <div class="user-details three-col mt-12">
+        @for (attr of userService.userAttributesList(); track attr.key) {
+          <div class="label flex ali-center">
+            {{ attr.key }}
+          </div>
+          <div class="value flex ali-center">{{ attr.value || "-" }}</div>
+          @if (deletableAttributes().includes(attr.key)) {
+            <button
+              mat-icon-button
+              class="ml-4"
+              (click)="deleteCustomAttribute(attr.key)"
+              i18n-aria-label="Delete custom attribute"
+              aria-label="Delete custom attribute">
+              <mat-icon>delete</mat-icon>
+            </button>
+          } @else {
+            <br/>
+          }
+        }
+      </div>
+    </div>
   </div>
   <app-user-details-token-table />
   <div class="flex-row filter-pageinator-container">

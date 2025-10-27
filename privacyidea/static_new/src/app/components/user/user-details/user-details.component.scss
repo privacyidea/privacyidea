@@ -14,7 +14,7 @@
 
 .user-details {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: 1fr 1fr 2fr;
   gap: 12px 16px;
   padding: 12px 16px;
   border: 1px solid #c7c5d0;
@@ -25,13 +25,19 @@
 .user-details-column {
   display: grid;
   grid-template-columns: 170px 1fr;
-  gap: 8px 16px;
+  gap: 16px;
   padding: 0;
   border: 0;
+  margin-bottom: auto;
 }
 
-.label { font-weight: 600; }
-.value { grid-column: 2; }
+.label {
+  font-weight: 600;
+}
+
+.value {
+  grid-column: 2;
+}
 
 @media (max-width: 720px) {
   .user-details {
@@ -41,7 +47,9 @@
   .user-details-column {
     grid-template-columns: 1fr;
   }
-  .value { grid-column: 1; }
+  .value {
+    grid-column: 1;
+  }
 }
 
 .token-option {
@@ -58,7 +66,47 @@
   margin-right: 8px;
 }
 
-.filter-pageinator-container{
+.filter-pageinator-container {
   margin-top: 16px;
   justify-content: space-between;
+}
+
+.custom-attr-add-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin: 8px 0 16px;
+}
+
+.custom-attr-add-row mat-form-field {
+  width: 18rem;
+}
+
+.attr-value-cell {
+  display: flex;
+  align-items: center;
+}
+
+.add-attr-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.mt-12 {
+  margin-top: 12px;
+}
+
+.ml-8 {
+  margin-left: 8px;
+}
+
+.ml-4 {
+  margin-left: 4px;
+}
+
+.red {
+  color: var(--mat-sys-error);
 }

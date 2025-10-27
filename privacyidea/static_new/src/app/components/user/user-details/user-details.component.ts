@@ -16,7 +16,17 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, ElementRef, inject, linkedSignal, ViewChild, WritableSignal } from "@angular/core";
+import {
+  Component,
+  computed,
+  effect,
+  ElementRef,
+  inject,
+  linkedSignal,
+  signal,
+  ViewChild,
+  WritableSignal
+} from "@angular/core";
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { UserService, UserServiceInterface } from "../../../services/user/user.service";
 import { ROUTE_PATHS } from "../../../route_paths";
@@ -34,6 +44,8 @@ import { UserDetailsContainerTableComponent } from "./user-details-container-tab
 import { UserDetailsPinDialogComponent } from "./user-details-pin-dialog/user-details-pin-dialog.component";
 import { MatDialog } from "@angular/material/dialog";
 import { filter } from "rxjs";
+import { FormsModule } from "@angular/forms";
+import { MatSelectModule } from "@angular/material/select";
 
 @Component({
   selector: "app-user-details",
@@ -52,7 +64,9 @@ import { filter } from "rxjs";
     MatFormField,
     NgClass,
     MatPaginator,
-    UserDetailsContainerTableComponent
+    UserDetailsContainerTableComponent,
+    FormsModule,
+    MatSelectModule
   ],
   templateUrl: "./user-details.component.html",
   styleUrl: "./user-details.component.scss"
@@ -62,10 +76,12 @@ export class UserDetailsComponent {
   protected readonly userService: UserServiceInterface = inject(UserService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly dialog: MatDialog = inject(MatDialog);
+
   userData = this.userService.user;
   tokenResource = this.tokenService.tokenResource;
   pageIndex = this.tokenService.pageIndex;
   pageSize = this.tokenService.pageSize;
+
   total: WritableSignal<number> = linkedSignal({
     source: this.tokenResource.value,
     computation: (tokenResource, previous) => {
@@ -78,8 +94,10 @@ export class UserDetailsComponent {
 
   @ViewChild("filterHTMLInputElement")
   filterHTMLInputElement!: ElementRef<HTMLInputElement>;
+
   @ViewChild("tokenAutoTrigger", { read: MatAutocompleteTrigger })
   tokenAutoTrigger!: MatAutocompleteTrigger;
+
   tokenDataSource: WritableSignal<MatTableDataSource<TokenDetails>> = linkedSignal({
     source: this.tokenResource.value,
     computation: (tokenResource, previous) => {
@@ -90,23 +108,113 @@ export class UserDetailsComponent {
     }
   });
 
+  // ===== Custom Attributes UI state =====
+  // Policy-driven helpers coming from UserService (patched in previous step)
+  attributeSetMap = this.userService.attributeSetMap;         // Record<string, string[]>
+  deletableAttributes = this.userService.deletableAttributes; // string[]
+  keyOptions = this.userService.keyOptions;                   // fixed keys (excluding '*')
+  hasWildcardKey = this.userService.hasWildcardKey;           // boolean
+
+  // Local UI state for "Add attribute" row
+  addKeyInput = signal<string>("");            // free-text key (used when keyMode === 'input')
+  addValueInput = signal<string>("");          // free-text value (when value is '*' or unconstrained)
+  selectedKey = signal<string | null>(null);   // selected key from dropdown (when keyMode === 'select')
+  selectedValue = signal<string | null>(null); // selected value from dropdown (when list exists)
+  keyMode = signal<"select" | "input">("select");
+  // Value options depend on selected/typed key and policy
+  valueOptions = computed<string[]>(() => {
+    const map = this.attributeSetMap();
+    const mode = this.keyMode();
+    const key = mode === "input" ? this.addKeyInput().trim() : (this.selectedKey() ?? "");
+    if (key && map[key]) return map[key];
+    if (map["*"]) return map["*"];
+    return []; // unconstrained → treated as free-text
+  });
+  // Decide if value should be an input field
+  isValueInput = computed<boolean>(() => {
+    const opts = this.valueOptions();
+    if (opts.includes("*")) return true;   // explicit wildcard value
+    return opts.length === 0;              // no options → free text
+  });
+  // Enable "Add" button only when both key & value have content
+  canAddAttribute = computed<boolean>(() => {
+    const key =
+      this.keyMode() === "input" ? this.addKeyInput().trim() : (this.selectedKey() ?? "").trim();
+    const value = this.isValueInput()
+      ? this.addValueInput().trim()
+      : (this.selectedValue() ?? "").trim();
+    return key.length > 0 && value.length > 0;
+  });
+
+  // Decide default key mode based on policy
+  constructor() {
+    effect(() => {
+      const hasWildcard = this.hasWildcardKey();
+      const hasFixedKeys = this.keyOptions().length > 0;
+      if (hasWildcard && !hasFixedKeys) {
+        this.keyMode.set("input");
+      } else {
+        this.keyMode.set("select");
+      }
+    });
+  }
+
+  switchToCustomKey() {
+    this.keyMode.set("input");
+    this.selectedKey.set(null);
+  }
+
+  switchToSelectKey() {
+    this.keyMode.set("select");
+    this.addKeyInput.set("");
+  }
+
+  addCustomAttribute() {
+    const key =
+      this.keyMode() === "input" ? this.addKeyInput().trim() : (this.selectedKey() ?? "").trim();
+    const value = this.isValueInput()
+      ? this.addValueInput().trim()
+      : (this.selectedValue() ?? "").trim();
+
+    if (!key || !value) return;
+
+    this.userService.setUserAttribute(key, value).subscribe({
+      next: () => {
+        this.userService.userAttributesResource.reload();
+        // reset UI
+        this.addKeyInput.set("");
+        this.addValueInput.set("");
+        this.selectedKey.set(null);
+        this.selectedValue.set(null);
+      }
+    });
+  }
+
+  deleteCustomAttribute(key: string) {
+    this.userService.deleteUserAttribute(key).subscribe({
+      next: () => this.userService.userAttributesResource.reload()
+    });
+  }
+
   assignUserToToken(option: TokenDetails) {
     this.dialog
       .open(UserDetailsPinDialogComponent)
       .afterClosed()
-      .pipe(
-        filter((pin): pin is string => pin != null)
-      )
+      .pipe(filter((pin): pin is string => pin != null))
       .subscribe((pin: string) => {
-        this.tokenService.assignUser({tokenSerial: option['serial'], username: this.userService.detailsUsername(),
-          realm: this.userService.selectedUserRealm(), pin: pin}).subscribe(
-          {
+        this.tokenService
+          .assignUser({
+            tokenSerial: option["serial"],
+            username: this.userService.detailsUsername(),
+            realm: this.userService.selectedUserRealm(),
+            pin: pin
+          })
+          .subscribe({
             next: () => {
-              this.tokenService.userTokenResource.reload()
+              this.tokenService.userTokenResource.reload();
               this.tokenService.tokenResource.reload();
             }
-          }
-        )
+          });
       });
   }
 
