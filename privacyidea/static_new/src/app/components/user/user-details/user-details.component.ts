@@ -108,35 +108,28 @@ export class UserDetailsComponent {
     }
   });
 
-  // ===== Custom Attributes UI state =====
-  // Policy-driven helpers coming from UserService (patched in previous step)
-  attributeSetMap = this.userService.attributeSetMap;         // Record<string, string[]>
-  deletableAttributes = this.userService.deletableAttributes; // string[]
-  keyOptions = this.userService.keyOptions;                   // fixed keys (excluding '*')
-  hasWildcardKey = this.userService.hasWildcardKey;           // boolean
-
-  // Local UI state for "Add attribute" row
-  addKeyInput = signal<string>("");            // free-text key (used when keyMode === 'input')
-  addValueInput = signal<string>("");          // free-text value (when value is '*' or unconstrained)
-  selectedKey = signal<string | null>(null);   // selected key from dropdown (when keyMode === 'select')
-  selectedValue = signal<string | null>(null); // selected value from dropdown (when list exists)
+  attributeSetMap = this.userService.attributeSetMap;
+  deletableAttributes = this.userService.deletableAttributes;
+  keyOptions = this.userService.keyOptions;
+  hasWildcardKey = this.userService.hasWildcardKey;
+  addKeyInput = signal<string>("");
+  addValueInput = signal<string>("");
+  selectedKey = signal<string | null>(null);
+  selectedValue = signal<string | null>(null);
   keyMode = signal<"select" | "input">("select");
-  // Value options depend on selected/typed key and policy
   valueOptions = computed<string[]>(() => {
     const map = this.attributeSetMap();
     const mode = this.keyMode();
     const key = mode === "input" ? this.addKeyInput().trim() : (this.selectedKey() ?? "");
     if (key && map[key]) return map[key];
     if (map["*"]) return map["*"];
-    return []; // unconstrained → treated as free-text
+    return [];
   });
-  // Decide if value should be an input field
   isValueInput = computed<boolean>(() => {
     const opts = this.valueOptions();
-    if (opts.includes("*")) return true;   // explicit wildcard value
-    return opts.length === 0;              // no options → free text
+    if (opts.includes("*")) return true;
+    return opts.length === 0;
   });
-  // Enable "Add" button only when both key & value have content
   canAddAttribute = computed<boolean>(() => {
     const key =
       this.keyMode() === "input" ? this.addKeyInput().trim() : (this.selectedKey() ?? "").trim();
@@ -146,7 +139,6 @@ export class UserDetailsComponent {
     return key.length > 0 && value.length > 0;
   });
 
-  // Decide default key mode based on policy
   constructor() {
     effect(() => {
       const hasWildcard = this.hasWildcardKey();
@@ -181,7 +173,6 @@ export class UserDetailsComponent {
     this.userService.setUserAttribute(key, value).subscribe({
       next: () => {
         this.userService.userAttributesResource.reload();
-        // reset UI
         this.addKeyInput.set("");
         this.addValueInput.set("");
         this.selectedKey.set(null);

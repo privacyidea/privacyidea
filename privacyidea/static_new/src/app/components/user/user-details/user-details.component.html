@@ -10,7 +10,6 @@
   </div>
   <div class="user-details three-col">
     <div class="user-details-column">
-      <div class="flex-row user-details-grid">
         <div class="label" i18n>Username</div>
         <div class="value">{{ userData().username || "-" }}</div>
 
@@ -22,7 +21,6 @@
 
         <div class="label" i18n>Description</div>
         <div class="value">{{ userData().description || "-" }}</div>
-      </div>
     </div>
 
     <div class="user-details-column">
@@ -41,6 +39,7 @@
       <div class="add-attr-row">
         <mat-form-field class="width-13rem">
           <mat-label i18n>Attribute Key</mat-label>
+          <div class="flex-row">
           @if (keyMode() === 'select') {
             <mat-select
               [(ngModel)]="selectedKey">
@@ -59,14 +58,15 @@
               <button
                 type="button"
                 mat-icon-button
-                class="ml-4"
+                class="ml-4 mt--8 return-button"
                 (click)="switchToSelectKey()"
                 i18n-aria-label="Back to key select"
                 aria-label="Back to key select">
-                <mat-icon>arrow_back</mat-icon>
+                <mat-icon>arrow_left</mat-icon>
               </button>
             }
           }
+          </div>
         </mat-form-field>
 
         <mat-form-field class="width-13rem">
@@ -94,12 +94,12 @@
         </button>
       </div>
 
-      <div class="user-details three-col mt-12">
+      <div class="custom-user-details three-col mt-12 custom-details">
         @for (attr of userService.userAttributesList(); track attr.key) {
-          <div class="label flex ali-center">
+          <div class="label">
             {{ attr.key }}
           </div>
-          <div class="value flex ali-center">{{ attr.value || "-" }}</div>
+          <div class="value">{{ attr.value || "-" }}</div>
           @if (deletableAttributes().includes(attr.key)) {
             <button
               mat-icon-button
