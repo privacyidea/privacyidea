@@ -23,13 +23,11 @@
           placeholder="Filter across all columns." />
       </mat-form-field>
     }
-    @if (dataSource.data.length > 5) {
       <mat-paginator
         [pageSizeOptions]="pageSizeOptions()"
         [pageSize]="pageSize"
         class="flex-just-start"
-        showFirstLastButtons></mat-paginator>
-    }
+        showFirstLastButtons/>
   </div>
   <div [ngClass]="[overflowService.isWidthOverflowing('body', 1580) ? 'flex-column' : 'flex-row']">
     <table
