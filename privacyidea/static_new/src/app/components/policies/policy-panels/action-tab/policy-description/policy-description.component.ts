@@ -4,6 +4,7 @@ import { MatInputModule } from "@angular/material/input";
 import { FormsModule } from "@angular/forms";
 import { TextFieldModule } from "@angular/cdk/text-field";
 import { PolicyService } from "../../../../../services/policies/policies.service";
+import { DocumentationService } from "../../../../../services/documentation/documentation.service";
 
 @Component({
   selector: "app-policy-description",
@@ -14,7 +15,11 @@ import { PolicyService } from "../../../../../services/policies/policies.service
 })
 export class PolicyDescriptionComponent {
   policyService = inject(PolicyService);
+  documentationService = inject(DocumentationService);
   updatePolicyDescription($event: string) {
     this.policyService.updateSelectedPolicy({ description: $event });
+  }
+  openDocumentation(page: string) {
+    this.documentationService.openDocumentation(page);
   }
 }

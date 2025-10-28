@@ -1,5 +1,5 @@
-<div class="action-description-container">
-  @if (policyService.selectedPolicy()?.description || this.policyService.viewMode() !== "view") {
+@if (policyService.selectedPolicy()?.description || this.policyService.viewMode() !== "view") {
+  <div class="action-description-container">
     <div
       i18n
       class="description-header">
@@ -19,5 +19,5 @@
         cdkAutosizeMinRows="3"
         cdkAutosizeMaxRows="6"></textarea>
     }
-  }
-</div>
+  </div>
+}

@@ -75,7 +75,7 @@ export class PolicyPanelComponent {
     computation: (source, previous) => {
       const { selectedPolicyHasConditions, isEditMode } = source;
       if (isEditMode) return previous?.value || "actions";
-      if (selectedPolicyHasConditions === true) return previous?.value || "conditions";
+      if (selectedPolicyHasConditions === true) return previous?.value || "actions";
       return "actions";
     }
   });

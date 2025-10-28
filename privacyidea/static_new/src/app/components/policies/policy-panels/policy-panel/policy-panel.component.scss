@@ -193,21 +193,22 @@
 
 .priority-description {
   display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 0 24px 16px;
-}
-
-:host ::ng-deep app-policy-priority {
-  p {
-    margin: 0;
+  align-items: stretch;
+  gap: var(--global-gap);
+  app-policy-priority {
+    flex: 1 1 0;
+    height: 100%;
+  }
+  app-policy-description {
+    flex: 5 1 0;
+    height: 100%;
   }
 }
 
-:host ::ng-deep app-policy-description {
-  flex-grow: 1;
-  p {
-    margin: 0;
-    font-size: 1.05rem;
-  }
+.mat-expansion-panel-body {
+  gap: var(--global-gap);
+  display: flex;
+  flex-direction: column;
+  padding: var(--global-padding);
+  border-radius: var(--quarter-global-padding);
 }
