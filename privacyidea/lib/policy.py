@@ -201,6 +201,7 @@ from privacyidea.lib.utils.export import (register_import, register_export)
 from .log import log_with
 from .policies.actions import PolicyAction
 from .policies.conditions import PolicyConditionClass, ConditionCheck, ConditionSection
+from .tokenclass import TokenClass
 from ..api.lib.utils import check_policy_name
 from ..models import (Policy, db, save_config_timestamp, PolicyDescription, PolicyCondition)
 
@@ -3275,7 +3276,7 @@ class Match(object):
                    sort_by_priority=True, serial=g.serial, user_agent=g.get("user_agent"))
 
     @classmethod
-    def token(cls, g, scope, action, token):
+    def token(cls, g, scope: str, action: str, token: TokenClass) -> "Match":
         """
         Match active policies with a scope, an action and a token object.
         The client IP is matched implicitly.
