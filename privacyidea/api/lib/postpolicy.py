@@ -55,8 +55,8 @@ from urllib.parse import quote
 
 from flask import g, current_app, make_response, Request
 
-from privacyidea.config import ConfigKey
 from privacyidea.api.lib.utils import get_all_params
+from privacyidea.config import ConfigKey
 from privacyidea.lib import _, lazy_gettext
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.config import get_multichallenge_enrollable_types, get_token_class, get_privacyidea_node
@@ -66,14 +66,12 @@ from privacyidea.lib.info.rss import FETCH_DAYS
 from privacyidea.lib.machine import get_auth_items
 from privacyidea.lib.policy import (DEFAULT_ANDROID_APP_URL, DEFAULT_IOS_APP_URL, DEFAULT_PREFERRED_CLIENT_MODE_LIST,
                                     SCOPE, AUTOASSIGNVALUE, AUTHORIZED, Match)
-from ...lib.policies.actions import PolicyAction
-from privacyidea.lib.realm import get_default_realm
 from privacyidea.lib.subscriptions import (subscription_status,
                                            get_subscription,
                                            check_subscription,
                                            SubscriptionError,
                                            EXPIRE_MESSAGE)
-from privacyidea.lib.token import get_tokens, assign_token, get_realms_of_token, get_one_token, init_token
+from privacyidea.lib.token import get_tokens, assign_token, get_one_token, init_token
 from privacyidea.lib.tokenclass import ROLLOUTSTATE, CHALLENGE_SESSION
 from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
 from privacyidea.lib.utils import (create_img, get_version, AUTH_RESPONSE,
@@ -83,6 +81,7 @@ from ...lib.challenge import get_challenges
 from ...lib.container import (get_all_containers, init_container, init_registration, find_container_by_serial,
                               create_container_tokens_from_template)
 from ...lib.containers.container_info import SERVER_URL, CHALLENGE_TTL, REGISTRATION_TTL, SSL_VERIFY, RegistrationState
+from ...lib.policies.actions import PolicyAction
 from ...lib.users.custom_user_attributes import InternalCustomUserAttributes
 
 log = logging.getLogger(__name__)
@@ -346,7 +345,8 @@ def no_detail_on_success(request, response):
     content = response.json
 
     # get the serials from a policy definition
-    policy = Match.action_only(g, scope=SCOPE.AUTHZ, action=PolicyAction.NODETAILSUCCESS).policies(write_to_audit_log=False)
+    policy = Match.action_only(g, scope=SCOPE.AUTHZ, action=PolicyAction.NODETAILSUCCESS).policies(
+        write_to_audit_log=False)
     if policy and content.get("result", {}).get("value"):
         # The policy was set, we need to strip the details, if the
         # authentication was successful. (value=true)
@@ -525,15 +525,12 @@ def save_pin_change(request, response, serial=None):
         log.error("Can not determine serial number. Have no idea of any "
                   "realm!")
     else:
-        # Determine the realm by the serial
-        realm = get_realms_of_token(serial, only_first_realm=True)
-        realm = realm or get_default_realm()
+        token = get_one_token(serial=serial, silent_fail=True)
 
         if g.logged_in_user.get("role") == ROLE.ADMIN:
-            policy = Match.realm(g, scope=SCOPE.ENROLL, action=PolicyAction.CHANGE_PIN_FIRST_USE,
-                                 realm=realm).policies()
+            policy = Match.token(g, scope=SCOPE.ENROLL, action=PolicyAction.CHANGE_PIN_FIRST_USE,
+                                 token=token).policies()
             if policy:
-                token = get_one_token(serial=serial)
                 token.set_next_pin_change(diff="0d")
 
         elif g.logged_in_user.get("role") == ROLE.USER:
@@ -542,14 +539,12 @@ def save_pin_change(request, response, serial=None):
             pin = request.all_data.get("pin")
             # The user sets a pin or enrolls a token. -> delete the pin_change
             if otppin or pin:
-                token = get_one_token(serial=serial)
                 token.del_tokeninfo("next_pin_change")
 
                 # If there is a change_pin_every policy, we need to set the PIN anew.
-                policy = Match.realm(g, scope=SCOPE.ENROLL, action=PolicyAction.CHANGE_PIN_EVERY,
-                                     realm=realm).action_values(unique=True)
+                policy = Match.token(g, scope=SCOPE.ENROLL, action=PolicyAction.CHANGE_PIN_EVERY,
+                                       token=token).action_values(unique=True)
                 if policy:
-                    token = get_one_token(serial=serial)
                     token.set_next_pin_change(diff=list(policy)[0])
 
     # we do not modify the response!
@@ -616,10 +611,12 @@ def get_webui_settings(request, response):
         user_page_size_pol = Match.generic(g, scope=SCOPE.WEBUI, action=PolicyAction.USERPAGESIZE, user_object=user,
                                            user=username, realm=realm).action_values(unique=True)
         token_wizard_2nd = bool(role == ROLE.USER
-                                and Match.generic(g, scope=SCOPE.WEBUI, action=PolicyAction.TOKENWIZARD2ND, user_object=user,
+                                and Match.generic(g, scope=SCOPE.WEBUI, action=PolicyAction.TOKENWIZARD2ND,
+                                                  user_object=user,
                                                   user=username, realm=realm).policies())
         admin_dashboard = (role == ROLE.ADMIN
-                           and Match.generic(g, scope=SCOPE.WEBUI, action=PolicyAction.ADMIN_DASHBOARD, user_object=user,
+                           and Match.generic(g, scope=SCOPE.WEBUI, action=PolicyAction.ADMIN_DASHBOARD,
+                                             user_object=user,
                                              user=username, realm=realm).any())
         token_rollover = Match.generic(g, scope=SCOPE.WEBUI, action=PolicyAction.TOKENROLLOVER, user_object=user,
                                        user=username, realm=realm).action_values(unique=False)
@@ -647,7 +644,8 @@ def get_webui_settings(request, response):
                                                           user_object=user).action_values(unique=True)
                 if container_wizard_type_policy:
                     container_wizard_type = list(container_wizard_type_policy.keys())[0]
-                    container_wizard_template_policy = Match.user(g, SCOPE.WEBUI, PolicyAction.CONTAINER_WIZARD_TEMPLATE,
+                    container_wizard_template_policy = Match.user(g, SCOPE.WEBUI,
+                                                                  PolicyAction.CONTAINER_WIZARD_TEMPLATE,
                                                                   user_object=user).action_values(unique=True)
                     if container_wizard_template_policy:
                         template = list(container_wizard_template_policy.keys())[0]
@@ -672,14 +670,16 @@ def get_webui_settings(request, response):
                                      user=username, realm=realm).any()
         deletion_confirmation = Match.generic(g, scope=SCOPE.WEBUI, action=PolicyAction.DELETION_CONFIRMATION,
                                               user_object=user, user=username, realm=realm).any()
-        default_tokentype_pol = Match.generic(g, scope=SCOPE.WEBUI, action=PolicyAction.DEFAULT_TOKENTYPE, user_object=user,
+        default_tokentype_pol = Match.generic(g, scope=SCOPE.WEBUI, action=PolicyAction.DEFAULT_TOKENTYPE,
+                                              user_object=user,
                                               user=username, realm=realm).action_values(unique=True)
         default_container_type_pol = Match.generic(g, scope=SCOPE.WEBUI, action=PolicyAction.DEFAULT_CONTAINER_TYPE,
                                                    user_object=user, user=username,
                                                    realm=realm).action_values(unique=True)
         show_seed = Match.generic(g, scope=SCOPE.WEBUI, action=PolicyAction.SHOW_SEED, user_object=user,
                                   user=username, realm=realm).any()
-        show_node = Match.generic(g, scope=SCOPE.WEBUI, action=PolicyAction.SHOW_NODE, realm=realm, user_object=user).any()
+        show_node = Match.generic(g, scope=SCOPE.WEBUI, action=PolicyAction.SHOW_NODE, realm=realm,
+                                  user_object=user).any()
         qr_ios_authenticator = Match.generic(g, scope=SCOPE.WEBUI, action=PolicyAction.SHOW_IOS_AUTHENTICATOR,
                                              user_object=user, user=username, realm=realm).any()
         qr_android_authenticator = Match.generic(g, scope=SCOPE.WEBUI, action=PolicyAction.SHOW_ANDROID_AUTHENTICATOR,
@@ -687,9 +687,11 @@ def get_webui_settings(request, response):
         qr_custom_authenticator_url = Match.generic(g, scope=SCOPE.WEBUI, action=PolicyAction.SHOW_CUSTOM_AUTHENTICATOR,
                                                     user_object=user, user=username,
                                                     realm=realm).action_values(unique=True)
-        logout_redirect_url_pol = Match.generic(g, scope=SCOPE.WEBUI, action=PolicyAction.LOGOUT_REDIRECT, user_object=user,
+        logout_redirect_url_pol = Match.generic(g, scope=SCOPE.WEBUI, action=PolicyAction.LOGOUT_REDIRECT,
+                                                user_object=user,
                                                 user=username, realm=realm).action_values(unique=True)
-        require_description = Match.generic(g, scope=SCOPE.ENROLL, action=PolicyAction.REQUIRE_DESCRIPTION, user_object=user,
+        require_description = Match.generic(g, scope=SCOPE.ENROLL, action=PolicyAction.REQUIRE_DESCRIPTION,
+                                            user_object=user,
                                             user=username, realm=realm).action_values(unique=False)
 
         qr_image_android = create_img(DEFAULT_ANDROID_APP_URL) if qr_android_authenticator else None
