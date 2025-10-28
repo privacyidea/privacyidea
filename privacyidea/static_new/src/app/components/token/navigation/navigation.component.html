@@ -1,15 +1,6 @@
 <div class="drawer-div">
   <div class="brand">
     <div class="brand-row">
-      <div class="flex-column">
-        <button
-          (click)="refreshPage()"
-          class="refresh-btn"
-          mat-fab>
-          <mat-icon>refresh</mat-icon>
-        </button>
-        <app-theme-switcher></app-theme-switcher>
-      </div>
       <a
         [routerLink]="[ROUTE_PATHS.TOKENS]"
         aria-label="Go to Token Overview"
@@ -26,34 +17,6 @@
           sizes="(max-width: 307px) 100vw, 307px"
           width="307" />
       </a>
-
-      <div class="flex-column ali-end">
-        <div
-          [ngClass]="[
-                sessionTimerService.remainingTime()! < 31000
-                  ? 'red-light'
-                  : sessionTimerService.remainingTime()! < 60000
-                    ? 'yellow-light'
-                    : 'surface-highest'
-              ]"
-          class="session-timer">
-          @if (sessionTimerService.remainingTime()! < 599500) {
-            {{ sessionTimerService.remainingTime() | date:'m:ss':'UTC' }}
-          } @else if (sessionTimerService.remainingTime()! < 3600000) {
-            {{ sessionTimerService.remainingTime() | date:'m':'UTC' }}min
-          } @else {
-            {{ sessionTimerService.remainingTime() | date:"H'h' mm'min'":"UTC" }}
-          }
-        </div>
-        <button
-          (click)="logout()"
-          aria-label="Logout"
-          class="logout-btn"
-          i18n-aria-label
-          mat-icon-button>
-          <mat-icon>logout</mat-icon>
-        </button>
-      </div>
     </div>
 
     <a
@@ -88,41 +51,47 @@
     </p>
   </div>
 
-  <a
-    aria-label="Support"
-    class="card-button-reset"
-    extended
-    href="https://netknights.it/support_link_admin"
-    i18n-aria-label
-    mat-fab
-    target="_blank">
-    <mat-icon>support_agent</mat-icon>
-    <h4 i18n>Support</h4>
-  </a>
+  <div class="utils-group">
+    <div class="account-div">
+      <mat-icon>account_box</mat-icon>
+      <h4>{{ profileText }}</h4>
+      <button
+        (click)="logout()"
+        aria-label="Logout"
+        class="logout-btn"
+        i18n-aria-label
+        mat-icon-button>
+        <mat-icon>logout</mat-icon>
+      </button>
+    </div>
 
-  <a
-    aria-label="Support"
-    class="card-button"
-    extended
-    href="https://netknights.it/support_link_admin"
-    i18n-aria-label
-    mat-fab
-    target="_blank">
-    <mat-icon>info_outline</mat-icon>
-    <h4 i18n>Documentation</h4>
-  </a>
-
-  <button
-    class="profile-btn"
-    disabled
-    extended
-    href="#"
-    mat-fab>
-    <mat-icon>account_box</mat-icon>
-    <h4>{{ profileText }}</h4>
-  </button>
-
-  <mat-divider class="width-100" />
+    <div class="utils">
+      <app-theme-switcher></app-theme-switcher>
+      <button
+        (click)="refreshPage()"
+        class="refresh-btn"
+        mat-fab>
+        <mat-icon>refresh</mat-icon>
+      </button>
+      <div
+        [ngClass]="[
+                sessionTimerService.remainingTime()! < 31000
+                  ? 'red-light'
+                  : sessionTimerService.remainingTime()! < 60000
+                    ? 'yellow-light'
+                    : 'surface-highest'
+              ]"
+        class="session-timer">
+        @if (sessionTimerService.remainingTime()! < 599500) {
+          {{ sessionTimerService.remainingTime() | date:'m:ss':'UTC' }}
+        } @else if (sessionTimerService.remainingTime()! < 3600000) {
+          {{ sessionTimerService.remainingTime() | date:'m':'UTC' }}min
+        } @else {
+          {{ sessionTimerService.remainingTime() | date:"H'h' mm'min'":"UTC" }}
+        }
+      </div>
+    </div>
+  </div>
 
   <form class="width-100">
     <mat-form-field class="width-100">
@@ -148,7 +117,7 @@
             [ngClass]="contentService.routeUrl() === ROUTE_PATHS.TOKENS ? 'card-button-active' : 'card-button'"
             [routerLink]="[ROUTE_PATHS.TOKENS]"
             i18n
-            mat-flat-button>
+            mat-stroked-button>
             <mat-icon>policy</mat-icon>
             Overview
           </button>
@@ -160,7 +129,7 @@
                       contentService.routeUrl() === ROUTE_PATHS.TOKENS_ENROLLMENT ? 'card-button-active' : 'card-button'"
               [routerLink]="[ROUTE_PATHS.TOKENS_ENROLLMENT]"
               i18n
-              mat-flat-button>
+              mat-stroked-button>
               <mat-icon>add_moderator</mat-icon>
               Enrollment
             </button>
@@ -172,8 +141,8 @@
               [ngClass]="
                       contentService.routeUrl() === ROUTE_PATHS.TOKENS_CHALLENGES ? 'card-button-active' : 'card-button'"
               [routerLink]="[ROUTE_PATHS.TOKENS_CHALLENGES]"
-              mat-flat-button
-              i18n>
+              i18n
+              mat-stroked-button>
               <mat-icon>cached</mat-icon>
               Show Challenges
             </button>
@@ -186,8 +155,8 @@
                       contentService.routeUrl() === ROUTE_PATHS.TOKENS_APPLICATIONS ? 'card-button-active' :
                       'card-button'"
               [routerLink]="[ROUTE_PATHS.TOKENS_APPLICATIONS]"
-              mat-flat-button
-              i18n>
+              i18n
+              mat-stroked-button>
               <mat-icon>now_widgets</mat-icon>
               Applications
             </button>
@@ -213,7 +182,7 @@
                   'card-button'"
             [routerLink]="[ROUTE_PATHS.TOKENS_CONTAINERS]"
             i18n
-            mat-flat-button>
+            mat-stroked-button>
             <mat-icon class="mdi--folder-search"></mat-icon>
             Overview
           </button>
@@ -221,11 +190,11 @@
         @if (authService.actionAllowed("container_create")) {
           <mat-list-item>
             <button
-              [routerLink]="[ROUTE_PATHS.TOKENS_CONTAINERS_CREATE]"
               [ngClass]="this.contentService.routeUrl() === ROUTE_PATHS.TOKENS_CONTAINERS_CREATE ?
                   'card-button-active' : 'card-button'"
-              mat-flat-button
-              i18n>
+              [routerLink]="[ROUTE_PATHS.TOKENS_CONTAINERS_CREATE]"
+              i18n
+              mat-stroked-button>
               <mat-icon>create_new_folder</mat-icon>
               Create
             </button>
@@ -236,9 +205,9 @@
             <mat-list-item>
               <button
                 class="card-button-disabled"
-                mat-flat-button
                 disabled
-                i18n>
+                i18n
+                mat-stroked-button>
                 <mat-icon>plagiarism</mat-icon>
                 Templates
               </button>
@@ -248,8 +217,8 @@
             <mat-list-item>
               <button
                 class="card-button-disabled"
-                mat-flat-button
-                disabled>
+                disabled
+                mat-stroked-button>
                 <mat-icon>note_add</mat-icon>
                 Create Template
               </button>
@@ -274,7 +243,7 @@
             [ngClass]="contentService.routeUrl() === ROUTE_PATHS.USERS ? 'card-button-active' : 'card-button'"
             [routerLink]="[ROUTE_PATHS.USERS]"
             i18n
-            mat-flat-button>
+            mat-stroked-button>
             <mat-icon>person_search</mat-icon>
             Overview
           </button>
@@ -283,7 +252,7 @@
           <button
             class="card-button-disabled"
             disabled
-            mat-flat-button>
+            mat-stroked-button>
             <mat-icon>hub</mat-icon>
             Sources
           </button>
@@ -292,7 +261,7 @@
           <button
             class="card-button-disabled"
             disabled
-            mat-flat-button>
+            mat-stroked-button>
             <mat-icon>public</mat-icon>
             Realms
           </button>
@@ -338,7 +307,7 @@
           <button
             [ngClass]="contentService.routeUrl() === ROUTE_PATHS.AUDIT ? 'card-button-active' : 'card-button'"
             [routerLink]="[ROUTE_PATHS.AUDIT]"
-            mat-flat-button>
+            mat-stroked-button>
             <mat-icon>list_alt</mat-icon>
             Log
           </button>
@@ -347,7 +316,7 @@
           <button
             class="card-button-disabled"
             disabled
-            mat-flat-button>
+            mat-stroked-button>
             <mat-icon>recent_actors</mat-icon>
             Known Clients
           </button>
@@ -367,7 +336,7 @@
           <button
             class="card-button-disabled"
             disabled
-            mat-flat-button>
+            mat-stroked-button>
             <mat-icon>email</mat-icon>
             SMTP Servers
           </button>
@@ -376,7 +345,7 @@
           <button
             class="card-button-disabled"
             disabled
-            mat-flat-button>
+            mat-stroked-button>
             <mat-icon>power_settings_new</mat-icon>
             RADIUS Servers
           </button>
@@ -385,7 +354,7 @@
           <button
             class="card-button-disabled"
             disabled
-            mat-flat-button>
+            mat-stroked-button>
             <mat-icon>sms</mat-icon>
             SMS Gateways
           </button>
@@ -394,7 +363,7 @@
           <button
             class="card-button-disabled"
             disabled
-            mat-flat-button>
+            mat-stroked-button>
             <mat-icon>receipt_long</mat-icon>
             CAs
           </button>
@@ -403,7 +372,7 @@
           <button
             class="card-button-disabled"
             disabled
-            mat-flat-button>
+            mat-stroked-button>
             <mat-icon class="mdi--pi-logo"></mat-icon>
             PrivacyIDEA Servers
           </button>
@@ -412,7 +381,7 @@
           <button
             class="card-button-disabled"
             disabled
-            mat-flat-button>
+            mat-stroked-button>
             <mat-icon>local_police</mat-icon>
             Tokengroups
           </button>
@@ -421,7 +390,7 @@
           <button
             class="card-button-disabled"
             disabled
-            mat-flat-button>
+            mat-stroked-button>
             <mat-icon>storage</mat-icon>
             Service IDs
           </button>
@@ -441,7 +410,7 @@
           <button
             class="card-button-disabled"
             disabled
-            mat-flat-button>
+            mat-stroked-button>
             <mat-icon>build</mat-icon>
             System
           </button>
@@ -450,7 +419,7 @@
           <button
             class="card-button-disabled"
             disabled
-            mat-flat-button>
+            mat-stroked-button>
             <mat-icon>privacy_tip</mat-icon>
             Tokentypes
           </button>
@@ -459,7 +428,7 @@
           <button
             class="card-button-disabled"
             disabled
-            mat-flat-button>
+            mat-stroked-button>
             <mat-icon>point_of_sale</mat-icon>
             Machines
           </button>
@@ -468,7 +437,7 @@
           <button
             class="card-button-disabled"
             disabled
-            mat-flat-button>
+            mat-stroked-button>
             <mat-icon>lan</mat-icon>
             Machine Resolver
           </button>
@@ -476,4 +445,28 @@
       </mat-list>
     </mat-expansion-panel>
   </mat-accordion>
+
+  <div class="sticky-actions">
+    <a
+      aria-label="Support"
+      class="card-button"
+      href="https://netknights.it/support_link_admin"
+      i18n-aria-label
+      mat-stroked-button
+      target="_blank">
+      <mat-icon>support_agent</mat-icon>
+      <h4 i18n>Support</h4>
+    </a>
+
+    <a
+      aria-label="Documentation"
+      class="card-button"
+      href="https://netknights.it/support_link_admin"
+      i18n-aria-label
+      mat-stroked-button
+      target="_blank">
+      <mat-icon>info_outline</mat-icon>
+      <h4 i18n>Documentation</h4>
+    </a>
+  </div>
 </div>

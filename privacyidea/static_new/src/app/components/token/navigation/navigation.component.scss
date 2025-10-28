@@ -42,15 +42,13 @@
   margin-right: 48px;
 }
 
-.spacer { flex: 1 1 0; }
+.spacer {
+  flex: 1 1 0;
+}
 
 .session-timer {
   width: 70px;
-  height: 19px;
   text-align: right;
-  margin-bottom: 13px;
-  margin-top: 8px;
-  margin-right: 8px;
 }
 
 .no-expansion.mat-expansion-panel {
@@ -72,6 +70,46 @@
   display: none;
 }
 
+.sticky-actions {
+  position: sticky;
+  bottom: 0;
+  margin-top: 8px;
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  background: var(--mat-sidenav-container-background, #fff);
+  z-index: 1;
+  width: 232px;
+  @include mat.elevation(3);
+}
+
+.sticky-actions a[mat-fab] {
+  width: 100%;
+  justify-content: flex-start;
+}
+
+.account-div {
+  display: flex;
+  flex-direction: row;
+  width: 240px;
+  justify-content: space-around;
+  align-items: center;
+  background: var(--mat-sys-surface-container-high);
+  height: 40px;
+}
+
+.utils-group {
+  border: solid 1px var(--mat-sys-surface-container-highest);
+  border-radius: var(--border-radius);
+}
+
+.utils {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
+  align-items: center;
+}
+
 .drawer-div {
   display: flex;
   flex-direction: column;
@@ -87,6 +125,10 @@
 
     .mat-mdc-form-field-subscript-wrapper, .mat-mdc-form-field-bottom-align::before {
       height: 8px;
+    }
+
+    .mat-expansion-panel-header.mat-expanded {
+      height: 48px;
     }
   }
 }

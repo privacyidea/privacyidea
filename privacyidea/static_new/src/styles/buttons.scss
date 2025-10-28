@@ -45,22 +45,18 @@ $button-low-contrast-variant: linear-gradient(
   $background: var(--mat-sys-primary),
   $cursor: pointer
 ) {
-  color: $color !important;
   height: $height;
   width: $width;
-  border: none;
-  justify-content: start;
-  border-radius: $border-radius;
-  background: $background !important;
-  box-shadow: $box-shadow;
   cursor: $cursor;
-}
+  border-radius: var(--border-radius);
+  background-color: var(--mat-sys-surface-container);
+  border-color: var(--mat-sys-surface-container-highest) !important;
+  color: var(--mat-sys-on-surface-variant) !important;
+  justify-content: start;
+  display: flex;
 
-@mixin button-hover($background, $box-shadow) {
-  &:hover {
-    background: $background;
-    box-shadow: $box-shadow;
-    transition: background 400ms, box-shadow 400ms;
+  &:disabled {
+    color: #909090 !important;
   }
 }
 
@@ -69,7 +65,6 @@ $button-low-contrast-variant: linear-gradient(
   &.active {
     background: $bg;
     box-shadow: $shadow;
-    transition: background 400ms, box-shadow 400ms;
 
     @if $translate == true {
       transform: translateY(2px);
@@ -155,9 +150,15 @@ $button-low-contrast-variant: linear-gradient(
   }
 }
 
+.mat-mdc-outlined-button.card-button,
+.mat-mdc-outlined-button[class*="card-button"] {
+  --mat-outlined-button-state-layer-color: var(--mat-sys-surface-container-highest);
+  --mat-outlined-button-ripple-color: var(--mat-sys-surface-container-high);
+  --mdc-ripple-color: var(--mat-sys-surface-container-high);
+}
+
 .card-button {
   @include card-button-variant(var(--mat-sys-primary), var(--box-shadow-blue));
-  @include button-hover(var(--background-blue-inset), var(--box-shadow-blue-inset));
 }
 
 .mat-unthemed.mat-mdc-button-base[class^="card-button"],
@@ -176,10 +177,6 @@ $button-low-contrast-variant: linear-gradient(
 
 .card-button-active {
   @include card-button-variant(var(--background-blue-inset), var(--box-shadow-blue-inset));
-}
-
-.profile-btn {
-  @include card-button-variant($profile-bg, none);
 }
 
 .card-button-disabled {
@@ -201,7 +198,6 @@ $button-low-contrast-variant: linear-gradient(
 .detail-button {
   color: white;
   @include card-button-variant(var(--background-blue), var(--box-shadow-blue));
-  @include button-hover(var(--background-blue-inset), var(--box-shadow-blue-inset));
 }
 
 .detail-button-icon {
@@ -282,6 +278,7 @@ $button-low-contrast-variant: linear-gradient(
   color: var(--mat-sys-on-surface-variant);
   background-color: transparent;
   transition: background-color 0.2s ease-in-out;
+  margin-left: 16px;
 
   &:hover {
     background-color: var(--mat-sys-surface-container);

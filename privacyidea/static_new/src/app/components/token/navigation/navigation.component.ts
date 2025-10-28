@@ -6,12 +6,11 @@ import {
   MatExpansionPanelHeader,
   MatExpansionPanelTitle
 } from "@angular/material/expansion";
-import { MatDivider } from "@angular/material/divider";
 import { MatInput, MatLabel, MatSuffix } from "@angular/material/input";
 import { MatList, MatListItem } from "@angular/material/list";
 import { ThemeSwitcherComponent } from "../../shared/theme-switcher/theme-switcher.component";
 import { ROUTE_PATHS } from "../../../route_paths";
-import { MatButton, MatFabAnchor, MatFabButton, MatIconButton } from "@angular/material/button";
+import { MatAnchor, MatButton, MatFabButton, MatIconButton } from "@angular/material/button";
 import { MatFormField } from "@angular/material/form-field";
 import { MatIcon, MatIconModule } from "@angular/material/icon";
 import { Router, RouterLink } from "@angular/router";
@@ -35,11 +34,9 @@ import {
     DatePipe,
     MatAccordion,
     MatButton,
-    MatDivider,
     MatExpansionPanel,
     MatExpansionPanelHeader,
     MatExpansionPanelTitle,
-    MatFabAnchor,
     MatFabButton,
     MatFormField,
     MatIconModule,
@@ -53,7 +50,8 @@ import {
     ThemeSwitcherComponent,
     MatIcon,
     RouterLink,
-    NgClass
+    NgClass,
+    MatAnchor
   ],
   templateUrl: "./navigation.component.html",
   styleUrl: "./navigation.component.scss"
