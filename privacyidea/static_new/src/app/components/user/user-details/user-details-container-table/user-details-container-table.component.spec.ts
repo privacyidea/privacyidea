@@ -84,13 +84,13 @@ describe("UserDetailsContainerTableComponent", () => {
       type: "Box",
       description: "My demo container",
       states: ["active"],
-      realms: ["r1", "blue-team"],
+      realms: ["r1", "r2"],
       users: [{ user_name: "alice", user_realm: "r1" }]
     } as any;
 
     const pred = component.dataSource.filterPredicate!;
     expect(pred(row, "active")).toBe(true);
-    expect(pred(row, "blue-team")).toBe(true);
+    expect(pred(row, "r2")).toBe(true);
     expect(pred(row, "demo")).toBe(true);
     expect(pred(row, "nope")).toBe(false);
   });

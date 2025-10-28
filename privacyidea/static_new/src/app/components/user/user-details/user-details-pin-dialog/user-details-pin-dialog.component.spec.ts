@@ -64,7 +64,7 @@ describe("UserDetailsPinDialogComponent", () => {
     expect(dialogRefMock.close).toHaveBeenCalledWith("1234");
   });
 
-  it("should return null on cancel", () => {
+  it("should close on cancel", () => {
     component.onCancel();
 
     expect(dialogRefMock.close).toHaveBeenCalled();

@@ -107,12 +107,7 @@ export class UserService implements UserServiceInterface {
   readonly advancedApiFilter = advancedApiFilter;
   private baseUrl = environment.proxyUrl + "/user/";
   filterValue = signal({} as Record<string, string>);
-
-  constructor() {
-    effect(() => {
-      console.log(this.userAttributesResource.value());
-    });
-  }  filterParams = computed<Record<string, string>>(() => {
+  filterParams = computed<Record<string, string>>(() => {
     const allowedFilters = [...this.apiFilterOptions, ...this.advancedApiFilterOptions];
     const filterPairs = Array.from(this.apiUserFilter().filterMap.entries())
       .map(([key, value]) => ({ key, value }))

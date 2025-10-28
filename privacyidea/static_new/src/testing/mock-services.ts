@@ -344,7 +344,6 @@ export class MockAuthService extends AuthService {
 }
 
 export class MockUserService implements UserServiceInterface {
-  // === Existing properties kept as-is (plus a couple tiny fixes) ===
   usersOfRealmResource: HttpResourceRef<PiResponse<UserData[], undefined> | undefined> =
     new MockHttpResourceRef(MockPiResponse.fromValue([]));
   selectedUsername = signal("");  attributePolicy: Signal<UserAttributePolicy> = signal<UserAttributePolicy>({
@@ -472,8 +471,6 @@ export class MockUserService implements UserServiceInterface {
 
   selectionFilteredUsers = signal<UserData[]>([]);
 
-  // Updated to match the real service signature and return a string.
-  // Still useful in tests: we track the username selected.
   displayUser = jest.fn().mockImplementation((user: UserData | string): string => {
     const name = typeof user === "string" ? user : user?.username ?? "";
     this.selectedUsername.set(name);

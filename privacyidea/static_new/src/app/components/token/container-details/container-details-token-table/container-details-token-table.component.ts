@@ -19,14 +19,14 @@
 import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
 import {
   Component,
-  Input,
-  ViewChild,
-  WritableSignal,
   computed,
   effect,
   inject,
+  Input,
   linkedSignal,
-  ElementRef, signal
+  signal,
+  ViewChild,
+  WritableSignal
 } from "@angular/core";
 import {
   ContainerDetailToken,
@@ -54,13 +54,11 @@ import { TokenService, TokenServiceInterface } from "../../../../services/token/
 import { ConfirmationDialogComponent } from "../../../shared/confirmation-dialog/confirmation-dialog.component";
 import { CopyButtonComponent } from "../../../shared/copy-button/copy-button.component";
 import { MatDialog } from "@angular/material/dialog";
-import { MatPaginator, MatPaginatorModule, PageEvent } from "@angular/material/paginator";
+import { MatPaginator, MatPaginatorModule } from "@angular/material/paginator";
 import { NgClass } from "@angular/common";
-import { f } from "../../../../../../node_modules/@angular/material/icon-module.d-d06a5620";
 import { MatIconModule } from "@angular/material/icon";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { MatInput } from "@angular/material/input";
-import { MatAutocompleteTrigger } from "@angular/material/autocomplete";
 
 const columnsKeyMap = [
   { key: "serial", label: "Serial" },
