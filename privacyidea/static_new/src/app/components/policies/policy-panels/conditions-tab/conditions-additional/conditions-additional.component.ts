@@ -107,12 +107,12 @@ export class ConditionsAdditionalComponent {
       this.conditionKey(),
       conditionComparator,
       this.conditionValue(),
-      !this.conditionActive(), // Inverted
+      this.conditionActive(),
       conditionHandleMissingData
     ];
 
     if (condition.some((v) => v === "")) {
-      return; // Or show some error
+      return;
     }
 
     const index = this.editIndex();

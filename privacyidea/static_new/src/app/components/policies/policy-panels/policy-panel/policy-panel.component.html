@@ -71,6 +71,10 @@
         </div>
       </mat-panel-description>
     </mat-expansion-panel-header>
+    <div class="priority-description">
+      <app-policy-priority />
+      <app-policy-description />
+    </div>
 
     @if (isEditingPolicy(policy().name) || policyService.selectedPolicyHasConditions()) {
       <div class="tab-buttons">

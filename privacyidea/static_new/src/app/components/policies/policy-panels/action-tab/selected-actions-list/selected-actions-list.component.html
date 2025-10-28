@@ -3,14 +3,14 @@
     <div
       class="action-card"
       [class.action-card-selected]="policyService.selectedAction()?.name === action.name"
-      [class.action-card-editmode]="editModeEnabled() && !isBooleanAction(action.name)"
+      [class.action-card-editmode]="isEditMode() && !isBooleanAction(action.name)"
       (click)="onActionClick(action)">
       <div class="action-row">
         <span class="action-label">{{ action.name }}</span>
         @if (!isBooleanAction(action.name)) {
           <span class="action-value">{{ action.value }}</span>
         }
-        @if (editModeEnabled()) {
+        @if (isEditMode()) {
           <div class="gap-div-8px"></div>
           <button
             mat-icon-button

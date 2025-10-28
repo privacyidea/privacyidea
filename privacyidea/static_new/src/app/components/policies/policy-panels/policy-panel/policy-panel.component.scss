@@ -190,3 +190,24 @@
     }
   }
 }
+
+.priority-description {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0 24px 16px;
+}
+
+:host ::ng-deep app-policy-priority {
+  p {
+    margin: 0;
+  }
+}
+
+:host ::ng-deep app-policy-description {
+  flex-grow: 1;
+  p {
+    margin: 0;
+    font-size: 1.05rem;
+  }
+}

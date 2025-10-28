@@ -11,6 +11,8 @@ import { PolicyDetail, PolicyService } from "../../../../services/policies/polic
 import { HorizontalWheelComponent } from "../../../shared/horizontal-wheel/horizontal-wheel.component";
 import { ActionTabComponent } from "../action-tab/action-tab.component";
 import { ConditionsTabComponent } from "../conditions-tab/conditions-tab.component";
+import { PolicyDescriptionComponent } from "../action-tab/policy-description/policy-description.component";
+import { PolicyPriorityComponent } from "../action-tab/policy-priority/policy-priority.component";
 
 type PolicyTab = "actions" | "conditions";
 
@@ -28,7 +30,9 @@ type PolicyTab = "actions" | "conditions";
     HorizontalWheelComponent,
     MatSlideToggleModule,
     ActionTabComponent,
-    ConditionsTabComponent
+    ConditionsTabComponent,
+    PolicyDescriptionComponent,
+    PolicyPriorityComponent
   ],
   templateUrl: "./policy-panel.component.html",
   styleUrl: "./policy-panel.component.scss"

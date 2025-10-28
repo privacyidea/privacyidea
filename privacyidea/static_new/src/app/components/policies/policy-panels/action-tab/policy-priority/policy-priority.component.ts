@@ -6,15 +6,15 @@ import { TextFieldModule } from "@angular/cdk/text-field";
 import { PolicyService } from "../../../../../services/policies/policies.service";
 
 @Component({
-  selector: "app-policy-description",
-  templateUrl: "./policy-description.component.html",
-  styleUrls: ["./policy-description.component.scss"],
+  selector: "app-policy-priority",
+  templateUrl: "./policy-priority.component.html",
+  styleUrls: ["./policy-priority.component.scss"],
   standalone: true,
   imports: [MatFormFieldModule, MatInputModule, FormsModule, TextFieldModule]
 })
-export class PolicyDescriptionComponent {
+export class PolicyPriorityComponent {
   policyService = inject(PolicyService);
-  updatePolicyDescription($event: string) {
-    this.policyService.updateSelectedPolicy({ description: $event });
+  updatePolicyPriority($event: any) {
+    this.policyService.updateSelectedPolicy({ priority: $event });
   }
 }

@@ -1,0 +1,18 @@
+<div class="action-priority-container">
+  <div
+    i18n
+    class="description-header">
+    Priority
+  </div>
+  @if (this.policyService.viewMode() === "view") {
+    <div class="description-text">
+      {{ policyService.selectedPolicy()?.priority }}
+    </div>
+  } @else {
+    <input
+      type="number"
+      class="description-textarea"
+      [ngModel]="policyService.selectedPolicy()?.priority"
+      (ngModelChange)="updatePolicyPriority($event)" />
+  }
+</div>
