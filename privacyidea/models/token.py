@@ -270,7 +270,10 @@ class Token(MethodsMixin, db.Model):
         """
         # delete old TokenRealms
         if not add:
-            db.session.query(TokenRealm).filter(TokenRealm.token_id == self.id).delete()
+            deleted_realms = db.session.query(TokenRealm).filter(TokenRealm.token_id == self.id).delete()
+            if deleted_realms > 0:
+                # commit deleted realms to avoid any inconsistency when checking the realms to add
+                db.session.commit()
         # add new TokenRealms
         # We must not set the same realm more than once...
         # uniquify: realms -> set(realms)
@@ -280,6 +283,7 @@ class Token(MethodsMixin, db.Model):
                 log.info(f"The realm of an assigned user cannot be removed from "
                          f"token {self.first_owner.token.serial} "
                          f"(realm: {self.first_owner.realm.name})")
+        realm_added = False
         for realm in set(realms):
             # Get the id of the realm to add
             realm_db = Realm.query.filter_by(name=realm).first()
@@ -290,7 +294,10 @@ class Token(MethodsMixin, db.Model):
                     # If the realm is not yet attached to the token
                     token_realm = TokenRealm(token_id=self.id, realm_id=realm_db.id)
                     db.session.add(token_realm)
-        db.session.commit()
+                    realm_added = True
+        if realm_added:
+            # avoid empty commits
+            db.session.commit()
 
     def get_realms(self):
         """
