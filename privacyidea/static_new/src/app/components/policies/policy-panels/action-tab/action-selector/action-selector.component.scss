@@ -66,3 +66,13 @@
   color: var(--mat-sys-on-primary);
   font-weight: 600;
 }
+
+.action-icons {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.warning-icon {
+  color: #E5A500;
+}

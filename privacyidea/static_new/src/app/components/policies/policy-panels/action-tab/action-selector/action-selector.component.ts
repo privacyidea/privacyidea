@@ -5,10 +5,18 @@ import { MatIconModule } from "@angular/material/icon";
 import { PolicyService as PolicyService } from "../../../../../services/policies/policies.service";
 import { BoolSelectButtonsComponent } from "../selector-buttons/selector-buttons.component";
 
+import { MatTooltipModule } from "@angular/material/tooltip";
+
 @Component({
   selector: "app-action-selector",
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule, BoolSelectButtonsComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    MatIconModule,
+    BoolSelectButtonsComponent,
+    MatTooltipModule
+  ],
   templateUrl: "./action-selector.component.html",
   styleUrls: ["./action-selector.component.scss"]
 })
