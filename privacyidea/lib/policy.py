@@ -2981,6 +2981,10 @@ def get_static_policy_definitions(scope=None):
             PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE_FOR_TTYPE: {
                 'type': 'bool',
                 'desc': _('Enable to return an unspecific error message for failures in the special token endpoints /ttype/*.')
+            },
+            PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE_FOR_OFFLINE_REFILL: {
+                'type': 'bool',
+                'desc': _('Enable to return an unspecific error message for failed offline token refills.')
             }
         }
 
