@@ -245,6 +245,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   private observer!: IntersectionObserver;
   timezoneOptions = TIMEZONE_OFFSETS;
+  protected wizard = false;
 
   enrollResponse: WritableSignal<EnrollmentResponse | null> = linkedSignal({
     source: this.tokenService.selectedTokenType,

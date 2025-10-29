@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
-import { Component, Input, ViewChild, WritableSignal, computed, effect, inject, linkedSignal } from "@angular/core";
+import { Component, computed, effect, inject, Input, linkedSignal, ViewChild, WritableSignal } from "@angular/core";
 import {
   ContainerDetailToken,
   ContainerService,
@@ -46,10 +46,13 @@ import { CopyButtonComponent } from "../../../shared/copy-button/copy-button.com
 import { MatDialog } from "@angular/material/dialog";
 import { MatPaginator, MatPaginatorModule } from "@angular/material/paginator";
 import { NgClass } from "@angular/common";
-import { f } from "../../../../../../node_modules/@angular/material/icon-module.d-d06a5620";
 import { MatIconModule } from "@angular/material/icon";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { MatInput } from "@angular/material/input";
+import {
+  NotificationService,
+  NotificationServiceInterface
+} from "../../../../services/notification/notification.service";
 
 const columnsKeyMap = [
   { key: "serial", label: "Serial" },
@@ -94,6 +97,7 @@ export class ContainerDetailsTokenTableComponent {
   protected readonly overflowService: OverflowServiceInterface = inject(OverflowService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
+  protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
 
   protected readonly columnsKeyMap = columnsKeyMap;
   displayedColumns: string[] = [...columnsKeyMap.map((column) => column.key)];
@@ -309,36 +313,8 @@ export class ContainerDetailsTokenTableComponent {
   }
 
   deleteAllTokens() {
-    const serialList = this.containerTokenData()
-      .data.map((token) => token.serial)
-      .join(",");
-    this.dialog
-      .open(ConfirmationDialogComponent, {
-        data: {
-          serialList: serialList.split(","),
-          title: "Delete All Tokens",
-          type: "token",
-          action: "delete",
-          numberOfTokens: serialList.split(",").length
-        }
-      })
-      .afterClosed()
-      .subscribe({
-        next: (result) => {
-          if (result) {
-            this.containerService
-              .deleteAllTokens({
-                containerSerial: this.containerSerial(),
-                serialList: serialList
-              })
-              .subscribe({
-                next: () => {
-                  this.containerService.containerDetailResource.reload();
-                }
-              });
-          }
-        }
-      });
+    const serialList = this.containerTokenData().data.map((token) => token.serial);
+    this.tokenService.bulkDeleteWithConfirmDialog(serialList, this.dialog, this.containerService.containerDetailResource.reload);
   }
 
   deleteTokenFromContainer(tokenSerial: string) {

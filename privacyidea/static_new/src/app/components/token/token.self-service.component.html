@@ -1,7 +1,11 @@
 <div
   aria-label="Token Selfservice Layout"
   class="token-selfservice-layout">
-  <app-navigation-self-service class="flex-size-1" />
+  @if (authService.tokenWizard() || authService.containerWizard().enabled) {
+    <app-navigation-self-service-wizard class="flex-size-1" />
+  } @else {
+    <app-navigation-self-service class="flex-size-1" />
+  }
   <div class="flex-size-8 flex-top-center">
     <div
       [@componentFade]
