@@ -4,9 +4,9 @@
     <mat-list-item>
       <button
         [ngClass]="contentService.routeUrl() === ROUTE_PATHS.TOKENS ? 'card-button-active' : 'card-button'"
+        mat-stroked-button
         [routerLink]="[ROUTE_PATHS.TOKENS]"
-        i18n
-        mat-flat-button>
+        i18n>
         <mat-icon>policy</mat-icon>
         Overview
       </button>
@@ -21,7 +21,7 @@
               [ngClass]="
                 contentService.routeUrl() === ROUTE_PATHS.TOKENS_ENROLLMENT ? 'card-button-active' : 'card-button'
               "
-              mat-flat-button
+              mat-stroked-button
               i18n>
               <mat-icon>add_moderator</mat-icon>
               Enrollment
@@ -35,7 +35,7 @@
               [ngClass]="
                 contentService.routeUrl() === ROUTE_PATHS.TOKENS_CHALLENGES ? 'card-button-active' : 'card-button'
               "
-              mat-flat-button
+              mat-stroked-button
               i18n>
               <mat-icon>cached</mat-icon>
               Show Challenges
@@ -50,7 +50,7 @@
               [ngClass]="
                 contentService.routeUrl() === ROUTE_PATHS.TOKENS_APPLICATIONS ? 'card-button-active' : 'card-button'
               "
-              mat-flat-button
+              mat-stroked-button
               i18n>
               <mat-icon>now_widgets</mat-icon>
               Applications
@@ -64,7 +64,7 @@
               [ngClass]="[
                 contentService.routeUrl() === ROUTE_PATHS.TOKENS_GET_SERIAL ? 'card-button-active' : 'card-button'
               ]"
-              mat-flat-button
+              mat-stroked-button
               [routerLink]="[ROUTE_PATHS.TOKENS_GET_SERIAL]"
               i18n>
               <mat-icon>help_outline</mat-icon>
@@ -76,7 +76,7 @@
           <button
             class="card-button"
             (click)="versioningService.openDocumentation(contentService.routeUrl())"
-            mat-flat-button
+            mat-stroked-button
             i18n>
             <mat-icon>info_outline</mat-icon>
             Help
@@ -88,10 +88,10 @@
             @if (authService.actionAllowed("delete")) {
               <mat-list-item>
                 <button
-                  [ngClass]="[tokenSelection().length === 0 ? 'card-button-disabled' : 'card-button-delete']"
                   (click)="deleteSelectedTokens()"
                   [disabled]="tokenSelection().length === 0"
-                  mat-flat-button
+                  class="card-button"
+                  mat-stroked-button
                   i18n>
                   <mat-icon> delete_sweep</mat-icon>
                   Delete Selected
@@ -101,10 +101,10 @@
             @if (authService.actionAllowed("assign")) {
               <mat-list-item>
                 <button
-                  [ngClass]="[tokenSelection().length === 0 ? 'card-button-disabled' : 'card-button']"
                   (click)="assignSelectedTokens()"
                   [disabled]="tokenSelection().length === 0"
-                  mat-flat-button
+                  class="card-button"
+                  mat-stroked-button
                   i18n>
                   <mat-icon> person_add</mat-icon>
                   Assign Selected
@@ -114,10 +114,10 @@
             @if (authService.actionAllowed("unassign")) {
               <mat-list-item>
                 <button
-                  [ngClass]="[tokenSelection().length === 0 ? 'card-button-disabled' : 'card-button']"
                   (click)="unassignSelectedTokens()"
                   [disabled]="tokenSelection().length === 0"
-                  mat-flat-button>
+                  class="card-button"
+                  mat-stroked-button>
                   <mat-icon> person_remove</mat-icon>
                   Unassign Selected
                 </button>
@@ -131,7 +131,7 @@
             [ngClass]="
               contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_DETAILS) ? 'card-button-active' : 'card-button'
             "
-            mat-flat-button
+            mat-stroked-button
             i18n>
             <mat-icon>health_and_safety</mat-icon>
             Token Details
@@ -141,7 +141,7 @@
           <mat-list-item>
             <button
               class="card-button"
-              mat-flat-button
+              mat-stroked-button
               [routerLink]="[ROUTE_PATHS.AUDIT]"
               (click)="onClickManageSearch()"
               i18n>
@@ -155,7 +155,7 @@
           <mat-list-item>
             <button
               class="card-button"
-              mat-flat-button
+              mat-stroked-button
               (click)="openLostTokenDialog()"
               i18n>
               <mat-icon>remove_red_eye</mat-icon>
@@ -166,8 +166,8 @@
         <mat-list-item>
           <button
             class="card-button"
+            mat-stroked-button
             (click)="versioningService.openDocumentation(contentService.routeUrl())"
-            mat-flat-button
             i18n>
             <mat-icon>info_outline</mat-icon>
             Help
@@ -183,14 +183,8 @@
               <button
                 (click)="toggleActive()"
                 [disabled]="tokenIsRevoked()"
-                mat-flat-button
-                [ngClass]="[
-                  tokenIsRevoked()
-                    ? 'card-button-disabled'
-                    : tokenIsActive()
-                      ? 'card-button-delete'
-                      : 'card-button-activate'
-                ]"
+                class="card-button"
+                mat-stroked-button
                 i18n>
                 <mat-icon>{{ tokenIsActive() ? "lock" : "play_circle" }}</mat-icon>
                 {{ tokenIsActive() ? "Deactivate" : "Activate" }}
@@ -201,8 +195,8 @@
             <mat-list-item>
               <button
                 (click)="deleteToken()"
-                class="card-button-delete"
-                mat-flat-button
+                class="card-button"
+                mat-stroked-button
                 i18n>
                 <mat-icon> delete</mat-icon>
                 Delete
@@ -214,8 +208,8 @@
               <button
                 (click)="revokeToken()"
                 [disabled]="tokenIsRevoked()"
-                [ngClass]="[tokenIsRevoked() ? 'card-button-disabled' : 'card-button-delete']"
-                mat-flat-button
+                class="card-button"
+                mat-stroked-button
                 i18n>
                 <mat-icon>undo</mat-icon>
                 Revoke

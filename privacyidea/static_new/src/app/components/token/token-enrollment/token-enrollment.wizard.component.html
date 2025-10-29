@@ -29,8 +29,8 @@
       <button
         (click)="versioningService.openDocumentation('tokentypes')"
         class="card-button width-100"
-        i18n
-        mat-flat-button>
+        mat-stroked-button
+        i18n>
         <mat-icon>info_outline</mat-icon>
         Help About Tokentypes
       </button>
@@ -56,12 +56,9 @@
       </button>
       <button
         (click)="enrollToken()"
-        [ngClass]="{
-          'card-button-disabled': formGroup.invalid,
-          'card-button': true
-        }"
-        i18n
-        mat-flat-button>
+        class="card-button"
+        mat-stroked-button
+        i18n>
         <mat-icon>add</mat-icon>
         <span i18n>Enroll</span>
         {{ selectedTokenType().key }}

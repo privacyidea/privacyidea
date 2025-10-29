@@ -7,7 +7,7 @@ $keyword-padding: 2px 8px;
 $button-gap-small: 10px;
 $padding-horizontal: 16px;
 $detail-icon-font-size: 18px;
-$margin-bottom-small: -6px;
+$margin-bottom-small: 0;
 $keyword-font-size: 18px;
 $button-border-radius: var(--border-radius);
 $profile-bg: var(--background-yellow);
@@ -198,12 +198,6 @@ $button-low-contrast-variant: linear-gradient(
 .detail-button {
   color: white;
   @include card-button-variant(var(--background-blue), var(--box-shadow-blue));
-}
-
-.detail-button-icon {
-  vertical-align: bottom;
-  margin-bottom: $margin-bottom-small;
-  font-size: $detail-icon-font-size;
 }
 
 .dialog-button-delete,

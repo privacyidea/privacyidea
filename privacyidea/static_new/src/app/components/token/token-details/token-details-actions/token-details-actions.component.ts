@@ -17,9 +17,9 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { NgClass } from "@angular/common";
-import { Component, computed, inject, Input, signal, WritableSignal } from "@angular/core";
+import { Component, computed, inject, Input, WritableSignal } from "@angular/core";
 import { FormsModule } from "@angular/forms";
-import { MatFabButton } from "@angular/material/button";
+import { MatButton } from "@angular/material/button";
 import { MatDialog } from "@angular/material/dialog";
 import { MatDivider } from "@angular/material/divider";
 import { MatIcon } from "@angular/material/icon";
@@ -38,11 +38,7 @@ import { ResyncTokenActionComponent } from "./resync-token-action/resync-token-a
 import { SetPinActionComponent } from "./set-pin-action/set-pin-action.component";
 import { TestOtpPinActionComponent } from "./test-otp-pin-action/test-otp-pin-action.component";
 import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
-import {
-  MachineService,
-  MachineServiceInterface,
-  TokenApplications
-} from "../../../../services/machine/machine.service";
+import { MachineService, MachineServiceInterface } from "../../../../services/machine/machine.service";
 import {
   HotpMachineAssignDialogData,
   TokenHotpMachineAssignDialogComponent
@@ -55,12 +51,12 @@ import { lastValueFrom } from "rxjs";
   imports: [
     FormsModule,
     MatIcon,
-    MatFabButton,
     MatDivider,
     NgClass,
     SetPinActionComponent,
     ResyncTokenActionComponent,
-    TestOtpPinActionComponent
+    TestOtpPinActionComponent,
+    MatButton
   ],
   templateUrl: "./token-details-actions.component.html",
   styleUrl: "./token-details-actions.component.scss"
@@ -119,6 +115,7 @@ export class TokenDetailsActionsComponent {
         });
       });
   }
+
   attachHotpToMachineDialog() {
     const data: HotpMachineAssignDialogData = {
       tokenSerial: this.tokenSerial()

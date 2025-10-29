@@ -6,7 +6,6 @@
           [ngClass]="[tokenSelection().length === 0 ? 'action-button-disabled' : 'action-button-delete']"
           (click)="deleteSelectedTokens()"
           [disabled]="tokenSelection().length === 0"
-          mat-flat-button
           i18n>
           <mat-icon> delete_sweep</mat-icon>
           Delete Selected
@@ -18,7 +17,6 @@
           [ngClass]="[tokenSelection().length === 0 ? 'action-button-disabled' : 'action-button']"
           (click)="assignSelectedTokens()"
           [disabled]="tokenSelection().length === 0"
-          mat-flat-button
           i18n>
           <mat-icon> person_add</mat-icon>
           Assign Selected
@@ -29,8 +27,7 @@
           mat-stroked-button
           [ngClass]="[tokenSelection().length === 0 ? 'action-button-disabled' : 'action-button']"
           (click)="unassignSelectedTokens()"
-          [disabled]="tokenSelection().length === 0"
-          mat-flat-button>
+          [disabled]="tokenSelection().length === 0">
           <mat-icon> person_remove</mat-icon>
           Unassign Selected
         </button>
