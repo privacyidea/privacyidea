@@ -66,7 +66,7 @@ Such a YAML based configuration could look like this:
         filename: /var/log/privacyidea/privacyidea.log
       syslog:
         class: logging.handlers.SysLogHandler
-        address: ('192.168.1.110', 514)
+        args=(('192.168.8.3', handlers.SYSLOG_UDP_PORT), handlers.SysLogHandler.LOG_USER)
         formatter: detail
         level: INFO
 
