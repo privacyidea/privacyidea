@@ -214,3 +214,4 @@ class PolicyAction:
     DISABLED_TOKEN_TYPES = "disabled_token_types"
     FORCE_SERVER_GENERATE = "force_server_generate"
     HIDE_SPECIFIC_ERROR_MESSAGE = "hide_specific_error_message"
+    HIDE_SPECIFIC_ERROR_MESSAGE_FOR_TTYPE = "hide_specific_error_message_for_ttype"
