@@ -193,6 +193,8 @@ export class DocumentationService implements DocumentationServiceInterface {
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, "text/html");
     console.log("doc:", doc);
+    sectionId = sectionId.replaceAll("_", "-");
+    console.log("sectionId:", sectionId);
 
     const section = doc.getElementById(sectionId);
 

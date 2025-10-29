@@ -19,14 +19,6 @@
           [class.policy-action-item-selected]="policyService.selectedAction()?.name === actionName"
           (click)="policyService.selectActionByName(actionName)">
           <span class="detail-label">{{ actionName }}</span>
-          <div class="action-icons">
-            <mat-icon matTooltip="Placeholder for hint text"> info_outline </mat-icon>
-            <mat-icon
-              class="warning-icon"
-              matTooltip="Placeholder for note text">
-              warning_outline
-            </mat-icon>
-          </div>
         </div>
       }
     </div>

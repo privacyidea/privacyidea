@@ -1,4 +1,4 @@
-import { Component, computed, effect, inject, signal, Signal } from "@angular/core";
+import { Component, computed, effect, inject, linkedSignal, signal, Signal } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
@@ -11,6 +11,7 @@ import {
   DocumentationService,
   DocumentationServiceInterface
 } from "../../../../../services/documentation/documentation.service";
+import { MatIcon } from "@angular/material/icon";
 
 @Component({
   selector: "app-action-detail",
@@ -22,7 +23,8 @@ import {
     MatInputModule,
     MatAutocompleteModule,
     MatSelectModule,
-    BoolSelectButtonsComponent
+    BoolSelectButtonsComponent,
+    MatIcon
   ],
   templateUrl: "./action-detail.component.html",
   styleUrls: ["./action-detail.component.scss"]
@@ -84,4 +86,19 @@ export class ActionDetailComponent {
 
   actionDocu = signal<string[] | null>(null);
   actionNotes = signal<string[] | null>(null);
+  visibleContent = linkedSignal<any, "docu" | "notes" | "none">({
+    source: () => ({
+      docu: this.actionDocu(),
+      notes: this.actionNotes()
+    }),
+    computation: (_) => "none"
+  });
+
+  toggleContent(contentType: "docu" | "notes") {
+    if (this.visibleContent() === contentType) {
+      this.visibleContent.set("none");
+    } else {
+      this.visibleContent.set(contentType);
+    }
+  }
 }

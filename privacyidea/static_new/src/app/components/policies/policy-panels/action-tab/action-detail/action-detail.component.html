@@ -1,9 +1,36 @@
 @if (policyService.selectedAction() !== null) {
   <div class="action-detail-column">
-    <h3>{{ policyService.selectedAction()?.name }}</h3>
+    <div class="action-icons">
+      <h3>
+        {{ policyService.selectedAction()?.name }}
+        @if (actionDocu() && actionDocu()!.length > 0) {
+          <button
+            mat-icon-button
+            (click)="toggleContent('docu')">
+            <mat-icon>info_outline</mat-icon>
+          </button>
+        }
+        @if (actionNotes() && actionNotes()!.length > 0) {
+          <button
+            mat-icon-button
+            (click)="toggleContent('notes')">
+            <mat-icon class="warning-icon">warning_outline</mat-icon>
+          </button>
+        }
+      </h3>
+    </div>
+    <div>
+      @if (visibleContent() === "docu") {
+        <div [innerHTML]="actionDocu()"></div>
+      }
+      @if (visibleContent() === "notes") {
+        <div [innerHTML]="actionNotes()"></div>
+      }
+    </div>
     <div class="action-detail-card">
-      <span class="detail-row">
-        {{ policyService.selectedActionDetail()?.desc }}
+      <span
+        class="detail-row"
+        [innerHTML]="policyService.selectedActionDetail()?.desc">
       </span>
     </div>
     @if (policyService.selectedActionDetail()?.value) {
@@ -86,8 +113,6 @@
         [disabled]="!inputIsValid()">
         Add Action
       </button>
-      <div [innerHTML]="actionDocu()"></div>
-      <div [innerHTML]="actionNotes()"></div>
     }
   </div>
 }
