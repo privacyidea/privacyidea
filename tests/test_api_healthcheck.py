@@ -83,7 +83,8 @@ class APIHealthcheckTestCase(MyApiTestCase):
 
         ldap3mock.setLDAPDirectory(LDAPDirectory)
 
-        with self.app.test_request_context('/healthz/resolversz', method='GET'):
+        with self.app.test_request_context('/healthz/resolversz', method='GET',
+                                           headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             check_resolvers(res, 200, "OK",
                             ldap_expected_status="fail",
