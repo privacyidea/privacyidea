@@ -23,10 +23,12 @@ import {
   effect,
   ElementRef,
   inject,
+  linkedSignal,
   Renderer2,
   signal,
   untracked,
-  ViewChild
+  ViewChild,
+  WritableSignal
 } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
@@ -51,7 +53,8 @@ import { ROUTE_PATHS } from "../../../route_paths";
 import {
   ContainerRegisterData,
   ContainerService,
-  ContainerServiceInterface
+  ContainerServiceInterface,
+  ContainerType
 } from "../../../services/container/container.service";
 import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
 import { NotificationService, NotificationServiceInterface } from "../../../services/notification/notification.service";
@@ -68,6 +71,12 @@ import {
 } from "./container-created-dialog/container-created-dialog.component";
 import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
 import { ContainerRegistrationConfigComponent } from "../container-registration/container-registration-config/container-registration-config.component";
+import { ContainerRegistrationDialogWizardComponent } from "./container-registration-dialog/container-registration-dialog.wizard.component";
+import {
+  ContainerRegistrationCompletedDialogComponent,
+  ContainerRegistrationCompletedDialogData
+} from "./container-registration-completed-dialog/container-registration-completed-dialog.component";
+import { ContainerRegistrationCompletedDialogWizardComponent } from "./container-registration-completed-dialog/container-registration-completed-dialog.wizard.component";
 
 export type ContainerTypeOption = "generic" | "smartphone" | "yubikey";
 
@@ -119,11 +128,18 @@ export class ContainerCreateComponent {
   selectedTemplate = signal("");
   templateOptions = this.containerService.templates;
   onlyAddToRealm = signal(false);
-  generateQRCode = signal(false);
+  generateQRCode: WritableSignal<boolean> = linkedSignal({
+      source: this.containerService.selectedContainerType,
+      computation: (containerType: ContainerType) => containerType.containerType === "smartphone"
+    }
+  );
   passphrasePrompt = signal("");
   passphraseResponse = signal("");
   userStorePassphrase = signal(false);
   registerResponse = signal<PiResponse<ContainerRegisterData> | null>(null);
+  pollResponse = signal<any>(null);
+  protected dialogComponent: any = ContainerRegistrationDialogComponent;
+  protected readonly wizard: boolean = false;
   userSelected = computed(() => this.userService.selectionUsernameFilter() !== "");
   public dialogData = signal<ContainerCreationDialogData | null>(null);
 
@@ -134,13 +150,6 @@ export class ContainerCreateComponent {
   registrationConfigComponent!: ContainerRegistrationConfigComponent;
 
   constructor(protected registrationDialog: MatDialog) {
-    effect(() => {
-      if (this.containerService.selectedContainerType().containerType === "smartphone") {
-        this.generateQRCode.set(true);
-      } else {
-        this.generateQRCode.set(false);
-      }
-    });
     effect(() => {
       this.containerService.selectedContainerType();
       untracked(() => {
@@ -200,7 +209,7 @@ export class ContainerCreateComponent {
     const createData = {
       container_type: this.containerService.selectedContainerType().containerType,
       description: this.description(),
-      template: this.selectedTemplate(),
+      template_name: this.selectedTemplate(),
       user: this.userService.selectionUsernameFilter(),
       realm: ""
     };
@@ -243,7 +252,7 @@ export class ContainerCreateComponent {
       });
   }
 
-  private resetCreateOptions = () => {
+  protected resetCreateOptions = () => {
     this.registerResponse.set(null);
     this.passphrasePrompt.set("");
     this.passphraseResponse.set("");
@@ -257,7 +266,10 @@ export class ContainerCreateComponent {
       response: response,
       containerSerial: this.containerSerial,
       registerContainer: this.registerContainer.bind(this)
-    });
+    };
+    if (this.wizard) {
+      this.dialogComponent = ContainerRegistrationDialogWizardComponent;
+    }
     this.registrationDialog.open(ContainerCreatedDialogComponent, {
       data: this.dialogData
     });
@@ -268,7 +280,12 @@ export class ContainerCreateComponent {
       next: (response) => {
         if (response?.result?.value?.containers[0].info.registration_state !== "client_wait") {
           this.registrationDialog.closeAll();
-          this.router.navigateByUrl(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + containerSerial);
+          let registrationCompletedDialogComponent: any = ContainerRegistrationCompletedDialogComponent;
+          if (this.wizard) {
+            registrationCompletedDialogComponent = ContainerRegistrationCompletedDialogWizardComponent;
+          }
+          this.registrationDialog.open(registrationCompletedDialogComponent,
+            { data: { "containerSerial": containerSerial } as ContainerRegistrationCompletedDialogData });
         }
       }
     });

@@ -90,10 +90,9 @@
           <mat-label i18n>Template</mat-label>
           <mat-select
             [(ngModel)]="selectedTemplate"
-            [value]="selectedTemplate()"
-            disabled>
+            [value]="selectedTemplate()">
             @for (option of templateOptions(); track option) {
-              <mat-option [value]="option">{{ option.name }}</mat-option>
+              <mat-option [value]="option.name">{{ option.name }}</mat-option>
             }
           </mat-select>
         </mat-form-field>

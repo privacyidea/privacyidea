@@ -42,7 +42,7 @@ import { VersioningService } from "../../../../services/version/version.service"
 
 import { ConfirmationDialogComponent } from "../../../shared/confirmation-dialog/confirmation-dialog.component";
 import { ActivatedRoute, NavigationEnd, Router } from "@angular/router";
-import { MockPiResponse } from "../../../../../testing/mock-services";
+import { MockPiResponse, MockTokenService } from "../../../../../testing/mock-services";
 import { ContentService } from "../../../../services/content/content.service";
 import { AuthService } from "../../../../services/auth/auth.service";
 import { AuditService } from "../../../../services/audit/audit.service";
@@ -50,29 +50,12 @@ import { AuditService } from "../../../../services/audit/audit.service";
 describe("TokenTabComponent", () => {
   let component: TokenTabComponent;
   let fixture: ComponentFixture<TokenTabComponent>;
-  let tokenService: jest.Mocked<TokenServiceInterface>;
+  let tokenService: MockTokenService;
   let dialog: jest.Mocked<MatDialog>;
   let notificationService: jest.Mocked<NotificationServiceInterface>;
   let router: jest.Mocked<Router>;
 
   beforeEach(async () => {
-    const tokenServiceMock = {
-      tokenIsActive: signal(true),
-      tokenIsRevoked: signal(false),
-      tokenSerial: signal("MOCK_SERIAL"),
-      tokenSelection: signal<TokenDetails[]>([]),
-      tokenDetailResource: { reload: jest.fn() },
-      tokenResource: { reload: jest.fn() },
-      toggleActive: jest.fn().mockReturnValue(of(null)),
-      revokeToken: jest.fn().mockReturnValue(of(null)),
-      deleteToken: jest.fn().mockReturnValue(of(null)),
-      getTokenDetails: jest.fn().mockReturnValue(of(new MockPiResponse({ detail: {} }))),
-      bulkDeleteTokens: jest.fn().mockReturnValue(of({})),
-      bulkUnassignTokens: jest.fn().mockReturnValue(of({})),
-      assignUser: jest.fn().mockReturnValue(of({})),
-      unassignUser: jest.fn().mockReturnValue(of({}))
-    };
-
     const dialogMock = {
       open: jest.fn().mockReturnValue({
         afterClosed: () => of(true)
@@ -96,7 +79,7 @@ describe("TokenTabComponent", () => {
 
     const contentServiceMock = {
       routeUrl: signal("/tokens"),
-      tokenSerial: tokenServiceMock.tokenSerial
+      tokenSerial: "MOCK_SERIAL"
     };
 
     const auditServiceMock = {
@@ -108,7 +91,8 @@ describe("TokenTabComponent", () => {
       tokenEnrollmentAllowed: jest.fn().mockReturnValue(true),
       actionAllowed: jest.fn().mockReturnValue(true),
       actionsAllowed: jest.fn().mockReturnValue(true),
-      oneActionAllowed: jest.fn().mockReturnValue(true)
+      oneActionAllowed: jest.fn().mockReturnValue(true),
+      getHeaders: jest.fn().mockReturnValue({})
     };
 
     await TestBed.configureTestingModule({
@@ -124,7 +108,7 @@ describe("TokenTabComponent", () => {
             params: of({ id: "123" })
           }
         },
-        { provide: TokenService, useValue: tokenServiceMock },
+        { provide: TokenService, useClass: MockTokenService },
         { provide: MatDialog, useValue: dialogMock },
         { provide: VersioningService, useValue: versioningServiceMock },
         { provide: NotificationService, useValue: notificationServiceMock },
@@ -136,7 +120,7 @@ describe("TokenTabComponent", () => {
 
     fixture = TestBed.createComponent(TokenTabComponent);
     component = fixture.componentInstance;
-    tokenService = TestBed.inject(TokenService) as unknown as jest.Mocked<TokenServiceInterface>;
+    tokenService = TestBed.inject(TokenService) as unknown as MockTokenService;
     dialog = TestBed.inject(MatDialog) as unknown as jest.Mocked<MatDialog>;
     notificationService = TestBed.inject(NotificationService) as unknown as jest.Mocked<NotificationServiceInterface>;
     router = TestBed.inject(Router) as unknown as jest.Mocked<Router>;
@@ -153,6 +137,9 @@ describe("TokenTabComponent", () => {
 
   describe("toggleActive()", () => {
     it("calls service, reloads details", () => {
+      jest.spyOn(tokenService, "toggleActive");
+      jest.spyOn(tokenService.tokenDetailResource, "reload");
+
       component.toggleActive();
 
       expect(tokenService.toggleActive).toHaveBeenCalledWith("MOCK_SERIAL", true);
@@ -162,6 +149,10 @@ describe("TokenTabComponent", () => {
 
   describe("revokeToken()", () => {
     it("opens confirm dialog, revokes, reloads details", () => {
+      jest.spyOn(tokenService, "revokeToken");
+      jest.spyOn(tokenService, "getTokenDetails");
+      jest.spyOn(tokenService.tokenDetailResource, "reload");
+
       component.revokeToken();
 
       expect(dialog.open).toHaveBeenCalled();
@@ -214,7 +205,7 @@ describe("TokenTabComponent", () => {
       });
       tokenService.bulkDeleteTokens.mockReturnValue(of(response));
       component.deleteSelectedTokens();
-      expect(tokenService.bulkDeleteTokens).toHaveBeenCalledWith(mockTokens);
+      expect(tokenService.bulkDeleteTokens).toHaveBeenCalledWith(mockTokens.map(token => token.serial));
       expect(tokenService.tokenResource.reload).toHaveBeenCalled();
       expect(notificationService.openSnackBar).toHaveBeenCalledWith("Successfully deleted 2 tokens.");
     });
@@ -228,7 +219,7 @@ describe("TokenTabComponent", () => {
       });
       tokenService.bulkDeleteTokens.mockReturnValue(of(response));
       component.deleteSelectedTokens();
-      expect(tokenService.bulkDeleteTokens).toHaveBeenCalledWith(singleToken);
+      expect(tokenService.bulkDeleteTokens).toHaveBeenCalledWith(["TOKEN1"]);
       expect(tokenService.tokenResource.reload).toHaveBeenCalled();
       expect(notificationService.openSnackBar).toHaveBeenCalledWith("Successfully deleted 1 token.");
     });
@@ -263,7 +254,7 @@ describe("TokenTabComponent", () => {
         detail: {},
         result: { status: true, value: { count_success: 1, failed: [], unauthorized: [] } }
       });
-      tokenService.bulkUnassignTokens.mockReturnValue(of(response));
+      jest.spyOn(tokenService, "bulkUnassignTokens").mockReturnValue(of(response));
       component.unassignSelectedTokens();
       expect(tokenService.bulkUnassignTokens).toHaveBeenCalledWith(mockTokens);
       expect(tokenService.tokenResource.reload).toHaveBeenCalled();

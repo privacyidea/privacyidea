@@ -68,8 +68,8 @@ describe("ContainerDetailsTokenTableComponent", () => {
   let fixture: ComponentFixture<ContainerDetailsTokenTableComponent>;
   let component: ContainerDetailsTokenTableComponent;
 
-  const containerServiceMock = new MockContainerService();
-  const tokenServiceMock = new MockTokenService();
+  let containerServiceMock: MockContainerService;
+  let tokenServiceMock: MockTokenService;
   const overflowServiceMock = new MockOverflowService();
   const tableUtilsMock = new MockTableUtilsService();
   const notificationServiceMock = new MockNotificationService();
@@ -82,8 +82,8 @@ describe("ContainerDetailsTokenTableComponent", () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: AuthService, useClass: MockAuthService },
-        { provide: ContainerService, useValue: containerServiceMock },
-        { provide: TokenService, useValue: tokenServiceMock },
+        { provide: ContainerService, useClass: MockContainerService },
+        { provide: TokenService, useClass: MockTokenService },
         { provide: TableUtilsService, useValue: tableUtilsMock },
         { provide: OverflowService, useValue: overflowServiceMock },
         { provide: NotificationService, useValue: notificationServiceMock },
@@ -96,13 +96,11 @@ describe("ContainerDetailsTokenTableComponent", () => {
       ]
     }).compileComponents();
 
-    (tokenServiceMock.unassignUserFromAll as any) = jest.fn().mockReturnValue(of([]));
-    (tokenServiceMock.assignUserToAll as any) = jest.fn().mockReturnValue(of([]));
-    (tokenServiceMock.deleteToken as any) = jest.fn().mockReturnValue(of({}));
-    tokenServiceMock.toggleActive.mockReturnValue(of({}));
-
     fixture = TestBed.createComponent(ContainerDetailsTokenTableComponent);
     component = fixture.componentInstance;
+
+    containerServiceMock = TestBed.inject(ContainerService) as unknown as MockContainerService;
+    tokenServiceMock = TestBed.inject(TokenService) as unknown as MockTokenService;
 
     component.containerTokenData = signal(
       new MatTableDataSource<any>([
@@ -221,12 +219,17 @@ describe("ContainerDetailsTokenTableComponent", () => {
 
   it("toggleActive calls service then reloads container details", () => {
     const t = { serial: "Mock serial", active: true } as any;
+    jest.spyOn(tokenServiceMock, "toggleActive");
+
     component.toggleActive(t);
     expect(tokenServiceMock.toggleActive).toHaveBeenCalledWith("Mock serial", true);
     expect(containerServiceMock.containerDetailResource.reload).toHaveBeenCalledTimes(1);
   });
 
   it("removeTokenFromContainer confirms and removes on confirm=true", () => {
+    jest.spyOn(containerServiceMock, "removeTokenFromContainer").mockReturnValue(
+      of({ result: { value: true } } as any)
+    );
     component.removeTokenFromContainer("CONT-1", "Mock serial");
     expect(matDialogMock.open).toHaveBeenCalledWith(
       ConfirmationDialogComponent,
@@ -269,24 +272,21 @@ describe("ContainerDetailsTokenTableComponent", () => {
       {
         data: {
           serialList: ["Mock serial", "Another serial"],
-          title: "Delete All Tokens",
+          title: "Delete Selected Tokens",
           type: "token",
           action: "delete",
           numberOfTokens: 2
         }
       }
     );
-    expect(containerServiceMock.deleteAllTokens).toHaveBeenCalledWith({
-      containerSerial: "CONT-1",
-      serialList: "Mock serial,Another serial"
-    });
+    expect(tokenServiceMock.bulkDeleteTokens).toHaveBeenCalledWith(["Mock serial", "Another serial"]);
     expect(containerServiceMock.containerDetailResource.reload).toHaveBeenCalled();
   });
 
   it("deleteAllTokens does NOT delete when confirm=false", () => {
     matDialogMock.open.mockReturnValueOnce(makeDialogResult(false));
     component.deleteAllTokens();
-    expect(containerServiceMock.deleteAllTokens).not.toHaveBeenCalled();
+    expect(tokenServiceMock.bulkDeleteTokens).not.toHaveBeenCalled();
   });
 
   it("removeAll opens confirm and removes when confirm=true", () => {
@@ -313,6 +313,7 @@ describe("ContainerDetailsTokenTableComponent", () => {
       { serial: "S1", username: "", active: true },
       { serial: "S2", username: "", active: true }
     ] as any;
+    jest.spyOn(tokenServiceMock, "unassignUserFromAll");
 
     component.unassignFromAllToken();
     expect(matDialogMock.open).not.toHaveBeenCalled();
@@ -325,6 +326,7 @@ describe("ContainerDetailsTokenTableComponent", () => {
       { serial: "S1", username: "x", active: true },
       { serial: "S2", username: "", active: true }
     ] as any;
+    jest.spyOn(tokenServiceMock, "unassignUserFromAll");
 
     component.unassignFromAllToken();
     expect(matDialogMock.open).toHaveBeenCalledWith(
@@ -361,6 +363,8 @@ describe("ContainerDetailsTokenTableComponent", () => {
       { serial: "S1", username: "alice", active: true },
       { serial: "S2", username: "alice", active: true }
     ] as any;
+    jest.spyOn(tokenServiceMock, "unassignUserFromAll")
+    jest.spyOn(tokenServiceMock, "assignUserToAll");
 
     component.assignToAllToken();
 
@@ -390,6 +394,9 @@ describe("ContainerDetailsTokenTableComponent", () => {
       { serial: "S2", username: "", active: true },
       { serial: "S3", username: "alice", active: true }
     ] as any;
+    jest.spyOn(tokenServiceMock, "unassignUserFromAll")
+    jest.spyOn(tokenServiceMock, "assignUserToAll");
+    jest.spyOn(containerServiceMock.containerDetailResource, "reload")
 
     component.assignToAllToken();
 

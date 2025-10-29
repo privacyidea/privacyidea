@@ -223,10 +223,9 @@ export interface ContainerServiceInterface {
   createContainer(param: {
     container_type: string;
     description?: string;
-    template?: string;
+    template_name?: string;
     user?: string;
     realm?: string;
-    options?: any;
   }): Observable<PiResponse<{ container_serial: string }>>;
 
   pollContainerRolloutState(containerSerial: string, startTime: number): Observable<PiResponse<ContainerDetails>>;
@@ -359,7 +358,7 @@ export class ContainerService implements ContainerServiceInterface {
   });
 
   containerTypesResource = httpResource<PiResponse<ContainerTypes>>(() => {
-    if (this.contentService.routeUrl() !== ROUTE_PATHS.TOKENS_CONTAINERS_CREATE) {
+    if (![ROUTE_PATHS.TOKENS_CONTAINERS_CREATE, ROUTE_PATHS.TOKENS_CONTAINERS_WIZARD].includes(this.contentService.routeUrl())) {
       return undefined;
     }
     return {
@@ -383,13 +382,21 @@ export class ContainerService implements ContainerServiceInterface {
 
   selectedContainerType = linkedSignal({
     source: this.contentService.routeUrl,
-    computation: () =>
-      this.containerTypeOptions().find((type) => type.containerType === this.authService.defaultContainerType()) ||
-      this.containerTypeOptions()[0] || {
-        containerType: "generic",
-        description: "No container type data available",
-        token_types: []
+    computation: () => {
+      let containerType = this.authService.defaultContainerType();
+      // Use the wizard type if on the wizard route and available
+      if (this.contentService.routeUrl() === ROUTE_PATHS.TOKENS_CONTAINERS_WIZARD) {
+        containerType = this.authService.containerWizard().type || containerType;
       }
+      return (
+        this.containerTypeOptions().find((type) => type.containerType === containerType) ||
+        this.containerTypeOptions()[0] || {
+          containerType: "generic",
+          description: "No container type data available",
+          token_types: []
+        }
+      );
+    }
   });
 
   containerDetailResource = httpResource<PiResponse<ContainerDetails>>(() => {
@@ -799,10 +806,9 @@ export class ContainerService implements ContainerServiceInterface {
   createContainer(param: {
     container_type: string;
     description?: string;
-    template?: string;
+    template_name?: string;
     user?: string;
     realm?: string;
-    options?: any;
   }): Observable<PiResponse<{ container_serial: string }>> {
     const headers = this.authService.getHeaders();
     return this.http
@@ -813,8 +819,7 @@ export class ContainerService implements ContainerServiceInterface {
           description: param.description,
           user: param.user,
           realm: param.realm,
-          template: param.template,
-          options: param.options
+          template_name: param.template_name
         },
         { headers }
       )
