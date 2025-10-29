@@ -48,6 +48,7 @@ import {
 import { ROUTE_PATHS } from "../../../../route_paths";
 import { QrCodeTextComponent } from "./qr-code-text/qr-code-text.component";
 import { StringUtils } from "../../../../utils/string.utils";
+import { environment } from "../../../../../environments/environment";
 
 @Component({
   selector: "app-token-enrollment-last-step-dialog-wizard",
@@ -88,7 +89,7 @@ export class TokenEnrollmentLastStepDialogWizardComponent extends TokenEnrollmen
   }));
 
   readonly postTopHtml$ = this.http
-    .get("/static/public/customize/token-enrollment.wizard.post.top.html", {
+    .get(environment.proxyUrl + "/static/public/customize/token-enrollment.wizard.post.top.html", {
       responseType: "text"
     })
     .pipe(map((raw) => ({
@@ -98,7 +99,7 @@ export class TokenEnrollmentLastStepDialogWizardComponent extends TokenEnrollmen
     );
 
   readonly postBottomHtml$ = this.http
-    .get("/static/public/customize/token-enrollment.wizard.post.bottom.html", {
+    .get(environment.proxyUrl + "/static/public/customize/token-enrollment.wizard.post.bottom.html", {
       responseType: "text"
     })
     .pipe(map((raw) => this.sanitizer.bypassSecurityTrustHtml(

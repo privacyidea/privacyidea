@@ -26,6 +26,7 @@ import { ContainerService, ContainerServiceInterface } from "../../../../service
 import { ContainerRegistrationDialogComponent } from "./container-registration-dialog.component";
 import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
 import { StringUtils } from "../../../../utils/string.utils";
+import { environment } from "../../../../../environments/environment";
 
 @Component({
   selector: "app-container-registration-dialog",
@@ -48,7 +49,7 @@ export class ContainerRegistrationDialogWizardComponent extends ContainerRegistr
   }));
 
   readonly postTopHtml$ = this.http
-    .get("/static/public/customize/container-create.wizard.post.top.html", {
+    .get(environment.proxyUrl + "/static/public/customize/container-create.wizard.post.top.html", {
       responseType: "text"
     })
     .pipe(map((raw) => ({
@@ -58,7 +59,7 @@ export class ContainerRegistrationDialogWizardComponent extends ContainerRegistr
     );
 
   readonly postBottomHtml$ = this.http
-    .get("/static/public/customize/container-create.wizard.post.bottom.html", {
+    .get(environment.proxyUrl + "/static/public/customize/container-create.wizard.post.bottom.html", {
       responseType: "text"
     })
     .pipe(map((raw) => this.sanitizer.bypassSecurityTrustHtml(

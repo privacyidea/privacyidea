@@ -68,6 +68,7 @@ import { AuthService } from "../../../services/auth/auth.service";
 import { TokenEnrollmentLastStepDialogData } from "./token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
 import { tokenTypes } from "../../../utils/token.utils";
 import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
+import { environment } from "../../../../environments/environment";
 
 @Component({
   selector: "app-token-enrollment-wizard",
@@ -159,7 +160,7 @@ export class TokenEnrollmentWizardComponent extends TokenEnrollmentComponent {
   }
 
   readonly preTopHtml$ = this.http
-    .get("/static/public/customize/token-enrollment.wizard.pre.top.html", {
+    .get(environment.proxyUrl + "/static/public/customize/token-enrollment.wizard.pre.top.html", {
       responseType: "text"
     })
     .pipe(
@@ -169,7 +170,7 @@ export class TokenEnrollmentWizardComponent extends TokenEnrollmentComponent {
       }))
     );
   readonly preBottomHtml$ = this.http
-    .get("/static/public/customize/token-enrollment.wizard.pre.bottom.html", {
+    .get(environment.proxyUrl + "/static/public/customize/token-enrollment.wizard.pre.bottom.html", {
       responseType: "text"
     })
     .pipe(map((raw) => this.sanitizer.bypassSecurityTrustHtml(raw)));
