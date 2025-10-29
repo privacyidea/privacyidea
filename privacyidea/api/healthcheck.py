@@ -31,8 +31,11 @@ The corresponding code is tested in tests/test_api_healthcheck.py.
 """
 from flask import Blueprint, current_app
 
+from privacyidea.api.auth import check_auth_token
 from privacyidea.api.lib.utils import send_result
+from privacyidea.lib.auth import ROLE
 from privacyidea.lib.crypto import get_hsm
+from privacyidea.lib.error import AuthError, ERROR
 from privacyidea.lib.resolver import get_resolver_list, get_resolver_class
 import logging
 
@@ -227,11 +230,11 @@ def resolversz():
 
       {
           "status": "ready",
-          "ldapresolvers": {
+          "ldapresolver": {
               "ldapresolver1": "OK",
               "ldapresolver2": "OK"
           },
-          "sqlresolvers": {
+          "sqlresolver": {
               "sqlresolver1": "OK",
               "sqlresolver2": "OK"
           },
@@ -242,8 +245,17 @@ def resolversz():
     total_status = "OK"
 
     try:
+        check_auth_token(required_role=[ROLE.ADMIN])
+    except AuthError as e:
+        if e.id != ERROR.AUTHENTICATE_AUTH_HEADER:
+            raise
+        authenticated = False
+    else:
+        authenticated = True
+
+    try:
         for resolver_type in resolver_types:
-            result[resolver_type] = {}
+            resolver_status = {}
             resolvers_list = get_resolver_list(filter_resolver_type=resolver_type)
             for resolver_name, resolver_data in resolvers_list.items():
                 if resolver_data:
@@ -251,12 +263,16 @@ def resolversz():
                     success, _ = resolver_class.testconnection(resolver_data.get("data"))
                     if not success:
                         total_status = "fail"
-                    result[resolver_type][resolver_name] = "OK" if success else "fail"
+                    resolver_status[resolver_name] = "OK" if success else "fail"
                 else:
-                    result[resolver_type][resolver_name] = "fail"
+                    resolver_status[resolver_name] = "fail"
+
+            if authenticated:
+                result[resolver_type] = resolver_status
 
         result["status"] = total_status
         return send_result(result), 200
+
     except Exception as e:
         log.debug(f"Exception in /resolversz endpoint: {e}")
         return send_result({"status": "error"}), 503
