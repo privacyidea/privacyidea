@@ -1627,7 +1627,11 @@ def get_static_policy_definitions(scope=None):
             PolicyAction.REGISTERBODY: {'type': 'text',
                                   'desc': _("The body of the registration "
                                             "email. Use '{regkey}' as tag "
-                                            "for the registration key.")}
+                                            "for the registration key.")},
+            PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE: {'type': 'bool',
+                                  'desc': _('Enable to return an unspecific '
+                                            'error message for failed '
+                                            'registrations.')}
         },
         SCOPE.ADMIN: {
             PolicyAction.ENABLE: {'type': 'bool',
