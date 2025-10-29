@@ -32,6 +32,10 @@ import { ConfirmationDialogComponent } from "../../../shared/confirmation-dialog
 import { Router, RouterLink } from "@angular/router";
 import { ROUTE_PATHS } from "../../../../route_paths";
 import { AuthService } from "../../../../services/auth/auth.service";
+import {
+  DocumentationService,
+  DocumentationServiceInterface
+} from "../../../../services/documentation/documentation.service";
 
 @Component({
   selector: "app-container-tab",
@@ -46,6 +50,7 @@ export class ContainerTabComponent {
   private readonly containerService: ContainerServiceInterface = inject(ContainerService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly versioningService: VersioningServiceInterface = inject(VersioningService);
+  protected readonly documentationService: DocumentationServiceInterface = inject(DocumentationService);
   protected readonly authService = inject(AuthService);
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
   private router = inject(Router);

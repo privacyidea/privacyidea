@@ -42,6 +42,10 @@ import {
 } from "../../../../services/notification/notification.service";
 import { PiResponse } from "../../../../app.component";
 import { FilterValue } from "../../../../core/models/filter_value";
+import {
+  DocumentationService,
+  DocumentationServiceInterface
+} from "../../../../services/documentation/documentation.service";
 
 @Component({
   selector: "app-token-tab",
@@ -54,6 +58,7 @@ import { FilterValue } from "../../../../core/models/filter_value";
 export class TokenTabComponent {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly versioningService: VersioningServiceInterface = inject(VersioningService);
+  protected readonly documentationService: DocumentationServiceInterface = inject(DocumentationService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly dialog: MatDialog = inject(MatDialog);
   protected readonly auditService: AuditServiceInterface = inject(AuditService);
@@ -157,7 +162,7 @@ export class TokenTabComponent {
                 const count_success = response.result?.value?.count_success || 0;
                 const messages: string[] = [];
                 if (count_success) {
-                  messages.push(`Successfully deleted ${count_success} token${count_success === 1 ? '' : 's'}.`);
+                  messages.push(`Successfully deleted ${count_success} token${count_success === 1 ? "" : "s"}.`);
                 }
 
                 if (failedTokens.length > 0) {
@@ -261,7 +266,7 @@ export class TokenTabComponent {
                 const messages: string[] = [];
 
                 if (count_success) {
-                  messages.push(`Successfully unassigned ${count_success} token${count_success === 1 ? '' : 's'}.`);
+                  messages.push(`Successfully unassigned ${count_success} token${count_success === 1 ? "" : "s"}.`);
                 }
 
                 if (failedTokens.length > 0) {

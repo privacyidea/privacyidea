@@ -1,4 +1,4 @@
-import { Component, computed, inject, Signal } from "@angular/core";
+import { Component, computed, effect, inject, signal, Signal } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
@@ -7,6 +7,10 @@ import { MatInputModule } from "@angular/material/input";
 import { MatAutocompleteModule } from "@angular/material/autocomplete";
 import { MatSelectModule } from "@angular/material/select";
 import { BoolSelectButtonsComponent } from "../selector-buttons/selector-buttons.component";
+import {
+  DocumentationService,
+  DocumentationServiceInterface
+} from "../../../../../services/documentation/documentation.service";
 
 @Component({
   selector: "app-action-detail",
@@ -25,12 +29,44 @@ import { BoolSelectButtonsComponent } from "../selector-buttons/selector-buttons
 })
 export class ActionDetailComponent {
   inputIsValid: Signal<boolean> = computed(() => {
-    const action = this.policyService.selectedActionDetail();
+    const actionDetail = this.policyService.selectedActionDetail();
     const actionValue = this.policyService.selectedAction()?.value;
-    if (action === null) return false;
-    return this.policyService.actionValueIsValid(action, actionValue);
+    if (actionDetail === null) return false;
+    return this.policyService.actionValueIsValid(actionDetail, actionValue);
   });
   policyService = inject(PolicyService);
+
+  documentationService: DocumentationServiceInterface = inject(DocumentationService);
+
+  constructor() {
+    effect(async () => {
+      const action = this.policyService.selectedAction();
+      if (!action) return [];
+      const scope = this.policyService.selectedPolicyScope();
+      console.log("Fetching documentation for action:", action.name, "in action:", action);
+      const sectionId = action ? action.name : "";
+      if (!scope || !sectionId) {
+        console.warn("Cannot fetch action documentation: Missing scope or sectionId");
+        this.actionDocu.set(null);
+        this.actionNotes.set(null);
+        return;
+      }
+
+      const result = await this.documentationService.getPolicyActionDocumentation(scope, sectionId);
+
+      console.log("result:", result);
+      if (result) {
+        console.log("Found action documentation:", result);
+        this.actionDocu.set(result.actionDocu);
+        this.actionNotes.set(result.actionNotes);
+      } else {
+        console.warn("No documentation found for action:", action.name);
+        this.actionDocu.set(null);
+        this.actionNotes.set(null);
+      }
+      return;
+    });
+  }
 
   actionIsAlreadyAdded(): boolean {
     const selectedAction = this.policyService.selectedAction();
@@ -45,4 +81,7 @@ export class ActionDetailComponent {
     this.policyService.updateActionInSelectedPolicy();
     this.policyService.selectedAction.set(null);
   }
+
+  actionDocu = signal<string[] | null>(null);
+  actionNotes = signal<string[] | null>(null);
 }

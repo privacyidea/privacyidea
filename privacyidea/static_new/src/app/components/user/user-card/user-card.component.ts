@@ -37,6 +37,10 @@ import { RealmService, RealmServiceInterface } from "../../../services/realm/rea
 import { UserService, UserServiceInterface } from "../../../services/user/user.service";
 import { ROUTE_PATHS } from "../../../route_paths";
 import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
+import {
+  DocumentationService,
+  DocumentationServiceInterface
+} from "../../../services/documentation/documentation.service";
 
 @Component({
   selector: "app-user-card",
@@ -63,12 +67,9 @@ import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.s
   styleUrls: ["./user-card.component.scss"]
 })
 export class UserCardComponent {
-  protected readonly overflowService: OverflowServiceInterface =
-    inject(OverflowService);
-  protected readonly contentService: ContentServiceInterface =
-    inject(ContentService);
-  protected readonly versioningService: VersioningServiceInterface =
-    inject(VersioningService);
+  protected readonly overflowService: OverflowServiceInterface = inject(OverflowService);
+  protected readonly contentService: ContentServiceInterface = inject(ContentService);
+  protected readonly documentationService: DocumentationServiceInterface = inject(DocumentationService);
   protected readonly realmService: RealmServiceInterface = inject(RealmService);
   protected readonly userService: UserServiceInterface = inject(UserService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);

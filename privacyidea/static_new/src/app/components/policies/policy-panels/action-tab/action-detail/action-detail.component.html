@@ -86,6 +86,8 @@
         [disabled]="!inputIsValid()">
         Add Action
       </button>
+      <div [innerHTML]="actionDocu()"></div>
+      <div [innerHTML]="actionNotes()"></div>
     }
   </div>
 }

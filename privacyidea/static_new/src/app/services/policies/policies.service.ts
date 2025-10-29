@@ -569,8 +569,12 @@ export class PolicyService implements PoliciesServiceInterface {
     }
   });
 
+  selectedPolicyScope = computed(() => {
+    return this._selectedPolicy()?.scope || "";
+  });
+
   policyActionGroupNames: Signal<string[]> = computed(() => {
-    const selectedScope = this._selectedPolicy()?.scope;
+    const selectedScope = this.selectedPolicyScope();
     if (!selectedScope) return [];
     const policyActionGroupFiltered = this.policyActionsByGroupFiltered()[selectedScope];
     if (!policyActionGroupFiltered) return [];
@@ -579,7 +583,7 @@ export class PolicyService implements PoliciesServiceInterface {
 
   _getActionDetail = (actionName: string): PolicyActionDetail | null => {
     const actions = this.policyActions();
-    const scope = this._selectedPolicy()?.scope;
+    const scope = this.selectedPolicyScope();
     if (!scope) return null;
     if (actionName && actions && actions[scope]) {
       return actions[scope][actionName] ?? null;
@@ -696,7 +700,7 @@ export class PolicyService implements PoliciesServiceInterface {
   getActionNamesOfSelectedGroup(): string[] {
     const group: string = this.selectedActionGroup();
     const actionsByGroup = this.policyActionsByGroupFiltered();
-    const scope = this._selectedPolicy()?.scope;
+    const scope = this.selectedPolicyScope();
     if (!scope || !actionsByGroup[scope]) return [];
     return Object.keys(actionsByGroup[scope][group] || {});
   }

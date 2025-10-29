@@ -19,8 +19,20 @@
 import { inject, Injectable, signal, WritableSignal } from "@angular/core";
 import { ROUTE_PATHS } from "../../route_paths";
 import { VersioningService } from "../version/version.service";
+import { version } from "uuid";
 
-export interface DocumentationServiceInterface {}
+export interface DocumentationServiceInterface {
+  openDocumentation(page: string): void;
+  getVersionUrl(pageUrl: string): string;
+  getFallbackUrl(pageUrl: string): string;
+  checkFullUrl(url: string): Promise<boolean>;
+  checkPageUrl(pageUrl: string): Promise<string | false>;
+  openDocumentationPage(page: string): Promise<boolean>;
+  getPolicyActionDocumentation(
+    scope: string,
+    sectionId: string
+  ): Promise<{ actionDocu: string[]; actionNotes: string[] } | null>;
+}
 
 @Injectable({
   providedIn: "root"
@@ -32,7 +44,8 @@ export class DocumentationService implements DocumentationServiceInterface {
 
   getVersionUrl(pageUrl: string): string {
     pageUrl = pageUrl.replace(/^\/+/, ""); // Remove leading slashes
-    return `${this._baseUrl}v${this._version()}/${pageUrl}`;
+    const version = this._version().split("+")[0];
+    return `${this._baseUrl}v${version}/${pageUrl}`;
   }
   getFallbackUrl(pageUrl: string): string {
     pageUrl = pageUrl.replace(/^\/+/, ""); // Remove leading slashes
@@ -164,43 +177,55 @@ export class DocumentationService implements DocumentationServiceInterface {
       });
     });
   }
-  async getPoliciesDocumentation(
+
+  async getPolicyActionDocumentation(
     scope: string,
     sectionId: string
-  ): Promise<{ baseParts: string[]; noteParts: string[] } | null> {
+  ): Promise<{ actionDocu: string[]; actionNotes: string[] } | null> {
     const pageUrl = "policies/" + scope + ".html";
     const existingPage = await this.checkPageUrl(pageUrl);
+    console.log("existingPage:", existingPage);
     if (!existingPage) return null;
     const response = await fetch(existingPage);
+    console.log("response:", response);
     const html = await response.text();
+    console.log("html:", html);
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, "text/html");
+    console.log("doc:", doc);
 
     const section = doc.getElementById(sectionId);
 
-    const baseParts: string[] = [];
-    const noteParts: string[] = [];
+    const actionDocu: string[] = [];
+    const actionNotes: string[] = [];
 
+    console.log("section:", section);
     if (!section) {
       return null;
     }
+    console.log("Found section:", section);
     section.childNodes.forEach((node) => {
       if (node.nodeType === Node.ELEMENT_NODE) {
         const element = node as HTMLElement;
+        console.log("Found element:", element);
         if (element.tagName.toLowerCase() === "p") {
           // Exclude type paragraphs
           if (!element.textContent?.startsWith("type:")) {
-            baseParts.push(element.outerHTML);
+            console.log("Adding to actionDocu:", element.outerHTML);
+            actionDocu.push(element.outerHTML);
           }
         } else if (
           element.tagName.toLowerCase() === "div" &&
           element.classList.contains("admonition") &&
           element.classList.contains("note")
         ) {
-          noteParts.push(element.outerHTML);
+          console.log("Adding to actionNotes:", element.outerHTML);
+          actionNotes.push(element.outerHTML);
         }
       }
     });
-    return { baseParts, noteParts };
+    console.log("actionDocu:", actionDocu);
+    console.log("actionNotes:", actionNotes);
+    return { actionDocu, actionNotes };
   }
 }
