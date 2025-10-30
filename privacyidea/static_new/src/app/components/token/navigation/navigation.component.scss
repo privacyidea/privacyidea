@@ -28,6 +28,19 @@
   @include mat.elevation(5);
 }
 
+.preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 0 0 8px;
+  border: 2px solid var(--mat-sys-on-surface);
+  padding: 8px;
+  border-radius: var(--border-radius);
+  color: var(--mat-sys-on-surface);
+  height: 20px;
+  width: 60px;
+}
+
 .clickable-logo {
   display: inline-grid;
   line-height: 0;
@@ -76,10 +89,11 @@
   margin-top: 8px;
   display: grid;
   gap: 8px;
-  padding: 12px;
-  background: var(--mat-sidenav-container-background, #fff);
+  padding: 8px;
+  background: var(--mat-sys-surface-container-low);
   z-index: 1;
-  width: 232px;
+  width: 240px;
+  border-radius: var(--border-radius);
   @include mat.elevation(3);
 }
 
