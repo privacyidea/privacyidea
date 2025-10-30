@@ -30,7 +30,6 @@ import {
   WritableSignal
 } from "@angular/core";
 import { FormsModule } from "@angular/forms";
-import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
 import { MatButton, MatIconButton } from "@angular/material/button";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatOption } from "@angular/material/core";
@@ -41,7 +40,7 @@ import {
   MatExpansionPanelHeader,
   MatExpansionPanelTitle
 } from "@angular/material/expansion";
-import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
+import { MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
 import { MatSelect } from "@angular/material/select";
@@ -61,7 +60,6 @@ import { RealmService, RealmServiceInterface } from "../../../services/realm/rea
 import { TokenService, TokenServiceInterface } from "../../../services/token/token.service";
 import { UserService, UserServiceInterface } from "../../../services/user/user.service";
 import { VersioningService, VersioningServiceInterface } from "../../../services/version/version.service";
-import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { TokenComponent } from "../token.component";
 import {
@@ -75,6 +73,7 @@ import {
   ContainerRegistrationCompletedDialogData
 } from "./container-registration-completed-dialog/container-registration-completed-dialog.component";
 import { ContainerRegistrationCompletedDialogWizardComponent } from "./container-registration-completed-dialog/container-registration-completed-dialog.wizard.component";
+import { UserAssignmentComponent } from "../user-assignment/user-assignment.component";
 
 export type ContainerTypeOption = "generic" | "smartphone" | "yubikey";
 
@@ -90,9 +89,6 @@ export type ContainerTypeOption = "generic" | "smartphone" | "yubikey";
     FormsModule,
     MatInput,
     MatLabel,
-    MatAutocomplete,
-    MatAutocompleteTrigger,
-    MatError,
     MatCheckbox,
     MatIconButton,
     MatAccordion,
@@ -102,8 +98,8 @@ export type ContainerTypeOption = "generic" | "smartphone" | "yubikey";
     MatTooltip,
     ScrollToTopDirective,
     NgClass,
-    ClearableInputComponent,
-    CommonModule
+    CommonModule,
+    UserAssignmentComponent
   ],
   templateUrl: "./container-create.component.html",
   styleUrl: "./container-create.component.scss"
@@ -125,7 +121,6 @@ export class ContainerCreateComponent {
   description = signal("");
   selectedTemplate = signal("");
   templateOptions = this.containerService.templates;
-  onlyAddToRealm = signal(false);
   generateQRCode: WritableSignal<boolean> = linkedSignal({
       source: this.containerService.selectedContainerType,
       computation: (containerType: ContainerType) => containerType.containerType === "smartphone"
@@ -141,6 +136,8 @@ export class ContainerCreateComponent {
   @ViewChild("scrollContainer") scrollContainer!: ElementRef<HTMLElement>;
   @ViewChild("stickyHeader") stickyHeader!: ElementRef<HTMLElement>;
   @ViewChild("stickySentinel") stickySentinel!: ElementRef<HTMLElement>;
+  @ViewChild(UserAssignmentComponent)
+  userAssignmentComponent!: UserAssignmentComponent;
 
   constructor(protected registrationDialog: MatDialog) {
     effect(() => {
@@ -200,7 +197,7 @@ export class ContainerCreateComponent {
       user: this.userService.selectionUsernameFilter(),
       realm: ""
     };
-    if (createData.user || this.onlyAddToRealm()) {
+    if (createData.user || this.userAssignmentComponent?.onlyAddToRealm()) {
       createData.realm = this.userService.selectedUserRealm();
     }
     this.containerService.createContainer(createData).subscribe({
