@@ -39,14 +39,14 @@ $button-low-contrast-variant: linear-gradient(
 @mixin button-base(
   $height,
   $width,
-  $border-radius,
+  $background-color,
   $cursor: pointer
 ) {
   height: $height;
   width: $width;
   cursor: $cursor;
   border-radius: var(--border-radius);
-  background-color: var(--mat-sys-surface-container);
+  background-color: $background-color !important;
   border-color: var(--mat-sys-surface-container-highest) !important;
   color: var(--mat-sys-on-surface-variant) !important;
   justify-content: start;
@@ -69,11 +69,11 @@ $button-low-contrast-variant: linear-gradient(
   }
 }
 
-@mixin card-button-variant() {
+@mixin card-button-variant($background-color) {
   @include button-base(
           $height: $button-height,
           $width: $button-width,
-          $border-radius: $button-border-radius,
+          $background-color: $background-color
   );
 }
 
@@ -133,7 +133,11 @@ $button-low-contrast-variant: linear-gradient(
 }
 
 .card-button {
-  @include card-button-variant();
+  @include card-button-variant(var(--mat-sys-surface-container));
+}
+
+.card-button-active {
+  @include card-button-variant(var(--mat-sys-surface-container-highest));
 }
 
 .mat-unthemed.mat-mdc-button-base[class^="card-button"],
@@ -143,10 +147,6 @@ $button-low-contrast-variant: linear-gradient(
   mat-icon.mat-icon.notranslate.material-icons {
     font-size: $detail-icon-font-size;
   }
-}
-
-.card-button-active {
-  @include card-button-variant();
 }
 
 .keyword-button {
