@@ -19,7 +19,6 @@
 import { CommonModule, NgClass } from "@angular/common";
 import { Component, effect, ElementRef, inject, Renderer2, signal, untracked, ViewChild } from "@angular/core";
 import { FormsModule } from "@angular/forms";
-import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
 import { MatButton, MatIconButton } from "@angular/material/button";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatOption } from "@angular/material/core";
@@ -30,7 +29,7 @@ import {
   MatExpansionPanelHeader,
   MatExpansionPanelTitle
 } from "@angular/material/expansion";
-import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
+import { MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
 import { MatSelect } from "@angular/material/select";
@@ -49,7 +48,6 @@ import { RealmService, RealmServiceInterface } from "../../../services/realm/rea
 import { TokenService, TokenServiceInterface } from "../../../services/token/token.service";
 import { UserService, UserServiceInterface } from "../../../services/user/user.service";
 import { VersioningService, VersioningServiceInterface } from "../../../services/version/version.service";
-import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { TokenComponent } from "../token.component";
 import {
@@ -57,6 +55,7 @@ import {
   ContainerRegistrationDialogComponent
 } from "./container-registration-dialog/container-registration-dialog.component";
 import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
+import { UserAssignmentComponent } from "../user-assignment/user-assignment.component";
 
 export type ContainerTypeOption = "generic" | "smartphone" | "yubikey";
 
@@ -72,9 +71,6 @@ export type ContainerTypeOption = "generic" | "smartphone" | "yubikey";
     FormsModule,
     MatInput,
     MatLabel,
-    MatAutocomplete,
-    MatAutocompleteTrigger,
-    MatError,
     MatCheckbox,
     MatIconButton,
     MatAccordion,
@@ -84,8 +80,8 @@ export type ContainerTypeOption = "generic" | "smartphone" | "yubikey";
     MatTooltip,
     ScrollToTopDirective,
     NgClass,
-    ClearableInputComponent,
-    CommonModule
+    CommonModule,
+    UserAssignmentComponent
   ],
   templateUrl: "./container-create.component.html",
   styleUrl: "./container-create.component.scss"

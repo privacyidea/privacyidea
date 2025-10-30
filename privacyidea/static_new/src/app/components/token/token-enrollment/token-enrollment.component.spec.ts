@@ -385,38 +385,6 @@ describe("TokenEnrollmentComponent", () => {
 
       expect(containers.selectedContainer()).toBe("CONT-42");
     });
-
-    it("userFilterControl toggles onlyAddToRealmControl", () => {
-      component.ngOnInit();
-
-      component.userFilterControl.setValue("alice");
-      expect(component.onlyAddToRealmControl.disabled).toBe(true);
-
-      component.userFilterControl.setValue("");
-      expect(component.onlyAddToRealmControl.disabled).toBe(false);
-    });
-
-    it("selectedUserRealmControl resets user filter and updates service", () => {
-      const users = TestBed.inject(UserService) as unknown as MockUserService;
-      component.ngOnInit();
-
-      component.selectedUserRealmControl.setValue("realmX");
-      expect(component.userFilterControl.disabled).toBe(false);
-      expect(users.selectedUserRealm()).toBe("realmX");
-
-      component.selectedUserRealmControl.setValue("");
-      expect(component.userFilterControl.disabled).toBe(true);
-    });
-
-    it("onlyAddToRealmControl disables/enables userFilterControl", () => {
-      component.ngOnInit();
-
-      component.onlyAddToRealmControl.setValue(true);
-      expect(component.userFilterControl.disabled).toBe(true);
-
-      component.onlyAddToRealmControl.setValue(false);
-      expect(component.userFilterControl.disabled).toBe(false);
-    });
   });
 
   describe("token-enrollment constants", () => {

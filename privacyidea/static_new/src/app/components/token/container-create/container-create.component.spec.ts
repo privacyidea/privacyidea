@@ -45,12 +45,6 @@ import { VersioningService } from "../../../services/version/version.service";
 import { Renderer2 } from "@angular/core";
 import { ContainerCreateSelfServiceComponent } from "./container-create.self-service.component";
 
-const mockMatDialog = {
-  open: () => ({ afterClosed: () => of(null) }),
-  closeAll: () => {
-  }
-};
-
 class MockIntersectionObserver {
   observe = jest.fn();
   disconnect = jest.fn();
