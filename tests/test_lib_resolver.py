@@ -2395,7 +2395,8 @@ class LDAPResolverTestCase(MyTestCase):
                                   '"mobile" : "mobile"'
                                   ', "email" : "mail", '
                                   '"surname" : "sn", '
-                                  '"givenname" : "givenName" }',
+                                  '"givenname" : "givenName",'
+                                  '"accountExpired": "accountExpired" }',
                       'UIDTYPE': 'DN',
                       })
 
@@ -2408,6 +2409,8 @@ class LDAPResolverTestCase(MyTestCase):
         search_filter = resolver._create_search_filter({"username": "*hans*", "email": "*.*@example*"})
         self.assertEqual("(&(cn=*)(cn=*hans*)(mail=*.*@example*))", search_filter)
 
+        search_filter = resolver._create_search_filter({"accountExpired": 1})
+        self.assertEqual("(&(cn=*)(accountExpired=1))", search_filter)
 
 
 class BaseResolverTestCase(MyTestCase):

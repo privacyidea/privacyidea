@@ -760,7 +760,7 @@ class IdResolver(UserIdResolver):
         """
         search_filter = "(&" + self.searchfilter
         for search_key in search_dict.keys():
-            if not search_dict[search_key].strip("*"):
+            if isinstance(search_dict[search_key], str) and not search_dict[search_key].strip("*"):
                 # skip empty and wildcard only search values
                 continue
             search_dict[search_key] = to_unicode(search_dict[search_key])
