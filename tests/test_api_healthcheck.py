@@ -1,3 +1,4 @@
+from typing import Optional
 from .pkcs11mock import PKCS11Mock
 from privacyidea.lib.resolver import save_resolver
 from privacyidea.lib.security.aeshsm import AESHardwareSecurityModule
@@ -60,8 +61,9 @@ class APIHealthcheckTestCase(MyApiTestCase):
 
     @ldap3mock.activate
     def test_resolversz(self):
-        def check_resolvers(res, expected_status_code, expected_status, ldap_expected_status,
-                            sql_expected_status):
+        def check_resolvers(res, expected_status_code: int, expected_status: str,
+                            ldap_expected_status: Optional[str],
+                            sql_expected_status: Optional[None]) -> None:
             assert res.status_code == expected_status_code, (f"Expected status code {expected_status_code}, "
                                                              f"got {res.status_code}")
             result = res.json.get("result")
@@ -70,69 +72,82 @@ class APIHealthcheckTestCase(MyApiTestCase):
                 "status") == expected_status, (f"Expected '{expected_status}' status, "
                                                f"got {result.get('value').get('status')}")
 
-            ldap_resolvers = result.get("value").get("ldapresolver")
-            sql_resolvers = result.get("value").get("sqlresolver")
+            result_value = result.get("value")
+            ldap_resolvers = result_value.get("ldapresolver")
+            sql_resolvers = result_value.get("sqlresolver")
 
-            assert ldap_resolvers is not None, "Expected 'ldapresolver' in result, but got None"
-            assert sql_resolvers is not None, "Expected 'sqlresolver' in result, but got None"
+            if ldap_expected_status is None:
+                assert 'ldapresolver' not in result_value, "Expected missing 'ldapresolver' in result, but is present"
+            else:
+                assert ldap_resolvers is not None, "Expected 'ldapresolver' in result, but got None"
+                assert all(status == ldap_expected_status for status in ldap_resolvers.values()), \
+                    f"At least one LDAP resolver does not have '{ldap_expected_status}' status."
 
-            assert all(status == ldap_expected_status for status in ldap_resolvers.values()), \
-                f"At least one LDAP resolver does not have '{ldap_expected_status}' status."
-            assert all(status == sql_expected_status for status in sql_resolvers.values()), \
-                f"At least one SQL resolver does not have '{sql_expected_status}' status."
+            if sql_expected_status is None:
+                assert 'sqlresolvers' not in result_value, "Expected missing 'sqlresolver' in result, but is present"
+            else:
+                assert sql_resolvers is not None, "Expected 'sqlresolver' in result, but got None"
+                assert all(status == sql_expected_status for status in sql_resolvers.values()), \
+                    f"At least one SQL resolver does not have '{sql_expected_status}' status."
 
         ldap3mock.setLDAPDirectory(LDAPDirectory)
 
-        with self.app.test_request_context('/healthz/resolversz', method='GET',
-                                           headers={'Authorization': self.at}):
-            res = self.app.full_dispatch_request()
-            check_resolvers(res, 200, "OK",
-                            ldap_expected_status="fail",
-                            sql_expected_status="fail")
+        for authenticated in True, False:
+            headers = {'Authorization': self.at} if authenticated else {}
+            with self.app.test_request_context('/healthz/resolversz', method='GET', headers=headers):
+                res = self.app.full_dispatch_request()
+                expected = "fail" if authenticated else None
+                check_resolvers(res, 200, "OK",
+                                ldap_expected_status=expected,
+                                sql_expected_status=expected)
 
-            ldapr = save_resolver({
-                'LDAPURI': 'ldap://localhost',
-                'LDAPBASE': 'o=test',
-                'BINDDN': 'cn=manager,ou=example,o=test',
-                'BINDPW': 'ldaptest',
-                'LOGINNAMEATTRIBUTE': 'cn',
-                'LDAPSEARCHFILTER': '(cn=*)',
-                'MULTIVALUEATTRIBUTES': '["groups"]',
-                'USERINFO': '{ "username": "cn",'
-                            '"phone" : "telephoneNumber", '
-                            '"mobile" : "mobile", '
-                            '"email" : "mail", '
-                            '"surname" : "sn", '
-                            '"groups": "memberOf", '
-                            '"givenname" : "givenName" }',
-                'UIDTYPE': 'DN',
-                "resolver": "test_ldapresolver",
-                "type": "ldapresolver"
-            })
+        ldapr = save_resolver({
+            'LDAPURI': 'ldap://localhost',
+            'LDAPBASE': 'o=test',
+            'BINDDN': 'cn=manager,ou=example,o=test',
+            'BINDPW': 'ldaptest',
+            'LOGINNAMEATTRIBUTE': 'cn',
+            'LDAPSEARCHFILTER': '(cn=*)',
+            'MULTIVALUEATTRIBUTES': '["groups"]',
+            'USERINFO': '{ "username": "cn",'
+                        '"phone" : "telephoneNumber", '
+                        '"mobile" : "mobile", '
+                        '"email" : "mail", '
+                        '"surname" : "sn", '
+                        '"groups": "memberOf", '
+                        '"givenname" : "givenName" }',
+            'UIDTYPE': 'DN',
+            "resolver": "test_ldapresolver",
+            "type": "ldapresolver"
+        })
 
-            sqlr = save_resolver({
-                'Driver': 'sqlite',
-                'Server': '/tests/testdata/',
-                'Database': "testuser.sqlite",
-                'Table': 'users',
-                'Encoding': 'utf8',
-                'Editable': True,
-                'Map': '{ "username": "username", \
-                             "userid" : "id", \
-                             "email" : "email", \
-                             "surname" : "name", \
-                             "givenname" : "givenname", \
-                             "password" : "password", \
-                             "phone": "phone", \
-                             "mobile": "mobile"}',
-                'resolver': "test_sqlresolver",
-                'type': "sqlresolver"
-            })
+        sqlr = save_resolver({
+            'Driver': 'sqlite',
+            'Server': '/tests/testdata/',
+            'Database': "testuser.sqlite",
+            'Table': 'users',
+            'Encoding': 'utf8',
+            'Editable': True,
+            'Map': '{ "username": "username", \
+                         "userid" : "id", \
+                         "email" : "email", \
+                         "surname" : "name", \
+                         "givenname" : "givenname", \
+                         "password" : "password", \
+                         "phone": "phone", \
+                         "mobile": "mobile"}',
+            'resolver': "test_sqlresolver",
+            'type': "sqlresolver"
+        })
 
-            self.assertGreater(ldapr, 0, "LDAP resolver creation failed.")
-            self.assertGreater(sqlr, 0, "SQL resolver creation failed.")
+        self.assertGreater(ldapr, 0, "LDAP resolver creation failed.")
+        self.assertGreater(sqlr, 0, "SQL resolver creation failed.")
 
-            res = self.app.full_dispatch_request()
-            check_resolvers(res, 200, "OK",
-                            ldap_expected_status="OK",
-                            sql_expected_status="OK")
+        for authenticated in True, False:
+            headers = {'Authorization': self.at} if authenticated else {}
+            with self.app.test_request_context('/healthz/resolversz', method='GET', headers=headers):
+                res = self.app.full_dispatch_request()
+                expected = "OK" if authenticated else None
+                check_resolvers(res, 200, "OK",
+                                ldap_expected_status=expected,
+                                sql_expected_status=expected)
