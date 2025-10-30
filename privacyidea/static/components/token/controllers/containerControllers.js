@@ -781,7 +781,6 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
 
         $scope.showDiff = false;
         $scope.compareWithTemplate = function (template) {
-
             ContainerFactory.compareTemplateWithContainers(
                 $scope.container.template, {"container_serial": $scope.container.serial},
                 function (data) {
@@ -904,20 +903,25 @@ myApp.controller("containerDetailsController", ['$scope', '$http', '$stateParams
         $scope.deleteAllTokens = function (callback) {
             let tokenSerialList = $scope.getAllTokenSerials();
             let tokenSerialStr = tokenSerialList.join(',');
-            TokenFactory.deleteBatch({"serial": tokenSerialStr}, function (data) {
+            TokenFactory.deleteBulk({"serial": tokenSerialStr}, function (data) {
                 // Delete container
                 callback();
                 // Error message if some tokens could not be deleted
-                let failedTokens = []
-                angular.forEach(data.result.value, function (success, serial) {
-                    if (!success) {
-                        failedTokens.push(serial);
-                    }
-                });
+                let failedTokens = data.result.value.failed || [];
+                let unauthorizedTokens = data.result.value.unauthorized || [];
+                let messages = [];
+
                 if (failedTokens.length > 0) {
-                    console.warn("Some tokens could not be deleted: " + failedTokens.join(", "));
-                    inform.add(gettextCatalog.getString("Some tokens could not be deleted: " + failedTokens.join(", ")),
-                        {type: "danger", ttl: 10000});
+                    messages.push(gettextCatalog.getString("The following tokens failed to delete: ") + failedTokens.join(", "));
+                }
+                if (unauthorizedTokens.length > 0) {
+                    messages.push(gettextCatalog.getString("You are not authorized to delete the following tokens: ") + unauthorizedTokens.join(", "));
+                }
+
+                if (messages.length > 0) {
+                    let fullMessage = messages.join("\n");
+                    console.warn(fullMessage);
+                    inform.add(fullMessage, {type: "danger", ttl: 10000});
                 }
             });
             $scope.showDialogAll = false;

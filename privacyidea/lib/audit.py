@@ -55,6 +55,7 @@ storage.
 
 import logging
 from collections import OrderedDict
+from typing import Optional
 
 from privacyidea.config import ConfigKey
 from privacyidea.lib.log import log_with
@@ -84,7 +85,7 @@ def getAudit(config, startdate=None):
 
 
 @log_with(log)
-def search(config, param=None, user=None):
+def search(config, param=None, admin_params: Optional[dict] = None):
     """
     Returns a list of audit entries, supports pagination
 
@@ -118,7 +119,7 @@ def search(config, param=None, user=None):
         hidden_columns = param["hidden_columns"]
         del param["hidden_columns"]
 
-    pagination = audit.search(param, sortorder=sortorder, page=page,
+    pagination = audit.search(param, admin_params=admin_params, sortorder=sortorder, page=page,
                               page_size=page_size, timelimit=timelimit)
 
     # delete hidden columns from response

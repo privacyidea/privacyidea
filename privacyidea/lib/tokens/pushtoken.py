@@ -1,4 +1,6 @@
-#  License:  AGPLv3
+# SPDX-FileCopyrightText: 2019 NetKnights GmbH <https://netknights.it>
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
 #  contact:  http://www.privacyidea.org
 #
 #  2019-02-08   Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -17,7 +19,7 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-__doc__ = """The pushtoken sends a push notification via Firebase service
+"""The pushtoken sends a push notification via Firebase service
 to the registered smartphone.
 The token is a challenge response token. The smartphone will sign the challenge
 and send it back to the authentication endpoint.
@@ -25,15 +27,16 @@ and send it back to the authentication endpoint.
 This code is tested in tests/test_lib_tokens_push
 """
 
-import secrets
 from base64 import b32decode
 from binascii import Error as BinasciiError
+from datetime import datetime, timedelta, timezone
+from dateutil.parser import isoparse
+from enum import Enum
+import random
+import secrets
 import string
 from typing import Optional, Union
 from urllib.parse import quote
-from datetime import datetime, timedelta
-from pytz import utc
-from dateutil.parser import isoparse
 import traceback
 
 from privacyidea.api.lib.utils import getParam, get_required
@@ -87,9 +90,16 @@ DELAY = 1.0
 POLL_TIME_WINDOW = 1
 UPDATE_FB_TOKEN_WINDOW = 5
 POLL_ONLY = "poll only"
-AVAILABLE_PRESENCE_OPTIONS_ALPHABETIC = [f"{x}" for x in string.ascii_uppercase]
+AVAILABLE_PRESENCE_OPTIONS_ALPHABETIC = list(string.ascii_uppercase)
 AVAILABLE_PRESENCE_OPTIONS_NUMERIC = [f'{x:02}' for x in range(100)]
-ALLOWED_NUMBER_OF_OPTIONS = [f"{i}" for i in range(2, 11)]
+ALLOWED_NUMBER_OF_OPTIONS = list(range(2, 11))
+DEFAULT_NUMBER_OF_PRESENCE_OPTIONS = 3
+
+
+class PushPresenceOptions(Enum):
+    ALPHABETIC = "ALPHABETIC"
+    NUMERIC = "NUMERIC"
+    CUSTOM = "CUSTOM"
 
 
 class PUSH_ACTION(object):
@@ -184,26 +194,29 @@ def create_push_token_url(url: Optional[str] = None, ttl: Union[int, str] = 10, 
     return token_url
 
 
-def _get_presence_options(options):
+def _get_presence_options(options) -> list:
     """
     Get the available presence options for the user to confirm the login based on the push policy configurations.
+
     :param options: the request context parameters / data
     :type options: dict
+    :return: The list of available presence characters/numbers
     """
-    push_presence_options = get_action_values_from_options(
-        SCOPE.AUTH, PUSH_ACTION.PRESENCE_OPTIONS, options) or "ALPHABETIC"
-    push_presence_options = getParam({"presence_options": push_presence_options}, "presence_options",
-                                     allowed_values=["ALPHABETIC", "NUMERIC", "CUSTOM"], default="ALPHABETIC")
-    push_presence_options
-    if push_presence_options == "ALPHABETIC":
-        available_presence_options = list(AVAILABLE_PRESENCE_OPTIONS_ALPHABETIC)
-    elif push_presence_options == "NUMERIC":
+    try:
+        push_presence_option = PushPresenceOptions(get_action_values_from_options(
+            SCOPE.AUTH, PUSH_ACTION.PRESENCE_OPTIONS, options))
+    except ValueError:
+        push_presence_option = PushPresenceOptions.ALPHABETIC
+
+    if push_presence_option == PushPresenceOptions.NUMERIC:
         available_presence_options = list(AVAILABLE_PRESENCE_OPTIONS_NUMERIC)
-    elif push_presence_options == "CUSTOM":
+    elif push_presence_option == PushPresenceOptions.CUSTOM:
         custom_presence_options = get_action_values_from_options(
             SCOPE.AUTH, PUSH_ACTION.PRESENCE_CUSTOM_OPTIONS, options)
-        available_presence_options = custom_presence_options.split(
-            ":") or list(AVAILABLE_PRESENCE_OPTIONS_ALPHABETIC)
+        available_presence_options = custom_presence_options.split(":")
+    # Default push_presence_option is "ALPHABETIC":
+    else:
+        available_presence_options = list(AVAILABLE_PRESENCE_OPTIONS_ALPHABETIC)
     return available_presence_options
 
 
@@ -463,7 +476,7 @@ class PushTokenClass(TokenClass):
                                          'Does only apply if <em>{0!s}</em> is set.').format(
                                    PUSH_ACTION.REQUIRE_PRESENCE),
                                'group': 'PUSH',
-                               'value': ["ALPHABETIC", "NUMERIC", "CUSTOM"],
+                               'value': [x for x in PushPresenceOptions.__members__],
                            },
                            PUSH_ACTION.PRESENCE_CUSTOM_OPTIONS: {
                                'type': 'str',
@@ -476,7 +489,7 @@ class PushTokenClass(TokenClass):
                                'group': 'PUSH'
                            },
                            PUSH_ACTION.PRESENCE_NUM_OPTIONS: {
-                               'type': 'str',
+                               'type': 'int',
                                'desc': _('The number of options the user is presented with to confirm the login. '
                                          'Does only apply if <em>{0!s}</em> is set.').format(
                                    PUSH_ACTION.REQUIRE_PRESENCE),
@@ -661,15 +674,18 @@ class PushTokenClass(TokenClass):
             ts = isoparse(timestamp)
         except (ValueError, TypeError) as _e:
             log.debug(f'{traceback.format_exc()}')
-            raise privacyIDEAError(f'Could not parse timestamp {timestamp}. '
-                                   'ISO-Format required.')
+            raise privacyIDEAError(f'Could not parse timestamp {timestamp}. ISO-Format required.')
         td = timedelta(minutes=window)
         # We don't know if the passed timestamp is timezone aware. If no
         # timezone is passed, we assume UTC
         if ts.tzinfo:
-            now = datetime.now(utc)
+            # We consider the timezone of the given timestamp
+            now = datetime.now(ts.tzinfo)
         else:
-            now = datetime.utcnow()
+            # If a timestamp without timezone is given, we assume it is UTC
+            now = datetime.now(timezone.utc)
+            # We need to add the timezone UTC to the naive timestamp
+            ts = ts.replace(tzinfo=timezone.utc)
         if not (now - td <= ts <= now + td):
             raise privacyIDEAError(f'Timestamp {timestamp} not in valid range.')
 
@@ -736,9 +752,21 @@ class PushTokenClass(TokenClass):
                         else:
                             # Verify the presence_answer. The correct choice is stored as last entry
                             # in the data separated by a comma.
-                            if presence_answer and presence_answer != challenge.get_data().split(",").pop():
+                            # Make sure that the presence_answer is given if it is set in the challenge.
+                            challenge_data = challenge.get_data()
+                            if challenge_data and presence_answer:
+                                if presence_answer != challenge_data.split(",").pop():
+                                    log.debug("Challenge data (%s) does not match "
+                                              "given presence answer (%s)!" % (challenge_data, presence_answer))
+                                    result = False
+                                    # TODO: should we somehow invalidate the challenge by e.g. shuffling the data?
+                                else:
+                                    # Presence answer matches, mark challenge as answered
+                                    challenge.set_otp_status(True)
+                            elif challenge_data and not presence_answer:
+                                log.warning("'push_require_presence' Policy is set but the presence answer "
+                                            "is not present in the smartphone request!")
                                 result = False
-                                # TODO: should we somehow invalidate the challenge by e.g. shuffling the data?
                             else:
                                 challenge.set_otp_status(True)
                         challenge.save()
@@ -994,24 +1022,8 @@ class PushTokenClass(TokenClass):
         data = None
         current_presence_options = None
         reply_dict = {}
-        if is_true(require_presence):
-            if not options["push_triggered"]:
-                # Create a new challenge data
-                current_presence_options = []
-
-                available_presence_options = _get_presence_options(options)
-                num_options = get_action_values_from_options(
-                    SCOPE.AUTH, PUSH_ACTION.PRESENCE_NUM_OPTIONS, options)
-                num_options = getParam({"num_options": num_options}, "num_options",
-                                       allowed_values=ALLOWED_NUMBER_OF_OPTIONS, default="3")
-                for _ in range(int(num_options)):
-                    selected_option = secrets.choice(available_presence_options)
-                    available_presence_options.remove(selected_option)
-                    current_presence_options.append(selected_option)
-                correct_presence_option = secrets.choice(current_presence_options)
-                # The data contains all selected options and the correct option at the end.
-                data = ",".join(current_presence_options + [correct_presence_option])
-            else:
+        if is_true(require_presence) and not options.get(PUSH_ACTION.WAIT):
+            if options.get("push_triggered"):
                 # If the user has more than one token and more than one challenge is created, we need to ensure
                 # that the challenge data for all push token is the same.
                 challenges = get_challenges(transaction_id=transactionid)
@@ -1020,7 +1032,30 @@ class PushTokenClass(TokenClass):
                 split_presence_options = data.split(",")
                 current_presence_options = split_presence_options[:-1]
                 correct_presence_option = split_presence_options[-1]
+            else:
+                # Create a new challenge data
+                current_presence_options = []
+
+                available_presence_options = _get_presence_options(options)
+                num_option = int(get_action_values_from_options(
+                    SCOPE.AUTH, PUSH_ACTION.PRESENCE_NUM_OPTIONS,
+                    options) or DEFAULT_NUMBER_OF_PRESENCE_OPTIONS)
+                num_option = (num_option if num_option in ALLOWED_NUMBER_OF_OPTIONS
+                              else DEFAULT_NUMBER_OF_PRESENCE_OPTIONS)
+                if num_option > len(available_presence_options):
+                    log.warning(f"The required number of presence options exceeds "
+                                f"the number of available presence options ({num_option} "
+                                f"!= {len(available_presence_options)})")
+                    num_option = len(available_presence_options)
+                current_presence_options = random.sample(available_presence_options,
+                                                         num_option)
+                correct_presence_option = secrets.choice(current_presence_options)
+                # The data contains all selected options and the correct option at the end.
+                data = ",".join(current_presence_options + [correct_presence_option])
             reply_dict.update({"presence_answer": correct_presence_option})
+        elif is_true(require_presence) and options.get(PUSH_ACTION.WAIT):
+            log.warning("Unable to use 'require_presence' policy with 'push_wait'. "
+                        "Disabling 'require_presence' policy!")
         # Initially we assume there is no error from Firebase
         res = True
         fb_identifier = self.get_tokeninfo(PUSH_ACTION.FIREBASE_CONFIG)
@@ -1072,7 +1107,7 @@ class PushTokenClass(TokenClass):
                     raise ValidateError("Failed to submit message to Firebase service.")
         else:
             log.warning(f"The token {self.token.serial} has no tokeninfo {PUSH_ACTION.FIREBASE_CONFIG}. "
-                        "The message could not be sent.")
+                        f"The message could not be sent.")
             message += " " + ERROR_CHALLENGE_TEXT
             if is_true(options.get("exception")):
                 raise ValidateError("The token has no tokeninfo. Can not send via Firebase service.")

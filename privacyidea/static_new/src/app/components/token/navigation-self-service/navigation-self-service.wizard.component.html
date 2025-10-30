@@ -1,0 +1,18 @@
+<div
+  [@componentFade]
+  class="navigation-self-service-column">
+  @if (authService.tokenWizard()) {
+    <app-navigation-self-service-button
+      i18n-title
+      key="{{ this.ROUTE_PATHS.TOKENS_WIZARD }}"
+      matIconName="auto_awesome"
+      title="Token Enrollment Wizard" />
+  }
+  @if (authService.containerWizard().enabled) {
+    <app-navigation-self-service-button
+      i18n-title
+      key="{{ this.ROUTE_PATHS.TOKENS_CONTAINERS_WIZARD }}"
+      matIconName="folder_special"
+      title="Container Wizard" />
+  }
+</div>

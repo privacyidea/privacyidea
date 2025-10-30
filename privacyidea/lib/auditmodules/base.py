@@ -53,7 +53,7 @@ storage.
 
 import logging
 import traceback
-from typing import Union
+from typing import Union, Optional
 
 from privacyidea.lib.log import log_with
 import datetime
@@ -151,12 +151,13 @@ class Audit(object):  # pragma: no cover
                 'log_level', 'policies', 'clearance_level', 'sig_check',
                 'missing_line', 'resolver', 'thread_id', 'container_serial', 'container_type']
 
-    def get_total(self, param, AND=True, display_error=True, timelimit=None):
+    def get_total(self, param: dict, admin_params: Optional[dict] = None, AND: bool = True, display_error: bool = True,
+                  timelimit: Optional[datetime.timedelta] = None) -> int:
         """
         This method returns the total number of audit entries
         in the audit store
         """
-        return None
+        return 0
 
     @property
     def has_data(self):
@@ -236,13 +237,23 @@ class Audit(object):  # pragma: no cover
 #        """
 #        pass
 
-    def search(self, search_dict, page_size=15, page=1, sortorder="asc",
-               timelimit=None):
+    def search(self, search_dict: dict, admin_params: Optional[dict] = None, page_size: int = 15, page: int = 1,
+               sortorder: str = "asc", timelimit: Optional[datetime.timedelta] = None):
         """
         This function is used to search audit events.
 
-        :param: Search parameters can be passed.
-        :return: A pagination object
+        :param search_dict: Filter parameters that are concatenated with a logical AND
+        :param admin_params: Optional admin parameters containing the admin name, admin realm and a list of realms the
+            admin is allowed to see, such as ::
+
+                {"admin": "admin_name",
+                 "admin_realm": "realm_of_the_admin",
+                 "allowed_audit_realms": ["realm1", "realm2"]}
+
+        :param page_size: Number of entries per page
+        :param page: The page number
+        :param sortorder: "asc" - ascending or "desc" - descending
+        :param timelimit: Only audit entries newer than this timedelta will be searched
         """
         return Paginate()
 
@@ -256,7 +267,8 @@ class Audit(object):  # pragma: no cover
         """
         return 0
 
-    def csv_generator(self, param=None, user=None, timelimit=None):
+    def csv_generator(self, param: Optional[dict] = None, admin_params: Optional[dict] = None, user=None,
+                      timelimit: Optional[datetime.timedelta] = None):
         """
         A generator that can be used to stream the audit log
 
@@ -265,8 +277,8 @@ class Audit(object):  # pragma: no cover
         """
         pass
 
-    def search_query(self, search_dict, page_size=15, page=1, sortorder="asc",
-                     sortname="number", timelimit=None):
+    def search_query(self, search_dict: dict, admin_params: Optional[dict] = None, page_size: int = 15, page: int = 1,
+                     sortorder: str = "asc", sortname: str = "number", timelimit: Optional[datetime.timedelta] = None):
         """
         This function returns the audit log as an iterator on the result
         """
