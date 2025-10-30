@@ -765,11 +765,11 @@ class IdResolver(UserIdResolver):
                 continue
             search_dict[search_key] = to_unicode(search_dict[search_key])
             if search_key == "accountExpires":
-                comperator = ">="
+                comparator = ">="
                 if search_dict[search_key] in ["1", 1]:
-                    comperator = "<="
+                    comparator = "<="
                 search_filter += "(&({0!s}{1!s}{2!s})(!({3!s}=0)))".format(
-                    self.userinfo[search_key], comperator,
+                    self.userinfo[search_key], comparator,
                     get_ad_timestamp_now(), self.userinfo[search_key])
             else:
                 search_filter += "({0!s}={1!s})".format(self.userinfo[search_key],
