@@ -1,6 +1,8 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { ContainerTableActionsComponent } from './container-table-actions.component';
+import { provideHttpClient } from "@angular/common/http";
+import { provideHttpClientTesting } from "@angular/common/http/testing";
 
 describe('ContainerTableActionsComponent', () => {
   let component: ContainerTableActionsComponent;
@@ -8,6 +10,7 @@ describe('ContainerTableActionsComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
+      providers: [provideHttpClient(), provideHttpClientTesting()],
       imports: [ContainerTableActionsComponent]
     })
     .compileComponents();
