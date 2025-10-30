@@ -12,45 +12,50 @@
  * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
  *
  * You should have received a copy of the GNU Affero General Public
- * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * License along with this program. If not, see <http://www.gnu.org/licenses/>.
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { TokenTabComponent } from "./token-tab.component";
 import "@angular/localize/init";
-
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { provideNoopAnimations } from "@angular/platform-browser/animations";
-
-import { signal } from "@angular/core";
 import { of, throwError } from "rxjs";
-
+import { signal } from "@angular/core";
 import { MatDialog, MatDialogRef } from "@angular/material/dialog";
+import { ActivatedRoute, NavigationEnd, Router } from "@angular/router";
+
+import { TokenTableActionsComponent } from "./token-table-actions.component";
+
 import {
   NotificationService,
   NotificationServiceInterface
 } from "../../../../services/notification/notification.service";
+
 import {
   BulkResult,
   TokenDetails,
   TokenService,
   TokenServiceInterface
 } from "../../../../services/token/token.service";
-import { VersioningService } from "../../../../services/version/version.service";
 
+import { VersioningService } from "../../../../services/version/version.service";
 import { ConfirmationDialogComponent } from "../../../shared/confirmation-dialog/confirmation-dialog.component";
-import { ActivatedRoute, NavigationEnd, Router } from "@angular/router";
-import { MockPiResponse, MockTokenService } from "../../../../../testing/mock-services";
 import { ContentService } from "../../../../services/content/content.service";
 import { AuthService } from "../../../../services/auth/auth.service";
 import { AuditService } from "../../../../services/audit/audit.service";
 
-describe("TokenTabComponent", () => {
-  let component: TokenTabComponent;
-  let fixture: ComponentFixture<TokenTabComponent>;
-  let tokenService: MockTokenService;
+import {
+  MockPiResponse,
+  MockTokenService
+} from "../../../../../testing/mock-services";
+
+describe("TokenTableActionsComponent", () => {
+  let component: TokenTableActionsComponent;
+  let fixture: ComponentFixture<TokenTableActionsComponent>;
+
+  let tokenService: jest.Mocked<MockTokenService>;
   let dialog: jest.Mocked<MatDialog>;
   let notificationService: jest.Mocked<NotificationServiceInterface>;
   let router: jest.Mocked<Router>;
@@ -59,7 +64,7 @@ describe("TokenTabComponent", () => {
     const dialogMock = {
       open: jest.fn().mockReturnValue({
         afterClosed: () => of(true)
-      } as MatDialogRef<ConfirmationDialogComponent>)
+      } as unknown as MatDialogRef<ConfirmationDialogComponent>)
     };
 
     const versioningServiceMock = {
@@ -82,9 +87,7 @@ describe("TokenTabComponent", () => {
       tokenSerial: "MOCK_SERIAL"
     };
 
-    const auditServiceMock = {
-      auditFilter: signal({})
-    };
+    const auditServiceMock = { auditFilter: signal({}) };
 
     const authServiceMock = {
       hasPermission: jest.fn().mockReturnValue(true),
@@ -96,18 +99,13 @@ describe("TokenTabComponent", () => {
     };
 
     await TestBed.configureTestingModule({
-      imports: [TokenTabComponent],
+      imports: [TokenTableActionsComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
         provideNoopAnimations(),
         { provide: Router, useValue: routerMock },
-        {
-          provide: ActivatedRoute,
-          useValue: {
-            params: of({ id: "123" })
-          }
-        },
+        { provide: ActivatedRoute, useValue: { params: of({ id: "123" }) } },
         { provide: TokenService, useClass: MockTokenService },
         { provide: MatDialog, useValue: dialogMock },
         { provide: VersioningService, useValue: versioningServiceMock },
@@ -118,12 +116,16 @@ describe("TokenTabComponent", () => {
       ]
     }).compileComponents();
 
-    fixture = TestBed.createComponent(TokenTabComponent);
+    fixture = TestBed.createComponent(TokenTableActionsComponent);
     component = fixture.componentInstance;
-    tokenService = TestBed.inject(TokenService) as unknown as MockTokenService;
+
+    tokenService = TestBed.inject(TokenService) as unknown as jest.Mocked<MockTokenService>;
     dialog = TestBed.inject(MatDialog) as unknown as jest.Mocked<MatDialog>;
-    notificationService = TestBed.inject(NotificationService) as unknown as jest.Mocked<NotificationServiceInterface>;
+    notificationService = TestBed.inject(
+      NotificationService
+    ) as unknown as jest.Mocked<NotificationServiceInterface>;
     router = TestBed.inject(Router) as unknown as jest.Mocked<Router>;
+
     fixture.detectChanges();
   });
 
@@ -131,17 +133,11 @@ describe("TokenTabComponent", () => {
     expect(component).toBeTruthy();
   });
 
-  it("sets the version on ngOnInit", () => {
-    expect(component.version).toBe("1.0.0");
-  });
-
   describe("toggleActive()", () => {
-    it("calls service, reloads details", () => {
+    it("calls service, then reloads details", () => {
       jest.spyOn(tokenService, "toggleActive");
       jest.spyOn(tokenService.tokenDetailResource, "reload");
-
       component.toggleActive();
-
       expect(tokenService.toggleActive).toHaveBeenCalledWith("MOCK_SERIAL", true);
       expect(tokenService.tokenDetailResource.reload).toHaveBeenCalled();
     });
@@ -172,19 +168,6 @@ describe("TokenTabComponent", () => {
     });
   });
 
-  describe("openLostTokenDialog()", () => {
-    it("passes the isLost & tokenSerial signals to the dialog", () => {
-      component.openLostTokenDialog();
-
-      expect(dialog.open).toHaveBeenCalledWith(expect.any(Function), {
-        data: {
-          isLost: component.isLost,
-          tokenSerial: component.tokenSerial
-        }
-      });
-    });
-  });
-
   describe("deleteSelectedTokens()", () => {
     const mockTokens = [{ serial: "TOKEN1" }, { serial: "TOKEN2" }] as TokenDetails[];
 
@@ -198,47 +181,80 @@ describe("TokenTabComponent", () => {
       expect(tokenService.bulkDeleteTokens).not.toHaveBeenCalled();
     });
 
-    it("should call batchDeleteTokens and reload on success", () => {
+    it("should call bulkDeleteTokens and reload on success", () => {
       const response = new MockPiResponse<BulkResult, any>({
         detail: {},
-        result: { status: true, value: { count_success: 2, failed: [], unauthorized: [] } }
+        result: {
+          status: true,
+          value: { count_success: 2, failed: [], unauthorized: [] }
+        }
       });
       tokenService.bulkDeleteTokens.mockReturnValue(of(response));
+
       component.deleteSelectedTokens();
-      expect(tokenService.bulkDeleteTokens).toHaveBeenCalledWith(mockTokens.map(token => token.serial));
+
+      expect(tokenService.bulkDeleteTokens).toHaveBeenCalledWith(
+        mockTokens.map(t => t.serial)
+      );
       expect(tokenService.tokenResource.reload).toHaveBeenCalled();
-      expect(notificationService.openSnackBar).toHaveBeenCalledWith("Successfully deleted 2 tokens.");
+      expect(notificationService.openSnackBar).toHaveBeenCalledWith(
+        "Successfully deleted 2 tokens."
+      );
     });
 
-    it("should call batchDeleteTokens and reload on success with singular token", () => {
-      const singleToken = [{ serial: "TOKEN1" }] as TokenDetails[];
-      tokenService.tokenSelection.set(singleToken);
+    it("should call bulkDeleteTokens and reload on success with singular token", () => {
+      const single = [{ serial: "TOKEN1" }] as TokenDetails[];
+      tokenService.tokenSelection.set(single);
+
       const response = new MockPiResponse<BulkResult, any>({
         detail: {},
-        result: { status: true, value: { count_success: 1, failed: [], unauthorized: [] } }
+        result: {
+          status: true,
+          value: { count_success: 1, failed: [], unauthorized: [] }
+        }
       });
       tokenService.bulkDeleteTokens.mockReturnValue(of(response));
+
       component.deleteSelectedTokens();
+
       expect(tokenService.bulkDeleteTokens).toHaveBeenCalledWith(["TOKEN1"]);
       expect(tokenService.tokenResource.reload).toHaveBeenCalled();
-      expect(notificationService.openSnackBar).toHaveBeenCalledWith("Successfully deleted 1 token.");
+      expect(notificationService.openSnackBar).toHaveBeenCalledWith(
+        "Successfully deleted 1 token."
+      );
     });
+
     it("should show a notification if some tokens failed or were unauthorized", () => {
       const response = new MockPiResponse<BulkResult, any>({
         detail: {},
-        result: { status: true, value: { count_success: 1, failed: ["TOKEN1"], unauthorized: ["TOKEN2"] } }
+        result: {
+          status: true,
+          value: {
+            count_success: 1,
+            failed: ["TOKEN1"],
+            unauthorized: ["TOKEN2"]
+          }
+        }
       });
       tokenService.bulkDeleteTokens.mockReturnValue(of(response));
+
       component.deleteSelectedTokens();
+
       expect(notificationService.openSnackBar).toHaveBeenCalledWith(
         "Successfully deleted 1 token.\nThe following tokens failed to delete: TOKEN1\nYou are not authorized to delete the following tokens: TOKEN2"
       );
     });
 
     it("should handle API errors gracefully", () => {
-      tokenService.bulkDeleteTokens.mockReturnValue(throwError(() => new Error("API Error")));
+      tokenService.bulkDeleteTokens.mockReturnValue(
+        throwError(() => new Error("API Error"))
+      );
+
       component.deleteSelectedTokens();
-      expect(notificationService.openSnackBar).toHaveBeenCalledWith("An error occurred while deleting tokens.");
+
+      expect(notificationService.openSnackBar).toHaveBeenCalledWith(
+        "An error occurred while deleting tokens."
+      );
     });
   });
 
@@ -249,39 +265,57 @@ describe("TokenTabComponent", () => {
       tokenService.tokenSelection.set(mockTokens);
     });
 
-    it("should call batchUnassignTokens and reload on success", () => {
+    it("should call bulkUnassignTokens and reload on success", () => {
       const response = new MockPiResponse<BulkResult, any>({
         detail: {},
-        result: { status: true, value: { count_success: 1, failed: [], unauthorized: [] } }
+        result: {
+          status: true,
+          value: { count_success: 1, failed: [], unauthorized: [] }
+        }
       });
+
       jest.spyOn(tokenService, "bulkUnassignTokens").mockReturnValue(of(response));
+
       component.unassignSelectedTokens();
+
       expect(tokenService.bulkUnassignTokens).toHaveBeenCalledWith(mockTokens);
       expect(tokenService.tokenResource.reload).toHaveBeenCalled();
-      expect(notificationService.openSnackBar).toHaveBeenCalledWith("Successfully unassigned 1 token.");
+      expect(notificationService.openSnackBar).toHaveBeenCalledWith(
+        "Successfully unassigned 1 token."
+      );
     });
   });
 
   describe("assignSelectedTokens()", () => {
-    it("should do nothing if dialog is cancelled", async () => {
-      (dialog.open as jest.Mock).mockReturnValue({ afterClosed: () => of(null) });
-      component.assignSelectedTokens();
-      jest.advanceTimersByTime(100);
-      await Promise.resolve();
-      expect(tokenService.assignUser).not.toHaveBeenCalled();
+    beforeEach(() => {
+      jest.useFakeTimers();
+    });
+    afterEach(() => {
+      jest.useRealTimers();
     });
 
-    it("should assign tokens without a user", async () => {
+    it("should do nothing if dialog is cancelled", async () => {
+      (dialog.open as jest.Mock).mockReturnValue({ afterClosed: () => of(null) });
+
+      component.assignSelectedTokens();
+
+      jest.advanceTimersByTime(100);
+      await Promise.resolve();
+
+      expect(tokenService.assignUser).not.toHaveBeenCalled();
+      expect(tokenService.unassignUser).not.toHaveBeenCalled();
+    });
+
+    it("should assign tokens without an existing user", async () => {
       const tokens = [{ serial: "T1", username: "" }] as TokenDetails[];
       tokenService.tokenSelection.set(tokens);
+
       (dialog.open as jest.Mock).mockReturnValue({
-        afterClosed: () => of({
-          username: "new_user",
-          realm: "new_realm"
-        })
+        afterClosed: () => of({ username: "new_user", realm: "new_realm" })
       });
 
       component.assignSelectedTokens();
+
       jest.advanceTimersByTime(100);
       await Promise.resolve();
 
@@ -297,14 +331,13 @@ describe("TokenTabComponent", () => {
     it("should unassign and then re-assign tokens that already have a user", async () => {
       const tokens = [{ serial: "T1", username: "old_user" }] as TokenDetails[];
       tokenService.tokenSelection.set(tokens);
+
       (dialog.open as jest.Mock).mockReturnValue({
-        afterClosed: () => of({
-          username: "new_user",
-          realm: "new_realm"
-        })
+        afterClosed: () => of({ username: "new_user", realm: "new_realm" })
       });
 
       component.assignSelectedTokens();
+
       jest.advanceTimersByTime(100);
       await Promise.resolve();
 

@@ -70,16 +70,11 @@ describe("LayoutComponent", () => {
     expect(component).toBeTruthy();
   });
 
-  it("should render the header and router-outlet in the DOM", () => {
+  it("should render router-outlet in the DOM", () => {
     fixture.detectChanges();
 
     const layoutElement = fixture.nativeElement.querySelector(".layout");
     expect(layoutElement).toBeTruthy();
-
-    const header = fixture.nativeElement.querySelector(
-      "header[aria-label=\"Header\"]"
-    );
-    expect(header).toBeTruthy();
 
     const main = fixture.nativeElement.querySelector(
       "main[aria-label=\"Main Router Outlet\"]"

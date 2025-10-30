@@ -17,22 +17,30 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-
-import { FooterComponent } from "./footer.component";
+import { UserTableActionsComponent } from "./user-table-actions.component";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { ActivatedRoute } from "@angular/router";
+import { of } from "rxjs";
 
-describe("FooterComponent", () => {
-  let component: FooterComponent;
-  let fixture: ComponentFixture<FooterComponent>;
+describe("UserTableActionsComponent", () => {
+  let component: UserTableActionsComponent;
+  let fixture: ComponentFixture<UserTableActionsComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [FooterComponent],
-      providers: [provideHttpClient(), provideHttpClientTesting()]
-    }).compileComponents();
+      providers: [provideHttpClient(), provideHttpClientTesting(),
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            params: of({ id: "123" })
+          }
+        }],
+      imports: [UserTableActionsComponent]
+    })
+      .compileComponents();
 
-    fixture = TestBed.createComponent(FooterComponent);
+    fixture = TestBed.createComponent(UserTableActionsComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

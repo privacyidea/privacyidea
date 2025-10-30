@@ -38,6 +38,7 @@
         [filterHTMLInputElement]="filterHTMLInputElement"
         [filterValue]="tokenService.tokenFilter" />
     </div>
+      <app-token-table-actions/>
     <div class="table-container">
       <table
         (matSortChange)="onSortEvent($event)"

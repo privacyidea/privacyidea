@@ -26,7 +26,6 @@ import {
   ContainerService,
   ContainerServiceInterface
 } from "../../../../services/container/container.service";
-import { LostTokenComponent } from "../../token-card/token-tab/lost-token/lost-token.component";
 import { ContentService } from "../../../../services/content/content.service";
 
 export type ContainerCreationDialogData = {

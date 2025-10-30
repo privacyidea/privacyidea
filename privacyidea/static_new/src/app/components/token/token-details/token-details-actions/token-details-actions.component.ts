@@ -19,7 +19,7 @@
 import { NgClass } from "@angular/common";
 import { Component, computed, inject, Input, signal, WritableSignal } from "@angular/core";
 import { FormsModule } from "@angular/forms";
-import { MatFabButton } from "@angular/material/button";
+import { MatButton } from "@angular/material/button";
 import { MatDialog } from "@angular/material/dialog";
 import { MatDivider } from "@angular/material/divider";
 import { MatIcon } from "@angular/material/icon";
@@ -38,16 +38,14 @@ import { ResyncTokenActionComponent } from "./resync-token-action/resync-token-a
 import { SetPinActionComponent } from "./set-pin-action/set-pin-action.component";
 import { TestOtpPinActionComponent } from "./test-otp-pin-action/test-otp-pin-action.component";
 import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
-import {
-  MachineService,
-  MachineServiceInterface,
-  TokenApplications
-} from "../../../../services/machine/machine.service";
+import { MachineService, MachineServiceInterface } from "../../../../services/machine/machine.service";
 import {
   HotpMachineAssignDialogData,
   TokenHotpMachineAssignDialogComponent
 } from "../token-machine-attach-dialog/token-hotp-machine-attach-dialog/token-hotp-machine-attach-dialog";
-import { lastValueFrom } from "rxjs";
+import { filter, lastValueFrom, switchMap } from "rxjs";
+import { SelectedUserAssignDialogComponent } from "../../token-table/token-table-actions/selected-user-attach-dialog/selected-user-attach-dialog.component";
+import { LostTokenComponent } from "./lost-token/lost-token.component";
 
 @Component({
   selector: "app-token-details-actions",
@@ -55,12 +53,12 @@ import { lastValueFrom } from "rxjs";
   imports: [
     FormsModule,
     MatIcon,
-    MatFabButton,
     MatDivider,
     NgClass,
     SetPinActionComponent,
     ResyncTokenActionComponent,
-    TestOtpPinActionComponent
+    TestOtpPinActionComponent,
+    MatButton
   ],
   templateUrl: "./token-details-actions.component.html",
   styleUrl: "./token-details-actions.component.scss"
@@ -77,6 +75,7 @@ export class TokenDetailsActionsComponent {
   @Input() repeatPinValue!: WritableSignal<string>;
   @Input() tokenType!: WritableSignal<string>;
   tokenSerial = this.tokenService.tokenSerial;
+  isLost = signal(false);
 
   isAttachedToMachine = computed<boolean>(() => {
     const tokenApplications = this.machineService.tokenApplications();
@@ -119,6 +118,7 @@ export class TokenDetailsActionsComponent {
         });
       });
   }
+
   attachHotpToMachineDialog() {
     const data: HotpMachineAssignDialogData = {
       tokenSerial: this.tokenSerial()
@@ -174,5 +174,14 @@ export class TokenDetailsActionsComponent {
           console.error("Error during unassignment request:", error);
         }
       });
+  }
+
+  openLostTokenDialog() {
+    this.matDialog.open(LostTokenComponent, {
+      data: {
+        isLost: this.isLost,
+        tokenSerial: this.tokenSerial
+      }
+    });
   }
 }
