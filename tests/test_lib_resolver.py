@@ -2382,6 +2382,36 @@ class LDAPResolverTestCase(MyTestCase):
             self.assertEqual("Cooper", user_info["surname"])
             self.assertNotIn("groups", user_info)
 
+    def test_39_create_search_filter(self):
+        resolver = LDAPResolver()
+        resolver.loadConfig({'LDAPURI': 'ldap://localhost',
+                      'LDAPBASE': 'o=test',
+                      'BINDDN': 'cn=manager,ou=example,o=test',
+                      'BINDPW': 'ldaptest',
+                      'LOGINNAMEATTRIBUTE': 'cn',
+                      'LDAPSEARCHFILTER': '(cn=*)',
+                      'USERINFO': '{ "username": "cn",'
+                                  '"phone" : "telephoneNumber", '
+                                  '"mobile" : "mobile"'
+                                  ', "email" : "mail", '
+                                  '"surname" : "sn", '
+                                  '"givenname" : "givenName",'
+                                  '"accountExpired": "accountExpired" }',
+                      'UIDTYPE': 'DN',
+                      })
+
+        search_filter = resolver._create_search_filter({"surname": "***"})
+        self.assertEqual("(&(cn=*))", search_filter)
+
+        search_filter = resolver._create_search_filter({"surname": "*"})
+        self.assertEqual("(&(cn=*))", search_filter)
+
+        search_filter = resolver._create_search_filter({"username": "*hans*", "email": "*.*@example*"})
+        self.assertEqual("(&(cn=*)(cn=*hans*)(mail=*.*@example*))", search_filter)
+
+        search_filter = resolver._create_search_filter({"accountExpired": 1})
+        self.assertEqual("(&(cn=*)(accountExpired=1))", search_filter)
+
 
 class BaseResolverTestCase(MyTestCase):
 
