@@ -16,10 +16,13 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { inject, Injectable, signal, WritableSignal } from "@angular/core";
+import { computed, effect, inject, Injectable, linkedSignal, signal, WritableSignal } from "@angular/core";
 import { ROUTE_PATHS } from "../../route_paths";
 import { VersioningService } from "../version/version.service";
 import { version } from "uuid";
+import { httpResource } from "@angular/common/http";
+import { ContentService, ContentServiceInterface } from "../content/content.service";
+import { PolicyService } from "../policies/policies.service";
 
 export interface DocumentationServiceInterface {
   openDocumentation(page: string): void;
@@ -37,8 +40,9 @@ export interface DocumentationServiceInterface {
 @Injectable({
   providedIn: "root"
 })
-export class DocumentationService implements DocumentationServiceInterface {
+export class DocumentationService {
   private _versioningService = inject(VersioningService);
+  private _policyActionService: PolicyService = inject(PolicyService);
   private _version = this._versioningService.version;
   private _baseUrl = "https://privacyidea.readthedocs.io/en/"; //TODO translation
 
@@ -129,6 +133,14 @@ export class DocumentationService implements DocumentationServiceInterface {
     }
   }
 
+  checkResponseFound(response: Response): boolean {
+    return response.ok; // Temporary simple check replace later with full HTML parsing
+    // const html = await response.text();
+    // const parser = new DOMParser();
+    // const doc = parser.parseFromString(html, "text/html");
+    // return !doc.querySelector("div.document div.documentwrapper div.bodywrapper div.body h1#notfound");
+  }
+
   /**
    *
    * @param pageUrl The page URL to check (relative to the documentation base URL)
@@ -178,22 +190,56 @@ export class DocumentationService implements DocumentationServiceInterface {
     });
   }
 
-  async getPolicyActionDocumentation(
-    scope: string,
-    sectionId: string
-  ): Promise<{ actionDocu: string[]; actionNotes: string[] } | null> {
-    const pageUrl = "policies/" + scope + ".html";
-    const existingPage = await this.checkPageUrl(pageUrl);
-    console.log("existingPage:", existingPage);
-    if (!existingPage) return null;
-    const response = await fetch(existingPage);
-    console.log("response:", response);
-    const html = await response.text();
+  policyActionSectionId = computed<string | null>(() => {
+    const selectedAction = this._policyActionService.selectedAction()?.name;
+    console.log("policyActionSectionId selectedAction:", selectedAction);
+    if (!selectedAction) return null;
+    return selectedAction.replaceAll("_", "-").toLowerCase();
+  });
+
+  policyActionDocumentationResource = httpResource.text(() => {
+    const scope = this._policyActionService.selectedPolicyScope();
+    if (!scope) return undefined;
+    console.log("policyActionDocumentationResource scope:", scope);
+    const page = "policies/" + scope + ".html";
+    return {
+      url: this.getVersionUrl(page),
+      method: "GET",
+      responseType: "text"
+    };
+  });
+  policyActionDocumentationFallbackResource = httpResource.text(() => {
+    const scope = this._policyActionService.selectedPolicyScope();
+    console.log("policyActionDocumentationFallbackResource scope:", scope);
+    if (!scope) return undefined;
+    const page = "policies/" + scope + ".html";
+    return {
+      url: this.getFallbackUrl(page),
+      method: "GET",
+      responseType: "text"
+    };
+  });
+
+  policyActionDocumentation = computed(() => {
+    let html = this.policyActionDocumentationResource.value();
+
+    console.log("resourceType:", typeof html);
+    if (!html) {
+      html = this.policyActionDocumentationFallbackResource.value();
+    }
+    if (!html) {
+      console.warn("No documentation resource found");
+      return null;
+    }
     console.log("html:", html);
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, "text/html");
     console.log("doc:", doc);
-    sectionId = sectionId.replaceAll("_", "-");
+    let sectionId = this.policyActionSectionId();
+    if (!sectionId) {
+      console.warn("No sectionId found");
+      return null;
+    }
     console.log("sectionId:", sectionId);
 
     const section = doc.getElementById(sectionId);
@@ -221,6 +267,11 @@ export class DocumentationService implements DocumentationServiceInterface {
           element.classList.contains("admonition") &&
           element.classList.contains("note")
         ) {
+          // remove <p class="admonition-title">Note</p> from the div
+          const title = element.querySelector("p.admonition-title");
+          if (title) {
+            element.removeChild(title);
+          }
           console.log("Adding to actionNotes:", element.outerHTML);
           actionNotes.push(element.outerHTML);
         }
@@ -229,5 +280,5 @@ export class DocumentationService implements DocumentationServiceInterface {
     console.log("actionDocu:", actionDocu);
     console.log("actionNotes:", actionNotes);
     return { actionDocu, actionNotes };
-  }
+  });
 }

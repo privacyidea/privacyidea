@@ -19,25 +19,6 @@
   padding: var(--half-global-padding) 0;
 }
 
-.tab-button {
-  font-size: 0.9rem;
-  font-weight: 500;
-  color: var(--mat-sys-on-surface-variant);
-  background-color: transparent;
-  border: none;
-  cursor: pointer;
-  border-radius: var(--global-padding);
-  padding: var(--half-global-padding) var(--global-padding);
-  transition:
-    background-color 0.2s ease-in-out,
-    color 0.2s ease-in-out;
-}
-
-.tab-button-active {
-  background-color: var(--mat-sys-primary);
-  color: var(--mat-sys-on-primary);
-}
-
 .policy-name-input {
   background-color: transparent;
   border: none;
@@ -59,7 +40,7 @@
 
 .action-card {
   padding: var(--quarter-global-padding) var(--global-padding);
-  border-radius: var(--quarter-global-padding);
+  border-radius: var(--border-radius);
   box-shadow:
     0px 2px 4px -1px rgba(0, 0, 0, 0.2),
     0px 4px 5px 0px rgba(0, 0, 0, 0.14),
@@ -68,7 +49,7 @@
 
 .conditions-list {
   padding: var(--global-padding);
-  border-radius: var(--quarter-global-padding);
+  border-radius: var(--border-radius);
   box-shadow:
     0px 2px 4px -1px rgba(0, 0, 0, 0.2),
     0px 4px 5px 0px rgba(0, 0, 0, 0.14),
@@ -80,7 +61,7 @@
   flex-direction: column;
   gap: var(--global-gap);
   padding: var(--global-padding);
-  border-radius: var(--quarter-global-padding);
+  border-radius: var(--border-radius);
   box-shadow:
     0px 2px 4px -1px rgba(0, 0, 0, 0.2),
     0px 4px 5px 0px rgba(0, 0, 0, 0.14),
@@ -152,10 +133,10 @@
 }
 
 .policy-card {
-  border-radius: var(--quarter-global-padding);
+  border-radius: var(--border-radius);
 
   mat-expansion-panel {
-    border-radius: var(--quarter-global-padding);
+    border-radius: var(--border-radius);
   }
 
   mat-expansion-panel-header {
@@ -209,6 +190,5 @@
   gap: var(--global-gap);
   display: flex;
   flex-direction: column;
-  padding: var(--global-padding);
-  border-radius: var(--quarter-global-padding);
+  border-radius: var(--border-radius);
 }

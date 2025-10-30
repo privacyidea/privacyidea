@@ -1,6 +1,6 @@
 .action-selector-container {
   background-color: var(--mat-sys-surface-container);
-  border-radius: var(--quarter-global-padding);
+  border-radius: var(--border-radius);
   box-shadow: var(--mat-sys-level2);
   color: var(--mat-sys-on-surface);
   display: flex;
@@ -32,7 +32,9 @@
   gap: calc(var(--global-gap) / 2);
   max-height: 32rem;
   overflow-y: none;
-  padding-right: var(--half-global-padding);
+  padding-right: var(
+    --half-global-padding
+  ); /* Adds space for the scrollbar to prevent content from touching the edge */
 }
 
 .policy-action-items {
@@ -44,7 +46,7 @@
 
 .policy-action-item {
   align-items: center;
-  border-radius: var(--quarter-global-padding);
+  border-radius: var(--border-radius);
   box-shadow: var(--mat-sys-level1);
   display: flex;
   font-weight: 500;

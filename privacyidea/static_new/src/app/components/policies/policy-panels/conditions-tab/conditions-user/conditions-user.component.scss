@@ -6,7 +6,7 @@
   background-color: var(--mat-sys-surface-container);
   border: 1px solid var(--mat-sys-outline-variant);
   box-shadow: var(--mat-sys-level1);
-  border-radius: var(--quarter-global-padding);
+  border-radius: var(--border-radius);
   padding: var(--half-global-padding) var(--three-quarters-global-padding);
 }
 
@@ -42,7 +42,7 @@
   display: flex;
   align-items: center;
   background-color: var(--mat-sys-surface-container-high);
-  border-radius: var(--half-global-padding);
+  border-radius: var(--border-radius);
   padding: var(--quarter-global-padding) var(--half-global-padding);
   // margin-right: var(--half-global-padding);
   flex-shrink: 0;
@@ -86,7 +86,7 @@
 .add-user-input {
   width: 100%;
   // ecken rechts sollen eckig sein
-  border-radius: var(--three-quarters-global-padding) 0 0 var(--three-quarters-global-padding);
+  border-radius: var(--border-radius);
 
   .mdc-text-field--filled {
     border-top-right-radius: 0 !important;

@@ -369,7 +369,7 @@ $button-low-contrast-variant: linear-gradient(
   height: 48px;
   width: 48px;
   color: var(--mat-sys-on-surface);
-  border-radius: calc(var(--border-radius) * 4);
+  border-radius: var(--border-radius);
   @include mat.elevation(5);
 }
 
@@ -421,7 +421,7 @@ $button-low-contrast-variant: linear-gradient(
   height: calc(var(--header-height) / 3);
   width: calc(var(--header-height) / 3);
   color: var(--mat-sys-on-surface);
-  border-radius: calc(var(--border-radius) / 4);
+  border-radius: var(--border-radius);
   @include mat.elevation(5);
 
   &:hover {
@@ -445,7 +445,7 @@ $button-low-contrast-variant: linear-gradient(
 }
 
 .mat-mdc-outlined-button {
-  border-radius: var(--half-global-padding);
+  border-radius: var(--border-radius);
   padding: var(--half-global-padding) var(--global-padding);
   border: 1px solid var(--mat-sys-outline);
   background-color: var(--mat-sys-surface);

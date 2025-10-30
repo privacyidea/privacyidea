@@ -66,8 +66,9 @@ $border-radius: var(--border-radius);
         background: var(--mat-sys-primary-base);
         color: var(--mat-sys-on-primary);
         transform: translateX(-2px);
-        transition: transform 200ms,
-        box-shadow 200ms ease;
+        transition:
+          transform 200ms,
+          box-shadow 200ms ease;
       }
 
       &.active {
@@ -75,8 +76,9 @@ $border-radius: var(--border-radius);
         background: var(--mat-sys-primary-base-active);
         color: var(--mat-sys-on-primary);
         transform: translateX(-2px);
-        transition: transform 200ms,
-        box-shadow 200ms ease;
+        transition:
+          transform 200ms,
+          box-shadow 200ms ease;
 
         &:hover {
           box-shadow: var(--box-shadow-header);
@@ -84,8 +86,9 @@ $border-radius: var(--border-radius);
           background: var(--mat-sys-primary-base);
           color: var(--mat-sys-on-primary);
           transform: translateX(-2px);
-          transition: transform 200ms,
-          box-shadow 200ms ease;
+          transition:
+            transform 200ms,
+            box-shadow 200ms ease;
         }
       }
     }

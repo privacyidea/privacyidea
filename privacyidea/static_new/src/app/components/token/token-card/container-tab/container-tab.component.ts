@@ -50,7 +50,7 @@ export class ContainerTabComponent {
   private readonly containerService: ContainerServiceInterface = inject(ContainerService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly versioningService: VersioningServiceInterface = inject(VersioningService);
-  protected readonly documentationService: DocumentationServiceInterface = inject(DocumentationService);
+  protected readonly documentationService = inject(DocumentationService);
   protected readonly authService = inject(AuthService);
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
   private router = inject(Router);

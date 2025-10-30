@@ -3,10 +3,10 @@
 @use "../policy-panel/policy-panel.component.scss";
 
 .policy-card {
-  border-radius: var(--quarter-global-padding);
+  border-radius: var(--border-radius);
 
   mat-expansion-panel {
-    border-radius: var(--quarter-global-padding);
+    border-radius: var(--border-radius);
   }
 
   mat-expansion-panel-header {

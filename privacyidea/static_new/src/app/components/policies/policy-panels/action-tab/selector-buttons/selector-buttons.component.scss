@@ -37,7 +37,7 @@
 .button-row {
   $border-thickness: 1px;
   border: $border-thickness solid var(--mat-sys-outline);
-  border-radius: calc(var(--half-global-padding) + $border-thickness);
+  border-radius: var(--border-radius);
   display: flex;
   overflow: auto;
   padding: 0;

@@ -4,7 +4,7 @@
 
 .action-detail-column {
   background-color: var(--mat-sys-surface-container);
-  border-radius: var(--quarter-global-padding);
+  border-radius: var(--border-radius);
   box-shadow: var(--mat-sys-level2);
   color: var(--mat-sys-on-surface);
   display: flex;
@@ -16,7 +16,7 @@
 
 .action-detail-card {
   background-color: var(--mat-sys-surface-container-high);
-  border-radius: var(--quarter-global-padding);
+  border-radius: var(--border-radius);
   box-shadow: var(--mat-sys-level2);
   padding: var(--global-padding);
 }
@@ -60,10 +60,17 @@
   align-self: flex-end;
   color: var(--mat-sys-primary);
 }
-.action-icons {
+.action-detail-title {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--global-gap);
+}
+
+.action-detail-title-buttons {
+  flex-grow: 1;
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--global-gap);
   button[mat-icon-button] {
     padding: 0;
     display: flex;

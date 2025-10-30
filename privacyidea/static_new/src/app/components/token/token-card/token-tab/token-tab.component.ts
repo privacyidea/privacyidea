@@ -58,7 +58,7 @@ import {
 export class TokenTabComponent {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly versioningService: VersioningServiceInterface = inject(VersioningService);
-  protected readonly documentationService: DocumentationServiceInterface = inject(DocumentationService);
+  protected readonly documentationService = inject(DocumentationService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly dialog: MatDialog = inject(MatDialog);
   protected readonly auditService: AuditServiceInterface = inject(AuditService);

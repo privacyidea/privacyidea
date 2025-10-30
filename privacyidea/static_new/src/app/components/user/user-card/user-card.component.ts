@@ -69,7 +69,7 @@ import {
 export class UserCardComponent {
   protected readonly overflowService: OverflowServiceInterface = inject(OverflowService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
-  protected readonly documentationService: DocumentationServiceInterface = inject(DocumentationService);
+  protected readonly documentationService = inject(DocumentationService);
   protected readonly realmService: RealmServiceInterface = inject(RealmService);
   protected readonly userService: UserServiceInterface = inject(UserService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);

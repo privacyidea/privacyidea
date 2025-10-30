@@ -38,37 +38,7 @@ export class ActionDetailComponent {
   });
   policyService = inject(PolicyService);
 
-  documentationService: DocumentationServiceInterface = inject(DocumentationService);
-
-  constructor() {
-    effect(async () => {
-      const action = this.policyService.selectedAction();
-      if (!action) return [];
-      const scope = this.policyService.selectedPolicyScope();
-      console.log("Fetching documentation for action:", action.name, "in action:", action);
-      const sectionId = action ? action.name : "";
-      if (!scope || !sectionId) {
-        console.warn("Cannot fetch action documentation: Missing scope or sectionId");
-        this.actionDocu.set(null);
-        this.actionNotes.set(null);
-        return;
-      }
-
-      const result = await this.documentationService.getPolicyActionDocumentation(scope, sectionId);
-
-      console.log("result:", result);
-      if (result) {
-        console.log("Found action documentation:", result);
-        this.actionDocu.set(result.actionDocu);
-        this.actionNotes.set(result.actionNotes);
-      } else {
-        console.warn("No documentation found for action:", action.name);
-        this.actionDocu.set(null);
-        this.actionNotes.set(null);
-      }
-      return;
-    });
-  }
+  documentationService = inject(DocumentationService);
 
   actionIsAlreadyAdded(): boolean {
     const selectedAction = this.policyService.selectedAction();
@@ -84,8 +54,12 @@ export class ActionDetailComponent {
     this.policyService.selectedAction.set(null);
   }
 
-  actionDocu = signal<string[] | null>(null);
-  actionNotes = signal<string[] | null>(null);
+  actionDocu = computed<string[] | null>(
+    () => this.documentationService.policyActionDocumentation()?.actionDocu ?? null
+  );
+  actionNotes = computed<string[] | null>(
+    () => this.documentationService.policyActionDocumentation()?.actionNotes ?? null
+  );
   visibleContent = linkedSignal<any, "docu" | "notes" | "none">({
     source: () => ({
       docu: this.actionDocu(),

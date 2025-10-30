@@ -1,8 +1,10 @@
 @if (policyService.selectedAction() !== null) {
   <div class="action-detail-column">
-    <div class="action-icons">
-      <h3>
+    <div class="action-detail-title">
+      <h3 i18n>
         {{ policyService.selectedAction()?.name }}
+      </h3>
+      <div class="action-detail-title-buttons">
         @if (actionDocu() && actionDocu()!.length > 0) {
           <button
             mat-icon-button
@@ -17,7 +19,7 @@
             <mat-icon class="warning-icon">warning_outline</mat-icon>
           </button>
         }
-      </h3>
+      </div>
     </div>
     <div>
       @if (visibleContent() === "docu") {

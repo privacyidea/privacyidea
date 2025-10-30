@@ -6,7 +6,7 @@
   background-color: var(--mat-sys-surface-container);
   border: 1px solid var(--mat-sys-outline-variant);
   box-shadow: var(--mat-sys-level1);
-  border-radius: var(--quarter-global-padding);
+  border-radius: var(--border-radius);
   padding: var(--half-global-padding) var(--three-quarters-global-padding);
 }
 
@@ -31,7 +31,7 @@
   text-align: center;
 
   background-color: var(--mat-sys-surface-container-high);
-  border-radius: var(--quarter-global-padding);
+  border-radius: var(--border-radius);
   box-shadow: var(--mat-sys-level1);
   font-weight: 500;
   padding: var(--half-global-padding) var(--three-quarters-global-padding);
