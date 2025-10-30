@@ -23,7 +23,7 @@ import { of } from "rxjs";
 import { ContainerCreateComponent } from "./container-create.component";
 import { MatDialog } from "@angular/material/dialog";
 import { NotificationService } from "../../../services/notification/notification.service";
-import { provideHttpClient } from "@angular/common/http";
+import { HttpClient, provideHttpClient } from "@angular/common/http";
 import {
   MockAuthService,
   MockContainerService,
@@ -44,6 +44,8 @@ import { UserService } from "../../../services/user/user.service";
 import { VersioningService } from "../../../services/version/version.service";
 import { Renderer2 } from "@angular/core";
 import { ContainerCreateSelfServiceComponent } from "./container-create.self-service.component";
+import { ContainerCreateWizardComponent } from "./container-create.wizard.component";
+import { ROUTE_PATHS } from "../../../route_paths";
 
 class MockIntersectionObserver {
   observe = jest.fn();
@@ -99,12 +101,21 @@ describe("ContainerCreateComponent", () => {
   let component: ContainerCreateComponent;
   let selfFixture: ComponentFixture<ContainerCreateSelfServiceComponent>;
   let selfComponent: ContainerCreateSelfServiceComponent;
+  let wizardFixture: ComponentFixture<ContainerCreateComponent>;
+  let wizardComponent: ContainerCreateComponent;
 
   let containerSvc: MockContainerService;
   let userSvc: MockUserService;
+  let authService: MockAuthService;
+  let httpClientMock: any;
+  let contentService: MockContentService;
 
   beforeEach(async () => {
     jest.clearAllMocks();
+
+    httpClientMock = {
+      get: jest.fn().mockReturnValue(of(""))
+    };
 
     let DummyVersioningService;
     await TestBed.configureTestingModule({
@@ -121,6 +132,7 @@ describe("ContainerCreateComponent", () => {
         { provide: TokenService, useClass: MockTokenService },
         { provide: UserService, useClass: MockUserService },
         { provide: VersioningService, useClass: DummyVersioningService },
+        { provide: HttpClient, useValue: httpClientMock },
         MockLocalService,
         MockNotificationService
       ]
@@ -130,9 +142,13 @@ describe("ContainerCreateComponent", () => {
     component = fixture.componentInstance;
     selfFixture = TestBed.createComponent(ContainerCreateSelfServiceComponent);
     selfComponent = selfFixture.componentInstance;
+    wizardFixture = TestBed.createComponent(ContainerCreateWizardComponent);
+    wizardComponent = wizardFixture.componentInstance;
 
     containerSvc = TestBed.inject(ContainerService) as unknown as MockContainerService;
     userSvc = TestBed.inject(UserService) as unknown as MockUserService;
+    authService = TestBed.inject(AuthService) as unknown as MockAuthService;
+    contentService = TestBed.inject(ContentService) as unknown as MockContentService;
 
     jest.spyOn(containerSvc, "createContainer").mockReturnValue(
       of({ result: { value: { container_serial: "C-001" } } } as any)
@@ -157,6 +173,10 @@ describe("ContainerCreateComponent", () => {
     expect(selfComponent).toBeTruthy();
   });
 
+  it("creates wizard", () => {
+    expect(wizardComponent).toBeTruthy();
+  });
+
   it("non-QR create: navigates and sets containerSerial", () => {
     containerSvc.selectedContainerType.set({ containerType: "generic", description: "", token_types: [] });
 
@@ -168,7 +188,7 @@ describe("ContainerCreateComponent", () => {
       expect.objectContaining({
         container_type: "generic",
         description: "",
-        template: "",
+        template_name: "",
         user: userSvc.selectionUsernameFilter(),
         realm: ""
       })
@@ -225,11 +245,17 @@ describe("ContainerCreateComponent", () => {
     expect(pollSpy).toHaveBeenCalledWith("CONT-42", 2000);
   });
 
-  it("pollContainerRolloutState: closes dialog and navigates when state !== 'client_wait'", () => {
+  it("pollContainerRolloutState: closes dialog and opens registered dialog when state !== 'client_wait'", () => {
+    (containerSvc.pollContainerRolloutState as jest.Mock).mockReturnValueOnce(
+      of({
+        result: { value: { containers: [{ info: { registration_state: "registered" } }] } }
+      } as any)
+    );
+
     (component as any)["pollContainerRolloutState"]("C-9", 1000);
 
     expect(matDialogMock.closeAll).toHaveBeenCalled();
-    expect(navigateByUrl).toHaveBeenCalledWith(expect.stringMatching("/tokens/containers/details/C-9"));
+    expect(matDialogMock.open).toHaveBeenCalled();
   });
 
   it("pollContainerRolloutState: keeps dialog open when state == 'client_wait'", () => {
@@ -271,5 +297,92 @@ describe("ContainerCreateComponent", () => {
 
     lastIO!.trigger([{ rootBounds: { top: 0 }, boundingClientRect: { top: 1 } } as any]);
     expect(removeClass).toHaveBeenCalledWith((component as any).stickyHeader.nativeElement, "is-sticky");
+  });
+
+  describe("wizard", () => {
+    it("show loaded templates if not empty", async () => {
+      authService.authData.set({
+        ...authService.authData(),
+        container_wizard: { enabled: true, type: "generic", registration: false, template: null }
+      });
+      httpClientMock.get.mockReturnValueOnce(of("Mock TOP HTML")).mockReturnValueOnce(of("Mock BOTTOM HTML"));
+      wizardFixture = TestBed.createComponent(ContainerCreateWizardComponent);
+      wizardFixture.detectChanges();
+      expect(wizardFixture.nativeElement.textContent).toContain("Mock TOP HTML");
+      expect(wizardFixture.nativeElement.textContent).toContain("Mock BOTTOM HTML");
+      expect(wizardFixture.nativeElement.textContent).not.toContain("Create Generic Container");
+    });
+
+    it("show default content if customization templates are empty", async () => {
+      authService.authData.set({
+        ...authService.authData(),
+        container_wizard: { enabled: true, type: "generic", registration: false, template: null }
+      });
+      wizardFixture.detectChanges();
+      expect(wizardFixture.nativeElement.textContent).toContain("Create Generic Container");
+    });
+
+    it("container wizard creates smartphone with template and registration", () => {
+      // Arrange: set container_wizard data in authService
+      authService.authData.set({
+        ...authService.authData(),
+        container_wizard: {
+          enabled: true,
+          type: "smartphone",
+          registration: true,
+          template: "custom-template"
+        }
+      });
+      contentService.routeUrl.set(ROUTE_PATHS.TOKENS_CONTAINERS_WIZARD);
+
+      // Spy on createContainer of containerSvc
+      const createSpy = jest.spyOn(containerSvc, "createContainer");
+      const registerSpy = jest.spyOn(containerSvc, "registerContainer");
+
+      // Act: call createContainer on wizardComponent
+      wizardComponent.createContainer();
+
+      // Assert: check that createContainer was called with correct data
+      expect(createSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          container_type: "smartphone",
+          template_name: "custom-template"
+        })
+      );
+      // check registration
+      expect(wizardComponent.generateQRCode()).toBe(true);
+      expect(registerSpy).toHaveBeenCalled();
+    });
+
+    it("container wizard creates generic container without template and without registration", () => {
+      // Arrange: set container_wizard data in authService
+      authService.authData.set({
+        ...authService.authData(),
+        container_wizard: {
+          enabled: true,
+          type: "generic",
+          registration: false,
+          template: null
+        }
+      });
+      contentService.routeUrl.set(ROUTE_PATHS.TOKENS_CONTAINERS_WIZARD);
+
+      // Spy on createContainer of containerSvc
+      const createSpy = jest.spyOn(containerSvc, "createContainer");
+      const registerSpy = jest.spyOn(containerSvc, "registerContainer");
+
+      // Act: call createContainer on wizardComponent
+      wizardComponent.createContainer();
+
+      // Assert: check that createContainer was called with correct data
+      expect(createSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          container_type: "generic"
+        })
+      );
+      // check registration
+      expect(wizardComponent.generateQRCode()).toBe(false);
+      expect(registerSpy).not.toHaveBeenCalled();
+    });
   });
 });

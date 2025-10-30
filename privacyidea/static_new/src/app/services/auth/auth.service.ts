@@ -27,6 +27,8 @@ import { LocalService, LocalServiceInterface } from "../local/local.service";
 import { VersioningService, VersioningServiceInterface } from "../version/version.service";
 import { tokenTypes } from "../../utils/token.utils";
 import { PolicyAction } from "./policy-actions";
+import { Router } from "@angular/router";
+import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
 
 export type AuthResponse = PiResponse<AuthData, AuthDetail>;
 
@@ -68,6 +70,9 @@ export interface AuthData {
   rss_age: number;
   container_wizard: {
     enabled: boolean;
+    type: string;
+    registration: boolean;
+    template: string | null;
   };
 }
 
@@ -160,8 +165,7 @@ export interface AuthServiceInterface {
   logoutRedirectUrl: Signal<string>;
   requireDescription: Signal<string[]>;
   rssAge: Signal<number>;
-  // TODO: When enabled there are more entries in the dict. We need to adapt the type accordingly.
-  containerWizard: Signal<{ enabled: boolean }>;
+  containerWizard: Signal<{ enabled: boolean, type: string | null, registration: boolean, template: string | null }>;
 
   isSelfServiceUser: Signal<boolean>;
   authenticate: (params: any) => Observable<AuthResponse>;
@@ -182,6 +186,8 @@ export interface AuthServiceInterface {
   providedIn: "root"
 })
 export class AuthService implements AuthServiceInterface {
+  protected readonly router: Router = inject(Router);
+  protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   readonly authUrl = environment.proxyUrl + "/auth";
   jwtData = signal<JwtData | null>(null);
   jwtNonce = computed(() => this.jwtData()?.nonce || "");
@@ -247,7 +253,12 @@ export class AuthService implements AuthServiceInterface {
   logoutRedirectUrl = computed(() => this.authData()?.logout_redirect_url || "");
   requireDescription = computed(() => this.authData()?.require_description || []);
   rssAge = computed(() => this.authData()?.rss_age || 0);
-  containerWizard = computed(() => this.authData()?.container_wizard || { enabled: false });
+  containerWizard = computed(() => this.authData()?.container_wizard || {
+    enabled: false,
+    type: null,
+    registration: false,
+    template: null
+  });
   isSelfServiceUser = computed(() => {
     return this.role() === "user";
   });
@@ -287,6 +298,7 @@ export class AuthService implements AuthServiceInterface {
     this.jwtData.set(null);
     this.localService.removeData(BEARER_TOKEN_STORAGE_KEY);
     this.authenticationAccepted.set(false);
+    this.router.navigate(["login"]).then(() => this.notificationService.openSnackBar("Logout successful."));
   }
 
   actionAllowed(action: PolicyAction): boolean {

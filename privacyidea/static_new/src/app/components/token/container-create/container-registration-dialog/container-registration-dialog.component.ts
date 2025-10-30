@@ -20,7 +20,6 @@ import { Component, inject, WritableSignal } from "@angular/core";
 import { MatButton } from "@angular/material/button";
 import { MAT_DIALOG_DATA, MatDialogContent, MatDialogRef, MatDialogTitle } from "@angular/material/dialog";
 import { MatIcon } from "@angular/material/icon";
-import { Router } from "@angular/router";
 import { PiResponse } from "../../../../app.component";
 import {
   ContainerRegisterData,
@@ -44,11 +43,11 @@ export type ContainerCreationDialogData = {
 })
 export class ContainerRegistrationDialogComponent {
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
+  protected readonly dialogRef: MatDialogRef<ContainerRegistrationDialogComponent> = inject(MatDialogRef);
   public readonly data: ContainerCreationDialogData = inject(MAT_DIALOG_DATA);
-  private router = inject(Router);
   private contentService = inject(ContentService);
 
-  constructor(private dialogRef: MatDialogRef<LostTokenComponent>) {
+  constructor() {
     this.dialogRef.afterClosed().subscribe(() => {
       this.containerService.stopPolling();
     });

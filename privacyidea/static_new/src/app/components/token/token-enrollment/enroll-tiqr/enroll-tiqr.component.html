@@ -1,5 +1,7 @@
 <div class="flex-column">
-  <h4 class="enroll-h4">Token Configuration</h4>
+  @if (!wizard) {
+    <h4 class="enroll-h4">Token Configuration</h4>
+  }
   @if (!defaultTiQRIsSet()) {
     <span
       i18n

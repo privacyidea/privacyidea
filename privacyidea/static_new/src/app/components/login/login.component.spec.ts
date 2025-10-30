@@ -36,6 +36,7 @@ import { NotificationService } from "../../services/notification/notification.se
 import { SessionTimerService, SessionTimerServiceInterface } from "../../services/session-timer/session-timer.service";
 import { ValidateService } from "../../services/validate/validate.service";
 import { LoginComponent } from "./login.component";
+import { ROUTE_PATHS } from "../../route_paths";
 
 describe("LoginComponent", () => {
   let fixture: ComponentFixture<LoginComponent>;
@@ -110,6 +111,45 @@ describe("LoginComponent", () => {
     });
   });
 
+  describe("wizard", () => {
+    beforeEach(() => {
+      component.username.set("test-user");
+      component.password.set("test-pass");
+    });
+
+    it("should redirect to token wizard", () => {
+      authService.authData.set({
+        ...authService.authData(),
+        token_wizard: true
+      });
+      component.onSubmit();
+
+      expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.TOKENS_WIZARD);
+    });
+
+    it("should redirect to token wizard first if token and container wizard are enabled", () => {
+      authService.authData.set({
+        ...authService.authData(),
+        token_wizard: true,
+        container_wizard: {enabled: true, type: "smartphone", registration: false, template: null}
+      });
+      component.onSubmit();
+
+      expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.TOKENS_WIZARD);
+    });
+
+    it("should redirect to container wizard if only container wizard is enabled", () => {
+      authService.authData.set({
+        ...authService.authData(),
+        token_wizard: false,
+        container_wizard: {enabled: true, type: "smartphone", registration: false, template: null}
+      });
+      component.onSubmit();
+
+      expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.TOKENS_CONTAINERS_WIZARD);
+    });
+  });
+
   describe("onSubmit", () => {
     beforeEach(() => {
       component.username.set("test-user");
@@ -123,6 +163,7 @@ describe("LoginComponent", () => {
         username: "test-user",
         password: "test-pass"
       });
+      expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.TOKENS);
     });
 
     it("should handle a complex multi-challenge response with WebAuthn and OTP", () => {

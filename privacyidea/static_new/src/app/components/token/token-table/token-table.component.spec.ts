@@ -21,8 +21,9 @@ import { TokenTableComponent } from "./token-table.component";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { of } from "rxjs";
 import {
+  MockAuthService,
   MockContainerService,
-  MockContentService,
+  MockContentService, MockLocalService, MockNotificationService,
   MockPiResponse,
   MockTableUtilsService,
   MockTokenService
@@ -32,9 +33,11 @@ import { TokenService } from "../../../services/token/token.service";
 import { TableUtilsService } from "../../../services/table-utils/table-utils.service";
 import { DialogService } from "../../../services/dialog/dialog.service";
 import { ContentService } from "../../../services/content/content.service";
-import { AuthService } from "../../../services/auth/auth.service";
+import { AuthService, JwtData } from "../../../services/auth/auth.service";
 import { ContainerService } from "../../../services/container/container.service";
 import { MatDialog } from "@angular/material/dialog";
+import { provideHttpClient } from "@angular/common/http";
+import { provideHttpClientTesting } from "@angular/common/http/testing";
 
 class MatDialogMock {
   result = true;
@@ -55,7 +58,7 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
   let self: TokenTableSelfServiceComponent;
 
   let tokenService: MockTokenService;
-  let auth: AuthServiceMock;
+  let auth: MockAuthService;
   let matDialog: MatDialogMock;
 
   beforeAll(() => {
@@ -98,13 +101,17 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
     await TestBed.configureTestingModule({
       imports: [TokenTableComponent, TokenTableSelfServiceComponent, NoopAnimationsModule],
       providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
         { provide: TokenService, useClass: MockTokenService },
         { provide: TableUtilsService, useClass: MockTableUtilsService },
         { provide: ContentService, useClass: MockContentService },
         { provide: DialogService, useValue: { /* not used here */ } },
-        { provide: AuthService, useClass: AuthServiceMock },
+        { provide: AuthService, useClass: MockAuthService },
         { provide: ContainerService, useClass: MockContainerService },
-        { provide: MatDialog, useClass: MatDialogMock }
+        { provide: MatDialog, useClass: MatDialogMock },
+        MockLocalService,
+        MockNotificationService
       ]
     }).compileComponents();
 
@@ -115,7 +122,7 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
     self = selfFixture.componentInstance;
 
     tokenService = TestBed.inject(TokenService) as unknown as MockTokenService;
-    auth = TestBed.inject(AuthService) as unknown as AuthServiceMock;
+    auth = TestBed.inject(AuthService) as unknown as MockAuthService;
     matDialog = TestBed.inject(MatDialog) as unknown as MatDialogMock;
 
     tokenService.toggleActive.mockReturnValue(of({}));
@@ -172,7 +179,10 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
 
   it("toggleActive calls service and reloads when allowed & not revoked/locked", () => {
     const t = { serial: "A", active: true, revoked: false, locked: false } as any;
-    (auth.actionAllowed as jest.Mock).mockImplementation((a: string) => a === "disable");
+    auth.jwtData.set({
+      ...auth.jwtData(),
+      rights: ["disable", "enable"]
+    } as JwtData);
 
     table.toggleActive(t);
 
@@ -182,7 +192,10 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
 
   it("toggleActive does nothing if action not allowed", () => {
     const t = { serial: "A", active: true, revoked: false, locked: false } as any;
-    (auth.actionAllowed as jest.Mock).mockReturnValue(false);
+    auth.jwtData.set({
+      ...auth.jwtData(),
+      rights: []
+    } as JwtData);
 
     table.toggleActive(t);
 
@@ -191,7 +204,10 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
   });
 
   it("toggleActive does nothing if revoked or locked", () => {
-    (auth.actionAllowed as jest.Mock).mockReturnValue(true);
+    auth.jwtData.set({
+      ...auth.jwtData(),
+      rights: ["disable", "enable"]
+    } as JwtData);
 
     table.toggleActive({ serial: "X", active: true, revoked: true, locked: false } as any);
     table.toggleActive({ serial: "Y", active: false, revoked: false, locked: true } as any);
@@ -201,7 +217,10 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
 
   it("resetFailCount calls service and reloads when allowed & not revoked/locked", () => {
     const t = { serial: "B", revoked: false, locked: false } as any;
-    (auth.actionAllowed as jest.Mock).mockImplementation((a: string) => a === "reset");
+    auth.jwtData.set({
+      ...auth.jwtData(),
+      rights: ["reset"]
+    } as JwtData);
 
     table.resetFailCount(t);
 
@@ -210,11 +229,17 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
   });
 
   it("resetFailCount does nothing when action not allowed / revoked / locked", () => {
-    (auth.actionAllowed as jest.Mock).mockReturnValue(false);
+    auth.jwtData.set({
+      ...auth.jwtData(),
+      rights: []
+    } as JwtData);
     table.resetFailCount({ serial: "B", revoked: false, locked: false } as any);
     expect(tokenService.resetFailCount).not.toHaveBeenCalled();
 
-    (auth.actionAllowed as jest.Mock).mockReturnValue(true);
+    auth.jwtData.set({
+      ...auth.jwtData(),
+      rights: ["reset"]
+    } as JwtData);
     table.resetFailCount({ serial: "B", revoked: true, locked: false } as any);
     table.resetFailCount({ serial: "B", revoked: false, locked: true } as any);
     expect(tokenService.resetFailCount).not.toHaveBeenCalled();
@@ -249,7 +274,10 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
   });
 
   it("self-service column keys include revoke/delete depending on permissions", () => {
-    (auth.actionAllowed as jest.Mock).mockReturnValue(true);
+    auth.jwtData.set({
+      ...auth.jwtData(),
+      rights: ["revoke", "delete"]
+    } as JwtData);
 
     const f1 = TestBed.createComponent(TokenTableSelfServiceComponent);
     const c1 = f1.componentInstance;
@@ -267,7 +295,10 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
       ])
     );
 
-    (auth.actionAllowed as jest.Mock).mockReturnValue(false);
+    auth.jwtData.set({
+      ...auth.jwtData(),
+      rights: []
+    } as JwtData);
 
     const f2 = TestBed.createComponent(TokenTableSelfServiceComponent);
     const c2 = f2.componentInstance;

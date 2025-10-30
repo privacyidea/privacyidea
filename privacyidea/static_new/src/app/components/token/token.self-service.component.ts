@@ -16,19 +16,22 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component } from "@angular/core";
+import { Component, inject } from "@angular/core";
 import { TokenComponent } from "./token.component";
 import { MatCardModule } from "@angular/material/card";
 import { componentFadeAnimation } from "../../../styles/animations/animations";
 import { NavigationSelfServiceComponent } from "./navigation-self-service/navigation-self-service.component";
 import { RouterOutlet } from "@angular/router";
+import { NavigationSelfServiceWizardComponent } from "./navigation-self-service/navigation-self-service.wizard.component";
+import { AuthService, AuthServiceInterface } from "../../services/auth/auth.service";
 
 @Component({
   selector: "app-token-self-service",
-  imports: [MatCardModule, NavigationSelfServiceComponent, RouterOutlet],
+  imports: [MatCardModule, NavigationSelfServiceComponent, RouterOutlet, NavigationSelfServiceWizardComponent],
   animations: [componentFadeAnimation],
   templateUrl: "./token.self-service.component.html",
   styleUrl: "./token.component.scss"
 })
 export class TokenSelfServiceComponent extends TokenComponent {
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
 }
