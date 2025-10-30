@@ -440,7 +440,12 @@ export class PolicyService implements PoliciesServiceInterface {
   selectedPolicyOriginal = computed(() => this._selectedPolicyOriginal());
 
   // Signals for action handling
-  actionFilter = signal<string>("");
+  actionFilter = linkedSignal({
+    source: () => {
+      this._selectedPolicyOriginal();
+    },
+    computation: (_) => ""
+  });
   selectedActionGroup: WritableSignal<string> = linkedSignal({
     source: () => this.policyActionGroupNames(),
     computation: (source, previous) => {

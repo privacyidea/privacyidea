@@ -84,3 +84,80 @@
 .warning-icon {
   color: #e5a500;
 }
+
+.action-docu,
+.action-notes {
+  padding: 1rem;
+  margin-top: 1rem;
+  border-radius: 0.25rem;
+  border: 1px solid;
+}
+
+// Apply styles to dynamically loaded content inside action-docu and action-notes.
+// The ::ng-deep selector is used to pierce the component's style encapsulation.
+:host ::ng-deep {
+  .action-docu,
+  .action-notes,
+  .action-detail-card {
+    code {
+      display: inline-block; // Use inline-block to allow padding and prevent line breaks
+      background-color: rgba(0, 0, 0, 0.08);
+      padding: 0.2em 0.4em;
+      margin: 0;
+      font-size: 85%;
+      border-radius: 3px;
+      font-family: "Courier New", Courier, monospace;
+    }
+
+    em {
+      display: inline; // Ensure em flows with the text
+      font-style: italic;
+    }
+
+    p {
+      margin-block-start: 1em;
+      margin-block-end: 1em;
+    }
+
+    a {
+      color: var(--mat-sys-primary);
+      text-decoration: underline;
+    }
+
+    strong,
+    b {
+      font-weight: bold;
+    }
+
+    ul,
+    ol {
+      padding-inline-start: 40px;
+    }
+
+    li {
+      margin-bottom: 0.5em;
+    }
+  }
+}
+
+.action-docu {
+  background-color: #e7f3fe;
+  border-color: #d0e5fc;
+  color: #31708f;
+}
+
+.action-notes {
+  background-color: #fef3e7;
+  border-color: #fce8d3;
+  color: #8a6d3b;
+}
+
+/*
+ * When .detail-row is used for the [innerHTML] container itself inside
+ * .action-detail-card, it must not be a flex container, otherwise the
+ * text flow will be broken into separate flex items.
+ * We reset it to a standard block element here.
+ */
+.action-detail-card > .detail-row {
+  display: block;
+}

@@ -23,10 +23,14 @@
     </div>
     <div>
       @if (visibleContent() === "docu") {
-        <div [innerHTML]="actionDocu()"></div>
+        <div
+          class="action-docu"
+          [innerHTML]="actionDocu()"></div>
       }
       @if (visibleContent() === "notes") {
-        <div [innerHTML]="actionNotes()"></div>
+        <div
+          class="action-notes"
+          [innerHTML]="actionNotes()"></div>
       }
     </div>
     <div class="action-detail-card">
