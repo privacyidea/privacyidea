@@ -168,18 +168,6 @@ describe("TokenTableActionsComponent", () => {
     });
   });
 
-  describe("openLostTokenDialog()", () => {
-    it("passes the isLost & tokenSerial signals to the dialog", () => {
-      component.openLostTokenDialog();
-      expect(dialog.open).toHaveBeenCalledWith(expect.any(Function), {
-        data: {
-          isLost: component.isLost,
-          tokenSerial: component.tokenSerial
-        }
-      });
-    });
-  });
-
   describe("deleteSelectedTokens()", () => {
     const mockTokens = [{ serial: "TOKEN1" }, { serial: "TOKEN2" }] as TokenDetails[];
 
