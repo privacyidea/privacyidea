@@ -23,6 +23,7 @@ import { computed, effect, inject, Injectable, linkedSignal, Signal, signal, Wri
 import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
 import {
   catchError,
+  EMPTY,
   forkJoin,
   Observable,
   of,
@@ -149,6 +150,10 @@ export interface ContainerRegisterData {
   ttl: number;
 }
 
+export interface ContainerUnregisterData {
+  success: boolean;
+}
+
 export interface ContainerServiceInterface {
   handleFilterInput($event: Event): void;
 
@@ -205,9 +210,12 @@ export interface ContainerServiceInterface {
   deleteAllTokens: (param: { containerSerial: string; serialList: string }) => Observable<any>;
   registerContainer: (params: {
     container_serial: string;
+    passphrase_user: boolean;
     passphrase_prompt: string;
     passphrase_response: string;
+    rollover?: boolean;
   }) => Observable<PiResponse<ContainerRegisterData>>;
+  unregister: (containerSerial: string) => Observable<PiResponse<any>>;
   containerBelongsToUser: (containerSerial: string) => false | true | undefined;
 
   stopPolling(): void;
@@ -744,19 +752,16 @@ export class ContainerService implements ContainerServiceInterface {
 
   registerContainer(params: {
     container_serial: string;
+    passphrase_user: boolean;
     passphrase_prompt: string;
     passphrase_response: string;
+    rollover?: boolean;
   }): Observable<PiResponse<ContainerRegisterData>> {
     const headers = this.authService.getHeaders();
     return this.http
       .post<PiResponse<ContainerRegisterData>>(
         `${this.containerBaseUrl}register/initialize`,
-        {
-          container_serial: params.container_serial,
-          passphrase_ad: false,
-          passphrase_prompt: params.passphrase_prompt,
-          passphrase_response: params.passphrase_response
-        },
+        params,
         { headers }
       )
       .pipe(
@@ -764,6 +769,25 @@ export class ContainerService implements ContainerServiceInterface {
           console.error("Failed to register container.", error);
           const message = error.error?.result?.error?.message || "";
           this.notificationService.openSnackBar("Failed to register container. " + message);
+          return throwError(() => error);
+        })
+      );
+  }
+
+  unregister(containerSerial: string) {
+    this.stopPolling();
+    const headers = this.authService.getHeaders();
+    return this.http
+      .post<PiResponse<ContainerUnregisterData>>(
+        `${this.containerBaseUrl}register/${containerSerial}/terminate`,
+        {},
+        { headers }
+      )
+      .pipe(
+        catchError((error) => {
+          console.error("Failed to unregister container.", error);
+          const message = error.error?.result?.error?.message || "";
+          this.notificationService.openSnackBar("Failed to unregister container. " + message);
           return throwError(() => error);
         })
       );
@@ -813,8 +837,23 @@ export class ContainerService implements ContainerServiceInterface {
     this.containerSerial.set(containerSerial);
     return timer(startTime, 2000).pipe(
       takeUntil(this.stopPolling$),
-      switchMap(() => this.getContainerDetails(this.containerSerial())),
-      takeWhile((response) => response.result?.value?.containers[0].info.registration_state === "client_wait", true),
+      switchMap(() => {
+        const routeUrl = this.contentService.routeUrl();
+        const onAllowedRoute =
+          routeUrl === ROUTE_PATHS.TOKENS_CONTAINERS_CREATE ||
+          routeUrl.startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS);
+        if (!onAllowedRoute) {
+          this.stopPolling();
+          return EMPTY;
+        }
+        return this.getContainerDetails(this.containerSerial());
+      }),
+      takeWhile((response) => {
+        // Update the resource so the UI reflects the latest data
+        this.containerDetailResource.set(response);
+        const registrationState = response.result?.value?.containers[0]?.info?.registration_state;
+        return registrationState !== "registered";
+      }, true),
       catchError((error) => {
         console.error("Failed to poll container state.", error);
         const message = error.error?.result?.error?.message || "";

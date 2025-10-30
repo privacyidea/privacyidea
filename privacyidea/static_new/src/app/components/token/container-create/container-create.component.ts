@@ -19,6 +19,7 @@
 import { CommonModule, NgClass } from "@angular/common";
 import {
   Component,
+  computed,
   effect,
   ElementRef,
   inject,
@@ -41,7 +42,7 @@ import {
   MatExpansionPanelHeader,
   MatExpansionPanelTitle
 } from "@angular/material/expansion";
-import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
+import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
 import { MatSelect } from "@angular/material/select";
@@ -65,16 +66,17 @@ import { ClearableInputComponent } from "../../shared/clearable-input/clearable-
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { TokenComponent } from "../token.component";
 import {
-  ContainerCreationDialogData,
-  ContainerRegistrationDialogComponent
-} from "./container-registration-dialog/container-registration-dialog.component";
+  ContainerCreatedDialogComponent,
+  ContainerCreationDialogData
+} from "./container-created-dialog/container-created-dialog.component";
 import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
-import { ContainerRegistrationDialogWizardComponent } from "./container-registration-dialog/container-registration-dialog.wizard.component";
+import { ContainerRegistrationConfigComponent } from "../container-registration/container-registration-config/container-registration-config.component";
 import {
   ContainerRegistrationCompletedDialogComponent,
   ContainerRegistrationCompletedDialogData
 } from "./container-registration-completed-dialog/container-registration-completed-dialog.component";
 import { ContainerRegistrationCompletedDialogWizardComponent } from "./container-registration-completed-dialog/container-registration-completed-dialog.wizard.component";
+import { ContainerCreatedDialogWizardComponent } from "./container-created-dialog/container-created-dialog.wizard.component";
 
 export type ContainerTypeOption = "generic" | "smartphone" | "yubikey";
 
@@ -83,7 +85,6 @@ export type ContainerTypeOption = "generic" | "smartphone" | "yubikey";
   imports: [
     MatButton,
     MatFormField,
-    MatHint,
     MatIcon,
     MatOption,
     MatSelect,
@@ -103,7 +104,8 @@ export type ContainerTypeOption = "generic" | "smartphone" | "yubikey";
     ScrollToTopDirective,
     NgClass,
     ClearableInputComponent,
-    CommonModule
+    CommonModule,
+    ContainerRegistrationConfigComponent
   ],
   templateUrl: "./container-create.component.html",
   styleUrl: "./container-create.component.scss"
@@ -133,14 +135,18 @@ export class ContainerCreateComponent {
   );
   passphrasePrompt = signal("");
   passphraseResponse = signal("");
+  userStorePassphrase = signal(false);
   registerResponse = signal<PiResponse<ContainerRegisterData> | null>(null);
   pollResponse = signal<any>(null);
-  protected dialogComponent: any = ContainerRegistrationDialogComponent;
   protected readonly wizard: boolean = false;
+  userSelected = computed(() => this.userService.selectionUsernameFilter() !== "");
+  public dialogData = signal<ContainerCreationDialogData | null>(null);
 
   @ViewChild("scrollContainer") scrollContainer!: ElementRef<HTMLElement>;
   @ViewChild("stickyHeader") stickyHeader!: ElementRef<HTMLElement>;
   @ViewChild("stickySentinel") stickySentinel!: ElementRef<HTMLElement>;
+  @ViewChild(ContainerRegistrationConfigComponent)
+  registrationConfigComponent!: ContainerRegistrationConfigComponent;
 
   constructor(protected registrationDialog: MatDialog) {
     effect(() => {
@@ -182,6 +188,13 @@ export class ContainerCreateComponent {
     }
   }
 
+  validInput = true;
+
+  onValidInputChange(isValid: boolean) {
+    this.validInput = isValid;
+  }
+
+
   reopenEnrollmentDialog() {
     const currentResponse = this.registerResponse();
     if (currentResponse) {
@@ -191,7 +204,6 @@ export class ContainerCreateComponent {
   }
 
   createContainer() {
-    this.pollResponse.set(null);
     this.registerResponse.set(null);
     const createData = {
       container_type: this.containerService.selectedContainerType().containerType,
@@ -220,48 +232,53 @@ export class ContainerCreateComponent {
     });
   }
 
-  registerContainer(serial: string) {
+  registerContainer(serial: string, regenerate: boolean = false) {
     this.containerService
       .registerContainer({
         container_serial: serial,
-        passphrase_response: this.passphraseResponse(),
-        passphrase_prompt: this.passphrasePrompt()
+        passphrase_user: false,
+        passphrase_response: this.registrationConfigComponent?.passphraseResponse() || "",
+        passphrase_prompt: this.registrationConfigComponent?.passphrasePrompt() || ""
       })
       .subscribe((registerResponse) => {
         this.registerResponse.set(registerResponse);
-        this.openRegistrationDialog(registerResponse);
-        this.pollContainerRolloutState(serial, 5000);
+        if (regenerate) {
+          this.dialogData.update(data => data ? { ...data, response: registerResponse } : data);
+        } else {
+          this.openRegistrationDialog(registerResponse);
+          this.pollContainerRolloutState(serial, 5000);
+        }
       });
   }
 
   protected resetCreateOptions = () => {
     this.registerResponse.set(null);
-    this.pollResponse.set(null);
     this.passphrasePrompt.set("");
     this.passphraseResponse.set("");
+    this.userStorePassphrase.set(false);
     this.description.set("");
     this.selectedTemplate.set("");
   };
 
   private openRegistrationDialog(response: PiResponse<ContainerRegisterData>) {
-    const dialogData: ContainerCreationDialogData = {
+    this.dialogData.set({
       response: response,
       containerSerial: this.containerSerial,
       registerContainer: this.registerContainer.bind(this)
-    };
+    });
+    let dialogComponent: any = ContainerCreatedDialogComponent;
     if (this.wizard) {
-      this.dialogComponent = ContainerRegistrationDialogWizardComponent;
+      dialogComponent = ContainerCreatedDialogWizardComponent;
     }
-    this.registrationDialog.open(this.dialogComponent, {
-      data: dialogData
+    this.registrationDialog.open(dialogComponent, {
+      data: this.dialogData
     });
   }
 
   private pollContainerRolloutState(containerSerial: string, startTime: number) {
     return this.containerService.pollContainerRolloutState(containerSerial, startTime).subscribe({
-      next: (pollResponse) => {
-        this.pollResponse.set(pollResponse);
-        if (pollResponse.result?.value?.containers[0].info.registration_state !== "client_wait") {
+      next: (response) => {
+        if (response?.result?.value?.containers[0].info.registration_state !== "client_wait") {
           this.registrationDialog.closeAll();
           let registrationCompletedDialogComponent: any = ContainerRegistrationCompletedDialogComponent;
           if (this.wizard) {

@@ -42,7 +42,7 @@ import { RealmService } from "../../../services/realm/realm.service";
 import { TokenService } from "../../../services/token/token.service";
 import { UserService } from "../../../services/user/user.service";
 import { VersioningService } from "../../../services/version/version.service";
-import { Renderer2 } from "@angular/core";
+import { Renderer2, signal } from "@angular/core";
 import { ContainerCreateSelfServiceComponent } from "./container-create.self-service.component";
 import { ContainerCreateWizardComponent } from "./container-create.wizard.component";
 import { ROUTE_PATHS } from "../../../route_paths";
@@ -207,7 +207,7 @@ describe("ContainerCreateComponent", () => {
     expect(navigateByUrl).not.toHaveBeenCalled();
   });
 
-  it("QR path (smartphone): calls registerContainer", () => {
+  it("QR path (smartphone): calls registerContainer", async () => {
     containerSvc.selectedContainerType.set({ containerType: "smartphone", description: "", token_types: [] });
 
     fixture.detectChanges();
@@ -222,10 +222,16 @@ describe("ContainerCreateComponent", () => {
   it("registerContainer: stores response, opens dialog, and starts polling with 5000", () => {
     const pollSpy = jest.spyOn(containerSvc, "pollContainerRolloutState");
 
+    (component as any).registrationConfigComponent = {
+      passphraseResponse: signal(""),
+      passphrasePrompt: signal("")
+    };
+
     (component as any).registerContainer("C-001");
 
     expect(containerSvc.registerContainer).toHaveBeenCalledWith({
       container_serial: "C-001",
+      passphrase_user: false,
       passphrase_response: "",
       passphrase_prompt: ""
     });
@@ -245,7 +251,7 @@ describe("ContainerCreateComponent", () => {
     expect(pollSpy).toHaveBeenCalledWith("CONT-42", 2000);
   });
 
-  it("pollContainerRolloutState: closes dialog and opens registered dialog when state !== 'client_wait'", () => {
+  it("pollContainerRolloutState: closes dialog and navigates when state === 'registered'", () => {
     (containerSvc.pollContainerRolloutState as jest.Mock).mockReturnValueOnce(
       of({
         result: { value: { containers: [{ info: { registration_state: "registered" } }] } }

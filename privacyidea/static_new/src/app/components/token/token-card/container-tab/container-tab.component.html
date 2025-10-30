@@ -171,6 +171,44 @@
             </mat-list-item>
           }
         }
+        @if (containerType() === "smartphone") {
+          @if (["client_wait", ""].includes(registrationState()) && authService.actionAllowed("container_register")) {
+            <mat-list-item>
+              <button
+                (click)="openRegisterInitDialog(false)"
+                class="card-button-delete"
+                mat-flat-button
+                i18n>
+                <mat-icon>phonelink</mat-icon>
+                Register
+              </button>
+            </mat-list-item>
+          } @else if (["registered", "rollover", "rollover_completed"].includes(registrationState()) &&
+          authService.actionAllowed("container_rollover")) {
+            <mat-list-item>
+              <button
+                (click)="openRegisterInitDialog(true)"
+                class="card-button-delete"
+                mat-flat-button
+                i18n>
+                <mat-icon>sync</mat-icon>
+                Rollover
+              </button>
+            </mat-list-item>
+          }
+          @if (registrationState() !== "" && authService.actionAllowed("container_unregister")) {
+            <mat-list-item>
+              <button
+                (click)="unregisterContainer()"
+                class="card-button-delete"
+                mat-flat-button
+                i18n>
+                <mat-icon>phonelink_off</mat-icon>
+                Unregister
+              </button>
+            </mat-list-item>
+          }
+        }
       }
     </div>
   </mat-list>
