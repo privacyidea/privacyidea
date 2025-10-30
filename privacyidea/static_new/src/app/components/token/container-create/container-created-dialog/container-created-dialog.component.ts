@@ -44,7 +44,7 @@ export type ContainerCreationDialogData = {
 })
 export class ContainerCreatedDialogComponent {
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
-  protected readonly dialogRef: MatDialogRef<ContainerRegistrationDialogComponent> = inject(MatDialogRef);
+  protected readonly dialogRef: MatDialogRef<ContainerCreatedDialogComponent> = inject(MatDialogRef);
   public readonly data: Signal<ContainerCreationDialogData> = inject(MAT_DIALOG_DATA);
   private contentService = inject(ContentService);
 

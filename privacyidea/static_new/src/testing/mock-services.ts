@@ -589,13 +589,9 @@ export class MockContainerService extends ContainerService {
     throw new Error("Method not implemented.");
   }
 
-  overrride unregister = jest.fn().mockReturnValue(of({}));
+  override unregister = jest.fn().mockReturnValue(of({}));
 
   override containerBelongsToUser = jest.fn().mockReturnValue(true);
-
-  override stopPolling(): void {
-    throw new Error("Method not implemented.");
-  }
 
   override createContainer(param: {
     container_type: string;

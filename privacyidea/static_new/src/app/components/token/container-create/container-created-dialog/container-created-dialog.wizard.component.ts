@@ -18,8 +18,8 @@
  **/
 import { AsyncPipe } from "@angular/common";
 import { HttpClient } from "@angular/common/http";
-import { Component, computed, inject, Signal, WritableSignal } from "@angular/core";
-import { MAT_DIALOG_DATA, MatDialogContent } from "@angular/material/dialog";
+import { Component, computed, inject, Signal } from "@angular/core";
+import { MatDialogContent, MatDialogRef } from "@angular/material/dialog";
 import { DomSanitizer } from "@angular/platform-browser";
 import { map } from "rxjs";
 import { ContainerService, ContainerServiceInterface } from "../../../../services/container/container.service";
@@ -30,22 +30,18 @@ import { environment } from "../../../../../environments/environment";
 
 @Component({
   selector: "app-container-created-wizard-dialog",
-  imports: [MatDialogContent, MatDialogTitle, AsyncPipe],
+  imports: [MatDialogContent, AsyncPipe],
   templateUrl: "./container-created-dialog.wizard.component.html",
   styleUrl: "./container-created-dialog.component.scss"
 })
 export class ContainerCreatedDialogWizardComponent extends ContainerCreatedDialogComponent {
   protected override readonly containerService: ContainerServiceInterface = inject(ContainerService);
-  public override readonly data: {
-    registerContainer: WritableSignal<string>;
-    response: any;
-    containerSerial: WritableSignal<string>;
-  } = inject(MAT_DIALOG_DATA);
   public readonly authService: AuthServiceInterface = inject(AuthService);
+  protected override readonly dialogRef: MatDialogRef<ContainerCreatedDialogWizardComponent> = inject(MatDialogRef);
   tagData: Signal<Record<string, string>> = computed(() => ({
-    containerSerial: this.data.containerSerial(),
-    containerRegistrationURL: this.data.response.result?.value?.container_url?.value || "",
-    containerRegistrationQR: this.data.response.result?.value?.container_url?.img || ""
+    containerSerial: this.data().containerSerial(),
+    containerRegistrationURL: this.data().response.result?.value?.container_url?.value || "",
+    containerRegistrationQR: this.data().response.result?.value?.container_url?.img || ""
   }));
 
   readonly postTopHtml$ = this.http

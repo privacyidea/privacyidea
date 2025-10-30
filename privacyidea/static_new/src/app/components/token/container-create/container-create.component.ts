@@ -71,12 +71,12 @@ import {
 } from "./container-created-dialog/container-created-dialog.component";
 import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
 import { ContainerRegistrationConfigComponent } from "../container-registration/container-registration-config/container-registration-config.component";
-import { ContainerRegistrationDialogWizardComponent } from "./container-registration-dialog/container-registration-dialog.wizard.component";
 import {
   ContainerRegistrationCompletedDialogComponent,
   ContainerRegistrationCompletedDialogData
 } from "./container-registration-completed-dialog/container-registration-completed-dialog.component";
 import { ContainerRegistrationCompletedDialogWizardComponent } from "./container-registration-completed-dialog/container-registration-completed-dialog.wizard.component";
+import { ContainerCreatedDialogWizardComponent } from "./container-created-dialog/container-created-dialog.wizard.component";
 
 export type ContainerTypeOption = "generic" | "smartphone" | "yubikey";
 
@@ -138,7 +138,6 @@ export class ContainerCreateComponent {
   userStorePassphrase = signal(false);
   registerResponse = signal<PiResponse<ContainerRegisterData> | null>(null);
   pollResponse = signal<any>(null);
-  protected dialogComponent: any = ContainerRegistrationDialogComponent;
   protected readonly wizard: boolean = false;
   userSelected = computed(() => this.userService.selectionUsernameFilter() !== "");
   public dialogData = signal<ContainerCreationDialogData | null>(null);
@@ -238,8 +237,8 @@ export class ContainerCreateComponent {
       .registerContainer({
         container_serial: serial,
         passphrase_user: false,
-        passphrase_response: this.registrationConfigComponent.passphraseResponse(),
-        passphrase_prompt: this.registrationConfigComponent.passphrasePrompt()
+        passphrase_response: this.registrationConfigComponent?.passphraseResponse() || "",
+        passphrase_prompt: this.registrationConfigComponent?.passphrasePrompt() || ""
       })
       .subscribe((registerResponse) => {
         this.registerResponse.set(registerResponse);
@@ -266,11 +265,12 @@ export class ContainerCreateComponent {
       response: response,
       containerSerial: this.containerSerial,
       registerContainer: this.registerContainer.bind(this)
-    };
+    });
+    let dialogComponent: any = ContainerCreatedDialogComponent;
     if (this.wizard) {
-      this.dialogComponent = ContainerRegistrationDialogWizardComponent;
+      dialogComponent = ContainerCreatedDialogWizardComponent;
     }
-    this.registrationDialog.open(ContainerCreatedDialogComponent, {
+    this.registrationDialog.open(dialogComponent, {
       data: this.dialogData
     });
   }

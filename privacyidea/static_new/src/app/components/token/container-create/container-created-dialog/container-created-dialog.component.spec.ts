@@ -94,7 +94,7 @@ describe("ContainerCreatedDialogComponent", () => {
   });
 });
 
-describe("ContainerRegistrationDialogWizardComponent", () => {
+describe("ContainerCreatedDialogWizardComponent", () => {
   let fixture: ComponentFixture<ContainerCreatedDialogWizardComponent>;
   let component: ContainerCreatedDialogWizardComponent;
   let httpMock: HttpTestingController;
@@ -111,11 +111,11 @@ describe("ContainerRegistrationDialogWizardComponent", () => {
   const dialogRefMock = { close: dialogClose, afterClosed: dialogAfterClosed };
 
   const registerContainer = jest.fn();
-  const matDialogData: any = {
+  const matDialogData = signal({
     response: { result: { value: { container_url: { img: "" } } } },
     containerSerial: signal("C-001"),
     registerContainer
-  };
+  });
 
   const flushInitialWizardRequests = () => {
     const topReq = httpMock.expectOne("/static/public/customize/container-create.wizard.post.top.html");

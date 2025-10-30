@@ -28,7 +28,7 @@ import { ROUTE_PATHS } from "../../../../route_paths";
 import { ContainerService } from "../../../../services/container/container.service";
 import { ContentService } from "../../../../services/content/content.service";
 import { VersioningService } from "../../../../services/version/version.service";
-import { AuthService } from "../../../../services/auth/auth.service";
+import { AuthService, JwtData } from "../../../../services/auth/auth.service";
 import { MatDialog } from "@angular/material/dialog";
 import { ActivatedRoute, Router } from "@angular/router";
 import { ConfirmationDialogComponent } from "../../../shared/confirmation-dialog/confirmation-dialog.component";
@@ -385,7 +385,10 @@ describe("ContainerTabComponent", () => {
     }
 
     it("should not display register, unregister, or rollover buttons on overview/list page", () => {
-      authService.rights.set(["container_register", "container_unregister", "container_rollover"]);
+      authService.jwtData.set({
+        ...authService.jwtData(),
+        rights: ["container_register", "container_unregister", "container_rollover"]
+      } as JwtData);
       setRoute(ROUTE_PATHS.TOKENS_CONTAINERS);
       setContainerType("smartphone");
       setRegistrationState("client_wait");
@@ -402,14 +405,20 @@ describe("ContainerTabComponent", () => {
       setContainerType("smartphone");
       setRegistrationState("client_wait");
 
-      authService.rights.set(["container_unregister", "container_rollover"]);
+      authService.jwtData.set({
+        ...authService.jwtData(),
+        rights: ["container_unregister", "container_rollover"]
+      } as JwtData);
       fixture.detectChanges();
       let html = fixture.nativeElement as HTMLElement;
       expect(html.textContent).not.toContain("Register");
       expect(html.textContent).toContain("Unregister");
       expect(html.textContent).not.toContain("Rollover");
 
-      authService.rights.set(["container_register", "container_rollover"]);
+      authService.jwtData.set({
+        ...authService.jwtData(),
+        rights: ["container_register", "container_rollover"]
+      } as JwtData);
       fixture.detectChanges();
       html = fixture.nativeElement as HTMLElement;
       expect(html.textContent).toContain("Register");
@@ -417,7 +426,10 @@ describe("ContainerTabComponent", () => {
       expect(html.textContent).not.toContain("Rollover");
 
       setRegistrationState("registered");
-      authService.rights.set(["container_unregister"]);
+      authService.jwtData.set({
+        ...authService.jwtData(),
+        rights: ["container_unregister"]
+      } as JwtData);
       fixture.detectChanges();
       html = fixture.nativeElement as HTMLElement;
       expect(html.textContent).not.toContain("Register");
@@ -426,13 +438,14 @@ describe("ContainerTabComponent", () => {
     });
 
 
-    it("should show Register button for smartphone, registration_state=client_wait", async () => {
-      authService.rights.set(["container_register", "container_unregister", "container_rollover"]);
+    it("should show Register button for smartphone, registration_state=client_wait", () => {
+      authService.jwtData.set({
+        ...authService.jwtData(),
+        rights: ["container_register", "container_unregister", "container_rollover"]
+      } as JwtData);
       setRoute(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + "CONT-1");
       setContainerType("smartphone");
       setRegistrationState("client_wait");
-      fixture.detectChanges();
-      await fixture.whenStable();
       fixture.detectChanges();
 
       const html = fixture.nativeElement as HTMLElement;
@@ -442,7 +455,10 @@ describe("ContainerTabComponent", () => {
     });
 
     it("should show Rollover button for smartphone, registration_state=registered", () => {
-      authService.rights.set(["container_register", "container_unregister", "container_rollover"]);
+      authService.jwtData.set({
+        ...authService.jwtData(),
+        rights: ["container_register", "container_unregister", "container_rollover"]
+      } as JwtData);
       setRoute(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + "CONT-1");
       setContainerType("smartphone");
       setRegistrationState("registered");
@@ -455,7 +471,10 @@ describe("ContainerTabComponent", () => {
     });
 
     it("should show Unregister button for smartphone, registration_state=rollover_completed", () => {
-      authService.rights.set(["container_register", "container_unregister", "container_rollover"]);
+      authService.jwtData.set({
+        ...authService.jwtData(),
+        rights: ["container_register", "container_unregister", "container_rollover"]
+      } as JwtData);
       setRoute(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + "CONT-1");
       setContainerType("smartphone");
       setRegistrationState("rollover_completed");
@@ -468,7 +487,10 @@ describe("ContainerTabComponent", () => {
     });
 
     it("should not show Register/Rollover/Unregister for non-smartphone type", () => {
-      authService.rights.set(["container_register", "container_unregister", "container_rollover"]);
+      authService.jwtData.set({
+        ...authService.jwtData(),
+        rights: ["container_register", "container_unregister", "container_rollover"]
+      } as JwtData);
       setRoute(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + "CONT-1");
       setContainerType("generic");
       setRegistrationState("client_wait");
@@ -481,7 +503,10 @@ describe("ContainerTabComponent", () => {
     });
 
     it("clicking Register button calls openRegisterInitDialog(false)", () => {
-      authService.rights.set(["container_register", "container_unregister", "container_rollover"]);
+      authService.jwtData.set({
+        ...authService.jwtData(),
+        rights: ["container_register", "container_unregister", "container_rollover"]
+      } as JwtData);
       setRoute(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + "CONT-1");
       setContainerType("smartphone");
       setRegistrationState("client_wait");
@@ -496,7 +521,10 @@ describe("ContainerTabComponent", () => {
     });
 
     it("clicking Rollover button calls openRegisterInitDialog(true)", () => {
-      authService.rights.set(["container_register", "container_unregister", "container_rollover"]);
+      authService.jwtData.set({
+        ...authService.jwtData(),
+        rights: ["container_register", "container_unregister", "container_rollover"]
+      } as JwtData);
       setRoute(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + "CONT-1");
       setContainerType("smartphone");
       setRegistrationState("registered");
@@ -511,7 +539,10 @@ describe("ContainerTabComponent", () => {
     });
 
     it("clicking Unregister button calls unregisterContainer()", () => {
-      authService.rights.set(["container_register", "container_unregister", "container_rollover"]);
+      authService.jwtData.set({
+        ...authService.jwtData(),
+        rights: ["container_register", "container_unregister", "container_rollover"]
+      } as JwtData);
       setRoute(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + "CONT-1");
       setContainerType("smartphone");
       setRegistrationState("registered");
