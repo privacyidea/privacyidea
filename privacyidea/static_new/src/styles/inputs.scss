@@ -22,6 +22,7 @@ $focus-outline: 3px solid var(--mat-sys-primary-light);
 .user-pin-container {
   display: flex;
   flex-direction: column;
+  gap: 8px;
 }
 
 .user-pin-input {
@@ -33,5 +34,4 @@ $focus-outline: 3px solid var(--mat-sys-primary-light);
   display: flex;
   margin-top: 8px;
   flex-direction: column;
-  gap: 8px;
 }

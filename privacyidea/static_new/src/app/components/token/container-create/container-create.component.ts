@@ -121,7 +121,6 @@ export class ContainerCreateComponent {
   description = signal("");
   selectedTemplate = signal("");
   templateOptions = this.containerService.templates;
-  onlyAddToRealm = signal(false);
   generateQRCode: WritableSignal<boolean> = linkedSignal({
       source: this.containerService.selectedContainerType,
       computation: (containerType: ContainerType) => containerType.containerType === "smartphone"
@@ -137,6 +136,8 @@ export class ContainerCreateComponent {
   @ViewChild("scrollContainer") scrollContainer!: ElementRef<HTMLElement>;
   @ViewChild("stickyHeader") stickyHeader!: ElementRef<HTMLElement>;
   @ViewChild("stickySentinel") stickySentinel!: ElementRef<HTMLElement>;
+  @ViewChild(UserAssignmentComponent)
+  userAssignmentComponent!: UserAssignmentComponent;
 
   constructor(protected registrationDialog: MatDialog) {
     effect(() => {
@@ -196,7 +197,7 @@ export class ContainerCreateComponent {
       user: this.userService.selectionUsernameFilter(),
       realm: ""
     };
-    if (createData.user || this.onlyAddToRealm()) {
+    if (createData.user || this.userAssignmentComponent?.onlyAddToRealm()) {
       createData.realm = this.userService.selectedUserRealm();
     }
     this.containerService.createContainer(createData).subscribe({

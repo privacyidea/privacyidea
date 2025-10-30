@@ -260,6 +260,8 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
   @ViewChild("scrollContainer") scrollContainer!: ElementRef<HTMLElement>;
   @ViewChild("stickyHeader") stickyHeader!: ElementRef<HTMLElement>;
   @ViewChild("stickySentinel") stickySentinel!: ElementRef<HTMLElement>;
+  @ViewChild(UserAssignmentComponent)
+  userAssignmentComponent!: UserAssignmentComponent;
   clickEnroll?: ClickEnrollFn;
   reopenDialogSignal: WritableSignal<ReopenDialogFn> = linkedSignal({
     source: this.tokenService.selectedTokenType,
@@ -298,10 +300,8 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     () => !!this.reopenDialogSignal() || !!this._lastTokenEnrollmentLastStepDialogData()
   );
 
-  // Add these controls for user assignment and validation
   selectedUserRealmControl = new FormControl<string>("", { nonNullable: true });
   userFilterControl = new FormControl<string | UserData | null>("", { nonNullable: true });
-  onlyAddToRealmControl = new FormControl<boolean>(false, { nonNullable: true });
 
   get isUserRequired() {
     return ["tiqr", "webauthn", "passkey", "certificate"].includes(this.tokenService.selectedTokenType()?.key ?? "");
@@ -438,7 +438,6 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
           description: this.descriptionControl,
           selectedUserRealm: this.selectedUserRealmControl,
           userFilter: this.userFilterControl,
-          onlyAddToRealm: this.onlyAddToRealmControl,
           setPin: this.setPinControl,
           repeatPin: this.repeatPinControl,
           selectedContainer: this.selectedContainerControl,
@@ -507,7 +506,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
       validityPeriodEnd: validityPeriodEnd,
       user: user?.username ?? "",
       realm: this.selectedUserRealmControl.value ?? "",
-      onlyAddToRealm: this.onlyAddToRealmControl.value ?? false,
+      onlyAddToRealm: this.userAssignmentComponent?.onlyAddToRealm() ?? false,
       pin: this.setPinControl.value ?? "",
       serial: this.serial()
     };
@@ -547,7 +546,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
       enrollToken: this.enrollToken.bind(this),
       user: user,
       userRealm: this.userService.selectedUserRealm(),
-      onlyAddToRealm: this.onlyAddToRealmControl.value
+      onlyAddToRealm: this.userAssignmentComponent?.onlyAddToRealm() ?? false
     };
     this._lastTokenEnrollmentLastStepDialogData.set(dialogData);
     this.dialogService.openTokenEnrollmentLastStepDialog({
