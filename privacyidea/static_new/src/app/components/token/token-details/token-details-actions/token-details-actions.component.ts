@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { NgClass } from "@angular/common";
-import { Component, computed, inject, Input, WritableSignal } from "@angular/core";
+import { Component, computed, inject, Input, signal, WritableSignal } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { MatButton } from "@angular/material/button";
 import { MatDialog } from "@angular/material/dialog";
@@ -43,7 +43,9 @@ import {
   HotpMachineAssignDialogData,
   TokenHotpMachineAssignDialogComponent
 } from "../token-machine-attach-dialog/token-hotp-machine-attach-dialog/token-hotp-machine-attach-dialog";
-import { lastValueFrom } from "rxjs";
+import { filter, lastValueFrom, switchMap } from "rxjs";
+import { SelectedUserAssignDialogComponent } from "../../token-table/token-table-actions/selected-user-attach-dialog/selected-user-attach-dialog.component";
+import { LostTokenComponent } from "./lost-token/lost-token.component";
 
 @Component({
   selector: "app-token-details-actions",
@@ -73,6 +75,7 @@ export class TokenDetailsActionsComponent {
   @Input() repeatPinValue!: WritableSignal<string>;
   @Input() tokenType!: WritableSignal<string>;
   tokenSerial = this.tokenService.tokenSerial;
+  isLost = signal(false);
 
   isAttachedToMachine = computed<boolean>(() => {
     const tokenApplications = this.machineService.tokenApplications();
@@ -171,5 +174,14 @@ export class TokenDetailsActionsComponent {
           console.error("Error during unassignment request:", error);
         }
       });
+  }
+
+  openLostTokenDialog() {
+    this.matDialog.open(LostTokenComponent, {
+      data: {
+        isLost: this.isLost,
+        tokenSerial: this.tokenSerial
+      }
+    });
   }
 }

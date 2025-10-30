@@ -25,8 +25,8 @@ import { BulkResult, TokenService, TokenServiceInterface } from "../../../../ser
 import { ConfirmationDialogComponent } from "../../../shared/confirmation-dialog/confirmation-dialog.component";
 import { PiResponse } from "../../../../app.component";
 import { catchError, concatMap, EMPTY, filter, from, reduce, switchMap } from "rxjs";
-import { LostTokenComponent } from "../../token-card/token-tab/lost-token/lost-token.component";
-import { SelectedUserAssignDialogComponent } from "../../token-card/selected-user-attach-dialog/selected-user-attach-dialog.component";
+import { LostTokenComponent } from "../../token-details/token-details-actions/lost-token/lost-token.component";
+import { SelectedUserAssignDialogComponent } from "./selected-user-attach-dialog/selected-user-attach-dialog.component";
 import { tap } from "rxjs/operators";
 import { ROUTE_PATHS } from "../../../../route_paths";
 import { VersioningService, VersioningServiceInterface } from "../../../../services/version/version.service";
@@ -63,7 +63,6 @@ export class TokenTableActionsComponent {
   tokenIsRevoked = this.tokenService.tokenIsRevoked;
   tokenSerial = this.tokenService.tokenSerial;
   tokenSelection = this.tokenService.tokenSelection;
-  isLost = signal(false);
 
   toggleActive(): void {
     this.tokenService.toggleActive(this.tokenSerial(), this.tokenIsActive()).subscribe({
@@ -130,15 +129,6 @@ export class TokenTableActionsComponent {
   deleteSelectedTokens(): void {
     const serialList = this.tokenSelection().map((token) => token.serial)
     this.tokenService.bulkDeleteWithConfirmDialog(serialList, this.dialog, this.tokenService.tokenResource.reload);
-  }
-
-  openLostTokenDialog() {
-    this.dialog.open(LostTokenComponent, {
-      data: {
-        isLost: this.isLost,
-        tokenSerial: this.tokenSerial
-      }
-    });
   }
 
   assignSelectedTokens() {

@@ -68,5 +68,16 @@
         Use Offline
       </button>
     }
+    @if (authService.actionAllowed("losttoken")) {
+      <mat-divider class="margin-top-1 margin-bottom-1" />
+        <button
+          class="card-button"
+          mat-stroked-button
+          (click)="openLostTokenDialog()"
+          i18n>
+          <mat-icon>remove_red_eye</mat-icon>
+          Lost Token
+        </button>
+    }
   }
 </div>

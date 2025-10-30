@@ -40,9 +40,6 @@ $button-low-contrast-variant: linear-gradient(
   $height,
   $width,
   $border-radius,
-  $box-shadow,
-  $color: var(--mat-sys-on-primary),
-  $background: var(--mat-sys-primary),
   $cursor: pointer
 ) {
   height: $height;
@@ -72,14 +69,11 @@ $button-low-contrast-variant: linear-gradient(
   }
 }
 
-@mixin card-button-variant($bg, $shadow, $color: var(--mat-sys-on-primary)) {
+@mixin card-button-variant() {
   @include button-base(
           $height: $button-height,
           $width: $button-width,
           $border-radius: $button-border-radius,
-          $background: $bg,
-          $color: $color,
-          $box-shadow: $shadow
   );
 }
 
@@ -131,25 +125,6 @@ $button-low-contrast-variant: linear-gradient(
   }
 }
 
-.support-btn {
-  height: var(--header-height);
-  margin: 0;
-  border: none;
-  box-shadow: none;
-  border-radius: 0;
-  background: var(--background-green-brand);
-  cursor: pointer;
-  color: white;
-
-  &.active,
-  &:hover {
-    box-shadow: none;
-    background: var(--background-green-brand);
-    color: white;
-    transform: translateX(2px);
-  }
-}
-
 .mat-mdc-outlined-button.card-button,
 .mat-mdc-outlined-button[class*="card-button"] {
   --mat-outlined-button-state-layer-color: var(--mat-sys-surface-container-highest);
@@ -158,7 +133,7 @@ $button-low-contrast-variant: linear-gradient(
 }
 
 .card-button {
-  @include card-button-variant(var(--mat-sys-primary), var(--box-shadow-blue));
+  @include card-button-variant();
 }
 
 .mat-unthemed.mat-mdc-button-base[class^="card-button"],
@@ -170,41 +145,8 @@ $button-low-contrast-variant: linear-gradient(
   }
 }
 
-.card-button-reset {
-  @include card-button-variant(var(--background-green), var(--box-shadow-green));
-  @include hover-or-active(var(--background-green-inset), var(--box-shadow-green-inset));
-}
-
 .card-button-active {
-  @include card-button-variant(var(--background-blue-inset), var(--box-shadow-blue-inset));
-}
-
-.card-button-disabled {
-  @include card-button-variant(var(--background-gray), var(--box-shadow-gray), var(--mat-sys-on-surface));
-}
-
-.card-button-delete {
-  @include card-button-variant(var(--background-red), var(--box-shadow-red));
-  transition: 0ms;
-  @include hover-or-active(var(--background-red-inset), var(--box-shadow-red-inset));
-}
-
-.card-button-activate {
-  @include card-button-variant(var(--background-green), var(--box-shadow-green));
-  transition: 0ms;
-  @include hover-or-active(var(--background-green-inset), var(--box-shadow-green-inset));
-}
-
-.detail-button {
-  color: white;
-  @include card-button-variant(var(--background-blue), var(--box-shadow-blue));
-}
-
-.dialog-button-delete,
-.cancel-button {
-  color: var(--red-base);
-  background-color: white;
-  cursor: pointer;
+  @include card-button-variant();
 }
 
 .keyword-button {

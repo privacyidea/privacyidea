@@ -33,7 +33,6 @@
   --main-height: calc(
           var(--total-layout-height) - var(--header-height) - var(--footer-height)
   );
-  --footer-height: 0vh;
 
   display: grid;
   grid-template-rows: auto 1fr auto;
