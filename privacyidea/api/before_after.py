@@ -72,6 +72,7 @@ from .subscriptions import subscriptions_blueprint
 from .monitoring import monitoring_blueprint
 from .tokengroup import tokengroup_blueprint
 from .serviceid import serviceid_blueprint
+from .healthcheck import healthz_blueprint
 from .info import info_blueprint
 from privacyidea.api.lib.postpolicy import postrequest, sign_response
 from ..lib.error import (privacyIDEAError,
@@ -491,6 +492,7 @@ def after_request(response):
 @tokengroup_blueprint.app_errorhandler(AuthError)
 @serviceid_blueprint.app_errorhandler(AuthError)
 @container_blueprint.app_errorhandler(AuthError)
+@healthz_blueprint.app_errorhandler(AuthError)
 @info_blueprint.app_errorhandler(AuthError)
 @jwtauth.app_errorhandler(AuthError)
 def auth_error(error):
