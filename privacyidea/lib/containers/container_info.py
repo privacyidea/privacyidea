@@ -26,6 +26,7 @@ REGISTRATION_TTL = "registration_ttl"
 SERVER_URL = "server_url"
 SSL_VERIFY = "ssl_verify"
 
+
 @dataclass
 class TokenContainerInfoData:
     """

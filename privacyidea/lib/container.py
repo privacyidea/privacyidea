@@ -23,7 +23,7 @@ import json
 import logging
 import os
 from datetime import timezone, datetime
-from typing import Union
+from typing import Union, Generator
 
 from flask import g
 from sqlalchemy import func
@@ -362,8 +362,8 @@ def get_all_containers(user: User = None, serial: str = None, ctype: str = None,
     sql_query = _create_container_query(user=user, serial=serial, ctype=ctype, token_serial=token_serial, realm=realm,
                                         allowed_realms=allowed_realms, template=template, description=description,
                                         assigned=assigned, resolver=resolver, info=info,
-                                        last_auth_delta=last_auth_delta, last_sync_delta=last_sync_delta, state=state,
-                                        sortby=sortby, sortdir=sortdir)
+                                        last_auth_delta=last_auth_delta,
+                                        last_sync_delta=last_sync_delta, state=state, sortby=sortby, sortdir=sortdir)
     ret = {}
     # Paginate if requested
     if page > 0 or pagesize > 0:
@@ -375,6 +375,26 @@ def get_all_containers(user: User = None, serial: str = None, ctype: str = None,
     ret["containers"] = container_list
 
     return ret
+
+
+def get_container_generator(pagesize: int = 10, **kwargs) -> Generator[list[TokenContainerClass], None, None]:
+    """
+    Generator that yields pages of containers.
+
+    :param page_size: Number of containers per page
+    :param kwargs: Filter arguments for get_all_containers
+    :yield: List of TokenContainerClass objects for each page
+    """
+    page = 1
+    while True:
+        result = get_all_containers(page=page, pagesize=pagesize, **kwargs)
+        containers = result.get("containers", [])
+        if not containers:
+            break
+        yield containers
+        if not result.get("next"):
+            break
+        page += 1
 
 
 def create_pagination(page: int, pagesize: int, sql_query: Query,
