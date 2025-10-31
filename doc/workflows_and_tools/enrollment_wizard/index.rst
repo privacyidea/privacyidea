@@ -34,21 +34,37 @@ Customization
 There are two dialog windows in the wizard. You can configure the text in the
 wizard in your html templates defined in these files:
 
-Before the token is enrolled you can add your custom text in these two files::
+Before the token is enrolled you can add your custom text in these two files:
+
+*Old WebUI*::
 
    static/customize/views/includes/token.enroll.pre.top.html
    static/customize/views/includes/token.enroll.pre.bottom.html
 
+*New WebUI*::
+
+    static_new/public/customize/token-enrollment.wizard.pre.top.html
+    static_new/public/customize/token-enrollment.wizard.pre.bottom.html
+
 When it is enrolled and the user needs to do something (e.g. scanning the qr-code),
-you can modify the text here::
+you can modify the text here:
+
+*Old WebUI*::
 
    static/customize/views/includes/token.enroll.post.top.html
    static/customize/views/includes/token.enroll.post.bottom.html
+
+*New WebUI*::
+
+    static_new/public/customize/token-enrollment.wizard.post.top.html
+    static_new/public/customize/token-enrollment.wizard.post.bottom.html
 
 .. note:: You can change the directory static/customize to a URL that fits
    your needs the best by defining a variable PI_CUSTOMIZATION in the file
    pi.cfg. This way you can put all modifications in one place apart from the
    original code.
+
+.. _pi_customization:
 
 Example
 ~~~~~~~

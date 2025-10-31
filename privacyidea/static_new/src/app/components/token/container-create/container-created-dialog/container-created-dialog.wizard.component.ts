@@ -44,8 +44,11 @@ export class ContainerCreatedDialogWizardComponent extends ContainerCreatedDialo
     containerRegistrationQR: this.data().response.result?.value?.container_url?.img || ""
   }));
 
+  // TODO: Get custom path from pi.cfg
+  customizationPath = "/static/public/customize/";
+
   readonly postTopHtml$ = this.http
-    .get(environment.proxyUrl + "/static/public/customize/container-create.wizard.post.top.html", {
+    .get(environment.proxyUrl + this.customizationPath + "container-create.wizard.post.top.html", {
       responseType: "text"
     })
     .pipe(map((raw) => ({
@@ -55,7 +58,7 @@ export class ContainerCreatedDialogWizardComponent extends ContainerCreatedDialo
     );
 
   readonly postBottomHtml$ = this.http
-    .get(environment.proxyUrl + "/static/public/customize/container-create.wizard.post.bottom.html", {
+    .get(environment.proxyUrl + this.customizationPath + "container-create.wizard.post.bottom.html", {
       responseType: "text"
     })
     .pipe(map((raw) => this.sanitizer.bypassSecurityTrustHtml(
