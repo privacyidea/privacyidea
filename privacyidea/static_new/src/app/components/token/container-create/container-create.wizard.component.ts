@@ -81,8 +81,11 @@ export class ContainerCreateWizardComponent extends ContainerCreateComponent {
     this.description.set("");
   };
 
+  // TODO: Get custom path from pi.cfg
+  customizationPath = "/static/public/customize/";
+
   readonly preTopHtml$ = this.http
-    .get(environment.proxyUrl + "/static/public/customize/container-create.wizard.pre.top.html", {
+    .get(environment.proxyUrl + this.customizationPath + "container-create.wizard.pre.top.html", {
       responseType: "text"
     })
     .pipe(map((raw) => ({
@@ -92,7 +95,7 @@ export class ContainerCreateWizardComponent extends ContainerCreateComponent {
     );
 
   readonly preBottomHtml$ = this.http
-    .get(environment.proxyUrl + "/static/public/customize/container-create.wizard.pre.bottom.html", {
+    .get(environment.proxyUrl + this.customizationPath + "container-create.wizard.pre.bottom.html", {
       responseType: "text"
     })
     .pipe(map((raw) => this.sanitizer.bypassSecurityTrustHtml(raw)));

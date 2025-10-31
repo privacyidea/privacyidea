@@ -159,8 +159,11 @@ export class TokenEnrollmentWizardComponent extends TokenEnrollmentComponent {
     });
   }
 
+  // TODO: Get custom path from pi.cfg
+  customizationPath = "/static/public/customize/";
+
   readonly preTopHtml$ = this.http
-    .get(environment.proxyUrl + "/static/public/customize/token-enrollment.wizard.pre.top.html", {
+    .get(environment.proxyUrl + this.customizationPath + "token-enrollment.wizard.pre.top.html", {
       responseType: "text"
     })
     .pipe(
@@ -170,7 +173,7 @@ export class TokenEnrollmentWizardComponent extends TokenEnrollmentComponent {
       }))
     );
   readonly preBottomHtml$ = this.http
-    .get(environment.proxyUrl + "/static/public/customize/token-enrollment.wizard.pre.bottom.html", {
+    .get(environment.proxyUrl + this.customizationPath + "token-enrollment.wizard.pre.bottom.html", {
       responseType: "text"
     })
     .pipe(map((raw) => this.sanitizer.bypassSecurityTrustHtml(raw)));

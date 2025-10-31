@@ -88,8 +88,11 @@ export class TokenEnrollmentLastStepDialogWizardComponent extends TokenEnrollmen
     url: this.url
   }));
 
+  // TODO: Get custom path from pi.cfg
+  customizationPath = "/static/public/customize/";
+
   readonly postTopHtml$ = this.http
-    .get(environment.proxyUrl + "/static/public/customize/token-enrollment.wizard.post.top.html", {
+    .get(environment.proxyUrl + this.customizationPath+ "token-enrollment.wizard.post.top.html", {
       responseType: "text"
     })
     .pipe(map((raw) => ({
@@ -99,7 +102,7 @@ export class TokenEnrollmentLastStepDialogWizardComponent extends TokenEnrollmen
     );
 
   readonly postBottomHtml$ = this.http
-    .get(environment.proxyUrl + "/static/public/customize/token-enrollment.wizard.post.bottom.html", {
+    .get(environment.proxyUrl + this.customizationPath+ "token-enrollment.wizard.post.bottom.html", {
       responseType: "text"
     })
     .pipe(map((raw) => this.sanitizer.bypassSecurityTrustHtml(
