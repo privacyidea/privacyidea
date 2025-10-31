@@ -815,7 +815,7 @@ tag.
     * {time} the current server time in the format HH:MM:SS.
     * {date} the current server date in the format YYYY-MM-DD.
     * {phone} the phone number from the challenge in case of sms token.
-    * {phone_redected} the phone number from the challenge in case of sms token in redacted form.
+    * {phone_redacted} the phone number from the challenge in case of sms token in redacted form.
     * {email} email address from the challenge in case of email token.
     * {email_redacted} email address from the challenge in case of email token in redacted form.
     * {presence_answer} only for push token and only if require_presence is enabled.
