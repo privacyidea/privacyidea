@@ -331,7 +331,7 @@ class UserNotificationEventHandler(BaseEventHandler):
         reply_to = None
 
         if notify_type == NOTIFY_TYPE.TOKENOWNER and not tokenowner.is_empty():
-            email = handler_options.get("To " + NOTIFY_TYPE.TOKENOWNER, "email")
+            email = handler_options.get("To " + NOTIFY_TYPE.TOKENOWNER, 'email')
             recipient = {
                 "givenname": tokenowner.info.get("givenname"),
                 "surname": tokenowner.info.get("surname"),
@@ -373,7 +373,7 @@ class UserNotificationEventHandler(BaseEventHandler):
                 # Try to find the user in the specified realm
                 user_obj = User(logged_in_user.get("username"),
                                 logged_in_user.get("realm"))
-                email = handler_options.get("To " + NOTIFY_TYPE.LOGGED_IN_USER, "email")
+                email = handler_options.get("To " + NOTIFY_TYPE.LOGGED_IN_USER, 'email')
                 if user_obj:
                     recipient = {
                         "givenname": user_obj.info.get("givenname"),
@@ -464,7 +464,7 @@ class UserNotificationEventHandler(BaseEventHandler):
                         reply_to = ""
 
                     elif reply_to_type == NOTIFY_TYPE.TOKENOWNER and not tokenowner.is_empty():
-                        email = handler_options.get("reply_to " + NOTIFY_TYPE.TOKENOWNER, "email")
+                        email = handler_options.get("reply_to " + NOTIFY_TYPE.TOKENOWNER, 'email')
                         reply_to = tokenowner.info.get(email)
 
                     elif reply_to_type == NOTIFY_TYPE.INTERNAL_ADMIN:
@@ -483,7 +483,7 @@ class UserNotificationEventHandler(BaseEventHandler):
 
                     elif reply_to_type == NOTIFY_TYPE.LOGGED_IN_USER:
                         # Add email address from the logged in user into the reply-to header
-                        email = handler_options.get("reply_to " + NOTIFY_TYPE.LOGGED_IN_USER, "email")
+                        email = handler_options.get("reply_to " + NOTIFY_TYPE.LOGGED_IN_USER, 'email')
                         if logged_in_user.get("username") and not logged_in_user.get(
                                 "realm"):
                             # internal admins have no realm
