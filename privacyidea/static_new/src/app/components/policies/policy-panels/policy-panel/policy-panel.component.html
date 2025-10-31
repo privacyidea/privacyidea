@@ -46,7 +46,7 @@
                 (click)="$event.stopPropagation()" />
             } @else {
               <span>
-                {{ newPolicyScope() }}
+                {{ newPolicyScope().toLocaleUpperCase() }}
               </span>
             }
           } @else if (policy()) {
@@ -120,7 +120,7 @@
     <div class="mat-expansion-panel-body">
       <div class="priority-description">
         <app-policy-priority [editMode]="isEditMode()" />
-        <app-policy-description [isEditMode]="isEditMode()" />
+        <app-policy-description />
       </div>
       @if (isNew() || isEditingPolicy(policy()!.name) || policyService.selectedPolicyHasConditions()) {
         <div class="tab-buttons">
@@ -141,10 +141,11 @@
         </div>
       }
       @if (activeTab() === "actions") {
-        <app-action-tab [isEditMode]="isNew() || isEditingPolicy(policy()?.name || '')" />
+        <!-- [isEditMode]="isNew() || isEditingPolicy(policy()?.name || '')"  -->
+        <app-action-tab />
       }
       @if (activeTab() === "conditions") {
-        <app-conditions-tab [isEditMode]="isNew() || isEditingPolicy(policy()?.name || '')" />
+        <app-conditions-tab />
       }
     </div>
   </mat-expansion-panel>

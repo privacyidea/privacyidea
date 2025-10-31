@@ -18,17 +18,17 @@ export class SelectedActionsListComponent {
   parseBooleanValue = parseBooleanValue;
   policyService = inject(PolicyService);
 
-  isEditMode = input.required<boolean>();
+  isEditMode = this.policyService.isEditMode;
 
   isBooleanAction(actionName: string): boolean {
     return this.policyService.getDetailsOfAction(actionName)?.type === "bool";
   }
 
   onActionClick(action: { name: string; value: string }) {
-    if (this.isBooleanAction(action.name)) return;
-    if (this.isEditMode()) {
-      this.policyService.selectedAction.set(action);
-    }
+    // if (this.isBooleanAction(action.name)) return;
+    // if (this.isEditMode()) {
+    this.policyService.selectedAction.set(action);
+    // }
   }
 
   onToggleChange(actionName: string, newValue: boolean): void {

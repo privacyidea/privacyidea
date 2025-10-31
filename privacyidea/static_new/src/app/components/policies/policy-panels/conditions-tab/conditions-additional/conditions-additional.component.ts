@@ -43,9 +43,9 @@ import { MatDividerModule } from "@angular/material/divider";
   styleUrls: ["./conditions-additional.component.scss"]
 })
 export class ConditionsAdditionalComponent {
-  isEditMode = input.required<boolean>();
   showAddConditionForm = signal(false);
   policyService = inject(PolicyService);
+  isEditMode = this.policyService.isEditMode;
 
   allSectionOptions = allSectionOptions;
   allComporatorOptions = allComporatorOptions;

@@ -13,7 +13,7 @@
   box-shadow: var(--mat-sys-level2);
 }
 
-.action-card-editmode:hover {
+.action-card:hover {
   background-color: var(--mat-sys-primary-light);
   color: var(--mat-sys-on-primary) !important;
   --mdc-icon-button-icon-color: currentColor;

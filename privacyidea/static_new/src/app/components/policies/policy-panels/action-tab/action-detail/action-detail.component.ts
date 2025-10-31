@@ -32,7 +32,7 @@ import { MatIcon } from "@angular/material/icon";
 export class ActionDetailComponent {
   policyService = inject(PolicyService);
   documentationService = inject(DocumentationService);
-  isEditMode = input.required<boolean>();
+  isEditMode = this.policyService.isEditMode;
   inputIsValid: Signal<boolean> = computed(() => {
     const actionDetail = this.policyService.selectedActionDetail();
     const actionValue = this.policyService.selectedAction()?.value;

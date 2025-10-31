@@ -192,6 +192,8 @@ export interface PoliciesServiceInterface {}
   providedIn: "root"
 })
 export class PolicyService implements PoliciesServiceInterface {
+  isEditMode = signal(false);
+
   updateActionInSelectedPolicy() {
     const selectedPolicy = this.selectedPolicy();
     const selectedAction = this.selectedAction();
@@ -452,14 +454,40 @@ export class PolicyService implements PoliciesServiceInterface {
   });
 
   selectedAction: WritableSignal<{ name: string; value: any } | null> = linkedSignal({
-    source: () => this.getActionNamesOfSelectedGroup() ?? [],
+    source: () => ({
+      getActionNamesOfSelectedGroup: this.getActionNamesOfSelectedGroup() ?? [],
+      _selectedPolicy: this._selectedPolicy(),
+      isEditMode: this.isEditMode()
+    }),
     computation: (source, previous) => {
-      const previousValue = previous?.value;
-      if (source.length < 1) return null;
-      if (previousValue && source.includes(previousValue.name)) return previous.value;
-      const firstActionName = source[0];
-      const defaultValue = this._getActionDetail(firstActionName)?.type === "bool" ? "true" : "";
-      return { name: firstActionName, value: defaultValue };
+      const { getActionNamesOfSelectedGroup, _selectedPolicy } = source;
+      console.log("Recomputing selectedAction with source:", source, "and previous:", previous);
+      if (previous?.value && _selectedPolicy?.action?.[previous.value.name]) {
+        console.log("Keeping previous selected action:", previous.value);
+        return previous.value;
+      }
+      console.log(
+        "Selecting first action of the selected group when editmode is on",
+        " or selecting the first action in _selectedPolicy when editmode is off."
+      );
+      if (this.isEditMode()) {
+        const previousValue = previous?.value;
+        if (getActionNamesOfSelectedGroup.length < 1) return null;
+        if (previousValue && getActionNamesOfSelectedGroup.includes(previousValue.name)) return previous.value;
+        const firstActionName = getActionNamesOfSelectedGroup[0];
+        const defaultValue = this._getActionDetail(firstActionName)?.type === "bool" ? "true" : "";
+        return { name: firstActionName, value: defaultValue };
+      } else {
+        if (_selectedPolicy && _selectedPolicy.action) {
+          const actionNames = Object.keys(_selectedPolicy.action);
+          if (actionNames.length > 0) {
+            const firstActionName = actionNames[0];
+            const actionValue = _selectedPolicy.action[firstActionName];
+            return { name: firstActionName, value: actionValue };
+          }
+        }
+        return null;
+      }
     }
   });
 

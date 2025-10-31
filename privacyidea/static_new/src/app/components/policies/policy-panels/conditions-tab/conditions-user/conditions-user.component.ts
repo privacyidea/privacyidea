@@ -38,11 +38,11 @@ import { PolicyService } from "../../../../../services/policies/policies.service
 export class ConditionsUserComponent {
   @ViewChild("resolverSelect") resolverSelect!: MatSelect;
   @ViewChild("realmSelect") realmSelect!: MatSelect;
-  isEditMode = input.required<boolean>();
   realmService: RealmServiceInterface = inject(RealmService);
   resolverService: ResolverService = inject(ResolverService);
   policyService = inject(PolicyService);
 
+  isEditMode = this.policyService.isEditMode;
   selectedRealms = computed(() => this.policyService.selectedPolicy()?.realm || []);
   selectedResolvers = computed(() => this.policyService.selectedPolicy()?.resolver || []);
   selectedUsers = computed(() => this.policyService.selectedPolicy()?.user || []);

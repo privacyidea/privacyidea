@@ -29,12 +29,12 @@ import { SystemServiceInterface, SystemService } from "../../../../../services/s
 })
 export class ConditionsNodesComponent {
   @ViewChild("nodeSelect") nodeSelect!: MatSelect;
-  isEditMode = input.required<boolean>();
   policyService: PolicyService = inject(PolicyService);
   systemService: SystemServiceInterface = inject(SystemService);
   selectedPolicy = this.policyService.selectedPolicy;
   selectedPolicyName = computed(() => this.selectedPolicy?.name || "");
 
+  isEditMode = this.policyService.isEditMode;
   availablePinodesList = computed(() => this.systemService.nodes().map((node) => node.name));
   selectedPinodes = computed<string[]>(() => {
     console.log("Selected policy nodes:", this.selectedPolicy()?.pinode);

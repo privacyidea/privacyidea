@@ -3,14 +3,11 @@
     @if (actions().length > 0) {
       <app-selected-actions-list
         class="grid-area-body-top"
-        [isEditMode]="isEditMode()"
         [actions]="actions()" />
     }
     @if (isEditMode()) {
       <app-action-selector class="grid-area-body-bottom" />
     }
   </div>
-  <app-action-detail
-    class="flex-detail"
-    [isEditMode]="isEditMode()" />
+  <app-action-detail class="flex-detail" />
 </div>

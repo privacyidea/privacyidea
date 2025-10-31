@@ -12,8 +12,8 @@ import { PolicyService } from "../../../../services/policies/policies.service";
   styleUrl: "./action-tab.component.scss"
 })
 export class ActionTabComponent {
-  isEditMode = input.required<boolean>();
   policyService = inject(PolicyService);
+  isEditMode = this.policyService.isEditMode;
 
   actions: Signal<{ name: string; value: string }[]> = computed(() => {
     const policy = this.policyService.selectedPolicy();

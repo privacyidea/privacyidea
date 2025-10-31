@@ -3,7 +3,6 @@
     <div
       class="action-card"
       [class.action-card-selected]="policyService.selectedAction()?.name === action.name"
-      [class.action-card-editmode]="isEditMode() && !isBooleanAction(action.name)"
       (click)="onActionClick(action)">
       <div class="action-row">
         <span class="action-label">{{ action.name }}</span>
@@ -15,7 +14,7 @@
           <button
             mat-icon-button
             class="action-button"
-            (click)="policyService.removeActionFromSelectedPolicy(action.name)">
+            (click)="policyService.removeActionFromSelectedPolicy(action.name); $event.stopPropagation()">
             <mat-icon>delete</mat-icon>
           </button>
         }

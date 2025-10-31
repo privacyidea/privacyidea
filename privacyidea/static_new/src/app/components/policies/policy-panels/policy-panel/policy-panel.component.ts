@@ -38,20 +38,22 @@ type PolicyTab = "actions" | "conditions";
   styleUrl: "./policy-panel.component.scss"
 })
 export class PolicyPanelComponent {
+  policyService: PolicyService = inject(PolicyService);
   isNew = input<boolean>(false);
   policy = input<PolicyDetail | undefined>(undefined);
   selectedPolicy = computed<PolicyDetail | null>(() => this.policyService.selectedPolicy());
-  isEditMode = signal<boolean>(false);
   activeTab = signal<PolicyTab>("actions");
 
-  policyService: PolicyService = inject(PolicyService);
+  isEditMode = this.policyService.isEditMode;
 
   newPolicyName = computed(() => {
     if (!this.isNew()) return "";
+    if (this.policyService.selectedPolicyOriginal()?.name) return "";
     return this.policyService.selectedPolicyOriginal()?.name || "";
   });
   newPolicyScope = computed(() => {
     if (!this.isNew()) return "";
+    if (this.policyService.selectedPolicyOriginal()?.name) return "";
     return this.policyService.selectedPolicy()?.scope || "";
   });
 

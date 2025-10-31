@@ -16,7 +16,7 @@ import { DocumentationService } from "../../../../../services/documentation/docu
 export class PolicyDescriptionComponent {
   policyService = inject(PolicyService);
   documentationService = inject(DocumentationService);
-  isEditMode = input.required<boolean>();
+  isEditMode = this.policyService.isEditMode;
   updatePolicyDescription($event: string) {
     this.policyService.updateSelectedPolicy({ description: $event });
   }

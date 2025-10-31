@@ -1,7 +1,8 @@
-import { Component, input, Input } from "@angular/core";
+import { Component, inject, input, Input } from "@angular/core";
 import { ConditionsUserComponent } from "./conditions-user/conditions-user.component";
 import { ConditionsNodesComponent } from "./conditions-nodes/conditions-nodes.component";
 import { ConditionsAdditionalComponent } from "./conditions-additional/conditions-additional.component";
+import { PolicyService } from "../../../../services/policies/policies.service";
 
 @Component({
   selector: "app-conditions-tab",
@@ -11,5 +12,6 @@ import { ConditionsAdditionalComponent } from "./conditions-additional/condition
   styleUrl: "./conditions-tab.component.scss"
 })
 export class ConditionsTabComponent {
-  isEditMode = input.required<boolean>();
+  policyService = inject(PolicyService);
+  isEditMode = this.policyService.isEditMode;
 }
