@@ -28,29 +28,36 @@ import { SystemServiceInterface, SystemService } from "../../../../../services/s
   styleUrl: "./conditions-nodes.component.scss"
 })
 export class ConditionsNodesComponent {
+  // ViewChild
   @ViewChild("nodeSelect") nodeSelect!: MatSelect;
+
+  // Services
   policyService: PolicyService = inject(PolicyService);
   systemService: SystemServiceInterface = inject(SystemService);
-  selectedPolicy = this.policyService.selectedPolicy;
-  selectedPolicyName = computed(() => this.selectedPolicy?.name || "");
 
+  // Component State
   isEditMode = this.policyService.isEditMode;
+  selectedPolicy = this.policyService.selectedPolicy;
+
+  // Form Controls
+  addUserAgentFormControl = new FormControl<string>("", this.userAgentValidator.bind(this));
+  validTimeFormControl = new FormControl<string>("", this.validTimeValidator.bind(this));
+  clientFormControl = new FormControl<string>("", this.clientValidator.bind(this));
+
+  // Computed Properties
+  selectedPolicyName = computed(() => this.selectedPolicy?.name || "");
   availablePinodesList = computed(() => this.systemService.nodes().map((node) => node.name));
   selectedPinodes = computed<string[]>(() => {
     console.log("Selected policy nodes:", this.selectedPolicy()?.pinode);
     return this.selectedPolicy()?.pinode || [];
   });
-
   selectedUserAgents = computed(() => this.policyService.selectedPolicy()?.user_agents || []);
-  addUserAgentFormControl = new FormControl<string>("", this.userAgentValidator.bind(this));
   selectedValidTime = computed(() => this.policyService.selectedPolicy()?.time || "");
-  validTimeFormControl = new FormControl<string>("", this.validTimeValidator.bind(this));
   selectedClient = computed(() => this.policyService.selectedPolicy()?.client || "");
-  clientFormControl = new FormControl<string>("", this.clientValidator.bind(this));
+  isAllNodesSelected = computed(() => this.selectedPinodes().length === this.availablePinodesList().length);
 
   // Placeholder for available user agents
   availableUserAgents = signal<string[]>(["Mozilla Firefox", "Google Chrome", "Microsoft Edge"]);
-  isAllNodesSelected = computed(() => this.selectedPinodes().length === this.availablePinodesList().length);
 
   constructor() {
     this.validTimeFormControl.valueChanges.subscribe(() => {
@@ -62,21 +69,23 @@ export class ConditionsNodesComponent {
     });
   }
 
+  // Node Selection
   toggleAllNodes() {
     if (this.isAllNodesSelected()) {
-      this.policyService.updateSelectedPolicy({
-        pinode: []
-      });
+      this.policyService.updateSelectedPolicy({ pinode: [] });
     } else {
-      this.policyService.updateSelectedPolicy({
-        pinode: [...this.availablePinodesList()]
-      });
+      this.policyService.updateSelectedPolicy({ pinode: [...this.availablePinodesList()] });
     }
     setTimeout(() => {
       this.nodeSelect.close();
     });
   }
 
+  updateSelectedPinodes($event: MatSelectChange<string[]>) {
+    this.policyService.updateSelectedPolicy({ pinode: $event.value });
+  }
+
+  // User Agent Management
   addUserAgent() {
     if (this.addUserAgentFormControl.invalid) return;
     const userAgent = this.addUserAgentFormControl.value;
@@ -85,52 +94,44 @@ export class ConditionsNodesComponent {
     if (oldUserAgents.includes(userAgent)) return;
     const newUserAgents = [...oldUserAgents, userAgent];
     console.log("Adding user agent:", newUserAgents);
-    this.policyService.updateSelectedPolicy({
-      user_agents: newUserAgents
-    });
+    this.policyService.updateSelectedPolicy({ user_agents: newUserAgents });
   }
 
   removeUserAgent(userAgent: string) {
     const newUserAgents = this.selectedUserAgents().filter((ua) => ua !== userAgent);
-    this.policyService.updateSelectedPolicy({
-      user_agents: newUserAgents
-    });
+    this.policyService.updateSelectedPolicy({ user_agents: newUserAgents });
   }
+
   clearUserAgents() {
     this.policyService.updateSelectedPolicy({ user_agents: [] });
   }
 
+  // Valid Time Management
   setValidTime() {
     if (this.validTimeFormControl.invalid) {
-      this.policyService.updateSelectedPolicy({
-        time: ""
-      });
+      this.policyService.updateSelectedPolicy({ time: "" });
       return;
     }
     const validTime = this.validTimeFormControl.value;
     if (!validTime) return;
     console.log("Setting valid time:", validTime);
-    this.policyService.updateSelectedPolicy({
-      time: validTime
-    });
+    this.policyService.updateSelectedPolicy({ time: validTime });
   }
 
+  // Client Management
   setClients() {
     if (this.clientFormControl.invalid) {
-      this.policyService.updateSelectedPolicy({
-        client: []
-      });
+      this.policyService.updateSelectedPolicy({ client: [] });
       return;
     }
     const client = this.clientFormControl.value;
     if (!client) return;
     console.log("Setting clients:", client);
     const clientsArray = client.split(",").map((c) => c.trim());
-    this.policyService.updateSelectedPolicy({
-      client: clientsArray
-    });
+    this.policyService.updateSelectedPolicy({ client: clientsArray });
   }
 
+  // Validators
   validTimeValidator(control: AbstractControl): ValidationErrors | null {
     const validTime = control.value;
     if (!validTime) return null;
@@ -140,9 +141,7 @@ export class ConditionsNodesComponent {
     if (validTime === "" || regex.test(validTime)) {
       return null;
     }
-    return {
-      invalidValidTime: { value: control.value }
-    };
+    return { invalidValidTime: { value: control.value } };
   }
 
   clientValidator(clientControl: AbstractControl): ValidationErrors | null {
@@ -152,25 +151,15 @@ export class ConditionsNodesComponent {
     const regex = /^(!?\d{1,3}(\.\d{1,3}){3}(\/\d{1,2})?)(,\s*!?\d{1,3}(\.\d{1,3}){3}(\/\d{1,2})?)*$/;
     const isValid = client === "" || regex.test(client);
     if (isValid) return null;
-    return {
-      invalidClient: { value: clientControl.value }
-    };
+    return { invalidClient: { value: clientControl.value } };
   }
 
   userAgentValidator(control: AbstractControl): ValidationErrors | null {
     const userAgent = control.value;
     if (!userAgent) return null;
     if (userAgent.includes(",")) {
-      return {
-        includesComma: { value: control.value }
-      };
+      return { includesComma: { value: control.value } };
     }
     return null;
-  }
-
-  updateSelectedPinodes($event: MatSelectChange<string[]>) {
-    this.policyService.updateSelectedPolicy({
-      pinode: $event.value
-    });
   }
 }

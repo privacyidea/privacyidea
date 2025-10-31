@@ -36,28 +36,35 @@ import { PolicyService } from "../../../../../services/policies/policies.service
   styleUrl: "./conditions-user.component.scss"
 })
 export class ConditionsUserComponent {
+  // ViewChild
   @ViewChild("resolverSelect") resolverSelect!: MatSelect;
   @ViewChild("realmSelect") realmSelect!: MatSelect;
+
+  // Services
   realmService: RealmServiceInterface = inject(RealmService);
   resolverService: ResolverService = inject(ResolverService);
   policyService = inject(PolicyService);
 
+  // Component State
   isEditMode = this.policyService.isEditMode;
+
+  // Form Controls
+  userFormControl = new FormControl<string>("", this.userValidator.bind(this));
+
+  // Computed Properties
   selectedRealms = computed(() => this.policyService.selectedPolicy()?.realm || []);
   selectedResolvers = computed(() => this.policyService.selectedPolicy()?.resolver || []);
   selectedUsers = computed(() => this.policyService.selectedPolicy()?.user || []);
   userCaseInsensitive = computed(() => this.policyService.selectedPolicy()?.user_case_insensitive || false);
+  isAllRealmsSelected = computed(() => this.selectedRealms().length === this.realmService.realmOptions().length);
+  isAllResolversSelected = computed(
+    () => this.selectedResolvers().length === this.resolverService.resolverOptions().length
+  );
 
-  userFormControl = new FormControl<string>("", this.userValidator.bind(this));
-
+  // Realm Management
   selectRealm(realmNames: string[]): void {
     this.policyService.updateSelectedPolicy({ realm: realmNames });
     console.log("Selected realm:", realmNames);
-  }
-
-  selectResolver(resolverNames: string[]): void {
-    this.policyService.updateSelectedPolicy({ resolver: resolverNames });
-    console.log("Selected resolver:", resolverNames);
   }
 
   toggleAllRealms() {
@@ -72,6 +79,12 @@ export class ConditionsUserComponent {
     });
   }
 
+  // Resolver Management
+  selectResolver(resolverNames: string[]): void {
+    this.policyService.updateSelectedPolicy({ resolver: resolverNames });
+    console.log("Selected resolver:", resolverNames);
+  }
+
   toggleAllResolvers() {
     if (this.isAllResolversSelected()) {
       this.policyService.updateSelectedPolicy({ resolver: [] });
@@ -84,12 +97,7 @@ export class ConditionsUserComponent {
     });
   }
 
-  isAllRealmsSelected = computed(() => this.selectedRealms().length === this.realmService.realmOptions().length);
-
-  isAllResolversSelected = computed(
-    () => this.selectedResolvers().length === this.resolverService.resolverOptions().length
-  );
-
+  // User Management
   addUser(user: string) {
     console.log("Adding user:", user);
     if (this.userFormControl.invalid) {
@@ -107,10 +115,12 @@ export class ConditionsUserComponent {
   clearUsers() {
     this.policyService.updateSelectedPolicy({ user: [] });
   }
+
   toggleUserCaseInsensitive() {
     this.policyService.updateSelectedPolicy({ user_case_insensitive: !this.userCaseInsensitive() });
   }
 
+  // Validators
   userValidator(control: AbstractControl): ValidationErrors | null {
     return /[,]/.test(control.value) ? { includesComma: { value: control.value } } : null;
   }

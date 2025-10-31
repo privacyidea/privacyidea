@@ -14,16 +14,24 @@ import { parseBooleanValue } from "../../../../../utils/parse-boolean-value";
   styleUrl: "./selected-actions-list.component.scss"
 })
 export class SelectedActionsListComponent {
+  // Inputs
   actions = input.required<{ name: string; value: string }[]>();
-  parseBooleanValue = parseBooleanValue;
+
+  // Services
   policyService = inject(PolicyService);
 
+  // Component State
   isEditMode = this.policyService.isEditMode;
 
+  // Helper functions
+  parseBooleanValue = parseBooleanValue;
+
+  // Type Checking Methods
   isBooleanAction(actionName: string): boolean {
     return this.policyService.getDetailsOfAction(actionName)?.type === "bool";
   }
 
+  // Event Handlers
   onActionClick(action: { name: string; value: string }) {
     // if (this.isBooleanAction(action.name)) return;
     // if (this.isEditMode()) {

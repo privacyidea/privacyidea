@@ -13,8 +13,13 @@ import { PolicyService } from "../../../../../services/policies/policies.service
   imports: [MatFormFieldModule, MatInputModule, FormsModule, TextFieldModule]
 })
 export class PolicyPriorityComponent {
+  // Services
   policyService = inject(PolicyService);
+
+  // Inputs
   editMode = input.required<boolean>();
+
+  // Public Methods
   updatePolicyPriority($event: any) {
     this.policyService.updateSelectedPolicy({ priority: $event });
   }

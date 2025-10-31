@@ -14,5 +14,6 @@ import { PolicyPanelComponent } from "./policy-panels/policy-panel/policy-panel.
 })
 export class PoliciesComponent {
   policyService: PolicyService = inject(PolicyService);
+
   allPoliciesList = this.policyService.allPolicies;
 }

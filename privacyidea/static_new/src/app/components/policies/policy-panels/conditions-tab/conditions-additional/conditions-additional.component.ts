@@ -43,43 +43,33 @@ import { MatDividerModule } from "@angular/material/divider";
   styleUrls: ["./conditions-additional.component.scss"]
 })
 export class ConditionsAdditionalComponent {
-  showAddConditionForm = signal(false);
+  // Services
   policyService = inject(PolicyService);
-  isEditMode = this.policyService.isEditMode;
 
-  allSectionOptions = allSectionOptions;
-  allComporatorOptions = allComporatorOptions;
-  allHandleMissingDataOptions = allHandleMissingDataOptions;
+  // Component State
+  isEditMode = this.policyService.isEditMode;
+  showAddConditionForm = signal(false);
+  editIndex = signal<number | null>(null);
+
+  // Form Signals
+  conditionSection = linkedSignal<boolean, SectionOption | "">({ source: () => this.isEditMode(), computation: () => "" });
+  conditionKey = linkedSignal<boolean, string>({ source: () => this.isEditMode(), computation: () => "" });
+  conditionComparator = linkedSignal<boolean, ComporatorOption | "">({ source: () => this.isEditMode(), computation: () => "" });
+  conditionValue = linkedSignal<boolean, string>({ source: () => this.isEditMode(), computation: () => "" });
+  conditionActive = linkedSignal<boolean, boolean>({ source: () => this.isEditMode(), computation: () => false });
+  conditionHandleMissingData = linkedSignal<boolean, HandleMissigDataOption | "">({ source: () => this.isEditMode(), computation: () => "" });
+
+  // Computed Properties
   additionalConditions = computed<AdditionalCondition[]>(() => {
     return this.policyService.selectedPolicy()?.conditions || [];
   });
-  editIndex = signal<number | null>(null);
 
-  conditionSection = linkedSignal<boolean, SectionOption | "">({
-    source: () => this.isEditMode(),
-    computation: () => ""
-  });
-  conditionKey = linkedSignal<boolean, string>({
-    source: () => this.isEditMode(),
-    computation: () => ""
-  });
-  conditionComparator = linkedSignal<boolean, ComporatorOption | "">({
-    source: () => this.isEditMode(),
-    computation: () => ""
-  });
-  conditionValue = linkedSignal<boolean, string>({
-    source: () => this.isEditMode(),
-    computation: () => ""
-  });
-  conditionActive = linkedSignal<boolean, boolean>({
-    source: () => this.isEditMode(),
-    computation: () => false
-  });
-  conditionHandleMissingData = linkedSignal<boolean, HandleMissigDataOption | "">({
-    source: () => this.isEditMode(),
-    computation: () => ""
-  });
+  // Constants
+  allSectionOptions = allSectionOptions;
+  allComporatorOptions = allComporatorOptions;
+  allHandleMissingDataOptions = allHandleMissingDataOptions;
 
+  // Condition Form Management
   startEditCondition(condition: AdditionalCondition, index: number) {
     if (!this.isEditMode) return;
     this.editIndex.set(index);
@@ -137,6 +127,7 @@ export class ConditionsAdditionalComponent {
     this.conditionHandleMissingData.set("");
   }
 
+  // Condition State Management
   updateActiveState(index: number, active: boolean) {
     const condition = this.additionalConditions()[index];
     if (!condition) return;

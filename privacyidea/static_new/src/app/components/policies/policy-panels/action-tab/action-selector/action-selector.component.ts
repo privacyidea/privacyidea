@@ -21,5 +21,6 @@ import { MatTooltipModule } from "@angular/material/tooltip";
   styleUrls: ["./action-selector.component.scss"]
 })
 export class ActionSelectorComponent {
+  // Services
   policyService = inject(PolicyService);
 }

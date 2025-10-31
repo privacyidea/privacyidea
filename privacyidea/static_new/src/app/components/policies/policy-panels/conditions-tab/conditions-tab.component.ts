@@ -13,5 +13,6 @@ import { PolicyService } from "../../../../services/policies/policies.service";
 })
 export class ConditionsTabComponent {
   policyService = inject(PolicyService);
+
   isEditMode = this.policyService.isEditMode;
 }

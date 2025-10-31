@@ -30,9 +30,14 @@ import { MatIcon } from "@angular/material/icon";
   styleUrls: ["./action-detail.component.scss"]
 })
 export class ActionDetailComponent {
+  // Services
   policyService = inject(PolicyService);
   documentationService = inject(DocumentationService);
+
+  // Component State
   isEditMode = this.policyService.isEditMode;
+
+  // Computed Properties
   inputIsValid: Signal<boolean> = computed(() => {
     const actionDetail = this.policyService.selectedActionDetail();
     const actionValue = this.policyService.selectedAction()?.value;
@@ -40,6 +45,25 @@ export class ActionDetailComponent {
     return this.policyService.actionValueIsValid(actionDetail, actionValue);
   });
 
+  actionDocuString = computed<string | undefined>(() => {
+    const docuList = this.documentationService.policyActionDocumentation()?.actionDocu ?? null;
+    return docuList?.join("\n");
+  });
+
+  actionNotesString = computed<string | undefined>(() => {
+    const notesList = this.documentationService.policyActionDocumentation()?.actionNotes ?? null;
+    return notesList?.join("\n");
+  });
+
+  visibleContent = linkedSignal<any, "docu" | "notes" | "none">({
+    source: () => ({
+      docu: this.actionDocuString(),
+      notes: this.actionNotesString()
+    }),
+    computation: (_) => "none"
+  });
+
+  // Public Methods
   actionIsAlreadyAdded(): boolean {
     const selectedAction = this.policyService.selectedAction();
     if (!selectedAction) return false;
@@ -53,20 +77,6 @@ export class ActionDetailComponent {
     this.policyService.updateActionInSelectedPolicy();
     this.policyService.selectedAction.set(null);
   }
-
-  actionDocu = computed<string[] | null>(
-    () => this.documentationService.policyActionDocumentation()?.actionDocu ?? null
-  );
-  actionNotes = computed<string[] | null>(
-    () => this.documentationService.policyActionDocumentation()?.actionNotes ?? null
-  );
-  visibleContent = linkedSignal<any, "docu" | "notes" | "none">({
-    source: () => ({
-      docu: this.actionDocu(),
-      notes: this.actionNotes()
-    }),
-    computation: (_) => "none"
-  });
 
   toggleContent(contentType: "docu" | "notes") {
     if (this.visibleContent() === contentType) {

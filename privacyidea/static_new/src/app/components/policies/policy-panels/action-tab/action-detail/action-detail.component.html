@@ -5,14 +5,14 @@
         {{ policyService.selectedAction()?.name }}
       </h3>
       <div class="action-detail-title-buttons">
-        @if (actionDocu() && actionDocu()!.length > 0) {
+        @if (actionDocuString() && actionDocuString()!.length > 0) {
           <button
             mat-icon-button
             (click)="toggleContent('docu')">
             <mat-icon>info_outline</mat-icon>
           </button>
         }
-        @if (actionNotes() && actionNotes()!.length > 0) {
+        @if (actionNotesString() && actionNotesString()!.length > 0) {
           <button
             mat-icon-button
             (click)="toggleContent('notes')">
@@ -25,12 +25,12 @@
       @if (visibleContent() === "docu") {
         <div
           class="action-docu"
-          [innerHTML]="actionDocu()"></div>
+          [innerHTML]="actionDocuString()"></div>
       }
       @if (visibleContent() === "notes") {
         <div
           class="action-notes"
-          [innerHTML]="actionNotes()"></div>
+          [innerHTML]="actionNotesString()"></div>
       }
     </div>
     <div class="action-detail-card">

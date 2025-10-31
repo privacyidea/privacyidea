@@ -14,12 +14,18 @@ import { DocumentationService } from "../../../../../services/documentation/docu
   imports: [MatFormFieldModule, MatInputModule, FormsModule, TextFieldModule]
 })
 export class PolicyDescriptionComponent {
+  // Services
   policyService = inject(PolicyService);
   documentationService = inject(DocumentationService);
+
+  // Component State
   isEditMode = this.policyService.isEditMode;
+
+  // Public Methods
   updatePolicyDescription($event: string) {
     this.policyService.updateSelectedPolicy({ description: $event });
   }
+
   openDocumentation(page: string) {
     this.documentationService.openDocumentation(page);
   }

@@ -13,6 +13,7 @@ import { PolicyService } from "../../../../services/policies/policies.service";
 })
 export class ActionTabComponent {
   policyService = inject(PolicyService);
+
   isEditMode = this.policyService.isEditMode;
 
   actions: Signal<{ name: string; value: string }[]> = computed(() => {
