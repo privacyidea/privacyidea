@@ -1,11 +1,11 @@
-import { Component, inject, Input, input, linkedSignal, signal, WritableSignal } from "@angular/core";
+import { Component, computed, inject, Input, input, linkedSignal, signal, WritableSignal } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { MatCardModule } from "@angular/material/card";
 import { MatIconModule } from "@angular/material/icon";
 import { MatButtonModule } from "@angular/material/button";
 import { MatButtonToggleModule } from "@angular/material/button-toggle";
 import { FormsModule } from "@angular/forms";
-import { MatExpansionModule } from "@angular/material/expansion";
+import { MatExpansionModule, MatExpansionPanel } from "@angular/material/expansion";
 import { MatSlideToggleModule } from "@angular/material/slide-toggle";
 import { PolicyDetail, PolicyService } from "../../../../services/policies/policies.service";
 import { HorizontalWheelComponent } from "../../../shared/horizontal-wheel/horizontal-wheel.component";
@@ -38,6 +38,23 @@ type PolicyTab = "actions" | "conditions";
   styleUrl: "./policy-panel.component.scss"
 })
 export class PolicyPanelComponent {
+  isNew = input<boolean>(false);
+  policy = input<PolicyDetail | undefined>(undefined);
+  selectedPolicy = computed<PolicyDetail | null>(() => this.policyService.selectedPolicy());
+  isEditMode = signal<boolean>(false);
+  activeTab = signal<PolicyTab>("actions");
+
+  policyService: PolicyService = inject(PolicyService);
+
+  newPolicyName = computed(() => {
+    if (!this.isNew()) return "";
+    return this.policyService.selectedPolicyOriginal()?.name || "";
+  });
+  newPolicyScope = computed(() => {
+    if (!this.isNew()) return "";
+    return this.policyService.selectedPolicy()?.scope || "";
+  });
+
   togglePolicyActive(policy: PolicyDetail, activate: boolean) {
     if (activate) {
       this.policyService.enablePolicy(policy.name);
@@ -47,6 +64,9 @@ export class PolicyPanelComponent {
   }
 
   canSavePolicy(): boolean {
+    if (this.isNew()) {
+      return this.policyService.canSaveSelectedPolicy();
+    }
     const policy = this.policyService.selectedPolicy();
     if (!policy) return false;
     if (!policy.name || policy.name.trim() === "") return false;
@@ -58,34 +78,10 @@ export class PolicyPanelComponent {
     }
     return true;
   }
-  isEditMode = input.required<boolean>();
-  policy = input.required<PolicyDetail>();
-
-  activeTab: WritableSignal<PolicyTab> = linkedSignal<
-    {
-      selectedPolicyHasConditions: boolean;
-      isEditMode: boolean;
-    },
-    PolicyTab
-  >({
-    source: () => ({
-      selectedPolicyHasConditions: this.policyService.selectedPolicyHasConditions(),
-      isEditMode: this.isEditMode()
-    }),
-    computation: (source, previous) => {
-      const { selectedPolicyHasConditions, isEditMode } = source;
-      if (isEditMode) return previous?.value || "actions";
-      if (selectedPolicyHasConditions === true) return previous?.value || "actions";
-      return "actions";
-    }
-  });
-
-  policyService: PolicyService = inject(PolicyService);
 
   confirmDiscardChanges(): boolean {
     if (
       this.policyService.isPolicyEdited() &&
-      this.policyService.viewMode() !== "view" &&
       !confirm("Are you sure you want to discard the changes? All changes will be lost.")
     ) {
       return false;
@@ -96,6 +92,7 @@ export class PolicyPanelComponent {
   cancelEditMode() {
     if (!this.confirmDiscardChanges()) return;
     this.policyService.cancelEditMode();
+    this.isEditMode.set(false);
   }
 
   deletePolicy(policyName: string): void {
@@ -106,26 +103,87 @@ export class PolicyPanelComponent {
     }
   }
 
-  deselectPolicy(name: string): void {
-    if (!this.confirmDiscardChanges()) return;
-    this.policyService.deselectPolicy(name);
+  handleExpansion(panel: MatExpansionPanel, policyName: string | undefined) {
+    console.log("handleExpansion called");
+    if (this.policyIsSelected(policyName)) {
+      console.log("Policy (" + policyName + ") is already selected, cancelling handleExpansion.");
+      return;
+    }
+    if (this.isNew()) {
+      console.log("Initializing new policy");
+      this.policyService.initializeNewPolicy();
+      this.isEditMode.set(true);
+    } else if (policyName) {
+      this.policyService.selectPolicyByName(policyName);
+      this.isEditMode.set(false);
+    }
+    console.log("handleExpansion completed");
   }
 
-  enableEditMode(editMode: "edit" | "new"): void {
-    this.policyService.viewMode.set(editMode);
+  policyIsSelected(policyName: string = ""): boolean {
+    const selectedPolicy = this.policyService.selectedPolicyOriginal();
+    return selectedPolicy !== null && selectedPolicy.name === policyName;
+  }
+
+  handleCollapse(panel: MatExpansionPanel, policyName: string | undefined) {
+    console.log("handleCollapse called");
+    if (!this.policyIsSelected(policyName)) {
+      console.log("Policy (" + policyName + ") is not selected, cancelling handleCollapse.");
+      this.isEditMode.set(false);
+      return;
+    }
+    if (this.isNew()) {
+      if (this.policyService.isPolicyEdited()) {
+        if (confirm("Are you sure you want to discard the new policy? All changes will be lost.")) {
+          this.policyService.deselectNewPolicy();
+          this.isEditMode.set(false);
+        } else {
+          panel.open(); // Re-open if user cancels
+        }
+      } else {
+        this.policyService.deselectNewPolicy();
+        this.isEditMode.set(false);
+      }
+    } else if (policyName) {
+      if (!this.confirmDiscardChanges()) {
+        panel.open();
+        return;
+      }
+      this.policyService.deselectPolicy(policyName);
+      this.isEditMode.set(false);
+    }
+    console.log("handleCollapse completed");
   }
 
   isEditingPolicy(name: string): boolean {
     return this.isEditMode() && this.policyService.selectedPolicyOriginal()?.name === name;
   }
 
-  savePolicy() {
-    this.policyService.savePolicyEdits();
+  savePolicy(panel?: MatExpansionPanel) {
+    if (!this.canSavePolicy()) return;
+    if (this.isNew()) {
+      this.policyService.savePolicyEdits({ asNew: true });
+      this.policyService.deselectPolicy(this.newPolicyName());
+      this.isEditMode.set(false);
+    } else {
+      this.policyService.savePolicyEdits();
+    }
+    this.isEditMode.set(false);
+    if (panel) panel.close();
   }
 
-  selectPolicy(policyName: string): void {
-    if (!this.confirmDiscardChanges()) return;
-    this.policyService.selectPolicyByName(policyName);
+  resetPolicy(panel: MatExpansionPanel) {
+    if (this.policyService.isPolicyEdited()) {
+      if (confirm("Are you sure you want to discard the new policy? All changes will be lost.")) {
+        this.policyService.deselectPolicy(this.newPolicyName());
+        this.isEditMode.set(false);
+        panel.close();
+      }
+    } else {
+      this.policyService.deselectPolicy(this.newPolicyName());
+      this.isEditMode.set(false);
+      panel.close();
+    }
   }
 
   selectPolicyScope(scope: string) {

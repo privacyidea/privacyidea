@@ -1,11 +1,11 @@
-@if (policyService.selectedPolicy()?.description || this.policyService.viewMode() !== "view") {
+@if (policyService.selectedPolicy()?.description || isEditMode()) {
   <div class="action-description-container">
     <div
       i18n
       class="description-header">
       Description
     </div>
-    @if (this.policyService.viewMode() === "view") {
+    @if (!isEditMode()) {
       <div class="description-text">
         {{ policyService.selectedPolicy()?.description }}
       </div>

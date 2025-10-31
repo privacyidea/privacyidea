@@ -39,7 +39,8 @@
         [innerHTML]="policyService.selectedActionDetail()?.desc">
       </span>
     </div>
-    @if (policyService.selectedActionDetail()?.value) {
+    @if (!isEditMode()) {
+    } @else if (policyService.selectedActionDetail()?.value) {
       <!-- add dropdown to select value from list -->
       @if (policyService.selectedActionDetail()?.value?.length === 0) {
         <!-- // Warning: No Value Available. Nothing to select not possible to add. NO MAT FORM FIELD -->
@@ -103,7 +104,8 @@
         }
       }
     }
-    @if (actionIsAlreadyAdded()) {
+    @if (!isEditMode()) {
+    } @else if (actionIsAlreadyAdded()) {
       <button
         mat-raised-button
         color="primary"

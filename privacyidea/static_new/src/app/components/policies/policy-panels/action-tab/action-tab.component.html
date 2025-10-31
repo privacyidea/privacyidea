@@ -1,21 +1,16 @@
 <div class="policy-flex-row">
-  @if (isEditMode()) {
-    <div class="flex-body">
-      @if (actions().length > 0) {
-        <app-selected-actions-list
-          class="grid-area-body-top"
-          [isEditMode]="isEditMode()"
-          [actions]="actions()" />
-      }
-      <app-action-selector class="grid-area-body-bottom" />
-    </div>
-    <app-action-detail class="flex-detail" />
-  } @else {
-    <div class="flex-body">
+  <div class="flex-body">
+    @if (actions().length > 0) {
       <app-selected-actions-list
         class="grid-area-body-top"
         [isEditMode]="isEditMode()"
         [actions]="actions()" />
-    </div>
-  }
+    }
+    @if (isEditMode()) {
+      <app-action-selector class="grid-area-body-bottom" />
+    }
+  </div>
+  <app-action-detail
+    class="flex-detail"
+    [isEditMode]="isEditMode()" />
 </div>

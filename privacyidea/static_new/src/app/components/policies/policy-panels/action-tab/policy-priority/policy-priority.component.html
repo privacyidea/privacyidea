@@ -4,7 +4,7 @@
     class="description-header">
     Priority
   </div>
-  @if (this.policyService.viewMode() === "view") {
+  @if (!editMode()) {
     <div class="description-text">
       {{ policyService.selectedPolicy()?.priority }}
     </div>

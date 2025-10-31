@@ -1,4 +1,4 @@
-import { Component, inject } from "@angular/core";
+import { Component, inject, input } from "@angular/core";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { FormsModule } from "@angular/forms";
@@ -14,6 +14,7 @@ import { PolicyService } from "../../../../../services/policies/policies.service
 })
 export class PolicyPriorityComponent {
   policyService = inject(PolicyService);
+  editMode = input.required<boolean>();
   updatePolicyPriority($event: any) {
     this.policyService.updateSelectedPolicy({ priority: $event });
   }

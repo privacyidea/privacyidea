@@ -3,11 +3,9 @@
   aria-label="Policies Layout">
   <mat-accordion>
     <div class="policies-layout">
-      <app-new-policy-panel />
+      <app-policy-panel [isNew]="true"></app-policy-panel>
       @for (policy of allPoliciesList(); track policy.name) {
-        <app-policy-panel
-          [policy]="policy"
-          [isEditMode]="isEditingPolicy(policy.name)"></app-policy-panel>
+        <app-policy-panel [policy]="policy"></app-policy-panel>
       }
     </div>
   </mat-accordion>

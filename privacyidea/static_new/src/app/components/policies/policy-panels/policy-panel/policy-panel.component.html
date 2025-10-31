@@ -2,81 +2,127 @@
   <mat-expansion-panel
     #panel
     class="margin-4"
-    (afterCollapse)="deselectPolicy(policy().name)"
-    (opened)="selectPolicy(policy().name)"
-    [disabled]="policyService.isPolicyEdited() && policyService.viewMode() !== 'view'">
+    [disabled]="isEditMode() || policyService.isPolicyEdited()"
+    (opened)="handleExpansion(panel, policy()?.name)"
+    (closed)="handleCollapse(panel, policy()?.name)">
     <mat-expansion-panel-header class="mat-expansion-panel-header">
       <mat-panel-title>
-        @if (isEditingPolicy(policy().name)) {
-          <input
-            type="text"
-            class="policy-name-input"
-            placeholder="Policy Name"
-            [ngModel]="policy().name"
-            (ngModelChange)="onNameChange($event)"
-            (click)="$event.stopPropagation(); panel.expanded = true"
-            (keydown)="$event.stopPropagation()" />
-        } @else {
-          {{ policy().name }}
+        @if (isNew()) {
+          @if (panel.expanded) {
+            <input
+              type="text"
+              class="policy-name-input"
+              placeholder="Policy Name"
+              [ngModel]="selectedPolicy()!.name"
+              (ngModelChange)="onNameChange($event)"
+              (click)="$event.stopPropagation(); panel.expanded = true"
+              (keydown)="$event.stopPropagation()" />
+          } @else {
+            <p i18n>New Policy</p>
+          }
+        } @else if (policy()) {
+          @if (isEditingPolicy(policy()!.name)) {
+            <input
+              type="text"
+              class="policy-name-input"
+              placeholder="Policy Name"
+              [ngModel]="selectedPolicy()!.name"
+              (ngModelChange)="onNameChange($event)"
+              (click)="$event.stopPropagation(); panel.expanded = true"
+              (keydown)="$event.stopPropagation()" />
+          } @else {
+            {{ policy()!.name }}
+          }
         }
       </mat-panel-title>
       <mat-panel-description class="header-description">
         <div class="policy-scope-label">
-          @if (isEditingPolicy(policy().name) && policyService.isScopeChangeable(policy())) {
-            <app-horizontal-wheel
-              [initialValue]="policy().scope"
-              [values]="policyService.allPolicyScopes"
-              (onSelect)="selectPolicyScope($event)" />
-          } @else {
-            <span>
-              {{ policy().scope.toLocaleUpperCase() }}
-            </span>
+          @if (isNew()) {
+            @if (!this.policyService.selectedPolicyHasActions() && panel.expanded) {
+              <app-horizontal-wheel
+                [initialValue]="newPolicyScope()"
+                [values]="policyService.allPolicyScopes"
+                (onSelect)="selectPolicyScope($event)"
+                (click)="$event.stopPropagation()" />
+            } @else {
+              <span>
+                {{ newPolicyScope() }}
+              </span>
+            }
+          } @else if (policy()) {
+            @if (isEditingPolicy(policy()!.name) && policyService.isScopeChangeable(selectedPolicy()!)) {
+              <app-horizontal-wheel
+                [initialValue]="selectedPolicy()!.scope"
+                [values]="policyService.allPolicyScopes"
+                (onSelect)="selectPolicyScope($event)"
+                (click)="$event.stopPropagation()" />
+            } @else {
+              <span>
+                {{ policy()!.scope.toLocaleUpperCase() }}
+              </span>
+            }
           }
         </div>
         <div class="policy-actions">
-          @if (panel.expanded) {
-            @if (isEditingPolicy(policy().name)) {
+          @if (isNew()) {
+            @if (panel.expanded) {
               <button
                 mat-icon-button
                 [disabled]="!canSavePolicy()"
-                (click)="$event.stopPropagation(); savePolicy()">
+                (click)="$event.stopPropagation(); savePolicy(panel)">
                 <mat-icon>save</mat-icon>
               </button>
               <button
                 mat-icon-button
-                class="action-button"
-                (click)="$event.stopPropagation(); cancelEditMode()">
-                <mat-icon>cancel</mat-icon>
-              </button>
-            } @else {
-              <button
-                mat-icon-button
-                (click)="$event.stopPropagation(); enableEditMode('edit')">
-                <mat-icon>edit</mat-icon>
+                (click)="$event.stopPropagation(); resetPolicy(panel)">
+                <mat-icon>close</mat-icon>
               </button>
             }
-            <button
-              mat-icon-button
-              (click)="$event.stopPropagation(); deletePolicy(policy().name)">
-              <mat-icon>delete</mat-icon>
-            </button>
+          } @else if (policy()) {
+            @if (panel.expanded) {
+              @if (isEditingPolicy(policy()!.name)) {
+                <button
+                  mat-icon-button
+                  [disabled]="!canSavePolicy()"
+                  (click)="$event.stopPropagation(); savePolicy()">
+                  <mat-icon>save</mat-icon>
+                </button>
+                <button
+                  mat-icon-button
+                  class="action-button"
+                  (click)="$event.stopPropagation(); cancelEditMode()">
+                  <mat-icon>cancel</mat-icon>
+                </button>
+              } @else {
+                <button
+                  mat-icon-button
+                  (click)="$event.stopPropagation(); isEditMode.set(true)">
+                  <mat-icon>edit</mat-icon>
+                </button>
+              }
+              <button
+                mat-icon-button
+                (click)="$event.stopPropagation(); deletePolicy(policy()!.name)">
+                <mat-icon>delete</mat-icon>
+              </button>
+            }
+            <mat-slide-toggle
+              #slideToggle
+              [checked]="panel.expanded ? selectedPolicy()!.active : policy()!.active"
+              (change)="togglePolicyActive(policy()!, $event.checked); slideToggle._switchElement.nativeElement.blur()"
+              (click)="$event.stopPropagation()"
+              [disableRipple]="true">
+            </mat-slide-toggle>
           }
-          <mat-slide-toggle
-            #slideToggle
-            [checked]="policy().active"
-            (change)="togglePolicyActive(policy(), $event.checked); slideToggle._switchElement.nativeElement.blur()"
-            (click)="$event.stopPropagation()"
-            [disableRipple]="true">
-          </mat-slide-toggle>
         </div>
       </mat-panel-description>
     </mat-expansion-panel-header>
     <div class="mat-expansion-panel-body">
       <div class="priority-description">
-        <app-policy-priority />
-        <app-policy-description />
+        <app-policy-priority [editMode]="isEditMode()" />
+        <app-policy-description [isEditMode]="isEditMode()" />
       </div>
-      @if (isEditingPolicy(policy().name) || policyService.selectedPolicyHasConditions()) {
+      @if (isNew() || isEditingPolicy(policy()!.name) || policyService.selectedPolicyHasConditions()) {
         <div class="tab-buttons">
           <button
             mat-stroked-button
@@ -95,10 +141,10 @@
         </div>
       }
       @if (activeTab() === "actions") {
-        <app-action-tab [isEditMode]="isEditingPolicy(policy().name)" />
+        <app-action-tab [isEditMode]="isNew() || isEditingPolicy(policy()?.name || '')" />
       }
       @if (activeTab() === "conditions") {
-        <app-conditions-tab [isEditMode]="isEditingPolicy(policy().name)" />
+        <app-conditions-tab [isEditMode]="isNew() || isEditingPolicy(policy()?.name || '')" />
       }
     </div>
   </mat-expansion-panel>

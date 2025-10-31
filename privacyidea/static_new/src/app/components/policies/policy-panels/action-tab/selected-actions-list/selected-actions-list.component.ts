@@ -25,9 +25,8 @@ export class SelectedActionsListComponent {
   }
 
   onActionClick(action: { name: string; value: string }) {
-    if (!this.isEditMode()) return;
     if (this.isBooleanAction(action.name)) return;
-    if (this.policyService.viewMode()) {
+    if (this.isEditMode()) {
       this.policyService.selectedAction.set(action);
     }
   }

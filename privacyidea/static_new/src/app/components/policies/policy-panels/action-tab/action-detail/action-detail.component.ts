@@ -1,4 +1,4 @@
-import { Component, computed, effect, inject, linkedSignal, signal, Signal } from "@angular/core";
+import { Component, computed, effect, inject, input, linkedSignal, signal, Signal } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
@@ -30,15 +30,15 @@ import { MatIcon } from "@angular/material/icon";
   styleUrls: ["./action-detail.component.scss"]
 })
 export class ActionDetailComponent {
+  policyService = inject(PolicyService);
+  documentationService = inject(DocumentationService);
+  isEditMode = input.required<boolean>();
   inputIsValid: Signal<boolean> = computed(() => {
     const actionDetail = this.policyService.selectedActionDetail();
     const actionValue = this.policyService.selectedAction()?.value;
     if (actionDetail === null) return false;
     return this.policyService.actionValueIsValid(actionDetail, actionValue);
   });
-  policyService = inject(PolicyService);
-
-  documentationService = inject(DocumentationService);
 
   actionIsAlreadyAdded(): boolean {
     const selectedAction = this.policyService.selectedAction();

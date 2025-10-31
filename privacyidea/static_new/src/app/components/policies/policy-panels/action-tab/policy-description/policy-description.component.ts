@@ -1,4 +1,4 @@
-import { Component, inject } from "@angular/core";
+import { Component, inject, input } from "@angular/core";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { FormsModule } from "@angular/forms";
@@ -16,6 +16,7 @@ import { DocumentationService } from "../../../../../services/documentation/docu
 export class PolicyDescriptionComponent {
   policyService = inject(PolicyService);
   documentationService = inject(DocumentationService);
+  isEditMode = input.required<boolean>();
   updatePolicyDescription($event: string) {
     this.policyService.updateSelectedPolicy({ description: $event });
   }

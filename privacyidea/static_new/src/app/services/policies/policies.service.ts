@@ -220,16 +220,11 @@ export class PolicyService implements PoliciesServiceInterface {
     };
     this.updateSelectedPolicy({ action: updatedAction });
   }
-  viewMode: WritableSignal<"view" | "edit" | "new"> = linkedSignal({
-    source: () => {
-      this.contentService.routeUrl();
-    },
-    computation: (_) => "view"
-  });
 
   selectPolicyByName(policyName: string) {
     const policy = this.allPolicies().find((p) => p.name === policyName);
     if (policy) {
+      console.log("Selecting policy:", policyName);
       this.selectPolicy(policy);
     }
   }
@@ -282,7 +277,8 @@ export class PolicyService implements PoliciesServiceInterface {
     return false;
   });
 
-  savePolicyEdits() {
+  savePolicyEdits(args?: { asNew?: boolean }) {
+    const asNew = args?.asNew || false;
     const selectedPolicy = this.selectedPolicy();
     const oldPolicyName = this.selectedPolicyOriginal()?.name;
     if (!selectedPolicy || !oldPolicyName) return;
@@ -295,7 +291,7 @@ export class PolicyService implements PoliciesServiceInterface {
       }
     }
 
-    if (this.viewMode() === "new") {
+    if (asNew) {
       this.createPolicy(selectedPolicy)
         .then((response) => {
           // Refresh the policies list
@@ -304,7 +300,7 @@ export class PolicyService implements PoliciesServiceInterface {
         .catch((error) => {
           console.error("Error creating policy: ", error);
         });
-    } else if (this.viewMode() === "edit") {
+    } else {
       this.updatePolicy(oldPolicyName, selectedPolicy)
         .then((response) => {
           // Refresh the policies list
@@ -314,9 +310,7 @@ export class PolicyService implements PoliciesServiceInterface {
           console.error("Error updating policy: ", error);
         });
     }
-
     this.selectPolicy(selectedPolicy);
-    this.viewMode.set("view");
   }
   getDetailsOfAction(actionName: string): PolicyActionDetail | null {
     const actions = this.allPolicyActionsFlat();
@@ -325,11 +319,15 @@ export class PolicyService implements PoliciesServiceInterface {
     }
     return null;
   }
+
+  deselectNewPolicy() {
+    this.deselectPolicy(this.emptyPolicy.name);
+  }
+
   deselectPolicy(name: string) {
     if (this.selectedPolicyOriginal()?.name !== name) return;
     this._selectedPolicy.set(null);
     this._selectedPolicyOriginal.set(null);
-    this.viewMode.set("view");
   }
 
   emptyPolicy: PolicyDetail = {
@@ -355,7 +353,6 @@ export class PolicyService implements PoliciesServiceInterface {
   initializeNewPolicy() {
     this._selectedPolicy.set({ ...this.emptyPolicy });
     this._selectedPolicyOriginal.set({ ...this.emptyPolicy });
-    this.viewMode.set("new");
   }
 
   isPolicyEdited = computed(() => {
@@ -374,7 +371,6 @@ export class PolicyService implements PoliciesServiceInterface {
   selectPolicy(policy: PolicyDetail) {
     this._selectedPolicy.set(policy);
     this._selectedPolicyOriginal.set({ ...policy });
-    this.viewMode.set("view");
   }
 
   updateSelectedPolicy(args: Partial<PolicyDetail>) {
@@ -699,7 +695,8 @@ export class PolicyService implements PoliciesServiceInterface {
   // -----------------------------------
 
   isScopeChangeable(policy: PolicyDetail): boolean {
-    return !policy.action;
+    if (!policy.action) return true;
+    return Object.keys(policy.action).length === 0;
   }
 
   getActionNamesOfSelectedGroup(): string[] {
@@ -734,6 +731,5 @@ export class PolicyService implements PoliciesServiceInterface {
     if (originalPolicy) {
       this._selectedPolicy.set({ ...originalPolicy });
     }
-    this.viewMode.set("view");
   }
 }

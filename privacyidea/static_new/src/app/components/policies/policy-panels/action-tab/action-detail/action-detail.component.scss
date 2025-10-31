@@ -70,7 +70,7 @@
   flex-grow: 1;
   display: flex;
   justify-content: flex-end;
-  gap: var(--global-gap);
+  gap: calc(var(--global-gap) / 2);
   button[mat-icon-button] {
     padding: 0;
     display: flex;
