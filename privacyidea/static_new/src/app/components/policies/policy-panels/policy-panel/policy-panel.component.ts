@@ -42,7 +42,19 @@ export class PolicyPanelComponent {
   isNew = input<boolean>(false);
   policy = input<PolicyDetail | undefined>(undefined);
   selectedPolicy = computed<PolicyDetail | null>(() => this.policyService.selectedPolicy());
-  activeTab = signal<PolicyTab>("actions");
+  activeTab = linkedSignal<any, PolicyTab>({
+    source: () => ({
+      isEditMode: this.isEditMode(),
+      selectedPolicyHasConditions: this.policyService.selectedPolicyHasConditions()
+    }),
+    computation: (source, previous) => {
+      const { isEditMode, selectedPolicyHasConditions } = source;
+      if (isEditMode || selectedPolicyHasConditions) {
+        return previous?.value || "actions";
+      }
+      return "actions";
+    }
+  });
 
   isEditMode = this.policyService.isEditMode;
 
