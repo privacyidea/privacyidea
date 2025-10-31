@@ -170,7 +170,6 @@ class UserNotificationTestCase(MyTestCase):
         msg = smtpmock.get_sent_message()
         self.assertIn('To: user@localhost.localdomain', msg)
 
-
     @smtpmock.activate
     def test_03_sendsms(self):
         # setup realms
@@ -849,11 +848,7 @@ class UserNotificationTestCase(MyTestCase):
                        "options": {"body": "your {registrationcode}",
                                    "emailconfig": "myserver",
                                    "To": NOTIFY_TYPE.TOKENOWNER,
-                                   "To " + NOTIFY_TYPE.TOKENOWNER:
-                                       "recp@example.com",
-                                   "reply_to": NOTIFY_TYPE.TOKENOWNER,
-                                   "reply_to" + NOTIFY_TYPE.TOKENOWNER:
-                                       "recp@example.com"}}}
+                                   "reply_to": NOTIFY_TYPE.TOKENOWNER}}}
 
         un_handler = UserNotificationEventHandler()
         res = un_handler.do("sendmail", options=options)
