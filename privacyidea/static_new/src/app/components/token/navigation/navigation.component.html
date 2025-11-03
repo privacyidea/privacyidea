@@ -1,6 +1,7 @@
 <div class="drawer-div">
   <div class="brand">
     <div class="brand-row">
+
       <a
         [routerLink]="[ROUTE_PATHS.TOKENS]"
         aria-label="Go to Token Overview"
@@ -41,7 +42,9 @@
         sizes="(max-width: 575px) 100vw, 575px"
         width="575" />
     </a>
-
+    <h5 class="margin-0">
+      Version {{ this.versioningService.version() }}
+    </h5>
     <p style="font-size: 12px">
       Open-source project
       <a
@@ -102,7 +105,9 @@
   <form class="width-100">
     <mat-form-field class="width-100">
       <mat-label>Search</mat-label>
-      <input matInput>
+      <input
+        disabled
+        matInput>
       <mat-icon matSuffix>search</mat-icon>
     </mat-form-field>
   </form>
@@ -259,7 +264,7 @@
             class="card-button"
             disabled
             mat-stroked-button>
-            <mat-icon>hub</mat-icon>
+            <mat-icon>database</mat-icon>
             Sources
           </button>
         </mat-list-item>
@@ -304,7 +309,7 @@
       [expanded]="router.url.startsWith(ROUTE_PATHS.AUDIT)">
       <mat-expansion-panel-header>
         <mat-panel-title>
-          <mat-icon>manage_search</mat-icon>
+          <mat-icon>receipt_long</mat-icon>
           Audit
         </mat-panel-title>
       </mat-expansion-panel-header>
@@ -333,7 +338,7 @@
     <mat-expansion-panel>
       <mat-expansion-panel-header>
         <mat-panel-title>
-          <mat-icon>home_repair_service</mat-icon>
+          <mat-icon>hub</mat-icon>
           External Services
         </mat-panel-title>
       </mat-expansion-panel-header>
@@ -352,7 +357,7 @@
             class="card-button"
             disabled
             mat-stroked-button>
-            <mat-icon>power_settings_new</mat-icon>
+            <mat-icon>vpn_lock</mat-icon>
             RADIUS Servers
           </button>
         </mat-list-item>
@@ -370,7 +375,7 @@
             class="card-button"
             disabled
             mat-stroked-button>
-            <mat-icon>receipt_long</mat-icon>
+            <mat-icon>assured_workload</mat-icon>
             CAs
           </button>
         </mat-list-item>
@@ -467,7 +472,7 @@
     <a
       aria-label="Documentation"
       class="card-button-active"
-      href="https://netknights.it/support_link_admin"
+      href="https://privacyidea.readthedocs.io"
       i18n-aria-label
       mat-stroked-button
       target="_blank">

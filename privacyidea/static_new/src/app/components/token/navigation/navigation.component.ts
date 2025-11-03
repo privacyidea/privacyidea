@@ -45,6 +45,7 @@ import {
   SessionTimerService,
   SessionTimerServiceInterface
 } from "../../../services/session-timer/session-timer.service";
+import { VersioningService, VersioningServiceInterface } from "../../../services/version/version.service";
 
 @Component({
   selector: "app-navigation",
@@ -80,6 +81,7 @@ export class NavigationComponent {
   private readonly challengeService: ChallengesServiceInterface = inject(ChallengesService);
   private readonly machineService: MachineServiceInterface = inject(MachineService);
   private readonly userService: UserServiceInterface = inject(UserService);
+  protected readonly versioningService: VersioningServiceInterface = inject(VersioningService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly auditService: AuditServiceInterface = inject(AuditService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
