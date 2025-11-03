@@ -545,19 +545,20 @@ def policy_create(name, scope, action, file):
 config_cli.add_command(policy_cli)
 
 imp_fmt_dict = {
-    'python': ast.literal_eval,
     'json': json.loads,
-    'yaml': yaml.safe_load}
+    'yaml': yaml.safe_load,
+    'python': ast.literal_eval
+}
 
 
 @config_cli.command("import")
 @click.option('-i', '--input', "infile", type=click.File('r'),
-              default=sys.stdin,
+              default=sys.stdin, show_default=False,
               help='The filename to import the data from. Read '
                    'from <stdin> if this argument is not given.')
 @click.option('-t', '--types', multiple=True, default=['all'], show_default=True,
               type=click.Choice(['all'] + list(IMPORT_FUNCTIONS.keys()), case_sensitive=False),
-              help='The types of configuration to import. By default import all '
+              help='The types of configuration to import. By default, import all '
                    'available data if a corresponding importer type exists. '
                    'Currently registered importer types are: '
                    '{0!s}'.format(', '.join(['all'] + list(IMPORT_FUNCTIONS.keys()))))
@@ -569,7 +570,7 @@ def config_import(ctx, infile, types, name):
     Import server configuration using specific or all registered importer types.
 
     Note: Existing configuration with the same name will be overwritten, other
-    existing configuration will be kept as is.
+    existing configurations will be kept as is.
     """
     data = None
     imp_types = IMPORT_FUNCTIONS.keys() if 'all' in types else types
@@ -580,10 +581,10 @@ def config_import(ctx, infile, types, name):
         try:
             data = imp_fmt_dict[fmt](content)
             break
-        except (SyntaxError, json.decoder.JSONDecodeError, yaml.error.YAMLError) as _e:
+        except (SyntaxError, ValueError, json.decoder.JSONDecodeError, yaml.error.YAMLError) as _e:
             continue
     if not data:
-        click.secho("Could not read input format! ", fg="red")
+        click.secho("Could not determine input format! ", fg="red")
         click.secho(f"Accepted formats are: {', '.join(imp_fmt_dict.keys())}.",
                     fg="yellow")
         ctx.exit(1)
@@ -594,9 +595,9 @@ def config_import(ctx, infile, types, name):
 
     # Check the version in the import data
     if "privacyIDEA_version" not in data:
-        click.secho("Unable to determine version of exported data.", fg="yellow")
-        click.secho("Please make sure that the imported configuration "
-                    "works as expected.", fg="yellow")
+        click.secho("Unable to determine the version of exported data.", fg="yellow")
+        click.secho("Please make sure that the imported configuration works as "
+                    "expected.", fg="yellow")
 
     else:
         if minver(data["privacyIDEA_version"]) != minver(get_version_number()):
@@ -634,21 +635,20 @@ exp_fmt_dict = {
 
 @config_cli.command("export")
 @click.option('-o', '--output', type=click.File('w'),
-              default=sys.stdout,
+              default=sys.stdout, show_default=False,
               help='The filename to export the data to. Write to '
                    '<stdout> if this argument is not given or is \'-\'.')
-@click.option('-f', '--format', "fmt", default='json', show_default=True,
-              type=click.Choice(exp_fmt_dict.keys(), case_sensitive=False),
-              help='Output format, default is \'python\'')
+@click.option('-f', '--format', "fmt", default='json',
+              type=click.Choice(list(exp_fmt_dict.keys()), case_sensitive=False),
+              help='The output format')
 # TODO: we need to have an eye on the help output, it might get less readable
 #  when more exporter functions are added
-@click.option('-t', '--types', multiple=True, default=['all'], show_default=True,
+@click.option('-t', '--types', multiple=True, default=['all'],
               type=click.Choice(['all'] + list(EXPORT_FUNCTIONS.keys()), case_sensitive=False),
-              help='The types of configuration to export (can be given multiple '
-                   'times). By default, export all available types. Currently '
-                   'registered exporter types are: '
-                   '{0!s}'.format(', '.join(['all'] + list(EXPORT_FUNCTIONS.keys()))),
-              )
+              help=f"The types of configuration to export (can be given multiple "
+                   f"times). By default, export all available types. Currently, "
+                   f"registered exporter types are: "
+                   f"{', '.join(['all'] + list(EXPORT_FUNCTIONS.keys()))}")
 @click.option('-n', '--name', metavar="NAME",
               help='The name of the configuration object to export (default: export all)')
 def config_export(output, fmt, types, name):

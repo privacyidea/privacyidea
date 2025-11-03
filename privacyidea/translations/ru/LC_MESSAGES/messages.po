@@ -5,13 +5,14 @@
 # Skeeve Aleph <skifalef@gmail.com>, 2024.
 # Сергей Котенков <kotenkovsn@ya.ru>, 2024.
 # LS_Grand <lsg@lsgrand.com>, 2025.
+# imennodenis <imennodenis@gmail.com>, 2025.
 msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: translations@privacyidea.org\n"
 "POT-Creation-Date: 2025-09-05 15:12+0200\n"
-"PO-Revision-Date: 2025-07-16 09:02+0000\n"
-"Last-Translator: LS_Grand <lsg@lsgrand.com>\n"
+"PO-Revision-Date: 2025-09-25 18:01+0000\n"
+"Last-Translator: imennodenis <imennodenis@gmail.com>\n"
 "Language-Team: Russian <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/ru/>\n"
 "Language: ru\n"
@@ -20,7 +21,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
 "n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
-"X-Generator: Weblate 5.13-dev\n"
+"X-Generator: Weblate 5.14-dev\n"
 "Generated-By: Babel 2.12.1\n"
 
 #: api/auth.py:256
@@ -38,7 +39,7 @@ msgstr "Ошибка аутентификации. Токен не привяз�
 #: api/auth.py:277
 #, python-brace-format
 msgid "Authentication failure. The token type {token_type} is disabled."
-msgstr ""
+msgstr "Ошибка аутентификации. Тип токена {token_type} отключен."
 
 #: api/auth.py:282
 #, python-brace-format
@@ -46,6 +47,8 @@ msgid ""
 "Authentication failure. Last authentication policy check failed for token "
 "{serial}"
 msgstr ""
+"Ошибка аутентификации. Последняя попытка проверки политики аутентификации "
+"неудачна для токена {serial}"
 
 #: api/auth.py:294
 msgid "Authentication failure using passkey."
@@ -73,24 +76,26 @@ msgstr "Не удалось проверить данные в запросе!"
 
 #: api/validate.py:443
 msgid "Cancelled enrollment via multichallenge"
-msgstr ""
+msgstr "Отменен выпуск с помощью multichallenge"
 
 #: api/validate.py:445
 msgid "Cancelled enrollment via multichallenge for transaction_id "
-msgstr ""
+msgstr "Отменен выпуск с помощью multichallenge для transaction_id "
 
 #: api/validate.py:448
 msgid "Failed to cancel enrollment via multichallenge"
-msgstr ""
+msgstr "Ошибка отмены выпуска с помощью multichallenge"
 
 #: api/validate.py:450
 msgid "Failed to cancel enrollment via multichallenge for transaction_id "
-msgstr ""
+msgstr "Ошибка отмены выпуска с помощью multichallenge для transaction_id "
 
 #: api/validate.py:500
 #, python-brace-format
 msgid "Last authentication policy check failed for token {serial}"
 msgstr ""
+"Последняя попытка проверки политики аутентификации неудачна для токена "
+"{serial}"
 
 #: api/validate.py:519 lib/token.py:2636
 msgid "Found matching challenge"
@@ -108,16 +113,26 @@ msgid ""
 "Subscriber: {subscriber_name}\n"
 "Subscriptions: {subscriptions}\n"
 msgstr ""
+"\n"
+"<--- Пожалуйста, опишите проблему подробнее --->\n"
+"\n"
+"<--- Пожалуйста, предоставьте как можно больше дополнительной информации --->"
+"\n"
+"\n"
+"Версия privacyIDEA: {version}\n"
+"Подписчик: {subscriber_name}\n"
+"Подписки: {subscriptions}\n"
 
 #: api/lib/postpolicy.py:911
 msgid "Please scan the QR code to register the container."
-msgstr ""
+msgstr "Пожалуйста, отсканируйте QR код чтобы зарегистрировать контейнер."
 
 #: api/lib/prepolicy.py:2884
 msgid ""
 "Authentication failure. The account has exceeded the authentication time "
 "limit!"
 msgstr ""
+"Ошибка аутентификации. Превышен лимит времени на аутентификацию для аккаунта!"
 
 #: api/lib/utils.py:401
 msgid "Authentication failure. Missing Authorization header."
@@ -209,11 +224,11 @@ msgstr ""
 
 #: lib/policy.py:1209
 msgid "Policy does not exist:"
-msgstr ""
+msgstr "Политика не существует:"
 
 #: lib/policy.py:1211
 msgid "Policy already exists:"
-msgstr ""
+msgstr "Политика уже существует:"
 
 #: lib/policy.py:1374
 msgid "Invalid client definition!"
@@ -727,6 +742,8 @@ msgid ""
 "A whitespace-separated list of container info keys that shall not be "
 "displayed to the admin."
 msgstr ""
+"Разделенный пробелами список информационных ключей контейнера, которые не "
+"должны отображаться администратору."
 
 #: lib/policy.py:2142
 msgid ""
@@ -869,6 +886,8 @@ msgstr "Пользователям разрешено удалять свои к
 #: lib/policy.py:2271
 msgid "Users are allowed to add their own tokens to their own containers."
 msgstr ""
+"Пользователям разрешается добавлять свои собственные токены в свои "
+"собственные контейнеры."
 
 #: lib/policy.py:2275
 msgid "Users are allowed to remove their own tokens from their own containers."
@@ -877,6 +896,7 @@ msgstr "Пользователям разрешено удалять свои т
 #: lib/policy.py:2280
 msgid "Users are allowed to assign themselves to containers without an owner."
 msgstr ""
+"Пользователям разрешается назначать себя контейнерам без указания владельца."
 
 #: lib/policy.py:2285
 msgid "Users are allowed to unassign themselves from containers."
@@ -900,6 +920,9 @@ msgid ""
 "This includes a rollover of all contained tokens even if the user is not the "
 "owner of a contained token."
 msgstr ""
+"Пользователям разрешается выполнять перенос содержимого своих собственных "
+"контейнеров. Это включает в себя перенос всех содержащихся в нем токенов, "
+"даже если пользователь не является владельцем содержащегося в нем токена."
 
 #: lib/policy.py:2308
 msgid "Users are allowed to create and edit container templates."
@@ -919,6 +942,8 @@ msgid ""
 "A whitespace-separated list of container info keys that shall not be "
 "displayed to the users."
 msgstr ""
+"Разделенный пробелами список информационных ключей контейнера, которые не "
+"должны отображаться пользователям."
 
 #: lib/policy.py:2327
 msgid "Limit the number of allowed tokens in a realm."
@@ -929,6 +954,8 @@ msgid ""
 "During the rollout process, this policy makes the description required for "
 "all selected tokentypes."
 msgstr ""
+"В процессе внедрения эта политика делает описание обязательным для всех "
+"выбранных типов токенов."
 
 #: lib/policy.py:2339
 msgid "Limit the number of tokens a user may have assigned."
@@ -1061,11 +1088,14 @@ msgid ""
 "Specify the email validator that should be used to validate email addresses "
 "during enrollment."
 msgstr ""
+"Укажите средство проверки электронной почты, которое следует использовать "
+"для проверки адресов электронной почты во время регистрации."
 
 #: lib/policy.py:2449
 msgid ""
 "Specify the list of token types, that must be verified during enrollment."
 msgstr ""
+"Укажите список типов токенов, которые должны быть проверены при регистрации."
 
 #: lib/policy.py:2462
 msgid ""
@@ -1097,45 +1127,60 @@ msgid ""
 "If there are several different challenges, this text precedes the list of "
 "the challenge texts."
 msgstr ""
+"Если существует несколько различных челленджей, этот текст предшествует "
+"список текстов челленджей."
 
 #: lib/policy.py:2487
 msgid ""
 "If there are several different challenges, this text follows the list of the "
 "challenge texts."
 msgstr ""
+"Если существует несколько различных челленджей, этот текст следует за "
+"списком текстов челленджей."
 
 #: lib/policy.py:2492
 msgid ""
 "If the PIN of a token is to be changed, this will allow the user to change "
 "the PIN during a validate/check request via challenge / response."
 msgstr ""
+"Если необходимо изменить PIN-код токена, это позволит пользователю изменить "
+"PIN-код во время запроса на проверку с помощью запроса challenge / response."
 
 #: lib/policy.py:2497
 msgid ""
 "Specify the list of token types, that can not be used for authentication."
 msgstr ""
+"Укажите список типов токенов, которые нельзя использовать для аутентификации."
 
 #: lib/policy.py:2504
 msgid ""
 "The autoresync of a token can be done via a challenge response message.You "
 "need to activate 'Automatic resync' in the general settings!"
 msgstr ""
+"Автоматическая повторная синхронизация токена может быть выполнена с помощью "
+"сообщения challenge response.Вам необходимо активировать "
+"\"Автоматическую повторную синхронизацию\" в общих настройках!"
 
 #: lib/policy.py:2509
 msgid ""
 "In case of a successful authentication the following token or container type "
 "is enrolled. The maximum number of tokens for a user is checked."
 msgstr ""
+"В случае успешной аутентификации выпускается следующий тип токена или "
+"контейнера. Проверяется максимальное количество токенов для пользователя."
 
 #: lib/policy.py:2515
 msgid "Change the default text that is shown during enrolling a token."
 msgstr ""
+"Изменить текст по умолчанию, который отображается во время выпуска токена."
 
 #: lib/policy.py:2520
 msgid ""
 "Select the template to use for the enrollment of a smartphone container via "
 "multichallenge."
 msgstr ""
+"Выберите шаблон, который будет использоваться для выпуска контейнера для "
+"смартфонов с помощью multichallenge."
 
 #: lib/policy.py:2526
 msgid ""
@@ -1143,6 +1188,9 @@ msgid ""
 "authentication. If disabled, the user must enroll a token. This is also the "
 "default behavior."
 msgstr ""
+"Если этот параметр включен, пользователь может пропустить выпуск токена во "
+"время аутентификации. Если он отключен, пользователь должен выпустить токен. "
+"Это также поведение по умолчанию."
 
 #: lib/policy.py:2532
 msgid ""

@@ -28,14 +28,16 @@ def upgrade():
     res = conn.execute(
         sms_gw.select().where(sms_gw.c.providermodule == GWTYPE)
     )
-    if res.rowcount == 0:
+    # Somehow this does not work with Oracle. The query is correct, but the
+    # result is empty even though the same query gives a result when issued directly.
+    if not res.scalar():
         print(f"Rev. {revision}: No Firebase-Provider detected. Skipping migration.")
         return
-    print(f"Rev. {revision}: Firebase-Provider detected. Check that the migration was successful")
+    print(f"(Rev. {revision}) WARNING: Firebase-Provider detected. Check that the "
+          f"migration was successful")
 
     # 1. Read the push_registration_url and ttl from the Firebase Config
     fb_gateways = get_smsgateway(gwtype=GWTYPE)
-    print(fb_gateways)
     # 2. Check which policy contains this Firebase Config
     P = PolicyClass()
     pols = P.list_policies(scope=SCOPE.ENROLL,
@@ -43,11 +45,11 @@ def upgrade():
 
     # iterate through all enrollment policies
     for pol in pols:
-        # Check for all firebase gateways, if this policy needs to be modified
+        # Check for all firebase gateways if this policy needs to be modified
         for fbgw in fb_gateways:
             if pol.get("action").get(PUSH_ACTION.FIREBASE_CONFIG) == fbgw.identifier:
                 print("Modifying policy {0!s}".format(pol.get("name")))
-                # This is an enrollment policy, that references this very firebase config
+                # This is an enrollment policy that references this very firebase config
                 # 3. Add the push_registration_url and ttl to this policy
                 registration_url = fbgw.option_dict.get("registration URL")
                 ttl = fbgw.option_dict.get("time to live")
@@ -55,7 +57,7 @@ def upgrade():
                 # We still need to pass the original "active" and "check_all_resolvers" params
                 # and we need to update the action
                 action = pol.get("action")
-                # Only add registration_url and ttl to the policy, if these values actually exist,
+                # Only add registration_url and ttl to the policy if these values actually exist,
                 # to avoid deleting (setting an empty value) in the policy.
                 if registration_url:
                     action[PUSH_ACTION.REGISTRATION_URL] = registration_url
@@ -70,7 +72,7 @@ def upgrade():
                 # 4. Delete push_registration_url and ttl from the Firebase Config
                 #    Note: If we had a firebase config, that would not be used in a policy,
                 #    the url and ttl would not be deleted from the firebase config. But this
-                #    does not matter. I like to keep it in this for-loop to avoid side unknown side effects.
+                #    does not matter. I like to keep it in this for-loop to avoid unknown side effects.
                 print("Deleting URL and TTL from the Firebase Gateway config.")
                 if registration_url:
                     delete_smsgateway_option(fbgw.id, "registration URL")

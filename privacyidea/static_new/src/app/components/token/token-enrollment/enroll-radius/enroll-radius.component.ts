@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, effect, EventEmitter, inject, OnInit, Output } from "@angular/core";
+import { Component, computed, effect, EventEmitter, inject, Input, OnInit, Output } from "@angular/core";
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatOption } from "@angular/material/core";
@@ -32,6 +32,8 @@ import {
   TokenEnrollmentData
 } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
 import { RadiusApiPayloadMapper } from "../../../../mappers/token-api-payload/radius-token-api-payload.mapper";
+import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
+
 
 export interface RadiusEnrollmentOptions extends TokenEnrollmentData {
   type: "radius";
@@ -62,7 +64,9 @@ export class EnrollRadiusComponent implements OnInit {
   protected readonly enrollmentMapper: RadiusApiPayloadMapper = inject(RadiusApiPayloadMapper);
   protected readonly systemService: SystemServiceInterface = inject(SystemService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
 
+  @Input() wizard: boolean = false;
   @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();

@@ -31,14 +31,14 @@ It only provides the method
 """
 from flask import (Blueprint, request, current_app, stream_with_context)
 from .lib.utils import (send_result, send_file)
-from ..api.lib.prepolicy import (prepolicy, check_base_action, auditlog_age,
-                                 allowed_audit_realm, hide_audit_columns)
+from ..api.lib.prepolicy import prepolicy, check_base_action, auditlog_age, hide_audit_columns
 from ..api.auth import admin_required
 from ..lib.policies.actions import PolicyAction
 from flask import g
 import logging
 from ..lib.audit import search, getAudit
 from privacyidea.lib.utils import parse_timedelta
+from ..lib.policies.helper import get_admin_audit_params
 
 log = logging.getLogger(__name__)
 
@@ -47,7 +47,6 @@ audit_blueprint = Blueprint('audit_blueprint', __name__)
 
 @audit_blueprint.route('/', methods=['GET'])
 @prepolicy(check_base_action, request, PolicyAction.AUDIT)
-@prepolicy(allowed_audit_realm, request, PolicyAction.AUDIT)
 @prepolicy(auditlog_age, request)
 @prepolicy(hide_audit_columns, request)
 def search_audit():
@@ -89,7 +88,8 @@ def search_audit():
           "version": "privacyIDEA unknown"
         }
     """
-    audit_dict = search(current_app.config, request.all_data)
+    admin_params = get_admin_audit_params()
+    audit_dict = search(current_app.config, request.all_data, admin_params)
     g.audit_object.log({'success': True})
 
     return send_result(audit_dict)
@@ -138,11 +138,10 @@ def download_csv(csvfile=None):
     audit = getAudit(current_app.config)
     g.audit_object.log({'success': True})
     param = request.all_data
+    admin_params = get_admin_audit_params()
     if "timelimit" in param:
         timelimit = parse_timedelta(param["timelimit"])
         del param["timelimit"]
     else:
         timelimit = None
-    return send_file(stream_with_context(audit.csv_generator(param=param,
-                                                             timelimit=timelimit)),
-                     csvfile)
+    return send_file(stream_with_context(audit.csv_generator(param=param, admin_params=admin_params, timelimit=timelimit)), csvfile)

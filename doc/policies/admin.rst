@@ -841,7 +841,7 @@ hotp_otplen and totp_otplen
 type: ``integer``
 
 Force the admin to enroll HOTP/TOTP Tokens with the specified otp length.
-The corresponding input selector will be disabled in the web UI.
+The corresponding input selector will be disabled in the web UI. This policy prevails on the value given on the System Config page (OTP length of newly enrolled tokens)
 Possible values are *6* or *8*, default is *6*.
 
 .. versionadded:: 3.2

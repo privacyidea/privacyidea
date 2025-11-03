@@ -2480,6 +2480,7 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
     pin_matching_token_list = []
     invalid_token_list = []
     valid_token_list = []
+    messages = []
 
     # Remove locked tokens from token_object_list
     if len(token_object_list) > 0:
@@ -2503,12 +2504,18 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
             # Avoid a SQL query triggered by ``token_object.user`` in case the log level is not DEBUG
             log.debug(f"Found user with loginId {token_object.user}: {token_object.get_serial()}")
 
-        if token_object.is_challenge_response(passw, user=user, options=options):
+        # Reset exceeded fail counter if reset timeout is reached
+        token_object.check_reset_failcount()
+
+        if not token_object.check_all(messages):
+            # token can not be used for authentication (e.g. maxfail exceeded, disabled, not within validity period)
+            pass
+        elif token_object.is_challenge_response(passw, user=user, options=options):
             # This is a challenge response, and it still has a challenge DB entry
             if token_object.has_db_challenge_response(passw, user=user, options=options):
                 challenge_response_token_list.append(token_object)
             else:
-                # This is a transaction_id, that either never existed or has expired.
+                # This is a transaction_id, that either never existed or has expired or is not for this token.
                 # We add this to the invalid_token_list
                 invalid_token_list.append(token_object)
         elif token_object.is_challenge_request(passw, user=user, options=options):
@@ -2723,6 +2730,10 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
                 token_object.inc_failcount()
                 if increase_auth_counters:
                     token_object.inc_count_auth()
+
+    elif messages:
+        reply_dict["message"] = ", ".join(set(messages))
+
     else:
         # There is no suitable token for authentication
         reply_dict["message"] = _("No suitable token found for authentication.")

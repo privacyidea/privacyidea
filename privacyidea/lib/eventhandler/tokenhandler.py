@@ -458,8 +458,9 @@ class TokenEventHandler(BaseEventHandler):
         content = self._get_response_content(response)
         handler_def = options.get("handler_def")
         handler_options = handler_def.get("options", {})
+        context = options.get("context")
 
-        serial_list = self._get_token_serials(request, content, g)
+        serial_list = context.token_serials
         log.debug(f"Serial list for event handling: {serial_list}")
         if action.lower() in [ACTION_TYPE.SET_TOKENREALM,
                               ACTION_TYPE.SET_DESCRIPTION,
@@ -478,8 +479,7 @@ class TokenEventHandler(BaseEventHandler):
                               ACTION_TYPE.REMOVE_TOKENGROUP,
                               ACTION_TYPE.ATTACH_APPLICATION]:
             if serial_list:
-                serials = serial_list.replace(' ', '').split(',')
-                for serial in serials:
+                for serial in serial_list:
                     log.info(f"{action} for token {serial}")
                     if action.lower() == ACTION_TYPE.SET_TOKENREALM:
                         realm = handler_options.get("realm")

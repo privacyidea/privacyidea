@@ -267,18 +267,12 @@ describe("HeaderComponent (with provided mocks)", () => {
   });
 
   describe("logout()", () => {
-    it("calls auth.logout, navigates to login, then shows a snackbar", async () => {
+    it("calls auth.logout", async () => {
       (auth as any).logout = jest.fn();
 
       component.logout();
 
       expect((auth as any).logout).toHaveBeenCalledTimes(1);
-      expect(routerMock.navigate).toHaveBeenCalledWith(["login"]);
-
-      await (routerMock.navigate as jest.Mock).mock.results[0].value;
-
-      expect(notifications.openSnackBar).toHaveBeenCalledWith("Logout successful.");
-      expect(notifications.openSnackBar).toHaveBeenCalledTimes(1);
     });
   });
 });

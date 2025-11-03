@@ -35,6 +35,7 @@ import { tokenTypes } from "../../utils/token.utils";
 import { FilterValue } from "../../core/models/filter_value";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
+import { ConfirmationDialogComponent } from "../../components/shared/confirmation-dialog/confirmation-dialog.component";
 
 const apiFilter = [
   "serial",
@@ -91,6 +92,7 @@ export interface TokenGroup {
 
 export interface TokenType {
   key: TokenTypeKey;
+  name: string;
   info: string;
   text: string;
 }
@@ -181,7 +183,9 @@ export interface TokenServiceInterface {
 
   deleteToken(tokenSerial: string): Observable<Object>;
 
-  bulkDeleteTokens(selectedTokens: TokenDetails[]): Observable<PiResponse<BulkResult, any>>;
+  bulkDeleteTokens(selectedTokens: string[]): Observable<PiResponse<BulkResult, any>>;
+
+  bulkDeleteWithConfirmDialog(serialList: string[], dialog: any, afterDelete?: () => void): void;
 
   revokeToken(tokenSerial: string): Observable<any>;
 
@@ -391,6 +395,7 @@ export class TokenService implements TokenServiceInterface {
     if (!obj) return [];
     return Object.entries(obj).map(([key, info]) => ({
       key: key as TokenTypeKey,
+      name: tokenTypes.find((t) => t.key === key)?.name || key,
       info: String(info),
       text: tokenTypes.find((t) => t.key === key)?.text || ""
     }));
@@ -453,6 +458,96 @@ export class TokenService implements TokenServiceInterface {
     }),
     computation: () => []
   });
+
+  bulkUnassignTokens(tokenDetails: TokenDetails[]): Observable<PiResponse<BulkResult, any>> {
+    const headers = this.authService.getHeaders();
+    return this.http
+      .post<PiResponse<BulkResult, any>>(
+        this.tokenBaseUrl + "unassign",
+        {
+          serials: tokenDetails.map((token) => token.serial)
+        },
+        { headers }
+      )
+      .pipe(
+        catchError((error) => {
+          console.error("Failed to unassign tokens.", error);
+          const message = error.error?.result?.error?.message || "";
+          this.notificationService.openSnackBar("Failed to unassign tokens. " + message);
+          return throwError(() => error);
+        })
+      );
+  }
+
+  bulkDeleteTokens(selectedTokens: string[]): Observable<PiResponse<BulkResult, any>> {
+    const headers = this.authService.getHeaders();
+    const body = { serials: selectedTokens };
+
+    return this.http.delete<PiResponse<BulkResult, any>>(this.tokenBaseUrl, { headers, body }).pipe(
+      catchError((error) => {
+        console.error("Failed to delete tokens.", error);
+        const message = error.result?.error?.message || "";
+        this.notificationService.openSnackBar("Failed to delete tokens. " + message);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  bulkDeleteWithConfirmDialog(serialList: string[], dialog: any, afterDelete?: () => void) {
+    dialog
+      .open(ConfirmationDialogComponent, {
+        data: {
+          serialList: serialList,
+          title: "Delete Selected Tokens",
+          type: "token",
+          action: "delete",
+          numberOfTokens: serialList.length
+        }
+      })
+      .afterClosed()
+      .subscribe({
+        next: (result: any) => {
+          if (result) {
+            this.bulkDeleteTokens(serialList).subscribe({
+              next: (response: PiResponse<BulkResult, any>) => {
+                const failedTokens = response.result?.value?.failed || [];
+                const unauthorizedTokens = response.result?.value?.unauthorized || [];
+                const count_success = response.result?.value?.count_success || 0;
+                const messages: string[] = [];
+                if (count_success) {
+                  messages.push(`Successfully deleted ${count_success} token${count_success === 1 ? '' : 's'}.`);
+                }
+
+                if (failedTokens.length > 0) {
+                  messages.push(`The following tokens failed to delete: ${failedTokens.join(", ")}`);
+                }
+
+                if (unauthorizedTokens.length > 0) {
+                  messages.push(
+                    `You are not authorized to delete the following tokens: ${unauthorizedTokens.join(", ")}`
+                  );
+                }
+
+                if (messages.length > 0) {
+                  this.notificationService.openSnackBar(messages.join("\n"));
+                }
+
+                if (afterDelete) {
+                  afterDelete();
+                }
+              },
+              error: (err) => {
+                let message = "An error occurred while deleting tokens.";
+                if (err.error?.result?.error?.message) {
+                  message = err.error.result.error.message;
+                }
+                this.notificationService.openSnackBar(message);
+              }
+            });
+          }
+        }
+      });
+  }
 
   toggleActive(tokenSerial: string, active: boolean): Observable<PiResponse<boolean>> {
     const headers = this.authService.getHeaders();
@@ -561,20 +656,6 @@ export class TokenService implements TokenServiceInterface {
     return this.http.delete(this.tokenBaseUrl + tokenSerial, { headers });
   }
 
-  bulkDeleteTokens(selectedTokens: TokenDetails[]): Observable<PiResponse<BulkResult, any>> {
-    const headers = this.authService.getHeaders();
-    const body = { serials: selectedTokens.map((t) => t.serial) };
-
-    return this.http.delete<PiResponse<BulkResult, any>>(this.tokenBaseUrl, { headers, body }).pipe(
-      catchError((error) => {
-        console.error("Failed to delete tokens.", error);
-        const message = error.result?.error?.message || "";
-        this.notificationService.openSnackBar("Failed to delete tokens. " + message);
-        return throwError(() => error);
-      })
-    );
-  }
-
   revokeToken(tokenSerial: string): Observable<any> {
     const headers = this.authService.getHeaders();
     return this.http.post(`${this.tokenBaseUrl}revoke`, { serial: tokenSerial }, { headers }).pipe(
@@ -630,26 +711,6 @@ export class TokenService implements TokenServiceInterface {
           console.error("Failed to unassign user.", error);
           const message = error.error?.result?.error?.message || "";
           this.notificationService.openSnackBar("Failed to unassign user. " + message);
-          return throwError(() => error);
-        })
-      );
-  }
-
-  bulkUnassignTokens(tokenDetails: TokenDetails[]): Observable<PiResponse<BulkResult, any>> {
-    const headers = this.authService.getHeaders();
-    return this.http
-      .post<PiResponse<BulkResult, any>>(
-        this.tokenBaseUrl + "unassign",
-        {
-          serials: tokenDetails.map((token) => token.serial)
-        },
-        { headers }
-      )
-      .pipe(
-        catchError((error) => {
-          console.error("Failed to unassign tokens.", error);
-          const message = error.error?.result?.error?.message || "";
-          this.notificationService.openSnackBar("Failed to unassign tokens. " + message);
           return throwError(() => error);
         })
       );
@@ -896,6 +957,4 @@ export class TokenService implements TokenServiceInterface {
         })
       );
   }
-
-
 }

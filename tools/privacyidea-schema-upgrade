@@ -55,7 +55,7 @@ if [ -z "$(pi-manage db current -v ${migration_param} | grep "^Rev:")" ]; then
         # Set the version to the first PI 2.0 version
         echo "++ Stamping DB to $FIRST_VERSION"
         pi-manage db stamp $FIRST_VERSION ${migration_param}
-      else
+    else
         echo "++ Not stamping Database as requested."
     fi
 fi
