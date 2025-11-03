@@ -64,13 +64,6 @@ import {
   NotificationServiceInterface
 } from "../../../../services/notification/notification.service";
 
-const columnsKeyMap = [
-  { key: "serial", label: "Serial" },
-  { key: "tokentype", label: "Type" },
-  { key: "active", label: "Active" },
-  { key: "username", label: "User" }
-];
-
 @Component({
   selector: "app-container-details-token-table",
   imports: [
@@ -109,8 +102,14 @@ export class ContainerDetailsTokenTableComponent {
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
 
-  protected readonly columnsKeyMap = columnsKeyMap;
-  displayedColumns: string[] = [...columnsKeyMap.map((column) => column.key)];
+  readonly columnsKeyMap = this.tableUtilsService.pickColumns(
+    "serial",
+    "tokentype",
+    "active",
+    "username"
+  );
+  readonly columnKeys = [...this.tableUtilsService.getColumnKeys(this.columnsKeyMap)];
+  displayedColumns: string[] = [...this.columnsKeyMap.map((column) => column.key)];
   pageSize = 10;
   pageSizeOptions = this.tableUtilsService.pageSizeOptions;
   pageIndex = this.tokenService.pageIndex;

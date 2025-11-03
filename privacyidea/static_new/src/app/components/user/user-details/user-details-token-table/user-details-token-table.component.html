@@ -10,11 +10,11 @@
       <h3 style="color: var(--mat-sys-primary)">{{ userService.detailsUsername() }}</h3>
       <h3 class="margin-left--8">:</h3>
     </div>
-    <div class="flex-row filter-pageinator-container">
+    <div class="flex-row filter-paginator-container">
       <mat-form-field
         class="width-50"
         subscriptSizing="dynamic">
-        <mat-label i18n>Enter Filter</mat-label>
+        <mat-label i18n>Filter Tokens...</mat-label>
         <input
           #filterInput
           (keyup)="handleFilterInput($event)"
@@ -33,7 +33,7 @@
     <div [ngClass]="[overflowService.isWidthOverflowing('body', 1580) ? 'flex-column' : 'flex-row']">
       <table
         [dataSource]="dataSource"
-        aria-label="Token of Container Data Table"
+        aria-label="Token Table of the User"
         class="user-details-token-table"
         i18n-aria-label
         mat-table

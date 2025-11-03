@@ -51,7 +51,7 @@ import {
   signal,
   WritableSignal
 } from "@angular/core";
-import { UserData, UserServiceInterface } from "../app/services/user/user.service";
+import { UserAttributePolicy, UserData, UserServiceInterface } from "../app/services/user/user.service";
 import { ValidateCheckResponse, ValidateServiceInterface } from "../app/services/validate/validate.service";
 
 import { ContentServiceInterface } from "../app/services/content/content.service";
@@ -345,40 +345,96 @@ export class MockAuthService extends AuthService {
 }
 
 export class MockUserService implements UserServiceInterface {
-  usersOfRealmResource: HttpResourceRef<PiResponse<UserData[], undefined> | undefined> = new MockHttpResourceRef(
-    MockPiResponse.fromValue([])
-  );
-  selectedUsername = signal("");
+  usersOfRealmResource: HttpResourceRef<PiResponse<UserData[], undefined> | undefined> =
+    new MockHttpResourceRef(MockPiResponse.fromValue([]));
+  selectedUsername = signal("");  attributePolicy: Signal<UserAttributePolicy> = signal<UserAttributePolicy>({
+    delete: ["department", "attr2", "attr1"],
+    set: {
+      "*": ["2", "1"],
+      city: ["*"],
+      department: ["sales", "finance"]
+    }
+  });
   setDefaultRealm = jest.fn();
-  selectedUser = signal<UserData | null>(null);
 
   resetUserSelection() {
     this.selectionFilter.set("");
     this.selectedUserRealm.set("");
-  }
+  }  deletableAttributes: Signal<string[]> = computed(() => this.attributePolicy().delete ?? []);
+
+  attributeSetMap: Signal<Record<string, string[]>> = computed(() => this.attributePolicy().set ?? {});
+
+
+
+  hasWildcardKey: Signal<boolean> = computed(() =>
+    Object.prototype.hasOwnProperty.call(this.attributeSetMap(), "*")
+  );
+  keyOptions: Signal<string[]> = computed(() =>
+    Object.keys(this.attributeSetMap()).filter((k) => k !== "*").sort()
+  );
+
+  userAttributesResource: HttpResourceRef<PiResponse<Record<string, string>> | undefined> =
+    new MockHttpResourceRef<PiResponse<Record<string, string>> | undefined>(
+      MockPiResponse.fromValue<Record<string, string>>({
+        department: "sales",
+        city: "Berlin"
+      })
+    );
+
+  userAttributes: Signal<Record<string, string>> = computed(
+    () => this.userAttributesResource.value()?.result?.value ?? {}
+  );
+
+  userAttributesList: Signal<{ key: string; value: string }[]> = computed(() =>
+    Object.entries(this.userAttributes()).map(([key, raw]) => ({
+      key,
+      value: Array.isArray(raw) ? raw.join(", ") : String(raw ?? "")
+    }))
+  );
+
+  setUserAttribute = jest.fn().mockImplementation((key: string, value: string) => {
+    const current = { ...this.userAttributes() };
+    current[key] = value;
+
+    (this.userAttributesResource as MockHttpResourceRef<
+      PiResponse<Record<string, string>> | undefined
+    >).set(MockPiResponse.fromValue<Record<string, string>>(current));
+
+    return of(MockPiResponse.fromValue<number>(1));
+  });
+
+  deleteUserAttribute = jest.fn().mockImplementation((key: string) => {
+    const current = { ...this.userAttributes() };
+    delete current[key];
+
+    (this.userAttributesResource as MockHttpResourceRef<
+      PiResponse<Record<string, string>> | undefined
+    >).set(MockPiResponse.fromValue<Record<string, string>>(current));
+
+    return of(MockPiResponse.fromValue<boolean>(true));
+  });
+
+  detailsUsername: WritableSignal<string> = this.selectedUsername;
+  selectedUser = signal<UserData | null>(null);
 
   resetFilter = jest.fn().mockImplementation(() => {
     this.apiUserFilter.set(new FilterValue());
   });
-
 
   handleFilterInput = jest.fn().mockImplementation(($event: Event) => {
     const inputElement = $event.target as HTMLInputElement;
     this.apiUserFilter.set(new FilterValue({ value: inputElement.value }));
   });
 
-
   apiUserFilter: WritableSignal<FilterValue> = signal(new FilterValue());
-
   pageIndex: WritableSignal<number> = signal(0);
-
-
   pageSize: WritableSignal<number> = signal(10);
   apiFilterOptions: string[] = [];
   advancedApiFilterOptions: string[] = [];
-  userResource: HttpResourceRef<PiResponse<UserData[]> | undefined> = new MockHttpResourceRef(
-    MockPiResponse.fromValue([])
-  );
+
+  userResource: HttpResourceRef<PiResponse<UserData[]> | undefined> =
+    new MockHttpResourceRef(MockPiResponse.fromValue([]));
+
   user: WritableSignal<UserData> = signal({
     description: "",
     editable: false,
@@ -391,9 +447,10 @@ export class MockUserService implements UserServiceInterface {
     userid: "",
     username: ""
   });
-  usersResource: HttpResourceRef<PiResponse<UserData[], undefined> | undefined> = new MockHttpResourceRef(
-    MockPiResponse.fromValue([])
-  );
+
+  usersResource: HttpResourceRef<PiResponse<UserData[], undefined> | undefined> =
+    new MockHttpResourceRef(MockPiResponse.fromValue([]));
+
   users: WritableSignal<UserData[]> = signal([]);
   allUsernames: Signal<string[]> = signal([]);
 
@@ -404,6 +461,7 @@ export class MockUserService implements UserServiceInterface {
     source: this.selectedUserRealm,
     computation: () => ""
   });
+
   selectionUsernameFilter = linkedSignal<string>(() => {
     const filter = this.selectionFilter();
     if (typeof filter === "string") {
@@ -412,14 +470,12 @@ export class MockUserService implements UserServiceInterface {
     return filter?.username ?? "";
   });
 
-  selectionFilteredUsers = signal([]);
+  selectionFilteredUsers = signal<UserData[]>([]);
 
-
-  displayUser = jest.fn().mockImplementation((username: string, realm: string) => {
-    this.selectedUsername.set(username);
-    this.selectedUserRealm.set(realm);
-    const user = this.users().find((u) => u.username === username && u.resolver === realm) || null;
-    this.selectedUser.set(user);
+  displayUser = jest.fn().mockImplementation((user: UserData | string): string => {
+    const name = typeof user === "string" ? user : user?.username ?? "";
+    this.selectedUsername.set(name);
+    return name;
   });
 }
 

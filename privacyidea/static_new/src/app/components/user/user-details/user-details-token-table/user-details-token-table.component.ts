@@ -30,17 +30,6 @@ import { AuthService, AuthServiceInterface } from "../../../../services/auth/aut
 import { TokenDetails, TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 import { UserService, UserServiceInterface } from "../../../../services/user/user.service";
 
-const columnsKeyMap = [
-  { key: "serial", label: "Serial" },
-  { key: "tokentype", label: "Type" },
-  { key: "active", label: "Active" },
-  { key: "description", label: "Description" },
-  { key: "failcount", label: "Fail Counter" },
-  { key: "maxfail", label: "Maxfail" },
-  { key: "container_serial", label: "Container" }
-];
-
-
 @Component({
   selector: "app-user-details-token-table",
   imports: [
@@ -77,8 +66,17 @@ export class UserDetailsTokenTableComponent {
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly userService: UserServiceInterface = inject(UserService);
-  protected readonly columnsKeyMap = columnsKeyMap;
-  displayedColumns: string[] = [...columnsKeyMap.map((column) => column.key)];
+  readonly columnsKeyMap = this.tableUtilsService.pickColumns(
+    "serial",
+    "tokentype",
+    "active",
+    "description",
+    "failcount",
+    "maxfail",
+    "container_serial"
+  );
+  readonly columnKeys = [...this.tableUtilsService.getColumnKeys(this.columnsKeyMap)];
+  displayedColumns: string[] = [...this.columnsKeyMap.map((column) => column.key)];
   dataSource = new MatTableDataSource<ContainerDetailToken>([]);
   filterValue = "";
   @ViewChild(MatPaginator) paginator!: MatPaginator;

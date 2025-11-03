@@ -30,14 +30,6 @@ import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
 import { NgClass } from "@angular/common";
 import { MatTooltip } from "@angular/material/tooltip";
 
-const columnsKeyMap = [
-  { key: "serial", label: "Serial" },
-  { key: "type", label: "Type" },
-  { key: "states", label: "Status" },
-  { key: "description", label: "Description" },
-  { key: "realms", label: "Container Realms" }
-];
-
 @Component({
   selector: "app-user-details-container-table",
   imports: [
@@ -74,8 +66,15 @@ export class UserDetailsContainerTableComponent {
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly userService: UserServiceInterface = inject(UserService);
 
-  readonly columnsKeyMap = columnsKeyMap;
-  displayedColumns: string[] = columnsKeyMap.map(c => c.key);
+  readonly columnsKeyMap = this.tableUtilsService.pickColumns(
+    "serial",
+    "type",
+    "states",
+    "description",
+    "realms"
+  );
+  readonly columnKeys = [...this.tableUtilsService.getColumnKeys(this.columnsKeyMap)];
+  displayedColumns: string[] = this.columnsKeyMap.map(c => c.key);
 
   dataSource = new MatTableDataSource<ContainerDetailData>([]);
   filterValue = "";

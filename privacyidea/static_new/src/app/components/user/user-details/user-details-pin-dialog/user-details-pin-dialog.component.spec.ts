@@ -31,7 +31,7 @@ describe("UserDetailsPinDialogComponent", () => {
   });
 
 
-  it("should disable \"Assign All\" when PINs do not match", () => {
+  it("should disable \"assign\" when PINs do not match", () => {
     component.pin.set("1234");
     component.pinRepeat.set("4321");
     fixture.detectChanges();
@@ -43,7 +43,7 @@ describe("UserDetailsPinDialogComponent", () => {
     expect(assignBtn.disabled).toBe(true);
   });
 
-  it("should enable \"Assign All\" when PINs match", () => {
+  it("should enable \"assign\" when PINs match", () => {
     component.pin.set("1234");
     component.pinRepeat.set("1234");
     fixture.detectChanges();
