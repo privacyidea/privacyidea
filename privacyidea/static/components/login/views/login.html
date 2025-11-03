@@ -63,7 +63,8 @@
                         ng-show="piRealms.length > 0"
                         id="realm"
                         ng-model="login.realm"
-                        ng-options="realm for realm in piRealms">
+                        ng-options="realm for realm in piRealms"
+                        ng-disabled="piRealms.length == 1">
                     <!-- We add a placeholder, if we do not have an empty realm -->
                     <option ng-hide="piRealms[0]===''" value="" selected translate>Choose a realm...</option>
                 </select>
