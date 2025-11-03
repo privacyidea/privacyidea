@@ -3,7 +3,7 @@
     @if (authService.actionAllowed("delete")) {
         <button
           mat-stroked-button
-          [ngClass]="[tokenSelection().length === 0 ? 'action-button-disabled' : 'action-button-delete']"
+          class="action-button-delete"
           (click)="deleteSelectedTokens()"
           [disabled]="tokenSelection().length === 0"
           i18n>
@@ -14,7 +14,7 @@
     @if (authService.actionAllowed("assign")) {
         <button
           mat-stroked-button
-          [ngClass]="[tokenSelection().length === 0 ? 'action-button-disabled' : 'action-button']"
+          class="action-button"
           (click)="assignSelectedTokens()"
           [disabled]="tokenSelection().length === 0"
           i18n>
@@ -25,12 +25,19 @@
     @if (authService.actionAllowed("unassign")) {
         <button
           mat-stroked-button
-          [ngClass]="[tokenSelection().length === 0 ? 'action-button-disabled' : 'action-button']"
+          class="action-button"
           (click)="unassignSelectedTokens()"
           [disabled]="tokenSelection().length === 0">
           <mat-icon> person_remove</mat-icon>
-          Unassign Selected
+          Unassign Selectedb
         </button>
     }
+    <button
+      [routerLink]="[ROUTE_PATHS.TOKENS_ENROLLMENT]"
+      class="action-button"
+      mat-stroked-button>
+      <mat-icon> add_moderator</mat-icon>
+      Enroll Token
+    </button>
   }
 </div>

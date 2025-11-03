@@ -1,5 +1,4 @@
-import { Component, computed, inject } from "@angular/core";
-import { NgClass } from "@angular/common";
+import { Component, inject } from "@angular/core";
 import { MatIcon } from "@angular/material/icon";
 import { MatButtonModule } from "@angular/material/button";
 import { ConfirmationDialogComponent } from "../../../shared/confirmation-dialog/confirmation-dialog.component";
@@ -9,13 +8,15 @@ import { ContainerService, ContainerServiceInterface } from "../../../../service
 import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
 import { VersioningService, VersioningServiceInterface } from "../../../../services/version/version.service";
 import { AuthService } from "../../../../services/auth/auth.service";
+import { ROUTE_PATHS } from "../../../../route_paths";
+import { RouterLink } from "@angular/router";
 
 @Component({
   selector: "app-container-table-actions",
   imports: [
-    NgClass,
     MatButtonModule,
-    MatIcon
+    MatIcon,
+    RouterLink
   ],
   templateUrl: "./container-table-actions.component.html",
   styleUrl: "./container-table-actions.component.scss"
@@ -26,6 +27,7 @@ export class ContainerTableActionsComponent {
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly versioningService: VersioningServiceInterface = inject(VersioningService);
   protected readonly authService = inject(AuthService);
+  protected readonly ROUTE_PATHS = ROUTE_PATHS;
   containerSelection = this.containerService.containerSelection;
   containerSerial = this.containerService.containerSerial;
   selectedContainer = this.containerService.selectedContainer;

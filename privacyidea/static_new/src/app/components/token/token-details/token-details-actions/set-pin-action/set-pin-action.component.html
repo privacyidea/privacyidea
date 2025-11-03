@@ -24,7 +24,7 @@
   @if (authService.actionAllowed("setpin")) {
     <button
       (click)="setPin()"
-      class="card-button"
+      class="action-button width-238"
       i18n
       mat-stroked-button>
       <mat-icon>password</mat-icon>
@@ -34,7 +34,7 @@
   @if (authService.actionsAllowed(["setrandompin", "otp_pin_set_random"])) {
     <button
       (click)="setRandomPin()"
-      class="card-button"
+      class="action-button width-238"
       mat-stroked-button
       i18n>
       <mat-icon>casino</mat-icon>

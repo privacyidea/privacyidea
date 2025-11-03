@@ -16,16 +16,14 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, inject, signal } from "@angular/core";
+import { Component, inject } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
-import { NgClass } from "@angular/common";
 import { BulkResult, TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 import { ConfirmationDialogComponent } from "../../../shared/confirmation-dialog/confirmation-dialog.component";
 import { PiResponse } from "../../../../app.component";
 import { catchError, concatMap, EMPTY, filter, from, reduce, switchMap } from "rxjs";
-import { LostTokenComponent } from "../../token-details/token-details-actions/lost-token/lost-token.component";
 import { SelectedUserAssignDialogComponent } from "./selected-user-attach-dialog/selected-user-attach-dialog.component";
 import { tap } from "rxjs/operators";
 import { ROUTE_PATHS } from "../../../../route_paths";
@@ -37,14 +35,14 @@ import {
   NotificationService,
   NotificationServiceInterface
 } from "../../../../services/notification/notification.service";
-import { Router } from "@angular/router";
+import { Router, RouterLink } from "@angular/router";
 
 @Component({
   selector: "app-token-table-actions",
   imports: [
     MatButtonModule,
     MatIcon,
-    NgClass
+    RouterLink
   ],
   templateUrl: "./token-table-actions.component.html",
   styleUrl: "./token-table-actions.component.scss"
@@ -127,7 +125,7 @@ export class TokenTableActionsComponent {
   }
 
   deleteSelectedTokens(): void {
-    const serialList = this.tokenSelection().map((token) => token.serial)
+    const serialList = this.tokenSelection().map((token) => token.serial);
     this.tokenService.bulkDeleteWithConfirmDialog(serialList, this.dialog, this.tokenService.tokenResource.reload);
   }
 

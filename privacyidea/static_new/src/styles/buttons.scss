@@ -40,15 +40,16 @@ $button-low-contrast-variant: linear-gradient(
   $height,
   $width,
   $background-color,
-  $cursor: pointer
+  $border-color,
+  $color
 ) {
   height: $height;
   width: $width;
-  cursor: $cursor;
+  cursor: pointer;
   border-radius: var(--border-radius);
   background-color: $background-color !important;
-  border-color: var(--mat-sys-surface-container-highest) !important;
-  color: var(--mat-sys-on-surface-variant) !important;
+  border-color: $border-color !important;
+  color: $color !important;
   justify-content: start;
   display: flex;
 
@@ -69,11 +70,13 @@ $button-low-contrast-variant: linear-gradient(
   }
 }
 
-@mixin card-button-variant($background-color) {
+@mixin card-button-variant($background-color, $border-color, $color) {
   @include button-base(
           $height: $button-height,
           $width: $button-width,
-          $background-color: $background-color
+          $background-color: $background-color,
+          $border-color: $border-color,
+          $color: $color,
   );
 }
 
@@ -133,11 +136,15 @@ $button-low-contrast-variant: linear-gradient(
 }
 
 .card-button {
-  @include card-button-variant(var(--mat-sys-surface-container));
+  @include card-button-variant(var(--mat-sys-surface-container), var(--mat-sys-surface-container-highest), var(--mat-sys-on-surface-variant));
 }
 
 .card-button-active {
-  @include card-button-variant(var(--mat-sys-surface-container-highest));
+  @include card-button-variant(var(--mat-sys-surface-container-lowest), var(--mat-sys-primary), var(--mat-sys-primary));
+}
+
+.card-button-support {
+  @include card-button-variant(var(--mat-sys-surface-container-lowest), var(--green-brand-light), var(--green-brand-light));
 }
 
 .mat-unthemed.mat-mdc-button-base[class^="card-button"],
@@ -349,14 +356,16 @@ $button-low-contrast-variant: linear-gradient(
 
 .action-button {
   @extend %action-button-base;
-  @include action-button-variant(var(--mat-sys-primary));
+
+  &:not([disabled]) {
+    @include action-button-variant(var(--mat-sys-primary));
+  }
 }
 
 .action-button-delete {
   @extend %action-button-base;
-  @include action-button-variant(var(--red-base));
-}
 
-.action-button-disabled {
-  @extend %action-button-base;
+  &:not([disabled]) {
+    @include action-button-variant(var(--red-base));
+  }
 }

@@ -1,7 +1,7 @@
 <div class="flex-row margin-bottom-1 gap-8">
   @if (authService.actionAllowed("container_delete")) {
     <button
-      [ngClass]="[containerSelection().length === 0 ? 'action-button-disabled' : 'action-button-delete']"
+      class="action-button-delete"
       (click)="deleteSelectedContainer()"
       [disabled]="containerSelection().length === 0"
       mat-stroked-button
@@ -10,4 +10,11 @@
       Delete Selected
     </button>
   }
+  <button
+    [routerLink]="[ROUTE_PATHS.TOKENS_CONTAINERS_CREATE]"
+    class="action-button"
+    mat-stroked-button>
+    <mat-icon> create_new_folder</mat-icon>
+    Create Container
+  </button>
 </div>
