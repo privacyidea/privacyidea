@@ -26,6 +26,7 @@ The file is tested in tests/test_lib_resolver.py
 """
 
 import logging
+from typing import Optional
 
 import yaml
 import threading
@@ -753,6 +754,29 @@ class IdResolver(UserIdResolver):
 
         return userid
 
+    def _create_search_filter(self, search_dict: Optional[dict]) -> str:
+        """
+        Create an LDAP search filter from the given search dictionary.
+        """
+        search_filter = "(&" + self.searchfilter
+        for search_key in search_dict.keys():
+            if isinstance(search_dict[search_key], str) and not search_dict[search_key].strip("*"):
+                # skip empty and wildcard only search values
+                continue
+            search_dict[search_key] = to_unicode(search_dict[search_key])
+            if search_key == "accountExpires":
+                comparator = ">="
+                if search_dict[search_key] in ["1", 1]:
+                    comparator = "<="
+                search_filter += "(&({0!s}{1!s}{2!s})(!({3!s}=0)))".format(
+                    self.userinfo[search_key], comparator,
+                    get_ad_timestamp_now(), self.userinfo[search_key])
+            else:
+                search_filter += "({0!s}={1!s})".format(self.userinfo[search_key],
+                                                        search_dict[search_key])
+        search_filter += ")"
+        return search_filter
+
     def getUserList(self, search_dict=None):
         """
         :param search_dict: A dictionary with search parameters
@@ -770,22 +794,8 @@ class IdResolver(UserIdResolver):
                       f"the attribute mapping keys ({list(self.userinfo.keys())}).")
             raise ParameterError(f"Search parameter ({unknown_search_keys}) not "
                                  f"available in attribute mapping.")
-        # do the filter depending on the searchDict
-        search_filter = "(&" + self.searchfilter
-        for search_key in search_dict.keys():
-            # convert to unicode
-            search_dict[search_key] = to_unicode(search_dict[search_key])
-            if search_key == "accountExpires":
-                comperator = ">="
-                if search_dict[search_key] in ["1", 1]:
-                    comperator = "<="
-                search_filter += "(&({0!s}{1!s}{2!s})(!({3!s}=0)))".format(
-                    self.userinfo[search_key], comperator,
-                    get_ad_timestamp_now(), self.userinfo[search_key])
-            else:
-                search_filter += "({0!s}={1!s})".format(self.userinfo[search_key],
-                                                        search_dict[search_key])
-        search_filter += ")"
+
+        search_filter = self._create_search_filter(search_dict)
 
         self._bind()
         try:
@@ -801,21 +811,25 @@ class IdResolver(UserIdResolver):
             log.error(f"Error performing paged search: {e}")
             raise ResolverError(f"Error performing paged search: {e}")
         # returns a generator of dictionaries
-        for entry in ignore_sizelimit_exception(self.connection, search_generator):
-            # Simple fix for ignored sizelimit with Active Directory
-            if len(user_list) >= self.sizelimit:
-                break
-            # Fix for searchResRef entries which have no attributes
-            if entry.get('type') == 'searchResRef':
-                continue
-            try:
-                attributes = entry.get("attributes")
-                user = self._ldap_attributes_to_user_object(attributes)
-                user['userid'] = self._get_uid(entry, self.uidtype)
-                user_list.append(user)
-            except Exception as ex:  # pragma: no cover
-                log.error(f"Error during fetching LDAP objects: {ex}")
-                log.debug("{0!s}".format(traceback.format_exc()))
+        try:
+            for entry in ignore_sizelimit_exception(self.connection, search_generator):
+                # Simple fix for ignored sizelimit with Active Directory
+                if len(user_list) >= self.sizelimit:
+                    break
+                # Fix for searchResRef entries which have no attributes
+                if entry.get('type') == 'searchResRef':
+                    continue
+                try:
+                    attributes = entry.get("attributes")
+                    user = self._ldap_attributes_to_user_object(attributes)
+                    user['userid'] = self._get_uid(entry, self.uidtype)
+                    user_list.append(user)
+                except Exception as ex:  # pragma: no cover
+                    log.error(f"Error during fetching LDAP objects: {ex}")
+                    log.debug("{0!s}".format(traceback.format_exc()))
+        except Exception as ex:  # pragma: no cover
+            log.error(f"Error during LDAP paged search: {ex}")
+            raise ResolverError(f"Error during LDAP paged search: {ex}")
 
         return user_list
 
