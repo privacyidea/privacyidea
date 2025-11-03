@@ -125,6 +125,10 @@ body {
   font-weight: bold;
 }
 
+.italic {
+  font-style: italic;
+}
+
 .red {
   color: var(--red-base);
 }
@@ -274,6 +278,10 @@ body {
 
 .margin-bottom-1 {
   margin-bottom: 16px;
+}
+
+.margin-bottom-2 {
+  margin-bottom: 32px;
 }
 
 .width-32 {

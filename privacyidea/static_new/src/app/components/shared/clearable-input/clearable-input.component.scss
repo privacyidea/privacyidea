@@ -3,7 +3,8 @@
 }
 
 .input-container button {
-  top: 0;
+  top: 50%;
+  transform: translateY(-50%);
   position: absolute;
   right: 2px;
   color: var(--grey-light-active);
