@@ -3663,7 +3663,6 @@ class APITokenTestCase(MyApiTestCase):
                 self.assertTrue(detail.get("pin_change"))
 
         # Create token of resolver 3 does not set next_pin_change
-
         token_corny = init_token({"type": "spass", "pin": "123456"}, user=User("corny", self.realm4))
         with self.app.test_request_context('/auth',
                                            method='POST',
