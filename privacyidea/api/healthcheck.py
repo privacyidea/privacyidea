@@ -29,13 +29,14 @@ Endpoints:
 
 The corresponding code is tested in tests/test_api_healthcheck.py.
 """
-from flask import Blueprint, current_app
+from flask import Blueprint, current_app, g
 
 from privacyidea.api.auth import check_auth_token
 from privacyidea.api.lib.utils import send_result
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.crypto import get_hsm
 from privacyidea.lib.error import AuthError, ERROR
+from privacyidea.lib.policy import PolicyAction, Match, SCOPE
 from privacyidea.lib.resolver import get_resolver_list, get_resolver_class
 import logging
 
@@ -244,14 +245,16 @@ def resolversz():
     resolver_types = ["ldapresolver", "sqlresolver"]
     total_status = "OK"
 
-    try:
-        check_auth_token(required_role=[ROLE.ADMIN])
-    except AuthError as e:
-        if e.id != ERROR.AUTHENTICATE_AUTH_HEADER:
-            raise
-        authenticated = False
-    else:
-        authenticated = True
+    accepts_auth = Match.action_only(g, scope=SCOPE.AUTHZ, action=PolicyAction.REQUIRE_AUTH_FOR_RESOLVER_DETAILS).any()
+    if accepts_auth:
+        try:
+            check_auth_token(required_role=[ROLE.ADMIN])
+        except AuthError as e:
+            if e.id != ERROR.AUTHENTICATE_AUTH_HEADER:
+                raise
+            authenticated = False
+        else:
+            authenticated = True
 
     try:
         for resolver_type in resolver_types:
@@ -267,7 +270,7 @@ def resolversz():
                 else:
                     resolver_status[resolver_name] = "fail"
 
-            if authenticated:
+            if not accepts_auth or authenticated:
                 result[resolver_type] = resolver_status
 
         result["status"] = total_status

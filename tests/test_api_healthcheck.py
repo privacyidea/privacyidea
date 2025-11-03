@@ -1,5 +1,6 @@
 from typing import Optional
 from .pkcs11mock import PKCS11Mock
+from privacyidea.lib.policy import SCOPE, PolicyAction, delete_policy, enable_policy, set_policy
 from privacyidea.lib.resolver import save_resolver
 from privacyidea.lib.security.aeshsm import AESHardwareSecurityModule
 from tests import ldap3mock
@@ -92,14 +93,20 @@ class APIHealthcheckTestCase(MyApiTestCase):
 
         ldap3mock.setLDAPDirectory(LDAPDirectory)
 
-        for authenticated in True, False:
-            headers = {'Authorization': self.at} if authenticated else {}
-            with self.app.test_request_context('/healthz/resolversz', method='GET', headers=headers):
-                res = self.app.full_dispatch_request()
-                expected = "fail" if authenticated else None
-                check_resolvers(res, 200, "OK",
-                                ldap_expected_status=expected,
-                                sql_expected_status=expected)
+        set_policy("require_auth_for_resolver_details", scope=SCOPE.AUTHZ,
+                   action=f"{PolicyAction.REQUIRE_AUTH_FOR_RESOLVER_DETAILS}=true")
+
+        for accepts_auth in True, False:
+            enable_policy("require_auth_for_resolver_details", accepts_auth)
+
+            for authenticated in True, False:
+                headers = {'Authorization': self.at} if authenticated else {}
+                with self.app.test_request_context('/healthz/resolversz', method='GET', headers=headers):
+                    res = self.app.full_dispatch_request()
+                    expected = "fail" if not accepts_auth or authenticated else None
+                    check_resolvers(res, 200, "OK",
+                                    ldap_expected_status=expected,
+                                    sql_expected_status=expected)
 
         ldapr = save_resolver({
             'LDAPURI': 'ldap://localhost',
@@ -143,11 +150,19 @@ class APIHealthcheckTestCase(MyApiTestCase):
         self.assertGreater(ldapr, 0, "LDAP resolver creation failed.")
         self.assertGreater(sqlr, 0, "SQL resolver creation failed.")
 
-        for authenticated in True, False:
-            headers = {'Authorization': self.at} if authenticated else {}
-            with self.app.test_request_context('/healthz/resolversz', method='GET', headers=headers):
-                res = self.app.full_dispatch_request()
-                expected = "OK" if authenticated else None
-                check_resolvers(res, 200, "OK",
-                                ldap_expected_status=expected,
-                                sql_expected_status=expected)
+        set_policy("require_auth_for_resolver_details", scope=SCOPE.AUTHZ,
+                   action=f"{PolicyAction.REQUIRE_AUTH_FOR_RESOLVER_DETAILS}=true")
+
+        for accepts_auth in True, False:
+            enable_policy("require_auth_for_resolver_details", accepts_auth)
+
+            for authenticated in True, False:
+                headers = {'Authorization': self.at} if authenticated else {}
+                with self.app.test_request_context('/healthz/resolversz', method='GET', headers=headers):
+                    res = self.app.full_dispatch_request()
+                    expected = "OK" if not accepts_auth or authenticated else None
+                    check_resolvers(res, 200, "OK",
+                                    ldap_expected_status=expected,
+                                    sql_expected_status=expected)
+
+        delete_policy("require_auth_for_resolver_details")
