@@ -46,6 +46,7 @@ import {
   SessionTimerServiceInterface
 } from "../../../services/session-timer/session-timer.service";
 import { VersioningService, VersioningServiceInterface } from "../../../services/version/version.service";
+import { MatTooltipModule } from "@angular/material/tooltip";
 
 @Component({
   selector: "app-navigation",
@@ -70,7 +71,8 @@ import { VersioningService, VersioningServiceInterface } from "../../../services
     MatIcon,
     RouterLink,
     NgClass,
-    MatAnchor
+    MatAnchor,
+    MatTooltipModule
   ],
   templateUrl: "./navigation.component.html",
   styleUrl: "./navigation.component.scss"

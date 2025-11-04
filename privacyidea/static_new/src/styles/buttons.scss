@@ -276,6 +276,20 @@ $button-low-contrast-variant: linear-gradient(
   mask-size: 100% 100%;
 }
 
+.ms--person-list {
+  display: inline-block;
+  width: 1.7em !important;
+  height: 1.7em !important;
+  --svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 28'%3E%3Cpath fill='%23000' d='M 10 7 a 3 3 0 1 1 0 7 a 3 3 0 1 1 0 -7 M 3 22 v -2 c 0 -3.3 4.7 -5 7 -5 s 7 1.7 7 5 v 2 Z M 18 9 h 14 v 2 H 18 V 9 M 18 13 h 9 v 2 H 18 V 13 M 18 17 h 7 v 2 H 18 v -2'/%3E%3C/svg%3E");
+  background-color: currentColor;
+  -webkit-mask-image: var(--svg);
+  mask-image: var(--svg);
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%
+}
+
 .ms--database {
   display: inline-block;
   width: 1em;
