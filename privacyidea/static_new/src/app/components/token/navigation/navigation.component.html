@@ -85,19 +85,13 @@
         <mat-icon>refresh</mat-icon>
       </button>
       <div
-        matTooltip="Time until session expires"
-        [ngClass]="[
-    sessionTimerService.remainingTime()! < 31000
-      ? 'red-light'
-      : sessionTimerService.remainingTime()! < 60000
-        ? 'yellow-light'
-        : 'surface-highest'
-  ]"
-        aria-label="Session time remaining"
+        [ngClass]="[sessionTimerService.remainingTime()! < 31000
+                  ? 'red-light'
+                  : sessionTimerService.remainingTime()! < 60000
+                    ? 'yellow-light'
+                    : 'surface-highest']"
         class="session-timer"
-        i18n-matTooltip="Tooltip shown when hovering the session timer"
-        matTooltipPosition="above"
-        matTooltipShowDelay="250">
+        matTooltip="Time until session expires">
         @if (sessionTimerService.remainingTime()! < 599500) {
           {{ sessionTimerService.remainingTime() | date:'m:ss':'UTC' }}
         } @else if (sessionTimerService.remainingTime()! < 3600000) {
