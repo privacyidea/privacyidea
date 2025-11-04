@@ -1,11 +1,34 @@
+import json
+from contextlib import contextmanager
 from typing import Optional
 from .pkcs11mock import PKCS11Mock
-from privacyidea.lib.policy import SCOPE, PolicyAction, delete_policy, enable_policy, set_policy
-from privacyidea.lib.resolver import save_resolver
+from privacyidea.lib.policy import SCOPE, PolicyAction, delete_policy, enable_policy, get_policies, set_policy
+from privacyidea.lib.resolver import delete_resolver, save_resolver
 from privacyidea.lib.security.aeshsm import AESHardwareSecurityModule
 from tests import ldap3mock
 from tests.base import MyApiTestCase
 from tests.test_api_validate import LDAPDirectory
+
+
+@contextmanager
+def setup_policy(name: str, *args, **kwargs):
+    """Create a policy as specified, and delete it after the block is done."""
+    r = set_policy(name, *args, **kwargs)
+    assert r > 0, f"Failed creating policy {name!r}."
+    try:
+        yield
+    finally:
+        delete_policy(name)
+
+@contextmanager
+def setup_resolver(name: str, **kwargs):
+    kwargs["resolver"] = name
+    r = save_resolver(kwargs)
+    assert r > 0, f"Failed creating resolver {name!r}."
+    try:
+        yield
+    finally:
+        delete_resolver(name)
 
 
 class APIHealthcheckTestCase(MyApiTestCase):
@@ -62,107 +85,92 @@ class APIHealthcheckTestCase(MyApiTestCase):
 
     @ldap3mock.activate
     def test_resolversz(self):
-        def check_resolvers(res, expected_status_code: int, expected_status: str,
-                            ldap_expected_status: Optional[str],
-                            sql_expected_status: Optional[None]) -> None:
-            assert res.status_code == expected_status_code, (f"Expected status code {expected_status_code}, "
-                                                             f"got {res.status_code}")
-            result = res.json.get("result")
-            assert result is not None, "Expected JSON result, got None"
-            assert result.get("value").get(
-                "status") == expected_status, (f"Expected '{expected_status}' status, "
-                                               f"got {result.get('value').get('status')}")
+        def check_resolvers(expected_status_code: int,
+                            expected_status: Optional[str] = None,
+                            ldap_expected_status: Optional[str] = None,
+                            sql_expected_status: Optional[str] = None,
+                            auth_token: Optional[str] = None) -> None:
+            headers = {'Authorization': auth_token} if auth_token is not None else {}
+            with self.app.test_request_context('/healthz/resolversz', method='GET', headers=headers):
+                res = self.app.full_dispatch_request()
+                assert res.status_code == expected_status_code, (f"Expected status code {expected_status_code}, "
+                                                                 f"got {res.status_code}")
 
-            result_value = result.get("value")
-            ldap_resolvers = result_value.get("ldapresolver")
-            sql_resolvers = result_value.get("sqlresolver")
+                if expected_status is None:
+                    return
 
-            if ldap_expected_status is None:
-                assert 'ldapresolver' not in result_value, "Expected missing 'ldapresolver' in result, but is present"
-            else:
-                assert ldap_resolvers is not None, "Expected 'ldapresolver' in result, but got None"
-                assert all(status == ldap_expected_status for status in ldap_resolvers.values()), \
-                    f"At least one LDAP resolver does not have '{ldap_expected_status}' status."
+                result = res.json.get("result")
+                assert result is not None, "Expected JSON result, got None"
+                assert result.get("value").get("status") == expected_status, (
+                    f"Expected '{expected_status}' status, "
+                    f"got {result.get('value').get('status')}"
+                )
 
-            if sql_expected_status is None:
-                assert 'sqlresolvers' not in result_value, "Expected missing 'sqlresolver' in result, but is present"
-            else:
-                assert sql_resolvers is not None, "Expected 'sqlresolver' in result, but got None"
-                assert all(status == sql_expected_status for status in sql_resolvers.values()), \
-                    f"At least one SQL resolver does not have '{sql_expected_status}' status."
+                result_value = result.get("value")
+                ldap_resolvers = result_value.get("ldapresolver")
+                sql_resolvers = result_value.get("sqlresolver")
 
-        ldap3mock.setLDAPDirectory(LDAPDirectory)
+                if ldap_expected_status is None:
+                    assert 'ldapresolver' not in result_value, "Expected missing 'ldapresolver' in result, but is present"
+                else:
+                    assert ldap_resolvers is not None, "Expected 'ldapresolver' in result, but got None"
+                    assert all(status == ldap_expected_status for status in ldap_resolvers.values()), \
+                        f"At least one LDAP resolver does not have '{ldap_expected_status}' status."
 
-        set_policy("require_auth_for_resolver_details", scope=SCOPE.AUTHZ,
-                   action=f"{PolicyAction.REQUIRE_AUTH_FOR_RESOLVER_DETAILS}=true")
+                if sql_expected_status is None:
+                    assert 'sqlresolver' not in result_value, "Expected missing 'sqlresolver' in result, but is present"
+                else:
+                    assert sql_resolvers is not None, "Expected 'sqlresolver' in result, but got None"
+                    assert all(status == sql_expected_status for status in sql_resolvers.values()), \
+                        f"At least one SQL resolver does not have '{sql_expected_status}' status."
 
-        for accepts_auth in True, False:
-            enable_policy("require_auth_for_resolver_details", accepts_auth)
+        @contextmanager
+        def setup_test_resolvers():
+            ldap3mock.setLDAPDirectory(LDAPDirectory)
+            ldapr = setup_resolver("test_ldapresolver", type="ldapresolver",
+                LDAPURI="ldap://localhost", LDAPBASE="o=test",
+                BINDDN="cn=manager,ou=example,o=test", BINDPW="ldaptest",
+                LOGINNAMEATTRIBUTE="cn", LDAPSEARCHFILTER="(cn=*)",
+                MULTIVALUEATTRIBUTES='["groups"]', UIDTYPE="DN",
+                USERINFO=json.dumps({
+                    "username": "cn",
+                    "phone": "telephoneNumber",
+                    "mobile": "mobile",
+                    "email": "mail",
+                    "surname": "sn",
+                    "groups": "memberOf",
+                    "givenname": "givenName",
+                }),
+            )
+            sqlr = setup_resolver("test_sqlresolver", type="sqlresolver",
+                Driver="sqlite", Server="/tests/testdata/",
+                Database="testuser.sqlite", Table="users",
+                Encoding="utf8", Editable=True,
+                Map=json.dumps({
+                    "username": "username",
+                    "userid": "id",
+                    "email": "email",
+                    "surname": "name",
+                    "givenname": "givenname",
+                    "password": "password",
+                    "phone": "phone",
+                    "mobile": "mobile",
+                }),
+            )
+            with ldapr, sqlr:
+                yield
 
-            for authenticated in True, False:
-                headers = {'Authorization': self.at} if authenticated else {}
-                with self.app.test_request_context('/healthz/resolversz', method='GET', headers=headers):
-                    res = self.app.full_dispatch_request()
-                    expected = "fail" if not accepts_auth or authenticated else None
-                    check_resolvers(res, 200, "OK",
-                                    ldap_expected_status=expected,
-                                    sql_expected_status=expected)
+        check_resolvers(200, "OK", ldap_expected_status="fail", sql_expected_status="fail")
+        with setup_test_resolvers():
+            check_resolvers(200, "OK", ldap_expected_status="OK", sql_expected_status="OK")
 
-        ldapr = save_resolver({
-            'LDAPURI': 'ldap://localhost',
-            'LDAPBASE': 'o=test',
-            'BINDDN': 'cn=manager,ou=example,o=test',
-            'BINDPW': 'ldaptest',
-            'LOGINNAMEATTRIBUTE': 'cn',
-            'LDAPSEARCHFILTER': '(cn=*)',
-            'MULTIVALUEATTRIBUTES': '["groups"]',
-            'USERINFO': '{ "username": "cn",'
-                        '"phone" : "telephoneNumber", '
-                        '"mobile" : "mobile", '
-                        '"email" : "mail", '
-                        '"surname" : "sn", '
-                        '"groups": "memberOf", '
-                        '"givenname" : "givenName" }',
-            'UIDTYPE': 'DN',
-            "resolver": "test_ldapresolver",
-            "type": "ldapresolver"
-        })
+        with setup_policy("auth_for_resolvers", scope=SCOPE.AUTHZ,
+                          action=f"{PolicyAction.REQUIRE_AUTH_FOR_RESOLVER_DETAILS}=true"):
+            check_resolvers(200, "OK")
+            check_resolvers(200, "OK", ldap_expected_status="fail", sql_expected_status="fail", auth_token=self.at)
+            check_resolvers(401, auth_token="")
 
-        sqlr = save_resolver({
-            'Driver': 'sqlite',
-            'Server': '/tests/testdata/',
-            'Database': "testuser.sqlite",
-            'Table': 'users',
-            'Encoding': 'utf8',
-            'Editable': True,
-            'Map': '{ "username": "username", \
-                         "userid" : "id", \
-                         "email" : "email", \
-                         "surname" : "name", \
-                         "givenname" : "givenname", \
-                         "password" : "password", \
-                         "phone": "phone", \
-                         "mobile": "mobile"}',
-            'resolver': "test_sqlresolver",
-            'type': "sqlresolver"
-        })
-
-        self.assertGreater(ldapr, 0, "LDAP resolver creation failed.")
-        self.assertGreater(sqlr, 0, "SQL resolver creation failed.")
-
-        set_policy("require_auth_for_resolver_details", scope=SCOPE.AUTHZ,
-                   action=f"{PolicyAction.REQUIRE_AUTH_FOR_RESOLVER_DETAILS}=true")
-
-        for accepts_auth in True, False:
-            enable_policy("require_auth_for_resolver_details", accepts_auth)
-
-            for authenticated in True, False:
-                headers = {'Authorization': self.at} if authenticated else {}
-                with self.app.test_request_context('/healthz/resolversz', method='GET', headers=headers):
-                    res = self.app.full_dispatch_request()
-                    expected = "OK" if not accepts_auth or authenticated else None
-                    check_resolvers(res, 200, "OK",
-                                    ldap_expected_status=expected,
-                                    sql_expected_status=expected)
-
-        delete_policy("require_auth_for_resolver_details")
+            with setup_test_resolvers():
+                check_resolvers(200, "OK")
+                check_resolvers(200, "OK", ldap_expected_status="OK", sql_expected_status="OK", auth_token=self.at)
+                check_resolvers(401, auth_token="")
