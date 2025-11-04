@@ -87,19 +87,14 @@ export class UserService implements UserServiceInterface {
   apiUserFilter = signal(new FilterValue());
   filterParams = computed<Record<string, string>>(() => {
     const allowedFilters = [...this.apiFilterOptions, ...this.advancedApiFilterOptions];
-    const filterPairs = Array.from(this.apiUserFilter().filterMap.entries())
-      .map(([key, value]) => ({ key, value }))
-      .filter(({ key }) => allowedFilters.includes(key));
-    if (filterPairs.length === 0) {
-      return {};
-    }
-    return filterPairs.reduce(
-      (acc, { key, value }) => ({
-        ...acc,
-        [key]: `*${value}*`
-      }),
-      {} as Record<string, string>
-    );
+    const entries = Array.from(this.apiUserFilter().filterMap.entries())
+      .filter(([key]) => allowedFilters.includes(key))
+      .map(([key, value]) => {
+        const v = (value ?? "").toString().trim();
+        return [key, v ? `*${v}*` : v] as const;
+      })
+      .filter(([, v]) => v !== "");
+    return Object.fromEntries(entries) as Record<string, string>;
   });
 
   readonly apiFilter = apiFilter;
