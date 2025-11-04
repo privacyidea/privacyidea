@@ -140,8 +140,8 @@ $button-low-contrast-variant: linear-gradient(
 }
 
 .mat-mdc-outlined-button[class*="card-button-support"] {
-  --mat-outlined-button-state-layer-color: #E9F5E0;
-  --mat-outlined-button-ripple-color: #E9F5E0;
+  --mat-outlined-button-state-layer-color: var(--mint-bg);
+  --mat-outlined-button-ripple-color: var(--mint-bg);
   --mdc-ripple-color: var(--mat-sys-surface-container-lowest)
 }
 
@@ -150,7 +150,7 @@ $button-low-contrast-variant: linear-gradient(
 }
 
 .card-button-active {
-  @include card-button-variant(#EDF3F5, var(--mat-sys-primary), var(--mat-sys-primary));
+  @include card-button-variant(var(--sky-bg), var(--mat-sys-primary), var(--mat-sys-primary));
 }
 
 .card-button-support {
@@ -397,13 +397,13 @@ $button-low-contrast-variant: linear-gradient(
 }
 
 .mat-mdc-outlined-button[class*="action-button-delete"] {
-  --mat-outlined-button-state-layer-color: #FAEBEF;
-  --mat-outlined-button-ripple-color: #FAEBEF;
-  --mdc-ripple-color: #FAEBEF;
+  --mat-outlined-button-state-layer-color: var(--rose-bg);
+  --mat-outlined-button-ripple-color: var(--rose-bg);
+  --mdc-ripple-color: var(--rose-bg);
 }
 
 .mat-mdc-outlined-button[class*="action-button-1"] {
-  --mdc-ripple-color: #EDF3F5;
+  --mdc-ripple-color: var(--sky-bg);
 }
 
 %action-button-base {

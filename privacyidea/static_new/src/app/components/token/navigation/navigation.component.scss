@@ -146,5 +146,10 @@
     .mat-expansion-panel-header.mat-expanded {
       height: 48px;
     }
+
+    .mat-expansion-panel:not([class*="mat-elevation-z"]) {
+      box-shadow: unset;
+      @include mat.elevation(5);
+    }
   }
 }

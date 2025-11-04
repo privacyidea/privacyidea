@@ -119,6 +119,7 @@
 
   <mat-accordion>
     <mat-expansion-panel
+      class="nav-expension-panel"
       (opened)="router.navigate([ROUTE_PATHS.TOKENS])"
       [expanded]="router.url.startsWith(ROUTE_PATHS.TOKENS)">
       <mat-expansion-panel-header>
