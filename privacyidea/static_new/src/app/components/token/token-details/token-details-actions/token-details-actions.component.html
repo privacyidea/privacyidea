@@ -21,7 +21,7 @@
   } @else {
     <button
       (click)="testPasskey()"
-      class="card-button"
+      class="card-button-1"
       mat-stroked-button
       i18n>
       <mat-icon>key</mat-icon>
@@ -32,7 +32,7 @@
     @if (tokenType() === "sshkey") {
       <button
         (click)="attachSshToMachineDialog()"
-        class="action-button width-238"
+        class="action-button-1 width-238"
         mat-stroked-button
         i18n>
         <mat-icon>computer</mat-icon>
@@ -42,7 +42,7 @@
       @if (isAttachedToMachine()) {
         <button
           (click)="removePasskeyFromMachine()"
-          class="action-button width-238"
+          class="action-button-1 width-238"
           mat-stroked-button
           i18n>
           <mat-icon>computer</mat-icon>
@@ -51,7 +51,7 @@
       } @else {
         <button
           (click)="attachPasskeyToMachine()"
-          class="action-button width-238"
+          class="action-button-1 width-238"
           mat-stroked-button
           i18n>
           <mat-icon>computer</mat-icon>
@@ -61,7 +61,7 @@
     } @else if (tokenType() === "hotp" && !isAttachedToMachine()) {
       <button
         (click)="attachHotpToMachineDialog()"
-        class="action-button width-238"
+        class="action-button-1 width-238"
         mat-stroked-button
         i18n>
         <mat-icon>computer</mat-icon>
@@ -71,7 +71,7 @@
     @if (authService.actionAllowed("losttoken")) {
       <mat-divider class="margin-top-1 margin-bottom-1" />
         <button
-          class="action-button width-238"
+          class="action-button-1 width-238"
           mat-stroked-button
           (click)="openLostTokenDialog()"
           i18n>

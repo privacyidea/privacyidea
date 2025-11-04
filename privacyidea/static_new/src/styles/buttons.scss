@@ -128,26 +128,40 @@ $button-low-contrast-variant: linear-gradient(
   }
 }
 
-.mat-mdc-outlined-button.card-button,
-.mat-mdc-outlined-button[class*="card-button"] {
+.mat-mdc-outlined-button.card-button-1,
+.mat-mdc-outlined-button[class*="card-button-1"] {
   --mat-outlined-button-state-layer-color: var(--mat-sys-surface-container-highest);
   --mat-outlined-button-ripple-color: var(--mat-sys-surface-container-high);
   --mdc-ripple-color: var(--mat-sys-surface-container-high);
 }
 
-.card-button {
+.mat-mdc-outlined-button[class*="card-button-active"] {
+  --mdc-ripple-color: var(--mat-sys-surface-container-lowest)
+}
+
+.mat-mdc-outlined-button[class*="card-button-support"] {
+  --mat-outlined-button-state-layer-color: #E9F5E0;
+  --mat-outlined-button-ripple-color: #E9F5E0;
+  --mdc-ripple-color: var(--mat-sys-surface-container-lowest)
+}
+
+.card-button-1 {
   @include card-button-variant(var(--mat-sys-surface-container), var(--mat-sys-surface-container-highest), var(--mat-sys-on-surface-variant));
 }
 
 .card-button-active {
-  @include card-button-variant(var(--mat-sys-surface-container-lowest), var(--mat-sys-primary), var(--mat-sys-primary));
+  @include card-button-variant(#EDF3F5, var(--mat-sys-primary), var(--mat-sys-primary));
 }
 
 .card-button-support {
   @include card-button-variant(var(--mat-sys-surface-container-lowest), var(--green-brand-light), var(--green-brand-light));
 }
 
-.mat-unthemed.mat-mdc-button-base[class^="card-button"],
+.card-button-docs {
+  @include card-button-variant(var(--mat-sys-surface-container-lowest), var(--mat-sys-primary), var(--mat-sys-primary));
+}
+
+.mat-unthemed.mat-mdc-button-base[class^="card-button-1"],
 .mat-unthemed.mat-mdc-button-base[class*=" card-button"] {
   min-width: $button-width;
 
@@ -382,6 +396,16 @@ $button-low-contrast-variant: linear-gradient(
   height: calc(var(--header-height) / 3 - 2px);
 }
 
+.mat-mdc-outlined-button[class*="action-button-delete"] {
+  --mat-outlined-button-state-layer-color: #FAEBEF;
+  --mat-outlined-button-ripple-color: #FAEBEF;
+  --mdc-ripple-color: #FAEBEF;
+}
+
+.mat-mdc-outlined-button[class*="action-button-1"] {
+  --mdc-ripple-color: #EDF3F5;
+}
+
 %action-button-base {
   background-color: var(--mat-sys-surface-container-lowest);
   border-radius: var(--border-radius);
@@ -396,7 +420,7 @@ $button-low-contrast-variant: linear-gradient(
   border-color: $color;
 }
 
-.action-button {
+.action-button-1 {
   @extend %action-button-base;
 
   &:not([disabled]) {

@@ -180,7 +180,7 @@
         <button
           (click)="assignToAllToken()"
           [disabled]="!isAssignableToAllToken()"
-          class="action-button"
+          class="action-button-1"
           mat-stroked-button
           i18n>
           <mat-icon>playlist_add</mat-icon>
@@ -204,7 +204,7 @@
       @if (authService.actionAllowed("enable")) {
         <button
           (click)="toggleAll('activate')"
-          class="action-button"
+          class="action-button-1"
           mat-stroked-button
           i18n>
           <mat-icon>playlist_play</mat-icon>

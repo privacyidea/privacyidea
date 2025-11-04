@@ -1,21 +1,3 @@
 <div class="flex-row margin-bottom-1 gap-8">
-  @if (authService.actionAllowed("adduser")) {
-    <button
-      [ngClass]="contentService.routeUrl() === '#' ? 'action-button-active' : 'action-button-disabled'"
-      [routerLink]="['#']"
-      disabled
-      mat-stroked-button>
-      <mat-icon>person_add</mat-icon>
-      Add User
-    </button>
-  }
 
-  <button
-    [ngClass]="contentService.routeUrl() === '#' ? 'action-button-active' : 'action-button-disabled'"
-    [routerLink]="['#']"
-    disabled
-    mat-stroked-button>
-    <mat-icon>edit</mat-icon>
-    Edit Realms
-  </button>
 </div>

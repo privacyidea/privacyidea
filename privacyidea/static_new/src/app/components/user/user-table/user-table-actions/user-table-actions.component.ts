@@ -17,9 +17,6 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, inject } from "@angular/core";
-import { NgClass } from "@angular/common";
-import { RouterLink } from "@angular/router";
-import { MatIcon } from "@angular/material/icon";
 import { MatButtonModule } from "@angular/material/button";
 import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
 import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
@@ -27,10 +24,7 @@ import { AuthService, AuthServiceInterface } from "../../../../services/auth/aut
 @Component({
   selector: "app-user-table-actions",
   imports: [
-    MatButtonModule,
-    NgClass,
-    RouterLink,
-    MatIcon
+    MatButtonModule
   ],
   templateUrl: "./user-table-actions.component.html",
   styleUrl: "./user-table-actions.component.scss"
