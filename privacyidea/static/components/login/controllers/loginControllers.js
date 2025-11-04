@@ -194,7 +194,7 @@ angular.module("privacyideaApp")
             $scope.login = {
                 username: $scope.remoteUser,
                 password: "",
-                realm: ""
+                realm: $scope.piRealms[0] || ""
             };
             $scope.transactionid = "";
             AuthFactory.setUser();
