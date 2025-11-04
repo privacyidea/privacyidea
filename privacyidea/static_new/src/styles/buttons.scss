@@ -264,9 +264,9 @@ $button-low-contrast-variant: linear-gradient(
 
 .mdi--folder-list {
   display: inline-block;
-  width: 2em !important;
-  height: 2em !important;
-  --svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 28'%3E%3Cpath fill='%23000' d='M 9 4 l 2 2 h 8 a 2 2 0 0 1 2 2 v 8 c -0.033 1.502 -0.545 1.996 -2 2 H 3 a 2 2 0 0 1 -2 -2 V 6 c 0 -1.11 0.89 -2 2 -2 z M 23 6 h 14 v 2 H 23 V 6 M 23 10 h 9 v 2 H 23 V 10 M 23 14 h 7 v 2 H 23 v -2'/%3E%3C/svg%3E");
+  width: 1.7em !important;
+  height: 1.7em !important;
+  --svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 28'%3E%3Cpath fill='%23000' d='M 9 4 l 2 2 h 7 a 2 2 0 0 1 2 2 v 8 c -0.033 1.502 -0.545 1.996 -2 2 H 3 a 2 2 0 0 1 -2 -2 V 6 c 0 -1.11 0.89 -2 2 -2 z M 22 6 h 14 v 2 H 22 V 6 M 22 10 h 9 v 2 H 22 V 10 M 22 14 h 7 v 2 H 22 v -2'/%3E%3C/svg%3E");
   background-color: currentColor;
   -webkit-mask-image: var(--svg);
   mask-image: var(--svg);
