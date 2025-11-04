@@ -5,7 +5,8 @@
     <app-navigation-self-service-button
       i18n-title
       key="{{ this.ROUTE_PATHS.TOKENS }}"
-      matIconName="shield"
+      matIconClass="ms--shield-list"
+      matIconSize="tile-icon-x-large"
       title="Token Overview" />
     @if (authService.tokenEnrollmentAllowed()) {
       <app-navigation-self-service-button
@@ -33,7 +34,8 @@
       <app-navigation-self-service-button
         i18n-title
         key="{{this.ROUTE_PATHS.TOKENS_CONTAINERS}}"
-        matIconClass="mdi--folder-search"
+        matIconClass="mdi--folder-list"
+        matIconSize="tile-icon-x-large"
         title="Container Overview" />
     }
     @if (authService.rights().includes("container_create")) {
