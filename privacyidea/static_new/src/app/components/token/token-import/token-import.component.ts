@@ -164,6 +164,9 @@ export class TokenImportComponent {
           const failed = result.result?.value?.n_not_imported || 0;
           const total = success + failed;
           this.notificationService.openSnackBar(success + "/" + total + " tokens imported successfully.");
+        },
+        error: (error) => {
+          // error handled in the token service
         }
       });
     }
