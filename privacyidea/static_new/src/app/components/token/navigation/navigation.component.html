@@ -42,10 +42,12 @@
         sizes="(max-width: 575px) 100vw, 575px"
         width="575" />
     </a>
-    <p class="margin-0" style="font-size: 10px">
+    <p
+      class="margin-0"
+      style="font-size: 12px">
       Version {{ this.versioningService.version() }}
     </p>
-    <p style="font-size: 12px">
+    <p style="font-size: 12px; margin-bottom: 6px;">
       An open-source project
       <a
         href="https://netknights.it/"
@@ -103,15 +105,17 @@
     </div>
   </div>
 
-  <form class="width-100">
-    <mat-form-field class="width-100">
-      <mat-label>Search</mat-label>
-      <input
-        disabled
-        matInput>
-      <mat-icon matSuffix>search</mat-icon>
-    </mat-form-field>
-  </form>
+  @if (false) {
+    <form class="width-100">
+      <mat-form-field class="width-100">
+        <mat-label>Search</mat-label>
+        <input
+          disabled
+          matInput>
+        <mat-icon matSuffix>search</mat-icon>
+      </mat-form-field>
+    </form>
+  }
 
   <mat-accordion>
     <mat-expansion-panel
