@@ -43,9 +43,11 @@ import {
   HotpMachineAssignDialogData,
   TokenHotpMachineAssignDialogComponent
 } from "../token-machine-attach-dialog/token-hotp-machine-attach-dialog/token-hotp-machine-attach-dialog";
-import { filter, lastValueFrom, switchMap } from "rxjs";
-import { SelectedUserAssignDialogComponent } from "../../token-table/token-table-actions/selected-user-attach-dialog/selected-user-attach-dialog.component";
+import { lastValueFrom, switchMap } from "rxjs";
 import { LostTokenComponent } from "./lost-token/lost-token.component";
+import { ConfirmationDialogComponent } from "../../../shared/confirmation-dialog/confirmation-dialog.component";
+import { ROUTE_PATHS } from "../../../../route_paths";
+import { Router } from "@angular/router";
 
 @Component({
   selector: "app-token-details-actions",
@@ -71,10 +73,14 @@ export class TokenDetailsActionsComponent {
   protected readonly overflowService: OverflowServiceInterface = inject(OverflowService);
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
+  private readonly dialog: MatDialog = inject(MatDialog);
+  private router = inject(Router);
   @Input() setPinValue!: WritableSignal<string>;
   @Input() repeatPinValue!: WritableSignal<string>;
   @Input() tokenType!: WritableSignal<string>;
   tokenSerial = this.tokenService.tokenSerial;
+  tokenIsActive = this.tokenService.tokenIsActive;
+  tokenIsRevoked = this.tokenService.tokenIsRevoked;
   isLost = signal(false);
 
   isAttachedToMachine = computed<boolean>(() => {
@@ -83,6 +89,69 @@ export class TokenDetailsActionsComponent {
     if (tokenApplications.length === 0) return false;
     return true;
   });
+
+  toggleActive(): void {
+    this.tokenService.toggleActive(this.tokenSerial(), this.tokenIsActive()).subscribe({
+      next: () => {
+        this.tokenService.tokenDetailResource.reload();
+      }
+    });
+  }
+
+  revokeToken(): void {
+    this.dialog
+      .open(ConfirmationDialogComponent, {
+        data: {
+          serialList: [this.tokenSerial()],
+          title: "Revoke Token",
+          type: "token",
+          action: "revoke",
+          numberOfTokens: 1
+        }
+      })
+      .afterClosed()
+      .subscribe({
+        next: (result) => {
+          if (result) {
+            this.tokenService
+              .revokeToken(this.tokenSerial())
+              .pipe(switchMap(() => this.tokenService.getTokenDetails(this.tokenSerial())))
+              .subscribe({
+                next: () => {
+                  this.tokenService.tokenDetailResource.reload();
+                }
+              });
+          }
+        }
+      });
+  }
+
+  deleteToken(): void {
+    this.dialog
+      .open(ConfirmationDialogComponent, {
+        data: {
+          serialList: [this.tokenSerial()],
+          title: "Delete Token",
+          type: "token",
+          action: "delete",
+          numberOfTokens: 1
+        }
+      })
+      .afterClosed()
+      .subscribe({
+        next: (result) => {
+          if (result) {
+            this.tokenService.deleteToken(this.tokenSerial()).subscribe({
+              next: () => {
+                this.router.navigateByUrl(ROUTE_PATHS.TOKENS).then();
+                this.tokenSerial.set("");
+              }
+            });
+          }
+        }
+      });
+  }
+
 
   testPasskey() {
     this.validateService.authenticatePasskey({ isTest: true }).subscribe({

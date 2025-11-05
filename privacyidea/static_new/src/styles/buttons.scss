@@ -142,7 +142,11 @@ $button-low-contrast-variant: linear-gradient(
 .mat-mdc-outlined-button[class*="card-button-support"] {
   --mat-outlined-button-state-layer-color: var(--mint-bg);
   --mat-outlined-button-ripple-color: var(--mint-bg);
-  --mdc-ripple-color: var(--mat-sys-surface-container-lowest)
+  --mdc-ripple-color: var(--mat-sys-surface-container-lowest);
+
+  &:hover {
+    background-color: var(--mint-bg) !important;
+  }
 }
 
 .card-button-1 {
@@ -409,22 +413,26 @@ $button-low-contrast-variant: linear-gradient(
 %action-button-base {
   background-color: var(--mat-sys-surface-container-lowest);
   border-radius: var(--border-radius);
+  justify-content: start;
 
   mat-icon.mat-icon.notranslate.material-icons {
     font-size: $detail-icon-font-size;
   }
 }
 
-@mixin action-button-variant($color) {
+@mixin action-button-variant($color, $background-color) {
   color: $color;
   border-color: $color;
+  &:hover {
+    background-color: $background-color
+  }
 }
 
 .action-button-1 {
   @extend %action-button-base;
 
   &:not([disabled]) {
-    @include action-button-variant(var(--mat-sys-primary));
+    @include action-button-variant(var(--mat-sys-primary), var(--sky-blue));
   }
 }
 
@@ -432,6 +440,6 @@ $button-low-contrast-variant: linear-gradient(
   @extend %action-button-base;
 
   &:not([disabled]) {
-    @include action-button-variant(var(--red-base));
+    @include action-button-variant(var(--red-base), var(--rose-bg));
   }
 }
