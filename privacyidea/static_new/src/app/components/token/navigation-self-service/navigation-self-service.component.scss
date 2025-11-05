@@ -6,10 +6,11 @@
   align-items: start;
   gap: var(--global-padding);
   padding: calc(2 * var(--global-padding));
-  max-height: calc(var(--main-height) - var(--global-padding) * 2);
+  max-height: calc(var(--main-height) - 2 * var(--global-padding));
   overflow-y: auto;
   overflow-x: hidden;
   scrollbar-width: thin;
+  box-sizing: border-box;
   height: 100vh;
   background: var(--mat-sys-surface-container-high);
 }

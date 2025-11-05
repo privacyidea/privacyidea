@@ -1,6 +1,7 @@
 <div
   [@componentFade]
   class="navigation-self-service-column">
+
   @if (!authService.tokenWizard() && !authService.containerWizard().enabled) {
     <app-navigation-self-service-button
       i18n-title
@@ -49,7 +50,7 @@
       <app-navigation-self-service-button
         i18n-title
         key="{{this.ROUTE_PATHS.AUDIT}}"
-        matIconName="manage_search"
+        matIconName="receipt_long"
         title="Audit Log" />
     }
   }
