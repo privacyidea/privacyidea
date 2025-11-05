@@ -1,0 +1,43 @@
+<div class="flex-row margin-bottom-1 gap-8">
+  <button
+    [routerLink]="[ROUTE_PATHS.TOKENS_ENROLLMENT]"
+    class="action-button-1"
+    mat-stroked-button>
+    <mat-icon> add_moderator</mat-icon>
+    Enroll Token
+  </button>
+  @if (authService.oneActionAllowed(["delete", "assign", "unassign"])) {
+    @if (authService.actionAllowed("delete")) {
+        <button
+          mat-stroked-button
+          class="action-button-delete"
+          (click)="deleteSelectedTokens()"
+          [disabled]="tokenSelection().length === 0"
+          i18n>
+          <mat-icon> delete_sweep</mat-icon>
+          Delete Selected
+        </button>
+    }
+    @if (authService.actionAllowed("assign")) {
+        <button
+          mat-stroked-button
+          class="action-button-1"
+          (click)="assignSelectedTokens()"
+          [disabled]="tokenSelection().length === 0"
+          i18n>
+          <mat-icon> person_add</mat-icon>
+          Assign Selected
+        </button>
+    }
+    @if (authService.actionAllowed("unassign")) {
+        <button
+          mat-stroked-button
+          class="action-button-1"
+          (click)="unassignSelectedTokens()"
+          [disabled]="tokenSelection().length === 0">
+          <mat-icon> person_remove</mat-icon>
+          Unassign Selected
+        </button>
+    }
+  }
+</div>

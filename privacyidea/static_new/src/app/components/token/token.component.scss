@@ -64,6 +64,45 @@ $margin-bottom-main: 136px;
   .mat-drawer-backdrop {
     opacity: 0.5;
   }
+
+  .mdc-list-item.mdc-list-item--with-one-line {
+    height: auto !important;
+    padding-left: 0;
+    padding-right: 0;
+    padding-bottom: 8px;
+  }
+
+  .mat-accordion .mat-expansion-panel {
+    border-radius: 0 !important;
+    overflow: hidden;
+  }
+
+  .mat-accordion .mat-expansion-panel:first-of-type {
+    border-top-left-radius: var(--border-radius) !important;
+    border-top-right-radius: var(--border-radius) !important;
+  }
+
+  .mat-accordion .mat-expansion-panel:last-of-type {
+    border-bottom-left-radius: var(--border-radius) !important;
+    border-bottom-right-radius: var(--border-radius) !important;
+  }
+
+  .mat-accordion .mat-expansion-panel.mat-expanded {
+    border-radius: var(--border-radius) !important;
+  }
+
+  .mat-accordion .mat-expansion-panel:first-of-type .mat-expansion-panel-header {
+    border-top-left-radius: inherit !important;
+    border-top-right-radius: inherit !important;
+  }
+  .mat-accordion .mat-expansion-panel:last-of-type .mat-expansion-panel-header {
+    border-bottom-left-radius: inherit !important;
+    border-bottom-right-radius: inherit !important;
+  }
+  mat-panel-title.mat-expansion-panel-header-title .mat-icon {
+    color: var(--mat-expansion-header-description-color, var(--mat-sys-on-surface-variant));
+    margin-right: 16px;
+  }
 }
 
 .token-selfservice-layout {
@@ -82,4 +121,19 @@ $margin-bottom-main: 136px;
 
 .tile-header {
   padding: 0;
+}
+
+.drawer-container {
+  height: 100vh;
+ }
+
+.drawer {
+  @include mat.elevation(5);
+  border-radius: var(--border-radius);
+  background: var(--table-color);
+}
+
+.drawer-content {
+  justify-content: center;
+  display: flex;
 }

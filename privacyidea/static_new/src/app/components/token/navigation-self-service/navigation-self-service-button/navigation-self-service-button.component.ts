@@ -47,8 +47,11 @@ export class NavigationSelfServiceButtonComponent {
   @Input() matIconSize?:
     | "tile-icon-small"
     | "tile-icon-medium"
-    | "tile-icon-large";
+    | "tile-icon-large"
+    | "tile-icon-x-large"
+  ;
   routePath = computed(() => this.key);
 
   isSelected = computed(() => this.contentService.routeUrl() === this.key);
+  protected readonly Boolean = Boolean;
 }
