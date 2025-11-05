@@ -138,6 +138,8 @@ If the user authenticates successfully with the correct token (serial number)
 and this very token is attached to the machine with an offline application,
 the response to validate/check is extended with a "auth_items" object.
 
+.. _hotp_offline:
+
 HOTP
 ....
 For HOTP token that is a list containing the hashes of the next OTP values.
@@ -154,6 +156,8 @@ It represents the OTP of the HOTP token with counter 4. The hash is stored in th
 The format has 4 parts: the algorithm, the number of iterations, the salt and the hash, each separated by a $.
 After a successful verification, clients should remove all values from the list between the first counter and the one
 that matches the input.
+
+.. _fido_offline:
 
 WebAuthn/Passkey
 ................

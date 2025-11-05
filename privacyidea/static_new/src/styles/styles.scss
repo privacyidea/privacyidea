@@ -169,8 +169,16 @@ body {
   align-items: center;
 }
 
+.ali-end {
+  align-items: end;
+}
+
 .just-center {
   justify-content: center;
+}
+
+.just-end {
+  justify-content: end;
 }
 
 .flex {
@@ -227,6 +235,10 @@ body {
   flex: auto;
 }
 
+.width-238 {
+  width: 238px;
+}
+
 .width-288px {
   width: 288px;
 }
@@ -280,6 +292,10 @@ body {
   margin-bottom: 16px;
 }
 
+.margin-0 {
+  margin: 0;
+}
+
 .margin-left--8 {
   margin-left: -8px;
 }
@@ -316,8 +332,16 @@ body {
   gap: 16px;
 }
 
-.margin-1 {
+.gap-8 {
+  gap: 8px;
+}
+
+.margin-16 {
   margin: 16px;
+}
+
+.margin-8 {
+  margin: 8px;
 }
 
 .overflow {

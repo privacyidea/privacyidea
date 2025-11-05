@@ -40,6 +40,7 @@ import { MatInputModule } from "@angular/material/input";
 import { NgClass } from "@angular/common";
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
+import { ContainerTableActionsComponent } from "./container-table-actions/container-table-actions.component";
 
 @Component({
   selector: "app-container-table",
@@ -56,7 +57,8 @@ import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.s
     MatCheckboxModule,
     FormsModule,
     ScrollToTopDirective,
-    ClearableInputComponent
+    ClearableInputComponent,
+    ContainerTableActionsComponent
   ],
   templateUrl: "./container-table.component.html",
   styleUrl: "./container-table.component.scss",

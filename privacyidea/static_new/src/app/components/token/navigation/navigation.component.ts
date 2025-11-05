@@ -16,71 +16,93 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { DatePipe, NgClass, NgOptimizedImage } from "@angular/common";
 import { Component, inject } from "@angular/core";
-import { MatFabAnchor, MatFabButton, MatIconButton } from "@angular/material/button";
-
-import { MatIconModule } from "@angular/material/icon";
-import { Router, RouterLink } from "@angular/router";
+import { DatePipe, NgClass, NgOptimizedImage } from "@angular/common";
+import {
+  MatAccordion,
+  MatExpansionPanel,
+  MatExpansionPanelHeader,
+  MatExpansionPanelTitle
+} from "@angular/material/expansion";
+import { MatInput, MatLabel, MatSuffix } from "@angular/material/input";
+import { MatList, MatListItem } from "@angular/material/list";
+import { ThemeSwitcherComponent } from "../../shared/theme-switcher/theme-switcher.component";
 import { ROUTE_PATHS } from "../../../route_paths";
-import { AuditService, AuditServiceInterface } from "../../../services/audit/audit.service";
-import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
+import { MatAnchor, MatButton, MatFabButton, MatIconButton } from "@angular/material/button";
+import { MatFormField } from "@angular/material/form-field";
+import { MatIcon, MatIconModule } from "@angular/material/icon";
+import { Router, RouterLink } from "@angular/router";
+import { TokenService, TokenServiceInterface } from "../../../services/token/token.service";
 import { ContainerService, ContainerServiceInterface } from "../../../services/container/container.service";
-import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
-import { LocalService, LocalServiceInterface } from "../../../services/local/local.service";
+import { ChallengesService, ChallengesServiceInterface } from "../../../services/token/challenges/challenges.service";
 import { MachineService, MachineServiceInterface } from "../../../services/machine/machine.service";
+import { UserService, UserServiceInterface } from "../../../services/user/user.service";
+import { AuditService, AuditServiceInterface } from "../../../services/audit/audit.service";
+import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
+import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
 import { NotificationService, NotificationServiceInterface } from "../../../services/notification/notification.service";
 import {
   SessionTimerService,
   SessionTimerServiceInterface
 } from "../../../services/session-timer/session-timer.service";
-import { ChallengesService, ChallengesServiceInterface } from "../../../services/token/challenges/challenges.service";
-import { TokenService, TokenServiceInterface } from "../../../services/token/token.service";
-import { UserService, UserServiceInterface } from "../../../services/user/user.service";
-import { ThemeSwitcherComponent } from "../../shared/theme-switcher/theme-switcher.component";
+import { VersioningService, VersioningServiceInterface } from "../../../services/version/version.service";
+import { MatTooltipModule } from "@angular/material/tooltip";
 
 @Component({
-  selector: "app-header",
-  standalone: true,
+  selector: "app-navigation",
   imports: [
-    NgOptimizedImage,
-    MatFabButton,
-    MatFabAnchor,
-    MatIconModule,
-    RouterLink,
     DatePipe,
-    NgClass,
+    MatAccordion,
+    MatButton,
+    MatExpansionPanel,
+    MatExpansionPanelHeader,
+    MatExpansionPanelTitle,
+    MatFabButton,
+    MatFormField,
+    MatIconModule,
     MatIconButton,
-    ThemeSwitcherComponent
+    MatInput,
+    MatLabel,
+    MatList,
+    MatListItem,
+    MatSuffix,
+    NgOptimizedImage,
+    ThemeSwitcherComponent,
+    MatIcon,
+    RouterLink,
+    NgClass,
+    MatAnchor,
+    MatTooltipModule
   ],
-  templateUrl: "./header.component.html",
-  styleUrl: "./header.component.scss"
+  templateUrl: "./navigation.component.html",
+  styleUrl: "./navigation.component.scss"
 })
-export class HeaderComponent {
-  protected readonly sessionTimerService: SessionTimerServiceInterface = inject(SessionTimerService);
-  protected readonly authService: AuthServiceInterface = inject(AuthService);
-  protected readonly localService: LocalServiceInterface = inject(LocalService);
-  protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
-  protected readonly router: Router = inject(Router);
-  protected readonly AuthService = AuthService;
-  private readonly contentService: ContentServiceInterface = inject(ContentService);
+export class NavigationComponent {
   private readonly tokenService: TokenServiceInterface = inject(TokenService);
   private readonly containerService: ContainerServiceInterface = inject(ContainerService);
   private readonly challengeService: ChallengesServiceInterface = inject(ChallengesService);
   private readonly machineService: MachineServiceInterface = inject(MachineService);
   private readonly userService: UserServiceInterface = inject(UserService);
+  protected readonly versioningService: VersioningServiceInterface = inject(VersioningService);
+  protected readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly auditService: AuditServiceInterface = inject(AuditService);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
+  protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
+  protected readonly sessionTimerService: SessionTimerServiceInterface = inject(SessionTimerService);
+  protected readonly router: Router = inject(Router);
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
+
   profileText = this.authService.username() + " @" + this.authService.realm() + " (" + this.authService.role() + ")";
 
-  isActive(link: string) {
-    return this.router.url.includes(link);
+  logout(): void {
+    this.authService.logout();
+    this.router.navigate(["login"]).then(() => this.notificationService.openSnackBar("Logout successful."));
   }
 
   refreshPage() {
     if (this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_DETAILS)) {
       this.tokenService.tokenDetailResource.reload();
-      if(this.authService.anyContainerActionAllowed()) {
+      if (this.authService.anyContainerActionAllowed()) {
         this.containerService.containerResource.reload();
       }
     }
@@ -118,9 +140,5 @@ export class HeaderComponent {
         this.userService.usersResource.reload();
         break;
     }
-  }
-
-  logout(): void {
-    this.authService.logout();
   }
 }

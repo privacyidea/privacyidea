@@ -63,6 +63,7 @@ import {
   NotificationService,
   NotificationServiceInterface
 } from "../../../../services/notification/notification.service";
+import { MatDivider } from "@angular/material/divider";
 
 @Component({
   selector: "app-container-details-token-table",
@@ -87,7 +88,8 @@ import {
     NgClass,
     MatIconModule,
     MatTooltipModule,
-    MatInput
+    MatInput,
+    MatDivider
   ],
   templateUrl: "./container-details-token-table.component.html",
   styleUrl: "./container-details-token-table.component.scss"

@@ -29,12 +29,13 @@ describe("UserTableComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      providers: [provideHttpClient(), {
-        provide: ActivatedRoute,
-        useValue: {
-          params: of({ id: "123" })
-        }
-      }],
+      providers: [provideHttpClient(),
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            params: of({ id: "123" })
+          }
+        }],
       imports: [UserTableComponent]
     }).compileComponents();
 

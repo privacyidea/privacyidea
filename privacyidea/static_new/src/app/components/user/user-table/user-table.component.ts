@@ -44,6 +44,7 @@ import { NgClass } from "@angular/common";
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { MatSort, MatSortModule } from "@angular/material/sort";
 import { RouterLink } from "@angular/router";
+import { UserTableActionsComponent } from "./user-table-actions/user-table-actions.component";
 
 const columnKeysMap = [
   { key: "username", label: "Username" },
@@ -80,6 +81,8 @@ const columnKeysMap = [
     MatNoDataRow,
     MatHeaderCellDef,
     ScrollToTopDirective,
+    ClearableInputComponent,
+    UserTableActionsComponent,
     ClearableInputComponent,
     RouterLink
   ],
