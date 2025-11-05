@@ -35,9 +35,9 @@
       <div class="enroll-button-container">
         <button
           (click)="createContainer()"
-          [ngClass]="validInput ? 'card-button' : 'card-button-disabled'"
+          class="action-button-1 width-238"
+          mat-stroked-button
           i18n
-          mat-flat-button
           [disabled]="!validInput">
           <mat-icon>add</mat-icon>
           Create

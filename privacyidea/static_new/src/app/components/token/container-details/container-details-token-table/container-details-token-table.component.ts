@@ -53,6 +53,7 @@ import {
   NotificationService,
   NotificationServiceInterface
 } from "../../../../services/notification/notification.service";
+import { MatDivider } from "@angular/material/divider";
 
 const columnsKeyMap = [
   { key: "serial", label: "Serial" },
@@ -84,7 +85,8 @@ const columnsKeyMap = [
     NgClass,
     MatIconModule,
     MatTooltipModule,
-    MatInput
+    MatInput,
+    MatDivider
   ],
   templateUrl: "./container-details-token-table.component.html",
   styleUrl: "./container-details-token-table.component.scss"

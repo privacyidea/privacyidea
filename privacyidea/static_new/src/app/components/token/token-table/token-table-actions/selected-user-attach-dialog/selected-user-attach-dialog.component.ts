@@ -25,11 +25,11 @@ import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
 import { MatSelect } from "@angular/material/select";
-import { RealmService, RealmServiceInterface } from "../../../../services/realm/realm.service";
-import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
-import { UserData, UserService, UserServiceInterface } from "../../../../services/user/user.service";
-import { ClearableInputComponent } from "../../../shared/clearable-input/clearable-input.component";
-import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
+import { RealmService, RealmServiceInterface } from "../../../../../services/realm/realm.service";
+import { TokenService, TokenServiceInterface } from "../../../../../services/token/token.service";
+import { UserData, UserService, UserServiceInterface } from "../../../../../services/user/user.service";
+import { ClearableInputComponent } from "../../../../shared/clearable-input/clearable-input.component";
+import { AuthService, AuthServiceInterface } from "../../../../../services/auth/auth.service";
 
 export interface SelectedUserAssignResult {
   username: string;

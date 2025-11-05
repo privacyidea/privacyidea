@@ -16,61 +16,51 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { NgClass } from "@angular/common";
-import { Component, inject, signal } from "@angular/core";
-import { MatButton } from "@angular/material/button";
-import { MatDialog } from "@angular/material/dialog";
-import { MatDivider } from "@angular/material/divider";
+import { Component, inject } from "@angular/core";
+import { MatButtonModule } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
-import { MatList, MatListItem } from "@angular/material/list";
-import { Router, RouterLink } from "@angular/router";
-import { catchError, concatMap, EMPTY, filter, from, reduce, switchMap } from "rxjs";
-import { tabToggleState } from "../../../../../styles/animations/animations";
-import { AuditService, AuditServiceInterface } from "../../../../services/audit/audit.service";
-import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
-import { BulkResult, TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
-import { VersioningService, VersioningServiceInterface } from "../../../../services/version/version.service";
-import { ConfirmationDialogComponent } from "../../../shared/confirmation-dialog/confirmation-dialog.component";
-import { SelectedUserAssignDialogComponent } from "../selected-user-attach-dialog/selected-user-attach-dialog.component";
-import { tap } from "rxjs/operators";
-import { LostTokenComponent } from "./lost-token/lost-token.component";
-import { ROUTE_PATHS } from "../../../../route_paths";
 import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
+import { BulkResult, TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
+import { ConfirmationDialogComponent } from "../../../shared/confirmation-dialog/confirmation-dialog.component";
+import { PiResponse } from "../../../../app.component";
+import { catchError, concatMap, EMPTY, filter, from, reduce, switchMap } from "rxjs";
+import { SelectedUserAssignDialogComponent } from "./selected-user-attach-dialog/selected-user-attach-dialog.component";
+import { tap } from "rxjs/operators";
+import { ROUTE_PATHS } from "../../../../route_paths";
+import { VersioningService, VersioningServiceInterface } from "../../../../services/version/version.service";
+import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
+import { MatDialog } from "@angular/material/dialog";
+import { AuditService, AuditServiceInterface } from "../../../../services/audit/audit.service";
 import {
   NotificationService,
   NotificationServiceInterface
 } from "../../../../services/notification/notification.service";
-import { PiResponse } from "../../../../app.component";
-import { FilterValue } from "../../../../core/models/filter_value";
+import { Router, RouterLink } from "@angular/router";
 
 @Component({
-  selector: "app-token-tab",
-  standalone: true,
-  imports: [MatIcon, MatList, MatListItem, MatButton, MatDivider, NgClass, RouterLink],
-  templateUrl: "./token-tab.component.html",
-  styleUrl: "./token-tab.component.scss",
-  animations: [tabToggleState]
+  selector: "app-token-table-actions",
+  imports: [
+    MatButtonModule,
+    MatIcon,
+    RouterLink
+  ],
+  templateUrl: "./token-table-actions.component.html",
+  styleUrl: "./token-table-actions.component.scss"
 })
-export class TokenTabComponent {
+export class TokenTableActionsComponent {
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly versioningService: VersioningServiceInterface = inject(VersioningService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly dialog: MatDialog = inject(MatDialog);
   protected readonly auditService: AuditServiceInterface = inject(AuditService);
-  protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
-  protected readonly ROUTE_PATHS = ROUTE_PATHS;
+  readonly ROUTE_PATHS = ROUTE_PATHS;
   private router = inject(Router);
   tokenIsActive = this.tokenService.tokenIsActive;
   tokenIsRevoked = this.tokenService.tokenIsRevoked;
   tokenSerial = this.tokenService.tokenSerial;
   tokenSelection = this.tokenService.tokenSelection;
-  isLost = signal(false);
-  version!: string;
-
-  ngOnInit(): void {
-    this.version = this.versioningService.getVersion();
-  }
 
   toggleActive(): void {
     this.tokenService.toggleActive(this.tokenSerial(), this.tokenIsActive()).subscribe({
@@ -135,17 +125,8 @@ export class TokenTabComponent {
   }
 
   deleteSelectedTokens(): void {
-    const serialList = this.tokenSelection().map((token) => token.serial)
+    const serialList = this.tokenSelection().map((token) => token.serial);
     this.tokenService.bulkDeleteWithConfirmDialog(serialList, this.dialog, this.tokenService.tokenResource.reload);
-  }
-
-  openLostTokenDialog() {
-    this.dialog.open(LostTokenComponent, {
-      data: {
-        isLost: this.isLost,
-        tokenSerial: this.tokenSerial
-      }
-    });
   }
 
   assignSelectedTokens() {
@@ -183,10 +164,6 @@ export class TokenTabComponent {
       .subscribe();
   }
 
-  onClickManageSearch(): void {
-    this.auditService.auditFilter.set(new FilterValue({ value: `serial: ${this.tokenSerial()}` }));
-  }
-
   unassignSelectedTokens() {
     const selectedTokens = this.tokenSelection();
     this.dialog
@@ -211,7 +188,7 @@ export class TokenTabComponent {
                 const messages: string[] = [];
 
                 if (count_success) {
-                  messages.push(`Successfully unassigned ${count_success} token${count_success === 1 ? '' : 's'}.`);
+                  messages.push(`Successfully unassigned ${count_success} token${count_success === 1 ? "" : "s"}.`);
                 }
 
                 if (failedTokens.length > 0) {
