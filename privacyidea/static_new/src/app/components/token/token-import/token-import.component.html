@@ -37,9 +37,12 @@
           <mat-label i18n>File Type</mat-label>
           <mat-select
             [(ngModel)]="fileType"
-            [value]="fileType()">
+            [value]="fileType()"
+            [ngModelOptions]="{ standalone: true }"
+            [panelClass]="'single-column-panel'">
             @for (type of Object.keys(fileTypes); track type) {
               <mat-option
+                class="select-option type-option"
                 [value]="type">{{ fileTypes[type] }}
               </mat-option>
             }
@@ -48,10 +51,11 @@
       </div>
       <div>
         <button
-          mat-flat-button
-          [ngClass]="inputForm.valid ? 'card-button' : 'card-button-disabled'"
+          mat-stroked-button
+          class="action-button-1 width-238"
           [disabled]="!inputForm.valid"
           (click)="importTokens()">
+          <mat-icon>input</mat-icon>
           Import
         </button>
       </div>
@@ -97,13 +101,14 @@
             <mat-label>Pre Shared Key</mat-label>
             <input
               matInput
-              [formControl]= "preSharedKey"
+              [formControl]="preSharedKey"
               placeholder="Pre Shared Key in hex format" />
-              <mat-hint>As the values are encrypted with AES128-CBC, you need to give a 32 characters long hex string.
-              </mat-hint>
+            <mat-hint>As the values are encrypted with AES128-CBC, you need to give a 32 characters long hex string.
+            </mat-hint>
             @if (!preSharedKey.valid) {
               <mat-error>As the values are encrypted with AES128-CBC, you need to give a 32 characters long hex
-                         string.</mat-error>
+                         string.
+              </mat-error>
             }
           </mat-form-field>
         </div>
@@ -174,7 +179,7 @@
     <div class="drag-and-drop-zone margin-bottom-1">
       <div class="margin-top-1 margin-bottom-1">
         <div>
-          <mat-icon>drive_folder_upload</mat-icon>
+          <mat-icon>upload_file</mat-icon>
         </div>
         Drag and Drop file here or
       </div>
@@ -187,9 +192,10 @@
 
       <div>
         <button
-          mat-flat-button
-          class="card-button text-center just-center"
+          mat-stroked-button
+          class="action-button-1 width-238 text-center just-center"
           (click)="fileUpload.click()">
+          <mat-icon>folder_open</mat-icon>
           Browse Files
         </button>
       </div>
