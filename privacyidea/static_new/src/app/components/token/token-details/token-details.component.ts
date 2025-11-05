@@ -40,7 +40,7 @@ import { MatListItem } from "@angular/material/list";
 import { MatSelectModule } from "@angular/material/select";
 import { NgClass } from "@angular/common";
 import { ROUTE_PATHS } from "../../../route_paths";
-import { Router } from "@angular/router";
+import { RouterLink } from "@angular/router";
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { TokenDetailsActionsComponent } from "./token-details-actions/token-details-actions.component";
 import { TokenDetailsInfoComponent } from "./token-details-info/token-details-info.component";
@@ -51,7 +51,10 @@ import {
 } from "./token-machine-attach-dialog/token-ssh-machine-attach-dialog/token-ssh-machine-attach-dialog";
 import { TokenDetailsMachineComponent } from "./token-details-machine/token-details-machine.component";
 import { PolicyAction } from "../../../services/auth/policy-actions";
-import { MachineService, MachineServiceInterface, TokenApplications } from "../../../services/machine/machine.service";
+import { MachineService, MachineServiceInterface } from "../../../services/machine/machine.service";
+import { FilterValue } from "../../../core/models/filter_value";
+import { MatTooltip } from "@angular/material/tooltip";
+import { AuditService, AuditServiceInterface } from "../../../services/audit/audit.service";
 
 export const tokenDetailsKeyMap = [
   { key: "tokentype", label: "Type" },
@@ -116,7 +119,10 @@ export const infoDetailsKeyMap = [{ key: "info", label: "Information" }];
     CopyButtonComponent,
     ClearableInputComponent,
     ScrollToTopDirective,
-    TokenDetailsMachineComponent
+    TokenDetailsMachineComponent,
+    MatTooltip,
+    RouterLink,
+    MatTooltip
   ],
   templateUrl: "./token-details.component.html",
   styleUrls: ["./token-details.component.scss"]
@@ -131,7 +137,8 @@ export class TokenDetailsComponent {
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly machineService: MachineServiceInterface = inject(MachineService);
-  private router = inject(Router);
+  private readonly auditService: AuditServiceInterface = inject(AuditService);
+  protected readonly ROUTE_PATHS = ROUTE_PATHS;
   tokenIsActive = this.tokenService.tokenIsActive;
   tokenIsRevoked = this.tokenService.tokenIsRevoked;
   isProgrammaticTabChange = this.contentService.isProgrammaticTabChange;
@@ -141,14 +148,12 @@ export class TokenDetailsComponent {
   isEditingInfo = signal(false);
   setPinValue = signal("");
   repeatPinValue = signal("");
-
   isAttachedToMachine = computed<boolean>(() => {
     const tokenApplications = this.machineService.tokenApplications();
     if (!tokenApplications) return false;
     if (tokenApplications.length === 0) return false;
     return true;
   });
-
   tokenDetailResource = this.tokenService.tokenDetailResource;
   tokenDetails: WritableSignal<TokenDetails> = linkedSignal({
     source: this.tokenDetailResource.value,
@@ -156,29 +161,29 @@ export class TokenDetailsComponent {
       return res && res.result?.value?.tokens[0]
         ? (res.result?.value.tokens[0] as TokenDetails)
         : {
-            active: false,
-            container_serial: "",
-            count: 0,
-            count_window: 0,
-            description: "",
-            failcount: 0,
-            id: 0,
-            info: {},
-            locked: false,
-            maxfail: 0,
-            otplen: 0,
-            realms: [],
-            resolver: "",
-            revoked: false,
-            rollout_state: "",
-            serial: "",
-            sync_window: 0,
-            tokengroup: [],
-            tokentype: "hotp",
-            user_id: "",
-            user_realm: "",
-            username: ""
-          };
+          active: false,
+          container_serial: "",
+          count: 0,
+          count_window: 0,
+          description: "",
+          failcount: 0,
+          id: 0,
+          info: {},
+          locked: false,
+          maxfail: 0,
+          otplen: 0,
+          realms: [],
+          resolver: "",
+          revoked: false,
+          rollout_state: "",
+          serial: "",
+          sync_window: 0,
+          tokengroup: [],
+          tokentype: "hotp",
+          user_id: "",
+          user_realm: "",
+          username: ""
+        };
     }
   });
   tokenDetailData = linkedSignal({
@@ -372,6 +377,10 @@ export class TokenDetailsComponent {
     this.matDialog.open(TokenSshMachineAssignDialogComponent, {
       data: data
     });
+  }
+
+  protected showTokenAuditLog() {
+    this.auditService.auditFilter.set(new FilterValue({ value: `serial: ${this.tokenSerial()}` }));
   }
 
   private resetEdit(type: string): void {

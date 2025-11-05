@@ -5,67 +5,105 @@
   i18n-aria-label>
   <div class="details-header">
     <h3 i18n>Details for User:</h3>
-    <h3 style="color: var(--mat-sys-primary)">{{ userService.detailsUsername() }}</h3>
+    <h3 style="color: var(--mat-sys-primary); margin-right: -8px">{{ userService.detailsUsername() }}</h3>
+    <app-copy-button [copyText]="userService.detailsUsername()"></app-copy-button>
     <h3>in Realm {{ userService.selectedUserRealm() }}</h3>
+    <button
+      (click)="showUserAuditLog()"
+      [routerLink]="[ROUTE_PATHS.AUDIT]"
+      mat-icon-button
+      matTooltip="Show audit log of user">
+      <mat-icon>receipt_long</mat-icon>
+    </button>
   </div>
   <div class="user-details three-col">
     <div class="user-details-column">
-        <div class="label" i18n>Username</div>
-        <div class="value">{{ userData().username || "-" }}</div>
+      <div
+        class="label"
+        i18n>Username
+      </div>
+      <div class="value">{{ userData().username || "-" }}</div>
 
-        <div class="label" i18n>Given name</div>
-        <div class="value">{{ userData().givenname || "-" }}</div>
+      <div
+        class="label"
+        i18n>Given name
+      </div>
+      <div class="value">{{ userData().givenname || "-" }}</div>
 
-        <div class="label" i18n>Surname</div>
-        <div class="value">{{ userData().surname || "-" }}</div>
+      <div
+        class="label"
+        i18n>Surname
+      </div>
+      <div class="value">{{ userData().surname || "-" }}</div>
 
-        <div class="label" i18n>Description</div>
-        <div class="value">{{ userData().description || "-" }}</div>
+      <div
+        class="label"
+        i18n>Description
+      </div>
+      <div class="value">{{ userData().description || "-" }}</div>
     </div>
 
     <div class="user-details-column">
-      <div class="label" i18n>Email</div>
+      <div
+        class="label"
+        i18n>Email
+      </div>
       <div class="value">{{ userData().email || "-" }}</div>
 
-      <div class="label" i18n>Phone</div>
+      <div
+        class="label"
+        i18n>Phone
+      </div>
       <div class="value">{{ userData().phone || "-" }}</div>
 
-      <div class="label" i18n>Mobile</div>
+      <div
+        class="label"
+        i18n>Mobile
+      </div>
       <div class="value">{{ userData().mobile || "-" }}</div>
     </div>
 
     <div class="flex-column">
-      <h3 class="margin-top-0" i18n>Custom Attributes:</h3>
+      <h3
+        class="margin-top-0"
+        i18n>Custom Attributes:
+      </h3>
       <div class="add-attr-row">
         <mat-form-field class="width-13rem">
           <mat-label i18n>Attribute Key</mat-label>
           <div class="flex-row">
-          @if (keyMode() === 'select') {
-            <mat-select
-              [(ngModel)]="selectedKey">
-              @for (k of keyOptions(); track k) {
-                <mat-option [value]="k">{{ k }}</mat-option>
+            @if (keyMode() === 'select') {
+              <mat-select
+                [(ngModel)]="selectedKey">
+                @for (k of keyOptions(); track k) {
+                  <mat-option [value]="k">{{ k }}</mat-option>
+                }
+                @if (hasWildcardKey()) {
+                  <mat-option
+                    (onSelectionChange)="switchToCustomKey()"
+                    [value]="'__CUSTOM__'">
+                    <i i18n>Custom…</i>
+                  </mat-option>
+                }
+              </mat-select>
+            } @else {
+              <input
+                [(ngModel)]="addKeyInput"
+                i18n-placeholder
+                matInput
+                placeholder="Enter key" />
+              @if (keyOptions().length > 0) {
+                <button
+                  (click)="switchToSelectKey()"
+                  aria-label="Back to key select"
+                  class="ml-4 mt--8 return-button"
+                  i18n-aria-label="Back to key select"
+                  mat-icon-button
+                  type="button">
+                  <mat-icon>arrow_left</mat-icon>
+                </button>
               }
-              @if (hasWildcardKey()) {
-                <mat-option (onSelectionChange)="switchToCustomKey()" [value]="'__CUSTOM__'">
-                  <i i18n>Custom…</i>
-                </mat-option>
-              }
-            </mat-select>
-          } @else {
-            <input matInput [(ngModel)]="addKeyInput" i18n-placeholder placeholder="Enter key" />
-            @if (keyOptions().length > 0) {
-              <button
-                type="button"
-                mat-icon-button
-                class="ml-4 mt--8 return-button"
-                (click)="switchToSelectKey()"
-                i18n-aria-label="Back to key select"
-                aria-label="Back to key select">
-                <mat-icon>arrow_left</mat-icon>
-              </button>
             }
-          }
           </div>
         </mat-form-field>
 
@@ -73,7 +111,11 @@
           <mat-label i18n>Attribute Value</mat-label>
 
           @if (isValueInput()) {
-            <input matInput [(ngModel)]="addValueInput" i18n-placeholder placeholder="Enter value" />
+            <input
+              [(ngModel)]="addValueInput"
+              i18n-placeholder
+              matInput
+              placeholder="Enter value" />
           } @else {
             <mat-select [(ngModel)]="selectedValue">
               @for (v of valueOptions(); track v) {
@@ -84,12 +126,12 @@
         </mat-form-field>
 
         <button
-          class="ml-8"
-          mat-icon-button
-          color="primary"
-          [disabled]="!canAddAttribute()"
           (click)="addCustomAttribute()"
-          i18n>
+          [disabled]="!canAddAttribute()"
+          class="ml-8"
+          color="primary"
+          i18n
+          mat-icon-button>
           <mat-icon>save</mat-icon>
         </button>
       </div>
@@ -102,15 +144,15 @@
           <div class="value">{{ attr.value || "-" }}</div>
           @if (deletableAttributes().includes(attr.key)) {
             <button
-              mat-icon-button
-              class="ml-4"
               (click)="deleteCustomAttribute(attr.key)"
+              aria-label="Delete custom attribute"
+              class="ml-4"
               i18n-aria-label="Delete custom attribute"
-              aria-label="Delete custom attribute">
+              mat-icon-button>
               <mat-icon>delete</mat-icon>
             </button>
           } @else {
-            <br/>
+            <br />
           }
         }
       </div>
@@ -163,7 +205,7 @@
       [hidePageSize]="true"
       [length]="total()"
       [pageIndex]="pageIndex()"
-      [pageSize]="pageSize()"/>
+      [pageSize]="pageSize()" />
   </div>
 
   <app-user-details-container-table />

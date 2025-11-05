@@ -11,6 +11,13 @@
         <h3 i18n>{{ " (Offline)" }}</h3>
       }
       <app-copy-button [copyText]="tokenSerial()"></app-copy-button>
+      <button
+        (click)="showTokenAuditLog()"
+        [routerLink]="[ROUTE_PATHS.AUDIT]"
+        mat-icon-button
+        matTooltip="Show token in audit log">
+        <mat-icon>receipt_long</mat-icon>
+      </button>
     </div>
     <div
       [ngClass]="[overflowService.isWidthOverflowing('body', 1310) ? 'flex-column' : 'flex-row']"

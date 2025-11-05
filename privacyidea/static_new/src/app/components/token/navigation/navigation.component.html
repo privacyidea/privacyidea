@@ -119,9 +119,9 @@
 
   <mat-accordion>
     <mat-expansion-panel
-      class="nav-expension-panel"
       (opened)="router.navigate([ROUTE_PATHS.TOKENS])"
-      [expanded]="router.url.startsWith(ROUTE_PATHS.TOKENS)">
+      [expanded]="router.url.startsWith(ROUTE_PATHS.TOKENS)"
+      class="nav-expension-panel">
       <mat-expansion-panel-header>
         <mat-panel-title>
           <mat-icon>shield</mat-icon>
@@ -266,6 +266,20 @@
             Overview
           </button>
         </mat-list-item>
+        @if (contentService.routeUrl() === ROUTE_PATHS.USERS) {
+          <mat-list-item class="height-auto">
+            <mat-form-field class="width-100">
+              <mat-label>Select Realm for Overview</mat-label>
+              <mat-select
+                [(ngModel)]="userService.selectedUserRealm"
+                [value]="userService.selectedUserRealm()">
+                @for (option of realmService.realmOptions(); track option) {
+                  <mat-option [value]="option">{{ option }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+          </mat-list-item>
+        }
         <mat-list-item>
           <button
             class="card-button-1"

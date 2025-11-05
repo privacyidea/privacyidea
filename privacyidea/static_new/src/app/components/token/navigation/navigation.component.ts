@@ -47,6 +47,9 @@ import {
 } from "../../../services/session-timer/session-timer.service";
 import { VersioningService, VersioningServiceInterface } from "../../../services/version/version.service";
 import { MatTooltipModule } from "@angular/material/tooltip";
+import { FormsModule } from "@angular/forms";
+import { MatOption, MatSelect } from "@angular/material/select";
+import { RealmService, RealmServiceInterface } from "../../../services/realm/realm.service";
 
 @Component({
   selector: "app-navigation",
@@ -72,7 +75,10 @@ import { MatTooltipModule } from "@angular/material/tooltip";
     RouterLink,
     NgClass,
     MatAnchor,
-    MatTooltipModule
+    MatTooltipModule,
+    MatSelect,
+    FormsModule,
+    MatOption
   ],
   templateUrl: "./navigation.component.html",
   styleUrl: "./navigation.component.scss"
@@ -82,7 +88,8 @@ export class NavigationComponent {
   private readonly containerService: ContainerServiceInterface = inject(ContainerService);
   private readonly challengeService: ChallengesServiceInterface = inject(ChallengesService);
   private readonly machineService: MachineServiceInterface = inject(MachineService);
-  private readonly userService: UserServiceInterface = inject(UserService);
+  protected readonly userService: UserServiceInterface = inject(UserService);
+  protected readonly realmService: RealmServiceInterface = inject(RealmService);
   protected readonly versioningService: VersioningServiceInterface = inject(VersioningService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly auditService: AuditServiceInterface = inject(AuditService);

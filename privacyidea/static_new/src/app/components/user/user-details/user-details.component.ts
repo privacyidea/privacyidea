@@ -46,6 +46,11 @@ import { MatDialog } from "@angular/material/dialog";
 import { filter } from "rxjs";
 import { FormsModule } from "@angular/forms";
 import { MatSelectModule } from "@angular/material/select";
+import { FilterValue } from "../../../core/models/filter_value";
+import { AuditService, AuditServiceInterface } from "../../../services/audit/audit.service";
+import { MatTooltip } from "@angular/material/tooltip";
+import { RouterLink } from "@angular/router";
+import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
 
 @Component({
   selector: "app-user-details",
@@ -66,7 +71,10 @@ import { MatSelectModule } from "@angular/material/select";
     MatPaginator,
     UserDetailsContainerTableComponent,
     FormsModule,
-    MatSelectModule
+    MatSelectModule,
+    MatTooltip,
+    RouterLink,
+    CopyButtonComponent
   ],
   templateUrl: "./user-details.component.html",
   styleUrl: "./user-details.component.scss"
@@ -75,6 +83,7 @@ export class UserDetailsComponent {
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
   protected readonly userService: UserServiceInterface = inject(UserService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+  private readonly auditService: AuditServiceInterface = inject(AuditService);
   protected readonly dialog: MatDialog = inject(MatDialog);
 
   userData = this.userService.user;
@@ -216,5 +225,9 @@ export class UserDetailsComponent {
       this.filterHTMLInputElement.nativeElement.focus();
       this.tokenAutoTrigger.openPanel();
     }, 0);
+  }
+
+  showUserAuditLog() {
+    this.auditService.auditFilter.set(new FilterValue({ value: `user: ${this.userService.detailsUsername()}` }));
   }
 }

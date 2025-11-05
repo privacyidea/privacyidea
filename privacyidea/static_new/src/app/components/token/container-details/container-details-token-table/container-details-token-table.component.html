@@ -195,9 +195,7 @@
           {{ "Unassign from All Tokens" }}
         </button>
       }
-      <br />
-      <mat-divider />
-      <br />
+      <mat-divider class="margin-top-1 margin-bottom-1" />
       @if (authService.actionAllowed("enable")) {
         <button
           (click)="toggleAll('activate')"
@@ -218,9 +216,7 @@
           {{ "Deactivate All Tokens" }}
         </button>
       }
-      <br />
-      <mat-divider />
-      <br />
+      <mat-divider class="margin-top-1 margin-bottom-1" />
       @if (authService.actionAllowed("container_remove_token")) {
         <button
           (click)="removeAll()"
