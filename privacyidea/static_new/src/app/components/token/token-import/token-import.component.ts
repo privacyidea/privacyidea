@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, ElementRef, inject, Renderer2, signal, ViewChild } from "@angular/core";
+import { Component, ElementRef, inject, Renderer2, signal, ViewChild } from "@angular/core";
 import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
 import { MatOption, MatSelect } from "@angular/material/select";
 import {
@@ -34,7 +34,6 @@ import { RealmService, RealmServiceInterface } from "../../../services/realm/rea
 import { UserService, UserServiceInterface } from "../../../services/user/user.service";
 import { TokenService, TokenServiceInterface } from "../../../services/token/token.service";
 import { MatButton, MatIconButton } from "@angular/material/button";
-import { NgClass } from "@angular/common";
 import { MatInput } from "@angular/material/input";
 import { NotificationService, NotificationServiceInterface } from "../../../services/notification/notification.service";
 import { MatIcon } from "@angular/material/icon";
@@ -51,7 +50,6 @@ import { MatIcon } from "@angular/material/icon";
     ScrollToTopDirective,
     MatLabel,
     MatButton,
-    NgClass,
     MatInput,
     MatHint,
     MatIcon,
@@ -65,9 +63,9 @@ export class TokenImportComponent {
   protected readonly userService: UserServiceInterface = inject(UserService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
-  private observer!: IntersectionObserver;
   protected readonly renderer: Renderer2 = inject(Renderer2);
-
+  protected readonly Object = Object;
+  private observer!: IntersectionObserver;
   fileTypes: Record<string, string> = {
     "OATH CSV": "CSV File for OATH Tokens",
     "Yubikey CSV": "CSV File for Yubikey Tokens",
@@ -92,6 +90,9 @@ export class TokenImportComponent {
     file: this.file,
     preSharedKey: this.preSharedKey
   });
+  @ViewChild("scrollContainer") scrollContainer!: ElementRef<HTMLElement>;
+  @ViewChild("stickyHeader") stickyHeader!: ElementRef<HTMLElement>;
+  @ViewChild("stickySentinel") stickySentinel!: ElementRef<HTMLElement>;
 
   preSharedKeyLength(): ValidatorFn {
     return (control: AbstractControl): ValidationErrors | null => {
@@ -99,10 +100,6 @@ export class TokenImportComponent {
       return validLength ? null : { invalidLength: { value: control.value } };
     };
   }
-
-  @ViewChild("scrollContainer") scrollContainer!: ElementRef<HTMLElement>;
-  @ViewChild("stickyHeader") stickyHeader!: ElementRef<HTMLElement>;
-  @ViewChild("stickySentinel") stickySentinel!: ElementRef<HTMLElement>;
 
   ngAfterViewInit(): void {
     if (!this.scrollContainer || !this.stickyHeader || !this.stickySentinel) {
@@ -176,6 +173,4 @@ export class TokenImportComponent {
     this.file.setValue("");
     this.fileName.set("");
   }
-
-  protected readonly Object = Object;
 }

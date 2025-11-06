@@ -42,7 +42,7 @@
             [panelClass]="'single-column-panel'">
             @for (type of Object.keys(fileTypes); track type) {
               <mat-option
-                class="select-option type-option"
+                class="select-option"
                 [value]="type">{{ fileTypes[type] }}
               </mat-option>
             }
