@@ -32,24 +32,31 @@ describe("UserDetailsTokenTableComponent", () => {
   beforeEach(async () => {
     TestBed.resetTestingModule();
 
-    tokenServiceMock = new MockTokenService();
-    userServiceMock = new MockUserService();
-
     await TestBed.configureTestingModule({
       imports: [UserDetailsTokenTableComponent, BrowserAnimationsModule],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: TableUtilsService, useClass: MockTableUtilsService },
-        { provide: OverflowService, useValue: { isWidthOverflowing: () => false, isHeightOverflowing: () => false, getOverflowThreshold: () => 1920 } },
+        {
+          provide: OverflowService,
+          useValue: {
+            isWidthOverflowing: () => false,
+            isHeightOverflowing: () => false,
+            getOverflowThreshold: () => 1920
+          }
+        },
         { provide: ContentService, useClass: MockContentService },
         { provide: AuthService, useClass: MockAuthService },
-        { provide: TokenService, useValue: tokenServiceMock },
-        { provide: UserService, useValue: userServiceMock },
+        { provide: TokenService, useClass: MockTokenService },
+        { provide: UserService, useClass: MockUserService },
         MockLocalService,
         MockNotificationService
       ]
     }).compileComponents();
+
+    tokenServiceMock = TestBed.inject(TokenService) as unknown as MockTokenService;
+    userServiceMock = TestBed.inject(UserService) as unknown as MockUserService;
 
     fixture = TestBed.createComponent(UserDetailsTokenTableComponent);
     component = fixture.componentInstance;
@@ -196,7 +203,7 @@ describe("UserDetailsTokenTableComponent", () => {
     component.toggleActive(token);
 
     expect(tokenServiceMock.toggleActive).toHaveBeenCalledWith("S-123", true);
-    expect(userServiceMock.userResource.reload).toHaveBeenCalledTimes(1);
+    expect(tokenServiceMock.userTokenResource.reload).toHaveBeenCalledTimes(1);
   });
 
   it("resetFailCount calls service only when allowed", () => {

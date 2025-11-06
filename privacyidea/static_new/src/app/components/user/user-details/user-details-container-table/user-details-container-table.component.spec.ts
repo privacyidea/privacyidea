@@ -3,16 +3,15 @@ import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 
 import { UserDetailsContainerTableComponent } from "./user-details-container-table.component";
 import {
-  MockAuthService,
   MockContainerService,
-  MockContentService, MockLoadingService, MockLocalService, MockNotificationService,
+  MockLoadingService,
+  MockLocalService,
+  MockNotificationService,
   MockTableUtilsService,
   MockUserService
 } from "../../../../../testing/mock-services";
 import { ContainerService } from "../../../../services/container/container.service";
 import { TableUtilsService } from "../../../../services/table-utils/table-utils.service";
-import { ContentService } from "../../../../services/content/content.service";
-import { AuthService } from "../../../../services/auth/auth.service";
 import { UserService } from "../../../../services/user/user.service";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
@@ -28,20 +27,14 @@ describe("UserDetailsContainerTableComponent", () => {
   beforeEach(async () => {
     TestBed.resetTestingModule();
 
-    containerServiceMock = new MockContainerService();
-    tableUtilsMock = new MockTableUtilsService();
-    userServiceMock = new MockUserService();
-
     await TestBed.configureTestingModule({
       imports: [UserDetailsContainerTableComponent, BrowserAnimationsModule],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
-        { provide: ContainerService, useValue: containerServiceMock },
-        { provide: TableUtilsService, useValue: tableUtilsMock },
-        { provide: ContentService, useClass: MockContentService },
-        { provide: AuthService, useClass: MockAuthService },
-        { provide: UserService, useValue: userServiceMock },
+        { provide: ContainerService, useClass: MockContainerService },
+        { provide: TableUtilsService, useClass: MockTableUtilsService },
+        { provide: UserService, useClass: MockUserService },
         MockLocalService,
         MockNotificationService,
         MockLoadingService
@@ -49,6 +42,11 @@ describe("UserDetailsContainerTableComponent", () => {
     }).compileComponents();
 
     fixture = TestBed.createComponent(UserDetailsContainerTableComponent);
+
+    containerServiceMock = TestBed.inject(ContainerService) as unknown as MockContainerService;
+    tableUtilsMock = TestBed.inject(TableUtilsService) as unknown as MockTableUtilsService;
+    userServiceMock = TestBed.inject(UserService) as unknown as MockUserService;
+
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

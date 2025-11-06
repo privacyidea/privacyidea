@@ -39,6 +39,7 @@ import {
   MockTokenService,
   MockUserService
 } from "../../../../testing/mock-services";
+import { ActivatedRoute } from "@angular/router";
 
 class MockMatDialog {
   open = jest.fn().mockReturnValue({
@@ -57,8 +58,6 @@ describe("UserDetailsComponent", () => {
   beforeEach(async () => {
     TestBed.resetTestingModule();
 
-    userServiceMock = new MockUserService();
-    tokenServiceMock = new MockTokenService();
     dialogMock = new MockMatDialog();
 
     await TestBed.configureTestingModule({
@@ -66,8 +65,14 @@ describe("UserDetailsComponent", () => {
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
-        { provide: UserService, useValue: userServiceMock },
-        { provide: TokenService, useValue: tokenServiceMock },
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            params: of({ id: "123" })
+          }
+        },
+        { provide: UserService, useClass: MockUserService },
+        { provide: TokenService, useClass: MockTokenService },
         { provide: AuthService, useClass: MockAuthService },
         { provide: ContentService, useClass: MockContentService },
         { provide: TableUtilsService, useClass: MockTableUtilsService },
@@ -79,6 +84,9 @@ describe("UserDetailsComponent", () => {
     jest.useFakeTimers();
 
     fixture = TestBed.createComponent(UserDetailsComponent);
+    tokenServiceMock = TestBed.inject(TokenService) as unknown as MockTokenService;
+    userServiceMock = TestBed.inject(UserService) as unknown as MockUserService;
+
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

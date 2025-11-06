@@ -361,10 +361,6 @@ export class TokenDetailsComponent {
     return key === "maxfail" || key === "count_window" || key === "sync_window";
   }
 
-  containerSelected(containerSerial: string) {
-    this.contentService.containerSelected(containerSerial);
-  }
-
   openSshMachineAssignDialog() {
     const data: SshMachineAssignDialogData = {
       tokenSerial: this.tokenSerial(),

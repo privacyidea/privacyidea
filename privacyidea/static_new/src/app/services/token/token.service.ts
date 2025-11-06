@@ -249,7 +249,6 @@ export interface TokenServiceInterface {
 })
 export class TokenService implements TokenServiceInterface {
   private readonly http: HttpClient = inject(HttpClient);
-
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);

@@ -80,6 +80,7 @@ describe("UserService", () => {
     alice = buildUser("Alice");
     users = [alice, buildUser("Bob"), buildUser("Charlie")];
     userService.users.set(users);
+    userService.detailsUsername.set("Alice");
   });
 
   afterEach(() => {
