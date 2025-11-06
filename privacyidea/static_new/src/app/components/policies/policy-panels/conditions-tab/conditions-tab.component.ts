@@ -1,4 +1,4 @@
-import { Component, inject, input, Input } from "@angular/core";
+import { Component, inject } from "@angular/core";
 import { ConditionsUserComponent } from "./conditions-user/conditions-user.component";
 import { ConditionsNodesComponent } from "./conditions-nodes/conditions-nodes.component";
 import { ConditionsAdditionalComponent } from "./conditions-additional/conditions-additional.component";
@@ -13,6 +13,5 @@ import { PolicyService } from "../../../../services/policies/policies.service";
 })
 export class ConditionsTabComponent {
   policyService = inject(PolicyService);
-
   isEditMode = this.policyService.isEditMode;
 }

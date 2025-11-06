@@ -52,12 +52,21 @@ export class ConditionsAdditionalComponent {
   editIndex = signal<number | null>(null);
 
   // Form Signals
-  conditionSection = linkedSignal<boolean, SectionOption | "">({ source: () => this.isEditMode(), computation: () => "" });
+  conditionSection = linkedSignal<boolean, SectionOption | "">({
+    source: () => this.isEditMode(),
+    computation: () => ""
+  });
   conditionKey = linkedSignal<boolean, string>({ source: () => this.isEditMode(), computation: () => "" });
-  conditionComparator = linkedSignal<boolean, ComporatorOption | "">({ source: () => this.isEditMode(), computation: () => "" });
+  conditionComparator = linkedSignal<boolean, ComporatorOption | "">({
+    source: () => this.isEditMode(),
+    computation: () => ""
+  });
   conditionValue = linkedSignal<boolean, string>({ source: () => this.isEditMode(), computation: () => "" });
   conditionActive = linkedSignal<boolean, boolean>({ source: () => this.isEditMode(), computation: () => false });
-  conditionHandleMissingData = linkedSignal<boolean, HandleMissigDataOption | "">({ source: () => this.isEditMode(), computation: () => "" });
+  conditionHandleMissingData = linkedSignal<boolean, HandleMissigDataOption | "">({
+    source: () => this.isEditMode(),
+    computation: () => ""
+  });
 
   // Computed Properties
   additionalConditions = computed<AdditionalCondition[]>(() => {
@@ -80,7 +89,7 @@ export class ConditionsAdditionalComponent {
     this.conditionKey.set(condition[1]);
     this.conditionComparator.set(condition[2]);
     this.conditionValue.set(condition[3]);
-    this.conditionActive.set(!condition[4]); // Inverted
+    this.conditionActive.set(condition[4]);
     this.conditionHandleMissingData.set(condition[5]);
   }
 

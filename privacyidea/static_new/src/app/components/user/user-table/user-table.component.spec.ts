@@ -20,6 +20,7 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 
 import { UserTableComponent } from "./user-table.component";
 import { provideHttpClient } from "@angular/common/http";
+import "@angular/localize/init";
 
 describe("UserTableComponent", () => {
   let component: UserTableComponent;

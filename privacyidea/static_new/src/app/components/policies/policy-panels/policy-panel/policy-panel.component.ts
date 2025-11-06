@@ -84,8 +84,7 @@ export class PolicyPanelComponent {
       console.log("Initializing new policy");
       this.policyService.initializeNewPolicy();
       this.isEditMode.set(true);
-    }
-    else if (policyName) {
+    } else if (policyName) {
       this.policyService.selectPolicyByName(policyName);
       this.isEditMode.set(false);
     }
@@ -95,8 +94,6 @@ export class PolicyPanelComponent {
   handleCollapse(panel: MatExpansionPanel, policyName: string | undefined) {
     console.log("handleCollapse called");
     if (!this.policyIsSelected(policyName)) {
-      console.log("Policy (" + policyName + ") is not selected, cancelling handleCollapse.");
-      this.isEditMode.set(false);
       return;
     }
     if (this.isNew()) {
@@ -104,17 +101,14 @@ export class PolicyPanelComponent {
         if (confirm("Are you sure you want to discard the new policy? All changes will be lost.")) {
           this.policyService.deselectNewPolicy();
           this.isEditMode.set(false);
-        }
-        else {
+        } else {
           panel.open(); // Re-open if user cancels
         }
-      }
-      else {
+      } else {
         this.policyService.deselectNewPolicy();
         this.isEditMode.set(false);
       }
-    }
-    else if (policyName) {
+    } else if (policyName) {
       if (!this.confirmDiscardChanges()) {
         panel.open();
         return;
@@ -136,8 +130,7 @@ export class PolicyPanelComponent {
   togglePolicyActive(policy: PolicyDetail, activate: boolean) {
     if (activate) {
       this.policyService.enablePolicy(policy.name);
-    }
-    else {
+    } else {
       this.policyService.disablePolicy(policy.name);
     }
   }
@@ -149,8 +142,7 @@ export class PolicyPanelComponent {
       this.policyService.savePolicyEdits({ asNew: true });
       this.policyService.deselectPolicy(this.newPolicyName());
       this.isEditMode.set(false);
-    }
-    else {
+    } else {
       this.policyService.savePolicyEdits();
     }
     this.isEditMode.set(false);
@@ -178,8 +170,7 @@ export class PolicyPanelComponent {
         this.isEditMode.set(false);
         panel.close();
       }
-    }
-    else {
+    } else {
       this.policyService.deselectPolicy(this.newPolicyName());
       this.isEditMode.set(false);
       panel.close();

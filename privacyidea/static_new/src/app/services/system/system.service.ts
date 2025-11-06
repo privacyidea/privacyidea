@@ -18,7 +18,7 @@
  **/
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { httpResource, HttpResourceRef } from "@angular/common/http";
-import { computed, inject, Injectable } from "@angular/core";
+import { computed, inject, Injectable, Signal } from "@angular/core";
 
 import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
@@ -29,9 +29,8 @@ export type PiNode = {
 };
 
 export interface SystemServiceInterface {
-  systemConfigResource: HttpResourceRef<any>;
-  nodesResource: HttpResourceRef<PiResponse<PiNode[], unknown> | undefined>;
-  nodes: () => PiNode[];
+  systemConfig: Signal<any>;
+  nodes: Signal<PiNode[]>;
 }
 
 @Injectable({
@@ -51,6 +50,10 @@ export class SystemService implements SystemServiceInterface {
     url: this.systemBaseUrl + "nodes",
     method: "GET",
     headers: this.authService.getHeaders()
+  });
+
+  systemConfig = computed<any>(() => {
+    return this.systemConfigResource.value()?.result?.value ?? {};
   });
 
   nodes = computed<PiNode[]>(() => {

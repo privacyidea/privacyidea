@@ -1,22 +1,13 @@
-import { httpResource } from "@angular/common/http";
+import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
 import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
 import { AuthService } from "../auth/auth.service";
-import { computed, effect, inject, Injectable, signal } from "@angular/core";
+import { computed, effect, inject, Injectable, Signal, signal, WritableSignal } from "@angular/core";
+import { catchError, Observable, throwError } from "rxjs";
 
 type ResolverType = "ldapresolver" | "sqlresolver" | "passwdresolver" | "scimresolver";
 
 export interface ResolverData {}
-
-/*
-Resolvers changed:
-  deflocal: Object { censor_keys: [], resolvername: "deflocal", type: "passwdresolver", … }
-  censor_keys: Array []
-  data: Object { filename: "/etc/passwd" }
-    filename: "/etc/passwd"
-  resolvername: "deflocal"
-  type: "passwdresolver"
-  */
 
 export type Resolvers = { [key: string]: Resolver };
 
@@ -77,111 +68,32 @@ export interface SCIMResolverData extends ResolverData {
   editable: boolean;
 }
 
-/*
-The code of this module is tested in tests/test_api_system.py
-POST /resolver/test
-    Send the complete parameters of a resolver to the privacyIDEA server to test, if these settings will result in a successful connection. If you are testing existing resolvers, you can send the “__CENSORED__” password. privacyIDEA will use the already stored password from the database.
-    Return
-        a json result with True, if the given values can create a working resolver and a description.
-GET /resolver/(resolver)
-GET /resolver/
-    returns a json list of the specified resolvers. The passwords of resolvers (e.g. Bind PW of the LDAP resolver or password of the SQL resolver) will be returned as “__CENSORED__”. You can run a POST request to update the data and privacyIDEA will ignore the “__CENSORED__” password or you can even run a testresolver.
-    Parameters
-            resolver (str) – the name of the resolver
-            type (str) – Only return resolvers of type (like passwdresolver..)
-            editable (str) – Set to “1” if only editable resolvers should be returned.
-    Return
-        a json result with the configuration of resolvers
-POST /resolver/(resolver)
-    This creates a new resolver or updates an existing one. A resolver is uniquely identified by its name.
-    If you update a resolver, you do not need to provide all parameters. Parameters you do not provide are left untouched. When updating a resolver you must not change the type! You do not need to specify the type, but if you specify a wrong type, it will produce an error.
-    Parameters
-            resolver (str) – the name of the resolver.
-            type – the type of the resolver. Valid types are passwdresolver,
-    ldapresolver, sqlresolver, scimresolver :type type: str :return: a json result with the value being the database id (>0)
-    Additional parameters depend on the resolver type.
-        LDAP:
-                LDAPURI
-                LDAPBASE
-                AUTHTYPE
-                BINDDN
-                BINDPW
-                TIMEOUT
-                CACHE_TIMEOUT
-                SIZELIMIT
-                LOGINNAMEATTRIBUTE
-                LDAPSEARCHFILTER
-                LDAPFILTER
-                LOGINNAMEATTRIBUTE
-                MULTIVALUEATTRIBUTES
-                USERINFO
-                UIDTYPE
-                NOREFERRALS - True|False
-                NOSCHEMAS - True|False
-                EDITABLE - True|False
-                START_TLS - True|False
-                TLS_VERIFY - True|False
-                TLS_VERSION
-        SQL:
-                Database
-                Driver
-                Server
-                Port
-                User
-                Password
-                Table
-                Map
-        Passwd
-                Filename
-DELETE /resolver/(resolver)
-    This function deletes an existing resolver. A resolver can not be deleted, if it is contained in a realm
-    Parameters
-            resolver – the name of the resolver to delete.
-    Return
-        json with success or fail
-
-
-        {
-  "deflocal": {
-    "censor_keys": [],
-    "data": ResolverData {
-      "filename": "/etc/passwd"
-    },
-    "resolvername": "deflocal",
-    "type": "passwdresolver"
-  }
+export interface ResolverServiceInterface {
+  selectedResolverName: WritableSignal<string>;
+  postResolverTest(): Observable<any>;
+  postResolver(resolverName: string, data: any): Observable<any>;
+  deleteResolver(resolverName: string): Observable<any>;
 }
-*/
+
 @Injectable({
   providedIn: "root"
 })
-export class ResolverService {
-  private readonly resolverBaseUrl = environment.proxyUrl + "/resolver/";
+export class ResolverService implements ResolverServiceInterface {
+  readonly resolverBaseUrl = environment.proxyUrl + "/resolver/";
   private readonly authService = inject(AuthService);
+  private readonly http: HttpClient = inject(HttpClient);
 
   selectedResolverName = signal<string>("");
 
-  constructor() {
-    effect(() => {
-      const resolvers = this.resolvers();
-      console.log("Resolvers changed:", resolvers);
-    });
-
-    effect(() => {
-      const resolvers = this.resolversResource.value()?.result?.value;
-      console.log("Resolvers resource changed:", resolvers);
-    });
-  }
-
   postResolverTest() {
-    const headers = this.authService.getHeaders();
-    return httpResource<PiResponse<any>>({
-      url: this.resolverBaseUrl + "test",
-      method: "POST",
-      headers: headers
-    });
+    return this.http.post(this.resolverBaseUrl + "test", {}, { headers: this.authService.getHeaders() }).pipe(
+      catchError((error) => {
+        console.error("Error during resolver test:", error);
+        return throwError(() => error);
+      })
+    );
   }
-  resolversResource = httpResource<PiResponse<any>>({
+  resolversResource = httpResource<PiResponse<Resolvers>>({
     url: this.resolverBaseUrl,
     method: "GET",
     headers: this.authService.getHeaders()
@@ -190,36 +102,40 @@ export class ResolverService {
   resolvers = computed<Resolver[]>(() => {
     const resolvers = this.resolversResource.value()?.result?.value;
     console.log("Resolvers:", resolvers);
-    return resolvers ?? [];
+    return resolvers ? Object.values(resolvers) : [];
   });
 
   resolverOptions = computed(() => {
     const resolvers = this.resolversResource.value()?.result?.value;
     return resolvers ? Object.keys(resolvers) : [];
   });
-
-  selectedResolverResource = httpResource<PiResponse<any>>({
-    url: this.resolverBaseUrl + this.selectedResolverName(),
-    method: "GET",
-    headers: this.authService.getHeaders()
+  selectedResolverResource = httpResource<PiResponse<any>>(() => {
+    const resolverName = this.selectedResolverName();
+    if (resolverName === "") {
+      return undefined;
+    }
+    return {
+      url: this.resolverBaseUrl + resolverName,
+      method: "GET",
+      headers: this.authService.getHeaders()
+    };
   });
 
   postResolver(resolverName: string, data: any) {
-    const headers = this.authService.getHeaders();
-    return httpResource<PiResponse<any>>({
-      url: this.resolverBaseUrl + resolverName,
-      method: "POST",
-      body: data,
-      headers: headers
-    });
+    return this.http.post(this.resolverBaseUrl + resolverName, data, { headers: this.authService.getHeaders() }).pipe(
+      catchError((error) => {
+        console.error(`Error during posting resolver ${resolverName}:`, error);
+        return throwError(() => error);
+      })
+    );
   }
 
   deleteResolver(resolverName: string) {
-    const headers = this.authService.getHeaders();
-    return httpResource<PiResponse<any>>({
-      url: this.resolverBaseUrl + resolverName,
-      method: "DELETE",
-      headers: headers
-    });
+    return this.http.delete(this.resolverBaseUrl + resolverName, { headers: this.authService.getHeaders() }).pipe(
+      catchError((error) => {
+        console.error(`Error during deleting resolver ${resolverName}:`, error);
+        return throwError(() => error);
+      })
+    );
   }
 }

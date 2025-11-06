@@ -22,6 +22,8 @@ import { KeywordFilterComponent } from "./keyword-filter.component";
 import { TableUtilsService } from "../../../services/table-utils/table-utils.service";
 import { FilterValue } from "../../../core/models/filter_value";
 import { MockTableUtilsService } from "../../../../testing/mock-services";
+import "@angular/localize/init";
+
 function setupComponent(): {
   fixture: ComponentFixture<KeywordFilterComponent>;
   component: KeywordFilterComponent;

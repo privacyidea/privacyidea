@@ -31,7 +31,9 @@
               (click)="$event.stopPropagation(); panel.expanded = true"
               (keydown)="$event.stopPropagation()" />
           } @else {
-            {{ policy()!.name }}
+            <div class="policy-name">
+              {{ policy()!.name }}
+            </div>
           }
         }
       </mat-panel-title>

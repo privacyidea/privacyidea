@@ -47,10 +47,7 @@ export class ConditionsNodesComponent {
   // Computed Properties
   selectedPolicyName = computed(() => this.selectedPolicy?.name || "");
   availablePinodesList = computed(() => this.systemService.nodes().map((node) => node.name));
-  selectedPinodes = computed<string[]>(() => {
-    console.log("Selected policy nodes:", this.selectedPolicy()?.pinode);
-    return this.selectedPolicy()?.pinode || [];
-  });
+  selectedPinodes = computed<string[]>(() => this.selectedPolicy()?.pinode || []);
   selectedUserAgents = computed(() => this.policyService.selectedPolicy()?.user_agents || []);
   selectedValidTime = computed(() => this.policyService.selectedPolicy()?.time || "");
   selectedClient = computed(() => this.policyService.selectedPolicy()?.client || "");
@@ -93,7 +90,6 @@ export class ConditionsNodesComponent {
     const oldUserAgents = this.selectedUserAgents();
     if (oldUserAgents.includes(userAgent)) return;
     const newUserAgents = [...oldUserAgents, userAgent];
-    console.log("Adding user agent:", newUserAgents);
     this.policyService.updateSelectedPolicy({ user_agents: newUserAgents });
   }
 
@@ -114,7 +110,6 @@ export class ConditionsNodesComponent {
     }
     const validTime = this.validTimeFormControl.value;
     if (!validTime) return;
-    console.log("Setting valid time:", validTime);
     this.policyService.updateSelectedPolicy({ time: validTime });
   }
 
@@ -126,7 +121,6 @@ export class ConditionsNodesComponent {
     }
     const client = this.clientFormControl.value;
     if (!client) return;
-    console.log("Setting clients:", client);
     const clientsArray = client.split(",").map((c) => c.trim());
     this.policyService.updateSelectedPolicy({ client: clientsArray });
   }
@@ -135,7 +129,6 @@ export class ConditionsNodesComponent {
   validTimeValidator(control: AbstractControl): ValidationErrors | null {
     const validTime = control.value;
     if (!validTime) return null;
-    console.log("Validating valid time:", validTime);
     const regex =
       /^((Mon|Tue|Wed|Thu|Fri|Sat|Sun)(-(Mon|Tue|Wed|Thu|Fri|Sat|Sun))?:\s([0-1]?[0-9]|2[0-3])-([0-1]?[0-9]|2[0-3])(,\s)?)+$/;
     if (validTime === "" || regex.test(validTime)) {
@@ -144,14 +137,39 @@ export class ConditionsNodesComponent {
     return { invalidValidTime: { value: control.value } };
   }
 
-  clientValidator(clientControl: AbstractControl): ValidationErrors | null {
-    const client = clientControl.value;
-    if (!client) return null;
-    if (typeof client !== "string") return { invalidClient: { value: clientControl.value } };
-    const regex = /^(!?\d{1,3}(\.\d{1,3}){3}(\/\d{1,2})?)(,\s*!?\d{1,3}(\.\d{1,3}){3}(\/\d{1,2})?)*$/;
-    const isValid = client === "" || regex.test(client);
-    if (isValid) return null;
-    return { invalidClient: { value: clientControl.value } };
+  clientValidator(clientControl: AbstractControl<string | null>): ValidationErrors | null {
+    const clients = clientControl.value;
+    if (!clients) return null;
+    if (typeof clients !== "string") return { invalidClient: { value: clientControl.value } };
+
+    const regexIpV4 =
+      /^!?(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(?:\/(?:[0-9]|[12]\d|3[0-2]))?$/;
+    const regexIpV6 =
+      /^!?(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))(?:\/(?:[0-9]|[1-9]\d|1[01]\d|12[0-8]))?$/;
+    const regexHostname =
+      /^!?(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9])\.)+([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9-]*[A-Za-z0-9])$/;
+
+    const invalidClients = [];
+    const hasLettersRegex = /[a-zA-Z]/;
+
+    for (const client of clients.split(",")) {
+      const trimmedClient = client.trim();
+      if (trimmedClient.length === 0) continue;
+      if (hasLettersRegex.test(trimmedClient)) {
+        if (!regexIpV6.test(trimmedClient) && !regexHostname.test(trimmedClient)) {
+          invalidClients.push(trimmedClient);
+        }
+      } else {
+        if (!regexIpV4.test(trimmedClient)) {
+          invalidClients.push(trimmedClient);
+        }
+      }
+    }
+
+    if (invalidClients.length > 0) {
+      return { invalidClient: { value: invalidClients.join(", ") } };
+    }
+    return null;
   }
 
   userAgentValidator(control: AbstractControl): ValidationErrors | null {

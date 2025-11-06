@@ -19,7 +19,7 @@
 
 import { HttpClient, httpResource } from "@angular/common/http";
 import { computed, inject, Injectable, linkedSignal, Signal, signal, WritableSignal } from "@angular/core";
-import { lastValueFrom } from "rxjs";
+import { lastValueFrom, Observable, of, switchMap } from "rxjs";
 import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
@@ -49,49 +49,6 @@ export type PolicyActionGroups = {
 };
 
 export type PoliciesList = PolicyDetail[];
-
-// const asd = {
-//   action: ["container_challenge_ttl=12"],
-//   scope: "container",
-//   realm: [
-//     "defrealm",
-//     "realm1",
-//     "realm2",
-//     "realm3",
-//     "realm4asdfsadfasdfasdfsadfasdfasfasfdsadfasdfsafdasdfasdfsadfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfsadfasdfasdfasd"
-//   ],
-//   resolver: ["deflocal"],
-//   user: "asd",
-//   active: true,
-//   check_all_resolvers: false,
-//   user_case_insensitive: true,
-//   client: "10.0.0.0/8",
-//   time: "Mon: 1-12",
-//   description: "",
-//   priority: 1,
-//   conditions: [
-//     ["userinfo", "asd", "equals", "asd", true, "raise_error"],
-//     ["userinfo", "asf", "equals", "asd", true, "raise_error"],
-//     ["userinfo", "asd", "equals", "asf", true, "raise_error"],
-//     ["userinfo", "asd", "equals", "asd", true, "raise_error"]
-//   ],
-//   pinode: ["localnode", "localnode", "localnode"],
-//   user_agents: [
-//     "privacyidea-cp",
-//     "privacyIDEA-Keycloak",
-//     "PrivacyIDEA-ADFS",
-//     "simpleSAMLphp",
-//     "PAM",
-//     "privacyIDEA-Shibboleth",
-//     "privacyidea-nextcloud",
-//     "FreeRADIUS",
-//     "privacyIDEA-LDAP-Proxy",
-//     "privacyIDEA-App",
-//     "567"
-//   ],
-//   name: "test",
-//   adminrealm: []
-// };
 
 export type PolicyDetail = {
   action: { [actionName: string]: string } | null;
@@ -186,13 +143,66 @@ export const allHandleMissingDataOptions: HandleMissigDataOption[] = [
   "condition_is_true"
 ];
 
-export interface PoliciesServiceInterface {}
+export interface PolicyServiceInterface {
+  readonly emptyPolicy: PolicyDetail;
+
+  readonly isEditMode: Signal<boolean>;
+  readonly selectedPolicyHasActions: Signal<boolean>;
+  readonly selectedPolicyHasUserConditions: Signal<boolean>;
+  readonly selectedPolicyHasNodeConditions: Signal<boolean>;
+  readonly selectedPolicyHasAdditionalConditions: Signal<boolean>;
+  readonly selectedPolicyHasConditions: Signal<boolean>;
+  readonly isPolicyEdited: Signal<boolean>;
+  readonly selectedPolicy: Signal<PolicyDetail | null>;
+  readonly selectedPolicyOriginal: Signal<PolicyDetail | null>;
+  readonly actionFilter: WritableSignal<string>;
+  readonly policyActionGroupNames: Signal<string[]>;
+  readonly selectedActionGroup: WritableSignal<string>;
+  readonly selectedAction: WritableSignal<{ name: string; value: any } | null>;
+  readonly policyActions: Signal<ScopedPolicyActions>;
+  readonly allPolicyActionsFlat: Signal<{ [actionName: string]: PolicyActionDetail }>;
+  readonly allPolicyScopes: Signal<string[]>;
+  readonly policyActionsByGroup: Signal<PolicyActionGroups>;
+  readonly alreadyAddedActionNames: Signal<string[]>;
+  readonly policyActionsByGroupFiltered: Signal<PolicyActionGroups>;
+  readonly allPolicies: Signal<PolicyDetail[]>;
+  readonly selectedPolicyScope: Signal<string>;
+  readonly selectedActionDetail: Signal<PolicyActionDetail | null>;
+
+  updateActionInSelectedPolicy(): void;
+  updateActionValue(actionName: string, newValue: boolean): void;
+  selectPolicyByName(policyName: string): void;
+  canSaveSelectedPolicy(): boolean;
+  savePolicyEdits(args?: { asNew?: boolean }): Promise<void> | undefined;
+  getDetailsOfAction(actionName: string): PolicyActionDetail | null;
+  deselectNewPolicy(): void;
+  deselectPolicy(name: string): void;
+  initializeNewPolicy(): void;
+  selectPolicy(policy: PolicyDetail): void;
+  updateSelectedPolicy(args: Partial<PolicyDetail>): void;
+  selectActionByName(actionName: string): void;
+  updateSelectedActionValue(value: any): void;
+  createPolicy(policyData: PolicyDetail): Promise<PiResponse<any>>;
+  updatePolicy(oldPolicyName: String, policyData: PolicyDetail): Promise<PiResponse<any>>;
+  deletePolicy(name: string): Promise<PiResponse<number>>;
+  enablePolicy(name: string): Promise<PiResponse<any>>;
+  disablePolicy(name: string): Promise<PiResponse<any>>;
+  addActionToSelectedPolicy(): void;
+  removeActionFromSelectedPolicy(actionName: string): void;
+  isScopeChangeable(policy: PolicyDetail): boolean;
+  getActionNamesOfSelectedGroup(): string[];
+  actionValueIsValid(action: PolicyActionDetail, value: string | number): boolean;
+  cancelEditMode(): void;
+}
 
 @Injectable({
   providedIn: "root"
 })
-export class PolicyService implements PoliciesServiceInterface {
-  isEditMode = signal(false);
+export class PolicyService implements PolicyServiceInterface {
+  readonly isEditMode = linkedSignal({
+    source: () => this.contentService.routeUrl(),
+    computation: (_) => false
+  });
 
   updateActionInSelectedPolicy() {
     const selectedPolicy = this.selectedPolicy();
@@ -239,13 +249,16 @@ export class PolicyService implements PoliciesServiceInterface {
     return true;
   }
 
-  selectedPolicyHasActions = computed(() => {
+  readonly selectedPolicyHasActions = computed<boolean>(() => {
     const policy = this.selectedPolicy();
     if (!policy) return false;
-    return policy?.action && Object.keys(policy.action).length > 0;
+    if (policy?.action && Object.keys(policy.action).length > 0) {
+      return true;
+    }
+    return false;
   });
 
-  selectedPolicyHasUserConditions = computed(() => {
+  readonly selectedPolicyHasUserConditions = computed(() => {
     const policy = this.selectedPolicy();
     if (!policy) return false;
     if (policy.realm && policy.realm.length > 0) return true;
@@ -254,7 +267,7 @@ export class PolicyService implements PoliciesServiceInterface {
     return false;
   });
 
-  selectedPolicyHasNodeConditions = computed(() => {
+  readonly selectedPolicyHasNodeConditions = computed(() => {
     const policy = this.selectedPolicy();
     if (!policy) return false;
     if (policy.pinode && policy.pinode.length > 0) return true;
@@ -264,13 +277,13 @@ export class PolicyService implements PoliciesServiceInterface {
     return false;
   });
 
-  selectedPolicyHasAdditionalConditions = computed(() => {
+  readonly selectedPolicyHasAdditionalConditions = computed(() => {
     const policy = this.selectedPolicy();
     if (!policy) return false;
     return policy.conditions && policy.conditions.length > 0;
   });
 
-  selectedPolicyHasConditions = computed(() => {
+  readonly selectedPolicyHasConditions = computed(() => {
     const policy = this.selectedPolicy();
     if (!policy) return false;
     if (this.selectedPolicyHasUserConditions()) return true;
@@ -279,8 +292,7 @@ export class PolicyService implements PoliciesServiceInterface {
     return false;
   });
 
-  savePolicyEdits(args?: { asNew?: boolean }) {
-    const asNew = args?.asNew || false;
+  savePolicyEdits(): Promise<void> | undefined {
     const selectedPolicy = this.selectedPolicy();
     const oldPolicyName = this.selectedPolicyOriginal()?.name;
     if (!selectedPolicy || !oldPolicyName) return;
@@ -293,27 +305,37 @@ export class PolicyService implements PoliciesServiceInterface {
       }
     }
 
-    if (asNew) {
-      this.createPolicy(selectedPolicy)
-        .then((response) => {
-          // Refresh the policies list
-          this.allPoliciesRecource.reload();
-        })
-        .catch((error) => {
-          console.error("Error creating policy: ", error);
-        });
-    } else {
-      this.updatePolicy(oldPolicyName, selectedPolicy)
-        .then((response) => {
-          // Refresh the policies list
-          this.allPoliciesRecource.reload();
-        })
-        .catch((error) => {
-          console.error("Error updating policy: ", error);
-        });
-    }
+    const promise = this.updatePolicy(oldPolicyName, selectedPolicy)
+      .then((_) => {
+        this.allPoliciesRecource.reload();
+      })
+      .catch((error) => {
+        console.error("Error updating policy: ", error);
+      });
+
     this.selectPolicy(selectedPolicy);
+    return promise;
   }
+  savePolicyEditsAsNew(): Promise<void> | undefined {
+    const selectedPolicy = this.selectedPolicy();
+    if (!selectedPolicy) return;
+
+    const allPoliciesCopy = this.allPolicies();
+    allPoliciesCopy.push({ ...selectedPolicy });
+    this.allPolicies.set(allPoliciesCopy);
+
+    const promise = this.createPolicy(selectedPolicy)
+      .then((_) => {
+        this.allPoliciesRecource.reload();
+      })
+      .catch((error) => {
+        console.error("Error creating policy: ", error);
+      });
+
+    this.selectPolicy(selectedPolicy);
+    return promise;
+  }
+
   getDetailsOfAction(actionName: string): PolicyActionDetail | null {
     const actions = this.allPolicyActionsFlat();
     if (actionName && actions) {
@@ -332,7 +354,7 @@ export class PolicyService implements PoliciesServiceInterface {
     this._selectedPolicyOriginal.set(null);
   }
 
-  emptyPolicy: PolicyDetail = {
+  readonly emptyPolicy: PolicyDetail = {
     action: null,
     active: true,
     adminrealm: [],
@@ -357,7 +379,7 @@ export class PolicyService implements PoliciesServiceInterface {
     this._selectedPolicyOriginal.set({ ...this.emptyPolicy });
   }
 
-  isPolicyEdited = computed(() => {
+  readonly isPolicyEdited = computed(() => {
     const selectedPolicy = this.selectedPolicy();
     const originalPolicy = this.selectedPolicyOriginal();
     if (!selectedPolicy || !originalPolicy) return false;
@@ -406,19 +428,19 @@ export class PolicyService implements PoliciesServiceInterface {
   // -----------------------------------
 
   // GET /policy/defs
-  policyActionResource = httpResource<PiResponse<ScopedPolicyActions>>(() => ({
+  readonly policyActionResource = httpResource<PiResponse<ScopedPolicyActions>>(() => ({
     url: `${this.policyBaseUrl}defs`,
     method: "GET",
     headers: this.authService.getHeaders()
   }));
 
-  policyDefinitions = httpResource(() => ({
+  readonly policyDefinitions = httpResource(() => ({
     url: `${this.policyBaseUrl}defs`,
     method: "GET",
     headers: this.authService.getHeaders()
   }));
 
-  allPoliciesRecource = httpResource<PiResponse<PolicyDetail[]>>(() => ({
+  readonly allPoliciesRecource = httpResource<PiResponse<PolicyDetail[]>>(() => ({
     url: `${this.policyBaseUrl}`,
     method: "GET",
     headers: this.authService.getHeaders()
@@ -429,8 +451,8 @@ export class PolicyService implements PoliciesServiceInterface {
   // -----------------------------------
 
   // Signals for selecting and editing selected policy
-  private _selectedPolicy = signal<PolicyDetail | null>(null);
-  selectedPolicy = computed(() => {
+  private readonly _selectedPolicy = signal<PolicyDetail | null>(null);
+  readonly selectedPolicy = computed(() => {
     console.log("Selected policy changed:", this._selectedPolicy());
     return this._selectedPolicy();
   });
@@ -635,29 +657,37 @@ export class PolicyService implements PoliciesServiceInterface {
   // -----------------------------------
 
   createPolicy(policyData: PolicyDetail): Promise<PiResponse<any>> {
-    const allPolicies = this.allPolicies();
-    allPolicies.push({ ...policyData });
+    const allPoliciesCopy = [...this.allPolicies()];
+    allPoliciesCopy.push({ ...policyData });
+    this.allPolicies.set(allPoliciesCopy);
+
     const headers = this.authService.getHeaders();
     return lastValueFrom(
       this.http.post<PiResponse<any>>(`${this.policyBaseUrl}${policyData.name}`, policyData, { headers })
     );
   }
 
-  async updatePolicy(oldPolicyName: String, policyData: PolicyDetail): Promise<PiResponse<any>> {
+  updatePolicy(oldPolicyName: string, policyData: PolicyDetail): Promise<PiResponse<any>> {
     const headers = this.authService.getHeaders();
-    let patchNameRespone: PiResponse<any> | null = null;
-    if (oldPolicyName !== policyData.name) {
-      patchNameRespone = await lastValueFrom(
-        this.http.patch<PiResponse<any>>(`${this.policyBaseUrl}${oldPolicyName}`, policyData, { headers })
-      );
-    }
-    if (patchNameRespone && patchNameRespone.result?.error) {
-      return patchNameRespone;
-    }
-    const response = await lastValueFrom(
-      this.http.post<PiResponse<any>>(`${this.policyBaseUrl}${policyData.name}`, policyData, { headers })
+    const patch$: Observable<PiResponse<any>> = this.http.patch<PiResponse<any>>(
+      `${this.policyBaseUrl}${oldPolicyName}`,
+      { name: policyData.name },
+      { headers }
     );
-    return response;
+    let request$: Observable<PiResponse<any>>;
+    if (oldPolicyName !== policyData.name) {
+      request$ = patch$.pipe(
+        switchMap((patchResponse) => {
+          if (patchResponse && patchResponse.result?.error) {
+            return of(patchResponse);
+          }
+          return this.http.post<PiResponse<any>>(`${this.policyBaseUrl}${policyData.name}`, policyData, { headers });
+        })
+      );
+    } else {
+      request$ = this.http.post<PiResponse<any>>(`${this.policyBaseUrl}${policyData.name}`, policyData, { headers });
+    }
+    return lastValueFrom(request$);
   }
 
   deletePolicy(name: string): Promise<PiResponse<number>> {
