@@ -69,7 +69,8 @@ export class RealmService implements RealmServiceInterface {
           ROUTE_PATHS.TOKENS,
           ROUTE_PATHS.USERS,
           ROUTE_PATHS.TOKENS_CONTAINERS_CREATE,
-          ROUTE_PATHS.TOKENS_ENROLLMENT
+          ROUTE_PATHS.TOKENS_ENROLLMENT,
+          ROUTE_PATHS.TOKENS_IMPORT
         ].includes(this.contentService.routeUrl()))
     ) {
       return undefined;
@@ -94,7 +95,8 @@ export class RealmService implements RealmServiceInterface {
           ROUTE_PATHS.TOKENS,
           ROUTE_PATHS.USERS,
           ROUTE_PATHS.TOKENS_CONTAINERS_CREATE,
-          ROUTE_PATHS.TOKENS_ENROLLMENT
+          ROUTE_PATHS.TOKENS_ENROLLMENT,
+          ROUTE_PATHS.TOKENS_IMPORT
         ].includes(this.contentService.routeUrl()))
     ) {
       return undefined;
