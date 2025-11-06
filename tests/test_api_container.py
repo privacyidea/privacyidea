@@ -17,6 +17,7 @@ from privacyidea.lib.containers.smartphone import SmartphoneOptions
 from privacyidea.lib.crypto import generate_keypair_ecc, decrypt_aes
 from privacyidea.lib.container import (init_container, find_container_by_serial, add_token_to_container, assign_user,
                                        add_container_realms, remove_token_from_container)
+from privacyidea.lib.error import ERROR
 from privacyidea.lib.machine import attach_token
 from privacyidea.lib.policies.conditions import ConditionSection, ConditionHandleMissingData
 from privacyidea.lib.policy import set_policy, SCOPE, delete_policy
@@ -38,6 +39,15 @@ from privacyidea.lib.utils.compare import PrimaryComparators
 from privacyidea.models import Realm
 from tests.base import MyApiTestCase
 from tests.test_lib_tokencontainer import MockSmartphone
+
+
+UNSPECIFIC_ERROR_MESSAGES: dict[str, str] = {
+    "container/rollover": "Failed container rollover",
+    "container/synchronize": "Failed container synchronization",
+    "container/challenge": "Failed creating container challenge",
+    "container/register/finalize": "Failed finalizing container registration",
+    "container/register/terminate/client": "Failed terminating container registration",
+}
 
 
 class APIContainerTest(MyApiTestCase):
@@ -63,7 +73,8 @@ class APIContainerTest(MyApiTestCase):
 
     def request_assert_error(self, status_code, url, data: dict, auth_token, method='POST',
                              error_code: Optional[int] = None,
-                             error_message: Optional[str] = None):
+                             error_message: Optional[str] = None,
+                             try_unspecific: bool = False):
         with self.app.test_request_context(url,
                                            method=method,
                                            data=data if method == 'POST' else None,
@@ -77,6 +88,16 @@ class APIContainerTest(MyApiTestCase):
             if error_message is not None:
                 self.assertEqual(res.json["result"]["error"]["message"], error_message)
         self.clear_flask_g()
+
+        if try_unspecific:
+            set_policy(name="hide_specific_error_message", scope=SCOPE.CONTAINER, action=f"{PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE}=true")
+            try:
+                return self.request_assert_error(status_code, url, data, auth_token,
+                                                 method=method, error_code=ERROR.CONTAINER,
+                                                 error_message=UNSPECIFIC_ERROR_MESSAGES[url])
+            finally:
+                delete_policy("hide_specific_error_message")
+
         return res.json
 
     def request_assert_405(self, url, data: dict, auth_token, method='POST'):
@@ -2494,7 +2515,7 @@ class ContainerPolicyConditions(APIContainerAuthorization):
         rollover_scope = "https://pi.net/container/rollover"
         params = mock_smph.register_finalize(challenge_data["nonce"], challenge_data["time_stamp"],
                                              rollover_scope, mock_smph.container_serial)
-        self.request_assert_error(403, "container/rollover", params, None, "POST")
+        self.request_assert_error(403, "container/rollover", params, None, "POST", try_unspecific=False)
 
         # Client rollover: User not allowed
         container.set_states([ContainerStates.ACTIVE.value])
@@ -2506,7 +2527,8 @@ class ContainerPolicyConditions(APIContainerAuthorization):
         rollover_scope = "https://pi.net/container/rollover"
         params = mock_smph.register_finalize(challenge_data["nonce"], challenge_data["time_stamp"],
                                              rollover_scope, mock_smph.container_serial)
-        self.request_assert_error(403, "container/rollover", params, None, "POST")
+        self.request_assert_error(403, "container/rollover", params, None, "POST",
+                                  try_unspecific=False)
 
         # Client rollover: State not allowed
         container.remove_user(User("selfservice", self.realm1))
@@ -2520,7 +2542,8 @@ class ContainerPolicyConditions(APIContainerAuthorization):
         rollover_scope = "https://pi.net/container/rollover"
         params = mock_smph.register_finalize(challenge_data["nonce"], challenge_data["time_stamp"],
                                              rollover_scope, mock_smph.container_serial)
-        self.request_assert_error(403, "container/rollover", params, None, "POST")
+        self.request_assert_error(403, "container/rollover", params, None, "POST",
+                                  try_unspecific=False)
 
         # Client rollover: Success
         container.set_states([ContainerStates.ACTIVE.value])
@@ -3515,14 +3538,16 @@ class APIContainerSynchronization(APIContainerTest):
         self.request_assert_error(400, 'container/register/finalize',
                                   {"device_brand": "LG", "device_model": "ABC123"}, None, 'POST',
                                   error_code=905,
-                                  error_message="ERR905: Missing parameter: 'container_serial'")
+                                  error_message="ERR905: Missing parameter: 'container_serial'",
+                                  try_unspecific=False)
 
         # Invalid container serial
         self.request_assert_error(404, 'container/register/finalize',
                                   {"container_serial": "invalid_serial", "device_brand": "LG",
                                    "device_model": "ABC123"},
                                   None, 'POST',
-                                  error_code=601)
+                                  error_code=601,
+                                  try_unspecific=True)
 
     def test_05_register_finalize_invalid_challenge(self):
         # Invalid challenge
@@ -3545,7 +3570,8 @@ class APIContainerSynchronization(APIContainerTest):
 
         self.request_assert_error(400, 'container/register/finalize', params,
                                   None, 'POST',
-                                  error_code=3002)
+                                  error_code=3002,
+                                  try_unspecific=True)
 
     def test_06_register_twice_fails(self):
         # register container successfully
@@ -3573,7 +3599,8 @@ class APIContainerSynchronization(APIContainerTest):
 
         # try register second time with same data
         self.request_assert_error(400, 'container/register/finalize',
-                                  params, None, 'POST')
+                                  params, None, 'POST',
+                                  try_unspecific=True)
 
         # try to reinit registration
         self.request_assert_error(400, 'container/register/initialize',
@@ -3637,19 +3664,22 @@ class APIContainerSynchronization(APIContainerTest):
         scope = "https://pi.net/container/synchronize"
         self.request_assert_error(404, "container/challenge",
                                   {"scope": scope, "container_serial": "random"}, None, "POST",
-                                  error_code=601)
+                                  error_code=601,
+                                  try_unspecific=True)
 
         # container is not registered
         smph_serial = init_container({"type": "smartphone"})["container_serial"]
         scope = "container/synchronize"
         self.request_assert_error(400, "container/challenge",
                                   {"scope": scope, "container_serial": smph_serial}, None, "POST",
-                                  error_code=3001)
+                                  error_code=3001,
+                                  try_unspecific=True)
 
         # Missing serial
         self.request_assert_error(400, "container/challenge",
                                   {"scope": scope}, None, "POST",
-                                  error_code=905)
+                                  error_code=905,
+                                  try_unspecific=False)
 
     def register_terminate_client_success(self, smartphone_serial=None):
         # Registration
@@ -3740,10 +3770,11 @@ class APIContainerSynchronization(APIContainerTest):
         params = mock_smph.register_terminate(result["result"]["value"], scope)
 
         # Terminate
-        res = self.request_assert_error(403, "container/register/terminate/client",
-                                        params,
-                                        None, 'POST')
-        self.assertEqual(303, res["result"]["error"]["code"])
+        self.request_assert_error(403, "container/register/terminate/client",
+                                  params,
+                                  None, 'POST',
+                                  error_code=303,
+                                  try_unspecific=False)
 
     def test_14_register_terminate_client_no_user_denied(self):
         # Generic policy
@@ -3800,7 +3831,8 @@ class APIContainerSynchronization(APIContainerTest):
         self.request_assert_error(400,
                                   "container/register/terminate/client",
                                   {"container_serial": mock_smph.container_serial}, None, 'POST',
-                                  error_code=905)
+                                  error_code=905,
+                                  try_unspecific=True)
 
         # Terminate without container serial
         self.request_assert_error(400,
@@ -3814,7 +3846,8 @@ class APIContainerSynchronization(APIContainerTest):
                                   "container/register/terminate/client",
                                   {"container_serial": "random"},
                                   self.at, "POST",
-                                  error_code=601)
+                                  error_code=601,
+                                  try_unspecific=True)
 
         # Missing serial
         self.request_assert_error(400,
@@ -3842,7 +3875,8 @@ class APIContainerSynchronization(APIContainerTest):
         # Terminate
         self.request_assert_error(400, "container/register/terminate/client",
                                   params, self.at, 'POST',
-                                  error_code=3002)
+                                  error_code=3002,
+                                  try_unspecific=True)
 
     def test_21_register_terminate_client_not_registered(self):
         # Registration
@@ -3864,7 +3898,8 @@ class APIContainerSynchronization(APIContainerTest):
         params = mock_smph.register_terminate(result["result"]["value"], scope)
         self.request_assert_error(400, "container/register/terminate/client",
                                   params, self.at, "POST",
-                                  error_code=3001)
+                                  error_code=3001,
+                                  try_unspecific=True)
 
     def test_22_register_generic_fail(self):
         set_policy("policy", scope=SCOPE.CONTAINER, action={PolicyAction.CONTAINER_SERVER_URL: "https://pi.net/",
@@ -3883,7 +3918,8 @@ class APIContainerSynchronization(APIContainerTest):
         data = {"container_serial": generic_serial}
         self.request_assert_error(501, 'container/register/finalize',
                                   data,
-                                  None, 'POST')
+                                  None, 'POST',
+                                  try_unspecific=True)
 
         # Terminate
         self.request_assert_error(501, f'container/register/{generic_serial}/terminate',
@@ -3908,7 +3944,8 @@ class APIContainerSynchronization(APIContainerTest):
         data = {"container_serial": yubi_serial}
         self.request_assert_error(501, 'container/register/finalize',
                                   data,
-                                  None, 'POST')
+                                  None, 'POST',
+                                  try_unspecific=True)
 
         # Terminate
         self.request_assert_error(501, f'container/register/{yubi_serial}/terminate',
@@ -3969,20 +4006,23 @@ class APIContainerSynchronization(APIContainerTest):
         params = {"public_enc_key_client": "123", "container_serial": smartphone_serial}
         self.request_assert_error(400, "container/synchronize",
                                   params, None, "POST",
-                                  error_code=905)
+                                  error_code=905,
+                                  try_unspecific=True)
 
         # missing serial
         params = {"public_enc_key_client": "123", "signature": "0001"}
         self.request_assert_error(400, "container/synchronize",
                                   params, None, "POST",
-                                  error_code=905)
+                                  error_code=905,
+                                  try_unspecific=False)
 
     def test_26_synchronize_invalid_container(self):
         # container does not exists
         params = {"public_enc_key_client": "123", "signature": "abcd", "container_serial": "random"}
         self.request_assert_error(404, "container/synchronize",
                                   params, None, "POST",
-                                  error_code=601)
+                                  error_code=601,
+                                  try_unspecific=True)
 
     def test_27_synchronize_container_not_registered(self):
         # Registration
@@ -4004,7 +4044,8 @@ class APIContainerSynchronization(APIContainerTest):
         # Sync
         self.request_assert_error(400, "container/synchronize",
                                   params, None, "POST",
-                                  error_code=3001)
+                                  error_code=3001,
+                                  try_unspecific=True)
 
     def test_28_synchronize_invalid_challenge(self):
         # invalid challenge
@@ -4020,7 +4061,8 @@ class APIContainerSynchronization(APIContainerTest):
         params = mock_smph.synchronize(result["result"]["value"], "https://pi.net/container/register/initialize")
         self.request_assert_error(400, "container/synchronize",
                                   params, None, 'POST',
-                                  error_code=3002)
+                                  error_code=3002,
+                                  try_unspecific=True)
 
     def test_29_synchronize_man_in_the_middle(self):
         # client register successfully
@@ -4042,7 +4084,8 @@ class APIContainerSynchronization(APIContainerTest):
         # Fails due to invalid signature (client signed the public encryption key which is now different)
         self.request_assert_error(400, "container/synchronize",
                                   params, None, 'POST',
-                                  error_code=3002)
+                                  error_code=3002,
+                                  try_unspecific=True)
 
     def test_30_synchronize_smartphone_with_push_fb(self):
         # Registration
@@ -4338,7 +4381,8 @@ class APIContainerSynchronization(APIContainerTest):
         scope = "https://pi.net/container/synchronize"
         self.request_assert_error(400, "container/challenge",
                                   {"scope": scope, "container_serial": generic_serial}, None, 'POST',
-                                  error_code=3001)
+                                  error_code=3001,
+                                  try_unspecific=True)
 
     def test_36_yubi_sync_fail(self):
         generic_serial = init_container({"type": "generic"})["container_serial"]
@@ -4347,7 +4391,8 @@ class APIContainerSynchronization(APIContainerTest):
         scope = "https://pi.net/container/synchronize"
         self.request_assert_error(400, "container/challenge",
                                   {"scope": scope, "container_serial": generic_serial}, None, "POST",
-                                  error_code=3001)
+                                  error_code=3001,
+                                  try_unspecific=True)
 
     def setup_rollover(self, smartphone_serial=None):
         # Registration
@@ -4430,7 +4475,8 @@ class APIContainerSynchronization(APIContainerTest):
         # Init rollover
         self.request_assert_error(403, "container/rollover", smartphone_params,
                                   None, "POST",
-                                  error_code=303)
+                                  error_code=303,
+                                  try_unspecific=False)
 
         delete_policy("register_policy")
 
@@ -4614,13 +4660,15 @@ class APIContainerSynchronization(APIContainerTest):
         scope = "https://pi.net/container/rollover"
         self.request_assert_error(400, "container/challenge",
                                   {"scope": scope, "container_serial": smartphone_serial}, None, "POST",
-                                  error_code=3001)
+                                  error_code=3001,
+                                  try_unspecific=True)
 
         # Init rollover
         self.request_assert_error(400, "container/rollover",
                                   {"container_serial": smartphone_serial},
                                   None, 'POST',
-                                  error_code=3001)
+                                  error_code=3001,
+                                  try_unspecific=True)
 
         delete_policy("policy")
         delete_policy("policy_rollover")
@@ -4661,7 +4709,8 @@ class APIContainerSynchronization(APIContainerTest):
         self.request_assert_error(400, "container/rollover",
                                   params,
                                   None, 'POST',
-                                  error_code=3002)
+                                  error_code=3002,
+                                  try_unspecific=True)
 
         delete_policy("policy")
         delete_policy("policy_rollover")
@@ -4715,7 +4764,8 @@ class APIContainerSynchronization(APIContainerTest):
         self.request_assert_error(400, 'container/register/finalize',
                                   params,
                                   None, 'POST',
-                                  error_code=3002)
+                                  error_code=3002,
+                                  try_unspecific=True)
 
         # Invalid time stamp
         # Mock smartphone
@@ -4726,7 +4776,8 @@ class APIContainerSynchronization(APIContainerTest):
         self.request_assert_error(400, 'container/register/finalize',
                                   params,
                                   None, 'POST',
-                                  error_code=3002)
+                                  error_code=3002,
+                                  try_unspecific=True)
 
         # Invalid passphrase
         # Mock smartphone
@@ -4737,7 +4788,8 @@ class APIContainerSynchronization(APIContainerTest):
         self.request_assert_error(400, 'container/register/finalize',
                                   params,
                                   None, 'POST',
-                                  error_code=3002)
+                                  error_code=3002,
+                                  try_unspecific=True)
 
         delete_policy("policy")
         delete_policy("policy_rollover")
@@ -4748,7 +4800,8 @@ class APIContainerSynchronization(APIContainerTest):
                                                             PolicyAction.CONTAINER_CLIENT_ROLLOVER: True})
 
         self.request_assert_error(400, "container/rollover", {}, None, 'POST',
-                                  error_code=905)
+                                  error_code=905,
+                                  try_unspecific=False)
 
         delete_policy("policy")
 
@@ -4876,7 +4929,8 @@ class APIContainerSynchronization(APIContainerTest):
         # Call sync endpoint with rollover signature
         self.request_assert_error(400, "container/synchronize",
                                   params, None, 'POST',
-                                  error_code=3002)
+                                  error_code=3002,
+                                  try_unspecific=True)
 
         delete_policy("policy")
         delete_policy("policy_rollover")
@@ -4978,7 +5032,8 @@ class APIContainerSynchronization(APIContainerTest):
         params = mock_smph.synchronize(result["result"]["value"], scope)
         self.request_assert_error(400, "container/synchronize",
                                   params, None, 'POST',
-                                  error_code=3002)
+                                  error_code=3002,
+                                  try_unspecific=True)
         self.assertEqual(RegistrationState.ROLLOVER_COMPLETED, smartphone.registration_state)
 
         # Sync with new smartphone
