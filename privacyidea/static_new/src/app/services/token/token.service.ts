@@ -251,6 +251,7 @@ export class TokenService implements TokenServiceInterface {
   tokenBaseUrl = environment.proxyUrl + "/token/";
   eventPageSize = 10;
   tokenSerial = this.contentService.tokenSerial;
+  detailsUsername = this.contentService.detailsUsername;
   filterParams = computed<Record<string, string>>(() => {
     const allowedFilters = [...this.apiFilter, ...this.advancedApiFilter, ...this.hiddenApiFilter];
 
@@ -389,7 +390,6 @@ export class TokenService implements TokenServiceInterface {
       params: { user: this.detailsUsername() }
     };
   });
-  detailsUsername = signal("");
   tokenTypeOptions = computed<TokenType[]>(() => {
     const obj = this.tokenTypesResource?.value()?.result?.value;
     if (!obj) return [];

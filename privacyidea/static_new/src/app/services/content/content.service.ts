@@ -23,6 +23,7 @@ import { filter, map, pairwise, startWith } from "rxjs";
 import { ROUTE_PATHS } from "../../route_paths";
 
 export interface ContentServiceInterface {
+  detailsUsername: WritableSignal<string>;
   router: Router;
   routeUrl: Signal<string>;
   previousUrl: Signal<string>;
@@ -30,10 +31,12 @@ export interface ContentServiceInterface {
   containerSerial: WritableSignal<string>;
   tokenSelected: (serial: string) => void;
   containerSelected: (containerSerial: string) => void;
+  userSelected: (username: any) => void;
 }
 
 @Injectable({ providedIn: "root" })
 export class ContentService implements ContentServiceInterface {
+  detailsUsername = signal("");
   router = inject(Router);
   private readonly _urlPair = toSignal(
     this.router.events.pipe(
@@ -49,13 +52,18 @@ export class ContentService implements ContentServiceInterface {
   tokenSerial = signal("");
   containerSerial = signal("");
 
-  tokenSelected(serial: string) {
+  tokenSelected(serial: string): void {
     this.router.navigateByUrl(ROUTE_PATHS.TOKENS_DETAILS + serial);
     this.tokenSerial.set(serial);
   }
 
-  containerSelected(containerSerial: string) {
+  containerSelected(containerSerial: string): void {
     this.router.navigateByUrl(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + containerSerial);
     this.containerSerial.set(containerSerial);
+  }
+
+  userSelected(username: any): void {
+    this.router.navigateByUrl(ROUTE_PATHS.USERS_DETAILS + "/" + username);
+    this.detailsUsername.set(username);
   }
 }

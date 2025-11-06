@@ -136,6 +136,13 @@
                       <app-copy-button [copyText]="tokenDetails.container_serial" />
                     }
                   }
+                  @case ("username") {
+                    <a
+                      (click)="contentService.userSelected(tokenDetails[column.key])"
+                      attr.aria-label="{{ column.label }} Link">
+                      {{ tokenDetails[column.key] }}
+                    </a>
+                  }
                   @default {
                     @if (tableUtilsService.isLink(column.key)) {
                       <a

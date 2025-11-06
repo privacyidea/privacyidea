@@ -118,6 +118,13 @@
                     </span>
                 }
               }
+              @case ("user") {
+                <a
+                  (click)="contentService.userSelected(element[column.key])"
+                  attr.aria-label="{{ column.label }} Link">
+                  {{ element[column.key] }}
+                </a>
+              }
               @default {
                 <span>
                     {{ element[column.key] }}

@@ -82,6 +82,13 @@
                   </a>
                   <app-copy-button [copyText]="element.serial"></app-copy-button>
                 }
+                @case ("user") {
+                  <a
+                    (click)="contentService.userSelected(element[column.key])"
+                    attr.aria-label="{{ column.label }} Link">
+                    {{ element[column.key] }}
+                  </a>
+                }
                 @default {
                   @if (tableUtilsService.isLink(column.key)) {
                     <a

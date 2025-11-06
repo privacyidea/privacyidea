@@ -73,6 +73,13 @@
                       {{ tableUtilsService.getDisplayText(column.key, element) }}
                     </span>
                   }
+                  @case ("username") {
+                    <a
+                      (click)="contentService.userSelected(element[column.key])"
+                      attr.aria-label="{{ column.label }} Link">
+                      {{ element[column.key] }}
+                    </a>
+                  }
                   @default {
                     @if (tableUtilsService.isLink(column.key)) {
                       <a

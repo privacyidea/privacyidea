@@ -170,7 +170,11 @@
                       </app-clearable-input>
                     </mat-form-field>
                   } @else {
-                    <span>{{ element.value }}</span>
+                    <a
+                      (click)="contentService.userSelected(element.value)"
+                      i18n-aria-label="{{ element.keyMap.label }} Link">
+                      {{ element.value }}
+                    </a>
                   }
                 }
                 @case ("user_realm") {
