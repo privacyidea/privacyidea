@@ -14,8 +14,8 @@
 
 .user-details {
   display: grid;
-  grid-template-columns: 1fr 1fr 2fr;
-  gap: 12px 16px;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 128px;
   padding: 12px 16px;
   border: 1px solid #c7c5d0;
   border-radius: var(--border-radius);
@@ -23,7 +23,7 @@
 
 .custom-user-details {
   display: grid;
-  grid-template-columns: 2fr 2fr 1fr;
+  grid-template-columns: 50fr 50fr 1fr;
   gap: 12px 16px;
   padding: 12px 16px;
   border: 1px solid #c7c5d0;
@@ -33,7 +33,7 @@
 .user-details-grid,
 .user-details-column {
   display: grid;
-  grid-template-columns: 170px 1fr;
+  grid-template-columns: 1fr 1fr;
   gap: 16px;
   padding: 0;
   border: 0;
@@ -76,7 +76,7 @@
 }
 
 .custom-details {
-  max-width: 467px;
+  max-width: 1035px;
 }
 
 .token-option {
