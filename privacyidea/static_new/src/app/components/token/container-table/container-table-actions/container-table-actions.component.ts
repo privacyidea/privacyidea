@@ -28,6 +28,7 @@ import { VersioningService, VersioningServiceInterface } from "../../../../servi
 import { AuthService } from "../../../../services/auth/auth.service";
 import { ROUTE_PATHS } from "../../../../route_paths";
 import { RouterLink } from "@angular/router";
+import { NotificationService } from "../../../../services/notification/notification.service";
 
 @Component({
   selector: "app-container-table-actions",
@@ -49,15 +50,6 @@ export class ContainerTableActionsComponent {
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
   containerSelection = this.containerService.containerSelection;
   containerSerial = this.containerService.containerSerial;
-  containerType = computed(() => {
-    const containerDetail = this.containerService.containerDetailResource.value();
-    return containerDetail?.result?.value?.containers[0]?.type ?? [];
-  });
-  registrationState = computed(() => {
-    const containerDetail = this.containerService.containerDetailResource.value();
-    return containerDetail?.result?.value?.containers[0]?.info?.registration_state ?? "";
-  });
-
   selectedContainer = this.containerService.selectedContainer;
 
   deleteSelectedContainer(): void {

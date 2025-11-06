@@ -50,7 +50,6 @@ import { ClearableInputComponent } from "../../shared/clearable-input/clearable-
 import { ContainerDetailsInfoComponent } from "./container-details-info/container-details-info.component";
 import { ContainerDetailsTokenTableComponent } from "./container-details-token-table/container-details-token-table.component";
 import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
-import { FilterValue } from "../../../core/models/filter_value";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatDivider } from "@angular/material/divider";
 import { MatFormField } from "@angular/material/form-field";
@@ -63,6 +62,11 @@ import { NgClass } from "@angular/common";
 import { ROUTE_PATHS } from "../../../route_paths";
 import { Router } from "@angular/router";
 import { infoDetailsKeyMap } from "../token-details/token-details.component";
+import { NotificationService } from "../../../services/notification/notification.service";
+import { MatDialog } from "@angular/material/dialog";
+import { ContainerDetailsActionsComponent } from "./container-details-actions/container-details-actions.component";
+import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
+import { ContainerDetailsTokenActionsComponent } from "./container-details-token-actions/container-details-token-actions.component";
 
 export const containerDetailsKeyMap = [
   { key: "type", label: "Type" },
@@ -116,7 +120,10 @@ interface TokenOption {
     MatDivider,
     MatCheckbox,
     CopyButtonComponent,
-    ClearableInputComponent
+    ClearableInputComponent,
+    ContainerDetailsActionsComponent,
+    ScrollToTopDirective,
+    ContainerDetailsTokenActionsComponent
   ],
   templateUrl: "./container-details.component.html",
   styleUrls: ["./container-details.component.scss"]
@@ -130,6 +137,7 @@ export class ContainerDetailsComponent {
   protected readonly userService: UserServiceInterface = inject(UserService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
+  protected readonly notificationService = inject(NotificationService);
   private router = inject(Router);
   states = this.containerService.states;
   isEditingUser = signal(false);
@@ -158,6 +166,11 @@ export class ContainerDetailsComponent {
       }
       return previous?.value ?? 0;
     }
+  });
+
+  containerType = computed(() => {
+    const containerDetail = this.containerService.containerDetailResource.value();
+    return containerDetail?.result?.value?.containers[0]?.type ?? "";
   });
 
   containerDetailResource = this.containerService.containerDetailResource;
@@ -286,7 +299,8 @@ export class ContainerDetailsComponent {
   constructor() {
     effect(() => {
       this.showOnlyTokenNotInContainer();
-      if (this.filterHTMLInputElement) {
+      // do not focus if showOnlyTokenNotInContainer is deselected to ensure the hint is visible
+      if (this.filterHTMLInputElement && this.showOnlyTokenNotInContainer()) {
         this.filterHTMLInputElement.nativeElement.focus();
       }
     });

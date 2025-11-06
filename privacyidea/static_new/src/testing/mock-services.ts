@@ -35,7 +35,6 @@ import {
   TokenGroups,
   Tokens,
   TokenService,
-  TokenServiceInterface,
   TokenType
 } from "../app/services/token/token.service";
 import { Machines, MachineServiceInterface, TokenApplication } from "../app/services/machine/machine.service";
@@ -734,7 +733,10 @@ export class MockTokenService extends TokenService {
   override resetFailCount = jest.fn().mockReturnValue(of(null));
   override saveTokenDetail = jest.fn().mockReturnValue(of(MockPiResponse.fromValue<boolean>(true)));
 
-  override getSerial(otp: string, params: HttpParams): Observable<PiResponse<{ count: number; serial?: string }, unknown>> {
+  override getSerial(otp: string, params: HttpParams): Observable<PiResponse<{
+    count: number;
+    serial?: string
+  }, unknown>> {
     throw new Error("Method not implemented.");
   }
 

@@ -26,7 +26,7 @@ import {
 import { MatButton } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import { ContainerService, ContainerServiceInterface } from "../../../../services/container/container.service";
-import { ContainerRegisterFinalizeData } from "../../token-card/container-tab/container-tab.component";
+import { ContainerRegisterFinalizeData } from "../../container-details/container-details-actions/container-details-actions.component";
 
 @Component({
   selector: "app-container-registration-finalize-dialog",

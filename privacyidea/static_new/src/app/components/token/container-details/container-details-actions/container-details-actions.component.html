@@ -1,0 +1,75 @@
+<!--
+ (c) NetKnights GmbH 2025,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+@if (anyActionsAllowed()) {
+  <div class="flex-column gap-8">
+    <h4 class="margin-0">Container Actions</h4>
+    @if (authService.actionAllowed("container_delete")) {
+      <div>
+        <button
+          (click)="deleteContainer()"
+          class="action-button-delete width-238"
+          mat-stroked-button
+          i18n>
+          <mat-icon>delete</mat-icon>
+          Delete
+        </button>
+      </div>
+    }
+    @if (containerType === "smartphone") {
+      @if (authService.actionAllowed("container_delete")) {
+        <mat-divider class="margin-top-8 margin-bottom-8"></mat-divider>
+      }
+      @if (registrationAllowed()) {
+        <div>
+          <button
+            (click)="openRegisterInitDialog(false)"
+            class="action-button-1 width-238"
+            mat-stroked-button
+            i18n>
+            <mat-icon>phonelink</mat-icon>
+            Register
+          </button>
+        </div>
+      } @else if (rolloverAllowed()) {
+        <div>
+          <button
+            (click)="openRegisterInitDialog(true)"
+            class="action-button-1 width-238"
+            mat-stroked-button
+            i18n>
+            <mat-icon>sync</mat-icon>
+            Rollover
+          </button>
+        </div>
+      }
+      @if (unregisterAllowed()) {
+        <div>
+          <button
+            (click)="unregisterContainer()"
+            class="action-button-1 width-238"
+            mat-stroked-button
+            i18n>
+            <mat-icon>phonelink_off</mat-icon>
+            Unregister
+          </button>
+        </div>
+      }
+    }
+  </div>
+}
