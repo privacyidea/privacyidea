@@ -449,3 +449,26 @@ body {
   flex-grow: 1;
   width: 100%;
 }
+
+
+::ng-deep {
+  .mat-pseudo-checkbox.mat-pseudo-checkbox-checked::after {
+    color: white !important;
+  }
+
+  .mdc-list-item--selected:not(.mdc-list-item--disabled):not(.mat-mdc-option-multiple) {
+    background-color: var(--mat-sys-primary-light) !important;
+  }
+
+  .mat-mdc-option.mdc-list-item {
+    background: var(--mat-sys-surface-container-low) !important;
+  }
+
+  .mat-mdc-option.mdc-list-item--selected:not(.mdc-list-item--disabled) .mdc-list-item__primary-text {
+    color: white !important;
+  }
+
+  .mat-mdc-option:hover:not(.mdc-list-item--selected, .mdc-list-item--disabled) {
+    background-color: #f2f9fd;
+  }
+}
