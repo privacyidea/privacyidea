@@ -45,7 +45,7 @@
     <p
       class="margin-0"
       style="font-size: 12px">
-      Version {{ this.versioningService.version() }}
+      Version {{ versioningService.version() }}
     </p>
     <p style="font-size: 12px; margin-bottom: 6px;">
       An open-source project
@@ -138,6 +138,17 @@
             Overview
           </button>
         </mat-list-item>
+        @if (contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_DETAILS)) {
+          <mat-list-item>
+            <button
+              class="card-button-active"
+              i18n
+              mat-stroked-button>
+              <mat-icon>privacy_tip</mat-icon>
+              Details
+            </button>
+          </mat-list-item>
+        }
         @if (authService.tokenEnrollmentAllowed()) {
           <mat-list-item>
             <button
@@ -203,10 +214,21 @@
             Overview
           </button>
         </mat-list-item>
+        @if (contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS)) {
+          <mat-list-item>
+            <button
+              class="card-button-active"
+              i18n
+              mat-stroked-button>
+              <mat-icon>source</mat-icon>
+              Details
+            </button>
+          </mat-list-item>
+        }
         @if (authService.actionAllowed("container_create")) {
           <mat-list-item>
             <button
-              [ngClass]="this.contentService.routeUrl() === ROUTE_PATHS.TOKENS_CONTAINERS_CREATE ?
+              [ngClass]="contentService.routeUrl() === ROUTE_PATHS.TOKENS_CONTAINERS_CREATE ?
                   'card-button-active' : 'card-button-1'"
               [routerLink]="[ROUTE_PATHS.TOKENS_CONTAINERS_CREATE]"
               i18n
@@ -275,6 +297,17 @@
                 }
               </mat-select>
             </mat-form-field>
+          </mat-list-item>
+        }
+        @if (contentService.routeUrl().startsWith(ROUTE_PATHS.USERS_DETAILS)) {
+          <mat-list-item>
+            <button
+              class="card-button-active"
+              i18n
+              mat-stroked-button>
+              <mat-icon>manage_accounts</mat-icon>
+              Details
+            </button>
           </mat-list-item>
         }
         <mat-list-item>
@@ -448,7 +481,7 @@
             class="card-button-1"
             disabled
             mat-stroked-button>
-            <mat-icon>privacy_tip</mat-icon>
+            <mat-icon>safety_check</mat-icon>
             Tokentypes
           </button>
         </mat-list-item>
