@@ -38,7 +38,7 @@
         [filterHTMLInputElement]="filterHTMLInputElement"
         [filterValue]="tokenService.tokenFilter" />
     </div>
-      <app-token-table-actions/>
+    <app-token-table-actions />
     <div class="table-container">
       <table
         (matSortChange)="onSortEvent($event)"
@@ -53,13 +53,13 @@
             @if (column.key === "select") {
               <th
                 *matHeaderCellDef
-                mat-header-cell
-                class="table-checkbox">
+                class="table-checkbox"
+                mat-header-cell>
                 <mat-checkbox
                   (change)="$event ? toggleAllRows() : null"
                   [checked]="isAllSelected()"
-                  [indeterminate]="tokenSelection().length > 0 && !isAllSelected()"
-                  [disabled]="totalLength() === 0" />
+                  [disabled]="totalLength() === 0"
+                  [indeterminate]="tokenSelection().length > 0 && !isAllSelected()" />
               </th>
             } @else {
               <th
@@ -72,12 +72,12 @@
             }
             <td
               *matCellDef="let tokenDetails"
-              attr.aria-label="{{ column.label }} Cell"
-              mat-cell
               [ngClass]="{
                 'width-18rem': column.key === 'description',
                 'table-checkbox': column.key === 'select'
-              }">
+              }"
+              attr.aria-label="{{ column.label }} Cell"
+              mat-cell>
               <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
                 @switch (column.key) {
                   @case ("select") {
@@ -90,27 +90,31 @@
                   @case ("serial") {
                     <div class="flex-row">
                       <a
-                        class="flex ali-center"
+                        (click)="contentService.tokenSelected(tokenDetails.serial)"
                         attr.aria-label="{{ column.label }} Link"
-                        (click)="contentService.tokenSelected(tokenDetails.serial)">
+                        class="flex ali-center">
                         {{ tokenDetails[column.key] }}
                       </a>
                       <app-copy-button [copyText]="tokenDetails.serial" />
                     </div>
                   }
                   @case ("active") {
-                    <span
-                      [ngClass]="tableUtilsService.getClassForColumn(column.key, tokenDetails)"
-                      (click)="toggleActive(tokenDetails)">
+                    @if (authService.actionAllowed("enable") && authService.actionAllowed("disable")) {
+                      <span
+                        (click)="toggleActive(tokenDetails)"
+                        [ngClass]="tableUtilsService.getClassForColumn(column.key, tokenDetails)">
                       {{ tableUtilsService.getDisplayText(column.key, tokenDetails) }}
                     </span>
+                    }
                   }
                   @case ("failcount") {
-                    <span
-                      [ngClass]="tableUtilsService.getClassForColumn(column.key, tokenDetails)"
-                      (click)="resetFailCount(tokenDetails)">
+                    @if (authService.actionAllowed("reset")) {
+                      <span
+                        (click)="resetFailCount(tokenDetails)"
+                        [ngClass]="tableUtilsService.getClassForColumn(column.key, tokenDetails)">
                       {{ tableUtilsService.getDisplayText(column.key, tokenDetails) }}
                     </span>
+                    }
                   }
                   @case ("realms") {
                     <div [ngClass]="{ 'realm-list': (tokenDetails[column.key]?.length || 0) > 1 }">
@@ -124,8 +128,8 @@
                   }
                   @case ("container_serial") {
                     <a
-                      attr.aria-label="{{ column.label }} Link"
-                      (click)="contentService.containerSelected(tokenDetails.container_serial)">
+                      (click)="contentService.containerSelected(tokenDetails.container_serial)"
+                      attr.aria-label="{{ column.label }} Link">
                       {{ tokenDetails[column.key] }}
                     </a>
                     @if (tokenDetails.container_serial !== "") {

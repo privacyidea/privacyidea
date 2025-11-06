@@ -119,10 +119,9 @@
 
   <mat-accordion>
     <mat-expansion-panel
-      (opened)="router.navigate([ROUTE_PATHS.TOKENS])"
       [expanded]="router.url.startsWith(ROUTE_PATHS.TOKENS)"
       class="nav-expension-panel">
-      <mat-expansion-panel-header>
+      <mat-expansion-panel-header (click)="router.navigate([ROUTE_PATHS.TOKENS])">
         <mat-panel-title>
           <mat-icon>shield</mat-icon>
           Token
@@ -184,9 +183,8 @@
     </mat-expansion-panel>
 
     <mat-expansion-panel
-      (opened)="router.navigate([ROUTE_PATHS.TOKENS_CONTAINERS])"
       [expanded]="router.url.startsWith(ROUTE_PATHS.TOKENS_CONTAINERS)">
-      <mat-expansion-panel-header>
+      <mat-expansion-panel-header (click)="router.navigate([ROUTE_PATHS.TOKENS_CONTAINERS])">
         <mat-panel-title>
           <mat-icon>folder</mat-icon>
           Container
@@ -247,9 +245,8 @@
     </mat-expansion-panel>
 
     <mat-expansion-panel
-      (opened)="router.navigate([ROUTE_PATHS.USERS])"
       [expanded]="router.url.startsWith(ROUTE_PATHS.USERS)">
-      <mat-expansion-panel-header>
+      <mat-expansion-panel-header (click)="router.navigate([ROUTE_PATHS.USERS])">
         <mat-panel-title>
           <mat-icon>supervised_user_circle</mat-icon>
           Users
@@ -326,9 +323,8 @@
     </mat-expansion-panel>
 
     <mat-expansion-panel
-      (opened)="router.navigate([ROUTE_PATHS.AUDIT])"
       [expanded]="router.url.startsWith(ROUTE_PATHS.AUDIT)">
-      <mat-expansion-panel-header>
+      <mat-expansion-panel-header (click)="router.navigate([ROUTE_PATHS.AUDIT])">
         <mat-panel-title>
           <mat-icon>receipt_long</mat-icon>
           Audit

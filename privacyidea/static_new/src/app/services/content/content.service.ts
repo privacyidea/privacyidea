@@ -26,7 +26,6 @@ export interface ContentServiceInterface {
   router: Router;
   routeUrl: Signal<string>;
   previousUrl: Signal<string>;
-  isProgrammaticTabChange: WritableSignal<boolean>;
   tokenSerial: WritableSignal<string>;
   containerSerial: WritableSignal<string>;
   tokenSelected: (serial: string) => void;
@@ -34,7 +33,7 @@ export interface ContentServiceInterface {
 }
 
 @Injectable({ providedIn: "root" })
-export class ContentService {
+export class ContentService implements ContentServiceInterface {
   router = inject(Router);
   private readonly _urlPair = toSignal(
     this.router.events.pipe(
@@ -47,22 +46,15 @@ export class ContentService {
   );
   readonly routeUrl = computed(() => this._urlPair()[1]);
   readonly previousUrl = computed(() => this._urlPair()[0]);
-  isProgrammaticTabChange = signal(false);
   tokenSerial = signal("");
   containerSerial = signal("");
 
   tokenSelected(serial: string) {
-    if (this.routeUrl().includes("containers")) {
-      this.isProgrammaticTabChange.set(true);
-    }
     this.router.navigateByUrl(ROUTE_PATHS.TOKENS_DETAILS + serial);
     this.tokenSerial.set(serial);
   }
 
   containerSelected(containerSerial: string) {
-    if (!this.routeUrl().includes("containers")) {
-      this.isProgrammaticTabChange.set(true);
-    }
     this.router.navigateByUrl(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + containerSerial);
     this.containerSerial.set(containerSerial);
   }

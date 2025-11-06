@@ -135,7 +135,6 @@ export class ContainerDetailsTokenTableComponent {
       }
   });
   tokenSerial = this.tokenService.tokenSerial;
-  isProgrammaticTabChange = this.contentService.isProgrammaticTabChange;
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
 

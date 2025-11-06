@@ -141,7 +141,6 @@ export class TokenDetailsComponent {
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
   tokenIsActive = this.tokenService.tokenIsActive;
   tokenIsRevoked = this.tokenService.tokenIsRevoked;
-  isProgrammaticTabChange = this.contentService.isProgrammaticTabChange;
   containerSerial = this.containerService.containerSerial;
   tokenSerial = this.tokenService.tokenSerial;
   isEditingUser = signal(false);
@@ -363,7 +362,6 @@ export class TokenDetailsComponent {
   }
 
   containerSelected(containerSerial: string) {
-    this.isProgrammaticTabChange.set(true);
     this.contentService.containerSelected(containerSerial);
   }
 

@@ -120,7 +120,7 @@ export class UserDetailsTokenTableComponent {
   toggleActive(token: ContainerDetailToken): void {
     this.tokenService.toggleActive(token.serial, token.active).subscribe({
       next: () => {
-        this.userService.userResource.reload();
+        this.tokenService.userTokenResource.reload();
       }
     });
   }
