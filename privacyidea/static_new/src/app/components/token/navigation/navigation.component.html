@@ -152,8 +152,7 @@
         @if (authService.tokenEnrollmentAllowed()) {
           <mat-list-item>
             <button
-              [ngClass]="
-                      contentService.routeUrl() === ROUTE_PATHS.TOKENS_ENROLLMENT ? 'card-button-active' :
+              [ngClass]="contentService.routeUrl() === ROUTE_PATHS.TOKENS_ENROLLMENT ? 'card-button-active' :
                       'card-button-1'"
               [routerLink]="[ROUTE_PATHS.TOKENS_ENROLLMENT]"
               i18n
@@ -163,11 +162,24 @@
             </button>
           </mat-list-item>
         }
+        @if (authService.actionAllowed("importtokens")) {
+          <mat-list-item>
+            <button
+              [ngClass]="contentService.routeUrl() === ROUTE_PATHS.TOKENS_IMPORT ? 'card-button-active' :
+              'card-button-1'"
+              [routerLink]="[ROUTE_PATHS.TOKENS_IMPORT]"
+              i18n
+              mat-stroked-button>
+              <mat-icon>input</mat-icon>
+              Import
+            </button>
+          </mat-list-item>
+        }
         @if (authService.actionAllowed("getchallenges")) {
           <mat-list-item>
             <button
-              [ngClass]="
-                      contentService.routeUrl() === ROUTE_PATHS.TOKENS_CHALLENGES ? 'card-button-active' : 'card-button-1'"
+              [ngClass]="contentService.routeUrl() === ROUTE_PATHS.TOKENS_CHALLENGES ?
+              'card-button-active' : 'card-button-1'"
               [routerLink]="[ROUTE_PATHS.TOKENS_CHALLENGES]"
               i18n
               mat-stroked-button>
@@ -179,8 +191,7 @@
         @if (authService.actionsAllowed(["machinelist", "manage_machine_tokens"])) {
           <mat-list-item>
             <button
-              [ngClass]="
-                      contentService.routeUrl() === ROUTE_PATHS.TOKENS_APPLICATIONS ? 'card-button-active' :
+              [ngClass]="contentService.routeUrl() === ROUTE_PATHS.TOKENS_APPLICATIONS ? 'card-button-active' :
                       'card-button-1'"
               [routerLink]="[ROUTE_PATHS.TOKENS_APPLICATIONS]"
               i18n

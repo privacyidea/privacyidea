@@ -140,6 +140,11 @@ export interface BulkResult {
   count_success: number;
 }
 
+export interface TokenImportResult {
+  n_imported: number;
+  n_not_imported: number;
+}
+
 export interface TokenServiceInterface {
   stopPolling$: Subject<void>;
   tokenBaseUrl: string;
@@ -235,6 +240,8 @@ export interface TokenServiceInterface {
   getTokengroups(): Observable<PiResponse<TokenGroups>>;
 
   setTokengroup(tokenSerial: string, value: string | string[]): Observable<Object>;
+
+  importTokens(fileName: string, params: Record<string, any>): Observable<PiResponse<TokenImportResult>>;
 }
 
 @Injectable({
@@ -953,6 +960,22 @@ export class TokenService implements TokenServiceInterface {
           console.error("Failed to set token group.", error);
           const message = error.error?.result?.error?.message || "";
           this.notificationService.openSnackBar("Failed to set token group. " + message);
+          return throwError(() => error);
+        })
+      );
+  }
+
+  importTokens(fileName: string, params: Record<string, any>): Observable<PiResponse<TokenImportResult>> {
+    const headers = this.authService.getHeaders();
+    return this.http
+      .post<PiResponse<TokenImportResult>>(`${this.tokenBaseUrl}load/${fileName}`, params, {
+        headers: headers
+      })
+      .pipe(
+        catchError((error) => {
+          console.error("Failed to import tokens.", error);
+          const message = error.error?.result?.error?.message || "";
+          this.notificationService.openSnackBar("Failed to import tokens. " + message);
           return throwError(() => error);
         })
       );
