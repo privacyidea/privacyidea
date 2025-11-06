@@ -185,6 +185,7 @@ type: ``bool``
 
 If the administrator enrolls a token or resets a PIN of a token, then the PIN
 of this token is marked to be changed on the first (or next) use.
+This action is only triggered if an administrator enrolls the token.
 When the user authenticates with the old PIN, the user is authenticated
 successfully. But the detail-response contains the keys "next_pin_change" and
 "pin_change". If "pin_change" is *True* the authenticating application must
