@@ -186,9 +186,9 @@ export interface TokenServiceInterface {
 
   deleteToken(tokenSerial: string): Observable<Object>;
 
-  bulkDeleteTokens(selectedTokens: TokenDetails[]): Observable<PiResponse<BulkResult, any>>;
+  bulkDeleteTokens(selectedTokens: string[]): Observable<PiResponse<BulkResult, any>>;
 
-  bulkDeleteWithConfirmDialog(serialList: TokenDetails[], dialog: any, afterDelete?: () => void): void;
+  bulkDeleteWithConfirmDialog(serialList: string[], dialog: any, afterDelete?: () => void): void;
 
   revokeToken(tokenSerial: string): Observable<any>;
 
@@ -459,7 +459,7 @@ export class TokenService implements TokenServiceInterface {
       );
   }
 
-  bulkDeleteTokens(selectedTokens: TokenDetails[]): Observable<PiResponse<BulkResult, any>> {
+  bulkDeleteTokens(selectedTokens: string[]): Observable<PiResponse<BulkResult, any>> {
     const headers = this.authService.getHeaders();
     const body = { serials: selectedTokens };
 
@@ -473,7 +473,7 @@ export class TokenService implements TokenServiceInterface {
     );
   }
 
-  bulkDeleteWithConfirmDialog(serialList: TokenDetails[], dialog: any, afterDelete?: () => void) {
+  bulkDeleteWithConfirmDialog(serialList: string[], dialog: any, afterDelete?: () => void) {
     dialog
       .open(ConfirmationDialogComponent, {
         data: {

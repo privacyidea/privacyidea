@@ -65,8 +65,8 @@ export const routes: Routes = [
   },
   {
     path: "policies",
-    component: PoliciesComponent,
-    children: []
+    component: TokenComponent,
+    children: [{ path: "", component: PoliciesComponent }]
   },
   {
     path: "audit",

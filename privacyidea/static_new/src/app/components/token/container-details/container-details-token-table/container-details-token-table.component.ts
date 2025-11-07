@@ -316,7 +316,11 @@ export class ContainerDetailsTokenTableComponent {
 
   deleteAllTokens() {
     const serialList = this.containerTokenData().data.map((token) => token.serial);
-    this.tokenService.bulkDeleteWithConfirmDialog(serialList, this.dialog, this.containerService.containerDetailResource.reload);
+    this.tokenService.bulkDeleteWithConfirmDialog(
+      serialList,
+      this.dialog,
+      this.containerService.containerDetailResource.reload
+    );
   }
 
   deleteTokenFromContainer(tokenSerial: string) {

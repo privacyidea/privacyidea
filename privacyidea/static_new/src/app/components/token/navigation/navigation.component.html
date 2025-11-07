@@ -1,7 +1,6 @@
 <div class="drawer-div">
   <div class="brand">
     <div class="brand-row">
-
       <a
         [routerLink]="[ROUTE_PATHS.TOKENS]"
         aria-label="Go to Token Overview"
@@ -47,17 +46,19 @@
       style="font-size: 12px">
       Version {{ this.versioningService.version() }}
     </p>
-    <p style="font-size: 12px; margin-bottom: 6px;">
+    <p style="font-size: 12px; margin-bottom: 6px">
       An open-source project
       <a
         href="https://netknights.it/"
-        target="_blank">maintained by NetKnights
+        target="_blank"
+        >maintained by NetKnights
       </a>
       <br />
       in collaboration with
       <a
         href="https://github.com/privacyidea/privacyidea"
-        target="_blank">community contributors
+        target="_blank"
+        >community contributors
       </a>
     </p>
   </div>
@@ -87,19 +88,21 @@
         <mat-icon>refresh</mat-icon>
       </button>
       <div
-        [ngClass]="[sessionTimerService.remainingTime()! < 31000
-                  ? 'red-light'
-                  : sessionTimerService.remainingTime()! < 60000
-                    ? 'yellow-light'
-                    : 'surface-highest']"
+        [ngClass]="[
+          sessionTimerService.remainingTime()! < 31000
+            ? 'red-light'
+            : sessionTimerService.remainingTime()! < 60000
+              ? 'yellow-light'
+              : 'surface-highest'
+        ]"
         class="session-timer"
         matTooltip="Time until session expires">
         @if (sessionTimerService.remainingTime()! < 599500) {
-          {{ sessionTimerService.remainingTime() | date:'m:ss':'UTC' }}
+          {{ sessionTimerService.remainingTime() | date: "m:ss" : "UTC" }}
         } @else if (sessionTimerService.remainingTime()! < 3600000) {
-          {{ sessionTimerService.remainingTime() | date:'m':'UTC' }}min
+          {{ sessionTimerService.remainingTime() | date: "m" : "UTC" }}min
         } @else {
-          {{ sessionTimerService.remainingTime() | date:"H'h' mm'min'":"UTC" }}
+          {{ sessionTimerService.remainingTime() | date: "H'h' mm'min'" : "UTC" }}
         }
       </div>
     </div>
@@ -111,7 +114,7 @@
         <mat-label>Search</mat-label>
         <input
           disabled
-          matInput>
+          matInput />
         <mat-icon matSuffix>search</mat-icon>
       </mat-form-field>
     </form>
@@ -142,8 +145,9 @@
         @if (authService.tokenEnrollmentAllowed()) {
           <mat-list-item>
             <button
-              [ngClass]="contentService.routeUrl() === ROUTE_PATHS.TOKENS_ENROLLMENT ? 'card-button-active' :
-                      'card-button-1'"
+              [ngClass]="
+                contentService.routeUrl() === ROUTE_PATHS.TOKENS_ENROLLMENT ? 'card-button-active' : 'card-button-1'
+              "
               [routerLink]="[ROUTE_PATHS.TOKENS_ENROLLMENT]"
               i18n
               mat-stroked-button>
@@ -155,8 +159,9 @@
         @if (authService.actionAllowed("importtokens")) {
           <mat-list-item>
             <button
-              [ngClass]="contentService.routeUrl() === ROUTE_PATHS.TOKENS_IMPORT ? 'card-button-active' :
-              'card-button-1'"
+              [ngClass]="
+                contentService.routeUrl() === ROUTE_PATHS.TOKENS_IMPORT ? 'card-button-active' : 'card-button-1'
+              "
               [routerLink]="[ROUTE_PATHS.TOKENS_IMPORT]"
               i18n
               mat-stroked-button>
@@ -168,8 +173,9 @@
         @if (authService.actionAllowed("getchallenges")) {
           <mat-list-item>
             <button
-              [ngClass]="contentService.routeUrl() === ROUTE_PATHS.TOKENS_CHALLENGES ?
-              'card-button-active' : 'card-button-1'"
+              [ngClass]="
+                contentService.routeUrl() === ROUTE_PATHS.TOKENS_CHALLENGES ? 'card-button-active' : 'card-button-1'
+              "
               [routerLink]="[ROUTE_PATHS.TOKENS_CHALLENGES]"
               i18n
               mat-stroked-button>
@@ -181,8 +187,9 @@
         @if (authService.actionsAllowed(["machinelist", "manage_machine_tokens"])) {
           <mat-list-item>
             <button
-              [ngClass]="contentService.routeUrl() === ROUTE_PATHS.TOKENS_APPLICATIONS ? 'card-button-active' :
-                      'card-button-1'"
+              [ngClass]="
+                contentService.routeUrl() === ROUTE_PATHS.TOKENS_APPLICATIONS ? 'card-button-active' : 'card-button-1'
+              "
               [routerLink]="[ROUTE_PATHS.TOKENS_APPLICATIONS]"
               i18n
               mat-stroked-button>
@@ -207,8 +214,9 @@
       <mat-list>
         <mat-list-item>
           <button
-            [ngClass]="contentService.routeUrl() === ROUTE_PATHS.TOKENS_CONTAINERS ? 'card-button-active' :
-                  'card-button-1'"
+            [ngClass]="
+              contentService.routeUrl() === ROUTE_PATHS.TOKENS_CONTAINERS ? 'card-button-active' : 'card-button-1'
+            "
             [routerLink]="[ROUTE_PATHS.TOKENS_CONTAINERS]"
             i18n
             mat-stroked-button>
@@ -219,8 +227,11 @@
         @if (authService.actionAllowed("container_create")) {
           <mat-list-item>
             <button
-              [ngClass]="this.contentService.routeUrl() === ROUTE_PATHS.TOKENS_CONTAINERS_CREATE ?
-                  'card-button-active' : 'card-button-1'"
+              [ngClass]="
+                this.contentService.routeUrl() === ROUTE_PATHS.TOKENS_CONTAINERS_CREATE
+                  ? 'card-button-active'
+                  : 'card-button-1'
+              "
               [routerLink]="[ROUTE_PATHS.TOKENS_CONTAINERS_CREATE]"
               i18n
               mat-stroked-button>
@@ -298,7 +309,9 @@
       </mat-list>
     </mat-expansion-panel>
 
-    <mat-expansion-panel disabled>
+    <mat-expansion-panel
+      (opened)="router.navigate([ROUTE_PATHS.POLICIES])"
+      [expanded]="router.url.startsWith(ROUTE_PATHS.POLICIES)">
       <mat-expansion-panel-header>
         <mat-panel-title>
           <mat-icon>gavel</mat-icon>
@@ -306,7 +319,16 @@
         </mat-panel-title>
       </mat-expansion-panel-header>
       <mat-list>
-        <mat-list-item></mat-list-item>
+        <mat-list-item>
+          <button
+            [ngClass]="contentService.routeUrl() === ROUTE_PATHS.POLICIES ? 'card-button-active' : 'card-button-1'"
+            [routerLink]="[ROUTE_PATHS.POLICIES]"
+            i18n
+            mat-stroked-button>
+            <mat-icon>gavel</mat-icon>
+            Policies
+          </button>
+        </mat-list-item>
       </mat-list>
     </mat-expansion-panel>
 
@@ -491,7 +513,7 @@
     </a>
 
     <a
-      (click)=versioningService.openDocumentation(contentService.routeUrl())
+      (click)="documentationService.openDocumentation(contentService.routeUrl())"
       aria-label="Documentation"
       class="card-button-docs"
       i18n-aria-label

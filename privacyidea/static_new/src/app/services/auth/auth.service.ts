@@ -165,7 +165,12 @@ export interface AuthServiceInterface {
   readonly logoutRedirectUrl: Signal<string>;
   readonly requireDescription: Signal<string[]>;
   readonly rssAge: Signal<number>;
-  readonly containerWizard: Signal<{ enabled: boolean }>;
+  readonly containerWizard: Signal<{
+    enabled: boolean;
+    type: string | null;
+    registration: boolean;
+    template: string | null;
+  }>;
   readonly isSelfServiceUser: Signal<boolean>;
 
   // Methods

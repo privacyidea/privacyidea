@@ -130,6 +130,7 @@ export class TokenTableActionsComponent {
 
   deleteSelectedTokens(): void {
     const selectedTokens = this.tokenSelection();
+    const serialList = selectedTokens.map((token) => token.serial);
     this.dialog
       .open(ConfirmationDialogComponent, {
         data: {
@@ -144,7 +145,7 @@ export class TokenTableActionsComponent {
       .subscribe({
         next: (result) => {
           if (result) {
-            this.tokenService.bulkDeleteTokens(selectedTokens).subscribe({
+            this.tokenService.bulkDeleteTokens(serialList).subscribe({
               next: (response: PiResponse<BulkResult, any>) => {
                 const failedTokens = response.result?.value?.failed || [];
                 const unauthorizedTokens = response.result?.value?.unauthorized || [];
@@ -191,11 +192,8 @@ export class TokenTableActionsComponent {
       }
     });
 
-    this.tokenService.bulkDeleteWithConfirmDialog(
-      this.tokenSelection(),
-      this.dialog,
-      this.tokenService.tokenResource.reload
-    );
+    const serialList = this.tokenSelection().map((token) => token.serial);
+    this.tokenService.bulkDeleteWithConfirmDialog(serialList, this.dialog, this.tokenService.tokenResource.reload);
   }
 
   assignSelectedTokens() {

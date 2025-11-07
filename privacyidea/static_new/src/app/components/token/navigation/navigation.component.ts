@@ -47,6 +47,10 @@ import {
 } from "../../../services/session-timer/session-timer.service";
 import { VersioningService, VersioningServiceInterface } from "../../../services/version/version.service";
 import { MatTooltipModule } from "@angular/material/tooltip";
+import {
+  DocumentationService,
+  DocumentationServiceInterface
+} from "../../../services/documentation/documentation.service";
 
 @Component({
   selector: "app-navigation",
@@ -84,6 +88,7 @@ export class NavigationComponent {
   private readonly machineService: MachineServiceInterface = inject(MachineService);
   private readonly userService: UserServiceInterface = inject(UserService);
   protected readonly versioningService: VersioningServiceInterface = inject(VersioningService);
+  protected readonly documentationService: DocumentationServiceInterface = inject(DocumentationService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly auditService: AuditServiceInterface = inject(AuditService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);

@@ -139,7 +139,7 @@ export class PolicyPanelComponent {
   savePolicy(panel?: MatExpansionPanel) {
     if (!this.canSavePolicy()) return;
     if (this.isNew()) {
-      this.policyService.savePolicyEdits({ asNew: true });
+      this.policyService.savePolicyEditsAsNew();
       this.policyService.deselectPolicy(this.newPolicyName());
       this.isEditMode.set(false);
     } else {

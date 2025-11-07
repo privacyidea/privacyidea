@@ -1,12 +1,13 @@
 <div
-  class="max-width-96 padding-32"
+  class="policies-layout"
   aria-label="Policies Layout">
-  <mat-accordion>
-    <div class="policies-layout">
-      <app-policy-panel [isNew]="true"></app-policy-panel>
-      @for (policy of allPoliciesList(); track policy.name) {
-        <app-policy-panel [policy]="policy"></app-policy-panel>
-      }
-    </div>
+  <h2 i18n>Policies</h2>
+  <mat-accordion class="policies-list-layout">
+    <!-- <div > -->
+    <app-policy-panel [isNew]="true"></app-policy-panel>
+    @for (policy of allPoliciesList(); track policy.name) {
+      <app-policy-panel [policy]="policy"></app-policy-panel>
+    }
+    <!-- </div> -->
   </mat-accordion>
 </div>
