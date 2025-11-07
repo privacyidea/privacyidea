@@ -125,6 +125,10 @@ body {
   font-weight: bold;
 }
 
+.italic {
+  font-style: italic;
+}
+
 .red {
   color: var(--red-base);
 }
@@ -169,8 +173,16 @@ body {
   align-items: center;
 }
 
+.ali-end {
+  align-items: end;
+}
+
 .just-center {
   justify-content: center;
+}
+
+.just-end {
+  justify-content: end;
 }
 
 .flex {
@@ -227,6 +239,10 @@ body {
   flex: auto;
 }
 
+.width-238 {
+  width: 238px;
+}
+
 .width-288px {
   width: 288px;
 }
@@ -276,6 +292,14 @@ body {
   margin-bottom: 16px;
 }
 
+.margin-bottom-32 {
+  margin-bottom: 32px;
+}
+
+.margin-0 {
+  margin: 0;
+}
+
 .width-32 {
   width: 32%;
 }
@@ -304,8 +328,16 @@ body {
   gap: 16px;
 }
 
-.margin-1 {
+.gap-8 {
+  gap: 8px;
+}
+
+.margin-16 {
   margin: 16px;
+}
+
+.margin-8 {
+  margin: 8px;
 }
 
 .overflow {

@@ -2,6 +2,10 @@
 
 html {
   &.system {
+    --mint-bg:  light-dark(#E9F5E0, #243328);
+    --rose-bg:  light-dark(#FAEBEF, #282426);
+    --sky-bg:   light-dark(#EDF3F5, #283034);
+
     --mat-sys-light: light-dark(#ffffff, #242424);
 
     --mat-sys-primary-dark: light-dark(hsl(198, 66%, 25%), hsl(198, 66%, 60%));
@@ -57,6 +61,9 @@ html {
 
   &.light {
     color-scheme: light;
+    --mint-bg: #E9F5E0;
+    --rose-bg: #FAEBEF;
+    --sky-bg:  #EDF3F5;
 
     --mat-sys-light: #ffffff;
 
@@ -92,6 +99,7 @@ html {
 
     --mat-sys-primary: var(--mat-sys-primary-base);
     --mat-sys-on-primary: hsl(198, 66%, 95%);
+    --mat-sys-secondary: #EDF3F5;
     --mat-sys-primary-container: hsl(0, 0%, 100%);
     --mat-sys-surface-container-lowest: hsl(0, 0%, 97.5%);
     --mat-sys-surface-container-low: hsl(0, 0%, 92%);
@@ -114,6 +122,9 @@ html {
 
   &.dark {
     color-scheme: dark;
+    --mint-bg: #243328;
+    --rose-bg: #282426;
+    --sky-bg:  #283034;
 
     --mat-sys-light: #242424;
 

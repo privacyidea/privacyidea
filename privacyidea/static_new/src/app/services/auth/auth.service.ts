@@ -27,6 +27,8 @@ import { LocalService, LocalServiceInterface } from "../local/local.service";
 import { VersioningService, VersioningServiceInterface } from "../version/version.service";
 import { tokenTypes } from "../../utils/token.utils";
 import { PolicyAction } from "./policy-actions";
+import { Router } from "@angular/router";
+import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
 
 export type AuthResponse = PiResponse<AuthData, AuthDetail>;
 
@@ -68,6 +70,9 @@ export interface AuthData {
   rss_age: number;
   container_wizard: {
     enabled: boolean;
+    type: string;
+    registration: boolean;
+    template: string | null;
   };
 }
 
@@ -181,7 +186,8 @@ export interface AuthServiceInterface {
   providedIn: "root"
 })
 export class AuthService implements AuthServiceInterface {
-  // Properties
+  protected readonly router: Router = inject(Router);
+  protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   readonly authUrl = environment.proxyUrl + "/auth";
   private readonly http: HttpClient = inject(HttpClient);
   private readonly versioningService: VersioningServiceInterface = inject(VersioningService);
@@ -246,7 +252,15 @@ export class AuthService implements AuthServiceInterface {
   readonly logoutRedirectUrl = computed(() => this.authData()?.logout_redirect_url || "");
   readonly requireDescription = computed(() => this.authData()?.require_description || []);
   readonly rssAge = computed(() => this.authData()?.rss_age || 0);
-  readonly containerWizard = computed(() => this.authData()?.container_wizard || { enabled: false });
+  readonly containerWizard = computed(
+    () =>
+      this.authData()?.container_wizard || {
+        enabled: false,
+        type: null,
+        registration: false,
+        template: null
+      }
+  );
   readonly isSelfServiceUser = computed(() => this.role() === "user");
 
   // Public methods
@@ -291,6 +305,7 @@ export class AuthService implements AuthServiceInterface {
     this.jwtData.set(null);
     this.localService.removeData(BEARER_TOKEN_STORAGE_KEY);
     this.authenticationAccepted.set(false);
+    this.router.navigate(["login"]).then(() => this.notificationService.openSnackBar("Logout successful."));
   }
 
   actionAllowed(action: PolicyAction): boolean {

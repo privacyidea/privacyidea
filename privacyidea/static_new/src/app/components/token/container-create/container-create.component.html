@@ -34,9 +34,9 @@
       <div class="enroll-button-container">
         <button
           (click)="createContainer()"
-          class="card-button"
-          i18n
-          mat-flat-button>
+          class="action-button-1 width-238"
+          mat-stroked-button
+          i18n>
           <mat-icon>add</mat-icon>
           Create
         </button>
@@ -85,10 +85,9 @@
           <mat-label i18n>Template</mat-label>
           <mat-select
             [(ngModel)]="selectedTemplate"
-            [value]="selectedTemplate()"
-            disabled>
+            [value]="selectedTemplate()">
             @for (option of templateOptions(); track option) {
-              <mat-option [value]="option">{{ option.name }}</mat-option>
+              <mat-option [value]="option.name">{{ option.name }}</mat-option>
             }
           </mat-select>
         </mat-form-field>

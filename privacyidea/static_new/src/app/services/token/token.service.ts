@@ -35,6 +35,7 @@ import { tokenTypes } from "../../utils/token.utils";
 import { FilterValue } from "../../core/models/filter_value";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
+import { ConfirmationDialogComponent } from "../../components/shared/confirmation-dialog/confirmation-dialog.component";
 
 const apiFilter = [
   "serial",
@@ -91,6 +92,7 @@ export interface TokenGroup {
 
 export interface TokenType {
   key: TokenTypeKey;
+  name: string;
   info: string;
   text: string;
 }
@@ -138,6 +140,11 @@ export interface BulkResult {
   count_success: number;
 }
 
+export interface TokenImportResult {
+  n_imported: number;
+  n_not_imported: number;
+}
+
 export interface TokenServiceInterface {
   stopPolling$: Subject<void>;
   tokenBaseUrl: string;
@@ -157,6 +164,7 @@ export interface TokenServiceInterface {
   pageSize: WritableSignal<number>;
   tokenIsActive: WritableSignal<boolean>;
   tokenIsRevoked: WritableSignal<boolean>;
+  tokenIsLost: WritableSignal<boolean>;
   defaultSizeOptions: number[];
   apiFilter: string[];
   advancedApiFilter: string[];
@@ -172,16 +180,15 @@ export interface TokenServiceInterface {
 
   saveTokenDetail(tokenSerial: string, key: string, value: any): Observable<PiResponse<boolean>>;
 
-  getSerial(
-    otp: string,
-    params: HttpParams
-  ): Observable<PiResponse<{ count: number; serial?: string | undefined }>>;
+  getSerial(otp: string, params: HttpParams): Observable<PiResponse<{ count: number; serial?: string | undefined }>>;
 
   setTokenInfos(tokenSerial: string, infos: any): Observable<PiResponse<boolean>[]>;
 
   deleteToken(tokenSerial: string): Observable<Object>;
 
   bulkDeleteTokens(selectedTokens: TokenDetails[]): Observable<PiResponse<BulkResult, any>>;
+
+  bulkDeleteWithConfirmDialog(serialList: TokenDetails[], dialog: any, afterDelete?: () => void): void;
 
   revokeToken(tokenSerial: string): Observable<any>;
 
@@ -231,6 +238,8 @@ export interface TokenServiceInterface {
   getTokengroups(): Observable<PiResponse<TokenGroups>>;
 
   setTokengroup(tokenSerial: string, value: string | string[]): Observable<Object>;
+
+  importTokens(fileName: string, params: Record<string, any>): Observable<PiResponse<TokenImportResult>>;
 }
 
 @Injectable({
@@ -270,6 +279,7 @@ export class TokenService implements TokenServiceInterface {
   readonly defaultSizeOptions = [5, 10, 25, 50];
   tokenIsActive = signal(true);
   tokenIsRevoked = signal(true);
+  tokenIsLost = signal(false);
 
   showOnlyTokenNotInContainer = linkedSignal({
     source: this.contentService.routeUrl,
@@ -336,6 +346,7 @@ export class TokenService implements TokenServiceInterface {
     if (!obj) return [];
     return Object.entries(obj).map(([key, info]) => ({
       key: key as TokenTypeKey,
+      name: tokenTypes.find((t) => t.key === key)?.name || key,
       info: String(info),
       text: tokenTypes.find((t) => t.key === key)?.text || ""
     }));
@@ -450,7 +461,7 @@ export class TokenService implements TokenServiceInterface {
 
   bulkDeleteTokens(selectedTokens: TokenDetails[]): Observable<PiResponse<BulkResult, any>> {
     const headers = this.authService.getHeaders();
-    const body = { serials: selectedTokens.map((t) => t.serial) };
+    const body = { serials: selectedTokens };
 
     return this.http.delete<PiResponse<BulkResult, any>>(this.tokenBaseUrl, { headers, body }).pipe(
       catchError((error) => {
@@ -460,6 +471,62 @@ export class TokenService implements TokenServiceInterface {
         return throwError(() => error);
       })
     );
+  }
+
+  bulkDeleteWithConfirmDialog(serialList: TokenDetails[], dialog: any, afterDelete?: () => void) {
+    dialog
+      .open(ConfirmationDialogComponent, {
+        data: {
+          serialList: serialList,
+          title: "Delete Selected Tokens",
+          type: "token",
+          action: "delete",
+          numberOfTokens: serialList.length
+        }
+      })
+      .afterClosed()
+      .subscribe({
+        next: (result: any) => {
+          if (result) {
+            this.bulkDeleteTokens(serialList).subscribe({
+              next: (response: PiResponse<BulkResult, any>) => {
+                const failedTokens = response.result?.value?.failed || [];
+                const unauthorizedTokens = response.result?.value?.unauthorized || [];
+                const count_success = response.result?.value?.count_success || 0;
+                const messages: string[] = [];
+                if (count_success) {
+                  messages.push(`Successfully deleted ${count_success} token${count_success === 1 ? "" : "s"}.`);
+                }
+
+                if (failedTokens.length > 0) {
+                  messages.push(`The following tokens failed to delete: ${failedTokens.join(", ")}`);
+                }
+
+                if (unauthorizedTokens.length > 0) {
+                  messages.push(
+                    `You are not authorized to delete the following tokens: ${unauthorizedTokens.join(", ")}`
+                  );
+                }
+
+                if (messages.length > 0) {
+                  this.notificationService.openSnackBar(messages.join("\n"));
+                }
+
+                if (afterDelete) {
+                  afterDelete();
+                }
+              },
+              error: (err) => {
+                let message = "An error occurred while deleting tokens.";
+                if (err.error?.result?.error?.message) {
+                  message = err.error.result.error.message;
+                }
+                this.notificationService.openSnackBar(message);
+              }
+            });
+          }
+        }
+      });
   }
 
   toggleActive(tokenSerial: string, active: boolean): Observable<PiResponse<boolean>> {
@@ -869,5 +936,21 @@ export class TokenService implements TokenServiceInterface {
 
   stopPolling(): void {
     this.stopPolling$.next();
+  }
+
+  importTokens(fileName: string, params: Record<string, any>): Observable<PiResponse<TokenImportResult>> {
+    const headers = this.authService.getHeaders();
+    return this.http
+      .post<PiResponse<TokenImportResult>>(`${this.tokenBaseUrl}load/${fileName}`, params, {
+        headers: headers
+      })
+      .pipe(
+        catchError((error) => {
+          console.error("Failed to import tokens.", error);
+          const message = error.error?.result?.error?.message || "";
+          this.notificationService.openSnackBar("Failed to import tokens. " + message);
+          return throwError(() => error);
+        })
+      );
   }
 }

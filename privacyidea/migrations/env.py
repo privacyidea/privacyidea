@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2015 NetKnights GmbH <https://netknights.it>
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 import logging
 from logging.config import fileConfig
 

@@ -9,7 +9,7 @@
       <mat-form-field
         class="token-table-filter"
         subscriptSizing="dynamic">
-        <mat-label i18n>Enter Filter</mat-label>
+        <mat-label i18n>Filter Users...</mat-label>
         <app-clearable-input
           (onClick)="userService.resetFilter()"
           [showClearButton]="filterHTMLInputElement.value.length > 0">
@@ -34,7 +34,8 @@
       [advancedApiFilter]="userService.advancedApiFilterOptions"
       [apiFilter]="userService.apiFilterOptions"
       [filterHTMLInputElement]="filterHTMLInputElement"
-      [filterValue]="userService.apiUserFilter"></app-keyword-filter>
+      [filterValue]="userService.apiUserFilter"/>
+    <app-user-table-actions />
     <div class="audit-table-overflow">
       <table
         [dataSource]="usersDataSource()"

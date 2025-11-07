@@ -16,17 +16,13 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, effect, EventEmitter, inject, OnInit, Output } from "@angular/core";
+import { Component, computed, effect, EventEmitter, inject, Input, OnInit, Output } from "@angular/core";
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatOption } from "@angular/material/core";
 import { MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { MatError, MatSelect } from "@angular/material/select";
-import {
-  RadiusServerService,
-  RadiusServerServiceInterface
-} from "../../../../services/radius-server/radius-server.service";
 import { SystemService, SystemServiceInterface } from "../../../../services/system/system.service";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 
@@ -36,6 +32,8 @@ import {
   TokenEnrollmentData
 } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
 import { RadiusApiPayloadMapper } from "../../../../mappers/token-api-payload/radius-token-api-payload.mapper";
+import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
+
 
 export interface RadiusEnrollmentOptions extends TokenEnrollmentData {
   type: "radius";
@@ -64,10 +62,11 @@ export interface RadiusEnrollmentOptions extends TokenEnrollmentData {
 })
 export class EnrollRadiusComponent implements OnInit {
   protected readonly enrollmentMapper: RadiusApiPayloadMapper = inject(RadiusApiPayloadMapper);
-  protected readonly radiusServerService: RadiusServerServiceInterface = inject(RadiusServerService);
   protected readonly systemService: SystemServiceInterface = inject(SystemService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
 
+  @Input() wizard: boolean = false;
   @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
@@ -86,7 +85,7 @@ export class EnrollRadiusComponent implements OnInit {
   });
 
   radiusServerConfigurationOptions = computed(
-    () => this.radiusServerService.radiusServerConfigurations()?.map((config) => config.name) ?? []
+    () => this.systemService.radiusServerResource.value()?.result?.value
   );
 
   defaultRadiusServerIsSet = computed(() => {

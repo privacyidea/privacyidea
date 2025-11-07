@@ -18,15 +18,15 @@
  **/
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
-import { HttpClient, HttpErrorResponse, HttpParams, HttpResourceRef, httpResource } from "@angular/common/http";
-import { Injectable, Signal, WritableSignal, computed, effect, inject, linkedSignal, signal } from "@angular/core";
+import { HttpClient, HttpErrorResponse, HttpParams, httpResource, HttpResourceRef } from "@angular/common/http";
+import { computed, effect, inject, Injectable, linkedSignal, Signal, signal, WritableSignal } from "@angular/core";
 import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
 import {
-  Observable,
-  Subject,
   catchError,
   forkJoin,
+  Observable,
   of,
+  Subject,
   switchMap,
   takeUntil,
   takeWhile,
@@ -151,7 +151,9 @@ export interface ContainerRegisterData {
 
 export interface ContainerServiceInterface {
   handleFilterInput($event: Event): void;
+
   clearFilter(): void;
+
   apiFilter: string[];
   advancedApiFilter: string[];
   stopPolling$: Subject<void>;
@@ -177,8 +179,8 @@ export interface ContainerServiceInterface {
   containerDetail: WritableSignal<ContainerDetails>;
   templatesResource: HttpResourceRef<PiResponse<{ templates: ContainerTemplate[] }> | undefined>;
   templates: Signal<ContainerTemplate[]>;
-  assignContainer: (tokenSerial: string, containerSerial: string) => Observable<any>;
-  unassignContainer: (tokenSerial: string, containerSerial: string) => Observable<any>;
+  addToken: (tokenSerial: string, containerSerial: string) => Observable<any>;
+  removeToken: (tokenSerial: string, containerSerial: string) => Observable<any>;
   setContainerRealm: (containerSerial: string, value: string[]) => Observable<any>;
   setContainerDescription: (containerSerial: string, value: string) => Observable<any>;
 
@@ -213,10 +215,9 @@ export interface ContainerServiceInterface {
   createContainer(param: {
     container_type: string;
     description?: string;
-    template?: string;
+    template_name?: string;
     user?: string;
     realm?: string;
-    options?: any;
   }): Observable<PiResponse<{ container_serial: string }>>;
 
   pollContainerRolloutState(containerSerial: string, startTime: number): Observable<PiResponse<ContainerDetails>>;
@@ -349,7 +350,7 @@ export class ContainerService implements ContainerServiceInterface {
   });
 
   containerTypesResource = httpResource<PiResponse<ContainerTypes>>(() => {
-    if (this.contentService.routeUrl() !== ROUTE_PATHS.TOKENS_CONTAINERS_CREATE) {
+    if (![ROUTE_PATHS.TOKENS_CONTAINERS_CREATE, ROUTE_PATHS.TOKENS_CONTAINERS_WIZARD].includes(this.contentService.routeUrl())) {
       return undefined;
     }
     return {
@@ -373,13 +374,21 @@ export class ContainerService implements ContainerServiceInterface {
 
   selectedContainerType = linkedSignal({
     source: this.contentService.routeUrl,
-    computation: () =>
-      this.containerTypeOptions().find((type) => type.containerType === this.authService.defaultContainerType()) ||
-      this.containerTypeOptions()[0] || {
-        containerType: "generic",
-        description: "No container type data available",
-        token_types: []
+    computation: () => {
+      let containerType = this.authService.defaultContainerType();
+      // Use the wizard type if on the wizard route and available
+      if (this.contentService.routeUrl() === ROUTE_PATHS.TOKENS_CONTAINERS_WIZARD) {
+        containerType = this.authService.containerWizard().type || containerType;
       }
+      return (
+        this.containerTypeOptions().find((type) => type.containerType === containerType) ||
+        this.containerTypeOptions()[0] || {
+          containerType: "generic",
+          description: "No container type data available",
+          token_types: []
+        }
+      );
+    }
   });
 
   containerDetailResource = httpResource<PiResponse<ContainerDetails>>(() => {
@@ -450,16 +459,18 @@ export class ContainerService implements ContainerServiceInterface {
       }
     });
   }
+
   handleFilterInput($event: Event): void {
     const input = $event.target as HTMLInputElement;
     const newFilter = this.containerFilter().copyWith({ value: input.value });
     this.containerFilter.set(newFilter);
   }
+
   clearFilter(): void {
     this.containerFilter.set(new FilterValue());
   }
 
-  assignContainer(tokenSerial: string, containerSerial: string): Observable<any> {
+  addToken(tokenSerial: string, containerSerial: string): Observable<any> {
     const headers = this.authService.getHeaders();
     return this.http
       .post<PiResponse<boolean>>(`${this.containerBaseUrl}${containerSerial}/add`, { serial: tokenSerial }, { headers })
@@ -473,7 +484,7 @@ export class ContainerService implements ContainerServiceInterface {
       );
   }
 
-  unassignContainer(tokenSerial: string, containerSerial: string): Observable<any> {
+  removeToken(tokenSerial: string, containerSerial: string): Observable<any> {
     const headers = this.authService.getHeaders();
     return this.http
       .post<
@@ -771,10 +782,9 @@ export class ContainerService implements ContainerServiceInterface {
   createContainer(param: {
     container_type: string;
     description?: string;
-    template?: string;
+    template_name?: string;
     user?: string;
     realm?: string;
-    options?: any;
   }): Observable<PiResponse<{ container_serial: string }>> {
     const headers = this.authService.getHeaders();
     return this.http
@@ -785,8 +795,7 @@ export class ContainerService implements ContainerServiceInterface {
           description: param.description,
           user: param.user,
           realm: param.realm,
-          template: param.template,
-          options: param.options
+          template_name: param.template_name
         },
         { headers }
       )

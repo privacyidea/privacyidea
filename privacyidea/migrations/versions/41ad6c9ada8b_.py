@@ -5,7 +5,7 @@ Revises: 04c078e29924
 Create Date: 2025-07-17 09:22:35.283486
 
 """
-from alembic import op
+from alembic import op, context
 import logging
 import sqlalchemy as sa
 from sqlalchemy.exc import OperationalError, ProgrammingError
@@ -63,11 +63,25 @@ def upgrade():
                               type_=sa.Unicode(length=50),
                               existing_nullable=True)
 
-    with op.batch_alter_table('policy', schema=None) as batch_op:
-        batch_op.alter_column('action',
-                              existing_type=sa.VARCHAR(length=2000),
-                              type_=sa.Text(),
-                              existing_nullable=True)
+    # Oracle does not support altering column type VARCHAR to TEXT (CLOB), so we
+    # have to do this manually (from https://forums.oracle.com/ords/apexds/post/modify-varchar2-column-to-clob-one-7177)
+    if context.get_context().dialect.name == "oracle":
+        op.execute(
+            """
+            begin
+            execute immediate 'alter table policy add (action_large clob)';
+            execute immediate 'update policy set action_large = action';
+            execute immediate 'alter table policy rename column action to action_old';
+            execute immediate 'alter table policy rename column action_large to action';
+            execute immediate 'alter table policy drop column action_old';
+            end;
+            """)
+    else:
+        with op.batch_alter_table('policy', schema=None) as batch_op:
+            batch_op.alter_column('action',
+                                  existing_type=sa.VARCHAR(length=2000),
+                                  type_=sa.Text(),
+                                  existing_nullable=True)
 
     try:
         with op.batch_alter_table('realm', schema=None) as batch_op:

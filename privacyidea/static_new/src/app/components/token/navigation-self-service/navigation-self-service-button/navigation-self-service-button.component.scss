@@ -72,6 +72,11 @@
   text-align: center;
 }
 
+.wh-3em {
+  width: 3em !important;
+  height: 3em !important;
+}
+
 .tile-size-scope .tile-button.selected {
   background-color: var(--mat-sys-primary);
   color: var(--mat-sys-on-primary);

@@ -8,7 +8,7 @@
       <mat-form-field
         class="container-table-filter"
         subscriptSizing="dynamic">
-        <mat-label i18n>Enter Filter</mat-label>
+        <mat-label i18n>Filter Containers...</mat-label>
         <app-clearable-input
           (onClick)="containerService.clearFilter()"
           [showClearButton]="containerService.containerFilter().isNotEmpty">
@@ -35,7 +35,8 @@
       [advancedApiFilter]="advancedApiFilter"
       [apiFilter]="apiFilter"
       [filterHTMLInputElement]="filterHTMLInputElement"
-      [filterValue]="containerService.containerFilter"></app-keyword-filter>
+      [filterValue]="containerService.containerFilter"/>
+    <app-container-table-actions/>
     <div class="table-container">
       <table
         (matSortChange)="onSortEvent($event)"

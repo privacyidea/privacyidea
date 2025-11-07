@@ -1,59 +1,60 @@
+import datetime
+import json
 import logging
+import re
+import time
+from base64 import b32encode
 from datetime import timezone
+from urllib.parse import quote
 
-from testfixtures import log_capture
+import mock
+import responses
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.asymmetric import rsa, padding
+from dateutil.tz import tzlocal
+from passlib.hash import argon2
+from testfixtures import Replace, test_datetime
+from testfixtures import log_capture
 
-from privacyidea.lib.container import init_container, find_container_by_serial, create_container_template
-from privacyidea.lib.users.custom_user_attributes import InternalCustomUserAttributes
-from privacyidea.lib.utils import to_unicode
-from urllib.parse import quote
-import json
-from privacyidea.lib.tokens.pushtoken import PUSH_ACTION, strip_key, POLL_ONLY
-from privacyidea.lib.utils import AUTH_RESPONSE
-from .base import MyApiTestCase
-from privacyidea.lib.user import (User)
-from privacyidea.lib.tokens.totptoken import HotpTokenClass
-from privacyidea.lib.tokens.yubikeytoken import YubikeyTokenClass
-from privacyidea.lib.tokens.registrationtoken import RegistrationTokenClass
-from privacyidea.lib.tokenclass import DATE_FORMAT
-from privacyidea.models import (Token, Policy, Challenge, AuthCache, db, TokenOwner, Realm)
-from privacyidea.lib.authcache import _hash_password
-from privacyidea.lib.config import (set_privacyidea_config,
-                                    get_inc_fail_count_on_false_pin,
-                                    delete_privacyidea_config)
-from privacyidea.lib.token import (get_tokens, init_token, remove_token,
-                                   reset_token, enable_token, revoke_token,
-                                   set_pin, get_one_token)
-from privacyidea.lib.policy import SCOPE, set_policy, delete_policy, AUTHORIZED
-from privacyidea.lib.policies.actions import PolicyAction
-from privacyidea.lib.event import set_event
-from privacyidea.lib.event import delete_event
-from privacyidea.lib.error import ERROR
-from privacyidea.lib.resolver import save_resolver, get_resolver_list, delete_resolver
-from privacyidea.lib.realm import set_realm, set_default_realm, delete_realm
-from privacyidea.lib.radiusserver import add_radius
-from privacyidea.lib.challenge import get_challenges
-from privacyidea.lib.tokens.registrationtoken import DEFAULT_LENGTH as DEFAULT_LENGTH_REG
-from privacyidea.lib.tokens.passwordtoken import DEFAULT_LENGTH as DEFAULT_LENGTH_PW
-from privacyidea.lib.tokenclass import CLIENTMODE
 from privacyidea.lib import _
 from privacyidea.lib.applications.offline import REFILLTOKEN_LENGTH
+from privacyidea.lib.authcache import _hash_password
+from privacyidea.lib.challenge import get_challenges
+from privacyidea.lib.config import (set_privacyidea_config,
+                                    get_inc_fail_count_on_false_pin,
+                                    delete_privacyidea_config, SYSCONF)
+from privacyidea.lib.container import init_container, find_container_by_serial, create_container_template
+from privacyidea.lib.error import ERROR
+from privacyidea.lib.event import delete_event
+from privacyidea.lib.event import set_event
 from privacyidea.lib.machine import attach_token, detach_token
 from privacyidea.lib.machineresolver import save_resolver as save_machine_resolver
-from passlib.hash import argon2
+from privacyidea.lib.policies.actions import PolicyAction
+from privacyidea.lib.policy import SCOPE, set_policy, delete_policy, AUTHORIZED
+from privacyidea.lib.radiusserver import add_radius
+from privacyidea.lib.realm import set_realm, set_default_realm, delete_realm
+from privacyidea.lib.resolver import save_resolver, get_resolver_list, delete_resolver
 from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway
-from base64 import b32encode
-
-from testfixtures import Replace, test_datetime
-import datetime
-import time
-import responses
-import mock
-import re
+from privacyidea.lib.token import (get_tokens, init_token, remove_token,
+                                   reset_token, enable_token, revoke_token,
+                                   set_pin, get_one_token, unassign_token)
+from privacyidea.lib.tokenclass import (CLIENTMODE, FAILCOUNTER_EXCEEDED,
+                                        FAILCOUNTER_CLEAR_TIMEOUT, DATE_FORMAT,
+                                        AUTH_DATE_FORMAT)
+from privacyidea.lib.tokens.passwordtoken import DEFAULT_LENGTH as DEFAULT_LENGTH_PW
+from privacyidea.lib.tokens.pushtoken import PUSH_ACTION, strip_key, POLL_ONLY
+from privacyidea.lib.tokens.registrationtoken import DEFAULT_LENGTH as DEFAULT_LENGTH_REG
+from privacyidea.lib.tokens.registrationtoken import RegistrationTokenClass
+from privacyidea.lib.tokens.totptoken import HotpTokenClass
+from privacyidea.lib.tokens.yubikeytoken import YubikeyTokenClass
+from privacyidea.lib.user import (User)
+from privacyidea.lib.users.custom_user_attributes import InternalCustomUserAttributes
+from privacyidea.lib.utils import AUTH_RESPONSE
+from privacyidea.lib.utils import to_unicode
+from privacyidea.models import (Token, Policy, Challenge, AuthCache, db, TokenOwner, Realm)
 from . import smtpmock, ldap3mock, radiusmock
+from .base import MyApiTestCase
 from .test_lib_tokencontainer import MockSmartphone
 
 PWFILE = "tests/testdata/passwords"
@@ -126,7 +127,7 @@ OTPs = ["755224",
 
 class AuthorizationPolicyTestCase(MyApiTestCase):
     """
-    This tests the catch all resolvers and resolvers which also contain the
+    This tests the catch-all resolvers and resolvers which also contain the
     user.
     A user may authenticate with the default resolver, but the user may also
     be contained in other resolver. we check these other resolvers, too.
@@ -921,7 +922,7 @@ class ValidateAPITestCase(MyApiTestCase):
         tok = get_tokens(serial="s3")[0]
         self.assertEqual(tok.token.failcount, 1)
 
-        set_privacyidea_config("IncFailCountOnFalsePin", False)
+        set_privacyidea_config(SYSCONF.INCFAILCOUNTER, False)
         self.assertFalse(get_inc_fail_count_on_false_pin())
         reset_token(serial="SE1")
         reset_token(serial="s2")
@@ -966,6 +967,11 @@ class ValidateAPITestCase(MyApiTestCase):
         tok = get_tokens(serial="s3")[0]
         self.assertEqual(tok.token.failcount, 0)
 
+        # clean up
+        remove_token("s2")
+        remove_token("s3")
+        set_privacyidea_config(SYSCONF.INCFAILCOUNTER, True)
+
     def test_07_authentication_counter_exceeded(self):
         token_obj = init_token({"serial": "pass1", "pin": "123456",
                                 "type": "spass"})
@@ -995,10 +1001,11 @@ class ValidateAPITestCase(MyApiTestCase):
                             in detail.get("message"))
 
     def test_08_failcounter_counter_exceeded(self):
-        token_obj = init_token({"serial": "pass2", "pin": "123456",
-                                "type": "spass"})
-        token_obj.set_maxfail(5)
-        token_obj.set_failcount(5)
+        token = init_token({"serial": "pass2", "pin": "123456", "type": "spass"})
+        token.set_maxfail(5)
+        token.set_failcount(5)
+        past = datetime.datetime.now(tzlocal()) - datetime.timedelta(minutes=10)
+        token.add_tokeninfo(FAILCOUNTER_EXCEEDED, past.strftime(DATE_FORMAT))
         # a valid authentication will fail
         with self.app.test_request_context('/validate/check',
                                            method='POST',
@@ -1008,9 +1015,82 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
             detail = res.json.get("detail")
-            self.assertEqual(result.get("value"), False)
-            self.assertEqual(detail.get("message"), "matching 1 tokens, "
-                                                    "Failcounter exceeded")
+            self.assertFalse(result.get("value"))
+            self.assertEqual("Failcounter exceeded", detail.get("message"))
+        self.assertEqual(5, token.get_failcount())
+        # invalid authentication fails with same message
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"serial": "pass2",
+                                                 "pass": "000000"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            detail = res.json.get("detail")
+            self.assertFalse(result.get("value"))
+            self.assertEqual("Failcounter exceeded", detail.get("message"))
+        self.assertEqual(5, token.get_failcount())
+
+        # set timeout
+        set_privacyidea_config(FAILCOUNTER_CLEAR_TIMEOUT, 30)
+        # timeout not expired: same behaviour
+        # a valid authentication will fail
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"serial": "pass2",
+                                                 "pass": "123456"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            detail = res.json.get("detail")
+            self.assertFalse(result.get("value"))
+            self.assertEqual("Failcounter exceeded", detail.get("message"))
+        self.assertEqual(5, token.get_failcount())
+        # invalid authentication fails with same message
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"serial": "pass2",
+                                                 "pass": "000000"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            detail = res.json.get("detail")
+            self.assertFalse(result.get("value"))
+            self.assertEqual("Failcounter exceeded", detail.get("message"))
+        self.assertEqual(5, token.get_failcount())
+
+        # timeout expired
+        set_privacyidea_config(FAILCOUNTER_CLEAR_TIMEOUT, 5)
+        # a valid authentication succeeds and resets failcount to 0
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"serial": "pass2",
+                                                 "pass": "123456"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            detail = res.json.get("detail")
+            self.assertTrue(result.get("value"))
+            self.assertEqual("matching 1 tokens", detail.get("message"))
+        self.assertEqual(0, token.get_failcount())
+        # an invalid auth also resets the failcount and increase it directly to one due to the invalid auth
+        token.set_failcount(5)
+        token.add_tokeninfo(FAILCOUNTER_EXCEEDED, past.strftime(DATE_FORMAT))
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"serial": "pass2",
+                                                 "pass": "000000"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            detail = res.json.get("detail")
+            self.assertFalse(result.get("value"))
+            self.assertEqual("wrong otp pin", detail.get("message"))
+        token = get_one_token(serial=token.get_serial())
+        self.assertEqual(1, token.get_failcount())
+
+        token.delete_token()
+        set_privacyidea_config(FAILCOUNTER_CLEAR_TIMEOUT, 0)
 
     def test_10_saml_check(self):
         # test successful authentication
@@ -1154,6 +1234,7 @@ class ValidateAPITestCase(MyApiTestCase):
         Verify that HOTP token work with the challenge_response policy. Also verify that the challenge_text policy is
         applied correctly.
         """
+        set_privacyidea_config(SYSCONF.INCFAILCOUNTER, False)
         serial = "CHALRESP1"
         pin = "chalresp1"
         # create a token and assign to the user
@@ -1219,6 +1300,7 @@ class ValidateAPITestCase(MyApiTestCase):
         remove_token(serial=serial)
         delete_policy("challengetext")
         delete_policy("challenge_response_hotp")
+        set_privacyidea_config(SYSCONF.INCFAILCOUNTER, True)
 
     def test_11a_challenge_response_registration(self):
         serial = "CHALRESP1"
@@ -1481,6 +1563,7 @@ class ValidateAPITestCase(MyApiTestCase):
         pol.delete()
 
     def test_12_challenge_response_sms(self):
+        unassign_token(self.serials[0])
         # set a chalresp policy for SMS
         with self.app.test_request_context('/policy/pol_chal_resp',
                                            data={'action': "challenge_response=sms",
@@ -1513,9 +1596,8 @@ class ValidateAPITestCase(MyApiTestCase):
             result = res.json.get("result")
             detail = res.json.get("detail")
             self.assertFalse(result.get("value"))
-            self.assertTrue("The PIN was correct, "
-                            "but the SMS could not be sent" in
-                            detail.get("message"))
+            self.assertIn("The PIN was correct, but the SMS could not be sent", detail.get("message"),
+                          detail.get("message"))
 
         # disable the token. The detail->message should be empty
         r = enable_token(serial=serial, enable=False)
@@ -1529,8 +1611,7 @@ class ValidateAPITestCase(MyApiTestCase):
             result = res.json.get("result")
             detail = res.json.get("detail")
             self.assertFalse(result.get("value"))
-            self.assertEqual(detail.get("message"),
-                             "No active challenge response token found")
+            self.assertEqual("Token is disabled", detail.get("message"))
 
         # delete the token
         remove_token(serial=serial)
@@ -3194,7 +3275,7 @@ class ValidateAPITestCase(MyApiTestCase):
         token.set_failcount(5)
 
         # set a chalresp policy for HOTP
-        set_policy("policy", scope=SCOPE.AUTH, action={PolicyAction.CHALLENGERESPONSE: 'hotp'})
+        set_policy("policy", scope=SCOPE.AUTH, action=f"{PolicyAction.CHALLENGERESPONSE}=hotp")
 
         # create the challenge by authenticating with the OTP PIN
         with self.app.test_request_context('/validate/check',
@@ -3274,7 +3355,8 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertEqual(result["authentication"], "CHALLENGE")
 
         # Disable the spass and hotp token for authentication
-        set_policy(name="disable_some_token", scope=SCOPE.AUTH, action=f"{PolicyAction.DISABLED_TOKEN_TYPES}=spass hotp")
+        set_policy(name="disable_some_token", scope=SCOPE.AUTH,
+                   action=f"{PolicyAction.DISABLED_TOKEN_TYPES}=spass hotp")
 
         # The very same auth attempt must now be rejected
         with self.app.test_request_context(
@@ -3345,7 +3427,8 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertEqual(400, res.status_code, res)
             error = res.json.get("result").get("error")
             self.assertEqual(904, error.get("code"), error)
-            self.assertEqual(f"ERR904: User <eve.{self.resolvername1}@{self.realm3}> does not exist.", error.get("message"),
+            self.assertEqual(f"ERR904: User <eve.{self.resolvername1}@{self.realm3}> does not exist.",
+                             error.get("message"),
                              error)
 
         # Pass username, realm, and resolver
@@ -3356,7 +3439,8 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertEqual(400, res.status_code, res)
             error = res.json.get("result").get("error")
             self.assertEqual(904, error.get("code"), error)
-            self.assertEqual(f"ERR904: User <eve.{self.resolvername1}@{self.realm1}> does not exist.", error.get("message"),
+            self.assertEqual(f"ERR904: User <eve.{self.resolvername1}@{self.realm1}> does not exist.",
+                             error.get("message"),
                              error)
 
         # --- Realm of user was deleted ---
@@ -3424,6 +3508,113 @@ class ValidateAPITestCase(MyApiTestCase):
         token.delete_token()
         token_realm1.delete_token()
 
+    def test_40_hide_specific_error_message(self):
+        """
+        Currently, the HTTP Status codes that are returned are mixed 200 and 401.
+        # TODO we need to consistently apply 401 for any kind of authentication failure, 403 for authorization failure
+        # TODO and 200 only for successful requests
+
+        This test checks that the message is generic, but the status code checks are not worth much currently.
+        """
+        set_policy(name="hide_error_message", scope=SCOPE.AUTH, action=f"{PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE}")
+        # User does not exist: 401
+        with self.app.test_request_context('/validate/check', method="POST",
+                                           data={
+                                               "user": "cornelius2",
+                                               "pass": "1234"
+                                           }):
+            res = self.app.full_dispatch_request()
+            self._assert_unspecific_message_with_401(res)
+
+        # User cornelius is in the realm that will be created
+        self.setUp_user_realms()
+        # Undo changes from other tests...
+        set_default_realm(self.realm1)
+        # User has no tokens assigned, currently returns 200 should be 401
+        with self.app.test_request_context('/validate/check', method="POST",
+                                           data={
+                                               "user": "cornelius",
+                                               "pass": "1234"
+                                           }):
+            res = self.app.full_dispatch_request()
+            self._assert_unspecific_message_with_200(res)
+
+        token = init_token({"type": "spass", "pin": "21"}, user=User("cornelius", self.realm1))
+
+        # Wrong OTP: currently 200, should be 401
+        with self.app.test_request_context('/validate/check', method="POST",
+                                           data={
+                                               "user": "cornelius",
+                                               "pass": "1234"
+                                           }):
+            res = self.app.full_dispatch_request()
+            self._assert_unspecific_message_with_200(res)
+
+        token.set_failcount(10)
+        # Failcount exceeded: currently 200, should be 401
+        with self.app.test_request_context('/validate/check', method="POST",
+                                           data={
+                                               "user": "cornelius",
+                                               "pass": "21"
+                                           }):
+            res = self.app.full_dispatch_request()
+            self._assert_unspecific_message_with_200(res)
+
+        token.set_failcount(0)
+
+        # lastauth: currently 200, should be 401
+        now = datetime.datetime.now(datetime.timezone.utc)
+        thirty_days_ago = now - datetime.timedelta(days=30)
+        token.add_tokeninfo(PolicyAction.LASTAUTH, thirty_days_ago.strftime(AUTH_DATE_FORMAT))
+        set_policy("lastauth", scope=SCOPE.AUTHZ, action=f"{PolicyAction.LASTAUTH}=7d")
+        with self.app.test_request_context('/validate/check', method="POST",
+                                           data={
+                                               "user": "cornelius",
+                                               "pass": "21"
+                                           }):
+            res = self.app.full_dispatch_request()
+            self._assert_unspecific_message_with_200(res)
+        delete_policy("lastauth")
+
+        # Successful authentication to double-check: currently 200, should be 200
+        with self.app.test_request_context('/validate/check', method="POST",
+                                           data={
+                                               "user": "cornelius",
+                                               "pass": "21"
+                                           }):
+            res = self.app.full_dispatch_request()
+            result = res.json.get("result")
+            self.assertEqual("ACCEPT", result.get("authentication"))
+            self.assertTrue(result.get("value"))
+
+        delete_policy("hide_error_message")
+
+    def _assert_unspecific_message_with_401(self, response):
+        self.assertEqual(401, response.status_code, response.json)
+        result = response.json.get("result")
+        error = result.get("error")
+        self.assertEqual(4031, error.get("code"))
+        self.assertEqual("Authentication failed.", error.get("message"))
+        self.assertEqual(2, len(error))
+        detail = response.json.get("detail")
+        self.assertEqual("Authentication failed.", detail.get("message"))
+        self.assertIn("threadid", detail)
+        self.assertEqual(2, len(detail))
+
+    def _assert_unspecific_message_with_200(self, response):
+        """
+        Responses with 200 do not contain the error section.
+        """
+        self.assertEqual(200, response.status_code, response.json)
+        detail = response.json.get("detail")
+        self.assertEqual("Authentication failed.", detail.get("message"), detail)
+        self.assertIn("threadid", detail)
+        self.assertEqual(2, len(detail), detail)
+
+        result = response.json.get("result")
+        self.assertEqual("REJECT", result.get("authentication"))
+        self.assertFalse(result.get("value"))
+
 
 class RegistrationValidity(MyApiTestCase):
 
@@ -3451,8 +3642,7 @@ class RegistrationValidity(MyApiTestCase):
             self.assertTrue(data.get("result").get("status"))
             self.assertFalse(data.get("result").get("value"))
             detail = data.get("detail")
-            self.assertEqual("matching 1 tokens, Outside validity period",
-                             detail.get("message"), (detail, password))
+            self.assertEqual("Outside validity period", detail.get("message"), (detail, password))
 
 
 class RegistrationAndPasswordToken(MyApiTestCase):
@@ -4402,8 +4592,7 @@ class AChallengeResponse(MyApiTestCase):
             self.assertFalse(data.get("result").get("value"))
             self.assertEqual(data.get("result").get("authentication"), "REJECT")
             detail = data.get("detail")
-            self.assertEqual(detail.get("message"),
-                             "Challenge matches, but token is not fit for challenge. Token is disabled")
+            self.assertEqual("Token is disabled", detail.get("message"))
 
         # The token is still disabled. We are checking, if we can do a challenge response
         # for a disabled token
@@ -4418,7 +4607,7 @@ class AChallengeResponse(MyApiTestCase):
             self.assertFalse(data.get("result").get("value"))
             self.assertEqual(data.get("result").get("authentication"), "REJECT")
             detail = data.get("detail")
-            self.assertTrue("No active challenge response" in detail.get("message"), detail.get("message"))
+            self.assertEqual("Token is disabled", detail.get("message"), detail.get("message"))
 
         delete_policy("pol_cr")
 
@@ -4798,7 +4987,7 @@ class AChallengeResponse(MyApiTestCase):
             self.assertTrue(data.get("result").get("status"))
             self.assertFalse(data.get("result").get("value"))
             detail = data.get("detail")
-            self.assertEqual("No active challenge response token found", detail.get("message"))
+            self.assertEqual("Token is disabled", detail.get("message"))
 
         remove_token(self.serial_sms)
 

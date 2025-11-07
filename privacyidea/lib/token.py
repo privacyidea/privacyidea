@@ -151,8 +151,8 @@ class TokenImportResult:
 
 @dataclass(frozen=True)
 class TokenExportResult:
-    successful_tokens: list[str] # The serialized tokens for which the export succeeded
-    failed_tokens: list[str] # The serial of tokens for which the export failed
+    successful_tokens: list[str]  # The serialized tokens for which the export succeeded
+    failed_tokens: list[str]  # The serial of tokens for which the export failed
 
 
 @compiles(clob_to_varchar, 'oracle')
@@ -1254,7 +1254,7 @@ def import_token(serial, token_dict, tokenrealms=None):
 
 
 @log_with(log, hide_args_keywords={'param': 'pin'})
-def init_token(param, user=None, tokenrealms=None, tokenkind=None):
+def init_token(param: dict, user: User = None, tokenrealms: list[str] = None, tokenkind: str = None) -> TokenClass:
     """
     Create a new token or update an existing token with the specified parameters.
 
@@ -1291,15 +1291,15 @@ def init_token(param, user=None, tokenrealms=None, tokenkind=None):
 
     # Check if a token with this serial already exists and
     # create a list of the found tokens
-    tokenobject_list = get_tokens(serial=serial)
-    token_count = len(tokenobject_list)
+    tokens = get_tokens(serial=serial)
+    token_count = len(tokens)
     if token_count == 0:
         # A token with the serial was not found, so we create a new one
         db_token = Token(serial, tokentype=token_type.lower())
 
     else:
         # The token already exist, so we update the token
-        db_token = tokenobject_list[0].token
+        db_token = tokens[0].token
         # Make sure the type is not changed between the initialization and the update
         old_type = db_token.tokentype
         if old_type.lower() != token_type.lower():
@@ -2480,6 +2480,7 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
     pin_matching_token_list = []
     invalid_token_list = []
     valid_token_list = []
+    messages = []
 
     # Remove locked tokens from token_object_list
     if len(token_object_list) > 0:
@@ -2503,12 +2504,18 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
             # Avoid a SQL query triggered by ``token_object.user`` in case the log level is not DEBUG
             log.debug(f"Found user with loginId {token_object.user}: {token_object.get_serial()}")
 
-        if token_object.is_challenge_response(passw, user=user, options=options):
+        # Reset exceeded fail counter if reset timeout is reached
+        token_object.check_reset_failcount()
+
+        if not token_object.check_all(messages):
+            # token can not be used for authentication (e.g. maxfail exceeded, disabled, not within validity period)
+            pass
+        elif token_object.is_challenge_response(passw, user=user, options=options):
             # This is a challenge response, and it still has a challenge DB entry
             if token_object.has_db_challenge_response(passw, user=user, options=options):
                 challenge_response_token_list.append(token_object)
             else:
-                # This is a transaction_id, that either never existed or has expired.
+                # This is a transaction_id, that either never existed or has expired or is not for this token.
                 # We add this to the invalid_token_list
                 invalid_token_list.append(token_object)
         elif token_object.is_challenge_request(passw, user=user, options=options):
@@ -2723,6 +2730,10 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
                 token_object.inc_failcount()
                 if increase_auth_counters:
                     token_object.inc_count_auth()
+
+    elif messages:
+        reply_dict["message"] = ", ".join(set(messages))
+
     else:
         # There is no suitable token for authentication
         reply_dict["message"] = _("No suitable token found for authentication.")

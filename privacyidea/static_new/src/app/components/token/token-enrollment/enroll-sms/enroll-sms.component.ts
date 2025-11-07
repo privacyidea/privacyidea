@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, effect, EventEmitter, inject, OnInit, Output } from "@angular/core";
+import { Component, computed, effect, EventEmitter, inject, Input, OnInit, Output } from "@angular/core";
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatOption } from "@angular/material/core";
@@ -33,6 +33,7 @@ import {
   TokenEnrollmentData
 } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
 import { SmsApiPayloadMapper } from "../../../../mappers/token-api-payload/sms-token-api-payload.mapper";
+import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
 
 export interface SmsEnrollmentOptions extends TokenEnrollmentData {
   type: "sms";
@@ -61,10 +62,11 @@ export interface SmsEnrollmentOptions extends TokenEnrollmentData {
 })
 export class EnrollSmsComponent implements OnInit {
   protected readonly enrollmentMapper: SmsApiPayloadMapper = inject(SmsApiPayloadMapper);
-  protected readonly smsGatewayService: SmsGatewayServiceInterface = inject(SmsGatewayService);
   protected readonly systemService: SystemServiceInterface = inject(SystemService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
 
+  @Input() wizard: boolean = false;
   @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
@@ -81,9 +83,14 @@ export class EnrollSmsComponent implements OnInit {
     phoneNumber: this.phoneNumberControl,
     readNumberDynamically: this.readNumberDynamicallyControl
   });
+
   smsGatewayOptions = computed(() => {
-    const raw = this.smsGatewayService.smsGatewayResource.value()?.result?.value;
-    return raw && Array.isArray(raw) ? raw.map((gw) => gw.name) : [];
+    // Find the first right that starts with "sms_gateways="
+    const right = this.authService.rights().find(r => r.startsWith("sms_gateways="));
+    if (!right) return [];
+    const gateways = right.split("=")[1];
+    if (!gateways) return [];
+    return gateways.split(" ").map(gw => gw.trim()).filter(gw => gw.length > 0);
   });
 
   defaultSMSGatewayIsSet = computed(() => {

@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { HttpClient, HttpErrorResponse, provideHttpClient } from "@angular/common/http";
+import { HttpClient, HttpErrorResponse, HttpParams, provideHttpClient } from "@angular/common/http";
 import { lastValueFrom, of, throwError } from "rxjs";
 
 import { ContentService } from "../content/content.service";
@@ -47,6 +47,7 @@ describe("TokenService", () => {
   let deleteSpy: jest.SpyInstance;
   let authService: MockAuthService;
   let notificationService: MockNotificationService;
+  let getSpy: jest.SpyInstance;
 
   beforeEach(() => {
     TestBed.resetTestingModule();
@@ -66,6 +67,7 @@ describe("TokenService", () => {
     deleteSpy = jest.spyOn(http, "delete");
     authService = TestBed.inject(AuthService) as any;
     notificationService = TestBed.inject(NotificationService) as any;
+    getSpy = jest.spyOn(http, "get");
 
     jest.spyOn(console, "error").mockImplementation(() => {});
   });
@@ -149,7 +151,7 @@ describe("TokenService", () => {
   });
 
   describe("saveTokenDetail()", () => {
-    it('maps "maxfail" to "max_failcount"', () => {
+    it("maps \"maxfail\" to \"max_failcount\"", () => {
       postSpy.mockReturnValue(of({ success: true } as any));
 
       tokenService.saveTokenDetail("serial", "maxfail", 3).subscribe();
@@ -275,7 +277,7 @@ describe("TokenService", () => {
     jest.useRealTimers();
   });
 
-  it('polls until rollout_state !== "clientwait"', async () => {
+  it("polls until rollout_state !== \"clientwait\"", async () => {
     jest.useFakeTimers();
     const first = {
       result: { value: { tokens: [{ rollout_state: "clientwait" }] } }
@@ -503,6 +505,272 @@ describe("TokenService", () => {
           expect(e.error.result.error.message).toBe("oops");
           expect(notificationService.openSnackBar).toHaveBeenCalledWith(
             "Failed to unassign user from all tokens. oops"
+          );
+          done();
+        }
+      });
+    });
+  });
+
+  describe("bulkDeleteTokens()", () => {
+    it("DELETEs with body of serials and propagates result", (done) => {
+      const backend = { success: true } as any;
+      deleteSpy.mockReturnValue(of(backend));
+
+      tokenService
+        .bulkDeleteTokens(["S1", "S2"])
+        .subscribe((r) => {
+          expect(deleteSpy).toHaveBeenCalledWith(
+            tokenService.tokenBaseUrl,
+            {
+              headers: authService.getHeaders(),
+              body: { serials: ["S1", "S2"] }
+            }
+          );
+          expect(r).toBe(backend);
+          done();
+        });
+    });
+
+    it("notifies user on error", (done) => {
+      const boom = new HttpErrorResponse({
+        error: { result: { error: { message: "bd" } } },
+        status: 500
+      });
+      deleteSpy.mockReturnValue(throwError(() => boom));
+
+      tokenService.bulkDeleteTokens(["S"]).subscribe({
+        next: () => fail("expected error"),
+        error: (e) => {
+          expect(e).toBe(boom);
+          // service reads error.result?.error?.message; keep assertion loose
+          expect(notificationService.openSnackBar).toHaveBeenCalledWith(
+            expect.stringContaining("Failed to delete tokens.")
+          );
+          done();
+        }
+      });
+    });
+  });
+
+  describe("deleteInfo()", () => {
+    it("DELETEs the /info/:serial/:key endpoint", () => {
+      deleteSpy.mockReturnValue(of({}));
+      tokenService.deleteInfo("SER", "infokey").subscribe();
+
+      expect(deleteSpy).toHaveBeenCalledWith(
+        `${tokenService.tokenBaseUrl}info/SER/infokey`,
+        { headers: authService.getHeaders() }
+      );
+    });
+
+    it("notifies on error", (done) => {
+      const boom = new HttpErrorResponse({
+        error: { result: { error: { message: "di" } } },
+        status: 500
+      });
+      deleteSpy.mockReturnValue(throwError(() => boom));
+
+      tokenService.deleteInfo("SER", "infokey").subscribe({
+        error: (e) => {
+          expect(e).toBe(boom);
+          expect(notificationService.openSnackBar).toHaveBeenCalledWith(
+            "Failed to delete token info. di"
+          );
+          done();
+        }
+      });
+    });
+  });
+
+  describe("unassignUser()", () => {
+    it("notifies on error", (done) => {
+      const boom = new HttpErrorResponse({
+        error: { result: { error: { message: "uu" } } },
+        status: 500
+      });
+      postSpy.mockReturnValue(throwError(() => boom));
+
+      tokenService.unassignUser("SER").subscribe({
+        error: (e) => {
+          expect(e).toBe(boom);
+          expect(notificationService.openSnackBar).toHaveBeenCalledWith(
+            "Failed to unassign user. uu"
+          );
+          done();
+        }
+      });
+    });
+  });
+
+  describe("assignUser()", () => {
+    it("notifies on error", (done) => {
+      const boom = new HttpErrorResponse({
+        error: { result: { error: { message: "au" } } },
+        status: 500
+      });
+      postSpy.mockReturnValue(throwError(() => boom));
+
+      tokenService.assignUser({ tokenSerial: "S", username: "u", realm: "r" }).subscribe({
+        error: (e) => {
+          expect(e).toBe(boom);
+          expect(notificationService.openSnackBar).toHaveBeenCalledWith(
+            "Failed to assign user. au"
+          );
+          done();
+        }
+      });
+    });
+  });
+
+  describe("resetFailCount()", () => {
+    it("notifies on error", (done) => {
+      const boom = new HttpErrorResponse({
+        error: { result: { error: { message: "rf" } } },
+        status: 500
+      });
+      postSpy.mockReturnValue(throwError(() => boom));
+
+      tokenService.resetFailCount("SER").subscribe({
+        error: (e) => {
+          expect(e).toBe(boom);
+          expect(notificationService.openSnackBar).toHaveBeenCalledWith(
+            "Failed to reset fail count. rf"
+          );
+          done();
+        }
+      });
+    });
+  });
+
+  describe("setTokengroup()", () => {
+    it("notifies on error", (done) => {
+      const boom = new HttpErrorResponse({
+        error: { result: { error: { message: "stg" } } },
+        status: 500
+      });
+      postSpy.mockReturnValue(throwError(() => boom));
+
+      tokenService.setTokengroup("SER", ["g"]).subscribe({
+        error: (e) => {
+          expect(e).toBe(boom);
+          expect(notificationService.openSnackBar).toHaveBeenCalledWith(
+            "Failed to set token group. stg"
+          );
+          done();
+        }
+      });
+    });
+  });
+
+  describe("setTokenInfos() – error branch", () => {
+    it("bubbles error from any request and shows snackbar", (done) => {
+      // first call (special key) succeeds, second (/info) fails
+      postSpy
+        .mockReturnValueOnce(of({ success: true } as any))
+        .mockReturnValueOnce(throwError(() =>
+          new HttpErrorResponse({ error: { result: { error: { message: "oops" } } }, status: 500 })
+        ));
+
+      tokenService.setTokenInfos("SER", { hashlib: "sha1", custom: "x" }).subscribe({
+        next: () => fail("expected error"),
+        error: (e) => {
+          expect(notificationService.openSnackBar).toHaveBeenCalledWith(
+            "Failed to set token info. oops"
+          );
+          done();
+        }
+      });
+    });
+  });
+
+  describe("getSerial()", () => {
+    it("GETs correct URL with params and headers", () => {
+      getSpy.mockReturnValue(of({ success: true } as any));
+      const params = new HttpParams().set("user", "alice");
+
+      tokenService.getSerial("123456", params).subscribe();
+
+      expect(getSpy).toHaveBeenCalledWith(
+        `${tokenService.tokenBaseUrl}getserial/123456`,
+        { params, headers: authService.getHeaders() }
+      );
+    });
+
+    it("notifies on error", (done) => {
+      const boom = new HttpErrorResponse({
+        error: { result: { error: { message: "cnt" } } },
+        status: 500
+      });
+      getSpy.mockReturnValue(throwError(() => boom));
+
+      tokenService.getSerial("111111", new HttpParams()).subscribe({
+        error: (e) => {
+          expect(e).toBe(boom);
+          expect(notificationService.openSnackBar).toHaveBeenCalledWith(
+            "Failed to get count. cnt"
+          );
+          done();
+        }
+      });
+    });
+  });
+
+  describe("getTokenDetails()", () => {
+    it("GETs /token with serial as HttpParams", () => {
+      getSpy.mockReturnValue(of({} as any));
+      tokenService.getTokenDetails("ABC").subscribe();
+
+      const call = getSpy.mock.calls[0];
+      expect(call[0]).toBe(tokenService.tokenBaseUrl);
+      const opts = call[1] as any;
+      expect(opts.headers).toEqual(authService.getHeaders());
+      expect(opts.params.get("serial")).toBe("ABC");
+    });
+  });
+
+  describe("getTokengroups()", () => {
+    it("GETs /tokengroup", () => {
+      getSpy.mockReturnValue(of({} as any));
+      tokenService.getTokengroups().subscribe();
+
+      // derive expected URL from known base to avoid importing environment
+      const expected = tokenService.tokenBaseUrl.replace("/token/", "/tokengroup/");
+      expect(getSpy).toHaveBeenCalledWith(expected, { headers: authService.getHeaders() });
+    });
+
+    it("notifies on error", (done) => {
+      const boom = new HttpErrorResponse({
+        error: { result: { error: { message: "tg" } } },
+        status: 500
+      });
+      getSpy.mockReturnValue(throwError(() => boom));
+
+      tokenService.getTokengroups().subscribe({
+        error: (e) => {
+          expect(e).toBe(boom);
+          expect(notificationService.openSnackBar).toHaveBeenCalledWith(
+            "Failed to get tokengroups. tg"
+          );
+          done();
+        }
+      });
+    });
+  });
+
+  describe("saveTokenDetail() – error branch", () => {
+    it("notifies on error", (done) => {
+      const boom = new HttpErrorResponse({
+        error: { result: { error: { message: "std" } } },
+        status: 500
+      });
+      postSpy.mockReturnValue(throwError(() => boom));
+
+      tokenService.saveTokenDetail("S", "description", "d").subscribe({
+        error: (e) => {
+          expect(e).toBe(boom);
+          expect(notificationService.openSnackBar).toHaveBeenCalledWith(
+            "Failed to set token detail. std"
           );
           done();
         }

@@ -83,7 +83,8 @@ from privacyidea.api.lib.postpolicy import (postpolicy,
                                             offline_info,
                                             add_user_detail_to_response, construct_radius_response,
                                             mangle_challenge_response, is_authorized,
-                                            multichallenge_enroll_via_validate, preferred_client_mode)
+                                            multichallenge_enroll_via_validate, preferred_client_mode,
+                                            hide_specific_error_message)
 from privacyidea.api.lib.prepolicy import (prepolicy, set_realm,
                                            api_key_required, mangle,
                                            save_client_application_type,
@@ -243,6 +244,7 @@ def offlinerefill():
 @validate_blueprint.route('/check', methods=['POST', 'GET'])
 @validate_blueprint.route('/radiuscheck', methods=['POST', 'GET'])
 @validate_blueprint.route('/samlcheck', methods=['POST', 'GET'])
+@postpolicy(hide_specific_error_message)
 @postpolicy(construct_radius_response, request=request)
 @postpolicy(is_authorized, request=request)
 @postpolicy(multichallenge_enroll_via_validate, request=request)

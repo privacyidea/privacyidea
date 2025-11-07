@@ -22,14 +22,12 @@ import { MatProgressBar } from "@angular/material/progress-bar";
 import { RouterOutlet } from "@angular/router";
 import { AuthService, AuthServiceInterface } from "../../services/auth/auth.service";
 import { LoadingService, LoadingServiceInterface } from "../../services/loading/loading-service";
-import { HeaderComponent } from "./header/header.component";
-import { HeaderSelfServiceComponent } from "./header/header.self-service.component";
 
 @Component({
   selector: "layout",
   templateUrl: "layout.component.html",
   standalone: true,
-  imports: [RouterOutlet, HeaderComponent, HeaderSelfServiceComponent, NgClass, MatProgressBar],
+  imports: [RouterOutlet, NgClass, MatProgressBar],
   styleUrl: "./layout.component.scss"
 })
 export class LayoutComponent {

@@ -8,7 +8,7 @@
       <mat-form-field
         class="token-table-filter"
         subscriptSizing="dynamic">
-        <mat-label i18n>Enter Filter</mat-label>
+        <mat-label i18n>Filter Tokens...</mat-label>
         <app-clearable-input
           (onClick)="tokenService.clearFilter()"
           [showClearButton]="tokenService.tokenFilter().isNotEmpty">
@@ -38,6 +38,7 @@
         [filterHTMLInputElement]="filterHTMLInputElement"
         [filterValue]="tokenService.tokenFilter" />
     </div>
+      <app-token-table-actions/>
     <div class="table-container">
       <table
         (matSortChange)="onSortEvent($event)"

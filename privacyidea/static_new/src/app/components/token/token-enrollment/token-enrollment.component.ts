@@ -100,7 +100,6 @@ import { MatCheckbox } from "@angular/material/checkbox";
 import { MAT_TOOLTIP_DEFAULT_OPTIONS, MatTooltipDefaultOptions, MatTooltipModule } from "@angular/material/tooltip";
 import { lastValueFrom, Observable } from "rxjs";
 import { EnrollmentResponse, TokenEnrollmentData } from "../../../mappers/token-api-payload/_token-api-payload.mapper";
-import { QuestionApiPayloadMapper } from "../../../mappers/token-api-payload/question-token-api-payload.mapper";
 import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
 import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
@@ -246,6 +245,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   private observer!: IntersectionObserver;
   timezoneOptions = TIMEZONE_OFFSETS;
+  protected wizard = false;
 
   enrollResponse: WritableSignal<EnrollmentResponse | null> = linkedSignal({
     source: this.tokenService.selectedTokenType,
@@ -448,7 +448,8 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
 
   userExistsValidator: ValidatorFn = (control: AbstractControl<string | UserData | null>): ValidationErrors | null => {
     const value = control.value;
-    if (typeof value === "string" && value !== "") {
+    // logged-in users always exist, no need for an additional check (and also not possible)
+    if (typeof value === "string" && value !== "" && this.authService.role() == "admin") {
       const users = this.userService.users();
       const userFound = users.some((user) => user.username === value);
       return userFound ? null : { userNotInRealm: { value: value } };
@@ -468,7 +469,8 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
       this.selectedUserRealmControl.setValidators(this.isUserRequired ? [Validators.required] : []);
 
       this.userFilterControl.setValidators(
-        this.isUserRequired ? [Validators.required, this.userExistsValidator] : [this.userExistsValidator]
+        this.authService.role() == "user" ? [] : this.isUserRequired ? [Validators.required, this.userExistsValidator] :
+          [this.userExistsValidator]
       );
 
       return new FormGroup(

@@ -18,10 +18,11 @@
  **/
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { httpResource, HttpResourceRef } from "@angular/common/http";
-import { computed, inject, Injectable, Signal } from "@angular/core";
+import { computed, inject, Injectable, linkedSignal, Signal, WritableSignal } from "@angular/core";
 
 import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
+import { CaConnectors } from "../ca-connector/ca-connector.service";
 
 export type PiNode = {
   name: string;
@@ -29,6 +30,10 @@ export type PiNode = {
 };
 
 export interface SystemServiceInterface {
+  systemConfigResource: HttpResourceRef<any>;
+  radiusServerResource: HttpResourceRef<any>;
+  caConnectorResource?: HttpResourceRef<any>;
+  caConnectors?: WritableSignal<CaConnectors>;
   systemConfig: Signal<any>;
   nodes: Signal<PiNode[]>;
 }
@@ -58,5 +63,21 @@ export class SystemService implements SystemServiceInterface {
 
   nodes = computed<PiNode[]>(() => {
     return this.nodesResource.value()?.result?.value ?? [];
+  });
+  radiusServerResource = httpResource<any>(() => ({
+    url: environment.proxyUrl + "/system/names/radius",
+    method: "GET",
+    headers: this.authService.getHeaders()
+  }));
+
+  caConnectorResource = httpResource<any>(() => ({
+    url: environment.proxyUrl + "/system/names/caconnector",
+    method: "GET",
+    headers: this.authService.getHeaders()
+  }));
+
+  caConnectors: WritableSignal<CaConnectors> = linkedSignal({
+    source: this.caConnectorResource.value,
+    computation: (source, previous) => source?.result?.value ?? previous?.value ?? []
   });
 }

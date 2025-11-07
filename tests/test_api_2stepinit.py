@@ -123,8 +123,7 @@ class TwoStepInitTestCase(MyApiTestCase):
             result = res.json
             self.assertTrue(result.get("result").get("status"))
             self.assertFalse(result.get("result").get("value"))
-            self.assertEqual(result.get("detail").get("message"),
-                             'matching 1 tokens, Token is disabled')
+            self.assertEqual('Token is disabled', result.get("detail").get("message"))
 
         # Now doing the correct 2nd step
         with self.app.test_request_context('/token/init',
@@ -216,8 +215,7 @@ class TwoStepInitTestCase(MyApiTestCase):
             result = res.json
             self.assertTrue(result.get("result").get("status"))
             self.assertFalse(result.get("result").get("value"))
-            self.assertEqual(result.get("detail").get("message"),
-                             'matching 1 tokens, Token is disabled')
+            self.assertEqual('Token is disabled', result.get("detail").get("message"))
 
         client_component = b"wrongsize"  # 9 bytes
         hex_client_component = binascii.hexlify(client_component)
@@ -498,8 +496,7 @@ class TwoStepInitTestCase(MyApiTestCase):
             result = res.json
             self.assertTrue(result.get("result").get("status"))
             self.assertFalse(result.get("result").get("value"))
-            self.assertEqual(result.get("detail").get("message"),
-                             'matching 1 tokens, Token is disabled')
+            self.assertEqual('Token is disabled', result.get("detail").get("message"))
 
         # Now doing the correct 2nd step
         with self.app.test_request_context('/token/init',
@@ -596,8 +593,7 @@ class TwoStepInitTestCase(MyApiTestCase):
             result = res.json
             self.assertTrue(result.get("result").get("status"))
             self.assertFalse(result.get("result").get("value"))
-            self.assertEqual(result.get("detail").get("message"),
-                             'matching 1 tokens, Token is disabled')
+            self.assertEqual('Token is disabled', result.get("detail").get("message"))
 
         client_component = b"wrongsize"  # 9 bytes
         hex_client_component = binascii.hexlify(client_component)

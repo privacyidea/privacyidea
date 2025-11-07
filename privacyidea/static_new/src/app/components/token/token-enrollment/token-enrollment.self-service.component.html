@@ -34,12 +34,9 @@
         </div>
         <div class="enroll-button-container">
           <button
-            [disabled]="formGroupSignal().invalid || !tokenService.selectedTokenType()"
-            [ngClass]="{
-              'card-button-disabled': formGroupSignal().invalid || !tokenService.selectedTokenType(),
-              'card-button': true
-            }"
-            mat-flat-button
+            [disabled]="!tokenService.selectedTokenType()"
+            class="action-button-1 width-238"
+            mat-stroked-button
             type="submit">
             <mat-icon>add</mat-icon>
             Enroll

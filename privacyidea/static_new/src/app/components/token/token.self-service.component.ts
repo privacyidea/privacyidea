@@ -22,13 +22,13 @@ import { MatCardModule } from "@angular/material/card";
 import { componentFadeAnimation } from "../../../styles/animations/animations";
 import { NavigationSelfServiceComponent } from "./navigation-self-service/navigation-self-service.component";
 import { RouterOutlet } from "@angular/router";
+import { NavigationSelfServiceWizardComponent } from "./navigation-self-service/navigation-self-service.wizard.component";
 
 @Component({
   selector: "app-token-self-service",
-  imports: [MatCardModule, NavigationSelfServiceComponent, RouterOutlet],
+  imports: [MatCardModule, NavigationSelfServiceComponent, RouterOutlet, NavigationSelfServiceWizardComponent],
   animations: [componentFadeAnimation],
   templateUrl: "./token.self-service.component.html",
   styleUrl: "./token.component.scss"
 })
-export class TokenSelfServiceComponent extends TokenComponent {
-}
+export class TokenSelfServiceComponent extends TokenComponent {}
