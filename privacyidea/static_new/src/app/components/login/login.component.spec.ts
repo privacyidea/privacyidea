@@ -451,7 +451,7 @@ describe("LoginComponent Realm Selection", () => {
     expect(options.length).toBe(3);
     expect(options[0].nativeElement.textContent).toContain("realm1");
     expect(options[1].nativeElement.textContent).toContain("realm2");
-    expect(options[1].nativeElement.textContent).toContain("-");
+    expect(options[2].nativeElement.textContent).toContain("-");
   });
 
   it("should preselect the first realm", () => {

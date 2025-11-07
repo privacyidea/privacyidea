@@ -29,22 +29,19 @@ describe("ConfigService", () => {
   let httpMock: HttpTestingController;
 
   const mockConfig: AppConfig = {
-    remoteUser: "testUser",
-    forceRemoteUser: "forceUser",
-    passwordReset: true,
-    hsmReady: true,
+    remote_user: "testUser",
+    force_remote_user: "forceUser",
+    password_reset: true,
+    hsm_ready: true,
     customization: "custom",
     realms: "realm1",
     logo: "logo.png",
-    showNode: "node1",
-    externalLinks: true,
-    hasJobQueue: "true",
-    loginText: "Welcome",
-    logoutRedirectUrl: "http://logout",
-    gdprLink: "http://gdpr",
-    privacyideaVersionNumber: "3.8",
-    translationWarning: true,
-    otpPinSetRandomUser: 1
+    show_node: "node1",
+    external_links: true,
+    has_job_queue: "true",
+    login_text: "Welcome",
+    gdpr_link: "http://gdpr",
+    translation_warning: true
   };
 
   beforeEach(() => {
@@ -68,21 +65,19 @@ describe("ConfigService", () => {
 
   it("should have default config values", () => {
     expect(service.config()).toEqual({
-      remoteUser: "",
-      forceRemoteUser: "",
-      passwordReset: false,
-      hsmReady: false,
+      remote_user: "",
+      force_remote_user: "",
+      password_reset: false,
+      hsm_ready: false,
       customization: "",
       realms: "",
       logo: "",
-      showNode: "",
-      externalLinks: false,
-      hasJobQueue: "false",
-      loginText: "",
-      logoutRedirectUrl: "",
-      gdprLink: "",
-      privacyideaVersionNumber: "",
-      translationWarning: false
+      show_node: "",
+      external_links: false,
+      has_job_queue: "false",
+      login_text: "",
+      gdpr_link: "",
+      translation_warning: false
     });
   });
 
@@ -114,21 +109,19 @@ describe("ConfigService", () => {
 
     // Should keep the default config values
     expect(service.config()).toEqual({
-      remoteUser: "",
-      forceRemoteUser: "",
-      passwordReset: false,
-      hsmReady: false,
+      remote_user: "",
+      force_remote_user: "",
+      password_reset: false,
+      hsm_ready: false,
       customization: "",
       realms: "",
       logo: "",
-      showNode: "",
-      externalLinks: false,
-      hasJobQueue: "false",
-      loginText: "",
-      logoutRedirectUrl: "",
-      gdprLink: "",
-      privacyideaVersionNumber: "",
-      translationWarning: false
+      show_node: "",
+      external_links: false,
+      has_job_queue: "false",
+      login_text: "",
+      gdpr_link: "",
+      translation_warning: false
     });
   });
 });
