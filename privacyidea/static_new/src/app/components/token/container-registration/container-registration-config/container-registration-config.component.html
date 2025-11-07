@@ -31,8 +31,8 @@
     rows="2"></textarea>
   <mat-hint
     align="start"
-    i18n
-    class="font-14">
+    [class.red]="promptRequired() && !passphrasePrompt()"
+    i18n>
     Enter a passphrase prompt that will be displayed to the user. This should indicate which passphrase the user should
     enter.
   </mat-hint>
@@ -54,8 +54,7 @@
     <mat-icon>{{ showPassphrase ? 'visibility_off' : 'visibility' }}</mat-icon>
   </button>
   <mat-hint
-    i18n
-    class="font-14">
+    i18n>
     This is the correct answer to the passphrase prompt the user has to enter to successfully register the container.
   </mat-hint>
 </mat-form-field>
@@ -76,10 +75,10 @@
     <mat-icon>{{ showRepeatPassphrase ? 'visibility_off' : 'visibility' }}</mat-icon>
   </button>
   @if (passphraseMismatch) {
-    <ng-container>
-      <mat-error i18n>
-        Passphrases do not match.
-      </mat-error>
-    </ng-container>
+    <mat-hint
+      class="red"
+      i18n>
+      Passphrases do not match.
+    </mat-hint>
   }
 </mat-form-field>

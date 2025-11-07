@@ -54,6 +54,8 @@ export class ContainerRegistrationConfigComponent {
   showRepeatPassphrase: boolean = false;
   repeatPassphraseResponse = signal("");
 
+  promptRequired = computed(() => this.userStorePassphrase() || this.passphraseResponse());
+
   private validInputEffect = effect(() => {
     this.validInputChange.emit(this.validInput());
   });
