@@ -14,11 +14,11 @@ export class MockAuthService implements AuthServiceInterface {
   readonly authenticationAccepted = signal(false);
 
   // Signals
-  readonly jwtNonce = computed(() => this.jwtData()?.nonce || "");
-  readonly authtype = computed<"cookie" | "none">(() => "cookie");
-  readonly jwtExpDate = computed(() => new Date());
-  readonly isAuthenticated = computed(() => true);
-  readonly logLevel = computed(() => 0);
+  readonly jwtNonce = signal(this.jwtData()?.nonce || "");
+  readonly authtype = signal<"cookie" | "none">("cookie");
+  readonly jwtExpDate = signal(new Date());
+  readonly isAuthenticated = signal(true);
+  readonly logLevel = signal(0);
   readonly menus = computed(() => this.authData()?.menus || []);
   readonly realm = computed(() => this.authData()?.realm || "");
   readonly rights = computed(() => this.authData()?.rights || []);
@@ -53,7 +53,15 @@ export class MockAuthService implements AuthServiceInterface {
   readonly logoutRedirectUrl = computed(() => this.authData()?.logout_redirect_url || "");
   readonly requireDescription = computed(() => this.authData()?.require_description || []);
   readonly rssAge = computed(() => this.authData()?.rss_age || 0);
-  readonly containerWizard = computed(() => this.authData()?.container_wizard || { enabled: false });
+  readonly containerWizard = computed(
+    () =>
+      this.authData()?.container_wizard || {
+        enabled: false,
+        type: "",
+        registration: false,
+        template: null
+      }
+  );
   readonly isSelfServiceUser = computed(() => this.role() === "user");
 
   // Methods
@@ -108,7 +116,10 @@ export class MockAuthService implements AuthServiceInterface {
     require_description: [],
     rss_age: 0,
     container_wizard: {
-      enabled: false
+      enabled: false,
+      type: "",
+      registration: false,
+      template: null
     }
   };
 }

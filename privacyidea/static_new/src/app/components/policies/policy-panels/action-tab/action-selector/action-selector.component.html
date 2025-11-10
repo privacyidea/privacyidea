@@ -3,8 +3,9 @@
     type="text"
     placeholder="Search action..."
     [ngModel]="policyService.actionFilter()"
-    (ngModelChange)="policyService.actionFilter.set($event)"
+    (ngModelChange)="testngModelChange($event)"
     class="search-input" />
+  <!-- (ngModelChange)="policyService.actionFilter.set($event)" -->
   @if (policyService.policyActionGroupNames().length > 1) {
     <app-selector-buttons
       [values]="policyService.policyActionGroupNames()"
@@ -13,7 +14,7 @@
   }
   <div class="add-action-details">
     <div class="policy-action-items">
-      @for (actionName of policyService.getActionNamesOfSelectedGroup(); track actionName) {
+      @for (actionName of policyService.actionNamesOfSelectedGroup(); track actionName) {
         <div
           class="policy-action-item"
           [class.policy-action-item-selected]="policyService.selectedAction()?.name === actionName"

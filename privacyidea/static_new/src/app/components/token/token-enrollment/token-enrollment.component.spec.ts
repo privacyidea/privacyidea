@@ -21,7 +21,6 @@ import "@angular/localize/init";
 import { TokenEnrollmentComponent } from "./token-enrollment.component";
 import { UserService } from "../../../services/user/user.service";
 import {
-  MockAuthService,
   MockContainerService,
   MockContentService,
   MockDialogService,
@@ -43,7 +42,7 @@ import { DialogService } from "../../../services/dialog/dialog.service";
 import { FormControl, FormGroup } from "@angular/forms";
 import { of, throwError } from "rxjs";
 import { signal } from "@angular/core";
-import { HttpClient, provideHttpClient } from "@angular/common/http";
+import { provideHttpClient } from "@angular/common/http";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { TokenEnrollmentSelfServiceComponent } from "./token-enrollment.self-service.component";
 import {
@@ -52,6 +51,7 @@ import {
   REGENERATE_AS_VALUES_TOKEN_TYPES
 } from "./token-enrollment.constants";
 import { TokenEnrollmentWizardComponent } from "./token-enrollment.wizard.component";
+import { provideHttpClientTesting } from "@angular/common/http/testing";
 
 describe("TokenEnrollmentComponent", () => {
   let fixture: ComponentFixture<TokenEnrollmentComponent>;
@@ -66,7 +66,6 @@ describe("TokenEnrollmentComponent", () => {
   let notifications: MockNotificationService;
   let dialog: MockDialogService;
   let authService: MockAuthService;
-  let httpClientMock: any;
 
   beforeAll(() => {
     Object.defineProperty(window, "matchMedia", {
@@ -95,28 +94,25 @@ describe("TokenEnrollmentComponent", () => {
 
   beforeEach(async () => {
     let MockVersioningService;
-    httpClientMock = { get: jest.fn().mockReturnValue(of("")) };
 
     await TestBed.configureTestingModule({
       imports: [TokenEnrollmentComponent],
       providers: [
         provideHttpClient(),
+        provideHttpClientTesting(),
         NoopAnimationsModule,
         MockLocalService,
         MockNotificationService,
         { provide: LocalService, useExisting: MockLocalService },
         { provide: NotificationService, useExisting: MockNotificationService },
-
         { provide: ContainerService, useClass: MockContainerService },
         { provide: RealmService, useClass: MockRealmService },
         { provide: UserService, useClass: MockUserService },
         { provide: TokenService, useClass: MockTokenService },
         { provide: ContentService, useClass: MockContentService },
         { provide: AuthService, useClass: MockAuthService },
-
         { provide: VersioningService, useClass: MockVersioningService },
-        { provide: DialogService, useClass: MockDialogService },
-        { provide: HttpClient, useValue: httpClientMock }
+        { provide: DialogService, useClass: MockDialogService }
       ]
     }).compileComponents();
 
@@ -316,7 +312,6 @@ describe("TokenEnrollmentComponent", () => {
       expect(notifications.openSnackBar).toHaveBeenCalledWith("Failed to enroll token: nope");
     });
 
-
     it("does NOT open dialog if rollout_state is 'clientwait'", async () => {
       tokenSvc.selectedTokenType.set({ key: "hotp", name: "HOTP", info: "", text: "" });
       component.setPinControl.setValue("0000");
@@ -437,8 +432,7 @@ describe("TokenEnrollmentComponent", () => {
   describe("token-enrollment constants", () => {
     const hasQr = (type: string) => !NO_QR_CODE_TOKEN_TYPES.includes(type);
     const canRegenerate = (type: string) => !NO_REGENERATE_TOKEN_TYPES.includes(type);
-    const regenerateLabel = (type: string) =>
-      REGENERATE_AS_VALUES_TOKEN_TYPES.includes(type) ? "Values" : "QR Code";
+    const regenerateLabel = (type: string) => (REGENERATE_AS_VALUES_TOKEN_TYPES.includes(type) ? "Values" : "QR Code");
 
     it("REGENERATE_AS_VALUES_TOKEN_TYPES is a subset of NO_QR_CODE_TOKEN_TYPES", () => {
       const allIn = REGENERATE_AS_VALUES_TOKEN_TYPES.every((t) => NO_QR_CODE_TOKEN_TYPES.includes(t));
@@ -516,4 +510,3 @@ describe("TokenEnrollmentComponent", () => {
     });
   });
 });
-

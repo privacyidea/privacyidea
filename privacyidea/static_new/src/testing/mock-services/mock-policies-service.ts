@@ -69,6 +69,7 @@ export class MockPolicyService implements PolicyServiceInterface {
   allPolicies = signal<PolicyDetail[]>([]);
   selectedPolicyScope = signal("");
   selectedActionDetail = signal<PolicyActionDetail | null>(null);
+  actionNamesOfSelectedGroup = signal<string[]>([]);
 
   updateActionInSelectedPolicy = jest.fn();
   updateActionValue = jest.fn();
@@ -91,7 +92,6 @@ export class MockPolicyService implements PolicyServiceInterface {
   addActionToSelectedPolicy = jest.fn();
   removeActionFromSelectedPolicy = jest.fn();
   isScopeChangeable = jest.fn().mockReturnValue(true);
-  getActionNamesOfSelectedGroup = jest.fn().mockReturnValue([]);
   actionValueIsValid = jest.fn().mockReturnValue(true);
   cancelEditMode = jest.fn();
 }

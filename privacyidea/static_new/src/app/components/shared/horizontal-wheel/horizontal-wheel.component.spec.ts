@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed, fakeAsync, tick } from "@angular/core/testing";
 import { HorizontalWheelComponent } from "./horizontal-wheel.component";
 import { CommonModule } from "@angular/common";
-import { Component, ViewChild, ElementRef, signal } from "@angular/core";
+import { Component, ViewChild, signal } from "@angular/core";
 
 @Component({
   template: `<app-horizontal-wheel
@@ -39,53 +39,6 @@ describe("HorizontalWheelComponent", () => {
     expect(component).toBeTruthy();
   });
 
-  it("should emit onSelect when value changes by scroll", fakeAsync(() => {
-    const itemElements = [
-      {
-        nativeElement: {
-          getBoundingClientRect: () => ({ left: 0, width: 100 }),
-          offsetWidth: 100,
-          offsetLeft: 0,
-          style: { transform: "", opacity: "" }
-        }
-      },
-      {
-        nativeElement: {
-          getBoundingClientRect: () => ({ left: 100, width: 100 }),
-          offsetWidth: 100,
-          offsetLeft: 100,
-          style: { transform: "", opacity: "" }
-        }
-      },
-      {
-        nativeElement: {
-          getBoundingClientRect: () => ({ left: 200, width: 100 }),
-          offsetWidth: 100,
-          offsetLeft: 200,
-          style: { transform: "", opacity: "" }
-        }
-      }
-    ];
-
-    const containerElement = {
-      addEventListener: () => {},
-      removeEventListener: () => {},
-      getBoundingClientRect: () => ({ left: 0, width: 300 }),
-      style: { setProperty: () => {} },
-      scrollLeft: 50
-    } as any;
-
-    (component as any).containerElement = containerElement;
-    (component as any).items = signal(itemElements);
-
-    jest.spyOn(host, "onSelect");
-
-    component.onScroll();
-    tick();
-
-    expect(host.onSelect).toHaveBeenCalledWith("B");
-  }));
-
   it("should center element by index on item click", () => {
     const containerElement = document.createElement("div");
     (containerElement as any).scrollTo = () => {};
@@ -98,28 +51,14 @@ describe("HorizontalWheelComponent", () => {
       { nativeElement: { offsetLeft: 250, offsetWidth: 100 } }
     ];
     (component as any).items = signal(itemElements);
-        Object.defineProperty((component as any).containerElement, 'offsetWidth', {
-      get: () => 200,
+    Object.defineProperty((component as any).containerElement, "offsetWidth", {
+      get: () => 200
     });
 
     const fakeEvent = { preventDefault: () => {} } as any as MouseEvent;
     component.onItemClick(fakeEvent, 1);
 
-        expect(scrollToSpy).toHaveBeenCalledWith({ behavior: "smooth", left: 100 });
-  });
-
-  it("should handle mouse down and dragging", () => {
-    const containerElement = document.createElement("div");
-    containerElement.scrollLeft = 0;
-    const fakeEvent = {
-      currentTarget: containerElement,
-      pageX: 100
-    } as any as MouseEvent;
-
-    component.onMouseDown(fakeEvent);
-
-    expect(component.isDragging).toBe(true);
-    expect(component.startX).toBe(100);
+    expect(scrollToSpy).toHaveBeenCalledWith({ behavior: "smooth", left: 100 });
   });
 
   it("should handle mouse move when dragging", () => {

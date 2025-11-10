@@ -22,6 +22,7 @@ import { ChallengesTableComponent } from "./challenges-table.component";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
+import "@angular/localize/init";
 
 describe("ChallengesTableComponent", () => {
   let component: ChallengesTableComponent;

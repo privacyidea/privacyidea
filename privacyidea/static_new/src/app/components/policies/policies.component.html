@@ -3,11 +3,9 @@
   aria-label="Policies Layout">
   <h2 i18n>Policies</h2>
   <mat-accordion class="policies-list-layout">
-    <!-- <div > -->
     <app-policy-panel [isNew]="true"></app-policy-panel>
     @for (policy of allPoliciesList(); track policy.name) {
       <app-policy-panel [policy]="policy"></app-policy-panel>
     }
-    <!-- </div> -->
   </mat-accordion>
 </div>

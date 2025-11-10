@@ -6,7 +6,7 @@ import { PolicyService } from "../../../../../services/policies/policies.service
 import { MatInputModule } from "@angular/material/input";
 import { MatAutocompleteModule } from "@angular/material/autocomplete";
 import { MatSelectModule } from "@angular/material/select";
-import { BoolSelectButtonsComponent } from "../selector-buttons/selector-buttons.component";
+import { SelectorButtons } from "../selector-buttons/selector-buttons.component";
 import {
   DocumentationService,
   DocumentationServiceInterface
@@ -23,7 +23,7 @@ import { MatIcon } from "@angular/material/icon";
     MatInputModule,
     MatAutocompleteModule,
     MatSelectModule,
-    BoolSelectButtonsComponent,
+    SelectorButtons,
     MatIcon
   ],
   templateUrl: "./action-detail.component.html",
@@ -64,7 +64,7 @@ export class ActionDetailComponent {
   });
 
   // Public Methods
-  actionIsAlreadyAdded(): boolean {
+  selectedActionIsAlreadyAdded(): boolean {
     const selectedAction = this.policyService.selectedAction();
     if (!selectedAction) return false;
     const policy = this.policyService.selectedPolicy();

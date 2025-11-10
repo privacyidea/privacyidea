@@ -6,17 +6,21 @@ import {
   PolicyServiceInterface as PolicyServiceInterface,
   PolicyService as PolicyService
 } from "../../../../../services/policies/policies.service";
-import { BoolSelectButtonsComponent } from "../selector-buttons/selector-buttons.component";
+import { SelectorButtons } from "../selector-buttons/selector-buttons.component";
 
 import { MatTooltipModule } from "@angular/material/tooltip";
 
 @Component({
   selector: "app-action-selector",
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule, BoolSelectButtonsComponent, MatTooltipModule],
+  imports: [CommonModule, FormsModule, MatIconModule, SelectorButtons, MatTooltipModule],
   templateUrl: "./action-selector.component.html",
   styleUrls: ["./action-selector.component.scss"]
 })
 export class ActionSelectorComponent {
   policyService: PolicyServiceInterface = inject(PolicyService);
+  testngModelChange(event: string) {
+    this.policyService.actionFilter.set(event);
+    throw Error(event);
+  }
 }

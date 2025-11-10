@@ -30,12 +30,14 @@ import { ContentService, ContentServiceInterface } from "../../../../services/co
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 import { UserData } from "../../../../services/user/user.service";
 import { TokenEnrollmentLastStepDialogWizardComponent } from "./token-enrollment-last-step-dialog.wizard.component";
-import { HttpClient } from "@angular/common/http";
+import { provideHttpClient } from "@angular/common/http";
 import { AuthService } from "../../../../services/auth/auth.service";
-import { MockAuthService, MockLocalService, MockNotificationService } from "../../../../../testing/mock-services";
+import { MockLocalService, MockNotificationService } from "../../../../../testing/mock-services";
 import { LocalService } from "../../../../services/local/local.service";
 import { NotificationService } from "../../../../services/notification/notification.service";
 import { ActivatedRoute, Router } from "@angular/router";
+import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { MockAuthService } from "../../../../../testing/mock-services/mock-auth-service";
 
 const buildBaseData = (): TokenEnrollmentLastStepDialogData => ({
   tokentype: { key: "hotp", name: "HOTP", text: "HOTP Token", info: "" },
@@ -149,12 +151,12 @@ describe("TokenEnrollmentLastStepDialogComponent", () => {
       expect(otpElements[1].textContent).toContain("654321");
     });
 
-    it("should have regenerate button text \"QR Code\" for hotp", async () => {
+    it('should have regenerate button text "QR Code" for hotp', async () => {
       await detectChangesStable(fixture);
       expect(component.regenerateButtonText()).toBe("QR Code");
     });
 
-    it("should have regenerate button text \"Values\" for paper", async () => {
+    it('should have regenerate button text "Values" for paper', async () => {
       component.data.tokentype = { key: "paper", text: "Paper Token", info: "" } as any;
       await detectChangesStable(fixture);
       expect(component.regenerateButtonText()).toBe("Values");
@@ -236,7 +238,6 @@ describe("TokenEnrollmentLastStepDialogWizardComponent", () => {
   let fixture: ComponentFixture<TokenEnrollmentLastStepDialogWizardComponent>;
   let mockDialogData: TokenEnrollmentLastStepDialogData;
   let authService: MockAuthService;
-  let httpClientMock: any;
 
   beforeEach(async () => {
     mockDialogData = buildBaseData();
@@ -255,20 +256,17 @@ describe("TokenEnrollmentLastStepDialogWizardComponent", () => {
       navigate: jest.fn().mockResolvedValue(true)
     };
 
-    httpClientMock = {
-      get: jest.fn().mockReturnValue(of(""))
-    };
-
     TestBed.resetTestingModule();
     await TestBed.configureTestingModule({
       imports: [TokenEnrollmentLastStepDialogWizardComponent, NoopAnimationsModule],
       providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
         provideExperimentalZonelessChangeDetection(),
         { provide: MatDialogRef, useValue: dialogRefMock },
         { provide: MAT_DIALOG_DATA, useValue: mockDialogData },
         { provide: TokenService, useValue: tokenServiceMock },
         { provide: ContentService, useValue: contentServiceMock },
-        { provide: HttpClient, useValue: httpClientMock },
         { provide: AuthService, useClass: MockAuthService },
         { provide: LocalService, useClass: MockLocalService },
         { provide: NotificationService, useClass: MockNotificationService },

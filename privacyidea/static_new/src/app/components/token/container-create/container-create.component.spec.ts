@@ -23,9 +23,8 @@ import { of } from "rxjs";
 import { ContainerCreateComponent } from "./container-create.component";
 import { MatDialog } from "@angular/material/dialog";
 import { NotificationService } from "../../../services/notification/notification.service";
-import { HttpClient, provideHttpClient } from "@angular/common/http";
+import { provideHttpClient } from "@angular/common/http";
 import {
-  MockAuthService,
   MockContainerService,
   MockContentService,
   MockLocalService,
@@ -46,12 +45,17 @@ import { Renderer2 } from "@angular/core";
 import { ContainerCreateSelfServiceComponent } from "./container-create.self-service.component";
 import { ContainerCreateWizardComponent } from "./container-create.wizard.component";
 import { ROUTE_PATHS } from "../../../route_paths";
+import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { MockAuthService } from "../../../../testing/mock-services/mock-auth-service";
 
 class MockIntersectionObserver {
   observe = jest.fn();
   disconnect = jest.fn();
 
-  constructor(private callback: any, private options?: any) {}
+  constructor(
+    private callback: any,
+    private options?: any
+  ) {}
 }
 
 Object.defineProperty(global, "IntersectionObserver", {
@@ -107,21 +111,17 @@ describe("ContainerCreateComponent", () => {
   let containerSvc: MockContainerService;
   let userSvc: MockUserService;
   let authService: MockAuthService;
-  let httpClientMock: any;
   let contentService: MockContentService;
 
   beforeEach(async () => {
     jest.clearAllMocks();
-
-    httpClientMock = {
-      get: jest.fn().mockReturnValue(of(""))
-    };
 
     let DummyVersioningService;
     await TestBed.configureTestingModule({
       imports: [ContainerCreateComponent, NoopAnimationsModule],
       providers: [
         provideHttpClient(),
+        provideHttpClientTesting(),
         { provide: MatDialog, useValue: matDialogMock },
         { provide: NotificationService, useValue: notificationMock },
         { provide: Router, useValue: routerMock },
@@ -132,7 +132,6 @@ describe("ContainerCreateComponent", () => {
         { provide: TokenService, useClass: MockTokenService },
         { provide: UserService, useClass: MockUserService },
         { provide: VersioningService, useClass: DummyVersioningService },
-        { provide: HttpClient, useValue: httpClientMock },
         MockLocalService,
         MockNotificationService
       ]
@@ -150,12 +149,12 @@ describe("ContainerCreateComponent", () => {
     authService = TestBed.inject(AuthService) as unknown as MockAuthService;
     contentService = TestBed.inject(ContentService) as unknown as MockContentService;
 
-    jest.spyOn(containerSvc, "createContainer").mockReturnValue(
-      of({ result: { value: { container_serial: "C-001" } } } as any)
-    );
-    jest.spyOn(containerSvc, "registerContainer").mockReturnValue(
-      of({ result: { value: {} }, detail: { info: "registered" } } as any)
-    );
+    jest
+      .spyOn(containerSvc, "createContainer")
+      .mockReturnValue(of({ result: { value: { container_serial: "C-001" } } } as any));
+    jest
+      .spyOn(containerSvc, "registerContainer")
+      .mockReturnValue(of({ result: { value: {} }, detail: { info: "registered" } } as any));
     jest.spyOn(containerSvc, "pollContainerRolloutState").mockReturnValue(
       of({
         result: { value: { containers: [{ info: { registration_state: "ok" } }] } }
@@ -302,7 +301,7 @@ describe("ContainerCreateComponent", () => {
   describe("wizard", () => {
     it("show loaded templates if not empty", async () => {
       authService.authData.set({
-        ...authService.authData(),
+        ...authService.authData()!,
         container_wizard: { enabled: true, type: "generic", registration: false, template: null }
       });
       httpClientMock.get.mockReturnValueOnce(of("Mock TOP HTML")).mockReturnValueOnce(of("Mock BOTTOM HTML"));
@@ -315,7 +314,7 @@ describe("ContainerCreateComponent", () => {
 
     it("show default content if customization templates are empty", async () => {
       authService.authData.set({
-        ...authService.authData(),
+        ...authService.authData()!,
         container_wizard: { enabled: true, type: "generic", registration: false, template: null }
       });
       wizardFixture.detectChanges();
@@ -325,7 +324,7 @@ describe("ContainerCreateComponent", () => {
     it("container wizard creates smartphone with template and registration", () => {
       // Arrange: set container_wizard data in authService
       authService.authData.set({
-        ...authService.authData(),
+        ...authService.authData()!,
         container_wizard: {
           enabled: true,
           type: "smartphone",
@@ -357,7 +356,7 @@ describe("ContainerCreateComponent", () => {
     it("container wizard creates generic container without template and without registration", () => {
       // Arrange: set container_wizard data in authService
       authService.authData.set({
-        ...authService.authData(),
+        ...authService.authData()!,
         container_wizard: {
           enabled: true,
           type: "generic",

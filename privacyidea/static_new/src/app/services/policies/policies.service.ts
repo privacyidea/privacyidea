@@ -190,7 +190,7 @@ export interface PolicyServiceInterface {
   addActionToSelectedPolicy(): void;
   removeActionFromSelectedPolicy(actionName: string): void;
   isScopeChangeable(policy: PolicyDetail): boolean;
-  getActionNamesOfSelectedGroup(): string[];
+  actionNamesOfSelectedGroup(): string[];
   actionValueIsValid(action: PolicyActionDetail, value: string | number): boolean;
   cancelEditMode(): void;
 }
@@ -477,12 +477,12 @@ export class PolicyService implements PolicyServiceInterface {
 
   selectedAction: WritableSignal<{ name: string; value: any } | null> = linkedSignal({
     source: () => ({
-      getActionNamesOfSelectedGroup: this.getActionNamesOfSelectedGroup() ?? [],
+      actionNamesOfSelectedGroup: this.actionNamesOfSelectedGroup() ?? [],
       _selectedPolicy: this._selectedPolicy(),
       isEditMode: this.isEditMode()
     }),
     computation: (source, previous) => {
-      const { getActionNamesOfSelectedGroup, _selectedPolicy } = source;
+      const { actionNamesOfSelectedGroup, _selectedPolicy } = source;
       console.log("Recomputing selectedAction with source:", source, "and previous:", previous);
       if (previous?.value && _selectedPolicy?.action?.[previous.value.name]) {
         console.log("Keeping previous selected action:", previous.value);
@@ -494,9 +494,9 @@ export class PolicyService implements PolicyServiceInterface {
       );
       if (this.isEditMode()) {
         const previousValue = previous?.value;
-        if (getActionNamesOfSelectedGroup.length < 1) return null;
-        if (previousValue && getActionNamesOfSelectedGroup.includes(previousValue.name)) return previous.value;
-        const firstActionName = getActionNamesOfSelectedGroup[0];
+        if (actionNamesOfSelectedGroup.length < 1) return null;
+        if (previousValue && actionNamesOfSelectedGroup.includes(previousValue.name)) return previous.value;
+        const firstActionName = actionNamesOfSelectedGroup[0];
         const defaultValue = this._getActionDetail(firstActionName)?.type === "bool" ? "true" : "";
         return { name: firstActionName, value: defaultValue };
       } else {
@@ -514,7 +514,7 @@ export class PolicyService implements PolicyServiceInterface {
   });
 
   selectActionByName(actionName: string) {
-    const actionNames = this.getActionNamesOfSelectedGroup();
+    const actionNames = this.actionNamesOfSelectedGroup();
     if (actionNames.includes(actionName)) {
       const defaultValue = this._getActionDetail(actionName)?.type === "bool" ? "true" : "";
       this.selectedAction.set({ name: actionName, value: defaultValue });
@@ -579,6 +579,10 @@ export class PolicyService implements PolicyServiceInterface {
     return Object.keys(currentActions);
   });
 
+  /**
+   * Filter policy actions by the actionFilter signal and already added actions.
+   * @returns {PolicyActionGroups} The filtered policy actions grouped by scope and group.
+   */
   policyActionsByGroupFiltered = computed<PolicyActionGroups>(() => {
     // Also filter out already added actions
     const alreadyAddedActionNames = this.alreadyAddedActionNames();
@@ -646,6 +650,14 @@ export class PolicyService implements PolicyServiceInterface {
     const actionName = this.selectedAction()?.name;
     if (!actionName) return null;
     return this._getActionDetail(actionName);
+  });
+
+  actionNamesOfSelectedGroup = computed<string[]>(() => {
+    const group: string = this.selectedActionGroup();
+    const actionsByGroup = this.policyActionsByGroupFiltered();
+    const scope = this.selectedPolicyScope();
+    if (!scope || !actionsByGroup[scope]) return [];
+    return Object.keys(actionsByGroup[scope][group] || {});
   });
 
   // ===================================
@@ -755,14 +767,6 @@ export class PolicyService implements PolicyServiceInterface {
   isScopeChangeable(policy: PolicyDetail): boolean {
     if (!policy.action) return true;
     return Object.keys(policy.action).length === 0;
-  }
-
-  getActionNamesOfSelectedGroup(): string[] {
-    const group: string = this.selectedActionGroup();
-    const actionsByGroup = this.policyActionsByGroupFiltered();
-    const scope = this.selectedPolicyScope();
-    if (!scope || !actionsByGroup[scope]) return [];
-    return Object.keys(actionsByGroup[scope][group] || {});
   }
 
   actionValueIsValid(action: PolicyActionDetail, value: string | number): boolean {

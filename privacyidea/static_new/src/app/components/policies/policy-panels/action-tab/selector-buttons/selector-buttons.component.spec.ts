@@ -1,21 +1,20 @@
-
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { BoolSelectButtonsComponent } from "./selector-buttons.component";
+import { SelectorButtons } from "./selector-buttons.component";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { input } from "@angular/core";
+// import "@angular/localize/init";
 
 describe("BoolSelectButtonsComponent", () => {
-  let component: BoolSelectButtonsComponent<any>;
-  let fixture: ComponentFixture<BoolSelectButtonsComponent<any>>;
+  let component: SelectorButtons<any>;
+  let fixture: ComponentFixture<SelectorButtons<any>>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [BoolSelectButtonsComponent, NoopAnimationsModule],
+      imports: [SelectorButtons, NoopAnimationsModule]
     }).compileComponents();
 
-    fixture = TestBed.createComponent(BoolSelectButtonsComponent);
+    fixture = TestBed.createComponent(SelectorButtons);
     component = fixture.componentInstance;
-    component.initialValue = input(true);
+    fixture.componentRef.setInput("initialValue", true);
     component.values = [true, false];
   });
 
@@ -30,17 +29,15 @@ describe("BoolSelectButtonsComponent", () => {
   });
 
   it("should emit value on button click", () => {
-    spyOn(component.onSelect, "emit");
+    jest.spyOn(component.onSelect, "emit");
     fixture.detectChanges();
-
     const button = fixture.nativeElement.querySelector("button");
     button.click();
-
     expect(component.onSelect.emit).toHaveBeenCalledWith(component.values[0]);
   });
 
   it("should set the selected value on init", () => {
-    component.initialValue = input(false);
+    fixture.componentRef.setInput("initialValue", false);
     fixture.detectChanges();
     expect(component.selectedValue()).toBe(false);
   });

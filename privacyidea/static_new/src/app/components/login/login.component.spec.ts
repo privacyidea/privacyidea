@@ -24,7 +24,6 @@ import { Router } from "@angular/router";
 import { of, throwError } from "rxjs";
 import {
   MockAuthDetail,
-  MockAuthService,
   MockLocalService,
   MockNotificationService,
   MockPiResponse,
@@ -37,6 +36,8 @@ import { SessionTimerService, SessionTimerServiceInterface } from "../../service
 import { ValidateService } from "../../services/validate/validate.service";
 import { LoginComponent } from "./login.component";
 import { ROUTE_PATHS } from "../../route_paths";
+import { MockAuthService } from "../../../testing/mock-services/mock-auth-service";
+import "@angular/localize/init";
 
 describe("LoginComponent", () => {
   let fixture: ComponentFixture<LoginComponent>;
@@ -119,7 +120,7 @@ describe("LoginComponent", () => {
 
     it("should redirect to token wizard", () => {
       authService.authData.set({
-        ...authService.authData(),
+        ...authService.authData()!,
         token_wizard: true
       });
       component.onSubmit();
@@ -129,9 +130,9 @@ describe("LoginComponent", () => {
 
     it("should redirect to token wizard first if token and container wizard are enabled", () => {
       authService.authData.set({
-        ...authService.authData(),
+        ...authService.authData()!,
         token_wizard: true,
-        container_wizard: {enabled: true, type: "smartphone", registration: false, template: null}
+        container_wizard: { enabled: true, type: "smartphone", registration: false, template: null }
       });
       component.onSubmit();
 
@@ -140,9 +141,9 @@ describe("LoginComponent", () => {
 
     it("should redirect to container wizard if only container wizard is enabled", () => {
       authService.authData.set({
-        ...authService.authData(),
+        ...authService.authData()!,
         token_wizard: false,
-        container_wizard: {enabled: true, type: "smartphone", registration: false, template: null}
+        container_wizard: { enabled: true, type: "smartphone", registration: false, template: null }
       });
       component.onSubmit();
 
@@ -215,7 +216,10 @@ describe("LoginComponent", () => {
 
       component.onSubmit();
       // "please enter otp:" is not duplicated
-      expect(component.loginMessage()).toEqual(["please enter otp: ", "Please confirm with your WebAuthn token (Generic WebAuthn Token)"]);
+      expect(component.loginMessage()).toEqual([
+        "please enter otp: ",
+        "Please confirm with your WebAuthn token (Generic WebAuthn Token)"
+      ]);
       expect(component.showOtpField()).toBe(true);
       expect(component.webAuthnTriggered()).toEqual(webAuthnSignRequestData);
       expect((component as any).transactionId).toBe("02247192477167467513");

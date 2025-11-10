@@ -1,29 +1,28 @@
-
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { ActionSelectorComponent } from "./action-selector.component";
 import { PolicyService } from "../../../../../services/policies/policies.service";
-import { signal } from "@angular/core";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
+import { MockPolicyService } from "../../../../../../testing/mock-services/mock-policies-service";
+import { By } from "@angular/platform-browser";
+import { SelectorButtons } from "../selector-buttons/selector-buttons.component";
+import { FormsModule } from "@angular/forms";
 
 describe("ActionSelectorComponent", () => {
   let component: ActionSelectorComponent;
   let fixture: ComponentFixture<ActionSelectorComponent>;
-  let policyServiceMock: any;
+  let policyServiceMock: MockPolicyService;
 
   beforeEach(async () => {
-    policyServiceMock = {
-      availableActions: signal([]),
-      selectedAction: signal(null),
-      selectAction: jasmine.createSpy("selectAction"),
-    };
-
     await TestBed.configureTestingModule({
       imports: [ActionSelectorComponent, NoopAnimationsModule],
-      providers: [{ provide: PolicyService, useValue: policyServiceMock }],
+      providers: [{ provide: PolicyService, useClass: MockPolicyService }]
     }).compileComponents();
 
     fixture = TestBed.createComponent(ActionSelectorComponent);
+    policyServiceMock = TestBed.inject(PolicyService) as unknown as MockPolicyService;
     component = fixture.componentInstance;
+    jest.spyOn(policyServiceMock.actionFilter, "set");
+    jest.spyOn(policyServiceMock.selectedActionGroup, "set");
   });
 
   it("should create", () => {
@@ -31,22 +30,80 @@ describe("ActionSelectorComponent", () => {
   });
 
   it("should display available actions", () => {
-    const actions = [{ name: "action1" }, { name: "action2" }];
-    policyServiceMock.availableActions.set(actions);
+    policyServiceMock.actionNamesOfSelectedGroup.set(["action1", "action2"]);
     fixture.detectChanges();
-
-    const actionElements = fixture.nativeElement.querySelectorAll(".action-button");
-    expect(actionElements.length).toBe(actions.length);
+    const actionElements = fixture.nativeElement.querySelectorAll(".policy-action-item");
+    expect(actionElements.length).toBe(2);
+    expect(actionElements[0].textContent).toContain("action1");
+    expect(actionElements[1].textContent).toContain("action2");
   });
 
   it("should select an action on click", () => {
-    const actions = [{ name: "action1" }, { name: "action2" }];
-    policyServiceMock.availableActions.set(actions);
+    const actions = ["action1", "action2"];
+    policyServiceMock.actionNamesOfSelectedGroup.set(actions);
     fixture.detectChanges();
 
-    const actionElement = fixture.nativeElement.querySelector(".action-button");
-    actionElement.click();
+    const actionElement = fixture.nativeElement.querySelectorAll(".policy-action-item");
+    actionElement[1].click();
 
-    expect(policyServiceMock.selectAction).toHaveBeenCalledWith(actions[0]);
+    expect(policyServiceMock.selectActionByName).toHaveBeenCalledWith(actions[1]);
+  });
+
+  it("should apply selected class to selected action", () => {
+    const actions = ["action1", "action2"];
+    policyServiceMock.actionNamesOfSelectedGroup.set(actions);
+    policyServiceMock.selectedAction.set({ name: "action1", value: "" });
+    fixture.detectChanges();
+
+    const actionElements = fixture.nativeElement.querySelectorAll(".policy-action-item");
+    expect(actionElements[0].classList).toContain("policy-action-item-selected");
+    expect(actionElements[1].classList).not.toContain("policy-action-item-selected");
+  });
+
+  it("should filter actions based on input", () => {
+    fixture.detectChanges();
+    const input: HTMLInputElement = fixture.nativeElement.querySelector(".search-input");
+
+    input.value = "test";
+    input.dispatchEvent(new Event("input"));
+
+    const actionFilter = policyServiceMock.actionFilter();
+    expect(actionFilter).toBe("test");
+
+    expect(policyServiceMock.actionFilter.set).toHaveBeenCalledWith("test");
+  });
+
+  // it("should filter actions based on input", () => {
+  //   const input: HTMLInputElement = fixture.nativeElement.querySelector(".search-input");
+
+  //   input.value = "test";
+  //   input.dispatchEvent(new Event("input"));
+  //   TestBed.flushEffects();
+  //   fixture.detectChanges();
+
+  //   const actionFilter = policyServiceMock.actionFilter();
+  //   expect(actionFilter).toBe("test");
+  // });
+
+  it("should show group selector if more than one group exists", () => {
+    policyServiceMock.policyActionGroupNames.set(["group1", "group2"]);
+    fixture.detectChanges();
+    const groupSelector = fixture.nativeElement.querySelector("app-selector-buttons");
+    expect(groupSelector).toBeTruthy();
+  });
+
+  it("should not show group selector if only one group exists", () => {
+    policyServiceMock.policyActionGroupNames.set(["group1"]);
+    fixture.detectChanges();
+    const groupSelector = fixture.nativeElement.querySelector("app-selector-buttons");
+    expect(groupSelector).toBeFalsy();
+  });
+
+  it("should call service when group is selected", () => {
+    policyServiceMock.policyActionGroupNames.set(["group1", "group2"]);
+    fixture.detectChanges();
+    const groupSelector = fixture.debugElement.query(By.directive(SelectorButtons));
+    groupSelector.triggerEventHandler("onSelect", "group2");
+    expect(policyServiceMock.selectedActionGroup.set).toHaveBeenCalledWith("group2");
   });
 });

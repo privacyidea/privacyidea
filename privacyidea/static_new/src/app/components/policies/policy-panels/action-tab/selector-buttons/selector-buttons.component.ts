@@ -27,7 +27,7 @@ import { MatButtonModule } from "@angular/material/button";
   styleUrl: "./selector-buttons.component.scss"
 })
 // Implement OnInit to use the hook
-export class BoolSelectButtonsComponent<T> implements OnInit {
+export class SelectorButtons<T> implements OnInit {
   // Inputs
   initialValue = input.required<T>();
   @Input({ required: true }) values!: T[];
