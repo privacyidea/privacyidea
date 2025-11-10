@@ -85,7 +85,7 @@ def get_render_context():
 
     if current_app.config.get("PI_UI_DEACTIVATED"):
         # Do not provide the UI
-        return send_html(render_template("deactivated.html"))
+        return {}
 
     # The default theme. We can change this later
     theme = current_app.config.get("PI_CSS", DEFAULT_THEME)
@@ -207,6 +207,9 @@ def get_render_context():
 @login_blueprint.route('/', methods=['GET'])
 def single_page_application():
     render_context = get_render_context()
+    if current_app.config.get("PI_UI_DEACTIVATED"):
+        # Do not provide the UI
+        return send_html(render_template("deactivated.html"))
     index_page = current_app.config.get("PI_INDEX_HTML") or "index.html"
     return send_html(render_template(index_page, **render_context))
 
