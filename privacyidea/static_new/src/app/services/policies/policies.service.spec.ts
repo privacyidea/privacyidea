@@ -453,13 +453,13 @@ describe("PolicyService", () => {
       service.policyActionResource.set(mock);
       service.selectPolicy({ ...service.emptyPolicy, scope: "scope1" });
       service.selectedActionGroup.set("group1");
-      expect(service.getActionNamesOfSelectedGroup()).toEqual(["action1"]);
+      expect(service.actionNamesOfSelectedGroup()).toEqual(["action1"]);
     });
 
     it("should return empty array if no scope selected", () => {
       service.policyActionResource.set(MockPiResponse.fromValue({ user: { test: { type: "str", desc: "test" } } }));
       service.selectedActionGroup.set("group1");
-      expect(service.getActionNamesOfSelectedGroup()).toEqual([]);
+      expect(service.actionNamesOfSelectedGroup()).toEqual([]);
     });
   });
 

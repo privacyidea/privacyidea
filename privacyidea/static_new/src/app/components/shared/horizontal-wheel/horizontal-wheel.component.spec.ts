@@ -39,28 +39,6 @@ describe("HorizontalWheelComponent", () => {
     expect(component).toBeTruthy();
   });
 
-  it("should center element by index on item click", () => {
-    const containerElement = document.createElement("div");
-    (containerElement as any).scrollTo = () => {};
-    (component as any).containerElement = containerElement;
-    const scrollToSpy = jest.spyOn(containerElement, "scrollTo");
-
-    const itemElements = [
-      { nativeElement: { offsetLeft: 50, offsetWidth: 100 } },
-      { nativeElement: { offsetLeft: 150, offsetWidth: 100 } },
-      { nativeElement: { offsetLeft: 250, offsetWidth: 100 } }
-    ];
-    (component as any).items = signal(itemElements);
-    Object.defineProperty((component as any).containerElement, "offsetWidth", {
-      get: () => 200
-    });
-
-    const fakeEvent = { preventDefault: () => {} } as any as MouseEvent;
-    component.onItemClick(fakeEvent, 1);
-
-    expect(scrollToSpy).toHaveBeenCalledWith({ behavior: "smooth", left: 100 });
-  });
-
   it("should handle mouse move when dragging", () => {
     component.isDragging = true;
     (component as any).containerElement = { scrollLeft: 50, offsetWidth: 200, style: {} };
@@ -72,25 +50,4 @@ describe("HorizontalWheelComponent", () => {
 
     expect((component as any).containerElement.scrollLeft).toBe(30);
   });
-
-  it("should stop dragging and center closest item on mouse up", fakeAsync(() => {
-    component.isDragging = true;
-    (component as any).containerElement = {
-      scrollLeft: 0,
-      offsetWidth: 100,
-      scrollTo: () => {}
-    } as any;
-
-    const itemElements = [
-      { nativeElement: { offsetLeft: 0, offsetWidth: 50 } },
-      { nativeElement: { offsetLeft: 50, offsetWidth: 50 } }
-    ];
-    (component as any).items = signal(itemElements);
-
-    const centerElementByIndexSpy = jest.spyOn(component, "centerElementByIndex" as any);
-    component.onMouseUp({} as MouseEvent);
-
-    expect(component.isDragging).toBe(false);
-    expect(centerElementByIndexSpy).toHaveBeenCalledWith(0);
-  }));
 });

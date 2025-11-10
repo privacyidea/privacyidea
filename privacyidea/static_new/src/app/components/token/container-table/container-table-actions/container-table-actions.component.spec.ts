@@ -23,6 +23,7 @@ import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ActivatedRoute } from "@angular/router";
 import { of } from "rxjs";
+import "@angular/localize/init";
 
 describe("ContainerTableActionsComponent", () => {
   let component: ContainerTableActionsComponent;
@@ -30,14 +31,16 @@ describe("ContainerTableActionsComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      providers: [provideHttpClient(), provideHttpClientTesting(), {
-        provide: ActivatedRoute,
-        useValue: { params: of({ id: "123" }) }
-      }
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        {
+          provide: ActivatedRoute,
+          useValue: { params: of({ id: "123" }) }
+        }
       ],
       imports: [ContainerTableActionsComponent]
-    })
-      .compileComponents();
+    }).compileComponents();
 
     fixture = TestBed.createComponent(ContainerTableActionsComponent);
     component = fixture.componentInstance;
