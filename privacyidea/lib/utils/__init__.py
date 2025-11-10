@@ -1491,21 +1491,15 @@ def get_computer_name_from_user_agent(user_agent: str) -> Union[str, None]:
 
 def redacted_email(email: str) -> str:
     """
-    Censors an email address from 'example.mail@test.com' to 'exa*********@t***.com'
+    Censors an email address from 'example.mail@test.com' to 'ex*********@t***.com'
     """
-    try:
-        name, domain = email.split('@')
-        domain_parts = domain.split('.')
-        return f'{name[:2]}********@{domain_parts[0][0]}****.{domain_parts[1]}'
-    except:
-        return '********@****.***'
+    name, domain = email.split('@') if '@' in email else ("**", email)
+    domain_parts = domain.split('.') if '.' in domain else ("**", "***")
+    return f'{name[:2]}********@{domain_parts[0][0]}****.{domain_parts[-1]}'
 
 
 def redacted_phone_number(number: str) -> str:
     """
     Censors a phone number from 01234567890 to *********90
     """
-    try:
-        return f'****-******{number[-2:]}'
-    except:
-        return '****-********'
+    return f'****-******{number[-2:] or "**"}'

@@ -1,6 +1,10 @@
 import logging
+
+import responses
+from mock import mock
 from testfixtures import LogCapture
 
+from privacyidea.lib.config import set_privacyidea_config
 from privacyidea.lib.container import create_container_template, get_template_obj
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.policies.actions import PolicyAction
@@ -205,7 +209,6 @@ class APIPolicyTestCase(MyApiTestCase):
         self.assertEqual({}, policy.get("action"))
 
         delete_policy("pol1")
-
 
     def test_02_set_policy_conditions(self):
         self.setUp_user_realms()
@@ -1093,3 +1096,137 @@ class APIPolicyConditionTestCase(MyApiTestCase):
             self.assertEqual(1, len(challenges))
             challenge_serials = {c.get("serial") for c in challenges}
             self.assertSetEqual({daypassword.get_serial()}, challenge_serials, challenge_serials)
+
+    def test_09_challenge_text(self):
+        """
+        Test that the policy CHALLENGE_TEXT works and replaces the tags correctly.
+        """
+        user = User("cornelius", self.realm1)
+        # The user "cornelius" already has a "spass" token from setUp.
+        # We create a new one to avoid side effects.
+        hotp_token = init_token({"type": "hotp", "genkey": True, "pin": "5678"}, user=user)
+
+        text = "Challenge for user {user}. The serial for the {tokentype} token is {serial}."
+        # We need to trigger a challenge. A CHALLENGERESPONSE policy does that.
+        action = {PolicyAction.CHALLENGERESPONSE: "hotp", PolicyAction.CHALLENGETEXT: text}
+        set_policy(name="policy-challenge-text", scope=SCOPE.AUTH, action=action, user="cornelius")
+
+        try:
+            # We authenticate with only the PIN of the new token to trigger a challenge
+            with self.app.test_request_context('/validate/check',
+                                               method='POST',
+                                               data={"user": "cornelius", "realm": self.realm1, "pass": "5678"}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(res.status_code, 200, res.json)
+                result = res.json.get("result")
+                self.assertTrue(result.get("status"))
+                self.assertEqual(result.get("authentication"), "CHALLENGE")
+
+                challenges = res.json.get("detail").get("multi_challenge")
+                self.assertEqual(len(challenges), 1)
+
+                challenge = challenges[0]
+                self.assertEqual(challenge.get("serial"), hotp_token.get_serial())
+
+                message = challenge.get("message")
+                # The pin used to trigger the challenge should be available as a tag
+                expected_message = f"Challenge for user Cornelius. The serial for the hotp token is {hotp_token.get_serial()}."
+                self.assertEqual(expected_message, message)
+        finally:
+            # Clean up
+            delete_policy("policy-challenge-text")
+            remove_token(serial=hotp_token.get_serial())
+
+    @mock.patch('privacyidea.lib.smtpserver.smtplib.SMTP', autospec=True)
+    def test_10_challenge_text_email(self, smtp_mock):
+        """
+        Test that the policy CHALLENGE_TEXT works and replaces the contact info tags correctly.
+        """
+        smtp_inst = smtp_mock.return_value
+        smtp_inst.sendmail.return_value = {"user@example.com": (200, 'OK')}
+
+        user = User("cornelius", self.realm1)
+
+        email_token = init_token({"type": "email", "email": "cornelius@example.com", "pin": "5678"}, user=user)
+
+        email_text = "Email challenge: {email} / {email_redacted}"
+        email_action = {'email_challenge_text': email_text}
+        set_policy(name="policy-challenge-email", scope=SCOPE.AUTH, action=email_action, user="cornelius")
+
+        try:
+            with self.app.test_request_context('/validate/check',
+                                               method='POST',
+                                               data={"user": "cornelius", "realm": self.realm1, "pass": "5678"}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(res.status_code, 200, res.json)
+                result = res.json.get("result")
+                self.assertTrue(result.get("status"))
+                self.assertEqual(result.get("authentication"), "CHALLENGE")
+
+                challenges = res.json.get("detail").get("multi_challenge")
+
+                messages = {c.get("type"): c.get("message") for c in challenges}
+
+                email_message = messages.get("email")
+                self.assertIsNotNone(email_message)
+                expected_email_message = "Email challenge: cornelius@example.com / co********@e****.com"
+                self.assertEqual(email_message, expected_email_message)
+
+        finally:
+            # Clean up
+            delete_policy("policy-challenge-email")
+            if email_token:
+                remove_token(serial=email_token.get_serial())
+
+    @responses.activate
+    def test_11_challenge_text_sms(self):
+        """
+        Test that the policy CHALLENGE_TEXT works and replaces the contact info tags correctly.
+        """
+        user = User("cornelius", self.realm1)
+        sms_provider_config = '''{"URL": "http://smsgateway.com/sms_send_api.cgi",
+                           "PARAMETER": {"from": "0170111111",
+                                         "password": "yoursecret",
+                                         "sender": "name",
+                                         "account": "company_ltd"},
+                           "SMS_TEXT_KEY": "text",
+                           "SMS_PHONENUMBER_KEY": "destination",
+                           "HTTP_Method": "POST",
+                           "PROXY": "http://username:password@your-proxy:8080",
+                           "RETURN_SUCCESS": "ID"
+            }'''
+        success_body = "ID 12345"
+        responses.add(responses.POST, "http://smsgateway.com/sms_send_api.cgi", body=success_body)
+        set_privacyidea_config("sms.providerConfig", sms_provider_config)
+
+        sms_token = init_token({"type": "sms", "phone": "123456789123", "pin": "5678"}, user=user)
+
+        sms_text = "SMS challenge: {phone} / {phone_redacted}"
+        sms_action = {'sms_challenge_text': sms_text}
+        set_policy(name="policy-challenge-sms", scope=SCOPE.AUTH, action=sms_action, user="cornelius")
+
+        try:
+            with self.app.test_request_context('/validate/check',
+                                               method='POST',
+                                               data={"user": "cornelius", "realm": self.realm1, "pass": "5678"}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(res.status_code, 200, res.json)
+                result = res.json.get("result")
+                self.assertTrue(result.get("status"))
+                self.assertEqual(result.get("authentication"), "CHALLENGE")
+
+                challenges = res.json.get("detail").get("multi_challenge")
+                self.assertEqual(len(challenges), 1)
+
+                messages = {c.get("type"): c.get("message") for c in challenges}
+
+                sms_message = messages.get("sms")
+                self.assertIsNotNone(sms_message)
+                expected_sms_message = "SMS challenge: 123456789123 / ****-******23"
+                self.assertEqual(sms_message, expected_sms_message)
+
+        finally:
+            # Clean up
+            delete_policy("policy-challenge-sms")
+            if sms_token:
+                remove_token(serial=sms_token.get_serial())
