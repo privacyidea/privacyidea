@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, inject, Input, signal, WritableSignal } from "@angular/core";
+import { Component, computed, effect, inject, Input, signal, WritableSignal } from "@angular/core";
 import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
 import { ContainerRegistrationInitDialogComponent } from "../../container-registration/container-registration-init-dialog/container-registration-init-dialog.component";
 import { PiResponse } from "../../../../app.component";
@@ -94,6 +94,15 @@ export class ContainerDetailsActionsComponent {
 
   ngOnDestroy(): void {
     this.containerService.stopPolling();
+  }
+
+  constructor() {
+    // Effect to close dialog when polling stops
+    effect(() => {
+      if (!this.containerService.isPollingActive()) {
+        this.dialog.closeAll();
+      }
+    });
   }
 
   deleteContainer() {

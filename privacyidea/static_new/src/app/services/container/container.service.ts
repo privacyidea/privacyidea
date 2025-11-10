@@ -143,6 +143,7 @@ export interface ContainerUnregisterData {
 }
 
 export interface ContainerServiceInterface {
+  isPollingActive: Signal<boolean>;
   apiFilter: string[];
   advancedApiFilter: string[];
   stopPolling$: Subject<void>;
@@ -228,9 +229,9 @@ export class ContainerService implements ContainerServiceInterface {
   private readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly pollingTrigger = signal<number>(0);
-  private readonly isPollingActive = signal(false);
   private readonly isRolloverPolling = signal(false);
 
+  readonly isPollingActive = signal(false);
   readonly apiFilter = apiFilter;
   readonly advancedApiFilter = advancedApiFilter;
 
