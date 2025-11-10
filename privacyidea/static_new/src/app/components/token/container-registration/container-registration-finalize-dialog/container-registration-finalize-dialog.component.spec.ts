@@ -95,7 +95,7 @@ describe("ContainerRegistrationFinalizeDialogComponent", () => {
   });
 
   it("should call regenerateQRCode when button is clicked", () => {
-    const button = fixture.debugElement.query(By.css("button.card-button"));
+    const button = fixture.debugElement.query(By.css("button.action-button-1"));
     button.triggerEventHandler("click");
     expect(mockRegisterContainer).toHaveBeenCalled();
   });
