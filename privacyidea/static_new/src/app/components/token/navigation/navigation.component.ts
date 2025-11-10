@@ -113,9 +113,13 @@ export class NavigationComponent {
         this.containerService.containerResource.reload();
       }
     }
-    if (this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS)) {
+    else if (this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS)) {
       this.containerService.containerDetailResource.reload();
       this.tokenService.tokenResource.reload();
+    }
+    else if (this.contentService.routeUrl().startsWith(ROUTE_PATHS.USERS_DETAILS)) {
+      this.userService.usersResource.reload();
+      return;
     }
     switch (this.contentService.routeUrl()) {
       case ROUTE_PATHS.TOKENS:
@@ -141,9 +145,6 @@ export class NavigationComponent {
         this.auditService.auditResource.reload();
         break;
       case ROUTE_PATHS.USERS:
-        this.userService.usersResource.reload();
-        break;
-      case ROUTE_PATHS.USERS_DETAILS:
         this.userService.usersResource.reload();
         break;
     }
