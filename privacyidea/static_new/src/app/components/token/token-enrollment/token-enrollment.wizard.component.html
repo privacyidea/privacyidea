@@ -17,11 +17,8 @@
     <div class="enroll-button-container margin-bottom-1">
       <button
         [disabled]="formGroupSignal().invalid"
-        [ngClass]="{
-              'card-button-disabled': formGroupSignal().invalid,
-              'card-button': true
-            }"
-        mat-flat-button
+        class="action-button-1 width-238"
+        mat-stroked-button
         type="submit">
         <mat-icon>add</mat-icon>
         Enroll

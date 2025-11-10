@@ -5,7 +5,7 @@
   @include styles.base-table-structure(".container-table", ".container-table-filter", ".table-scroll-container");
   overflow-y: auto;
   overflow-x: hidden;
-  max-height: calc(var(--main-height) - var(--global-padding) * 5);
+  max-height: var(--max-height);
   max-width: calc(100vw - var(--global-padding) * 5 - 48px);
   display: grid;
 }

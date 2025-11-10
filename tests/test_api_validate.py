@@ -52,7 +52,7 @@ from privacyidea.lib.user import (User)
 from privacyidea.lib.users.custom_user_attributes import InternalCustomUserAttributes
 from privacyidea.lib.utils import AUTH_RESPONSE
 from privacyidea.lib.utils import to_unicode
-from privacyidea.models import (Token, Policy, Challenge, AuthCache, db, TokenOwner, Realm)
+from privacyidea.models import (Token, Policy, Challenge, AuthCache, db, TokenOwner, Realm, CustomUserAttribute)
 from . import smtpmock, ldap3mock, radiusmock
 from .base import MyApiTestCase
 from .test_lib_tokencontainer import MockSmartphone
@@ -3444,7 +3444,10 @@ class ValidateAPITestCase(MyApiTestCase):
                              error)
 
         # --- Realm of user was deleted ---
-        Realm.query.filter_by(name=self.realm1).first().delete()
+        realm = Realm.query.filter_by(name=self.realm1).first()
+        for user_attribute in CustomUserAttribute.query.filter_by(realm_id=realm.id).all():
+            user_attribute.delete()
+        realm.delete()
 
         # only pass username uses default realm: same username exist in defrealm
         with self.app.test_request_context('/validate/check', method="POST",

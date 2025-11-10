@@ -29,8 +29,8 @@ import { TokenTableComponent } from "./components/token/token-table/token-table.
 import { TokenComponent } from "./components/token/token.component";
 import { UserDetailsComponent } from "./components/user/user-details/user-details.component";
 import { UserTableComponent } from "./components/user/user-table/user-table.component";
-import { UserComponent } from "./components/user/user.component";
 import { AuditComponent } from "./components/audit/audit.component";
+import { TokenImportComponent } from "./components/token/token-import/token-import.component";
 
 export const routes: Routes = [
   {
@@ -50,12 +50,13 @@ export const routes: Routes = [
           { path: "details/:serial", component: ContainerDetailsComponent }
         ]
       },
-      { path: "details/:serial", component: TokenDetailsComponent }
+      { path: "details/:serial", component: TokenDetailsComponent },
+      { path: "import", component: TokenImportComponent }
     ]
   },
   {
     path: "users",
-    component: UserComponent,
+    component: TokenComponent,
     children: [
       { path: "", component: UserTableComponent },
       { path: "details/:username", component: UserDetailsComponent }
@@ -63,6 +64,9 @@ export const routes: Routes = [
   },
   {
     path: "audit",
-    component: AuditComponent
+    component: TokenComponent,
+    children: [
+      { path: "", component: AuditComponent }
+    ]
   }
 ];

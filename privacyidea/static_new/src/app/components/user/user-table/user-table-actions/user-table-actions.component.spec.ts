@@ -17,32 +17,30 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-
-import { UserCardComponent } from "./user-card.component";
+import { UserTableActionsComponent } from "./user-table-actions.component";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ActivatedRoute } from "@angular/router";
 import { of } from "rxjs";
 
-describe("UserCardComponent", () => {
-  let component: UserCardComponent;
-  let fixture: ComponentFixture<UserCardComponent>;
+describe("UserTableActionsComponent", () => {
+  let component: UserTableActionsComponent;
+  let fixture: ComponentFixture<UserTableActionsComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      providers: [
+      providers: [provideHttpClient(), provideHttpClientTesting(),
         {
           provide: ActivatedRoute,
           useValue: {
             params: of({ id: "123" })
           }
-        },
-        provideHttpClient(),
-        provideHttpClientTesting()],
-      imports: [UserCardComponent]
-    }).compileComponents();
+        }],
+      imports: [UserTableActionsComponent]
+    })
+      .compileComponents();
 
-    fixture = TestBed.createComponent(UserCardComponent);
+    fixture = TestBed.createComponent(UserTableActionsComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

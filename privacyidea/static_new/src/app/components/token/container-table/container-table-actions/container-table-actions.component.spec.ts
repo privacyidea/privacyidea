@@ -12,27 +12,34 @@
  * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
  *
  * You should have received a copy of the GNU Affero General Public
- * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * License along with this program. If not, see <http://www.gnu.org/licenses/>.
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 
-import { FooterComponent } from "./footer.component";
+import { ContainerTableActionsComponent } from "./container-table-actions.component";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { ActivatedRoute } from "@angular/router";
+import { of } from "rxjs";
 
-describe("FooterComponent", () => {
-  let component: FooterComponent;
-  let fixture: ComponentFixture<FooterComponent>;
+describe("ContainerTableActionsComponent", () => {
+  let component: ContainerTableActionsComponent;
+  let fixture: ComponentFixture<ContainerTableActionsComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [FooterComponent],
-      providers: [provideHttpClient(), provideHttpClientTesting()]
-    }).compileComponents();
+      providers: [provideHttpClient(), provideHttpClientTesting(), {
+        provide: ActivatedRoute,
+        useValue: { params: of({ id: "123" }) }
+      }
+      ],
+      imports: [ContainerTableActionsComponent]
+    })
+      .compileComponents();
 
-    fixture = TestBed.createComponent(FooterComponent);
+    fixture = TestBed.createComponent(ContainerTableActionsComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
