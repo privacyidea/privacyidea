@@ -16,8 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, EventEmitter, Input, Output, signal, Signal, effect } from "@angular/core";
-import { MatError, MatFormField, MatHint, MatLabel, MatSuffix } from "@angular/material/form-field";
+import { Component, computed, effect, EventEmitter, Input, Output, Signal, signal } from "@angular/core";
+import { MatFormField, MatHint, MatLabel, MatSuffix } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { FormsModule } from "@angular/forms";
 import { MatCheckbox } from "@angular/material/checkbox";
@@ -37,8 +37,7 @@ import { MatButtonModule } from "@angular/material/button";
     MatCheckbox,
     MatIconModule,
     MatButtonModule,
-    MatSuffix,
-    MatError
+    MatSuffix
   ]
 })
 export class ContainerRegistrationConfigComponent {
@@ -55,10 +54,25 @@ export class ContainerRegistrationConfigComponent {
   repeatPassphraseResponse = signal("");
 
   promptRequired = computed(() => this.userStorePassphrase() || this.passphraseResponse());
-
+  validInput: Signal<boolean> = computed(() => {
+    if (this.userStorePassphrase()) {
+      return true;
+    } else if (this.passphrasePrompt()) {
+      return !!this.passphraseResponse() && this.passphraseResponse() === this.repeatPassphraseResponse();
+    } else {
+      return !this.passphraseResponse() && !this.repeatPassphraseResponse();
+    }
+  });
   private validInputEffect = effect(() => {
     this.validInputChange.emit(this.validInput());
   });
+
+  get passphraseMismatch(): boolean {
+    return (
+      !this.userStorePassphrase() &&
+      this.passphraseResponse() !== this.repeatPassphraseResponse()
+    );
+  }
 
   toggleShowPassphrase() {
     this.showPassphrase = !this.showPassphrase;
@@ -72,22 +86,5 @@ export class ContainerRegistrationConfigComponent {
         this.passphrasePrompt.set(this.defaultPrompt);
       }
     }
-  }
-
-  validInput: Signal<boolean> = computed(() => {
-    if (this.userStorePassphrase()) {
-      return true;
-    } else if (this.passphrasePrompt()) {
-      return !!this.passphraseResponse() && this.passphraseResponse() === this.repeatPassphraseResponse();
-    } else {
-      return !this.passphraseResponse() && !this.repeatPassphraseResponse();
-    }
-  });
-
-  get passphraseMismatch(): boolean {
-    return (
-      !this.userStorePassphrase() &&
-      this.passphraseResponse() !== this.repeatPassphraseResponse()
-    );
   }
 }
