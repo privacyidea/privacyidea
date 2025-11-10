@@ -244,9 +244,9 @@ def resolversz():
     result = {}
     resolver_types = ["ldapresolver", "sqlresolver"]
     total_status = "OK"
-
-    accepts_auth = Match.action_only(g, scope=SCOPE.AUTHZ, action=PolicyAction.REQUIRE_AUTH_FOR_RESOLVER_DETAILS).any()
-    if accepts_auth:
+    # TODO this has to be inverted on a major update, so that authentication is required by default
+    requires_auth = Match.action_only(g, scope=SCOPE.AUTHZ, action=PolicyAction.REQUIRE_AUTH_FOR_RESOLVER_DETAILS).any()
+    if requires_auth:
         try:
             check_auth_token(required_role=[ROLE.ADMIN])
         except AuthError as e:
@@ -270,7 +270,7 @@ def resolversz():
                 else:
                     resolver_status[resolver_name] = "fail"
 
-            if not accepts_auth or authenticated:
+            if not requires_auth or authenticated:
                 result[resolver_type] = resolver_status
 
         result["status"] = total_status
