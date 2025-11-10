@@ -255,27 +255,19 @@ export class ContainerService implements ContainerServiceInterface {
     computation: () => new FilterValue()
   });
   filterParams = computed<Record<string, string>>(() => {
-    const allowedFilters = [...this.apiFilter, ...this.advancedApiFilter];
-    const filterPairs = Array.from(this.containerFilter().filterMap.entries())
-      .filter(([key]) => allowedFilters.includes(key))
-      .map(([key, value]) => {
-        if (value === "") {
-          return { key, value: "*" };
-        }
-        return { key, value };
-      });
-    return filterPairs.reduce(
-      (acc, { key, value }) => {
-        if (key === "user" || key === "type" || key === "container_serial" || key === "token_serial") {
-          acc[key] = `${value}`;
-        } else {
-          acc[key] = `*${value}*`;
-        }
-        return acc;
-      },
-      {} as Record<string, string>
-    );
+    const allowed = [...this.apiFilter, ...this.advancedApiFilter];
+
+    const plainKeys = new Set(["user", "type", "container_serial", "token_serial"]);
+
+    const entries = Array.from(this.containerFilter().filterMap.entries())
+      .filter(([key]) => allowed.includes(key))
+      .map(([key, value]) => [key, (value ?? "").toString().trim()] as const)
+      .filter(([, v]) => v !== "")
+      .map(([key, v]) => [key, plainKeys.has(key) ? v : `*${v}*`] as const);
+
+    return Object.fromEntries(entries) as Record<string, string>;
   });
+
   pageSize = linkedSignal({
     source: this.containerFilter,
     computation: (): any => {

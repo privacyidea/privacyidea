@@ -25,6 +25,7 @@ import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
 
 import { FilterValue } from "../../core/models/filter_value";
+import { map } from "rxjs";
 
 export interface Audit {
   auditcolumns: string[];
@@ -113,21 +114,19 @@ export class AuditService implements AuditServiceInterface {
   private auditBaseUrl = environment.proxyUrl + "/audit/";
   auditFilter = signal(new FilterValue());
   filterParams = computed<Record<string, string>>(() => {
-    const allowedFilters = [...this.apiFilter, ...this.advancedApiFilter];
-    const filterPairs = Array.from(this.auditFilter().filterMap.entries())
-      .map(([key, value]) => ({ key, value }))
-      .filter(({ key }) => allowedFilters.includes(key));
-    if (filterPairs.length === 0) {
-      return {};
-    }
-    return filterPairs.reduce(
-      (acc, { key, value }) => ({
-        ...acc,
-        [key]: `*${value}*`
-      }),
-      {} as Record<string, string>
-    );
+    const allowed = [...this.apiFilter, ...this.advancedApiFilter];
+
+    const entries = Array.from(this.auditFilter().filterMap.entries())
+      .filter(([key]) => allowed.includes(key))
+      .filter(([, v]) => v !== "")
+      .map(([key, value]) => {
+        const v = (value ?? "").toString().trim();
+        return [key, v ? `*${v}*` : v] as const;
+      });
+
+    return Object.fromEntries(entries) as Record<string, string>;
   });
+
   pageSize = linkedSignal({
     source: () => this.authService.auditPageSize(),
     computation: (pageSize) => (pageSize > 0 ? pageSize : 10)

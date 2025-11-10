@@ -384,24 +384,27 @@ export class TokenService implements TokenServiceInterface {
   });
 
   filterParams = computed<Record<string, string>>(() => {
-    const allowedFilters = [...this.apiFilter, ...this.advancedApiFilter, ...this.hiddenApiFilter];
+    const allowed = [...this.apiFilter, ...this.advancedApiFilter, ...this.hiddenApiFilter];
 
-    let filterPairs = [
+    const plainKeys = new Set([
+      "user",
+      "infokey",
+      "infovalue",
+      "active",
+      "assigned",
+      "container_serial",
+    ]);
+
+    const entries = [
       ...Array.from(this.tokenFilter().filterMap.entries()),
-      ...Array.from(this.tokenFilter().hiddenFilterMap.entries())
-    ];
-    let filterPairsMap = filterPairs
-      .filter(([key]) => allowedFilters.includes(key))
-      .map(([key, value]) => ({ key, value }));
-    return filterPairsMap.reduce(
-      (acc, { key, value }) => ({
-        ...acc,
-        [key]: ["user", "infokey", "infovalue", "active", "assigned", "container_serial"].includes(key)
-          ? `${value}`
-          : `*${value}*`
-      }),
-      {} as Record<string, string>
-    );
+      ...Array.from(this.tokenFilter().hiddenFilterMap.entries()),
+    ]
+      .filter(([key]) => allowed.includes(key))
+      .map(([key, value]) => [key, (value ?? "").toString().trim()] as const)
+      .filter(([, v]) => v !== "")
+      .map(([key, v]) => [key, plainKeys.has(key) ? v : `*${v}*`] as const);
+
+    return Object.fromEntries(entries) as Record<string, string>;
   });
 
   tokenResource = httpResource<PiResponse<Tokens>>(() => {
