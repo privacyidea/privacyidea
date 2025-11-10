@@ -24,7 +24,7 @@
 .custom-user-details {
   display: grid;
   grid-template-columns: 50fr 50fr 1fr;
-  gap: 12px 16px;
+  column-gap: 16px;
   padding: 12px 16px;
   border: 1px solid #c7c5d0;
   border-radius: var(--border-radius);

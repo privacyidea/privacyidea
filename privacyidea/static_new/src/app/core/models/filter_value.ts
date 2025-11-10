@@ -183,7 +183,7 @@ export class FilterValue {
   /**
    * Adds or updates a hidden (key: value) pair in hiddenValue.
    */
-  public upsertHiddenEntry(key: string, value: string): FilterValue {
+  public updateHiddenEntry(key: string, value: string): FilterValue {
     const map = this.hiddenFilterMap;
     map.set(key, value);
     this.setHiddenFromMap(map);

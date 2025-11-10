@@ -107,7 +107,6 @@ export class UserDetailsTokenTableComponent {
     this.dataSource.sort = this.sort;
   }
 
-
   handleFilterInput($event: Event): void {
     this.filterValue = ($event.target as HTMLInputElement).value.trim();
     const normalised = this.filterValue.toLowerCase();
@@ -117,7 +116,7 @@ export class UserDetailsTokenTableComponent {
     }
   }
 
-  toggleActive(token: ContainerDetailToken): void {
+  toggleActive(token: TokenDetails): void {
     this.tokenService.toggleActive(token.serial, token.active).subscribe({
       next: () => {
         this.tokenService.userTokenResource.reload();

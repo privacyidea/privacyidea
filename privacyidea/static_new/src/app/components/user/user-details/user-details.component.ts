@@ -85,6 +85,18 @@ export class UserDetailsComponent {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   private readonly auditService: AuditServiceInterface = inject(AuditService);
   protected readonly dialog: MatDialog = inject(MatDialog);
+  readonly labels: Record<string, string> = {
+    username: 'Username',
+    givenname: 'Given name',
+    surname: 'Surname',
+    email: 'Email',
+    phone: 'Phone',
+    mobile: 'Mobile',
+    description: 'Description',
+    userid: 'User ID',
+    resolver: 'Resolver'
+  };
+  readonly excludedKeys = new Set(['editable']);
 
   userData = this.userService.user;
   tokenResource = this.tokenService.tokenResource;
@@ -159,6 +171,25 @@ export class UserDetailsComponent {
       }
     });
   }
+
+  detailsEntries = computed(() =>
+    Object.entries(this.userData() ?? {})
+      .filter(([key]) => !this.excludedKeys.has(key))
+      .map(([key, value]) => ({
+        key,
+        label: this.labels[key] ?? key,
+        value: value ?? '-'
+      }))
+  );
+
+  detailsColumns = computed(() => {
+    const entries = this.detailsEntries();
+    const colCount = 3;
+    const perCol = Math.ceil(entries.length / colCount);
+    return Array.from({ length: colCount }, (_, i) =>
+      entries.slice(i * perCol, (i + 1) * perCol)
+    );
+  });
 
   switchToCustomKey() {
     this.keyMode.set("input");

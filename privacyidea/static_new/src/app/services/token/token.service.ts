@@ -330,7 +330,7 @@ export class TokenService implements TokenServiceInterface {
         });
 
         if (inUserDetails) {
-          filterValue = filterValue.upsertHiddenEntry("assigned", "false");
+          filterValue = filterValue.updateHiddenEntry("assigned", "false");
         }
         return filterValue;
       }
@@ -346,7 +346,7 @@ export class TokenService implements TokenServiceInterface {
       }
 
       if (inUserDetails) {
-        filterValue = filterValue.upsertHiddenEntry("assigned", "false");
+        filterValue = filterValue.updateHiddenEntry("assigned", "false");
       } else {
         filterValue = filterValue.removeHiddenKey("assigned");
       }

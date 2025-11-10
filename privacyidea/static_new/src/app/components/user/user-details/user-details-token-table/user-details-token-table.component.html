@@ -91,13 +91,15 @@
                       }
                     }
                     @case ("container_serial") {
-                      <a
-                        (click)="contentService.containerSelected(element[column.key])"
-                        attr.aria-label="{{ column.label }} Link">
-                        {{ element[column.key] }}
-                      </a>
-                      @if (element.container_serial !== "") {
-                        <app-copy-button [copyText]="element[column.key]" />
+                      @if (authService.actionAllowed("container_list")) {
+                        <a
+                          (click)="contentService.containerSelected(element[column.key])"
+                          attr.aria-label="{{ column.label }} Link">
+                          {{ element[column.key] }}
+                        </a>
+                        @if (element.container_serial !== "") {
+                          <app-copy-button [copyText]="element[column.key]" />
+                        }
                       }
                     }
                     @default {

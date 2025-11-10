@@ -17,53 +17,14 @@
     </button>
   </div>
   <div class="user-details">
-    <div class="user-details-column">
-      <div
-        class="label"
-        i18n>Username:
+    @for (col of detailsColumns(); track $index) {
+      <div class="user-details-column">
+        @for (item of col; track item.key) {
+          <div class="label">{{ item.label }}:</div>
+          <div class="value">{{ item.value }}</div>
+        }
       </div>
-      <div class="value">{{ userData().username || "-" }}</div>
-
-      <div
-        class="label"
-        i18n>Given name:
-      </div>
-      <div class="value">{{ userData().givenname || "-" }}</div>
-
-      <div
-        class="label"
-        i18n>Surname:
-      </div>
-      <div class="value">{{ userData().surname || "-" }}</div>
-    </div>
-
-    <div class="user-details-column">
-      <div
-        class="label"
-        i18n>Email:
-      </div>
-      <div class="value">{{ userData().email || "-" }}</div>
-
-      <div
-        class="label"
-        i18n>Phone:
-      </div>
-      <div class="value">{{ userData().phone || "-" }}</div>
-
-      <div
-        class="label"
-        i18n>Mobile:
-      </div>
-      <div class="value">{{ userData().mobile || "-" }}</div>
-    </div>
-
-    <div class="user-details-column">
-      <div
-        class="label"
-        i18n>Description:
-      </div>
-      <div class="value">{{ userData().description || "-" }}</div>
-    </div>
+    }
   </div>
 
   <div class="flex-column">
@@ -146,7 +107,7 @@
           {{ attr.key }}:
         </div>
         <div class="value">{{ attr.value || "-" }}</div>
-        @if (deletableAttributes().includes(attr.key)) {
+        @if (deletableAttributes().includes(attr.key) || deletableAttributes().includes("*")) {
           <button
             (click)="deleteCustomAttribute(attr.key)"
             aria-label="Delete custom attribute"
