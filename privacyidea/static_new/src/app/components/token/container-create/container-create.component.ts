@@ -158,6 +158,11 @@ export class ContainerCreateComponent {
   };
 
   constructor(protected registrationDialog: MatDialog) {
+    // Clear container serial and detail resource when entering create page
+    this.containerService.containerSerial.set("");
+    this.containerService.containerDetailResource.set(undefined);
+
+
     effect(() => {
       this.containerService.selectedContainerType();
       untracked(() => {
