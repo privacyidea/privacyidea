@@ -28,7 +28,8 @@ import {
   MockNotificationService,
   MockRealmService,
   MockTokenService,
-  MockUserService
+  MockUserService,
+  MockVersioningService
 } from "../../../../testing/mock-services";
 import { TokenService } from "../../../services/token/token.service";
 import { LocalService } from "../../../services/local/local.service";
@@ -94,7 +95,7 @@ describe("TokenEnrollmentComponent", () => {
   });
 
   beforeEach(async () => {
-    let MockVersioningService;
+    let mockVersioningService: MockVersioningService;
 
     await TestBed.configureTestingModule({
       imports: [TokenEnrollmentComponent],
@@ -125,6 +126,7 @@ describe("TokenEnrollmentComponent", () => {
     tokenSvc = TestBed.inject(TokenService) as unknown as MockTokenService;
     userSvc = TestBed.inject(UserService) as unknown as MockUserService;
     notifications = TestBed.inject(NotificationService) as unknown as MockNotificationService;
+    mockVersioningService = TestBed.inject(VersioningService) as unknown as MockVersioningService;
     dialog = TestBed.inject(DialogService) as unknown as MockDialogService;
     authService = TestBed.inject(AuthService) as unknown as MockAuthService;
     httpTestingController = TestBed.inject(HttpTestingController);
