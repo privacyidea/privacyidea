@@ -121,6 +121,7 @@ export class ContainerCreateComponent {
   protected readonly TokenComponent = TokenComponent;
   protected readonly renderer: Renderer2 = inject(Renderer2);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
+  protected readonly wizard: boolean = false;
   private router = inject(Router);
   private observer!: IntersectionObserver;
   containerSerial = this.containerService.containerSerial;
@@ -138,7 +139,6 @@ export class ContainerCreateComponent {
   userStorePassphrase = signal(false);
   registerResponse = signal<PiResponse<ContainerRegisterData> | null>(null);
   pollResponse = signal<any>(null);
-  protected readonly wizard: boolean = false;
   userSelected = computed(() => this.userService.selectionUsernameFilter() !== "");
   public dialogData = signal<ContainerCreationDialogData | null>(null);
 
@@ -147,6 +147,15 @@ export class ContainerCreateComponent {
   @ViewChild("stickySentinel") stickySentinel!: ElementRef<HTMLElement>;
   @ViewChild(ContainerRegistrationConfigComponent)
   registrationConfigComponent!: ContainerRegistrationConfigComponent;
+  validInput = true;
+  protected resetCreateOptions = () => {
+    this.registerResponse.set(null);
+    this.passphrasePrompt.set("");
+    this.passphraseResponse.set("");
+    this.userStorePassphrase.set(false);
+    this.description.set("");
+    this.selectedTemplate.set("");
+  };
 
   constructor(protected registrationDialog: MatDialog) {
     effect(() => {
@@ -154,6 +163,32 @@ export class ContainerCreateComponent {
       untracked(() => {
         this.resetCreateOptions();
       });
+    });
+
+    effect(() => {
+      const containerDetailResource = this.containerService.containerDetailResource.value();
+      const serial = this.containerService.containerSerial();
+
+      if (!serial) {
+        return;
+      }
+
+      if (containerDetailResource?.result?.value) {
+        const registrationState = containerDetailResource.result.value.containers[0]?.info?.registration_state;
+
+        if (registrationState !== "client_wait") {
+          this.registrationDialog.closeAll();
+          this.containerService.stopPolling();
+
+          let registrationCompletedDialogComponent: any = ContainerRegistrationCompletedDialogComponent;
+          if (this.wizard) {
+            registrationCompletedDialogComponent = ContainerRegistrationCompletedDialogWizardComponent;
+          }
+
+          this.registrationDialog.open(registrationCompletedDialogComponent,
+            { data: { "containerSerial": serial } as ContainerRegistrationCompletedDialogData });
+        }
+      }
     });
   }
 
@@ -186,20 +221,18 @@ export class ContainerCreateComponent {
     if (this.observer) {
       this.observer.disconnect();
     }
+    this.containerService.stopPolling();
   }
-
-  validInput = true;
 
   onValidInputChange(isValid: boolean) {
     this.validInput = isValid;
   }
 
-
   reopenEnrollmentDialog() {
     const currentResponse = this.registerResponse();
     if (currentResponse) {
       this.openRegistrationDialog(currentResponse);
-      this.pollContainerRolloutState(this.containerSerial(), 2000);
+      this.containerService.startPolling(this.containerSerial());
     }
   }
 
@@ -246,19 +279,10 @@ export class ContainerCreateComponent {
           this.dialogData.update(data => data ? { ...data, response: registerResponse } : data);
         } else {
           this.openRegistrationDialog(registerResponse);
-          this.pollContainerRolloutState(serial, 5000);
+          this.containerService.startPolling(serial);
         }
       });
   }
-
-  protected resetCreateOptions = () => {
-    this.registerResponse.set(null);
-    this.passphrasePrompt.set("");
-    this.passphraseResponse.set("");
-    this.userStorePassphrase.set(false);
-    this.description.set("");
-    this.selectedTemplate.set("");
-  };
 
   private openRegistrationDialog(response: PiResponse<ContainerRegisterData>) {
     this.dialogData.set({
@@ -272,22 +296,6 @@ export class ContainerCreateComponent {
     }
     this.registrationDialog.open(dialogComponent, {
       data: this.dialogData
-    });
-  }
-
-  private pollContainerRolloutState(containerSerial: string, startTime: number) {
-    return this.containerService.pollContainerRolloutState(containerSerial, startTime).subscribe({
-      next: (response) => {
-        if (response?.result?.value?.containers[0].info.registration_state !== "client_wait") {
-          this.registrationDialog.closeAll();
-          let registrationCompletedDialogComponent: any = ContainerRegistrationCompletedDialogComponent;
-          if (this.wizard) {
-            registrationCompletedDialogComponent = ContainerRegistrationCompletedDialogWizardComponent;
-          }
-          this.registrationDialog.open(registrationCompletedDialogComponent,
-            { data: { "containerSerial": containerSerial } as ContainerRegistrationCompletedDialogData });
-        }
-      }
     });
   }
 }

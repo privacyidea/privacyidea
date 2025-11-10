@@ -92,6 +92,10 @@ export class ContainerDetailsActionsComponent {
       (this.registrationAllowed() || this.rolloverAllowed() || this.unregisterAllowed()));
   });
 
+  ngOnDestroy(): void {
+    this.containerService.stopPolling();
+  }
+
   deleteContainer() {
     this.dialog
       .open(ConfirmationDialogComponent, {
@@ -152,7 +156,7 @@ export class ContainerDetailsActionsComponent {
           this.dialogData.update(data => data ? { ...data, response: registerResponse } : data);
         } else {
           this.openRegisterFinalizeDialog(registerResponse, rollover);
-          this.pollContainerRolloutState(5000, rollover);
+          this.containerService.startPolling(this.containerSerial);
         }
       });
   }
@@ -181,21 +185,6 @@ export class ContainerDetailsActionsComponent {
     });
     dialogRef.afterClosed().subscribe(() => {
       this.containerService.stopPolling();
-    });
-  }
-
-  pollContainerRolloutState(startTime: number, rollover: boolean = false) {
-    return this.containerService.pollContainerRolloutState(this.containerSerial, startTime).subscribe({
-      next: (response) => {
-        if (response?.result?.value?.containers[0].info.registration_state === "registered") {
-          this.dialog.closeAll();
-          if (rollover) {
-            this.notificationService.openSnackBar("Container rollover completed successfully.");
-          } else {
-            this.notificationService.openSnackBar("Container registered successfully.");
-          }
-        }
-      }
     });
   }
 }
