@@ -30,9 +30,14 @@ import { routes } from "./app.routes";
 import { loadingInterceptor } from "./interceptor/loading/loading.interceptor";
 import { AuthService } from "./services/auth/auth.service";
 import { ThemeService } from "./services/theme/theme.service";
+import { ConfigService } from "./services/config/config.service";
 
 export const appConfig: ApplicationConfig = {
   providers: [
+    provideAppInitializer(() => {
+      const configService = inject(ConfigService);
+      configService.loadConfig();
+    }),
     provideExperimentalZonelessChangeDetection(),
     provideRouter(routes),
     provideAnimationsAsync(),
