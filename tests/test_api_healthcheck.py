@@ -114,15 +114,17 @@ class APIHealthcheckTestCase(MyApiTestCase):
                     assert 'ldapresolver' not in result_value, "Expected missing 'ldapresolver' in result, but is present"
                 else:
                     assert ldap_resolvers is not None, "Expected 'ldapresolver' in result, but got None"
-                    assert all(status == ldap_expected_status for status in ldap_resolvers.values()), \
+                    assert all(status == ldap_expected_status for status in ldap_resolvers.values()), (
                         f"At least one LDAP resolver does not have '{ldap_expected_status}' status."
+                    )
 
                 if sql_expected_status is None:
                     assert 'sqlresolver' not in result_value, "Expected missing 'sqlresolver' in result, but is present"
                 else:
                     assert sql_resolvers is not None, "Expected 'sqlresolver' in result, but got None"
-                    assert all(status == sql_expected_status for status in sql_resolvers.values()), \
+                    assert all(status == sql_expected_status for status in sql_resolvers.values()), (
                         f"At least one SQL resolver does not have '{sql_expected_status}' status."
+                    )
 
         @contextmanager
         def setup_test_resolvers():
