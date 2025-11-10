@@ -779,18 +779,19 @@ class TokenBaseTestCase(MyTestCase):
         db_token.save()
 
         # delete the realm
-        Realm.query.filter_by(name=realm).delete()
+        Realm.query.filter_by(name=realm).first().delete()
         # token is orphaned
         token_obj = TokenClass(db_token)
         orph = token_obj.is_orphaned()
         self.assertTrue(orph)
 
         # delete the resolver
-        Resolver.query.filter_by(name=resolver).delete()
+        delete_resolver(resolver)
         # token is orphaned
         token_obj = TokenClass(db_token)
         orph = token_obj.is_orphaned()
         self.assertTrue(orph)
+
         # clean up token
         token_obj.delete_token()
 

@@ -27,6 +27,10 @@
       sizes="(max-width: 575px) 100vw, 575px"
       width="575" />
 
+    <div class="margin-top-64">
+      {{ loginText() }}
+    </div>
+
     <form
       (ngSubmit)="onSubmit()"
       aria-label="Login Form"
@@ -43,6 +47,20 @@
         <div class="error-message">
           <p>{{ errorMessage() }}</p>
         </div>
+      }
+
+      @if (realms().length > 0) {
+        <mat-form-field>
+          <mat-label>Realm</mat-label>
+          <mat-select
+            [(ngModel)]="realm"
+            [ngModelOptions]="{ standalone: true }"
+            [value]="realm()">
+            @for (realmOption of realms(); track realmOption) {
+              <mat-option [value]="realmOption">{{ realmOption }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
       }
 
       @if (!showOtpField()) {
