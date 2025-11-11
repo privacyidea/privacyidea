@@ -4,7 +4,7 @@
 .token-enrollment-container {
   @include styles.table-container-styles;
   width: 56rem;
-  max-height: calc(var(--main-height) - var(--global-padding) * 5);
+  max-height: var(--max-height);
   overflow: auto;
   display: grid;
 }
@@ -13,14 +13,6 @@
   width: 473px;
   margin-top: 8px;
   font-size: 1rem;
-}
-
-.assign-user-container {
-  display: flex;
-  flex-direction: row;
-  align-items: baseline;
-  gap: 16px;
-  margin-bottom: 8px;
 }
 
 .h4-container {

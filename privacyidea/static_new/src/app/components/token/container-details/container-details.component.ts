@@ -61,8 +61,10 @@ import { MatListItem } from "@angular/material/list";
 import { MatSelectModule } from "@angular/material/select";
 import { NgClass } from "@angular/common";
 import { ROUTE_PATHS } from "../../../route_paths";
-import { Router } from "@angular/router";
+import { Router, RouterLink } from "@angular/router";
 import { infoDetailsKeyMap } from "../token-details/token-details.component";
+import { MatTooltip } from "@angular/material/tooltip";
+import { AuditService, AuditServiceInterface } from "../../../services/audit/audit.service";
 
 export const containerDetailsKeyMap = [
   { key: "type", label: "Type" },
@@ -116,7 +118,10 @@ interface TokenOption {
     MatDivider,
     MatCheckbox,
     CopyButtonComponent,
-    ClearableInputComponent
+    ClearableInputComponent,
+    MatTooltip,
+    RouterLink,
+    MatTooltip
   ],
   templateUrl: "./container-details.component.html",
   styleUrls: ["./container-details.component.scss"]
@@ -130,6 +135,8 @@ export class ContainerDetailsComponent {
   protected readonly userService: UserServiceInterface = inject(UserService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
+  private readonly auditService: AuditServiceInterface = inject(AuditService);
+  protected readonly ROUTE_PATHS = ROUTE_PATHS;
   private router = inject(Router);
   states = this.containerService.states;
   isEditingUser = signal(false);
@@ -137,7 +144,6 @@ export class ContainerDetailsComponent {
   tokenSerial = this.tokenService.tokenSerial;
   containerSerial = this.containerService.containerSerial;
   showOnlyTokenNotInContainer = this.tokenService.showOnlyTokenNotInContainer;
-
   tokenResource = this.tokenService.tokenResource;
   pageIndex = this.tokenService.pageIndex;
   pageSize = this.tokenService.pageSize;
@@ -159,7 +165,6 @@ export class ContainerDetailsComponent {
       return previous?.value ?? 0;
     }
   });
-
   containerDetailResource = this.containerService.containerDetailResource;
   containerDetails = linkedSignal({
     source: this.containerDetailResource.value,
@@ -271,13 +276,11 @@ export class ContainerDetailsComponent {
     source: this.rawUserData,
     computation: (user) => user.user_realm || ""
   });
-
   isAnyEditing = computed(() => {
     return (
       this.containerDetailData().some((element) => element.isEditing()) || this.isEditingUser() || this.isEditingInfo()
     );
   });
-
   @ViewChild("filterHTMLInputElement")
   filterHTMLInputElement!: ElementRef<HTMLInputElement>;
   @ViewChild("tokenAutoTrigger", { read: MatAutocompleteTrigger })
@@ -434,5 +437,9 @@ export class ContainerDetailsComponent {
         this.containerDetailResource.reload();
       }
     });
+  }
+
+  protected showContainerAuditLog() {
+    this.auditService.auditFilter.set(new FilterValue({ value: `container_serial: ${this.containerSerial()}` }));
   }
 }

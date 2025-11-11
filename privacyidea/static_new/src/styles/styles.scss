@@ -57,32 +57,32 @@ body {
   --background-green-brand: linear-gradient(145deg, var(--green-brand-light), var(--green-brand-base));
 
   --box-shadow: var(--shadow-distance) var(--shadow-distance) var(--blur) var(--mat-sys-shadow),
-    var(--light-distance) var(--light-distance) var(--blur) var(--mat-sys-light);
+  var(--light-distance) var(--light-distance) var(--blur) var(--mat-sys-light);
   --box-shadow-white: var(--shadow-distance) var(--shadow-distance) var(--blur) var(--mat-sys-shadow),
-    var(--light-distance) var(--light-distance) var(--blur) var(--mat-sys-light);
+  var(--light-distance) var(--light-distance) var(--blur) var(--mat-sys-light);
   --box-shadow-inset: inset var(--shadow-distance) var(--shadow-distance) var(--blur) var(--mat-sys-shadow),
-    inset var(--light-distance) var(--light-distance) var(--blur) var(--mat-sys-light);
+  inset var(--light-distance) var(--light-distance) var(--blur) var(--mat-sys-light);
 
   --background-blue: linear-gradient(145deg, var(--mat-sys-primary-dark), var(--mat-sys-primary));
   --background-blue-inset: linear-gradient(145deg, var(--mat-sys-primary-light-active), var(--mat-sys-primary-light));
   --box-shadow-blue: inset var(--shadow-distance) var(--shadow-distance) var(--blur) var(--mat-sys-primary-light-active),
-    inset var(--light-distance) var(--light-distance) var(--blur) var(--mat-sys-primary-dark);
+  inset var(--light-distance) var(--light-distance) var(--blur) var(--mat-sys-primary-dark);
   --box-shadow-blue-inset: inset var(--shadow-distance) var(--shadow-distance) var(--blur) var(--mat-sys-primary-dark),
-    inset var(--light-distance) var(--light-distance) var(--blur) var(--mat-sys-primary-light-active);
+  inset var(--light-distance) var(--light-distance) var(--blur) var(--mat-sys-primary-light-active);
 
   --background-green: linear-gradient(145deg, var(--green-base), var(--green-light));
   --background-green-inset: linear-gradient(145deg, var(--green-light), var(--green-base));
   --box-shadow-green: inset var(--shadow-distance) var(--shadow-distance) var(--blur) var(--green-light-active),
-    inset var(--light-distance) var(--light-distance) var(--blur) var(--green-dark);
+  inset var(--light-distance) var(--light-distance) var(--blur) var(--green-dark);
   --box-shadow-green-inset: inset var(--shadow-distance) var(--shadow-distance) var(--blur) var(--green-dark),
-    inset var(--light-distance) var(--light-distance) var(--blur) var(--green-light-active);
+  inset var(--light-distance) var(--light-distance) var(--blur) var(--green-light-active);
 
   --background-red: linear-gradient(145deg, var(--red-base), var(--red-light));
   --background-red-inset: linear-gradient(145deg, var(--red-light), var(--red-base));
   --box-shadow-red: inset var(--shadow-distance) var(--shadow-distance) var(--blur) var(--red-light-active),
-    inset var(--light-distance) var(--light-distance) var(--blur) var(--red-dark);
+  inset var(--light-distance) var(--light-distance) var(--blur) var(--red-dark);
   --box-shadow-red-inset: inset var(--shadow-distance) var(--shadow-distance) var(--blur) var(--red-dark),
-    inset var(--light-distance) var(--light-distance) var(--blur) var(--red-light-active);
+  inset var(--light-distance) var(--light-distance) var(--blur) var(--red-light-active);
 
   --background-yellow: linear-gradient(145deg, var(--yellow-base), var(--yellow-light));
   --background-yellow-inset: linear-gradient(145deg, var(--yellow-light), var(--yellow-base));
@@ -91,9 +91,9 @@ body {
   --background-gray-inset: linear-gradient(145deg, var(--grey-light), var(--grey-base));
 
   --box-shadow-gray: inset var(--shadow-distance) var(--shadow-distance) var(--blur) var(--grey-light-active),
-    inset var(--light-distance) var(--light-distance) var(--blur) var(--grey-dark);
+  inset var(--light-distance) var(--light-distance) var(--blur) var(--grey-dark);
   --box-shadow-gray-inset: inset var(--shadow-distance) var(--shadow-distance) var(--blur) var(--grey-dark),
-    inset var(--light-distance) var(--light-distance) var(--blur) var(--grey-light-active);
+  inset var(--light-distance) var(--light-distance) var(--blur) var(--grey-light-active);
 
   --box-shadow-header: 4px 2px var(--blur) var(--mat-sys-shadow);
   --box-dialog-shadow: 0px 4px 20px var(--mat-sys-shadow-color-high);
@@ -123,6 +123,10 @@ body {
 
 .bold {
   font-weight: bold;
+}
+
+.italic {
+  font-style: italic;
 }
 
 .red {
@@ -169,8 +173,16 @@ body {
   align-items: center;
 }
 
+.ali-end {
+  align-items: end;
+}
+
 .just-center {
   justify-content: center;
+}
+
+.just-end {
+  justify-content: end;
 }
 
 .flex {
@@ -227,6 +239,10 @@ body {
   flex: auto;
 }
 
+.width-238 {
+  width: 238px;
+}
+
 .width-288px {
   width: 288px;
 }
@@ -272,8 +288,28 @@ body {
   margin-top: 32px;
 }
 
+.margin-top-0 {
+  margin-top: 0;
+}
+
+.margin-top-64 {
+  margin-top: 64px;
+}
+
 .margin-bottom-1 {
   margin-bottom: 16px;
+}
+
+.margin-bottom-32 {
+  margin-bottom: 32px;
+}
+
+.margin-0 {
+  margin: 0;
+}
+
+.margin-left--8 {
+  margin-left: -8px;
 }
 
 .width-32 {
@@ -296,6 +332,10 @@ body {
   width: 100%;
 }
 
+.width-13rem {
+  width: 13rem;
+}
+
 .height-auto {
   height: auto;
 }
@@ -304,8 +344,16 @@ body {
   gap: 16px;
 }
 
-.margin-1 {
+.gap-8 {
+  gap: 8px;
+}
+
+.margin-16 {
   margin: 16px;
+}
+
+.margin-8 {
+  margin: 8px;
 }
 
 .overflow {
@@ -412,4 +460,29 @@ body {
 .sticky-controls .mat-mdc-form-field {
   flex-grow: 1;
   width: 100%;
+}
+
+
+::ng-deep {
+  .mat-pseudo-checkbox.mat-pseudo-checkbox-checked::after {
+    color: white !important;
+  }
+
+  .mdc-list-item--selected:not(.mdc-list-item--disabled):not(.mat-mdc-option-multiple) {
+    background-color: var(--mat-sys-primary-light) !important;
+  }
+
+  .mat-mdc-option.mdc-list-item {
+    background: var(--mat-sys-surface-container-low) !important;
+  }
+
+  .mat-mdc-select-panel[aria-multiselectable="false"]
+  .mat-mdc-option.mdc-list-item--selected:not(.mdc-list-item--disabled)
+  .mdc-list-item__primary-text {
+    color: white !important;
+  }
+
+  .mat-mdc-option:hover:not(.mdc-list-item--selected, .mdc-list-item--disabled) {
+    background-color: #f2f9fd;
+  }
 }

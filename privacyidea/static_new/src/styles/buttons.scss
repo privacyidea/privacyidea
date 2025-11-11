@@ -7,276 +7,185 @@ $keyword-padding: 2px 8px;
 $button-gap-small: 10px;
 $padding-horizontal: 16px;
 $detail-icon-font-size: 18px;
-$margin-bottom-small: -6px;
+$margin-bottom-small: 0;
 $keyword-font-size: 18px;
 $button-border-radius: var(--border-radius);
 $profile-bg: var(--background-yellow);
 $profile-hover-bg: var(--background-yellow-inset);
+
+$grad-surface: linear-gradient(
+                145deg,
+                var(--mat-sys-surface-container),
+                var(--mat-sys-surface-container-low)
+);
+$grad-surface-hover: linear-gradient(
+                145deg,
+                var(--mat-sys-surface-container-lowest),
+                var(--mat-sys-surface-container-low)
+);
+
 $background-low-contrast: linear-gradient(
-  145deg,
-  var(--mat-sys-surface-container-highest),
-  var(--mat-sys-surface-container-low)
+                145deg,
+                var(--mat-sys-surface-container-highest),
+                var(--mat-sys-surface-container-low)
 );
 
 $button-low-contrast-variant: linear-gradient(
-  145deg,
-  var(--mat-sys-surface-container-low),
-  var(--mat-sys-surface-container-highest)
+                145deg,
+                var(--mat-sys-surface-container-low),
+                var(--mat-sys-surface-container-highest)
 );
 
-// Mixins for common button styles
 @mixin button-base(
   $height,
   $width,
-  $border-radius,
-  $box-shadow,
-  $color: var(--mat-sys-on-primary),
-  $background: var(--mat-sys-primary),
-  $cursor: pointer
+  $background-color,
+  $border-color,
+  $color
 ) {
-  color: $color !important;
   height: $height;
   width: $width;
-  border: none;
+  cursor: pointer;
+  border-radius: var(--border-radius);
+  background-color: $background-color !important;
+  border-color: $border-color !important;
+  color: $color !important;
   justify-content: start;
-  border-radius: $border-radius;
-  background: $background !important;
-  box-shadow: $box-shadow;
-  cursor: $cursor;
-}
-
-@mixin button-hover($background, $box-shadow) {
-  &:hover {
-    background: $background;
-    box-shadow: $box-shadow;
-    transition:
-      background 400ms,
-      box-shadow 400ms;
-  }
-}
-
-.login-btn {
-  text-decoration: none;
-  color: var(--mat-sys-on-primary);
-  padding: 10px;
-  border-radius: $button-border-radius;
-  background: var(--mat-sys-primary);
-
-  &:hover {
-    box-shadow: var(--box-shadow-blue-inset);
-    background: var(--background-blue-inset);
-    transform: translateY(2px);
-  }
-}
-
-.login-actions {
   display: flex;
-  gap: 16px; // Sets the space between the buttons
-  width: 100%;
 
-  > .login-btn {
-    // When both buttons are shown, this one takes ~70% of the space.
-    // When only this button is shown, it takes 100% of the space.
-    flex: 7;
-    min-width: 0; // Prevents buttons from overflowing when the container is narrow
-  }
-
-  > .reset-btn {
-    flex: 3; // Takes ~30% of the space when shown.
-    min-width: 0;
+  &:disabled {
+    color: #909090 !important;
   }
 }
 
-.passkey-btn {
+@mixin hover-or-active($bg, $shadow, $translate: false) {
+  &:hover,
+  &.active {
+    background: $bg;
+    box-shadow: $shadow;
+
+    @if $translate == true {
+      transform: translateY(2px);
+    }
+  }
+}
+
+@mixin card-button-variant($background-color, $border-color, $color) {
+  @include button-base(
+          $height: $button-height,
+          $width: $button-width,
+          $background-color: $background-color,
+          $border-color: $border-color,
+          $color: $color,
+  );
+}
+
+%linkish-btn {
   text-decoration: none;
-  color: var(--mat-sys-on-surface-variant);
   padding: 10px;
   border-radius: $button-border-radius;
-  background: linear-gradient(145deg, var(--mat-sys-surface-container), var(--mat-sys-surface-container-low));
-
-  &:hover {
-    box-shadow: var(--box-shadow-inset);
-    background: linear-gradient(145deg, var(--mat-sys-surface-container-lowest), var(--mat-sys-surface-container-low));
-    transform: translateY(2px);
-  }
 }
 
-.reset-btn {
-  text-decoration: none;
-  color: var(--mat-sys-on-surface-variant);
-  padding: 10px;
-  border-radius: $button-border-radius;
-  background: linear-gradient(145deg, var(--mat-sys-surface-container), var(--mat-sys-surface-container-low));
-
-  &:hover {
-    box-shadow: var(--box-shadow-inset);
-    background: linear-gradient(145deg, var(--mat-sys-surface-container-lowest), var(--mat-sys-surface-container-low));
-    transform: translateY(2px);
-  }
-}
-
-.support-btn {
-  height: var(--header-height);
-  margin: 0;
-  border: none;
-  box-shadow: none;
-  border-radius: 0;
-  background: var(--background-green-brand);
-  cursor: pointer;
-  color: white;
-
-  &.active,
-  &:hover {
-    box-shadow: none;
-    background: var(--background-green-brand);
-    color: white;
-    transform: translateX(2px);
-  }
-}
-
-.card-button {
-  @include button-base(
-    $height: $button-height,
-    $width: $button-width,
-    $border-radius: $button-border-radius,
-    $box-shadow: var(--box-shadow-blue)
-  );
-  @include button-hover(var(--background-blue-inset), var(--box-shadow-blue-inset));
-}
-
-.card-button-reset {
-  min-width: 240px;
-  @include button-base(
-    $height: $button-height,
-    $width: $button-width,
-    $border-radius: $button-border-radius,
-    $background: var(--background-green),
-    $box-shadow: var(--box-shadow-green)
-  );
-}
-
-.card-button-active {
-  min-width: 240px;
-  @include button-base(
-    $height: $button-height,
-    $width: $button-width,
-    $border-radius: $button-border-radius,
-    $background: var(--background-blue-inset),
-    $box-shadow: var(--box-shadow-blue-inset)
-  );
-}
-
-.card-button-disabled {
-  min-width: 240px;
-  @include button-base(
-    $height: $button-height,
-    $width: $button-width,
-    $border-radius: $button-border-radius,
-    $background: var(--background-gray),
-    $color: var(--mat-sys-on-surface),
-    $box-shadow: var(--box-shadow-gray)
-  );
-}
-
-.card-button-delete {
-  min-width: 240px;
-  @include button-base(
-    $height: $button-height,
-    $width: $button-width,
-    $border-radius: $button-border-radius,
-    $background: var(--background-red),
-    $box-shadow: var(--box-shadow-red)
-  );
-  transition: 0ms;
-
-  &.active,
-  &:hover {
-    background: var(--background-red-inset);
-    box-shadow: var(--box-shadow-red-inset);
-    transition:
-      background 400ms,
-      box-shadow 400ms;
-  }
-}
-
-.card-button-activate {
-  min-width: 240px;
-  @include button-base(
-    $height: $button-height,
-    $width: $button-width,
-    $border-radius: $button-border-radius,
-    $background: var(--background-green),
-    $box-shadow: var(--box-shadow-green)
-  );
-  transition: 0ms;
-
-  &.active,
-  &:hover {
-    background: var(--background-green-inset);
-    box-shadow: var(--box-shadow-green-inset);
-    transition:
-      background 400ms,
-      box-shadow 400ms;
-  }
-}
-
-.detail-button {
-  min-width: 240px;
-  color: white;
-  @include button-base(
-    $height: $button-height,
-    $width: $button-width,
-    $border-radius: $button-border-radius,
-    $background: var(--background-blue),
-    $box-shadow: var(--box-shadow-blue)
-  );
-  @include button-hover(var(--background-blue-inset), var(--box-shadow-blue-inset));
-}
-
-.detail-button-icon {
-  vertical-align: bottom;
-  margin-bottom: $margin-bottom-small;
-  font-size: $detail-icon-font-size;
-}
-
-.delete-buttons-container {
-  display: flex;
-  flex-direction: column;
-  gap: $button-gap-small;
-  padding: 0 $padding-horizontal;
-}
-
-.dialog-button-delete {
-  color: var(--red-base);
-  background-color: white;
-}
-
-.cancel-button {
-  color: var(--red-base);
-  background-color: white;
-  cursor: pointer;
-}
-
-.keyword-button,
-.more-keyword-button {
+%keyword-chip {
   background-color: var(--mat-sys-surface-container-low);
   border-radius: $button-border-radius;
   height: $keyword-height;
   margin: 3px;
   box-shadow: none;
   color: var(--mat-sys-on-surface-variant);
+}
 
-  &.keyword-button {
-    padding: $keyword-padding;
+.login-btn {
+  @extend %linkish-btn;
+  color: var(--mat-sys-on-primary);
+  background: var(--mat-sys-primary);
 
-    &:hover .add-keyword {
-      color: var(--green-light);
-    }
+  @include hover-or-active(var(--background-blue-inset), var(--box-shadow-blue-inset), true);
+}
+
+.passkey-btn,
+.reset-btn {
+  @extend %linkish-btn;
+  color: var(--mat-sys-on-surface-variant);
+  background: $grad-surface;
+
+  @include hover-or-active($grad-surface-hover, var(--box-shadow-inset), true);
+}
+
+.login-actions {
+  display: flex;
+  gap: 16px;
+  width: 100%;
+
+  > .login-btn {
+    flex: 7;
+    min-width: 0;
   }
 
-  &.more-keyword-button {
-    padding: 0 0 0 8px;
+  > .reset-btn {
+    flex: 3;
+    min-width: 0;
   }
+}
+
+.mat-mdc-outlined-button.card-button-1,
+.mat-mdc-outlined-button[class*="card-button-1"] {
+  --mat-outlined-button-state-layer-color: var(--mat-sys-surface-container-highest);
+  --mat-outlined-button-ripple-color: var(--mat-sys-surface-container-high);
+  --mdc-ripple-color: var(--mat-sys-surface-container-high);
+}
+
+.mat-mdc-outlined-button[class*="card-button-active"] {
+  --mdc-ripple-color: var(--mat-sys-surface-container-lowest)
+}
+
+.mat-mdc-outlined-button[class*="card-button-support"] {
+  --mat-outlined-button-state-layer-color: var(--mint-bg);
+  --mat-outlined-button-ripple-color: var(--mint-bg);
+  --mdc-ripple-color: var(--mat-sys-surface-container-lowest);
+
+  &:hover {
+    background-color: var(--mint-bg) !important;
+  }
+}
+
+.card-button-1 {
+  @include card-button-variant(var(--mat-sys-surface-container), var(--mat-sys-surface-container-highest), var(--mat-sys-on-surface-variant));
+}
+
+.card-button-active {
+  @include card-button-variant(var(--sky-bg), var(--mat-sys-primary), var(--mat-sys-primary));
+}
+
+.card-button-support {
+  @include card-button-variant(var(--mat-sys-surface-container-lowest), var(--green-brand-light), var(--green-brand-light));
+}
+
+.card-button-docs {
+  @include card-button-variant(var(--mat-sys-surface-container-lowest), var(--mat-sys-primary), var(--mat-sys-primary));
+}
+
+.mat-unthemed.mat-mdc-button-base[class^="card-button-1"],
+.mat-unthemed.mat-mdc-button-base[class*=" card-button"] {
+  min-width: $button-width;
+
+  mat-icon.mat-icon.notranslate.material-icons {
+    font-size: $detail-icon-font-size;
+  }
+}
+
+.keyword-button {
+  @extend %keyword-chip;
+  padding: $keyword-padding;
+
+  &:hover .add-keyword {
+    color: var(--green-light);
+  }
+}
+
+.more-keyword-button {
+  @extend %keyword-chip;
+  padding: 0 0 0 8px;
 }
 
 .keyword-button-icon {
@@ -300,19 +209,37 @@ $button-low-contrast-variant: linear-gradient(
   color: var(--yellow-light);
 }
 
+.delete-buttons-container {
+  display: flex;
+  flex-direction: column;
+  gap: $button-gap-small;
+  padding: 0 $padding-horizontal;
+}
+
 .delete-info-button {
   margin-top: 16px;
 }
 
 .refresh-btn {
-  width: var(--header-height);
-  height: var(--header-height);
+  height: $button-height;
+  width: $button-height;
   cursor: pointer;
-  border-radius: 0;
+  border-radius: 50%;
   background-color: transparent;
   color: var(--mat-sys-on-surface-variant);
   box-shadow: none !important;
   transition: background-color 0.2s ease-in-out;
+
+  &:hover {
+    background-color: var(--mat-sys-surface-container);
+  }
+}
+
+.logout-btn {
+  color: var(--mat-sys-on-surface-variant);
+  background-color: transparent;
+  transition: background-color 0.2s ease-in-out;
+  margin-left: 16px;
 
   &:hover {
     background-color: var(--mat-sys-surface-container);
@@ -328,37 +255,8 @@ $button-low-contrast-variant: linear-gradient(
 }
 
 .enroll-button-spacer {
-  width: 40px;
-  height: 40px;
-}
-
-.profile-btn {
-  height: var(--header-height);
-  justify-content: start;
-  border: none;
-  border-radius: 0;
-  background: $profile-bg;
-  cursor: pointer;
-  box-shadow: none;
-  color: white !important;
-
-  &.active,
-  &:hover {
-    box-shadow: none;
-    background: $profile-hover-bg;
-    color: white;
-    transform: translateX(2px);
-  }
-}
-
-.logout-btn {
-  color: var(--mat-sys-on-surface-variant);
-  background-color: transparent;
-  transition: background-color 0.2s ease-in-out;
-
-  &:hover {
-    background-color: var(--mat-sys-surface-container);
-  }
+  width: $button-height;
+  height: $button-height;
 }
 
 .drawer-button {
@@ -382,11 +280,53 @@ $button-low-contrast-variant: linear-gradient(
   }
 }
 
-.mdi--folder-search {
+.mdi--folder-list {
+  display: inline-block;
+  width: 1.7em !important;
+  height: 1.7em !important;
+  --svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 28'%3E%3Cpath fill='%23000' d='M 8 4 l 2 2 h 6 a 2 2 0 0 1 2 2 v 8 c -0.033 1.502 -0.545 1.996 -2 2 H 3 a 2 2 0 0 1 -2 -2 V 6 c 0 -1.11 0.89 -2 2 -2 z M 20 6 h 14 v 2 H 20 V 6 M 20 10 h 9 v 2 H 20 V 10 M 20 14 h 7 v 2 H 20 v -2'/%3E%3C/svg%3E");
+  background-color: currentColor;
+  -webkit-mask-image: var(--svg);
+  mask-image: var(--svg);
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+}
+
+.ms--person-list {
+  display: inline-block;
+  width: 1.7em !important;
+  height: 1.7em !important;
+  --svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 28'%3E%3Cpath fill='%23000' d='M 10 7 a 3 3 0 1 1 0 7 a 3 3 0 1 1 0 -7 M 3 22 v -2 c 0 -3.3 4.7 -5 7 -5 s 7 1.7 7 5 v 2 Z M 18 9 h 14 v 2 H 18 V 9 M 18 13 h 9 v 2 H 18 V 13 M 18 17 h 7 v 2 H 18 v -2'/%3E%3C/svg%3E");
+  background-color: currentColor;
+  -webkit-mask-image: var(--svg);
+  mask-image: var(--svg);
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%
+}
+
+.ms--database {
   display: inline-block;
   width: 1em;
   height: 1em;
-  --svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23000' d='M16.5 12c2.5 0 4.5 2 4.5 4.5c0 .88-.25 1.71-.69 2.4l3.08 3.1L22 23.39l-3.12-3.07c-.69.43-1.51.68-2.38.68c-2.5 0-4.5-2-4.5-4.5s2-4.5 4.5-4.5m0 2a2.5 2.5 0 0 0-2.5 2.5a2.5 2.5 0 0 0 2.5 2.5a2.5 2.5 0 0 0 2.5-2.5a2.5 2.5 0 0 0-2.5-2.5M9 4l2 2h8a2 2 0 0 1 2 2v3.81A6.48 6.48 0 0 0 16.5 10a6.5 6.5 0 0 0-6.5 6.5c0 1.29.37 2.5 1 3.5H3a2 2 0 0 1-2-2V6c0-1.11.89-2 2-2z'/%3E%3C/svg%3E");
+  --svg: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%20-960%20960%20960%27%3E%3Cpath%20fill%3D%27%2523000%27%20d%3D%27M480-120q-151%200-255.5-46.5T120-280v-400q0-66%20105.5-113T480-840q149%200%20254.5%2047T840-680v400q0%2067-104.5%20113.5T480-120Zm0-479q89%200%20179-25.5T760-679q-11-29-100.5-55T480-760q-91%200-178.5%2025.5T200-679q14%2030%20101.5%2055T480-599Zm0%20199q42%200%2081-4t74.5-11.5q35.5-7.5%2067-18.5t57.5-25v-120q-26%2014-57.5%2025t-67%2018.5Q600-528%20561-524t-81%204q-42%200-82-4t-75.5-11.5Q287-543%20256-554t-56-25v120q25%2014%2056%2025t66.5%2018.5Q358-408%20398-404t82%204Zm0%20200q46%200%2093.5-7t87.5-18.5q40-11.5%2067-26t32-29.5v-98q-26%2014-57.5%2025t-67%2018.5Q600-328%20561-324t-81%204q-42%200-82-4t-75.5-11.5Q287-343%20256-354t-56-25v99q5%2015%2031.5%2029t66.5%2025.5q40%2011.5%2088%2018.5t94%207Z%27%2F%3E%3C%2Fsvg%3E");
+  background-color: currentColor;
+  -webkit-mask-image: var(--svg);
+  mask-image: var(--svg);
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+}
+
+.ms--shield-list {
+  display: inline-block;
+  width: 2em !important;
+  height: 2em !important;
+  --svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 28'%3E%3Cpath fill='%23000' d='M 19 9 h 14 v 2 H 19 V 9 M 19 13 h 9 v 2 H 19 V 13 M 19 17 h 7 v 2 H 19 v -2 M 9.8 5 L 2.6 8.2 L 2.6 13 C 2.6 17.44 5.672 21.592 9.8 22.6 C 13.928 21.592 17 17.44 17 13 L 17 8.2 L 9.8 5 Z'/%3E%3C/svg%3E");
   background-color: currentColor;
   -webkit-mask-image: var(--svg);
   mask-image: var(--svg);
@@ -403,6 +343,22 @@ $button-low-contrast-variant: linear-gradient(
   background-color: currentColor;
 
   --svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23000' d='M 3 4 h 14 v 2 H 3 V 4 M 3 8 h 9 v 2 H 3 V 8 M 3 12 h 7 v 2 H 3 v -2'/%3E%3Cg transform='translate(13 4)'%3E%3Cpath fill='%23000' d='M 6 8 h 0 V 7 a 3 3 0 0 0 -6 0 v 3 H 0 a 2 2 0 0 0 -2 2 v 5 a 2 2 0 0 0 2 2 h 6 a 2 2 0 0 0 2 -2 v -5 a 2 2 0 0 0 -2 -2 Z m -4 2 V 7 a 1 1 0 0 1 2 0 v 3 Z'/%3E%3C/g%3E%3C/svg%3E");
+
+  -webkit-mask-image: var(--svg);
+  mask-image: var(--svg);
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+}
+
+.mdi--pi-logo {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  background-color: currentColor;
+
+  --svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 -25 85 50'%3E%3Cpath fill='%23000' d='M 0 0 A 2 2 0 0 0 80 0 A 2 2 0 0 0 0 0 M 40 -20 L 40 -13 L 18 -16 L 18 -23 Z M 61 -23 L 61 -16 L 40 -13 L 40 -20 Z M 58 -9 C 60 -9 61 -8 61 -5 L 61 9 C 60 23 45 23 40 23 C 36 23 19 23 18 9 L 18 -5 C 18 -8 19 -9 21 -9 Z M 55 -2 L 55 1 C 55 11 57 17 40 17 C 24 17 25 11 25 1 L 25 -2 Z'/%3E%3C/svg%3E");
 
   -webkit-mask-image: var(--svg);
   mask-image: var(--svg);
@@ -442,4 +398,48 @@ $button-low-contrast-variant: linear-gradient(
   color: var(--mat-sys-on-surface);
   width: calc(var(--header-height) / 3 - 2px);
   height: calc(var(--header-height) / 3 - 2px);
+}
+
+.mat-mdc-outlined-button[class*="action-button-delete"] {
+  --mat-outlined-button-state-layer-color: var(--rose-bg);
+  --mat-outlined-button-ripple-color: var(--rose-bg);
+  --mdc-ripple-color: var(--rose-bg);
+}
+
+.mat-mdc-outlined-button[class*="action-button-1"] {
+  --mdc-ripple-color: var(--sky-bg);
+}
+
+%action-button-base {
+  background-color: var(--mat-sys-surface-container-lowest);
+  border-radius: var(--border-radius);
+  justify-content: start;
+
+  mat-icon.mat-icon.notranslate.material-icons {
+    font-size: $detail-icon-font-size;
+  }
+}
+
+@mixin action-button-variant($color, $background-color) {
+  color: $color;
+  border-color: $color;
+  &:hover {
+    background-color: $background-color
+  }
+}
+
+.action-button-1 {
+  @extend %action-button-base;
+
+  &:not([disabled]) {
+    @include action-button-variant(var(--mat-sys-primary), var(--sky-blue));
+  }
+}
+
+.action-button-delete {
+  @extend %action-button-base;
+
+  &:not([disabled]) {
+    @include action-button-variant(var(--red-base), var(--rose-bg));
+  }
 }

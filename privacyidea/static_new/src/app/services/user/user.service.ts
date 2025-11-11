@@ -18,8 +18,8 @@
  **/
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
-import { httpResource, HttpResourceRef } from "@angular/common/http";
-import { computed, inject, Injectable, linkedSignal, Signal, signal, WritableSignal } from "@angular/core";
+import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
+import { computed, effect, inject, Injectable, linkedSignal, Signal, signal, WritableSignal } from "@angular/core";
 import { RealmService, RealmServiceInterface } from "../realm/realm.service";
 import { TokenService, TokenServiceInterface } from "../token/token.service";
 
@@ -45,7 +45,22 @@ export interface UserData {
   username: string;
 }
 
+export interface UserAttributePolicy {
+  delete: string[];
+  set: Record<string, string[]>;
+}
+
 export interface UserServiceInterface {
+  userAttributes: Signal<Record<string, string>>;
+  userAttributesList: Signal<{ key: string; value: string }[]>;
+  userAttributesResource: HttpResourceRef<PiResponse<Record<string, string>> | undefined>;
+
+  attributePolicy: Signal<UserAttributePolicy>;
+  deletableAttributes: Signal<string[]>;
+  attributeSetMap: Signal<Record<string, string[]>>;
+  hasWildcardKey: Signal<boolean>;
+  keyOptions: Signal<string[]>;
+
   selectedUser: Signal<UserData | null>;
   selectionFilter: WritableSignal<string | UserData | null>;
   selectionFilteredUsers: Signal<UserData[]>;
@@ -67,6 +82,12 @@ export interface UserServiceInterface {
   apiFilterOptions: string[];
   advancedApiFilterOptions: string[];
 
+  detailsUsername: WritableSignal<string>;
+
+  setUserAttribute(key: string, value: string): any;
+
+  deleteUserAttribute(key: string): any;
+
   resetFilter(): void;
 
   handleFilterInput($event: Event): void;
@@ -82,10 +103,11 @@ export class UserService implements UserServiceInterface {
   private readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly tokenService: TokenServiceInterface = inject(TokenService);
   private readonly authService: AuthServiceInterface = inject(AuthService);
-  readonly apiFilterOptions = apiFilter;
-  readonly advancedApiFilterOptions = advancedApiFilter;
+  private readonly http = inject(HttpClient);
+  readonly apiFilter = apiFilter;
+  readonly advancedApiFilter = advancedApiFilter;
   private baseUrl = environment.proxyUrl + "/user/";
-  apiUserFilter = signal(new FilterValue());
+  filterValue = signal({} as Record<string, string>);
   filterParams = computed<Record<string, string>>(() => {
     const allowedFilters = [...this.apiFilterOptions, ...this.advancedApiFilterOptions];
     const entries = Array.from(this.apiUserFilter().filterMap.entries())
@@ -97,12 +119,55 @@ export class UserService implements UserServiceInterface {
       .filter(([, v]) => StringUtils.validFilterValue(v));
     return Object.fromEntries(entries) as Record<string, string>;
   });
+  readonly apiFilterOptions = apiFilter;
 
-  readonly apiFilter = apiFilter;
-  readonly advancedApiFilter = advancedApiFilter;
 
-  filterValue = signal({} as Record<string, string>);
 
+  attributePolicy = computed<UserAttributePolicy>(
+    () => this.attributesResource.value()?.result?.value ?? { delete: [], set: {} }
+  );
+  deletableAttributes = computed<string[]>(() => this.attributePolicy().delete ?? []);
+  attributesResource = httpResource<PiResponse<UserAttributePolicy>>(() => {
+    if (!this.contentService.routeUrl().startsWith(ROUTE_PATHS.USERS_DETAILS)) {
+      return undefined;
+    }
+    return {
+      url: this.baseUrl + "editable_attributes/",
+      method: "GET",
+      headers: this.authService.getHeaders(),
+      params: { user: this.detailsUsername(), realm: this.selectedUserRealm() }
+    };
+  });
+  attributeSetMap = computed<Record<string, string[]>>(() => this.attributePolicy().set ?? {});
+  hasWildcardKey = computed<boolean>(() => Object.prototype.hasOwnProperty.call(this.attributeSetMap(), "*"));
+  keyOptions = computed<string[]>(
+    () => Object.keys(this.attributeSetMap()).filter((k) => k !== "*").sort()
+  );
+  userAttributes = computed<Record<string, string>>(() =>
+    this.userAttributesResource.value()?.result?.value ?? {}
+  );
+  userAttributesList = computed(() =>
+    Object.entries(this.userAttributes()).map(([key, raw]) => ({
+      key,
+      value: Array.isArray(raw) ? raw.join(", ") : String(raw ?? "")
+    }))
+  );
+
+  userAttributesResource = httpResource<PiResponse<Record<string, string>>>(() => {
+    if (!this.contentService.routeUrl().startsWith(ROUTE_PATHS.USERS_DETAILS)) {
+      return undefined;
+    }
+    return {
+      url: this.baseUrl + "attribute",
+      method: "GET",
+      headers: this.authService.getHeaders(),
+      params: { user: this.detailsUsername(), realm: this.selectedUserRealm() }
+    };
+  });
+
+  readonly advancedApiFilterOptions = advancedApiFilter;
+  detailsUsername = this.tokenService.detailsUsername;
+  apiUserFilter = signal(new FilterValue());
   pageSize = linkedSignal({
     source: () => this.authService.userPageSize(),
     computation: (pageSize) => (pageSize > 0 ? pageSize : 10)
@@ -115,7 +180,7 @@ export class UserService implements UserServiceInterface {
     }),
     computation: () => 0
   });
-  selectedUserRealm = linkedSignal({
+  selectedUserRealm: WritableSignal<string> = linkedSignal({
     source: () => ({
       routeUrl: this.contentService.routeUrl(),
       defaultRealm: this.realmService.defaultRealm(),
@@ -123,11 +188,11 @@ export class UserService implements UserServiceInterface {
       authRole: this.authService.role(),
       authRealm: this.authService.realm()
     }),
-    computation: (source) => {
-      if (source.authRole === "user") {
-        return source.authRealm;
+    computation: (source, previous): string => {
+      if (source.routeUrl.startsWith(ROUTE_PATHS.USERS) && previous?.value) {
+        return previous.value;
       }
-      return source.defaultRealm;
+      return source.authRole === "user" ? source.authRealm : source.defaultRealm;
     }
   });
   selectionFilter = linkedSignal<string, UserData | string>({
@@ -148,15 +213,20 @@ export class UserService implements UserServiceInterface {
     return {
       url: this.baseUrl,
       method: "GET",
-      headers: this.authService.getHeaders()
+      headers: this.authService.getHeaders(),
+      params: {
+        ...this.detailsUsername() && { user: this.detailsUsername() }
+      }
     };
   });
   user: WritableSignal<UserData> = linkedSignal({
-    source: this.userResource.value,
+    source: () => ({
+      userResource: this.userResource.value,
+      detailsUsername: this.detailsUsername()
+    }),
     computation: (source, previous) => {
       return (
-        source?.result?.value?.[0] ??
-        previous?.value ?? {
+        source?.userResource()?.result?.value?.[0] ?? {
           description: "",
           editable: false,
           email: "",
@@ -178,6 +248,7 @@ export class UserService implements UserServiceInterface {
       !this.authService.actionAllowed("userlist") ||
       (!this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_DETAILS) &&
         !this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS) &&
+        !this.contentService.routeUrl().startsWith(ROUTE_PATHS.USERS_DETAILS) &&
         ![
           ROUTE_PATHS.TOKENS,
           ROUTE_PATHS.USERS,
@@ -255,5 +326,27 @@ export class UserService implements UserServiceInterface {
     const input = $event.target as HTMLInputElement;
     const newFilter = this.apiUserFilter().copyWith({ value: input.value });
     this.apiUserFilter.set(newFilter);
+  }
+
+  setUserAttribute(key: string, value: string) {
+    const params: Record<string, string> = {
+      user: this.detailsUsername(),
+      realm: this.selectedUserRealm(),
+      key,
+      value
+    };
+    return this.http.post<PiResponse<number>>(this.baseUrl + "attribute", null, {
+      headers: this.authService.getHeaders(),
+      params
+    });
+  }
+
+  deleteUserAttribute(key: string) {
+    const username = this.detailsUsername();
+    const realm = this.selectedUserRealm();
+    const url =
+      this.baseUrl +
+      `attribute/${encodeURIComponent(key)}/${encodeURIComponent(username)}/${encodeURIComponent(realm)}`;
+    return this.http.delete<PiResponse<any>>(url, { headers: this.authService.getHeaders() });
   }
 }

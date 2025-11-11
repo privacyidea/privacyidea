@@ -64,6 +64,9 @@ export class OverflowService implements OverflowServiceInterface {
     if (this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS)) {
       return 1880;
     }
+    if (this.contentService.routeUrl().startsWith(ROUTE_PATHS.USERS_DETAILS)) {
+      return 1500;
+    }
     switch (this.contentService.routeUrl()) {
       case ROUTE_PATHS.TOKENS:
         return 1880;

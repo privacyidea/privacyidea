@@ -35,7 +35,8 @@
       [advancedApiFilter]="advancedApiFilter"
       [apiFilter]="apiFilter"
       [filterHTMLInputElement]="filterHTMLInputElement"
-      [filterValue]="containerService.containerFilter"></app-keyword-filter>
+      [filterValue]="containerService.containerFilter"/>
+    <app-container-table-actions/>
     <div class="table-container">
       <table
         (matSortChange)="onSortEvent($event)"
@@ -114,6 +115,13 @@
                       [ngClass]="tableUtilsService.getSpanClassForState(element[column.key][0], true)">
                       {{ tableUtilsService.getDisplayTextForState(element[column.key][0]) }}
                     </span>
+                  }
+                  @case ("user_name") {
+                    <a
+                      (click)="contentService.userSelected(element[column.key])"
+                      attr.aria-label="{{ column.label }} Link">
+                      {{ element[column.key] }}
+                    </a>
                   }
                   @default {
                     @if (tableUtilsService.isLink(column.key)) {

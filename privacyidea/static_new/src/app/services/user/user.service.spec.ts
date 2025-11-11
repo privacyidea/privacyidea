@@ -17,19 +17,22 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { TestBed } from "@angular/core/testing";
-import { signal } from "@angular/core";
-import { UserData, UserService } from "./user.service";
-import { LocalService } from "../local/local.service";
-import { RealmService } from "../realm/realm.service";
 import { provideHttpClient } from "@angular/common/http";
+import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
+import { UserData, UserService } from "./user.service";
+import { RealmService } from "../realm/realm.service";
+import { AuthService } from "../auth/auth.service";
+import { ContentService } from "../content/content.service";
+import { TokenService } from "../token/token.service";
 
-class MockLocalService {
-  getHeaders = jest.fn().mockReturnValue({ Authorization: "Bearer FAKE_TOKEN" });
-}
-
-class MockRealmService {
-  defaultRealm = signal("defaultRealm");
-}
+import {
+  MockAuthService,
+  MockContentService, MockHttpResourceRef,
+  MockLocalService,
+  MockNotificationService, MockPiResponse,
+  MockRealmService,
+  MockTokenService
+} from "../../../testing/mock-services";
 
 function buildUser(username: string): UserData {
   return {
@@ -49,6 +52,8 @@ function buildUser(username: string): UserData {
 describe("UserService", () => {
   let userService: UserService;
   let realmService: MockRealmService;
+  let httpMock: HttpTestingController;
+
   let users: UserData[];
   let alice: UserData;
 
@@ -57,18 +62,29 @@ describe("UserService", () => {
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(),
+        provideHttpClientTesting(),
         UserService,
-        { provide: LocalService, useClass: MockLocalService },
-        { provide: RealmService, useClass: MockRealmService }
+        { provide: RealmService, useClass: MockRealmService },
+        { provide: AuthService, useClass: MockAuthService },
+        { provide: ContentService, useClass: MockContentService },
+        { provide: TokenService, useClass: MockTokenService },
+        MockLocalService,
+        MockNotificationService
       ]
     });
 
     userService = TestBed.inject(UserService);
     realmService = TestBed.inject(RealmService) as unknown as MockRealmService;
+    httpMock = TestBed.inject(HttpTestingController);
 
     alice = buildUser("Alice");
     users = [alice, buildUser("Bob"), buildUser("Charlie")];
     userService.users.set(users);
+    userService.detailsUsername.set("Alice");
+  });
+
+  afterEach(() => {
+    httpMock.verify();
   });
 
   it("should be created", () => {
@@ -76,7 +92,7 @@ describe("UserService", () => {
   });
 
   it("selectedUserRealm should expose the current defaultRealm", () => {
-    expect(userService.selectedUserRealm()).toBe("defaultRealm");
+    expect(userService.selectedUserRealm()).toBe("realm1");
     realmService.defaultRealm.set("someRealm");
     expect(userService.selectedUserRealm()).toBe("someRealm");
   });
@@ -108,6 +124,118 @@ describe("UserService", () => {
     it("should return all users when filter is empty", () => {
       userService.selectionFilter.set("");
       expect(userService.selectionFilteredUsers()).toEqual(users);
+    });
+  });
+
+  describe("attribute policy + attributes", () => {
+    it("setUserAttribute issues POST /user/attribute with params", () => {
+      userService.setUserAttribute("department", "finance").subscribe();
+
+      const req = httpMock.expectOne(r =>
+        r.method === "POST" && r.url.endsWith("/user/attribute")
+      );
+      expect(req.request.params.get("user")).toBe("Alice");
+      expect(req.request.params.get("realm")).toBe("realm1");
+      expect(req.request.params.get("key")).toBe("department");
+      expect(req.request.params.get("value")).toBe("finance");
+
+      req.flush({ result: { value: 123 } });
+    });
+
+    it("deleteUserAttribute issues DELETE /user/attribute/<key>/<user>/<realm> with proper encoding", () => {
+      userService.detailsUsername.set("Alice Smith");
+      realmService.defaultRealm.set("r 1");
+
+      const key = "department/role";
+      userService.deleteUserAttribute(key).subscribe();
+
+      const expectedEnding =
+        "/user/attribute/" +
+        encodeURIComponent(key) +
+        "/" +
+        encodeURIComponent("Alice Smith") +
+        "/" +
+        encodeURIComponent("r 1");
+
+      const req = httpMock.expectOne(r =>
+        r.method === "DELETE" && r.url.endsWith(expectedEnding)
+      );
+
+      expect(req.request.headers).toBeTruthy();
+
+      req.flush({ result: { status: true, value: true } });
+    });
+  });
+
+  describe("attribute policy + attributes (no HTTP; drive signals directly)", () => {
+    it("attributePolicy defaults when attributesResource has no value", () => {
+      (userService as any).attributesResource = new MockHttpResourceRef<
+        any | undefined
+      >(undefined as any);
+
+      expect(userService.attributePolicy()).toEqual({ delete: [], set: {} });
+      expect(userService.deletableAttributes()).toEqual([]);
+      expect(userService.attributeSetMap()).toEqual({});
+      expect(userService.hasWildcardKey()).toBe(false);
+      expect(userService.keyOptions()).toEqual([]);
+    });
+
+    it("derives deletableAttributes, wildcard, and sorted keyOptions from attributesResource value", () => {
+      const policy = {
+        delete: ["department", "attr2", "attr1"],
+        set: {
+          "*": ["2", "1"],
+          city: ["*"],
+          department: ["sales", "finance"]
+        }
+      };
+
+      (userService as any).attributesResource = new MockHttpResourceRef(
+        MockPiResponse.fromValue(policy)
+      );
+
+      expect(userService.attributePolicy()).toEqual(policy);
+      expect(userService.deletableAttributes()).toEqual(["department", "attr2", "attr1"]);
+      expect(userService.attributeSetMap()).toEqual(policy.set);
+      expect(userService.hasWildcardKey()).toBe(true);
+      expect(userService.keyOptions()).toEqual(["city", "department"]);
+    });
+
+    it("userAttributes and userAttributesList derive from userAttributesResource value", () => {
+      const attrs = { city: "Berlin", department: ["sales", "finance"] };
+
+      (userService as any).userAttributesResource = new MockHttpResourceRef(
+        MockPiResponse.fromValue(attrs)
+      );
+
+      expect(userService.userAttributes()).toEqual(attrs);
+      expect(userService.userAttributesList()).toEqual([
+        { key: "city", value: "Berlin" },
+        { key: "department", value: "sales, finance" }
+      ]);
+    });
+
+    it("userAttributes falls back to {} when userAttributesResource becomes undefined", () => {
+      const ref = new MockHttpResourceRef(
+        MockPiResponse.fromValue({ city: "Berlin" })
+      );
+      (userService as any).userAttributesResource = ref;
+
+      expect(userService.userAttributes()).toEqual({ city: "Berlin" });
+
+      ref.set(undefined as any);
+
+      expect(userService.userAttributes()).toEqual({});
+      expect(userService.userAttributesList()).toEqual([]);
+    });
+
+    it("resetFilter replaces apiUserFilter with a fresh instance", () => {
+      const before = userService.apiUserFilter();
+      userService.resetFilter();
+      const after = userService.apiUserFilter();
+
+      expect(after).not.toBe(before);
+      expect(userService.filterParams()).toEqual({});
     });
   });
 

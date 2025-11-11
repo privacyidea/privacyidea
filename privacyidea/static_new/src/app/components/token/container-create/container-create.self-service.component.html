@@ -22,7 +22,7 @@
             [value]="containerService.selectedContainerType()">
             @for (type of containerService.containerTypeOptions(); track type) {
               <mat-option
-                class="select-option type-option"
+                class="select-option"
                 [value]="type">
                 {{ type.description }}
               </mat-option>
@@ -33,8 +33,8 @@
       <div class="enroll-button-container">
         <button
           (click)="createContainer()"
-          class="card-button"
-          mat-flat-button>
+          class="action-button-1 width-238"
+          mat-stroked-button>
           <mat-icon>add</mat-icon>
           Create
         </button>

@@ -23,18 +23,20 @@ import { filter, map, pairwise, startWith } from "rxjs";
 import { ROUTE_PATHS } from "../../route_paths";
 
 export interface ContentServiceInterface {
+  detailsUsername: WritableSignal<string>;
   router: Router;
   routeUrl: Signal<string>;
   previousUrl: Signal<string>;
-  isProgrammaticTabChange: WritableSignal<boolean>;
   tokenSerial: WritableSignal<string>;
   containerSerial: WritableSignal<string>;
   tokenSelected: (serial: string) => void;
   containerSelected: (containerSerial: string) => void;
+  userSelected: (username: any) => void;
 }
 
 @Injectable({ providedIn: "root" })
-export class ContentService {
+export class ContentService implements ContentServiceInterface {
+  detailsUsername = signal("");
   router = inject(Router);
   private readonly _urlPair = toSignal(
     this.router.events.pipe(
@@ -47,23 +49,21 @@ export class ContentService {
   );
   readonly routeUrl = computed(() => this._urlPair()[1]);
   readonly previousUrl = computed(() => this._urlPair()[0]);
-  isProgrammaticTabChange = signal(false);
   tokenSerial = signal("");
   containerSerial = signal("");
 
-  tokenSelected(serial: string) {
-    if (this.routeUrl().includes("containers")) {
-      this.isProgrammaticTabChange.set(true);
-    }
+  tokenSelected(serial: string): void {
     this.router.navigateByUrl(ROUTE_PATHS.TOKENS_DETAILS + serial);
     this.tokenSerial.set(serial);
   }
 
-  containerSelected(containerSerial: string) {
-    if (!this.routeUrl().includes("containers")) {
-      this.isProgrammaticTabChange.set(true);
-    }
+  containerSelected(containerSerial: string): void {
     this.router.navigateByUrl(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + containerSerial);
     this.containerSerial.set(containerSerial);
+  }
+
+  userSelected(username: any): void {
+    this.router.navigateByUrl(ROUTE_PATHS.USERS_DETAILS + "/" + username);
+    this.detailsUsername.set(username);
   }
 }

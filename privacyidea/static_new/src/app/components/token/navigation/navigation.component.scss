@@ -1,0 +1,159 @@
+@use "../../../../styles";
+@use "@angular/material" as mat;
+
+.brand {
+  display: flex;
+  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.brand-row {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  width: 100%;
+}
+
+.brand-row > a.clickable-logo {
+  grid-column: 2;
+  justify-self: center;
+}
+
+.logo {
+  margin-bottom: 16px;
+  height: 80px;
+  width: 80px;
+  border-radius: 50%;
+  @include mat.elevation(5);
+}
+
+.preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 0 0 auto;
+  border: 2px solid var(--mat-sys-on-surface);
+  padding: 4px;
+  border-radius: var(--border-radius);
+  color: var(--mat-sys-on-surface);
+  height: 20px;
+  width: 60px;
+}
+
+.clickable-logo {
+  display: inline-grid;
+  line-height: 0;
+}
+
+.logo-text {
+  width: 240px;
+  height: auto;
+}
+
+.support-spacer {
+  margin-right: 48px;
+}
+
+.spacer {
+  flex: 1 1 0;
+}
+
+.session-timer {
+  width: 70px;
+  text-align: right;
+}
+
+.no-expansion.mat-expansion-panel {
+  box-shadow: none;
+  background: transparent;
+  border-radius: 0;
+}
+
+.no-expansion .mat-expansion-panel-header {
+  padding: 0;
+}
+
+.no-expansion .mat-expansion-panel-header .mat-content {
+  margin: 0;
+}
+
+.no-expansion .mat-expansion-indicator,
+.no-expansion .mat-expansion-panel-header:before {
+  display: none;
+}
+
+.sticky-actions {
+  position: sticky;
+  bottom: 0;
+  margin-top: 8px;
+  display: grid;
+  gap: 8px;
+  padding: 8px;
+  background: var(--mat-sys-surface-container-low);
+  z-index: 1;
+  width: 240px;
+  border-radius: var(--border-radius);
+  @include mat.elevation(3);
+}
+
+.sticky-actions a[mat-fab] {
+  width: 100%;
+  justify-content: flex-start;
+}
+
+.account-div {
+  display: flex;
+  flex-direction: row;
+  width: 256px;
+  justify-content: space-around;
+  align-items: center;
+  background: var(--mat-sys-surface-container);
+  border-radius: var(--border-radius);
+  height: 40px;
+}
+
+.utils-group {
+  border: solid 1px var(--mat-sys-surface-container-highest);
+  border-radius: var(--border-radius);
+  margin-bottom: 6px;
+}
+
+.utils {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
+  align-items: center;
+}
+
+.drawer-div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin: 16px;
+  gap: 8px;
+
+  ::ng-deep {
+    .mat-expansion-panel-body {
+      padding: 0 8px 8px;
+    }
+
+    .mat-mdc-form-field-subscript-wrapper, .mat-mdc-form-field-bottom-align::before {
+      height: 8px;
+    }
+
+    .mat-expansion-panel-header.mat-expanded {
+      height: 48px;
+    }
+
+    .mat-expansion-panel.mat-expanded:not([class*="mat-elevation-z"]) {
+      box-shadow: unset;
+      @include mat.elevation(5);
+    }
+
+    .card-button-active > mat-icon.mat-icon.notranslate.material-icons {
+      font-size: 18px;
+    }
+  }
+}

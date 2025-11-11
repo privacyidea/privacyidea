@@ -91,7 +91,8 @@ describe("TokenApplicationsOfflineComponent (Jest)", () => {
           resolver: "",
           serial: "",
           type: "",
-          application: ""
+          application: "",
+          hostname: ""
         }
       ];
       machineServiceMock.tokenApplications.set(fakeApps);
