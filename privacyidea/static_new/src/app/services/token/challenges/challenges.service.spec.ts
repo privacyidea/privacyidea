@@ -36,7 +36,7 @@ describe("ChallengesService", () => {
     expect(challengesService).toBeTruthy();
   });
 
-  it("should not include empty filter values in filterParams except fo the serial", () => {
+  it("should not include empty filter values in filterParams except for the serial", () => {
     challengesService.challengesFilter.set(
       new FilterValue({
         value: "serial: '' transaction_id: ***"
