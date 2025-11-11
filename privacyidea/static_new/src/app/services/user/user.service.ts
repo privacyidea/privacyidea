@@ -19,7 +19,7 @@
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
 import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
-import { computed, effect, inject, Injectable, linkedSignal, Signal, signal, WritableSignal } from "@angular/core";
+import { computed, inject, Injectable, linkedSignal, Signal, signal, WritableSignal } from "@angular/core";
 import { RealmService, RealmServiceInterface } from "../realm/realm.service";
 import { TokenService, TokenServiceInterface } from "../token/token.service";
 
@@ -124,7 +124,6 @@ export class UserService implements UserServiceInterface {
     );
   });
   readonly apiFilterOptions = apiFilter;
-
 
 
   attributePolicy = computed<UserAttributePolicy>(
@@ -278,31 +277,41 @@ export class UserService implements UserServiceInterface {
     computation: (source, previous) => source?.result?.value ?? previous?.value ?? []
   });
   selectedUser = computed<UserData | null>(() => {
-    let userName = "";
-    let user = null;
-    if (this.authService.role() === "user") {
-      userName = this.authService.username();
-      user = {
-        "username": userName,
-        "description": "",
-        "editable": false,
-        "email": "",
-        "givenname": "",
-        "mobile": "",
-        "phone": "",
-        "resolver": "",
-        "surname": "",
-        "userid": ""
-      } as UserData;
+    const onTokenDetails = this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_DETAILS);
+    let tokenUsername = "";
+    if (onTokenDetails) {
+      const token = this.tokenService.tokenDetailResource.value()?.result?.value?.tokens?.[0];
+      tokenUsername = token?.username ?? "";
+    }
+
+    let targetUsername = "";
+    if (tokenUsername) {
+      targetUsername = tokenUsername;
+    } else if (this.authService.role() === "user") {
+      targetUsername = this.authService.username();
     } else {
-      userName = this.selectionUsernameFilter();
-      if (!userName) {
+      targetUsername = this.selectionUsernameFilter();
+      if (!targetUsername) {
         return null;
       }
-      const users = this.users();
-      user = users.find((user) => user.username === userName) || null;
     }
-    return user;
+
+    const users = this.users();
+    const found = users.find((u) => u.username === targetUsername);
+    if (found) return found;
+
+    return {
+      username: targetUsername,
+      description: "",
+      editable: false,
+      email: "",
+      givenname: "",
+      mobile: "",
+      phone: "",
+      resolver: "",
+      surname: "",
+      userid: ""
+    } as UserData;
   });
   allUsernames = computed<string[]>(() => this.users().map((user) => user.username));
   selectionFilteredUsers = computed<UserData[]>(() => {

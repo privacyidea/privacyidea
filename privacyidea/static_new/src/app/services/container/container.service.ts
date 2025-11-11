@@ -41,6 +41,7 @@ import { EnrollmentUrl } from "../../mappers/token-api-payload/_token-api-payloa
 import { FilterValue } from "../../core/models/filter_value";
 import { Sort } from "@angular/material/sort";
 import { TokenService, TokenServiceInterface } from "../token/token.service";
+import { UserService, UserServiceInterface } from "../user/user.service";
 
 const apiFilter = ["container_serial", "type", "user"];
 const advancedApiFilter = ["token_serial"];
@@ -232,6 +233,7 @@ export class ContainerService implements ContainerServiceInterface {
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly authService: AuthServiceInterface = inject(AuthService);
+  private readonly userService: UserServiceInterface = inject(UserService);
 
   readonly apiFilter = apiFilter;
   readonly advancedApiFilter = advancedApiFilter;
@@ -325,7 +327,8 @@ export class ContainerService implements ContainerServiceInterface {
         }),
         sortby: this.sort().active,
         sortdir: this.sort().direction,
-        ...this.filterParams()
+        ...this.filterParams(),
+        user: this.userService.selectedUser()?.username ?? ""
       }
     };
   });
