@@ -169,17 +169,19 @@ export class ContainerDetailsComponent {
   });
 
   containerType = computed(() => {
-    const containerDetail = this.containerService.containerDetailResource.value();
-    return containerDetail?.result?.value?.containers[0]?.type ?? "";
+    return this.containerDetails()?.type ?? "";
   });
 
   containerDetailResource = this.containerService.containerDetailResource;
-  containerDetails = linkedSignal({
+  containerDetails: WritableSignal<ContainerDetailData> = linkedSignal({
     source: this.containerDetailResource.value,
-    computation: (containerDetailResourceValue) => {
+    computation: (containerDetailResourceValue, previous) => {
       const value = containerDetailResourceValue?.result?.value;
       if (value && value.containers.length > 0) {
         return value.containers[0];
+      }
+      else if (previous?.value) {
+        return previous.value;
       }
 
       const emptyContainerDetails: ContainerDetailData = {

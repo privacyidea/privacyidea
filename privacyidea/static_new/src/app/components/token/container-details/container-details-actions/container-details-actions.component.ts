@@ -73,8 +73,7 @@ export class ContainerDetailsActionsComponent {
   userStorePW: boolean = false;
   dialogData: WritableSignal<ContainerRegisterFinalizeData | null> = signal(null);
   registrationState = computed(() => {
-    const containerDetail = this.containerService.containerDetailResource.value();
-    return containerDetail?.result?.value?.containers[0]?.info?.registration_state ?? "";
+    return this.containerService.containerDetail()?.containers[0]?.info?.registration_state ?? "";
   });
 
   registrationAllowed = computed(() => {
