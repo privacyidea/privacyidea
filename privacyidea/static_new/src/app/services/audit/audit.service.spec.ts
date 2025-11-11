@@ -18,14 +18,14 @@
  **/
 import { AuditService } from "./audit.service";
 import { ContentService } from "../content/content.service";
-import { LocalService } from "../local/local.service";
 import { TestBed } from "@angular/core/testing";
 import { environment } from "../../../environments/environment";
 import { provideHttpClient } from "@angular/common/http";
 import { signal } from "@angular/core";
 import { AuthService } from "../auth/auth.service";
 import { FilterValue } from "../../core/models/filter_value";
-import { MockAuthService, MockLocalService, MockNotificationService } from "../../../testing/mock-services";
+import { MockLocalService, MockNotificationService } from "../../../testing/mock-services";
+import { MockAuthService } from "../../../testing/mock-services/mock-auth-service";
 
 environment.proxyUrl = "/api";
 
@@ -82,7 +82,14 @@ describe("AuditService (signals & helpers)", () => {
     expect(auditService.auditResource.value()).toBeUndefined();
 
     expect(auditService.filterParams()).toEqual({ serial: "*otp123*" });
-    expect(auditService.pageSize()).toBe(25);
+    expect(auditService.pageSize()).toBe(10);
+    expect(auditService.pageIndex()).toBe(0);
+  });
+
+  it("resets pageIndex to 0 when auditFilter change", () => {
+    auditService.pageIndex.set(3);
+    auditService.auditFilter.set(new FilterValue({ value: "user: bob success: true" }));
+
     expect(auditService.pageIndex()).toBe(0);
   });
 });

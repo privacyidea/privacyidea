@@ -23,6 +23,7 @@ import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ActivatedRoute } from "@angular/router";
 import { of } from "rxjs";
+import "@angular/localize/init";
 
 describe("LayoutComponent", () => {
   let component: LayoutComponent;
@@ -76,9 +77,7 @@ describe("LayoutComponent", () => {
     const layoutElement = fixture.nativeElement.querySelector(".layout");
     expect(layoutElement).toBeTruthy();
 
-    const main = fixture.nativeElement.querySelector(
-      "main[aria-label=\"Main Router Outlet\"]"
-    );
+    const main = fixture.nativeElement.querySelector('main[aria-label="Main Router Outlet"]');
     expect(main).toBeTruthy();
   });
 });
