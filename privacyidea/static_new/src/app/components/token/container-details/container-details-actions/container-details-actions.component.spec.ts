@@ -89,7 +89,6 @@ describe("ContainerDetailsActionsComponent", () => {
   });
 
   it("should call deleteContainer and navigate on success", () => {
-    const afterClosed$ = of(true);
     mockContainerService.deleteContainer = jest.fn().mockReturnValue(of({}));
     jest.spyOn(component["router"], "navigateByUrl");
     component.deleteContainer();
@@ -103,15 +102,15 @@ describe("ContainerDetailsActionsComponent", () => {
     expect(dialogOpen).toHaveBeenCalled();
   });
 
-  it("should call registerContainer and open finalize dialog", () => {
+  it("should call registerContainer, open finalize dialog", () => {
     const registerResponse = { result: { value: {} } } as PiResponse<any>;
     mockContainerService.registerContainer = jest.fn().mockReturnValue(of(registerResponse));
     jest.spyOn(component, "openRegisterFinalizeDialog");
-    jest.spyOn(component, "pollContainerRolloutState");
+    jest.spyOn(mockContainerService, "startPolling");
     component.registerContainer(false, "", "", false);
     expect(mockContainerService.registerContainer).toHaveBeenCalled();
     expect(component.openRegisterFinalizeDialog).toHaveBeenCalledWith(registerResponse, false);
-    expect(component.pollContainerRolloutState).toHaveBeenCalledWith(5000, false);
+    expect(mockContainerService.startPolling).toHaveBeenCalledWith("SMPH-1");
   });
 
   it("should call unregisterContainer and show notification", () => {
@@ -123,17 +122,5 @@ describe("ContainerDetailsActionsComponent", () => {
     expect(mockContainerService.unregister).toHaveBeenCalledWith("SMPH-1");
     expect(mockNotificationService.openSnackBar).toHaveBeenCalledWith("Container unregistered successfully.");
     expect(mockContainerService.containerDetailResource.reload).toHaveBeenCalled();
-  });
-
-  it("should call pollContainerRolloutState and show notification on registered", () => {
-    const pollResponse = {
-      result: { value: { containers: [{ info: { registration_state: "registered" } }] } }
-    } as PiResponse<any>;
-    mockContainerService.pollContainerRolloutState = jest.fn().mockReturnValue(of(pollResponse));
-    jest.spyOn(mockNotificationService, "openSnackBar");
-    component.pollContainerRolloutState(0, false);
-    expect(mockContainerService.pollContainerRolloutState).toHaveBeenCalled();
-    expect(dialogCloseAll).toHaveBeenCalled();
-    expect(mockNotificationService.openSnackBar).toHaveBeenCalledWith("Container registered successfully.");
   });
 });

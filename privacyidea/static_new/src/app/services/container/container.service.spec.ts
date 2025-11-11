@@ -255,21 +255,29 @@ describe("ContainerService", () => {
     expect(r.result?.value?.container_url).toBe("u");
   });
 
-  it("pollContainerRolloutState completes when state == registered", async () => {
-    contentService.routeUrl.set(ROUTE_PATHS.TOKENS_CONTAINERS_CREATE)
+  it("poll container details completes when state == registered", async () => {
+    jest.useFakeTimers();
+    contentService.routeUrl.set(ROUTE_PATHS.TOKENS_CONTAINERS_CREATE);
+    containerService.containerSerial.set("SMPH1");
 
-    jest.spyOn(containerService, "getContainerDetails").mockReturnValue(
-      of({
-        result: {
-          value: {
-            containers: [{ info: { registration_state: "registered" } }]
-          }
+    const getContainerSpy = jest.spyOn(http, "get").mockReturnValue(of({
+      result: {
+        value: {
+          containers: [{ info: { registration_state: "registered" } }]
         }
-      } as any)
-    );
-    const r = await lastValueFrom(containerService.pollContainerRolloutState("cPoll", 0));
-    expect(containerService.getContainerDetails).toHaveBeenCalled();
-    expect(r.result?.value?.containers[0].info.registration_state).toBe("registered");
+      }
+    } as any));
+
+    containerService.startPolling("SMPH1");
+    // Flush microtasks to allow signals/effects to propagate
+    await Promise.resolve();
+    jest.runAllTimers();
+
+    expect(getContainerSpy).toHaveBeenCalled();
+    expect(containerService.containerDetailResource.value()?.result?.value?.containers[0].info.registration_state).toBe("registered");
+    expect(containerService.isPollingActive()).toBe(false);
+
+    jest.useRealTimers();
   });
 
   it("filterParams converts blank values and drops unknown keys", () => {
@@ -489,24 +497,6 @@ describe("ContainerService", () => {
     const hdrs = (post as jest.Mock).mock.calls[0][2]?.headers;
     const authHeader = typeof hdrs?.get === "function" ? hdrs.get("Authorization") : hdrs?.Authorization;
     expect(authHeader).toMatch(/^Bearer /);
-  });
-
-  // === FIX 2: getContainerDetails — use baseUrl, relax headers/params, then inspect params ===
-  it("getContainerDetails GETs with headers & params (robust assertion)", async () => {
-    const get = jest.spyOn(http, "get").mockReturnValue(of({ result: {} }) as any);
-    await lastValueFrom(containerService.getContainerDetails("SER"));
-
-    expect(get).toHaveBeenCalledWith(
-      containerService.containerBaseUrl,
-      expect.objectContaining({
-        headers: expect.anything(),
-        params: expect.any(HttpParams)
-      })
-    );
-
-    const optionsArg = (get as jest.Mock).mock.calls[0][1];
-    const params = optionsArg.params as HttpParams;
-    expect(params.get("container_serial")).toBe("SER");
   });
 
   // === Extra small coverage to close error branches cleanly ===

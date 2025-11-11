@@ -220,7 +220,7 @@ describe("ContainerCreateComponent", () => {
   });
 
   it("registerContainer: stores response, opens dialog, and starts polling with 5000", () => {
-    const pollSpy = jest.spyOn(containerSvc, "pollContainerRolloutState");
+    const pollSpy = jest.spyOn(containerSvc, "startPolling");
 
     (component as any).registrationConfigComponent = {
       passphraseResponse: signal(""),
@@ -236,19 +236,19 @@ describe("ContainerCreateComponent", () => {
       passphrase_prompt: ""
     });
     expect(matDialogMock.open).toHaveBeenCalled();
-    expect(pollSpy).toHaveBeenCalledWith("C-001", 5000);
+    expect(pollSpy).toHaveBeenCalledWith("C-001");
   });
 
-  it("reopenEnrollmentDialog opens dialog and polls again (startTime=2000)", () => {
+  it("reopenEnrollmentDialog opens dialog and polls again", () => {
     (component as any).registerResponse.set({ result: { value: {} } } as any);
     containerSvc.containerSerial.set("CONT-42");
 
-    const pollSpy = jest.spyOn(containerSvc, "pollContainerRolloutState");
+    const pollSpy = jest.spyOn(containerSvc, "startPolling");
 
     component.reopenEnrollmentDialog();
 
     expect(matDialogMock.open).toHaveBeenCalled();
-    expect(pollSpy).toHaveBeenCalledWith("CONT-42", 2000);
+    expect(pollSpy).toHaveBeenCalledWith("CONT-42");
   });
 
   it("pollContainerRolloutState: closes dialog and navigates when state === 'registered'", () => {
