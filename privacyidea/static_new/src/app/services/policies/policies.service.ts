@@ -71,12 +71,12 @@ export type PolicyDetail = {
   user_case_insensitive: boolean;
 };
 
-export type AdditionalCondition = [SectionOption, string, ComporatorOption, string, boolean, HandleMissigDataOption];
+export type AdditionalCondition = [SectionOption, string, ComporatorOption, string, boolean, HandleMissingDataOption];
 
 export type SectionOption =
   | "HTTP Environment"
   | "HTTP Request header"
-  | "Requst Data"
+  | "Request Data"
   | "container"
   | "container_info"
   | "token"
@@ -90,7 +90,7 @@ export type SectionOption =
 export const allSectionOptions: SectionOption[] = [
   "HTTP Environment",
   "HTTP Request header",
-  "Requst Data",
+  "Request Data",
   "container",
   "container_info",
   "token",
@@ -135,9 +135,9 @@ export const allComporatorOptions: ComporatorOption[] = [
   "string_contains"
 ];
 
-export type HandleMissigDataOption = "raise_error" | "condition_is_false" | "condition_is_true";
+export type HandleMissingDataOption = "raise_error" | "condition_is_false" | "condition_is_true";
 
-export const allHandleMissingDataOptions: HandleMissigDataOption[] = [
+export const allHandleMissingDataOptions: HandleMissingDataOption[] = [
   "raise_error",
   "condition_is_false",
   "condition_is_true"

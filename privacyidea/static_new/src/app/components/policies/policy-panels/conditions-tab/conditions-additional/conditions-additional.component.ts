@@ -12,7 +12,7 @@ import {
   allHandleMissingDataOptions,
   allSectionOptions,
   ComporatorOption,
-  HandleMissigDataOption,
+  HandleMissingDataOption,
   PolicyService,
   SectionOption
 } from "../../../../../services/policies/policies.service";
@@ -63,7 +63,7 @@ export class ConditionsAdditionalComponent {
   });
   conditionValue = linkedSignal<boolean, string>({ source: () => this.isEditMode(), computation: () => "" });
   conditionActive = linkedSignal<boolean, boolean>({ source: () => this.isEditMode(), computation: () => false });
-  conditionHandleMissingData = linkedSignal<boolean, HandleMissigDataOption | "">({
+  conditionHandleMissingData = linkedSignal<boolean, HandleMissingDataOption | "">({
     source: () => this.isEditMode(),
     computation: () => ""
   });

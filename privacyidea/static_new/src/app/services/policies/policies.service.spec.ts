@@ -345,25 +345,19 @@ describe("PolicyService", () => {
     it("should send a PATCH and a POST request if policy name changes", fakeAsync(() => {
       const policyData: PolicyDetail = { ...service.emptyPolicy, name: "new-name" };
 
-      // 1. Service-Aufruf
-      const updatePromise = service.updatePolicy("old-name", policyData);
+      service.updatePolicy("old-name", policyData);
 
-      // 2. PATCH erwarten und beantworten (startet sofort den POST-Request)
       const reqPatch = httpTestingController.expectOne(`${service.policyBaseUrl}old-name`);
       expect(reqPatch.request.method).toEqual("PATCH");
       expect(reqPatch.request.body).toEqual({ name: "new-name" });
       reqPatch.flush({ result: { value: {} } });
 
-      // 3. POST erwarten und beantworten
       const reqPost = httpTestingController.expectOne(`${service.policyBaseUrl}new-name`);
       expect(reqPost.request.method).toEqual("POST");
       expect(reqPost.request.body).toEqual(policyData);
       reqPost.flush({ result: { value: {} } });
 
-      // 4. Den Abschluss des Promises sicherstellen
-      // Wichtig: Da der Dienst ein Promise zurückgibt, ist ein Ticken/Leeren am Ende
-      // immer noch erforderlich, um das finale lastValueFrom aufzulösen!
-      tick(); // <--- Dies löst das externe Promise auf
+      tick();
 
       httpTestingController.verify();
     }));

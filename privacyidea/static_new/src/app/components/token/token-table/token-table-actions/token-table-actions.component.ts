@@ -41,7 +41,6 @@ import {
   DocumentationServiceInterface
 } from "../../../../services/documentation/documentation.service";
 import { Router, RouterLink } from "@angular/router";
-import { LostTokenComponent } from "../../token-details/token-details-actions/lost-token/lost-token.component";
 
 @Component({
   selector: "app-token-table-actions",
@@ -129,69 +128,6 @@ export class TokenTableActionsComponent {
   }
 
   deleteSelectedTokens(): void {
-    const selectedTokens = this.tokenSelection();
-    const serialList = selectedTokens.map((token) => token.serial);
-    this.dialog
-      .open(ConfirmationDialogComponent, {
-        data: {
-          serialList: selectedTokens.map((token) => token.serial),
-          title: "Delete Selected Tokens",
-          type: "token",
-          action: "delete",
-          numberOfTokens: selectedTokens.length
-        }
-      })
-      .afterClosed()
-      .subscribe({
-        next: (result) => {
-          if (result) {
-            this.tokenService.bulkDeleteTokens(serialList).subscribe({
-              next: (response: PiResponse<BulkResult, any>) => {
-                const failedTokens = response.result?.value?.failed || [];
-                const unauthorizedTokens = response.result?.value?.unauthorized || [];
-                const count_success = response.result?.value?.count_success || 0;
-                const messages: string[] = [];
-                if (count_success) {
-                  messages.push(`Successfully deleted ${count_success} token${count_success === 1 ? "" : "s"}.`);
-                }
-
-                if (failedTokens.length > 0) {
-                  messages.push(`The following tokens failed to delete: ${failedTokens.join(", ")}`);
-                }
-
-                if (unauthorizedTokens.length > 0) {
-                  messages.push(
-                    `You are not authorized to delete the following tokens: ${unauthorizedTokens.join(", ")}`
-                  );
-                }
-
-                if (messages.length > 0) {
-                  this.notificationService.openSnackBar(messages.join("\n"));
-                }
-
-                this.tokenService.tokenResource.reload();
-              },
-              error: (err) => {
-                let message = "An error occurred while deleting tokens.";
-                if (err.error?.result?.error?.message) {
-                  message = err.error.result.error.message;
-                }
-                this.notificationService.openSnackBar(message);
-              }
-            });
-          }
-        }
-      });
-  }
-
-  openLostTokenDialog() {
-    this.dialog.open(LostTokenComponent, {
-      data: {
-        isLost: this.isLost,
-        tokenSerial: this.tokenSerial
-      }
-    });
-
     const serialList = this.tokenSelection().map((token) => token.serial);
     this.tokenService.bulkDeleteWithConfirmDialog(serialList, this.dialog, this.tokenService.tokenResource.reload);
   }
