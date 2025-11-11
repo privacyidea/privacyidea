@@ -190,9 +190,9 @@ function parseToMap(text: string): Map<string, string> {
     const key = m[1];
     const val =
       m[2] != null
-        ? m[2].replace(/\\\\/g, "\\").replace(/\\"/g, "\"")
+        ? m[2].replace(/\\"/g, "\"").replace(/\\\\/g, "\\")
         : m[3] != null
-          ? m[3].replace(/\\\\/g, "\\").replace(/\\'/g, "'")
+          ? m[3].replace(/\\'/g, "'").replace(/\\\\/g, "\\")
           : (m[4] ?? "").trim();
     map.set(key, val);
   }
