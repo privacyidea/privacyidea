@@ -571,4 +571,21 @@ describe("ContainerService", () => {
       expect.stringContaining("Failed to delete container.")
     );
   });
+
+  it("should not include empty filter values in filterParams", () => {
+    containerService.containerFilter.set({
+      filterMap: new Map([
+        ["container_serial", ""],
+        ["type", "generic"],
+        ["user", "   "],
+        ["token_serial", "*"]
+      ])
+    } as any);
+
+    const params = containerService.filterParams();
+    expect(params).not.toHaveProperty("container_serial");
+    expect(params).toHaveProperty("type", "generic");
+    expect(params).not.toHaveProperty("user");
+    expect(params).not.toHaveProperty("token_serial");
+  });
 });

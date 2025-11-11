@@ -777,4 +777,19 @@ describe("TokenService", () => {
       });
     });
   });
+
+  it("should not include empty filter values in filterParams", () => {
+    tokenService.tokenFilter.set(
+      new FilterValue({
+        value: "serial: '' type: hotp active: '  ' description: * rollout_state: ***"
+      })
+    );
+
+    const params = tokenService.filterParams();
+    expect(params).not.toHaveProperty("serial");
+    expect(params).not.toHaveProperty("active");
+    expect(params).toHaveProperty("type", "*hotp*");
+    expect(params).not.toHaveProperty("description");
+    expect(params).not.toHaveProperty("rollout_state");
+  });
 });

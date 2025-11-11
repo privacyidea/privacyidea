@@ -29,6 +29,7 @@ import { ROUTE_PATHS } from "../../route_paths";
 import { Sort } from "@angular/material/sort";
 import { environment } from "../../../environments/environment";
 import { TokenService, TokenServiceInterface } from "../token/token.service";
+import { StringUtils } from "../../utils/string.utils";
 
 export type TokenApplications = TokenApplication[];
 
@@ -220,7 +221,7 @@ export class MachineService implements MachineServiceInterface {
     const entries = Array.from(this.machineFilter().filterMap.entries())
       .filter(([key]) => allowed.includes(key))
       .map(([key, value]) => [key, (value ?? "").toString().trim()] as const)
-      .filter(([, v]) => v !== "")
+      .filter(([, v]) => StringUtils.validFilterValue(v))
       .map(([key, v]) => [key, wrapKeys.has(key) ? `*${v}*` : v] as const)
       .filter(([key]) => wrapKeys.has(key) || plainKeys.has(key));
 

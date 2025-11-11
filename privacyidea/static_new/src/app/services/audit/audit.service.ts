@@ -25,7 +25,7 @@ import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
 
 import { FilterValue } from "../../core/models/filter_value";
-import { map } from "rxjs";
+import { StringUtils } from "../../utils/string.utils";
 
 export interface Audit {
   auditcolumns: string[];
@@ -98,7 +98,9 @@ export interface AuditServiceInterface {
   pageSize: WritableSignal<number>;
   pageIndex: WritableSignal<number>;
   auditResource: HttpResourceRef<PiResponse<Audit> | undefined>;
+
   clearFilter(): void;
+
   handleFilterInput($event: Event): void;
 }
 
@@ -118,11 +120,11 @@ export class AuditService implements AuditServiceInterface {
 
     const entries = Array.from(this.auditFilter().filterMap.entries())
       .filter(([key]) => allowed.includes(key))
-      .filter(([, v]) => v !== "")
       .map(([key, value]) => {
         const v = (value ?? "").toString().trim();
         return [key, v ? `*${v}*` : v] as const;
-      });
+      })
+      .filter(([, v]) => StringUtils.validFilterValue(v));
 
     return Object.fromEntries(entries) as Record<string, string>;
   });
@@ -158,6 +160,7 @@ export class AuditService implements AuditServiceInterface {
   clearFilter(): void {
     this.auditFilter.set(this.auditFilter().copyWith({ value: "" }));
   }
+
   handleFilterInput($event: Event): void {
     const input = $event.target as HTMLInputElement;
     this.auditFilter.set(this.auditFilter().copyWith({ value: input.value }));

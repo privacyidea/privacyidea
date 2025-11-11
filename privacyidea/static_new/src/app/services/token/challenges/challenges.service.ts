@@ -26,6 +26,7 @@ import { FilterValue } from "../../../core/models/filter_value";
 import { PiResponse } from "../../../app.component";
 import { Sort } from "@angular/material/sort";
 import { ROUTE_PATHS } from "../../../route_paths";
+import { StringUtils } from "../../../utils/string.utils";
 
 const apiFilter = ["serial", "transaction_id"];
 const advancedApiFilter: string[] = [];
@@ -97,7 +98,7 @@ export class ChallengesService implements ChallengesServiceInterface {
     const pairs = Array.from(this.challengesFilter().filterMap.entries())
       .filter(([key]) => allowed.includes(key))
       .map(([key, value]) => [key, (value ?? "").toString().trim()] as const)
-      .filter(([, v]) => v !== "");
+      .filter(([, v]) => StringUtils.validFilterValue(v));
 
     const result = { params: {} as Record<string, string>, serial: "" };
 

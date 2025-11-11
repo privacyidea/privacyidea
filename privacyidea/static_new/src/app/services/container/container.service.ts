@@ -41,6 +41,7 @@ import { EnrollmentUrl } from "../../mappers/token-api-payload/_token-api-payloa
 import { FilterValue } from "../../core/models/filter_value";
 import { Sort } from "@angular/material/sort";
 import { TokenService, TokenServiceInterface } from "../token/token.service";
+import { StringUtils } from "../../utils/string.utils";
 
 const apiFilter = ["container_serial", "type", "user"];
 const advancedApiFilter = ["token_serial"];
@@ -262,7 +263,7 @@ export class ContainerService implements ContainerServiceInterface {
     const entries = Array.from(this.containerFilter().filterMap.entries())
       .filter(([key]) => allowed.includes(key))
       .map(([key, value]) => [key, (value ?? "").toString().trim()] as const)
-      .filter(([, v]) => v !== "")
+      .filter(([, v]) => StringUtils.validFilterValue(v))
       .map(([key, v]) => [key, plainKeys.has(key) ? v : `*${v}*`] as const);
 
     return Object.fromEntries(entries) as Record<string, string>;

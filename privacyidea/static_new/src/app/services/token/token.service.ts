@@ -36,6 +36,7 @@ import { FilterValue } from "../../core/models/filter_value";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
 import { ConfirmationDialogComponent } from "../../components/shared/confirmation-dialog/confirmation-dialog.component";
+import { StringUtils } from "../../utils/string.utils";
 
 const apiFilter = [
   "serial",
@@ -401,7 +402,7 @@ export class TokenService implements TokenServiceInterface {
     ]
       .filter(([key]) => allowed.includes(key))
       .map(([key, value]) => [key, (value ?? "").toString().trim()] as const)
-      .filter(([, v]) => v !== "")
+      .filter(([, v]) => StringUtils.validFilterValue(v))
       .map(([key, v]) => [key, plainKeys.has(key) ? v : `*${v}*`] as const);
 
     return Object.fromEntries(entries) as Record<string, string>;
