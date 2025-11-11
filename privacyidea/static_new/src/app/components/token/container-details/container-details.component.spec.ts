@@ -37,6 +37,7 @@ import {
   MockUserService
 } from "../../../../testing/mock-services";
 import { ContainerDetailsSelfServiceComponent } from "./container-details.self-service.component";
+import { ActivatedRoute } from "@angular/router";
 
 class MockValidateService {
   testToken = jest.fn().mockReturnValue(of(null));
@@ -57,6 +58,12 @@ describe("ContainerDetailsComponent", () => {
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            params: of({ id: "123" })
+          }
+        },
         { provide: TokenService, useClass: MockTokenService },
         { provide: ValidateService, useClass: MockValidateService },
         { provide: NotificationService, useClass: MockNotificationService },

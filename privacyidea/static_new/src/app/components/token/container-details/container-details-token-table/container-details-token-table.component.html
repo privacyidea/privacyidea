@@ -23,13 +23,11 @@
           placeholder="Filter across all columns." />
       </mat-form-field>
     }
-    @if (dataSource.data.length > 5) {
       <mat-paginator
         [pageSizeOptions]="pageSizeOptions()"
         [pageSize]="pageSize"
         class="flex-just-start"
-        showFirstLastButtons></mat-paginator>
-    }
+        showFirstLastButtons/>
   </div>
   <div [ngClass]="[overflowService.isWidthOverflowing('body', 1580) ? 'flex-column' : 'flex-row']">
     <table
@@ -51,8 +49,7 @@
           <td
             *matCellDef="let element"
             attr.aria-label="{{ column.label }} Cell"
-            mat-cell
-            [ngClass]="{ 'width-18rem': column.key === 'description' }">
+            mat-cell>
             <ng-container>
               <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
                 @switch (column.key) {
@@ -75,6 +72,13 @@
                       [ngClass]="tableUtilsService.getClassForColumn(column.key, element)">
                       {{ tableUtilsService.getDisplayText(column.key, element) }}
                     </span>
+                  }
+                  @case ("username") {
+                    <a
+                      (click)="contentService.userSelected(element[column.key])"
+                      attr.aria-label="{{ column.label }} Link">
+                      {{ element[column.key] }}
+                    </a>
                   }
                   @default {
                     @if (tableUtilsService.isLink(column.key)) {
@@ -198,9 +202,7 @@
           {{ "Unassign from All Tokens" }}
         </button>
       }
-      <br />
-      <mat-divider />
-      <br />
+      <mat-divider class="margin-top-1 margin-bottom-1" />
       @if (authService.actionAllowed("enable")) {
         <button
           (click)="toggleAll('activate')"
@@ -221,9 +223,7 @@
           {{ "Deactivate All Tokens" }}
         </button>
       }
-      <br />
-      <mat-divider />
-      <br />
+      <mat-divider class="margin-top-1 margin-bottom-1" />
       @if (authService.actionAllowed("container_remove_token")) {
         <button
           (click)="removeAll()"

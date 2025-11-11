@@ -33,6 +33,7 @@ import { ConfirmationDialogComponent } from "../../shared/confirmation-dialog/co
 import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
 import { ScrollAdjusterDirective } from "../../shared/directives/scroll-adjuster.directive";
 import { TokenTableComponent } from "./token-table.component";
+import { MatTooltip } from "@angular/material/tooltip";
 
 @Component({
   selector: "app-token-table-self-service",
@@ -49,7 +50,8 @@ import { TokenTableComponent } from "./token-table.component";
     FormsModule,
     MatIconButton,
     MatIcon,
-    ScrollAdjusterDirective
+    ScrollAdjusterDirective,
+    MatTooltip
   ],
   templateUrl: "./token-table.self-service.component.html",
   styleUrl: "./token-table.component.scss"

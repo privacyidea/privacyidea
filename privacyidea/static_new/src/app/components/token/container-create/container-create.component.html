@@ -24,7 +24,7 @@
             [value]="containerService.selectedContainerType()">
             @for (type of containerService.containerTypeOptions(); track type) {
               <mat-option
-                class="select-option type-option"
+                class="select-option"
                 [value]="type">
                 {{ type.description }}
               </mat-option>

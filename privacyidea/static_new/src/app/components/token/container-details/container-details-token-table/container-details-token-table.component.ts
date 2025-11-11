@@ -17,7 +17,17 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
-import { Component, computed, effect, inject, Input, linkedSignal, ViewChild, WritableSignal } from "@angular/core";
+import {
+  Component,
+  computed,
+  effect,
+  inject,
+  Input,
+  linkedSignal,
+  signal,
+  ViewChild,
+  WritableSignal
+} from "@angular/core";
 import {
   ContainerDetailToken,
   ContainerService,
@@ -54,13 +64,6 @@ import {
   NotificationServiceInterface
 } from "../../../../services/notification/notification.service";
 import { MatDivider } from "@angular/material/divider";
-
-const columnsKeyMap = [
-  { key: "serial", label: "Serial" },
-  { key: "tokentype", label: "Type" },
-  { key: "active", label: "Active" },
-  { key: "username", label: "User" }
-];
 
 @Component({
   selector: "app-container-details-token-table",
@@ -101,11 +104,18 @@ export class ContainerDetailsTokenTableComponent {
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
 
-  protected readonly columnsKeyMap = columnsKeyMap;
-  displayedColumns: string[] = [...columnsKeyMap.map((column) => column.key)];
+  readonly columnsKeyMap = this.tableUtilsService.pickColumns(
+    "serial",
+    "tokentype",
+    "active",
+    "username"
+  );
+  readonly columnKeys = [...this.tableUtilsService.getColumnKeys(this.columnsKeyMap)];
+  displayedColumns: string[] = [...this.columnsKeyMap.map((column) => column.key)];
   pageSize = 10;
   pageSizeOptions = this.tableUtilsService.pageSizeOptions;
-  filterValue = "";
+  pageIndex = this.tokenService.pageIndex;
+  filterValue = signal("");
   @Input() containerTokenData!: WritableSignal<MatTableDataSource<ContainerDetailToken, MatPaginator>>;
   dataSource = new MatTableDataSource<ContainerDetailToken>([]);
   containerSerial = this.containerService.containerSerial;
@@ -125,7 +135,6 @@ export class ContainerDetailsTokenTableComponent {
       }
   });
   tokenSerial = this.tokenService.tokenSerial;
-  isProgrammaticTabChange = this.contentService.isProgrammaticTabChange;
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
 
@@ -170,8 +179,9 @@ export class ContainerDetailsTokenTableComponent {
   }
 
   handleFilterInput($event: Event): void {
-    this.filterValue = ($event.target as HTMLInputElement).value.trim();
-    const normalised = this.filterValue.toLowerCase();
+    const value = ($event.target as HTMLInputElement).value.trim();
+    this.filterValue.set(value);
+    const normalised = value.toLowerCase();
     this.dataSource.filter = normalised;
     if (this.containerTokenData) {
       this.containerTokenData().filter = normalised;
