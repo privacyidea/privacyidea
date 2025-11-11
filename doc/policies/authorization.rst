@@ -346,3 +346,20 @@ in the attestation certificate matches accordingly the token can be enrolled.
 
 .. note:: If you configure this, you will likely also want to configure
     :ref:`policy_webauthn_enroll_req`
+
+.. _policy_require_auth_for_resolver_details:
+
+require_auth_for_resolver_details
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: ``bool``
+
+Usually, `/healthz/resolversz` will include in its response the name and status
+of each resolver individually, as well as the total status of all resolvers;
+without requiring any form of authentication.
+
+If this policy is set, admin credentials must be provided to receive the
+individual resolver details.  The total status will be included either way.
+
+.. note:: In order to limit the amount of information exposed to third parties,
+    it is recommended to activate this policy.

@@ -2697,6 +2697,12 @@ def get_static_policy_definitions(scope=None):
                           'authentication. This avoids rogue authenticate '
                           'requests against the /validate/check interface.'),
                 'group': GROUP.SETTING_ACTIONS,
+            },
+            PolicyAction.REQUIRE_AUTH_FOR_RESOLVER_DETAILS: {
+                'type': 'bool',
+                'desc': _('If set, the /healthz/resolversz endpoint requires a '
+                          'valid admin authentication token to include the status '
+                          'of each resolver individually.'),
             }
         },
         SCOPE.WEBUI: {
