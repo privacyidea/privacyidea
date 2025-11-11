@@ -103,43 +103,8 @@
       i18n>Assign the Container to a User
     </h4>
     <div class="flex-row gap-1">
-      <mat-form-field class="width-32 input-height">
-        <mat-label i18n>Select Realm of User</mat-label>
-        <mat-select
-          [(ngModel)]="userService.selectedUserRealm"
-          [value]="userService.selectedUserRealm()">
-          @for (option of realmService.realmOptions(); track option) {
-            <mat-option value="{{ option }}">{{ option }}</mat-option>
-          }
-        </mat-select>
-      </mat-form-field>
-      <mat-form-field class="width-32 input-height">
-        <mat-label i18n>Enter User</mat-label>
-        <app-clearable-input
-          (onClick)="userService.resetFilter()"
-          [showClearButton]="userService.apiUserFilter().isNotEmpty">
-          <input
-            #userInput
-            (input)="userService.handleFilterInput($event)"
-            [value]="userService.apiUserFilter().filterString"
-            [disabled]="onlyAddToRealm()"
-            [matAutocomplete]="userAuto"
-            matInput />
-        </app-clearable-input>
-        <mat-error i18n>User is <strong>required</strong></mat-error>
-        <mat-autocomplete #userAuto="matAutocomplete">
-          @for (option of userService.selectionFilteredUsernames(); track option) {
-            <mat-option [value]="option">{{ option }}</mat-option>
-          }
-        </mat-autocomplete>
-      </mat-form-field>
-      <mat-checkbox
-        [(ngModel)]="onlyAddToRealm"
-        [disabled]="userService.apiUserFilter().isNotEmpty">
-        Only add to the realm
-        <br />
-        (no user assignment)
-      </mat-checkbox>
+      <app-user-assignment
+        [showOnlyAddToRealm]="true"></app-user-assignment>
     </div>
   </div>
 
