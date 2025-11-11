@@ -37,12 +37,6 @@ import { ClearableInputComponent } from "../../../shared/clearable-input/clearab
 import { CopyButtonComponent } from "../../../shared/copy-button/copy-button.component";
 import { KeywordFilterComponent } from "../../../shared/keyword-filter/keyword-filter.component";
 
-const _sshColumnsKeyMap = [
-  { key: "serial", label: "Serial" },
-  { key: "service_id", label: "Service ID" },
-  { key: "user", label: "SSH User" }
-];
-
 @Component({
   selector: "app-token-applications-ssh",
   standalone: true,
@@ -71,17 +65,22 @@ export class TokenApplicationsSshComponent {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
 
-  columnsKeyMap = _sshColumnsKeyMap;
+  readonly columnsKeyMap = this.tableUtilsService.pickColumns(
+    "serial",
+    "service_id",
+    "user",
+  );
+  readonly columnKeys = [...this.tableUtilsService.getColumnKeys(this.columnsKeyMap)];
   pageSizeOptions = this.tableUtilsService.pageSizeOptions;
   length = computed(() => this.machineService.tokenApplications()?.length ?? 0);
-  displayedColumns: string[] = _sshColumnsKeyMap.map((column) => column.key);
+  displayedColumns: string[] = this.columnsKeyMap.map((column) => column.key);
 
   dataSource = computed(() => {
     var data = this.machineService.tokenApplications();
     if (data) {
       return new MatTableDataSource<TokenApplication>(data);
     }
-    return this.tableUtilsService.emptyDataSource(this.machineService.pageSize(), _sshColumnsKeyMap);
+    return this.tableUtilsService.emptyDataSource(this.machineService.pageSize(), [...this.columnsKeyMap]);
   });
 
   getObjectStrings(options: object) {

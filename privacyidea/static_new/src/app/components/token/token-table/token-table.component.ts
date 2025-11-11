@@ -86,7 +86,6 @@ export class TokenTableComponent {
   readonly apiFilter = this.tokenService.apiFilter;
   readonly advancedApiFilter = this.tokenService.advancedApiFilter;
   tokenSelection = this.tokenService.tokenSelection;
-  isProgrammaticTabChange = this.contentService.isProgrammaticTabChange;
 
   tokenResource = this.tokenService.tokenResource;
   tokenFilter = this.tokenService.tokenFilter;

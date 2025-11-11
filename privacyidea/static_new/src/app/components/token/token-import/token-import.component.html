@@ -23,10 +23,11 @@
   aria-label="Import Tokens"
   class="token-import-container"
   i18n-aria-label>
-  <h3 i18n>
-    Import Tokens
-  </h3>
-
+  <div class="margin-left-1">
+    <h3 i18n>
+      Import Tokens
+    </h3>
+  </div>
   <div #stickySentinel></div>
   <div
     #stickyHeader
@@ -193,7 +194,7 @@
       <div>
         <button
           mat-stroked-button
-          class="action-button-1 width-238 text-center just-center"
+          class="action-button-1 text-center just-center"
           (click)="fileUpload.click()">
           <mat-icon>folder_open</mat-icon>
           Browse Files

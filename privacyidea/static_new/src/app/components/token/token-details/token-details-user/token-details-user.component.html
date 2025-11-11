@@ -42,10 +42,11 @@
                 </mat-autocomplete>
               </mat-form-field>
             } @else {
-              <span
-                i18n-aria-label="{{ element.keyMap.label }} Link">
-                {{ element.value }}
-              </span>
+                <a
+                  (click)="contentService.userSelected(element.value)"
+                  i18n-aria-label="{{ element.keyMap.label }} Link">
+                  {{ element.value }}
+                </a>
             }
           }
           @case ("user_realm") {

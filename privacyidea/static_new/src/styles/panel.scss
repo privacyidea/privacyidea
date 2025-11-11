@@ -2,9 +2,6 @@
   box-shadow: var(--box-shadow) !important;
 }
 
-.type-option {
-}
-
 ::ng-deep {
   .mat-expansion-panel:not(.mat-expanded) .mat-expansion-panel-header:hover {
     background: var(--mat-sys-surface-container-high) !important;

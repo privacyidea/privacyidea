@@ -8,6 +8,13 @@
       <h3 i18n>Details for Container:</h3>
       <h3 style="color: var(--mat-sys-primary)">{{ containerSerial() }}</h3>
       <app-copy-button [copyText]="containerSerial()"></app-copy-button>
+      <button
+        (click)="showContainerAuditLog()"
+        [routerLink]="[ROUTE_PATHS.AUDIT]"
+        mat-icon-button
+        matTooltip="Show container in audit log">
+        <mat-icon>receipt_long</mat-icon>
+      </button>
     </div>
     <div
       [ngClass]="[overflowService.isWidthOverflowing('body', 1310) ? 'flex-column' : 'flex-row']"
@@ -163,7 +170,11 @@
                       </app-clearable-input>
                     </mat-form-field>
                   } @else {
-                    <span>{{ element.value }}</span>
+                    <a
+                      (click)="contentService.userSelected(element.value)"
+                      i18n-aria-label="{{ element.keyMap.label }} Link">
+                      {{ element.value }}
+                    </a>
                   }
                 }
                 @case ("user_realm") {
@@ -233,9 +244,7 @@
             [isEditingUser]="isEditingUser" />
         </div>
         @if (overflowService.isWidthOverflowing("body", 1310)) {
-          <br />
-          <mat-divider></mat-divider>
-          <br />
+          <mat-divider class="margin-top-1 margin-bottom-1" />
         }
       </div>
       <div

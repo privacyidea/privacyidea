@@ -51,6 +51,9 @@ import {
   DocumentationService,
   DocumentationServiceInterface
 } from "../../../services/documentation/documentation.service";
+import { FormsModule } from "@angular/forms";
+import { MatOption, MatSelect } from "@angular/material/select";
+import { RealmService, RealmServiceInterface } from "../../../services/realm/realm.service";
 
 @Component({
   selector: "app-navigation",
@@ -76,7 +79,10 @@ import {
     RouterLink,
     NgClass,
     MatAnchor,
-    MatTooltipModule
+    MatTooltipModule,
+    MatSelect,
+    FormsModule,
+    MatOption
   ],
   templateUrl: "./navigation.component.html",
   styleUrl: "./navigation.component.scss"
@@ -86,7 +92,8 @@ export class NavigationComponent {
   private readonly containerService: ContainerServiceInterface = inject(ContainerService);
   private readonly challengeService: ChallengesServiceInterface = inject(ChallengesService);
   private readonly machineService: MachineServiceInterface = inject(MachineService);
-  private readonly userService: UserServiceInterface = inject(UserService);
+  protected readonly userService: UserServiceInterface = inject(UserService);
+  protected readonly realmService: RealmServiceInterface = inject(RealmService);
   protected readonly versioningService: VersioningServiceInterface = inject(VersioningService);
   protected readonly documentationService: DocumentationServiceInterface = inject(DocumentationService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
@@ -110,10 +117,12 @@ export class NavigationComponent {
       if (this.authService.anyContainerActionAllowed()) {
         this.containerService.containerResource.reload();
       }
-    }
-    if (this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS)) {
+    } else if (this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS)) {
       this.containerService.containerDetailResource.reload();
       this.tokenService.tokenResource.reload();
+    } else if (this.contentService.routeUrl().startsWith(ROUTE_PATHS.USERS_DETAILS)) {
+      this.userService.usersResource.reload();
+      return;
     }
     switch (this.contentService.routeUrl()) {
       case ROUTE_PATHS.TOKENS:

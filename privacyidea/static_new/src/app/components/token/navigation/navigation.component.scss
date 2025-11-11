@@ -151,5 +151,9 @@
       box-shadow: unset;
       @include mat.elevation(5);
     }
+
+    .card-button-active > mat-icon.mat-icon.notranslate.material-icons {
+      font-size: 18px;
+    }
   }
 }
