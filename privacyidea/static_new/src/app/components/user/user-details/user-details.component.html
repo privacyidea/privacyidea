@@ -21,7 +21,17 @@
       <div class="user-details-column">
         @for (item of col; track item.key) {
           <div class="label">{{ item.label }}:</div>
-          <div class="value">{{ item.value }}</div>
+          @if (typeof item.value === 'object' && item.value.length > 1) {
+            <div class="value">
+              <ul class="no-indention margin-0">
+                @for (val of item.value; track val) {
+                  <li>{{ val }}</li>
+                }
+              </ul>
+            </div>
+          } @else {
+            <div class="value">{{ item.value }}</div>
+          }
         }
       </div>
     }
@@ -101,26 +111,28 @@
       </button>
     </div>
 
-    <div class="custom-user-details mt-12 custom-details">
-      @for (attr of userService.userAttributesList(); track attr.key) {
-        <div class="label">
-          {{ attr.key }}:
-        </div>
-        <div class="value">{{ attr.value || "-" }}</div>
-        @if (deletableAttributes().includes(attr.key) || deletableAttributes().includes("*")) {
-          <button
-            (click)="deleteCustomAttribute(attr.key)"
-            aria-label="Delete custom attribute"
-            class="ml-4"
-            i18n-aria-label="Delete custom attribute"
-            mat-icon-button>
-            <mat-icon>delete</mat-icon>
-          </button>
-        } @else {
-          <br />
+    @if (userService.userAttributesList().length > 0) {
+      <div class="custom-user-details mt-12 custom-details">
+        @for (attr of userService.userAttributesList(); track attr.key) {
+          <div class="label">
+            {{ attr.key }}:
+          </div>
+          <div class="value">{{ attr.value || "-" }}</div>
+          @if (deletableAttributes().includes(attr.key) || deletableAttributes().includes("*")) {
+            <button
+              (click)="deleteCustomAttribute(attr.key)"
+              aria-label="Delete custom attribute"
+              class="ml-4 small-icon-button"
+              i18n-aria-label="Delete custom attribute"
+              mat-icon-button>
+              <mat-icon>delete</mat-icon>
+            </button>
+          } @else {
+            <div class="small-icon-button"></div>
+          }
         }
-      }
-    </div>
+      </div>
+    }
   </div>
 
   <app-user-details-token-table />

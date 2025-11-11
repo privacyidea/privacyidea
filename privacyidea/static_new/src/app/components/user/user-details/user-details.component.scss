@@ -14,8 +14,8 @@
 
 .user-details {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 128px;
+  grid-template-columns: auto auto auto;
+  gap: 64px;
   padding: 12px 16px;
   border: 1px solid #c7c5d0;
   border-radius: var(--border-radius);
@@ -33,7 +33,7 @@
 .user-details-grid,
 .user-details-column {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: auto auto;
   gap: 16px;
   padding: 0;
   border: 0;
@@ -50,8 +50,7 @@
 
 .value {
   grid-column: 2;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow: scroll;
   display: block;
   margin-block: auto;
 }
@@ -134,6 +133,36 @@
   margin-left: 4px;
 }
 
+.no-indention {
+  margin-left: 8px;
+  padding-left: 8px;
+}
+
 .mt--8 {
   margin-top: -8px;
+}
+
+.small-icon-button {
+   width: 36px !important;
+   height: 36px !important;
+   padding: 0px !important;
+   display: inline-flex !important;
+   align-items: center;
+   justify-content: center;
+
+   & > *[role=img] {
+      width: 18px;
+      height: 18px;
+      font-size: 18px;
+
+      svg {
+         width: 18px;
+         height: 18px;
+      }
+   }
+
+   .mat-mdc-button-touch-target {
+      width: 36px !important;
+      height: 36px !important;
+   }
 }
