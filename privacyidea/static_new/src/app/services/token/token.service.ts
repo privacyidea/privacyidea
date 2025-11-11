@@ -259,26 +259,7 @@ export class TokenService implements TokenServiceInterface {
   eventPageSize = 10;
   tokenSerial = this.contentService.tokenSerial;
   detailsUsername = this.contentService.detailsUsername;
-  filterParams = computed<Record<string, string>>(() => {
-    const allowedFilters = [...this.apiFilter, ...this.advancedApiFilter, ...this.hiddenApiFilter];
-
-    let filterPairs = [
-      ...Array.from(this.tokenFilter().filterMap.entries()),
-      ...Array.from(this.tokenFilter().hiddenFilterMap.entries())
-    ];
-    let filterPairsMap = filterPairs
-      .filter(([key]) => allowedFilters.includes(key))
-      .map(([key, value]) => ({ key, value }));
-    return filterPairsMap.reduce(
-      (acc, { key, value }) => ({
-        ...acc,
-        [key]: ["user", "infokey", "infovalue", "active", "assigned", "container_serial"].includes(key)
-          ? `${value}`
-          : `*${value}*`
-      }),
-      {} as Record<string, string>
-    );
-  });  selectedTokenType = linkedSignal({
+  selectedTokenType = linkedSignal({
     source: () => ({
       tokenTypeOptions: this.tokenTypeOptions(),
       routeUrl: this.contentService.routeUrl()
@@ -288,7 +269,6 @@ export class TokenService implements TokenServiceInterface {
       source.tokenTypeOptions[0] ||
       ({ key: "hotp", info: "", text: "" } as TokenType)
   });
-
   constructor() {
     effect(() => {
       if (this.tokenResource.error()) {
@@ -304,7 +284,9 @@ export class TokenService implements TokenServiceInterface {
         this.notificationService.openSnackBar(tokenTypesResourceError.message);
       }
     });
-  }  showOnlyTokenNotInContainer = linkedSignal({
+  };
+
+  showOnlyTokenNotInContainer = linkedSignal({
     source: this.contentService.routeUrl,
     computation: (routeUrl) => {
       return routeUrl.startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS);

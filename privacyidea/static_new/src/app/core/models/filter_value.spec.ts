@@ -136,4 +136,36 @@ describe("Edge cases", () => {
     expect(parsed.get("description")).toBe(`He said "hello"`);
     expect(parsed.get("note")).toBe("it's fine");
   });
+
+  test("excludes asterisk-only values (wildcard means no filter)", () => {
+    const fv = new FilterValue({
+      value: `description:* user:alice version:"*" note:'*' realm:"**"`
+    });
+
+    expect(fv.filterMap.get("description")).toBeUndefined();
+    expect(fv.filterMap.get("version")).toBeUndefined();
+    expect(fv.filterMap.get("note")).toBeUndefined();
+
+    expect(fv.filterMap.get("user")).toBe("alice");
+
+    expect(fv.filterMap.get("realm")).toBe("**");
+
+    const fvh = new FilterValue({
+      hiddenValue: `serial:* container_serial:'*' keep:**`
+    });
+    expect(fvh.hiddenFilterMap.get("serial")).toBeUndefined();
+    expect(fvh.hiddenFilterMap.get("container_serial")).toBeUndefined();
+    expect(fvh.hiddenFilterMap.get("keep")).toBe("**");
+  });
+
+  test("setFromMap drops asterisk-only values", () => {
+    const source = new Map<string, string>([
+      ["description", "*"],
+      ["user", "alice"],
+    ]);
+    const fv = new FilterValue();
+    fv.setFromMap(source);
+    expect(fv.filterMap.get("description")).toBeUndefined();
+    expect(fv.filterMap.get("user")).toBe("alice");
+  });
 });

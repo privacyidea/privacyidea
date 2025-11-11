@@ -186,15 +186,22 @@ function parseToMap(text: string): Map<string, string> {
   const re = new RegExp(PAIR_RE_SRC, "g");
   const map = new Map<string, string>();
   let m: RegExpExecArray | null;
+
   while ((m = re.exec(text)) !== null) {
     const key = m[1];
-    const val =
+    const valRaw =
       m[2] != null
         ? m[2].replace(/\\"/g, "\"").replace(/\\\\/g, "\\")
         : m[3] != null
           ? m[3].replace(/\\'/g, "'").replace(/\\\\/g, "\\")
           : (m[4] ?? "").trim();
-    map.set(key, val);
+
+    if (valRaw.trim() === "*") {
+      continue;
+    }
+
+    map.set(key, valRaw);
   }
+
   return map;
 }
