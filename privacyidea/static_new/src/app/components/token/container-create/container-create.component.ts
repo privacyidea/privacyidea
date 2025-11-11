@@ -41,7 +41,7 @@ import {
   MatExpansionPanelHeader,
   MatExpansionPanelTitle
 } from "@angular/material/expansion";
-import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
+import { MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
 import { MatSelect } from "@angular/material/select";
@@ -99,7 +99,6 @@ export type ContainerTypeOption = "generic" | "smartphone" | "yubikey";
     MatTooltip,
     ScrollToTopDirective,
     NgClass,
-    ClearableInputComponent,
     CommonModule,
     ContainerRegistrationConfigComponent,
     UserAssignmentComponent
