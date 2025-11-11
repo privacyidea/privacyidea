@@ -603,17 +603,6 @@ export class MockContainerService extends ContainerService {
   }): Observable<PiResponse<{ container_serial: string }, unknown>> {
     throw new Error("Method not implemented.");
   }
-
-  override pollContainerRolloutState(
-    containerSerial: string,
-    startTime: number
-  ): Observable<PiResponse<ContainerDetails, unknown>> {
-    throw new Error("Method not implemented.");
-  }
-
-  override getContainerDetails(containerSerial: string): Observable<PiResponse<ContainerDetails, unknown>> {
-    throw new Error("Method not implemented.");
-  }
 }
 
 export class MockOverflowService implements OverflowServiceInterface {

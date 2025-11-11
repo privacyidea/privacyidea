@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { ContainerDetails, ContainerService } from "./container.service";
-import { HttpClient, HttpErrorResponse, HttpParams, provideHttpClient } from "@angular/common/http";
+import { HttpClient, HttpErrorResponse, provideHttpClient } from "@angular/common/http";
 import {
   MockContentService,
   MockLocalService,
@@ -255,29 +255,33 @@ describe("ContainerService", () => {
     expect(r.result?.value?.container_url).toBe("u");
   });
 
-  it("poll container details completes when state == registered", async () => {
-    jest.useFakeTimers();
+  it("poll container details completes when state == registered", () => {
     contentService.routeUrl.set(ROUTE_PATHS.TOKENS_CONTAINERS_CREATE);
     containerService.containerSerial.set("SMPH1");
 
-    const getContainerSpy = jest.spyOn(http, "get").mockReturnValue(of({
-      result: {
-        value: {
-          containers: [{ info: { registration_state: "registered" } }]
+    const valueSpy = jest
+      .spyOn(containerService.containerDetailResource, "value")
+      .mockReturnValueOnce(undefined as any)
+      .mockReturnValue({
+        result: {
+          value: {
+            count: 1,
+            containers: [{ info: { registration_state: "registered" } }]
+          }
         }
-      }
-    } as any));
+      } as any);
 
     containerService.startPolling("SMPH1");
-    // Flush microtasks to allow signals/effects to propagate
-    await Promise.resolve();
-    jest.runAllTimers();
+    TestBed.flushEffects();
+    (containerService as any)["pollingTrigger"].update((n: number) => n + 1);
+    TestBed.flushEffects();
 
-    expect(getContainerSpy).toHaveBeenCalled();
-    expect(containerService.containerDetailResource.value()?.result?.value?.containers[0].info.registration_state).toBe("registered");
+    expect(valueSpy).toHaveBeenCalled();
+    expect(containerService.containerDetailResource.value()?.result?.value?.containers[0].info.registration_state)
+      .toBe("registered");
     expect(containerService.isPollingActive()).toBe(false);
-
-    jest.useRealTimers();
+    expect(notificationService.openSnackBar)
+      .toHaveBeenCalledWith("Container registered successfully.");
   });
 
   it("filterParams converts blank values and drops unknown keys", () => {

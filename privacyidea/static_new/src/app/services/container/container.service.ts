@@ -458,7 +458,7 @@ export class ContainerService implements ContainerServiceInterface {
 
     effect(() => {
       clearTimeout(this.pollingTimeoutId);
-
+      this.pollingTrigger();
       const serial = this.containerSerial();
       const resourceValue = this.containerDetailResource.value();
       const active = this.isPollingActive();

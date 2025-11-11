@@ -156,11 +156,6 @@ describe("ContainerCreateComponent", () => {
     jest.spyOn(containerSvc, "registerContainer").mockReturnValue(
       of({ result: { value: {} }, detail: { info: "registered" } } as any)
     );
-    jest.spyOn(containerSvc, "pollContainerRolloutState").mockReturnValue(
-      of({
-        result: { value: { containers: [{ info: { registration_state: "ok" } }] } }
-      } as any)
-    );
 
     fixture.detectChanges();
   });
@@ -251,30 +246,47 @@ describe("ContainerCreateComponent", () => {
     expect(pollSpy).toHaveBeenCalledWith("CONT-42");
   });
 
-  it("pollContainerRolloutState: closes dialog and navigates when state === 'registered'", () => {
-    (containerSvc.pollContainerRolloutState as jest.Mock).mockReturnValueOnce(
-      of({
-        result: { value: { containers: [{ info: { registration_state: "registered" } }] } }
-      } as any)
-    );
+  it("pollContainerRolloutState: closes dialog and opens completed dialog when state === 'registered'", () => {
+    const dialog = TestBed.inject(MatDialog) as unknown as { closeAll: jest.Mock; open: jest.Mock };
+    const closeSpy = jest.spyOn(dialog, "closeAll");
+    const openSpy = jest.spyOn(dialog, "open");
 
-    (component as any)["pollContainerRolloutState"]("C-9", 1000);
+    const stopPollingSpy = jest.spyOn(containerSvc, "stopPolling");
 
-    expect(matDialogMock.closeAll).toHaveBeenCalled();
-    expect(matDialogMock.open).toHaveBeenCalled();
+    jest.spyOn(containerSvc.containerDetailResource, "value").mockReturnValue({
+      result: { value: { containers: [{ info: { registration_state: "registered" } }] } }
+    } as any);
+
+    containerSvc.containerSerial.set("CONT-OK");
+
+    fixture.detectChanges();
+    TestBed.flushEffects();
+
+    expect(closeSpy).toHaveBeenCalled();
+    expect(stopPollingSpy).toHaveBeenCalled();
+
+    expect(openSpy).toHaveBeenCalled();
+    expect(openSpy.mock.calls[0][1]).toEqual({ data: { containerSerial: "CONT-OK" } });
   });
 
   it("pollContainerRolloutState: keeps dialog open when state == 'client_wait'", () => {
-    (containerSvc.pollContainerRolloutState as jest.Mock).mockReturnValueOnce(
-      of({
-        result: { value: { containers: [{ info: { registration_state: "client_wait" } }] } }
-      } as any)
-    );
+    const dialog = TestBed.inject(MatDialog) as any;
+    const closeSpy = jest.spyOn(dialog, "closeAll");
+    const openSpy = jest.spyOn(dialog, "open");
+    const stopPollingSpy = jest.spyOn(containerSvc, "stopPolling");
 
-    (component as any)["pollContainerRolloutState"]("C-10", 1000);
+    jest.spyOn(containerSvc.containerDetailResource, "value").mockReturnValue({
+      result: { value: { containers: [{ info: { registration_state: "client_wait" } }] } }
+    } as any);
 
-    expect(matDialogMock.closeAll).not.toHaveBeenCalled();
-    expect(navigateByUrl).not.toHaveBeenCalled();
+    containerSvc.containerSerial.set("CONT-WAIT");
+
+    fixture.detectChanges();
+    TestBed.flushEffects();
+
+    expect(closeSpy).not.toHaveBeenCalled();
+    expect(openSpy).not.toHaveBeenCalled();
+    expect(stopPollingSpy).not.toHaveBeenCalled();
   });
 
   it("ngAfterViewInit wires IO and toggles sticky class via renderer", () => {
