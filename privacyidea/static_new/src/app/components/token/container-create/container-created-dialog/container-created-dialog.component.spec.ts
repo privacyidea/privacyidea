@@ -24,15 +24,15 @@ import { firstValueFrom, of } from "rxjs";
 import { signal } from "@angular/core";
 import { Router } from "@angular/router";
 
-import { ContainerRegistrationDialogComponent } from "./container-registration-dialog.component";
-import { ContainerRegistrationDialogWizardComponent } from "./container-registration-dialog.wizard.component";
+import { ContainerCreatedDialogComponent } from "./container-created-dialog.component";
+import { ContainerCreatedDialogWizardComponent } from "./container-created-dialog.wizard.component";
 import { ContainerService } from "../../../../services/container/container.service";
 import { ContentService } from "../../../../services/content/content.service";
 import { MockAuthService } from "../../../../../testing/mock-services";
 
-describe("ContainerRegistrationDialogComponent", () => {
-  let fixture: ComponentFixture<ContainerRegistrationDialogComponent>;
-  let component: ContainerRegistrationDialogComponent;
+describe("ContainerCreatedDialogComponent", () => {
+  let fixture: ComponentFixture<ContainerCreatedDialogComponent>;
+  let component: ContainerCreatedDialogComponent;
 
   const stopPolling = jest.fn();
   const containerServiceMock = { stopPolling };
@@ -44,18 +44,18 @@ describe("ContainerRegistrationDialogComponent", () => {
   const dialogAfterClosed = jest.fn(() => of(true));
   const dialogRefMock = { close: dialogClose, afterClosed: dialogAfterClosed };
 
-  const registerContainer = jest.fn();
-  const matDialogData = {
+  const registerContainer = jest.fn((containerSerial: string, regenerate: boolean) => {});
+  const matDialogData = signal({
     response: { result: { value: { container_url: { img: "" } } } },
     containerSerial: signal("C-001"),
     registerContainer
-  };
+  });
 
   beforeEach(async () => {
     jest.clearAllMocks();
 
     await TestBed.configureTestingModule({
-      imports: [ContainerRegistrationDialogComponent],
+      imports: [ContainerCreatedDialogComponent],
       providers: [
         provideHttpClient(),
         { provide: MatDialogRef, useValue: dialogRefMock },
@@ -66,7 +66,7 @@ describe("ContainerRegistrationDialogComponent", () => {
       ]
     }).compileComponents();
 
-    fixture = TestBed.createComponent(ContainerRegistrationDialogComponent);
+    fixture = TestBed.createComponent(ContainerCreatedDialogComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
@@ -86,17 +86,17 @@ describe("ContainerRegistrationDialogComponent", () => {
     expect(containerSelected).toHaveBeenCalledWith("C-777");
   });
 
-  it("regenerateQRCode calls registerContainer with current serial and closes", () => {
-    matDialogData.containerSerial.set("C-123");
+  it("regenerateQRCode calls registerContainer with current serial and regenerate flag", () => {
+    matDialogData.set({...matDialogData(), containerSerial: signal("C-123")});
     component.regenerateQRCode();
-    expect(registerContainer).toHaveBeenCalledWith("C-123");
-    expect(dialogClose).toHaveBeenCalled();
+    expect(registerContainer).toHaveBeenCalledWith("C-123", true);
+    expect(dialogClose).not.toHaveBeenCalled();
   });
 });
 
-describe("ContainerRegistrationDialogWizardComponent", () => {
-  let fixture: ComponentFixture<ContainerRegistrationDialogWizardComponent>;
-  let component: ContainerRegistrationDialogWizardComponent;
+describe("ContainerCreatedDialogWizardComponent", () => {
+  let fixture: ComponentFixture<ContainerCreatedDialogWizardComponent>;
+  let component: ContainerCreatedDialogWizardComponent;
   let httpMock: HttpTestingController;
   let authService: MockAuthService;
 
@@ -111,11 +111,11 @@ describe("ContainerRegistrationDialogWizardComponent", () => {
   const dialogRefMock = { close: dialogClose, afterClosed: dialogAfterClosed };
 
   const registerContainer = jest.fn();
-  const matDialogData: any = {
+  const matDialogData = signal({
     response: { result: { value: { container_url: { img: "" } } } },
     containerSerial: signal("C-001"),
     registerContainer
-  };
+  });
 
   const flushInitialWizardRequests = () => {
     const topReq = httpMock.expectOne("/static/public/customize/container-create.wizard.post.top.html");
@@ -131,7 +131,7 @@ describe("ContainerRegistrationDialogWizardComponent", () => {
     jest.clearAllMocks();
 
     await TestBed.configureTestingModule({
-      imports: [ContainerRegistrationDialogWizardComponent],
+      imports: [ContainerCreatedDialogWizardComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
@@ -143,7 +143,7 @@ describe("ContainerRegistrationDialogWizardComponent", () => {
       ]
     }).compileComponents();
 
-    fixture = TestBed.createComponent(ContainerRegistrationDialogWizardComponent);
+    fixture = TestBed.createComponent(ContainerCreatedDialogWizardComponent);
     component = fixture.componentInstance;
     httpMock = TestBed.inject(HttpTestingController);
 

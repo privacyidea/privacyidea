@@ -17,12 +17,19 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 export class FilterValue {
+  constructor(args: { value?: string; hiddenValue?: string } = {}) {
+    this._value = args.value ? args.value : "";
+    this._hiddenValue = args.hiddenValue ? args.hiddenValue : "";
+  }
+
   private _value: string;
+
   get value(): string {
     return this._value;
   }
 
   private _hiddenValue: string;
+
   get hiddenValue(): string {
     return this._hiddenValue;
   }
@@ -30,19 +37,25 @@ export class FilterValue {
   get isEmpty(): boolean {
     return this._value.length === 0;
   }
+
   get isNotEmpty(): boolean {
     return this._value.length > 0;
   }
+
   get filterString(): string {
     return this._value;
   }
+
   set setString(newValue: string) {
     this._value = newValue;
   }
 
-  constructor(args: { value?: string; hiddenValue?: string } = {}) {
-    this._value = args.value ? args.value : "";
-    this._hiddenValue = args.hiddenValue ? args.hiddenValue : "";
+  get filterMap(): Map<string, string> {
+    return parseToMap(this._value);
+  }
+
+  get hiddenFilterMap(): Map<string, string> {
+    return parseToMap(this._hiddenValue);
   }
 
   public copyWith(args?: { value?: string; hiddenValue?: string }): FilterValue {
@@ -55,39 +68,36 @@ export class FilterValue {
 
   public addKey(key: string): FilterValue {
     // Adds a new key to the string if it does not already exist.
-    const regex = new RegExp(`(?<=^|\\s)(${key})+:\\s*[\\w\\d]*(?=$|\\s)`, "g");
-    if (!this._value.match(regex)) {
+    if (!keyPresenceRe(key).test(this._value)) {
       this._value = this._value ? `${this._value.trim()} ${key}: ` : `${key}: `;
     }
     return new FilterValue({ value: this._value, hiddenValue: this._hiddenValue });
   }
+
   public addHiddenKey(key: string): FilterValue {
     // Adds a new key to the string if it does not already exist.
-    const regex = new RegExp(`(?<=^|\\s)(${key})+:\\s*[\\w\\d]*(?=$|\\s)`, "g");
-    if (!this._hiddenValue.match(regex)) {
-      this._hiddenValue = this._hiddenValue ? `${this._hiddenValue} ${key}: ` : `${key}: `;
+    if (!keyPresenceRe(key).test(this._hiddenValue)) {
+      this._hiddenValue = this._hiddenValue ? `${this._hiddenValue.trim()} ${key}: ` : `${key}: `;
     }
     return new FilterValue({ value: this._value, hiddenValue: this._hiddenValue });
   }
+
   public getValueOfKey(key: string): string | undefined {
     return this.filterMap.get(key);
   }
 
   public removeKey(key: string): FilterValue {
-    const regex = new RegExp(`(?<=^|\\s)(${key})+:\\s*[\\w\\d]*(?=$|\\s)`, "g");
-    this._value = this._value.replace(regex, "").trim().replace(/\s+/g, " ");
+    this._value = this._value.replace(keySegmentRe(key), "").trim().replace(/\s+/g, " ");
     return new FilterValue({ value: this._value, hiddenValue: this._hiddenValue });
   }
 
   public removeHiddenKey(key: string): FilterValue {
-    const regex = new RegExp(`(?<=^|\\s)(${key})+:\\s*[\\w\\d]*(?=$|\\s)`, "g");
-    this._hiddenValue = this._hiddenValue.replace(regex, "").trim().replace(/\s+/g, " ");
+    this._hiddenValue = this._hiddenValue.replace(keySegmentRe(key), "").trim().replace(/\s+/g, " ");
     return new FilterValue({ value: this._value, hiddenValue: this._hiddenValue });
   }
 
   public hasKey(key: string): boolean {
-    const regex = new RegExp(`(?<=^|\\s)(${key})+:\\s*[\\w\\d]*(?=$|\\s)`, "g");
-    return regex.test(this._value);
+    return keyPresenceRe(key).test(this._value);
   }
 
   public toggleKey(key: string): FilterValue {
@@ -96,50 +106,6 @@ export class FilterValue {
     } else {
       return this.addKey(key);
     }
-  }
-
-  get filterMap(): Map<string, string> {
-    // Convert the normalized string back to a map.
-    // Each key-value pair is separated by space. Key and value are separated by colon followed by a space.
-    // Example:
-    // "key1: value1 value2 key2: key3: value3 ..." => {key1:value1,key2:,key3:value3,...}
-    // Incorrect formats are ignored.
-
-    const map = new Map<string, string>();
-    const regex = RegExp(/(?<=^|\s)[\w\d]+:\s*[\w\d]*(?=$|\s)/, "g");
-    const matches = this._value.match(regex);
-    if (matches) {
-      matches.forEach((pair) => {
-        let [key, value] = pair.split(/:/); // Split only on the first occurrence of ": "
-        value = value?.trim();
-        if (key) {
-          map.set(key, value ?? "");
-        }
-      });
-    }
-    return map;
-  }
-
-  get hiddenFilterMap(): Map<string, string> {
-    // Convert the normalized string back to a map.
-    // Each key-value pair is separated by space. Key and value are separated by colon followed by a space.
-    // Example:
-    // "key1: value1 value2 key2: key3: value3 ..." => {key1:value1,key2:,key3:value3,...}
-    // Incorrect formats are ignored.
-
-    const map = new Map<string, string>();
-    const regex = RegExp(/(?<=^|\s)[\w\d]+:\s*[\w\d]*(?=$|\s)/, "g");
-    const matches = this._hiddenValue.match(regex);
-    if (matches) {
-      matches.forEach((pair) => {
-        let [key, value] = pair.split(/:/); // Split only on the first occurrence of ": "
-        value = value?.trim();
-        if (key) {
-          map.set(key, value ?? "");
-        }
-      });
-    }
-    return map;
   }
 
   /**
@@ -160,12 +126,17 @@ export class FilterValue {
    * Converts the map to the normalized string format and updates _value.
    */
   public setFromMap(map: Map<string, string>): void {
-    // Convert the map to the normalized string format: "key1: value1 key2: value2 ..."
+    const needsQuoting = (v: string) => /[\s"']/.test(v);
+    const quoteAndEscape = (v: string) =>
+      `"${v.replace(/\\/g, "\\\\").replace(/"/g, "\\\"")}"`; // double-quote strategy
+
     const entries: string[] = [];
     map.forEach((value, key) => {
-      entries.push(`${key}: ${value}`);
+      const val = value ?? "";
+      const rendered = val === "" ? "" : (needsQuoting(val) ? quoteAndEscape(val) : val);
+      entries.push(`${key}: ${rendered}`);
     });
-    this._value = entries.join(" ");
+    this._value = entries.join(" ").trim();
   }
 
   /**
@@ -190,4 +161,47 @@ export class FilterValue {
     return new FilterValue({ value: this._value, hiddenValue: this._hiddenValue });
   }
 
+}
+
+const PAIR_RE_SRC =
+  String.raw`(?<=^|\s)([A-Za-z0-9_]+):\s*(?:"((?:\\.|[^"\\])*)"|'((?:\\.|[^'\\])*)'|(.*?))(?=\s*(?:[A-Za-z0-9_]+:|$))`;
+
+function escapeRe(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function keySegmentRe(key: string): RegExp {
+  return new RegExp(
+    `(?<=^|\\s)(${key}):\\s*(?:"[^"]*"|'[^']*'|.*?)(?=\\s*(?:[A-Za-z0-9_]+:|$))`,
+    "g"
+  );
+}
+
+function keyPresenceRe(key: string): RegExp {
+  const k = escapeRe(key);
+  return new RegExp(`(?<=^|\\s)(${k}):(?=\\s|$)`, "g");
+}
+
+function parseToMap(text: string): Map<string, string> {
+  const re = new RegExp(PAIR_RE_SRC, "g");
+  const map = new Map<string, string>();
+  let m: RegExpExecArray | null;
+
+  while ((m = re.exec(text)) !== null) {
+    const key = m[1];
+    const valRaw =
+      m[2] != null
+        ? m[2].replace(/\\"/g, "\"").replace(/\\\\/g, "\\")
+        : m[3] != null
+          ? m[3].replace(/\\'/g, "'").replace(/\\\\/g, "\\")
+          : (m[4] ?? "").trim();
+
+    if (valRaw.trim() === "*") {
+      continue;
+    }
+
+    map.set(key, valRaw);
+  }
+
+  return map;
 }

@@ -27,6 +27,7 @@ import { FilterValue } from "../../core/models/filter_value";
 import { PiResponse } from "../../app.component";
 import { environment } from "../../../environments/environment";
 import { ROUTE_PATHS } from "../../route_paths";
+import { StringUtils } from "../../utils/string.utils";
 
 const apiFilter = ["description", "email", "givenname", "mobile", "phone", "resolver", "surname", "userid", "username"];
 const advancedApiFilter: string[] = [];
@@ -109,19 +110,14 @@ export class UserService implements UserServiceInterface {
   filterValue = signal({} as Record<string, string>);
   filterParams = computed<Record<string, string>>(() => {
     const allowedFilters = [...this.apiFilterOptions, ...this.advancedApiFilterOptions];
-    const filterPairs = Array.from(this.apiUserFilter().filterMap.entries())
-      .map(([key, value]) => ({ key, value }))
-      .filter(({ key }) => allowedFilters.includes(key));
-    if (filterPairs.length === 0) {
-      return {};
-    }
-    return filterPairs.reduce(
-      (acc, { key, value }) => ({
-        ...acc,
-        [key]: `*${value}*`
-      }),
-      {} as Record<string, string>
-    );
+    const entries = Array.from(this.apiUserFilter().filterMap.entries())
+      .filter(([key]) => allowedFilters.includes(key))
+      .map(([key, value]) => {
+        const v = (value ?? "").toString().trim();
+        return [key, v ? `*${v}*` : v] as const;
+      })
+      .filter(([, v]) => StringUtils.validFilterValue(v));
+    return Object.fromEntries(entries) as Record<string, string>;
   });
   readonly apiFilterOptions = apiFilter;
 

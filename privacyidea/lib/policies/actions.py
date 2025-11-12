@@ -214,3 +214,4 @@ class PolicyAction:
     DISABLED_TOKEN_TYPES = "disabled_token_types"
     FORCE_SERVER_GENERATE = "force_server_generate"
     HIDE_SPECIFIC_ERROR_MESSAGE = "hide_specific_error_message"
+    REQUIRE_AUTH_FOR_RESOLVER_DETAILS = "require_auth_for_resolver_details"

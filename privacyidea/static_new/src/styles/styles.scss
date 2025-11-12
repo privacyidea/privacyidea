@@ -280,8 +280,16 @@ body {
   margin-left: 16px;
 }
 
+.margin-top-0 {
+  margin-top: 0;
+}
+
 .margin-top-1 {
   margin-top: 16px;
+}
+
+.margin-top-8 {
+  margin-top: 8px;
 }
 
 .margin-top-2 {
@@ -298,6 +306,10 @@ body {
 
 .margin-bottom-1 {
   margin-bottom: 16px;
+}
+
+.margin-bottom-8 {
+  margin-bottom: 8px;
 }
 
 .margin-bottom-32 {
@@ -348,12 +360,20 @@ body {
   gap: 8px;
 }
 
+.gap-32 {
+  gap: 32px;
+}
+
 .margin-16 {
   margin: 16px;
 }
 
 .margin-8 {
   margin: 8px;
+}
+
+.margin-bottom-0 {
+  margin-bottom: 0;
 }
 
 .overflow {

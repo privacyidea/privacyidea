@@ -266,6 +266,23 @@ describe("UserService", () => {
     });
   });
 
+  it("should not include empty filter values in filterParams", () => {
+    userService.apiUserFilter.set({
+      filterMap: new Map([
+        ["username", ""],
+        ["email", "alice@test"],
+        ["givenname", "   "],
+        ["surname", "*"]
+      ])
+    } as any);
+
+    const params = userService.filterParams();
+    expect(params).not.toHaveProperty("username");
+    expect(params).not.toHaveProperty("givenname");
+    expect(params).toHaveProperty("email", "*alice@test*");
+    expect(params).not.toHaveProperty("surname");
+  });
+
   describe("selectedUser", () => {
     let contentService: MockContentService;
     let tokenService: MockTokenService;
