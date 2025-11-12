@@ -274,7 +274,8 @@ def get_auth_token():
                             id=ERROR.AUTHENTICATE_MISSING_USERNAME)
         if token.get_type() in request.all_data.get("disabled_token_types", []):
             raise AuthError(
-                _("Authentication failure. The token type {token_type} is disabled.").format(token.get_type()),
+                _("Authentication failure. The token type {token_type} is disabled.").format(
+                    token_type=token.get_type()),
                 id=ERROR.AUTHENTICATE_WRONG_CREDENTIALS)
         if not check_last_auth_policy(g, token):
             log.debug(f"Last authentication policy check failed for token {token.get_serial()}.")

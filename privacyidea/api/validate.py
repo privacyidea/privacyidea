@@ -476,9 +476,14 @@ def check():
                 return send_result(False, rid=2, details={
                     "message": "No token found for the given credential ID or transaction ID!"})
 
-            if not token.user:
-                return send_result(False, rid=2, details={
-                    "message": "No user found for the token with the given credential ID!"})
+        # Check if tokentype is disabled
+        if (PolicyAction.DISABLED_TOKEN_TYPES in request.all_data and
+                token.get_type() in request.all_data[PolicyAction.DISABLED_TOKEN_TYPES]):
+            raise PolicyError(f"The authentication method is not available.")
+
+        if not token.user:
+            return send_result(False, rid=2, details={
+                "message": "No user found for the token with the given credential ID!"})
         user = token.user
         request.User = user
         # The request could also be an enrollment via validate. In that case, the param "attestationObject" is present
@@ -856,6 +861,7 @@ def poll_transaction(transaction_id=None):
 
 @validate_blueprint.route('/initialize', methods=['POST', 'GET'])
 @prepolicy(fido2_auth, request=request)
+@prepolicy(disabled_token_types, request=request)
 def initialize():
     """
     Start an authentication by requesting a challenge for a token type. Currently, supports only type passkey
@@ -863,9 +869,12 @@ def initialize():
     """
     token_type = get_required(request.all_data, "type")
     details = {}
+    if PolicyAction.DISABLED_TOKEN_TYPES in request.all_data:
+        if token_type in request.all_data[PolicyAction.DISABLED_TOKEN_TYPES]:
+            raise PolicyError(f"The authentication method is not available.")
+
     if token_type.lower() == "passkey":
-        rp_id = get_first_policy_value(policy_action=FIDO2PolicyAction.RELYING_PARTY_ID, default="",
-                                       scope=SCOPE.ENROLL)
+        rp_id = request.all_data[FIDO2PolicyAction.RELYING_PARTY_ID]
         if not rp_id:
             raise PolicyError(
                 f"Missing policy for {FIDO2PolicyAction.RELYING_PARTY_ID}, unable to create challenge!")
@@ -879,6 +888,7 @@ def initialize():
         details["transaction_id"] = challenge["transaction_id"]
     else:
         raise ParameterError(f"Unsupported token type '{token_type}' for authentication initialization!")
+
     g.audit_object.log({"success": True})
     response = send_result(False, rid=2, details=details)
     return response
