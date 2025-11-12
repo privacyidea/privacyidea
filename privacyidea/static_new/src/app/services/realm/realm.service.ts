@@ -68,7 +68,8 @@ export class RealmService implements RealmServiceInterface {
           ROUTE_PATHS.USERS,
           ROUTE_PATHS.TOKENS_CONTAINERS_CREATE,
           ROUTE_PATHS.TOKENS_ENROLLMENT,
-          ROUTE_PATHS.TOKENS_IMPORT
+          ROUTE_PATHS.TOKENS_IMPORT,
+          ROUTE_PATHS.POLICIES
         ].includes(this.contentService.routeUrl()))
     ) {
       return undefined;
@@ -81,9 +82,6 @@ export class RealmService implements RealmServiceInterface {
   });
   realmOptions = computed(() => {
     const realms = this.realmResource.value()?.result?.value;
-    console.log("Realms in realmOptions computation:", realms);
-    const keys = realms ? Object.keys(realms) : [];
-    console.log("Computed realm options:", keys);
     return realms ? Object.keys(realms) : [];
   });
 
@@ -97,7 +95,8 @@ export class RealmService implements RealmServiceInterface {
           ROUTE_PATHS.USERS,
           ROUTE_PATHS.TOKENS_CONTAINERS_CREATE,
           ROUTE_PATHS.TOKENS_ENROLLMENT,
-          ROUTE_PATHS.TOKENS_IMPORT
+          ROUTE_PATHS.TOKENS_IMPORT,
+          ROUTE_PATHS.POLICIES
         ].includes(this.contentService.routeUrl()))
     ) {
       return undefined;

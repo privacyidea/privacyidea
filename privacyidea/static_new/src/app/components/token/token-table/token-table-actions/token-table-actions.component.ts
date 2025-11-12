@@ -63,7 +63,6 @@ export class TokenTableActionsComponent {
   tokenIsRevoked = this.tokenService.tokenIsRevoked;
   tokenSerial = this.tokenService.tokenSerial;
   tokenSelection = this.tokenService.tokenSelection;
-  isLost = this.tokenService.tokenIsLost;
 
   toggleActive(): void {
     this.tokenService.toggleActive(this.tokenSerial(), this.tokenIsActive()).subscribe({
