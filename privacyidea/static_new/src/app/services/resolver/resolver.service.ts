@@ -101,7 +101,6 @@ export class ResolverService implements ResolverServiceInterface {
 
   resolvers = computed<Resolver[]>(() => {
     const resolvers = this.resolversResource.value()?.result?.value;
-    console.log("Resolvers:", resolvers);
     return resolvers ? Object.values(resolvers) : [];
   });
 

@@ -76,7 +76,7 @@ export type AdditionalCondition = [SectionOption, string, ComporatorOption, stri
 export type SectionOption =
   | "HTTP Environment"
   | "HTTP Request header"
-  | "Request Data"
+  | "Requst Data"
   | "container"
   | "container_info"
   | "token"
@@ -236,7 +236,6 @@ export class PolicyService implements PolicyServiceInterface {
   selectPolicyByName(policyName: string) {
     const policy = this.allPolicies().find((p) => p.name === policyName);
     if (policy) {
-      console.log("Selecting policy:", policyName);
       this.selectPolicy(policy);
     }
   }
@@ -399,14 +398,11 @@ export class PolicyService implements PolicyServiceInterface {
 
   updateSelectedPolicy(args: Partial<PolicyDetail>) {
     const selectedPolicy = this.selectedPolicy();
-    console.log("Updating selected policy with args:", args);
-    console.log("Current selected policy before update:", selectedPolicy);
     if (!selectedPolicy) return;
     const updatedPolicy = {
       ...selectedPolicy,
       ...args
     };
-    console.log("Updated selected policy:", updatedPolicy);
     this._selectedPolicy.set(updatedPolicy);
   }
 
@@ -453,7 +449,6 @@ export class PolicyService implements PolicyServiceInterface {
   // Signals for selecting and editing selected policy
   private readonly _selectedPolicy = signal<PolicyDetail | null>(null);
   readonly selectedPolicy = computed(() => {
-    console.log("Selected policy changed:", this._selectedPolicy());
     return this._selectedPolicy();
   });
   private _selectedPolicyOriginal = signal<PolicyDetail | null>(null);
@@ -483,15 +478,9 @@ export class PolicyService implements PolicyServiceInterface {
     }),
     computation: (source, previous) => {
       const { actionNamesOfSelectedGroup, _selectedPolicy } = source;
-      console.log("Recomputing selectedAction with source:", source, "and previous:", previous);
       if (previous?.value && _selectedPolicy?.action?.[previous.value.name]) {
-        console.log("Keeping previous selected action:", previous.value);
         return previous.value;
       }
-      console.log(
-        "Selecting first action of the selected group when editmode is on",
-        " or selecting the first action in _selectedPolicy when editmode is off."
-      );
       if (this.isEditMode()) {
         const previousValue = previous?.value;
         if (actionNamesOfSelectedGroup.length < 1) return null;

@@ -75,24 +75,19 @@ export class PolicyPanelComponent {
 
   // Event Handlers
   handleExpansion(panel: MatExpansionPanel, policyName: string | undefined) {
-    console.log("handleExpansion called");
     if (this.policyIsSelected(policyName)) {
-      console.log("Policy (" + policyName + ") is already selected, cancelling handleExpansion.");
       return;
     }
     if (this.isNew()) {
-      console.log("Initializing new policy");
       this.policyService.initializeNewPolicy();
       this.isEditMode.set(true);
     } else if (policyName) {
       this.policyService.selectPolicyByName(policyName);
       this.isEditMode.set(false);
     }
-    console.log("handleExpansion completed");
   }
 
   handleCollapse(panel: MatExpansionPanel, policyName: string | undefined) {
-    console.log("handleCollapse called");
     if (!this.policyIsSelected(policyName)) {
       return;
     }
@@ -116,7 +111,6 @@ export class PolicyPanelComponent {
       this.policyService.deselectPolicy(policyName);
       this.isEditMode.set(false);
     }
-    console.log("handleCollapse completed");
   }
 
   onNameChange(name: string): void {

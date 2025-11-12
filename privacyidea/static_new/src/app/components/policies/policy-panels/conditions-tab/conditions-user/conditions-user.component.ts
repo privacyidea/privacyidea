@@ -64,7 +64,6 @@ export class ConditionsUserComponent {
   // Realm Management
   selectRealm(realmNames: string[]): void {
     this.policyService.updateSelectedPolicy({ realm: realmNames });
-    console.log("Selected realm:", realmNames);
   }
 
   toggleAllRealms() {
@@ -82,7 +81,6 @@ export class ConditionsUserComponent {
   // Resolver Management
   selectResolver(resolverNames: string[]): void {
     this.policyService.updateSelectedPolicy({ resolver: resolverNames });
-    console.log("Selected resolver:", resolverNames);
   }
 
   toggleAllResolvers() {
@@ -99,7 +97,6 @@ export class ConditionsUserComponent {
 
   // User Management
   addUser(user: string) {
-    console.log("Adding user:", user);
     if (this.userFormControl.invalid) {
       return;
     }
