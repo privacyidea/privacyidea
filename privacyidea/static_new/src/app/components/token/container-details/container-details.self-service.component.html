@@ -8,6 +8,15 @@
       <h3 i18n>Details for Container:</h3>
       <h3 style="color: var(--mat-sys-primary)">{{ containerSerial() }}</h3>
       <app-copy-button [copyText]="containerSerial()"></app-copy-button>
+      @if (authService.actionAllowed("auditlog")) {
+        <button
+          (click)="showContainerAuditLog()"
+          [routerLink]="[ROUTE_PATHS.AUDIT]"
+          mat-icon-button
+          matTooltip="Show container in audit log">
+          <mat-icon>receipt_long</mat-icon>
+        </button>
+      }
     </div>
     <div
       [ngClass]="[overflowService.isWidthOverflowing('body', 1310) ? 'flex-column' : 'flex-row']"
@@ -221,7 +230,7 @@
         <div class="flex-row gap-32 margin-top-1">
           @if (authService.actionAllowed("container_add_token")) {
             <div class="flex-column">
-              <h4 class="margin-0">Add Token</h4>
+              <h4 class="margin-left-1 margin-bottom-0">Add Token</h4>
               <div class="flex-row checkbox-paginator-container">
                 <section>
                   <mat-checkbox
@@ -286,7 +295,7 @@
       </div>
       <div
         [ngClass]="[overflowService.isWidthOverflowing('body', 1310) ? '' : 'margin-left-1']"
-        class="flex-column gap-32">
+        class="flex-column gap-32 ali-center">
         <app-container-details-actions
           [containerSerial]="containerSerial()"
           [containerType]="containerType()"></app-container-details-actions>
