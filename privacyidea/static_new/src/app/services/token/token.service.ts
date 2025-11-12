@@ -36,6 +36,7 @@ import { FilterValue } from "../../core/models/filter_value";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
 import { ConfirmationDialogComponent } from "../../components/shared/confirmation-dialog/confirmation-dialog.component";
+import { StringUtils } from "../../utils/string.utils";
 
 const apiFilter = [
   "serial",
@@ -256,6 +257,7 @@ export class TokenService implements TokenServiceInterface {
   eventPageSize = 10;
   tokenSerial = this.contentService.tokenSerial;
   detailsUsername = this.contentService.detailsUsername;
+
   filterParams = computed<Record<string, string>>(() => {
     const allowedFilters = [...this.apiFilter, ...this.advancedApiFilter, ...this.hiddenApiFilter];
 
@@ -286,7 +288,6 @@ export class TokenService implements TokenServiceInterface {
       source.tokenTypeOptions[0] ||
       ({ key: "hotp", info: "", text: "" } as TokenType)
   });
-
   constructor() {
     effect(() => {
       if (this.tokenResource.error()) {

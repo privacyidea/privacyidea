@@ -26,5 +26,10 @@ export class StringUtils {
     });
     return result;
   };
+
+  static validFilterValue(value: string): boolean {
+    // A valid filter value is not empty and not just asterisks
+    return !/^\**$/.test(value.trim());
+  }
 }
 

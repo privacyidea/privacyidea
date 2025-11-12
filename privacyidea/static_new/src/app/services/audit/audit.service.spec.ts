@@ -92,4 +92,21 @@ describe("AuditService (signals & helpers)", () => {
 
     expect(auditService.pageIndex()).toBe(0);
   });
+
+  it("should not include empty filter values in filterParams", () => {
+    auditService.auditFilter.set({
+      filterMap: new Map([
+        ["action", ""],
+        ["authentication", "ACCEPT"],
+        ["serial", "   "],
+        ["container_serial", "*"]
+      ])
+    } as any);
+
+    const params = auditService.filterParams();
+    expect(params).not.toHaveProperty("action");
+    expect(params).toHaveProperty("authentication", "*ACCEPT*");
+    expect(params).not.toHaveProperty("serial");
+    expect(params).not.toHaveProperty("container_serial");
+  });
 });

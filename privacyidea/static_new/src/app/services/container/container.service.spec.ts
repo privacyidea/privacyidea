@@ -17,18 +17,26 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { ContainerDetails, ContainerService } from "./container.service";
-import { HttpClient, HttpErrorResponse, HttpParams, provideHttpClient } from "@angular/common/http";
-import { MockLocalService, MockNotificationService, MockTokenService } from "../../../testing/mock-services";
+import { HttpClient, HttpErrorResponse, provideHttpClient } from "@angular/common/http";
+import {
+  MockContentService,
+  MockLocalService,
+  MockNotificationService,
+  MockTokenService
+} from "../../../testing/mock-services";
 import { lastValueFrom, of, throwError } from "rxjs";
 import { NotificationService } from "../notification/notification.service";
 import { TestBed } from "@angular/core/testing";
 import { TokenService } from "../token/token.service";
 import { AuthService } from "../auth/auth.service";
 import { FilterValue } from "../../core/models/filter_value";
+import { ROUTE_PATHS } from "../../route_paths";
+import { ContentService } from "../content/content.service";
 
 
 class MockAuthService implements Partial<AuthService> {
   getHeaders = jest.fn().mockReturnValue({ Authorization: "Bearer FAKE_TOKEN" });
+  actionAllowed = jest.fn().mockReturnValue(true);
 }
 
 describe("ContainerService", () => {
@@ -37,6 +45,7 @@ describe("ContainerService", () => {
   let authService: MockAuthService;
   let notificationService: MockNotificationService;
   let tokenService: MockTokenService;
+  let contentService: MockContentService;
 
   beforeEach(() => {
     TestBed.resetTestingModule();
@@ -46,6 +55,7 @@ describe("ContainerService", () => {
         { provide: AuthService, useClass: MockAuthService },
         { provide: NotificationService, useClass: MockNotificationService },
         { provide: TokenService, useClass: MockTokenService },
+        { provide: ContentService, useClass: MockContentService },
         MockLocalService,
         MockNotificationService
       ]
@@ -55,6 +65,7 @@ describe("ContainerService", () => {
     authService = TestBed.inject(AuthService) as any;
     notificationService = TestBed.inject(NotificationService) as any;
     tokenService = TestBed.inject(TokenService) as any;
+    contentService = TestBed.inject(ContentService) as any;
   });
 
   it("creates the service", () => {
@@ -226,6 +237,7 @@ describe("ContainerService", () => {
     const r = await lastValueFrom(
       containerService.registerContainer({
         container_serial: "cReg",
+        passphrase_user: false,
         passphrase_prompt: "p?",
         passphrase_response: "r!"
       })
@@ -234,7 +246,7 @@ describe("ContainerService", () => {
       `${containerService.containerBaseUrl}register/initialize`,
       {
         container_serial: "cReg",
-        passphrase_ad: false,
+        passphrase_user: false,
         passphrase_prompt: "p?",
         passphrase_response: "r!"
       },
@@ -243,25 +255,66 @@ describe("ContainerService", () => {
     expect(r.result?.value?.container_url).toBe("u");
   });
 
-  it("pollContainerRolloutState completes when state != client_wait", async () => {
-    jest.spyOn(containerService, "getContainerDetails").mockReturnValue(
-      of({
+  it("poll container details completes when state == registered for container create", () => {
+    contentService.routeUrl.set(ROUTE_PATHS.TOKENS_CONTAINERS_CREATE);
+    containerService.containerSerial.set("SMPH1");
+
+    const valueSpy = jest
+      .spyOn(containerService.containerDetailResource, "value")
+      .mockReturnValueOnce(undefined as any)
+      .mockReturnValue({
         result: {
           value: {
-            containers: [{ info: { registration_state: "done" } }]
+            count: 1,
+            containers: [{ info: { registration_state: "registered" } }]
           }
         }
-      } as any)
-    );
-    const r = await lastValueFrom(containerService.pollContainerRolloutState("cPoll", 0));
-    expect(containerService.getContainerDetails).toHaveBeenCalled();
-    expect(r.result?.value?.containers[0].info.registration_state).toBe("done");
+      } as any);
+
+    containerService.startPolling("SMPH1");
+    TestBed.flushEffects();
+    (containerService as any)["pollingTrigger"].update((n: number) => n + 1);
+    TestBed.flushEffects();
+
+    expect(valueSpy).toHaveBeenCalled();
+    expect(containerService.containerDetailResource.value()?.result?.value?.containers[0].info.registration_state)
+      .toBe("registered");
+    expect(containerService.isPollingActive()).toBe(false);
+    expect(notificationService.openSnackBar).not.toHaveBeenCalled();
+  });
+
+  it("poll container details completes when state == registered for container details", () => {
+    contentService.routeUrl.set(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + "/SMPH1");
+    containerService.containerSerial.set("SMPH1");
+
+    const valueSpy = jest
+      .spyOn(containerService.containerDetailResource, "value")
+      .mockReturnValueOnce(undefined as any)
+      .mockReturnValue({
+        result: {
+          value: {
+            count: 1,
+            containers: [{ info: { registration_state: "registered" } }]
+          }
+        }
+      } as any);
+
+    containerService.startPolling("SMPH1");
+    TestBed.flushEffects();
+    (containerService as any)["pollingTrigger"].update((n: number) => n + 1);
+    TestBed.flushEffects();
+
+    expect(valueSpy).toHaveBeenCalled();
+    expect(containerService.containerDetailResource.value()?.result?.value?.containers[0].info.registration_state)
+      .toBe("registered");
+    expect(containerService.isPollingActive()).toBe(false);
+    expect(notificationService.openSnackBar).toHaveBeenCalledWith("Container registered successfully.");
   });
 
   it("filterParams converts blank values and drops unknown keys", () => {
     containerService.containerFilter.set(new FilterValue({ value: "user: Alice type: foo: bar" }));
     const fp = containerService.filterParams();
-    expect(fp).toEqual({ user: "Alice", type: "*" });
+    expect(fp).toEqual({ user: "Alice" });
   });
 
   it("pageSize falls back to 10 for invalid eventPageSize", () => {
@@ -340,7 +393,6 @@ describe("ContainerService", () => {
     expect(containerService.filterParams()).toEqual({
       desc: "*foo*",
       token_serial: "123",
-      type: "*",
       user: "Bob"
     });
   });
@@ -477,24 +529,6 @@ describe("ContainerService", () => {
     expect(authHeader).toMatch(/^Bearer /);
   });
 
-  // === FIX 2: getContainerDetails — use baseUrl, relax headers/params, then inspect params ===
-  it("getContainerDetails GETs with headers & params (robust assertion)", async () => {
-    const get = jest.spyOn(http, "get").mockReturnValue(of({ result: {} }) as any);
-    await lastValueFrom(containerService.getContainerDetails("SER"));
-
-    expect(get).toHaveBeenCalledWith(
-      containerService.containerBaseUrl,
-      expect.objectContaining({
-        headers: expect.anything(),
-        params: expect.any(HttpParams)
-      })
-    );
-
-    const optionsArg = (get as jest.Mock).mock.calls[0][1];
-    const params = optionsArg.params as HttpParams;
-    expect(params.get("container_serial")).toBe("SER");
-  });
-
   // === Extra small coverage to close error branches cleanly ===
   it("addTokenToContainer/ removeTokenFromContainer / assignUser / unassignUser error paths surface snackbar", async () => {
     jest.spyOn(http, "post")
@@ -530,6 +564,7 @@ describe("ContainerService", () => {
 
     await expect(lastValueFrom(containerService.registerContainer({
       container_serial: "c",
+      passphrase_user: false,
       passphrase_prompt: "p",
       passphrase_response: "r"
     }))).rejects.toBeDefined();
@@ -571,5 +606,40 @@ describe("ContainerService", () => {
     expect(notificationService.openSnackBar).toHaveBeenCalledWith(
       expect.stringContaining("Failed to delete container.")
     );
+  });
+
+  it("unregister posts to the correct endpoint and returns result", async () => {
+    jest.spyOn(http, "post").mockReturnValue(of({ result: { value: { container_serial: "CONT1234" } } } as any));
+    const r = await lastValueFrom(containerService.unregister("CONT1234"));
+    expect(http.post).toHaveBeenCalledWith(
+      `${containerService.containerBaseUrl}register/CONT1234/terminate`,
+      {},
+      expect.objectContaining({ headers: expect.anything() })
+    );
+  });
+
+  it("unregister error surfaces snackbar", async () => {
+    jest.spyOn(http, "post").mockReturnValueOnce(throwError(() => new HttpErrorResponse({ status: 500 })));
+    await expect(lastValueFrom(containerService.unregister("CONT1234"))).rejects.toBeDefined();
+    expect(notificationService.openSnackBar).toHaveBeenCalledWith(
+      expect.stringContaining("Failed to unregister container.")
+    );
+  });
+
+  it("should not include empty filter values in filterParams", () => {
+    containerService.containerFilter.set({
+      filterMap: new Map([
+        ["container_serial", ""],
+        ["type", "generic"],
+        ["user", "   "],
+        ["token_serial", "*"]
+      ])
+    } as any);
+
+    const params = containerService.filterParams();
+    expect(params).not.toHaveProperty("container_serial");
+    expect(params).toHaveProperty("type", "generic");
+    expect(params).not.toHaveProperty("user");
+    expect(params).not.toHaveProperty("token_serial");
   });
 });

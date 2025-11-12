@@ -34,8 +34,13 @@ import { ClearableInputComponent } from "../../shared/clearable-input/clearable-
 import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
 import { EditButtonsComponent } from "../../shared/edit-buttons/edit-buttons.component";
 import { ContainerDetailsInfoComponent } from "./container-details-info/container-details-info.component";
-import { ContainerDetailsTokenTableSelfServiceComponent } from "./container-details-token-table/container-details-token-table.self-service.component";
 import { ContainerDetailsComponent } from "./container-details.component";
+import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
+import { ContainerDetailsTokenTableComponent } from "./container-details-token-table/container-details-token-table.component";
+import { ContainerDetailsActionsComponent } from "./container-details-actions/container-details-actions.component";
+import { ContainerDetailsTokenActionsComponent } from "./container-details-token-actions/container-details-token-actions.component";
+import { RouterLink } from "@angular/router";
+import { MatTooltip } from "@angular/material/tooltip";
 
 @Component({
   selector: "app-container-details-self-service",
@@ -57,12 +62,17 @@ import { ContainerDetailsComponent } from "./container-details.component";
     MatIcon,
     MatIconButton,
     ContainerDetailsInfoComponent,
-    ContainerDetailsTokenTableSelfServiceComponent,
     MatPaginator,
     MatDivider,
     MatCheckbox,
     CopyButtonComponent,
-    ClearableInputComponent
+    ClearableInputComponent,
+    ScrollToTopDirective,
+    ContainerDetailsTokenTableComponent,
+    ContainerDetailsActionsComponent,
+    ContainerDetailsTokenActionsComponent,
+    RouterLink,
+    MatTooltip
   ],
   templateUrl: "./container-details.self-service.component.html",
   styleUrls: ["./container-details.component.scss"]

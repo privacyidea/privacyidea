@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, inject, WritableSignal } from "@angular/core";
+import { Component, inject, Signal, WritableSignal } from "@angular/core";
 import { MatButton } from "@angular/material/button";
 import { MAT_DIALOG_DATA, MatDialogContent, MatDialogRef, MatDialogTitle } from "@angular/material/dialog";
 import { MatIcon } from "@angular/material/icon";
@@ -31,19 +31,20 @@ import { ContentService } from "../../../../services/content/content.service";
 export type ContainerCreationDialogData = {
   response: PiResponse<ContainerRegisterData>;
   containerSerial: WritableSignal<string>;
-  registerContainer: (containerSerial: string) => void;
+  registerContainer: (containerSerial: string, regenerate: boolean) => void;
 };
 
+
 @Component({
-  selector: "app-container-registration-dialog",
+  selector: "app-container-created-dialog",
   imports: [MatDialogContent, MatDialogTitle, MatButton, MatIcon],
-  templateUrl: "./container-registration-dialog.component.html",
-  styleUrl: "./container-registration-dialog.component.scss"
+  templateUrl: "./container-created-dialog.component.html",
+  styleUrl: "./container-created-dialog.component.scss"
 })
-export class ContainerRegistrationDialogComponent {
+export class ContainerCreatedDialogComponent {
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
-  protected readonly dialogRef: MatDialogRef<ContainerRegistrationDialogComponent> = inject(MatDialogRef);
-  public readonly data: ContainerCreationDialogData = inject(MAT_DIALOG_DATA);
+  protected readonly dialogRef: MatDialogRef<ContainerCreatedDialogComponent> = inject(MatDialogRef);
+  public readonly data: Signal<ContainerCreationDialogData> = inject(MAT_DIALOG_DATA);
   private contentService = inject(ContentService);
 
   constructor() {
@@ -58,7 +59,6 @@ export class ContainerRegistrationDialogComponent {
   }
 
   regenerateQRCode() {
-    this.data.registerContainer(this.data.containerSerial());
-    this.dialogRef.close();
+    this.data().registerContainer(this.data().containerSerial(), true);
   }
 }

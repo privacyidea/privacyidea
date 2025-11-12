@@ -392,9 +392,12 @@ export class MockContentService implements ContentServiceInterface {
     this.containerSerial.set(serial);
   });
   userSelected: (username: any) => void = jest.fn();
-  isProgrammaticTabChange = signal(false);
 }
 export class MockContainerService implements ContainerServiceInterface {
+  isPollingActive: Signal<boolean> = signal(false);
+  startPolling(containerSerial: string): void {
+    throw new Error("Method not implemented.");
+  }
   handleFilterInput($event: Event): void {
     throw new Error("Method not implemented.");
   }
@@ -467,7 +470,8 @@ export class MockContainerService implements ContainerServiceInterface {
           states: [],
           type: "",
           select: "",
-          description: ""
+          description: "",
+          info: {}
         }
       ],
       count: 1
@@ -502,6 +506,9 @@ export class MockContainerService implements ContainerServiceInterface {
   }): Observable<PiResponse<ContainerRegisterData, unknown>> {
     throw new Error("Method not implemented.");
   }
+
+  readonly unregister = jest.fn().mockReturnValue(of({}));
+
   stopPolling(): void {
     throw new Error("Method not implemented.");
   }
