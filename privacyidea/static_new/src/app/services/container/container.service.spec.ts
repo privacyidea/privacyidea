@@ -255,7 +255,7 @@ describe("ContainerService", () => {
     expect(r.result?.value?.container_url).toBe("u");
   });
 
-  it("poll container details completes when state == registered", () => {
+  it("poll container details completes when state == registered for container create", () => {
     contentService.routeUrl.set(ROUTE_PATHS.TOKENS_CONTAINERS_CREATE);
     containerService.containerSerial.set("SMPH1");
 
@@ -280,8 +280,35 @@ describe("ContainerService", () => {
     expect(containerService.containerDetailResource.value()?.result?.value?.containers[0].info.registration_state)
       .toBe("registered");
     expect(containerService.isPollingActive()).toBe(false);
-    expect(notificationService.openSnackBar)
-      .toHaveBeenCalledWith("Container registered successfully.");
+    expect(notificationService.openSnackBar).not.toHaveBeenCalled();
+  });
+
+  it("poll container details completes when state == registered for container details", () => {
+    contentService.routeUrl.set(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + "/SMPH1");
+    containerService.containerSerial.set("SMPH1");
+
+    const valueSpy = jest
+      .spyOn(containerService.containerDetailResource, "value")
+      .mockReturnValueOnce(undefined as any)
+      .mockReturnValue({
+        result: {
+          value: {
+            count: 1,
+            containers: [{ info: { registration_state: "registered" } }]
+          }
+        }
+      } as any);
+
+    containerService.startPolling("SMPH1");
+    TestBed.flushEffects();
+    (containerService as any)["pollingTrigger"].update((n: number) => n + 1);
+    TestBed.flushEffects();
+
+    expect(valueSpy).toHaveBeenCalled();
+    expect(containerService.containerDetailResource.value()?.result?.value?.containers[0].info.registration_state)
+      .toBe("registered");
+    expect(containerService.isPollingActive()).toBe(false);
+    expect(notificationService.openSnackBar).toHaveBeenCalledWith("Container registered successfully.");
   });
 
   it("filterParams converts blank values and drops unknown keys", () => {

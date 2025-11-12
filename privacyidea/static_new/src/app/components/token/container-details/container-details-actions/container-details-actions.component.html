@@ -32,7 +32,7 @@
       </div>
     }
     @if (containerType === "smartphone") {
-      @if (authService.actionAllowed("container_delete")) {
+      @if (authService.actionAllowed("container_delete") && (registrationAllowed() || rolloverAllowed() || unregisterAllowed())) {
         <mat-divider class="margin-top-8 margin-bottom-8"></mat-divider>
       }
       @if (registrationAllowed()) {

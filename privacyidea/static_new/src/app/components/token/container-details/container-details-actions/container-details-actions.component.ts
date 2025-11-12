@@ -122,7 +122,6 @@ export class ContainerDetailsActionsComponent {
             const prev = this.contentService.previousUrl();
 
             if (prev.startsWith(ROUTE_PATHS.TOKENS_DETAILS)) {
-              this.contentService.isProgrammaticTabChange.set(true);
               this.router.navigateByUrl(prev);
             } else {
               this.router.navigateByUrl(ROUTE_PATHS.TOKENS_CONTAINERS);

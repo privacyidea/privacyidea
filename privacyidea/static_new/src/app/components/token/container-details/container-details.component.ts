@@ -60,7 +60,7 @@ import { MatListItem } from "@angular/material/list";
 import { MatSelectModule } from "@angular/material/select";
 import { NgClass } from "@angular/common";
 import { ROUTE_PATHS } from "../../../route_paths";
-import { Router } from "@angular/router";
+import { Router, RouterLink } from "@angular/router";
 import { infoDetailsKeyMap } from "../token-details/token-details.component";
 import { MatTooltip } from "@angular/material/tooltip";
 import { AuditService, AuditServiceInterface } from "../../../services/audit/audit.service";
@@ -68,6 +68,7 @@ import { NotificationService } from "../../../services/notification/notification
 import { ContainerDetailsActionsComponent } from "./container-details-actions/container-details-actions.component";
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { ContainerDetailsTokenActionsComponent } from "./container-details-token-actions/container-details-token-actions.component";
+import { FilterValue } from "../../../core/models/filter_value";
 
 export const containerDetailsKeyMap = [
   { key: "type", label: "Type" },
@@ -126,7 +127,8 @@ interface TokenOption {
     ClearableInputComponent,
     ContainerDetailsActionsComponent,
     ScrollToTopDirective,
-    ContainerDetailsTokenActionsComponent
+    ContainerDetailsTokenActionsComponent,
+    RouterLink
   ],
   templateUrl: "./container-details.component.html",
   styleUrls: ["./container-details.component.scss"]

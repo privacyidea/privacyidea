@@ -484,7 +484,8 @@ export class ContainerService implements ContainerServiceInterface {
         const isRollover = this.isRolloverPolling();
         if (isRollover) {
           this.notificationService.openSnackBar("Container rollover completed successfully.");
-        } else {
+        } else if (routeUrl !== ROUTE_PATHS.TOKENS_CONTAINERS_CREATE) {
+          // container create shows a dialog on successful registration
           this.notificationService.openSnackBar("Container registered successfully.");
         }
         this.isPollingActive.set(false);

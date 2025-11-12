@@ -41,7 +41,9 @@
         {{ "Unassign from All Tokens" }}
       </button>
     }
-    <mat-divider class="margin-top-8 margin-bottom-8"></mat-divider>
+    @if (authService.oneActionAllowed(["assign", "unassign"]) && authService.oneActionAllowed(["enable", "disable"])) {
+      <mat-divider class="margin-top-8 margin-bottom-8"></mat-divider>
+    }
     @if (authService.actionAllowed("enable")) {
       <button
         (click)="toggleAll('activate')"
@@ -64,7 +66,10 @@
         {{ "Deactivate All Tokens" }}
       </button>
     }
-    <mat-divider class="margin-top-8 margin-bottom-8"></mat-divider>
+    @if (authService.oneActionAllowed(["enable", "disable", "unassign", "assign"]) &&
+    authService.oneActionAllowed(["container_remove_token", "delete"])) {
+      <mat-divider class="margin-top-8 margin-bottom-8"></mat-divider>
+    }
     @if (authService.actionAllowed("container_remove_token")) {
       <button
         (click)="removeAll()"

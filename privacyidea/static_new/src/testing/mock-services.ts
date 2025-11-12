@@ -549,7 +549,6 @@ export class MockContentService implements ContentServiceInterface {
     this.containerSerial.set(serial);
   });
   userSelected: (username: any) => void = jest.fn();
-  isProgrammaticTabChange = signal(false);
 }
 
 export class MockContainerService extends ContainerService {
