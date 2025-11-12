@@ -920,7 +920,7 @@ class UtilsTestCase(MyTestCase):
         self.assertEqual("ex********@*****.***", redacted_email("example@test"))
         self.assertEqual("**********@*****.***", redacted_email("invalid-email"))
 
-    def test_39_redacted_phone_nuber(self):
+    def test_39_redacted_phone_number(self):
         self.assertEqual("****-******78", redacted_phone_number("012345678"))
         self.assertEqual("****-******89", redacted_phone_number("01234567890123456789"))
         self.assertEqual("****-******01", redacted_phone_number("01"))
