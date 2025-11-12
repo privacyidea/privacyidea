@@ -913,14 +913,18 @@ class UtilsTestCase(MyTestCase):
 
     def test_38_redacted_email(self):
         self.assertEqual("ex********@t****.com", redacted_email("example.mail@test.com"))
+        self.assertEqual("ex********@t****.com", redacted_email("example.mail@test.sub.com"))
         self.assertEqual("sh********@t****.co", redacted_email("short@t.co"))
-        self.assertEqual("a********@b****.c", redacted_email("a@b.c"))
+        self.assertEqual("a*********@b****.c", redacted_email("a@b.c"))
+        self.assertEqual("**********@b****.c", redacted_email("@b.c"))
+        self.assertEqual("ex********@*****.***", redacted_email("example@test"))
         self.assertEqual("**********@*****.***", redacted_email("invalid-email"))
 
     def test_39_redacted_phone_nuber(self):
         self.assertEqual("****-******78", redacted_phone_number("012345678"))
         self.assertEqual("****-******89", redacted_phone_number("01234567890123456789"))
         self.assertEqual("****-******01", redacted_phone_number("01"))
+        self.assertEqual("****-********", redacted_phone_number(""))
 
 
 class UtilsTestCaseOverrideConfig(OverrideConfigTestCase):

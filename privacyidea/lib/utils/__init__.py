@@ -1494,8 +1494,9 @@ def redacted_email(email: str) -> str:
     Censors an email address from 'example.mail@test.com' to 'ex*********@t***.com'
     """
     name, domain = email.split('@') if '@' in email else ("**", email)
+    name_redacted = name[:2] + "*" * (10 - len(name[:2]))
     domain_parts = domain.split('.') if '.' in domain else ("**", "***")
-    return f'{name[:2]}********@{domain_parts[0][0]}****.{domain_parts[-1]}'
+    return f'{name_redacted}@{domain_parts[0][0]}****.{domain_parts[-1]}'
 
 
 def redacted_phone_number(number: str) -> str:

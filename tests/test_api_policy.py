@@ -1129,7 +1129,6 @@ class APIPolicyConditionTestCase(MyApiTestCase):
                 self.assertEqual(challenge.get("serial"), hotp_token.get_serial())
 
                 message = challenge.get("message")
-                # The pin used to trigger the challenge should be available as a tag
                 expected_message = f"Challenge for user Cornelius. The serial for the hotp token is {hotp_token.get_serial()}."
                 self.assertEqual(expected_message, message)
         finally:
