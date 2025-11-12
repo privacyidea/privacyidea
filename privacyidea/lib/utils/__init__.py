@@ -1495,7 +1495,7 @@ def redacted_email(email: str) -> str:
     """
     name, domain = email.split('@') if '@' in email else ("**", email)
     name_redacted = name[:2] + "*" * (10 - len(name[:2]))
-    domain_parts = domain.split('.') if '.' in domain else ("**", "***")
+    domain_parts = domain.split('.') if '.' in domain else ["**", "***"]
     return f'{name_redacted}@{domain_parts[0][0]}****.{domain_parts[-1]}'
 
 
