@@ -27,7 +27,6 @@ import { NavigationEnd, Router } from "@angular/router";
 
 import { ContainerDetailsTokenTableComponent } from "./container-details-token-table.component";
 import {
-  MockAuthService,
   MockContainerService,
   MockContentService,
   MockLocalService,
@@ -46,7 +45,8 @@ import { MatDialog } from "@angular/material/dialog";
 import { UserService } from "../../../../services/user/user.service";
 import { ConfirmationDialogComponent } from "../../../shared/confirmation-dialog/confirmation-dialog.component";
 import { ContentService } from "../../../../services/content/content.service";
-
+import "@angular/localize/init";
+import { MockAuthService } from "../../../../../testing/mock-services/mock-auth-service";
 
 const routerEvents$ = new Subject<NavigationEnd>();
 routerEvents$.next(new NavigationEnd(1, "/", "/"));
@@ -135,9 +135,7 @@ describe("ContainerDetailsTokenTableComponent", () => {
     const fx = TestBed.createComponent(ContainerDetailsTokenTableComponent);
     const cmp = fx.componentInstance;
 
-    expect(cmp.displayedColumns).toEqual(
-      expect.arrayContaining(["remove", "delete"])
-    );
+    expect(cmp.displayedColumns).toEqual(expect.arrayContaining(["remove", "delete"]));
   });
 
   it("sets paginator and sort on both internal and external data sources", () => {
@@ -227,9 +225,9 @@ describe("ContainerDetailsTokenTableComponent", () => {
   });
 
   it("removeTokenFromContainer confirms and removes on confirm=true", () => {
-    jest.spyOn(containerServiceMock, "removeTokenFromContainer").mockReturnValue(
-      of({ result: { value: true } } as any)
-    );
+    jest
+      .spyOn(containerServiceMock, "removeTokenFromContainer")
+      .mockReturnValue(of({ result: { value: true } } as any));
     component.removeTokenFromContainer("CONT-1", "Mock serial");
     expect(matDialogMock.open).toHaveBeenCalledWith(
       ConfirmationDialogComponent,
@@ -261,7 +259,7 @@ describe("ContainerDetailsTokenTableComponent", () => {
         })
       })
     );
-    expect((tokenServiceMock.deleteToken as any)).toHaveBeenCalledWith("Another serial");
+    expect(tokenServiceMock.deleteToken as any).toHaveBeenCalledWith("Another serial");
     expect(containerServiceMock.containerDetailResource.reload).toHaveBeenCalled();
   });
 });

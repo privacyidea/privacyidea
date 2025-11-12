@@ -1,7 +1,6 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { ContainerDetailsActionsComponent } from "./container-details-actions.component";
 import {
-  MockAuthService,
   MockContainerService,
   MockNotificationService,
   MockContentService,
@@ -16,6 +15,8 @@ import { of, Subject } from "rxjs";
 import { PiResponse } from "../../../../app.component";
 import { provideHttpClient } from "@angular/common/http";
 import { NavigationEnd, Router } from "@angular/router";
+import { MockAuthService } from "../../../../../testing/mock-services/mock-auth-service";
+import "@angular/localize/init";
 
 const routerEvents$ = new Subject<NavigationEnd>();
 routerEvents$.next(new NavigationEnd(1, "/", "/"));
@@ -30,7 +31,7 @@ describe("ContainerDetailsActionsComponent", () => {
   let component: ContainerDetailsActionsComponent;
   let fixture: ComponentFixture<ContainerDetailsActionsComponent>;
   let mockContainerService: MockContainerService;
-  let mockAuthService: MockAuthService;
+  let authServiceMock: MockAuthService;
   let mockNotificationService: MockNotificationService;
   let dialogOpen: jest.Mock;
   let dialogCloseAll: jest.Mock;
@@ -50,7 +51,7 @@ describe("ContainerDetailsActionsComponent", () => {
         { provide: ContainerService, useClass: MockContainerService },
         { provide: NotificationService, useClass: MockNotificationService },
         { provide: ContentService, useClass: MockContentService },
-        { provide: MatDialog, useValue: { open: dialogOpen , closeAll: dialogCloseAll} },
+        { provide: MatDialog, useValue: { open: dialogOpen, closeAll: dialogCloseAll } },
         { provide: MAT_DIALOG_DATA, useValue: {} },
         { provide: MatDialogRef, useValue: { close: () => {} } },
         { provide: Router, useValue: routerMock },
@@ -62,7 +63,7 @@ describe("ContainerDetailsActionsComponent", () => {
     fixture = TestBed.createComponent(ContainerDetailsActionsComponent);
     component = fixture.componentInstance;
     mockContainerService = TestBed.inject(ContainerService) as any;
-    mockAuthService = TestBed.inject(AuthService) as any;
+    authServiceMock = TestBed.inject(AuthService) as unknown as MockAuthService;
     mockNotificationService = TestBed.inject(NotificationService) as any;
 
     component.containerSerial = "SMPH-1";
@@ -75,14 +76,18 @@ describe("ContainerDetailsActionsComponent", () => {
   });
 
   it("should render actions if anyActionsAllowed is true", () => {
-    mockAuthService.jwtData.set({...component.authService.jwtData(), rights: ["container_delete"]});
+    authServiceMock.jwtData.set({ ...authServiceMock.jwtData()!, rights: ["container_delete"] });
     fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.textContent).toContain("Container Actions");
   });
 
   it("should not render actions if no action is allowed", () => {
-    mockAuthService.jwtData.set({...component.authService.jwtData(), rights: []});
+    authServiceMock.actionAllowed.mockImplementation((asd) => {
+      console.warn(asd);
+      return false;
+    });
+    // TestBed.flushEffects();
     fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.textContent).not.toContain("Container Actions");
@@ -115,7 +120,7 @@ describe("ContainerDetailsActionsComponent", () => {
 
   it("should call unregisterContainer and show notification", () => {
     const unregisterResponse = { result: { value: { success: true } } } as PiResponse<any>;
-    mockContainerService.unregister = jest.fn().mockReturnValue(of(unregisterResponse));
+    mockContainerService.unregister.mockReturnValue(of(unregisterResponse));
     jest.spyOn(mockNotificationService, "openSnackBar");
     jest.spyOn(mockContainerService.containerDetailResource, "reload");
     component.unregisterContainer();

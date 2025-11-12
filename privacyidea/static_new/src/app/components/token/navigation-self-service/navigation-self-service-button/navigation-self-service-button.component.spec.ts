@@ -21,6 +21,7 @@ import { NavigationSelfServiceButtonComponent } from "./navigation-self-service-
 import { provideHttpClient } from "@angular/common/http";
 import { ActivatedRoute } from "@angular/router";
 import { of } from "rxjs";
+import "@angular/localize/init";
 
 describe("NavigationSelfServiceButtonComponent", () => {
   let component: NavigationSelfServiceButtonComponent;

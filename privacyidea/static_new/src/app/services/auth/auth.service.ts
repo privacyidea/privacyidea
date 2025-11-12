@@ -291,7 +291,7 @@ export class AuthService implements AuthServiceInterface {
           if (response?.result?.status && value) {
             this.acceptAuthentication();
             this.authData.set(value);
-            this.jwtData.set(this._decodeJwtPayload(value.token));
+            this.jwtData.set(this.decodeJwtPayload(value.token));
             this.localService.saveData(BEARER_TOKEN_STORAGE_KEY, value.token);
           }
         }),
@@ -348,8 +348,7 @@ export class AuthService implements AuthServiceInterface {
     return this.actionAllowed((tokenType + "_force_server_generate") as PolicyAction);
   }
 
-  // Private methods
-  private _decodeJwtPayload(token: string): JwtData | null {
+  decodeJwtPayload(token: string): JwtData | null {
     try {
       const parts = token.split(".");
       if (parts.length !== 3) {

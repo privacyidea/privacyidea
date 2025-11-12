@@ -3,7 +3,6 @@ import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 
 import { UserDetailsTokenTableComponent } from "./user-details-token-table.component";
 import {
-  MockAuthService,
   MockContentService,
   MockLocalService,
   MockNotificationService,
@@ -21,6 +20,8 @@ import { ContentService } from "../../../../services/content/content.service";
 import { AuthService } from "../../../../services/auth/auth.service";
 import { TokenService } from "../../../../services/token/token.service";
 import { UserService } from "../../../../services/user/user.service";
+import "@angular/localize/init";
+import { MockAuthService } from "../../../../../testing/mock-services/mock-auth-service";
 
 describe("UserDetailsTokenTableComponent", () => {
   let fixture: ComponentFixture<UserDetailsTokenTableComponent>;
@@ -207,7 +208,7 @@ describe("UserDetailsTokenTableComponent", () => {
   });
 
   it("resetFailCount calls service only when allowed", () => {
-    const auth = TestBed.inject(AuthService) as MockAuthService;
+    const auth = TestBed.inject(AuthService) as unknown as MockAuthService;
     (auth as any).actionAllowed = jest.fn().mockReturnValue(true);
 
     const token = {

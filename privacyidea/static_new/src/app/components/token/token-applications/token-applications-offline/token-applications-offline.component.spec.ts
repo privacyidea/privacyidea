@@ -21,7 +21,8 @@ import { MatTableDataSource } from "@angular/material/table";
 import { MatTabsModule } from "@angular/material/tabs";
 import {
   MockLocalService,
-  MockMachineService, MockNotificationService,
+  MockMachineService,
+  MockNotificationService,
   MockTableUtilsService
 } from "../../../../../testing/mock-services";
 import { MachineService, TokenApplication } from "../../../../services/machine/machine.service";
@@ -32,6 +33,7 @@ import { KeywordFilterComponent } from "../../../shared/keyword-filter/keyword-f
 import { TokenApplicationsOfflineComponent } from "./token-applications-offline.component";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
+import "@angular/localize/init";
 
 describe("TokenApplicationsOfflineComponent (Jest)", () => {
   let fixture: ComponentFixture<TokenApplicationsOfflineComponent>;
@@ -42,12 +44,7 @@ describe("TokenApplicationsOfflineComponent (Jest)", () => {
   beforeEach(async () => {
     TestBed.resetTestingModule();
     await TestBed.configureTestingModule({
-      imports: [
-        TokenApplicationsOfflineComponent,
-        MatTabsModule,
-        KeywordFilterComponent,
-        CopyButtonComponent
-      ],
+      imports: [TokenApplicationsOfflineComponent, MatTabsModule, KeywordFilterComponent, CopyButtonComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
@@ -75,10 +72,7 @@ describe("TokenApplicationsOfflineComponent (Jest)", () => {
 
   it("should return object strings correctly", () => {
     const options = { key1: "value1", key2: "value2" };
-    expect(component.getObjectStrings(options)).toEqual([
-      "key1: value1",
-      "key2: value2"
-    ]);
+    expect(component.getObjectStrings(options)).toEqual(["key1: value1", "key2: value2"]);
   });
 
   describe("dataSource computed", () => {
@@ -101,9 +95,7 @@ describe("TokenApplicationsOfflineComponent (Jest)", () => {
 
       const ds = component.dataSource();
       expect(ds).toBeInstanceOf(MatTableDataSource);
-      expect((ds as MatTableDataSource<TokenApplication>).data).toEqual(
-        fakeApps
-      );
+      expect((ds as MatTableDataSource<TokenApplication>).data).toEqual(fakeApps);
       expect(component.length()).toBe(1);
     });
   });

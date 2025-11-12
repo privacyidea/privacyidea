@@ -24,6 +24,7 @@ import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ValidateService } from "../../../../../services/validate/validate.service";
 import { TokenService } from "../../../../../services/token/token.service";
 import { MockTokenService } from "../../../../../../testing/mock-services";
+import "@angular/localize/init";
 
 describe("TestOtpPinActionComponent", () => {
   let component: TestOtpPinActionComponent;
@@ -40,8 +41,7 @@ describe("TestOtpPinActionComponent", () => {
         provideHttpClientTesting(),
         { provide: TokenService, useClass: MockTokenService }
       ]
-    })
-      .compileComponents();
+    }).compileComponents();
 
     fixture = TestBed.createComponent(TestOtpPinActionComponent);
     component = fixture.componentInstance;

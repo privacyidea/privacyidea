@@ -28,7 +28,7 @@ import { ContainerCreatedDialogComponent } from "./container-created-dialog.comp
 import { ContainerCreatedDialogWizardComponent } from "./container-created-dialog.wizard.component";
 import { ContainerService } from "../../../../services/container/container.service";
 import { ContentService } from "../../../../services/content/content.service";
-import { MockAuthService } from "../../../../../testing/mock-services";
+import "@angular/localize/init";
 
 describe("ContainerCreatedDialogComponent", () => {
   let fixture: ComponentFixture<ContainerCreatedDialogComponent>;
@@ -87,7 +87,7 @@ describe("ContainerCreatedDialogComponent", () => {
   });
 
   it("regenerateQRCode calls registerContainer with current serial and regenerate flag", () => {
-    matDialogData.set({...matDialogData(), containerSerial: signal("C-123")});
+    matDialogData.set({ ...matDialogData(), containerSerial: signal("C-123") });
     component.regenerateQRCode();
     expect(registerContainer).toHaveBeenCalledWith("C-123", true);
     expect(dialogClose).not.toHaveBeenCalled();
@@ -184,9 +184,9 @@ describe("ContainerCreatedDialogWizardComponent", () => {
 
   it("show loaded templates if not empty", async () => {
     // Mock HTTP responses for custom templates;
-    httpMock.expectOne("/static/public/customize/container-create.wizard.post.top.html")
-      .flush("<div>Custom TOP</div>");
-    httpMock.expectOne("/static/public/customize/container-create.wizard.post.bottom.html")
+    httpMock.expectOne("/static/public/customize/container-create.wizard.post.top.html").flush("<div>Custom TOP</div>");
+    httpMock
+      .expectOne("/static/public/customize/container-create.wizard.post.bottom.html")
       .flush("<div>Custom BOTTOM</div>");
     fixture.detectChanges();
 
@@ -198,7 +198,7 @@ describe("ContainerCreatedDialogWizardComponent", () => {
   });
 
   it("show default content if customization templates are empty", async () => {
-   // Mock HTTP responses for custom templates;
+    // Mock HTTP responses for custom templates;
     httpMock.expectOne("/static/public/customize/container-create.wizard.post.top.html").flush("");
     httpMock.expectOne("/static/public/customize/container-create.wizard.post.bottom.html").flush("");
     fixture.detectChanges();
@@ -206,4 +206,3 @@ describe("ContainerCreatedDialogWizardComponent", () => {
     expect(fixture.nativeElement.textContent).toContain("Container Successfully Created");
   });
 });
-

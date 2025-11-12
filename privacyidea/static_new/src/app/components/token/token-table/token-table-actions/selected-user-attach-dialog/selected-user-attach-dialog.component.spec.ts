@@ -22,6 +22,7 @@ import { SelectedUserAssignDialogComponent } from "./selected-user-attach-dialog
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { MatDialogRef } from "@angular/material/dialog";
+import "@angular/localize/init";
 
 describe("SelectedUserAssignDialogComponent", () => {
   let component: SelectedUserAssignDialogComponent;

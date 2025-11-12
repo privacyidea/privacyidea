@@ -395,40 +395,34 @@ export class MockContentService implements ContentServiceInterface {
 }
 export class MockContainerService implements ContainerServiceInterface {
   isPollingActive: Signal<boolean> = signal(false);
-  startPolling(containerSerial: string): void {
-    throw new Error("Method not implemented.");
-  }
-  handleFilterInput($event: Event): void {
-    throw new Error("Method not implemented.");
-  }
-  clearFilter(): void {
-    throw new Error("Method not implemented.");
-  }
+  startPolling = jest.fn();
+  handleFilterInput = jest.fn();
+  clearFilter = jest.fn();
   apiFilter: string[] = [];
   advancedApiFilter: string[] = [];
   stopPolling$: Subject<void> = new Subject<void>();
   eventPageSize: number = 10;
-  states: WritableSignal<string[]> = signal([]);
-  selectedContainerType: Signal<ContainerType> = signal({ containerType: "generic", description: "", token_types: [] });
-  containerDetail: WritableSignal<ContainerDetails> = signal({ containers: [], count: 0 });
-  addToken: (tokenSerial: string, containerSerial: string) => Observable<any> = jest.fn().mockReturnValue(of(null));
-  removeToken: (tokenSerial: string, containerSerial: string) => Observable<any> = jest.fn().mockReturnValue(of(null));
-  containerBelongsToUser: (containerSerial: string) => false | true | undefined = jest.fn().mockReturnValue(false);
-  readonly containerBaseUrl: string = "mockEnvironment.proxyUrl + '/container'";
+  states = signal<string[]>([]);
+  selectedContainerType = signal<ContainerType>({ containerType: "generic", description: "", token_types: [] });
+  containerDetail = signal<ContainerDetails>({ containers: [], count: 0 });
+  addToken = jest.fn().mockReturnValue(of(null));
+  removeToken = jest.fn().mockReturnValue(of(null));
+  containerBelongsToUser = jest.fn().mockReturnValue(false);
+  readonly containerBaseUrl = "mockEnvironment.proxyUrl + '/container'";
   readonly containerSerial = signal("CONT-1");
   readonly selectedContainer = signal("");
-  readonly sort: WritableSignal<Sort> = signal({ active: "serial", direction: "asc" });
-  readonly containerFilter: WritableSignal<FilterValue> = signal(new FilterValue());
-  readonly filterParams: Signal<Record<string, string>> = computed(() =>
+  readonly sort = signal<Sort>({ active: "serial", direction: "asc" });
+  readonly containerFilter = signal<FilterValue>(new FilterValue());
+  readonly filterParams = computed<Record<string, string>>(() =>
     Object.fromEntries(
       Object.entries(this.containerFilter()).filter(([key]) =>
         [...this.apiFilter, ...this.advancedApiFilter].includes(key)
       )
     )
   );
-  pageSize: WritableSignal<number> = signal(10);
-  pageIndex: WritableSignal<number> = signal(0);
-  loadAllContainers: Signal<boolean> = signal(false);
+  pageSize = signal<number>(10);
+  pageIndex = signal<number>(0);
+  loadAllContainers = signal<boolean>(false);
   containerResource: HttpResourceRef<PiResponse<ContainerDetails> | undefined> = new MockHttpResourceRef(
     MockPiResponse.fromValue({
       containers: [],
@@ -509,26 +503,9 @@ export class MockContainerService implements ContainerServiceInterface {
 
   readonly unregister = jest.fn().mockReturnValue(of({}));
 
-  stopPolling(): void {
-    throw new Error("Method not implemented.");
-  }
-  createContainer(param: {
-    container_type: string;
-    description?: string;
-    user_realm?: string;
-    template?: string;
-    user?: string;
-    realm?: string;
-    options?: any;
-  }): Observable<PiResponse<{ container_serial: string }, unknown>> {
-    throw new Error("Method not implemented.");
-  }
-  pollContainerRolloutState(
-    containerSerial: string,
-    startTime: number
-  ): Observable<PiResponse<ContainerDetails, unknown>> {
-    throw new Error("Method not implemented.");
-  }
+  stopPolling = jest.fn();
+  createContainer = jest.fn();
+  pollContainerRolloutState = jest.fn();
   getContainerData = jest.fn().mockReturnValue(
     of({
       result: {

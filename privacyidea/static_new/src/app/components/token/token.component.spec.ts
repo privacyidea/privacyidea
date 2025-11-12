@@ -25,6 +25,7 @@ import { OverflowService } from "../../services/overflow/overflow.service";
 import { MockOverflowService } from "../../../testing/mock-services";
 import { ActivatedRoute } from "@angular/router";
 import { of } from "rxjs";
+import "@angular/localize/init";
 
 describe("TokenComponent", () => {
   let component: TokenComponent;
@@ -45,7 +46,7 @@ describe("TokenComponent", () => {
         dispatchEvent: jest.fn()
       })
     });
-  })
+  });
 
   beforeEach(async () => {
     mockOverflowService = new MockOverflowService();

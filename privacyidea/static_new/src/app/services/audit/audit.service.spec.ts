@@ -82,7 +82,7 @@ describe("AuditService (signals & helpers)", () => {
     expect(auditService.auditResource.value()).toBeUndefined();
 
     expect(auditService.filterParams()).toEqual({ serial: "*otp123*" });
-    expect(auditService.pageSize()).toBe(10);
+    expect(auditService.pageSize()).toBe(25);
     expect(auditService.pageIndex()).toBe(0);
   });
 

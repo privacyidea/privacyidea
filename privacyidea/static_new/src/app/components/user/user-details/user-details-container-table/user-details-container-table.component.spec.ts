@@ -15,6 +15,7 @@ import { TableUtilsService } from "../../../../services/table-utils/table-utils.
 import { UserService } from "../../../../services/user/user.service";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
+import "@angular/localize/init";
 
 describe("UserDetailsContainerTableComponent", () => {
   let fixture: ComponentFixture<UserDetailsContainerTableComponent>;
@@ -58,13 +59,7 @@ describe("UserDetailsContainerTableComponent", () => {
   });
 
   it("has the expected displayed columns", () => {
-    expect(component.displayedColumns).toEqual([
-      "serial",
-      "type",
-      "states",
-      "description",
-      "realms"
-    ]);
+    expect(component.displayedColumns).toEqual(["serial", "type", "states", "description", "realms"]);
   });
 
   it("exposes pageSizeOptions from TableUtilsService", () => {

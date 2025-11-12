@@ -23,6 +23,7 @@ import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { provideAnimationsAsync } from "@angular/platform-browser/animations/async";
 import { ActivatedRoute } from "@angular/router";
 import { of } from "rxjs";
+import "@angular/localize/init";
 
 describe("NavigationSelfServiceComponent", () => {
   let component: NavigationSelfServiceComponent;

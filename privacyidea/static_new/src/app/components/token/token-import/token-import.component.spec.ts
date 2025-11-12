@@ -32,6 +32,7 @@ import { UserService } from "../../../services/user/user.service";
 import { FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { of } from "rxjs";
 import { provideHttpClient } from "@angular/common/http";
+import "@angular/localize/init";
 
 describe("TokenImportComponent", () => {
   let component: TokenImportComponent;
@@ -172,10 +173,7 @@ describe("TokenImportComponent", () => {
 
     component.importTokens();
 
-    expect(importTokensSpy).toHaveBeenCalledWith(
-      "pskcfile.pskc",
-      expect.any(FormData)
-    );
+    expect(importTokensSpy).toHaveBeenCalledWith("pskcfile.pskc", expect.any(FormData));
 
     const formDataArg = importTokensSpy.mock.calls[0][1] as FormData;
     expect(formDataArg.get("file")).toBe(file);

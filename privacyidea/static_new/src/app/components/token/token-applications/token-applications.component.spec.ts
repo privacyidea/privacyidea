@@ -24,6 +24,7 @@ import { MatSelectModule } from "@angular/material/select";
 import { MachineService } from "../../../services/machine/machine.service";
 import { provideHttpClient } from "@angular/common/http";
 import { MockLocalService, MockMachineService, MockNotificationService } from "../../../../testing/mock-services";
+import "@angular/localize/init";
 
 describe("TokenApplicationsComponent (Jest)", () => {
   let fixture: ComponentFixture<TokenApplicationsComponent>;
@@ -58,7 +59,7 @@ describe("TokenApplicationsComponent (Jest)", () => {
     expect(component).toBeTruthy();
   });
 
-  it("should default to \"ssh\" for selectedApplicationType", () => {
+  it('should default to "ssh" for selectedApplicationType', () => {
     expect(component.selectedApplicationType()).toBe("ssh");
   });
 

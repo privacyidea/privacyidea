@@ -29,6 +29,7 @@ import { ApplicationService } from "../../../../../services/application/applicat
 import { MachineService } from "../../../../../services/machine/machine.service";
 import { UserService } from "../../../../../services/user/user.service";
 import { MockApplicationService, MockMachineService, MockUserService } from "../../../../../../testing/mock-services";
+import "@angular/localize/init";
 
 type TestMachine = {
   id: number;
@@ -196,8 +197,9 @@ describe("TokenSshMachineAssignDialogComponent", () => {
     });
 
     it("returns {invalidMachine:true} when object is missing fields", () => {
-      expect(component.machineValidator({ value: { id: 1, hostname: ["h"], ip: "x" } } as any))
-        .toEqual({ invalidMachine: true });
+      expect(component.machineValidator({ value: { id: 1, hostname: ["h"], ip: "x" } } as any)).toEqual({
+        invalidMachine: true
+      });
     });
 
     it("returns null for a valid machine", () => {

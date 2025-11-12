@@ -28,7 +28,6 @@ import { NotificationService } from "../../../../services/notification/notificat
 import { OverflowService } from "../../../../services/overflow/overflow.service";
 import { AuthService } from "../../../../services/auth/auth.service";
 import {
-  MockAuthService,
   MockLocalService,
   MockMachineService,
   MockNotificationService,
@@ -39,6 +38,8 @@ import {
 import { MatDialog } from "@angular/material/dialog";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { MockAuthService } from "../../../../../testing/mock-services/mock-auth-service";
+import "@angular/localize/init";
 
 describe("TokenDetailsActionsComponent", () => {
   let fixture: ComponentFixture<TokenDetailsActionsComponent>;
@@ -187,7 +188,6 @@ describe("TokenDetailsActionsComponent", () => {
     });
     expect(reloadSpy).toHaveBeenCalledTimes(1);
   });
-
 
   describe("openLostTokenDialog()", () => {
     it("passes the isLost & tokenSerial signals to the dialog", () => {
