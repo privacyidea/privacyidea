@@ -365,7 +365,8 @@ export class ContainerService implements ContainerServiceInterface {
 
   containerTypesResource = httpResource<PiResponse<ContainerTypes>>(() => {
     const route = this.contentService.routeUrl();
-    if (![ROUTE_PATHS.TOKENS_CONTAINERS_CREATE, ROUTE_PATHS.TOKENS_CONTAINERS_WIZARD]
+    if (![ROUTE_PATHS.TOKENS_CONTAINERS_CREATE, ROUTE_PATHS.TOKENS_CONTAINERS_WIZARD,
+      ROUTE_PATHS.TOKENS_ENROLLMENT]
         .includes(route) && !route.startsWith(ROUTE_PATHS.TOKENS_DETAILS)) {
       return undefined;
     }
