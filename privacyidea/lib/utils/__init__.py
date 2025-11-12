@@ -1491,7 +1491,7 @@ def get_computer_name_from_user_agent(user_agent: str) -> Union[str, None]:
 
 def redacted_email(email: str) -> str:
     """
-    Censors an email address from 'example.mail@test.com' to 'ex*********@t***.com'
+    Censors an email address from 'example.mail@test.com' to 'ex********@t****.com'
     """
     name, domain = email.split('@') if '@' in email else ("**", email)
     name_redacted = name[:2] + "*" * (10 - len(name[:2]))
