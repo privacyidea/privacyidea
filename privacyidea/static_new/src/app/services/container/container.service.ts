@@ -145,6 +145,7 @@ export interface ContainerUnregisterData {
 }
 
 export interface ContainerServiceInterface {
+  compatibleWithTokenType: WritableSignal<string | null>;
   isPollingActive: Signal<boolean>;
   apiFilter: string[];
   advancedApiFilter: string[];
@@ -233,7 +234,7 @@ export class ContainerService implements ContainerServiceInterface {
   private readonly userService: UserServiceInterface = inject(UserService);
   private readonly pollingTrigger = signal<number>(0);
   private readonly isRolloverPolling = signal(false);
-
+  readonly compatibleWithTokenType: WritableSignal<string | null> = signal<string | null>(null);
   readonly isPollingActive = signal(false);
   readonly apiFilter = apiFilter;
   readonly advancedApiFilter = advancedApiFilter;
@@ -293,6 +294,17 @@ export class ContainerService implements ContainerServiceInterface {
       this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_DETAILS)
     );
   });
+
+  private readonly uniqueCompatibleType = computed<string | null>(() => {
+    const tt = this.compatibleWithTokenType();
+    if (!tt) return null;
+
+    const types = this.containerTypeOptions();
+    const compatible = types.filter(t => (t.token_types ?? []).includes(tt));
+
+    return compatible.length === 1 ? String(compatible[0].containerType) : null;
+  });
+
   containerResource = httpResource<PiResponse<ContainerDetails>>(() => {
     if (
       (!this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_DETAILS) &&
@@ -305,23 +317,29 @@ export class ContainerService implements ContainerServiceInterface {
     ) {
       return undefined;
     }
+
+    const baseParams: Record<string, any> = {
+      ...(!this.loadAllContainers() && {
+        page: this.pageIndex() + 1,
+        pagesize: this.pageSize()
+      }),
+      ...(this.loadAllContainers() && { no_token: 1 }),
+      sortby: this.sort().active,
+      sortdir: this.sort().direction,
+      ...this.filterParams(),
+      user: this.userService.selectedUser()?.username ?? ""
+    };
+
+    const autoType = this.uniqueCompatibleType();
+    if (autoType && !('type' in baseParams) && !('type_list' in baseParams)) {
+      baseParams["type"] = autoType;
+    }
+
     return {
       url: this.containerBaseUrl,
       method: "GET",
       headers: this.authService.getHeaders(),
-      params: {
-        ...(!this.loadAllContainers() && {
-          page: this.pageIndex() + 1,
-          pagesize: this.pageSize()
-        }),
-        ...(this.loadAllContainers() && {
-          no_token: 1
-        }),
-        sortby: this.sort().active,
-        sortdir: this.sort().direction,
-        ...this.filterParams(),
-        user: this.userService.selectedUser()?.username ?? ""
-      }
+      params: baseParams
     };
   });
   containerOptions = linkedSignal({
@@ -346,7 +364,9 @@ export class ContainerService implements ContainerServiceInterface {
   });
 
   containerTypesResource = httpResource<PiResponse<ContainerTypes>>(() => {
-    if (![ROUTE_PATHS.TOKENS_CONTAINERS_CREATE, ROUTE_PATHS.TOKENS_CONTAINERS_WIZARD].includes(this.contentService.routeUrl())) {
+    const route = this.contentService.routeUrl();
+    if (![ROUTE_PATHS.TOKENS_CONTAINERS_CREATE, ROUTE_PATHS.TOKENS_CONTAINERS_WIZARD]
+        .includes(route) && !route.startsWith(ROUTE_PATHS.TOKENS_DETAILS)) {
       return undefined;
     }
     return {
