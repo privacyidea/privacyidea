@@ -18,18 +18,18 @@
  **/
 import { ContainerDetails, ContainerService } from "./container.service";
 import { HttpClient, HttpErrorResponse, HttpParams, provideHttpClient } from "@angular/common/http";
-import { MockLocalService, MockNotificationService, MockTokenService } from "../../../testing/mock-services";
+import {
+  MockAuthService,
+  MockLocalService,
+  MockNotificationService,
+  MockTokenService
+} from "../../../testing/mock-services";
 import { lastValueFrom, of, throwError } from "rxjs";
 import { NotificationService } from "../notification/notification.service";
 import { TestBed } from "@angular/core/testing";
 import { TokenService } from "../token/token.service";
 import { AuthService } from "../auth/auth.service";
 import { FilterValue } from "../../core/models/filter_value";
-
-
-class MockAuthService implements Partial<AuthService> {
-  getHeaders = jest.fn().mockReturnValue({ Authorization: "Bearer FAKE_TOKEN" });
-}
 
 describe("ContainerService", () => {
   let containerService: ContainerService;
