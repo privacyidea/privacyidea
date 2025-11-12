@@ -2175,6 +2175,8 @@ def fido2_auth(request, action):
     rp_id = get_first_policy_value(FIDO2PolicyAction.RELYING_PARTY_ID, "", scope=SCOPE.ENROLL)
     if rp_id:
         request.all_data[FIDO2PolicyAction.RELYING_PARTY_ID] = rp_id
+    else:
+        request.all_data[FIDO2PolicyAction.RELYING_PARTY_ID] = ""
 
     passkey_trigger_by_pin = (Match.user(g,
                                          scope=SCOPE.AUTH,
