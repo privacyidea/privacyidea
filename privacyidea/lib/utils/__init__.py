@@ -1501,6 +1501,6 @@ def redacted_email(email: str) -> str:
 
 def redacted_phone_number(number: str) -> str:
     """
-    Censors a phone number from 01234567890 to *********90
+    Censors a phone number from 01234567890 to ****-******90
     """
     return f'****-******{number[-2:] or "**"}'
