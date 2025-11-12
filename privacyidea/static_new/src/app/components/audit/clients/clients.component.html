@@ -1,0 +1,104 @@
+<!--
+ (c) NetKnights GmbH 2025,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+ -->
+<div
+  appScrollToTop
+  class="clients-layout">
+  <table
+    mat-table
+    [dataSource]="clientDataSource()"
+    class="mat-elevation-z8 token-table"
+    aria-label="Client Data Table">
+    <ng-container matColumnDef="application">
+      <th
+        mat-header-cell
+        *matHeaderCellDef>Application
+      </th>
+      <ng-container *matCellDef="let row; let i = index">
+        @if (row.isFirst) {
+          <td
+            mat-cell
+            [attr.rowspan]="row.rowspan">
+
+            <ng-container>
+              <span>{{ row.application }}</span>
+            </ng-container>
+
+          </td>
+        }
+      </ng-container>
+    </ng-container>
+
+    <!-- Hostname Column -->
+    <ng-container matColumnDef="hostname">
+      <th
+        mat-header-cell
+        *matHeaderCellDef>Hostname
+      </th>
+      <td
+        mat-cell
+        *matCellDef="let row">{{ row.hostname }}
+      </td>
+    </ng-container>
+
+    <!-- IP Address Column -->
+    <ng-container matColumnDef="ip">
+      <th
+        mat-header-cell
+        *matHeaderCellDef>IP Address
+      </th>
+      <td
+        mat-cell
+        *matCellDef="let row">{{ row.ip }}
+      </td>
+    </ng-container>
+
+    <!-- Last Seen Column -->
+    <ng-container matColumnDef="lastseen">
+      <th
+        mat-header-cell
+        *matHeaderCellDef>Last Seen
+      </th>
+      <td
+        mat-cell
+        *matCellDef="let row">{{ row.lastseen }}
+      </td>
+    </ng-container>
+
+    <tr
+      mat-header-row
+      *matHeaderRowDef="columnKeys"></tr>
+    <tr
+      mat-row
+      *matRowDef="let row; columns: columnKeys;"></tr>
+
+    <tr
+      *matNoDataRow
+      aria-label="No Data Row"
+      i18n-aria-label>
+      <td
+        [attr.colspan]="columnKeys.length"
+        aria-label="No Data Cell"
+        i18n
+        i18n-aria-label>
+        No data matching the filter.
+      </td>
+    </tr>
+
+  </table>
+</div>

@@ -1,0 +1,10 @@
+@use "../../../../styles";
+
+.clients-layout {
+  @include styles.table-container-styles;
+  @include styles.base-table-structure();
+  max-height: var(--max-height);
+  max-width: calc(100vw - var(--global-padding) * 5 - 48px);
+  overflow: auto;
+  display: grid;
+}
