@@ -26,24 +26,96 @@ export interface FilterPair {
   value: string;
 }
 
+export type ColumnKey =
+  | "select"
+  | "serial"
+  | "type"
+  | "states"
+  | "description"
+  | "user_name"
+  | "user_realm"
+  | "realms"
+  | "tokentype"
+  | "active"
+  | "username"
+  | "failcount"
+  | "maxfail"
+  | "container_serial"
+  | "count"
+  | "rounds"
+  | "service_id"
+  | "user";
+
+export type ColumnDef<K extends ColumnKey = ColumnKey> = Readonly<{
+  key: K;
+  label: string;
+}>;
+
+export const COLUMN_REGISTRY: Readonly<Record<ColumnKey, ColumnDef>> = {
+  select: { key: "select", label: "" },
+  serial: { key: "serial", label: "Serial" },
+  type: { key: "type", label: "Type" },
+  states: { key: "states", label: "Status" },
+  description: { key: "description", label: "Description" },
+  user_name: { key: "user_name", label: "User" },
+  user_realm: { key: "user_realm", label: "Realm" },
+  realms: { key: "realms", label: "Container Realms" },
+  tokentype: { key: "tokentype", label: "Type" },
+  active: { key: "active", label: "Active" },
+  username: { key: "username", label: "User" },
+  failcount: { key: "failcount", label: "Fail Counter" },
+  maxfail: { key: "maxfail", label: "Maxfail" },
+  container_serial: { key: "container_serial", label: "Container" },
+  count: { key: "count", label: "Count" },
+  rounds: { key: "rounds", label: "Rounds" },
+  service_id: { key: "service_id", label: "Service ID" },
+  user: { key: "user", label: "SSH User" }
+} as const;
+
+type ColumnsTuple<K extends readonly ColumnKey[]> = {
+  readonly [I in keyof K]: ColumnDef<Extract<K[I], ColumnKey>>;
+};
+
+type KeysOfColumns<C extends readonly ColumnDef[]> = {
+  readonly [I in keyof C]: C[I] extends ColumnDef<infer KK> ? KK : never;
+};
+
 export interface TableUtilsServiceInterface {
   pageSizeOptions: WritableSignal<number[]>;
 
   emptyDataSource<T>(pageSize: number, columnsKeyMap: { key: string; label: string }[]): MatTableDataSource<T>;
+
   toggleKeywordInFilter(args: { keyword: string; currentValue: FilterValue }): FilterValue;
+
   toggleBooleanInFilter(args: { keyword: string; currentValue: FilterValue }): FilterValue;
+
   isLink(columnKey: string): boolean;
+
   getClassForColumn(columnKey: string, element: any): string;
+
   getTooltipForColumn(columnKey: string, element: any): string;
+
   getDisplayText(columnKey: string, element: any): string;
+
   getSpanClassForKey(args: { key: string; value?: any; maxfail?: any }): string;
+
   getDivClassForKey(key: string): string;
+
   getClassForColumnKey(columnKey: string): string;
+
   getChildClassForColumnKey(columnKey: string): string;
+
   getDisplayTextForKeyAndRevoked(key: string, value: any, revoked: boolean): string;
+
   getTdClassForKey(key: string): string[];
+
   getSpanClassForState(state: string, clickable: boolean): string;
+
   getDisplayTextForState(state: string): string;
+
+  pickColumns<const K extends readonly ColumnKey[]>(...keys: K): ColumnsTuple<K>;
+
+  getColumnKeys<const C extends readonly ColumnDef[]>(cols: C): KeysOfColumns<C>;
 }
 
 @Injectable({
@@ -283,5 +355,21 @@ export class TableUtilsService implements TableUtilsServiceInterface {
     } else {
       return state;
     }
+  }
+
+  pickColumns<const K extends readonly ColumnKey[]>(
+    ...keys: K
+  ) {
+    return keys.map(k => COLUMN_REGISTRY[k]) as {
+      readonly [I in keyof K]: ColumnDef<Extract<K[I], ColumnKey>>;
+    };
+  }
+
+  getColumnKeys<const C extends readonly ColumnDef[]>(
+    cols: C
+  ) {
+    return cols.map(c => c.key) as {
+      readonly [I in keyof C]: C[I] extends ColumnDef<infer KK> ? KK : never;
+    };
   }
 }

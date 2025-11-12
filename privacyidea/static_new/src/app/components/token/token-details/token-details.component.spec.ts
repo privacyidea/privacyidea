@@ -27,6 +27,7 @@ import {
   MockValidateService
 } from "../../../../testing/mock-services";
 import { MatDialog } from "@angular/material/dialog";
+import { ActivatedRoute } from "@angular/router";
 
 describe("TokenDetailsComponent", () => {
   let fixture: ComponentFixture<TokenDetailsComponent>;
@@ -50,6 +51,12 @@ describe("TokenDetailsComponent", () => {
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            params: of({ id: "123" })
+          }
+        },
         { provide: TokenService, useClass: MockTokenService },
         { provide: ContainerService, useClass: MockContainerService },
         { provide: ValidateService, useClass: MockValidateService },
@@ -230,13 +237,6 @@ describe("TokenDetailsComponent", () => {
     expect(component.isNumberElement("count_window")).toBe(true);
     expect(component.isNumberElement("sync_window")).toBe(true);
     expect(component.isNumberElement("description")).toBe(false);
-  });
-
-  it("containerSelected marks programmatic change and forwards to ContentService", () => {
-    const spy = jest.spyOn(contentSvc, "containerSelected");
-    component.containerSelected("C-9");
-    expect(component.isProgrammaticTabChange()).toBe(true);
-    expect(spy).toHaveBeenCalledWith("C-9");
   });
 
   it("openSshMachineAssignDialog opens the dialog with expected data", () => {

@@ -50,8 +50,7 @@
           <td
             *matCellDef="let element"
             attr.aria-label="{{ column.label }} Cell"
-            mat-cell
-            [ngClass]="{ 'width-18rem': column.key === 'description' }">
+            mat-cell>
             <ng-container>
               <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
                 @switch (column.key) {

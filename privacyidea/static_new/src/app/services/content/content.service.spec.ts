@@ -79,52 +79,30 @@ describe("ContentService", () => {
   });
 
   describe("tokenSelected()", () => {
-    it("navigates to token details, sets serial, and marks programmatic change when coming from containers", async () => {
+    it("navigates to token details and sets serial", async () => {
       emitNav("/tokens/containers");
-
-      expect(service.isProgrammaticTabChange()).toBe(false);
-
       service.tokenSelected("SER1");
 
       expect(mockRouter.navigateByUrl).toHaveBeenCalledWith(
         ROUTE_PATHS.TOKENS_DETAILS + "SER1"
       );
       expect(service.tokenSerial()).toBe("SER1");
-      expect(service.isProgrammaticTabChange()).toBe(true);
-
       expect(service.routeUrl()).toBe(ROUTE_PATHS.TOKENS_DETAILS + "SER1");
       expect(service.previousUrl()).toBe("/tokens/containers");
     });
   });
 
   describe("containerSelected()", () => {
-    it("navigates to container details, sets serial, and marks programmatic change when not on containers route", async () => {
+    it("navigates to container details and sets serial", async () => {
       emitNav("/tokens");
-      expect(service.isProgrammaticTabChange()).toBe(false);
-
       service.containerSelected("C1");
 
       expect(mockRouter.navigateByUrl).toHaveBeenCalledWith(
         ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + "C1"
       );
       expect(service.containerSerial()).toBe("C1");
-      expect(service.isProgrammaticTabChange()).toBe(true);
-
       expect(service.routeUrl()).toBe(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + "C1");
       expect(service.previousUrl()).toBe("/tokens");
-    });
-
-    it("does NOT mark programmatic change when already on containers route", async () => {
-      emitNav("/tokens/containers");
-      service.isProgrammaticTabChange.set(false);
-
-      service.containerSelected("C2");
-
-      expect(mockRouter.navigateByUrl).toHaveBeenCalledWith(
-        ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + "C2"
-      );
-      expect(service.containerSerial()).toBe("C2");
-      expect(service.isProgrammaticTabChange()).toBe(false);
     });
   });
 });

@@ -1,1 +1,189 @@
-<p i18n>user-details works!</p>
+<div
+  appScrollToTop
+  aria-label="Details"
+  class="details-container"
+  i18n-aria-label>
+  <div class="details-header">
+    <h3 i18n>Details for User:</h3>
+    <h3 style="color: var(--mat-sys-primary); margin-right: -8px">{{ userService.detailsUsername() }}</h3>
+    <app-copy-button [copyText]="userService.detailsUsername()"></app-copy-button>
+    <h3>in Realm {{ userService.selectedUserRealm() }}</h3>
+    <button
+      (click)="showUserAuditLog()"
+      [routerLink]="[ROUTE_PATHS.AUDIT]"
+      mat-icon-button
+      matTooltip="Show audit log of user">
+      <mat-icon>receipt_long</mat-icon>
+    </button>
+  </div>
+  <div class="user-details">
+    @for (col of detailsColumns(); track $index) {
+      <div class="user-details-column">
+        @for (item of col; track item.key) {
+          <div class="label">{{ item.label }}:</div>
+          @if (typeof item.value === 'object' && item.value.length > 1) {
+            <div class="value">
+              <ul class="no-indention margin-0">
+                @for (val of item.value; track val) {
+                  <li>{{ val }}</li>
+                }
+              </ul>
+            </div>
+          } @else {
+            <div class="value">{{ item.value }}</div>
+          }
+        }
+      </div>
+    }
+  </div>
+
+  <div class="flex-column">
+    <div class="details-header">
+      <h3 i18n>
+        Custom Attributes:
+      </h3>
+    </div>
+    <div class="add-attr-row">
+      <mat-form-field class="width-238">
+        <mat-label i18n>Attribute Key</mat-label>
+        <div class="flex-row">
+          @if (keyMode() === 'select') {
+            <mat-select
+              [(ngModel)]="selectedKey">
+              @for (k of keyOptions(); track k) {
+                <mat-option [value]="k">{{ k }}</mat-option>
+              }
+              @if (hasWildcardKey()) {
+                <mat-option
+                  (onSelectionChange)="switchToCustomKey()"
+                  [value]="'__CUSTOM__'">
+                  <i i18n>Custom…</i>
+                </mat-option>
+              }
+            </mat-select>
+          } @else {
+            <input
+              [(ngModel)]="addKeyInput"
+              i18n-placeholder
+              matInput
+              placeholder="Enter key" />
+            @if (keyOptions().length > 0) {
+              <button
+                (click)="switchToSelectKey()"
+                aria-label="Back to key select"
+                class="ml-4 mt--8 return-button"
+                i18n-aria-label="Back to key select"
+                mat-icon-button
+                type="button">
+                <mat-icon>arrow_left</mat-icon>
+              </button>
+            }
+          }
+        </div>
+      </mat-form-field>
+
+      <mat-form-field class="width-238">
+        <mat-label i18n>Attribute Value</mat-label>
+
+        @if (isValueInput()) {
+          <input
+            [(ngModel)]="addValueInput"
+            i18n-placeholder
+            matInput
+            placeholder="Enter value" />
+        } @else {
+          <mat-select [(ngModel)]="selectedValue">
+            @for (v of valueOptions(); track v) {
+              <mat-option [value]="v">{{ v }}</mat-option>
+            }
+          </mat-select>
+        }
+      </mat-form-field>
+
+      <button
+        (click)="addCustomAttribute()"
+        [disabled]="!canAddAttribute()"
+        class="ml-8"
+        color="primary"
+        i18n
+        mat-icon-button>
+        <mat-icon>save</mat-icon>
+      </button>
+    </div>
+
+    @if (userService.userAttributesList().length > 0) {
+      <div class="custom-user-details mt-12 custom-details">
+        @for (attr of userService.userAttributesList(); track attr.key) {
+          <div class="label">
+            {{ attr.key }}:
+          </div>
+          <div class="value">{{ attr.value || "-" }}</div>
+          @if (deletableAttributes().includes(attr.key) || deletableAttributes().includes("*")) {
+            <button
+              (click)="deleteCustomAttribute(attr.key)"
+              aria-label="Delete custom attribute"
+              class="ml-4 small-icon-button"
+              i18n-aria-label="Delete custom attribute"
+              mat-icon-button>
+              <mat-icon>delete</mat-icon>
+            </button>
+          } @else {
+            <div class="small-icon-button"></div>
+          }
+        }
+      </div>
+    }
+  </div>
+
+  <app-user-details-token-table />
+
+  <div class="flex-row filter-paginator-container">
+    <mat-form-field class="width-66">
+      <mat-label i18n>Assign Token to User</mat-label>
+      <app-clearable-input
+        (onClick)="tokenService.clearFilter()"
+        [showClearButton]="tokenService.tokenFilter().isNotEmpty">
+        <input
+          #filterHTMLInputElement
+          #tokenAutoTrigger="matAutocompleteTrigger"
+          (input)="tokenService.handleFilterInput($event)"
+          [matAutocomplete]="tokenAuto"
+          [value]="tokenService.tokenFilter().filterString"
+          i18n-placeholder
+          matInput
+          placeholder="Example query: 'type: hotp serial: 123'" />
+      </app-clearable-input>
+      <mat-autocomplete #tokenAuto="matAutocomplete">
+        @for (option of tokenDataSource().data; track option) {
+          <mat-option
+            (click)="assignUserToToken(option)"
+            class="token-option">
+            <span class="token-option-span"> {{ option["serial"] }} </span>
+            <span class="token-option-span">
+                    {{ option["tokentype"] }}
+                  </span>
+            <span
+              [ngClass]="option['active'] ? 'highlight-true' : 'highlight-false'"
+              class="token-option-span"
+              i18n>
+                    {{ option["active"] ? "active" : "deactivated" }}
+                  </span>
+            <span class="token-option-span">
+                    {{ option["username"] }}
+                  </span>
+            <mat-icon>add</mat-icon>
+          </mat-option>
+        }
+      </mat-autocomplete>
+    </mat-form-field>
+    <mat-paginator
+      (page)="onPageEvent($event)"
+      [hidePageSize]="true"
+      [length]="total()"
+      [pageIndex]="pageIndex()"
+      [pageSize]="pageSize()" />
+  </div>
+
+  <app-user-details-container-table />
+
+</div>

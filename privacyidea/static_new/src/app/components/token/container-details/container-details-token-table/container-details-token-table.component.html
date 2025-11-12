@@ -22,12 +22,12 @@
           i18n-placeholder
           placeholder="Filter across all columns." />
       </mat-form-field>
+    }
       <mat-paginator
         [pageSizeOptions]="pageSizeOptions()"
         [pageSize]="pageSize"
         class="flex-just-start"
-        showFirstLastButtons></mat-paginator>
-    }
+        showFirstLastButtons/>
   </div>
   <div [ngClass]="[overflowService.isWidthOverflowing('body', 1580) ? 'flex-column' : 'flex-row']">
     <table
@@ -49,8 +49,7 @@
           <td
             *matCellDef="let element"
             attr.aria-label="{{ column.label }} Cell"
-            mat-cell
-            [ngClass]="{ 'width-18rem': column.key === 'description' }">
+            mat-cell>
             <ng-container>
               <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
                 @switch (column.key) {
@@ -73,6 +72,13 @@
                       [ngClass]="tableUtilsService.getClassForColumn(column.key, element)">
                       {{ tableUtilsService.getDisplayText(column.key, element) }}
                     </span>
+                  }
+                  @case ("username") {
+                    <a
+                      (click)="contentService.userSelected(element[column.key])"
+                      attr.aria-label="{{ column.label }} Link">
+                      {{ element[column.key] }}
+                    </a>
                   }
                   @default {
                     @if (tableUtilsService.isLink(column.key)) {
