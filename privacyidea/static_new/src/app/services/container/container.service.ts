@@ -305,7 +305,22 @@ export class ContainerService implements ContainerServiceInterface {
     return compatible.length === 1 ? String(compatible[0].containerType) : null;
   });
 
+  private readonly tokenInContainer = computed<boolean>(() => {
+    const onTokenDetails = this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_DETAILS);
+    if (!onTokenDetails) return false;
+
+    const tokenDetailsRes = this.tokenService.tokenDetailResource.value();
+    const assigned = tokenDetailsRes?.result?.value?.tokens?.[0]?.container_serial ?? "";
+    return String(assigned).trim() !== "";
+  });
+
   containerResource = httpResource<PiResponse<ContainerDetails>>(() => {
+    if (this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_DETAILS)) {
+      const tokenRes = this.tokenService.tokenDetailResource.value();
+      if (!tokenRes) return undefined;
+      if (this.tokenInContainer()) return undefined;
+    }
+
     if (
       (!this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_DETAILS) &&
         !this.contentService.routeUrl().startsWith(ROUTE_PATHS.USERS_DETAILS) &&
