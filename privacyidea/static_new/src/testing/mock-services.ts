@@ -303,7 +303,7 @@ export class MockAuthService extends AuthService {
     realm: "default",
     rights: [],
     role: "admin",
-    token: "",
+    token: "Bearer FAKE_TOKEN",
     username: "alice",
     logout_time: 3600,
     audit_page_size: 25,
@@ -549,7 +549,6 @@ export class MockContentService implements ContentServiceInterface {
     this.containerSerial.set(serial);
   });
   userSelected: (username: any) => void = jest.fn();
-  isProgrammaticTabChange = signal(false);
 }
 
 export class MockContainerService extends ContainerService {
@@ -607,7 +606,8 @@ export class MockContainerService extends ContainerService {
           states: [],
           type: "",
           select: "",
-          description: ""
+          description: "",
+          info: {}
         }
       ],
       count: 1
@@ -645,11 +645,9 @@ export class MockContainerService extends ContainerService {
     throw new Error("Method not implemented.");
   }
 
-  override containerBelongsToUser = jest.fn().mockReturnValue(true);
+  override unregister = jest.fn().mockReturnValue(of({}));
 
-  override stopPolling(): void {
-    throw new Error("Method not implemented.");
-  }
+  override containerBelongsToUser = jest.fn().mockReturnValue(true);
 
   override createContainer(param: {
     container_type: string;
@@ -660,17 +658,6 @@ export class MockContainerService extends ContainerService {
     realm?: string;
     options?: any;
   }): Observable<PiResponse<{ container_serial: string }, unknown>> {
-    throw new Error("Method not implemented.");
-  }
-
-  override pollContainerRolloutState(
-    containerSerial: string,
-    startTime: number
-  ): Observable<PiResponse<ContainerDetails, unknown>> {
-    throw new Error("Method not implemented.");
-  }
-
-  override getContainerDetails(containerSerial: string): Observable<PiResponse<ContainerDetails, unknown>> {
     throw new Error("Method not implemented.");
   }
 }

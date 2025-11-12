@@ -1,0 +1,38 @@
+@if (data.rollover) {
+  <h2
+    mat-dialog-title>
+    Container Rollover
+  </h2>
+} @else {
+  <h2
+    mat-dialog-title>
+    Register Container
+  </h2>
+}
+<mat-dialog-content>
+  <app-container-registration-config
+    [containerHasOwner]="data.containerHasOwner"
+    (validInputChange)="onValidInputChange($event)"></app-container-registration-config>
+</mat-dialog-content>
+<mat-dialog-actions>
+  @if (data.rollover) {
+    <button
+      (click)="onRegister()"
+      mat-button
+      [disabled]="!validInput">
+      Rollover
+    </button>
+  } @else {
+    <button
+      (click)="onRegister()"
+      mat-button
+      [disabled]="!validInput">
+      Register
+    </button>
+  }
+  <button
+    mat-button
+    mat-dialog-close>
+    Close
+  </button>
+</mat-dialog-actions>

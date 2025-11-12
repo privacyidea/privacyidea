@@ -28,6 +28,7 @@ import { VersioningService, VersioningServiceInterface } from "../../../../servi
 import { AuthService } from "../../../../services/auth/auth.service";
 import { ROUTE_PATHS } from "../../../../route_paths";
 import { RouterLink } from "@angular/router";
+import { NotificationService } from "../../../../services/notification/notification.service";
 
 @Component({
   selector: "app-container-table-actions",
@@ -45,6 +46,7 @@ export class ContainerTableActionsComponent {
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly versioningService: VersioningServiceInterface = inject(VersioningService);
   protected readonly authService = inject(AuthService);
+  protected readonly notificationService = inject(NotificationService);
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
   containerSelection = this.containerService.containerSelection;
   containerSerial = this.containerService.containerSerial;

@@ -50,7 +50,6 @@ import { ClearableInputComponent } from "../../shared/clearable-input/clearable-
 import { ContainerDetailsInfoComponent } from "./container-details-info/container-details-info.component";
 import { ContainerDetailsTokenTableComponent } from "./container-details-token-table/container-details-token-table.component";
 import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
-import { FilterValue } from "../../../core/models/filter_value";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatDivider } from "@angular/material/divider";
 import { MatFormField } from "@angular/material/form-field";
@@ -65,6 +64,11 @@ import { Router, RouterLink } from "@angular/router";
 import { infoDetailsKeyMap } from "../token-details/token-details.component";
 import { MatTooltip } from "@angular/material/tooltip";
 import { AuditService, AuditServiceInterface } from "../../../services/audit/audit.service";
+import { NotificationService } from "../../../services/notification/notification.service";
+import { ContainerDetailsActionsComponent } from "./container-details-actions/container-details-actions.component";
+import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
+import { ContainerDetailsTokenActionsComponent } from "./container-details-token-actions/container-details-token-actions.component";
+import { FilterValue } from "../../../core/models/filter_value";
 
 export const containerDetailsKeyMap = [
   { key: "type", label: "Type" },
@@ -120,8 +124,11 @@ interface TokenOption {
     CopyButtonComponent,
     ClearableInputComponent,
     MatTooltip,
-    RouterLink,
-    MatTooltip
+    ClearableInputComponent,
+    ContainerDetailsActionsComponent,
+    ScrollToTopDirective,
+    ContainerDetailsTokenActionsComponent,
+    RouterLink
   ],
   templateUrl: "./container-details.component.html",
   styleUrls: ["./container-details.component.scss"]
@@ -137,6 +144,7 @@ export class ContainerDetailsComponent {
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly auditService: AuditServiceInterface = inject(AuditService);
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
+  protected readonly notificationService = inject(NotificationService);
   private router = inject(Router);
   states = this.containerService.states;
   isEditingUser = signal(false);
@@ -165,13 +173,20 @@ export class ContainerDetailsComponent {
       return previous?.value ?? 0;
     }
   });
+
+  containerType = computed(() => {
+    return this.containerDetails()?.type ?? "";
+  });
+
   containerDetailResource = this.containerService.containerDetailResource;
-  containerDetails = linkedSignal({
+  containerDetails: WritableSignal<ContainerDetailData> = linkedSignal({
     source: this.containerDetailResource.value,
-    computation: (containerDetailResourceValue) => {
+    computation: (containerDetailResourceValue, previous) => {
       const value = containerDetailResourceValue?.result?.value;
       if (value && value.containers.length > 0) {
         return value.containers[0];
+      } else if (previous?.value) {
+        return previous.value;
       }
 
       const emptyContainerDetails: ContainerDetailData = {
@@ -289,7 +304,8 @@ export class ContainerDetailsComponent {
   constructor() {
     effect(() => {
       this.showOnlyTokenNotInContainer();
-      if (this.filterHTMLInputElement) {
+      // do not focus if showOnlyTokenNotInContainer is deselected to ensure the hint is visible
+      if (this.filterHTMLInputElement && this.showOnlyTokenNotInContainer()) {
         this.filterHTMLInputElement.nativeElement.focus();
       }
     });
@@ -301,31 +317,6 @@ export class ContainerDetailsComponent {
         });
       }
     });
-  }
-
-  _addTypeListToFilter(currentFilter: FilterValue): FilterValue {
-    const containerDetails = this.containerDetails();
-    const containerType = containerDetails?.type;
-    const allowedTokenTypes = allowedTokenTypesMap.get(containerType);
-    const _currentFilter = currentFilter.copyWith();
-    if (
-      !allowedTokenTypes ||
-      allowedTokenTypes === "all" ||
-      !Array.isArray(allowedTokenTypes) ||
-      allowedTokenTypes.length === 0
-    ) {
-      _currentFilter.removeKey("type");
-      _currentFilter.removeKey("type_list");
-      return _currentFilter;
-    }
-    if (allowedTokenTypes.length === 1) {
-      _currentFilter.addEntry("type", allowedTokenTypes[0]);
-      _currentFilter.removeKey("type_list");
-    } else {
-      _currentFilter.addEntry("type_list", allowedTokenTypes.join(","));
-      _currentFilter.removeKey("type");
-    }
-    return _currentFilter;
   }
 
   isEditableElement(key: string) {

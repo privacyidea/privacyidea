@@ -18,21 +18,10 @@
  **/
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
-import { HttpClient, HttpErrorResponse, HttpParams, httpResource, HttpResourceRef } from "@angular/common/http";
+import { HttpClient, HttpErrorResponse, httpResource, HttpResourceRef } from "@angular/common/http";
 import { computed, effect, inject, Injectable, linkedSignal, Signal, signal, WritableSignal } from "@angular/core";
 import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
-import {
-  catchError,
-  forkJoin,
-  Observable,
-  of,
-  Subject,
-  switchMap,
-  takeUntil,
-  takeWhile,
-  throwError,
-  timer
-} from "rxjs";
+import { catchError, forkJoin, Observable, of, Subject, throwError } from "rxjs";
 import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
 import { ROUTE_PATHS } from "../../route_paths";
@@ -150,11 +139,12 @@ export interface ContainerRegisterData {
   ttl: number;
 }
 
+export interface ContainerUnregisterData {
+  success: boolean;
+}
+
 export interface ContainerServiceInterface {
-  handleFilterInput($event: Event): void;
-
-  clearFilter(): void;
-
+  isPollingActive: Signal<boolean>;
   apiFilter: string[];
   advancedApiFilter: string[];
   stopPolling$: Subject<void>;
@@ -184,7 +174,6 @@ export interface ContainerServiceInterface {
   removeToken: (tokenSerial: string, containerSerial: string) => Observable<any>;
   setContainerRealm: (containerSerial: string, value: string[]) => Observable<any>;
   setContainerDescription: (containerSerial: string, value: string) => Observable<any>;
-
   toggleActive: (
     containerSerial: string,
     states: string[]
@@ -206,10 +195,17 @@ export interface ContainerServiceInterface {
   deleteAllTokens: (param: { containerSerial: string; serialList: string }) => Observable<any>;
   registerContainer: (params: {
     container_serial: string;
+    passphrase_user: boolean;
     passphrase_prompt: string;
     passphrase_response: string;
+    rollover?: boolean;
   }) => Observable<PiResponse<ContainerRegisterData>>;
+  unregister: (containerSerial: string) => Observable<PiResponse<any>>;
   containerBelongsToUser: (containerSerial: string) => false | true | undefined;
+
+  handleFilterInput($event: Event): void;
+
+  clearFilter(): void;
 
   stopPolling(): void;
 
@@ -221,7 +217,7 @@ export interface ContainerServiceInterface {
     realm?: string;
   }): Observable<PiResponse<{ container_serial: string }>>;
 
-  pollContainerRolloutState(containerSerial: string, startTime: number): Observable<PiResponse<ContainerDetails>>;
+  startPolling(containerSerial: string): void;
 }
 
 @Injectable({
@@ -233,12 +229,17 @@ export class ContainerService implements ContainerServiceInterface {
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly authService: AuthServiceInterface = inject(AuthService);
+  private readonly pollingTrigger = signal<number>(0);
+  private readonly isRolloverPolling = signal(false);
 
+  readonly isPollingActive = signal(false);
   readonly apiFilter = apiFilter;
   readonly advancedApiFilter = advancedApiFilter;
+
   stopPolling$ = new Subject<void>();
   containerBaseUrl = environment.proxyUrl + "/container/";
   eventPageSize = 10;
+
   states = signal<string[]>([]);
   containerSerial = this.contentService.containerSerial;
   selectedContainer: WritableSignal<string | null> = linkedSignal({
@@ -248,9 +249,7 @@ export class ContainerService implements ContainerServiceInterface {
     computation: (source, previous) =>
       source.routeUrl === ROUTE_PATHS.TOKENS_ENROLLMENT ? (previous?.value ?? "") : ""
   });
-
   sort = signal<Sort>({ active: "serial", direction: "asc" });
-
   containerFilter: WritableSignal<FilterValue> = linkedSignal({
     source: this.contentService.routeUrl,
     computation: () => new FilterValue()
@@ -370,7 +369,6 @@ export class ContainerService implements ContainerServiceInterface {
     source: this.contentService.routeUrl,
     computation: () => {
       let containerType = this.authService.defaultContainerType();
-      // Use the wizard type if on the wizard route and available
       if (this.contentService.routeUrl() === ROUTE_PATHS.TOKENS_CONTAINERS_WIZARD) {
         containerType = this.authService.containerWizard().type || containerType;
       }
@@ -387,6 +385,8 @@ export class ContainerService implements ContainerServiceInterface {
 
   containerDetailResource = httpResource<PiResponse<ContainerDetails>>(() => {
     const serial = this.containerSerial();
+    const trigger = this.pollingTrigger();
+    const active = this.isPollingActive();
 
     if (serial === "") {
       return undefined;
@@ -436,9 +436,6 @@ export class ContainerService implements ContainerServiceInterface {
 
   constructor() {
     effect(() => {
-      this.selectedContainer(); // Trigger recomputation for enrollment from container details
-    });
-    effect(() => {
       if (this.containerDetailResource.error()) {
         const containerDetailError = this.containerDetailResource.error() as HttpErrorResponse;
         console.error("Failed to get container details.", containerDetailError.message);
@@ -452,16 +449,42 @@ export class ContainerService implements ContainerServiceInterface {
         this.notificationService.openSnackBar(error.message);
       }
     });
-  }
 
-  handleFilterInput($event: Event): void {
-    const input = $event.target as HTMLInputElement;
-    const newFilter = this.containerFilter().copyWith({ value: input.value });
-    this.containerFilter.set(newFilter);
-  }
+    effect(() => {
+      clearTimeout(this.pollingTimeoutId);
+      this.pollingTrigger();
+      const serial = this.containerSerial();
+      const resourceValue = this.containerDetailResource.value();
+      const active = this.isPollingActive();
 
-  clearFilter(): void {
-    this.containerFilter.set(new FilterValue());
+      const routeUrl = this.contentService.routeUrl();
+      const onAllowedRoute =
+        routeUrl === ROUTE_PATHS.TOKENS_CONTAINERS_CREATE ||
+        routeUrl.startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS);
+
+      if (!active || !serial || !resourceValue?.result?.value || !onAllowedRoute) {
+        return;
+      }
+
+      const containerData = resourceValue.result.value.containers[0];
+      const registrationState = containerData?.info?.registration_state;
+
+      if (registrationState !== "registered") {
+        this.pollingTimeoutId = setTimeout(() => {
+          this.pollingTrigger.update(count => count + 1);
+        }, 2000);
+      } else {
+        const isRollover = this.isRolloverPolling();
+        if (isRollover) {
+          this.notificationService.openSnackBar("Container rollover completed successfully.");
+        } else if (routeUrl !== ROUTE_PATHS.TOKENS_CONTAINERS_CREATE) {
+          // container create shows a dialog on successful registration
+          this.notificationService.openSnackBar("Container registered successfully.");
+        }
+        this.isPollingActive.set(false);
+        this.isRolloverPolling.set(false);
+      }
+    });
   }
 
   addToken(tokenSerial: string, containerSerial: string): Observable<any> {
@@ -738,19 +761,16 @@ export class ContainerService implements ContainerServiceInterface {
 
   registerContainer(params: {
     container_serial: string;
+    passphrase_user: boolean;
     passphrase_prompt: string;
     passphrase_response: string;
+    rollover?: boolean;
   }): Observable<PiResponse<ContainerRegisterData>> {
     const headers = this.authService.getHeaders();
     return this.http
       .post<PiResponse<ContainerRegisterData>>(
         `${this.containerBaseUrl}register/initialize`,
-        {
-          container_serial: params.container_serial,
-          passphrase_ad: false,
-          passphrase_prompt: params.passphrase_prompt,
-          passphrase_response: params.passphrase_response
-        },
+        params,
         { headers }
       )
       .pipe(
@@ -763,13 +783,44 @@ export class ContainerService implements ContainerServiceInterface {
       );
   }
 
+  unregister(containerSerial: string) {
+    this.stopPolling();
+    const headers = this.authService.getHeaders();
+    return this.http
+      .post<PiResponse<ContainerUnregisterData>>(
+        `${this.containerBaseUrl}register/${containerSerial}/terminate`,
+        {},
+        { headers }
+      )
+      .pipe(
+        catchError((error) => {
+          console.error("Failed to unregister container.", error);
+          const message = error.error?.result?.error?.message || "";
+          this.notificationService.openSnackBar("Failed to unregister container. " + message);
+          return throwError(() => error);
+        })
+      );
+  }
+
   containerBelongsToUser(containerSerial: any): false | true | undefined {
     return this.containerResource
       .value()
       ?.result?.value?.containers?.some((container) => container.serial === containerSerial);
   }
 
+  handleFilterInput($event: Event): void {
+    const input = $event.target as HTMLInputElement;
+    const newFilter = this.containerFilter().copyWith({ value: input.value });
+    this.containerFilter.set(newFilter);
+  }
+
+  clearFilter(): void {
+    this.containerFilter.set(new FilterValue());
+  }
+
   stopPolling(): void {
+    clearTimeout(this.pollingTimeoutId);
+    this.isPollingActive.set(false);
     this.stopPolling$.next();
   }
 
@@ -803,27 +854,15 @@ export class ContainerService implements ContainerServiceInterface {
       );
   }
 
-  pollContainerRolloutState(containerSerial: string, startTime: number): Observable<PiResponse<ContainerDetails>> {
+  startPolling(containerSerial: string, isRollover: boolean = false): void {
+    if (this.isPollingActive()) {
+      return;
+    }
     this.containerSerial.set(containerSerial);
-    return timer(startTime, 2000).pipe(
-      takeUntil(this.stopPolling$),
-      switchMap(() => this.getContainerDetails(this.containerSerial())),
-      takeWhile((response) => response.result?.value?.containers[0].info.registration_state === "client_wait", true),
-      catchError((error) => {
-        console.error("Failed to poll container state.", error);
-        const message = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar("Failed to poll container state. " + message);
-        return throwError(() => error);
-      })
-    );
+    this.isRolloverPolling.set(isRollover);
+    this.isPollingActive.set(true);
+    this.pollingTrigger.update(count => count + 1);
   }
 
-  getContainerDetails(containerSerial: string): Observable<PiResponse<ContainerDetails>> {
-    const headers = this.authService.getHeaders();
-    let params = new HttpParams().set("container_serial", containerSerial);
-    return this.http.get<PiResponse<ContainerDetails>>(this.containerBaseUrl, {
-      headers,
-      params
-    });
-  }
+  private pollingTimeoutId: any;
 }
