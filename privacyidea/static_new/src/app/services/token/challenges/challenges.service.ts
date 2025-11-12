@@ -26,6 +26,7 @@ import { FilterValue } from "../../../core/models/filter_value";
 import { PiResponse } from "../../../app.component";
 import { Sort } from "@angular/material/sort";
 import { ROUTE_PATHS } from "../../../route_paths";
+import { StringUtils } from "../../../utils/string.utils";
 
 const apiFilter = ["serial", "transaction_id"];
 const advancedApiFilter: string[] = [];
@@ -91,22 +92,25 @@ export class ChallengesService implements ChallengesServiceInterface {
     computation: () => 0
   });
   sort = signal({ active: "timestamp", direction: "asc" } as Sort);
-  private filterParams = computed(() => {
-    const allowedFilters = [...this.apiFilter, ...this.advancedApiFilter];
-    const filterPairs = Array.from(this.challengesFilter().filterMap.entries())
-      .map(([key, value]) => ({ key, value }))
-      .filter(({ key }) => allowedFilters.includes(key));
-    return filterPairs.reduce(
-      (acc, { key, value }) => {
-        if (key === "serial") {
-          acc.serial = `*${value}*`;
-        } else {
-          acc.params[key] = `*${value}*`;
-        }
-        return acc;
-      },
-      { params: {} as Record<string, string>, serial: "" }
-    );
+  filterParams = computed(() => {
+    const allowed = [...this.apiFilter, ...this.advancedApiFilter];
+
+    const pairs = Array.from(this.challengesFilter().filterMap.entries())
+      .filter(([key]) => allowed.includes(key))
+      .map(([key, value]) => [key, (value ?? "").toString().trim()] as const)
+      .filter(([, v]) => StringUtils.validFilterValue(v));
+
+    const result = { params: {} as Record<string, string>, serial: "" };
+
+    for (const [key, v] of pairs) {
+      if (key === "serial") {
+        result.serial = `*${v}*`;
+      } else {
+        result.params[key] = `*${v}*`;
+      }
+    }
+
+    return result;
   });
   challengesResource = httpResource<PiResponse<Challenges>>(() => {
     if (this.contentService.routeUrl() !== ROUTE_PATHS.TOKENS_CHALLENGES) {

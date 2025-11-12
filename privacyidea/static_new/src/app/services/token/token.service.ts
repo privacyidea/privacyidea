@@ -36,6 +36,7 @@ import { FilterValue } from "../../core/models/filter_value";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
 import { ConfirmationDialogComponent } from "../../components/shared/confirmation-dialog/confirmation-dialog.component";
+import { StringUtils } from "../../utils/string.utils";
 
 const apiFilter = [
   "serial",
@@ -258,26 +259,7 @@ export class TokenService implements TokenServiceInterface {
   eventPageSize = 10;
   tokenSerial = this.contentService.tokenSerial;
   detailsUsername = this.contentService.detailsUsername;
-  filterParams = computed<Record<string, string>>(() => {
-    const allowedFilters = [...this.apiFilter, ...this.advancedApiFilter, ...this.hiddenApiFilter];
-
-    let filterPairs = [
-      ...Array.from(this.tokenFilter().filterMap.entries()),
-      ...Array.from(this.tokenFilter().hiddenFilterMap.entries())
-    ];
-    let filterPairsMap = filterPairs
-      .filter(([key]) => allowedFilters.includes(key))
-      .map(([key, value]) => ({ key, value }));
-    return filterPairsMap.reduce(
-      (acc, { key, value }) => ({
-        ...acc,
-        [key]: ["user", "infokey", "infovalue", "active", "assigned", "container_serial"].includes(key)
-          ? `${value}`
-          : `*${value}*`
-      }),
-      {} as Record<string, string>
-    );
-  });  selectedTokenType = linkedSignal({
+  selectedTokenType = linkedSignal({
     source: () => ({
       tokenTypeOptions: this.tokenTypeOptions(),
       routeUrl: this.contentService.routeUrl()
@@ -287,7 +269,6 @@ export class TokenService implements TokenServiceInterface {
       source.tokenTypeOptions[0] ||
       ({ key: "hotp", info: "", text: "" } as TokenType)
   });
-
   constructor() {
     effect(() => {
       if (this.tokenResource.error()) {
@@ -303,7 +284,9 @@ export class TokenService implements TokenServiceInterface {
         this.notificationService.openSnackBar(tokenTypesResourceError.message);
       }
     });
-  }  showOnlyTokenNotInContainer = linkedSignal({
+  };
+
+  showOnlyTokenNotInContainer = linkedSignal({
     source: this.contentService.routeUrl,
     computation: (routeUrl) => {
       return routeUrl.startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS);
@@ -434,6 +417,30 @@ export class TokenService implements TokenServiceInterface {
       sort: this.sort()
     }),
     computation: () => 0
+  });
+
+  filterParams = computed<Record<string, string>>(() => {
+    const allowed = [...this.apiFilter, ...this.advancedApiFilter, ...this.hiddenApiFilter];
+
+    const plainKeys = new Set([
+      "user",
+      "infokey",
+      "infovalue",
+      "active",
+      "assigned",
+      "container_serial",
+    ]);
+
+    const entries = [
+      ...Array.from(this.tokenFilter().filterMap.entries()),
+      ...Array.from(this.tokenFilter().hiddenFilterMap.entries()),
+    ]
+      .filter(([key]) => allowed.includes(key))
+      .map(([key, value]) => [key, (value ?? "").toString().trim()] as const)
+      .filter(([, v]) => StringUtils.validFilterValue(v))
+      .map(([key, v]) => [key, plainKeys.has(key) ? v : `*${v}*`] as const);
+
+    return Object.fromEntries(entries) as Record<string, string>;
   });
 
   tokenResource = httpResource<PiResponse<Tokens>>(() => {

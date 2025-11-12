@@ -202,4 +202,21 @@ describe("MachineService (with mock classes)", () => {
       direction: "desc"
     });
   });
+
+  it("should not include empty filter values in filterParams", () => {
+    machineService.machineFilter.set({
+      filterMap: new Map([
+        ["serial", ""],
+        ["service_id", "123"],
+        ["hostname", "   "],
+        ["machineid", "*"]
+      ])
+    } as any);
+
+    const params = machineService.filterParams();
+    expect(params).not.toHaveProperty("serial");
+    expect(params).toHaveProperty("service_id", "*123*");
+    expect(params).not.toHaveProperty("hostname");
+    expect(params).not.toHaveProperty("machineid");
+  });
 });

@@ -29,6 +29,7 @@ import { ROUTE_PATHS } from "../../route_paths";
 import { Sort } from "@angular/material/sort";
 import { environment } from "../../../environments/environment";
 import { TokenService, TokenServiceInterface } from "../token/token.service";
+import { StringUtils } from "../../utils/string.utils";
 
 export type TokenApplications = TokenApplication[];
 
@@ -205,33 +206,26 @@ export class MachineService implements MachineServiceInterface {
     }
   });
   filterParams = computed<Record<string, string>>(() => {
-    let allowedKeywords =
-      this.selectedApplicationType() === "ssh"
-        ? [...this.sshApiFilter, ...this.sshAdvancedApiFilter]
-        : [...this.offlineApiFilter, ...this.offlineAdvancedApiFilter];
-    const filterPairs = Array.from(this.machineFilter().filterMap.entries())
-      .map(([key, value]) => ({ key, value }))
-      .filter(({ key }) => allowedKeywords.includes(key));
+    const isSSH = this.selectedApplicationType() === "ssh";
+    const allowed = isSSH
+      ? [...this.sshApiFilter, ...this.sshAdvancedApiFilter]
+      : [...this.offlineApiFilter, ...this.offlineAdvancedApiFilter];
 
-    if (filterPairs.length === 0) {
-      return {};
-    }
-    let params: any = {};
-    filterPairs.forEach(({ key, value }) => {
-      if (["serial"].includes(key)) {
-        params[key] = `*${value}*`;
-      }
-      if (["hostname", "machineid", "resolver"].includes(key)) {
-        params[key] = value;
-      }
-      if (this.selectedApplicationType() === "ssh" && ["service_id"].includes(key)) {
-        params[key] = `*${value}*`;
-      }
-      if (this.selectedApplicationType() === "offline" && ["count", "rounds"].includes(key)) {
-        params[key] = value;
-      }
-    });
-    return params;
+    const wrapKeys = new Set(isSSH ? ["serial", "service_id"] : ["serial"]);
+    const plainKeys = new Set(
+      isSSH
+        ? ["hostname", "machineid", "resolver"]
+        : ["hostname", "machineid", "resolver", "count", "rounds"]
+    );
+
+    const entries = Array.from(this.machineFilter().filterMap.entries())
+      .filter(([key]) => allowed.includes(key))
+      .map(([key, value]) => [key, (value ?? "").toString().trim()] as const)
+      .filter(([, v]) => StringUtils.validFilterValue(v))
+      .map(([key, v]) => [key, wrapKeys.has(key) ? `*${v}*` : v] as const)
+      .filter(([key]) => wrapKeys.has(key) || plainKeys.has(key));
+
+    return Object.fromEntries(entries) as Record<string, string>;
   });
   sort = linkedSignal({
     source: this.selectedApplicationType,
