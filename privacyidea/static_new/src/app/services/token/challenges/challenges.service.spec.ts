@@ -20,6 +20,7 @@ import { TestBed } from "@angular/core/testing";
 
 import { ChallengesService } from "./challenges.service";
 import { provideHttpClient } from "@angular/common/http";
+import { FilterValue } from "../../../core/models/filter_value";
 
 describe("ChallengesService", () => {
   let challengesService: ChallengesService;
@@ -33,5 +34,25 @@ describe("ChallengesService", () => {
 
   it("should be created", () => {
     expect(challengesService).toBeTruthy();
+  });
+
+  it("should not include empty filter values in filterParams except for the serial", () => {
+    challengesService.challengesFilter.set(
+      new FilterValue({
+        value: "serial: '' transaction_id: ***"
+      })
+    );
+    let params = challengesService.filterParams();
+    expect(params).toHaveProperty("serial", "");
+    expect(params).not.toHaveProperty("transaction_id");
+
+    challengesService.challengesFilter.set(
+      new FilterValue({
+        value: "serial: '123' transaction_id: '    '"
+      })
+    );
+    params = challengesService.filterParams();
+    expect(params).toHaveProperty("serial", "*123*");
+    expect(params).not.toHaveProperty("transaction_id");
   });
 });
