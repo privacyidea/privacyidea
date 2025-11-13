@@ -20,9 +20,9 @@ import { Component } from "@angular/core";
 import { TokenComponent } from "./token.component";
 import { MatCardModule } from "@angular/material/card";
 import { componentFadeAnimation } from "../../../styles/animations/animations";
-import { NavigationSelfServiceComponent } from "./navigation-self-service/navigation-self-service.component";
+import { NavigationSelfServiceComponent } from "../layout/navigation-self-service/navigation-self-service.component";
 import { RouterOutlet } from "@angular/router";
-import { NavigationSelfServiceWizardComponent } from "./navigation-self-service/navigation-self-service.wizard.component";
+import { NavigationSelfServiceWizardComponent } from "../layout/navigation-self-service/navigation-self-service.wizard.component";
 
 @Component({
   selector: "app-token-self-service",

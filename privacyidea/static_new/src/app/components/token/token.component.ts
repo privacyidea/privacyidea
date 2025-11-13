@@ -34,7 +34,7 @@ import { SessionTimerService, SessionTimerServiceInterface } from "../../service
 import { LocalService, LocalServiceInterface } from "../../services/local/local.service";
 import { NotificationService, NotificationServiceInterface } from "../../services/notification/notification.service";
 import { MatDividerModule } from "@angular/material/divider";
-import { NavigationComponent } from "./navigation/navigation.component";
+import { NavigationComponent } from "../layout/navigation/navigation.component";
 
 export type TokenTypeOption =
   | "hotp"
