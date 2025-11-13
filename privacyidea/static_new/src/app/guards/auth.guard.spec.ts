@@ -69,6 +69,7 @@ describe("AuthGuard — CanMatch helpers", () => {
 
   it("adminMatch/selfServiceMatch are false for unknown role", () => {
     authMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, role: "" });
+    expect(authMock.role()).toBe("");
     expect(runMatch(adminMatch)).toBe(false);
     expect(runMatch(selfServiceMatch)).toBe(false);
   });

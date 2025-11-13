@@ -68,7 +68,6 @@ describe("ContainerDetailsActionsComponent", () => {
 
     component.containerSerial = "SMPH-1";
     component.containerType = "smartphone";
-    fixture.detectChanges();
   });
 
   it("should create", () => {
@@ -76,6 +75,7 @@ describe("ContainerDetailsActionsComponent", () => {
   });
 
   it("should render actions if anyActionsAllowed is true", () => {
+    authServiceMock.actionAllowed.mockReturnValue(true);
     authServiceMock.jwtData.set({ ...authServiceMock.jwtData()!, rights: ["container_delete"] });
     fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
@@ -83,12 +83,7 @@ describe("ContainerDetailsActionsComponent", () => {
   });
 
   it("should not render actions if no action is allowed", () => {
-    authServiceMock.actionAllowed.mockImplementation((asd) => {
-      console.warn(asd);
-      return false;
-    });
-    // TestBed.flushEffects();
-    fixture.detectChanges();
+    authServiceMock.actionAllowed.mockReturnValue(false);
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.textContent).not.toContain("Container Actions");
   });

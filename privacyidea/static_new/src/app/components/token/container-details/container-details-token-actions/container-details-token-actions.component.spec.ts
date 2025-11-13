@@ -25,7 +25,7 @@ import {
   MockTokenService
 } from "../../../../../testing/mock-services";
 import { AuthService } from "../../../../services/auth/auth.service";
-import { ContainerService } from "../../../../services/container/container.service";
+import { ContainerDetailToken, ContainerService } from "../../../../services/container/container.service";
 import { TokenService } from "../../../../services/token/token.service";
 import { MatDialog } from "@angular/material/dialog";
 import { ConfirmationDialogComponent } from "../../../shared/confirmation-dialog/confirmation-dialog.component";
@@ -280,18 +280,34 @@ describe("ContainerDetailsTokenActionsComponent", () => {
   });
 
   it("deleteAllTokens opens confirm and deletes when confirm=true", () => {
+    const token1: ContainerDetailToken = {
+      serial: "T1",
+      username: "",
+      active: false,
+      container_serial: "",
+      count: 0,
+      count_window: 0,
+      description: "",
+      failcount: 0,
+      id: 0,
+      revoked: false,
+      sync_window: 0,
+      tokengroup: [],
+      tokentype: "",
+      user_editable: false,
+      user_id: "",
+      user_realm: ""
+    };
+    const token2: ContainerDetailToken = { ...token1, serial: "T2" };
+    const data = new MatTableDataSource<ContainerDetailToken>([token1, token2]);
+    component.tokenData.set(data);
     component.deleteAllTokens();
-    expect(mockDialog.open).toHaveBeenCalledWith(ConfirmationDialogComponent, {
-      data: {
-        serialList: ["T1", "T2"],
-        title: "Delete Selected Tokens",
-        type: "token",
-        action: "delete",
-        numberOfTokens: 2
-      }
-    });
-    expect(mockTokenService.bulkDeleteTokens).toHaveBeenCalledWith(["T1", "T2"]);
-    expect(mockContainerService.containerDetailResource.reload).toHaveBeenCalled();
+
+    expect(mockTokenService.bulkDeleteWithConfirmDialog).toHaveBeenCalledWith(
+      ["T1", "T2"],
+      mockDialog,
+      expect.any(Function)
+    );
   });
 
   it("deleteAllTokens does NOT delete when confirm=false", () => {

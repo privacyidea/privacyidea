@@ -236,17 +236,14 @@ export class MockUserService implements UserServiceInterface {
   userAttributesResource: HttpResourceRef<PiResponse<Record<string, string>, unknown> | undefined> =
     new MockHttpResourceRef(MockPiResponse.fromValue({}));
   deletableAttributes: Signal<string[]> = signal([]);
-  attributeSetMap: Signal<Record<string, string[]>> = signal({});
+  attributeSetMap = signal<Record<string, string[]>>({});
   hasWildcardKey: Signal<boolean> = signal(false);
   keyOptions: Signal<string[]> = signal([]);
   selectedUser: Signal<UserData | null> = signal(null);
   detailsUsername: WritableSignal<string> = signal("");
-  setUserAttribute(key: string, value: string) {
-    throw new Error("Method not implemented.");
-  }
-  deleteUserAttribute(key: string) {
-    throw new Error("Method not implemented.");
-  }
+  setUserAttribute = jest.fn().mockReturnValue(of({}));
+  deleteUserAttribute = jest.fn().mockReturnValue(of({}));
+
   usersOfRealmResource: HttpResourceRef<PiResponse<UserData[], undefined> | undefined> = new MockHttpResourceRef(
     MockPiResponse.fromValue([])
   );
@@ -609,34 +606,16 @@ export class MockTokenService implements TokenServiceInterface {
   apiFilter: string[] = [];
   advancedApiFilter: string[] = [];
   sort: WritableSignal<Sort> = signal({ active: "serial", direction: "asc" });
-  setPin(tokenSerial: string, userPin: string): Observable<any> {
-    throw new Error("Method not implemented.");
-  }
-  setRandomPin(tokenSerial: string): Observable<any> {
-    throw new Error("Method not implemented.");
-  }
-  setTokenRealm(tokenSerial: string, value: string[]): Observable<PiResponse<boolean>> {
-    throw new Error("Method not implemented.");
-  }
-  getTokengroups(): Observable<PiResponse<TokenGroups>> {
-    throw new Error("Method not implemented.");
-  }
-  setTokengroup(tokenSerial: string, value: string | string[]): Observable<Object> {
-    throw new Error("Method not implemented.");
-  }
-  bulkDeleteWithConfirmDialog(serialList: string[], dialog: any, afterDelete?: () => void): void {
-    throw new Error("Method not implemented.");
-  }
-  importTokens(fileName: string, params: Record<string, any>): Observable<PiResponse<TokenImportResult>> {
-    throw new Error("Method not implemented.");
-  }
+  setPin = jest.fn();
+  setRandomPin = jest.fn();
+  setTokenRealm = jest.fn();
+  getTokengroups = jest.fn();
+  setTokengroup = jest.fn();
+  bulkDeleteWithConfirmDialog = jest.fn();
+  importTokens = jest.fn();
   tokenFilter: WritableSignal<FilterValue> = signal(new FilterValue());
-  clearFilter(): void {
-    throw new Error("Method not implemented.");
-  }
-  handleFilterInput($event: Event): void {
-    throw new Error("Method not implemented.");
-  }
+  clearFilter = jest.fn();
+  handleFilterInput = jest.fn();
   hiddenApiFilter: string[] = [];
   stopPolling$: Subject<void> = new Subject<void>();
   tokenBaseUrl: string = "mockEnvironment.proxyUrl + '/token'";

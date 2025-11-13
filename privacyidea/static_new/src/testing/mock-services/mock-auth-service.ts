@@ -33,48 +33,48 @@ export class MockAuthService implements AuthServiceInterface {
   readonly authenticationAccepted = signal(false);
 
   // Signals
-  readonly jwtNonce = signal(this.jwtData()?.nonce || "");
+  readonly jwtNonce = signal(this.jwtData()?.nonce ?? "");
   readonly authtype = signal<"cookie" | "none">("cookie");
   readonly jwtExpDate = signal(new Date());
   readonly isAuthenticated = signal(true);
   readonly logLevel = signal(0);
-  readonly menus = computed(() => this.authData()?.menus || []);
-  readonly realm = computed(() => this.authData()?.realm || "");
-  readonly rights = computed(() => this.authData()?.rights || []);
-  readonly role = computed<AuthRole>(() => this.authData()?.role || "admin");
-  readonly token = computed(() => this.authData()?.token || "");
-  readonly username = computed(() => this.authData()?.username || "");
-  readonly logoutTimeSeconds = computed(() => this.authData()?.logout_time || null);
-  readonly auditPageSize = computed(() => this.authData()?.audit_page_size || 10);
-  readonly tokenPageSize = computed(() => this.authData()?.token_page_size || 10);
-  readonly userPageSize = computed(() => this.authData()?.user_page_size || 10);
-  readonly policyTemplateUrl = computed(() => this.authData()?.policy_template_url || "");
-  readonly defaultTokentype = computed(() => this.authData()?.default_tokentype || "hotp");
-  readonly defaultContainerType = computed(() => this.authData()?.default_container_type || "generic");
-  readonly userDetails = computed(() => this.authData()?.user_details || false);
-  readonly tokenWizard = computed(() => this.authData()?.token_wizard || false);
-  readonly tokenWizard2nd = computed(() => this.authData()?.token_wizard_2nd || false);
-  readonly adminDashboard = computed(() => this.authData()?.admin_dashboard || false);
-  readonly dialogNoToken = computed(() => this.authData()?.dialog_no_token || false);
-  readonly searchOnEnter = computed(() => this.authData()?.search_on_enter || false);
-  readonly timeoutAction = computed(() => this.authData()?.timeout_action || "");
-  readonly tokenRollover = computed(() => this.authData()?.token_rollover || null);
-  readonly hideWelcome = computed(() => this.authData()?.hide_welcome || false);
-  readonly hideButtons = computed(() => this.authData()?.hide_buttons || false);
-  readonly deletionConfirmation = computed(() => this.authData()?.deletion_confirmation || false);
-  readonly showSeed = computed(() => this.authData()?.show_seed || false);
-  readonly showNode = computed(() => this.authData()?.show_node || "");
-  readonly subscriptionStatus = computed(() => this.authData()?.subscription_status || 0);
-  readonly subscriptionStatusPush = computed(() => this.authData()?.subscription_status_push || 0);
-  readonly qrImageAndroid = computed(() => this.authData()?.qr_image_android || null);
-  readonly qrImageIOS = computed(() => this.authData()?.qr_image_ios || null);
-  readonly qrImageCustom = computed(() => this.authData()?.qr_image_custom || null);
-  readonly logoutRedirectUrl = computed(() => this.authData()?.logout_redirect_url || "");
-  readonly requireDescription = computed(() => this.authData()?.require_description || []);
-  readonly rssAge = computed(() => this.authData()?.rss_age || 0);
+  readonly menus = computed(() => this.authData()?.menus ?? []);
+  readonly realm = computed(() => this.authData()?.realm ?? "");
+  readonly rights = computed(() => this.authData()?.rights ?? []);
+  readonly role = computed<AuthRole>(() => this.authData()?.role ?? "admin");
+  readonly token = computed(() => this.authData()?.token ?? "");
+  readonly username = computed(() => this.authData()?.username ?? "");
+  readonly logoutTimeSeconds = computed(() => this.authData()?.logout_time ?? null);
+  readonly auditPageSize = computed(() => this.authData()?.audit_page_size ?? 10);
+  readonly tokenPageSize = computed(() => this.authData()?.token_page_size ?? 10);
+  readonly userPageSize = computed(() => this.authData()?.user_page_size ?? 10);
+  readonly policyTemplateUrl = computed(() => this.authData()?.policy_template_url ?? "");
+  readonly defaultTokentype = computed(() => this.authData()?.default_tokentype ?? "hotp");
+  readonly defaultContainerType = computed(() => this.authData()?.default_container_type ?? "generic");
+  readonly userDetails = computed(() => this.authData()?.user_details ?? false);
+  readonly tokenWizard = computed(() => this.authData()?.token_wizard ?? false);
+  readonly tokenWizard2nd = computed(() => this.authData()?.token_wizard_2nd ?? false);
+  readonly adminDashboard = computed(() => this.authData()?.admin_dashboard ?? false);
+  readonly dialogNoToken = computed(() => this.authData()?.dialog_no_token ?? false);
+  readonly searchOnEnter = computed(() => this.authData()?.search_on_enter ?? false);
+  readonly timeoutAction = computed(() => this.authData()?.timeout_action ?? "");
+  readonly tokenRollover = computed(() => this.authData()?.token_rollover ?? null);
+  readonly hideWelcome = computed(() => this.authData()?.hide_welcome ?? false);
+  readonly hideButtons = computed(() => this.authData()?.hide_buttons ?? false);
+  readonly deletionConfirmation = computed(() => this.authData()?.deletion_confirmation ?? false);
+  readonly showSeed = computed(() => this.authData()?.show_seed ?? false);
+  readonly showNode = computed(() => this.authData()?.show_node ?? "");
+  readonly subscriptionStatus = computed(() => this.authData()?.subscription_status ?? 0);
+  readonly subscriptionStatusPush = computed(() => this.authData()?.subscription_status_push ?? 0);
+  readonly qrImageAndroid = computed(() => this.authData()?.qr_image_android ?? null);
+  readonly qrImageIOS = computed(() => this.authData()?.qr_image_ios ?? null);
+  readonly qrImageCustom = computed(() => this.authData()?.qr_image_custom ?? null);
+  readonly logoutRedirectUrl = computed(() => this.authData()?.logout_redirect_url ?? "");
+  readonly requireDescription = computed(() => this.authData()?.require_description ?? []);
+  readonly rssAge = computed(() => this.authData()?.rss_age ?? 0);
   readonly containerWizard = computed(
     () =>
-      this.authData()?.container_wizard || {
+      this.authData()?.container_wizard ?? {
         enabled: false,
         type: "",
         registration: false,
@@ -90,7 +90,7 @@ export class MockAuthService implements AuthServiceInterface {
     .mockReturnValue(of(MockPiResponse.fromValue<AuthData, AuthDetail>(new MockAuthData(), new MockAuthDetail())));
   acceptAuthentication = jest.fn();
   logout = jest.fn();
-  actionAllowed = jest.fn().mockReturnValue(true);
+  actionAllowed = jest.fn();
   actionsAllowed = jest.fn().mockReturnValue(true);
   oneActionAllowed = jest.fn().mockReturnValue(true);
   anyContainerActionAllowed = jest.fn().mockReturnValue(true);

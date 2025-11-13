@@ -28,6 +28,7 @@ import { PiResponse } from "../../app.component";
 import { environment } from "../../../environments/environment";
 import { ROUTE_PATHS } from "../../route_paths";
 import { StringUtils } from "../../utils/string.utils";
+import { Observable } from "rxjs";
 
 const apiFilter = ["description", "email", "givenname", "mobile", "phone", "resolver", "surname", "userid", "username"];
 const advancedApiFilter: string[] = [];
@@ -84,9 +85,9 @@ export interface UserServiceInterface {
 
   detailsUsername: WritableSignal<string>;
 
-  setUserAttribute(key: string, value: string): any;
+  setUserAttribute(key: string, value: string): Observable<PiResponse<number, unknown>>;
 
-  deleteUserAttribute(key: string): any;
+  deleteUserAttribute(key: string): Observable<PiResponse<any, unknown>>;
 
   resetFilter(): void;
 
@@ -121,8 +122,6 @@ export class UserService implements UserServiceInterface {
   });
   readonly apiFilterOptions = apiFilter;
 
-
-
   attributePolicy = computed<UserAttributePolicy>(
     () => this.attributesResource.value()?.result?.value ?? { delete: [], set: {} }
   );
@@ -140,12 +139,12 @@ export class UserService implements UserServiceInterface {
   });
   attributeSetMap = computed<Record<string, string[]>>(() => this.attributePolicy().set ?? {});
   hasWildcardKey = computed<boolean>(() => Object.prototype.hasOwnProperty.call(this.attributeSetMap(), "*"));
-  keyOptions = computed<string[]>(
-    () => Object.keys(this.attributeSetMap()).filter((k) => k !== "*").sort()
+  keyOptions = computed<string[]>(() =>
+    Object.keys(this.attributeSetMap())
+      .filter((k) => k !== "*")
+      .sort()
   );
-  userAttributes = computed<Record<string, string>>(() =>
-    this.userAttributesResource.value()?.result?.value ?? {}
-  );
+  userAttributes = computed<Record<string, string>>(() => this.userAttributesResource.value()?.result?.value ?? {});
   userAttributesList = computed(() =>
     Object.entries(this.userAttributes()).map(([key, raw]) => ({
       key,
@@ -215,7 +214,7 @@ export class UserService implements UserServiceInterface {
       method: "GET",
       headers: this.authService.getHeaders(),
       params: {
-        ...this.detailsUsername() && { user: this.detailsUsername() }
+        ...(this.detailsUsername() && { user: this.detailsUsername() })
       }
     };
   });
@@ -279,16 +278,16 @@ export class UserService implements UserServiceInterface {
     if (this.authService.role() === "user") {
       userName = this.authService.username();
       user = {
-        "username": userName,
-        "description": "",
-        "editable": false,
-        "email": "",
-        "givenname": "",
-        "mobile": "",
-        "phone": "",
-        "resolver": "",
-        "surname": "",
-        "userid": ""
+        username: userName,
+        description: "",
+        editable: false,
+        email: "",
+        givenname: "",
+        mobile: "",
+        phone: "",
+        resolver: "",
+        surname: "",
+        userid: ""
       } as UserData;
     } else {
       userName = this.selectionUsernameFilter();

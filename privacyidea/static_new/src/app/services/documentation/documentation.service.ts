@@ -22,7 +22,7 @@ import { VersioningService } from "../version/version.service";
 import { httpResource } from "@angular/common/http";
 import { PolicyService } from "../policies/policies.service";
 export interface DocumentationServiceInterface {
-  openDocumentation(page: string): void;
+  openDocumentation(page: string): Promise<void>;
   getVersionUrl(pageUrl: string): string;
   getFallbackUrl(pageUrl: string): string;
   checkFullUrl(url: string): Promise<boolean>;
@@ -89,13 +89,13 @@ export class DocumentationService implements DocumentationServiceInterface {
           pageUrl = "webui/container_view.html#container-create";
           break;
         default:
-          pageUrl = "webui/index.html";
+          pageUrl = `webui/index.html#${page}`;
           break;
       }
     }
     const versionUrl = this.getVersionUrl(pageUrl);
     const fallbackUrl = this.getFallbackUrl(pageUrl);
-    this.checkFullUrl(versionUrl).then((found) => {
+    const promise = this.checkFullUrl(versionUrl).then((found) => {
       if (found) {
         window.open(versionUrl, "_blank");
       } else {
@@ -108,6 +108,7 @@ export class DocumentationService implements DocumentationServiceInterface {
         });
       }
     });
+    return promise;
   }
   /**
    * * @param url The full URL to check (including base URL and page URL)

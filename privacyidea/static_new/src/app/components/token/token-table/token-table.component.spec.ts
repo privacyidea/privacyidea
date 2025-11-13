@@ -21,9 +21,10 @@ import { TokenTableComponent } from "./token-table.component";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { of } from "rxjs";
 import {
-  MockAuthService,
   MockContainerService,
-  MockContentService, MockLocalService, MockNotificationService,
+  MockContentService,
+  MockLocalService,
+  MockNotificationService,
   MockPiResponse,
   MockTableUtilsService,
   MockTokenService
@@ -38,16 +39,14 @@ import { ContainerService } from "../../../services/container/container.service"
 import { MatDialog } from "@angular/material/dialog";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { MockAuthService } from "../../../../testing/mock-services/mock-auth-service";
+import "@angular/localize/init";
 
 class MatDialogMock {
   result = true;
   open = jest.fn(() => ({
     afterClosed: () => of(this.result)
   }));
-}
-
-class AuthServiceMock {
-  actionAllowed = jest.fn((_action: string) => true);
 }
 
 describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
@@ -90,7 +89,9 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
 
         disconnect() {}
 
-        takeRecords() { return []; }
+        takeRecords() {
+          return [];
+        }
       };
     }
 
@@ -106,7 +107,12 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
         { provide: TokenService, useClass: MockTokenService },
         { provide: TableUtilsService, useClass: MockTableUtilsService },
         { provide: ContentService, useClass: MockContentService },
-        { provide: DialogService, useValue: { /* not used here */ } },
+        {
+          provide: DialogService,
+          useValue: {
+            /* not used here */
+          }
+        },
         { provide: AuthService, useClass: MockAuthService },
         { provide: ContainerService, useClass: MockContainerService },
         { provide: MatDialog, useClass: MatDialogMock },
@@ -129,6 +135,7 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
     tokenService.resetFailCount.mockReturnValue(of(null));
     (tokenService as any).revokeToken = jest.fn().mockReturnValue(of({}));
     (tokenService as any).deleteToken = jest.fn().mockReturnValue(of({}));
+    auth.actionAllowed.mockImplementation((action: string) => auth.jwtData()?.rights?.includes(action));
 
     tableFixture.detectChanges();
     selfFixture.detectChanges();
@@ -147,10 +154,7 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
   });
 
   it("isAllSelected/toggleAllRows/toggleRow work as expected", () => {
-    const tokens = [
-      { serial: "T-1" } as any,
-      { serial: "T-2" } as any
-    ];
+    const tokens = [{ serial: "T-1" } as any, { serial: "T-2" } as any];
     tokenService.tokenResource.set(
       MockPiResponse.fromValue({
         tokens,
@@ -304,14 +308,7 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
     const c2 = f2.componentInstance;
 
     expect(c2.columnKeysSelfService).toEqual(
-      expect.arrayContaining([
-        "serial",
-        "tokentype",
-        "description",
-        "container_serial",
-        "active",
-        "failcount"
-      ])
+      expect.arrayContaining(["serial", "tokentype", "description", "container_serial", "active", "failcount"])
     );
     expect(c2.columnKeysSelfService).not.toEqual(expect.arrayContaining(["revoke", "delete"]));
   });

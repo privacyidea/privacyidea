@@ -21,6 +21,8 @@ import { DocumentationService } from "./documentation.service";
 import { VersioningService } from "../version/version.service";
 import { PolicyService } from "../policies/policies.service";
 import { signal } from "@angular/core";
+import { provideHttpClient } from "@angular/common/http";
+import { provideHttpClientTesting } from "@angular/common/http/testing";
 
 class MockVersioningService {
   version = signal("3.9.1+123.456");
@@ -38,10 +40,12 @@ describe("DocumentationService", () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
       providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
         DocumentationService,
         { provide: VersioningService, useClass: MockVersioningService },
-        { provide: PolicyService, useClass: MockPolicyService },
-      ],
+        { provide: PolicyService, useClass: MockPolicyService }
+      ]
     });
     service = TestBed.inject(DocumentationService);
     versioningService = TestBed.inject(VersioningService) as any;
@@ -78,8 +82,13 @@ describe("DocumentationService", () => {
     it("should open versioned URL if it exists", async () => {
       checkFullUrlSpy.mockResolvedValue(true);
       await service.openDocumentation("tokens");
-      expect(checkFullUrlSpy).toHaveBeenCalledWith("https://privacyidea.readthedocs.io/en/v3.9.1/webui/index.html#tokens");
-      expect(windowOpenSpy).toHaveBeenCalledWith("https://privacyidea.readthedocs.io/en/v3.9.1/webui/index.html#tokens", "_blank");
+      expect(checkFullUrlSpy).toHaveBeenCalledWith(
+        "https://privacyidea.readthedocs.io/en/v3.9.1/webui/index.html#tokens"
+      );
+      expect(windowOpenSpy).toHaveBeenCalledWith(
+        "https://privacyidea.readthedocs.io/en/v3.9.1/webui/index.html#tokens",
+        "_blank"
+      );
     });
 
     it("should open fallback URL if versioned URL does not exist", async () => {
@@ -87,9 +96,16 @@ describe("DocumentationService", () => {
         return url.includes("stable");
       });
       await service.openDocumentation("tokens");
-      expect(checkFullUrlSpy).toHaveBeenCalledWith("https://privacyidea.readthedocs.io/en/v3.9.1/webui/index.html#tokens");
-      expect(checkFullUrlSpy).toHaveBeenCalledWith("https://privacyidea.readthedocs.io/en/stable/webui/index.html#tokens");
-      expect(windowOpenSpy).toHaveBeenCalledWith("https://privacyidea.readthedocs.io/en/stable/webui/index.html#tokens", "_blank");
+      expect(checkFullUrlSpy).toHaveBeenCalledWith(
+        "https://privacyidea.readthedocs.io/en/v3.9.1/webui/index.html#tokens"
+      );
+      expect(checkFullUrlSpy).toHaveBeenCalledWith(
+        "https://privacyidea.readthedocs.io/en/stable/webui/index.html#tokens"
+      );
+      expect(windowOpenSpy).toHaveBeenCalledWith(
+        "https://privacyidea.readthedocs.io/en/stable/webui/index.html#tokens",
+        "_blank"
+      );
     });
 
     it("should show alert if no documentation is found", async () => {
