@@ -352,26 +352,16 @@
     </mat-expansion-panel>
 
     <mat-expansion-panel
-      (opened)="router.navigate([ROUTE_PATHS.POLICIES])"
-      [expanded]="router.url.startsWith(ROUTE_PATHS.POLICIES)">
-      <mat-expansion-panel-header>
+      class="nav-expension-panel policy-header"
+      [disabled]="true">
+      <mat-expansion-panel-header
+        (click)="onPoliciesHeaderClick($event)"
+        class="nav-header-button">
         <mat-panel-title>
           <mat-icon>gavel</mat-icon>
           Policies
         </mat-panel-title>
       </mat-expansion-panel-header>
-      <mat-list>
-        <mat-list-item>
-          <button
-            [ngClass]="contentService.routeUrl() === ROUTE_PATHS.POLICIES ? 'card-button-active' : 'card-button-1'"
-            [routerLink]="[ROUTE_PATHS.POLICIES]"
-            i18n
-            mat-stroked-button>
-            <mat-icon>gavel</mat-icon>
-            Policies
-          </button>
-        </mat-list-item>
-      </mat-list>
     </mat-expansion-panel>
 
     <mat-expansion-panel disabled>

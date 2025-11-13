@@ -152,4 +152,12 @@ export class NavigationComponent {
         break;
     }
   }
+
+  onPoliciesHeaderClick(event: MouseEvent): void {
+    event.preventDefault();
+    (event as any).stopImmediatePropagation?.();
+    event.stopPropagation();
+
+    this.router.navigate([ROUTE_PATHS.POLICIES]);
+  }
 }
