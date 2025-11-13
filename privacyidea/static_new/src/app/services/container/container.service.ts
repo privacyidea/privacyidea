@@ -145,7 +145,7 @@ export interface ContainerUnregisterData {
 }
 
 export interface ContainerServiceInterface {
-  compatibleWithTokenType: WritableSignal<string | null>;
+  compatibleWithSelectedTokenType: WritableSignal<string | null>;
   isPollingActive: Signal<boolean>;
   apiFilter: string[];
   advancedApiFilter: string[];
@@ -234,7 +234,7 @@ export class ContainerService implements ContainerServiceInterface {
   private readonly userService: UserServiceInterface = inject(UserService);
   private readonly pollingTrigger = signal<number>(0);
   private readonly isRolloverPolling = signal(false);
-  readonly compatibleWithTokenType: WritableSignal<string | null> = linkedSignal({
+  readonly compatibleWithSelectedTokenType: WritableSignal<string | null> = linkedSignal({
     source: this.tokenService.selectedTokenType,
     computation: (tt) => tt?.key ?? null
   });
@@ -260,17 +260,15 @@ export class ContainerService implements ContainerServiceInterface {
     source: this.contentService.routeUrl,
     computation: () => new FilterValue()
   });
+
   filterParams = computed<Record<string, string>>(() => {
     const allowed = [...this.apiFilter, ...this.advancedApiFilter];
-
     const plainKeys = new Set(["user", "type", "container_serial", "token_serial"]);
-
     const entries = Array.from(this.containerFilter().filterMap.entries())
       .filter(([key]) => allowed.includes(key))
       .map(([key, value]) => [key, (value ?? "").toString().trim()] as const)
       .filter(([, v]) => StringUtils.validFilterValue(v))
       .map(([key, v]) => [key, plainKeys.has(key) ? v : `*${v}*`] as const);
-
     return Object.fromEntries(entries) as Record<string, string>;
   });
 
@@ -283,6 +281,7 @@ export class ContainerService implements ContainerServiceInterface {
       return this.eventPageSize;
     }
   });
+
   pageIndex = linkedSignal({
     source: () => ({
       filterValue: this.containerFilter(),
@@ -291,6 +290,7 @@ export class ContainerService implements ContainerServiceInterface {
     }),
     computation: () => 0
   });
+
   loadAllContainers = computed(() => {
     return (
       [ROUTE_PATHS.TOKENS_ENROLLMENT].includes(this.contentService.routeUrl()) ||
@@ -299,7 +299,7 @@ export class ContainerService implements ContainerServiceInterface {
   });
 
   private readonly uniqueCompatibleType = computed<string | null>(() => {
-    const tt = this.compatibleWithTokenType();
+    const tt = this.compatibleWithSelectedTokenType();
     if (!tt) return null;
 
     const types = this.containerTypeOptions();
@@ -346,7 +346,7 @@ export class ContainerService implements ContainerServiceInterface {
     };
 
     const compatibleType = this.uniqueCompatibleType();
-    if (compatibleType && !('type' in baseParams) && !('type_list' in baseParams)) {
+    if (compatibleType && !("type" in baseParams) && !("type_list" in baseParams)) {
       baseParams["type"] = compatibleType;
     }
 
@@ -357,12 +357,14 @@ export class ContainerService implements ContainerServiceInterface {
       params: baseParams
     };
   });
+
   containerOptions = linkedSignal({
     source: this.containerResource.value,
     computation: (containerResource) => {
       return containerResource?.result?.value?.containers.map((container) => container.serial) ?? [];
     }
   });
+
   filteredContainerOptions = computed(() => {
     const filter = (this.selectedContainer() || "").toLowerCase();
     return this.containerOptions().filter((option) => option.toLowerCase().includes(filter));
@@ -382,7 +384,7 @@ export class ContainerService implements ContainerServiceInterface {
     const route = this.contentService.routeUrl();
     if (![ROUTE_PATHS.TOKENS_CONTAINERS_CREATE, ROUTE_PATHS.TOKENS_CONTAINERS_WIZARD,
       ROUTE_PATHS.TOKENS_ENROLLMENT]
-        .includes(route) && !route.startsWith(ROUTE_PATHS.TOKENS_DETAILS)) {
+      .includes(route) && !route.startsWith(ROUTE_PATHS.TOKENS_DETAILS)) {
       return undefined;
     }
     return {
@@ -439,6 +441,7 @@ export class ContainerService implements ContainerServiceInterface {
       }
     };
   });
+
   containerDetail: WritableSignal<ContainerDetails> = linkedSignal({
     source: this.containerDetailResource.value,
     computation: (containerDetailResource, previous) => {

@@ -268,7 +268,7 @@ export class TokenDetailsComponent {
       this.containerService.selectedContainer.set(this.tokenDetails().container_serial);
       this.realmService.selectedRealms.set(this.tokenDetails().realms);
       this.userRealm = this.userData().find((detail) => detail.keyMap.key === "user_realm")?.value || "";
-      this.containerService.compatibleWithTokenType.set(this.tokenDetails().tokentype);
+      this.containerService.compatibleWithSelectedTokenType.set(this.tokenDetails().tokentype);
     });
   }
 
