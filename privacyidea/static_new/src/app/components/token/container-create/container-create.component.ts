@@ -50,6 +50,7 @@ import { Router } from "@angular/router";
 import { PiResponse } from "../../../app.component";
 import { ROUTE_PATHS } from "../../../route_paths";
 import {
+  ContainerCreateData,
   ContainerRegisterData,
   ContainerService,
   ContainerServiceInterface,
@@ -240,15 +241,16 @@ export class ContainerCreateComponent {
 
   createContainer() {
     this.registerResponse.set(null);
-    const createData = {
+    const createData: ContainerCreateData = {
       container_type: this.containerService.selectedContainerType().containerType,
       description: this.description(),
-      template_name: this.selectedTemplate(),
-      user: this.userService.selectionUsernameFilter(),
-      realm: ""
+      user: this.userService.selectionUsernameFilter()
     };
     if (createData.user || this.userAssignmentComponent?.onlyAddToRealm()) {
       createData.realm = this.userService.selectedUserRealm();
+    }
+    if (this.selectedTemplate() && this.selectedTemplate() !== "-") {
+      createData.template_name = this.selectedTemplate();
     }
     this.containerService.createContainer(createData).subscribe({
       next: (response) => {

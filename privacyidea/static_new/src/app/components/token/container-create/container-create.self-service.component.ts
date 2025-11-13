@@ -35,6 +35,7 @@ import { MatSelect } from "@angular/material/select";
 import { MatTooltip } from "@angular/material/tooltip";
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { ContainerCreateComponent } from "./container-create.component";
+import { ContainerRegistrationConfigComponent } from "../container-registration/container-registration-config/container-registration-config.component";
 
 @Component({
   selector: "app-container-create-self-service",
@@ -56,7 +57,8 @@ import { ContainerCreateComponent } from "./container-create.component";
     MatExpansionPanelHeader,
     MatTooltip,
     ScrollToTopDirective,
-    NgClass
+    NgClass,
+    ContainerRegistrationConfigComponent
   ],
   templateUrl: "./container-create.self-service.component.html",
   styleUrl: "./container-create.component.scss"

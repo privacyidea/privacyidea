@@ -108,6 +108,14 @@ export interface ContainerType {
   token_types: string[];
 }
 
+export interface ContainerCreateData {
+  container_type: ContainerTypeOption;
+  description?: string;
+  user?: string;
+  realm?: string;
+  template_name?: string;
+}
+
 export interface ContainerTemplate {
   container_type: string;
   default: boolean;
@@ -211,13 +219,7 @@ export interface ContainerServiceInterface {
 
   stopPolling(): void;
 
-  createContainer(param: {
-    container_type: string;
-    description?: string;
-    template_name?: string;
-    user?: string;
-    realm?: string;
-  }): Observable<PiResponse<{ container_serial: string }>>;
+  createContainer(param: ContainerCreateData): Observable<PiResponse<{ container_serial: string }>>;
 
   startPolling(containerSerial: string): void;
 }
@@ -464,9 +466,16 @@ export class ContainerService implements ContainerServiceInterface {
     ) {
       return undefined;
     }
+    let params = {};
+    if (this.selectedContainerType()) {
+      params = {
+        container_type: this.selectedContainerType().containerType
+      };
+    }
     return {
       url: `${this.containerBaseUrl}templates`,
       method: "GET",
+      params: params,
       headers: this.authService.getHeaders()
     };
   });
@@ -866,13 +875,7 @@ export class ContainerService implements ContainerServiceInterface {
     this.stopPolling$.next();
   }
 
-  createContainer(param: {
-    container_type: string;
-    description?: string;
-    template_name?: string;
-    user?: string;
-    realm?: string;
-  }): Observable<PiResponse<{ container_serial: string }>> {
+  createContainer(param: ContainerCreateData): Observable<PiResponse<{ container_serial: string }>> {
     const headers = this.authService.getHeaders();
     return this.http
       .post<PiResponse<{ container_serial: string }>>(

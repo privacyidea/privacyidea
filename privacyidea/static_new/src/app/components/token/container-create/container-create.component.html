@@ -91,6 +91,7 @@
           <mat-select
             [(ngModel)]="selectedTemplate"
             [value]="selectedTemplate()">
+            <mat-option [value]="'-'">-</mat-option>
             @for (option of templateOptions(); track option) {
               <mat-option [value]="option.name">{{ option.name }}</mat-option>
             }
