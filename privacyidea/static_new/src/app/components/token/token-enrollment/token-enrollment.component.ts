@@ -333,13 +333,6 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     this.additionalFormFields.set(validControls);
   }
 
-  constructor() {
-    effect(() => {
-      const current = this.tokenService.selectedTokenType();
-      this.containerService.compatibleWithTokenType.set(current?.key ?? null);
-    });
-  }
-
   ngOnInit(): void {
     this.selectedContainerControl.valueChanges.subscribe((value) =>
       this.containerService.selectedContainer.set(value ?? "")

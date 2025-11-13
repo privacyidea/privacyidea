@@ -234,7 +234,10 @@ export class ContainerService implements ContainerServiceInterface {
   private readonly userService: UserServiceInterface = inject(UserService);
   private readonly pollingTrigger = signal<number>(0);
   private readonly isRolloverPolling = signal(false);
-  readonly compatibleWithTokenType: WritableSignal<string | null> = signal<string | null>(null);
+  readonly compatibleWithTokenType: WritableSignal<string | null> = linkedSignal({
+    source: this.tokenService.selectedTokenType,
+    computation: (tt) => tt?.key ?? null
+  });
   readonly isPollingActive = signal(false);
   readonly apiFilter = apiFilter;
   readonly advancedApiFilter = advancedApiFilter;
