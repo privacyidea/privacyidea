@@ -6,7 +6,7 @@
   align-items: start;
   gap: var(--global-padding);
   padding: calc(2 * var(--global-padding));
-  max-height: calc(var(--main-height) - 2 * var(--global-padding));
+  max-height: var(--total-layout-height);
   overflow-y: auto;
   overflow-x: hidden;
   scrollbar-width: thin;
