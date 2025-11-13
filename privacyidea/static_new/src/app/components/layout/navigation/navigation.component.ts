@@ -98,13 +98,6 @@ export class NavigationComponent {
 
   profileText = this.authService.username() + " @" + this.authService.realm() + " (" + this.authService.role() + ")";
 
-  constructor() {
-    effect(() => {
-      console.log(this.contentService.routeUrl()+" changed");
-      console.log(this.router.url)
-    });
-  }
-
   logout(): void {
     this.authService.logout();
     this.router.navigate(["login"]).then(() => this.notificationService.openSnackBar("Logout successful."));

@@ -23,11 +23,18 @@ import { inject, Injectable, linkedSignal, WritableSignal } from "@angular/core"
 import { environment } from "../../../environments/environment";
 import { CaConnectors } from "../ca-connector/ca-connector.service";
 
+export interface NodeInfo {
+  name: string;
+  uuid: string;
+}
+
 export interface SystemServiceInterface {
   systemConfigResource: HttpResourceRef<any>;
   radiusServerResource: HttpResourceRef<any>;
   caConnectorResource?: HttpResourceRef<any>;
   caConnectors?: WritableSignal<CaConnectors>;
+  nodesResource: HttpResourceRef<any>;
+  nodes: WritableSignal<NodeInfo[]>;
 }
 
 @Injectable({
@@ -55,6 +62,17 @@ export class SystemService implements SystemServiceInterface {
 
   caConnectors: WritableSignal<CaConnectors> = linkedSignal({
     source: this.caConnectorResource.value,
+    computation: (source, previous) => source?.result?.value ?? previous?.value ?? []
+  });
+
+  nodesResource = httpResource<any>(() => ({
+    url: environment.proxyUrl + "/system/nodes",
+    method: "GET",
+    headers: this.authService.getHeaders()
+  }));
+
+  nodes: WritableSignal<NodeInfo[]> = linkedSignal({
+    source: this.nodesResource.value,
     computation: (source, previous) => source?.result?.value ?? previous?.value ?? []
   });
 }

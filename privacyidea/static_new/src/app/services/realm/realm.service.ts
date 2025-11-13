@@ -34,6 +34,13 @@ export interface Realm {
   resolver: RealmResolvers;
 }
 
+export interface RealmRow {
+  name: string;
+  isDefault: boolean;
+  resolvers: string;
+  nodes: string;
+}
+
 export type RealmResolvers = Array<RealmResolver>;
 
 export interface RealmResolver {
@@ -70,7 +77,8 @@ export class RealmService implements RealmServiceInterface {
           ROUTE_PATHS.USERS,
           ROUTE_PATHS.TOKENS_CONTAINERS_CREATE,
           ROUTE_PATHS.TOKENS_ENROLLMENT,
-          ROUTE_PATHS.TOKENS_IMPORT
+          ROUTE_PATHS.TOKENS_IMPORT,
+          ROUTE_PATHS.USERS_REALMS
         ].includes(this.contentService.routeUrl()))
     ) {
       return undefined;
