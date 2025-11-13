@@ -21,7 +21,7 @@
     type="text"
     placeholder="Search action ..."
     [ngModel]="policyService.actionFilter()"
-    (ngModelChange)="testngModelChange($event)"
+    (ngModelChange)="policyService.actionFilter.set($event)"
     class="search-input" />
   @if (policyService.policyActionGroupNames().length > 1) {
     <app-selector-buttons

@@ -91,18 +91,6 @@ describe("ActionSelectorComponent", () => {
     expect(policyServiceMock.actionFilter.set).toHaveBeenCalledWith("test");
   });
 
-  // it("should filter actions based on input", () => {
-  //   const input: HTMLInputElement = fixture.nativeElement.querySelector(".search-input");
-
-  //   input.value = "test";
-  //   input.dispatchEvent(new Event("input"));
-  //   TestBed.flushEffects();
-  //   fixture.detectChanges();
-
-  //   const actionFilter = policyServiceMock.actionFilter();
-  //   expect(actionFilter).toBe("test");
-  // });
-
   it("should show group selector if more than one group exists", () => {
     policyServiceMock.policyActionGroupNames.set(["group1", "group2"]);
     fixture.detectChanges();

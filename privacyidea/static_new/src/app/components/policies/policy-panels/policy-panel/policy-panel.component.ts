@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, inject, Input, input, linkedSignal, signal, WritableSignal } from "@angular/core";
+import { Component, computed, inject, input, linkedSignal } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { MatCardModule } from "@angular/material/card";
 import { MatIconModule } from "@angular/material/icon";
@@ -32,6 +32,9 @@ import { ActionTabComponent } from "../action-tab/action-tab.component";
 import { ConditionsTabComponent } from "../conditions-tab/conditions-tab.component";
 import { PolicyDescriptionComponent } from "../action-tab/policy-description/policy-description.component";
 import { PolicyPriorityComponent } from "../action-tab/policy-priority/policy-priority.component";
+import { MatFormFieldModule } from "@angular/material/form-field";
+import { MatSelectModule } from "@angular/material/select";
+import { MatOptionModule } from "@angular/material/core";
 
 type PolicyTab = "actions" | "conditions";
 
@@ -51,7 +54,10 @@ type PolicyTab = "actions" | "conditions";
     ActionTabComponent,
     ConditionsTabComponent,
     PolicyDescriptionComponent,
-    PolicyPriorityComponent
+    PolicyPriorityComponent,
+    MatFormFieldModule,
+    MatSelectModule,
+    MatOptionModule
   ],
   templateUrl: "./policy-panel.component.html",
   styleUrl: "./policy-panel.component.scss"

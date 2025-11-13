@@ -60,11 +60,19 @@
         <div class="policy-scope-label">
           @if (isNew()) {
             @if (!this.policyService.selectedPolicyHasActions() && panel.expanded) {
-              <app-horizontal-wheel
-                [initialValue]="newPolicyScope()"
-                [values]="policyService.allPolicyScopes"
-                (onSelect)="selectPolicyScope($event)"
-                (click)="$event.stopPropagation()" />
+              <mat-form-field
+                appearance="fill"
+                class="policy-scope-dropdown"
+                (click)="$event.stopPropagation()">
+                <mat-label i18n>Scope</mat-label>
+                <mat-select
+                  [value]="selectedPolicy()!.scope"
+                  (selectionChange)="selectPolicyScope($event.value)">
+                  @for (scopeOption of policyService.allPolicyScopes(); track scopeOption) {
+                    <mat-option [value]="scopeOption">{{ scopeOption }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
             } @else {
               <span>
                 {{ newPolicyScope().toLocaleUpperCase() }}
@@ -72,11 +80,19 @@
             }
           } @else if (policy()) {
             @if (isEditingPolicy(policy()!.name) && policyService.isScopeChangeable(selectedPolicy()!)) {
-              <app-horizontal-wheel
-                [initialValue]="selectedPolicy()!.scope"
-                [values]="policyService.allPolicyScopes"
-                (onSelect)="selectPolicyScope($event)"
-                (click)="$event.stopPropagation()" />
+              <mat-form-field
+                appearance="fill"
+                class="policy-scope-dropdown"
+                (click)="$event.stopPropagation()">
+                <mat-label i18n>Scope</mat-label>
+                <mat-select
+                  [value]="selectedPolicy()!.scope"
+                  (selectionChange)="selectPolicyScope($event.value)">
+                  @for (scopeOption of policyService.allPolicyScopes(); track scopeOption) {
+                    <mat-option [value]="scopeOption">{{ scopeOption }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
             } @else {
               <span>
                 {{ policy()!.scope.toLocaleUpperCase() }}

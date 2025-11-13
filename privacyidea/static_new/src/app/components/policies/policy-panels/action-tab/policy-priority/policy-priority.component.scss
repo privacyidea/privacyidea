@@ -1,3 +1,5 @@
+@use "../action-tab.component.scss";
+
 .description-header {
   font-size: 1.17em;
   font-weight: bold;
@@ -16,14 +18,6 @@
   padding: var(--three-quarters-global-padding);
 }
 
-.description-textarea {
-  background-color: transparent;
-  border: none;
-  border-bottom: 1px solid var(--mat-sys-outline-variant);
-  border-radius: 0;
-  box-sizing: border-box;
-  font-size: 1rem;
-  padding: var(--half-global-padding) 0;
-  resize: vertical;
-  width: 100%;
+.priority-input {
+  @include action-tab.action-tab-input;
 }

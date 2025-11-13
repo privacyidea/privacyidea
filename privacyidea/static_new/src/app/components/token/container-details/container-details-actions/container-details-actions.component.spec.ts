@@ -76,7 +76,6 @@ describe("ContainerDetailsActionsComponent", () => {
 
   it("should render actions if anyActionsAllowed is true", () => {
     authServiceMock.actionAllowed.mockReturnValue(true);
-    authServiceMock.jwtData.set({ ...authServiceMock.jwtData()!, rights: ["container_delete"] });
     fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.textContent).toContain("Container Actions");

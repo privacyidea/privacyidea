@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, inject, input, signal, ViewChild } from "@angular/core";
+import { Component, computed, inject, signal, ViewChild } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { AbstractControl, FormControl, FormsModule, ValidationErrors, ReactiveFormsModule } from "@angular/forms";
 import { MatIconModule } from "@angular/material/icon";
@@ -72,8 +72,18 @@ export class ConditionsNodesComponent {
   selectedClient = computed(() => this.policyService.selectedPolicy()?.client || "");
   isAllNodesSelected = computed(() => this.selectedPinodes().length === this.availablePinodesList().length);
 
-  // Placeholder for available user agents
-  availableUserAgents = signal<string[]>(["Mozilla Firefox", "Google Chrome", "Microsoft Edge"]);
+  availableUserAgents = signal<string[]>([
+    "Credential Provicer",
+    "Keycloak",
+    "AD FS",
+    "SimpleSAMLphp",
+    "PAM",
+    "Shibboleth",
+    "Nextcloud",
+    "FreeRADIUS",
+    "LDAP Proxy",
+    "privacyIDEA Authenticator"
+  ]);
 
   constructor() {
     this.validTimeFormControl.valueChanges.subscribe(() => {

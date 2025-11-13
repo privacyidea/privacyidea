@@ -44,7 +44,6 @@
   background-color: var(--mat-sys-surface-container-high);
   border-radius: var(--border-radius);
   padding: var(--quarter-global-padding) var(--half-global-padding);
-  // margin-right: var(--half-global-padding);
   flex-shrink: 0;
 }
 
@@ -85,7 +84,6 @@
 
 .add-user-input {
   width: 100%;
-  // ecken rechts sollen eckig sein
   border-radius: var(--border-radius);
 
   .mdc-text-field--filled {

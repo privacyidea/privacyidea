@@ -23,11 +23,7 @@
       class="description-header">
       Description
     </div>
-    @if (!isEditMode()) {
-      <div class="description-text">
-        {{ policyService.selectedPolicy()?.description }}
-      </div>
-    } @else {
+    @if (isEditMode()) {
       <textarea
         class="description-textarea"
         [ngModel]="policyService.selectedPolicy()?.description"
@@ -36,6 +32,8 @@
         cdkTextareaAutosize
         cdkAutosizeMinRows="3"
         cdkAutosizeMaxRows="6"></textarea>
+    } @else {
+      {{ policyService.selectedPolicy()?.description }}
     }
   </div>
 }

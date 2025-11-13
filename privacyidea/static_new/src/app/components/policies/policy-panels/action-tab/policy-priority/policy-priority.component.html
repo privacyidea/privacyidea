@@ -22,15 +22,13 @@
     class="description-header">
     Priority
   </div>
-  @if (!editMode()) {
-    <div class="description-text">
-      {{ policyService.selectedPolicy()?.priority }}
-    </div>
-  } @else {
+  @if (editMode()) {
     <input
       type="number"
-      class="description-textarea"
+      class="priority-input"
       [ngModel]="policyService.selectedPolicy()?.priority"
       (ngModelChange)="updatePolicyPriority($event)" />
+  } @else {
+    {{ policyService.selectedPolicy()?.priority }}
   }
 </div>

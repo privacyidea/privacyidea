@@ -38,8 +38,4 @@ import { MatTooltipModule } from "@angular/material/tooltip";
 })
 export class ActionSelectorComponent {
   policyService: PolicyServiceInterface = inject(PolicyService);
-  testngModelChange(event: string) {
-    this.policyService.actionFilter.set(event);
-    throw Error(event);
-  }
 }

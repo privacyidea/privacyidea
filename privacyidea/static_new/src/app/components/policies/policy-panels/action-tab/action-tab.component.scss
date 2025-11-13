@@ -18,3 +18,14 @@
   flex: 5 1 0;
   min-width: 0;
 }
+
+@mixin action-tab-input {
+  background-color: transparent;
+  border: none;
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 0;
+  box-sizing: border-box;
+  font-size: 1rem;
+  resize: vertical;
+  width: 100%;
+}
