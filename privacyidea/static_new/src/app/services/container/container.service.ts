@@ -31,6 +31,7 @@ import { FilterValue } from "../../core/models/filter_value";
 import { Sort } from "@angular/material/sort";
 import { TokenService, TokenServiceInterface } from "../token/token.service";
 import { StringUtils } from "../../utils/string.utils";
+import { UserService, UserServiceInterface } from "../user/user.service";
 
 const apiFilter = ["container_serial", "type", "user"];
 const advancedApiFilter = ["token_serial"];
@@ -144,6 +145,7 @@ export interface ContainerUnregisterData {
 }
 
 export interface ContainerServiceInterface {
+  compatibleWithSelectedTokenType: WritableSignal<string | null>;
   isPollingActive: Signal<boolean>;
   apiFilter: string[];
   advancedApiFilter: string[];
@@ -229,9 +231,13 @@ export class ContainerService implements ContainerServiceInterface {
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly authService: AuthServiceInterface = inject(AuthService);
+  private readonly userService: UserServiceInterface = inject(UserService);
   private readonly pollingTrigger = signal<number>(0);
   private readonly isRolloverPolling = signal(false);
-
+  readonly compatibleWithSelectedTokenType: WritableSignal<string | null> = linkedSignal({
+    source: this.tokenService.selectedTokenType,
+    computation: (tt) => tt?.key ?? null
+  });
   readonly isPollingActive = signal(false);
   readonly apiFilter = apiFilter;
   readonly advancedApiFilter = advancedApiFilter;
@@ -254,17 +260,15 @@ export class ContainerService implements ContainerServiceInterface {
     source: this.contentService.routeUrl,
     computation: () => new FilterValue()
   });
+
   filterParams = computed<Record<string, string>>(() => {
     const allowed = [...this.apiFilter, ...this.advancedApiFilter];
-
     const plainKeys = new Set(["user", "type", "container_serial", "token_serial"]);
-
     const entries = Array.from(this.containerFilter().filterMap.entries())
       .filter(([key]) => allowed.includes(key))
       .map(([key, value]) => [key, (value ?? "").toString().trim()] as const)
       .filter(([, v]) => StringUtils.validFilterValue(v))
       .map(([key, v]) => [key, plainKeys.has(key) ? v : `*${v}*`] as const);
-
     return Object.fromEntries(entries) as Record<string, string>;
   });
 
@@ -277,6 +281,7 @@ export class ContainerService implements ContainerServiceInterface {
       return this.eventPageSize;
     }
   });
+
   pageIndex = linkedSignal({
     source: () => ({
       filterValue: this.containerFilter(),
@@ -285,13 +290,37 @@ export class ContainerService implements ContainerServiceInterface {
     }),
     computation: () => 0
   });
+
   loadAllContainers = computed(() => {
     return (
       [ROUTE_PATHS.TOKENS_ENROLLMENT].includes(this.contentService.routeUrl()) ||
       this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_DETAILS)
     );
   });
+
+  private readonly uniqueCompatibleType = computed<string | null>(() => {
+    const tt = this.compatibleWithSelectedTokenType();
+    if (!tt) return null;
+
+    const types = this.containerTypeOptions();
+    const compatible = types.filter(t => (t.token_types ?? []).includes(tt));
+
+    return compatible.length === 1 ? String(compatible[0].containerType) : null;
+  });
+
+  private readonly tokenInContainer = computed<boolean>(() => {
+    const tokenDetailsRes = this.tokenService.tokenDetailResource.value();
+    const assigned = tokenDetailsRes?.result?.value?.tokens?.[0]?.container_serial ?? "";
+    return String(assigned).trim() !== "";
+  });
+
   containerResource = httpResource<PiResponse<ContainerDetails>>(() => {
+    if (this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_DETAILS)) {
+      const tokenRes = this.tokenService.tokenDetailResource.value();
+      if (!tokenRes) return undefined;
+      if (this.tokenInContainer()) return undefined;
+    }
+
     if (
       (!this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_DETAILS) &&
         !this.contentService.routeUrl().startsWith(ROUTE_PATHS.USERS_DETAILS) &&
@@ -303,30 +332,39 @@ export class ContainerService implements ContainerServiceInterface {
     ) {
       return undefined;
     }
+
+    const baseParams: Record<string, any> = {
+      ...(!this.loadAllContainers() && {
+        page: this.pageIndex() + 1,
+        pagesize: this.pageSize()
+      }),
+      ...(this.loadAllContainers() && { no_token: 1 }),
+      sortby: this.sort().active,
+      sortdir: this.sort().direction,
+      ...this.filterParams(),
+      user: this.userService.selectedUser()?.username ?? ""
+    };
+
+    const compatibleType = this.uniqueCompatibleType();
+    if (compatibleType && !("type" in baseParams) && !("type_list" in baseParams)) {
+      baseParams["type"] = compatibleType;
+    }
+
     return {
       url: this.containerBaseUrl,
       method: "GET",
       headers: this.authService.getHeaders(),
-      params: {
-        ...(!this.loadAllContainers() && {
-          page: this.pageIndex() + 1,
-          pagesize: this.pageSize()
-        }),
-        ...(this.loadAllContainers() && {
-          no_token: 1
-        }),
-        sortby: this.sort().active,
-        sortdir: this.sort().direction,
-        ...this.filterParams()
-      }
+      params: baseParams
     };
   });
+
   containerOptions = linkedSignal({
     source: this.containerResource.value,
     computation: (containerResource) => {
       return containerResource?.result?.value?.containers.map((container) => container.serial) ?? [];
     }
   });
+
   filteredContainerOptions = computed(() => {
     const filter = (this.selectedContainer() || "").toLowerCase();
     return this.containerOptions().filter((option) => option.toLowerCase().includes(filter));
@@ -343,7 +381,10 @@ export class ContainerService implements ContainerServiceInterface {
   });
 
   containerTypesResource = httpResource<PiResponse<ContainerTypes>>(() => {
-    if (![ROUTE_PATHS.TOKENS_CONTAINERS_CREATE, ROUTE_PATHS.TOKENS_CONTAINERS_WIZARD].includes(this.contentService.routeUrl())) {
+    const route = this.contentService.routeUrl();
+    if (![ROUTE_PATHS.TOKENS_CONTAINERS_CREATE, ROUTE_PATHS.TOKENS_CONTAINERS_WIZARD,
+      ROUTE_PATHS.TOKENS_ENROLLMENT]
+      .includes(route) && !route.startsWith(ROUTE_PATHS.TOKENS_DETAILS)) {
       return undefined;
     }
     return {
@@ -385,8 +426,8 @@ export class ContainerService implements ContainerServiceInterface {
 
   containerDetailResource = httpResource<PiResponse<ContainerDetails>>(() => {
     const serial = this.containerSerial();
-    const trigger = this.pollingTrigger();
-    const active = this.isPollingActive();
+    this.pollingTrigger();
+    this.isPollingActive();
 
     if (serial === "") {
       return undefined;
@@ -400,6 +441,7 @@ export class ContainerService implements ContainerServiceInterface {
       }
     };
   });
+
   containerDetail: WritableSignal<ContainerDetails> = linkedSignal({
     source: this.containerDetailResource.value,
     computation: (containerDetailResource, previous) => {

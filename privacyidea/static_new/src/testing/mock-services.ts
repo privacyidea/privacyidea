@@ -391,6 +391,7 @@ export class MockContentService implements ContentServiceInterface {
   userSelected: (username: any) => void = jest.fn();
 }
 export class MockContainerService implements ContainerServiceInterface {
+  compatibleWithSelectedTokenType = signal<string | null>(null);
   isPollingActive: Signal<boolean> = signal(false);
   startPolling = jest.fn();
   handleFilterInput = jest.fn();
