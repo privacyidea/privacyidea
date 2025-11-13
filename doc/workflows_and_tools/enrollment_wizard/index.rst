@@ -64,6 +64,9 @@ you can modify the text here:
    pi.cfg. This way you can put all modifications in one place apart from the
    original code.
 
+   This is only possible in the old WebUI.
+   The new WebUI always looks for the files in the path ``static_new/public/customize/``.
+
 .. _pi_customization:
 
 Example

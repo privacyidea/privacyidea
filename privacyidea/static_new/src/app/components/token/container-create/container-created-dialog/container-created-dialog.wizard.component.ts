@@ -18,7 +18,7 @@
  **/
 import { AsyncPipe } from "@angular/common";
 import { HttpClient } from "@angular/common/http";
-import { Component, computed, inject, Signal } from "@angular/core";
+import { Component, computed, inject, SecurityContext, Signal } from "@angular/core";
 import { MatDialogContent, MatDialogRef } from "@angular/material/dialog";
 import { DomSanitizer } from "@angular/platform-browser";
 import { map } from "rxjs";
@@ -53,7 +53,7 @@ export class ContainerCreatedDialogWizardComponent extends ContainerCreatedDialo
     })
     .pipe(map((raw) => ({
         hasContent: !!raw && raw.trim().length > 0,
-        sanitized: this.sanitizer.bypassSecurityTrustHtml(StringUtils.replaceWithTags(raw, this.tagData()))
+        sanitized: this.sanitizer.sanitize(SecurityContext.HTML, StringUtils.replaceWithTags(raw, this.tagData()))
       }))
     );
 
@@ -61,7 +61,7 @@ export class ContainerCreatedDialogWizardComponent extends ContainerCreatedDialo
     .get(environment.proxyUrl + this.customizationPath + "container-create.wizard.post.bottom.html", {
       responseType: "text"
     })
-    .pipe(map((raw) => this.sanitizer.bypassSecurityTrustHtml(
+    .pipe(map((raw) => this.sanitizer.sanitize(SecurityContext.HTML,
       StringUtils.replaceWithTags(raw, this.tagData()))
     ));
 

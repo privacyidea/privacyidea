@@ -18,7 +18,7 @@
  **/
 import { AsyncPipe } from "@angular/common";
 import { HttpClient } from "@angular/common/http";
-import { Component, computed, inject, Signal } from "@angular/core";
+import { Component, computed, inject, SecurityContext, Signal } from "@angular/core";
 import { MatButton } from "@angular/material/button";
 import {
   MAT_DIALOG_DATA,
@@ -97,7 +97,7 @@ export class TokenEnrollmentLastStepDialogWizardComponent extends TokenEnrollmen
     })
     .pipe(map((raw) => ({
         hasContent: !!raw && raw.trim().length > 0,
-        sanitized: this.sanitizer.bypassSecurityTrustHtml(StringUtils.replaceWithTags(raw, this.tagData()))
+        sanitized: this.sanitizer.sanitize(SecurityContext.HTML, StringUtils.replaceWithTags(raw, this.tagData()))
       }))
     );
 
@@ -105,7 +105,7 @@ export class TokenEnrollmentLastStepDialogWizardComponent extends TokenEnrollmen
     .get(environment.proxyUrl + this.customizationPath+ "token-enrollment.wizard.post.bottom.html", {
       responseType: "text"
     })
-    .pipe(map((raw) => this.sanitizer.bypassSecurityTrustHtml(
+    .pipe(map((raw) => this.sanitizer.sanitize(SecurityContext.HTML,
         StringUtils.replaceWithTags(raw, this.tagData()))
       )
     );

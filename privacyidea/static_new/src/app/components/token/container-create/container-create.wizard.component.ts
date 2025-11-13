@@ -18,7 +18,7 @@
  **/
 import { AsyncPipe, NgClass, TitleCasePipe } from "@angular/common";
 import { HttpClient } from "@angular/common/http";
-import { Component, inject, linkedSignal, WritableSignal } from "@angular/core";
+import { Component, inject, linkedSignal, SecurityContext, WritableSignal } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { MatButton, MatIconButton } from "@angular/material/button";
 import { MatDialog } from "@angular/material/dialog";
@@ -90,7 +90,7 @@ export class ContainerCreateWizardComponent extends ContainerCreateComponent {
     })
     .pipe(map((raw) => ({
         hasContent: !!raw && raw.trim().length > 0,
-        sanitized: this.sanitizer.bypassSecurityTrustHtml(raw)
+        sanitized: this.sanitizer.sanitize(SecurityContext.HTML, raw)
       }))
     );
 
@@ -98,7 +98,7 @@ export class ContainerCreateWizardComponent extends ContainerCreateComponent {
     .get(environment.proxyUrl + this.customizationPath + "container-create.wizard.pre.bottom.html", {
       responseType: "text"
     })
-    .pipe(map((raw) => this.sanitizer.bypassSecurityTrustHtml(raw)));
+    .pipe(map((raw) => this.sanitizer.sanitize(SecurityContext.HTML, raw)));
 
   constructor(
     private http: HttpClient,
