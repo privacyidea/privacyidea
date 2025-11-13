@@ -309,9 +309,6 @@ export class ContainerService implements ContainerServiceInterface {
   });
 
   private readonly tokenInContainer = computed<boolean>(() => {
-    const onTokenDetails = this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_DETAILS);
-    if (!onTokenDetails) return false;
-
     const tokenDetailsRes = this.tokenService.tokenDetailResource.value();
     const assigned = tokenDetailsRes?.result?.value?.tokens?.[0]?.container_serial ?? "";
     return String(assigned).trim() !== "";
@@ -348,9 +345,9 @@ export class ContainerService implements ContainerServiceInterface {
       user: this.userService.selectedUser()?.username ?? ""
     };
 
-    const autoType = this.uniqueCompatibleType();
-    if (autoType && !('type' in baseParams) && !('type_list' in baseParams)) {
-      baseParams["type"] = autoType;
+    const compatibleType = this.uniqueCompatibleType();
+    if (compatibleType && !('type' in baseParams) && !('type_list' in baseParams)) {
+      baseParams["type"] = compatibleType;
     }
 
     return {
@@ -427,8 +424,8 @@ export class ContainerService implements ContainerServiceInterface {
 
   containerDetailResource = httpResource<PiResponse<ContainerDetails>>(() => {
     const serial = this.containerSerial();
-    const trigger = this.pollingTrigger();
-    const active = this.isPollingActive();
+    this.pollingTrigger();
+    this.isPollingActive();
 
     if (serial === "") {
       return undefined;
