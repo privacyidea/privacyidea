@@ -275,28 +275,6 @@ export class TokenService implements TokenServiceInterface {
     return Object.fromEntries(entries) as Record<string, string>;
   });
 
-  // Merge conflicting commented code with the following implementation
-  // I don't know which one is preferred, so I will keep the current implementation and comment out the old one.
-
-  // filterParams = computed<Record<string, string>>(() => {
-  //   const allowedFilters = [...this.apiFilter, ...this.advancedApiFilter, ...this.hiddenApiFilter];
-  //   let filterPairs = [
-  //     ...Array.from(this.tokenFilter().filterMap.entries()),
-  //     ...Array.from(this.tokenFilter().hiddenFilterMap.entries())
-  //   ];
-  //   let filterPairsMap = filterPairs
-  //     .filter(([key]) => allowedFilters.includes(key))
-  //     .map(([key, value]) => ({ key, value }));
-  //   return filterPairsMap.reduce(
-  //     (acc, { key, value }) => ({
-  //       ...acc,
-  //       [key]: ["user", "infokey", "infovalue", "active", "assigned", "container_serial"].includes(key)
-  //         ? `${value}`
-  //         : `*${value}*`
-  //     }),
-  //     {} as Record<string, string>
-  //   );
-  // });
   selectedTokenType = linkedSignal({
     source: () => ({
       tokenTypeOptions: this.tokenTypeOptions(),
