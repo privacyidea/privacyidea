@@ -102,7 +102,7 @@ export class TokenEnrollmentLastStepDialogWizardComponent extends TokenEnrollmen
     );
 
   readonly postBottomHtml$ = this.http
-    .get(environment.proxyUrl + this.customizationPath+ "token-enrollment.wizard.post.bottom.html", {
+    .get(environment.proxyUrl + this.customizationPath + "token-enrollment.wizard.post.bottom.html", {
       responseType: "text"
     })
     .pipe(map((raw) => this.sanitizer.sanitize(SecurityContext.HTML,
