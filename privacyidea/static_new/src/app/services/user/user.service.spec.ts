@@ -23,7 +23,7 @@ import { UserData, UserService } from "./user.service";
 import { RealmService } from "../realm/realm.service";
 import { AuthService } from "../auth/auth.service";
 import { ContentService } from "../content/content.service";
-import { TokenService } from "../token/token.service";
+import { Tokens, TokenService } from "../token/token.service";
 
 import {
   MockAuthService,
@@ -33,6 +33,8 @@ import {
   MockRealmService,
   MockTokenService
 } from "../../../testing/mock-services";
+import { ROUTE_PATHS } from "../../route_paths";
+import { PiResponse } from "../../app.component";
 
 function buildUser(username: string): UserData {
   return {
@@ -47,6 +49,31 @@ function buildUser(username: string): UserData {
     phone: "",
     resolver: ""
   };
+}
+
+function setTokenDetailUsername(name: string) {
+  const ref = (TestBed.inject(TokenService) as unknown as MockTokenService).tokenDetailResource;
+
+  if (!ref.value()) {
+    const seeded = MockPiResponse.fromValue<Tokens>(
+      { tokens: [{ username: name } as any] } as any
+    ) as unknown as PiResponse<Tokens>;
+    ref.set(seeded);
+    return;
+  }
+
+  ref.update((resp) => {
+    const current = resp!.result!.value as unknown as Tokens;
+    const first = (current.tokens?.[0] ?? {}) as any;
+    first.username = name;
+    return {
+      ...resp!,
+      result: {
+        ...resp!.result!,
+        value: { ...current, tokens: [first] }
+      }
+    } as PiResponse<Tokens>;
+  });
 }
 
 describe("UserService", () => {
@@ -254,5 +281,54 @@ describe("UserService", () => {
     expect(params).not.toHaveProperty("givenname");
     expect(params).toHaveProperty("email", "*alice@test*");
     expect(params).not.toHaveProperty("surname");
+  });
+
+  describe("selectedUser", () => {
+    let contentService: MockContentService;
+    let tokenService: MockTokenService;
+    let authService: MockAuthService;
+
+    beforeEach(() => {
+      contentService = TestBed.inject(ContentService) as unknown as MockContentService;
+      tokenService = TestBed.inject(TokenService) as unknown as MockTokenService;
+      authService = TestBed.inject(AuthService) as unknown as MockAuthService;
+
+      contentService.routeUrl.set(ROUTE_PATHS.USERS);
+      authService.role.set("admin");
+      authService.username.set("enduser");
+      tokenService.tokenDetailResource = new MockHttpResourceRef(undefined as any);
+      userService.selectionFilter.set("");
+    });
+
+    it("returns null when no token username, role != user, and selection filter empty", () => {
+      expect(userService.selectedUser()).toBeNull();
+    });
+
+    it("returns matching user when selection filter is a string", () => {
+      userService.selectionFilter.set("Alice");
+      expect(userService.selectedUser()).toEqual(alice);
+    });
+
+    it("returns matching user when selection filter is a UserData object", () => {
+      userService.selectionFilter.set(users[1]);
+      expect(userService.selectedUser()).toEqual(users[1]);
+    });
+
+    it("returns username when on token detail route and token has username", () => {
+      contentService.routeUrl.set(ROUTE_PATHS.TOKENS_DETAILS);
+
+      setTokenDetailUsername("Bob");
+
+      userService.selectionFilter.set("Alice");
+      expect(userService.selectedUser()).toEqual(users[1]);
+    });
+
+    it('when role is "user": returns the authenticated username', () => {
+      authService.role.set("user");
+      authService.username.set("Charlie");
+
+      userService.selectionFilter.set("");
+      expect(userService.selectedUser()).toEqual(users[2]);
+    });
   });
 });

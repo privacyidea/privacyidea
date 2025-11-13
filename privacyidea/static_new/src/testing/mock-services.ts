@@ -341,7 +341,9 @@ export class MockAuthService extends AuthService {
     }
   };
   isAuthenticatedUser = jest.fn().mockReturnValue(this.isAuthenticated() && this.role() === "user");
-}
+  override getHeaders = jest
+    .fn()
+    .mockReturnValue(new HttpHeaders({ Authorization: "Bearer FAKE_TOKEN" }));}
 
 export class MockUserService implements UserServiceInterface {
   usersOfRealmResource: HttpResourceRef<PiResponse<UserData[], undefined> | undefined> =

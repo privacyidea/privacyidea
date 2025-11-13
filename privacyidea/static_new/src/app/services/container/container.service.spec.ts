@@ -19,6 +19,7 @@
 import { ContainerDetails, ContainerService } from "./container.service";
 import { HttpClient, HttpErrorResponse, provideHttpClient } from "@angular/common/http";
 import {
+  MockAuthService,
   MockContentService,
   MockLocalService,
   MockNotificationService,
@@ -32,12 +33,6 @@ import { AuthService } from "../auth/auth.service";
 import { FilterValue } from "../../core/models/filter_value";
 import { ROUTE_PATHS } from "../../route_paths";
 import { ContentService } from "../content/content.service";
-
-
-class MockAuthService implements Partial<AuthService> {
-  getHeaders = jest.fn().mockReturnValue({ Authorization: "Bearer FAKE_TOKEN" });
-  actionAllowed = jest.fn().mockReturnValue(true);
-}
 
 describe("ContainerService", () => {
   let containerService: ContainerService;
@@ -511,7 +506,6 @@ describe("ContainerService", () => {
     expect(containerService.containerTypeOptions()).toEqual([]);
   });
 
-  // === FIX 1: setContainerDescription — loosen header equality and assert Authorization optionally ===
   it("setContainerDescription posts payload (robust headers assertion)", async () => {
     const post = jest.spyOn(http, "post").mockReturnValue(of({}) as any);
     await lastValueFrom(containerService.setContainerDescription("cD", "desc"));
@@ -523,19 +517,17 @@ describe("ContainerService", () => {
       expect.objectContaining({ headers: expect.anything() })
     );
 
-    // Optional: verify Authorization header value regardless of HttpHeaders vs. plain object
     const hdrs = (post as jest.Mock).mock.calls[0][2]?.headers;
     const authHeader = typeof hdrs?.get === "function" ? hdrs.get("Authorization") : hdrs?.Authorization;
     expect(authHeader).toMatch(/^Bearer /);
   });
 
-  // === Extra small coverage to close error branches cleanly ===
   it("addTokenToContainer/ removeTokenFromContainer / assignUser / unassignUser error paths surface snackbar", async () => {
     jest.spyOn(http, "post")
-      .mockReturnValueOnce(throwError(() => new HttpErrorResponse({ status: 500 }))) // addTokenToContainer
-      .mockReturnValueOnce(throwError(() => new HttpErrorResponse({ status: 500 }))) // removeTokenFromContainer
-      .mockReturnValueOnce(throwError(() => new HttpErrorResponse({ status: 500 }))) // assignUser
-      .mockReturnValueOnce(throwError(() => new HttpErrorResponse({ status: 500 }))); // unassignUser
+      .mockReturnValueOnce(throwError(() => new HttpErrorResponse({ status: 500 })))
+      .mockReturnValueOnce(throwError(() => new HttpErrorResponse({ status: 500 })))
+      .mockReturnValueOnce(throwError(() => new HttpErrorResponse({ status: 500 })))
+      .mockReturnValueOnce(throwError(() => new HttpErrorResponse({ status: 500 })));
 
     await expect(lastValueFrom(containerService.addTokenToContainer("c", "t"))).rejects.toBeDefined();
     await expect(lastValueFrom(containerService.removeTokenFromContainer("c", "t"))).rejects.toBeDefined();
@@ -559,8 +551,8 @@ describe("ContainerService", () => {
 
   it("registerContainer / toggleActive error paths surface snackbar", async () => {
     jest.spyOn(http, "post")
-      .mockReturnValueOnce(throwError(() => new HttpErrorResponse({ status: 400 }))) // register
-      .mockReturnValueOnce(throwError(() => new HttpErrorResponse({ status: 500 }))); // toggleActive
+      .mockReturnValueOnce(throwError(() => new HttpErrorResponse({ status: 400 })))
+      .mockReturnValueOnce(throwError(() => new HttpErrorResponse({ status: 500 })));
 
     await expect(lastValueFrom(containerService.registerContainer({
       container_serial: "c",
@@ -576,8 +568,8 @@ describe("ContainerService", () => {
 
   it("setContainerInfos: per-key error surfaces snackbar", async () => {
     const post = jest.spyOn(http, "post")
-      .mockReturnValueOnce(of({}) as any) // k1 ok
-      .mockReturnValueOnce(throwError(() => new HttpErrorResponse({ status: 500 }))); // k2 fails
+      .mockReturnValueOnce(of({}) as any)
+      .mockReturnValueOnce(throwError(() => new HttpErrorResponse({ status: 500 })));
 
     const [o1, o2] = containerService.setContainerInfos("cI", { k1: "v1", k2: "v2" });
     await lastValueFrom(o1);

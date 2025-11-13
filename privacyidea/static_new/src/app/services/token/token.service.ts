@@ -359,7 +359,8 @@ export class TokenService implements TokenServiceInterface {
     };
   });
   tokenTypesResource = httpResource<PiResponse<{}>>(() => {
-    if (![ROUTE_PATHS.TOKENS_ENROLLMENT, ROUTE_PATHS.TOKENS_GET_SERIAL].includes(this.contentService.routeUrl())) {
+    if (![ROUTE_PATHS.TOKENS_ENROLLMENT, ROUTE_PATHS.TOKENS_GET_SERIAL, ROUTE_PATHS.TOKENS_CONTAINERS_CREATE]
+      .includes(this.contentService.routeUrl())) {
       return undefined;
     }
     return {
@@ -528,7 +529,7 @@ export class TokenService implements TokenServiceInterface {
                 const count_success = response.result?.value?.count_success || 0;
                 const messages: string[] = [];
                 if (count_success) {
-                  messages.push(`Successfully deleted ${count_success} token${count_success === 1 ? '' : 's'}.`);
+                  messages.push(`Successfully deleted ${count_success} token${count_success === 1 ? "" : "s"}.`);
                 }
 
                 if (failedTokens.length > 0) {

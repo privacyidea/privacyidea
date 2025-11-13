@@ -365,6 +365,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.containerService.compatibleWithSelectedTokenType.set(null);
     if (this.observer) {
       this.observer.disconnect();
     }
