@@ -126,7 +126,7 @@ export class TokenTableActionsComponent {
 
   deleteSelectedTokens(): void {
     const serialList = this.tokenSelection().map((token) => token.serial);
-    this.tokenService.bulkDeleteWithConfirmDialog(serialList, this.dialog, this.tokenService.tokenResource.reload);
+    this.tokenService.bulkDeleteWithConfirmDialog(serialList, this.dialog, () => this.tokenService.tokenResource.reload());
   }
 
   assignSelectedTokens() {
