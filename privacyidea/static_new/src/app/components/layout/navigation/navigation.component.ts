@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, inject } from "@angular/core";
+import { Component, effect, inject } from "@angular/core";
 import { DatePipe, NgClass, NgOptimizedImage } from "@angular/common";
 import {
   MatAccordion,
@@ -48,7 +48,6 @@ import {
 import { VersioningService, VersioningServiceInterface } from "../../../services/version/version.service";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { FormsModule } from "@angular/forms";
-import { MatOption, MatSelect } from "@angular/material/select";
 import { RealmService, RealmServiceInterface } from "../../../services/realm/realm.service";
 
 @Component({
@@ -76,9 +75,7 @@ import { RealmService, RealmServiceInterface } from "../../../services/realm/rea
     NgClass,
     MatAnchor,
     MatTooltipModule,
-    MatSelect,
-    FormsModule,
-    MatOption
+    FormsModule
   ],
   templateUrl: "./navigation.component.html",
   styleUrl: "./navigation.component.scss"
@@ -101,6 +98,13 @@ export class NavigationComponent {
 
   profileText = this.authService.username() + " @" + this.authService.realm() + " (" + this.authService.role() + ")";
 
+  constructor() {
+    effect(() => {
+      console.log(this.contentService.routeUrl()+" changed");
+      console.log(this.router.url)
+    });
+  }
+
   logout(): void {
     this.authService.logout();
     this.router.navigate(["login"]).then(() => this.notificationService.openSnackBar("Logout successful."));
@@ -112,12 +116,10 @@ export class NavigationComponent {
       if (this.authService.anyContainerActionAllowed()) {
         this.containerService.containerResource.reload();
       }
-    }
-    else if (this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS)) {
+    } else if (this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS)) {
       this.containerService.containerDetailResource.reload();
       this.tokenService.tokenResource.reload();
-    }
-    else if (this.contentService.routeUrl().startsWith(ROUTE_PATHS.USERS_DETAILS)) {
+    } else if (this.contentService.routeUrl().startsWith(ROUTE_PATHS.USERS_DETAILS)) {
       this.userService.usersResource.reload();
       return;
     }

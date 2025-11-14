@@ -20,55 +20,55 @@
   <div class="flex-column gap-8">
     <h4 class="margin-0">Container Actions</h4>
     @if (authService.actionAllowed("container_delete")) {
-      <div>
-        <button
-          (click)="deleteContainer()"
-          class="action-button-delete width-238"
-          mat-stroked-button
-          i18n>
-          <mat-icon>delete</mat-icon>
-          Delete
-        </button>
-      </div>
+      <button
+        (click)="deleteContainer()"
+        class="action-button-delete width-238"
+        i18n
+        mat-stroked-button>
+        <mat-icon>delete</mat-icon>
+        Delete
+      </button>
     }
+    <button
+      (click)="enrollTokenInContainer()"
+      class="action-button-1 width-238"
+      i18n
+      mat-stroked-button>
+      <mat-icon>add_moderator</mat-icon>
+      Enroll Token in Container
+    </button>
     @if (containerType === "smartphone") {
       @if (authService.actionAllowed("container_delete") && (registrationAllowed() || rolloverAllowed() || unregisterAllowed())) {
         <mat-divider class="margin-top-8 margin-bottom-8"></mat-divider>
       }
       @if (registrationAllowed()) {
-        <div>
-          <button
-            (click)="openRegisterInitDialog(false)"
-            class="action-button-1 width-238"
-            mat-stroked-button
-            i18n>
-            <mat-icon>phonelink</mat-icon>
-            Register
-          </button>
-        </div>
+        <button
+          (click)="openRegisterInitDialog(false)"
+          class="action-button-1 width-238"
+          i18n
+          mat-stroked-button>
+          <mat-icon>phonelink</mat-icon>
+          Register
+        </button>
       } @else if (rolloverAllowed()) {
-        <div>
-          <button
-            (click)="openRegisterInitDialog(true)"
-            class="action-button-1 width-238"
-            mat-stroked-button
-            i18n>
-            <mat-icon>sync</mat-icon>
-            Rollover
-          </button>
-        </div>
+        <button
+          (click)="openRegisterInitDialog(true)"
+          class="action-button-1 width-238"
+          i18n
+          mat-stroked-button>
+          <mat-icon>sync</mat-icon>
+          Rollover
+        </button>
       }
       @if (unregisterAllowed()) {
-        <div>
-          <button
-            (click)="unregisterContainer()"
-            class="action-button-1 width-238"
-            mat-stroked-button
-            i18n>
-            <mat-icon>phonelink_off</mat-icon>
-            Unregister
-          </button>
-        </div>
+        <button
+          (click)="unregisterContainer()"
+          class="action-button-1 width-238"
+          i18n
+          mat-stroked-button>
+          <mat-icon>phonelink_off</mat-icon>
+          Unregister
+        </button>
       }
     }
   </div>
