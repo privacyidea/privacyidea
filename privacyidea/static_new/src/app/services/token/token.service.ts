@@ -162,6 +162,7 @@ export interface TokenServiceInterface {
   pageSize: WritableSignal<number>;
   tokenIsActive: WritableSignal<boolean>;
   tokenIsRevoked: WritableSignal<boolean>;
+  // tokenIsLost: WritableSignal<boolean>;
   defaultSizeOptions: number[];
   apiFilter: string[];
   advancedApiFilter: string[];
@@ -180,10 +181,7 @@ export interface TokenServiceInterface {
 
   saveTokenDetail(tokenSerial: string, key: string, value: any): Observable<PiResponse<boolean>>;
 
-  getSerial(
-    otp: string,
-    params: HttpParams
-  ): Observable<PiResponse<{ count: number; serial?: string | undefined }>>;
+  getSerial(otp: string, params: HttpParams): Observable<PiResponse<{ count: number; serial?: string | undefined }>>;
 
   setTokenInfos(tokenSerial: string, infos: any): Observable<PiResponse<boolean>[]>;
 
@@ -259,6 +257,24 @@ export class TokenService implements TokenServiceInterface {
   eventPageSize = 10;
   tokenSerial = this.contentService.tokenSerial;
   detailsUsername = this.contentService.detailsUsername;
+
+  filterParams = computed<Record<string, string>>(() => {
+    const allowed = [...this.apiFilter, ...this.advancedApiFilter, ...this.hiddenApiFilter];
+
+    const plainKeys = new Set(["user", "infokey", "infovalue", "active", "assigned", "container_serial"]);
+
+    const entries = [
+      ...Array.from(this.tokenFilter().filterMap.entries()),
+      ...Array.from(this.tokenFilter().hiddenFilterMap.entries())
+    ]
+      .filter(([key]) => allowed.includes(key))
+      .map(([key, value]) => [key, (value ?? "").toString().trim()] as const)
+      .filter(([, v]) => StringUtils.validFilterValue(v))
+      .map(([key, v]) => [key, plainKeys.has(key) ? v : `*${v}*`] as const);
+
+    return Object.fromEntries(entries) as Record<string, string>;
+  });
+
   selectedTokenType = linkedSignal({
     source: () => ({
       tokenTypeOptions: this.tokenTypeOptions(),
@@ -284,8 +300,7 @@ export class TokenService implements TokenServiceInterface {
         this.notificationService.openSnackBar(tokenTypesResourceError.message);
       }
     });
-  };
-
+  }
   showOnlyTokenNotInContainer = linkedSignal({
     source: this.contentService.routeUrl,
     computation: (routeUrl) => {
@@ -307,9 +322,7 @@ export class TokenService implements TokenServiceInterface {
 
       if (!previous || source.routeUrl !== previous.source.routeUrl) {
         let filterValue = new FilterValue({
-          hiddenValue: inContainerDetails
-            ? (source.showOnlyTokenNotInContainer ? "container_serial:" : " ")
-            : ""
+          hiddenValue: inContainerDetails ? (source.showOnlyTokenNotInContainer ? "container_serial:" : " ") : ""
         });
 
         if (inUserDetails) {
@@ -418,30 +431,6 @@ export class TokenService implements TokenServiceInterface {
       sort: this.sort()
     }),
     computation: () => 0
-  });
-
-  filterParams = computed<Record<string, string>>(() => {
-    const allowed = [...this.apiFilter, ...this.advancedApiFilter, ...this.hiddenApiFilter];
-
-    const plainKeys = new Set([
-      "user",
-      "infokey",
-      "infovalue",
-      "active",
-      "assigned",
-      "container_serial",
-    ]);
-
-    const entries = [
-      ...Array.from(this.tokenFilter().filterMap.entries()),
-      ...Array.from(this.tokenFilter().hiddenFilterMap.entries()),
-    ]
-      .filter(([key]) => allowed.includes(key))
-      .map(([key, value]) => [key, (value ?? "").toString().trim()] as const)
-      .filter(([, v]) => StringUtils.validFilterValue(v))
-      .map(([key, v]) => [key, plainKeys.has(key) ? v : `*${v}*`] as const);
-
-    return Object.fromEntries(entries) as Record<string, string>;
   });
 
   tokenResource = httpResource<PiResponse<Tokens>>(() => {

@@ -19,14 +19,13 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { ContainerDetailsTokenActionsComponent } from "./container-details-token-actions.component";
 import {
-  MockAuthService,
   MockContainerService,
   MockLocalService,
   MockNotificationService,
   MockTokenService
 } from "../../../../../testing/mock-services";
 import { AuthService } from "../../../../services/auth/auth.service";
-import { ContainerService } from "../../../../services/container/container.service";
+import { ContainerDetailToken, ContainerService } from "../../../../services/container/container.service";
 import { TokenService } from "../../../../services/token/token.service";
 import { MatDialog } from "@angular/material/dialog";
 import { ConfirmationDialogComponent } from "../../../shared/confirmation-dialog/confirmation-dialog.component";
@@ -34,6 +33,7 @@ import { MatTableDataSource } from "@angular/material/table";
 import { signal, WritableSignal } from "@angular/core";
 import { of } from "rxjs";
 import { provideHttpClient } from "@angular/common/http";
+import { MockAuthService } from "../../../../../testing/mock-services/mock-auth-service";
 
 describe("ContainerDetailsTokenActionsComponent", () => {
   let component: ContainerDetailsTokenActionsComponent;
@@ -115,7 +115,10 @@ describe("ContainerDetailsTokenActionsComponent", () => {
   });
 
   it("isUnassignableFromAllToken should be false if no token has a user", () => {
-    const tokens = [{ serial: "T1", username: "", active: false }, { serial: "T2", username: "", active: false }];
+    const tokens = [
+      { serial: "T1", username: "", active: false },
+      { serial: "T2", username: "", active: false }
+    ];
     tokenDataSignal.set(new MatTableDataSource(tokens));
     expect(component.isUnassignableFromAllToken()).toBe(false);
   });
@@ -131,7 +134,10 @@ describe("ContainerDetailsTokenActionsComponent", () => {
   });
 
   it("anyActiveTokens should be false if no token is active", () => {
-    const tokens = [{ serial: "T1", username: "", active: false }, { serial: "T2", username: "", active: false }];
+    const tokens = [
+      { serial: "T1", username: "", active: false },
+      { serial: "T2", username: "", active: false }
+    ];
     tokenDataSignal.set(new MatTableDataSource(tokens));
     expect(component.anyActiveTokens()).toBe(false);
   });
@@ -147,7 +153,10 @@ describe("ContainerDetailsTokenActionsComponent", () => {
   });
 
   it("anyDisabledTokens should be false if no token is disabled", () => {
-    const tokens = [{ serial: "T1", username: "", active: true }, { serial: "T2", username: "", active: true }];
+    const tokens = [
+      { serial: "T1", username: "", active: true },
+      { serial: "T2", username: "", active: true }
+    ];
     tokenDataSignal.set(new MatTableDataSource(tokens));
     expect(component.anyDisabledTokens()).toBe(false);
   });
@@ -168,7 +177,7 @@ describe("ContainerDetailsTokenActionsComponent", () => {
 
     component.unassignFromAllToken();
     expect(mockDialog.open).not.toHaveBeenCalled();
-    expect((mockTokenService.unassignUserFromAll as any)).not.toHaveBeenCalled();
+    expect(mockTokenService.unassignUserFromAll as any).not.toHaveBeenCalled();
   });
 
   it("unassignFromAllToken opens confirm and unassigns then reloads", () => {
@@ -189,7 +198,7 @@ describe("ContainerDetailsTokenActionsComponent", () => {
         })
       })
     );
-    expect((mockTokenService.unassignUserFromAll as any)).toHaveBeenCalledWith(["S1"]);
+    expect(mockTokenService.unassignUserFromAll as any).toHaveBeenCalledWith(["S1"]);
     expect(mockContainerService.containerDetailResource.reload).toHaveBeenCalled();
   });
 
@@ -219,8 +228,8 @@ describe("ContainerDetailsTokenActionsComponent", () => {
 
     component.assignToAllToken();
 
-    expect((mockTokenService.unassignUserFromAll as any)).not.toHaveBeenCalled();
-    expect((mockTokenService.assignUserToAll as any)).not.toHaveBeenCalled();
+    expect(mockTokenService.unassignUserFromAll as any).not.toHaveBeenCalled();
+    expect(mockTokenService.assignUserToAll as any).not.toHaveBeenCalled();
   });
 
   it("assignToAllToken unassigns others, assigns all remaining, then reloads", () => {
@@ -236,8 +245,8 @@ describe("ContainerDetailsTokenActionsComponent", () => {
 
     component.assignToAllToken();
 
-    expect((mockTokenService.unassignUserFromAll as any)).toHaveBeenCalledWith(["S1"]);
-    expect((mockTokenService.assignUserToAll as any)).toHaveBeenCalledWith({
+    expect(mockTokenService.unassignUserFromAll as any).toHaveBeenCalledWith(["S1"]);
+    expect(mockTokenService.assignUserToAll as any).toHaveBeenCalledWith({
       tokenSerials: ["S1", "S2"],
       username: "alice",
       realm: "realm1"
@@ -270,21 +279,34 @@ describe("ContainerDetailsTokenActionsComponent", () => {
   });
 
   it("deleteAllTokens opens confirm and deletes when confirm=true", () => {
+    const token1: ContainerDetailToken = {
+      serial: "T1",
+      username: "",
+      active: false,
+      container_serial: "",
+      count: 0,
+      count_window: 0,
+      description: "",
+      failcount: 0,
+      id: 0,
+      revoked: false,
+      sync_window: 0,
+      tokengroup: [],
+      tokentype: "",
+      user_editable: false,
+      user_id: "",
+      user_realm: ""
+    };
+    const token2: ContainerDetailToken = { ...token1, serial: "T2" };
+    const data = new MatTableDataSource<ContainerDetailToken>([token1, token2]);
+    component.tokenData.set(data);
     component.deleteAllTokens();
-    expect(mockDialog.open).toHaveBeenCalledWith(
-      ConfirmationDialogComponent,
-      {
-        data: {
-          serialList: ["T1", "T2"],
-          title: "Delete Selected Tokens",
-          type: "token",
-          action: "delete",
-          numberOfTokens: 2
-        }
-      }
+
+    expect(mockTokenService.bulkDeleteWithConfirmDialog).toHaveBeenCalledWith(
+      ["T1", "T2"],
+      mockDialog,
+      expect.any(Function)
     );
-    expect(mockTokenService.bulkDeleteTokens).toHaveBeenCalledWith(["T1", "T2"]);
-    expect(mockContainerService.containerDetailResource.reload).toHaveBeenCalled();
   });
 
   it("deleteAllTokens does NOT delete when confirm=false", () => {
@@ -293,4 +315,3 @@ describe("ContainerDetailsTokenActionsComponent", () => {
     expect(mockTokenService.bulkDeleteTokens).not.toHaveBeenCalled();
   });
 });
-

@@ -45,7 +45,7 @@ describe("TokenComponent", () => {
         dispatchEvent: jest.fn()
       })
     });
-  })
+  });
 
   beforeEach(async () => {
     mockOverflowService = new MockOverflowService();

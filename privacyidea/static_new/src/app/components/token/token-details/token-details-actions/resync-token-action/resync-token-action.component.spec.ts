@@ -24,7 +24,6 @@ import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { MockTokenService } from "../../../../../../testing/mock-services";
 
-
 describe("ResyncTokenActionComponent", () => {
   let component: ResyncTokenActionComponent;
   let fixture: ComponentFixture<ResyncTokenActionComponent>;
@@ -39,8 +38,7 @@ describe("ResyncTokenActionComponent", () => {
         provideHttpClientTesting(),
         { provide: TokenService, useClass: MockTokenService }
       ]
-    })
-      .compileComponents();
+    }).compileComponents();
 
     tokenService = TestBed.inject(TokenService);
     tokenService.tokenSerial.set("Mock serial");
@@ -69,9 +67,7 @@ describe("ResyncTokenActionComponent", () => {
 
     const resyncSpy = jest.spyOn(tokenService, "resyncOTPToken");
 
-    const btn: HTMLButtonElement = fixture.nativeElement.querySelector(
-      ".actions-pin-input-button button"
-    );
+    const btn: HTMLButtonElement = fixture.nativeElement.querySelector(".actions-pin-input-button button");
     btn.click();
 
     expect(resyncSpy).toHaveBeenCalledWith("Mock serial", "otp1", "otp2");

@@ -68,10 +68,7 @@
   align-items: flex-start;
 
   font-weight: bold;
-  font-size: min(
-          calc(var(--tile-height) / 7.5),
-          calc(var(--tile-max-width) / 4)
-  );
+  font-size: min(calc(var(--tile-height) / 7.5), calc(var(--tile-max-width) / 4));
   text-align: center;
 }
 

@@ -172,10 +172,7 @@ describe("TokenImportComponent", () => {
 
     component.importTokens();
 
-    expect(importTokensSpy).toHaveBeenCalledWith(
-      "pskcfile.pskc",
-      expect.any(FormData)
-    );
+    expect(importTokensSpy).toHaveBeenCalledWith("pskcfile.pskc", expect.any(FormData));
 
     const formDataArg = importTokensSpy.mock.calls[0][1] as FormData;
     expect(formDataArg.get("file")).toBe(file);

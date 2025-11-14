@@ -20,7 +20,6 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { EnrollHotpComponent } from "./enroll-hotp.component";
 import { of } from "rxjs";
-import "@angular/localize/init";
 
 import { TokenService } from "../../../../services/token/token.service";
 import { AuthService } from "../../../../services/auth/auth.service";

@@ -40,8 +40,7 @@ describe("TestOtpPinActionComponent", () => {
         provideHttpClientTesting(),
         { provide: TokenService, useClass: MockTokenService }
       ]
-    })
-      .compileComponents();
+    }).compileComponents();
 
     fixture = TestBed.createComponent(TestOtpPinActionComponent);
     component = fixture.componentInstance;

@@ -58,7 +58,7 @@ describe("TokenApplicationsComponent (Jest)", () => {
     expect(component).toBeTruthy();
   });
 
-  it("should default to \"ssh\" for selectedApplicationType", () => {
+  it('should default to "ssh" for selectedApplicationType', () => {
     expect(component.selectedApplicationType()).toBe("ssh");
   });
 

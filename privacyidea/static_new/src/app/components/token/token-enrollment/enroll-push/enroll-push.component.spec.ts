@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import "@angular/localize/init";
+
 import { EnrollPushComponent } from "./enroll-push.component";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { provideHttpClient } from "@angular/common/http";
@@ -30,7 +30,6 @@ import { DialogService } from "../../../../services/dialog/dialog.service";
 import { PushApiPayloadMapper } from "../../../../mappers/token-api-payload/push-token-api-payload.mapper";
 import { of, throwError } from "rxjs";
 import { ReopenDialogFn } from "../token-enrollment.component";
-
 
 function makeInitResp(serial = "S-1"): EnrollmentResponse {
   return {
@@ -95,7 +94,7 @@ describe("EnrollPushComponent", () => {
 
     expect(addSpy).toHaveBeenCalledWith({});
     expect(clickSpy).toHaveBeenCalled();
-    const emitted = (clickSpy.mock.calls[0][0]) as (opts: any) => Promise<EnrollmentResponse | null>;
+    const emitted = clickSpy.mock.calls[0][0] as (opts: any) => Promise<EnrollmentResponse | null>;
     expect(typeof emitted).toBe("function");
   });
 

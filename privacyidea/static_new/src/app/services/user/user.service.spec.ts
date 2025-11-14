@@ -26,15 +26,17 @@ import { ContentService } from "../content/content.service";
 import { Tokens, TokenService } from "../token/token.service";
 
 import {
-  MockAuthService,
-  MockContentService, MockHttpResourceRef,
+  MockContentService,
+  MockHttpResourceRef,
   MockLocalService,
-  MockNotificationService, MockPiResponse,
+  MockNotificationService,
+  MockPiResponse,
   MockRealmService,
   MockTokenService
 } from "../../../testing/mock-services";
 import { ROUTE_PATHS } from "../../route_paths";
 import { PiResponse } from "../../app.component";
+import { MockAuthService } from "../../../testing/mock-services/mock-auth-service";
 
 function buildUser(username: string): UserData {
   return {
@@ -55,9 +57,9 @@ function setTokenDetailUsername(name: string) {
   const ref = (TestBed.inject(TokenService) as unknown as MockTokenService).tokenDetailResource;
 
   if (!ref.value()) {
-    const seeded = MockPiResponse.fromValue<Tokens>(
-      { tokens: [{ username: name } as any] } as any
-    ) as unknown as PiResponse<Tokens>;
+    const seeded = MockPiResponse.fromValue<Tokens>({
+      tokens: [{ username: name } as any]
+    } as any) as unknown as PiResponse<Tokens>;
     ref.set(seeded);
     return;
   }
@@ -158,9 +160,7 @@ describe("UserService", () => {
     it("setUserAttribute issues POST /user/attribute with params", () => {
       userService.setUserAttribute("department", "finance").subscribe();
 
-      const req = httpMock.expectOne(r =>
-        r.method === "POST" && r.url.endsWith("/user/attribute")
-      );
+      const req = httpMock.expectOne((r) => r.method === "POST" && r.url.endsWith("/user/attribute"));
       expect(req.request.params.get("user")).toBe("Alice");
       expect(req.request.params.get("realm")).toBe("realm1");
       expect(req.request.params.get("key")).toBe("department");
@@ -184,9 +184,7 @@ describe("UserService", () => {
         "/" +
         encodeURIComponent("r 1");
 
-      const req = httpMock.expectOne(r =>
-        r.method === "DELETE" && r.url.endsWith(expectedEnding)
-      );
+      const req = httpMock.expectOne((r) => r.method === "DELETE" && r.url.endsWith(expectedEnding));
 
       expect(req.request.headers).toBeTruthy();
 
@@ -196,9 +194,7 @@ describe("UserService", () => {
 
   describe("attribute policy + attributes (no HTTP; drive signals directly)", () => {
     it("attributePolicy defaults when attributesResource has no value", () => {
-      (userService as any).attributesResource = new MockHttpResourceRef<
-        any | undefined
-      >(undefined as any);
+      (userService as any).attributesResource = new MockHttpResourceRef<any | undefined>(undefined as any);
 
       expect(userService.attributePolicy()).toEqual({ delete: [], set: {} });
       expect(userService.deletableAttributes()).toEqual([]);
@@ -217,9 +213,7 @@ describe("UserService", () => {
         }
       };
 
-      (userService as any).attributesResource = new MockHttpResourceRef(
-        MockPiResponse.fromValue(policy)
-      );
+      (userService as any).attributesResource = new MockHttpResourceRef(MockPiResponse.fromValue(policy));
 
       expect(userService.attributePolicy()).toEqual(policy);
       expect(userService.deletableAttributes()).toEqual(["department", "attr2", "attr1"]);
@@ -231,9 +225,7 @@ describe("UserService", () => {
     it("userAttributes and userAttributesList derive from userAttributesResource value", () => {
       const attrs = { city: "Berlin", department: ["sales", "finance"] };
 
-      (userService as any).userAttributesResource = new MockHttpResourceRef(
-        MockPiResponse.fromValue(attrs)
-      );
+      (userService as any).userAttributesResource = new MockHttpResourceRef(MockPiResponse.fromValue(attrs));
 
       expect(userService.userAttributes()).toEqual(attrs);
       expect(userService.userAttributesList()).toEqual([
@@ -243,9 +235,7 @@ describe("UserService", () => {
     });
 
     it("userAttributes falls back to {} when userAttributesResource becomes undefined", () => {
-      const ref = new MockHttpResourceRef(
-        MockPiResponse.fromValue({ city: "Berlin" })
-      );
+      const ref = new MockHttpResourceRef(MockPiResponse.fromValue({ city: "Berlin" }));
       (userService as any).userAttributesResource = ref;
 
       expect(userService.userAttributes()).toEqual({ city: "Berlin" });
@@ -294,9 +284,9 @@ describe("UserService", () => {
       authService = TestBed.inject(AuthService) as unknown as MockAuthService;
 
       contentService.routeUrl.set(ROUTE_PATHS.USERS);
-      authService.role.set("admin");
-      authService.username.set("enduser");
-      tokenService.tokenDetailResource = new MockHttpResourceRef(undefined as any);
+      authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, role: "admin", username: "enduser" });
+
+      // tokenService.tokenDetailResource = new MockHttpResourceRef(undefined as any);
       userService.selectionFilter.set("");
     });
 
@@ -324,8 +314,7 @@ describe("UserService", () => {
     });
 
     it('when role is "user": returns the authenticated username', () => {
-      authService.role.set("user");
-      authService.username.set("Charlie");
+      authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, role: "user", username: "Charlie" });
 
       userService.selectionFilter.set("");
       expect(userService.selectedUser()).toEqual(users[2]);

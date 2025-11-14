@@ -10,7 +10,6 @@ describe("ContainerRegistrationInitDialogComponent", () => {
   let mockRegisterContainer: jest.Mock;
 
   describe("Registration", () => {
-
     const mockData = {
       rollover: false,
       containerHasOwner: true,
@@ -20,9 +19,7 @@ describe("ContainerRegistrationInitDialogComponent", () => {
     beforeEach(async () => {
       await TestBed.configureTestingModule({
         imports: [ContainerRegistrationInitDialogComponent],
-        providers: [
-          { provide: MAT_DIALOG_DATA, useValue: mockData }
-        ],
+        providers: [{ provide: MAT_DIALOG_DATA, useValue: mockData }],
         schemas: [NO_ERRORS_SCHEMA]
       }).compileComponents();
 
@@ -50,12 +47,7 @@ describe("ContainerRegistrationInitDialogComponent", () => {
       } as any;
 
       component.onRegister();
-      expect(mockRegisterContainer).toHaveBeenCalledWith(
-        true,
-        "prompt",
-        "response",
-        component.data.rollover
-      );
+      expect(mockRegisterContainer).toHaveBeenCalledWith(true, "prompt", "response", component.data.rollover);
     });
 
     it("should disable Register button when validInput is false", () => {
@@ -77,9 +69,7 @@ describe("ContainerRegistrationInitDialogComponent", () => {
     beforeEach(async () => {
       await TestBed.configureTestingModule({
         imports: [ContainerRegistrationInitDialogComponent],
-        providers: [
-          { provide: MAT_DIALOG_DATA, useValue: mockData }
-        ],
+        providers: [{ provide: MAT_DIALOG_DATA, useValue: mockData }],
         schemas: [NO_ERRORS_SCHEMA]
       }).compileComponents();
 
@@ -112,12 +102,7 @@ describe("ContainerRegistrationInitDialogComponent", () => {
       } as any;
 
       component.onRegister();
-      expect(mockRegisterContainer).toHaveBeenCalledWith(
-        true,
-        "prompt",
-        "response",
-        true
-      );
+      expect(mockRegisterContainer).toHaveBeenCalledWith(true, "prompt", "response", true);
     });
 
     it("should disable Rollover button when validInput is false", () => {

@@ -30,14 +30,16 @@ describe("ContainerTableActionsComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      providers: [provideHttpClient(), provideHttpClientTesting(), {
-        provide: ActivatedRoute,
-        useValue: { params: of({ id: "123" }) }
-      }
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        {
+          provide: ActivatedRoute,
+          useValue: { params: of({ id: "123" }) }
+        }
       ],
       imports: [ContainerTableActionsComponent]
-    })
-      .compileComponents();
+    }).compileComponents();
 
     fixture = TestBed.createComponent(ContainerTableActionsComponent);
     component = fixture.componentInstance;

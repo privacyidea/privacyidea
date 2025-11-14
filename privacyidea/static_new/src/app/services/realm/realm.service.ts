@@ -16,16 +16,15 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { HttpErrorResponse, httpResource, HttpResourceRef } from "@angular/common/http";
-import { computed, effect, inject, Injectable, Signal, signal, WritableSignal } from "@angular/core";
+import { httpResource, HttpResourceRef } from "@angular/common/http";
+import { computed, inject, Injectable, Signal, signal, WritableSignal } from "@angular/core";
 import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
 import { ROUTE_PATHS } from "../../route_paths";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
-import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
 
-export type Realms = Map<string, Realm>;
+export type Realms = { [key: string]: Realm };
 
 export interface Realm {
   default: boolean;
@@ -56,7 +55,6 @@ export interface RealmServiceInterface {
 })
 export class RealmService implements RealmServiceInterface {
   private readonly authService: AuthServiceInterface = inject(AuthService);
-  private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
   selectedRealms = signal<string[]>([]);
 
@@ -70,7 +68,8 @@ export class RealmService implements RealmServiceInterface {
           ROUTE_PATHS.USERS,
           ROUTE_PATHS.TOKENS_CONTAINERS_CREATE,
           ROUTE_PATHS.TOKENS_ENROLLMENT,
-          ROUTE_PATHS.TOKENS_IMPORT
+          ROUTE_PATHS.TOKENS_IMPORT,
+          ROUTE_PATHS.POLICIES
         ].includes(this.contentService.routeUrl()))
     ) {
       return undefined;
@@ -96,7 +95,8 @@ export class RealmService implements RealmServiceInterface {
           ROUTE_PATHS.USERS,
           ROUTE_PATHS.TOKENS_CONTAINERS_CREATE,
           ROUTE_PATHS.TOKENS_ENROLLMENT,
-          ROUTE_PATHS.TOKENS_IMPORT
+          ROUTE_PATHS.TOKENS_IMPORT,
+          ROUTE_PATHS.POLICIES
         ].includes(this.contentService.routeUrl()))
     ) {
       return undefined;
@@ -114,24 +114,4 @@ export class RealmService implements RealmServiceInterface {
     }
     return "";
   });
-
-  constructor() {
-    effect(() => {
-      if (this.realmResource.error()) {
-        const realmError = this.realmResource.error() as HttpErrorResponse;
-        console.error("Failed to get realms.", realmError.message);
-        const message = realmError.error?.result?.error?.message || realmError.message;
-        this.notificationService.openSnackBar("Failed to get realms. " + message);
-      }
-    });
-
-    effect(() => {
-      if (this.defaultRealmResource.error()) {
-        const defaultRealmError = this.defaultRealmResource.error() as HttpErrorResponse;
-        console.error("Failed to get default realm.", defaultRealmError.message);
-        const message = defaultRealmError.error?.result?.error?.message || defaultRealmError.message;
-        this.notificationService.openSnackBar("Failed to get default realm. " + message);
-      }
-    });
-  }
 }

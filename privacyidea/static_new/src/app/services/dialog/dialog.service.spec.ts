@@ -21,34 +21,31 @@ import { Subject } from "rxjs";
 import { MatDialog } from "@angular/material/dialog";
 import { DialogService } from "./dialog.service";
 import { AuthService } from "../auth/auth.service";
-import { MockAuthService, MockLocalService, MockNotificationService } from "../../../testing/mock-services";
+import { MockLocalService, MockNotificationService } from "../../../testing/mock-services";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { MockAuthService } from "../../../testing/mock-services/mock-auth-service";
 
 jest.mock(
   "../../components/token/token-enrollment/token-enrollment-firtst-step-dialog/token-enrollment-first-step-dialog.component",
   () => ({
-    TokenEnrollmentFirstStepDialogComponent: class TokenEnrollmentFirstStepDialogComponent {
-    }
+    TokenEnrollmentFirstStepDialogComponent: class TokenEnrollmentFirstStepDialogComponent {}
   })
 );
 jest.mock(
   "../../components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component",
   () => ({
-    TokenEnrollmentLastStepDialogComponent: class TokenEnrollmentLastStepDialogComponent {
-    }
+    TokenEnrollmentLastStepDialogComponent: class TokenEnrollmentLastStepDialogComponent {}
   })
 );
 jest.mock(
   "../../components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.self-service.component",
   () => ({
-    TokenEnrollmentLastStepDialogSelfServiceComponent: class TokenEnrollmentLastStepDialogSelfServiceComponent {
-    }
+    TokenEnrollmentLastStepDialogSelfServiceComponent: class TokenEnrollmentLastStepDialogSelfServiceComponent {}
   })
 );
 jest.mock("../../components/shared/confirmation-dialog/confirmation-dialog.component", () => ({
-  ConfirmationDialogComponent: class ConfirmationDialogComponent {
-  }
+  ConfirmationDialogComponent: class ConfirmationDialogComponent {}
 }));
 
 const matDialogStub = {
@@ -70,7 +67,7 @@ const matDialogStub = {
 
 describe("DialogService", () => {
   let dialogService: DialogService;
-  let authService: MockAuthService;
+  let authServiceMock: MockAuthService;
 
   beforeEach(() => {
     TestBed.resetTestingModule();
@@ -86,7 +83,7 @@ describe("DialogService", () => {
       ]
     });
     dialogService = TestBed.inject(DialogService);
-    authService = TestBed.inject(AuthService) as any;
+    authServiceMock = TestBed.inject(AuthService) as any;
   });
 
   it("openTokenEnrollmentFirstStepDialog handles multiple opens", () => {
@@ -107,7 +104,7 @@ describe("DialogService", () => {
   });
 
   it("openTokenEnrollmentLastStepDialog picks self‑service component", async () => {
-    authService.role.set("user");
+    authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, role: "user" });
     await dialogService.openTokenEnrollmentLastStepDialog({ data: {} } as any);
     const componentName = matDialogStub.open.mock.calls.at(-1)?.[0].name ?? "none";
     expect(componentName).toBe("TokenEnrollmentLastStepDialogSelfServiceComponent");

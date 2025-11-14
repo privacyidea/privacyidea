@@ -16,10 +16,11 @@ import { AuthService } from "../../../services/auth/auth.service";
 import { ContentService } from "../../../services/content/content.service";
 import { MachineService } from "../../../services/machine/machine.service";
 import {
-  MockAuthService,
   MockContainerService,
-  MockContentService, MockLocalService,
-  MockMachineService, MockNotificationService,
+  MockContentService,
+  MockLocalService,
+  MockMachineService,
+  MockNotificationService,
   MockOverflowService,
   MockRealmService,
   MockTableUtilsService,
@@ -28,6 +29,7 @@ import {
 } from "../../../../testing/mock-services";
 import { MatDialog } from "@angular/material/dialog";
 import { ActivatedRoute } from "@angular/router";
+import { MockAuthService } from "../../../../testing/mock-services/mock-auth-service";
 
 describe("TokenDetailsComponent", () => {
   let fixture: ComponentFixture<TokenDetailsComponent>;
@@ -170,7 +172,7 @@ describe("TokenDetailsComponent", () => {
     component.tokengroupOptions.set([]);
     component.toggleTokenEdit(tgEl);
 
-    expect((tokenSvc.getTokengroups as any)).toHaveBeenCalled();
+    expect(tokenSvc.getTokengroups as any).toHaveBeenCalled();
     expect(component.tokengroupOptions()).toEqual(["groupA", "groupB"]);
     expect(tgEl.isEditing()).toBe(true);
   });
@@ -205,7 +207,7 @@ describe("TokenDetailsComponent", () => {
 
     component.saveTokenEdit(el);
 
-    expect((tokenSvc.setTokengroup as any)).toHaveBeenCalledWith("Mock serial", ["groupB"]);
+    expect(tokenSvc.setTokengroup as any).toHaveBeenCalledWith("Mock serial", ["groupB"]);
     expect(reloadSpy).toHaveBeenCalled();
     expect(el.isEditing()).toBe(false);
   });

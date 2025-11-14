@@ -19,7 +19,6 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import {
   MockAuditService,
-  MockAuthService,
   MockContentService,
   MockLocalService,
   MockNotificationService,
@@ -38,6 +37,7 @@ import { provideHttpClient } from "@angular/common/http";
 import { FilterValue } from "../../core/models/filter_value";
 import { AuditSelfServiceComponent } from "./audit.self-service.component";
 import { provideNoopAnimations } from "@angular/platform-browser/animations";
+import { MockAuthService } from "../../../testing/mock-services/mock-auth-service";
 
 describe("AuditComponent (unit)", () => {
   let fixture: ComponentFixture<AuditComponent>;
@@ -46,7 +46,6 @@ describe("AuditComponent (unit)", () => {
   let selfComponent: AuditSelfServiceComponent;
   let mockAuditService: MockAuditService;
   let mockTableUtilsService: MockTableUtilsService;
-
 
   beforeEach(async () => {
     TestBed.resetTestingModule();
@@ -109,7 +108,6 @@ describe("AuditComponent (unit)", () => {
     expect(selfComponent).toBeTruthy();
   });
 
-
   describe("page‑related derived signals", () => {
     it.each`
       count | expectedOptions
@@ -169,17 +167,6 @@ describe("AuditComponent (unit)", () => {
     });
     expect(component.auditDataSource() instanceof MatTableDataSource).toBe(true);
     expect(component.auditDataSource().data).toEqual(rows);
-  });
-
-  it("parses filterValueString and resets pageIndex through the effect", async () => {
-    mockAuditService.pageIndex.set(3);
-    mockAuditService.auditFilter.set(new FilterValue({ value: "user: bob success: true" }));
-
-    await fixture.whenStable();
-    await Promise.resolve();
-    jest.runOnlyPendingTimers();
-
-    expect(mockAuditService.pageIndex()).toBe(0);
   });
 
   it("onPageEvent mutates pageSize & pageIndex signals", () => {

@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import "@angular/localize/init";
+
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { provideHttpClient } from "@angular/common/http";
@@ -100,9 +100,7 @@ describe("EnrollPasskeyComponent", () => {
       /Passkey\/WebAuthn is not supported/i
     );
 
-    expect(notif.openSnackBar).toHaveBeenCalledWith(
-      "Passkey/WebAuthn is not supported by this browser."
-    );
+    expect(notif.openSnackBar).toHaveBeenCalledWith("Passkey/WebAuthn is not supported by this browser.");
   });
 
   it("happy path: init -> open dialog -> create cred -> finalize -> close", async () => {
@@ -126,9 +124,7 @@ describe("EnrollPasskeyComponent", () => {
 
     const finalResp = { detail: {} };
 
-    tokenSvc.enrollToken
-      .mockReturnValueOnce(of(initResp))
-      .mockReturnValueOnce(of(finalResp));
+    tokenSvc.enrollToken.mockReturnValueOnce(of(initResp)).mockReturnValueOnce(of(finalResp));
 
     const createdCred = {
       id: "cred-1",
@@ -213,9 +209,7 @@ describe("EnrollPasskeyComponent", () => {
       }
     };
 
-    tokenSvc.enrollToken
-      .mockReturnValueOnce(of(initResp))
-      .mockReturnValueOnce(throwError(() => new Error("fin")));
+    tokenSvc.enrollToken.mockReturnValueOnce(of(initResp)).mockReturnValueOnce(throwError(() => new Error("fin")));
 
     const createdCred = {
       id: "cred-2",
@@ -273,13 +267,11 @@ describe("EnrollPasskeyComponent", () => {
             attestation: "none"
           }
         }
-      } as EnrollmentResponse);
+      }) as EnrollmentResponse;
 
     const finalize = (serial: string) => ({ detail: { serial } });
 
-    tokenSvc.enrollToken
-      .mockReturnValueOnce(of(passkeyInit("S-1", "tx-1")))
-      .mockReturnValueOnce(of(finalize("S-1")));
+    tokenSvc.enrollToken.mockReturnValueOnce(of(passkeyInit("S-1", "tx-1"))).mockReturnValueOnce(of(finalize("S-1")));
 
     let reopenCb: (() => Promise<EnrollmentResponse | null>) | undefined;
 

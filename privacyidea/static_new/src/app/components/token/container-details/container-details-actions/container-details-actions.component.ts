@@ -41,20 +41,21 @@ import { ConfirmationDialogComponent } from "../../../shared/confirmation-dialog
 import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
 
 export type ContainerRegisterFinalizeData = {
-  response: PiResponse<ContainerRegisterData>,
-  registerContainer: (userStorePW?: boolean, passphrasePrompt?: string,
-                      passphraseResponse?: string, rollover?: boolean, regenerate?: boolean) => void,
-  rollover: boolean
+  response: PiResponse<ContainerRegisterData>;
+  registerContainer: (
+    userStorePW?: boolean,
+    passphrasePrompt?: string,
+    passphraseResponse?: string,
+    rollover?: boolean,
+    regenerate?: boolean
+  ) => void;
+  rollover: boolean;
 };
 
 @Component({
   selector: "app-container-details-actions",
   templateUrl: "./container-details-actions.component.html",
-  imports: [
-    MatButton,
-    MatIcon,
-    MatDivider
-  ],
+  imports: [MatButton, MatIcon, MatDivider],
   styleUrl: "./container-details-actions.component.scss"
 })
 export class ContainerDetailsActionsComponent {
@@ -77,18 +78,26 @@ export class ContainerDetailsActionsComponent {
   });
 
   registrationAllowed = computed(() => {
-    return ["client_wait", ""].includes(this.registrationState()) && this.authService.actionAllowed("container_register");
+    return (
+      ["client_wait", ""].includes(this.registrationState()) && this.authService.actionAllowed("container_register")
+    );
   });
   rolloverAllowed = computed(() => {
-    return ["registered", "rollover", "rollover_completed"].includes(this.registrationState()) &&
-      this.authService.actionAllowed("container_rollover");
+    return (
+      ["registered", "rollover", "rollover_completed"].includes(this.registrationState()) &&
+      this.authService.actionAllowed("container_rollover")
+    );
   });
   unregisterAllowed = computed(() => {
     return this.registrationState() !== "" && this.authService.actionAllowed("container_unregister");
   });
   anyActionsAllowed = computed(() => {
-    return this.authService.actionAllowed("container_delete") || (this.containerType === "smartphone" &&
-      (this.registrationAllowed() || this.rolloverAllowed() || this.unregisterAllowed()));
+    const container_delete_allowed = this.authService.actionAllowed("container_delete");
+    return (
+      container_delete_allowed ||
+      (this.containerType === "smartphone" &&
+        (this.registrationAllowed() || this.rolloverAllowed() || this.unregisterAllowed()))
+    );
   });
 
   ngOnDestroy(): void {
@@ -142,8 +151,13 @@ export class ContainerDetailsActionsComponent {
     });
   }
 
-  registerContainer(userStorePW?: boolean, passphrasePrompt?: string, passphraseResponse?: string, rollover?: boolean,
-                    regenerate: boolean = false) {
+  registerContainer(
+    userStorePW?: boolean,
+    passphrasePrompt?: string,
+    passphraseResponse?: string,
+    rollover?: boolean,
+    regenerate: boolean = false
+  ) {
     this.userStorePW = userStorePW ?? this.userStorePW;
     this.passphrasePrompt = passphrasePrompt ?? this.passphrasePrompt;
     this.passphraseResponse = passphraseResponse ?? this.passphraseResponse;
@@ -160,7 +174,7 @@ export class ContainerDetailsActionsComponent {
       })
       .subscribe((registerResponse) => {
         if (regenerate) {
-          this.dialogData.update(data => data ? { ...data, response: registerResponse } : data);
+          this.dialogData.update((data) => (data ? { ...data, response: registerResponse } : data));
         } else {
           this.openRegisterFinalizeDialog(registerResponse, rollover);
           this.containerService.startPolling(this.containerSerial);

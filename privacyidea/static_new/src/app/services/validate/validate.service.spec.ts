@@ -24,12 +24,8 @@ import { ValidateCheckResponse, ValidateService } from "./validate.service";
 import { NotificationService } from "../notification/notification.service";
 import { Base64Service } from "../base64/base64.service";
 import { AuthResponse, AuthService } from "../auth/auth.service";
-import {
-  MockAuthService,
-  MockBase64Service,
-  MockLocalService,
-  MockNotificationService
-} from "../../../testing/mock-services";
+import { MockBase64Service, MockLocalService, MockNotificationService } from "../../../testing/mock-services";
+import { MockAuthService } from "../../../testing/mock-services/mock-auth-service";
 
 describe("ValidateService", () => {
   let validateService: ValidateService;
@@ -59,8 +55,7 @@ describe("ValidateService", () => {
     http = TestBed.inject(HttpClient);
     postSpy = jest.spyOn(http, "post");
 
-    consoleErrorSpy = jest.spyOn(console, "error").mockImplementation(() => {
-    });
+    consoleErrorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
 
     notif = TestBed.inject(NotificationService) as unknown as MockNotificationService;
     b64 = TestBed.inject(Base64Service) as unknown as MockBase64Service;
@@ -97,9 +92,7 @@ describe("ValidateService", () => {
     it("should error and notify when WebAuthn is unsupported", async () => {
       let restore: () => void;
       if ("PublicKeyCredential" in window) {
-        const spy = jest
-          .spyOn(window as any, "PublicKeyCredential", "get")
-          .mockReturnValue(undefined);
+        const spy = jest.spyOn(window as any, "PublicKeyCredential", "get").mockReturnValue(undefined);
         restore = () => spy.mockRestore();
       } else {
         (window as any).PublicKeyCredential = undefined;
@@ -110,9 +103,7 @@ describe("ValidateService", () => {
         next: () => fail("expected error"),
         error: (err) => {
           expect(err.message).toMatch(/WebAuthn is not supported/i);
-          expect(notif.openSnackBar).toHaveBeenCalledWith(
-            "WebAuthn is not supported by this browser."
-          );
+          expect(notif.openSnackBar).toHaveBeenCalledWith("WebAuthn is not supported by this browser.");
         }
       });
 
@@ -160,9 +151,7 @@ describe("ValidateService", () => {
         });
 
       let final!: AuthResponse;
-      validateService
-        .authenticatePasskey({ isTest: true })
-        .subscribe((r) => (final = r as AuthResponse));
+      validateService.authenticatePasskey({ isTest: true }).subscribe((r) => (final = r as AuthResponse));
 
       jest.runOnlyPendingTimers();
       await Promise.resolve();
@@ -185,9 +174,7 @@ describe("ValidateService", () => {
 
     describe("testToken (errors)", () => {
       it("notifies and rethrows when POST /check fails with API message", (done) => {
-        postSpy.mockReturnValueOnce(
-          throwError(() => ({ error: { result: { error: { message: "Bad OTP" } } } }))
-        );
+        postSpy.mockReturnValueOnce(throwError(() => ({ error: { result: { error: { message: "Bad OTP" } } } })));
 
         validateService.testToken("HOTP1", "000000").subscribe({
           next: () => done.fail("expected error"),
@@ -284,10 +271,9 @@ describe("ValidateService", () => {
           configurable: true
         });
 
-        postSpy
-          .mockImplementationOnce(() =>
-            of({ detail: { passkey: { challenge: "x", rpId: "r", transaction_id: "t" } } })
-          );
+        postSpy.mockImplementationOnce(() =>
+          of({ detail: { passkey: { challenge: "x", rpId: "r", transaction_id: "t" } } })
+        );
 
         const authSpy = jest.spyOn(auth as any, "authenticate").mockReturnValue(of({ success: true }));
 
@@ -332,19 +318,21 @@ describe("ValidateService", () => {
         (window as any).PublicKeyCredential = (window as any).PublicKeyCredential ?? {};
         const bad = { ...okSignRequest, allowCredentials: undefined };
 
-        validateService.authenticateWebAuthn({
-          signRequest: bad as any,
-          transaction_id: "T",
-          username: "u",
-          isTest: true
-        }).subscribe({
-          next: () => done.fail("expected error"),
-          error: (err) => {
-            expect(err.message).toBe("Invalid WebAuthn challenge data received from server.");
-            expect(notif.openSnackBar).toHaveBeenCalledWith("Invalid WebAuthn challenge data received from server.");
-            done();
-          }
-        });
+        validateService
+          .authenticateWebAuthn({
+            signRequest: bad as any,
+            transaction_id: "T",
+            username: "u",
+            isTest: true
+          })
+          .subscribe({
+            next: () => done.fail("expected error"),
+            error: (err) => {
+              expect(err.message).toBe("Invalid WebAuthn challenge data received from server.");
+              expect(notif.openSnackBar).toHaveBeenCalledWith("Invalid WebAuthn challenge data received from server.");
+              done();
+            }
+          });
       });
 
       it("isTest=true: builds payload, posts /check, uses encoders", async () => {
@@ -368,15 +356,17 @@ describe("ValidateService", () => {
 
         let final: any;
         await new Promise<void>((resolve) => {
-          validateService.authenticateWebAuthn({
-            signRequest: okSignRequest as any,
-            transaction_id: "T-1",
-            username: "alice",
-            isTest: true
-          }).subscribe((r) => {
-            final = r;
-            resolve();
-          });
+          validateService
+            .authenticateWebAuthn({
+              signRequest: okSignRequest as any,
+              transaction_id: "T-1",
+              username: "alice",
+              isTest: true
+            })
+            .subscribe((r) => {
+              final = r;
+              resolve();
+            });
         });
 
         expect(postSpy).toHaveBeenCalledTimes(1);
@@ -410,19 +400,23 @@ describe("ValidateService", () => {
         );
 
         const authSpy = jest.spyOn(auth as any, "authenticate").mockReturnValue(of({ ok: 1 }));
-        postSpy.mockImplementation(() => { throw new Error("should not POST in this branch"); });
+        postSpy.mockImplementation(() => {
+          throw new Error("should not POST in this branch");
+        });
 
         let final: any;
         await new Promise<void>((resolve) => {
-          validateService.authenticateWebAuthn({
-            signRequest: okSignRequest as any,
-            transaction_id: "T-2",
-            username: "bob",
-            isTest: false
-          }).subscribe((r) => {
-            final = r;
-            resolve();
-          });
+          validateService
+            .authenticateWebAuthn({
+              signRequest: okSignRequest as any,
+              transaction_id: "T-2",
+              username: "bob",
+              isTest: false
+            })
+            .subscribe((r) => {
+              final = r;
+              resolve();
+            });
         });
 
         expect(authSpy).toHaveBeenCalledTimes(1);
@@ -434,18 +428,20 @@ describe("ValidateService", () => {
 
         let caught: any;
         await new Promise<void>((resolve) => {
-          validateService.authenticateWebAuthn({
-            signRequest: okSignRequest as any,
-            transaction_id: "T-3",
-            username: "eve",
-            isTest: true
-          }).subscribe({
-            next: () => resolve(),
-            error: (e) => {
-              caught = e;
-              resolve();
-            }
-          });
+          validateService
+            .authenticateWebAuthn({
+              signRequest: okSignRequest as any,
+              transaction_id: "T-3",
+              username: "eve",
+              isTest: true
+            })
+            .subscribe({
+              next: () => resolve(),
+              error: (e) => {
+                caught = e;
+                resolve();
+              }
+            });
         });
 
         expect(caught.message).toBe("nope");
@@ -455,19 +451,21 @@ describe("ValidateService", () => {
       it("unsupported WebAuthn shows snack and throws", (done) => {
         (window as any).PublicKeyCredential = undefined;
 
-        validateService.authenticateWebAuthn({
-          signRequest: okSignRequest as any,
-          transaction_id: "T-4",
-          username: "mallory",
-          isTest: true
-        }).subscribe({
-          next: () => done.fail("expected error"),
-          error: (err) => {
-            expect(err.message).toMatch(/not supported/i);
-            expect(notif.openSnackBar).toHaveBeenCalled();
-            done();
-          }
-        });
+        validateService
+          .authenticateWebAuthn({
+            signRequest: okSignRequest as any,
+            transaction_id: "T-4",
+            username: "mallory",
+            isTest: true
+          })
+          .subscribe({
+            next: () => done.fail("expected error"),
+            error: (err) => {
+              expect(err.message).toMatch(/not supported/i);
+              expect(notif.openSnackBar).toHaveBeenCalled();
+              done();
+            }
+          });
       });
     });
 
@@ -475,9 +473,7 @@ describe("ValidateService", () => {
       it("returns true only when authentication=ACCEPT and value=true", (done) => {
         const httpGet = jest.spyOn(TestBed.inject(HttpClient), "get");
 
-        httpGet.mockReturnValueOnce(
-          of({ result: { authentication: "ACCEPT", value: true } } as any)
-        );
+        httpGet.mockReturnValueOnce(of({ result: { authentication: "ACCEPT", value: true } } as any));
 
         validateService.pollTransaction("tid").subscribe((res) => {
           expect(res).toBe(true);

@@ -35,7 +35,6 @@ import { SessionTimerService } from "../../../services/session-timer/session-tim
 import { NotificationService } from "../../../services/notification/notification.service";
 import {
   MockAuditService,
-  MockAuthService,
   MockChallengesService,
   MockContainerService,
   MockContentService,
@@ -47,12 +46,12 @@ import {
   MockUserService
 } from "../../../../testing/mock-services";
 import { MatSnackBar } from "@angular/material/snack-bar";
+import { MockAuthService } from "../../../../testing/mock-services/mock-auth-service";
 
 describe("NavigationComponent (async, no RouterTestingModule, no MatSnackBar)", () => {
   let component: NavigationComponent;
   let fixture: ComponentFixture<NavigationComponent>;
   let router: Router;
-
 
   beforeAll(async () => {
     Object.defineProperty(window, "matchMedia", {
@@ -100,7 +99,6 @@ describe("NavigationComponent (async, no RouterTestingModule, no MatSnackBar)", 
     })
       .overrideComponent(NavigationComponent, { set: { template: "" } })
       .compileComponents();
-
 
     fixture = TestBed.createComponent(NavigationComponent);
     component = fixture.componentInstance;

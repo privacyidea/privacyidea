@@ -23,7 +23,6 @@ import { signal, WritableSignal } from "@angular/core";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { UserService } from "../../../../services/user/user.service";
 import {
-  MockAuthService,
   MockLocalService,
   MockNotificationService,
   MockOverflowService,
@@ -40,7 +39,7 @@ import { TokenTypeOption } from "../../token.component";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { TokenDetailsUserSelfServiceComponent } from "./token-details-user.self-service.component";
-import { TokenTableSelfServiceComponent } from "../../token-table/token-table.self-service.component";
+import { MockAuthService } from "../../../../../testing/mock-services/mock-auth-service";
 
 function makeTokenDetailResponse(tokentype: TokenTypeOption): MockPiResponse<Tokens> {
   return {

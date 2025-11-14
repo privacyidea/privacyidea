@@ -58,13 +58,7 @@ describe("UserDetailsContainerTableComponent", () => {
   });
 
   it("has the expected displayed columns", () => {
-    expect(component.displayedColumns).toEqual([
-      "serial",
-      "type",
-      "states",
-      "description",
-      "realms"
-    ]);
+    expect(component.displayedColumns).toEqual(["serial", "type", "states", "description", "realms"]);
   });
 
   it("exposes pageSizeOptions from TableUtilsService", () => {
