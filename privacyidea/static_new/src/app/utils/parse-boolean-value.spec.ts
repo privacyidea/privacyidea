@@ -1,5 +1,5 @@
 import { parseBooleanValue } from "./parse-boolean-value";
-import { assert } from "./assert"; // Assuming assert is a named export
+import { assert } from "./assert";
 
 // Mock the assert function to prevent tests from crashing
 jest.mock("./assert", () => ({
@@ -57,5 +57,39 @@ describe("parseBooleanValue", () => {
 
   it("should return false for string 'False'", () => {
     expect(parseBooleanValue("False")).toBe(false);
+  });
+
+  // Test cases for invalid inputs
+  it("should call assert for an invalid number", () => {
+    const errMsg = "Initial value for BoolSelectButtonsComponent must be 0 or 1 if number, but was 2";
+    expect(() => parseBooleanValue(2)).toThrow(errMsg);
+    expect(assert).toHaveBeenCalledWith(false, errMsg);
+  });
+
+  it("should call assert for an invalid string", () => {
+    const errMsg = 'Initial value for BoolSelectButtonsComponent must be "true" or "false" if string, but was invalid';
+    expect(() => parseBooleanValue("invalid")).toThrow(errMsg);
+    expect(assert).toHaveBeenCalledWith(false, errMsg);
+  });
+
+  it("should call assert for null", () => {
+    const errMsg =
+      'Initial value for BoolSelectButtonsComponent must be boolean, 0, 1, "true" or "false", but was null';
+    expect(() => parseBooleanValue(null as any)).toThrow(errMsg);
+    expect(assert).toHaveBeenCalledWith(false, errMsg);
+  });
+
+  it("should call assert for undefined", () => {
+    const errMsg =
+      'Initial value for BoolSelectButtonsComponent must be boolean, 0, 1, "true" or "false", but was undefined';
+    expect(() => parseBooleanValue(undefined as any)).toThrow(errMsg);
+    expect(assert).toHaveBeenCalledWith(false, errMsg);
+  });
+
+  it("should call assert for an object", () => {
+    const obj = {};
+    const errMsg = `Initial value for BoolSelectButtonsComponent must be boolean, 0, 1, "true" or "false", but was ${obj}`;
+    expect(() => parseBooleanValue(obj as any)).toThrow(errMsg);
+    expect(assert).toHaveBeenCalledWith(false, errMsg);
   });
 });

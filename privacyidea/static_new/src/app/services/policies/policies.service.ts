@@ -436,11 +436,16 @@ export class PolicyService implements PolicyServiceInterface {
     headers: this.authService.getHeaders()
   }));
 
-  readonly allPoliciesRecource = httpResource<PiResponse<PolicyDetail[]>>(() => ({
-    url: `${this.policyBaseUrl}`,
-    method: "GET",
-    headers: this.authService.getHeaders()
-  }));
+  readonly allPoliciesRecource = httpResource<PiResponse<PolicyDetail[]>>(() => {
+    if (!this.authService.actionAllowed("policyread") || !this.contentService.routeUrl().includes("policy")) {
+      return undefined;
+    }
+    return {
+      url: `${this.policyBaseUrl}`,
+      method: "GET",
+      headers: this.authService.getHeaders()
+    };
+  });
 
   // -----------------------------------
   // 2.2 Writable Signals (State)

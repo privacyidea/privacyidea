@@ -219,42 +219,6 @@ export class ContainerDetailsTokenTableComponent {
     });
   }
 
-  toggleAll(action: "activate" | "deactivate") {
-    this.containerService.toggleAll(action).subscribe({
-      next: () => {
-        this.containerService.containerDetailResource.reload();
-      }
-    });
-  }
-
-  removeAll() {
-    const serialList = this.containerTokenData()
-      .data.map((token) => token.serial)
-      .join(",");
-    this.dialog
-      .open(ConfirmationDialogComponent, {
-        data: {
-          serialList: serialList.split(","),
-          title: "Remove Token",
-          type: "token",
-          action: "remove",
-          numberOfTokens: serialList.split(",").length
-        }
-      })
-      .afterClosed()
-      .subscribe({
-        next: (result) => {
-          if (result) {
-            this.containerService.removeAll(this.containerSerial()).subscribe({
-              next: () => {
-                this.containerService.containerDetailResource.reload();
-              }
-            });
-          }
-        }
-      });
-  }
-
   deleteAllTokens() {
     const serialList = this.containerTokenData().data.map((token) => token.serial);
     this.tokenService.bulkDeleteWithConfirmDialog(
