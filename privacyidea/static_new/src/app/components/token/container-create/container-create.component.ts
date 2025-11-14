@@ -50,6 +50,7 @@ import { Router } from "@angular/router";
 import { PiResponse } from "../../../app.component";
 import { ROUTE_PATHS } from "../../../route_paths";
 import {
+  ContainerCreateData,
   ContainerRegisterData,
   ContainerService,
   ContainerServiceInterface,
@@ -136,6 +137,7 @@ export class ContainerCreateComponent {
   pollResponse = signal<any>(null);
   userSelected = computed(() => this.userService.selectionUsernameFilter() !== "");
   public dialogData = signal<ContainerCreationDialogData | null>(null);
+  NO_TEMPLATE_OPTION = "-";
 
   @ViewChild("scrollContainer") scrollContainer!: ElementRef<HTMLElement>;
   @ViewChild("stickyHeader") stickyHeader!: ElementRef<HTMLElement>;
@@ -240,15 +242,16 @@ export class ContainerCreateComponent {
 
   createContainer() {
     this.registerResponse.set(null);
-    const createData = {
+    const createData: ContainerCreateData = {
       container_type: this.containerService.selectedContainerType().containerType,
       description: this.description(),
-      template_name: this.selectedTemplate(),
-      user: this.userService.selectionUsernameFilter(),
-      realm: ""
+      user: this.userService.selectionUsernameFilter()
     };
     if (createData.user || this.userAssignmentComponent?.onlyAddToRealm()) {
       createData.realm = this.userService.selectedUserRealm();
+    }
+    if (this.selectedTemplate() && this.selectedTemplate() !== this.NO_TEMPLATE_OPTION) {
+      createData.template_name = this.selectedTemplate();
     }
     this.containerService.createContainer(createData).subscribe({
       next: (response) => {

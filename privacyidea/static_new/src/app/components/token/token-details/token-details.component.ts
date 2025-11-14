@@ -118,7 +118,6 @@ export const infoDetailsKeyMap = [{ key: "info", label: "Information" }];
     ClearableInputComponent,
     CopyButtonComponent,
     ClearableInputComponent,
-    ScrollToTopDirective,
     TokenDetailsMachineComponent,
     MatTooltip,
     RouterLink,

@@ -24,31 +24,6 @@
   }
 }
 
-.layout-self-service {
-  --total-layout-height: 100vh;
-
-  --header-height: calc(
-          var(--mat-sys-label-large-line-height) + var(--global-padding) * 1.75
-  );
-  --main-height: calc(
-          var(--total-layout-height) - var(--header-height) - var(--footer-height)
-  );
-
-  display: grid;
-  grid-template-rows: auto 1fr auto;
-  height: var(--total-layout-height);
-
-  header {
-    height: var(--header-height);
-  }
-
-  main {
-    overflow-x: auto;
-    overflow-y: hidden;
-    height: var(--main-height);
-  }
-}
-
 .progress-bar {
   position: fixed;
   top: calc(100% - max(var(--mdc-linear-progress-track-height, 4px),

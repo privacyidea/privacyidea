@@ -16,7 +16,6 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { NgClass } from "@angular/common";
 import { Component, inject, signal } from "@angular/core";
 import { MatProgressBar } from "@angular/material/progress-bar";
 import { RouterOutlet } from "@angular/router";
@@ -27,7 +26,7 @@ import { LoadingService, LoadingServiceInterface } from "../../services/loading/
   selector: "layout",
   templateUrl: "layout.component.html",
   standalone: true,
-  imports: [RouterOutlet, NgClass, MatProgressBar],
+  imports: [RouterOutlet, MatProgressBar],
   styleUrl: "./layout.component.scss"
 })
 export class LayoutComponent {

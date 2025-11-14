@@ -28,20 +28,20 @@ import {
   MatExpansionPanelHeader,
   MatExpansionPanelTitle
 } from "@angular/material/expansion";
-import { MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
+import { MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
 import { MatSelect } from "@angular/material/select";
 import { MatTooltip } from "@angular/material/tooltip";
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { ContainerCreateComponent } from "./container-create.component";
+import { ContainerRegistrationConfigComponent } from "../container-registration/container-registration-config/container-registration-config.component";
 
 @Component({
   selector: "app-container-create-self-service",
   imports: [
     MatButton,
     MatFormField,
-    MatHint,
     MatIcon,
     MatOption,
     MatSelect,
@@ -56,7 +56,8 @@ import { ContainerCreateComponent } from "./container-create.component";
     MatExpansionPanelHeader,
     MatTooltip,
     ScrollToTopDirective,
-    NgClass
+    NgClass,
+    ContainerRegistrationConfigComponent
   ],
   templateUrl: "./container-create.self-service.component.html",
   styleUrl: "./container-create.component.scss"
