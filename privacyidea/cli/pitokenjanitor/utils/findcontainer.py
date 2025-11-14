@@ -31,12 +31,14 @@ def _get_container_list(serial: str = None, ctype: str = None, token_serial: str
             add = True
             if orphaned is not None:
                 try:
+                    users = container.get_users()
                     if is_true(orphaned):
-                        users = container.get_users()
-                        if users is [] or all(not user.exist() for user in users):
+                        if not users or any(user.exist() for user in users):
+                            # Either the container has no user assigned or the
+                            # assigned user exists in the resolver
                             add = False
                     else:
-                        if container.get_users() is not [] and any(user.exist() for user in container.get_users()):
+                        if users and all(not user.exist() for user in users):
                             add = False
                 except ResolverError:
                     click.secho(
@@ -191,8 +193,10 @@ def set_realm(ctx, realms, add):
     for clist in ctx.obj['containers']:
         for container in clist:
             ret = container.set_realms(realms_list, add=add)
-            for serial, result in ret.items():
-                if not result:
-                    click.echo(f"realm: {serial} could not be set for container {container.serial}")
-                else:
-                    click.echo(f"Set realm '{serial}' for container {container.serial}")
+            ret.pop('deleted', None)
+            succsesful_realms = [key for key, value in ret.items() if value is True]
+            unsuccsesful_realms = [key for key, value in ret.items() if value is False]
+            if unsuccsesful_realms:
+                click.echo(f"realm: {unsuccsesful_realms} could not be set for container {container.serial}")
+            if succsesful_realms:
+                click.echo(f"Set realm '{succsesful_realms}' for container {container.serial}")

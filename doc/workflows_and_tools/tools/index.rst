@@ -767,56 +767,56 @@ You can use several options to filter the containers.
 
     Example::
 
-        pi-tokenjanitor findcontainer --serial 'SMPH00009272'
+        pi-tokenjanitor container --serial 'SMPH00009272'
 
 ``--type``
     Find containers with a specific type.
 
     Example::
 
-        pi-tokenjanitor findcontainer --type 'smartphone'
+        pi-tokenjanitor container --type 'smartphone'
 
 ``--token-serial``
     Find containers that contain a token with a specific serial.
 
     Example::
 
-        pi-tokenjanitor findcontainer --token-serial 'HOTP123456'
+        pi-tokenjanitor container --token-serial 'HOTP123456'
 
 ``--realm``
     Find containers that belong to a specific realm.
 
     Example::
 
-        pi-tokenjanitor findcontainer --realm 'defrealm'
+        pi-tokenjanitor container --realm 'defrealm'
 
 ``--template``
     Find containers that are based on a specific template.
 
     Example::
 
-        pi-tokenjanitor findcontainer --template 'default_smartphone'
+        pi-tokenjanitor container --template 'default_smartphone'
 
 ``--description``
     Find containers with a specific description.
 
     Example::
 
-        pi-tokenjanitor findcontainer --description 'My smartphone container'
+        pi-tokenjanitor container --description 'My smartphone container'
 
 ``--assigned``
     Find containers that are either assigned to a user or unassigned.
 
     Example::
 
-        pi-tokenjanitor findcontainer --assigned true
+        pi-tokenjanitor container --assigned true
 
 ``--resolver``
     Find containers that belong to a specific resolver.
 
     Example::
 
-        pi-tokenjanitor findcontainer --resolver 'my_ldap_resolver'
+        pi-tokenjanitor container --resolver 'my_ldap_resolver'
 
 ``--info``
     Find containers with specific info key-value pairs. Give the key and value in the format key=value.
@@ -824,7 +824,7 @@ You can use several options to filter the containers.
 
     Example::
 
-        pi-tokenjanitor findcontainer --info 'os=android'
+        pi-tokenjanitor container --info 'os=android'
 
 ``--last-auth-delta``
     Find containers where the last authentication of any token in the container happened longer ago than the given value.
@@ -832,7 +832,7 @@ You can use several options to filter the containers.
 
     Example::
 
-        pi-tokenjanitor findcontainer --last-auth-delta '90d'
+        pi-tokenjanitor container --last-auth-delta '90d'
 
 ``--last-sync-delta``
     Find containers where the last sync of any token in the container happened longer ago than the given value.
@@ -840,15 +840,15 @@ You can use several options to filter the containers.
 
     Example::
 
-        pi-tokenjanitor findcontainer --last-sync-delta '90d'
+        pi-tokenjanitor container --last-sync-delta '90d'
 
 ``--chunksize``
-    The number of containers to fetch in one database request (default: 100).
+    The number of containers to fetch in one database request (default: 1000).
     This is useful if you have a lot of containers in your database.
 
     Example::
 
-        pi-tokenjanitor findcontainer --chunksize 500
+        pi-tokenjanitor container --chunksize 500
 
 ``--orphaned``
     Find containers that are orphaned. Orphaned containers are assigned to a user, but the user does not
@@ -856,7 +856,7 @@ You can use several options to filter the containers.
 
     Example::
 
-        pi-tokenjanitor findcontainer --orphaned True
+        pi-tokenjanitor container --orphaned True
 
     This returns all orphaned containers for later processing.
 
@@ -865,16 +865,18 @@ list
 List all found containers.
 Example::
 
-    pi-tokenjanitor findcontainer --type 'smartphone' list
+    pi-tokenjanitor container --type 'smartphone' list
 
 ``--key``
     Can be used to select the displayed information about the container.
     This option can be used multiple times.
     The default: ``serial``, ``type``, ``description``, ``realm``, ``user``.
+    Possible keys: ``type``, ``serial``, ``description``, ``last_authentication``, ``last_synchronization``,
+    ``states``, ``info``, ``internal_info_keys``, ``realms``, ``users``, ``tokens``
 
     Example::
 
-        pi-tokenjanitor findcontainer --type 'smartphone' list --key user --key last_sync
+        pi-tokenjanitor container --type 'smartphone' list --key user --key last_synchronization
 
 delete
 ******
@@ -882,7 +884,7 @@ Delete the found containers.
 
 Example::
 
-    pi-tokenjanitor findcontainer --type 'smartphone' delete
+    pi-tokenjanitor container --type 'smartphone' delete
 
 update_info
 ***********
@@ -897,7 +899,7 @@ overwritten. All other entries remain unchanged.
 
 Example::
 
-    pi-tokenjanitor findcontainer --type 'smartphone' update_info 'os' 'android'
+    pi-tokenjanitor container --type 'smartphone' update_info 'os' 'android'
 
 delete_info
 ***********
@@ -908,18 +910,18 @@ Delete the info key from all found containers.
 
 Example::
 
-    pi-tokenjanitor findcontainer --type 'smartphone' delete_info 'os'
+    pi-tokenjanitor container --type 'smartphone' delete_info 'os'
 
 set_description
 ***************
 Sets a description for all found containers.
 
-``--description``
+``description``
     The description to set.
 
 Example::
 
-    pi-tokenjanitor findcontainer --type 'smartphone' set_description 'example description'
+    pi-tokenjanitor container --type 'smartphone' set_description 'example description'
 
 set_realm
 *********
@@ -934,5 +936,5 @@ Sets a realm for all found containers.
 
 Example::
 
-    pi-tokenjanitor findcontainer --type 'smartphone' set_realm 'defrealm' --add
+    pi-tokenjanitor container --type 'smartphone' set_realm 'defrealm' --add
 
