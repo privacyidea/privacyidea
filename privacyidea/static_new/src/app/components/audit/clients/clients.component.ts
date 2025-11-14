@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, inject, linkedSignal, WritableSignal } from "@angular/core";
+import { Component, effect, inject, linkedSignal, signal, ViewChild, WritableSignal } from "@angular/core";
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import {
   MatCell,
@@ -29,7 +29,8 @@ import {
   MatRow,
   MatRowDef,
   MatTable,
-  MatTableDataSource
+  MatTableDataSource,
+  MatTableModule
 } from "@angular/material/table";
 import {
   ClientData,
@@ -37,6 +38,8 @@ import {
   ClientsService,
   ClientsServiceInterface
 } from "../../../services/clients/clients.service";
+import { MatSort, MatSortHeader, MatSortModule } from "@angular/material/sort";
+import { NgClass } from "@angular/common";
 
 const columnKeysMap = [
   { key: "application", label: "Application" },
@@ -67,6 +70,7 @@ interface FlattenedClientRow {
   imports: [
     ScrollToTopDirective,
     MatTable,
+    MatTableModule,
     MatColumnDef,
     MatCell,
     MatCellDef,
@@ -75,7 +79,11 @@ interface FlattenedClientRow {
     MatHeaderRow,
     MatHeaderRowDef,
     MatRow,
-    MatRowDef
+    MatRowDef,
+    MatSort,
+    MatSortHeader,
+    MatSortModule,
+    NgClass
   ]
 })
 export class ClientsComponent {
@@ -83,6 +91,20 @@ export class ClientsComponent {
 
   readonly columnKeysMap = columnKeysMap;
   readonly columnKeys = ["application", "hostname", "ip", "lastseen"];
+
+  activeSortColumn = signal<string | null>(null);
+
+  onSortChange(event: { active: string }) {
+    this.activeSortColumn.set(event.active || null);
+  }
+
+  @ViewChild(MatSort) sort!: MatSort;
+
+  constructor() {
+    effect(() => {
+      this.clientDataSource().sort = this.sort;
+    });
+  }
 
   // Flattens the grouped client data for the material table, from ClientsDict
   flattenedClientRowsFromDict = (dict: ClientsDict): FlattenedClientRow[] => {
@@ -115,4 +137,11 @@ export class ClientsComponent {
       return previous?.value ?? new MatTableDataSource([] as FlattenedClientRow[]);
     }
   });
+
+  filterValue: string = "";
+
+  handleFilterInput($event: Event): void {
+    this.filterValue = ($event.target as HTMLInputElement).value.trim();
+    this.clientDataSource().filter = this.filterValue.toLowerCase();
+  }
 }

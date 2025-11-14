@@ -21,65 +21,53 @@
   class="clients-layout">
   <table
     mat-table
+    matSort
+    (matSortChange)="onSortChange($event)"
     [dataSource]="clientDataSource()"
-    class="mat-elevation-z8 token-table"
     aria-label="Client Data Table">
-    <ng-container matColumnDef="application">
-      <th
-        mat-header-cell
-        *matHeaderCellDef>Application
-      </th>
-      <ng-container *matCellDef="let row; let i = index">
-        @if (row.isFirst) {
+    @for (column of columnKeysMap; let colIdx = $index; track column) {
+      <ng-container [matColumnDef]="column.key">
+        <th
+          *matHeaderCellDef
+          attr.aria-label="{{ column.label }} Header"
+          mat-header-cell
+          mat-sort-header
+          [ngClass]="{'col-even': colIdx % 2 === 0, 'col-odd': colIdx % 2 !== 0}">
+          {{ column.label }}
+        </th>
+        @if (column.key === "application") {
+          <ng-container *matCellDef="let client">
+            @if ((!activeSortColumn() || activeSortColumn() === "application")) {
+              @if (client.isFirst) {
+                <td
+                  mat-cell
+                  [attr.rowspan]="client.rowspan"
+                  [ngClass]="colIdx % 2 === 0 ? 'col-even' : 'col-odd'">
+                  <ng-container>
+                    <span>{{ client[column.key] }}</span>
+                  </ng-container>
+                </td>
+              }
+            } @else {
+              <td
+                attr.aria-label="{{ column.label }} Cell"
+                mat-cell
+                [ngClass]="colIdx % 2 === 0 ? 'col-even' : 'col-odd'">
+                {{ client[column.key] }}
+              </td>
+            }
+          </ng-container>
+        } @else {
           <td
+            *matCellDef="let client"
+            attr.aria-label="{{ column.label }} Cell"
             mat-cell
-            [attr.rowspan]="row.rowspan">
-
-            <ng-container>
-              <span>{{ row.application }}</span>
-            </ng-container>
-
+            [ngClass]="colIdx % 2 === 0 ? 'col-even' : 'col-odd'">
+            {{ client[column.key] }}
           </td>
         }
       </ng-container>
-    </ng-container>
-
-    <!-- Hostname Column -->
-    <ng-container matColumnDef="hostname">
-      <th
-        mat-header-cell
-        *matHeaderCellDef>Hostname
-      </th>
-      <td
-        mat-cell
-        *matCellDef="let row">{{ row.hostname }}
-      </td>
-    </ng-container>
-
-    <!-- IP Address Column -->
-    <ng-container matColumnDef="ip">
-      <th
-        mat-header-cell
-        *matHeaderCellDef>IP Address
-      </th>
-      <td
-        mat-cell
-        *matCellDef="let row">{{ row.ip }}
-      </td>
-    </ng-container>
-
-    <!-- Last Seen Column -->
-    <ng-container matColumnDef="lastseen">
-      <th
-        mat-header-cell
-        *matHeaderCellDef>Last Seen
-      </th>
-      <td
-        mat-cell
-        *matCellDef="let row">{{ row.lastseen }}
-      </td>
-    </ng-container>
-
+    }
     <tr
       mat-header-row
       *matHeaderRowDef="columnKeys"></tr>
@@ -99,6 +87,5 @@
         No data matching the filter.
       </td>
     </tr>
-
   </table>
 </div>
