@@ -39,11 +39,12 @@ def _get_container_list(serial: str = None, ctype: str = None, token_serial: str
                     users = container.get_users()
                     if is_true(orphaned):
                         if not users or any(user.exist() for user in users):
-                            # Either the container has no user assigned or the
-                            # assigned user exists in the resolver
+                            # Either the container has no user assigned or at least one assigned user exists in the
+                            # resolver
                             add = False
                     else:
                         if users and all(not user.exist() for user in users):
+                            # The container has assigned users, but none of them exists in the resolver
                             add = False
                 except ResolverError:
                     click.secho(

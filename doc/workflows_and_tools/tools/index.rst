@@ -757,9 +757,9 @@ Example::
     pi-tokenjanitor update /path/to/yamlfile.yaml
 
 
-Findcontainer
+Container
 ~~~~~~~~~~~~~
-With the **findcontainer** command you can search for containers in the database.
+With the **container** command you can search for containers in the database.
 You can use several options to filter the containers.
 
 ``--serial``
@@ -925,10 +925,10 @@ Example::
 
 set_realm
 *********
-Sets a realm for all found containers.
+Sets a list of realms for all found containers.
 
 ``realm``
-    The realm to set.
+    A comma separated list of realms to set.
 
 ``--add``
     If this option is set, the realm will be added to the existing realms.
