@@ -24,7 +24,6 @@ import { DocumentationService } from "../../../../../services/documentation/docu
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { MockDocumentationService } from "../../../../../../testing/mock-services/mock-documentation-service";
 import { MockPolicyService } from "../../../../../../testing/mock-services/mock-policies-service";
-import "@angular/localize/init";
 
 describe("ActionDetailComponent", () => {
   let component: ActionDetailComponent;

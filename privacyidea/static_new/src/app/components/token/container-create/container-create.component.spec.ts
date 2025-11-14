@@ -46,7 +46,6 @@ import { ContainerCreateSelfServiceComponent } from "./container-create.self-ser
 import { ContainerCreateWizardComponent } from "./container-create.wizard.component";
 import { ROUTE_PATHS } from "../../../route_paths";
 import { MockAuthService } from "../../../../testing/mock-services/mock-auth-service";
-import "@angular/localize/init";
 
 class MockIntersectionObserver {
   observe = jest.fn();

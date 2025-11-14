@@ -7,7 +7,6 @@ import { MockContainerService, MockMachineService, MockOverflowService } from ".
 import { MachineService } from "../../../../services/machine/machine.service";
 import { ContentService } from "../../../../services/content/content.service";
 import { OverflowService } from "../../../../services/overflow/overflow.service";
-import "@angular/localize/init";
 
 describe("TokenDetailsInfoComponent", () => {
   let component: TokenDetailsMachineComponent;

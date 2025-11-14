@@ -24,7 +24,6 @@ import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from "@angular/materia
 import { Observable } from "rxjs";
 
 import { TokenHotpMachineAssignDialogComponent } from "./token-hotp-machine-attach-dialog";
-import "@angular/localize/init";
 
 class MockMachineService {
   subscribed = false;

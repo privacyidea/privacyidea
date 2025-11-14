@@ -32,7 +32,6 @@ import { UserService } from "../../../services/user/user.service";
 import { FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { of } from "rxjs";
 import { provideHttpClient } from "@angular/common/http";
-import "@angular/localize/init";
 
 describe("TokenImportComponent", () => {
   let component: TokenImportComponent;

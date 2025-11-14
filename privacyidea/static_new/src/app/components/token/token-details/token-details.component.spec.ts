@@ -30,7 +30,6 @@ import {
 import { MatDialog } from "@angular/material/dialog";
 import { ActivatedRoute } from "@angular/router";
 import { MockAuthService } from "../../../../testing/mock-services/mock-auth-service";
-import "@angular/localize/init";
 
 describe("TokenDetailsComponent", () => {
   let fixture: ComponentFixture<TokenDetailsComponent>;

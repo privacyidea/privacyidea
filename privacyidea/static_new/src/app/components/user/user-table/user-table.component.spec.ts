@@ -22,7 +22,6 @@ import { UserTableComponent } from "./user-table.component";
 import { provideHttpClient } from "@angular/common/http";
 import { ActivatedRoute } from "@angular/router";
 import { of } from "rxjs";
-import "@angular/localize/init";
 
 describe("UserTableComponent", () => {
   let component: UserTableComponent;

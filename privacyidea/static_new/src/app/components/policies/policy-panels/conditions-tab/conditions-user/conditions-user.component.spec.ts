@@ -24,7 +24,7 @@ import { ResolverService } from "../../../../../services/resolver/resolver.servi
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { MockRealmService } from "../../../../../../testing/mock-services";
 import { MockPolicyService } from "../../../../../../testing/mock-services/mock-policies-service";
-import "@angular/localize/init";
+
 import { MockResolverService } from "../../../../../../testing/mock-services/mock-resolver-service";
 
 describe("ConditionsUserComponent", () => {

@@ -3,7 +3,6 @@ import { ContainerRegistrationInitDialogComponent } from "./container-registrati
 import { MAT_DIALOG_DATA } from "@angular/material/dialog";
 import { By } from "@angular/platform-browser";
 import { NO_ERRORS_SCHEMA, signal } from "@angular/core";
-import "@angular/localize/init";
 
 describe("ContainerRegistrationInitDialogComponent", () => {
   let component: ContainerRegistrationInitDialogComponent;

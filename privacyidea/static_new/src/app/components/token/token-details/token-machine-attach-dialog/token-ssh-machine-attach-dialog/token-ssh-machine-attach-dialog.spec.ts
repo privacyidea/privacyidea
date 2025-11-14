@@ -29,7 +29,6 @@ import { ApplicationService } from "../../../../../services/application/applicat
 import { MachineService } from "../../../../../services/machine/machine.service";
 import { UserService } from "../../../../../services/user/user.service";
 import { MockApplicationService, MockMachineService, MockUserService } from "../../../../../../testing/mock-services";
-import "@angular/localize/init";
 
 type TestMachine = {
   id: number;

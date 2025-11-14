@@ -23,7 +23,6 @@ import { TokenService } from "../../../../../services/token/token.service";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { MockTokenService } from "../../../../../../testing/mock-services";
-import "@angular/localize/init";
 
 describe("ResyncTokenActionComponent", () => {
   let component: ResyncTokenActionComponent;

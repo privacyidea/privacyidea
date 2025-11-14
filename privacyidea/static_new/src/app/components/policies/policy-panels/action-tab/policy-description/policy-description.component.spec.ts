@@ -24,7 +24,6 @@ import { PolicyDetail, PolicyService } from "../../../../../services/policies/po
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { MockPolicyService } from "../../../../../../testing/mock-services/mock-policies-service";
 import { MockDocumentationService } from "../../../../../../testing/mock-services/mock-documentation-service";
-import "@angular/localize/init";
 
 describe("PolicyDescriptionComponent", () => {
   let component: PolicyDescriptionComponent;

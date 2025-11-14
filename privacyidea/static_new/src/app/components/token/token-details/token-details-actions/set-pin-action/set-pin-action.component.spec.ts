@@ -28,7 +28,6 @@ import { MockLocalService, MockNotificationService } from "../../../../../../tes
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { MockAuthService } from "../../../../../../testing/mock-services/mock-auth-service";
-import "@angular/localize/init";
 
 describe("SetPinActionComponent", () => {
   let component: SetPinActionComponent;

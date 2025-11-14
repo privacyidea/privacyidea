@@ -28,7 +28,7 @@ import { ContainerCreatedDialogComponent } from "./container-created-dialog.comp
 import { ContainerCreatedDialogWizardComponent } from "./container-created-dialog.wizard.component";
 import { ContainerService } from "../../../../services/container/container.service";
 import { ContentService } from "../../../../services/content/content.service";
-import "@angular/localize/init";
+import { MockAuthService } from "../../../../../testing/mock-services/mock-auth-service";
 
 describe("ContainerCreatedDialogComponent", () => {
   let fixture: ComponentFixture<ContainerCreatedDialogComponent>;

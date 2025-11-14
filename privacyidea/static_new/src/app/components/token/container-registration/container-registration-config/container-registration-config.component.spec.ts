@@ -5,7 +5,6 @@ import { MatCheckbox } from "@angular/material/checkbox";
 import { MatFormField } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { By } from "@angular/platform-browser";
-import "@angular/localize/init";
 
 const detectChangesStable = async (fixture: ComponentFixture<any>) => {
   fixture.detectChanges();

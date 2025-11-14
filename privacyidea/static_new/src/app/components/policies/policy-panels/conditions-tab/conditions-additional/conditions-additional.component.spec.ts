@@ -20,7 +20,7 @@
 import { ComponentFixture, fakeAsync, TestBed, tick } from "@angular/core/testing";
 import { ConditionsAdditionalComponent } from "./conditions-additional.component";
 import { PolicyService } from "../../../../../services/policies/policies.service";
-import "@angular/localize/init";
+
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { AdditionalCondition } from "../../../../../services/policies/policies.service";
 import { MockPolicyService } from "../../../../../../testing/mock-services/mock-policies-service";

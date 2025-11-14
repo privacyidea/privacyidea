@@ -34,7 +34,6 @@ import { signal, WritableSignal } from "@angular/core";
 import { of } from "rxjs";
 import { provideHttpClient } from "@angular/common/http";
 import { MockAuthService } from "../../../../../testing/mock-services/mock-auth-service";
-import "@angular/localize/init";
 
 describe("ContainerDetailsTokenActionsComponent", () => {
   let component: ContainerDetailsTokenActionsComponent;

@@ -33,7 +33,6 @@ import { KeywordFilterComponent } from "../../../shared/keyword-filter/keyword-f
 import { TokenApplicationsOfflineComponent } from "./token-applications-offline.component";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import "@angular/localize/init";
 
 describe("TokenApplicationsOfflineComponent (Jest)", () => {
   let fixture: ComponentFixture<TokenApplicationsOfflineComponent>;

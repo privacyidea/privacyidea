@@ -30,7 +30,6 @@ import { MockContentService, MockNotificationService, MockTokenService } from ".
 import { MatDialog } from "@angular/material/dialog";
 import { ConfirmationDialogComponent } from "../../shared/confirmation-dialog/confirmation-dialog.component";
 import { GetSerialResultDialogComponent } from "./get-serial-result-dialog/get-serial-result-dialog.component";
-import "@angular/localize/init";
 
 const makeCountResp = (count: number) => ({ result: { value: { count } } }) as any;
 

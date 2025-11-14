@@ -3,7 +3,6 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { UserDetailsPinDialogComponent } from "./user-details-pin-dialog.component";
 import { By } from "@angular/platform-browser";
 import { MatDialogRef } from "@angular/material/dialog";
-import "@angular/localize/init";
 
 describe("UserDetailsPinDialogComponent", () => {
   let component: UserDetailsPinDialogComponent;

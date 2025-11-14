@@ -24,7 +24,6 @@ import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { MatSelectChange } from "@angular/material/select";
 import { MockPolicyService } from "../../../../../../testing/mock-services/mock-policies-service";
 import { MockSystemService } from "../../../../../../testing/mock-services/mock-system-service";
-import "@angular/localize/init";
 
 describe("ConditionsNodesComponent", () => {
   let component: ConditionsNodesComponent;

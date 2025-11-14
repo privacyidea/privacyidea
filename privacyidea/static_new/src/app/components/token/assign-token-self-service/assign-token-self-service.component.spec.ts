@@ -24,7 +24,6 @@ import { TokenService } from "../../../services/token/token.service";
 import { MockContentService, MockTokenService } from "../../../../testing/mock-services";
 import { provideHttpClient } from "@angular/common/http";
 import { ContentService } from "../../../services/content/content.service";
-import "@angular/localize/init";
 
 describe("AssignTokenSelfServiceComponent (no zone.js)", () => {
   let fixture: ComponentFixture<AssignTokenSelfServiceComponent>;

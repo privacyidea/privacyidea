@@ -24,7 +24,6 @@ import { MatSelectModule } from "@angular/material/select";
 import { MachineService } from "../../../services/machine/machine.service";
 import { provideHttpClient } from "@angular/common/http";
 import { MockLocalService, MockMachineService, MockNotificationService } from "../../../../testing/mock-services";
-import "@angular/localize/init";
 
 describe("TokenApplicationsComponent (Jest)", () => {
   let fixture: ComponentFixture<TokenApplicationsComponent>;

@@ -17,14 +17,14 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { fakeAsync, TestBed, tick } from "@angular/core/testing";
+import { TestBed } from "@angular/core/testing";
 import { Resolver, Resolvers, ResolverService } from "./resolver.service";
 import { HttpTestingController, provideHttpClientTesting, TestRequest } from "@angular/common/http/testing";
-import { environment } from "../../../environments/environment";
 import { HttpHeaders, provideHttpClient } from "@angular/common/http";
 import { MockPiResponse } from "../../../testing/mock-services";
 import { AuthService } from "../auth/auth.service";
 import { MockAuthService } from "../../../testing/mock-services/mock-auth-service";
+import { lastValueFrom, of } from "rxjs";
 
 describe("ResolverService", () => {
   let resolverService: ResolverService;
@@ -82,7 +82,7 @@ describe("ResolverService", () => {
     req.flush({});
   });
 
-  it("should get resolvers", fakeAsync(() => {
+  it("should get resolvers", async () => {
     const resolver1: Resolver = {
       censor_keys: [],
       data: {},
@@ -103,11 +103,11 @@ describe("ResolverService", () => {
     const req = httpMock.expectOne(resolverService.resolverBaseUrl);
     expect(req.request.method).toBe("GET");
     req.flush(mockResponse);
-    tick();
+    await lastValueFrom(of({})); // Wait for async updates
     expect(resolverService.resolvers()).toEqual([resolver1, resolver2]);
-  }));
+  });
 
-  it("should get resolver options", fakeAsync(() => {
+  it("should get resolver options", async () => {
     const resolver1: Resolver = {
       censor_keys: [],
       data: {},
@@ -128,7 +128,8 @@ describe("ResolverService", () => {
     const req = httpMock.expectOne(resolverService.resolverBaseUrl);
     expect(req.request.method).toBe("GET");
     req.flush(mockResponse);
-    tick();
+    await lastValueFrom(of({})); // Wait for async updates
+
     expect(resolverService.resolverOptions()).toEqual(["resolver1", "resolver2"]);
-  }));
+  });
 });

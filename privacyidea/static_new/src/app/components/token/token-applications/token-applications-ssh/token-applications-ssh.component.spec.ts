@@ -27,7 +27,6 @@ import { KeywordFilterComponent } from "../../../shared/keyword-filter/keyword-f
 import { TokenApplicationsSshComponent } from "./token-applications-ssh.component";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import "@angular/localize/init";
 
 describe("TokenApplicationsSshComponent (Jest)", () => {
   let fixture: ComponentFixture<TokenApplicationsSshComponent>;
@@ -85,7 +84,7 @@ describe("TokenApplicationsSshComponent (Jest)", () => {
           serial: "",
           type: "",
           application: ""
-        }
+        } as TokenApplication
       ];
       machineServiceMock.tokenApplications!.set(fakeApps);
 

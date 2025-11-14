@@ -26,7 +26,6 @@ import { Subject } from "rxjs";
 import { NotificationService } from "../../../../../services/notification/notification.service";
 import { MockNotificationService, MockTokenService } from "../../../../../../testing/mock-services";
 import { TokenService } from "../../../../../services/token/token.service";
-import "@angular/localize/init";
 
 describe("LostTokenComponent", () => {
   let component: LostTokenComponent;

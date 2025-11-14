@@ -24,7 +24,6 @@ import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MockPolicyService } from "../../../../../testing/mock-services/mock-policies-service";
 
-import "@angular/localize/init";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 

@@ -33,7 +33,6 @@ import {
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { MockAuthService } from "../../../../../testing/mock-services/mock-auth-service";
-import "@angular/localize/init";
 
 describe("ContainerDetailsInfoComponent", () => {
   let fixture: ComponentFixture<ContainerDetailsInfoComponent>;

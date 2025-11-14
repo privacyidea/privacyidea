@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { fakeAsync, TestBed, tick } from "@angular/core/testing";
+import { TestBed } from "@angular/core/testing";
 import { PolicyActionDetail, PolicyDetail, PolicyService, ScopedPolicyActions } from "./policies.service";
 import { provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
@@ -342,7 +342,7 @@ describe("PolicyService", () => {
       await promise;
     });
 
-    it("should send a PATCH and a POST request if policy name changes", fakeAsync(() => {
+    it("should send a PATCH and a POST request if policy name changes", () => {
       const policyData: PolicyDetail = { ...service.emptyPolicy, name: "new-name" };
 
       service.updatePolicy("old-name", policyData);
@@ -357,10 +357,8 @@ describe("PolicyService", () => {
       expect(reqPost.request.body).toEqual(policyData);
       reqPost.flush({ result: { value: {} } });
 
-      tick();
-
       httpTestingController.verify();
-    }));
+    });
   });
 
   describe("deletePolicy", () => {

@@ -39,7 +39,6 @@ import { ROUTE_PATHS } from "../../route_paths";
 import { MockAuthService } from "../../../testing/mock-services/mock-auth-service";
 import { ConfigService } from "../../services/config/config.service";
 import { By } from "@angular/platform-browser";
-import "@angular/localize/init";
 
 describe("LoginComponent", () => {
   let fixture: ComponentFixture<LoginComponent>;

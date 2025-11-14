@@ -45,7 +45,7 @@ import { MatDialog } from "@angular/material/dialog";
 import { UserService } from "../../../../services/user/user.service";
 import { ConfirmationDialogComponent } from "../../../shared/confirmation-dialog/confirmation-dialog.component";
 import { ContentService } from "../../../../services/content/content.service";
-import "@angular/localize/init";
+
 import { MockAuthService } from "../../../../../testing/mock-services/mock-auth-service";
 
 const routerEvents$ = new Subject<NavigationEnd>();

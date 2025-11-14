@@ -38,7 +38,6 @@ import {
 } from "../../../../testing/mock-services";
 import { ContainerDetailsSelfServiceComponent } from "./container-details.self-service.component";
 import { ActivatedRoute } from "@angular/router";
-import "@angular/localize/init";
 
 class MockValidateService {
   testToken = jest.fn().mockReturnValue(of(null));

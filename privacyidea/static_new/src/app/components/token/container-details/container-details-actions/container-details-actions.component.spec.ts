@@ -16,7 +16,6 @@ import { PiResponse } from "../../../../app.component";
 import { provideHttpClient } from "@angular/common/http";
 import { NavigationEnd, Router } from "@angular/router";
 import { MockAuthService } from "../../../../../testing/mock-services/mock-auth-service";
-import "@angular/localize/init";
 
 const routerEvents$ = new Subject<NavigationEnd>();
 routerEvents$.next(new NavigationEnd(1, "/", "/"));

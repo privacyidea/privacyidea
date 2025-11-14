@@ -40,7 +40,6 @@ import {
 } from "../../../../testing/mock-services";
 import { ActivatedRoute } from "@angular/router";
 import { MockAuthService } from "../../../../testing/mock-services/mock-auth-service";
-import "@angular/localize/init";
 
 class MockMatDialog {
   open = jest.fn().mockReturnValue({

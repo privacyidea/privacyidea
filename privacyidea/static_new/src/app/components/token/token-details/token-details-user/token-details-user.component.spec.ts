@@ -40,7 +40,6 @@ import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { TokenDetailsUserSelfServiceComponent } from "./token-details-user.self-service.component";
 import { MockAuthService } from "../../../../../testing/mock-services/mock-auth-service";
-import "@angular/localize/init";
 
 function makeTokenDetailResponse(tokentype: TokenTypeOption): MockPiResponse<Tokens> {
   return {

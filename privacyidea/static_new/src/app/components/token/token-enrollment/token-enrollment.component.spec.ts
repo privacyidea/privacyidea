@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import "@angular/localize/init";
+
 import { TokenEnrollmentComponent } from "./token-enrollment.component";
 import { UserService } from "../../../services/user/user.service";
 import {

@@ -45,7 +45,6 @@ import {
   MockTableUtilsService
 } from "../../../../testing/mock-services";
 import { MockAuthService } from "../../../../testing/mock-services/mock-auth-service";
-import "@angular/localize/init";
 
 function makeResource<T>(initial: T) {
   return {
