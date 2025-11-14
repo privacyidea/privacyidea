@@ -76,7 +76,7 @@ export type AdditionalCondition = [SectionOption, string, ComporatorOption, stri
 export type SectionOption =
   | "HTTP Environment"
   | "HTTP Request header"
-  | "Requst Data"
+  | "Request Data"
   | "container"
   | "container_info"
   | "token"
