@@ -27,7 +27,6 @@ import { FormsModule } from "@angular/forms";
 import { MatExpansionModule, MatExpansionPanel } from "@angular/material/expansion";
 import { MatSlideToggleModule } from "@angular/material/slide-toggle";
 import { PolicyDetail, PolicyService } from "../../../../services/policies/policies.service";
-import { HorizontalWheelComponent } from "../../../shared/horizontal-wheel/horizontal-wheel.component";
 import { ActionTabComponent } from "../action-tab/action-tab.component";
 import { ConditionsTabComponent } from "../conditions-tab/conditions-tab.component";
 import { PolicyDescriptionComponent } from "../action-tab/policy-description/policy-description.component";
@@ -49,7 +48,6 @@ type PolicyTab = "actions" | "conditions";
     MatButtonToggleModule,
     FormsModule,
     MatExpansionModule,
-    HorizontalWheelComponent,
     MatSlideToggleModule,
     ActionTabComponent,
     ConditionsTabComponent,
