@@ -28,7 +28,7 @@ import {
   MatExpansionPanelHeader,
   MatExpansionPanelTitle
 } from "@angular/material/expansion";
-import { MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
+import { MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
 import { MatSelect } from "@angular/material/select";
@@ -42,7 +42,6 @@ import { ContainerRegistrationConfigComponent } from "../container-registration/
   imports: [
     MatButton,
     MatFormField,
-    MatHint,
     MatIcon,
     MatOption,
     MatSelect,
