@@ -18,6 +18,11 @@ def _get_container_list(serial: str = None, ctype: str = None, token_serial: str
     """
     Helper function to get a list of containers based on the provided parameters.
     """
+
+    if info:
+        info_key, info_value = info.split("=")
+        info = {info_key: info_value}
+
     container_page = get_container_generator(serial=serial, ctype=ctype,
                                              token_serial=token_serial, realm=realm,
                                              template=template, description=description,
