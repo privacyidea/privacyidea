@@ -18,7 +18,7 @@
  **/
 import { AsyncPipe, NgClass, TitleCasePipe } from "@angular/common";
 import { HttpClient } from "@angular/common/http";
-import { Component, inject, linkedSignal, WritableSignal } from "@angular/core";
+import { Component, inject, linkedSignal, SecurityContext, WritableSignal } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { MatButton, MatIconButton } from "@angular/material/button";
 import { MatDialog } from "@angular/material/dialog";
@@ -81,21 +81,24 @@ export class ContainerCreateWizardComponent extends ContainerCreateComponent {
     this.description.set("");
   };
 
+  // TODO: Get custom path from pi.cfg
+  customizationPath = "/static/public/customize/";
+
   readonly preTopHtml$ = this.http
-    .get(environment.proxyUrl + "/static/public/customize/container-create.wizard.pre.top.html", {
+    .get(environment.proxyUrl + this.customizationPath + "container-create.wizard.pre.top.html", {
       responseType: "text"
     })
     .pipe(map((raw) => ({
         hasContent: !!raw && raw.trim().length > 0,
-        sanitized: this.sanitizer.bypassSecurityTrustHtml(raw)
+        sanitized: this.sanitizer.sanitize(SecurityContext.HTML, raw)
       }))
     );
 
   readonly preBottomHtml$ = this.http
-    .get(environment.proxyUrl + "/static/public/customize/container-create.wizard.pre.bottom.html", {
+    .get(environment.proxyUrl + this.customizationPath + "container-create.wizard.pre.bottom.html", {
       responseType: "text"
     })
-    .pipe(map((raw) => this.sanitizer.bypassSecurityTrustHtml(raw)));
+    .pipe(map((raw) => this.sanitizer.sanitize(SecurityContext.HTML, raw)));
 
   constructor(
     private http: HttpClient,
@@ -105,3 +108,4 @@ export class ContainerCreateWizardComponent extends ContainerCreateComponent {
     super(registrationDialog);
   }
 }
+

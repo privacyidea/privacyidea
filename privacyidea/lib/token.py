@@ -110,7 +110,8 @@ from privacyidea.lib.realm import realm_is_defined, get_realms
 from privacyidea.lib.resolver import get_resolver_object
 from privacyidea.lib.tokenclass import DATE_FORMAT, TOKENKIND, TokenClass
 from privacyidea.lib.user import User
-from privacyidea.lib.utils import is_true, BASE58, hexlify_and_unicode, check_serial_valid, create_tag_dict
+from privacyidea.lib.utils import (is_true, BASE58, hexlify_and_unicode, check_serial_valid, create_tag_dict,
+                                   redacted_phone_number, redacted_email)
 from privacyidea.models import (db, Token, Realm, TokenRealm, Challenge,
                                 TokenInfo, TokenOwner, TokenTokengroup, Tokengroup, TokenContainer,
                                 TokenContainerToken)
@@ -2918,6 +2919,7 @@ def challenge_text_replace(message, user, token_obj, additional_tags: dict = Non
             phone = token_obj.get_tokeninfo("phone")
         if phone:
             tags["phone"] = phone
+            tags["phone_redacted"] = redacted_phone_number(phone)
 
     if token_type == "email":
         if is_true(TokenClass.get_tokeninfo(token_obj, "dynamic_email")):
@@ -2929,6 +2931,7 @@ def challenge_text_replace(message, user, token_obj, additional_tags: dict = Non
             email = TokenClass.get_tokeninfo(token_obj, token_obj.EMAIL_ADDRESS_KEY)
         if email:
             tags["email"] = email
+            tags["email_redacted"] = redacted_email(email)
 
     # If the message is for a pushtoken and the presence_answer is set, but there is no tag for placing that answer,
     # Append the answer to the message

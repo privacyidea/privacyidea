@@ -4,9 +4,9 @@
   i18n-aria-label>
   <div class="flex-column">
     <h3
-      class="margin-left-1"
+      class="margin-left-1 margin-top-0"
       i18n>
-      Token in Container
+      Tokens in Container
     </h3>
     @if (dataSource.data.length > 1) {
       <mat-form-field
@@ -23,13 +23,11 @@
           placeholder="Filter across all columns." />
       </mat-form-field>
     }
-    @if (dataSource.data.length > 5) {
       <mat-paginator
         [pageSizeOptions]="pageSizeOptions()"
         [pageSize]="pageSize"
         class="flex-just-start"
-        showFirstLastButtons></mat-paginator>
-    }
+        showFirstLastButtons/>
   </div>
   <div [ngClass]="[overflowService.isWidthOverflowing('body', 1580) ? 'flex-column' : 'flex-row']">
     <table
@@ -51,8 +49,7 @@
           <td
             *matCellDef="let element"
             attr.aria-label="{{ column.label }} Cell"
-            mat-cell
-            [ngClass]="{ 'width-18rem': column.key === 'description' }">
+            mat-cell>
             <ng-container>
               <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
                 @switch (column.key) {
@@ -75,6 +72,13 @@
                       [ngClass]="tableUtilsService.getClassForColumn(column.key, element)">
                       {{ tableUtilsService.getDisplayText(column.key, element) }}
                     </span>
+                  }
+                  @case ("username") {
+                    <a
+                      (click)="contentService.userSelected(element[column.key])"
+                      attr.aria-label="{{ column.label }} Link">
+                      {{ element[column.key] }}
+                    </a>
                   }
                   @default {
                     @if (tableUtilsService.isLink(column.key)) {
@@ -170,80 +174,5 @@
         </td>
       </tr>
     </table>
-    <div
-      [ngClass]="[
-        overflowService.isWidthOverflowing('body', 1580)
-          ? 'container-details-action-column'
-          : 'container-details-action-row'
-      ]">
-      @if (authService.actionAllowed("assign")) {
-        <button
-          (click)="assignToAllToken()"
-          [disabled]="!isAssignableToAllToken()"
-          class="action-button-1"
-          mat-stroked-button
-          i18n>
-          <mat-icon>playlist_add</mat-icon>
-          {{ "Assign to All Tokens" }}
-        </button>
-      }
-      @if (authService.actionAllowed("unassign")) {
-        <button
-          (click)="unassignFromAllToken()"
-          [disabled]="!isUnassignableFromAllToken()"
-          class="action-button-delete"
-          mat-stroked-button
-          i18n>
-          <mat-icon>playlist_remove</mat-icon>
-          {{ "Unassign from All Tokens" }}
-        </button>
-      }
-      <br />
-      <mat-divider />
-      <br />
-      @if (authService.actionAllowed("enable")) {
-        <button
-          (click)="toggleAll('activate')"
-          class="action-button-1"
-          mat-stroked-button
-          i18n>
-          <mat-icon>playlist_play</mat-icon>
-          {{ "Activate All Tokens" }}
-        </button>
-      }
-      @if (authService.actionAllowed("disable")) {
-        <button
-          (click)="toggleAll('deactivate')"
-          class="action-button-delete"
-          mat-stroked-button
-          i18n>
-          <mat-icon class="mdi--list-lock"/>
-          {{ "Deactivate All Tokens" }}
-        </button>
-      }
-      <br />
-      <mat-divider />
-      <br />
-      @if (authService.actionAllowed("container_remove_token")) {
-        <button
-          (click)="removeAll()"
-          class="action-button-delete"
-          mat-stroked-button
-          i18n>
-          <mat-icon> playlist_remove</mat-icon>
-          {{ "Remove All Tokens" }}
-        </button>
-      }
-      @if (authService.actionAllowed("delete")) {
-        <button
-          (click)="deleteAllTokens()"
-          class="action-button-delete"
-          mat-stroked-button
-          i18n>
-          <mat-icon> delete_sweep</mat-icon>
-          {{ "Delete All Tokens" }}
-        </button>
-      }
-    </div>
   </div>
 </div>

@@ -76,18 +76,31 @@
                       </div>
                     }
                     @case ("active") {
-                      <span
-                        [ngClass]="tableUtilsService.getClassForColumn(column.key, element)"
-                        (click)="toggleActive(element)">
-                        {{ tableUtilsService.getDisplayText(column.key, element) }}
-                      </span>
+                      @if (authService.actionAllowed("enable") && authService.actionAllowed("disable")) {
+                        <span
+                          (click)="toggleActive(element)"
+                          [matTooltip]="tableUtilsService.getTooltipForColumn(column.key,element)"
+                          [ngClass]="tableUtilsService.getClassForColumn(column.key, element)">
+                      {{ tableUtilsService.getDisplayText(column.key, element) }}
+                    </span>
+                      } @else {
+                        <span [ngClass]="tableUtilsService.getClassForColumn(column.key, element)">
+                          {{ tableUtilsService.getDisplayText(column.key, element) }}
+                        </span>
+                      }
                     }
                     @case ("failcount") {
-                      <span
-                        [ngClass]="tableUtilsService.getClassForColumn(column.key, element)"
-                        (click)="resetFailCount(element)">
-                        {{ tableUtilsService.getDisplayText(column.key, element) }}
-                      </span>
+                      @if (authService.actionAllowed("reset")) {
+                        <span
+                          (click)="resetFailCount(element)"
+                          [ngClass]="tableUtilsService.getClassForColumn(column.key, element)">
+                      {{ tableUtilsService.getDisplayText(column.key, element) }}
+                    </span>
+                      } @else {
+                        <span [ngClass]="tableUtilsService.getClassForColumn(column.key, element)">
+                          {{ tableUtilsService.getDisplayText(column.key, element) }}
+                        </span>
+                      }
                     }
                     @case ("revoke") {
                       @if (!element.revoked) {

@@ -71,8 +71,7 @@
           <td
             *matCellDef="let element"
             attr.aria-label="{{ column.label }} Cell"
-            mat-cell
-            [ngClass]="{ 'width-18rem': column.key === 'description' }">
+            mat-cell>
             <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
               @switch (column.key) {
                 @case ("serial") {
@@ -82,6 +81,13 @@
                     {{ element[column.key] }}
                   </a>
                   <app-copy-button [copyText]="element.serial"></app-copy-button>
+                }
+                @case ("user") {
+                  <a
+                    (click)="contentService.userSelected(element[column.key])"
+                    attr.aria-label="{{ column.label }} Link">
+                    {{ element[column.key] }}
+                  </a>
                 }
                 @default {
                   @if (tableUtilsService.isLink(column.key)) {

@@ -50,8 +50,7 @@
           <td
             *matCellDef="let element"
             attr.aria-label="{{ column.label }} Cell"
-            mat-cell
-            [ngClass]="{ 'width-18rem': column.key === 'description' }">
+            mat-cell>
             <ng-container>
               <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
                 @switch (column.key) {
@@ -178,69 +177,5 @@
         </td>
       </tr>
     </table>
-    <div
-      [ngClass]="[
-        overflowService.isWidthOverflowing('body', 1580)
-          ? 'container-details-action-column'
-          : 'container-details-action-row'
-      ]">
-      @if (authService.actionAllowed("assign")) {
-        <button
-          (click)="assignToAllToken()"
-          [disabled]="!isAssignableToAllToken()"
-          class="card-button-1"
-          mat-stroked-button
-          i18n>
-          <mat-icon>playlist_add</mat-icon>
-          "Assign to All Tokens"
-        </button>
-      }
-      @if (authService.actionAllowed("unassign")) {
-        <button
-          (click)="unassignFromAllToken()"
-          [disabled]="!isUnassignableFromAllToken()"
-          class="card-button-1"
-          mat-stroked-button>
-          <mat-icon>playlist_remove</mat-icon>
-          <span i18n>Unassign from All Tokens</span>
-        </button>
-      }
-      @if (authService.actionAllowed("enable")) {
-        <button
-          (click)="toggleAll('activate')"
-          class="card-button-1"
-          mat-stroked-button>
-          <mat-icon>playlist_play</mat-icon>
-          <span i18n>Activate All Tokens</span>
-        </button>
-      }
-      @if (authService.actionAllowed("disable")) {
-        <button
-          (click)="toggleAll('deactivate')"
-          class="card-button-1"
-          mat-stroked-button>
-          <mat-icon class="mdi--list-lock"/>
-          <span i18n>Deactivate All Tokens</span>
-        </button>
-      }
-      @if (authService.actionAllowed("container_remove_token")) {
-        <button
-          (click)="removeAll()"
-          class="card-button-1"
-          mat-stroked-button>
-          <mat-icon> playlist_remove</mat-icon>
-          <span i18n>Remove All Tokens</span>
-        </button>
-      }
-      @if (authService.actionAllowed("delete")) {
-        <button
-          (click)="deleteAllTokens()"
-          class="card-button-1"
-          mat-stroked-button>
-          <mat-icon> delete_sweep</mat-icon>
-          <span i18n>Delete All Tokens</span>
-        </button>
-      }
-    </div>
   </div>
 </div>

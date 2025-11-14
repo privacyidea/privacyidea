@@ -1,10 +1,16 @@
 """
 This tests the package lib.utils
 """
-import segno
-from privacyidea.config import TestingConfig
-from .base import MyTestCase, OverrideConfigTestCase
+import binascii
+from datetime import timedelta, datetime
 
+import segno
+from dateutil.tz import tzlocal, tzoffset, gettz
+from netaddr import IPAddress, IPNetwork, AddrFormatError
+
+from privacyidea.config import TestingConfig
+from privacyidea.lib.crypto import generate_password
+from privacyidea.lib.error import PolicyError, ParameterError
 from privacyidea.lib.utils import (parse_timelimit,
                                    check_time_in_range, parse_proxy,
                                    check_proxy, reduce_realms, is_true,
@@ -23,13 +29,9 @@ from privacyidea.lib.utils import (parse_timelimit,
                                    check_ip_in_policy, split_pin_pass, create_tag_dict,
                                    check_serial_valid, determine_logged_in_userparams,
                                    to_list, parse_string_to_dict, convert_imagefile_to_dataimage,
-                                   get_plugin_info_from_useragent, get_computer_name_from_user_agent)
-from privacyidea.lib.crypto import generate_password
-from datetime import timedelta, datetime
-from netaddr import IPAddress, IPNetwork, AddrFormatError
-from dateutil.tz import tzlocal, tzoffset, gettz
-from privacyidea.lib.error import PolicyError, ParameterError
-import binascii
+                                   get_plugin_info_from_useragent, get_computer_name_from_user_agent,
+                                   redacted_email, redacted_phone_number)
+from .base import MyTestCase, OverrideConfigTestCase
 
 
 class UtilsTestCase(MyTestCase):
@@ -908,6 +910,21 @@ class UtilsTestCase(MyTestCase):
         for val in user_agents:
             res = get_plugin_info_from_useragent(val[0])
             self.assertEqual(res, val[1:], res)
+
+    def test_38_redacted_email(self):
+        self.assertEqual("ex********@t****.com", redacted_email("example.mail@test.com"))
+        self.assertEqual("ex********@t****.com", redacted_email("example.mail@test.sub.com"))
+        self.assertEqual("sh********@t****.co", redacted_email("short@t.co"))
+        self.assertEqual("a*********@b****.c", redacted_email("a@b.c"))
+        self.assertEqual("**********@b****.c", redacted_email("@b.c"))
+        self.assertEqual("ex********@*****.***", redacted_email("example@test"))
+        self.assertEqual("**********@*****.***", redacted_email("invalid-email"))
+
+    def test_39_redacted_phone_number(self):
+        self.assertEqual("****-******78", redacted_phone_number("012345678"))
+        self.assertEqual("****-******89", redacted_phone_number("01234567890123456789"))
+        self.assertEqual("****-******01", redacted_phone_number("01"))
+        self.assertEqual("****-********", redacted_phone_number(""))
 
 
 class UtilsTestCaseOverrideConfig(OverrideConfigTestCase):

@@ -4,6 +4,7 @@
 <div
   [ngClass]="{ 'ali-center': overflowService.isWidthOverflowing('body', 1580) }"
   class="actions-otp-container">
+  <h4 class="margin-0">Token Actions</h4>
   @if (authService.actionAllowed("setpin") || authService.actionsAllowed(["setrandompin", "otp_pin_set_random"])) {
     <div class="user-pin-container">
       <app-set-pin-action

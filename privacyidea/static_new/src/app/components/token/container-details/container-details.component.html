@@ -8,6 +8,15 @@
       <h3 i18n>Details for Container:</h3>
       <h3 style="color: var(--mat-sys-primary)">{{ containerSerial() }}</h3>
       <app-copy-button [copyText]="containerSerial()"></app-copy-button>
+      @if (authService.actionAllowed("auditlog")) {
+        <button
+          (click)="showContainerAuditLog()"
+          [routerLink]="[ROUTE_PATHS.AUDIT]"
+          mat-icon-button
+          matTooltip="Show container in audit log">
+          <mat-icon>receipt_long</mat-icon>
+        </button>
+      }
     </div>
     <div
       [ngClass]="[overflowService.isWidthOverflowing('body', 1310) ? 'flex-column' : 'flex-row']"
@@ -163,7 +172,11 @@
                       </app-clearable-input>
                     </mat-form-field>
                   } @else {
-                    <span>{{ element.value }}</span>
+                    <a
+                      (click)="contentService.userSelected(element.value)"
+                      i18n-aria-label="{{ element.keyMap.label }} Link">
+                      {{ element.value }}
+                    </a>
                   }
                 }
                 @case ("user_realm") {
@@ -194,7 +207,7 @@
               *matCellDef="let element"
               class="edit-column-cell"
               mat-cell>
-              @if (authService.actionAllowed("container_assign_user")) {
+              @if (authService.actionAllowed("container_unassign_user")) {
                 @if (element.keyMap.key === "user_name" && !(isAnyEditing() && !isEditingUser())) {
                   @if (element.value) {
                     <div class="edit-button-container">
@@ -233,81 +246,89 @@
             [isEditingUser]="isEditingUser" />
         </div>
         @if (overflowService.isWidthOverflowing("body", 1310)) {
-          <br />
-          <mat-divider></mat-divider>
-          <br />
+          <mat-divider class="margin-top-1 margin-bottom-1" />
         }
       </div>
       <div
         [ngClass]="[overflowService.isWidthOverflowing('body', 1310) ? '' : 'margin-left-1']"
         class="flex-column">
-        @if (authService.actionAllowed("container_add_token")) {
-          <div class="flex-row checkbox-paginator-container">
-            <section>
-              <mat-checkbox
-                [(ngModel)]="showOnlyTokenNotInContainer"
-                [ngClass]="{ 'pad-top-10': showOnlyTokenNotInContainer() }">
-                <span i18n> Only display tokens that are not in a container </span>
+        <app-container-details-token-table [containerTokenData]="containerTokenData" />
+        <div class="flex-row gap-32 margin-top-1">
+          @if (authService.actionAllowed("container_add_token")) {
+            <div class="flex-column">
+              <h4 class="margin-left-1 margin-bottom-0">Add Token</h4>
+              <div class="flex-row checkbox-paginator-container">
+                <section>
+                  <mat-checkbox
+                    [(ngModel)]="showOnlyTokenNotInContainer"
+                    class="pad-top-10">
+                    <span i18n> Only display tokens that are not in a container </span>
+                  </mat-checkbox>
+                </section>
+                <mat-paginator
+                  (page)="onPageEvent($event)"
+                  [hidePageSize]="true"
+                  [length]="total()"
+                  [pageIndex]="pageIndex()"
+                  [pageSize]="pageSize()"></mat-paginator>
+              </div>
+              <mat-form-field class="add-token">
+                <mat-label i18n>Add Token to Container</mat-label>
+                <app-clearable-input
+                  (onClick)="tokenService.clearFilter()"
+                  [showClearButton]="tokenService.tokenFilter().isNotEmpty">
+                  <input
+                    #filterHTMLInputElement
+                    #tokenAutoTrigger="matAutocompleteTrigger"
+                    (input)="tokenService.handleFilterInput($event)"
+                    [value]="tokenService.tokenFilter().filterString"
+                    [matAutocomplete]="tokenAuto"
+                    i18n-placeholder
+                    matInput
+                    placeholder="Example query: 'type: hotp serial: 123'" />
+                </app-clearable-input>
                 @if (!showOnlyTokenNotInContainer()) {
-                  <br />
-                  <span i18n> Note: Adding a token removes it from</span>
-                  <br />
-                  <span
-                    i18n
-                    style="margin-left: 39px">
-                    its previous container.
-                  </span>
+                  <mat-hint>
+                    Adding a token removes it from its previous container
+                  </mat-hint>
                 }
-              </mat-checkbox>
-            </section>
-            <mat-paginator
-              (page)="onPageEvent($event)"
-              [hidePageSize]="true"
-              [length]="total()"
-              [pageIndex]="pageIndex()"
-              [pageSize]="pageSize()"></mat-paginator>
-          </div>
-          <mat-form-field class="add-token">
-            <mat-label i18n>Add Token to Container</mat-label>
-            <app-clearable-input
-              (onClick)="tokenService.clearFilter()"
-              [showClearButton]="tokenService.tokenFilter().isNotEmpty">
-              <input
-                #filterHTMLInputElement
-                #tokenAutoTrigger="matAutocompleteTrigger"
-                (input)="tokenService.handleFilterInput($event)"
-                [value]="tokenService.tokenFilter().filterString"
-                [matAutocomplete]="tokenAuto"
-                i18n-placeholder
-                matInput
-                placeholder="Example query: 'type: hotp serial: 123'" />
-            </app-clearable-input>
-            <mat-autocomplete #tokenAuto="matAutocomplete">
-              @for (option of tokenDataSource().data; track option) {
-                <mat-option
-                  class="token-option"
-                  (click)="addTokenToContainer(option)">
-                  <span class="token-option-span"> {{ option["serial"] }} </span>
-                  <span class="token-option-span">
+                <mat-autocomplete #tokenAuto="matAutocomplete">
+                  @for (option of tokenDataSource().data; track option) {
+                    <mat-option
+                      class="token-option"
+                      (click)="addTokenToContainer(option)">
+                      <span class="token-option-span"> {{ option["serial"] }} </span>
+                      <span class="token-option-span">
                     {{ option["tokentype"] }}
                   </span>
-                  <span
-                    i18n
-                    class="token-option-span"
-                    [ngClass]="option['active'] ? 'highlight-true' : 'highlight-false'">
+                      <span
+                        i18n
+                        class="token-option-span"
+                        [ngClass]="option['active'] ? 'highlight-true' : 'highlight-false'">
                     {{ option["active"] ? "active" : "deactivated" }}
                   </span>
-                  <span class="token-option-span">
+                      <span class="token-option-span">
                     {{ option["username"] }}
                   </span>
-                  <mat-icon>add</mat-icon>
-                </mat-option>
-              }
-            </mat-autocomplete>
-          </mat-form-field>
-          <mat-divider class="width-36"></mat-divider>
-        }
-        <app-container-details-token-table [containerTokenData]="containerTokenData" />
+                      <mat-icon>add</mat-icon>
+                    </mat-option>
+                  }
+                </mat-autocomplete>
+              </mat-form-field>
+            </div>
+          }
+        </div>
+      </div>
+      <div
+        [ngClass]="[overflowService.isWidthOverflowing('body', 1310) ? '' : 'margin-left-1']"
+        class="flex-column gap-32 ali-center">
+        <app-container-details-actions
+          [containerSerial]="containerSerial()"
+          [containerType]="containerType()"></app-container-details-actions>
+        <app-container-details-token-actions
+          [containerSerial]="containerSerial()"
+          [user]="rawUserData"
+          [tokenData]="containerTokenData"></app-container-details-token-actions>
       </div>
     </div>
   </div>

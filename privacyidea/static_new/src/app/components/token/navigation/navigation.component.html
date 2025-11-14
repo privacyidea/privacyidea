@@ -45,7 +45,7 @@
     <p
       class="margin-0"
       style="font-size: 12px">
-      Version {{ this.versioningService.version() }}
+      Version {{ versioningService.version() }}
     </p>
     <p style="font-size: 12px; margin-bottom: 6px;">
       An open-source project
@@ -119,10 +119,9 @@
 
   <mat-accordion>
     <mat-expansion-panel
-      (opened)="router.navigate([ROUTE_PATHS.TOKENS])"
       [expanded]="router.url.startsWith(ROUTE_PATHS.TOKENS)"
       class="nav-expension-panel">
-      <mat-expansion-panel-header>
+      <mat-expansion-panel-header (click)="router.navigate([ROUTE_PATHS.TOKENS])">
         <mat-panel-title>
           <mat-icon>shield</mat-icon>
           Token
@@ -139,6 +138,17 @@
             Overview
           </button>
         </mat-list-item>
+        @if (contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_DETAILS)) {
+          <mat-list-item>
+            <button
+              class="card-button-active"
+              i18n
+              mat-stroked-button>
+              <mat-icon>privacy_tip</mat-icon>
+              Details
+            </button>
+          </mat-list-item>
+        }
         @if (authService.tokenEnrollmentAllowed()) {
           <mat-list-item>
             <button
@@ -195,9 +205,8 @@
     </mat-expansion-panel>
 
     <mat-expansion-panel
-      (opened)="router.navigate([ROUTE_PATHS.TOKENS_CONTAINERS])"
       [expanded]="router.url.startsWith(ROUTE_PATHS.TOKENS_CONTAINERS)">
-      <mat-expansion-panel-header>
+      <mat-expansion-panel-header (click)="router.navigate([ROUTE_PATHS.TOKENS_CONTAINERS])">
         <mat-panel-title>
           <mat-icon>folder</mat-icon>
           Container
@@ -216,10 +225,21 @@
             Overview
           </button>
         </mat-list-item>
+        @if (contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS)) {
+          <mat-list-item>
+            <button
+              class="card-button-active"
+              i18n
+              mat-stroked-button>
+              <mat-icon>source</mat-icon>
+              Details
+            </button>
+          </mat-list-item>
+        }
         @if (authService.actionAllowed("container_create")) {
           <mat-list-item>
             <button
-              [ngClass]="this.contentService.routeUrl() === ROUTE_PATHS.TOKENS_CONTAINERS_CREATE ?
+              [ngClass]="contentService.routeUrl() === ROUTE_PATHS.TOKENS_CONTAINERS_CREATE ?
                   'card-button-active' : 'card-button-1'"
               [routerLink]="[ROUTE_PATHS.TOKENS_CONTAINERS_CREATE]"
               i18n
@@ -258,9 +278,8 @@
     </mat-expansion-panel>
 
     <mat-expansion-panel
-      (opened)="router.navigate([ROUTE_PATHS.USERS])"
       [expanded]="router.url.startsWith(ROUTE_PATHS.USERS)">
-      <mat-expansion-panel-header>
+      <mat-expansion-panel-header (click)="router.navigate([ROUTE_PATHS.USERS])">
         <mat-panel-title>
           <mat-icon>supervised_user_circle</mat-icon>
           Users
@@ -277,6 +296,31 @@
             Overview
           </button>
         </mat-list-item>
+        @if (contentService.routeUrl() === ROUTE_PATHS.USERS) {
+          <mat-list-item class="height-auto">
+            <mat-form-field class="width-100">
+              <mat-label>Select Realm for Overview</mat-label>
+              <mat-select
+                [(ngModel)]="userService.selectedUserRealm"
+                [value]="userService.selectedUserRealm()">
+                @for (option of realmService.realmOptions(); track option) {
+                  <mat-option [value]="option">{{ option }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+          </mat-list-item>
+        }
+        @if (contentService.routeUrl().startsWith(ROUTE_PATHS.USERS_DETAILS)) {
+          <mat-list-item>
+            <button
+              class="card-button-active"
+              i18n
+              mat-stroked-button>
+              <mat-icon>manage_accounts</mat-icon>
+              Details
+            </button>
+          </mat-list-item>
+        }
         <mat-list-item>
           <button
             class="card-button-1"
@@ -323,9 +367,8 @@
     </mat-expansion-panel>
 
     <mat-expansion-panel
-      (opened)="router.navigate([ROUTE_PATHS.AUDIT])"
       [expanded]="router.url.startsWith(ROUTE_PATHS.AUDIT)">
-      <mat-expansion-panel-header>
+      <mat-expansion-panel-header (click)="router.navigate([ROUTE_PATHS.AUDIT])">
         <mat-panel-title>
           <mat-icon>receipt_long</mat-icon>
           Audit
@@ -451,7 +494,7 @@
             class="card-button-1"
             disabled
             mat-stroked-button>
-            <mat-icon>privacy_tip</mat-icon>
+            <mat-icon>safety_check</mat-icon>
             Tokentypes
           </button>
         </mat-list-item>
