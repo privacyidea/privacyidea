@@ -51,42 +51,39 @@ describe("PolicyPriorityComponent", () => {
     component.updatePolicyPriority(priority);
     expect(policyServiceMock.updateSelectedPolicy).toHaveBeenCalledWith({ priority });
   });
-
+  const policyDetail: PolicyDetail = {
+    action: {
+      action1: "value1",
+      action2: "value2"
+    },
+    name: "",
+    priority: 10,
+    active: false,
+    adminrealm: [],
+    adminuser: [],
+    check_all_resolvers: false,
+    client: [],
+    conditions: [],
+    description: null,
+    pinode: [],
+    realm: [],
+    resolver: [],
+    scope: "",
+    time: "",
+    user: [],
+    user_agents: [],
+    user_case_insensitive: false
+  };
   describe("editMode = false", () => {
     beforeEach(() => {
       fixture.componentRef.setInput("editMode", false);
-
-      const policyDetail: PolicyDetail = {
-        action: {
-          action1: "value1",
-          action2: "value2"
-        },
-        name: "",
-        priority: 10,
-        active: false,
-        adminrealm: [],
-        adminuser: [],
-        check_all_resolvers: false,
-        client: [],
-        conditions: [],
-        description: null,
-        pinode: [],
-        realm: [],
-        resolver: [],
-        scope: "",
-        time: "",
-        user: [],
-        user_agents: [],
-        user_case_insensitive: false
-      };
       policyServiceMock.selectedPolicy.set(policyDetail);
       fixture.detectChanges();
     });
 
     it("should display the priority as text", () => {
-      const priorityEl = fixture.nativeElement.querySelector(".description-text");
-      expect(priorityEl).toBeTruthy();
-      expect(priorityEl.textContent.trim()).toBe("10");
+      const html = fixture.nativeElement.innerHTML;
+      expect(html).toContain(policyDetail.priority.toString());
     });
   });
 

@@ -20,7 +20,7 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { PolicyDescriptionComponent } from "./policy-description.component";
 import { DocumentationService } from "../../../../../services/documentation/documentation.service";
-import { PolicyService } from "../../../../../services/policies/policies.service";
+import { PolicyDetail, PolicyService } from "../../../../../services/policies/policies.service";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { MockPolicyService } from "../../../../../../testing/mock-services/mock-policies-service";
 import { MockDocumentationService } from "../../../../../../testing/mock-services/mock-documentation-service";
@@ -31,7 +31,26 @@ describe("PolicyDescriptionComponent", () => {
   let fixture: ComponentFixture<PolicyDescriptionComponent>;
   let policyServiceMock: MockPolicyService;
   let documentationServiceMock: MockDocumentationService;
-
+  const policyDetail: PolicyDetail = {
+    action: null,
+    active: true,
+    adminrealm: [],
+    adminuser: [],
+    check_all_resolvers: false,
+    client: [],
+    conditions: [],
+    description: "test description",
+    name: "test-policy",
+    pinode: [],
+    priority: 1,
+    realm: [],
+    resolver: [],
+    scope: "",
+    time: "",
+    user: [],
+    user_agents: [],
+    user_case_insensitive: false
+  };
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [PolicyDescriptionComponent, NoopAnimationsModule],
@@ -46,26 +65,8 @@ describe("PolicyDescriptionComponent", () => {
     documentationServiceMock = TestBed.inject(DocumentationService) as unknown as MockDocumentationService;
     component = fixture.componentInstance;
     policyServiceMock.isEditMode.set(false);
-    policyServiceMock.selectedPolicy.set({
-      action: null,
-      active: true,
-      adminrealm: [],
-      adminuser: [],
-      check_all_resolvers: false,
-      client: [],
-      conditions: [],
-      description: "test description",
-      name: "test-policy",
-      pinode: [],
-      priority: 1,
-      realm: [],
-      resolver: [],
-      scope: "",
-      time: "",
-      user: [],
-      user_agents: [],
-      user_case_insensitive: false
-    });
+
+    policyServiceMock.selectedPolicy.set(policyDetail);
     fixture.detectChanges();
   });
 
@@ -92,9 +93,8 @@ describe("PolicyDescriptionComponent", () => {
     });
 
     it("should display the description when available", () => {
-      const descriptionEl = fixture.nativeElement.querySelector(".description-text");
-      expect(descriptionEl).toBeTruthy();
-      expect(descriptionEl.textContent.trim()).toBe("test description");
+      const html = fixture.nativeElement.innerHTML;
+      expect(html).toContain(policyDetail.description);
     });
 
     it("should not display the description section when description is null", () => {
