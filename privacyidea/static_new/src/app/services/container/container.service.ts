@@ -170,8 +170,6 @@ export interface ContainerServiceInterface {
   selectedContainerType: Signal<ContainerType>;
   containerDetailResource: HttpResourceRef<PiResponse<ContainerDetails> | undefined>;
   containerDetail: WritableSignal<ContainerDetails>;
-  templatesResource: HttpResourceRef<PiResponse<{ templates: ContainerTemplate[] }> | undefined>;
-  templates: Signal<ContainerTemplate[]>;
   addToken: (tokenSerial: string, containerSerial: string) => Observable<any>;
   removeToken: (tokenSerial: string, containerSerial: string) => Observable<any>;
   setContainerRealm: (containerSerial: string, value: string[]) => Observable<any>;
@@ -303,7 +301,7 @@ export class ContainerService implements ContainerServiceInterface {
     if (!tt) return null;
 
     const types = this.containerTypeOptions();
-    const compatible = types.filter(t => (t.token_types ?? []).includes(tt));
+    const compatible = types.filter((t) => (t.token_types ?? []).includes(tt));
 
     return compatible.length === 1 ? String(compatible[0].containerType) : null;
   });
@@ -382,9 +380,14 @@ export class ContainerService implements ContainerServiceInterface {
 
   containerTypesResource = httpResource<PiResponse<ContainerTypes>>(() => {
     const route = this.contentService.routeUrl();
-    if (![ROUTE_PATHS.TOKENS_CONTAINERS_CREATE, ROUTE_PATHS.TOKENS_CONTAINERS_WIZARD,
-      ROUTE_PATHS.TOKENS_ENROLLMENT]
-      .includes(route) && !route.startsWith(ROUTE_PATHS.TOKENS_DETAILS)) {
+    if (
+      ![
+        ROUTE_PATHS.TOKENS_CONTAINERS_CREATE,
+        ROUTE_PATHS.TOKENS_CONTAINERS_WIZARD,
+        ROUTE_PATHS.TOKENS_ENROLLMENT
+      ].includes(route) &&
+      !route.startsWith(ROUTE_PATHS.TOKENS_DETAILS)
+    ) {
       return undefined;
     }
     return {
@@ -457,25 +460,6 @@ export class ContainerService implements ContainerServiceInterface {
     }
   });
 
-  templatesResource = httpResource<PiResponse<{ templates: ContainerTemplate[] }>>(() => {
-    if (
-      this.contentService.routeUrl() !== ROUTE_PATHS.TOKENS_CONTAINERS_CREATE ||
-      !this.authService.actionAllowed("container_template_list")
-    ) {
-      return undefined;
-    }
-    return {
-      url: `${this.containerBaseUrl}templates`,
-      method: "GET",
-      headers: this.authService.getHeaders()
-    };
-  });
-
-  templates: WritableSignal<ContainerTemplate[]> = linkedSignal({
-    source: this.templatesResource.value,
-    computation: (templatesResource, previous) => templatesResource?.result?.value?.templates ?? previous?.value ?? []
-  });
-
   constructor() {
     effect(() => {
       if (this.containerDetailResource.error()) {
@@ -501,8 +485,7 @@ export class ContainerService implements ContainerServiceInterface {
 
       const routeUrl = this.contentService.routeUrl();
       const onAllowedRoute =
-        routeUrl === ROUTE_PATHS.TOKENS_CONTAINERS_CREATE ||
-        routeUrl.startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS);
+        routeUrl === ROUTE_PATHS.TOKENS_CONTAINERS_CREATE || routeUrl.startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS);
 
       if (!active || !serial || !resourceValue?.result?.value || !onAllowedRoute) {
         return;
@@ -513,7 +496,7 @@ export class ContainerService implements ContainerServiceInterface {
 
       if (registrationState !== "registered") {
         this.pollingTimeoutId = setTimeout(() => {
-          this.pollingTrigger.update(count => count + 1);
+          this.pollingTrigger.update((count) => count + 1);
         }, 2000);
       } else {
         const isRollover = this.isRolloverPolling();
@@ -810,11 +793,7 @@ export class ContainerService implements ContainerServiceInterface {
   }): Observable<PiResponse<ContainerRegisterData>> {
     const headers = this.authService.getHeaders();
     return this.http
-      .post<PiResponse<ContainerRegisterData>>(
-        `${this.containerBaseUrl}register/initialize`,
-        params,
-        { headers }
-      )
+      .post<PiResponse<ContainerRegisterData>>(`${this.containerBaseUrl}register/initialize`, params, { headers })
       .pipe(
         catchError((error) => {
           console.error("Failed to register container.", error);
@@ -829,11 +808,9 @@ export class ContainerService implements ContainerServiceInterface {
     this.stopPolling();
     const headers = this.authService.getHeaders();
     return this.http
-      .post<PiResponse<ContainerUnregisterData>>(
-        `${this.containerBaseUrl}register/${containerSerial}/terminate`,
-        {},
-        { headers }
-      )
+      .post<
+        PiResponse<ContainerUnregisterData>
+      >(`${this.containerBaseUrl}register/${containerSerial}/terminate`, {}, { headers })
       .pipe(
         catchError((error) => {
           console.error("Failed to unregister container.", error);
@@ -903,7 +880,7 @@ export class ContainerService implements ContainerServiceInterface {
     this.containerSerial.set(containerSerial);
     this.isRolloverPolling.set(isRollover);
     this.isPollingActive.set(true);
-    this.pollingTrigger.update(count => count + 1);
+    this.pollingTrigger.update((count) => count + 1);
   }
 
   private pollingTimeoutId: any;

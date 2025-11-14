@@ -1,0 +1,59 @@
+@use "../../../../../styles" as styles;
+@use "../../container-templates/container-templates.component.scss";
+@use "@angular/material" as mat;
+
+// --- Main Layout ---
+
+.placeholder-for-right-column {
+  grid-area: right-column;
+}
+
+.template-name-input {
+  background-color: transparent;
+  border: none;
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 0;
+  box-sizing: border-box;
+  font-size: 1rem;
+  margin-left: 2px;
+  padding: var(--half-global-padding) 0;
+  width: 100%;
+}
+
+.template-card {
+  border-radius: var(--border-radius);
+
+  mat-expansion-panel {
+    border-radius: var(--border-radius);
+  }
+
+  mat-expansion-panel-header {
+    padding: 0 var(--global-padding);
+  }
+
+  .header-description {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+  }
+
+  .template-actions {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+
+    button {
+      background: transparent;
+      border: none;
+      cursor: pointer;
+    }
+  }
+}
+
+.mat-expansion-panel-body {
+  gap: var(--global-gap);
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--border-radius);
+}

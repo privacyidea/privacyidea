@@ -76,6 +76,7 @@ import {
 import { ContainerRegistrationCompletedDialogWizardComponent } from "./container-registration-completed-dialog/container-registration-completed-dialog.wizard.component";
 import { ContainerCreatedDialogWizardComponent } from "./container-created-dialog/container-created-dialog.wizard.component";
 import { UserAssignmentComponent } from "../user-assignment/user-assignment.component";
+import { ContainerTemplateService } from "../../../services/container-template/container-template.service";
 
 export type ContainerTypeOption = "generic" | "smartphone" | "yubikey";
 
@@ -111,6 +112,7 @@ export class ContainerCreateComponent {
   protected readonly userService: UserServiceInterface = inject(UserService);
   protected readonly realmService: RealmServiceInterface = inject(RealmService);
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
+  protected readonly containerTemplateService: ContainerTemplateService = inject(ContainerTemplateService);
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
@@ -123,12 +125,11 @@ export class ContainerCreateComponent {
   containerSerial = this.containerService.containerSerial;
   description = signal("");
   selectedTemplate = signal("");
-  templateOptions = this.containerService.templates;
+  templateOptions = this.containerTemplateService.templates;
   generateQRCode: WritableSignal<boolean> = linkedSignal({
-      source: this.containerService.selectedContainerType,
-      computation: (containerType: ContainerType) => containerType.containerType === "smartphone"
-    }
-  );
+    source: this.containerService.selectedContainerType,
+    computation: (containerType: ContainerType) => containerType.containerType === "smartphone"
+  });
   passphrasePrompt = signal("");
   passphraseResponse = signal("");
   userStorePassphrase = signal(false);
@@ -159,7 +160,6 @@ export class ContainerCreateComponent {
     this.containerService.containerSerial.set("");
     this.containerService.containerDetailResource.set(undefined);
 
-
     effect(() => {
       this.containerService.selectedContainerType();
       untracked(() => {
@@ -187,8 +187,9 @@ export class ContainerCreateComponent {
             registrationCompletedDialogComponent = ContainerRegistrationCompletedDialogWizardComponent;
           }
 
-          this.registrationDialog.open(registrationCompletedDialogComponent,
-            { data: { "containerSerial": serial } as ContainerRegistrationCompletedDialogData });
+          this.registrationDialog.open(registrationCompletedDialogComponent, {
+            data: { containerSerial: serial } as ContainerRegistrationCompletedDialogData
+          });
         }
       }
     });
@@ -278,7 +279,7 @@ export class ContainerCreateComponent {
       .subscribe((registerResponse) => {
         this.registerResponse.set(registerResponse);
         if (regenerate) {
-          this.dialogData.update(data => data ? { ...data, response: registerResponse } : data);
+          this.dialogData.update((data) => (data ? { ...data, response: registerResponse } : data));
         } else {
           this.openRegistrationDialog(registerResponse);
           this.containerService.startPolling(serial);

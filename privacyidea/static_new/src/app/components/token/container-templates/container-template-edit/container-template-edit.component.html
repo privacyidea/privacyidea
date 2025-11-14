@@ -1,0 +1,111 @@
+<!--
+ (c) NetKnights GmbH 2025,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+
+<div class="template-card">
+  <mat-expansion-panel
+    #panel
+    class="margin-4"
+    [disabled]="isEditMode() || containerTemplateService.isTemplateEdited()"
+    (opened)="handleExpansion(panel, template()?.name)"
+    (closed)="handleCollapse(panel, template()?.name)">
+    <mat-expansion-panel-header class="mat-expansion-panel-header">
+      <mat-panel-title>
+        @if (isNew()) {
+          @if (panel.expanded) {
+            <input
+              type="text"
+              class="template-name-input"
+              placeholder="Template Name"
+              [ngModel]="selectedTemplate()!.name"
+              (ngModelChange)="onNameChange($event)"
+              (click)="$event.stopPropagation(); panel.expanded = true"
+              (keydown)="$event.stopPropagation()" />
+          } @else {
+            <p i18n>New Template</p>
+          }
+        } @else if (template()) {
+          @if (containerTemplateService.isEditingTemplate(template()!.name)) {
+            <input
+              type="text"
+              class="template-name-input"
+              placeholder="Template Name"
+              [ngModel]="selectedTemplate()!.name"
+              (ngModelChange)="onNameChange($event)"
+              (click)="$event.stopPropagation(); panel.expanded = true"
+              (keydown)="$event.stopPropagation()" />
+          } @else {
+            <div class="template-name">
+              {{ template()!.name }}
+            </div>
+          }
+        }
+      </mat-panel-title>
+      <mat-panel-description class="header-description">
+        <div class="template-actions">
+          @if (isNew()) {
+            @if (panel.expanded) {
+              <button
+                mat-icon-button
+                [disabled]="!canSaveTemplate()"
+                (click)="$event.stopPropagation(); saveTemplate(panel)">
+                <mat-icon>save</mat-icon>
+              </button>
+              <button
+                mat-icon-button
+                (click)="$event.stopPropagation(); panel.close(); cancelEditMode()">
+                <mat-icon>close</mat-icon>
+              </button>
+            }
+          } @else if (template()) {
+            @if (panel.expanded) {
+              @if (containerTemplateService.isEditingTemplate(template()!.name)) {
+                <button
+                  mat-icon-button
+                  [disabled]="!canSaveTemplate()"
+                  (click)="$event.stopPropagation(); saveTemplate()">
+                  <mat-icon>save</mat-icon>
+                </button>
+                <button
+                  mat-icon-button
+                  class="action-button"
+                  (click)="$event.stopPropagation(); cancelEditMode()">
+                  <mat-icon>cancel</mat-icon>
+                </button>
+              } @else {
+                <button
+                  mat-icon-button
+                  (click)="$event.stopPropagation(); isEditMode.set(true)">
+                  <mat-icon>edit</mat-icon>
+                </button>
+              }
+              <button
+                mat-icon-button
+                (click)="$event.stopPropagation(); deleteTemplate(template()!.name)">
+                <mat-icon>delete</mat-icon>
+              </button>
+            }
+          }
+        </div>
+      </mat-panel-description>
+    </mat-expansion-panel-header>
+    <div class="mat-expansion-panel-body">
+      <!-- Add template content here -->
+    </div>
+  </mat-expansion-panel>
+</div>
