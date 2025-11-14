@@ -40,6 +40,17 @@ import {
 } from "../../../services/clients/clients.service";
 import { MatSort, MatSortHeader, MatSortModule } from "@angular/material/sort";
 import { NgClass } from "@angular/common";
+import { CommonModule } from "@angular/common";
+import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
+import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
+import { AuthService } from "../../../services/auth/auth.service";
+import { AuditService } from "../../../services/audit/audit.service";
+import { FilterValue } from "../../../core/models/filter_value";
+import { ROUTE_PATHS } from "../../../route_paths";
+import { RouterLink } from "@angular/router";
+import { MatIconButton } from "@angular/material/button";
+import { MatTooltip } from "@angular/material/tooltip";
+import { MatIcon } from "@angular/material/icon";
 
 const columnKeysMap = [
   { key: "application", label: "Application" },
@@ -58,7 +69,7 @@ interface FlattenedClientRow {
   application: string;
   hostname?: string;
   ip?: string;
-  lastseen?: string;
+  lastseen?: Date; // Change to Date
   isFirst: boolean;
   rowspan: number;
 }
@@ -83,11 +94,23 @@ interface FlattenedClientRow {
     MatSort,
     MatSortHeader,
     MatSortModule,
-    NgClass
+    NgClass,
+    CommonModule,
+    MatFormField,
+    MatInput,
+    MatLabel,
+    MatFormField,
+    CopyButtonComponent,
+    RouterLink,
+    MatIconButton,
+    MatTooltip,
+    MatIcon
   ]
 })
 export class ClientsComponent {
   clientService: ClientsServiceInterface = inject(ClientsService);
+  authService = inject(AuthService);
+  auditService = inject(AuditService);
 
   readonly columnKeysMap = columnKeysMap;
   readonly columnKeys = ["application", "hostname", "ip", "lastseen"];
@@ -117,7 +140,7 @@ export class ClientsComponent {
           application,
           hostname: client.hostname,
           ip: client.ip,
-          lastseen: client.lastseen,
+          lastseen: client.lastseen ? new Date(client.lastseen) : undefined, // Convert to Date
           isFirst: idx === 0,
           rowspan: idx === 0 ? len : 0
         });
@@ -132,7 +155,15 @@ export class ClientsComponent {
     computation: (clientResource, previous) => {
       if (clientResource) {
         const clientData = clientResource.result?.value || {} as ClientsDict;
-        return new MatTableDataSource(this.flattenedClientRowsFromDict(clientData));
+        const dataSource = new MatTableDataSource(this.flattenedClientRowsFromDict(clientData));
+        // Custom sorting for lastseen
+        dataSource.sortingDataAccessor = (item, property) => {
+          if (property === 'lastseen') {
+            return item.lastseen ? item.lastseen.getTime() : 0;
+          }
+          return (item as any)[property];
+        };
+        return dataSource;
       }
       return previous?.value ?? new MatTableDataSource([] as FlattenedClientRow[]);
     }
@@ -144,4 +175,10 @@ export class ClientsComponent {
     this.filterValue = ($event.target as HTMLInputElement).value.trim();
     this.clientDataSource().filter = this.filterValue.toLowerCase();
   }
+
+   protected showIpInAuditLog(ip: string): void {
+    this.auditService.auditFilter.set(new FilterValue({ value: `client: ${ip}` }));
+  }
+
+  protected readonly ROUTE_PATHS = ROUTE_PATHS;
 }

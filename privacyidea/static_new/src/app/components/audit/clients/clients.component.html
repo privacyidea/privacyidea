@@ -19,6 +19,30 @@
 <div
   appScrollToTop
   class="clients-layout">
+
+  <h3>
+    Known Clients
+  </h3>
+
+  <div class="margin-bottom-1">
+    This is a list of clients that have used the <i>/validate/check</i> endpoint for authentication.
+  </div>
+
+  <div class="margin-bottom-1">
+    <mat-form-field
+      class="width-100"
+      subscriptSizing="dynamic">
+      <mat-label i18n>Filter Clients ...</mat-label>
+      <input
+        (keyup)="handleFilterInput($event)"
+        i18n-aria-label
+        aria-label="Filter Input"
+        matInput
+        i18n-placeholder
+        placeholder="Filter across all columns." />
+    </mat-form-field>
+  </div>
+
   <table
     mat-table
     matSort
@@ -37,7 +61,7 @@
         </th>
         @if (column.key === "application") {
           <ng-container *matCellDef="let client">
-            @if ((!activeSortColumn() || activeSortColumn() === "application")) {
+            @if ((!activeSortColumn() || activeSortColumn() === "application") && !filterValue) {
               @if (client.isFirst) {
                 <td
                   mat-cell
@@ -46,6 +70,7 @@
                   <ng-container>
                     <span>{{ client[column.key] }}</span>
                   </ng-container>
+                  <app-copy-button [copyText]="client.application" />
                 </td>
               }
             } @else {
@@ -63,7 +88,24 @@
             attr.aria-label="{{ column.label }} Cell"
             mat-cell
             [ngClass]="colIdx % 2 === 0 ? 'col-even' : 'col-odd'">
-            {{ client[column.key] }}
+            <!-- Format lastseen as date/time -->
+            @if (column.key === 'lastseen') {
+              {{ client.lastseen ? (client.lastseen | date:'yyyy-MM-dd HH:mm:ss z':'UTC') : '' }}
+            } @else {
+              {{ client[column.key] }}
+            }
+            @if (column.key === 'ip') {
+              <app-copy-button [copyText]="client[column.key]" />
+              @if (authService.actionAllowed("auditlog")) {
+                <button
+                  (click)="showIpInAuditLog(client[column.key])"
+                  [routerLink]="[ROUTE_PATHS.AUDIT]"
+                  mat-icon-button
+                  matTooltip="Show client in audit log">
+                  <mat-icon>receipt_long</mat-icon>
+                </button>
+              }
+            }
           </td>
         }
       </ng-container>
