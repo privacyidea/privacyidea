@@ -18,7 +18,9 @@
 # License along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import click
+
 from privacyidea.cli import create_silent_app, NoPluginsFlaskGroup, get_version
+from privacyidea.cli.pitokenjanitor.utils.findcontainer import findcontainer
 from privacyidea.cli.pitokenjanitor.utils.findtokens import findtokens
 from privacyidea.cli.pitokenjanitor.utils.importtokens import importtokens_cli
 from privacyidea.cli.pitokenjanitor.utils.updatetokens import updatetokens
@@ -55,6 +57,7 @@ def cli():
 cli.add_command(findtokens)
 cli.add_command(importtokens_cli)
 cli.add_command(updatetokens)
+cli.add_command(findcontainer)
 
 if __name__ == '__main__':
     cli()
