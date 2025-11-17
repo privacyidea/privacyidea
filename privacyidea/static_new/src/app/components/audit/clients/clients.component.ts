@@ -51,12 +51,14 @@ import { RouterLink } from "@angular/router";
 import { MatIconButton } from "@angular/material/button";
 import { MatTooltip } from "@angular/material/tooltip";
 import { MatIcon } from "@angular/material/icon";
+import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
+import { filter } from "rxjs";
 
 const columnKeysMap = [
   { key: "application", label: "Application" },
   { key: "hostname", label: "Hostname" },
   { key: "ip", label: "IP Address" },
-  { key: "lastseen", label: "Last Seen" }
+  { key: "lastseen", label: "Last Authentication" }
 ];
 
 export interface ClientTableRow {
@@ -104,7 +106,8 @@ interface FlattenedClientRow {
     RouterLink,
     MatIconButton,
     MatTooltip,
-    MatIcon
+    MatIcon,
+    ClearableInputComponent
   ]
 })
 export class ClientsComponent {
@@ -171,6 +174,11 @@ export class ClientsComponent {
 
   filterValue: string = "";
 
+  clearFilter(): void {
+    this.filterValue = "";
+    this.clientDataSource().filter = "";
+  }
+
   handleFilterInput($event: Event): void {
     this.filterValue = ($event.target as HTMLInputElement).value.trim();
     this.clientDataSource().filter = this.filterValue.toLowerCase();
@@ -180,5 +188,13 @@ export class ClientsComponent {
     this.auditService.auditFilter.set(new FilterValue({ value: `client: ${ip}` }));
   }
 
+  protected showUserAgentInAuditLog(application: string): void {
+    const applicationSplit = application.split("/");
+    const userAgent = applicationSplit[0];
+    const version = (applicationSplit[1] || "").split(" ")[0];
+    this.auditService.auditFilter.set(new FilterValue({ value: `user_agent: ${userAgent} user_agent_version: ${version}` }));
+  }
+
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
+  protected readonly filter = filter;
 }

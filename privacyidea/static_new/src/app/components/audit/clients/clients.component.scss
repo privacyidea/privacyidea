@@ -11,3 +11,13 @@
 
 .col-even { background-color: var(--mat-sys-light) !important; }
 .col-odd { background-color: var(--mat-sys-surface-container-low) !important; }
+
+.line-height {
+  line-height: 1em;
+}
+
+.data-table-cell {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
