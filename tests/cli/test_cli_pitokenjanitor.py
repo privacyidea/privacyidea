@@ -15,15 +15,17 @@
 # GNU Affero General Public License for more details.
 #
 # You should have received a copy of the GNU Affero General Public
-# License along with this program. If not, see <http://www.gnu.org/licenses/>.
+# License along with this program. If not, see <https://www.gnu.org/licenses/>.
 import datetime
 
 import pytest
 from sqlalchemy.orm.session import close_all_sessions
 
 from privacyidea.app import create_app
-from privacyidea.cli.pitokenjanitor.main import cli
-from privacyidea.lib.container import find_container_by_serial, init_container
+from privacyidea.cli.pitokenjanitor.main import cli, findcontainer
+from privacyidea.lib.container import find_container_by_serial, init_container, create_container_template, \
+    ResourceNotFoundError
+from privacyidea.lib.containers.container_info import TokenContainerInfoData
 from privacyidea.lib.lifecycle import call_finalizers
 from privacyidea.lib.realm import set_realm, get_realms
 from privacyidea.lib.resolver import save_resolver
@@ -32,7 +34,7 @@ from privacyidea.lib.user import User
 from privacyidea.models import db
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def app():
     """Create and configure app instance for testing"""
     app = create_app(config_name="testing", config_file="", silent=True)
@@ -48,7 +50,7 @@ def app():
         db.engine.dispose()
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def resolver(app):
     """Create a user resolver"""
     with app.app_context():
@@ -59,7 +61,7 @@ def resolver(app):
         return rid
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def realms(app, resolver):
     with app.app_context():
         r1 = set_realm(realm="realm1", resolvers=[{"name": "testresolver"}])
@@ -70,7 +72,7 @@ def realms(app, resolver):
         return [r1, r2]
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def users(app, realms, resolver):
     with app.app_context():
         u1 = User(login="cornelius", realm="realm1")
@@ -129,6 +131,56 @@ def token_container(app, tokens):
     assert ret is True
     db.session.commit()
     return container
+
+
+@pytest.fixture(scope="function")
+def container_template(app):
+    with app.app_context():
+        template_name = "test-template"
+        template_id = create_container_template(
+            container_type="generic",
+            template_name=template_name,
+            options={"tokens": [{"type": "hotp", "genkey": True, "hashlib": "sha1"},
+                                {"type": "totp", "genkey": True, "hashlib": "sha256"}]}
+        )
+        db.session.commit()
+        yield {"id": template_id, "name": template_name}
+
+
+@pytest.fixture(scope="function")
+def containers(app, tokens, users, realms, container_template):
+    with app.app_context():
+        # Container 1: generic, with token, user, realm, description, info
+        c1_dict = init_container({"type": "generic", "container_serial": "C1", "description": "Container One"})
+        c1 = find_container_by_serial(c1_dict['container_serial'])
+        t1 = get_one_token(serial=tokens[0].get_serial())
+        c1.add_token(t1)
+        c1.set_realms(['realm1'])
+        c1.add_user(t1.user)
+        c1.update_container_info([TokenContainerInfoData(key='key1', value='value1')])
+
+        # Container 2: smartphone, with token, user, realm, description
+        c2_dict = init_container({"type": "smartphone", "container_serial": "C2", "description": "Container Two"})
+        c2 = find_container_by_serial(c2_dict['container_serial'])
+        t2 = get_one_token(serial=tokens[1].get_serial())
+        c2.add_token(t2)
+        c2.set_realms(['realm2'])
+        c2.add_user(t2.user)
+
+        # Container 3: generic, no token, no user, no realm
+        c3_dict = init_container({"type": "generic", "container_serial": "C3", "description": "Container Three"})
+        c3 = find_container_by_serial(c3_dict['container_serial'])
+
+        # Container 4: generic, with token, created from template
+        c4_dict = init_container(
+            {"type": "generic", "container_serial": "C4", "description": "Container Four",
+             "template_name": container_template["name"]})
+        c4 = find_container_by_serial(c4_dict['container_serial'])
+        t3 = get_one_token(serial=tokens[2].get_serial())
+        c4.add_token(t3)
+
+        db.session.commit()
+        yield [c1, c2, c3, c4]
 
 
 class TestPiTokenJanitorFind:
@@ -257,16 +309,16 @@ class TestPiTokenJanitorFind:
         assert "TOTP0001" not in result.output
         assert "HOTP0002" in result.output
 
-    # def test_find_tokencontainer(self, app, tokens, token_container):
-    #    """
-    #    Tests filtering tokens by their container.
-    #    """
-    #    runner = app.test_cli_runner()
-    #    result = runner.invoke(cli, ["find", "--tokencontainer", "serial=container1", "list"])
-    #    assert result.exit_code == 0
-    #    assert "HOTP0001" in result.output
-    #    assert "TOTP0001" not in result.output
-    #    assert "HOTP0002" not in result.output
+    def test_find_tokencontainer(self, app, tokens, token_container):
+        """
+        Tests filtering tokens by their container.
+        """
+        runner = app.test_cli_runner()
+        result = runner.invoke(cli, ["find", "--tokencontainer", "serial=container1", "list"])
+        assert result.exit_code == 0
+        assert "HOTP0001" in result.output
+        assert "TOTP0001" not in result.output
+        assert "HOTP0002" not in result.output
 
     def test_find_filter_comparisons(self, app, tokens):
         """
@@ -495,3 +547,223 @@ class TestPiTokenJanitorActions:
         assert result.exit_code == 0
         assert "Successfully exported 3 tokens." in result.output
         assert "The key to import the tokens is:" in result.output
+
+
+class TestPiTokenJanitorContainer:
+    def test_findcontainer_no_args(self, app, containers):
+        """
+        Tests that `container list` with no arguments returns all containers.
+        """
+        runner = app.test_cli_runner()
+        result = runner.invoke(findcontainer, ["list"])
+        assert result.exit_code == 0
+        assert "C1" in result.output
+        assert "C2" in result.output
+        assert "C3" in result.output
+        assert "C4" in result.output
+
+    def test_findcontainer_by_type(self, app, containers):
+        """
+        Tests filtering containers by type.
+        """
+        runner = app.test_cli_runner()
+        result = runner.invoke(findcontainer, ["--type", "smartphone", "list"])
+        assert result.exit_code == 0
+        assert "C1" not in result.output
+        assert "C2" in result.output
+        assert "C3" not in result.output
+        assert "C4" not in result.output
+
+    def test_findcontainer_by_token_serial(self, app, containers, tokens):
+        """
+        Tests filtering containers by token serial.
+        """
+        runner = app.test_cli_runner()
+        result = runner.invoke(findcontainer, ["--token-serial", tokens[0].get_serial(), "list"])
+        assert result.exit_code == 0
+        assert "C1" in result.output
+        assert "C2" not in result.output
+        assert "C3" not in result.output
+        assert "C4" not in result.output
+
+    def test_container_delete(self, app, containers):
+        """
+        Tests deleting a container without deleting its tokens.
+        """
+        runner = app.test_cli_runner()
+        with app.app_context():
+            # C1 contains token HOTP0001
+            assert find_container_by_serial("C1") is not None
+            assert get_one_token(serial="HOTP0001") is not None
+
+        result = runner.invoke(findcontainer, ["--serial", "C1", "delete"])
+        assert result.exit_code == 0
+        assert "Deleted container C1" in result.output
+
+        with app.app_context():
+            with pytest.raises(ResourceNotFoundError):
+                find_container_by_serial("C1")
+            # The token should still exist
+            assert get_one_token(serial="HOTP0001") is not None
+
+    def test_container_delete_with_tokens(self, app, containers):
+        """
+        Tests deleting a container and its tokens using the --tokens flag.
+        """
+        runner = app.test_cli_runner()
+        with app.app_context():
+            # C1 contains token HOTP0001
+            assert find_container_by_serial("C1") is not None
+            assert get_one_token(serial="HOTP0001") is not None
+
+        result = runner.invoke(findcontainer, ["--serial", "C1", "delete", "--tokens"])
+        assert result.exit_code == 0
+        assert "Deleted container C1" in result.output
+
+        with app.app_context():
+            with pytest.raises(ResourceNotFoundError):
+                find_container_by_serial("C1")
+            # The token should also be deleted
+            assert get_one_token(serial="HOTP0001", silent_fail=True) is None
+
+    def test_container_update_info(self, app, containers):
+        """
+        Tests updating info for a container.
+        """
+        runner = app.test_cli_runner()
+        # Add new info
+        result = runner.invoke(findcontainer, ["--serial", "C2", "update_info", "new_key", "new_value"])
+        assert result.exit_code == 0
+        assert "Updated info new_key=new_value for container C2" in result.output
+
+        with app.app_context():
+            container = find_container_by_serial("C2")
+            info = container.get_container_info_dict()
+            assert info.get("new_key") == "new_value"
+
+        # Update existing info
+        result = runner.invoke(findcontainer, ["--serial", "C1", "update_info", "key1", "updated_value"])
+        assert result.exit_code == 0
+        assert "Updated info key1=updated_value for container C1" in result.output
+
+        with app.app_context():
+            container = find_container_by_serial("C1")
+            info = container.get_container_info_dict()
+            assert info.get("key1") == "updated_value"
+
+    def test_container_delete_info(self, app, containers):
+        """
+        Tests deleting info from a container.
+        """
+        runner = app.test_cli_runner()
+        with app.app_context():
+            container = find_container_by_serial("C1")
+            assert "key1" in container.get_container_info_dict()
+
+        result = runner.invoke(findcontainer, ["--serial", "C1", "delete_info", "key1"])
+        assert result.exit_code == 0
+        assert "Deleted info key1 for container C1" in result.output
+
+        with app.app_context():
+            container = find_container_by_serial("C1")
+            assert "key1" not in container.get_container_info_dict()
+
+    def test_container_set_description(self, app, containers):
+        """
+        Tests setting the description for a container.
+        """
+        runner = app.test_cli_runner()
+        new_description = "A new description for C3"
+        result = runner.invoke(findcontainer, ["--serial", "C3", "set_description", new_description])
+        assert result.exit_code == 0
+        assert f"Set description '{new_description}' for container C3" in result.output
+
+        with app.app_context():
+            container = find_container_by_serial("C3")
+            assert container.description == new_description
+
+    def test_container_set_realm(self, app, containers, realms):
+        """
+        Tests setting and adding realms for a container.
+        """
+        runner = app.test_cli_runner()
+        # Set realm (overwrite)
+        c3 = find_container_by_serial("C3")
+        c3.set_realms(['realm1'])
+        result = runner.invoke(findcontainer, ["--serial", "C3", "set_realm", "realm2"])
+        assert result.exit_code == 0
+        assert "Set realm '['realm2']' for container C3" in result.output
+
+        with app.app_context():
+            container = find_container_by_serial("C3")
+            assert container.get_as_dict().get("realms") == ["realm2"]
+
+        # Add realm
+        result = runner.invoke(findcontainer, ["--serial", "C3", "set_realm", "realm1", "--add"])
+        assert result.exit_code == 0
+        assert "Set realm '['realm1']' for container C3" in result.output
+
+        with app.app_context():
+            container = find_container_by_serial("C3")
+            assert sorted(container.get_as_dict().get("realms")) == sorted(["realm1", "realm2"])
+
+    def test_findcontainer_by_realm(self, app, containers, realms):
+        """
+        Tests filtering containers by realm.
+        """
+        runner = app.test_cli_runner()
+        result = runner.invoke(findcontainer, ["--realm", 'realm2', "list"])
+        assert result.exit_code == 0
+        assert "C1" not in result.output
+        assert "C2" in result.output
+        assert "C3" not in result.output
+        assert "C4" not in result.output
+
+    def test_findcontainer_by_template(self, app, containers):
+        """
+        Tests filtering containers by template.
+        """
+        runner = app.test_cli_runner()
+        result = runner.invoke(findcontainer, ["--template", "test-template", "list"])
+        assert result.exit_code == 0
+        assert "C1" not in result.output
+        assert "C2" not in result.output
+        assert "C3" not in result.output
+        assert "C4" in result.output
+
+    def test_findcontainer_by_description(self, app, containers):
+        """
+        Tests filtering containers by description.
+        """
+        runner = app.test_cli_runner()
+        result = runner.invoke(findcontainer, ["--description", "Container One", "list"])
+        assert result.exit_code == 0
+        assert "C1" in result.output
+        assert "C2" not in result.output
+        assert "C3" not in result.output
+        assert "C4" not in result.output
+
+    def test_findcontainer_by_assigned(self, app, containers):
+        """
+        Tests filtering containers by assignment status.
+        """
+        runner = app.test_cli_runner()
+        # C1 and C2 are assigned because their tokens are assigned
+        result = runner.invoke(findcontainer, ["--assigned", "True", "list"])
+        assert result.exit_code == 0
+        assert "C1" in result.output
+        assert "C2" in result.output
+        assert "C3" not in result.output
+        assert "C4" not in result.output  # Token in C4 is not assigned to a user
+
+    def test_findcontainer_by_info(self, app, containers):
+        """
+        Tests filtering containers by info.
+        """
+        runner = app.test_cli_runner()
+        result = runner.invoke(findcontainer, ["--info", "key1=value1", "list"])
+        assert result.exit_code == 0
+        assert "C1" in result.output
+        assert "C2" not in result.output
+        assert "C3" not in result.output
+        assert "C4" not in result.output

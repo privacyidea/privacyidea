@@ -187,7 +187,7 @@ def set_description(ctx, description):
 
 @findcontainer.command('set_realm')
 @click.argument('realms', type=str)
-@click.option('--add', '-a', is_flag=True, help='The realm(s) will be added to the existing realms.')
+@click.option('--add', '-a', is_flag=True, default=False, help='The realm(s) will be added to the existing realms.')
 @click.pass_context
 def set_realm(ctx, realms, add):
     """
@@ -198,7 +198,7 @@ def set_realm(ctx, realms, add):
     realms_list = [r.strip() for r in realms.split(',')]
     for clist in ctx.obj['containers']:
         for container in clist:
-            ret = container.set_realms(realms_list, add=add)
+            ret = container.set_realms(realms=realms_list, add=add)
             ret.pop('deleted', None)
             succsesful_realms = [key for key, value in ret.items() if value is True]
             unsuccsesful_realms = [key for key, value in ret.items() if value is False]
