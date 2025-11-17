@@ -20,11 +20,22 @@ import { Component, inject } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
 import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
+import { ROUTE_PATHS } from "../../../../route_paths";
+import { FormsModule } from "@angular/forms";
+import { MatFormField, MatLabel } from "@angular/material/form-field";
+import { MatOption, MatSelect } from "@angular/material/select";
+import { UserService, UserServiceInterface } from "../../../../services/user/user.service";
+import { RealmService, RealmServiceInterface } from "../../../../services/realm/realm.service";
 
 @Component({
   selector: "app-user-table-actions",
   imports: [
-    MatButtonModule
+    MatButtonModule,
+    MatFormField,
+    MatLabel,
+    MatOption,
+    MatSelect,
+    FormsModule
   ],
   templateUrl: "./user-table-actions.component.html",
   styleUrl: "./user-table-actions.component.scss"
@@ -32,4 +43,7 @@ import { AuthService, AuthServiceInterface } from "../../../../services/auth/aut
 export class UserTableActionsComponent {
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
+  protected readonly userService: UserServiceInterface = inject(UserService);
+  protected readonly realmService: RealmServiceInterface = inject(RealmService);
+  protected readonly ROUTE_PATHS = ROUTE_PATHS;
 }

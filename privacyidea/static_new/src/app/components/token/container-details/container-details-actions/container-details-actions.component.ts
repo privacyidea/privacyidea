@@ -104,6 +104,11 @@ export class ContainerDetailsActionsComponent {
     });
   }
 
+  enrollTokenInContainer() {
+    this.containerService.selectedContainer.set(this.containerSerial);
+    this.router.navigateByUrl(ROUTE_PATHS.TOKENS_ENROLLMENT);
+  }
+
   deleteContainer() {
     this.dialog
       .open(ConfirmationDialogComponent, {
