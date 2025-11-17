@@ -20,3 +20,59 @@
   min-width: 220px;
   margin-left: 1rem;
 }
+
+.icon-true {
+  color: var(--mdc-theme-success, var(--green-base));
+}
+
+.icon-false {
+  color: var(--mdc-theme-error, var(--red-base));
+}
+
+.resolver-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.resolver-node-group {
+  margin-bottom: 0.5rem;
+}
+
+.resolver-node-label {
+  display: flex;
+  align-items: center;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.resolver-node-icon {
+  font-size: 18px;
+  align-items: center;
+  display: flex;
+}
+
+.resolver-list {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 1rem;
+}
+
+.resolver-item {
+  font-size: 0.875rem;
+  display: flex;
+  gap: 0.25rem;
+  align-items: baseline;
+}
+
+.resolver-name {
+  font-weight: 500;
+}
+
+.resolver-type {
+  opacity: 0.8;
+}
+
+.resolver-priority {
+  opacity: 0.8;
+}

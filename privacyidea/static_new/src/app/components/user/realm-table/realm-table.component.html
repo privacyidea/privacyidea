@@ -21,7 +21,7 @@
             i18n-aria-label
             i18n-placeholder
             matInput
-            placeholder="Example: 'node1' or 'resolver: ldap'" />
+            placeholder="Filter across all columns." />
         </app-clearable-input>
       </mat-form-field>
       <mat-paginator
@@ -77,12 +77,41 @@
                     <span>{{ element.name }}</span>
                   }
                   @case ("isDefault") {
-                    <span>
-                      {{ element.isDefault ? ("Yes" | i18nSelect : { "true": "Yes", "false": "No" }) : ("No") }}
-                    </span>
+                    <mat-icon
+                      [ngClass]="{ 'icon-true': element.isDefault, 'icon-false': !element.isDefault }">
+                      {{ element.isDefault ? 'check' : 'close' }}
+                    </mat-icon>
                   }
                   @case ("resolvers") {
-                    <span>{{ element.resolvers }}</span>
+                    <div class="resolver-cell">
+                      @if (element.resolverGroups.length === 0) {
+                        <span i18n>No resolvers</span>
+                      } @else {
+                        @for (group of element.resolverGroups; track group.nodeLabel) {
+                          <div class="resolver-node-group">
+                            <div class="resolver-node-label">
+                              <mat-icon
+                                class="resolver-node-icon">
+                                dns
+                              </mat-icon>
+                              <span>{{ group.nodeLabel }}:</span>
+                            </div>
+
+                            <ul class="resolver-list">
+                              @for (res of group.resolvers; track res.name + res.type + res.priority) {
+                                <li class="resolver-item">
+                                  <span class="resolver-name">{{ res.name }}</span>
+                                  @if (res.priority !== null && res.priority !== undefined) {
+                                    <span class="resolver-priority">[{{ res.priority }}]</span>
+                                  }
+                                  <span class="resolver-type">({{ res.type }})</span>
+                                </li>
+                              }
+                            </ul>
+                          </div>
+                        }
+                      }
+                    </div>
                   }
                   @case ("nodes") {
                     <span>{{ element.nodes }}</span>

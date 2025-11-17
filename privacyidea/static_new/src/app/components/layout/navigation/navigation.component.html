@@ -319,7 +319,8 @@
         <mat-list-item>
           <button
             [routerLink]="[ROUTE_PATHS.USERS_REALMS]"
-            class="card-button-1"
+            [ngClass]="contentService.routeUrl() === ROUTE_PATHS.USERS_REALMS ?
+                  'card-button-active' : 'card-button-1'"
             mat-stroked-button>
             <mat-icon>public</mat-icon>
             Realms

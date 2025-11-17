@@ -34,12 +34,25 @@ export interface Realm {
   resolver: RealmResolvers;
 }
 
+export interface ResolverDisplay {
+  name: string;
+  type: string;
+  priority: number | null;
+}
+
+export interface ResolverGroup {
+  nodeId: string;
+  nodeLabel: string;
+  resolvers: ResolverDisplay[];
+}
+
 export interface RealmRow {
   name: string;
   isDefault: boolean;
-  resolvers: string;
-  nodes: string;
+  resolverGroups: ResolverGroup[];
+  resolversText: string;
 }
+
 
 export type RealmResolvers = Array<RealmResolver>;
 
