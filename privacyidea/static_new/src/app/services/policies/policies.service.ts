@@ -437,7 +437,7 @@ export class PolicyService implements PolicyServiceInterface {
   }));
 
   readonly allPoliciesRecource = httpResource<PiResponse<PolicyDetail[]>>(() => {
-    if (!this.authService.actionAllowed("policyread") || !this.contentService.routeUrl().includes("policy")) {
+    if (!this.authService.actionAllowed("policyread") || !this.contentService.routeUrl().includes("policies")) {
       return undefined;
     }
     return {
