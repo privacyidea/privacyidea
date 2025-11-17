@@ -25,6 +25,29 @@
     (opened)="handleExpansion(panel, template()?.name)"
     (closed)="handleCollapse(panel, template()?.name)">
     <mat-expansion-panel-header>
+      <div class="template-default-indicator-container">
+        @if (isNew()) {
+          @if (panel.expanded) {
+            <button
+              mat-icon-button
+              matTooltip="Set as default template"
+              i18n-matTooltip
+              (click)="$event.stopPropagation(); onDefaultChange(!selectedTemplate()?.default)">
+              <mat-icon>{{ selectedTemplate()?.default ? "star" : "star_border" }}</mat-icon>
+            </button>
+          }
+        } @else if (template()) {
+          <button
+            mat-icon-button
+            matTooltip="Set as default template"
+            i18n-matTooltip
+            (click)="$event.stopPropagation(); onDefaultToggle(template()!)"
+            [disabled]="isEditMode() && !containerTemplateService.isEditingTemplate(template()!.name)">
+            <mat-icon>{{ isDefault(template()!) ? "star" : "star_border" }}</mat-icon>
+          </button>
+        }
+      </div>
+
       <div class="template-name-container">
         @if (isNew()) {
           @if (panel.expanded) {
@@ -63,7 +86,9 @@
             [ngModel]="selectedTemplate()!.container_type"
             (ngModelChange)="onTypeChange($event)"
             (click)="$event.stopPropagation()"
-            (keydown)="$event.stopPropagation()">
+            (keydown)="$event.stopPropagation()"
+            placeholder="Container Type"
+            i18n-placeholder>
             @for (type of containerTemplateService.availableContainerTypes(); track type) {
               <mat-option [value]="type">
                 {{ type }}
@@ -123,8 +148,16 @@
         }
       </div>
     </mat-expansion-panel-header>
-    <div class="mat-expansion-panel-body">
-      <!-- Add template content here -->
+    <div class="flex-column">
+      <div class="addTokenRow">
+        <app-template-add-token-dropdown></app-template-add-token-dropdown>
+        <app-template-add-token-button></app-template-add-token-button>
+      </div>
+      <div class="addedTokensList">
+        @for (token of selectedTemplate()?.template_options?.tokens ?? []; track $index) {
+          <app-template-added-token-row [token]="token"></app-template-added-token-row>
+        }
+      </div>
     </div>
   </mat-expansion-panel>
 </div>

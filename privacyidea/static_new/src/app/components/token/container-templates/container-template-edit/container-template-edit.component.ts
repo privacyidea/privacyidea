@@ -5,7 +5,6 @@ import { MatIconModule } from "@angular/material/icon";
 import { MatButtonModule } from "@angular/material/button";
 import { FormsModule } from "@angular/forms";
 import { MatExpansionModule, MatExpansionPanel } from "@angular/material/expansion";
-import { MatSlideToggleModule } from "@angular/material/slide-toggle";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatSelectModule } from "@angular/material/select";
 import { MatOptionModule } from "@angular/material/core";
@@ -18,6 +17,10 @@ import {
   ContainerTemplateService,
   ContainerTemplateServiceInterface
 } from "../../../../services/container-template/container-template.service";
+import { TemplateAddTokenDropdownComponent } from "./template-add-token-row/template-add-token-dropdown/template-add-token-dropdown.component";
+import { TemplateAddTokenButtonComponent } from "./template-add-token-row/template-add-token-button/template-add-token-button.component";
+import { TemplateAddedTokenRowComponent } from "./template-added-token-row/template-added-token-row.component";
+import { MatTooltipModule } from "@angular/material/tooltip";
 
 @Component({
   selector: "app-container-template-edit",
@@ -29,16 +32,28 @@ import {
     MatButtonModule,
     FormsModule,
     MatExpansionModule,
-    MatSlideToggleModule,
+    MatTooltipModule,
     MatFormFieldModule,
     MatSelectModule,
-    MatOptionModule
+    MatOptionModule,
+    TemplateAddTokenDropdownComponent,
+    TemplateAddTokenButtonComponent,
+    TemplateAddedTokenRowComponent
   ],
   templateUrl: "./container-template-edit.component.html",
   styleUrl: "./container-template-edit.component.scss"
 })
 export class ContainerTemplateEditComponent {
-  onTypeChange(containerType: string): void {
+  isDefault(arg0?: ContainerTemplate): boolean {
+    return true;
+  }
+  onDefaultToggle(arg0?: ContainerTemplate | undefined): void {
+    throw new Error("Method not implemented.");
+  }
+  onDefaultChange($event?: any): void {
+    throw new Error("Method not implemented.");
+  }
+  onTypeChange(containerType?: string): void {
     throw new Error("Method not implemented.");
   }
   // Angular Inputs and Services

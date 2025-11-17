@@ -16,12 +16,18 @@
   mat-expansion-panel-header {
     padding: 0 var(--global-padding);
     display: flex;
+    align-items: center;
     gap: var(--global-gap);
     .mat-content {
       gap: var(--global-gap);
     }
+    .template-default-indicator-container {
+      width: 40px;
+      flex-shrink: 0;
+    }
 
     .template-name-container {
+      align-content: center;
       .template-name-input {
         background-color: transparent;
         border: none;
@@ -44,12 +50,22 @@
       align-items: center;
       justify-content: center;
       flex-grow: 1;
+      mat-select {
+        width: 300px;
+      }
+
+      // The mat-select is "naked" (not in a mat-form-field), so it's invisible by default.
+      // We apply a border to the bottom of the trigger to make it look like a standard
+      // material input field, similar to how it appears in other parts of the application like the policy editor.
+      ::ng-deep .mat-mdc-select-trigger {
+        border-bottom: 1px solid var(--mat-sys-outline-variant);
+      }
     }
 
     .template-actions {
       display: flex;
       align-items: center;
-      width: 80px;
+      width: 120px;
       button {
         background: transparent;
         border: none;
@@ -64,4 +80,10 @@
   display: flex;
   flex-direction: column;
   border-radius: var(--border-radius);
+}
+
+.addTokenRow {
+  display: flex;
+  gap: 16px;
+  align-items: center;
 }

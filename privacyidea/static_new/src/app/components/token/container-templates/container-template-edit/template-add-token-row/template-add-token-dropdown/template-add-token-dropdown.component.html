@@ -1,0 +1,8 @@
+<mat-form-field>
+  <mat-label i18n>Token Type</mat-label>
+  <mat-select [ngModel]="selectedTokenType" (ngModelChange)="onTokenTypeChange($event)">
+    @for (tokenType of tokenTypes; track tokenType) {
+      <mat-option [value]="tokenType">{{ tokenType }}</mat-option>
+    }
+  </mat-select>
+</mat-form-field>
