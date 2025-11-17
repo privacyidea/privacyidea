@@ -38,6 +38,9 @@ import {
   styleUrl: "./container-template-edit.component.scss"
 })
 export class ContainerTemplateEditComponent {
+  onTypeChange(containerType: string): void {
+    throw new Error("Method not implemented.");
+  }
   // Angular Inputs and Services
   containerTemplateService: ContainerTemplateService = inject(ContainerTemplateService);
   template = input<ContainerTemplate | undefined>(undefined);

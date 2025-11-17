@@ -1,4 +1,4 @@
-import { computed, inject, Injectable, linkedSignal, signal, WritableSignal } from "@angular/core";
+import { computed, effect, inject, Injectable, linkedSignal, signal, WritableSignal } from "@angular/core";
 import { HttpClient, httpResource } from "@angular/common/http";
 import { PiResponse } from "../../app.component";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
@@ -14,6 +14,15 @@ export interface ContainerTemplateServiceInterface {
   // Add method and property signatures here
 }
 
+export interface TemplateTokenTypes {
+  [key: string]: TemplateTokenType;
+}
+
+export interface TemplateTokenType {
+  description: string;
+  token_types: string[];
+}
+
 @Injectable({
   providedIn: "root"
 })
@@ -23,6 +32,15 @@ export class ContainerTemplateService implements ContainerTemplateServiceInterfa
   contentService: ContentServiceInterface = inject(ContentService);
   authService: AuthServiceInterface = inject(AuthService);
   notificationService: NotificationServiceInterface = inject(NotificationService);
+
+  constructor() {
+    effect(() => {
+      console.log("availableContainerTypes changed:", this.availableContainerTypes());
+    });
+    effect(() => {
+      console.log("templateTokentypesResource changed:", this.templateTokentypesResource.value());
+    });
+  }
 
   templatesResource = httpResource<PiResponse<{ templates: ContainerTemplate[] }>>(() => {
     if (
@@ -43,6 +61,34 @@ export class ContainerTemplateService implements ContainerTemplateServiceInterfa
     source: this.templatesResource.value,
     computation: (templatesResource, previous) => templatesResource?.result?.value?.templates ?? previous?.value ?? []
   });
+
+  templateTokentypesResource = httpResource<PiResponse<TemplateTokenTypes>>(() => {
+    // if (
+    //   (this.contentService.routeUrl() !== ROUTE_PATHS.TOKENS_CONTAINERS_CREATE &&
+    //     this.contentService.routeUrl() !== ROUTE_PATHS.TOKENS_CONTAINERS_TEMPLATES) ||
+    //   !this.authService.actionAllowed("container_template_list")
+    // ) {
+    //   return undefined;
+    // }
+    return {
+      url: environment.proxyUrl + `/container/template/tokentypes`,
+      method: "GET",
+      headers: this.authService.getHeaders()
+    };
+  });
+
+  templateTokenTypes = computed<TemplateTokenTypes>(() => {
+    return this.templateTokentypesResource.value()?.result?.value ?? {};
+  });
+
+  availableContainerTypes = computed(() => {
+    return Object.keys(this.templateTokenTypes());
+  });
+
+  getTokenTypesForContainerType(containerType: string): string[] {
+    const tokenTypeEntry = this.templateTokenTypes()[containerType];
+    return tokenTypeEntry ? tokenTypeEntry.token_types : [];
+  }
 
   isEditMode: WritableSignal<boolean> = linkedSignal({
     source: () => ({
