@@ -28,7 +28,6 @@ import { OverflowService } from "../../../../services/overflow/overflow.service"
 import { AuthService } from "../../../../services/auth/auth.service";
 
 import {
-  MockAuthService,
   MockLocalService,
   MockNotificationService,
   MockOverflowService,
@@ -36,6 +35,7 @@ import {
 } from "../../../../../testing/mock-services";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { MockAuthService } from "../../../../../testing/mock-services/mock-auth-service";
 
 describe("TokenDetailsInfoComponent", () => {
   let component: TokenDetailsInfoComponent;

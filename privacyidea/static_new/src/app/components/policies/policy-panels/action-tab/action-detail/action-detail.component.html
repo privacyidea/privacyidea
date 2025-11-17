@@ -1,0 +1,142 @@
+<!--
+ (c) NetKnights GmbH 2025,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+@if (policyService.selectedAction() !== null) {
+  <div class="action-detail-column">
+    <div class="action-detail-title">
+      <h3 i18n>
+        {{ policyService.selectedAction()?.name }}
+      </h3>
+      <div class="action-detail-title-buttons">
+        @if (actionDocuString() && actionDocuString()!.length > 0) {
+          <button
+            mat-icon-button
+            (click)="toggleContent('docu')">
+            <mat-icon>info_outline</mat-icon>
+          </button>
+        }
+        @if (actionNotesString() && actionNotesString()!.length > 0) {
+          <button
+            mat-icon-button
+            (click)="toggleContent('notes')">
+            <mat-icon class="warning-icon">warning_outline</mat-icon>
+          </button>
+        }
+      </div>
+    </div>
+    <div>
+      @if (visibleContent() === "docu") {
+        <div
+          class="action-docu"
+          [innerHTML]="actionDocuString()"></div>
+      }
+      @if (visibleContent() === "notes") {
+        <div
+          class="action-notes"
+          [innerHTML]="actionNotesString()"></div>
+      }
+    </div>
+    <div class="action-detail-card">
+      <span
+        class="detail-row"
+        [innerHTML]="policyService.selectedActionDetail()?.desc">
+      </span>
+    </div>
+    @if (isEditMode()) {
+      @if (policyService.selectedActionDetail()?.value) {
+        <!-- add dropdown to select value from list -->
+        @if (policyService.selectedActionDetail()?.value?.length === 0) {
+          <!-- // Warning: No Value Available. Nothing to select not possible to add. NO MAT FORM FIELD -->
+          <p i18n>No values available for this action.</p>
+        } @else if (
+          policyService.selectedActionDetail()?.value?.length === 2 ||
+          policyService.selectedActionDetail()?.value?.length === 3
+        ) {
+          <app-selector-buttons
+            [values]="policyService.selectedActionDetail()?.value!"
+            [initialValue]="policyService.selectedAction()?.value"
+            (onSelect)="policyService.updateSelectedActionValue($event)" />
+        } @else {
+          <mat-form-field
+            appearance="fill"
+            class="full-width">
+            <mat-label i18n>Value</mat-label>
+            <mat-select
+              [value]="policyService.selectedAction()?.value"
+              (selectionChange)="policyService.updateSelectedActionValue($event.value)">
+              @for (option of policyService.selectedActionDetail()?.value; track option) {
+                <mat-option [value]="option">{{ option }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        }
+      } @else {
+        @switch (policyService.selectedActionDetail()?.type) {
+          @case ("bool") {
+            <!-- Show Nothing -->
+          }
+          @case ("str") {
+            <input
+              type="text"
+              placeholder="Text"
+              [ngModel]="policyService.selectedAction()?.value"
+              (ngModelChange)="policyService.updateSelectedActionValue($event)"
+              class="action-value-input"
+              (keydown.enter)="policyService.addActionToSelectedPolicy()" />
+          }
+          @case ("int") {
+            <input
+              type="number"
+              placeholder="Number"
+              [ngModel]="policyService.selectedAction()?.value"
+              (ngModelChange)="policyService.updateSelectedActionValue($event)"
+              class="action-value-input"
+              (keydown.enter)="policyService.addActionToSelectedPolicy()" />
+          }
+          @case ("text") {
+            <textarea
+              placeholder="Text"
+              [ngModel]="policyService.selectedAction()?.value"
+              (ngModelChange)="policyService.updateSelectedActionValue($event)"
+              class="action-value-textarea"></textarea>
+          }
+          @default {
+            <p i18n>Unknown action type: {{ policyService.selectedActionDetail()?.type }}</p>
+          }
+        }
+      }
+      @if (selectedActionIsAlreadyAdded()) {
+        <button
+          mat-raised-button
+          color="primary"
+          (click)="applyChanges()"
+          [disabled]="!inputIsValid()">
+          Apply Changes
+        </button>
+      } @else {
+        <button
+          mat-raised-button
+          color="primary"
+          (click)="policyService.addActionToSelectedPolicy()"
+          [disabled]="!inputIsValid()">
+          Add Action
+        </button>
+      }
+    }
+  </div>
+}

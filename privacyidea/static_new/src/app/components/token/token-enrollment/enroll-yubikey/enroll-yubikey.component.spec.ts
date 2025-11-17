@@ -19,7 +19,6 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { EnrollYubikeyComponent } from "./enroll-yubikey.component";
 import { provideHttpClient } from "@angular/common/http";
-import "@angular/localize/init";
 
 describe("EnrollYubikeyComponent", () => {
   let component: EnrollYubikeyComponent;
