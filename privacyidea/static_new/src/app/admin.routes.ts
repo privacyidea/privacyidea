@@ -30,6 +30,7 @@ import { TokenComponent } from "./components/token/token.component";
 import { UserDetailsComponent } from "./components/user/user-details/user-details.component";
 import { UserTableComponent } from "./components/user/user-table/user-table.component";
 import { AuditComponent } from "./components/audit/audit.component";
+import { PoliciesComponent } from "./components/policies/policies.component";
 import { TokenImportComponent } from "./components/token/token-import/token-import.component";
 import { ContainerTemplatesComponent } from "./components/token/container-templates/container-templates.component";
 
@@ -63,6 +64,11 @@ export const routes: Routes = [
       { path: "", component: UserTableComponent },
       { path: "details/:username", component: UserDetailsComponent }
     ]
+  },
+  {
+    path: "policies",
+    component: TokenComponent,
+    children: [{ path: "", component: PoliciesComponent }]
   },
   {
     path: "audit",

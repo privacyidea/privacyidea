@@ -25,7 +25,6 @@ import { ContainerService } from "../../../../services/container/container.servi
 import { OverflowService } from "../../../../services/overflow/overflow.service";
 import { AuthService } from "../../../../services/auth/auth.service";
 import {
-  MockAuthService,
   MockContainerService,
   MockLocalService,
   MockNotificationService,
@@ -33,6 +32,7 @@ import {
 } from "../../../../../testing/mock-services";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { MockAuthService } from "../../../../../testing/mock-services/mock-auth-service";
 
 describe("ContainerDetailsInfoComponent", () => {
   let fixture: ComponentFixture<ContainerDetailsInfoComponent>;
@@ -76,7 +76,9 @@ describe("ContainerDetailsInfoComponent", () => {
     const detailArr: ContainerInfoDetail[] = [makeOtherEl("info", {})];
 
     component.infoData = signal(infoArr as unknown as ContainerInfoDetail[]) as WritableSignal<ContainerInfoDetail[]>;
-    component.detailData = signal(detailArr as unknown as ContainerInfoDetail[]) as WritableSignal<ContainerInfoDetail[]>;
+    component.detailData = signal(detailArr as unknown as ContainerInfoDetail[]) as WritableSignal<
+      ContainerInfoDetail[]
+    >;
     component.isAnyEditingOrRevoked = signal(false);
     component.isEditingInfo = signal(false);
     component.isEditingUser = signal(false);

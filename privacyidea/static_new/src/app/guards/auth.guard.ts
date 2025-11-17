@@ -22,7 +22,6 @@ import { AuthService, AuthServiceInterface } from "../services/auth/auth.service
 import { NotificationService, NotificationServiceInterface } from "../services/notification/notification.service";
 
 export const adminMatch: CanMatchFn = () => inject(AuthService).role() === "admin";
-
 export const selfServiceMatch: CanMatchFn = () => inject(AuthService).role() === "user";
 
 @Injectable({

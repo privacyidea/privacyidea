@@ -84,7 +84,7 @@ describe("ContainerRegistrationConfigComponent", () => {
   it("should enable passphraseResponse textarea when userStorePassphrase is false", async () => {
     component.userStorePassphrase.set(false);
     await detectChangesStable(fixture);
-    const inputs = fixture.debugElement.queryAll(By.css('input[matinput]'));
+    const inputs = fixture.debugElement.queryAll(By.css("input[matinput]"));
     const responseInput: HTMLInputElement = inputs[0].nativeElement;
     const repeatResponseInput: HTMLInputElement = inputs[1].nativeElement;
     expect(responseInput.disabled).toBe(false);

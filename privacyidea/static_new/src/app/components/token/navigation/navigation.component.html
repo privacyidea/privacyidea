@@ -247,7 +247,7 @@
           <mat-list-item>
             <button
               [ngClass]="
-                contentService.routeUrl() === ROUTE_PATHS.TOKENS_CONTAINERS_CREATE
+                this.contentService.routeUrl() === ROUTE_PATHS.TOKENS_CONTAINERS_CREATE
                   ? 'card-button-active'
                   : 'card-button-1'
               "
@@ -350,19 +350,20 @@
         </mat-list-item>
       </mat-list>
     </mat-expansion-panel>
-
-    <mat-expansion-panel disabled>
-      <mat-expansion-panel-header>
-        <mat-panel-title>
-          <mat-icon>gavel</mat-icon>
-          Policies
-        </mat-panel-title>
-      </mat-expansion-panel-header>
-      <mat-list>
-        <mat-list-item></mat-list-item>
-      </mat-list>
-    </mat-expansion-panel>
-
+    @if (authService.actionAllowed("policyread")) {
+      <mat-expansion-panel
+        class="nav-expension-panel policy-header"
+        [disabled]="true">
+        <mat-expansion-panel-header
+          (click)="onPoliciesHeaderClick($event)"
+          class="nav-header-button">
+          <mat-panel-title>
+            <mat-icon>gavel</mat-icon>
+            Policies
+          </mat-panel-title>
+        </mat-expansion-panel-header>
+      </mat-expansion-panel>
+    }
     <mat-expansion-panel disabled>
       <mat-expansion-panel-header>
         <mat-panel-title>
@@ -542,7 +543,7 @@
     </a>
 
     <a
-      (click)="versioningService.openDocumentation(contentService.routeUrl())"
+      (click)="documentationService.openDocumentation(contentService.routeUrl())"
       aria-label="Documentation"
       class="card-button-docs"
       i18n-aria-label
