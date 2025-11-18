@@ -16,11 +16,11 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, inject, linkedSignal, signal, ViewChild, WritableSignal } from "@angular/core";
+import { Component, computed, inject, linkedSignal, Signal, signal, ViewChild, WritableSignal } from "@angular/core";
 import {
   MatCell,
   MatCellDef,
-  MatColumnDef,
+  MatColumnDef, MatFooterCell, MatFooterCellDef, MatFooterRow, MatFooterRowDef,
   MatHeaderCell,
   MatHeaderCellDef,
   MatHeaderRow,
@@ -38,27 +38,32 @@ import { NgClass } from "@angular/common";
 import { MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { MatSelectModule } from "@angular/material/select";
+import { MatIconModule } from "@angular/material/icon";
+import { MatButtonModule } from "@angular/material/button";
 
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
 import { TableUtilsService, TableUtilsServiceInterface } from "../../../services/table-utils/table-utils.service";
 import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
-import { RealmService, RealmServiceInterface, ResolverGroup } from "../../../services/realm/realm.service";
+import {
+  RealmRow,
+  Realms,
+  RealmService,
+  RealmServiceInterface,
+  ResolverGroup
+} from "../../../services/realm/realm.service";
 import { NodeInfo, SystemService, SystemServiceInterface } from "../../../services/system/system.service";
-import { MatIcon } from "@angular/material/icon";
-
-export interface RealmRow {
-  name: string;
-  isDefault: boolean;
-  resolvers: string;
-  nodes: string;
-}
+import { NotificationService, NotificationServiceInterface } from "../../../services/notification/notification.service";
+import { HttpErrorResponse } from "@angular/common/http";
+import { take } from "rxjs/operators";
+import { ConfirmationDialogComponent } from "../../shared/confirmation-dialog/confirmation-dialog.component";
+import { MatDialog } from "@angular/material/dialog";
 
 const columnKeysMap = [
   { key: "name", label: "Realm" },
   { key: "isDefault", label: "Default" },
   { key: "resolvers", label: "Resolvers" },
-  { key: "nodes", label: "Nodes" }
+  { key: "actions", label: "Actions" }
 ];
 
 const ALL_NODES_VALUE = "__all_nodes__";
@@ -88,7 +93,12 @@ const ALL_NODES_VALUE = "__all_nodes__";
     ScrollToTopDirective,
     ClearableInputComponent,
     MatSelectModule,
-    MatIcon
+    MatIconModule,
+    MatButtonModule,
+    MatFooterRowDef,
+    MatFooterRow,
+    MatFooterCellDef,
+    MatFooterCell
   ],
   templateUrl: "./realm-table.component.html",
   styleUrl: "./realm-table.component.scss"
@@ -101,6 +111,8 @@ export class RealmTableComponent {
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly realmService: RealmServiceInterface = inject(RealmService);
   protected readonly systemService: SystemServiceInterface = inject(SystemService);
+  private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
+  protected readonly dialog: MatDialog = inject(MatDialog);
 
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
@@ -108,7 +120,6 @@ export class RealmTableComponent {
   pageSizeOptions = this.tableUtilsService.pageSizeOptions;
 
   selectedNode = signal<string>(ALL_NODES_VALUE);
-
   filterString = signal<string>("");
 
   nodeOptions = computed(() => {
@@ -122,9 +133,42 @@ export class RealmTableComponent {
     ];
   });
 
-  realmRows = computed<RealmRow[]>(() => {
+  newRealmName = signal<string>("");
+  newRealmNodeId = signal<string>("");
+  newRealmResolvers = signal<string[]>([]);
+  isCreatingRealm = signal<boolean>(false);
+
+  createNodeOptions = computed(() => {
+    const nodes = this.systemService.nodes();
+    return [
+      { label: $localize`No node`, value: "" },
+      ...nodes.map((n: NodeInfo) => ({
+        label: n.name,
+        value: n.uuid
+      }))
+    ];
+  });
+
+  resolverOptions = computed(() => {
     const realmResource = this.realmService.realmResource.value();
     const realms = realmResource?.result?.value;
+    if (!realms) {
+      return [];
+    }
+    const map = new Map<string, string>();
+    Object.values(realms).forEach((realm: any) => {
+      (realm.resolver ?? []).forEach((r: any) => {
+        if (!map.has(r.name)) {
+          map.set(r.name, r.type);
+        }
+      });
+    });
+    return Array.from(map.entries()).map(([name, type]) => ({ name, type }));
+  });
+
+  realmRows = computed<RealmRow[]>(() => {
+    const realmResource = this.realmService.realmResource.value();
+    const realms: Realms | undefined = realmResource?.result?.value as Realms | undefined;
     if (!realms) {
       return [];
     }
@@ -150,7 +194,7 @@ export class RealmTableComponent {
         if (!groupsMap.has(nodeKey)) {
           let nodeLabel: string;
           if (!r.node) {
-            nodeLabel = "All nodes";
+            nodeLabel = $localize`No node`;
           } else {
             const nodeInfo = nodes.find((n) => n.uuid === r.node || n.name === r.node);
             nodeLabel = nodeInfo?.name ?? r.node;
@@ -172,18 +216,10 @@ export class RealmTableComponent {
 
       const resolverGroups = Array.from(groupsMap.values());
 
-      const nodeNames = Array.from(
-        new Set(
-          resolverGroups
-            .map((g) => g.nodeLabel)
-            .filter((label) => !!label && label !== "All nodes")
-        )
-      ).join(", ");
-
       const resolversText = resolverGroups
         .flatMap((g) =>
           g.resolvers.map(
-            (r) => `${r.name} ${r.type} ${g.nodeLabel} ${r.priority ?? ""}`
+            (rr) => `${rr.name} ${rr.type} ${g.nodeLabel} ${rr.priority ?? ""}`
           )
         )
         .join(" ");
@@ -193,17 +229,14 @@ export class RealmTableComponent {
           name: realmName,
           isDefault: realm.default,
           resolverGroups,
-          nodes: nodeNames,
-          resolversText
-        } as unknown as RealmRow
+          resolversText,
+          isCreateRow: false
+        } as RealmRow
       ];
     });
   });
 
-  totalLength: WritableSignal<number> = computed(() => {
-    const rows = this.realmRows();
-    return rows.length;
-  }) as WritableSignal<number>;
+  totalLength: Signal<number> = computed(() => this.realmRows().length);
 
   realmsDataSource: WritableSignal<MatTableDataSource<RealmRow>> = linkedSignal({
     source: this.realmRows,
@@ -219,12 +252,11 @@ export class RealmTableComponent {
         }
         return (
           data.name.toLowerCase().includes(normalizedFilter) ||
-          data.resolvers.toLowerCase().includes(normalizedFilter) ||
-          data.nodes.toLowerCase().includes(normalizedFilter)
+          data.resolversText.toLowerCase().includes(normalizedFilter)
         );
       };
-      dataSource.filter = this.filterString().trim().toLowerCase();
 
+      dataSource.filter = this.filterString().trim().toLowerCase();
       return dataSource;
     }
   });
@@ -243,5 +275,103 @@ export class RealmTableComponent {
 
   onNodeSelectionChange(value: string): void {
     this.selectedNode.set(value);
+  }
+
+  onNewRealmResolversChange(values: string[]): void {
+    this.newRealmResolvers.set(values);
+  }
+
+  canSubmitNewRealm(): boolean {
+    return (
+      this.newRealmName().trim().length > 0 &&
+      !this.isCreatingRealm()
+    );
+  }
+
+  resetCreateForm(): void {
+    this.newRealmName.set("");
+    this.newRealmNodeId.set("");
+    this.newRealmResolvers.set([]);
+  }
+
+  onCreateRealm(): void {
+    if (!this.canSubmitNewRealm()) {
+      return;
+    }
+
+    this.isCreatingRealm.set(true);
+
+    const realmName = this.newRealmName().trim();
+    const nodeId = this.newRealmNodeId();
+    const resolvers = this.newRealmResolvers().map((name, index) => ({
+      name,
+      priority: index + 1
+    }));
+
+    this.realmService
+      .createRealm(realmName, nodeId, resolvers)
+      .pipe(take(1))
+      .subscribe({
+        next: () => {
+          this.notificationService.openSnackBar($localize`Realm created.`);
+          this.resetCreateForm();
+          this.realmService.realmResource.reload?.();
+        },
+        error: (err: HttpErrorResponse) => {
+          console.error("Failed to create realm.", err);
+          const message = err.error?.result?.error?.message || err.message;
+          this.notificationService.openSnackBar(
+            $localize`Failed to create realm. ${message}`
+          );
+        }
+      })
+      .add(() => this.isCreatingRealm.set(false));
+  }
+
+  onEditRealm(row: RealmRow): void {
+    console.log("Edit realm", row.name);
+    // TODO: open edit dialog, or inline editing
+  }
+
+  onDeleteRealm(row: RealmRow): void {
+    if (!row?.name) {
+      return;
+    }
+
+    this.dialog
+      .open(ConfirmationDialogComponent, {
+        data: {
+          serialList: [row.name],
+          title: $localize`Delete Realm`,
+          type: "realm",
+          action: "delete"
+        }
+      })
+      .afterClosed()
+      .subscribe({
+        next: (result) => {
+          if (!result) {
+            return;
+          }
+
+          this.realmService
+            .deleteRealm(row.name)
+            .subscribe({
+              next: () => {
+                this.notificationService.openSnackBar(
+                  $localize`Realm "${row.name}" deleted.`
+                );
+                this.realmService.realmResource.reload?.();
+              },
+              error: (err: HttpErrorResponse) => {
+                console.error("Failed to delete realm.", err);
+                const message = err.error?.result?.error?.message || err.message;
+                this.notificationService.openSnackBar(
+                  $localize`Failed to delete realm. ${message}`
+                );
+              }
+            });
+        }
+      });
   }
 }

@@ -57,6 +57,7 @@
         class="token-table"
         mat-table
         matSort>
+
         @for (column of columnKeysMap; track column) {
           <ng-container [matColumnDef]="column.key">
             <th
@@ -66,20 +67,27 @@
               mat-sort-header>
               {{ column.label }}
             </th>
+
             <td
               *matCellDef="let element"
-              [ngClass]="{ 'width-18rem': column.key === 'resolvers' }"
+              [ngClass]="{
+              'width-18rem': column.key === 'resolvers',
+              'actions-cell': column.key === 'actions'}"
               attr.aria-label="{{ column.label }} Cell"
               mat-cell>
               <div>
                 @switch (column.key) {
+
                   @case ("name") {
                     <span>{{ element.name }}</span>
                   }
                   @case ("isDefault") {
                     <mat-icon
-                      [ngClass]="{ 'icon-true': element.isDefault, 'icon-false': !element.isDefault }">
-                      {{ element.isDefault ? 'check' : 'close' }}
+                      [ngClass]="{
+                      'icon-true': element.isDefault,
+                      'icon-false': !element.isDefault}"
+                      aria-label="Default realm icon">
+                      {{ element.isDefault ? "check" : "close" }}
                     </mat-icon>
                   }
                   @case ("resolvers") {
@@ -91,20 +99,21 @@
                           <div class="resolver-node-group">
                             <div class="resolver-node-label">
                               <mat-icon
+                                aria-hidden="true"
                                 class="resolver-node-icon">
                                 dns
                               </mat-icon>
-                              <span>{{ group.nodeLabel }}:</span>
+                              <span>{{ group.nodeLabel }}</span>
                             </div>
 
                             <ul class="resolver-list">
                               @for (res of group.resolvers; track res.name + res.type + res.priority) {
                                 <li class="resolver-item">
                                   <span class="resolver-name">{{ res.name }}</span>
-                                  @if (res.priority !== null && res.priority !== undefined) {
-                                    <span class="resolver-priority">[{{ res.priority }}]</span>
-                                  }
                                   <span class="resolver-type">({{ res.type }})</span>
+                                  @if (res.priority !== null && res.priority !== undefined) {
+                                    <span class="resolver-priority">#{{ res.priority }}</span>
+                                  }
                                 </li>
                               }
                             </ul>
@@ -113,11 +122,111 @@
                       }
                     </div>
                   }
-                  @case ("nodes") {
-                    <span>{{ element.nodes }}</span>
+                  @case ("actions") {
+                    <div class="actions-buttons">
+                      <button
+                        mat-icon-button
+                        type="button"
+                        (click)="onEditRealm(element)"
+                        aria-label="Edit realm">
+                        <mat-icon>edit</mat-icon>
+                      </button>
+                      <button
+                        mat-icon-button
+                        color="warn"
+                        type="button"
+                        (click)="onDeleteRealm(element)"
+                        aria-label="Delete realm">
+                        <mat-icon>delete</mat-icon>
+                      </button>
+                    </div>
                   }
                   @default {
                     <span>{{ element[column.key] }}</span>
+                  }
+                }
+              </div>
+            </td>
+
+            <td
+              *matFooterCellDef
+              [ngClass]="{
+              'width-18rem': column.key === 'resolvers',
+              'actions-cell': column.key === 'actions'}"
+              mat-footer-cell>
+              <div>
+                @switch (column.key) {
+
+                  @case ("name") {
+                    <mat-form-field
+                      class="new-realm-name-field"
+                      subscriptSizing="dynamic">
+                      <mat-label i18n>Realm name</mat-label>
+                      <input
+                        (input)="newRealmName.set($any($event.target).value)"
+                        [value]="newRealmName()"
+                        matInput />
+                    </mat-form-field>
+                  }
+                  @case ("isDefault") {
+                    <span>-</span>
+                  }
+                  @case ("resolvers") {
+                    <div class="new-realm-resolvers">
+                      <mat-form-field
+                        class="new-realm-node-field"
+                        subscriptSizing="dynamic">
+                        <mat-label i18n>Node</mat-label>
+                        <mat-select
+                          (selectionChange)="newRealmNodeId.set($event.value)"
+                          [value]="newRealmNodeId()">
+                          @for (node of createNodeOptions(); track node.value) {
+                            <mat-option [value]="node.value">
+                              {{ node.label }}
+                            </mat-option>
+                          }
+                        </mat-select>
+                      </mat-form-field>
+
+                      <mat-form-field
+                        class="new-realm-resolvers-field"
+                        subscriptSizing="dynamic">
+                        <mat-label i18n>Resolvers</mat-label>
+                        <mat-select
+                          (selectionChange)="onNewRealmResolversChange($event.value)"
+                          [value]="newRealmResolvers()"
+                          multiple>
+                          @for (res of resolverOptions(); track res.name) {
+                            <mat-option [value]="res.name">
+                              {{ res.name }} ({{ res.type }})
+                            </mat-option>
+                          }
+                        </mat-select>
+                      </mat-form-field>
+                    </div>
+                  }
+                  @case ("actions") {
+                    <div class="actions-buttons">
+                      <button
+                        (click)="onCreateRealm()"
+                        [disabled]="!canSubmitNewRealm()"
+                        color="primary"
+                        mat-flat-button
+                        type="button">
+                        <mat-icon>add</mat-icon>
+                        <span i18n>Create</span>
+                      </button>
+                      <button
+                        (click)="resetCreateForm()"
+                        [disabled]="isCreatingRealm()"
+                        mat-button
+                        type="button">
+                        <span i18n>Reset</span>
+                      </button>
+                    </div>
+                  }
+                  @default {
+                    <span></span>
                   }
                 }
               </div>
@@ -129,10 +238,18 @@
           *matHeaderRowDef="columnKeys"
           aria-label="Header Row"
           mat-header-row></tr>
+
         <tr
           *matRowDef="let row; columns: columnKeys"
           aria-label="Data Row"
           mat-row></tr>
+
+        <tr
+          *matFooterRowDef="columnKeys"
+          aria-label="Create Realm Footer Row"
+          class="new-realm-footer-row"
+          mat-footer-row></tr>
+
         <tr
           *matNoDataRow
           aria-label="No Data Row">

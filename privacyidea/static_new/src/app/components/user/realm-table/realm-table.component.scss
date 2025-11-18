@@ -69,10 +69,33 @@
   font-weight: 500;
 }
 
-.resolver-type {
+.resolver-type,
+.resolver-priority {
   opacity: 0.8;
 }
 
-.resolver-priority {
-  opacity: 0.8;
+.new-realm-row {
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+.new-realm-name-field,
+.new-realm-node-field,
+.new-realm-resolvers-field {
+  width: 100%;
+}
+
+.new-realm-resolvers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.actions-cell {
+  width: 8rem;
+}
+
+.actions-buttons {
+  display: flex;
+  gap: 0.25rem;
+  align-items: center;
 }

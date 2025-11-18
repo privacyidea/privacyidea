@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { HttpErrorResponse, httpResource, HttpResourceRef } from "@angular/common/http";
+import { HttpClient, HttpErrorResponse, httpResource, HttpResourceRef } from "@angular/common/http";
 import { computed, effect, inject, Injectable, Signal, signal, WritableSignal } from "@angular/core";
 import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
@@ -24,6 +24,7 @@ import { ROUTE_PATHS } from "../../route_paths";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
 import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
+import { Observable } from "rxjs";
 
 export type Realms = Map<string, Realm>;
 
@@ -69,6 +70,13 @@ export interface RealmServiceInterface {
   realmOptions: Signal<string[]>;
   defaultRealmResource: HttpResourceRef<PiResponse<Realms> | undefined>;
   defaultRealm: Signal<string>;
+
+  createRealm(
+    realm: string,
+    nodeId: string,
+    resolvers: { name: string; priority: number }[]
+  ): Observable<PiResponse<any>>;
+  deleteRealm(realm: string): Observable<PiResponse<number | any>>;
 }
 
 @Injectable({
@@ -78,6 +86,7 @@ export class RealmService implements RealmServiceInterface {
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
+  private readonly http: HttpClient = inject(HttpClient);
   selectedRealms = signal<string[]>([]);
 
   realmResource = httpResource<PiResponse<Realms>>(() => {
@@ -153,6 +162,31 @@ export class RealmService implements RealmServiceInterface {
         const message = defaultRealmError.error?.result?.error?.message || defaultRealmError.message;
         this.notificationService.openSnackBar("Failed to get default realm. " + message);
       }
+    });
+  }
+
+  createRealm(
+    realm: string,
+    nodeId: string,
+    resolvers: { name: string; priority: number }[]
+  ): Observable<PiResponse<any>> {
+
+    const url = `${environment.proxyUrl}/realm/${realm}/node/${nodeId}`;
+    const body = {
+      resolver: resolvers
+    };
+
+    return this.http.post<PiResponse<any>>(url, body, {
+      headers: this.authService.getHeaders()
+    });
+  }
+
+  deleteRealm(realm: string): Observable<PiResponse<number | any>> {
+    const encodedRealm = encodeURIComponent(realm);
+    const url = `${environment.proxyUrl}/realm/${encodedRealm}`;
+
+    return this.http.delete<PiResponse<number | any>>(url, {
+      headers: this.authService.getHeaders()
     });
   }
 }
