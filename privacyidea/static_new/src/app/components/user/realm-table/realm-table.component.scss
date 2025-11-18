@@ -74,20 +74,50 @@
   opacity: 0.8;
 }
 
-.new-realm-row {
+.new-realm-footer-row {
   background-color: rgba(0, 0, 0, 0.02);
 }
 
-.new-realm-name-field,
-.new-realm-node-field,
-.new-realm-resolvers-field {
+.new-realm-name-field {
   width: 100%;
 }
 
-.new-realm-resolvers {
+.node-resolvers-groups {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 0.5rem;
+}
+
+.node-resolvers-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.node-resolvers-select {
+  width: 100%;
+}
+
+.resolver-priority-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-top: 0.25rem;
+}
+
+.resolver-priority-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.priority-label {
+  font-size: 0.75rem;
+}
+
+.resolver-priority-input {
+  width: 80px;
+  padding: 0.1rem 0.25rem;
+  font-size: 0.75rem;
 }
 
 .actions-cell {

@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, inject, linkedSignal, Signal, signal, ViewChild, WritableSignal } from "@angular/core";
+import { Component, computed, inject, linkedSignal, signal, ViewChild, WritableSignal } from "@angular/core";
 import {
   MatCell,
   MatCellDef,
@@ -44,6 +44,10 @@ import { MatInput } from "@angular/material/input";
 import { MatSelectModule } from "@angular/material/select";
 import { MatIconModule } from "@angular/material/icon";
 import { MatButtonModule } from "@angular/material/button";
+import { MatDialog } from "@angular/material/dialog";
+import { HttpErrorResponse } from "@angular/common/http";
+import { forkJoin, Observable } from "rxjs";
+import { take } from "rxjs/operators";
 
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
@@ -58,10 +62,10 @@ import {
 } from "../../../services/realm/realm.service";
 import { NodeInfo, SystemService, SystemServiceInterface } from "../../../services/system/system.service";
 import { NotificationService, NotificationServiceInterface } from "../../../services/notification/notification.service";
-import { HttpErrorResponse } from "@angular/common/http";
-import { take } from "rxjs/operators";
 import { ConfirmationDialogComponent } from "../../shared/confirmation-dialog/confirmation-dialog.component";
-import { MatDialog } from "@angular/material/dialog";
+
+type ResolverWithPriority = { name: string; priority: number };
+type NodeResolversMap = { [nodeId: string]: ResolverWithPriority[] };
 
 const columnKeysMap = [
   { key: "name", label: "Realm" },
@@ -71,6 +75,8 @@ const columnKeysMap = [
 ];
 
 const ALL_NODES_VALUE = "__all_nodes__";
+const NO_NODE_ID = "";
+const NO_NODE_UUID = "00000000-0000-0000-0000-000000000000";
 
 @Component({
   selector: "app-realm-table",
@@ -86,23 +92,23 @@ const ALL_NODES_VALUE = "__all_nodes__";
     MatTable,
     MatSortModule,
     MatHeaderCell,
-    MatColumnDef,
-    NgClass,
-    MatHeaderRowDef,
-    MatHeaderRow,
-    MatRowDef,
-    MatRow,
-    MatNoDataRow,
     MatHeaderCellDef,
+    MatColumnDef,
+    MatHeaderRow,
+    MatHeaderRowDef,
+    MatRow,
+    MatRowDef,
+    MatNoDataRow,
+    MatFooterRow,
+    MatFooterRowDef,
+    MatFooterCell,
+    MatFooterCellDef,
+    NgClass,
     ScrollToTopDirective,
     ClearableInputComponent,
     MatSelectModule,
     MatIconModule,
-    MatButtonModule,
-    MatFooterRowDef,
-    MatFooterRow,
-    MatFooterCellDef,
-    MatFooterCell
+    MatButtonModule
   ],
   templateUrl: "./realm-table.component.html",
   styleUrl: "./realm-table.component.scss"
@@ -126,6 +132,15 @@ export class RealmTableComponent {
   selectedNode = signal<string>(ALL_NODES_VALUE);
   filterString = signal<string>("");
 
+  newRealmName = signal<string>("");
+  newRealmNodeResolvers = signal<NodeResolversMap>({});
+  isCreatingRealm = signal<boolean>(false);
+
+  editingRealmName = signal<string | null>(null);
+  editOriginalNodeResolvers = signal<NodeResolversMap>({});
+  editNodeResolvers = signal<NodeResolversMap>({});
+  isSavingEditedRealm = signal<boolean>(false);
+
   nodeOptions = computed(() => {
     const nodes = this.systemService.nodes();
     return [
@@ -137,22 +152,13 @@ export class RealmTableComponent {
     ];
   });
 
-  newRealmName = signal<string>("");
-  newRealmNodeId = signal<string>("");
-  newRealmResolvers = signal<string[]>([]);
-  isCreatingRealm = signal<boolean>(false);
-  editingRealmName = signal<string | null>(null);
-  editRealmNodeId = signal<string>("");
-  editRealmResolvers = signal<string[]>([]);
-  isSavingEditedRealm = signal<boolean>(false);
-
-  createNodeOptions = computed(() => {
+  allNodeGroups = computed(() => {
     const nodes = this.systemService.nodes();
     return [
-      { label: $localize`No node`, value: "" },
+      { id: NO_NODE_ID, label: $localize`No node` },
       ...nodes.map((n: NodeInfo) => ({
-        label: n.name,
-        value: n.uuid
+        id: n.uuid,
+        label: n.name
       }))
     ];
   });
@@ -164,7 +170,7 @@ export class RealmTableComponent {
       return [];
     }
     const map = new Map<string, string>();
-    Object.values(realms).forEach((realm: any) => {
+    Object.values(realms as any).forEach((realm: any) => {
       (realm.resolver ?? []).forEach((r: any) => {
         if (!map.has(r.name)) {
           map.set(r.name, r.type);
@@ -184,7 +190,7 @@ export class RealmTableComponent {
     const nodes = this.systemService.nodes();
     const selectedNodeUuid = this.selectedNode();
 
-    return Object.entries(realms).flatMap(([realmName, realm]) => {
+    return Object.entries(realms as any).flatMap(([realmName, realm]: [string, any]) => {
       const resolvers = realm.resolver ?? [];
 
       if (selectedNodeUuid !== ALL_NODES_VALUE) {
@@ -237,14 +243,15 @@ export class RealmTableComponent {
           name: realmName,
           isDefault: realm.default,
           resolverGroups,
-          resolversText,
-          isCreateRow: false
+          resolversText
         } as RealmRow
       ];
     });
   });
 
-  totalLength: Signal<number> = computed(() => this.realmRows().length);
+  totalLength: WritableSignal<number> = computed(
+    () => this.realmRows().length
+  ) as WritableSignal<number>;
 
   realmsDataSource: WritableSignal<MatTableDataSource<RealmRow>> = linkedSignal({
     source: this.realmRows,
@@ -285,21 +292,89 @@ export class RealmTableComponent {
     this.selectedNode.set(value);
   }
 
-  onNewRealmResolversChange(values: string[]): void {
-    this.newRealmResolvers.set(values);
+  getCreateNodeResolvers(nodeId: string): ResolverWithPriority[] {
+    return this.newRealmNodeResolvers()[nodeId] ?? [];
+  }
+
+  getCreateNodeResolverNames(groupId: string): string[] {
+    return this.getCreateNodeResolvers(groupId).map(res => res.name);
+  }
+
+  onNewRealmNodeResolversChange(nodeId: string, values: string[]): void {
+    const current = { ...this.newRealmNodeResolvers() };
+    const existing = current[nodeId] ?? [];
+    const updated: ResolverWithPriority[] = values.map((name, index) => {
+      const found = existing.find((r) => r.name === name);
+      return {
+        name,
+        priority: found?.priority ?? index + 1
+      };
+    });
+    current[nodeId] = updated;
+    this.newRealmNodeResolvers.set(current);
+  }
+
+  setNewRealmResolverPriority(nodeId: string, resolverName: string, priority: number): void {
+    if (!priority || priority < 1) {
+      priority = 1;
+    }
+    if (priority > 999) {
+      priority = 999;
+    }
+    const current = { ...this.newRealmNodeResolvers() };
+    const list = current[nodeId] ?? [];
+    const entry = list.find((r) => r.name === resolverName);
+    if (entry) {
+      entry.priority = priority;
+    } else {
+      list.push({ name: resolverName, priority });
+    }
+    current[nodeId] = [...list];
+    this.newRealmNodeResolvers.set(current);
+  }
+
+  getEditNodeResolvers(nodeId: string): ResolverWithPriority[] {
+    return this.editNodeResolvers()[nodeId] ?? [];
+  }
+
+  onEditNodeResolversChange(nodeId: string, values: string[]): void {
+    const current = this.editNodeResolvers();
+    const prevList = current[nodeId] ?? [];
+
+    const updated: ResolverWithPriority[] = values.map((name, index) => {
+      const existing = prevList.find((r) => r.name === name);
+      return {
+        name,
+        priority: existing?.priority ?? index + 1
+      };
+    });
+
+    this.editNodeResolvers.set({
+      ...current,
+      [nodeId]: updated
+    });
+  }
+
+  setEditResolverPriority(nodeId: string, resolverName: string, priority: number): void {
+    const current = this.editNodeResolvers();
+    const list = [...(current[nodeId] ?? [])];
+    const entry = list.find((r) => r.name === resolverName);
+    if (entry) {
+      entry.priority = Math.min(999, Math.max(1, Number(priority) || 1));
+    }
+    this.editNodeResolvers.set({
+      ...current,
+      [nodeId]: list
+    });
   }
 
   canSubmitNewRealm(): boolean {
-    return (
-      this.newRealmName().trim().length > 0 &&
-      !this.isCreatingRealm()
-    );
+    return this.newRealmName().trim().length > 0 && !this.isCreatingRealm();
   }
 
   resetCreateForm(): void {
     this.newRealmName.set("");
-    this.newRealmNodeId.set("");
-    this.newRealmResolvers.set([]);
+    this.newRealmNodeResolvers.set({});
   }
 
   onCreateRealm(): void {
@@ -310,14 +385,26 @@ export class RealmTableComponent {
     this.isCreatingRealm.set(true);
 
     const realmName = this.newRealmName().trim();
-    const nodeId = this.newRealmNodeId();
-    const resolvers = this.newRealmResolvers().map((name, index) => ({
-      name,
-      priority: index + 1
-    }));
+    const nodeResolvers = this.newRealmNodeResolvers();
+    const entries = Object.entries(nodeResolvers);
+    const nonEmptyEntries = entries.filter(([, resolvers]) => resolvers && resolvers.length > 0);
 
-    this.realmService
-      .createRealm(realmName, nodeId, resolvers)
+    let requests;
+
+    if (nonEmptyEntries.length === 0) {
+      requests = [this.realmService.createRealm(realmName, NO_NODE_UUID, [])];
+    } else {
+      requests = nonEmptyEntries.map(([nodeId, resolvers]) => {
+        const nodeUuid = nodeId || NO_NODE_UUID;
+        const payload = resolvers.map((r) => ({
+          name: r.name,
+          priority: Number(r.priority) || 1
+        }));
+        return this.realmService.createRealm(realmName, nodeUuid, payload);
+      });
+    }
+
+    forkJoin(requests)
       .pipe(take(1))
       .subscribe({
         next: () => {
@@ -326,7 +413,6 @@ export class RealmTableComponent {
           this.realmService.realmResource.reload?.();
         },
         error: (err: HttpErrorResponse) => {
-          console.error("Failed to create realm.", err);
           const message = err.error?.result?.error?.message || err.message;
           this.notificationService.openSnackBar(
             $localize`Failed to create realm. ${message}`
@@ -336,10 +422,106 @@ export class RealmTableComponent {
       .add(() => this.isCreatingRealm.set(false));
   }
 
-  onEditRealm(row: RealmRow): void {
-    console.log("Edit realm", row.name);
-    // TODO: open edit dialog, or inline editing
+  startEditRealm(row: RealmRow): void {
+    if (!row?.name) {
+      return;
+    }
+
+    const map: NodeResolversMap = {};
+    row.resolverGroups.forEach((g) => {
+      const key = g.nodeId ?? NO_NODE_ID;
+      map[key] = g.resolvers.map((r) => ({
+        name: r.name,
+        priority: r.priority ?? 1
+      }));
+    });
+
+    // Store an immutable copy as "original"
+    const original: NodeResolversMap = {};
+    Object.entries(map).forEach(([nodeId, list]) => {
+      original[nodeId] = list.map(r => ({ ...r }));
+    });
+
+    // Editable copy
+    const editable: NodeResolversMap = {};
+    Object.entries(map).forEach(([nodeId, list]) => {
+      editable[nodeId] = list.map(r => ({ ...r }));
+    });
+
+    this.editOriginalNodeResolvers.set(original);
+    this.editNodeResolvers.set(editable);
+    this.editingRealmName.set(row.name);
   }
+
+  cancelEditRealm(): void {
+    this.editingRealmName.set(null);
+    this.editOriginalNodeResolvers.set({});
+    this.editNodeResolvers.set({});
+    this.isSavingEditedRealm.set(false);
+  }
+
+  canSaveEditedRealm(row: RealmRow): boolean {
+    return this.editingRealmName() === row.name && !this.isSavingEditedRealm();
+  }
+
+  getEditNodeResolverNames(nodeId: string): string[] {
+    return this.getEditNodeResolvers(nodeId).map(r => r.name);
+  }
+
+  saveEditedRealm(row: RealmRow): void {
+    if (this.editingRealmName() !== row.name) {
+      return;
+    }
+
+    this.isSavingEditedRealm.set(true);
+
+    const realmName = row.name;
+    const current: NodeResolversMap = this.editNodeResolvers() || {};
+    const entries = Object.entries(current);
+
+    if (entries.length === 0) {
+      this.notificationService.openSnackBar($localize`No resolvers configured.`);
+      this.isSavingEditedRealm.set(false);
+      return;
+    }
+
+    const requests = entries.map(([nodeIdKey, list]) => {
+      const nodeUuid = nodeIdKey || NO_NODE_UUID;
+
+      const payload = (list ?? []).map((res, index) => ({
+        name: res.name,
+        priority: Number(res.priority) || index + 1
+      }));
+
+      return this.realmService.createRealm(realmName, nodeUuid, payload);
+    });
+    console.log("requests", requests)
+    console.log("realmName", realmName)
+    console.log("current", current)
+    console.log("entries", entries)
+    console.log("original", this.editOriginalNodeResolvers())
+    console.log("nodeResolvers", this.editNodeResolvers())
+    forkJoin(requests)
+      .pipe(take(1))
+      .subscribe({
+        next: () => {
+          this.notificationService.openSnackBar(
+            $localize`Realm "${realmName}" updated.`
+          );
+          this.cancelEditRealm();
+          this.realmService.realmResource.reload?.();
+        },
+        error: (err: HttpErrorResponse) => {
+          console.error("Failed to update realm.", err);
+          const message = err.error?.result?.error?.message || err.message;
+          this.notificationService.openSnackBar(
+            $localize`Failed to update realm. ${message}`
+          );
+        }
+      })
+      .add(() => this.isSavingEditedRealm.set(false));
+  }
+
 
   onDeleteRealm(row: RealmRow): void {
     if (!row?.name) {
@@ -362,103 +544,21 @@ export class RealmTableComponent {
             return;
           }
 
-          this.realmService
-            .deleteRealm(row.name)
-            .subscribe({
-              next: () => {
-                this.notificationService.openSnackBar(
-                  $localize`Realm "${row.name}" deleted.`
-                );
-                this.realmService.realmResource.reload?.();
-              },
-              error: (err: HttpErrorResponse) => {
-                console.error("Failed to delete realm.", err);
-                const message = err.error?.result?.error?.message || err.message;
-                this.notificationService.openSnackBar(
-                  $localize`Failed to delete realm. ${message}`
-                );
-              }
-            });
+          this.realmService.deleteRealm(row.name).subscribe({
+            next: () => {
+              this.notificationService.openSnackBar(
+                $localize`Realm "${row.name}" deleted.`
+              );
+              this.realmService.realmResource.reload?.();
+            },
+            error: (err: HttpErrorResponse) => {
+              const message = err.error?.result?.error?.message || err.message;
+              this.notificationService.openSnackBar(
+                $localize`Failed to delete realm. ${message}`
+              );
+            }
+          });
         }
       });
-  }
-
-  startEditRealm(row: RealmRow): void {
-    if (!row?.name) {
-      return;
-    }
-
-    this.editingRealmName.set(row.name);
-
-    const firstGroup = row.resolverGroups[0];
-    if (firstGroup) {
-      this.editRealmNodeId.set(firstGroup.nodeId ?? "");
-      this.editRealmResolvers.set(firstGroup.resolvers.map((r) => r.name));
-    } else {
-      this.editRealmNodeId.set("");
-      this.editRealmResolvers.set([]);
-    }
-  }
-
-  cancelEditRealm(): void {
-    this.editingRealmName.set(null);
-    this.editRealmNodeId.set("");
-    this.editRealmResolvers.set([]);
-    this.isSavingEditedRealm.set(false);
-  }
-
-  onEditRealmResolversChange(values: string[]): void {
-    this.editRealmResolvers.set(values);
-  }
-
-  canSaveEditedRealm(row: RealmRow): boolean {
-    return (
-      this.editingRealmName() === row.name &&
-      !this.isSavingEditedRealm()
-    );
-  }
-
-  saveEditedRealm(row: RealmRow): void {
-    if (this.editingRealmName() !== row.name) {
-      return;
-    }
-
-    this.isSavingEditedRealm.set(true);
-
-    const realmName = row.name;
-    const rawNodeId = this.editRealmNodeId();
-    const nodeId =
-      rawNodeId && rawNodeId.length > 0
-        ? rawNodeId
-        : "00000000-0000-0000-0000-000000000000"; // "no node"
-
-    const resolvers =
-      this.editRealmResolvers().length > 0
-        ? this.editRealmResolvers().map((name, index) => ({
-          name,
-          priority: index + 1
-        }))
-        : [];
-
-    this.realmService
-      .createRealm(realmName, nodeId, resolvers)
-      .pipe(take(1))
-      .subscribe({
-        next: () => {
-          this.notificationService.openSnackBar(
-            $localize`Realm "${realmName}" updated.`
-          );
-          this.cancelEditRealm();
-          this.realmService.realmResource.reload?.();
-        },
-        error: (err: HttpErrorResponse) => {
-          console.error("Failed to update realm.", err);
-          const message = err.error?.result?.error?.message || err.message;
-          this.notificationService.openSnackBar(
-            $localize`Failed to update realm. ${message}`
-          );
-        }
-      })
-      .add(() => this.isSavingEditedRealm.set(false));
   }
 }
