@@ -190,9 +190,7 @@ describe("ContainerCreateComponent", () => {
       expect.objectContaining({
         container_type: "generic",
         description: "",
-        template_name: "",
-        user: userSvc.selectionUsernameFilter(),
-        realm: ""
+        user: userSvc.selectionUsernameFilter()
       })
     );
     expect(regSpy).not.toHaveBeenCalled();
