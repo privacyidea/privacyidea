@@ -46,7 +46,7 @@ import { MatIconModule } from "@angular/material/icon";
 import { MatButtonModule } from "@angular/material/button";
 import { MatDialog } from "@angular/material/dialog";
 import { HttpErrorResponse } from "@angular/common/http";
-import { forkJoin, Observable } from "rxjs";
+import { concat, forkJoin, last } from "rxjs";
 import { take } from "rxjs/operators";
 
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
@@ -436,13 +436,11 @@ export class RealmTableComponent {
       }));
     });
 
-    // Store an immutable copy as "original"
     const original: NodeResolversMap = {};
     Object.entries(map).forEach(([nodeId, list]) => {
       original[nodeId] = list.map(r => ({ ...r }));
     });
 
-    // Editable copy
     const editable: NodeResolversMap = {};
     Object.entries(map).forEach(([nodeId, list]) => {
       editable[nodeId] = list.map(r => ({ ...r }));
@@ -495,14 +493,9 @@ export class RealmTableComponent {
 
       return this.realmService.createRealm(realmName, nodeUuid, payload);
     });
-    console.log("requests", requests)
-    console.log("realmName", realmName)
-    console.log("current", current)
-    console.log("entries", entries)
-    console.log("original", this.editOriginalNodeResolvers())
-    console.log("nodeResolvers", this.editNodeResolvers())
-    forkJoin(requests)
-      .pipe(take(1))
+
+    concat(...requests)
+      .pipe(last())
       .subscribe({
         next: () => {
           this.notificationService.openSnackBar(
@@ -521,7 +514,6 @@ export class RealmTableComponent {
       })
       .add(() => this.isSavingEditedRealm.set(false));
   }
-
 
   onDeleteRealm(row: RealmRow): void {
     if (!row?.name) {
