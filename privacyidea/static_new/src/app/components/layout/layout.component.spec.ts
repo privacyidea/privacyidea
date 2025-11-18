@@ -76,9 +76,7 @@ describe("LayoutComponent", () => {
     const layoutElement = fixture.nativeElement.querySelector(".layout");
     expect(layoutElement).toBeTruthy();
 
-    const main = fixture.nativeElement.querySelector(
-      "main[aria-label=\"Main Router Outlet\"]"
-    );
+    const main = fixture.nativeElement.querySelector('main[aria-label="Main Router Outlet"]');
     expect(main).toBeTruthy();
   });
 });

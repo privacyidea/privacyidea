@@ -52,22 +52,22 @@
           attr.aria-label="{{ column.label }} Cell"
           mat-cell
           [ngClass]="{
-              'width-18rem': column.key === 'description',
-              'table-checkbox': column.key === 'select'
-            }">
+            'width-18rem': column.key === 'description',
+            'table-checkbox': column.key === 'select'
+          }">
           <div>
             @switch (column.key) {
               @case ("success") {
                 <div class="flex just-center">
-                    <span
-                      [ngClass]="
-                        tableUtilsService.getSpanClassForKey({
-                          key: column.key,
-                          value: element[column.key]
-                        })
-                      ">
-                      {{ element[column.key] }}
-                    </span>
+                  <span
+                    [ngClass]="
+                      tableUtilsService.getSpanClassForKey({
+                        key: column.key,
+                        value: element[column.key]
+                      })
+                    ">
+                    {{ element[column.key] }}
+                  </span>
                 </div>
               }
               @case ("serial") {
@@ -85,8 +85,8 @@
               }
               @case (column.key === "sig_check" || column.key === "missing_line" ? column.key : "") {
                 <span [ngClass]="[element[column.key] === 'OK' ? 'highlight-true' : 'highlight-false']">
-                    {{ element[column.key] }}
-                  </span>
+                  {{ element[column.key] }}
+                </span>
               }
               @case ("container_serial") {
                 <div class="flex-row ali-center">
@@ -103,19 +103,19 @@
               }
               @case ("startdate") {
                 <span>
-                    {{ element[column.key].split(".")[0].replace("T", " ") }}
-                  </span>
+                  {{ element[column.key].split(".")[0].replace("T", " ") }}
+                </span>
               }
               @case ("date") {
                 <span>
-                    {{ element[column.key].split(".")[0].replace("T", " ") }}
-                  </span>
+                  {{ element[column.key].split(".")[0].replace("T", " ") }}
+                </span>
               }
               @case ("policies") {
                 @for (policy of element[column.key]?.split(","); track policy) {
                   <span>
-                      {{ policy }}
-                    </span>
+                    {{ policy }}
+                  </span>
                 }
               }
               @case ("user") {
@@ -127,8 +127,8 @@
               }
               @default {
                 <span>
-                    {{ element[column.key] }}
-                  </span>
+                  {{ element[column.key] }}
+                </span>
               }
             }
           </div>
