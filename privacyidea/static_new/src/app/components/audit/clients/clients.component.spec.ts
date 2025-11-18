@@ -74,7 +74,7 @@ describe("ClientsComponent", () => {
     expect(rows[0].isFirst).toBe(true);
     expect(rows[0].rowspan).toBe(2);
     expect(rows[1].isFirst).toBe(false);
-    expect(rows[1].rowspan).toBe(0);
+    expect(rows[1].rowspan).toBe(1);
     expect(rows[2].isFirst).toBe(true);
     expect(rows[2].rowspan).toBe(1);
     expect(rows[0].application).toBe("app1/1.0 comment");

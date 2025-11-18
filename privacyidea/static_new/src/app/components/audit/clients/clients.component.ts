@@ -52,6 +52,7 @@ import { MatTooltip } from "@angular/material/tooltip";
 import { MatIcon } from "@angular/material/icon";
 import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
 import { filter } from "rxjs";
+import { StringUtils } from "../../../utils/string.utils";
 
 const columnKeysMap = [
   { key: "application", label: "Application" },
@@ -193,28 +194,12 @@ export class ClientsComponent {
     }
   }
 
-  splitOnce(str: string, delimiter: string): [string, string] {
-    const index = str.indexOf(delimiter);
-
-    // If the delimiter is not found, return the original string and an empty string
-    if (index === -1) {
-      return [str, ""];
-    }
-
-    // Split the string at the first occurrence of the delimiter
-    const beforeDelimiter = str.slice(0, index);
-    const afterDelimiter = str.slice(index + delimiter.length);
-
-    return [beforeDelimiter, afterDelimiter];
-  }
-
-
   private _split_user_agent(application: string): { userAgent: string; version: string; comment: string } {
-    const applicationSplit = this.splitOnce(application, "/");
-    const userAgent = applicationSplit[0] || "";
-    const versionCommentSplit = this.splitOnce((applicationSplit[1] || ""), " ");
-    const version = versionCommentSplit[0] || "";
-    const comment = versionCommentSplit[1] || "";
+    const applicationSplit = StringUtils.splitOnce(application, "/");
+    const userAgent = applicationSplit.head;
+    const versionCommentSplit = StringUtils.splitOnce(applicationSplit.tail, " ");
+    const version = versionCommentSplit.head;
+    const comment = versionCommentSplit.tail;
 
     return { userAgent: userAgent, version: version, comment: comment };
   }
