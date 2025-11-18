@@ -1,0 +1,33 @@
+.token-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--global-padding);
+  border-radius: var(--border-radius);
+  box-shadow:
+    0 2px 4px -1px #00000033,
+    0 4px 5px 0 #00000024,
+    0 1px 10px 0 #0000001f;
+}
+
+.token-type {
+  font-weight: 400;
+}
+
+.token-actions {
+  display: flex;
+  align-items: center;
+
+  button {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+  }
+}
+
+.token-details-form {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  padding: 1rem 0;
+}

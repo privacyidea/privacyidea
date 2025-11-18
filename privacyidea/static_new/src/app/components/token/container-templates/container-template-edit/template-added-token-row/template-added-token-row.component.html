@@ -1,11 +1,62 @@
-<div class="token-row">
-  <div class="token-type">{{ token.type }}</div>
-  <div class="token-actions">
-    <button mat-icon-button (click)="editToken()">
-      <mat-icon>edit</mat-icon>
-    </button>
-    <button mat-icon-button (click)="deleteToken()">
-      <mat-icon>delete</mat-icon>
-    </button>
+<mat-expansion-panel class="token-card">
+  <mat-expansion-panel-header>
+    <mat-panel-title>
+      {{ token.type }}
+    </mat-panel-title>
+    <div class="token-actions">
+      <button
+        mat-icon-button
+        (click)="deleteToken(); $event.stopPropagation()">
+        <mat-icon>delete</mat-icon>
+      </button>
+    </div>
+  </mat-expansion-panel-header>
+
+  <div class="token-details-form">
+    <mat-slide-toggle
+      [ngModel]="editableToken().genkey"
+      (ngModelChange)="updateToken({ genkey: $event })"
+      name="genkey">
+      Generate Key
+    </mat-slide-toggle>
+
+    <mat-form-field>
+      <mat-label>OTP Length</mat-label>
+      <input
+        matInput
+        type="number"
+        [ngModel]="editableToken().otplen"
+        (ngModelChange)="updateToken({ otplen: +$event })"
+        name="otplen" />
+    </mat-form-field>
+
+    <mat-form-field>
+      <mat-label>Time Step</mat-label>
+      <input
+        matInput
+        type="number"
+        [ngModel]="editableToken().timeStep"
+        (ngModelChange)="updateToken({ timeStep: +$event })"
+        name="timeStep" />
+    </mat-form-field>
+
+    <mat-form-field>
+      <mat-label>Hashlib</mat-label>
+      <mat-select
+        [ngModel]="editableToken().hashlib"
+        (ngModelChange)="updateToken({ hashlib: $event })"
+        name="hashlib">
+        <mat-option value="sha1">SHA1</mat-option>
+        <mat-option value="sha256">SHA256</mat-option>
+        <mat-option value="sha512">SHA512</mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <mat-slide-toggle
+      [ngModel]="editableToken().user"
+      (ngModelChange)="updateToken({ user: $event })"
+      name="user">
+      User Token
+    </mat-slide-toggle>
   </div>
-</div>
+</mat-expansion-panel>

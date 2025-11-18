@@ -8,19 +8,11 @@ import { MatExpansionModule, MatExpansionPanel } from "@angular/material/expansi
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatSelectModule } from "@angular/material/select";
 import { MatOptionModule } from "@angular/material/core";
-import {
-  ContainerService,
-  ContainerServiceInterface,
-  ContainerTemplate
-} from "../../../../services/container/container.service";
-import {
-  ContainerTemplateService,
-  ContainerTemplateServiceInterface
-} from "../../../../services/container-template/container-template.service";
-import { TemplateAddTokenDropdownComponent } from "./template-add-token-row/template-add-token-dropdown/template-add-token-dropdown.component";
-import { TemplateAddTokenButtonComponent } from "./template-add-token-row/template-add-token-button/template-add-token-button.component";
+import { ContainerTemplate } from "../../../../services/container/container.service";
+import { ContainerTemplateService } from "../../../../services/container-template/container-template.service";
 import { TemplateAddedTokenRowComponent } from "./template-added-token-row/template-added-token-row.component";
 import { MatTooltipModule } from "@angular/material/tooltip";
+import { TemplateAddTokenRowComponent } from "./template-add-token-row/template-add-token-row.component";
 
 @Component({
   selector: "app-container-template-edit",
@@ -36,9 +28,8 @@ import { MatTooltipModule } from "@angular/material/tooltip";
     MatFormFieldModule,
     MatSelectModule,
     MatOptionModule,
-    TemplateAddTokenDropdownComponent,
-    TemplateAddTokenButtonComponent,
-    TemplateAddedTokenRowComponent
+    TemplateAddedTokenRowComponent,
+    TemplateAddTokenRowComponent
   ],
   templateUrl: "./container-template-edit.component.html",
   styleUrl: "./container-template-edit.component.scss"

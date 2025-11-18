@@ -1,0 +1,19 @@
+<div class="addTokenRow">
+  <mat-form-field>
+    <mat-label i18n>Token Type</mat-label>
+    <mat-select
+      [ngModel]="selectedTokenType"
+      (ngModelChange)="onTokenTypeChange($event)">
+      @for (tokenType of tokenTypes; track tokenType) {
+        <mat-option [value]="tokenType">{{ tokenType }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+  <button
+    mat-raised-button
+    color="primary"
+    (click)="addToken()">
+    <mat-icon>add</mat-icon>
+    <span i18n>Add Token</span>
+  </button>
+</div>

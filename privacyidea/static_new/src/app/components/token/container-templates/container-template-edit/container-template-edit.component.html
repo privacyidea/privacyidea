@@ -149,10 +149,8 @@
       </div>
     </mat-expansion-panel-header>
     <div class="flex-column">
-      <div class="addTokenRow">
-        <app-template-add-token-dropdown></app-template-add-token-dropdown>
-        <app-template-add-token-button></app-template-add-token-button>
-      </div>
+      <app-template-add-token-row />
+
       <div class="addedTokensList">
         @for (token of selectedTemplate()?.template_options?.tokens ?? []; track $index) {
           <app-template-added-token-row [token]="token"></app-template-added-token-row>
