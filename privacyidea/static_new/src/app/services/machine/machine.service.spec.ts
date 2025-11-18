@@ -52,9 +52,7 @@ describe("MachineService (with mock classes)", () => {
         { provide: LocalService, useClass: MockLocalService },
         { provide: TableUtilsService, useClass: MockTableUtilsService },
         { provide: ContentService, useClass: MockContentService },
-        MachineService,
-        MockLocalService,
-        MockNotificationService
+        MachineService
       ]
     });
 

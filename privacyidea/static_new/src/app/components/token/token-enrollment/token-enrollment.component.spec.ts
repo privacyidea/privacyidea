@@ -17,11 +17,10 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import "@angular/localize/init";
+
 import { TokenEnrollmentComponent } from "./token-enrollment.component";
 import { UserService } from "../../../services/user/user.service";
 import {
-  MockAuthService,
   MockContainerService,
   MockContentService,
   MockDialogService,
@@ -29,7 +28,8 @@ import {
   MockNotificationService,
   MockRealmService,
   MockTokenService,
-  MockUserService
+  MockUserService,
+  MockVersioningService
 } from "../../../../testing/mock-services";
 import { TokenService } from "../../../services/token/token.service";
 import { LocalService } from "../../../services/local/local.service";
@@ -43,7 +43,7 @@ import { DialogService } from "../../../services/dialog/dialog.service";
 import { FormControl, FormGroup } from "@angular/forms";
 import { of, throwError } from "rxjs";
 import { signal } from "@angular/core";
-import { HttpClient, provideHttpClient } from "@angular/common/http";
+import { provideHttpClient } from "@angular/common/http";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { TokenEnrollmentSelfServiceComponent } from "./token-enrollment.self-service.component";
 import {
@@ -52,21 +52,22 @@ import {
   REGENERATE_AS_VALUES_TOKEN_TYPES
 } from "./token-enrollment.constants";
 import { TokenEnrollmentWizardComponent } from "./token-enrollment.wizard.component";
+import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
+import { MockAuthService } from "../../../../testing/mock-services/mock-auth-service";
+import { environment } from "../../../../environments/environment";
 
 describe("TokenEnrollmentComponent", () => {
   let fixture: ComponentFixture<TokenEnrollmentComponent>;
   let component: TokenEnrollmentComponent;
   let selfFixture: ComponentFixture<TokenEnrollmentSelfServiceComponent>;
   let selfComponent: TokenEnrollmentSelfServiceComponent;
-  let wizardFixture: ComponentFixture<TokenEnrollmentWizardComponent>;
-  let wizardComponent: TokenEnrollmentWizardComponent;
 
   let tokenSvc: MockTokenService;
   let userSvc: MockUserService;
   let notifications: MockNotificationService;
   let dialog: MockDialogService;
   let authService: MockAuthService;
-  let httpClientMock: any;
+  let httpTestingController: HttpTestingController;
 
   beforeAll(() => {
     Object.defineProperty(window, "matchMedia", {
@@ -94,29 +95,26 @@ describe("TokenEnrollmentComponent", () => {
   });
 
   beforeEach(async () => {
-    let MockVersioningService;
-    httpClientMock = { get: jest.fn().mockReturnValue(of("")) };
+    let mockVersioningService: MockVersioningService;
 
     await TestBed.configureTestingModule({
       imports: [TokenEnrollmentComponent],
       providers: [
         provideHttpClient(),
+        provideHttpClientTesting(),
         NoopAnimationsModule,
         MockLocalService,
         MockNotificationService,
         { provide: LocalService, useExisting: MockLocalService },
         { provide: NotificationService, useExisting: MockNotificationService },
-
         { provide: ContainerService, useClass: MockContainerService },
         { provide: RealmService, useClass: MockRealmService },
         { provide: UserService, useClass: MockUserService },
         { provide: TokenService, useClass: MockTokenService },
         { provide: ContentService, useClass: MockContentService },
         { provide: AuthService, useClass: MockAuthService },
-
         { provide: VersioningService, useClass: MockVersioningService },
-        { provide: DialogService, useClass: MockDialogService },
-        { provide: HttpClient, useValue: httpClientMock }
+        { provide: DialogService, useClass: MockDialogService }
       ]
     }).compileComponents();
 
@@ -124,19 +122,20 @@ describe("TokenEnrollmentComponent", () => {
     component = fixture.componentInstance;
     selfFixture = TestBed.createComponent(TokenEnrollmentSelfServiceComponent);
     selfComponent = selfFixture.componentInstance;
-    wizardFixture = TestBed.createComponent(TokenEnrollmentWizardComponent);
-    wizardComponent = wizardFixture.componentInstance;
 
     tokenSvc = TestBed.inject(TokenService) as unknown as MockTokenService;
     userSvc = TestBed.inject(UserService) as unknown as MockUserService;
     notifications = TestBed.inject(NotificationService) as unknown as MockNotificationService;
+    mockVersioningService = TestBed.inject(VersioningService) as unknown as MockVersioningService;
     dialog = TestBed.inject(DialogService) as unknown as MockDialogService;
     authService = TestBed.inject(AuthService) as unknown as MockAuthService;
+    httpTestingController = TestBed.inject(HttpTestingController);
 
     fixture.detectChanges();
   });
 
   afterEach(() => {
+    httpTestingController.verify();
     jest.clearAllMocks();
   });
 
@@ -146,10 +145,6 @@ describe("TokenEnrollmentComponent", () => {
 
   it("creates self service", () => {
     expect(selfComponent).toBeTruthy();
-  });
-
-  it("creates wizard", () => {
-    expect(wizardComponent).toBeTruthy();
   });
 
   it("formatDateTimeOffset builds the expected ISO-ish string", () => {
@@ -316,7 +311,6 @@ describe("TokenEnrollmentComponent", () => {
       expect(notifications.openSnackBar).toHaveBeenCalledWith("Failed to enroll token: nope");
     });
 
-
     it("does NOT open dialog if rollout_state is 'clientwait'", async () => {
       tokenSvc.selectedTokenType.set({ key: "hotp", name: "HOTP", info: "", text: "" });
       component.setPinControl.setValue("0000");
@@ -405,8 +399,7 @@ describe("TokenEnrollmentComponent", () => {
   describe("token-enrollment constants", () => {
     const hasQr = (type: string) => !NO_QR_CODE_TOKEN_TYPES.includes(type);
     const canRegenerate = (type: string) => !NO_REGENERATE_TOKEN_TYPES.includes(type);
-    const regenerateLabel = (type: string) =>
-      REGENERATE_AS_VALUES_TOKEN_TYPES.includes(type) ? "Values" : "QR Code";
+    const regenerateLabel = (type: string) => (REGENERATE_AS_VALUES_TOKEN_TYPES.includes(type) ? "Values" : "QR Code");
 
     it("REGENERATE_AS_VALUES_TOKEN_TYPES is a subset of NO_QR_CODE_TOKEN_TYPES", () => {
       const allIn = REGENERATE_AS_VALUES_TOKEN_TYPES.every((t) => NO_QR_CODE_TOKEN_TYPES.includes(t));
@@ -460,28 +453,62 @@ describe("TokenEnrollmentComponent", () => {
   });
 
   describe("wizard", () => {
-    it("show custom content if defined", () => {
-      authService.authData.set({
-        ...authService.authData(),
-        token_wizard: true
-      });
-      httpClientMock.get.mockReturnValueOnce(of(""));
-      fixture = TestBed.createComponent(TokenEnrollmentWizardComponent);
-      fixture.detectChanges();
-      expect(fixture.nativeElement.textContent).toContain("Enroll HOTP Token");
+    let wizardFixture: ComponentFixture<TokenEnrollmentWizardComponent>;
+    let wizardComponent: TokenEnrollmentWizardComponent;
+
+    beforeEach(() => {
+      wizardFixture = TestBed.createComponent(TokenEnrollmentWizardComponent);
+      wizardComponent = wizardFixture.componentInstance;
+    });
+
+    it("creates", () => {
+      expect(wizardComponent).toBeTruthy();
+      wizardFixture.detectChanges();
+      const req = httpTestingController.expectOne(
+        environment.proxyUrl + "/static/public/customize/token-enrollment.wizard.pre.top.html"
+      );
+      req.flush("");
+      const req2 = httpTestingController.expectOne(
+        environment.proxyUrl + "/static/public/customize/token-enrollment.wizard.pre.bottom.html"
+      );
+      req2.flush("");
     });
 
     it("show default content if no custom content is defined", () => {
       authService.authData.set({
-        ...authService.authData(),
+        ...authService.authData()!,
         token_wizard: true
       });
-      httpClientMock.get.mockReturnValueOnce(of("Custom Content"));
-      fixture = TestBed.createComponent(TokenEnrollmentWizardComponent);
-      fixture.detectChanges();
-      expect(fixture.nativeElement.textContent).toContain("Custom Content");
-      expect(fixture.nativeElement.textContent).not.toContain("Enroll HOTP Token");
+      wizardFixture.detectChanges();
+      const req = httpTestingController.expectOne(
+        environment.proxyUrl + "/static/public/customize/token-enrollment.wizard.pre.top.html"
+      );
+      req.flush("");
+      const req2 = httpTestingController.expectOne(
+        environment.proxyUrl + "/static/public/customize/token-enrollment.wizard.pre.bottom.html"
+      );
+      req2.flush("");
+      wizardFixture.detectChanges();
+      expect(wizardFixture.nativeElement.textContent).toContain("Enroll HOTP Token");
+    });
+
+    it("show custom content if defined", () => {
+      authService.authData.set({
+        ...authService.authData()!,
+        token_wizard: true
+      });
+      wizardFixture.detectChanges();
+      const req = httpTestingController.expectOne(
+        environment.proxyUrl + "/static/public/customize/token-enrollment.wizard.pre.top.html"
+      );
+      req.flush("Custom Content");
+      const req2 = httpTestingController.expectOne(
+        environment.proxyUrl + "/static/public/customize/token-enrollment.wizard.pre.bottom.html"
+      );
+      req2.flush("");
+      wizardFixture.detectChanges();
+      expect(wizardFixture.nativeElement.textContent).toContain("Custom Content");
+      expect(wizardFixture.nativeElement.textContent).not.toContain("Enroll HOTP Token");
     });
   });
 });
-

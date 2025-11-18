@@ -1,33 +1,14 @@
 @use "../../../styles";
 
 .layout {
-  --total-layout-height: 100vh;
-  --header-height: calc(1rem + 4px + var(--global-padding) * 2);
-  --main-height: calc(100vh - var(--header-height));
-  --footer-height: calc(2.25rem + var(--global-padding));
-  --max-height: calc(var(--main-height) - var(--global-padding) * 3);
-
-  display: grid;
-  grid-template-rows: auto 1fr auto;
-  height: var(--total-layout-height);
-
-  header {
-    height: var(--header-height);
-  }
-
-  main {
-    height: var(--main-height);
-  }
-
-  footer {
-    height: var(--footer-height);
-  }
+  --max-height: calc(100vh - 64px - var(--global-padding) * 2);
 }
 
 .progress-bar {
   position: fixed;
-  top: calc(100% - max(var(--mdc-linear-progress-track-height, 4px),
-  var(--mdc-linear-progress-active-indicator-height, 4px)));
+  top: calc(
+    100% - max(var(--mdc-linear-progress-track-height, 4px), var(--mdc-linear-progress-active-indicator-height, 4px))
+  );
   left: 0;
   width: 100%;
   z-index: 1000;

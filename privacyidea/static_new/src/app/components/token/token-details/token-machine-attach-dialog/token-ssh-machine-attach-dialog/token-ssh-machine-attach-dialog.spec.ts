@@ -196,8 +196,9 @@ describe("TokenSshMachineAssignDialogComponent", () => {
     });
 
     it("returns {invalidMachine:true} when object is missing fields", () => {
-      expect(component.machineValidator({ value: { id: 1, hostname: ["h"], ip: "x" } } as any))
-        .toEqual({ invalidMachine: true });
+      expect(component.machineValidator({ value: { id: 1, hostname: ["h"], ip: "x" } } as any)).toEqual({
+        invalidMachine: true
+      });
     });
 
     it("returns null for a valid machine", () => {
