@@ -1,0 +1,15 @@
+@use "../../../../styles";
+
+.clear-button-container button {
+  color: var(--grey-light-active);
+}
+
+.clear-button-container button mat-icon {
+  font-size: 24px;
+  rotate: 45deg;
+}
+
+.clear-button-container button :hover {
+  color: var(--red-light);
+  cursor: pointer;
+}

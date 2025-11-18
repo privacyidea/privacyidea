@@ -41,7 +41,7 @@ import {
   MatExpansionPanelHeader,
   MatExpansionPanelTitle
 } from "@angular/material/expansion";
-import { MatFormField, MatLabel } from "@angular/material/form-field";
+import { MatFormField, MatLabel, MatSuffix } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
 import { MatSelect } from "@angular/material/select";
@@ -77,6 +77,7 @@ import {
 import { ContainerRegistrationCompletedDialogWizardComponent } from "./container-registration-completed-dialog/container-registration-completed-dialog.wizard.component";
 import { ContainerCreatedDialogWizardComponent } from "./container-created-dialog/container-created-dialog.wizard.component";
 import { UserAssignmentComponent } from "../user-assignment/user-assignment.component";
+import { ClearButtonComponent } from "../../shared/clear-button/clear-button.component";
 
 export type ContainerTypeOption = "generic" | "smartphone" | "yubikey";
 
@@ -102,7 +103,9 @@ export type ContainerTypeOption = "generic" | "smartphone" | "yubikey";
     NgClass,
     CommonModule,
     ContainerRegistrationConfigComponent,
-    UserAssignmentComponent
+    UserAssignmentComponent,
+    MatSuffix,
+    ClearButtonComponent
   ],
   templateUrl: "./container-create.component.html",
   styleUrl: "./container-create.component.scss"
@@ -137,7 +140,6 @@ export class ContainerCreateComponent {
   pollResponse = signal<any>(null);
   userSelected = computed(() => this.userService.selectionUsernameFilter() !== "");
   public dialogData = signal<ContainerCreationDialogData | null>(null);
-  NO_TEMPLATE_OPTION = "-";
 
   @ViewChild("scrollContainer") scrollContainer!: ElementRef<HTMLElement>;
   @ViewChild("stickyHeader") stickyHeader!: ElementRef<HTMLElement>;
@@ -250,7 +252,7 @@ export class ContainerCreateComponent {
     if (createData.user || this.userAssignmentComponent?.onlyAddToRealm()) {
       createData.realm = this.userService.selectedUserRealm();
     }
-    if (this.selectedTemplate() && this.selectedTemplate() !== this.NO_TEMPLATE_OPTION) {
+    if (this.selectedTemplate()) {
       createData.template_name = this.selectedTemplate();
     }
     this.containerService.createContainer(createData).subscribe({
@@ -302,5 +304,9 @@ export class ContainerCreateComponent {
     this.registrationDialog.open(dialogComponent, {
       data: this.dialogData
     });
+  }
+
+  clearTemplateSelection() {
+    this.selectedTemplate.set("");
   }
 }

@@ -87,11 +87,15 @@
         <mat-select
           [(ngModel)]="selectedTemplate"
           [value]="selectedTemplate()">
-          <mat-option [value]="NO_TEMPLATE_OPTION">{{NO_TEMPLATE_OPTION}}</mat-option>
           @for (option of templateOptions(); track option) {
             <mat-option [value]="option">{{ option.name }}</mat-option>
           }
         </mat-select>
+        @if (selectedTemplate() !== "") {
+            <app-clear-button
+              matSuffix
+              (onClick)="clearTemplateSelection()"></app-clear-button>
+          }
       </mat-form-field>
     </div>
   }
