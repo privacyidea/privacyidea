@@ -20,7 +20,11 @@ import { Component, computed, inject, linkedSignal, Signal, signal, ViewChild, W
 import {
   MatCell,
   MatCellDef,
-  MatColumnDef, MatFooterCell, MatFooterCellDef, MatFooterRow, MatFooterRowDef,
+  MatColumnDef,
+  MatFooterCell,
+  MatFooterCellDef,
+  MatFooterRow,
+  MatFooterRowDef,
   MatHeaderCell,
   MatHeaderCellDef,
   MatHeaderRow,
@@ -137,6 +141,10 @@ export class RealmTableComponent {
   newRealmNodeId = signal<string>("");
   newRealmResolvers = signal<string[]>([]);
   isCreatingRealm = signal<boolean>(false);
+  editingRealmName = signal<string | null>(null);
+  editRealmNodeId = signal<string>("");
+  editRealmResolvers = signal<string[]>([]);
+  isSavingEditedRealm = signal<boolean>(false);
 
   createNodeOptions = computed(() => {
     const nodes = this.systemService.nodes();
@@ -373,5 +381,84 @@ export class RealmTableComponent {
             });
         }
       });
+  }
+
+  startEditRealm(row: RealmRow): void {
+    if (!row?.name) {
+      return;
+    }
+
+    this.editingRealmName.set(row.name);
+
+    const firstGroup = row.resolverGroups[0];
+    if (firstGroup) {
+      this.editRealmNodeId.set(firstGroup.nodeId ?? "");
+      this.editRealmResolvers.set(firstGroup.resolvers.map((r) => r.name));
+    } else {
+      this.editRealmNodeId.set("");
+      this.editRealmResolvers.set([]);
+    }
+  }
+
+  cancelEditRealm(): void {
+    this.editingRealmName.set(null);
+    this.editRealmNodeId.set("");
+    this.editRealmResolvers.set([]);
+    this.isSavingEditedRealm.set(false);
+  }
+
+  onEditRealmResolversChange(values: string[]): void {
+    this.editRealmResolvers.set(values);
+  }
+
+  canSaveEditedRealm(row: RealmRow): boolean {
+    return (
+      this.editingRealmName() === row.name &&
+      !this.isSavingEditedRealm()
+    );
+  }
+
+  saveEditedRealm(row: RealmRow): void {
+    if (this.editingRealmName() !== row.name) {
+      return;
+    }
+
+    this.isSavingEditedRealm.set(true);
+
+    const realmName = row.name;
+    const rawNodeId = this.editRealmNodeId();
+    const nodeId =
+      rawNodeId && rawNodeId.length > 0
+        ? rawNodeId
+        : "00000000-0000-0000-0000-000000000000"; // "no node"
+
+    const resolvers =
+      this.editRealmResolvers().length > 0
+        ? this.editRealmResolvers().map((name, index) => ({
+          name,
+          priority: index + 1
+        }))
+        : [];
+
+    this.realmService
+      .createRealm(realmName, nodeId, resolvers)
+      .pipe(take(1))
+      .subscribe({
+        next: () => {
+          this.notificationService.openSnackBar(
+            $localize`Realm "${realmName}" updated.`
+          );
+          this.cancelEditRealm();
+          this.realmService.realmResource.reload?.();
+        },
+        error: (err: HttpErrorResponse) => {
+          console.error("Failed to update realm.", err);
+          const message = err.error?.result?.error?.message || err.message;
+          this.notificationService.openSnackBar(
+            $localize`Failed to update realm. ${message}`
+          );
+        }
+      })
+      .add(() => this.isSavingEditedRealm.set(false));
   }
 }
