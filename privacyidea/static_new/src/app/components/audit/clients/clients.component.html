@@ -64,82 +64,36 @@
           [ngClass]="{'col-even': colIdx % 2 === 0, 'col-odd': colIdx % 2 !== 0}">
           {{ column.label }}
         </th>
-        @if (column.key === "application") {
           <ng-container *matCellDef="let client">
-            @if ((!activeSortColumn() || activeSortColumn() === "application") && !filterValue) {
-              @if (client.isFirst) {
+            @if (!useApplicationRowSpan(column.key) || client.isFirst) {
                 <td
                   mat-cell
-                  [attr.rowspan]="client.rowspan"
+                  [attr.rowspan]="useApplicationRowSpan(column.key) ? client.rowspan : 1"
                   [ngClass]="colIdx % 2 === 0 ? 'col-even' : 'col-odd'">
                   <div class="data-table-cell">
-                    <ng-container>
-                      <span>{{ client[column.key] }}</span>
-                    </ng-container>
-                    <app-copy-button [copyText]="client.application" />
-                    @if (authService.actionAllowed("auditlog")) {
-                      <button
-                        (click)="showUserAgentInAuditLog(client[column.key])"
-                        [routerLink]="[ROUTE_PATHS.AUDIT]"
-                        class="ml-4 small-icon-button"
-                        mat-icon-button
-                        matTooltip="Show user agent in audit log">
-                        <mat-icon>receipt_long</mat-icon>
-                      </button>
-                    }
+                      @if (column.key === 'lastseen') {
+                        <!-- Format lastseen as date/time -->
+                        {{ client.lastseen ? (client.lastseen | date:'yyyy-MM-dd HH:mm:ss z':'UTC') : '' }}
+                      } @else {
+                        {{ client[column.key] }}
+                      }
+                      @if (['ip', 'application'].includes(column.key)) {
+                        <app-copy-button [copyText]="client[column.key]" />
+                        @if (authService.actionAllowed("auditlog")) {
+                          <button
+                            (click)="showInAuditLog(column.key, client[column.key])"
+                            [routerLink]="[ROUTE_PATHS.AUDIT]"
+                            class="ml-4 small-icon-button"
+                            mat-icon-button
+                            matTooltip="Show in audit log">
+                            <mat-icon>receipt_long</mat-icon>
+                          </button>
+                        }
+                      }
                   </div>
                 </td>
-              }
-            } @else {
-              <td
-                attr.aria-label="{{ column.label }} Cell"
-                mat-cell
-                [ngClass]="colIdx % 2 === 0 ? 'col-even' : 'col-odd'">
-                <div class="data-table-cell">
-                  <span class="line-height">{{ client[column.key] }}</span>
-                  @if (authService.actionAllowed("auditlog")) {
-                    <button
-                      (click)="showUserAgentInAuditLog(client[column.key])"
-                      [routerLink]="[ROUTE_PATHS.AUDIT]"
-                      class="ml-4 small-icon-button"
-                      mat-icon-button
-                      matTooltip="Show user agent in audit log">
-                      <mat-icon>receipt_long</mat-icon>
-                    </button>
-                  }
-                </div>
-              </td>
             }
           </ng-container>
-        } @else {
-          <td
-            *matCellDef="let client"
-            attr.aria-label="{{ column.label }} Cell"
-            mat-cell
-            [ngClass]="colIdx % 2 === 0 ? 'col-even' : 'col-odd'">
-            <div class="data-table-cell">
-              <!-- Format lastseen as date/time -->
-              @if (column.key === 'lastseen') {
-                {{ client.lastseen ? (client.lastseen | date:'yyyy-MM-dd HH:mm:ss z':'UTC') : '' }}
-              } @else {
-                {{ client[column.key] }}
-              }
-              @if (column.key === 'ip') {
-                <app-copy-button [copyText]="client[column.key]" />
-                @if (authService.actionAllowed("auditlog")) {
-                  <button
-                    (click)="showIpInAuditLog(client[column.key])"
-                    [routerLink]="[ROUTE_PATHS.AUDIT]"
-                    class="ml-4 small-icon-button"
-                    mat-icon-button
-                    matTooltip="Show IP in audit log">
-                    <mat-icon>receipt_long</mat-icon>
-                  </button>
-                }
-              }
-            </div>
-          </td>
-        }
       </ng-container>
     }
     <tr

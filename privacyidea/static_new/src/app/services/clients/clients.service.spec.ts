@@ -19,7 +19,6 @@
 
 import { ClientsService } from "./clients.service";
 import {
-  MockAuthService,
   MockContentService,
   MockLocalService,
   MockNotificationService
@@ -31,6 +30,7 @@ import { ContentService } from "../content/content.service";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
 import { ROUTE_PATHS } from "../../route_paths";
 import { environment } from "../../../environments/environment";
+import { MockAuthService } from "../../../testing/mock-services/mock-auth-service";
 
 
 describe("ClientsService", () => {

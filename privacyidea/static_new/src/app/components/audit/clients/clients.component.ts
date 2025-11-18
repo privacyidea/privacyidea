@@ -144,10 +144,11 @@ export class ClientsComponent {
           ip: client.ip,
           lastseen: client.lastseen ? new Date(client.lastseen) : undefined,
           isFirst: idx === 0,
-          rowspan: idx === 0 ? len : 0
+          rowspan: idx === 0 ? len : 1
         });
       });
     }
+    console.log(rows);
     return rows;
   };
 
@@ -183,8 +184,13 @@ export class ClientsComponent {
     this.clientDataSource().filter = this.filterValue.toLowerCase();
   }
 
-  protected showIpInAuditLog(ip: string): void {
-    this.auditService.auditFilter.set(new FilterValue({ value: `client: ${ip}` }));
+  protected showInAuditLog(column: string, value: string) {
+    if (column === "application") {
+        const userAgent = this._split_user_agent(value);
+        this.auditService.auditFilter.set(new FilterValue({ value: `user_agent: ${userAgent.userAgent} user_agent_version: ${userAgent.version}` }));
+    } else if (column === "ip") {
+        this.auditService.auditFilter.set(new FilterValue({ value: `client: ${value}` }));
+    }
   }
 
   splitOnce(str: string, delimiter: string): [string, string] {
@@ -213,9 +219,8 @@ export class ClientsComponent {
     return { userAgent: userAgent, version: version, comment: comment };
   }
 
-  protected showUserAgentInAuditLog(application: string): void {
-    const userAgent = this._split_user_agent(application);
-    this.auditService.auditFilter.set(new FilterValue({ value: `user_agent: ${userAgent.userAgent} user_agent_version: ${userAgent.version}` }));
+  useApplicationRowSpan(columnKey: string): boolean {
+    return columnKey === "application" && (!this.activeSortColumn() || this.activeSortColumn() === "application") && !this.filterValue;
   }
 
   protected readonly ROUTE_PATHS = ROUTE_PATHS;

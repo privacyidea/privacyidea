@@ -22,12 +22,12 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideHttpClient } from "@angular/common/http";
 import {
   MockAuditService,
-  MockAuthService,
   MockContentService,
   MockPiResponse
 } from "../../../../testing/mock-services";
 import { ClientsDict } from "../../../services/clients/clients.service";
 import { FilterValue } from "../../../core/models/filter_value";
+import { MockAuthService } from "../../../../testing/mock-services/mock-auth-service";
 
 describe("ClientsComponent", () => {
   let fixture: ComponentFixture<ClientsComponent>;
@@ -112,17 +112,23 @@ describe("ClientsComponent", () => {
 
   it("should call auditService.auditFilter.set with correct IP filter", () => {
     const spy = jest.spyOn(component.auditService.auditFilter, "set");
-    (component as any).showIpInAuditLog("1.2.3.4");
+    (component as any).showInAuditLog("ip", "1.2.3.4");
     expect(spy).toHaveBeenCalledWith(new FilterValue({ value: "client: 1.2.3.4" }));
   });
 
   it("should call auditService.auditFilter.set with correct user agent filter", () => {
     const spy = jest.spyOn(component.auditService.auditFilter, "set");
-    (component as any).showUserAgentInAuditLog("privacyIDEA-Keycloak/1.5.1 Keycloak/25.0.1");
+    (component as any).showInAuditLog("application", "privacyIDEA-Keycloak/1.5.1 Keycloak/25.0.1");
     expect(spy).toHaveBeenCalledWith(new FilterValue({
       value: "user_agent: privacyIDEA-Keycloak user_agent_version:" +
         " 1.5.1"
     }));
+  });
+
+  it("should not set auditFilter for not covered columns", () => {
+    const spy = jest.spyOn(component.auditService.auditFilter, "set");
+    (component as any).showInAuditLog("hostname", "host");
+    expect(spy).not.toHaveBeenCalled();
   });
 
   it("should create MatTableDataSource with correct sorting accessor for lastseen", () => {
