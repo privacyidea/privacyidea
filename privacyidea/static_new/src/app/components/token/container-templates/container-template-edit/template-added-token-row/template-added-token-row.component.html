@@ -5,6 +5,7 @@
     </mat-panel-title>
     <div class="token-actions">
       <button
+        *ngIf="isEditMode()"
         mat-icon-button
         (click)="deleteToken(); $event.stopPropagation()">
         <mat-icon>delete</mat-icon>
@@ -14,15 +15,23 @@
 
   <div class="token-details-form">
     <mat-slide-toggle
+      [disabled]="!isEditMode()"
       [ngModel]="editableToken().genkey"
       (ngModelChange)="updateToken({ genkey: $event })"
       name="genkey">
       Generate Key
     </mat-slide-toggle>
-
+    <mat-slide-toggle
+      [disabled]="!isEditMode()"
+      [ngModel]="editableToken().user"
+      (ngModelChange)="updateToken({ user: $event })"
+      name="user">
+      User Token
+    </mat-slide-toggle>
     <mat-form-field>
       <mat-label>OTP Length</mat-label>
       <input
+        [disabled]="!isEditMode()"
         matInput
         type="number"
         [ngModel]="editableToken().otplen"
@@ -33,6 +42,7 @@
     <mat-form-field>
       <mat-label>Time Step</mat-label>
       <input
+        [disabled]="!isEditMode()"
         matInput
         type="number"
         [ngModel]="editableToken().timeStep"
@@ -43,6 +53,7 @@
     <mat-form-field>
       <mat-label>Hashlib</mat-label>
       <mat-select
+        [disabled]="!isEditMode()"
         [ngModel]="editableToken().hashlib"
         (ngModelChange)="updateToken({ hashlib: $event })"
         name="hashlib">
@@ -51,12 +62,5 @@
         <mat-option value="sha512">SHA512</mat-option>
       </mat-select>
     </mat-form-field>
-
-    <mat-slide-toggle
-      [ngModel]="editableToken().user"
-      (ngModelChange)="updateToken({ user: $event })"
-      name="user">
-      User Token
-    </mat-slide-toggle>
   </div>
 </mat-expansion-panel>

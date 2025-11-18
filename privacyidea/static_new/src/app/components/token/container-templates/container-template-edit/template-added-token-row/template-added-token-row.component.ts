@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, OnInit, linkedSignal, effect } from "@angular/core";
+import { Component, effect, EventEmitter, input, Input, linkedSignal, Output } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { MatIconModule } from "@angular/material/icon";
 import { MatButtonModule } from "@angular/material/button";
@@ -34,6 +34,8 @@ export class TemplateAddedTokenRowComponent {
   @Input() token!: ContainerTemplateToken;
   @Output() tokenChange = new EventEmitter<ContainerTemplateToken>();
   @Output() delete = new EventEmitter<ContainerTemplateToken>();
+
+  isEditMode = input<boolean>(false);
 
   editableToken = linkedSignal<ContainerTemplateToken>(() => ({ ...this.token }));
 
