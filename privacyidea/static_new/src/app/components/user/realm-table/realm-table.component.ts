@@ -155,7 +155,7 @@ export class RealmTableComponent {
   allNodeGroups = computed(() => {
     const nodes = this.systemService.nodes();
     return [
-      { id: NO_NODE_ID, label: $localize`No node` },
+      { id: NO_NODE_ID, label: $localize`All nodes` },
       ...nodes.map((n: NodeInfo) => ({
         id: n.uuid,
         label: n.name
@@ -208,7 +208,7 @@ export class RealmTableComponent {
         if (!groupsMap.has(nodeKey)) {
           let nodeLabel: string;
           if (!r.node) {
-            nodeLabel = $localize`No node`;
+            nodeLabel = $localize`All nodes`;
           } else {
             const nodeInfo = nodes.find((n) => n.uuid === r.node || n.name === r.node);
             nodeLabel = nodeInfo?.name ?? r.node;
