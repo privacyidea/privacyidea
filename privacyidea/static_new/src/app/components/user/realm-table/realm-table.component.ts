@@ -46,8 +46,7 @@ import { MatIconModule } from "@angular/material/icon";
 import { MatButtonModule } from "@angular/material/button";
 import { MatDialog } from "@angular/material/dialog";
 import { HttpErrorResponse } from "@angular/common/http";
-import { concat, forkJoin, last } from "rxjs";
-import { take } from "rxjs/operators";
+import { concat, last } from "rxjs";
 
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
@@ -76,7 +75,6 @@ const columnKeysMap = [
 
 const ALL_NODES_VALUE = "__all_nodes__";
 const NO_NODE_ID = "";
-const NO_NODE_UUID = "00000000-0000-0000-0000-000000000000";
 
 @Component({
   selector: "app-realm-table",
@@ -386,26 +384,39 @@ export class RealmTableComponent {
 
     const realmName = this.newRealmName().trim();
     const nodeResolvers = this.newRealmNodeResolvers();
-    const entries = Object.entries(nodeResolvers);
-    const nonEmptyEntries = entries.filter(([, resolvers]) => resolvers && resolvers.length > 0);
 
-    let requests;
+    const hasGlobalGroup = Object.prototype.hasOwnProperty.call(nodeResolvers, NO_NODE_ID);
+    const globalResolvers = (nodeResolvers[NO_NODE_ID] ?? []) as ResolverWithPriority[];
 
-    if (nonEmptyEntries.length === 0) {
-      requests = [this.realmService.createRealm(realmName, NO_NODE_UUID, [])];
-    } else {
-      requests = nonEmptyEntries.map(([nodeId, resolvers]) => {
-        const nodeUuid = nodeId || NO_NODE_UUID;
-        const payload = resolvers.map((r) => ({
-          name: r.name,
-          priority: Number(r.priority) || 1
-        }));
-        return this.realmService.createRealm(realmName, nodeUuid, payload);
-      });
+    const nodeEntries = Object.entries(nodeResolvers).filter(
+      ([nodeId, resolvers]) =>
+        nodeId !== NO_NODE_ID && resolvers && resolvers.length > 0
+    );
+
+    const requests = [];
+
+    if (hasGlobalGroup) {
+      const payload = (globalResolvers ?? []).map((r, index) => ({
+        name: r.name,
+        priority: Number(r.priority) || index + 1
+      }));
+
+      requests.push(this.realmService.createRealm(realmName, NO_NODE_ID, payload));
+    } else if (nodeEntries.length === 0) {
+      requests.push(this.realmService.createRealm(realmName, NO_NODE_ID, []));
     }
 
-    forkJoin(requests)
-      .pipe(take(1))
+    nodeEntries.forEach(([nodeId, resolvers]) => {
+      const payload = (resolvers ?? []).map((r, index) => ({
+        name: r.name,
+        priority: Number(r.priority) || index + 1
+      }));
+
+      requests.push(this.realmService.createRealm(realmName, nodeId, payload));
+    });
+
+    concat(...requests)
+      .pipe(last())
       .subscribe({
         next: () => {
           this.notificationService.openSnackBar($localize`Realm created.`);
@@ -475,23 +486,37 @@ export class RealmTableComponent {
 
     const realmName = row.name;
     const current: NodeResolversMap = this.editNodeResolvers() || {};
-    const entries = Object.entries(current);
 
-    if (entries.length === 0) {
+    const hasGlobalGroup = Object.prototype.hasOwnProperty.call(current, NO_NODE_ID);
+    const globalResolvers = (current[NO_NODE_ID] ?? []) as ResolverWithPriority[];
+    const nodeEntries = Object.entries(current).filter(
+      ([nodeId]) => nodeId !== NO_NODE_ID
+    );
+
+    if (!hasGlobalGroup && nodeEntries.length === 0) {
       this.notificationService.openSnackBar($localize`No resolvers configured.`);
       this.isSavingEditedRealm.set(false);
       return;
     }
 
-    const requests = entries.map(([nodeIdKey, list]) => {
-      const nodeUuid = nodeIdKey || NO_NODE_UUID;
+    const requests = [];
 
+    if (hasGlobalGroup) {
+      const payload = (globalResolvers ?? []).map((res, index) => ({
+        name: res.name,
+        priority: Number(res.priority) || index + 1
+      }));
+
+      requests.push(this.realmService.createRealm(realmName, NO_NODE_ID, payload));
+    }
+
+    nodeEntries.forEach(([nodeId, list]) => {
       const payload = (list ?? []).map((res, index) => ({
         name: res.name,
         priority: Number(res.priority) || index + 1
       }));
 
-      return this.realmService.createRealm(realmName, nodeUuid, payload);
+      requests.push(this.realmService.createRealm(realmName, nodeId, payload));
     });
 
     concat(...requests)

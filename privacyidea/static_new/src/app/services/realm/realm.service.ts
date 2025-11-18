@@ -76,6 +76,7 @@ export interface RealmServiceInterface {
     nodeId: string,
     resolvers: { name: string; priority: number }[]
   ): Observable<PiResponse<any>>;
+
   deleteRealm(realm: string): Observable<PiResponse<number | any>>;
 }
 
@@ -145,6 +146,50 @@ export class RealmService implements RealmServiceInterface {
     return "";
   });
 
+  createRealm(
+    realm: string,
+    nodeId: string,
+    resolvers: { name: string; priority: number }[]
+  ): Observable<PiResponse<any>> {
+
+    let url: string;
+    let body: any;
+
+    if (!nodeId) {
+      url = `${environment.proxyUrl}/realm/${encodeURIComponent(realm)}`;
+
+      const resolverNames = resolvers.map(r => r.name);
+      body = {
+        resolvers: resolverNames
+      };
+
+      resolvers.forEach(r => {
+        body[`priority.${r.name}`] = r.priority ?? 1;
+      });
+    } else {
+      url = `${environment.proxyUrl}/realm/${encodeURIComponent(realm)}/node/${nodeId}`;
+      body = {
+        resolver: resolvers.map(r => ({
+          name: r.name,
+          priority: r.priority ?? 1
+        }))
+      };
+    }
+
+    return this.http.post<PiResponse<any>>(url, body, {
+      headers: this.authService.getHeaders()
+    });
+  }
+
+  deleteRealm(realm: string): Observable<PiResponse<number | any>> {
+    const encodedRealm = encodeURIComponent(realm);
+    const url = `${environment.proxyUrl}/realm/${encodedRealm}`;
+
+    return this.http.delete<PiResponse<number | any>>(url, {
+      headers: this.authService.getHeaders()
+    });
+  }
+
   constructor() {
     effect(() => {
       if (this.realmResource.error()) {
@@ -162,31 +207,6 @@ export class RealmService implements RealmServiceInterface {
         const message = defaultRealmError.error?.result?.error?.message || defaultRealmError.message;
         this.notificationService.openSnackBar("Failed to get default realm. " + message);
       }
-    });
-  }
-
-  createRealm(
-    realm: string,
-    nodeId: string,
-    resolvers: { name: string; priority: number }[]
-  ): Observable<PiResponse<any>> {
-
-    const url = `${environment.proxyUrl}/realm/${realm}/node/${nodeId}`;
-    const body = {
-      resolver: resolvers
-    };
-
-    return this.http.post<PiResponse<any>>(url, body, {
-      headers: this.authService.getHeaders()
-    });
-  }
-
-  deleteRealm(realm: string): Observable<PiResponse<number | any>> {
-    const encodedRealm = encodeURIComponent(realm);
-    const url = `${environment.proxyUrl}/realm/${encodedRealm}`;
-
-    return this.http.delete<PiResponse<number | any>>(url, {
-      headers: this.authService.getHeaders()
     });
   }
 }
