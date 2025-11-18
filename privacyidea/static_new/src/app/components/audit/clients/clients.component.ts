@@ -39,8 +39,7 @@ import {
   ClientsServiceInterface
 } from "../../../services/clients/clients.service";
 import { MatSort, MatSortHeader, MatSortModule } from "@angular/material/sort";
-import { NgClass } from "@angular/common";
-import { CommonModule } from "@angular/common";
+import { CommonModule, NgClass } from "@angular/common";
 import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
 import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
 import { AuthService } from "../../../services/auth/auth.service";
@@ -58,7 +57,7 @@ const columnKeysMap = [
   { key: "application", label: "Application" },
   { key: "hostname", label: "Hostname" },
   { key: "ip", label: "IP Address" },
-  { key: "lastseen", label: "Last Authentication" }
+  { key: "lastseen", label: "Last Authentication Attempt" }
 ];
 
 export interface ClientTableRow {
@@ -71,7 +70,7 @@ interface FlattenedClientRow {
   application: string;
   hostname?: string;
   ip?: string;
-  lastseen?: Date; // Change to Date
+  lastseen?: Date;
   isFirst: boolean;
   rowspan: number;
 }
@@ -116,7 +115,7 @@ export class ClientsComponent {
   auditService = inject(AuditService);
 
   readonly columnKeysMap = columnKeysMap;
-  readonly columnKeys = ["application", "hostname", "ip", "lastseen"];
+  readonly columnKeys = columnKeysMap.map(c => c.key);
 
   activeSortColumn = signal<string | null>(null);
 
@@ -143,7 +142,7 @@ export class ClientsComponent {
           application,
           hostname: client.hostname,
           ip: client.ip,
-          lastseen: client.lastseen ? new Date(client.lastseen) : undefined, // Convert to Date
+          lastseen: client.lastseen ? new Date(client.lastseen) : undefined,
           isFirst: idx === 0,
           rowspan: idx === 0 ? len : 0
         });
@@ -161,7 +160,7 @@ export class ClientsComponent {
         const dataSource = new MatTableDataSource(this.flattenedClientRowsFromDict(clientData));
         // Custom sorting for lastseen
         dataSource.sortingDataAccessor = (item, property) => {
-          if (property === 'lastseen') {
+          if (property === "lastseen") {
             return item.lastseen ? item.lastseen.getTime() : 0;
           }
           return (item as any)[property];
@@ -184,15 +183,39 @@ export class ClientsComponent {
     this.clientDataSource().filter = this.filterValue.toLowerCase();
   }
 
-   protected showIpInAuditLog(ip: string): void {
+  protected showIpInAuditLog(ip: string): void {
     this.auditService.auditFilter.set(new FilterValue({ value: `client: ${ip}` }));
   }
 
+  splitOnce(str: string, delimiter: string): [string, string] {
+    const index = str.indexOf(delimiter);
+
+    // If the delimiter is not found, return the original string and an empty string
+    if (index === -1) {
+      return [str, ""];
+    }
+
+    // Split the string at the first occurrence of the delimiter
+    const beforeDelimiter = str.slice(0, index);
+    const afterDelimiter = str.slice(index + delimiter.length);
+
+    return [beforeDelimiter, afterDelimiter];
+  }
+
+
+  private _split_user_agent(application: string): { userAgent: string; version: string; comment: string } {
+    const applicationSplit = this.splitOnce(application, "/");
+    const userAgent = applicationSplit[0] || "";
+    const versionCommentSplit = this.splitOnce((applicationSplit[1] || ""), " ");
+    const version = versionCommentSplit[0] || "";
+    const comment = versionCommentSplit[1] || "";
+
+    return { userAgent: userAgent, version: version, comment: comment };
+  }
+
   protected showUserAgentInAuditLog(application: string): void {
-    const applicationSplit = application.split("/");
-    const userAgent = applicationSplit[0];
-    const version = (applicationSplit[1] || "").split(" ")[0];
-    this.auditService.auditFilter.set(new FilterValue({ value: `user_agent: ${userAgent} user_agent_version: ${version}` }));
+    const userAgent = this._split_user_agent(application);
+    this.auditService.auditFilter.set(new FilterValue({ value: `user_agent: ${userAgent.userAgent} user_agent_version: ${userAgent.version}` }));
   }
 
   protected readonly ROUTE_PATHS = ROUTE_PATHS;

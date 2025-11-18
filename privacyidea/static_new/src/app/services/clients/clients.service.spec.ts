@@ -18,7 +18,6 @@
  **/
 
 import { ClientsService } from "./clients.service";
-import { AuditService } from "../audit/audit.service";
 import {
   MockAuthService,
   MockContentService,
@@ -29,17 +28,21 @@ import { TestBed } from "@angular/core/testing";
 import { provideHttpClient } from "@angular/common/http";
 import { AuthService } from "../auth/auth.service";
 import { ContentService } from "../content/content.service";
+import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
+import { ROUTE_PATHS } from "../../route_paths";
+import { environment } from "../../../environments/environment";
+
 
 describe("ClientsService", () => {
   let clientService: ClientsService;
-  let content: MockContentService;
-  let authService: MockAuthService;
+  let contentService: MockContentService;
 
   beforeEach(() => {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(),
+        provideHttpClientTesting(),
         { provide: AuthService, useClass: MockAuthService },
         { provide: ContentService, useClass: MockContentService },
         ClientsService,
@@ -48,12 +51,35 @@ describe("ClientsService", () => {
       ]
     });
     clientService = TestBed.inject(ClientsService);
-    content = TestBed.inject(ContentService) as any;
-    authService = TestBed.inject(AuthService) as any;
+    contentService = TestBed.inject(ContentService) as any;
   });
 
   it("should be created", () => {
     expect(clientService).toBeTruthy();
   });
-});
 
+  it("should return undefined if route is not CLIENTS", async () => {
+    contentService.routeUrl.update(() => ROUTE_PATHS.TOKENS);
+    const mockBackend = TestBed.inject(HttpTestingController);
+    TestBed.flushEffects();
+
+    // Expect and flush the HTTP request
+    mockBackend.expectNone(environment.proxyUrl + "/client/");
+    await Promise.resolve();
+
+    expect(clientService.clientsResource.value()).toBeUndefined();
+  });
+
+  it("should return correct resource if route is CLIENTS", async () => {
+    contentService.routeUrl.update(() => ROUTE_PATHS.CLIENTS);
+    const mockBackend = TestBed.inject(HttpTestingController);
+    TestBed.flushEffects();
+
+    // Expect and flush the HTTP request
+    const req = mockBackend.expectOne(environment.proxyUrl + "/client/");
+    req.flush({ result: {} });
+    await Promise.resolve();
+
+    expect(clientService.clientsResource.value()).toBeDefined();
+  });
+});
