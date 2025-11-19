@@ -129,5 +129,4 @@ export class TokenComponent {
     window.removeEventListener("resize", this.updateOverflowState);
   }
 
-  i = 42;
 }
