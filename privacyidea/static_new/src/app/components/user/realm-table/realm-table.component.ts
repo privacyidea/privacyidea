@@ -63,7 +63,7 @@ import { NodeInfo, SystemService, SystemServiceInterface } from "../../../servic
 import { NotificationService, NotificationServiceInterface } from "../../../services/notification/notification.service";
 import { ConfirmationDialogComponent } from "../../shared/confirmation-dialog/confirmation-dialog.component";
 
-type ResolverWithPriority = { name: string; priority: number };
+type ResolverWithPriority = { name: string; priority: number | null };
 type NodeResolversMap = { [nodeId: string]: ResolverWithPriority[] };
 
 const columnKeysMap = [
@@ -301,32 +301,39 @@ export class RealmTableComponent {
   onNewRealmNodeResolversChange(nodeId: string, values: string[]): void {
     const current = { ...this.newRealmNodeResolvers() };
     const existing = current[nodeId] ?? [];
-    const updated: ResolverWithPriority[] = values.map((name, index) => {
+    const updated: ResolverWithPriority[] = values.map((name) => {
       const found = existing.find((r) => r.name === name);
       return {
         name,
-        priority: found?.priority ?? index + 1
+        priority: found?.priority ?? null
       };
     });
     current[nodeId] = updated;
     this.newRealmNodeResolvers.set(current);
   }
 
-  setNewRealmResolverPriority(nodeId: string, resolverName: string, priority: number): void {
-    if (!priority || priority < 1) {
-      priority = 1;
-    }
-    if (priority > 999) {
-      priority = 999;
-    }
+  setNewRealmResolverPriority(nodeId: string, resolverName: string, priority: any): void {
     const current = { ...this.newRealmNodeResolvers() };
     const list = current[nodeId] ?? [];
     const entry = list.find((r) => r.name === resolverName);
-    if (entry) {
-      entry.priority = priority;
+
+    const num = Number(priority);
+    let value: number | null;
+
+    if (priority === null || priority === undefined || priority === "") {
+      value = null;
+    } else if (Number.isNaN(num)) {
+      value = null;
     } else {
-      list.push({ name: resolverName, priority });
+      value = Math.min(999, Math.max(1, num));
     }
+
+    if (entry) {
+      entry.priority = value;
+    } else {
+      list.push({ name: resolverName, priority: value });
+    }
+
     current[nodeId] = [...list];
     this.newRealmNodeResolvers.set(current);
   }
@@ -339,11 +346,11 @@ export class RealmTableComponent {
     const current = this.editNodeResolvers();
     const prevList = current[nodeId] ?? [];
 
-    const updated: ResolverWithPriority[] = values.map((name, index) => {
+    const updated: ResolverWithPriority[] = values.map((name) => {
       const existing = prevList.find((r) => r.name === name);
       return {
         name,
-        priority: existing?.priority ?? index + 1
+        priority: existing?.priority ?? null
       };
     });
 
@@ -353,13 +360,22 @@ export class RealmTableComponent {
     });
   }
 
-  setEditResolverPriority(nodeId: string, resolverName: string, priority: number): void {
+  setEditResolverPriority(nodeId: string, resolverName: string, priority: any): void {
     const current = this.editNodeResolvers();
     const list = [...(current[nodeId] ?? [])];
     const entry = list.find((r) => r.name === resolverName);
-    if (entry) {
-      entry.priority = Math.min(999, Math.max(1, Number(priority) || 1));
+
+    if (!entry) {
+      return;
     }
+
+    const num = Number(priority);
+    if (priority === null || priority === undefined || priority === "" || Number.isNaN(num)) {
+      entry.priority = null;
+    } else {
+      entry.priority = Math.min(999, Math.max(1, num));
+    }
+
     this.editNodeResolvers.set({
       ...current,
       [nodeId]: list
@@ -396,10 +412,13 @@ export class RealmTableComponent {
     const requests = [];
 
     if (hasGlobalGroup) {
-      const payload = (globalResolvers ?? []).map((r, index) => ({
-        name: r.name,
-        priority: Number(r.priority) || index + 1
-      }));
+      const payload = (globalResolvers ?? []).map((r) => {
+        const num = Number(r.priority);
+        if (r.priority === null || r.priority === undefined || Number.isNaN(num)) {
+          return { name: r.name };
+        }
+        return { name: r.name, priority: num };
+      });
 
       requests.push(this.realmService.createRealm(realmName, NO_NODE_ID, payload));
     } else if (nodeEntries.length === 0) {
@@ -407,10 +426,14 @@ export class RealmTableComponent {
     }
 
     nodeEntries.forEach(([nodeId, resolvers]) => {
-      const payload = (resolvers ?? []).map((r, index) => ({
-        name: r.name,
-        priority: Number(r.priority) || index + 1
-      }));
+      const list = resolvers ?? [];
+      const payload = list.map((r) => {
+        const num = Number(r.priority);
+        if (r.priority === null || r.priority === undefined || Number.isNaN(num)) {
+          return { name: r.name };
+        }
+        return { name: r.name, priority: num };
+      });
 
       requests.push(this.realmService.createRealm(realmName, nodeId, payload));
     });
@@ -443,7 +466,7 @@ export class RealmTableComponent {
       const key = g.nodeId ?? NO_NODE_ID;
       map[key] = g.resolvers.map((r) => ({
         name: r.name,
-        priority: r.priority ?? 1
+        priority: r.priority ?? null
       }));
     });
 
@@ -502,19 +525,25 @@ export class RealmTableComponent {
     const requests = [];
 
     if (hasGlobalGroup) {
-      const payload = (globalResolvers ?? []).map((res, index) => ({
-        name: res.name,
-        priority: Number(res.priority) || index + 1
-      }));
+      const payload = (globalResolvers ?? []).map((res) => {
+        const num = Number(res.priority);
+        if (res.priority === null || res.priority === undefined || Number.isNaN(num)) {
+          return { name: res.name };
+        }
+        return { name: res.name, priority: num };
+      });
 
       requests.push(this.realmService.createRealm(realmName, NO_NODE_ID, payload));
     }
 
     nodeEntries.forEach(([nodeId, list]) => {
-      const payload = (list ?? []).map((res, index) => ({
-        name: res.name,
-        priority: Number(res.priority) || index + 1
-      }));
+      const payload = (list ?? []).map((res) => {
+        const num = Number(res.priority);
+        if (res.priority === null || res.priority === undefined || Number.isNaN(num)) {
+          return { name: res.name };
+        }
+        return { name: res.name, priority: num };
+      });
 
       requests.push(this.realmService.createRealm(realmName, nodeId, payload));
     });

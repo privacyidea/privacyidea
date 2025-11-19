@@ -54,14 +54,13 @@ export interface RealmRow {
   resolversText: string;
 }
 
-
 export type RealmResolvers = Array<RealmResolver>;
 
 export interface RealmResolver {
   name: string;
   node: string;
   type: string;
-  priority: any;
+  priority: number | null;
 }
 
 export interface RealmServiceInterface {
@@ -74,7 +73,7 @@ export interface RealmServiceInterface {
   createRealm(
     realm: string,
     nodeId: string,
-    resolvers: { name: string; priority: number }[]
+    resolvers: { name: string; priority?: number | null }[]
   ): Observable<PiResponse<any>>;
 
   deleteRealm(realm: string): Observable<PiResponse<number | any>>;
@@ -151,7 +150,7 @@ export class RealmService implements RealmServiceInterface {
   createRealm(
     realm: string,
     nodeId: string,
-    resolvers: { name: string; priority: number }[]
+    resolvers: { name: string; priority?: number | null }[]
   ): Observable<PiResponse<any>> {
 
     let url: string;
@@ -166,15 +165,22 @@ export class RealmService implements RealmServiceInterface {
       };
 
       resolvers.forEach(r => {
-        body[`priority.${r.name}`] = r.priority ?? 1;
+        const num = Number(r.priority);
+        if (r.priority !== null && r.priority !== undefined && !Number.isNaN(num)) {
+          body[`priority.${r.name}`] = num;
+        }
       });
     } else {
       url = `${environment.proxyUrl}/realm/${encodeURIComponent(realm)}/node/${nodeId}`;
       body = {
-        resolver: resolvers.map(r => ({
-          name: r.name,
-          priority: r.priority ?? 1
-        }))
+        resolver: resolvers.map(r => {
+          const base: any = { name: r.name };
+          const num = Number(r.priority);
+          if (r.priority !== null && r.priority !== undefined && !Number.isNaN(num)) {
+            base.priority = num;
+          }
+          return base;
+        })
       };
     }
 

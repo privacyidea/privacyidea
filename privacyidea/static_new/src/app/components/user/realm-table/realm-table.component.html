@@ -128,6 +128,8 @@
                                 <div class="resolver-priority-item">
                                   <span class="priority-label">{{ r.name }}</span>
                                   <input
+                                    (click)="$event.stopPropagation()"
+                                    (mousedown)="$event.stopPropagation()"
                                     (ngModelChange)="setEditResolverPriority(group.id, r.name, $event)"
                                     [ngModel]="r.priority"
                                     class="resolver-priority-input"
