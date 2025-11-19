@@ -128,5 +128,4 @@ export class TokenComponent {
   ngOnDestroy() {
     window.removeEventListener("resize", this.updateOverflowState);
   }
-
 }
