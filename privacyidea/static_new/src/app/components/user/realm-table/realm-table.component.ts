@@ -62,6 +62,7 @@ import {
 import { NodeInfo, SystemService, SystemServiceInterface } from "../../../services/system/system.service";
 import { NotificationService, NotificationServiceInterface } from "../../../services/notification/notification.service";
 import { ConfirmationDialogComponent } from "../../shared/confirmation-dialog/confirmation-dialog.component";
+import { MatTooltip } from "@angular/material/tooltip";
 
 type ResolverWithPriority = { name: string; priority: number | null };
 type NodeResolversMap = { [nodeId: string]: ResolverWithPriority[] };
@@ -106,7 +107,8 @@ const NO_NODE_ID = "";
     ClearableInputComponent,
     MatSelectModule,
     MatIconModule,
-    MatButtonModule
+    MatButtonModule,
+    MatTooltip
   ],
   templateUrl: "./realm-table.component.html",
   styleUrl: "./realm-table.component.scss"

@@ -85,6 +85,7 @@
                       [attr.aria-label]="element.isDefault ? 'Default realm' : 'Set as default realm'"
                       [disabled]="element.isDefault"
                       mat-icon-button
+                      matTooltip="{{ element.isDefault ? 'Default realm' : 'Set as default realm' }}"
                       type="button">
                       <mat-icon
                         [ngClass]="{
@@ -198,6 +199,7 @@
                       </button>
                     } @else {
                       <button
+                        matTooltip="Edit realm"
                         (click)="startEditRealm(element)"
                         aria-label="Edit realm"
                         mat-icon-button
@@ -205,6 +207,7 @@
                         <mat-icon>edit</mat-icon>
                       </button>
                       <button
+                        matTooltip="Delete realm"
                         (click)="onDeleteRealm(element)"
                         aria-label="Delete realm"
                         color="warn"
@@ -303,6 +306,7 @@
                         (click)="resetCreateForm()"
                         [disabled]="isCreatingRealm()"
                         mat-button
+                        matTooltip="Reset form"
                         type="button">
                         <span i18n>Reset</span>
                       </button>
