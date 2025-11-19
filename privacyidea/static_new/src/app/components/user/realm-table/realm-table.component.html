@@ -127,10 +127,11 @@
                             <div class="resolver-priority-list">
                               @for (r of getEditNodeResolvers(group.id); track r.name) {
                                 <div class="resolver-priority-item">
-                                  <span class="priority-label">{{ r.name }}</span>
+                                  <span class="priority-label">{{ r.name }} priority:</span>
                                   <input
                                     (click)="$event.stopPropagation()"
                                     (mousedown)="$event.stopPropagation()"
+                                    (keydown)="$event.stopPropagation()"
                                     (ngModelChange)="setEditResolverPriority(group.id, r.name, $event)"
                                     [ngModel]="r.priority"
                                     class="resolver-priority-input"
