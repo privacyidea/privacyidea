@@ -29,6 +29,28 @@ export interface ContentServiceInterface {
   previousUrl: Signal<string>;
   tokenSerial: WritableSignal<string>;
   containerSerial: WritableSignal<string>;
+
+  onLogin: Signal<boolean>;
+  onAudit: Signal<boolean>;
+  onTokens: Signal<boolean>;
+  onUsers: Signal<boolean>;
+  onPolicies: Signal<boolean>;
+  onTokenDetails: Signal<boolean>;
+  onUserDetails: Signal<boolean>;
+  onTokensEnrollment: Signal<boolean>;
+  onTokensChallenges: Signal<boolean>;
+  onTokensApplications: Signal<boolean>;
+  onTokensGetSerial: Signal<boolean>;
+  onTokensImport: Signal<boolean>;
+  onTokensContainers: Signal<boolean>;
+  onTokensContainersCreate: Signal<boolean>;
+  onTokensContainersDetails: Signal<boolean>;
+  onTokensAssignToken: Signal<boolean>;
+  onTokensWizard: Signal<boolean>;
+  onTokensContainersWizard: Signal<boolean>;
+  onAnyTokensRoute: Signal<boolean>;
+  onAnyUsersRoute: Signal<boolean>;
+
   tokenSelected: (serial: string) => void;
   containerSelected: (containerSerial: string) => void;
   userSelected: (username: any) => void;
@@ -51,6 +73,38 @@ export class ContentService implements ContentServiceInterface {
   readonly previousUrl = computed(() => this._urlPair()[0]);
   tokenSerial = signal("");
   containerSerial = signal("");
+  onLogin = computed(() => this.routeUrl() === ROUTE_PATHS.LOGIN);
+  onAudit = computed(() => this.routeUrl() === ROUTE_PATHS.AUDIT);
+  onTokens = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS);
+  onUsers = computed(() => this.routeUrl() === ROUTE_PATHS.USERS);
+  onPolicies = computed(() => this.routeUrl() === ROUTE_PATHS.POLICIES);
+  onTokenDetails = computed(() =>
+    this.routeUrl().startsWith(ROUTE_PATHS.TOKENS_DETAILS + "/")
+  );
+  onUserDetails = computed(() =>
+    this.routeUrl().startsWith(ROUTE_PATHS.USERS_DETAILS + "/")
+  );
+  onTokensEnrollment = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS_ENROLLMENT);
+  onTokensChallenges = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS_CHALLENGES);
+  onTokensApplications = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS_APPLICATIONS);
+  onTokensGetSerial = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS_GET_SERIAL);
+  onTokensImport = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS_IMPORT);
+  onTokensContainers = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS_CONTAINERS);
+  onTokensContainersCreate = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS_CONTAINERS_CREATE);
+  onTokensContainersDetails = computed(() =>
+    this.routeUrl().startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + "/")
+  );
+  onTokensAssignToken = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS_ASSIGN_TOKEN);
+  onTokensWizard = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS_WIZARD);
+  onTokensContainersWizard = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS_CONTAINERS_WIZARD);
+  onAnyTokensRoute = computed(() =>
+    this.routeUrl() === ROUTE_PATHS.TOKENS ||
+    this.routeUrl().startsWith(ROUTE_PATHS.TOKENS + "/")
+  );
+  onAnyUsersRoute = computed(() =>
+    this.routeUrl() === ROUTE_PATHS.USERS ||
+    this.routeUrl().startsWith(ROUTE_PATHS.USERS + "/")
+  );
 
   tokenSelected(serial: string): void {
     this.router.navigateByUrl(ROUTE_PATHS.TOKENS_DETAILS + serial);
