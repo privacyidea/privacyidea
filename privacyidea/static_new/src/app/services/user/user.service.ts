@@ -206,7 +206,8 @@ export class UserService implements UserServiceInterface {
     return filter?.username ?? "";
   });
   userResource = httpResource<PiResponse<UserData[]>>(() => {
-    if (!this.authService.actionAllowed("userlist")) {
+    if (!this.authService.actionAllowed("userlist") || (
+      !this.contentService.routeUrl().startsWith(ROUTE_PATHS.USERS_DETAILS))) {
       return undefined;
     }
     return {
@@ -242,12 +243,13 @@ export class UserService implements UserServiceInterface {
   });
   usersResource = httpResource<PiResponse<UserData[]>>(() => {
     const selectedUserRealm = this.selectedUserRealm();
+    const tokenSelection = this.tokenService.tokenSelection();
     if (
       selectedUserRealm === "" ||
+      (this.contentService.routeUrl() === ROUTE_PATHS.TOKENS && tokenSelection.length === 0) ||
       !this.authService.actionAllowed("userlist") ||
       (!this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_DETAILS) &&
         !this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS) &&
-        !this.contentService.routeUrl().startsWith(ROUTE_PATHS.USERS_DETAILS) &&
         ![
           ROUTE_PATHS.TOKENS,
           ROUTE_PATHS.USERS,
