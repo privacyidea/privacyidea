@@ -1,0 +1,17 @@
+@use "../../../../../styles";
+
+.add-token-container {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+.add-token-select {
+  flex-grow: 1;
+
+  .mdc-text-field--filled {
+    background-color: var(--mat-sys-surface-container-high);
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+}

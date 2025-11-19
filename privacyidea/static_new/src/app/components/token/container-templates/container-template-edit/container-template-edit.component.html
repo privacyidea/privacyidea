@@ -22,21 +22,11 @@
     #panel
     class="margin-4"
     [disabled]="isEditMode() || containerTemplateService.isTemplateEdited()"
-    (opened)="handleExpansion(panel, template()?.name)"
-    (closed)="handleCollapse(panel, template()?.name)">
+    (opened)="handleExpansion(panel, template().name)"
+    (closed)="handleCollapse(panel, template().name)">
     <mat-expansion-panel-header>
       <div class="template-default-indicator-container">
-        @if (isNew()) {
-          @if (panel.expanded) {
-            <button
-              mat-icon-button
-              matTooltip="Set as default template"
-              i18n-matTooltip
-              (click)="$event.stopPropagation(); onDefaultChange(!selectedTemplate()?.default)">
-              <mat-icon>{{ selectedTemplate()?.default ? "star" : "star_border" }}</mat-icon>
-            </button>
-          }
-        } @else if (template()) {
+        @if (template()) {
           <button
             mat-icon-button
             matTooltip="Set as default template"
@@ -49,20 +39,7 @@
       </div>
 
       <div class="template-name-container">
-        @if (isNew()) {
-          @if (panel.expanded) {
-            <input
-              type="text"
-              class="template-name-input"
-              placeholder="Template Name"
-              [ngModel]="selectedTemplate()!.name"
-              (ngModelChange)="onNameChange($event)"
-              (click)="$event.stopPropagation(); panel.expanded = true"
-              (keydown)="$event.stopPropagation()" />
-          } @else {
-            <p i18n>New Template</p>
-          }
-        } @else if (template()) {
+        @if (template()) {
           @if (containerTemplateService.isEditingTemplate(template()!.name)) {
             <input
               type="text"
@@ -81,21 +58,7 @@
       </div>
 
       <div class="template-type-select-container">
-        @if (isNew() && panel.expanded) {
-          <mat-select
-            [ngModel]="selectedTemplate()!.container_type"
-            (ngModelChange)="onTypeChange($event)"
-            (click)="$event.stopPropagation()"
-            (keydown)="$event.stopPropagation()"
-            placeholder="Container Type"
-            i18n-placeholder>
-            @for (type of containerTemplateService.availableContainerTypes(); track type) {
-              <mat-option [value]="type">
-                {{ type }}
-              </mat-option>
-            }
-          </mat-select>
-        } @else if (template()) {
+        @if (template()) {
           <div class="template-type-plain">
             {{ template()!.container_type }}
           </div>
@@ -103,21 +66,7 @@
       </div>
 
       <div class="template-actions">
-        @if (isNew()) {
-          @if (panel.expanded) {
-            <button
-              mat-icon-button
-              [disabled]="!canSaveTemplate()"
-              (click)="$event.stopPropagation(); saveTemplate(panel)">
-              <mat-icon>save</mat-icon>
-            </button>
-            <button
-              mat-icon-button
-              (click)="$event.stopPropagation(); panel.close(); cancelEditMode()">
-              <mat-icon>close</mat-icon>
-            </button>
-          }
-        } @else if (template()) {
+        @if (template()) {
           @if (panel.expanded) {
             @if (containerTemplateService.isEditingTemplate(template()!.name)) {
               <button
@@ -153,7 +102,9 @@
 
       <div class="addedTokensList">
         @for (token of selectedTemplate()?.template_options?.tokens ?? []; track $index) {
-          <app-template-added-token-row [token]="token"></app-template-added-token-row>
+          <app-template-added-token-row
+            [token]="token"
+            [isEditMode]="isEditMode()"></app-template-added-token-row>
         }
       </div>
     </div>

@@ -232,4 +232,26 @@ export class ContainerTemplateService implements ContainerTemplateServiceInterfa
   isEditingTemplate(name: string): boolean {
     return this.isEditMode() && this._selectedTemplateOriginal()?.name === name;
   }
+
+  setDefaultTemplate(toggleTemplate: ContainerTemplate, isDefault: boolean) {
+    const url =
+      environment.proxyUrl + `/container/${toggleTemplate.container_type}/template/${toggleTemplate.name}/setdefault`;
+    this.http
+      .post<PiResponse<any>>(url, { ...toggleTemplate, default: isDefault }, { headers: this.authService.getHeaders() })
+      .pipe(
+        catchError((error) => {
+          console.error("Failed to set default template:", error);
+          const message = error.error?.result?.error?.message || "";
+          this.notificationService.openSnackBar("Failed to set default template. " + message);
+          return throwError(() => error);
+        })
+      )
+      .subscribe({
+        next: (response) => {
+          console.log("Default template successfully set:", response);
+          this.templatesResource.reload();
+          this.notificationService.openSnackBar(`Successfully set "${toggleTemplate.name}" as default template.`);
+        }
+      });
+  }
 }

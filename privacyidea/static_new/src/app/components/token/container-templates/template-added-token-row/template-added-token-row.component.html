@@ -1,29 +1,30 @@
 <mat-expansion-panel class="token-card">
   <mat-expansion-panel-header>
     <mat-panel-title>
-      {{ token.type }}
+      {{ token().type }}
     </mat-panel-title>
     <div class="token-actions">
-      <button
-        *ngIf="isEditMode()"
-        mat-icon-button
-        (click)="deleteToken(); $event.stopPropagation()">
-        <mat-icon>delete</mat-icon>
-      </button>
+      @if (isEditMode()) {
+        <button
+          mat-icon-button
+          (click)="deleteToken(); $event.stopPropagation()">
+          <mat-icon>delete</mat-icon>
+        </button>
+      }
     </div>
   </mat-expansion-panel-header>
 
   <div class="token-details-form">
     <mat-slide-toggle
       [disabled]="!isEditMode()"
-      [ngModel]="editableToken().genkey"
+      [ngModel]="token().genkey"
       (ngModelChange)="updateToken({ genkey: $event })"
       name="genkey">
       Generate Key
     </mat-slide-toggle>
     <mat-slide-toggle
       [disabled]="!isEditMode()"
-      [ngModel]="editableToken().user"
+      [ngModel]="token().user"
       (ngModelChange)="updateToken({ user: $event })"
       name="user">
       User Token
@@ -34,7 +35,7 @@
         [disabled]="!isEditMode()"
         matInput
         type="number"
-        [ngModel]="editableToken().otplen"
+        [ngModel]="token().otplen"
         (ngModelChange)="updateToken({ otplen: +$event })"
         name="otplen" />
     </mat-form-field>
@@ -45,7 +46,7 @@
         [disabled]="!isEditMode()"
         matInput
         type="number"
-        [ngModel]="editableToken().timeStep"
+        [ngModel]="token().timeStep"
         (ngModelChange)="updateToken({ timeStep: +$event })"
         name="timeStep" />
     </mat-form-field>
@@ -54,7 +55,7 @@
       <mat-label>Hashlib</mat-label>
       <mat-select
         [disabled]="!isEditMode()"
-        [ngModel]="editableToken().hashlib"
+        [ngModel]="token().hashlib"
         (ngModelChange)="updateToken({ hashlib: $event })"
         name="hashlib">
         <mat-option value="sha1">SHA1</mat-option>

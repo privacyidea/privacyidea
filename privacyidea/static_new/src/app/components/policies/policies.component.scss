@@ -18,13 +18,3 @@
   overflow: auto;
 }
 
-.button-active {
-  background-color: var(--mat-sys-primary-base-active);
-  color: var(--mat-sys-on-primary);
-}
-.button-hover:hover:not(:disabled):not(.button-active) {
-  background-color: var(--mat-sys-primary-base-hover);
-  color: var(--mat-sys-on-primary);
-  font-size: 600;
-  cursor: pointer;
-}

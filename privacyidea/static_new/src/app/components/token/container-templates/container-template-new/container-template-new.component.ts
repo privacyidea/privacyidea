@@ -8,14 +8,14 @@ import { MatExpansionModule, MatExpansionPanel } from "@angular/material/expansi
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatSelectModule } from "@angular/material/select";
 import { MatOptionModule } from "@angular/material/core";
+import { MatTooltipModule } from "@angular/material/tooltip";
+import { TemplateAddedTokenRowComponent } from "../template-added-token-row/template-added-token-row.component";
+import { TemplateAddTokenRowComponent } from "../template-add-token-row/template-add-token-row.component";
 import { ContainerTemplate } from "../../../../services/container/container.service";
 import { ContainerTemplateService } from "../../../../services/container-template/container-template.service";
-import { TemplateAddedTokenRowComponent } from "../template-added-token-row/template-added-token-row.component";
-import { MatTooltipModule } from "@angular/material/tooltip";
-import { TemplateAddTokenRowComponent } from "../template-add-token-row/template-add-token-row.component";
 
 @Component({
-  selector: "app-container-template-edit",
+  selector: "app-container-template-new",
   standalone: true,
   imports: [
     CommonModule,
@@ -31,10 +31,10 @@ import { TemplateAddTokenRowComponent } from "../template-add-token-row/template
     TemplateAddedTokenRowComponent,
     TemplateAddTokenRowComponent
   ],
-  templateUrl: "./container-template-edit.component.html",
-  styleUrl: "./container-template-edit.component.scss"
+  templateUrl: "./container-template-new.component.html",
+  styleUrl: "./container-template-new.component.scss"
 })
-export class ContainerTemplateEditComponent {
+export class ContainerTemplateNewComponent {
   isDefault(arg0?: ContainerTemplate): boolean {
     return true;
   }
@@ -51,33 +51,31 @@ export class ContainerTemplateEditComponent {
   }
   // Angular Inputs and Services
   containerTemplateService: ContainerTemplateService = inject(ContainerTemplateService);
-  template = input.required<ContainerTemplate>();
+  template = input<ContainerTemplate | undefined>(undefined);
 
   // Component State Signals
   isEditMode = this.containerTemplateService.isEditMode;
   selectedTemplate = computed(() => this.containerTemplateService.selectedTemplate());
 
   // Event Handlers
-  handleExpansion(panel: MatExpansionPanel, templateName: string | undefined) {
-    if (this.containerTemplateService.templateIsSelected(templateName)) {
-      return;
-    }
-    if (templateName) {
-      this.containerTemplateService.selectTemplateByName(templateName);
-      this.isEditMode.set(false);
-    }
+  handleExpansion(panel: MatExpansionPanel) {
+    this.containerTemplateService.initializeNewTemplate();
+    this.isEditMode.set(true);
   }
 
-  handleCollapse(panel: MatExpansionPanel, templateName: string | undefined) {
-    if (!this.containerTemplateService.templateIsSelected(templateName)) {
+  handleCollapse(panel: MatExpansionPanel) {
+    if (!this.containerTemplateService.templateIsSelected(undefined)) {
       return;
     }
-    if (templateName) {
-      if (!this.confirmDiscardChanges()) {
-        panel.open();
-        return;
+    if (this.containerTemplateService.isTemplateEdited()) {
+      if (confirm("Are you sure you want to discard the new template? All changes will be lost.")) {
+        this.containerTemplateService.deselectNewTemplate();
+        this.isEditMode.set(false);
+      } else {
+        panel.open(); // Re-open if user cancels
       }
-      this.containerTemplateService.deselectTemplate(templateName);
+    } else {
+      this.containerTemplateService.deselectNewTemplate();
       this.isEditMode.set(false);
     }
   }
@@ -89,9 +87,7 @@ export class ContainerTemplateEditComponent {
   // Action Methods
   saveTemplate(panel?: MatExpansionPanel) {
     if (!this.canSaveTemplate()) return;
-
-    this.containerTemplateService.saveTemplateEdits();
-
+    this.containerTemplateService.saveTemplateEditsAsNew();
     this.isEditMode.set(false);
     if (panel) panel.close();
   }
@@ -105,6 +101,7 @@ export class ContainerTemplateEditComponent {
   cancelEditMode() {
     if (!this.confirmDiscardChanges()) return;
     this.containerTemplateService.cancelEditMode();
+    this.containerTemplateService.deselectNewTemplate();
   }
 
   // State-checking Methods

@@ -21,7 +21,7 @@
   aria-label="Container Templates Layout">
   <h2 i18n>Container Templates</h2>
   <mat-accordion class="container-templates-list-layout">
-    <app-container-template-edit></app-container-template-edit>
+    <app-container-template-new></app-container-template-new>
     @for (template of this.containerTemplateService.templates(); track template.name) {
       <app-container-template-edit [template]="template"></app-container-template-edit>
     }

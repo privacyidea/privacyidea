@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Output } from "@angular/core";
+import { Component, EventEmitter, Output, signal } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
@@ -27,16 +27,14 @@ import { FormsModule } from "@angular/forms";
 })
 export class TemplateAddTokenRowComponent {
   tokenTypes: string[] = ["HOTP", "TOTP", "SMS"]; // Example token types
-  selectedTokenType: string = this.tokenTypes[0];
+  selectedTokenType = signal<string>(this.tokenTypes[0]);
 
-  @Output() selectionChange = new EventEmitter<string>();
+  @Output() addTokenSelection = new EventEmitter<string>();
 
   onTokenTypeChange(tokenType: string) {
-    this.selectedTokenType = tokenType;
-    this.selectionChange.emit(tokenType);
+    this.selectedTokenType.set(tokenType);
   }
   addToken() {
-    // TODO: Implement add token logic
-    console.log("Add token clicked");
+    this.addTokenSelection.emit(this.selectedTokenType());
   }
 }
