@@ -78,6 +78,8 @@ export interface RealmServiceInterface {
   ): Observable<PiResponse<any>>;
 
   deleteRealm(realm: string): Observable<PiResponse<number | any>>;
+
+  setDefaultRealm(realm: string): Observable<PiResponse<number | any>>;
 }
 
 @Injectable({
@@ -188,6 +190,17 @@ export class RealmService implements RealmServiceInterface {
     return this.http.delete<PiResponse<number | any>>(url, {
       headers: this.authService.getHeaders()
     });
+  }
+
+  setDefaultRealm(realm: string): Observable<PiResponse<number | any>> {
+    const encodedRealm = encodeURIComponent(realm);
+    const url = `${environment.proxyUrl}/defaultrealm/${encodedRealm}`;
+
+    return this.http.post<PiResponse<number | any>>(
+      url,
+      {},
+      { headers: this.authService.getHeaders() }
+    );
   }
 
   constructor() {

@@ -121,11 +121,29 @@
 }
 
 .actions-cell {
-  width: 8rem;
+  max-width: unset !important;
 }
 
 .actions-buttons {
   display: flex;
   gap: 0.25rem;
+  justify-content: center;
   align-items: center;
+}
+
+
+.token-table {
+  th.mat-mdc-header-cell.mat-column-resolvers {
+    width: 100%;
+  }
+
+  td.mat-mdc-cell.mat-column-resolvers,
+  td.mat-mdc-footer-cell.mat-column-resolvers {
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+
+  ::ng-deep th.mat-mdc-header-cell.mat-column-actions .mat-sort-header-container {
+    justify-content: center;
+  }
 }

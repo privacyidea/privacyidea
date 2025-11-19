@@ -46,7 +46,7 @@ import { MatIconModule } from "@angular/material/icon";
 import { MatButtonModule } from "@angular/material/button";
 import { MatDialog } from "@angular/material/dialog";
 import { HttpErrorResponse } from "@angular/common/http";
-import { concat, last } from "rxjs";
+import { concat, last, take } from "rxjs";
 
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
@@ -575,6 +575,34 @@ export class RealmTableComponent {
               );
             }
           });
+        }
+      });
+  }
+
+  onSetDefaultRealm(row: RealmRow): void {
+    if (!row?.name) {
+      return;
+    }
+
+    const realmName = row.name;
+
+    this.realmService
+      .setDefaultRealm(realmName)
+      .pipe(take(1))
+      .subscribe({
+        next: () => {
+          this.notificationService.openSnackBar(
+            $localize`Realm "${realmName}" set as default.`
+          );
+          this.realmService.realmResource.reload?.();
+          this.realmService.defaultRealmResource.reload?.();
+        },
+        error: (err: HttpErrorResponse) => {
+          console.error("Failed to set default realm.", err);
+          const message = err.error?.result?.error?.message || err.message;
+          this.notificationService.openSnackBar(
+            $localize`Failed to set default realm. ${message}`
+          );
         }
       });
   }

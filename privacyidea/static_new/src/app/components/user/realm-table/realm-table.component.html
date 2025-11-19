@@ -69,147 +69,154 @@
             <td
               *matCellDef="let element"
               [ngClass]="{
-                'width-18rem': column.key === 'resolvers',
-                'actions-cell': column.key === 'actions'
+                'width-100': column.key === 'resolvers',
+                'actions-cell': column.key === 'actions',
               }"
               attr.aria-label="{{ column.label }} Cell"
               mat-cell>
-              <div>
-                @switch (column.key) {
-                  @case ("name") {
-                    <span>{{ element.name }}</span>
-                  }
-                  @case ("isDefault") {
-                    <mat-icon
-                      [ngClass]="{
-                        'icon-true': element.isDefault,
-                        'icon-false': !element.isDefault
-                      }">
-                      {{ element.isDefault ? "check" : "close" }}
-                    </mat-icon>
-                  }
-                  @case ("resolvers") {
-                    @if (editingRealmName() === element.name) {
-                      <div class="node-resolvers-groups">
-                        @for (group of allNodeGroups(); track group.id) {
-                          <div class="node-resolvers-group">
+              @switch (column.key) {
+                @case ("name") {
+                  <span>{{ element.name }}</span>
+                }
+                @case ("isDefault") {
+                  <div class="flex just-center">
+                    <button
+                      (click)="onSetDefaultRealm(element)"
+                      [attr.aria-label]="element.isDefault ? 'Default realm' : 'Set as default realm'"
+                      [disabled]="element.isDefault"
+                      mat-icon-button
+                      type="button">
+                      <mat-icon
+                        [ngClass]="{
+                          'icon-true': element.isDefault,
+                        }">
+                        {{ element.isDefault ? "radio_button_checked" : "radio_button_unchecked" }}
+                      </mat-icon>
+                    </button>
+                  </div>
+                }
+                @case ("resolvers") {
+                  @if (editingRealmName() === element.name) {
+                    <div class="node-resolvers-groups">
+                      @for (group of allNodeGroups(); track group.id) {
+                        <div class="node-resolvers-group">
+                          <div class="resolver-node-label">
+                            <mat-icon
+                              aria-hidden="true"
+                              class="resolver-node-icon">
+                              dns
+                            </mat-icon>
+                            <span>{{ group.label }}</span>
+                          </div>
+
+                          <mat-form-field
+                            class="node-resolvers-select"
+                            subscriptSizing="dynamic">
+                            <mat-label i18n>Resolvers</mat-label>
+                            <mat-select
+                              (selectionChange)="onEditNodeResolversChange(group.id, $event.value)"
+                              [value]="getEditNodeResolverNames(group.id)"
+                              multiple>
+                              @for (res of resolverOptions(); track res.name) {
+                                <mat-option [value]="res.name">
+                                  {{ res.name }} ({{ res.type }})
+                                </mat-option>
+                              }
+                            </mat-select>
+                            <div class="resolver-priority-list">
+                              @for (r of getEditNodeResolvers(group.id); track r.name) {
+                                <div class="resolver-priority-item">
+                                  <span class="priority-label">{{ r.name }}</span>
+                                  <input
+                                    (ngModelChange)="setEditResolverPriority(group.id, r.name, $event)"
+                                    [ngModel]="r.priority"
+                                    class="resolver-priority-input"
+                                    max="999"
+                                    min="1"
+                                    type="number" />
+                                </div>
+                              }
+                            </div>
+                          </mat-form-field>
+                        </div>
+                      }
+                    </div>
+                  } @else {
+                    <div class="resolver-cell">
+                      @if (element.resolverGroups.length === 0) {
+                        <span i18n>No resolvers</span>
+                      } @else {
+                        @for (group of element.resolverGroups; track group.nodeLabel) {
+                          <div class="resolver-node-group">
                             <div class="resolver-node-label">
                               <mat-icon
                                 aria-hidden="true"
                                 class="resolver-node-icon">
                                 dns
                               </mat-icon>
-                              <span>{{ group.label }}</span>
+                              <span>{{ group.nodeLabel }}</span>
                             </div>
 
-                            <mat-form-field
-                              class="node-resolvers-select"
-                              subscriptSizing="dynamic">
-                              <mat-label i18n>Resolvers</mat-label>
-                              <mat-select
-                                (selectionChange)="onEditNodeResolversChange(group.id, $event.value)"
-                                [value]="getEditNodeResolverNames(group.id)"
-                                multiple>
-                                @for (res of resolverOptions(); track res.name) {
-                                  <mat-option [value]="res.name">
-                                    {{ res.name }} ({{ res.type }})
-                                  </mat-option>
-                                }
-                              </mat-select>
-                              <div class="resolver-priority-list">
-                                @for (r of getEditNodeResolvers(group.id); track r.name) {
-                                  <div class="resolver-priority-item">
-                                    <span class="priority-label">{{ r.name }}</span>
-                                    <input
-                                      (ngModelChange)="setEditResolverPriority(group.id, r.name, $event)"
-                                      [ngModel]="r.priority"
-                                      class="resolver-priority-input"
-                                      max="999"
-                                      min="1"
-                                      type="number" />
-                                  </div>
-                                }
-                              </div>
-                            </mat-form-field>
+                            <ul class="resolver-list">
+                              @for (res of group.resolvers; track res.name + res.type + res.priority) {
+                                <li class="resolver-item">
+                                  <span class="resolver-name">{{ res.name }}</span>
+                                  @if (res.priority !== null && res.priority !== undefined) {
+                                    <span class="resolver-priority">[{{ res.priority }}]</span>
+                                  }
+                                  <span class="resolver-type">({{ res.type }})</span>
+                                </li>
+                              }
+                            </ul>
                           </div>
                         }
-                      </div>
-                    } @else {
-                      <div class="resolver-cell">
-                        @if (element.resolverGroups.length === 0) {
-                          <span i18n>No resolvers</span>
-                        } @else {
-                          @for (group of element.resolverGroups; track group.nodeLabel) {
-                            <div class="resolver-node-group">
-                              <div class="resolver-node-label">
-                                <mat-icon
-                                  aria-hidden="true"
-                                  class="resolver-node-icon">
-                                  dns
-                                </mat-icon>
-                                <span>{{ group.nodeLabel }}</span>
-                              </div>
-
-                              <ul class="resolver-list">
-                                @for (res of group.resolvers; track res.name + res.type + res.priority) {
-                                  <li class="resolver-item">
-                                    <span class="resolver-name">{{ res.name }}</span>
-                                    @if (res.priority !== null && res.priority !== undefined) {
-                                      <span class="resolver-priority">[{{ res.priority }}]</span>
-                                    }
-                                    <span class="resolver-type">({{ res.type }})</span>
-                                  </li>
-                                }
-                              </ul>
-                            </div>
-                          }
-                        }
-                      </div>
-                    }
-                  }
-                  @case ("actions") {
-                    <div class="actions-buttons">
-                      @if (editingRealmName() === element.name) {
-                        <button
-                          (click)="saveEditedRealm(element)"
-                          [disabled]="!canSaveEditedRealm(element)"
-                          aria-label="Save realm"
-                          color="primary"
-                          mat-icon-button
-                          type="button">
-                          <mat-icon>save_as</mat-icon>
-                        </button>
-                        <button
-                          (click)="cancelEditRealm()"
-                          aria-label="Cancel edit"
-                          mat-icon-button
-                          type="button">
-                          <mat-icon>cancel</mat-icon>
-                        </button>
-                      } @else {
-                        <button
-                          (click)="startEditRealm(element)"
-                          aria-label="Edit realm"
-                          mat-icon-button
-                          type="button">
-                          <mat-icon>edit</mat-icon>
-                        </button>
-                        <button
-                          (click)="onDeleteRealm(element)"
-                          aria-label="Delete realm"
-                          color="warn"
-                          mat-icon-button
-                          type="button">
-                          <mat-icon>delete</mat-icon>
-                        </button>
                       }
                     </div>
                   }
-                  @default {
-                    <span>{{ element[column.key] }}</span>
-                  }
                 }
-              </div>
+                @case ("actions") {
+                  <div class="actions-buttons">
+                    @if (editingRealmName() === element.name) {
+                      <button
+                        (click)="saveEditedRealm(element)"
+                        [disabled]="!canSaveEditedRealm(element)"
+                        aria-label="Save realm"
+                        color="primary"
+                        mat-icon-button
+                        type="button">
+                        <mat-icon>save_as</mat-icon>
+                      </button>
+                      <button
+                        (click)="cancelEditRealm()"
+                        aria-label="Cancel edit"
+                        class="red"
+                        mat-icon-button
+                        type="button">
+                        <mat-icon>cancel</mat-icon>
+                      </button>
+                    } @else {
+                      <button
+                        (click)="startEditRealm(element)"
+                        aria-label="Edit realm"
+                        mat-icon-button
+                        type="button">
+                        <mat-icon>edit</mat-icon>
+                      </button>
+                      <button
+                        (click)="onDeleteRealm(element)"
+                        aria-label="Delete realm"
+                        color="warn"
+                        mat-icon-button
+                        type="button">
+                        <mat-icon>delete</mat-icon>
+                      </button>
+                    }
+                  </div>
+                }
+                @default {
+                  <span>{{ element[column.key] }}</span>
+                }
+              }
             </td>
 
             <td
@@ -231,9 +238,6 @@
                         [value]="newRealmName()"
                         matInput />
                     </mat-form-field>
-                  }
-                  @case ("isDefault") {
-                    <span>-</span>
                   }
                   @case ("resolvers") {
                     <div class="node-resolvers-groups">
@@ -287,8 +291,8 @@
                       <button
                         (click)="onCreateRealm()"
                         [disabled]="!canSubmitNewRealm()"
-                        color="primary"
-                        mat-flat-button
+                        class="action-button-1 width-238"
+                        mat-stroked-button
                         type="button">
                         <mat-icon>add</mat-icon>
                         <span i18n>Create</span>
