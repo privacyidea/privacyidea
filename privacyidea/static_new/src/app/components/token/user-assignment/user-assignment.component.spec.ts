@@ -102,16 +102,14 @@ describe("UserAssignmentComponent", () => {
 
   it("should reset user filter on realm change", () => {
     const userCtrl = component.userFilterCtrl;
+    const realmCtrl = component.selectedUserRealmCtrl;
+
     userCtrl.setValue("user1");
+    expect(userCtrl.value).toBe("user1");
 
-    // Open the mat-select dropdown
-    const selectTrigger = fixture.debugElement.query(By.css("mat-select"));
-    selectTrigger.nativeElement.click();
-    fixture.detectChanges();
+    realmCtrl.setValue("realm2");
+    component.onSelectedRealmChange("realm2");
 
-    // Find and click the desired option
-    const options = fixture.debugElement.queryAll(By.css("mat-option"));
-    options.find((opt) => opt.nativeElement.textContent.includes("realm2"))!.nativeElement.click();
     fixture.detectChanges();
 
     expect(userServiceMock.selectedUserRealm()).toBe("realm2");
