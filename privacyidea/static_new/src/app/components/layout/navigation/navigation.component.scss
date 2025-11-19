@@ -64,6 +64,10 @@
   text-align: right;
 }
 
+.mat-expansion-panel {
+  background: var(--mat-sys-surface-container-low);
+}
+
 .no-expansion.mat-expansion-panel {
   box-shadow: none;
   background: transparent;
