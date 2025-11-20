@@ -3509,6 +3509,7 @@ class ValidateAPITestCase(MyApiTestCase):
 
     def test_40_realm_for_authentication(self):
         self.setUp_user_realms()
+        set_default_realm(self.realm1)
         self.setUp_user_realm3()
 
         token = init_token({"type": "spass", "pin": "test"}, user=User("corny", self.realm3))
