@@ -264,7 +264,6 @@ export class TokenDetailsComponent {
       this.tokenIsActive.set(this.tokenDetails().active);
       this.tokenIsRevoked.set(this.tokenDetails().revoked);
       this.maxfail = this.tokenDetails().maxfail;
-      this.containerService.selectedContainer.set(this.tokenDetails().container_serial);
       this.realmService.selectedRealms.set(this.tokenDetails().realms);
       this.userRealm = this.userData().find((detail) => detail.keyMap.key === "user_realm")?.value || "";
       this.containerService.compatibleWithSelectedTokenType.set(this.tokenDetails().tokentype);
@@ -342,14 +341,12 @@ export class TokenDetailsComponent {
   }
 
   removeFromContainer() {
-    const selectedContainer = this.containerService.selectedContainer();
-    if (selectedContainer) {
-      this.containerService.removeToken(this.tokenSerial(), selectedContainer).subscribe({
-        next: () => {
-          this.tokenDetailResource.reload();
-        }
-      });
-    }
+    this.containerService.removeToken(this.tokenSerial(), this.tokenDetails().container_serial).subscribe({
+      next: () => {
+        this.containerService.selectedContainer.set("");
+        this.tokenDetailResource.reload();
+      }
+    });
   }
 
   isEditableElement(key: string) {

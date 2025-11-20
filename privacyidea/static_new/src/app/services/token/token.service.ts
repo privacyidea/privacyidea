@@ -361,7 +361,8 @@ export class TokenService implements TokenServiceInterface {
   }
 
   tokenDetailResource = httpResource<PiResponse<Tokens>>(() => {
-    if (!this.contentService.routeUrl().includes(ROUTE_PATHS.TOKENS_DETAILS, 0)) {
+    if (!this.contentService.onTokenDetails()) {
+      console.log("Not a token detail page.");
       return undefined;
     }
     return {

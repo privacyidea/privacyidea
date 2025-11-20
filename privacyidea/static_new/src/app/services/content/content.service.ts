@@ -79,7 +79,7 @@ export class ContentService implements ContentServiceInterface {
   onUsers = computed(() => this.routeUrl() === ROUTE_PATHS.USERS);
   onPolicies = computed(() => this.routeUrl() === ROUTE_PATHS.POLICIES);
   onTokenDetails = computed(() =>
-    this.routeUrl().startsWith(ROUTE_PATHS.TOKENS_DETAILS + "/")
+    this.routeUrl().startsWith(ROUTE_PATHS.TOKENS_DETAILS)
   );
   onUserDetails = computed(() =>
     this.routeUrl().startsWith(ROUTE_PATHS.USERS_DETAILS + "/")
@@ -92,7 +92,7 @@ export class ContentService implements ContentServiceInterface {
   onTokensContainers = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS_CONTAINERS);
   onTokensContainersCreate = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS_CONTAINERS_CREATE);
   onTokensContainersDetails = computed(() =>
-    this.routeUrl().startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + "/")
+    this.routeUrl().startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS)
   );
   onTokensAssignToken = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS_ASSIGN_TOKEN);
   onTokensWizard = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS_WIZARD);

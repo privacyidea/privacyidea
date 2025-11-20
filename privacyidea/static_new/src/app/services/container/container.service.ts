@@ -340,11 +340,13 @@ export class ContainerService implements ContainerServiceInterface {
         page: this.pageIndex() + 1,
         pagesize: this.pageSize()
       }),
-      ...(this.loadAllContainers() && { no_token: 1 }),
+      ...(this.loadAllContainers() && {
+        no_token: 1,
+        user: this.userService.selectedUser()?.username ?? ""
+      }),
       sortby: this.sort().active,
       sortdir: this.sort().direction,
       ...this.filterParams(),
-      user: this.userService.selectedUser()?.username ?? ""
     };
 
     const compatibleType = this.uniqueCompatibleType();
@@ -529,7 +531,6 @@ export class ContainerService implements ContainerServiceInterface {
         if (isRollover) {
           this.notificationService.openSnackBar("Container rollover completed successfully.");
         } else if (routeUrl !== ROUTE_PATHS.TOKENS_CONTAINERS_CREATE) {
-          // container create shows a dialog on successful registration
           this.notificationService.openSnackBar("Container registered successfully.");
         }
         this.isPollingActive.set(false);

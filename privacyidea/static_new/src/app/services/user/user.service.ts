@@ -131,9 +131,8 @@ export class UserService implements UserServiceInterface {
   deletableAttributes = computed<string[]>(() => this.attributePolicy().delete ?? []);
 
   editableAttributesResource = httpResource<PiResponse<UserAttributePolicy>>(() => {
-
     // Only load editable user attributes on the user details page.
-    if (!this.contentService.routeUrl().startsWith(ROUTE_PATHS.USERS_DETAILS)) {
+    if (!this.contentService.onUserDetails()) {
       return undefined;
     }
 
@@ -165,7 +164,6 @@ export class UserService implements UserServiceInterface {
   );
 
   userAttributesResource = httpResource<PiResponse<Record<string, string>>>(() => {
-
     // Only load user attributes on the user details page.
     if (!this.contentService.onUserDetails()) {
       return undefined;
@@ -227,9 +225,12 @@ export class UserService implements UserServiceInterface {
   });
 
   userResource = httpResource<PiResponse<UserData[]>>(() => {
-
-    // Only load user details on the user details page if the action is allowed.
-    if (!this.authService.actionAllowed("userlist") || !this.contentService.onTokenDetails()) {
+    // Do not load user details if the action is not allowed.
+    if (!this.authService.actionAllowed("userlist")) {
+      return undefined;
+    }
+    // Only load user details on the user details page.
+    if (!this.contentService.onUserDetails()) {
       return undefined;
     }
 
@@ -269,21 +270,31 @@ export class UserService implements UserServiceInterface {
   usersResource = httpResource<PiResponse<UserData[]>>(() => {
     const selectedUserRealm = this.selectedUserRealm();
     const tokenSelection = this.tokenService.tokenSelection();
-    if (
-      selectedUserRealm === "" ||
-      (this.contentService.routeUrl() === ROUTE_PATHS.TOKENS && tokenSelection.length === 0) ||
-      !this.authService.actionAllowed("userlist") ||
-      (!this.contentService.onTokenDetails() &&
-        !this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS) &&
-        ![
-          ROUTE_PATHS.TOKENS,
-          ROUTE_PATHS.USERS,
-          ROUTE_PATHS.TOKENS_CONTAINERS_CREATE,
-          ROUTE_PATHS.TOKENS_ENROLLMENT
-        ].includes(this.contentService.routeUrl()))
-    ) {
+    // Do not load users if the action is not allowed.
+    if (!this.authService.actionAllowed("userlist")) {
       return undefined;
     }
+    // Load users only if a realm is selected.
+    if (!selectedUserRealm) {
+      return undefined;
+    }
+    //Only load users on routes with a user list or selection.
+    const showUsersOnRoute =
+      this.contentService.onTokenDetails() ||
+      this.contentService.onTokensContainersDetails() ||
+      this.contentService.onTokens() ||
+      this.contentService.onUsers() ||
+      this.contentService.onTokensContainersCreate() ||
+      this.contentService.onTokensEnrollment();
+
+    if (!showUsersOnRoute) {
+      return undefined;
+    }
+    // On /tokens (list view) we require at least one selected token before loading users.
+    if (this.contentService.onTokens() && tokenSelection.length === 0) {
+      return undefined;
+    }
+
     return {
       url: this.baseUrl,
       method: "GET",
