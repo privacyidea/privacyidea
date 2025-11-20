@@ -278,8 +278,8 @@ export class UserService implements UserServiceInterface {
     if (!selectedUserRealm) {
       return undefined;
     }
-    //Only load users on routes with a user list or selection.
-    const showUsersOnRoute =
+    // Only load users on routes with a user list or selection.
+    const onAllowedRoute =
       this.contentService.onTokenDetails() ||
       this.contentService.onTokensContainersDetails() ||
       this.contentService.onTokens() ||
@@ -287,7 +287,7 @@ export class UserService implements UserServiceInterface {
       this.contentService.onTokensContainersCreate() ||
       this.contentService.onTokensEnrollment();
 
-    if (!showUsersOnRoute) {
+    if (!onAllowedRoute) {
       return undefined;
     }
     // On /tokens (list view) we require at least one selected token before loading users.
