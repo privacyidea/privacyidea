@@ -112,7 +112,7 @@ from privacyidea.lib.policy import PolicyClass, SCOPE
 from privacyidea.lib.subscriptions import CheckSubscription
 from privacyidea.lib.token import (check_user_pass, check_serial_pass,
                                    check_otp, create_challenges_from_tokens, get_one_token)
-from .lib.policyhelper import check_last_auth_policy
+from .lib.policyhelper import check_last_auth_policy, get_realm_for_authentication
 from ..lib.fido2.util import get_fido2_token_by_credential_id, get_fido2_token_by_transaction_id
 from ..lib.fido2.challenge import create_fido2_challenge, verify_fido2_challenge
 from privacyidea.lib.token import get_tokens
@@ -162,6 +162,13 @@ def before_request():
     g.serial = getParam(request.all_data, "serial", default=None)
     ua_name, ua_version, _ua_comment = get_plugin_info_from_useragent(request.user_agent.string)
     g.user_agent = ua_name
+
+    # Check if a policy defines the realm
+    # TODO: do this before the first user resolving to avoid multiple user store requests
+    realm = get_realm_for_authentication(g, request.User.login, request.User.realm)
+    if realm != request.User.realm:
+        request.User = User(request.User.login, realm)
+
     g.audit_object.log({"success": False,
                         "action_detail": "",
                         "client": g.client_ip,

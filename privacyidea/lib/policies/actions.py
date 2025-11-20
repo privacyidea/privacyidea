@@ -213,3 +213,4 @@ class PolicyAction:
     HIDE_CONTAINER_INFO = "hide_container_info"
     DISABLED_TOKEN_TYPES = "disabled_token_types"
     FORCE_SERVER_GENERATE = "force_server_generate"
+    REALM_FOR_AUTHENTICATION = "realm_for_authentication"

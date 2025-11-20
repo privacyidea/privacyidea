@@ -50,7 +50,7 @@ import jwt
 from functools import wraps
 from datetime import (datetime, timezone)
 
-from privacyidea.api.lib.policyhelper import check_last_auth_policy
+from privacyidea.api.lib.policyhelper import check_last_auth_policy, get_realm_for_authentication
 from privacyidea.lib.error import AuthError, ERROR
 from privacyidea.lib.crypto import geturandom, init_hsm
 from privacyidea.lib.audit import getAudit
@@ -128,6 +128,8 @@ def before_request():
         login_name, realm = split_user(username)
         # overwrite the split realm if we have a realm parameter. Default back to default_realm
         realm = get_optional(request.all_data, "realm") or realm
+        # Check if realm should be overwritten
+        realm = get_realm_for_authentication(g, login_name, realm)
         # Prefill the request.User. This is used by some pre-event handlers
         if not realm and db_admin_exists(login_name):
             # TODO: create an own local admin user object

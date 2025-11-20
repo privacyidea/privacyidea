@@ -2569,6 +2569,12 @@ def get_static_policy_definitions(scope=None):
                           'user and realm in an authentication request. See '
                           'the documentation for an example.')
             },
+            PolicyAction.REALM_FOR_AUTHENTICATION: {
+                'type': 'str',
+                'value': realms,
+                'desc': _('In an authentication requests, sets or overwrites the realm parameter. It takes precedence '
+                          'over the mangle and setrealm policies.' )
+            },
             PolicyAction.RESETALLTOKENS: {
                 'type': 'bool',
                 'desc': _('If a user authenticates successfully reset the '
