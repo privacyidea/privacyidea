@@ -65,7 +65,7 @@
     .template-actions {
       display: flex;
       align-items: center;
-      width: 120px;
+      width: 80px;
       button {
         background: transparent;
         border: none;
@@ -82,8 +82,11 @@
   border-radius: var(--border-radius);
 }
 
-.addTokenRow {
+.add-token-row {
   display: flex;
   gap: 16px;
   align-items: center;
+}
+.expand-icon-spacer {
+  width: 16px;
 }

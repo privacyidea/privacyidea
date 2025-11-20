@@ -3,7 +3,6 @@ import { ContainerTemplateEditComponent } from "./container-template-edit.compon
 import { ContainerTemplateService } from "../../../../services/container-template/container-template.service";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { MatExpansionModule } from "@angular/material/expansion";
-import { MockContainerTemplateService } from "../../../../../testing/mock-services/mock-container-template-service";
 
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";

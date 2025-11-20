@@ -29,14 +29,15 @@ import { MatSelectModule } from "@angular/material/select";
 })
 export class TemplateAddedTokenRowComponent {
   token = input.required<ContainerTemplateToken>();
+  index = input.required<number>();
   isEditMode = input.required<boolean>();
-  @Output() tokenChange = new EventEmitter<ContainerTemplateToken>();
-  @Output() delete = new EventEmitter<ContainerTemplateToken>();
+  @Output() onEditToken = new EventEmitter<ContainerTemplateToken>();
+  @Output() onDelete = new EventEmitter<number>();
 
   updateToken(patch: Partial<ContainerTemplateToken>) {
-    this.tokenChange.emit({ ...this.token(), ...patch });
+    this.onEditToken.emit({ ...this.token(), ...patch });
   }
   deleteToken() {
-    this.delete.emit(this.token());
+    this.onDelete.emit(this.index());
   }
 }

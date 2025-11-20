@@ -28,6 +28,7 @@
 
     .template-name-container {
       align-content: center;
+      width: 164px;
       .template-name-input {
         background-color: transparent;
         border: none;
@@ -65,6 +66,7 @@
     .template-actions {
       display: flex;
       align-items: center;
+      justify-content: end;
       width: 120px;
       button {
         background: transparent;
@@ -82,8 +84,11 @@
   border-radius: var(--border-radius);
 }
 
-.addTokenRow {
+.add-token-row {
   display: flex;
   gap: 16px;
   align-items: center;
+}
+.expand-icon-spacer {
+  width: 16px;
 }

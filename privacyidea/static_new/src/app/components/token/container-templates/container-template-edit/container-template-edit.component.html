@@ -21,90 +21,97 @@
   <mat-expansion-panel
     #panel
     class="margin-4"
-    [disabled]="isEditMode() || containerTemplateService.isTemplateEdited()"
-    (opened)="handleExpansion(panel, template().name)"
-    (closed)="handleCollapse(panel, template().name)">
+    [disabled]="isTemplateEdited()"
+    (closed)="handleCollapse(panel)">
     <mat-expansion-panel-header>
       <div class="template-default-indicator-container">
-        @if (template()) {
+        @if (currentTemplate()) {
           <button
             mat-icon-button
             matTooltip="Set as default template"
             i18n-matTooltip
-            (click)="$event.stopPropagation(); onDefaultToggle(template()!)"
-            [disabled]="isEditMode() && !containerTemplateService.isEditingTemplate(template()!.name)">
-            <mat-icon>{{ isDefault(template()!) ? "star" : "star_border" }}</mat-icon>
+            (click)="$event.stopPropagation(); onDefaultChange()"
+            [disabled]="!isEditMode()">
+            <mat-icon>{{ currentTemplate().default ? "star" : "star_border" }}</mat-icon>
           </button>
         }
       </div>
 
       <div class="template-name-container">
-        @if (template()) {
-          @if (containerTemplateService.isEditingTemplate(template()!.name)) {
-            <input
-              type="text"
-              class="template-name-input"
-              placeholder="Template Name"
-              [ngModel]="selectedTemplate()!.name"
-              (ngModelChange)="onNameChange($event)"
-              (click)="$event.stopPropagation(); panel.expanded = true"
-              (keydown)="$event.stopPropagation()" />
-          } @else {
-            <div class="template-name-plain">
-              {{ template()!.name }}
-            </div>
-          }
-        }
-      </div>
-
-      <div class="template-type-select-container">
-        @if (template()) {
-          <div class="template-type-plain">
-            {{ template()!.container_type }}
+        @if (isEditMode()) {
+          <input
+            type="text"
+            class="template-name-input"
+            placeholder="Template Name"
+            [ngModel]="currentTemplate().name"
+            (ngModelChange)="onNameChange($event)"
+            (click)="$event.stopPropagation(); panel.expanded = true"
+            (keydown)="$event.stopPropagation()" />
+        } @else {
+          <div class="template-name-plain">
+            {{ currentTemplate().name }}
           </div>
         }
       </div>
 
+      <div class="template-type-select-container">
+        <div class="template-type-plain">
+          {{ currentTemplate().container_type }}
+        </div>
+      </div>
+
       <div class="template-actions">
-        @if (template()) {
-          @if (panel.expanded) {
-            @if (containerTemplateService.isEditingTemplate(template()!.name)) {
-              <button
-                mat-icon-button
-                [disabled]="!canSaveTemplate()"
-                (click)="$event.stopPropagation(); saveTemplate()">
-                <mat-icon>save</mat-icon>
-              </button>
-              <button
-                mat-icon-button
-                class="action-button"
-                (click)="$event.stopPropagation(); cancelEditMode()">
-                <mat-icon>cancel</mat-icon>
-              </button>
-            } @else {
-              <button
-                mat-icon-button
-                (click)="$event.stopPropagation(); isEditMode.set(true)">
-                <mat-icon>edit</mat-icon>
-              </button>
-            }
+        @if (panel.expanded) {
+          @if (isEditMode()) {
             <button
               mat-icon-button
-              (click)="$event.stopPropagation(); deleteTemplate(template()!.name)">
-              <mat-icon>delete</mat-icon>
+              [disabled]="!containerTemplateService.canSaveTemplate()"
+              (click)="$event.stopPropagation(); saveTemplate()">
+              <mat-icon>save</mat-icon>
+            </button>
+            <button
+              mat-icon-button
+              class="action-button"
+              (click)="$event.stopPropagation(); cancelEditMode()">
+              <mat-icon>cancel</mat-icon>
+            </button>
+          } @else {
+            <button
+              mat-icon-button
+              (click)="$event.stopPropagation(); isEditMode.set(true)">
+              <mat-icon>edit</mat-icon>
             </button>
           }
+          <button
+            mat-icon-button
+            (click)="$event.stopPropagation(); deleteTemplate(currentTemplate().name)">
+            <mat-icon>delete</mat-icon>
+          </button>
         }
       </div>
+      @if (isTemplateEdited()) {
+        <div class="expand-icon-spacer"></div>
+      }
     </mat-expansion-panel-header>
     <div class="flex-column">
-      <app-template-add-token-row />
+      @if (isEditMode()) {
+        @if (currentTemplate().container_type) {
+          <app-container-template-add-token-chips
+            [containerType]="currentTemplate().container_type"
+            (onAddToken)="onAddToken($event)" />
+          <app-template-add-token-row (onAddToken)="onAddToken($event)" />
+        }
+      }
 
       <div class="addedTokensList">
-        @for (token of selectedTemplate()?.template_options?.tokens ?? []; track $index) {
+        @for (token of currentTemplate().template_options.tokens; track $index) {
           <app-template-added-token-row
             [token]="token"
-            [isEditMode]="isEditMode()"></app-template-added-token-row>
+            [index]="$index"
+            [isEditMode]="isEditMode()"
+            (onEditToken)="onEditToken($event, $index)"
+            (onDelete)="onDeleteToken($event)">
+          </app-template-added-token-row>
         }
       </div>
     </div>

@@ -21,8 +21,8 @@
   <mat-expansion-panel
     #panel
     class="margin-4"
-    [disabled]="isEditMode() || containerTemplateService.isTemplateEdited()"
-    (opened)="handleExpansion(panel)"
+    [disabled]="isEditMode() && isTemplateEdited()"
+    (opened)="handleExpansion()"
     (closed)="handleCollapse(panel)">
     <mat-expansion-panel-header>
       <div class="template-default-indicator-container">
@@ -32,7 +32,7 @@
             matTooltip="Set as default template"
             i18n-matTooltip
             (click)="$event.stopPropagation(); onDefaultToggle()">
-            <mat-icon>{{ selectedTemplate()?.default ? "star" : "star_border" }}</mat-icon>
+            <mat-icon>{{ newTemplate().default ? "star" : "star_border" }}</mat-icon>
           </button>
         }
       </div>
@@ -43,7 +43,7 @@
             type="text"
             class="template-name-input"
             placeholder="Template Name"
-            [ngModel]="selectedTemplate()!.name"
+            [ngModel]="newTemplate().name"
             (ngModelChange)="onNameChange($event)"
             (click)="$event.stopPropagation(); panel.expanded = true"
             (keydown)="$event.stopPropagation()" />
@@ -55,7 +55,7 @@
       <div class="template-type-select-container">
         @if (panel.expanded) {
           <mat-select
-            [ngModel]="selectedTemplate()!.container_type"
+            [ngModel]="newTemplate().container_type"
             (ngModelChange)="onTypeChange($event)"
             (click)="$event.stopPropagation()"
             (keydown)="$event.stopPropagation()"
@@ -74,7 +74,7 @@
         @if (panel.expanded) {
           <button
             mat-icon-button
-            [disabled]="!canSaveTemplate()"
+            [disabled]="!containerTemplateService.canSaveTemplate()"
             (click)="$event.stopPropagation(); saveTemplate(panel)">
             <mat-icon>save</mat-icon>
           </button>
@@ -85,14 +85,40 @@
           </button>
         }
       </div>
+      @if (isTemplateEdited()) {
+        <div class="expand-icon-spacer"></div>
+      }
     </mat-expansion-panel-header>
     <div class="flex-column">
-      <app-template-add-token-row />
+      <!-- <mat-card class="select-container-type-card">
+        <mat-card-content>
+          <mat-chip-listbox
+            class="container-type-chips"
+            [ngModel]="newTemplate().container_type"
+            (ngModelChange)="onTypeChange($event)"
+            aria-label="Container type selection">
+            @for (type of containerTemplateService.availableContainerTypes(); track type) {
+              <mat-chip-option [value]="type">{{ type }}</mat-chip-option>
+            }
+          </mat-chip-listbox>
+        </mat-card-content>
+      </mat-card> -->
+
+      @if (newTemplate().container_type) {
+        <app-container-template-add-token-chips
+          [containerType]="newTemplate().container_type"
+          (onAddToken)="onAddToken($event)" />
+      }
+
       <div class="addedTokensList">
-        @for (token of selectedTemplate()?.template_options?.tokens ?? []; track $index) {
+        @for (token of newTemplate().template_options.tokens; track $index) {
           <app-template-added-token-row
             [token]="token"
-            [isEditMode]="isEditMode()"></app-template-added-token-row>
+            [index]="$index"
+            [isEditMode]="isEditMode()"
+            (onEditToken)="onEditToken($event, $index)"
+            (onDelete)="onDeleteToken($event)">
+          </app-template-added-token-row>
         }
       </div>
     </div>

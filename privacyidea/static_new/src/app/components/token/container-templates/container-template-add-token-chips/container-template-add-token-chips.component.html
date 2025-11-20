@@ -1,0 +1,13 @@
+<mat-card>
+  <mat-card-title i18n>Add new Token</mat-card-title>
+  <mat-card-content>
+    <mat-chip-listbox [multiple]="false">
+      @for (type of tokenTypes; track type) {
+        <mat-chip (click)="addToken(type)"
+          >{{ type }}
+          <mat-icon>add</mat-icon>
+        </mat-chip>
+      }
+    </mat-chip-listbox>
+  </mat-card-content>
+</mat-card>

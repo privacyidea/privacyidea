@@ -1,7 +1,10 @@
+@use "../../../../../styles";
+
 .token-card {
   width: 100%;
   margin-bottom: 1rem;
   border-radius: var(--border-radius);
+  background-color: var(--mat-sys-surface-container) !important;
   box-shadow:
     0 2px 4px -1px #00000033,
     0 4px 5px 0 #00000024,

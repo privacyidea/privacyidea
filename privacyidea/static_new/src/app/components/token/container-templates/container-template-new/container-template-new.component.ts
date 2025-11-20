@@ -1,4 +1,4 @@
-import { Component, computed, inject, input } from "@angular/core";
+import { Component, computed, inject, input, linkedSignal, signal } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { MatCardModule } from "@angular/material/card";
 import { MatIconModule } from "@angular/material/icon";
@@ -11,8 +11,11 @@ import { MatOptionModule } from "@angular/material/core";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { TemplateAddedTokenRowComponent } from "../template-added-token-row/template-added-token-row.component";
 import { TemplateAddTokenRowComponent } from "../template-add-token-row/template-add-token-row.component";
-import { ContainerTemplate } from "../../../../services/container/container.service";
+import { ContainerTemplate, ContainerTemplateToken } from "../../../../services/container/container.service";
 import { ContainerTemplateService } from "../../../../services/container-template/container-template.service";
+import { deepCopy } from "../../../../utils/deep-copy.utils";
+import { ContainerTemplateTokenTypeSelectorComponent } from "../container-template-add-token-chips/container-template-add-token-chips.component";
+import { MatChipsModule } from "@angular/material/chips";
 
 @Component({
   selector: "app-container-template-new",
@@ -29,65 +32,60 @@ import { ContainerTemplateService } from "../../../../services/container-templat
     MatSelectModule,
     MatOptionModule,
     TemplateAddedTokenRowComponent,
-    TemplateAddTokenRowComponent
+
+    ContainerTemplateTokenTypeSelectorComponent,
+    MatChipsModule
   ],
   templateUrl: "./container-template-new.component.html",
   styleUrl: "./container-template-new.component.scss"
 })
 export class ContainerTemplateNewComponent {
-  isDefault(arg0?: ContainerTemplate): boolean {
-    return true;
-  }
-  onDefaultToggle(toggleTemplate?: ContainerTemplate): void {
-    if (toggleTemplate) {
-      this.containerTemplateService.setDefaultTemplate(toggleTemplate!, !toggleTemplate!.default);
-    } else {
-      const isDefault = this.selectedTemplate()?.default ?? true;
-      this.containerTemplateService.updateSelectedTemplate({ default: !isDefault });
-    }
-  }
-  onTypeChange(containerType?: string): void {
-    this.containerTemplateService.updateSelectedTemplate({ container_type: containerType ?? "" });
-  }
   // Angular Inputs and Services
-  containerTemplateService: ContainerTemplateService = inject(ContainerTemplateService);
-  template = input<ContainerTemplate | undefined>(undefined);
+  protected readonly containerTemplateService: ContainerTemplateService = inject(ContainerTemplateService);
+  protected readonly isEditMode = signal<boolean>(false);
+  // protected readonly newTemplate = signal<ContainerTemplate>(this.containerTemplateService.emptyContainerTemplate);
+  protected readonly newTemplate = linkedSignal<any, ContainerTemplate>({
+    source: () => ({
+      emptyContainerTemplate: this.containerTemplateService.emptyContainerTemplate,
+      isEditMode: this.isEditMode(),
+      containerType: this.containerTemplateService.availableContainerTypes()[0] ?? ""
+    }),
+    computation: (source) => deepCopy({ ...source.emptyContainerTemplate, container_type: source.containerType })
+  });
+
+  protected readonly isTemplateEdited = computed(() => {
+    if (!this.isEditMode()) return false;
+    // Dont compare container type, only everything else
+    return (
+      JSON.stringify({ ...this.newTemplate(), container_type: "" }) !==
+      JSON.stringify({
+        ...this.containerTemplateService.emptyContainerTemplate,
+        container_type: ""
+      })
+    );
+  });
 
   // Component State Signals
-  isEditMode = this.containerTemplateService.isEditMode;
-  selectedTemplate = computed(() => this.containerTemplateService.selectedTemplate());
+  // selectedTemplate = computed(() => this.containerTemplateService.selectedTemplate());
 
   // Event Handlers
-  handleExpansion(panel: MatExpansionPanel) {
-    this.containerTemplateService.initializeNewTemplate();
+  handleExpansion() {
     this.isEditMode.set(true);
   }
 
   handleCollapse(panel: MatExpansionPanel) {
-    if (!this.containerTemplateService.templateIsSelected(undefined)) {
+    if (!this.confirmDiscardChanges()) {
+      panel.open();
       return;
     }
-    if (this.containerTemplateService.isTemplateEdited()) {
-      if (confirm("Are you sure you want to discard the new template? All changes will be lost.")) {
-        this.containerTemplateService.deselectNewTemplate();
-        this.isEditMode.set(false);
-      } else {
-        panel.open(); // Re-open if user cancels
-      }
-    } else {
-      this.containerTemplateService.deselectNewTemplate();
-      this.isEditMode.set(false);
-    }
-  }
-
-  onNameChange(name: string): void {
-    this.containerTemplateService.updateSelectedTemplate({ name: name });
+    // this.containerTemplateService.deselectTemplate(templateName);
+    this.isEditMode.set(false);
   }
 
   // Action Methods
-  saveTemplate(panel?: MatExpansionPanel) {
-    if (!this.canSaveTemplate()) return;
-    this.containerTemplateService.saveTemplateEditsAsNew();
+  async saveTemplate(panel?: MatExpansionPanel) {
+    if (!this.containerTemplateService.canSaveTemplate()) return;
+    this.containerTemplateService.postAddNewTemplate(this.newTemplate());
     this.isEditMode.set(false);
     if (panel) panel.close();
   }
@@ -100,24 +98,81 @@ export class ContainerTemplateNewComponent {
 
   cancelEditMode() {
     if (!this.confirmDiscardChanges()) return;
-    this.containerTemplateService.cancelEditMode();
-    this.containerTemplateService.deselectNewTemplate();
-  }
-
-  // State-checking Methods
-  canSaveTemplate(): boolean {
-    // Simplified for now
-    // TODO: Add more validation checks
-    return true;
+    this.isEditMode.set(false);
   }
 
   confirmDiscardChanges(): boolean {
     if (
-      this.containerTemplateService.isTemplateEdited() &&
+      this.isTemplateEdited() &&
       !confirm("Are you sure you want to discard the changes? All changes will be lost.")
     ) {
       return false;
     }
     return true;
+  }
+
+  onNameChange(newName: string) {
+    this._editTemplate({ name: newName });
+  }
+
+  onTypeChange(newType: string) {
+    this._editTemplate({ container_type: newType });
+  }
+
+  onDefaultChange(newDefault: boolean) {
+    this._editTemplate({ default: newDefault });
+  }
+  onDefaultToggle(): void {
+    // if (this.isEditMode()) {
+    this._editTemplate({ default: !this.newTemplate().default });
+    return;
+    // }
+    // this.containerTemplateService.postUpdateDefault(toggleTemplate!, !toggleTemplate!.default);''
+  }
+
+  onEditToken(patch: Partial<ContainerTemplateToken>, index: number) {
+    if (!this.isEditMode()) return;
+    const updatedTokens = this.newTemplate().template_options.tokens.map((token, i) =>
+      i === index ? { ...token, ...patch } : token
+    );
+    this._editTemplate({
+      template_options: {
+        ...this.newTemplate().template_options,
+        tokens: updatedTokens
+      }
+    });
+  }
+  onAddToken(tokenType: string) {
+    if (!this.isEditMode()) return;
+    const containerTemplateToken: ContainerTemplateToken = {
+      type: tokenType,
+      genkey: false,
+      hashlib: "",
+      otplen: 6,
+      timeStep: 0,
+      user: false
+    };
+    const updatedTokens = [...this.newTemplate().template_options.tokens, containerTemplateToken];
+    this._editTemplate({
+      template_options: {
+        ...this.newTemplate().template_options,
+        tokens: updatedTokens
+      }
+    });
+  }
+  onDeleteToken(index: number) {
+    if (!this.isEditMode()) return;
+    const updatedTokens = this.newTemplate().template_options.tokens.filter((_, i) => i !== index);
+    this._editTemplate({
+      template_options: {
+        ...this.newTemplate().template_options,
+        tokens: updatedTokens
+      }
+    });
+  }
+
+  _editTemplate(templateUpdates: Partial<ContainerTemplate>) {
+    if (!this.isEditMode()) return;
+    this.newTemplate.set({ ...this.newTemplate(), ...templateUpdates });
   }
 }

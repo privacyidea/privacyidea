@@ -29,12 +29,12 @@ export class TemplateAddTokenRowComponent {
   tokenTypes: string[] = ["HOTP", "TOTP", "SMS"]; // Example token types
   selectedTokenType = signal<string>(this.tokenTypes[0]);
 
-  @Output() addTokenSelection = new EventEmitter<string>();
+  @Output() onAddToken = new EventEmitter<string>();
 
   onTokenTypeChange(tokenType: string) {
     this.selectedTokenType.set(tokenType);
   }
   addToken() {
-    this.addTokenSelection.emit(this.selectedTokenType());
+    this.onAddToken.emit(this.selectedTokenType());
   }
 }

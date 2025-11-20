@@ -5,7 +5,7 @@ import { ContentService, ContentServiceInterface } from "../content/content.serv
 import { ROUTE_PATHS } from "../../route_paths";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { deepCopy } from "../../utils/deep-copy.utils";
-import { catchError, throwError } from "rxjs";
+import { catchError, last, lastValueFrom, of, tap, throwError } from "rxjs";
 import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
 import { ContainerTemplate } from "../container/container.service";
 import { environment } from "../../../environments/environment";
@@ -27,6 +27,11 @@ export interface TemplateTokenType {
   providedIn: "root"
 })
 export class ContainerTemplateService implements ContainerTemplateServiceInterface {
+  canSaveTemplate(): boolean {
+    // Simplified for now
+    // TODO: Add more validation checks
+    return true;
+  }
   http = inject(HttpClient);
   containerTemplateBaseUrl = environment.proxyUrl + "/container/templates";
   contentService: ContentServiceInterface = inject(ContentService);
@@ -90,50 +95,50 @@ export class ContainerTemplateService implements ContainerTemplateServiceInterfa
     return tokenTypeEntry ? tokenTypeEntry.token_types : [];
   }
 
-  isEditMode: WritableSignal<boolean> = linkedSignal({
-    source: () => ({
-      routeUrl: this.contentService.routeUrl(),
-      selectedTemplateOriginal: this._selectedTemplateOriginal(),
-      templatesResource: this.templatesResource.value()
-    }),
-    computation: (source, previous) => {
-      if (
-        source.templatesResource !== previous?.source.templatesResource ||
-        source.selectedTemplateOriginal !== previous?.source.selectedTemplateOriginal ||
-        !source.routeUrl.includes("templates")
-      ) {
-        return false;
-      }
-      return previous?.value ?? false;
-    }
-  });
+  // isEditMode: WritableSignal<boolean> = linkedSignal({
+  //   source: () => ({
+  //     routeUrl: this.contentService.routeUrl(),
+  //     selectedTemplateOriginal: this._selectedTemplateOriginal(),
+  //     templatesResource: this.templatesResource.value()
+  //   }),
+  //   computation: (source, previous) => {
+  //     if (
+  //       source.templatesResource !== previous?.source.templatesResource ||
+  //       source.selectedTemplateOriginal !== previous?.source.selectedTemplateOriginal ||
+  //       !source.routeUrl.includes("templates")
+  //     ) {
+  //       return false;
+  //     }
+  //     return previous?.value ?? false;
+  //   }
+  // });
 
-  selectedTemplate = linkedSignal({
-    source: () => this._selectedTemplateOriginal(),
-    computation: (selectedTemplateOriginal) => deepCopy(selectedTemplateOriginal)
-  });
-  private _selectedTemplateOriginal = signal<ContainerTemplate | null>(null);
+  // selectedTemplate = linkedSignal({
+  //   source: () => this._selectedTemplateOriginal(),
+  //   computation: (selectedTemplateOriginal) => deepCopy(selectedTemplateOriginal)
+  // });
+  // private _selectedTemplateOriginal = signal<ContainerTemplate | null>(null);
 
-  isTemplateEdited = computed(() => {
-    return JSON.stringify(this.selectedTemplate()) !== JSON.stringify(this._selectedTemplateOriginal());
-  });
+  // isTemplateEdited = computed(() => {
+  //   return JSON.stringify(this.selectedTemplate()) !== JSON.stringify(this._selectedTemplateOriginal());
+  // });
 
-  selectTemplateByName(name: string) {
-    const template = this.templates()?.find((p) => p.name === name);
-    if (template) {
-      this._selectedTemplateOriginal.set(deepCopy(template));
-    }
-  }
-  selectTemplate(template: ContainerTemplate) {
-    this._selectedTemplateOriginal.set(deepCopy(template));
-  }
+  // selectTemplateByName(name: string) {
+  //   const template = this.templates()?.find((p) => p.name === name);
+  //   if (template) {
+  //     this._selectedTemplateOriginal.set(deepCopy(template));
+  //   }
+  // }
+  // selectTemplate(template: ContainerTemplate) {
+  //   this._selectedTemplateOriginal.set(deepCopy(template));
+  // }
 
-  initializeNewTemplate() {
-    this._selectedTemplateOriginal.set(deepCopy(ContainerTemplateService.emptyContainerTemplate));
-    this.isEditMode.set(true);
-  }
+  // initializeNewTemplate() {
+  //   this._selectedTemplateOriginal.set(deepCopy(ContainerTemplateService.emptyContainerTemplate));
+  //   this.isEditMode.set(true);
+  // }
 
-  static readonly emptyContainerTemplate: ContainerTemplate = {
+  readonly emptyContainerTemplate: ContainerTemplate = {
     container_type: "",
     default: false,
     name: "",
@@ -143,61 +148,56 @@ export class ContainerTemplateService implements ContainerTemplateServiceInterfa
     }
   };
 
-  deselectNewTemplate() {
-    if (this._selectedTemplateOriginal()?.name === ContainerTemplateService.emptyContainerTemplate.name) {
-      this._selectedTemplateOriginal.set(null);
+  // deselectNewTemplate() {
+  //   if (this._selectedTemplateOriginal()?.name === this.emptyContainerTemplate.name) {
+  //     this._selectedTemplateOriginal.set(null);
+  //   }
+  // }
+
+  // deselectTemplate(name: string) {
+  //   if (this._selectedTemplateOriginal()?.name === name) {
+  //     this._selectedTemplateOriginal.set(null);
+  //   }
+  // }
+
+  postAddNewTemplate(newTemplate: ContainerTemplate) {
+    if (!newTemplate) {
+      console.error("No template provided to postAddNewTemplate.");
+      return;
     }
-  }
-
-  deselectTemplate(name: string) {
-    if (this._selectedTemplateOriginal()?.name === name) {
-      this._selectedTemplateOriginal.set(null);
-    }
-  }
-
-  updateSelectedTemplate(template: Partial<ContainerTemplate>) {
-    const newTemplate = { ...this.selectedTemplate(), ...template } as ContainerTemplate;
-    this.selectedTemplate.set(deepCopy(newTemplate));
-  }
-
-  saveTemplateEditsAsNew() {
-    const template = this.selectedTemplate();
-    if (template) {
-      this.http
-        .post<PiResponse<ContainerTemplate>>(this.containerTemplateBaseUrl, template)
-        .pipe(
-          catchError((error) => {
-            console.error("Failed to save new template:", error);
-            const message = error.error?.result?.error?.message || "";
-            this.notificationService.openSnackBar("Failed to save new template. " + message);
-            return throwError(() => error);
-          })
-        )
-        .subscribe();
-    }
-  }
-
-  saveTemplateEdits() {
-    const template = this.selectedTemplate();
-    if (!template) return;
     this.http
-      .put<PiResponse<ContainerTemplate>>(this.containerTemplateBaseUrl + template.name, template)
+      .post<PiResponse<ContainerTemplate>>(this.containerTemplateBaseUrl, newTemplate)
       .pipe(
         catchError((error) => {
-          console.error("Failed to save template edits:", error);
+          console.error("Failed to save new template:", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.openSnackBar("Failed to save template edits. " + message);
+          this.notificationService.openSnackBar("Failed to save new template. " + message);
           return throwError(() => error);
         })
       )
-      .subscribe({
-        next: (response) => {
-          console.log("Template edits successfully saved:", response);
-          this.templatesResource.reload();
-          this.notificationService.openSnackBar("Successfully saved template edits.");
-        }
-      });
+      .subscribe();
   }
+
+  // async postTemplateEdits(template: ContainerTemplate): Promise<boolean> {
+  //   const request$ = this.http
+  //     .put<PiResponse<ContainerTemplate>>(this.containerTemplateBaseUrl + template.name, template)
+  //     .pipe(
+  //       tap((response) => {
+  //         console.log("Template edits successfully saved:", response);
+  //         this.templatesResource.reload();
+  //         this.notificationService.openSnackBar("Successfully saved template edits.");
+  //       }),
+  //       catchError((error) => {
+  //         console.error("Failed to save template edits:", error);
+  //         const message = error.error?.result?.error?.message || "";
+  //         this.notificationService.openSnackBar("Failed to save template edits. " + message);
+  //         return throwError(() => error);
+  //       })
+  //     );
+  //   return lastValueFrom(request$)
+  //     .then(() => true)
+  //     .catch(() => false);
+  // }
 
   deleteTemplate(name: string) {
     this.http
@@ -219,25 +219,24 @@ export class ContainerTemplateService implements ContainerTemplateServiceInterfa
       });
   }
 
-  cancelEditMode() {
-    this.selectedTemplate.set(deepCopy(this._selectedTemplateOriginal()));
-    this.isEditMode.set(false);
-  }
+  // cancelEditMode() {
+  //   this.selectedTemplate.set(deepCopy(this._selectedTemplateOriginal()));
+  //   this.isEditMode.set(false);
+  // }
 
-  templateIsSelected(templateNameOriginal: string = ""): boolean {
-    const selectedTemplate = this._selectedTemplateOriginal();
-    return selectedTemplate !== null && selectedTemplate.name === templateNameOriginal;
-  }
+  // templateIsSelected(templateNameOriginal: string = ""): boolean {
+  //   const selectedTemplate = this._selectedTemplateOriginal();
+  //   return selectedTemplate !== null && selectedTemplate.name === templateNameOriginal;
+  // }
 
-  isEditingTemplate(name: string): boolean {
-    return this.isEditMode() && this._selectedTemplateOriginal()?.name === name;
-  }
+  // isEditingTemplate(name: string): boolean {
+  //   return this.isEditMode() && this._selectedTemplateOriginal()?.name === name;
+  // }
 
-  setDefaultTemplate(toggleTemplate: ContainerTemplate, isDefault: boolean) {
-    const url =
-      environment.proxyUrl + `/container/${toggleTemplate.container_type}/template/${toggleTemplate.name}/setdefault`;
-    this.http
-      .post<PiResponse<any>>(url, { ...toggleTemplate, default: isDefault }, { headers: this.authService.getHeaders() })
+  async postTemplateEdits(template: ContainerTemplate): Promise<boolean> {
+    const url = environment.proxyUrl + `/container/${template.container_type}/template/${template.name}`;
+    const request$ = this.http.post<PiResponse<any>>(url, template, { headers: this.authService.getHeaders() });
+    request$
       .pipe(
         catchError((error) => {
           console.error("Failed to set default template:", error);
@@ -250,8 +249,11 @@ export class ContainerTemplateService implements ContainerTemplateServiceInterfa
         next: (response) => {
           console.log("Default template successfully set:", response);
           this.templatesResource.reload();
-          this.notificationService.openSnackBar(`Successfully set "${toggleTemplate.name}" as default template.`);
+          this.notificationService.openSnackBar(`Successfully set "${template.name}" as default template.`);
         }
       });
+    return lastValueFrom(request$.pipe(last()))
+      .then(() => true)
+      .catch(() => false);
   }
 }

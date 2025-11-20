@@ -23,7 +23,7 @@
   <mat-accordion class="container-templates-list-layout">
     <app-container-template-new></app-container-template-new>
     @for (template of this.containerTemplateService.templates(); track template.name) {
-      <app-container-template-edit [template]="template"></app-container-template-edit>
+      <app-container-template-edit [templateOriginal]="template"></app-container-template-edit>
     }
   </mat-accordion>
 </div>
