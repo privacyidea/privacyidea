@@ -1,29 +1,25 @@
 /**
  * (c) NetKnights GmbH 2025,  https://netknights.it
  *
- * This code is free software; you can redistribute it and/or
- * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
- * as published by the Free Software Foundation; either
- * version 3 of the License, or any later version.
- *
- * This code is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
- *
- * You should have received a copy of the GNU Affero General Public
- * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
- *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { HttpClient, HttpErrorResponse, HttpParams, httpResource, HttpResourceRef } from "@angular/common/http";
 import { computed, effect, inject, Injectable, linkedSignal, Signal, signal, WritableSignal } from "@angular/core";
 import { Sort } from "@angular/material/sort";
-import { forkJoin, Observable, Subject, switchMap, throwError, timer } from "rxjs";
-import { catchError, shareReplay, takeUntil, takeWhile } from "rxjs/operators";
+import {
+  catchError,
+  forkJoin,
+  Observable,
+  shareReplay,
+  Subject,
+  switchMap,
+  takeUntil,
+  takeWhile,
+  throwError,
+  timer
+} from "rxjs";
 import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
-import { ROUTE_PATHS } from "../../route_paths";
 import { TokenTypeOption as TokenTypeKey } from "../../components/token/token.component";
 import {
   EnrollmentResponse,
@@ -35,8 +31,8 @@ import { tokenTypes } from "../../utils/token.utils";
 import { FilterValue } from "../../core/models/filter_value";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
-import { ConfirmationDialogComponent } from "../../components/shared/confirmation-dialog/confirmation-dialog.component";
 import { StringUtils } from "../../utils/string.utils";
+import { ConfirmationDialogComponent } from "../../components/shared/confirmation-dialog/confirmation-dialog.component";
 
 const apiFilter = [
   "serial",
@@ -162,7 +158,6 @@ export interface TokenServiceInterface {
   pageSize: WritableSignal<number>;
   tokenIsActive: WritableSignal<boolean>;
   tokenIsRevoked: WritableSignal<boolean>;
-  // tokenIsLost: WritableSignal<boolean>;
   defaultSizeOptions: number[];
   apiFilter: string[];
   advancedApiFilter: string[];
@@ -251,16 +246,16 @@ export class TokenService implements TokenServiceInterface {
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
+
   readonly hiddenApiFilter = hiddenApiFilter;
   stopPolling$ = new Subject<void>();
   tokenBaseUrl = environment.proxyUrl + "/token/";
   eventPageSize = 10;
+
   tokenSerial = this.contentService.tokenSerial;
-  detailsUsername = this.contentService.detailsUsername;
 
   filterParams = computed<Record<string, string>>(() => {
     const allowed = [...this.apiFilter, ...this.advancedApiFilter, ...this.hiddenApiFilter];
-
     const plainKeys = new Set(["user", "infokey", "infovalue", "active", "assigned", "container_serial"]);
 
     const entries = [
@@ -269,11 +264,29 @@ export class TokenService implements TokenServiceInterface {
     ]
       .filter(([key]) => allowed.includes(key))
       .map(([key, value]) => [key, (value ?? "").toString().trim()] as const)
-      .filter(([, v]) => StringUtils.validFilterValue(v))
+      .filter(([key, v]) => key === "container_serial" ? true : StringUtils.validFilterValue(v))
       .map(([key, v]) => [key, plainKeys.has(key) ? v : `*${v}*`] as const);
-
     return Object.fromEntries(entries) as Record<string, string>;
   });
+
+  constructor() {
+    effect(() => {
+      if (this.tokenResource.error()) {
+        const tokensResourceError = this.tokenResource.error() as HttpErrorResponse;
+        console.error("Failed to get token data.", tokensResourceError.message);
+        this.notificationService.openSnackBar(tokensResourceError.message);
+      }
+    });
+    effect(() => {
+      if (this.tokenTypesResource.error()) {
+        const tokenTypesResourceError = this.tokenTypesResource.error() as HttpErrorResponse;
+        console.error("Failed to get token type data.", tokenTypesResourceError.message);
+        this.notificationService.openSnackBar(tokenTypesResourceError.message);
+      }
+    });
+  }
+
+  detailsUsername = this.contentService.detailsUsername;
 
   selectedTokenType = linkedSignal({
     source: () => ({
@@ -285,47 +298,34 @@ export class TokenService implements TokenServiceInterface {
       source.tokenTypeOptions[0] ||
       ({ key: "hotp", info: "", text: "" } as TokenType)
   });
-  constructor() {
-    effect(() => {
-      if (this.tokenResource.error()) {
-        let tokensResourceError = this.tokenResource.error() as HttpErrorResponse;
-        console.error("Failed to get token data.", tokensResourceError.message);
-        this.notificationService.openSnackBar(tokensResourceError.message);
-      }
-    });
-    effect(() => {
-      if (this.tokenTypesResource.error()) {
-        let tokenTypesResourceError = this.tokenTypesResource.error() as HttpErrorResponse;
-        console.error("Failed to get token type data.", tokenTypesResourceError.message);
-        this.notificationService.openSnackBar(tokenTypesResourceError.message);
-      }
-    });
-  }
+
+
   showOnlyTokenNotInContainer = linkedSignal({
     source: this.contentService.routeUrl,
-    computation: (routeUrl) => {
-      return routeUrl.startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS);
+    computation: () => {
+      // Initally show tokens not in a container on the container details route.
+      return this.contentService.onTokensContainersDetails();
     }
   });
+
   tokenFilter: WritableSignal<FilterValue> = linkedSignal({
     source: () => ({
       showOnlyTokenNotInContainer: this.showOnlyTokenNotInContainer(),
       routeUrl: this.contentService.routeUrl()
     }),
     computation: (source, previous) => {
-      const inContainerDetails = source.routeUrl.startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS);
-      const inUserDetails = source.routeUrl.includes(ROUTE_PATHS.USERS_DETAILS);
-
-      if (!inContainerDetails && !inUserDetails) {
+      // Outside of container details and user details we reset the filter.
+      if (!this.contentService.onTokensContainersDetails() && !this.contentService.onUserDetails()) {
         return new FilterValue();
       }
-
+      // Initialize filter when the route changes.
       if (!previous || source.routeUrl !== previous.source.routeUrl) {
         let filterValue = new FilterValue({
-          hiddenValue: inContainerDetails ? (source.showOnlyTokenNotInContainer ? "container_serial:" : " ") : ""
+          hiddenValue: this.contentService.onTokensContainersDetails() ?
+            (source.showOnlyTokenNotInContainer ? "container_serial:" : " ") : ""
         });
 
-        if (inUserDetails) {
+        if (this.contentService.onUserDetails()) {
           filterValue = filterValue.updateHiddenEntry("assigned", "false");
         }
         return filterValue;
@@ -333,7 +333,7 @@ export class TokenService implements TokenServiceInterface {
 
       let filterValue = previous.value;
 
-      if (inContainerDetails) {
+      if (this.contentService.onTokensContainersDetails()) {
         filterValue = source.showOnlyTokenNotInContainer
           ? filterValue.addHiddenKey("container_serial")
           : filterValue.removeHiddenKey("container_serial");
@@ -341,7 +341,7 @@ export class TokenService implements TokenServiceInterface {
         filterValue = filterValue.removeHiddenKey("container_serial");
       }
 
-      if (inUserDetails) {
+      if (this.contentService.onUserDetails()) {
         filterValue = filterValue.updateHiddenEntry("assigned", "false");
       } else {
         filterValue = filterValue.removeHiddenKey("assigned");
@@ -361,10 +361,11 @@ export class TokenService implements TokenServiceInterface {
   }
 
   tokenDetailResource = httpResource<PiResponse<Tokens>>(() => {
+    // Only load token details on the token details page.
     if (!this.contentService.onTokenDetails()) {
-      console.log("Not a token detail page.");
       return undefined;
     }
+
     return {
       url: this.tokenBaseUrl,
       method: "GET",
@@ -372,21 +373,31 @@ export class TokenService implements TokenServiceInterface {
       params: { serial: this.tokenSerial() }
     };
   });
+
   tokenTypesResource = httpResource<PiResponse<{}>>(() => {
-    if (![ROUTE_PATHS.TOKENS_ENROLLMENT, ROUTE_PATHS.TOKENS_GET_SERIAL, ROUTE_PATHS.TOKENS_CONTAINERS_CREATE]
-      .includes(this.contentService.routeUrl())) {
+    // Only load token types on routes with a tokentype list or selection.
+    const onAllowedRoute =
+      this.contentService.onTokensEnrollment() ||
+      this.contentService.onTokensGetSerial() ||
+      this.contentService.onTokensContainersCreate();
+
+    if (!onAllowedRoute) {
       return undefined;
     }
+
     return {
       url: environment.proxyUrl + "/auth/rights",
       method: "GET",
       headers: this.authService.getHeaders()
     };
   });
+
   userTokenResource = httpResource<PiResponse<Tokens> | undefined>(() => {
-    if (!this.contentService.routeUrl().includes(ROUTE_PATHS.USERS_DETAILS)) {
+    // Only load user tokens on the user details page.
+    if (!this.contentService.onUserDetails()) {
       return undefined;
     }
+
     return {
       url: this.tokenBaseUrl,
       method: "GET",
@@ -394,6 +405,7 @@ export class TokenService implements TokenServiceInterface {
       params: { user: this.detailsUsername() }
     };
   });
+
   tokenTypeOptions = computed<TokenType[]>(() => {
     const obj = this.tokenTypesResource?.value()?.result?.value;
     if (!obj) return [];
@@ -404,6 +416,7 @@ export class TokenService implements TokenServiceInterface {
       text: tokenTypes.find((t) => t.key === key)?.text || ""
     }));
   });
+
   pageSize = linkedSignal<{ role: string }, number>({
     source: () => ({
       role: this.authService.role()
@@ -418,12 +431,15 @@ export class TokenService implements TokenServiceInterface {
       return source.role === "user" ? 5 : 10;
     }
   });
+
   tokenIsActive = signal(true);
   tokenIsRevoked = signal(true);
   readonly defaultSizeOptions = [5, 10, 25, 50];
   readonly apiFilter = apiFilter;
   readonly advancedApiFilter = advancedApiFilter;
+
   sort = signal({ active: "serial", direction: "asc" } as Sort);
+
   pageIndex = linkedSignal({
     source: () => ({
       filterValue: this.tokenFilter(),
@@ -435,13 +451,16 @@ export class TokenService implements TokenServiceInterface {
   });
 
   tokenResource = httpResource<PiResponse<Tokens>>(() => {
-    if (
-      this.contentService.routeUrl() !== ROUTE_PATHS.TOKENS &&
-      !this.contentService.routeUrl().includes(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS) &&
-      !this.contentService.routeUrl().includes(ROUTE_PATHS.USERS_DETAILS)
-    ) {
+    // Only load tokens on routes with a token list or selection.
+    const onAllowedRoute =
+      this.contentService.onTokens() ||
+      this.contentService.onTokensContainersDetails() ||
+      this.contentService.onUserDetails();
+
+    if (!onAllowedRoute) {
       return undefined;
     }
+
     return {
       url: this.tokenBaseUrl,
       method: "GET",
@@ -455,6 +474,7 @@ export class TokenService implements TokenServiceInterface {
       }
     };
   });
+
   tokenSelection: WritableSignal<TokenDetails[]> = linkedSignal({
     source: () => ({
       routeUrl: this.contentService.routeUrl(),
