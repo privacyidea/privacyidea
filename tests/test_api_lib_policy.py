@@ -1337,7 +1337,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         g.policies = {PolicyAction.REALM_FOR_AUTHENTICATION: "lower Realm"}
         mangle(req)
         # Check that realm was not modified, but username is modified
-        self.assertEqual("lower Realm" , req.all_data.get("realm"))
+        self.assertEqual("lower Realm", req.all_data.get("realm"))
         self.assertEqual("user", req.all_data.get("user"))
         self.assertEqual(User("user", "lower realm"), req.User)
 

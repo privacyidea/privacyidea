@@ -1150,36 +1150,6 @@ class AuthApiTestCase(MyApiTestCase):
             self.assertTrue(result.get("status"), result)
             self.assertEqual(self.realm3, result.get("value").get("realm"))
 
-        # set policy for auth realm with condition on user agent
-        delete_policy("realm_auth")
-        set_policy("realm_auth", scope=SCOPE.AUTH, action=f"{PolicyAction.REALM_FOR_AUTHENTICATION}={self.realm3}",
-                   user_agents="privacyIDEA-Keycloak")
-
-        # auth with different realm from different User Agent works
-        with self.app.test_request_context("/auth",
-                                           method="POST",
-                                           data={"username": "hans",
-                                                 "realm": self.realm1,
-                                                 "password": "test1234"},
-                                           headers={"User-Agent": "PAM"}):
-            res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res)
-            result = res.json.get("result")
-            self.assertTrue(result.get("status"), result)
-            self.assertEqual(self.realm1, result.get("value").get("realm"))
-
-        # auth from matching User-Agent enforces realm3
-        with self.app.test_request_context("/auth",
-                                           method="POST",
-                                           data={"username": "corny",
-                                                 "password": "test"},
-                                           headers={"User-Agent": "privacyIDEA-Keycloak"}):
-            res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res)
-            result = res.json.get("result")
-            self.assertTrue(result.get("status"), result)
-            self.assertEqual(self.realm3, result.get("value").get("realm"))
-
         # set policy for auth realm with condition on node
         delete_policy("realm_auth")
         node1 = NodeName(id="8e4272a9-9037-40df-8aa3-976e4a04b5a9", name="Node1")

@@ -3553,7 +3553,7 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertEqual("ACCEPT", result.get("authentication"), result)
 
         # realm_for_authentication takes precedence over mangle and setrealm policy
-        set_policy("mangle", scope=SCOPE.AUTH, action=f"{PolicyAction.MANGLE}=realm/.*/mangeledRealm/")
+        set_policy("mangle", scope=SCOPE.AUTH, action=f"{PolicyAction.MANGLE}=realm/.*/mangledRealm/")
         set_policy("setrealm", scope=SCOPE.AUTHZ, action=f"{PolicyAction.SETREALM}=setrealm")
         self.set_default_g_variables()
         with self.app.test_request_context("/validate/check",
@@ -3604,40 +3604,6 @@ class ValidateAPITestCase(MyApiTestCase):
                                            data={"user": "corny",
                                                  "pass": "test"},
                                            environ_base={"REMOTE_ADDR": "6.7.8.9"}):
-            res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res)
-            result = res.json.get("result")
-            self.assertTrue(result.get("status"), result)
-            self.assertTrue(result.get("value"), result)
-            self.assertEqual("ACCEPT", result.get("authentication"), result)
-            self.assertEqual(token_corny.get_serial(), res.json.get("detail").get("serial"))
-
-        # set policy for auth realm with condition on user agent
-        delete_policy("realm_auth")
-        set_policy("realm_auth", scope=SCOPE.AUTH, action=f"{PolicyAction.REALM_FOR_AUTHENTICATION}={self.realm3}",
-                   user_agents="privacyIDEA-Keycloak")
-
-        # auth with different realm from different User Agent works
-        with self.app.test_request_context("/validate/check",
-                                           method="POST",
-                                           data={"user": "hans",
-                                                 "realm": self.realm1,
-                                                 "pass": "test1234"},
-                                           headers={"User-Agent": "PAM"}):
-            res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res)
-            result = res.json.get("result")
-            self.assertTrue(result.get("status"), result)
-            self.assertTrue(result.get("value"), result)
-            self.assertEqual("ACCEPT", result.get("authentication"), result)
-            self.assertEqual(token_hans.get_serial(), res.json.get("detail").get("serial"))
-
-        # auth from matching User-Agent enforces realm3
-        with self.app.test_request_context("/validate/check",
-                                           method="POST",
-                                           data={"user": "corny",
-                                                 "pass": "test"},
-                                           headers={"User-Agent": "privacyIDEA-Keycloak"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")

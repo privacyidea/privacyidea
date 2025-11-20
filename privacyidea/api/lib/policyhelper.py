@@ -424,7 +424,7 @@ def get_realm_for_authentication(g, username: str, realm: str) -> str:
             log.warning("Realm '%s' defined in the policy '%s' does not exist. Using realm '%s' instead.", new_realm,
                         PolicyAction.REALM_FOR_AUTHENTICATION, realm)
             return realm
-        log.debug("Setting realm for authentication to '%'", new_realm)
+        log.debug("Setting realm for authentication to '%s'", new_realm)
         if "policies" in g:
             g.policies[PolicyAction.REALM_FOR_AUTHENTICATION] = new_realm
         else:

@@ -2572,7 +2572,7 @@ def get_static_policy_definitions(scope=None):
             PolicyAction.REALM_FOR_AUTHENTICATION: {
                 'type': 'str',
                 'value': realms,
-                'desc': _('In an authentication requests, sets or overwrites the realm parameter. It takes precedence '
+                'desc': _('In authentication requests, sets or overwrites the realm parameter. It takes precedence '
                           'over the mangle and setrealm policies.' )
             },
             PolicyAction.RESETALLTOKENS: {
