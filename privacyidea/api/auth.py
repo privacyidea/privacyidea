@@ -128,8 +128,6 @@ def before_request():
         login_name, realm = split_user(username)
         # overwrite the split realm if we have a realm parameter. Default back to default_realm
         realm = get_optional(request.all_data, "realm") or realm
-        # Check if realm should be overwritten
-        realm = get_realm_for_authentication(g, login_name, realm)
         # Prefill the request.User. This is used by some pre-event handlers
         if not realm and db_admin_exists(login_name):
             # TODO: create an own local admin user object
@@ -137,6 +135,8 @@ def before_request():
             request.User = User(login_name)
         else:
             realm = realm or get_default_realm()
+            # Check if realm should be overwritten
+            realm = get_realm_for_authentication(g, login_name, realm)
             try:
                 request.User = User(login_name, realm)
             except Exception as e:
