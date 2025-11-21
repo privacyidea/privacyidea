@@ -112,12 +112,12 @@ from privacyidea.lib.policy import PolicyClass, SCOPE
 from privacyidea.lib.subscriptions import CheckSubscription
 from privacyidea.lib.token import (check_user_pass, check_serial_pass,
                                    check_otp, create_challenges_from_tokens, get_one_token)
-from .lib.policyhelper import check_last_auth_policy
+from .lib.policyhelper import check_last_auth_policy, get_realm_for_authentication
 from ..lib.fido2.util import get_fido2_token_by_credential_id, get_fido2_token_by_transaction_id
 from ..lib.fido2.challenge import create_fido2_challenge, verify_fido2_challenge
 from privacyidea.lib.token import get_tokens
 from privacyidea.lib.tokenclass import CHALLENGE_SESSION
-from privacyidea.lib.user import get_user_from_param, log_used_user, User
+from privacyidea.lib.user import get_user_from_param, log_used_user, User, split_user
 from privacyidea.lib.utils import get_client_ip, get_plugin_info_from_useragent, AUTH_RESPONSE
 from privacyidea.lib.utils import is_true, get_computer_name_from_user_agent
 from .lib.utils import required
@@ -125,6 +125,7 @@ from .lib.utils import send_result, getParam, get_required
 from ..lib.decorators import (check_user_serial_or_cred_id_in_request)
 from ..lib.fido2.policy_action import FIDO2PolicyAction
 from ..lib.framework import get_app_config_value
+from ..lib.realm import get_default_realm
 from ..lib.users.custom_user_attributes import InternalCustomUserAttributes, INTERNAL_USAGE
 
 log = logging.getLogger(__name__)
@@ -144,7 +145,6 @@ def before_request():
     g.request_data = get_all_params(request)
     request.all_data = copy.deepcopy(g.request_data)
 
-    request.User = get_user_from_param(request.all_data)
     privacyidea_server = get_app_config_value("PI_AUDIT_SERVERNAME", get_privacyidea_node(request.host))
     # Create a policy_object, that reads the database audit settings
     # and contains the complete policy definition during the request.
@@ -162,6 +162,18 @@ def before_request():
     g.serial = getParam(request.all_data, "serial", default=None)
     ua_name, ua_version, _ua_comment = get_plugin_info_from_useragent(request.user_agent.string)
     g.user_agent = ua_name
+
+    # Get user
+    username = request.all_data.get("user", "")
+    username, realm = split_user(username)
+    realm = request.all_data.get("realm", realm)
+    if username and not realm:
+        realm = get_default_realm()
+    # Check if a policy defines the realm
+    realm = get_realm_for_authentication(g, username, realm)
+    resolver = request.all_data.get("resolver")
+    request.User = User(username, realm, resolver)
+
     g.audit_object.log({"success": False,
                         "action_detail": "",
                         "client": g.client_ip,

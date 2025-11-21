@@ -937,9 +937,11 @@ def set_realm(request=None, action=None):
     """
     Pre Policy
     This pre condition gets the current realm and verifies if the realm
-    should be rewritten due to the policy definition.
+    should be rewritten due to the policy definition of the setrealm action in the authorization scope.
     I takes the realm from the request and - if a policy matches - replaces
     this realm with the realm defined in the policy
+
+    The policy set_realm in the authentication scope takes precedence over this policy.
 
     Check ACTION.SETREALM
 
@@ -955,7 +957,7 @@ def set_realm(request=None, action=None):
     # At the moment a realm parameter with no user parameter returns a user
     # object like "@realm". If this is changed one day, we need to also fetch
     #  the realm
-    if request.User and request.User.login:
+    if request.User and request.User.login and not g.get("policies", {}).get(PolicyAction.SET_REALM):
         user_object = request.User
         username = user_object.login
         policy_match = Match.user(g, scope=SCOPE.AUTHZ, action=PolicyAction.SETREALM,
@@ -1130,6 +1132,8 @@ def mangle(request=None, action=None):
     authentication policy with action "mangle".
     See :ref:`policy_mangle` for an example.
 
+    The policy set_realm in the authentication scope takes precedence over this policy.
+
     Check ACTION.MANGLE
 
     This decorator should wrap
@@ -1141,6 +1145,7 @@ def mangle(request=None, action=None):
     :type action: basestring
     :returns: Always true. Modified the parameter request
     """
+    auth_realm_policy = g.get("policies", {}).get(PolicyAction.SET_REALM)
     user_object = request.User
 
     mangle_pols = Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.MANGLE,
@@ -1152,6 +1157,9 @@ def mangle(request=None, action=None):
         # keyword/search/replace/. Where "keyword" can be "user", "pass" or
         # "realm".
         mangle_key, search, replace, _rest = mangle_pol_action.split("/", 3)
+        if mangle_key == "realm" and auth_realm_policy:
+            # set_realm policy takes precedence over mangle realm
+            continue
         mangle_value = request.all_data.get(mangle_key)
         if mangle_value:
             log.debug("mangling authentication data: {0!s}".format(mangle_key))

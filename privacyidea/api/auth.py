@@ -50,7 +50,7 @@ import jwt
 from functools import wraps
 from datetime import (datetime, timezone)
 
-from privacyidea.api.lib.policyhelper import check_last_auth_policy
+from privacyidea.api.lib.policyhelper import check_last_auth_policy, get_realm_for_authentication
 from privacyidea.lib.error import AuthError, ERROR
 from privacyidea.lib.crypto import geturandom, init_hsm
 from privacyidea.lib.audit import getAudit
@@ -135,6 +135,8 @@ def before_request():
             request.User = User(login_name)
         else:
             realm = realm or get_default_realm()
+            # Check if realm should be overwritten
+            realm = get_realm_for_authentication(g, login_name, realm)
             try:
                 request.User = User(login_name, realm)
             except Exception as e:
