@@ -36,7 +36,6 @@ import {
   TokenEnrollmentData
 } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
 
-
 export interface RadiusEnrollmentOptions extends TokenEnrollmentData {
   type: "radius";
   radiusServerConfiguration: string;
@@ -90,9 +89,7 @@ export class EnrollRadiusComponent implements OnInit {
     checkPinLocally: this.checkPinLocallyControl
   });
 
-  radiusServerConfigurationOptions = computed(
-    () => this.systemService.radiusServerResource.value()?.result?.value
-  );
+  radiusServerConfigurationOptions = computed(() => this.systemService.radiusServerResource.value()?.result?.value);
 
   defaultRadiusServerIsSet = computed(() => {
     const cfg = this.systemService.systemConfigResource.value()?.result?.value;
@@ -100,6 +97,9 @@ export class EnrollRadiusComponent implements OnInit {
   });
 
   constructor() {
+    effect(() =>
+      this.disabled() ? this.radiusForm.disable({ emitEvent: false }) : this.radiusForm.enable({ emitEvent: false })
+    );
     effect(() => {
       const id = this.systemService.systemConfigResource.value()?.result?.value?.["radius.identifier"];
       if (id && this.radiusServerConfigurationControl.pristine) {

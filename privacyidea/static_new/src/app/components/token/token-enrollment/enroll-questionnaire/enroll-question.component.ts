@@ -39,6 +39,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  effect,
   EventEmitter,
   inject,
   input,
@@ -112,6 +113,14 @@ export class EnrollQuestionComponent implements OnInit {
       return form;
     }
   });
+
+  constructor() {
+    effect(() =>
+      this.disabled()
+        ? this.questionForm().disable({ emitEvent: false })
+        : this.questionForm().enable({ emitEvent: false })
+    );
+  }
 
   ngOnInit(): void {
     this.clickEnrollChange.emit(this.onClickEnroll);

@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, EventEmitter, inject, input, OnInit, Output } from "@angular/core";
+import { Component, effect, EventEmitter, inject, input, OnInit, Output } from "@angular/core";
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { ErrorStateMatcher } from "@angular/material/core";
@@ -90,6 +90,12 @@ export class EnrollVascoComponent implements OnInit {
       vascoOtpStr += String.fromCharCode(parseInt(otpHex.slice(i, i + 2), 16));
     }
     return vascoOtpStr.slice(0, 10);
+  }
+
+  constructor() {
+    effect(() =>
+      this.disabled() ? this.vascoForm.disable({ emitEvent: false }) : this.vascoForm.enable({ emitEvent: false })
+    );
   }
 
   ngOnInit(): void {

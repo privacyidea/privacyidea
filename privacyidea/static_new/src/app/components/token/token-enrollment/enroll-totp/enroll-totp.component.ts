@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { NgClass } from "@angular/common";
-import { Component, EventEmitter, inject, input, Input, OnInit, Output } from "@angular/core";
+import { Component, effect, EventEmitter, inject, input, Input, OnInit, Output } from "@angular/core";
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatOption } from "@angular/material/core";
@@ -97,6 +97,12 @@ export class EnrollTotpComponent implements OnInit {
   });
 
   disabled = input<boolean>(false);
+
+  constructor() {
+    effect(() =>
+      this.disabled() ? this.totpForm.disable({ emitEvent: false }) : this.totpForm.enable({ emitEvent: false })
+    );
+  }
 
   ngOnInit(): void {
     this.additionalFormFieldsChange.emit({

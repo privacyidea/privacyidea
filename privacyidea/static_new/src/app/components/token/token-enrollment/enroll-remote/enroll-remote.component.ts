@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, EventEmitter, inject, input, OnInit, Output } from "@angular/core";
+import { Component, effect, EventEmitter, inject, input, OnInit, Output } from "@angular/core";
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { ErrorStateMatcher, MatOption } from "@angular/material/core";
@@ -97,6 +97,12 @@ export class EnrollRemoteComponent implements OnInit {
 
   remoteServerOptions = this.privacyideaServerService.remoteServerOptions;
   remoteErrorStateMatcher = new RemoteErrorStateMatcher();
+
+  constructor() {
+    effect(() =>
+      this.disabled() ? this.remoteForm.disable({ emitEvent: false }) : this.remoteForm.enable({ emitEvent: false })
+    );
+  }
 
   ngOnInit(): void {
     this.additionalFormFieldsChange.emit({

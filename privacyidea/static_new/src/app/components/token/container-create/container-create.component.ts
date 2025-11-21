@@ -132,7 +132,7 @@ export class ContainerCreateComponent {
   templateOptions = this.containerTemplateService.templates;
   generateQRCode: WritableSignal<boolean> = linkedSignal({
     source: this.containerService.selectedContainerType,
-    computation: (containerType: ContainerType) => containerType.containerType === "smartphone"
+    computation: (containerType?: ContainerType) => containerType?.containerType === "smartphone"
   });
   passphrasePrompt = signal("");
   passphraseResponse = signal("");
@@ -245,8 +245,10 @@ export class ContainerCreateComponent {
 
   createContainer() {
     this.registerResponse.set(null);
+    const containerType = this.containerService.selectedContainerType()?.containerType;
+    if (!containerType) return;
     const createData: ContainerCreateData = {
-      container_type: this.containerService.selectedContainerType().containerType,
+      container_type: containerType,
       description: this.description(),
       user: this.userService.selectionUsernameFilter()
     };

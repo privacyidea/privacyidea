@@ -2,7 +2,6 @@
   <h4 class="enroll-h4">Token Configuration</h4>
   @if (!wizard) {
     <mat-checkbox
-      [disabled]="disabled()"
       [formControl]="generateOnServerControl"
       class="server-checkbox"
       i18n>
@@ -16,7 +15,6 @@
         <mat-label i18n>Application Specific Password</mat-label>
         <input
           matInput
-          [disabled]="disabled()"
           [formControl]="otpKeyFormControl"
           i18n-placeholder
           placeholder="Enter static password" />
@@ -26,7 +24,6 @@
     <mat-form-field class="width-64 input-height">
       <mat-label i18n>Service ID</mat-label>
       <mat-select
-        [disabled]="disabled()"
         [errorStateMatcher]="applspecErrorStateMatcher"
         [formControl]="serviceIdControl"
         [value]="serviceIdControl.value"

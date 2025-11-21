@@ -94,13 +94,10 @@
       }
     </mat-expansion-panel-header>
     <div class="flex-column">
-      @if (isEditMode()) {
-        @if (currentTemplate().container_type) {
-          <app-container-template-add-token-chips
-            [containerType]="currentTemplate().container_type"
-            (onAddToken)="onAddToken($event)" />
-          <app-template-add-token-row (onAddToken)="onAddToken($event)" />
-        }
+      @if (isEditMode() && currentTemplate().container_type !== "") {
+        <app-container-template-add-token-chips
+          [containerType]="currentTemplate().container_type"
+          (onAddToken)="onAddToken($event)" />
       }
 
       <div class="addedTokensList">

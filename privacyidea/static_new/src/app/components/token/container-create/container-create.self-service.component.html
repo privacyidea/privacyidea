@@ -6,7 +6,8 @@
   i18n-aria-label>
   <h3
     class="margin-left-1"
-    i18n>Create a New Container
+    i18n>
+    Create a New Container
   </h3>
   <div #stickySentinel></div>
   <div
@@ -58,12 +59,12 @@
     class="container-type-hint"
     i18n>
     Supported Token Types:
-    @if (containerService.selectedContainerType().token_types.length >= tokenService.tokenTypeOptions().length) {
+    @if (containerService.selectedContainerType()?.token_types?.length ?? 0 >= tokenService.tokenTypeOptions().length) {
       All
-    } @else if (containerService.selectedContainerType().token_types.length > 1) {
-      {{ containerService.selectedContainerType().token_types.join(", ") }}
+    } @else if (containerService.selectedContainerType()?.token_types?.length ?? 0 > 1) {
+      {{ containerService.selectedContainerType()?.token_types?.join(", ") }}
     } @else {
-      {{ containerService.selectedContainerType().token_types[0] }}
+      {{ containerService.selectedContainerType()?.token_types?.[0] }}
     }
   </div>
 
@@ -81,7 +82,11 @@
 
   @if (authService.actionAllowed("container_template_list")) {
     <div class="flex-column width-66">
-      <h4 class="enroll-h4" i18n>Use a Template</h4>
+      <h4
+        class="enroll-h4"
+        i18n>
+        Use a Template
+      </h4>
       <mat-form-field class="width-100 input-height">
         <mat-label i18n>Template</mat-label>
         <mat-select
@@ -92,15 +97,15 @@
           }
         </mat-select>
         @if (selectedTemplate() !== "") {
-            <app-clear-button
-              matSuffix
-              (onClick)="clearTemplateSelection()"></app-clear-button>
-          }
+          <app-clear-button
+            matSuffix
+            (onClick)="clearTemplateSelection()"></app-clear-button>
+        }
       </mat-form-field>
     </div>
   }
 
-  @if (containerService.selectedContainerType().containerType === "smartphone") {
+  @if (containerService.selectedContainerType()?.containerType === "smartphone") {
     <h4
       i18n
       class="enroll-h4">

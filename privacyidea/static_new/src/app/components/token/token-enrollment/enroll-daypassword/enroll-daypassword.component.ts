@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, EventEmitter, inject, input, Input, OnInit, Output } from "@angular/core";
+import { Component, effect, EventEmitter, inject, input, Input, OnInit, Output } from "@angular/core";
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatOption } from "@angular/material/core";
@@ -92,6 +92,14 @@ export class EnrollDaypasswordComponent implements OnInit {
     hashAlgorithm: this.hashAlgorithmControl,
     timeStep: this.timeStepControl
   });
+
+  constructor() {
+    effect(() =>
+      this.disabled()
+        ? this.daypasswordForm.disable({ emitEvent: false })
+        : this.daypasswordForm.enable({ emitEvent: false })
+    );
+  }
 
   ngOnInit(): void {
     this.additionalFormFieldsChange.emit({

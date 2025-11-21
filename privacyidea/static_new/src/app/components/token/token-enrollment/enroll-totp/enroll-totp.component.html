@@ -3,7 +3,6 @@
     <h4 class="enroll-h4">Token Configuration</h4>
     <mat-checkbox
       [formControl]="generateOnServerFormControl"
-      [disabled]="disabled()"
       class="server-checkbox">
       Generate the OTP key on the server and show a QR code to scan.
     </mat-checkbox>
@@ -14,7 +13,6 @@
           <input
             matInput
             [formControl]="otpKeyFormControl"
-            [disabled]="disabled()"
             placeholder="Enter OTP key"
             required />
           @if (otpKeyFormControl.hasError("required")) {
@@ -30,7 +28,6 @@
         <mat-label>OTP length</mat-label>
         <mat-select
           [formControl]="otpLengthFormControl"
-          [disabled]="disabled()"
           [value]="otpLengthFormControl.value">
           @for (len of otpLengthOptions; track len) {
             <mat-option [value]="len">{{ len }}</mat-option>
@@ -43,7 +40,6 @@
         <mat-label>Hash algorithm</mat-label>
         <mat-select
           [formControl]="hashAlgorithmControl"
-          [disabled]="disabled()"
           [value]="hashAlgorithmControl.value">
           @for (alg of hashAlgorithmOptions; track alg.value) {
             <mat-option [value]="alg.value">{{ alg.viewValue }}</mat-option>
@@ -58,7 +54,6 @@
         <mat-label>Timestep</mat-label>
         <mat-select
           [formControl]="timeStepControl"
-          [disabled]="disabled()"
           [value]="timeStepControl.value">
           @for (step of timeStepOptions; track step) {
             <mat-option [value]="step">{{ step }}</mat-option>

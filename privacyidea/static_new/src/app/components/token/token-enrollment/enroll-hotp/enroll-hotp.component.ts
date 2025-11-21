@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, EventEmitter, inject, input, Input, OnInit, Output } from "@angular/core";
+import { Component, effect, EventEmitter, inject, input, Input, OnInit, Output } from "@angular/core";
 import { FormControl, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatInput } from "@angular/material/input";
@@ -26,7 +26,10 @@ import {
   TokenApiPayloadMapper,
   TokenEnrollmentData
 } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
-import { HotpApiPayloadMapper, HotpEnrollmentData } from "../../../../mappers/token-api-payload/hotp-token-api-payload.mapper";
+import {
+  HotpApiPayloadMapper,
+  HotpEnrollmentData
+} from "../../../../mappers/token-api-payload/hotp-token-api-payload.mapper";
 import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
 
 export interface HotpEnrollmentOptions extends TokenEnrollmentData {
@@ -80,6 +83,10 @@ export class EnrollHotpComponent implements OnInit {
   otpLengthFormControl = new FormControl<number>(6, [Validators.required]);
   otpKeyFormControl = new FormControl<string>({ value: "", disabled: true });
   hashAlgorithmFormControl = new FormControl<string>("sha1", [Validators.required]);
+
+  constructor() {
+    effect(() => (this.disabled() ? this._disableFormControls() : this._enableFormControls()));
+  }
 
   ngOnInit(): void {
     this.additionalFormFieldsChange.emit({
@@ -143,4 +150,20 @@ export class EnrollHotpComponent implements OnInit {
       mapper: this.enrollmentMapper
     };
   };
+
+  private _disableFormControls(): void {
+    this.generateOnServerFormControl.disable();
+    this.otpLengthFormControl.disable();
+    this.otpKeyFormControl.disable();
+    this.hashAlgorithmFormControl.disable();
+  }
+
+  private _enableFormControls(): void {
+    this.generateOnServerFormControl.enable();
+    this.otpLengthFormControl.enable();
+    if (!this.generateOnServerFormControl.value) {
+      this.otpKeyFormControl.enable();
+    }
+    this.hashAlgorithmFormControl.enable();
+  }
 }

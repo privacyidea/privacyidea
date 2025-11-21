@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, EventEmitter, inject, input, Input, OnInit, Output } from "@angular/core";
+import { Component, computed, effect, EventEmitter, inject, input, Input, OnInit, Output } from "@angular/core";
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { ErrorStateMatcher, MatOption } from "@angular/material/core";
@@ -96,6 +96,10 @@ export class EnrollApplspecComponent implements OnInit {
   serviceIdOptions = computed(() => this.serviceIdService.serviceIds().map((s) => s.name) || []);
   applspecErrorStateMatcher = new ApplspecErrorStateMatcher();
 
+  constructor() {
+    effect(() => (this.disabled() ? this._disableFormControls() : this._enableFormControls()));
+  }
+
   ngOnInit(): void {
     this.additionalFormFieldsChange.emit({
       serviceId: this.serviceIdControl,
@@ -149,4 +153,12 @@ export class EnrollApplspecComponent implements OnInit {
       mapper: this.enrollmentMapper
     };
   };
+
+  private _disableFormControls() {
+    this.applspecForm.disable({ emitEvent: false });
+  }
+
+  private _enableFormControls() {
+    this.applspecForm.enable({ emitEvent: false });
+  }
 }

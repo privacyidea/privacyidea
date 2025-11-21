@@ -59,7 +59,7 @@ export class ContainerTemplateService implements ContainerTemplateServiceInterfa
     let params = {};
     if (this.containerService.selectedContainerType()) {
       params = {
-        container_type: this.containerService.selectedContainerType().containerType
+        container_type: this.containerService.selectedContainerType()?.containerType
       };
     }
     return {

@@ -14,7 +14,7 @@ import { TemplateAddTokenRowComponent } from "../template-add-token-row/template
 import { ContainerTemplate, ContainerTemplateToken } from "../../../../services/container/container.service";
 import { ContainerTemplateService } from "../../../../services/container-template/container-template.service";
 import { deepCopy } from "../../../../utils/deep-copy.utils";
-import { ContainerTemplateTokenTypeSelectorComponent } from "../container-template-add-token-chips/container-template-add-token-chips.component";
+import { ContainerTemplateAddTokenChipsComponent } from "../container-template-add-token-chips/container-template-add-token-chips.component";
 import { MatChipsModule } from "@angular/material/chips";
 
 @Component({
@@ -33,7 +33,7 @@ import { MatChipsModule } from "@angular/material/chips";
     MatOptionModule,
     TemplateAddedTokenRowComponent,
 
-    ContainerTemplateTokenTypeSelectorComponent,
+    ContainerTemplateAddTokenChipsComponent,
     MatChipsModule
   ],
   templateUrl: "./container-template-new.component.html",

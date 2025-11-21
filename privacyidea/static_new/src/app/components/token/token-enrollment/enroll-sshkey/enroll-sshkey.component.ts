@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, EventEmitter, inject, Output } from "@angular/core";
+import { Component, effect, EventEmitter, inject, input, Output } from "@angular/core";
 import { AbstractControl, FormControl, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
@@ -66,6 +66,14 @@ export class EnrollSshkeyComponent {
       return { invalidSshKey: true };
     }
     return null;
+  }
+
+  constructor() {
+    effect(() =>
+      this.disabled()
+        ? this.sshPublicKeyFormControl.disable({ emitEvent: false })
+        : this.sshPublicKeyFormControl.enable({ emitEvent: false })
+    );
   }
 
   ngOnInit() {

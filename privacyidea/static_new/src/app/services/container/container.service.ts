@@ -175,7 +175,7 @@ export interface ContainerServiceInterface {
   containerSelection: WritableSignal<ContainerDetailData[]>;
   containerTypesResource: HttpResourceRef<PiResponse<ContainerTypes> | undefined>;
   containerTypeOptions: Signal<ContainerType[]>;
-  selectedContainerType: Signal<ContainerType>;
+  selectedContainerType: Signal<ContainerType | undefined>;
   containerDetailResource: HttpResourceRef<PiResponse<ContainerDetails> | undefined>;
   containerDetail: WritableSignal<ContainerDetails>;
   addToken: (tokenSerial: string, containerSerial: string) => Observable<any>;
@@ -411,12 +411,15 @@ export class ContainerService implements ContainerServiceInterface {
     }));
   });
 
-  selectedContainerType = linkedSignal({
+  selectedContainerType = linkedSignal<any, ContainerType | undefined>({
     source: this.contentService.routeUrl,
-    computation: () => {
+    computation: (routeUrl) => {
       let containerType = this.authService.defaultContainerType();
       if (this.contentService.routeUrl() === ROUTE_PATHS.TOKENS_CONTAINERS_WIZARD) {
         containerType = this.authService.containerWizard().type || containerType;
+      }
+      if (routeUrl === ROUTE_PATHS.TOKENS_CONTAINERS_TEMPLATES) {
+        return undefined;
       }
       return (
         this.containerTypeOptions().find((type) => type.containerType === containerType) ||

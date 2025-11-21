@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, EventEmitter, inject, input, OnInit, Output } from "@angular/core";
+import { Component, computed, effect, EventEmitter, inject, input, OnInit, Output } from "@angular/core";
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
@@ -25,7 +25,10 @@ import {
   TokenApiPayloadMapper,
   TokenEnrollmentData
 } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
-import { EmailApiPayloadMapper, EmailEnrollmentData } from "../../../../mappers/token-api-payload/email-token-api-payload.mapper";
+import {
+  EmailApiPayloadMapper,
+  EmailEnrollmentData
+} from "../../../../mappers/token-api-payload/email-token-api-payload.mapper";
 import { SystemService, SystemServiceInterface } from "../../../../services/system/system.service";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 
@@ -69,6 +72,12 @@ export class EnrollEmailComponent implements OnInit {
     const cfg = this.systemService.systemConfigResource.value()?.result?.value;
     return !!cfg?.["email.identifier"];
   });
+
+  constructor() {
+    effect(() =>
+      this.disabled() ? this.emailForm.disable({ emitEvent: false }) : this.emailForm.enable({ emitEvent: false })
+    );
+  }
 
   ngOnInit(): void {
     this.additionalFormFieldsChange.emit({

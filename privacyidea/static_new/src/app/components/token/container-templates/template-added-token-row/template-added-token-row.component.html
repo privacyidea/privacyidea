@@ -17,12 +17,14 @@
     @case ("hotp") {
       <app-enroll-hotp
         (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-        (clickEnrollChange)="updateClickEnroll($event)" />
+        (clickEnrollChange)="updateClickEnroll($event)"
+        [disabled]="!isEditMode()" />
     }
     @case ("totp") {
       <app-enroll-totp
         (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-        (clickEnrollChange)="updateClickEnroll($event)" />
+        (clickEnrollChange)="updateClickEnroll($event)"
+        [disabled]="!isEditMode()" />
     }
     @case ("spass") {
       <app-enroll-spass
@@ -42,22 +44,26 @@
     @case ("4eyes") {
       <app-enroll-foureyes
         (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-        (clickEnrollChange)="updateClickEnroll($event)" />
+        (clickEnrollChange)="updateClickEnroll($event)"
+        [disabled]="!isEditMode()" />
     }
     @case ("applspec") {
       <app-enroll-applspec
         (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-        (clickEnrollChange)="updateClickEnroll($event)" />
+        (clickEnrollChange)="updateClickEnroll($event)"
+        [disabled]="!isEditMode()" />
     }
     @case ("daypassword") {
       <app-enroll-daypassword
         (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-        (clickEnrollChange)="updateClickEnroll($event)" />
+        (clickEnrollChange)="updateClickEnroll($event)"
+        [disabled]="!isEditMode()" />
     }
     @case ("email") {
       <app-enroll-email
         (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-        (clickEnrollChange)="updateClickEnroll($event)" />
+        (clickEnrollChange)="updateClickEnroll($event)"
+        [disabled]="!isEditMode()" />
     }
     @case ("indexedsecret") {
       <app-enroll-indexedsecret
@@ -87,7 +93,8 @@
     @case ("tiqr") {
       <app-enroll-tiqr
         (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-        (clickEnrollChange)="updateClickEnroll($event)" />
+        (clickEnrollChange)="updateClickEnroll($event)"
+        [disabled]="!isEditMode()" />
     }
   }
   <!-- <div class="token-details-form">

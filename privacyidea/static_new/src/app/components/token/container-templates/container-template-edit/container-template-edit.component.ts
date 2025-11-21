@@ -12,9 +12,8 @@ import { ContainerTemplate, ContainerTemplateToken } from "../../../../services/
 import { ContainerTemplateService } from "../../../../services/container-template/container-template.service";
 import { TemplateAddedTokenRowComponent } from "../template-added-token-row/template-added-token-row.component";
 import { MatTooltipModule } from "@angular/material/tooltip";
-import { TemplateAddTokenRowComponent } from "../template-add-token-row/template-add-token-row.component";
 import { deepCopy } from "../../../../utils/deep-copy.utils";
-import { ContainerTemplateTokenTypeSelectorComponent } from "../container-template-add-token-chips/container-template-add-token-chips.component";
+import { ContainerTemplateAddTokenChipsComponent } from "../container-template-add-token-chips/container-template-add-token-chips.component";
 
 @Component({
   selector: "app-container-template-edit",
@@ -31,8 +30,7 @@ import { ContainerTemplateTokenTypeSelectorComponent } from "../container-templa
     MatSelectModule,
     MatOptionModule,
     TemplateAddedTokenRowComponent,
-    TemplateAddTokenRowComponent,
-    ContainerTemplateTokenTypeSelectorComponent
+    ContainerTemplateAddTokenChipsComponent
   ],
   templateUrl: "./container-template-edit.component.html",
   styleUrl: "./container-template-edit.component.scss"

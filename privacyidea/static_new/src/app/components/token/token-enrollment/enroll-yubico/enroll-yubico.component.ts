@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, EventEmitter, inject, input, OnInit, Output } from "@angular/core";
+import { Component, computed, effect, EventEmitter, inject, input, OnInit, Output } from "@angular/core";
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { ErrorStateMatcher } from "@angular/material/core";
 import { MatFormField, MatLabel } from "@angular/material/form-field";
@@ -85,6 +85,12 @@ export class EnrollYubicoComponent implements OnInit {
     const cfg = this.systemService.systemConfigResource.value()?.result?.value;
     return !!(cfg?.["yubico.id"] && cfg?.["yubico.url"] && cfg?.["yubico.secret"]);
   });
+
+  constructor() {
+    effect(() =>
+      this.disabled() ? this.yubicoForm.disable({ emitEvent: false }) : this.yubicoForm.enable({ emitEvent: false })
+    );
+  }
 
   ngOnInit(): void {
     this.additionalFormFieldsChange.emit({
