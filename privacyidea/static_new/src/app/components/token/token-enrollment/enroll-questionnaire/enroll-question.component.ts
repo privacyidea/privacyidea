@@ -41,6 +41,7 @@ import {
   computed,
   EventEmitter,
   inject,
+  input,
   linkedSignal,
   OnInit,
   Output,
@@ -80,6 +81,7 @@ export class EnrollQuestionComponent implements OnInit {
       mapper: TokenApiPayloadMapper<QuestionEnrollmentData>;
     } | null
   >();
+  disabled = input<boolean>(false);
   configQuestions = computed(() => {
     const cfg = this.systemService.systemConfigResource.value()?.result?.value || {};
     return Object.entries(cfg)

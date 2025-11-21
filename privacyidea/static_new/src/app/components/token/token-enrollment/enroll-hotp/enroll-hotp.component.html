@@ -2,6 +2,7 @@
   <div class="flex-column">
     <h4 class="enroll-h4">Token Configuration</h4>
     <mat-checkbox
+      [disabled]="disabled()"
       [formControl]="generateOnServerFormControl"
       class="server-checkbox"
       i18n>
@@ -13,6 +14,7 @@
           <mat-label i18n>OTP Key</mat-label>
           <input
             matInput
+            [disabled]="disabled()"
             [formControl]="otpKeyFormControl"
             i18n-placeholder
             placeholder="Enter OTP key"
@@ -27,6 +29,7 @@
         class="input-height width-33">
         <mat-label i18n>OTP length</mat-label>
         <mat-select
+          [disabled]="disabled()"
           [formControl]="otpLengthFormControl"
           [value]="otpLengthFormControl.value">
           @for (len of otpLengthOptions; track len) {
@@ -40,6 +43,7 @@
         class="input-height width-33">
         <mat-label i18n>Hash algorithm</mat-label>
         <mat-select
+          [disabled]="disabled()"
           [formControl]="hashAlgorithmFormControl"
           [value]="hashAlgorithmFormControl.value">
           @for (alg of hashAlgorithmOptions; track alg.value) {

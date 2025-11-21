@@ -1,10 +1,13 @@
 <div class="flex-column">
   <h4 class="enroll-h4">Token Configuration</h4>
-  <mat-checkbox [formControl]="checkPinLocallyControl"> Check the PIN locally</mat-checkbox>
+  <mat-checkbox
+    [disabled]="disabled()"
+    [formControl]="checkPinLocallyControl"> Check the PIN locally</mat-checkbox>
   <div class="flex-row gap-1">
     <mat-form-field class="remote-description-form">
       <mat-label i18n>Remote Server</mat-label>
       <mat-select
+        [disabled]="disabled()"
         [errorStateMatcher]="remoteErrorStateMatcher"
         [formControl]="remoteServerControl"
         [value]="remoteServerControl.value"
@@ -23,6 +26,7 @@
     <mat-form-field class="input-height width-33">
       <mat-label i18n>Remote Serial</mat-label>
       <input
+        [disabled]="disabled()"
         [formControl]="remoteSerialControl"
         matInput />
       <mat-error>Remote Serial is <strong>required</strong></mat-error>
@@ -32,6 +36,7 @@
     <mat-form-field class="input-height width-33">
       <mat-label i18n>Remote User</mat-label>
       <input
+        [disabled]="disabled()"
         [formControl]="remoteUserControl"
         matInput />
       <!-- Assuming optional based on TS -->
@@ -40,12 +45,14 @@
     <mat-form-field class="input-height width-33">
       <mat-label i18n>Remote Realm</mat-label>
       <input
+        [disabled]="disabled()"
         [formControl]="remoteRealmControl"
         matInput />
     </mat-form-field>
     <mat-form-field class="input-height width-33">
       <mat-label i18n>Remote Resolver</mat-label>
       <input
+        [disabled]="disabled()"
         [formControl]="remoteResolverControl"
         matInput />
       <mat-error>Remote Resolver is <strong>required</strong></mat-error>

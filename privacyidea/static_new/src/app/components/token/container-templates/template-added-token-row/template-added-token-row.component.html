@@ -13,8 +13,84 @@
       }
     </div>
   </mat-expansion-panel-header>
-
-  <div class="token-details-form">
+  @switch (token().type) {
+    @case ("hotp") {
+      <app-enroll-hotp
+        (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
+        (clickEnrollChange)="updateClickEnroll($event)" />
+    }
+    @case ("totp") {
+      <app-enroll-totp
+        (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
+        (clickEnrollChange)="updateClickEnroll($event)" />
+    }
+    @case ("spass") {
+      <app-enroll-spass
+        (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
+        (clickEnrollChange)="updateClickEnroll($event)" />
+    }
+    @case ("remote") {
+      <app-enroll-remote
+        (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
+        (clickEnrollChange)="updateClickEnroll($event)" />
+    }
+    @case ("sms") {
+      <app-enroll-sms
+        (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
+        (clickEnrollChange)="updateClickEnroll($event)" />
+    }
+    @case ("4eyes") {
+      <app-enroll-foureyes
+        (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
+        (clickEnrollChange)="updateClickEnroll($event)" />
+    }
+    @case ("applspec") {
+      <app-enroll-applspec
+        (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
+        (clickEnrollChange)="updateClickEnroll($event)" />
+    }
+    @case ("daypassword") {
+      <app-enroll-daypassword
+        (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
+        (clickEnrollChange)="updateClickEnroll($event)" />
+    }
+    @case ("email") {
+      <app-enroll-email
+        (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
+        (clickEnrollChange)="updateClickEnroll($event)" />
+    }
+    @case ("indexedsecret") {
+      <app-enroll-indexedsecret
+        (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
+        (clickEnrollChange)="updateClickEnroll($event)" />
+    }
+    @case ("paper") {
+      <app-enroll-paper
+        (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
+        (clickEnrollChange)="updateClickEnroll($event)" />
+    }
+    @case ("push") {
+      <app-enroll-push
+        (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
+        (clickEnrollChange)="updateClickEnroll($event)" />
+    }
+    @case ("registration") {
+      <app-enroll-registration
+        (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
+        (clickEnrollChange)="updateClickEnroll($event)" />
+    }
+    @case ("tan") {
+      <app-enroll-tan
+        (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
+        (clickEnrollChange)="updateClickEnroll($event)" />
+    }
+    @case ("tiqr") {
+      <app-enroll-tiqr
+        (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
+        (clickEnrollChange)="updateClickEnroll($event)" />
+    }
+  }
+  <!-- <div class="token-details-form">
     <mat-slide-toggle
       [disabled]="!isEditMode()"
       [ngModel]="token().genkey"
@@ -63,5 +139,5 @@
         <mat-option value="sha512">SHA512</mat-option>
       </mat-select>
     </mat-form-field>
-  </div>
+  </div> -->
 </mat-expansion-panel>

@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, effect, EventEmitter, inject, Input, OnInit, Output } from "@angular/core";
+import { Component, computed, effect, EventEmitter, inject, input, Input, OnInit, Output } from "@angular/core";
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatOption } from "@angular/material/core";
@@ -78,6 +78,7 @@ export class EnrollRadiusComponent implements OnInit {
       mapper: TokenApiPayloadMapper<RadiusEnrollmentData>;
     } | null
   >();
+  disabled = input<boolean>(false);
 
   radiusUserControl = new FormControl<string>("");
   radiusServerConfigurationControl = new FormControl<string>("", [Validators.required]);

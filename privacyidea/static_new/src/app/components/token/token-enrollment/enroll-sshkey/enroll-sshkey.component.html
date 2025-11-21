@@ -4,6 +4,7 @@
     <mat-label i18n>SSH public key</mat-label>
     <textarea
       [formControl]="sshPublicKeyFormControl"
+      [disabled]="disabled()"
       i18n-placeholder
       matInput
       placeholder="Paste the PUBLIC ssh key here"

@@ -6,6 +6,7 @@
       class="inline-warning">For Email tokens to work properly you need to set the <a href="#">Email Token Config</a>!</span><!-- TODO: Link -->
   }
   <mat-checkbox
+    [disabled]="disabled()"
     [formControl]="readEmailDynamicallyControl"
     i18n>
     Read email dynamically from user source on each request
@@ -15,6 +16,7 @@
       <mat-form-field class="input-height width-33">
         <mat-label i18n>Email Address</mat-label>
         <input
+          [disabled]="disabled()"
           [formControl]="emailAddressControl"
           matInput
           required />

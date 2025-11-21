@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, EventEmitter, inject, OnInit, Output } from "@angular/core";
+import { Component, EventEmitter, inject, input, OnInit, Output } from "@angular/core";
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { ErrorStateMatcher, MatOption } from "@angular/material/core";
 import { MatFormField, MatLabel } from "@angular/material/form-field";
@@ -66,6 +66,7 @@ export class EnrollFoureyesComponent implements OnInit {
       mapper: TokenApiPayloadMapper<FourEyesEnrollmentData>;
     } | null
   >();
+  disabled = input<boolean>(false);
 
   separatorControl = new FormControl<string>("|", [Validators.required]);
   requiredTokensOfRealmsControl = new FormControl<string[]>([], [Validators.required, Validators.minLength(1)]);

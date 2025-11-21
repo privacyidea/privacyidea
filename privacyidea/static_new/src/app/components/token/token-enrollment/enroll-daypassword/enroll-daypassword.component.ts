@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, EventEmitter, inject, Input, OnInit, Output } from "@angular/core";
+import { Component, EventEmitter, inject, input, Input, OnInit, Output } from "@angular/core";
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatOption } from "@angular/material/core";
@@ -78,6 +78,7 @@ export class EnrollDaypasswordComponent implements OnInit {
       mapper: DaypasswordApiPayloadMapper;
     } | null
   >();
+  disabled = input<boolean>(false);
 
   otpKeyFormControl = new FormControl<string>({ value: "", disabled: true });
   hashAlgorithmControl = new FormControl<string>("sha256", [Validators.required]);

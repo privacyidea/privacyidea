@@ -43,6 +43,7 @@ export interface SshkeyEnrollmentOptions extends TokenEnrollmentData {
   templateUrl: "./enroll-sshkey.component.html"
 })
 export class EnrollSshkeyComponent {
+  disabled = input<boolean>(false);
   protected readonly enrollmentMapper: SshkeyApiPayloadMapper = inject(SshkeyApiPayloadMapper);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
 

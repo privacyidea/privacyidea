@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, EventEmitter, inject, linkedSignal, OnInit, Output } from "@angular/core";
+import { Component, computed, EventEmitter, inject, input, linkedSignal, OnInit, Output } from "@angular/core";
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatButtonToggle, MatButtonToggleGroup } from "@angular/material/button-toggle";
 import { ErrorStateMatcher, MatOption } from "@angular/material/core";
@@ -80,6 +80,7 @@ export class EnrollCertificateComponent implements OnInit {
       mapper: CertificateApiPayloadMapper;
     } | null
   >();
+  disabled = input<boolean>(false);
 
   caConnectorControl = new FormControl<string>("", [Validators.required]);
   certTemplateControl = new FormControl<string>("");

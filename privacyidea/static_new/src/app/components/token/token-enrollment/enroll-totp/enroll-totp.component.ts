@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { NgClass } from "@angular/common";
-import { Component, EventEmitter, inject, Input, OnInit, Output } from "@angular/core";
+import { Component, EventEmitter, inject, input, Input, OnInit, Output } from "@angular/core";
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatOption } from "@angular/material/core";
@@ -28,7 +28,10 @@ import {
   TokenApiPayloadMapper,
   TokenEnrollmentData
 } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
-import { TotpApiPayloadMapper, TotpEnrollmentData } from "../../../../mappers/token-api-payload/totp-token-api-payload.mapper";
+import {
+  TotpApiPayloadMapper,
+  TotpEnrollmentData
+} from "../../../../mappers/token-api-payload/totp-token-api-payload.mapper";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
 
@@ -92,6 +95,8 @@ export class EnrollTotpComponent implements OnInit {
     hashAlgorithm: this.hashAlgorithmControl,
     timeStep: this.timeStepControl
   });
+
+  disabled = input<boolean>(false);
 
   ngOnInit(): void {
     this.additionalFormFieldsChange.emit({

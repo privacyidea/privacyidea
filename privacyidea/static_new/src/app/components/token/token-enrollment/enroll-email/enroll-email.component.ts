@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, EventEmitter, inject, OnInit, Output } from "@angular/core";
+import { Component, computed, EventEmitter, inject, input, OnInit, Output } from "@angular/core";
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
@@ -56,6 +56,7 @@ export class EnrollEmailComponent implements OnInit {
       mapper: TokenApiPayloadMapper<EmailEnrollmentData>;
     } | null
   >();
+  disabled = input<boolean>(false);
 
   emailAddressControl = new FormControl<string>("");
   readEmailDynamicallyControl = new FormControl<boolean>(false);

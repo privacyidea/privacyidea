@@ -234,22 +234,23 @@ export class ContainerTemplateService implements ContainerTemplateServiceInterfa
   // }
 
   async postTemplateEdits(template: ContainerTemplate): Promise<boolean> {
+    console.log("Posting template edits for template:", template);
     const url = environment.proxyUrl + `/container/${template.container_type}/template/${template.name}`;
     const request$ = this.http.post<PiResponse<any>>(url, template, { headers: this.authService.getHeaders() });
     request$
       .pipe(
         catchError((error) => {
-          console.error("Failed to set default template:", error);
+          console.error("Failed to save template edits:", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.openSnackBar("Failed to set default template. " + message);
+          this.notificationService.openSnackBar("Failed to save template edits. " + message);
           return throwError(() => error);
         })
       )
       .subscribe({
         next: (response) => {
-          console.log("Default template successfully set:", response);
+          console.log("Default template edits successfully saved:", response);
           this.templatesResource.reload();
-          this.notificationService.openSnackBar(`Successfully set "${template.name}" as default template.`);
+          this.notificationService.openSnackBar(`Successfully saved template edits.`);
         }
       });
     return lastValueFrom(request$.pipe(last()))

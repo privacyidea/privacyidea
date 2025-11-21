@@ -5,6 +5,7 @@
     <textarea
       [errorStateMatcher]="vascoErrorStatematcher"
       [formControl]="otpKeyControl"
+      [disabled]="disabled()"
       i18n-placeholder
       matInput
       placeholder="Enter blob"
@@ -21,6 +22,7 @@
   <div class="flex-row gap-1">
     <mat-checkbox
       [formControl]="useVascoSerialControl"
+      [disabled]="disabled()"
       class="server-checkbox"
       i18n>
       Use VASCO Serial
@@ -28,7 +30,7 @@
     <mat-form-field class="width-33">
       <mat-label i18n>Vasco Serial</mat-label>
       <input
-        [disabled]="!useVascoSerialControl.value"
+        [disabled]="!useVascoSerialControl.value || disabled()"
         [formControl]="vascoSerialControl"
         matInput />
     </mat-form-field>

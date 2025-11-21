@@ -4,6 +4,7 @@
     <mat-form-field class="separator-input-form input-height">
       <mat-label i18n>Separator</mat-label>
       <input
+        [disabled]="disabled()"
         [formControl]="separatorControl"
         class="separator-input"
         i18n-placeholder
@@ -20,6 +21,7 @@
     <mat-form-field class="width-288px input-height">
       <mat-label>Select Realms</mat-label>
       <mat-select
+        [disabled]="disabled()"
         [errorStateMatcher]="requiredRealmsErrorStateMatcher"
         [formControl]="requiredTokensOfRealmsControl"
         multiple
@@ -32,6 +34,7 @@
               <span>{{ realm }}</span>
             </mat-option>
             <input
+              [disabled]="disabled()"
               type="number"
               class="required-realms-input"
               [ngModel]="getTokenCount(realm)"

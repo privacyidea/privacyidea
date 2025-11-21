@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, EventEmitter, inject, OnInit, Output } from "@angular/core";
+import { Component, computed, EventEmitter, inject, input, OnInit, Output } from "@angular/core";
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { ErrorStateMatcher } from "@angular/material/core";
 import { MatFormField, MatLabel } from "@angular/material/form-field";
@@ -57,6 +57,7 @@ export class EnrollYubicoComponent implements OnInit {
   protected readonly enrollmentMapper: YubicoApiPayloadMapper = inject(YubicoApiPayloadMapper);
   protected readonly systemService: SystemServiceInterface = inject(SystemService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+  disabled = input<boolean>(false);
 
   yubicoErrorStatematcher = new YubicoErrorStateMatcher();
 

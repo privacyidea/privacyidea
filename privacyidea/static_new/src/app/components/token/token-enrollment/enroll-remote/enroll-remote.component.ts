@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, EventEmitter, inject, OnInit, Output } from "@angular/core";
+import { Component, EventEmitter, inject, input, OnInit, Output } from "@angular/core";
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { ErrorStateMatcher, MatOption } from "@angular/material/core";
@@ -77,6 +77,7 @@ export class EnrollRemoteComponent implements OnInit {
       mapper: TokenApiPayloadMapper<RemoteEnrollmentData>;
     } | null
   >();
+  disabled = input<boolean>(false);
 
   checkPinLocallyControl = new FormControl<boolean>(false, [Validators.required]);
   remoteServerControl = new FormControl<RemoteServer | null>(null, [Validators.required]);

@@ -11,6 +11,7 @@
       <input
         [errorStateMatcher]="yubicoErrorStatematcher"
         [formControl]="yubikeyIdentifierControl"
+        [disabled]="disabled()"
         i18n-placeholder
         matInput
         placeholder="Enter the 12 digit identifier"

@@ -10,6 +10,7 @@
       <mat-form-field class="question-input-width input-height">
         <mat-label>{{ question.question }}</mat-label>
         <input
+          [disabled]="disabled()"
           type="text"
           [formControlName]="questionControlNames()[i]"
           matInput />

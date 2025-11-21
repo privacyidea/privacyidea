@@ -4,9 +4,11 @@
     <span
       i18n
       class="inline-hint">To ease the enrolling of RADIUS tokens you can set default values in the
-      <a href="#">RADIUS Token Config</a>.</span>
+      <a href="#">RADIUS Token Config</a>.
+    </span>
   }
   <mat-checkbox
+    [disabled]="disabled()"
     [formControl]="checkPinLocallyControl"
     i18n>
     Check the PIN locally
@@ -21,6 +23,7 @@
           . The RADIUS request will be forwarded to this RADIUS server.
         </mat-hint>
         <mat-select
+          [disabled]="disabled()"
           [formControl]="radiusServerConfigurationControl"
           [value]="radiusServerConfigurationControl.value"
           required>
@@ -34,6 +37,7 @@
     <mat-form-field class="input-height width-33">
       <mat-label i18n>RADIUS User</mat-label>
       <input
+        [disabled]="disabled()"
         [formControl]="radiusUserControl"
         matInput />
       <mat-error i18n>RADIUS User is <strong>required</strong></mat-error>

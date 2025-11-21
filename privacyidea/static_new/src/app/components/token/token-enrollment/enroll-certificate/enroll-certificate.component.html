@@ -1,6 +1,7 @@
 <div class="flex-column">
   <h4 class="enroll-h4">Token Configuration</h4>
   <mat-button-toggle-group
+    [disabled]="disabled()"
     [formControl]="intentionToggleControl"
     [hideSingleSelectionIndicator]="true"
     class="button-toggle-group">
@@ -22,6 +23,7 @@
     <mat-form-field class="width-33">
       <mat-label i18n>CA Connector</mat-label>
       <mat-select
+        [disabled]="disabled()"
         [errorStateMatcher]="caConnectorErrorStateMatcher"
         [formControl]="caConnectorControl"
         [value]="caConnectorControl.value"
@@ -36,6 +38,7 @@
     <mat-form-field class="width-33">
       <mat-label i18n>Certificate Template</mat-label>
       <mat-select
+        [disabled]="disabled()"
         [formControl]="certTemplateControl"
         [value]="certTemplateControl.value">
         @for (option of certTemplateOptions(); track option) {
@@ -59,6 +62,7 @@
       <mat-form-field class="width-66">
         <mat-label i18n> Certificate Signing Request (PEM)</mat-label>
         <textarea
+          [disabled]="disabled()"
           [formControl]="pemControl"
           matInput
           i18n-placeholder
@@ -70,6 +74,7 @@
       <mat-form-field class="width-66">
         <mat-label i18n> Certificate (PEM)</mat-label>
         <textarea
+          [disabled]="disabled()"
           [formControl]="pemControl"
           matInput
           i18n-placeholder
