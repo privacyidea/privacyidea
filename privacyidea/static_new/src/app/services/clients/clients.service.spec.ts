@@ -36,6 +36,7 @@ import { MockAuthService } from "../../../testing/mock-services/mock-auth-servic
 describe("ClientsService", () => {
   let clientService: ClientsService;
   let contentService: MockContentService;
+  let mockAuthService: MockAuthService;
 
   beforeEach(() => {
     TestBed.resetTestingModule();
@@ -52,6 +53,8 @@ describe("ClientsService", () => {
     });
     clientService = TestBed.inject(ClientsService);
     contentService = TestBed.inject(ContentService) as any;
+    mockAuthService = TestBed.inject(AuthService) as any;
+    mockAuthService.actionAllowed.mockImplementation((action: string) => action === "clienttype");
   });
 
   it("should be created", () => {
