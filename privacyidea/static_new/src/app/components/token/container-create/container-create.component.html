@@ -95,6 +95,11 @@
               <mat-option [value]="option.name">{{ option.name }}</mat-option>
             }
           </mat-select>
+          @if (selectedTemplate() !== "") {
+            <app-clear-button
+              matSuffix
+              (onClick)="clearTemplateSelection()"></app-clear-button>
+          }
         </mat-form-field>
       </div>
     }
@@ -132,8 +137,7 @@
           [userStorePassphrase]="userStorePassphrase"
           [passphrasePrompt]="passphrasePrompt"
           [passphraseResponse]="passphraseResponse"
-          (validInputChange)="onValidInputChange($event)">
-        </app-container-registration-config>
+          (validInputChange)="onValidInputChange($event)"></app-container-registration-config>
       </mat-expansion-panel>
     </mat-accordion>
   }

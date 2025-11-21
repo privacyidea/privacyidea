@@ -7,7 +7,7 @@ import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { deepCopy } from "../../utils/deep-copy.utils";
 import { catchError, last, lastValueFrom, of, tap, throwError } from "rxjs";
 import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
-import { ContainerTemplate } from "../container/container.service";
+import { ContainerService, ContainerServiceInterface, ContainerTemplate } from "../container/container.service";
 import { environment } from "../../../environments/environment";
 
 export interface ContainerTemplateServiceInterface {
@@ -34,6 +34,7 @@ export class ContainerTemplateService implements ContainerTemplateServiceInterfa
   }
   http = inject(HttpClient);
   containerTemplateBaseUrl = environment.proxyUrl + "/container/templates";
+  containerService: ContainerServiceInterface = inject(ContainerService);
   contentService: ContentServiceInterface = inject(ContentService);
   authService: AuthServiceInterface = inject(AuthService);
   notificationService: NotificationServiceInterface = inject(NotificationService);
@@ -55,9 +56,16 @@ export class ContainerTemplateService implements ContainerTemplateServiceInterfa
     ) {
       return undefined;
     }
+    let params = {};
+    if (this.containerService.selectedContainerType()) {
+      params = {
+        container_type: this.containerService.selectedContainerType().containerType
+      };
+    }
     return {
       url: `${this.containerTemplateBaseUrl}`,
       method: "GET",
+      params: params,
       headers: this.authService.getHeaders()
     };
   });

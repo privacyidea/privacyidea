@@ -41,7 +41,7 @@ import {
   MatExpansionPanelHeader,
   MatExpansionPanelTitle
 } from "@angular/material/expansion";
-import { MatFormField, MatLabel } from "@angular/material/form-field";
+import { MatFormField, MatLabel, MatSuffix } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
 import { MatSelect } from "@angular/material/select";
@@ -50,6 +50,7 @@ import { Router } from "@angular/router";
 import { PiResponse } from "../../../app.component";
 import { ROUTE_PATHS } from "../../../route_paths";
 import {
+  ContainerCreateData,
   ContainerRegisterData,
   ContainerService,
   ContainerServiceInterface,
@@ -77,6 +78,7 @@ import { ContainerRegistrationCompletedDialogWizardComponent } from "./container
 import { ContainerCreatedDialogWizardComponent } from "./container-created-dialog/container-created-dialog.wizard.component";
 import { UserAssignmentComponent } from "../user-assignment/user-assignment.component";
 import { ContainerTemplateService } from "../../../services/container-template/container-template.service";
+import { ClearButtonComponent } from "../../shared/clear-button/clear-button.component";
 
 export type ContainerTypeOption = "generic" | "smartphone" | "yubikey";
 
@@ -102,7 +104,9 @@ export type ContainerTypeOption = "generic" | "smartphone" | "yubikey";
     NgClass,
     CommonModule,
     ContainerRegistrationConfigComponent,
-    UserAssignmentComponent
+    UserAssignmentComponent,
+    MatSuffix,
+    ClearButtonComponent
   ],
   templateUrl: "./container-create.component.html",
   styleUrl: "./container-create.component.scss"
@@ -241,15 +245,16 @@ export class ContainerCreateComponent {
 
   createContainer() {
     this.registerResponse.set(null);
-    const createData = {
+    const createData: ContainerCreateData = {
       container_type: this.containerService.selectedContainerType().containerType,
       description: this.description(),
-      template_name: this.selectedTemplate(),
-      user: this.userService.selectionUsernameFilter(),
-      realm: ""
+      user: this.userService.selectionUsernameFilter()
     };
     if (createData.user || this.userAssignmentComponent?.onlyAddToRealm()) {
       createData.realm = this.userService.selectedUserRealm();
+    }
+    if (this.selectedTemplate()) {
+      createData.template_name = this.selectedTemplate();
     }
     this.containerService.createContainer(createData).subscribe({
       next: (response) => {
@@ -300,5 +305,9 @@ export class ContainerCreateComponent {
     this.registrationDialog.open(dialogComponent, {
       data: this.dialogData
     });
+  }
+
+  clearTemplateSelection() {
+    this.selectedTemplate.set("");
   }
 }

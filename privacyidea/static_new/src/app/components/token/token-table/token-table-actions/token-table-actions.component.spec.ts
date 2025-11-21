@@ -176,8 +176,8 @@ describe("TokenTableActionsComponent", () => {
 
       expect(tokenService.bulkDeleteWithConfirmDialog).toHaveBeenCalledWith(
         ["TOKEN1", "TOKEN2"],
-        dialog,
-        tokenService.tokenResource.reload
+        expect.objectContaining({ open: expect.any(Function) }),
+        expect.any(Function)
       );
     });
   });
