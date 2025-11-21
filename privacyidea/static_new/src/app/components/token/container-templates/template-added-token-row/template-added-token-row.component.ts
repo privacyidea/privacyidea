@@ -76,7 +76,21 @@ export class TemplateAddedTokenRowComponent {
           this.updateToken({ [controlKey]: newValue });
         });
       }
-      // this.updateToken(patch);
+      this._initialTokenFill(patch);
+    }
+  }
+
+  private _initialTokenFill(patch: { [key: string]: any }) {
+    // Fill the received patch into the token. But only missing values. Not overwriting existing ones.
+    const token = this.token() as any;
+    const updatedToken: { [key: string]: any } = {};
+    for (const key of Object.keys(patch)) {
+      if (token[key] === undefined || token[key] === null) {
+        updatedToken[key] = patch[key];
+      }
+    }
+    if (Object.keys(updatedToken).length > 0) {
+      this.updateToken(updatedToken);
     }
   }
 

@@ -103,23 +103,23 @@ export class ContainerTemplateService implements ContainerTemplateServiceInterfa
     }
   };
 
-  postAddNewTemplate(newTemplate: ContainerTemplate) {
-    if (!newTemplate) {
-      console.error("No template provided to postAddNewTemplate.");
-      return;
-    }
-    this.http
-      .post<PiResponse<ContainerTemplate>>(this.containerTemplateBaseUrl, newTemplate)
-      .pipe(
-        catchError((error) => {
-          console.error("Failed to save new template:", error);
-          const message = error.error?.result?.error?.message || "";
-          this.notificationService.openSnackBar("Failed to save new template. " + message);
-          return throwError(() => error);
-        })
-      )
-      .subscribe();
-  }
+  // postAddNewTemplate(newTemplate: ContainerTemplate) {
+  //   if (!newTemplate) {
+  //     console.error("No template provided to postAddNewTemplate.");
+  //     return;
+  //   }
+  //   this.http
+  //     .post<PiResponse<ContainerTemplate>>(this.containerTemplateBaseUrl, newTemplate)
+  //     .pipe(
+  //       catchError((error) => {
+  //         console.error("Failed to save new template:", error);
+  //         const message = error.error?.result?.error?.message || "";
+  //         this.notificationService.openSnackBar("Failed to save new template. " + message);
+  //         return throwError(() => error);
+  //       })
+  //     )
+  //     .subscribe();
+  // }
 
   deleteTemplate(name: string) {
     this.http

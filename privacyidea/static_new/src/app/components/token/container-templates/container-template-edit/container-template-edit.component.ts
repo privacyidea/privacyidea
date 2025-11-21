@@ -67,7 +67,7 @@ export class ContainerTemplateEditComponent {
   }
 
   // Action Methods
-  async saveTemplate() {
+  saveTemplate() {
     if (!this.containerTemplateService.canSaveTemplate()) return;
     this.containerTemplateService.postTemplateEdits(this.templateEdited());
     this.isEditMode.set(false);

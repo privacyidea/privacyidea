@@ -43,7 +43,6 @@ export class ContainerTemplateNewComponent {
   // Angular Inputs and Services
   protected readonly containerTemplateService: ContainerTemplateService = inject(ContainerTemplateService);
   protected readonly isEditMode = signal<boolean>(false);
-  // protected readonly newTemplate = signal<ContainerTemplate>(this.containerTemplateService.emptyContainerTemplate);
   protected readonly newTemplate = linkedSignal<any, ContainerTemplate>({
     source: () => ({
       emptyContainerTemplate: this.containerTemplateService.emptyContainerTemplate,
@@ -65,9 +64,6 @@ export class ContainerTemplateNewComponent {
     );
   });
 
-  // Component State Signals
-  // selectedTemplate = computed(() => this.containerTemplateService.selectedTemplate());
-
   // Event Handlers
   handleExpansion() {
     this.isEditMode.set(true);
@@ -78,14 +74,13 @@ export class ContainerTemplateNewComponent {
       panel.open();
       return;
     }
-    // this.containerTemplateService.deselectTemplate(templateName);
     this.isEditMode.set(false);
   }
 
   // Action Methods
   async saveTemplate(panel?: MatExpansionPanel) {
     if (!this.containerTemplateService.canSaveTemplate()) return;
-    this.containerTemplateService.postAddNewTemplate(this.newTemplate());
+    this.containerTemplateService.postTemplateEdits(this.newTemplate());
     this.isEditMode.set(false);
     if (panel) panel.close();
   }
@@ -123,14 +118,11 @@ export class ContainerTemplateNewComponent {
     this._editTemplate({ default: newDefault });
   }
   onDefaultToggle(): void {
-    // if (this.isEditMode()) {
     this._editTemplate({ default: !this.newTemplate().default });
     return;
-    // }
-    // this.containerTemplateService.postUpdateDefault(toggleTemplate!, !toggleTemplate!.default);''
   }
 
-  onEditToken(patch: Partial<ContainerTemplateToken>, index: number) {
+  onEditToken(patch: Partial<any>, index: number) {
     if (!this.isEditMode()) return;
     const updatedTokens = this.newTemplate().template_options.tokens.map((token, i) =>
       i === index ? { ...token, ...patch } : token
@@ -144,13 +136,8 @@ export class ContainerTemplateNewComponent {
   }
   onAddToken(tokenType: string) {
     if (!this.isEditMode()) return;
-    const containerTemplateToken: ContainerTemplateToken = {
-      type: tokenType,
-      genkey: false,
-      hashlib: "",
-      otplen: 6,
-      timeStep: 0,
-      user: false
+    const containerTemplateToken: any = {
+      type: tokenType
     };
     const updatedTokens = [...this.newTemplate().template_options.tokens, containerTemplateToken];
     this._editTemplate({
