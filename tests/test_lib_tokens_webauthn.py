@@ -54,11 +54,15 @@
 This file tests the lib.tokens.webauthntoken, along with lib.tokens.webauthn.
 This depends on lib.tokenclass
 """
+import datetime
 import os
 import struct
 import unittest
 from copy import copy
 
+from cryptography import x509
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric import rsa
 from mock import patch
 
 from privacyidea.lib.challenge import get_challenges
@@ -74,6 +78,7 @@ from privacyidea.lib.tokens.webauthn import (CoseAlgorithm, RegistrationRejected
                                              WebAuthnMakeCredentialOptions, AuthenticationRejectedException,
                                              webauthn_b64_decode, webauthn_b64_encode,
                                              WebAuthnRegistrationResponse, ATTESTATION_REQUIREMENT_LEVEL,
+                                             _is_trusted_x509_attestation_cert,
                                              AttestationLevel, AuthenticatorDataFlags, WebAuthnAssertionResponse,
                                              WebAuthnUser)
 from privacyidea.lib.tokens.webauthntoken import (WebAuthnTokenClass, DEFAULT_AUTHENTICATOR_ATTESTATION_FORM,
@@ -1008,3 +1013,104 @@ class MultipleWebAuthnTokenTestCase(MyTestCase):
         self.assertEqual(chals[0].challenge, chals[1].challenge, chals)
 
         delete_policy('otppin')
+
+
+class WebAuthnUtilsTestCase(unittest.TestCase):
+    """
+    Test case for utility functions in webauthn.py
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        # Generate a self-signed root CA certificate
+        cls.root_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+        subject = issuer = x509.Name([x509.NameAttribute(x509.NameOID.COMMON_NAME, u"Test Root CA")])
+        cls.root_cert = (
+            x509.CertificateBuilder()
+            .subject_name(subject)
+            .issuer_name(issuer)
+            .public_key(cls.root_key.public_key())
+            .serial_number(x509.random_serial_number())
+            .not_valid_before(datetime.datetime.now(datetime.UTC))
+            .not_valid_after(datetime.datetime.now(datetime.UTC) + datetime.timedelta(days=10))
+            .add_extension(x509.BasicConstraints(ca=True, path_length=None), critical=True)
+            .sign(cls.root_key, hashes.SHA256())
+        )
+
+        # Generate a leaf certificate signed by the root CA
+        cls.leaf_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+        leaf_subject = x509.Name([x509.NameAttribute(x509.NameOID.COMMON_NAME, u"Test Leaf Cert")])
+        cls.leaf_cert = (
+            x509.CertificateBuilder()
+            .subject_name(leaf_subject)
+            .issuer_name(cls.root_cert.subject)
+            .public_key(cls.leaf_key.public_key())
+            .serial_number(x509.random_serial_number())
+            .not_valid_before(datetime.datetime.now(datetime.UTC))
+            .not_valid_after(datetime.datetime.now(datetime.UTC) + datetime.timedelta(days=5))
+            .sign(cls.root_key, hashes.SHA256())
+        )
+
+        # Generate another unrelated root and leaf for failure tests
+        cls.unrelated_root_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+        unrelated_subject = x509.Name([x509.NameAttribute(x509.NameOID.COMMON_NAME, u"Unrelated Root CA")])
+        cls.unrelated_root_cert = (
+            x509.CertificateBuilder()
+            .subject_name(unrelated_subject)
+            .issuer_name(unrelated_subject)
+            .public_key(cls.unrelated_root_key.public_key())
+            .serial_number(x509.random_serial_number())
+            .not_valid_before(datetime.datetime.now(datetime.UTC))
+            .not_valid_after(datetime.datetime.now(datetime.UTC) + datetime.timedelta(days=10))
+            .add_extension(x509.BasicConstraints(ca=True, path_length=None), critical=True)
+            .sign(cls.unrelated_root_key, hashes.SHA256())
+        )
+
+    def test_is_trusted_x509_attestation_cert_success(self):
+        """
+        Test that a certificate is correctly identified as trusted.
+        """
+        trust_path = [self.leaf_cert]
+        trust_anchors = [self.root_cert]
+        self.assertTrue(_is_trusted_x509_attestation_cert(trust_path, trust_anchors))
+
+    def test_is_trusted_x509_attestation_cert_untrusted_ca(self):
+        """
+        Test that a certificate signed by an untrusted CA is correctly identified as not trusted.
+        """
+        trust_path = [self.leaf_cert]
+        trust_anchors = [self.unrelated_root_cert]
+        self.assertFalse(_is_trusted_x509_attestation_cert(trust_path, trust_anchors))
+
+    def test_is_trusted_x509_attestation_cert_empty_trust_path(self):
+        """
+        Test that an empty trust path results in failure.
+        """
+        trust_path = []
+        trust_anchors = [self.root_cert]
+        self.assertFalse(_is_trusted_x509_attestation_cert(trust_path, trust_anchors))
+
+    def test_is_trusted_x509_attestation_cert_empty_trust_anchors(self):
+        """
+        Test that empty trust anchors result in failure.
+        """
+        trust_path = [self.leaf_cert]
+        trust_anchors = []
+        self.assertFalse(_is_trusted_x509_attestation_cert(trust_path, trust_anchors))
+
+    def test_is_trusted_x509_attestation_cert_invalid_input_types(self):
+        """
+        Test that non-list inputs for trust_path or trust_anchors result in failure.
+        """
+        self.assertFalse(_is_trusted_x509_attestation_cert(None, [self.root_cert]))
+        self.assertFalse(_is_trusted_x509_attestation_cert([self.leaf_cert], None))
+        self.assertFalse(_is_trusted_x509_attestation_cert("not a list", [self.root_cert]))
+        self.assertFalse(_is_trusted_x509_attestation_cert([self.leaf_cert], "not a list"))
+
+    def test_is_trusted_x509_attestation_cert_self_signed_in_path(self):
+        """
+        Test that a self-signed certificate in the trust path is not trusted if it's not in the anchors.
+        """
+        trust_path = [self.root_cert]
+        trust_anchors = [self.unrelated_root_cert]
+        self.assertFalse(_is_trusted_x509_attestation_cert(trust_path, trust_anchors))
