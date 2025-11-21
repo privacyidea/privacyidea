@@ -20,7 +20,6 @@
 import { StringUtils } from "./string.utils";
 
 describe("StringUtils", () => {
-
   it("should replace tags in template string with provided values", () => {
     const template = "Token with serial {{ serial }} successfully enrolled for user {{user}}.";
     const tagData = {
@@ -65,6 +64,14 @@ describe("StringUtils", () => {
     it("should handle multi-character delimiter", () => {
       const result = StringUtils.splitOnce("foo--bar--baz", "--");
       expect(result).toEqual({ head: "foo", tail: "bar--baz" });
+    });
+    it("should handle string with only the delimiter", () => {
+      const result = StringUtils.splitOnce("::", ":");
+      expect(result).toEqual({ head: "", tail: ":" });
+    });
+    it("should handle string with multiple consecutive delimiters", () => {
+      const result = StringUtils.splitOnce("foo:::bar", ":");
+      expect(result).toEqual({ head: "foo", tail: "::bar" });
     });
   });
 });

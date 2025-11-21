@@ -54,7 +54,7 @@ import { ClearableInputComponent } from "../../shared/clearable-input/clearable-
 import { filter } from "rxjs";
 import { StringUtils } from "../../../utils/string.utils";
 
-const columnKeysMap = [
+const columnKeysMap: { key: keyof ClientData; label: string }[] = [
   { key: "application", label: "Application" },
   { key: "hostname", label: "Hostname" },
   { key: "ip", label: "IP Address" },
@@ -116,7 +116,7 @@ export class ClientsComponent {
   auditService = inject(AuditService);
 
   readonly columnKeysMap = columnKeysMap;
-  readonly columnKeys = columnKeysMap.map(c => c.key);
+  readonly columnKeys = columnKeysMap.map((c) => c.key);
 
   activeSortColumn = signal<string | null>(null);
 
@@ -158,7 +158,7 @@ export class ClientsComponent {
     source: this.clientResource.value,
     computation: (clientResource, previous) => {
       if (clientResource) {
-        const clientData = clientResource.result?.value || {} as ClientsDict;
+        const clientData = clientResource.result?.value || ({} as ClientsDict);
         const dataSource = new MatTableDataSource(this.flattenedClientRowsFromDict(clientData));
         // Custom sorting for lastseen
         dataSource.sortingDataAccessor = (item, property) => {
@@ -187,10 +187,12 @@ export class ClientsComponent {
 
   protected showInAuditLog(column: string, value: string) {
     if (column === "application") {
-        const userAgent = this._split_user_agent(value);
-        this.auditService.auditFilter.set(new FilterValue({ value: `user_agent: ${userAgent.userAgent} user_agent_version: ${userAgent.version}` }));
+      const userAgent = this._split_user_agent(value);
+      this.auditService.auditFilter.set(
+        new FilterValue({ value: `user_agent: ${userAgent.userAgent} user_agent_version: ${userAgent.version}` })
+      );
     } else if (column === "ip") {
-        this.auditService.auditFilter.set(new FilterValue({ value: `client: ${value}` }));
+      this.auditService.auditFilter.set(new FilterValue({ value: `client: ${value}` }));
     }
   }
 
@@ -205,7 +207,11 @@ export class ClientsComponent {
   }
 
   useApplicationRowSpan(columnKey: string): boolean {
-    return columnKey === "application" && (!this.activeSortColumn() || this.activeSortColumn() === "application") && !this.filterValue;
+    return (
+      columnKey === "application" &&
+      (!this.activeSortColumn() || this.activeSortColumn() === "application") &&
+      !this.filterValue
+    );
   }
 
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
