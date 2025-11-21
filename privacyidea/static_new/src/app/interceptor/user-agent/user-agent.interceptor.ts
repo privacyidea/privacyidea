@@ -24,6 +24,7 @@ import { inject } from "@angular/core";
 export const userAgentInterceptor: HttpInterceptorFn = (req, next) => {
   const versioningService: VersioningServiceInterface = inject(VersioningService);
   const userAgentReq = req.clone({
+    // TODO: include the original user-agent
     setHeaders: {
       "User-Agent": "privacyIDEA-WebUI/" + versioningService.getVersion()
     }

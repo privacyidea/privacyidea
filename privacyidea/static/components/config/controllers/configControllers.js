@@ -109,7 +109,8 @@ myApp.controller("policyDetailsController", ["$scope", "$stateParams",
             "Nextcloud": "privacyidea-nextcloud",
             "FreeRADIUS": "FreeRADIUS",
             "LDAP Proxy": "privacyIDEA-LDAP-Proxy",
-            "privacyIDEA Authenticator": "privacyIDEA-App"
+            "privacyIDEA Authenticator": "privacyIDEA-App",
+            "privacyIDEA WebUI": "privacyIDEA-WebUI"
         };
         $scope.userAgents = [];
         angular.forEach($scope.userAgentsMapping, function (value, key) {
