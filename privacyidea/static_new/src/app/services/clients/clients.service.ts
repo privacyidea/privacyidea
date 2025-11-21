@@ -46,7 +46,7 @@ export class ClientsService implements ClientsServiceInterface {
   private clientsBaseUrl = environment.proxyUrl + "/client/";
 
   clientsResource = httpResource<PiResponse<ClientsDict>>(() => {
-    if (this.contentService.routeUrl() !== ROUTE_PATHS.CLIENTS) {
+    if (this.contentService.routeUrl() !== ROUTE_PATHS.CLIENTS || !this.authService.actionAllowed("clienttype")) {
       return undefined;
     }
     return {
