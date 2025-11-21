@@ -19,13 +19,11 @@
 import { Component, EventEmitter, inject, Input, OnInit, Output } from "@angular/core";
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
-
-import { Observable } from "rxjs";
 import {
-  EnrollmentResponse,
+  TokenApiPayloadMapper,
   TokenEnrollmentData
 } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
-import { PaperApiPayloadMapper } from "../../../../mappers/token-api-payload/paper-token-api-payload.mapper";
+import { PaperApiPayloadMapper, PaperEnrollmentData } from "../../../../mappers/token-api-payload/paper-token-api-payload.mapper";
 
 export interface PaperEnrollmentOptions extends TokenEnrollmentData {
   type: "paper";
@@ -47,7 +45,10 @@ export class EnrollPaperComponent implements OnInit {
     [key: string]: FormControl<any>;
   }>();
   @Output() clickEnrollChange = new EventEmitter<
-    (basicOptions: TokenEnrollmentData) => Observable<EnrollmentResponse | null>
+    (basicOptions: TokenEnrollmentData) => {
+      data: PaperEnrollmentData;
+      mapper: TokenApiPayloadMapper<PaperEnrollmentData>;
+    } | null
   >();
 
   paperForm = new FormGroup({});
@@ -57,14 +58,19 @@ export class EnrollPaperComponent implements OnInit {
     this.clickEnrollChange.emit(this.onClickEnroll);
   }
 
-  onClickEnroll = (basicOptions: TokenEnrollmentData): Observable<EnrollmentResponse | null> => {
+  onClickEnroll = (
+    basicOptions: TokenEnrollmentData
+  ): {
+    data: PaperEnrollmentData;
+    mapper: TokenApiPayloadMapper<PaperEnrollmentData>;
+  } | null => {
     const enrollmentData: PaperEnrollmentOptions = {
       ...basicOptions,
       type: "paper"
     };
-    return this.tokenService.enrollToken({
+    return {
       data: enrollmentData,
       mapper: this.enrollmentMapper
-    });
+    };
   };
 }

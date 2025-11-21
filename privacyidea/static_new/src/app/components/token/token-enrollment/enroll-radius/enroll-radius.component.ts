@@ -26,13 +26,15 @@ import { MatError, MatSelect } from "@angular/material/select";
 import { SystemService, SystemServiceInterface } from "../../../../services/system/system.service";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 
-import { Observable, of } from "rxjs";
 import {
-  EnrollmentResponse,
+  RadiusApiPayloadMapper,
+  RadiusEnrollmentData
+} from "../../../../mappers/token-api-payload/radius-token-api-payload.mapper";
+import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
+import {
+  TokenApiPayloadMapper,
   TokenEnrollmentData
 } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
-import { RadiusApiPayloadMapper } from "../../../../mappers/token-api-payload/radius-token-api-payload.mapper";
-import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
 
 
 export interface RadiusEnrollmentOptions extends TokenEnrollmentData {
@@ -71,7 +73,10 @@ export class EnrollRadiusComponent implements OnInit {
     [key: string]: FormControl<any>;
   }>();
   @Output() clickEnrollChange = new EventEmitter<
-    (basicOptions: TokenEnrollmentData) => Observable<EnrollmentResponse | null>
+    (basicOptions: TokenEnrollmentData) => {
+      data: RadiusEnrollmentData;
+      mapper: TokenApiPayloadMapper<RadiusEnrollmentData>;
+    } | null
   >();
 
   radiusUserControl = new FormControl<string>("");
@@ -111,14 +116,19 @@ export class EnrollRadiusComponent implements OnInit {
     this.clickEnrollChange.emit(this.onClickEnroll);
   }
 
-  onClickEnroll = (basicOptions: TokenEnrollmentData): Observable<EnrollmentResponse | null> => {
+  onClickEnroll = (
+    basicOptions: TokenEnrollmentData
+  ): {
+    data: RadiusEnrollmentData;
+    mapper: TokenApiPayloadMapper<RadiusEnrollmentData>;
+  } | null => {
     if (
       this.radiusUserControl.invalid ||
       this.radiusServerConfigurationControl.invalid ||
       this.checkPinLocallyControl.invalid
     ) {
       this.radiusForm.markAllAsTouched();
-      return of(null);
+      return null;
     }
 
     const enrollmentData: RadiusEnrollmentOptions = {
@@ -129,9 +139,9 @@ export class EnrollRadiusComponent implements OnInit {
       checkPinLocally: !!this.checkPinLocallyControl.value
     };
 
-    return this.tokenService.enrollToken({
+    return {
       data: enrollmentData,
       mapper: this.enrollmentMapper
-    });
+    };
   };
 }

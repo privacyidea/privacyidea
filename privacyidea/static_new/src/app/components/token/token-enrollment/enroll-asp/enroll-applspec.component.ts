@@ -28,11 +28,11 @@ import { TokenService, TokenServiceInterface } from "../../../../services/token/
 
 import { Observable, of } from "rxjs";
 import {
-  EnrollmentResponse,
-  TokenEnrollmentData
-} from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
-import { ApplspecApiPayloadMapper } from "../../../../mappers/token-api-payload/applspec-token-api-payload.mapper";
+  ApplspecApiPayloadMapper,
+  ApplspecEnrollmentData
+} from "../../../../mappers/token-api-payload/applspec-token-api-payload.mapper";
 import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
+import { TokenEnrollmentData } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
 
 export interface ApplspecEnrollmentOptions extends TokenEnrollmentData {
   type: "applspec";
@@ -66,11 +66,8 @@ export class ApplspecErrorStateMatcher implements ErrorStateMatcher {
   styleUrl: "./enroll-applspec.component.scss"
 })
 export class EnrollApplspecComponent implements OnInit {
-  protected readonly enrollmentMapper: ApplspecApiPayloadMapper = inject(
-    ApplspecApiPayloadMapper
-  );
-  protected readonly serviceIdService: ServiceIdServiceInterface =
-    inject(ServiceIdService);
+  protected readonly enrollmentMapper: ApplspecApiPayloadMapper = inject(ApplspecApiPayloadMapper);
+  protected readonly serviceIdService: ServiceIdServiceInterface = inject(ServiceIdService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
 
@@ -79,13 +76,14 @@ export class EnrollApplspecComponent implements OnInit {
     [key: string]: FormControl<any>;
   }>();
   @Output() clickEnrollChange = new EventEmitter<
-    (basicOptions: TokenEnrollmentData) => Observable<EnrollmentResponse | null>
+    (basicOptions: TokenEnrollmentData) => {
+      data: ApplspecEnrollmentData;
+      mapper: ApplspecApiPayloadMapper;
+    } | null
   >();
 
   serviceIdControl = new FormControl<string>("", [Validators.required]);
-  generateOnServerControl = new FormControl<boolean>(true, [
-    Validators.required
-  ]);
+  generateOnServerControl = new FormControl<boolean>(true, [Validators.required]);
 
   otpKeyFormControl = new FormControl<string>({ value: "", disabled: true });
 
@@ -94,9 +92,7 @@ export class EnrollApplspecComponent implements OnInit {
     generateOnServer: this.generateOnServerControl,
     otpKey: this.otpKeyFormControl
   });
-  serviceIdOptions = computed(
-    () => this.serviceIdService.serviceIds().map((s) => s.name) || []
-  );
+  serviceIdOptions = computed(() => this.serviceIdService.serviceIds().map((s) => s.name) || []);
   applspecErrorStateMatcher = new ApplspecErrorStateMatcher();
 
   ngOnInit(): void {
@@ -125,12 +121,17 @@ export class EnrollApplspecComponent implements OnInit {
 
   onClickEnroll = (
     basicOptions: TokenEnrollmentData
-  ): Observable<EnrollmentResponse | null> => {
-    if ((!this.generateOnServerControl.value && this.otpKeyFormControl.invalid) ||
+  ): {
+    data: ApplspecEnrollmentData;
+    mapper: ApplspecApiPayloadMapper;
+  } | null => {
+    if (
+      (!this.generateOnServerControl.value && this.otpKeyFormControl.invalid) ||
       this.generateOnServerControl.invalid ||
-      this.serviceIdControl.invalid) {
+      this.serviceIdControl.invalid
+    ) {
       this.applspecForm.markAllAsTouched();
-      return of(null);
+      return null;
     }
 
     const enrollmentData: ApplspecEnrollmentOptions = {
@@ -142,9 +143,9 @@ export class EnrollApplspecComponent implements OnInit {
     if (!enrollmentData.generateOnServer) {
       enrollmentData.otpKey = this.otpKeyFormControl.value ?? "";
     }
-    return this.tokenService.enrollToken({
+    return {
       data: enrollmentData,
       mapper: this.enrollmentMapper
-    });
+    };
   };
 }

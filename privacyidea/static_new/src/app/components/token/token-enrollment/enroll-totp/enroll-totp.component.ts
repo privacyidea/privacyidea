@@ -24,12 +24,11 @@ import { MatOption } from "@angular/material/core";
 import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { MatSelect } from "@angular/material/select";
-import { Observable, of } from "rxjs";
 import {
-  EnrollmentResponse,
+  TokenApiPayloadMapper,
   TokenEnrollmentData
 } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
-import { TotpApiPayloadMapper } from "../../../../mappers/token-api-payload/totp-token-api-payload.mapper";
+import { TotpApiPayloadMapper, TotpEnrollmentData } from "../../../../mappers/token-api-payload/totp-token-api-payload.mapper";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
 
@@ -76,7 +75,10 @@ export class EnrollTotpComponent implements OnInit {
     [key: string]: FormControl<any>;
   }>();
   @Output() clickEnrollChange = new EventEmitter<
-    (basicOptions: TokenEnrollmentData) => Observable<EnrollmentResponse | null>
+    (basicOptions: TokenEnrollmentData) => {
+      data: TotpEnrollmentData;
+      mapper: TokenApiPayloadMapper<TotpEnrollmentData>;
+    } | null
   >();
   generateOnServerFormControl = new FormControl<boolean>(true, [Validators.required]);
   otpLengthFormControl = new FormControl<number>(6, [Validators.required]);
@@ -117,10 +119,15 @@ export class EnrollTotpComponent implements OnInit {
     }
   }
 
-  onClickEnroll = (basicOptions: TokenEnrollmentData): Observable<EnrollmentResponse | null> => {
+  onClickEnroll = (
+    basicOptions: TokenEnrollmentData
+  ): {
+    data: TotpEnrollmentData;
+    mapper: TokenApiPayloadMapper<TotpEnrollmentData>;
+  } | null => {
     if (this.totpForm.invalid) {
       this.totpForm.markAllAsTouched();
-      return of(null);
+      return null;
     }
     const timeStepValue =
       typeof this.timeStepControl.value === "string"
@@ -138,9 +145,9 @@ export class EnrollTotpComponent implements OnInit {
     if (!enrollmentData.generateOnServer) {
       enrollmentData.otpKey = this.otpKeyFormControl.value ?? "";
     }
-    return this.tokenService.enrollToken({
+    return {
       data: enrollmentData,
       mapper: this.enrollmentMapper
-    });
+    };
   };
 }

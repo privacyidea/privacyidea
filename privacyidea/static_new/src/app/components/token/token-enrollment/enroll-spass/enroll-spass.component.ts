@@ -20,12 +20,14 @@ import { Component, EventEmitter, inject, Input, OnInit, Output } from "@angular
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 
-import { Observable } from "rxjs";
 import {
-  EnrollmentResponse,
+  SpassApiPayloadMapper,
+  SpassEnrollmentData
+} from "../../../../mappers/token-api-payload/spass-token-api-payload.mapper";
+import {
+  TokenApiPayloadMapper,
   TokenEnrollmentData
 } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
-import { SpassApiPayloadMapper } from "../../../../mappers/token-api-payload/spass-token-api-payload.mapper";
 
 export interface SpassEnrollmentOptions extends TokenEnrollmentData {
   type: "spass";
@@ -47,7 +49,10 @@ export class EnrollSpassComponent implements OnInit {
     [key: string]: FormControl<any>;
   }>();
   @Output() clickEnrollChange = new EventEmitter<
-    (basicOptions: TokenEnrollmentData) => Observable<EnrollmentResponse | null>
+    (basicOptions: TokenEnrollmentData) => {
+      data: SpassEnrollmentData;
+      mapper: TokenApiPayloadMapper<SpassEnrollmentData>;
+    } | null
   >();
 
   ngOnInit(): void {
@@ -55,14 +60,19 @@ export class EnrollSpassComponent implements OnInit {
     this.clickEnrollChange.emit(this.onClickEnroll);
   }
 
-  onClickEnroll = (basicOptions: TokenEnrollmentData): Observable<EnrollmentResponse | null> => {
+  onClickEnroll = (
+    basicOptions: TokenEnrollmentData
+  ): {
+    data: SpassEnrollmentData;
+    mapper: TokenApiPayloadMapper<SpassEnrollmentData>;
+  } | null => {
     const enrollmentData: SpassEnrollmentOptions = {
       ...basicOptions,
       type: "spass"
     };
-    return this.tokenService.enrollToken({
+    return {
       data: enrollmentData,
       mapper: this.enrollmentMapper
-    });
+    };
   };
 }

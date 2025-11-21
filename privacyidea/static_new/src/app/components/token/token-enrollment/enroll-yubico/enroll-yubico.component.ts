@@ -25,12 +25,14 @@ import { MatError } from "@angular/material/select";
 import { SystemService, SystemServiceInterface } from "../../../../services/system/system.service";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 
-import { Observable, of } from "rxjs";
 import {
-  EnrollmentResponse,
+  YubicoApiPayloadMapper,
+  YubicoEnrollmentData
+} from "../../../../mappers/token-api-payload/yubico-token-api-payload.mapper";
+import {
+  TokenApiPayloadMapper,
   TokenEnrollmentData
 } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
-import { YubicoApiPayloadMapper } from "../../../../mappers/token-api-payload/yubico-token-api-payload.mapper";
 
 export interface YubicoEnrollmentOptions extends TokenEnrollmentData {
   type: "yubico";
@@ -62,7 +64,10 @@ export class EnrollYubicoComponent implements OnInit {
     [key: string]: FormControl<any>;
   }>();
   @Output() clickEnrollChange = new EventEmitter<
-    (basicOptions: TokenEnrollmentData) => Observable<EnrollmentResponse | null>
+    (basicOptions: TokenEnrollmentData) => {
+      data: YubicoEnrollmentData;
+      mapper: TokenApiPayloadMapper<YubicoEnrollmentData>;
+    } | null
   >();
 
   yubikeyIdentifierControl = new FormControl<string>("", [
@@ -87,11 +92,16 @@ export class EnrollYubicoComponent implements OnInit {
     this.clickEnrollChange.emit(this.onClickEnroll);
   }
 
-  onClickEnroll = (basicOptions: TokenEnrollmentData): Observable<EnrollmentResponse | null> => {
+  onClickEnroll = (
+    basicOptions: TokenEnrollmentData
+  ): {
+    data: YubicoEnrollmentData;
+    mapper: TokenApiPayloadMapper<YubicoEnrollmentData>;
+  } | null => {
     this.yubicoForm.updateValueAndValidity();
     if (this.yubicoForm.invalid) {
       this.yubicoForm.markAllAsTouched();
-      return of(null);
+      return null;
     }
 
     const enrollmentData: YubicoEnrollmentOptions = {
@@ -99,9 +109,9 @@ export class EnrollYubicoComponent implements OnInit {
       type: "yubico",
       yubicoIdentifier: this.yubikeyIdentifierControl.value ?? ""
     };
-    return this.tokenService.enrollToken({
+    return {
       data: enrollmentData,
       mapper: this.enrollmentMapper
-    });
+    };
   };
 }

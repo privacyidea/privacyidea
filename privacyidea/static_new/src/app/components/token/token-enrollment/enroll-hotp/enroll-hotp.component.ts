@@ -22,12 +22,11 @@ import { MatCheckbox } from "@angular/material/checkbox";
 import { MatInput } from "@angular/material/input";
 import { MatError, MatFormField, MatHint, MatLabel, MatOption, MatSelect } from "@angular/material/select";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
-import { Observable, of } from "rxjs";
 import {
-  EnrollmentResponse,
+  TokenApiPayloadMapper,
   TokenEnrollmentData
 } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
-import { HotpApiPayloadMapper } from "../../../../mappers/token-api-payload/hotp-token-api-payload.mapper";
+import { HotpApiPayloadMapper, HotpEnrollmentData } from "../../../../mappers/token-api-payload/hotp-token-api-payload.mapper";
 import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
 
 export interface HotpEnrollmentOptions extends TokenEnrollmentData {
@@ -68,7 +67,10 @@ export class EnrollHotpComponent implements OnInit {
   ];
   @Input() wizard: boolean = false;
   @Output() clickEnrollChange = new EventEmitter<
-    (basicOptions: TokenEnrollmentData) => Observable<EnrollmentResponse | null>
+    (basicOptions: TokenEnrollmentData) => {
+      data: HotpEnrollmentData;
+      mapper: TokenApiPayloadMapper<HotpEnrollmentData>;
+    } | null
   >();
   @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
@@ -103,7 +105,12 @@ export class EnrollHotpComponent implements OnInit {
     }
   }
 
-  onClickEnroll = (basicOptions: TokenEnrollmentData): Observable<EnrollmentResponse | null> => {
+  onClickEnroll = (
+    basicOptions: TokenEnrollmentData
+  ): {
+    data: HotpEnrollmentData;
+    mapper: TokenApiPayloadMapper<HotpEnrollmentData>;
+  } | null => {
     if (
       this.generateOnServerFormControl.invalid ||
       this.otpLengthFormControl.invalid ||
@@ -116,7 +123,7 @@ export class EnrollHotpComponent implements OnInit {
       if (!this.generateOnServerFormControl.value) {
         this.otpKeyFormControl.markAsTouched();
       }
-      return of(null);
+      return null;
     }
 
     const enrollmentData: HotpEnrollmentOptions = {
@@ -130,9 +137,9 @@ export class EnrollHotpComponent implements OnInit {
     if (!enrollmentData.generateOnServer) {
       enrollmentData.otpKey = this.otpKeyFormControl.value?.trim() ?? "";
     }
-    return this.tokenService.enrollToken({
+    return {
       data: enrollmentData,
       mapper: this.enrollmentMapper
-    });
+    };
   };
 }

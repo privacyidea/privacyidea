@@ -22,10 +22,12 @@ import { ErrorStateMatcher, MatOption } from "@angular/material/core";
 import { MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { MatError, MatSelect } from "@angular/material/select";
-import { Observable, of } from "rxjs";
-import { FourEyesApiPayloadMapper } from "../../../../mappers/token-api-payload/4eyes-token-api-payload.mapper";
 import {
-  EnrollmentResponse,
+  FourEyesApiPayloadMapper,
+  FourEyesEnrollmentData
+} from "../../../../mappers/token-api-payload/4eyes-token-api-payload.mapper";
+import {
+  TokenApiPayloadMapper,
   TokenEnrollmentData
 } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
 import { RealmService, RealmServiceInterface } from "../../../../services/realm/realm.service";
@@ -59,7 +61,10 @@ export class EnrollFoureyesComponent implements OnInit {
 
   @Output() additionalFormFieldsChange = new EventEmitter<{ [key: string]: FormControl<any> }>();
   @Output() clickEnrollChange = new EventEmitter<
-    (basicOptions: TokenEnrollmentData) => Observable<EnrollmentResponse | null>
+    (basicOptions: TokenEnrollmentData) => {
+      data: FourEyesEnrollmentData;
+      mapper: TokenApiPayloadMapper<FourEyesEnrollmentData>;
+    } | null
   >();
 
   separatorControl = new FormControl<string>("|", [Validators.required]);
@@ -91,10 +96,15 @@ export class EnrollFoureyesComponent implements OnInit {
     else this.tokensByRealm.set(realm, tokens);
   }
 
-  onClickEnroll = (basicOptions: TokenEnrollmentData): Observable<EnrollmentResponse | null> => {
+  onClickEnroll = (
+    basicOptions: TokenEnrollmentData
+  ): {
+    data: FourEyesEnrollmentData;
+    mapper: TokenApiPayloadMapper<FourEyesEnrollmentData>;
+  } | null => {
     if (this.separatorControl.invalid || this.requiredTokensOfRealmsControl.invalid) {
       this.foureyesForm.markAllAsTouched();
-      return of(null);
+      return null;
     }
     const selected = this.requiredTokensOfRealmsControl.value ?? [];
     const requiredTokenOfRealms = selected.map((realm) => ({
@@ -107,9 +117,9 @@ export class EnrollFoureyesComponent implements OnInit {
       separator: this.separatorControl.value ?? ":",
       requiredTokenOfRealms
     };
-    return this.tokenService.enrollToken({
+    return {
       data: enrollmentData,
       mapper: this.enrollmentMapper
-    });
+    };
   };
 }

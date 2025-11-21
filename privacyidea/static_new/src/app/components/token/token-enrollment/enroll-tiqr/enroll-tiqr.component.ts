@@ -21,12 +21,14 @@ import { FormControl, FormGroup, FormsModule, ReactiveFormsModule } from "@angul
 import { SystemService, SystemServiceInterface } from "../../../../services/system/system.service";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 
-import { Observable } from "rxjs";
 import {
-  EnrollmentResponse,
+  TiqrApiPayloadMapper,
+  TiqrEnrollmentData
+} from "../../../../mappers/token-api-payload/tiqr-token-api-payload.mapper";
+import {
+  TokenApiPayloadMapper,
   TokenEnrollmentData
 } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
-import { TiqrApiPayloadMapper } from "../../../../mappers/token-api-payload/tiqr-token-api-payload.mapper";
 
 export interface TiqrEnrollmentOptions extends TokenEnrollmentData {
   type: "tiqr";
@@ -49,7 +51,10 @@ export class EnrollTiqrComponent implements OnInit {
     [key: string]: FormControl<any>;
   }>();
   @Output() clickEnrollChange = new EventEmitter<
-    (basicOptions: TokenEnrollmentData) => Observable<EnrollmentResponse | null>
+    (basicOptions: TokenEnrollmentData) => {
+      data: TiqrEnrollmentData;
+      mapper: TokenApiPayloadMapper<TiqrEnrollmentData>;
+    } | null
   >();
 
   defaultTiQRIsSet = computed(() => {
@@ -62,14 +67,19 @@ export class EnrollTiqrComponent implements OnInit {
     this.clickEnrollChange.emit(this.onClickEnroll);
   }
 
-  onClickEnroll = (basicOptions: TokenEnrollmentData): Observable<EnrollmentResponse | null> => {
+  onClickEnroll = (
+    basicOptions: TokenEnrollmentData
+  ): {
+    data: TiqrEnrollmentData;
+    mapper: TokenApiPayloadMapper<TiqrEnrollmentData>;
+  } | null => {
     const enrollmentData: TiqrEnrollmentOptions = {
       ...basicOptions,
       type: "tiqr"
     };
-    return this.tokenService.enrollToken({
+    return {
       data: enrollmentData,
       mapper: this.enrollmentMapper
-    });
+    };
   };
 }

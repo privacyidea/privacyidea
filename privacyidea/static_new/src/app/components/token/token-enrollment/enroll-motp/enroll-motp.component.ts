@@ -30,12 +30,14 @@ import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 
-import { Observable } from "rxjs";
 import {
-  EnrollmentResponse,
+  MotpApiPayloadMapper,
+  MotpEnrollmentData
+} from "../../../../mappers/token-api-payload/motp-token-api-payload.mapper";
+import {
+  TokenApiPayloadMapper,
   TokenEnrollmentData
 } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
-import { MotpApiPayloadMapper } from "../../../../mappers/token-api-payload/motp-token-api-payload.mapper";
 import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
 
 export interface MotpEnrollmentOptions extends TokenEnrollmentData {
@@ -62,7 +64,10 @@ export class EnrollMotpComponent implements OnInit {
     [key: string]: FormControl<any>;
   }>();
   @Output() clickEnrollChange = new EventEmitter<
-    (basicOptions: TokenEnrollmentData) => Observable<EnrollmentResponse | null>
+    (basicOptions: TokenEnrollmentData) => {
+      data: MotpEnrollmentData;
+      mapper: TokenApiPayloadMapper<MotpEnrollmentData>;
+    } | null
   >();
 
   generateOnServerControl = new FormControl<boolean>(true, [Validators.required]);
@@ -109,7 +114,12 @@ export class EnrollMotpComponent implements OnInit {
     });
   }
 
-  onClickEnroll = (basicOptions: TokenEnrollmentData): Observable<EnrollmentResponse | null> => {
+  onClickEnroll = (
+    basicOptions: TokenEnrollmentData
+  ): {
+    data: MotpEnrollmentData;
+    mapper: TokenApiPayloadMapper<MotpEnrollmentData>;
+  } | null => {
     const enrollmentData: MotpEnrollmentOptions = {
       ...basicOptions,
       type: "motp",
@@ -119,9 +129,9 @@ export class EnrollMotpComponent implements OnInit {
     if (!enrollmentData.generateOnServer) {
       enrollmentData.otpKey = this.otpKeyFormControl.value ?? "";
     }
-    return this.tokenService.enrollToken({
+    return {
       data: enrollmentData,
       mapper: this.enrollmentMapper
-    });
+    };
   };
 }

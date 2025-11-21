@@ -22,12 +22,14 @@ import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 
-import { Observable, of } from "rxjs";
 import {
-  EnrollmentResponse,
+  TokenApiPayloadMapper,
   TokenEnrollmentData
 } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
-import { IndexedSecretApiPayloadMapper } from "../../../../mappers/token-api-payload/indexedsecret-token-api-payload.mapper";
+import {
+  IndexedSecretApiPayloadMapper,
+  IndexedSecretEnrollmentData
+} from "../../../../mappers/token-api-payload/indexedsecret-token-api-payload.mapper";
 
 export interface IndexedSecretEnrollmentOptions extends TokenEnrollmentData {
   type: "indexedsecret";
@@ -49,7 +51,10 @@ export class EnrollIndexedsecretComponent implements OnInit {
     [key: string]: FormControl<any>;
   }>();
   @Output() clickEnrollChange = new EventEmitter<
-    (basicOptions: TokenEnrollmentData) => Observable<EnrollmentResponse | null>
+    (basicOptions: TokenEnrollmentData) => {
+      data: IndexedSecretEnrollmentData;
+      mapper: TokenApiPayloadMapper<IndexedSecretEnrollmentData>;
+    } | null
   >();
 
   otpKeyControl = new FormControl<string>("", [Validators.required, Validators.minLength(16)]);
@@ -65,19 +70,24 @@ export class EnrollIndexedsecretComponent implements OnInit {
     this.clickEnrollChange.emit(this.onClickEnroll);
   }
 
-  onClickEnroll = (basicOptions: TokenEnrollmentData): Observable<EnrollmentResponse | null> => {
+  onClickEnroll = (
+    basicOptions: TokenEnrollmentData
+  ): {
+    data: IndexedSecretEnrollmentData;
+    mapper: TokenApiPayloadMapper<IndexedSecretEnrollmentData>;
+  } | null => {
     if (this.otpKeyControl.invalid) {
       this.indexedSecretForm.markAllAsTouched();
-      return of(null);
+      return null;
     }
     const enrollmentData: IndexedSecretEnrollmentOptions = {
       ...basicOptions,
       type: "indexedsecret",
       otpKey: this.otpKeyControl.value ?? ""
     };
-    return this.tokenService.enrollToken({
+    return {
       data: enrollmentData,
       mapper: this.enrollmentMapper
-    });
+    };
   };
 }

@@ -30,15 +30,14 @@ import {
 } from "../../../../services/privavyidea-server/privacyidea-server.service";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 
-import { Observable, of } from "rxjs";
-import {
-  EnrollmentResponse,
-  TokenEnrollmentData
-} from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
 import {
   RemoteApiPayloadMapper,
   RemoteEnrollmentData
 } from "../../../../mappers/token-api-payload/remote-token-api-payload.mapper";
+import {
+  TokenApiPayloadMapper,
+  TokenEnrollmentData
+} from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
 
 export class RemoteErrorStateMatcher implements ErrorStateMatcher {
   isErrorState(control: FormControl | null): boolean {
@@ -73,7 +72,10 @@ export class EnrollRemoteComponent implements OnInit {
     [key: string]: FormControl<any>;
   }>();
   @Output() clickEnrollChange = new EventEmitter<
-    (basicOptions: TokenEnrollmentData) => Observable<EnrollmentResponse | null>
+    (basicOptions: TokenEnrollmentData) => {
+      data: RemoteEnrollmentData;
+      mapper: TokenApiPayloadMapper<RemoteEnrollmentData>;
+    } | null
   >();
 
   checkPinLocallyControl = new FormControl<boolean>(false, [Validators.required]);
@@ -107,7 +109,12 @@ export class EnrollRemoteComponent implements OnInit {
     this.clickEnrollChange.emit(this.onClickEnroll);
   }
 
-  onClickEnroll = (basicOptions: TokenEnrollmentData): Observable<EnrollmentResponse | null> => {
+  onClickEnroll = (
+    basicOptions: TokenEnrollmentData
+  ): {
+    data: RemoteEnrollmentData;
+    mapper: TokenApiPayloadMapper<RemoteEnrollmentData>;
+  } | null => {
     if (
       this.remoteServerControl.invalid ||
       this.remoteSerialControl.invalid ||
@@ -117,7 +124,7 @@ export class EnrollRemoteComponent implements OnInit {
       this.checkPinLocallyControl.invalid
     ) {
       this.remoteForm.markAllAsTouched();
-      return of(null);
+      return null;
     }
 
     const enrollmentData: RemoteEnrollmentData = {
@@ -131,9 +138,9 @@ export class EnrollRemoteComponent implements OnInit {
       remoteResolver: this.remoteResolverControl.value ?? ""
     };
 
-    return this.tokenService.enrollToken({
+    return {
       data: enrollmentData,
       mapper: this.enrollmentMapper
-    });
+    };
   };
 }

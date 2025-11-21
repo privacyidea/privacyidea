@@ -28,11 +28,11 @@ import { TokenService, TokenServiceInterface } from "../../../../services/token/
 
 import { Observable, of } from "rxjs";
 import {
-  EnrollmentResponse,
-  TokenEnrollmentData
-} from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
-import { CertificateApiPayloadMapper } from "../../../../mappers/token-api-payload/certificate-token-api-payload.mapper";
+  CertificateApiPayloadMapper,
+  CertificateEnrollmentData
+} from "../../../../mappers/token-api-payload/certificate-token-api-payload.mapper";
 import { SystemService, SystemServiceInterface } from "../../../../services/system/system.service";
+import { TokenEnrollmentData } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
 
 export interface CertificateEnrollmentOptions extends TokenEnrollmentData {
   type: "certificate";
@@ -75,7 +75,10 @@ export class EnrollCertificateComponent implements OnInit {
     [key: string]: FormControl<any>;
   }>();
   @Output() clickEnrollChange = new EventEmitter<
-    (basicOptions: TokenEnrollmentData) => Observable<EnrollmentResponse | null>
+    (basicOptions: TokenEnrollmentData) => {
+      data: CertificateEnrollmentData;
+      mapper: CertificateApiPayloadMapper;
+    } | null
   >();
 
   caConnectorControl = new FormControl<string>("", [Validators.required]);
@@ -93,7 +96,8 @@ export class EnrollCertificateComponent implements OnInit {
   });
 
   caConnectorOptions = computed(
-    () => this.systemService.caConnectorResource?.value()?.result?.value.map((config: any) => config.connectorname) || []
+    () =>
+      this.systemService.caConnectorResource?.value()?.result?.value.map((config: any) => config.connectorname) || []
   );
 
   certTemplateOptions = linkedSignal({
@@ -132,10 +136,15 @@ export class EnrollCertificateComponent implements OnInit {
     });
   }
 
-  onClickEnroll = (basicOptions: TokenEnrollmentData): Observable<EnrollmentResponse | null> => {
+  onClickEnroll = (
+    basicOptions: TokenEnrollmentData
+  ): {
+    data: CertificateEnrollmentData;
+    mapper: CertificateApiPayloadMapper;
+  } | null => {
     if (this.certificateForm.invalid) {
       this.certificateForm.markAllAsTouched();
-      return of(null);
+      return null;
     }
     const enrollmentData: CertificateEnrollmentOptions = {
       ...basicOptions,
@@ -146,9 +155,9 @@ export class EnrollCertificateComponent implements OnInit {
     if (this.intentionToggleControl.value === "uploadRequest" || this.intentionToggleControl.value === "uploadCert") {
       enrollmentData.pem = this.pemControl.value ?? "";
     }
-    return this.tokenService.enrollToken({
+    return {
       data: enrollmentData,
       mapper: this.enrollmentMapper
-    });
+    };
   };
 }

@@ -145,7 +145,8 @@
         <app-enroll-push
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
           (clickEnrollChange)="updateClickEnroll($event)"
-          (reopenDialogChange)="updateReopenDialog($event)" />
+          (reopenDialogChange)="updateReopenDialog($event)"
+          (onEnrollmentResponseChange)="updateOnEnrollmentResponse($event)" />
       }
       @case ("question") {
         <app-enroll-question
@@ -180,13 +181,15 @@
       @case ("webauthn") {
         <app-enroll-webauthn
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (clickEnrollChange)="updateClickEnroll($event)" />
+          (clickEnrollChange)="updateClickEnroll($event)"
+          (onEnrollmentResponseChange)="updateOnEnrollmentResponse($event)" />
       }
       @case ("passkey") {
         <app-enroll-passkey
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
           (clickEnrollChange)="updateClickEnroll($event)"
-          (reopenDialogChange)="updateReopenDialog($event)" />
+          (reopenDialogChange)="updateReopenDialog($event)"
+          (onEnrollmentResponseChange)="updateOnEnrollmentResponse($event)" />
       }
     }
     <mat-form-field class="description-form">
@@ -205,7 +208,9 @@
           <app-user-assignment
             [selectedUserRealmControl]="selectedUserRealmControl"
             [userFilterControl]="userFilterControl"
-            [showOnlyAddToRealm]="!['passkey', 'webauthn', 'tiqr', 'push'].includes(tokenService.selectedTokenType().key)"></app-user-assignment>
+            [showOnlyAddToRealm]="
+              !['passkey', 'webauthn', 'tiqr', 'push'].includes(tokenService.selectedTokenType().key)
+            "></app-user-assignment>
         </div>
       }
     </div>
@@ -213,28 +218,30 @@
     @if (tokenService.selectedTokenType().key !== "passkey") {
       <div class="user-pin-container">
         <h4 class="enroll-h4">Set PIN</h4>
+        <input
+          style="display: none"
+          type="text" />
+        <input
+          style="display: none"
+          type="password" />
+        <div class="user-pin-input margin-bottom-1">
           <input
-            style="display: none"
-            type="text" />
+            [formControl]="setPinControl"
+            [type]="'password'"
+            class="input"
+            placeholder="PIN" />
           <input
-            style="display: none"
-            type="password" />
-          <div class="user-pin-input margin-bottom-1">
-            <input
-              [formControl]="setPinControl"
-              [type]="'password'"
-              class="input"
-              placeholder="PIN" />
-            <input
-              [formControl]="repeatPinControl"
-              [type]="'password'"
-              class="input"
-              placeholder="Repeat PIN" />
-          </div>
-          @if (formGroupSignal().hasError("pinMismatch") &&
-          (formGroupSignal().get("setPin")?.touched || formGroupSignal().get("repeatPin")?.touched)) {
-            <mat-error class="pin-error">PINs do not match.</mat-error>
-          }
+            [formControl]="repeatPinControl"
+            [type]="'password'"
+            class="input"
+            placeholder="Repeat PIN" />
+        </div>
+        @if (
+          formGroupSignal().hasError("pinMismatch") &&
+          (formGroupSignal().get("setPin")?.touched || formGroupSignal().get("repeatPin")?.touched)
+        ) {
+          <mat-error class="pin-error">PINs do not match.</mat-error>
+        }
       </div>
     }
 

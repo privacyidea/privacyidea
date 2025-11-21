@@ -21,12 +21,11 @@ import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } 
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
-import { Observable, of } from "rxjs";
 import {
-  EnrollmentResponse,
+  TokenApiPayloadMapper,
   TokenEnrollmentData
 } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
-import { EmailApiPayloadMapper } from "../../../../mappers/token-api-payload/email-token-api-payload.mapper";
+import { EmailApiPayloadMapper, EmailEnrollmentData } from "../../../../mappers/token-api-payload/email-token-api-payload.mapper";
 import { SystemService, SystemServiceInterface } from "../../../../services/system/system.service";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 
@@ -52,7 +51,10 @@ export class EnrollEmailComponent implements OnInit {
     [key: string]: FormControl<any>;
   }>();
   @Output() clickEnrollChange = new EventEmitter<
-    (basicOptions: TokenEnrollmentData) => Observable<EnrollmentResponse | null>
+    (basicOptions: TokenEnrollmentData) => {
+      data: EmailEnrollmentData;
+      mapper: TokenApiPayloadMapper<EmailEnrollmentData>;
+    } | null
   >();
 
   emailAddressControl = new FormControl<string>("");
@@ -84,10 +86,15 @@ export class EnrollEmailComponent implements OnInit {
     });
   }
 
-  onClickEnroll = (basicOptions: TokenEnrollmentData): Observable<EnrollmentResponse | null> => {
+  onClickEnroll = (
+    basicOptions: TokenEnrollmentData
+  ): {
+    data: EmailEnrollmentData;
+    mapper: TokenApiPayloadMapper<EmailEnrollmentData>;
+  } | null => {
     if (!this.readEmailDynamicallyControl.value && this.emailAddressControl.invalid) {
       this.emailForm.markAllAsTouched();
-      return of(null);
+      return null;
     }
     const enrollmentData: EmailEnrollmentOptions = {
       ...basicOptions,
@@ -97,9 +104,9 @@ export class EnrollEmailComponent implements OnInit {
     if (!enrollmentData.readEmailDynamically) {
       enrollmentData.emailAddress = this.emailAddressControl.value ?? "";
     }
-    return this.tokenService.enrollToken({
+    return {
       data: enrollmentData,
       mapper: this.enrollmentMapper
-    });
+    };
   };
 }

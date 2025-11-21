@@ -97,21 +97,35 @@ import { EnrollYubicoComponent } from "./enroll-yubico/enroll-yubico.component";
 import { EnrollYubikeyComponent } from "./enroll-yubikey/enroll-yubikey.component";
 import { MAT_TOOLTIP_DEFAULT_OPTIONS, MatTooltipDefaultOptions, MatTooltipModule } from "@angular/material/tooltip";
 import { lastValueFrom, Observable } from "rxjs";
-import { EnrollmentResponse, TokenEnrollmentData } from "../../../mappers/token-api-payload/_token-api-payload.mapper";
+import {
+  EnrollmentResponse,
+  TokenApiPayloadMapper,
+  TokenEnrollmentData
+} from "../../../mappers/token-api-payload/_token-api-payload.mapper";
 import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
 import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { TokenEnrollmentLastStepDialogData } from "./token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
 import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
 import { UserAssignmentComponent } from "../user-assignment/user-assignment.component";
+import {
+  WebauthnEnrollmentResponse,
+  WebAuthnEnrollmentData
+} from "../../../mappers/token-api-payload/webauthn-token-api-payload.mapper";
 
-export type ClickEnrollFn = (
+export type ClickEnrollFn<T extends TokenEnrollmentData = TokenEnrollmentData> = (
   enrollmentOptions: TokenEnrollmentData
-) => Promise<EnrollmentResponse | null> | Observable<EnrollmentResponse | null>;
+) => {
+  data: T;
+  mapper: TokenApiPayloadMapper<T>;
+} | null;
 
-export type ReopenDialogFn =
-  | (() => Promise<EnrollmentResponse | null> | Observable<EnrollmentResponse | null>)
-  | undefined;
+export type ReopenDialogFn = () => Promise<EnrollmentResponse | null> | Observable<EnrollmentResponse | null>;
+
+export type OnEnrollmentResponseFn = (
+  enrollmentResponse: EnrollmentResponse,
+  enrollmentData: TokenEnrollmentData
+) => Promise<EnrollmentResponse | null>;
 
 export const CUSTOM_TOOLTIP_OPTIONS: MatTooltipDefaultOptions = {
   showDelay: 500,
@@ -263,13 +277,18 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
   @ViewChild(UserAssignmentComponent)
   userAssignmentComponent!: UserAssignmentComponent;
   clickEnroll?: ClickEnrollFn;
-  reopenDialogSignal: WritableSignal<ReopenDialogFn> = linkedSignal({
+  reopenDialogSignal = linkedSignal<any, ReopenDialogFn | undefined>({
     source: this.tokenService.selectedTokenType,
     computation: () => undefined
   });
   additionalFormFields: WritableSignal<{
     [key: string]: FormControl<any>;
   }> = signal({});
+  onEnrollmentResponse = linkedSignal<any, OnEnrollmentResponseFn | undefined>({
+    source: this.tokenService.selectedTokenType,
+    computation: () => undefined
+  });
+
   descriptionControl = new FormControl<string>("", {
     nonNullable: true,
     validators: [Validators.maxLength(80)]
@@ -331,6 +350,9 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
       }
     }
     this.additionalFormFields.set(validControls);
+  }
+  updateOnEnrollmentResponse(event: OnEnrollmentResponseFn) {
+    this.onEnrollmentResponse.set(event);
   }
 
   ngOnInit(): void {
@@ -430,8 +452,11 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
       this.selectedUserRealmControl.setValidators(this.isUserRequired ? [Validators.required] : []);
 
       this.userFilterControl.setValidators(
-        this.authService.role() == "user" ? [] : this.isUserRequired ? [Validators.required, this.userExistsValidator] :
-          [this.userExistsValidator]
+        this.authService.role() == "user"
+          ? []
+          : this.isUserRequired
+            ? [Validators.required, this.userExistsValidator]
+            : [this.userExistsValidator]
       );
 
       return new FormGroup(
@@ -512,18 +537,26 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
       serial: this.serial()
     };
 
-    const enrollResponse = this.clickEnroll(basicOptions);
+    const enrollmentArgs = this.clickEnroll(basicOptions);
+    if (!enrollmentArgs) return;
+    const enrollResponse = this.tokenService.enrollToken(enrollmentArgs);
+
     let enrollPromise: Promise<EnrollmentResponse | null>;
     if (enrollResponse instanceof Promise) {
       enrollPromise = enrollResponse;
     } else {
       enrollPromise = lastValueFrom(enrollResponse);
     }
+
     enrollPromise.catch((error) => {
       const message = error.error?.result?.error?.message || "";
       this.notificationService.openSnackBar(`Failed to enroll token: ${message || error.message || error}`);
     });
-    const enrollmentResponse = await enrollPromise;
+    let enrollmentResponse = await enrollPromise;
+    const onEnrollmentResponseFn = this.onEnrollmentResponse();
+    if (onEnrollmentResponseFn && enrollmentResponse) {
+      enrollmentResponse = await onEnrollmentResponseFn(enrollmentResponse, enrollmentArgs.data);
+    }
     this.enrollResponse.set(enrollmentResponse);
     if (enrollmentResponse) {
       this._handleEnrollmentResponse({

@@ -24,12 +24,14 @@ import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 
-import { Observable, of } from "rxjs";
 import {
-  EnrollmentResponse,
+  VascoApiPayloadMapper,
+  VascoEnrollmentData
+} from "../../../../mappers/token-api-payload/vasco-token-api-payload.mapper";
+import {
+  TokenApiPayloadMapper,
   TokenEnrollmentData
 } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
-import { VascoApiPayloadMapper } from "../../../../mappers/token-api-payload/vasco-token-api-payload.mapper";
 
 export interface VascoEnrollmentOptions extends TokenEnrollmentData {
   type: "vasco";
@@ -60,7 +62,10 @@ export class EnrollVascoComponent implements OnInit {
     [key: string]: FormControl<any>;
   }>();
   @Output() clickEnrollChange = new EventEmitter<
-    (basicOptions: TokenEnrollmentData) => Observable<EnrollmentResponse | null>
+    (basicOptions: TokenEnrollmentData) => {
+      data: VascoEnrollmentData;
+      mapper: TokenApiPayloadMapper<VascoEnrollmentData>;
+    } | null
   >();
 
   otpKeyControl = new FormControl<string>("");
@@ -108,10 +113,15 @@ export class EnrollVascoComponent implements OnInit {
     this.useVascoSerialControl.updateValueAndValidity();
   }
 
-  onClickEnroll = (basicOptions: TokenEnrollmentData): Observable<EnrollmentResponse | null> => {
+  onClickEnroll = (
+    basicOptions: TokenEnrollmentData
+  ): {
+    data: VascoEnrollmentData;
+    mapper: TokenApiPayloadMapper<VascoEnrollmentData>;
+  } | null => {
     if (this.vascoForm.invalid) {
       this.vascoForm.markAllAsTouched();
-      return of(null);
+      return null;
     }
 
     const enrollmentData: VascoEnrollmentOptions = {
@@ -125,9 +135,9 @@ export class EnrollVascoComponent implements OnInit {
     } else {
       enrollmentData.otpKey = this.otpKeyControl.value ?? "";
     }
-    return this.tokenService.enrollToken({
+    return {
       data: enrollmentData,
       mapper: this.enrollmentMapper
-    });
+    };
   };
 }
