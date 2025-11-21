@@ -1903,7 +1903,7 @@ def _is_trusted_x509_attestation_cert(trust_path: list[Certificate], trust_ancho
         verifier.verify(leaf_certificate, intermediates)
         return True
     except Exception as e:
-        log.info(f'Unable to verify certificate: %s', e)
+        log.info('Unable to verify certificate: %s', e)
     return False
 
 
