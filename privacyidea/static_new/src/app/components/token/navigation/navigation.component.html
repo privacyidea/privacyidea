@@ -393,15 +393,17 @@
             Log
           </button>
         </mat-list-item>
+        @if (authService.actionAllowed("clienttype")) {
         <mat-list-item>
           <button
-            class="card-button-1"
-            disabled
+            [ngClass]="contentService.routeUrl() === ROUTE_PATHS.CLIENTS ? 'card-button-active' : 'card-button-1'"
+            [routerLink]="[ROUTE_PATHS.CLIENTS]"
             mat-stroked-button>
             <mat-icon>recent_actors</mat-icon>
             Known Clients
           </button>
         </mat-list-item>
+        }
       </mat-list>
     </mat-expansion-panel>
 

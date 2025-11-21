@@ -1,0 +1,23 @@
+@use "../../../../styles";
+
+.clients-layout {
+  @include styles.table-container-styles;
+  @include styles.base-table-structure();
+  max-height: var(--max-height);
+  max-width: calc(100vw - var(--global-padding) * 5 - 48px);
+  overflow: auto;
+  display: grid;
+}
+
+.col-even { background-color: var(--mat-sys-light) !important; }
+.col-odd { background-color: var(--mat-sys-surface-container-low) !important; }
+
+.line-height {
+  line-height: 1em;
+}
+
+.data-table-cell {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
