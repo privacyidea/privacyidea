@@ -36,7 +36,6 @@
           </button>
         }
       </div>
-
       <div class="template-name-container">
         @if (isEditMode()) {
           <input
@@ -53,13 +52,11 @@
           </div>
         }
       </div>
-
       <div class="template-type-select-container">
         <div class="template-type-plain">
           {{ currentTemplate().container_type }}
         </div>
       </div>
-
       <div class="template-actions">
         @if (panel.expanded) {
           @if (isEditMode()) {
@@ -99,7 +96,6 @@
           [containerType]="currentTemplate().container_type"
           (onAddToken)="onAddToken($event)" />
       }
-
       <div class="addedTokensList">
         @for (token of currentTemplate().template_options.tokens; track $index) {
           <app-template-added-token-row

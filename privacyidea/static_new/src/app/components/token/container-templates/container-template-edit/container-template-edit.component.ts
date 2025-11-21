@@ -55,31 +55,10 @@ export class ContainerTemplateEditComponent {
 
   protected readonly isTemplateEdited = computed(() => {
     if (!this.isEditMode()) return false;
-    console.log("Comparing:", this.templateOriginal(), "!==", this.templateEdited());
-    console.log("Stringified:", JSON.stringify(this.templateOriginal()), "!==", JSON.stringify(this.templateEdited()));
-    console.log("Result:", JSON.stringify(this.templateOriginal()) !== JSON.stringify(this.templateEdited()));
     return JSON.stringify(this.templateOriginal()) !== JSON.stringify(this.templateEdited());
   });
 
-  // Component State Signals
-  // selectedTemplate = computed(() => this.containerTemplateService.selectedTemplate());
-
-  // Event Handlers
-  // handleExpansion(panel: MatExpansionPanel, templateName: string | undefined) {
-  //   if (this.containerTemplateService.templateIsSelected(templateName)) {
-  //     return;
-  //   }
-  //   if (templateName) {
-  //     this.containerTemplateService.selectTemplateByName(templateName);
-  //     this.isEditMode.set(false);
-  //   }
-  // }
-
   handleCollapse(panel: MatExpansionPanel) {
-    // if (!this.containerTemplateService.templateIsSelected(templateName)) {
-    //   return;
-    // }
-
     if (!this._confirmDiscardChanges()) {
       panel.open();
       return;

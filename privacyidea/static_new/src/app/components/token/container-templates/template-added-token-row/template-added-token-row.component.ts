@@ -1,4 +1,4 @@
-import { Component, effect, EventEmitter, input, Input, linkedSignal, Output, signal } from "@angular/core";
+import { Component, computed, effect, EventEmitter, input, Output, signal } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { MatIconModule } from "@angular/material/icon";
 import { MatButtonModule } from "@angular/material/button";
@@ -28,7 +28,6 @@ import {
   TokenEnrollmentData,
   TokenApiPayloadMapper
 } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
-import { HotpEnrollmentData } from "../../../../mappers/token-api-payload/hotp-token-api-payload.mapper";
 
 @Component({
   selector: "app-template-added-token-row",
@@ -63,13 +62,6 @@ import { HotpEnrollmentData } from "../../../../mappers/token-api-payload/hotp-t
   styleUrls: ["./template-added-token-row.component.scss"]
 })
 export class TemplateAddedTokenRowComponent {
-  updateClickEnroll(
-    $event: (
-      basicOptions: TokenEnrollmentData
-    ) => { data: TokenEnrollmentData; mapper: TokenApiPayloadMapper<TokenEnrollmentData> } | null
-  ) {
-    this.onClickEnroll.set($event);
-  }
   updateAdditionalFormFields($event: { [key: string]: FormControl<any> }) {
     this.formControls.set($event);
     for (const controlKey of Object.keys($event)) {
@@ -81,15 +73,36 @@ export class TemplateAddedTokenRowComponent {
         console.log("Form Control Value:", control.value);
         control.valueChanges.subscribe((newValue) => {
           console.log(`Form Control '${controlKey}' Value Changed:`, newValue);
+          this.updateToken({ [controlKey]: newValue });
         });
       }
-      this.updateToken(patch);
+      // this.updateToken(patch);
     }
   }
+
+  constructor() {
+    effect(() => {
+      // Replace the default form control values with the token's current values
+      const controls = this.formControls();
+      const token = this.token() as any;
+      console.log("Form Controls changed:", controls);
+      for (const controlKey of Object.keys(controls)) {
+        const control = controls[controlKey];
+        if (control) {
+          const tokenValue = token[controlKey];
+          console.log(`Syncing Form Control '${controlKey}' with Token Value:`, tokenValue);
+          if (tokenValue !== undefined && tokenValue !== null && control.value !== tokenValue) {
+            control.setValue(tokenValue, { emitEvent: false });
+          }
+        }
+      }
+    });
+  }
+
   token = input.required<ContainerTemplateToken>();
   index = input.required<number>();
   isEditMode = input.required<boolean>();
-  @Output() onEditToken = new EventEmitter<ContainerTemplateToken>();
+  @Output() onEditToken = new EventEmitter<any>();
   @Output() onDelete = new EventEmitter<number>();
 
   onClickEnroll = signal<
@@ -101,9 +114,10 @@ export class TemplateAddedTokenRowComponent {
   >(undefined);
   formControls = signal<{ [key: string]: FormControl<any> }>({});
 
-  updateToken(patch: Partial<ContainerTemplateToken>) {
-    if (!this.isEditMode()) return;
-    this.onEditToken.emit({ ...this.token(), ...patch });
+  childHadNoForm = computed(() => Object.keys(this.formControls()).length === 0);
+
+  updateToken(patch: { [key: string]: any }) {
+    this.onEditToken.emit({ ...patch });
   }
   deleteToken() {
     this.onDelete.emit(this.index());
