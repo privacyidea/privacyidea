@@ -941,7 +941,7 @@ def set_realm(request=None, action=None):
     I takes the realm from the request and - if a policy matches - replaces
     this realm with the realm defined in the policy
 
-    The policy set_realm in the authetnication scope takes precedence over this policy.
+    The policy set_realm in the authentication scope takes precedence over this policy.
 
     Check ACTION.SETREALM
 
