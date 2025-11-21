@@ -628,10 +628,10 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # Check, if the realm was modified to the realm specified in the policy
         self.assertEqual(req.all_data.get("realm"), self.realm1)
 
-        # do not set realm if realm_for_authentication policy is set
+        # do not set realm if set_realm policy is set
         req.all_data = {"realm": self.realm3, "user": "cornelius"}
         req.User = User(login="cornelius", realm=self.realm3)
-        g.policies = {PolicyAction.REALM_FOR_AUTHENTICATION: self.realm3}
+        g.policies = {PolicyAction.SET_REALM: self.realm3}
         set_realm(req)
         # Check that realm was not modified
         self.assertEqual(self.realm3, req.all_data.get("realm"))
@@ -1331,10 +1331,10 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         self.assertEqual(req.all_data.get("realm"), "lowerRealm")
         self.assertEqual(req.User, User("", "lowerrealm"))
 
-        # do not mangle realm if realm_for_authentication policy is set
+        # do not mangle realm if set_realm policy is set
         req.all_data = {"realm": "lower Realm", "user": "Thiswillbesplit_user"}
         req.User = User("Thiswillbesplit_user", "lower Realm")
-        g.policies = {PolicyAction.REALM_FOR_AUTHENTICATION: "lower Realm"}
+        g.policies = {PolicyAction.SET_REALM: "lower Realm"}
         mangle(req)
         # Check that realm was not modified, but username is modified
         self.assertEqual("lower Realm", req.all_data.get("realm"))
@@ -6562,7 +6562,7 @@ class PolicyHelperTestCase(MyApiTestCase):
         self.assertNotIn("policies", g)
 
         # policy with non-existing realm
-        set_policy("auth_realm", scope=SCOPE.AUTH, action=f"{PolicyAction.REALM_FOR_AUTHENTICATION}=random")
+        set_policy("auth_realm", scope=SCOPE.AUTH, action=f"{PolicyAction.SET_REALM}=random")
         realm = get_realm_for_authentication(g, "hans", "realm1")
         self.assertEqual("realm1", realm)
         self.assertNotIn("policies", g)
@@ -6572,10 +6572,10 @@ class PolicyHelperTestCase(MyApiTestCase):
         self.assertNotIn("policies", g)
 
         # set policy
-        set_policy("auth_realm", scope=SCOPE.AUTH, action=f"{PolicyAction.REALM_FOR_AUTHENTICATION}=realm2")
+        set_policy("auth_realm", scope=SCOPE.AUTH, action=f"{PolicyAction.SET_REALM}=realm2")
         realm = get_realm_for_authentication(g, "hans", "realm1")
         self.assertEqual("realm2", realm)
-        self.assertEqual("realm2", g.policies.get(PolicyAction.REALM_FOR_AUTHENTICATION))
+        self.assertEqual("realm2", g.policies.get(PolicyAction.SET_REALM))
 
         realm = get_realm_for_authentication(g, "hans", "")
         self.assertEqual("realm2", realm)

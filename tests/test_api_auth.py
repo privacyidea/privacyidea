@@ -1039,7 +1039,7 @@ class AuthApiTestCase(MyApiTestCase):
         delete_policy("verify")
         delete_event(event_id)
 
-    def test_13_realm_for_authentication(self):
+    def test_13_set_realm(self):
         self.setUp_user_realms()
         self.setUp_user_realm3()
         set_policy("login-mode", scope=SCOPE.WEBUI, action=f"{PolicyAction.LOGINMODE}=privacyIDEA")
@@ -1055,7 +1055,7 @@ class AuthApiTestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 401, res)
 
         # set policy for auth realm
-        set_policy("realm_auth", scope=SCOPE.AUTH, action=f"{PolicyAction.REALM_FOR_AUTHENTICATION}={self.realm3}")
+        set_policy("realm_auth", scope=SCOPE.AUTH, action=f"{PolicyAction.SET_REALM}={self.realm3}")
 
         # pass no realm
         with self.app.test_request_context("/auth",
@@ -1084,7 +1084,7 @@ class AuthApiTestCase(MyApiTestCase):
         delete_policy("realm_auth")
         delete_policy("login-mode")
 
-    def test_14_realm_for_authentication_conditions(self):
+    def test_14_set_realm_conditions(self):
         self.setUp_user_realms()
         self.setUp_user_realm3()
         set_policy("login-mode", scope=SCOPE.WEBUI, action=f"{PolicyAction.LOGINMODE}=privacyIDEA")
@@ -1092,7 +1092,7 @@ class AuthApiTestCase(MyApiTestCase):
         token_hans = init_token({"type": "spass", "pin": "test1234"}, user=User("hans", self.realm1))
 
         # set policy for auth realm with condition on IP address
-        set_policy("realm_auth", scope=SCOPE.AUTH, action=f"{PolicyAction.REALM_FOR_AUTHENTICATION}={self.realm3}",
+        set_policy("realm_auth", scope=SCOPE.AUTH, action=f"{PolicyAction.SET_REALM}={self.realm3}",
                    client="6.7.8.9")
 
         # auth with different realm from different IP works
@@ -1122,7 +1122,7 @@ class AuthApiTestCase(MyApiTestCase):
 
         # set policy for auth realm with condition on user agent
         delete_policy("realm_auth")
-        set_policy("realm_auth", scope=SCOPE.AUTH, action=f"{PolicyAction.REALM_FOR_AUTHENTICATION}={self.realm3}",
+        set_policy("realm_auth", scope=SCOPE.AUTH, action=f"{PolicyAction.SET_REALM}={self.realm3}",
                    user_agents="privacyIDEA-Keycloak")
 
         # auth with different realm from different User Agent works
@@ -1155,7 +1155,7 @@ class AuthApiTestCase(MyApiTestCase):
         node1 = NodeName(id="8e4272a9-9037-40df-8aa3-976e4a04b5a9", name="Node1")
         node2 = NodeName(id="d1d7fde6-330f-4c12-88f3-58a1752594bf", name="Node2")
         db.session.add_all([node1, node2])
-        set_policy("realm_auth", scope=SCOPE.AUTH, action=f"{PolicyAction.REALM_FOR_AUTHENTICATION}={self.realm3}",
+        set_policy("realm_auth", scope=SCOPE.AUTH, action=f"{PolicyAction.SET_REALM}={self.realm3}",
                    pinode="Node1")
 
         # auth with different realm on different node
@@ -1188,7 +1188,7 @@ class AuthApiTestCase(MyApiTestCase):
         # set policy for auth realm with condition on user
         delete_policy("realm_auth")
         set_policy("realm_auth", scope=SCOPE.AUTH,
-                   action=f"{PolicyAction.REALM_FOR_AUTHENTICATION}={self.realm3}",
+                   action=f"{PolicyAction.SET_REALM}={self.realm3}",
                    user="corny")
 
         # auth with different realm from different User Agent works
@@ -1217,7 +1217,7 @@ class AuthApiTestCase(MyApiTestCase):
         # set policy for auth realm with condition on user agent
         delete_policy("realm_auth")
         set_policy("realm_auth", scope=SCOPE.AUTH,
-                   action=f"{PolicyAction.REALM_FOR_AUTHENTICATION}={self.realm3}",
+                   action=f"{PolicyAction.SET_REALM}={self.realm3}",
                    user_agents="privacyIDEA-Keycloak")
 
         token_corny.delete_token()

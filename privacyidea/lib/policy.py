@@ -2569,7 +2569,7 @@ def get_static_policy_definitions(scope=None):
                           'user and realm in an authentication request. See '
                           'the documentation for an example.')
             },
-            PolicyAction.REALM_FOR_AUTHENTICATION: {
+            PolicyAction.SET_REALM: {
                 'type': 'str',
                 'value': realms,
                 'desc': _('In authentication requests, sets or overwrites the realm parameter. It takes precedence '

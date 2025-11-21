@@ -268,12 +268,12 @@ If set, a new OTP Email will be sent, when successfully authenticated with an
 Email Token.
 
 
-.. _policy_realm_for_authentication:
+.. _policy_set_realm:
 
-realm_for_authentication
-~~~~~~~~~~~~~~~~~~~~~~~~
+set_realm
+~~~~~~~~~
 
-.. index:: Realm for authentication
+.. index:: Set realm for authentication
 
 type: ``string``
 
@@ -303,7 +303,7 @@ modified prior to authentication.
 
 .. note:: This policy is only applied to :http:post:`/validate/check`.
 
-    If the policy :ref:`policy_realm_for_authentication` is set, this policy is only applied for ``user`` and ``pass``
+    If the policy :ref:`policy_set_realm` is set, this policy is only applied for ``user`` and ``pass``
     parameters. Policies with the ``realm`` parameter are ignored.
 
     However, it is still applied after the policy :ref:`policy_setrealm` is executed.

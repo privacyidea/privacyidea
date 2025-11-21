@@ -3507,7 +3507,7 @@ class ValidateAPITestCase(MyApiTestCase):
         token.delete_token()
         token_realm1.delete_token()
 
-    def test_40_realm_for_authentication(self):
+    def test_40_set_realm(self):
         self.setUp_user_realms()
         set_default_realm(self.realm1)
         self.setUp_user_realm3()
@@ -3523,7 +3523,7 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 400, res)
 
         # set policy for auth realm
-        set_policy("realm_auth", scope=SCOPE.AUTH, action=f"{PolicyAction.REALM_FOR_AUTHENTICATION}={self.realm3}")
+        set_policy("realm_auth", scope=SCOPE.AUTH, action=f"{PolicyAction.SET_REALM}={self.realm3}")
 
         # pass no realm
         self.set_default_g_variables()
@@ -3552,7 +3552,7 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertTrue(result.get("value"), result)
             self.assertEqual("ACCEPT", result.get("authentication"), result)
 
-        # realm_for_authentication takes precedence over mangle and setrealm policy
+        # set_realm takes precedence over mangle and setrealm policy
         set_policy("mangle", scope=SCOPE.AUTH, action=f"{PolicyAction.MANGLE}=realm/.*/mangledRealm/")
         set_policy("setrealm", scope=SCOPE.AUTHZ, action=f"{PolicyAction.SETREALM}=setrealm")
         self.set_default_g_variables()
@@ -3573,14 +3573,14 @@ class ValidateAPITestCase(MyApiTestCase):
         delete_policy("mangle")
         delete_policy("setrealm")
 
-    def test_41_realm_for_authentication_conditions(self):
+    def test_41_set_realm_conditions(self):
         self.setUp_user_realms()
         self.setUp_user_realm3()
         token_corny = init_token({"type": "spass", "pin": "test"}, user=User("corny", self.realm3))
         token_hans = init_token({"type": "spass", "pin": "test1234"}, user=User("hans", self.realm1))
 
         # set policy for auth realm with condition on IP address
-        set_policy("realm_auth", scope=SCOPE.AUTH, action=f"{PolicyAction.REALM_FOR_AUTHENTICATION}={self.realm3}",
+        set_policy("realm_auth", scope=SCOPE.AUTH, action=f"{PolicyAction.SET_REALM}={self.realm3}",
                    client="6.7.8.9")
 
         # auth with different realm from different IP works
@@ -3614,7 +3614,7 @@ class ValidateAPITestCase(MyApiTestCase):
 
         # set policy for auth realm with condition on user agent
         delete_policy("realm_auth")
-        set_policy("realm_auth", scope=SCOPE.AUTH, action=f"{PolicyAction.REALM_FOR_AUTHENTICATION}={self.realm3}",
+        set_policy("realm_auth", scope=SCOPE.AUTH, action=f"{PolicyAction.SET_REALM}={self.realm3}",
                    user_agents="privacyIDEA-Keycloak")
 
         # auth with different realm from different User Agent works
@@ -3651,7 +3651,7 @@ class ValidateAPITestCase(MyApiTestCase):
         node1 = NodeName(id="8e4272a9-9037-40df-8aa3-976e4a04b5a9", name="Node1")
         node2 = NodeName(id="d1d7fde6-330f-4c12-88f3-58a1752594bf", name="Node2")
         db.session.add_all([node1, node2])
-        set_policy("realm_auth", scope=SCOPE.AUTH, action=f"{PolicyAction.REALM_FOR_AUTHENTICATION}={self.realm3}",
+        set_policy("realm_auth", scope=SCOPE.AUTH, action=f"{PolicyAction.SET_REALM}={self.realm3}",
                    pinode="Node1")
 
         # auth with different realm on different node
@@ -3688,7 +3688,7 @@ class ValidateAPITestCase(MyApiTestCase):
         # set policy for auth realm with condition on user
         delete_policy("realm_auth")
         set_policy("realm_auth", scope=SCOPE.AUTH,
-                   action=f"{PolicyAction.REALM_FOR_AUTHENTICATION}={self.realm3}",
+                   action=f"{PolicyAction.SET_REALM}={self.realm3}",
                    user="corny")
 
         # auth with different realm from different User Agent works
@@ -3721,7 +3721,7 @@ class ValidateAPITestCase(MyApiTestCase):
         # set policy for auth realm with condition on user agent
         delete_policy("realm_auth")
         set_policy("realm_auth", scope=SCOPE.AUTH,
-                   action=f"{PolicyAction.REALM_FOR_AUTHENTICATION}={self.realm3}",
+                   action=f"{PolicyAction.SET_REALM}={self.realm3}",
                    user_agents="privacyIDEA-Keycloak")
 
         token_corny.delete_token()

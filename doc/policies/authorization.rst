@@ -136,9 +136,9 @@ This policy is only applied to :http:post:`/validate/check`.
 This can be used if the user can not pass their realm when authenticating at a certain client, but the realm needs to
 be available during authentication since the user is not located in the default realm.
 
-.. note:: It is recommended to use the policy :ref:`policy_realm_for_authentication` instead of this policy.
-    It takes precedence over this policy, is also applied to :http:post:`/auth`, and is applied before the first user
-    resolving, which avoids unnecessary requests to the user store.
+.. note:: It is recommended to use the policy :ref:`policy_set_realm` from the authentication scope instead of this
+    policy. It takes precedence over this policy, is also applied to :http:post:`/auth`, and is applied before the
+    first user resolving, which avoids unnecessary requests to the user store.
 
 .. note:: The :ref:`policy_mangle` policy is still executed after this policy and can change the realm again.
 

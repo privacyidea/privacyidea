@@ -407,7 +407,8 @@ def check_last_auth_policy(g, token: TokenClass) -> bool:
 
 def get_realm_for_authentication(g, username: str, realm: str) -> str:
     """
-    Checks if a realm for the authentication is defined in the policies.
+    Checks if the set_realm policy action from the authentication scope defines a realm that should be used for the
+    authentication.
     Returns the defined realm if the policy is set or the given realm otherwise.
     In case the realm defined in the policy does not exist the given realm is returned.
 
@@ -416,18 +417,18 @@ def get_realm_for_authentication(g, username: str, realm: str) -> str:
     :param realm: The realm from the request parameters
     :return: The realm to be used for authentication
     """
-    auth_realm_policy = Match.generic(g, scope=SCOPE.AUTH, action=PolicyAction.REALM_FOR_AUTHENTICATION,
+    auth_realm_policy = Match.generic(g, scope=SCOPE.AUTH, action=PolicyAction.SET_REALM,
                                       user=username, realm=realm or None).action_values(unique=True)
     if auth_realm_policy:
         new_realm = list(auth_realm_policy)[0]
         if not realm_is_defined(new_realm):
             log.warning("Realm '%s' defined in the policy '%s' does not exist. Using realm '%s' instead.", new_realm,
-                        PolicyAction.REALM_FOR_AUTHENTICATION, realm)
+                        PolicyAction.SET_REALM, realm)
             return realm
-        log.debug("Setting realm for authentication to '%s' due to policy action %s", new_realm, PolicyAction.REALM_FOR_AUTHENTICATION)
+        log.debug("Setting realm for authentication to '%s' due to policy action %s", new_realm, PolicyAction.SET_REALM)
         if "policies" in g:
-            g.policies[PolicyAction.REALM_FOR_AUTHENTICATION] = new_realm
+            g.policies[PolicyAction.SET_REALM] = new_realm
         else:
-            g.policies = {PolicyAction.REALM_FOR_AUTHENTICATION: new_realm}
+            g.policies = {PolicyAction.SET_REALM: new_realm}
         return new_realm
     return realm
