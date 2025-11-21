@@ -131,6 +131,7 @@ myApp.config(['$httpProvider', function ($httpProvider, inform, gettext) {
     $httpProvider.interceptors.push(function ($rootScope, $q, inform, gettext) {
         return {
             request: function (config) {
+                config.headers["User-Agent"] = "privacyIDEA-WebUI/" + $rootScope.privacyideaVersionNumber || "";
                 $rootScope.$broadcast('spinnerEvent', {
                     action: 'increment'
                 });
