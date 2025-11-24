@@ -33,6 +33,8 @@ import {
   MockRealmService, MockSystemService,
   MockTableUtilsService
 } from "../../../../testing/mock-services";
+import { provideHttpClient } from "@angular/common/http";
+import { provideHttpClientTesting } from "@angular/common/http/testing";
 
 class LocalMockMatDialog {
   result$ = of(true);
@@ -53,6 +55,8 @@ describe("RealmTableComponent", () => {
     await TestBed.configureTestingModule({
       imports: [RealmTableComponent],
       providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
         { provide: TableUtilsService, useClass: MockTableUtilsService },
         { provide: RealmService, useClass: MockRealmService },
         { provide: SystemService, useClass: MockSystemService },
