@@ -203,7 +203,7 @@ class HotpTokenClass(TokenClass):
                                       'value': ['allow', 'force'],
                                       'desc': HotpTokenClass.desc_two_step_admin},
                        PolicyAction.FORCE_SERVER_GENERATE: {'type': 'bool',
-                                                      'desc': HotpTokenClass.desc_key_gen}
+                                                            'desc': HotpTokenClass.desc_key_gen}
                    }
                }
                }
@@ -347,31 +347,38 @@ class HotpTokenClass(TokenClass):
 
         val = getParam(upd_param, "hashlib", optional)
         if val is not None:
-            hashlibStr = val
+            hashlib_str = val
         else:
-            hashlibStr = self.hashlib
+            hashlib_str = self.hashlib
 
         # check if the key_size is provided
         # if not, we could derive it from the hashlib
         key_size = upd_param.get('keysize')
         if key_size is None:
-            upd_param['keysize'] = keylen.get(hashlibStr)
+            upd_param['keysize'] = keylen.get(hashlib_str)
 
         otp_key = upd_param.get("otpkey")
-        force_genkey = param.get("policies", {}).get(f"{self.get_tokentype()}_{PolicyAction.FORCE_SERVER_GENERATE}", False)
+        force_genkey = param.get("policies", {}).get(f"{self.get_tokentype()}_{PolicyAction.FORCE_SERVER_GENERATE}",
+                                                     False)
+        # If force_server_generate is enabled and this is a 2step enrollments second step
+        # (identified by the 2step_clientsize tokeninfo), don't do force_generate,
+        # because the server has already generated its part of the 2step enrollment previously.
         if force_genkey or not otp_key:
-            upd_param["genkey"] = True
+            if bool(self.get_tokeninfo("2step_clientsize")):
+                log.debug("force_server_generate is enabled for this enrollment but is overwritten by 2step enrollment")
+            else:
+                upd_param["genkey"] = True
         genkey = is_true(upd_param.get("genkey"))
         if genkey and otp_key is not None:
             # The Base TokenClass does not allow otpkey and genkey at the
             # same time
             del upd_param['otpkey']
-        upd_param['hashlib'] = hashlibStr
+        upd_param['hashlib'] = hashlib_str
         # We first need to call the parent class. Since exceptions would be
         # raised here.
         TokenClass.update(self, upd_param, reset_failcount)
 
-        self.add_tokeninfo("hashlib", hashlibStr)
+        self.add_tokeninfo("hashlib", hashlib_str)
 
         # check the tokenkind
         if self.token.serial.startswith("UB"):
@@ -379,9 +386,7 @@ class HotpTokenClass(TokenClass):
 
     @property
     def hashlib(self):
-        hashlibStr = self.get_tokeninfo("hashlib") or \
-                     get_from_config("hotp.hashlib", 'sha1')
-        return hashlibStr
+        return self.get_tokeninfo("hashlib") or get_from_config("hotp.hashlib", 'sha1')
 
     def _calc_otp(self, counter):
         """
@@ -391,15 +396,15 @@ class HotpTokenClass(TokenClass):
         :return: OTP value as string
         """
         otplen = int(self.token.otplen)
-        secretHOtp = self.token.get_otpkey()
-        hmac2Otp = HmacOtp(secretHOtp,
-                           self.get_otp_count(),
-                           otplen,
-                           self.get_hashlib(self.hashlib))
+        otp_key = self.token.get_otpkey()
+        hmac = HmacOtp(otp_key,
+                       self.get_otp_count(),
+                       otplen,
+                       self.get_hashlib(self.hashlib))
 
-        otpval = hmac2Otp.generate(counter=counter,
-                                   inc_counter=False,
-                                   do_truncation=True)
+        otpval = hmac.generate(counter=counter,
+                               inc_counter=False,
+                               do_truncation=True)
         return otpval
 
     @log_with(log)
@@ -907,7 +912,6 @@ class HotpTokenClass(TokenClass):
         init_details = self.get_init_detail(params, user)
         enroll_url = init_details.get("googleurl").get("value")
         return enroll_url
-
 
     def export_token(self, export_user: bool = False) -> dict:
         """
