@@ -26,7 +26,6 @@ import { TokenDetailsComponent } from "./components/token/token-details/token-de
 import { TokenEnrollmentComponent } from "./components/token/token-enrollment/token-enrollment.component";
 import { TokenGetSerialComponent } from "./components/token/token-get-serial/token-get-serial.component";
 import { TokenTableComponent } from "./components/token/token-table/token-table.component";
-import { TokenComponent } from "./components/token/token.component";
 import { UserDetailsComponent } from "./components/user/user-details/user-details.component";
 import { UserTableComponent } from "./components/user/user-table/user-table.component";
 import { AuditComponent } from "./components/audit/audit.component";
@@ -36,7 +35,6 @@ import { RealmTableComponent } from "./components/user/realm-table/realm-table.c
 export const routes: Routes = [
   {
     path: "tokens",
-    component: TokenComponent,
     children: [
       { path: "", component: TokenTableComponent },
       { path: "enrollment", component: TokenEnrollmentComponent },
@@ -57,7 +55,6 @@ export const routes: Routes = [
   },
   {
     path: "users",
-    component: TokenComponent,
     children: [
       { path: "", component: UserTableComponent },
       { path: "details/:username", component: UserDetailsComponent },
@@ -66,7 +63,6 @@ export const routes: Routes = [
   },
   {
     path: "audit",
-    component: TokenComponent,
     children: [
       { path: "", component: AuditComponent }
     ]
