@@ -290,7 +290,7 @@ export class UserService implements UserServiceInterface {
     if (!onAllowedRoute) {
       return undefined;
     }
-    // On /tokens (list view) we require at least one selected token before loading users.
+    // On the tokens route we require at least one selected token before loading users.
     if (this.contentService.onTokens() && tokenSelection.length === 0) {
       return undefined;
     }

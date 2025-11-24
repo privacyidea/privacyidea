@@ -114,7 +114,7 @@ export class ChallengesService implements ChallengesServiceInterface {
   });
 
   challengesResource = httpResource<PiResponse<Challenges>>(() => {
-    // Only load challenges on the token challenges route.
+    // Only load challenges on the challenges route.
     if (!this.contentService.onTokensChallenges()) {
       return undefined;
     }

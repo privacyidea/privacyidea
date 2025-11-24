@@ -316,7 +316,7 @@ export class TokenService implements TokenServiceInterface {
   showOnlyTokenNotInContainer = linkedSignal({
     source: this.contentService.routeUrl,
     computation: () => {
-      // Initally show tokens not in a container on the container details route.
+      // Initially show tokens not in a container on the container details route.
       return this.contentService.onTokensContainersDetails();
     }
   });

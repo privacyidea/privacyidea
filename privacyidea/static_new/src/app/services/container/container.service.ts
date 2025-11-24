@@ -330,7 +330,7 @@ export class ContainerService implements ContainerServiceInterface {
       }
     }
 
-    // Only load containers on routes where it makes sense.
+    // Only load containers on routes with a container list or selection.
     const onAllowedRoute =
       this.contentService.onTokenDetails() ||
       this.contentService.onUserDetails() ||
@@ -342,7 +342,7 @@ export class ContainerService implements ContainerServiceInterface {
       return undefined;
     }
 
-    // Admin is not allowed to load containers on plain /tokens in this context.
+    // Admin does not need to load containers on the tokens route.
     if (this.authService.role() === "admin" && this.contentService.onTokens()) {
       return undefined;
     }
@@ -484,7 +484,7 @@ export class ContainerService implements ContainerServiceInterface {
     if (!this.authService.actionAllowed("container_template_list")) {
       return undefined;
     }
-    // Only load templates on the container create route
+    // Only load templates on the container create route.
     if (!this.contentService.onTokensContainersCreate()) {
       return undefined;
     }

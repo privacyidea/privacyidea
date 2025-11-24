@@ -67,7 +67,7 @@ export class SystemService implements SystemServiceInterface {
     if (!this.authService.actionAllowed("enrollRADIUS")) {
       return undefined;
     }
-    // Only load CA connectors on enrollment or wizard routes.
+    // Only load CA connectors on enrollment or token wizard routes.
     if (!this.contentService.onTokensEnrollment() ||
       this.contentService.onTokensWizard()) {
       return undefined;
@@ -84,7 +84,7 @@ export class SystemService implements SystemServiceInterface {
     if (!this.authService.actionAllowed("enrollCERTIFICATE")) {
       return undefined;
     }
-    // Only load CA connectors on enrollment or wizard routes.
+    // Only load CA connectors on enrollment or token wizard routes.
     if (!this.contentService.onTokensEnrollment() ||
       this.contentService.onTokensWizard()) {
       return undefined;
