@@ -63,6 +63,7 @@ import { NodeInfo, SystemService, SystemServiceInterface } from "../../../servic
 import { NotificationService, NotificationServiceInterface } from "../../../services/notification/notification.service";
 import { ConfirmationDialogComponent } from "../../shared/confirmation-dialog/confirmation-dialog.component";
 import { MatTooltip } from "@angular/material/tooltip";
+import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
 
 type ResolverWithPriority = { name: string; priority: number | null };
 type NodeResolversMap = { [nodeId: string]: ResolverWithPriority[] };
@@ -123,6 +124,7 @@ export class RealmTableComponent {
   protected readonly systemService: SystemServiceInterface = inject(SystemService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   protected readonly dialog: MatDialog = inject(MatDialog);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
 
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;

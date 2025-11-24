@@ -60,6 +60,7 @@
           <ng-container [matColumnDef]="column.key">
             <th
               *matHeaderCellDef
+              [disabled]="column.key === 'actions' || column.key === 'resolvers'"
               attr.aria-label="{{ column.label }} Header"
               mat-header-cell
               mat-sort-header>
@@ -130,8 +131,8 @@
                                   <span class="priority-label">{{ r.name }} priority:</span>
                                   <input
                                     (click)="$event.stopPropagation()"
-                                    (mousedown)="$event.stopPropagation()"
                                     (keydown)="$event.stopPropagation()"
+                                    (mousedown)="$event.stopPropagation()"
                                     (ngModelChange)="setEditResolverPriority(group.id, r.name, $event)"
                                     [ngModel]="r.priority"
                                     class="resolver-priority-input"
@@ -181,41 +182,45 @@
                 @case ("actions") {
                   <div class="actions-buttons">
                     @if (editingRealmName() === element.name) {
-                      <button
-                        (click)="saveEditedRealm(element)"
-                        [disabled]="!canSaveEditedRealm(element)"
-                        aria-label="Save realm"
-                        color="primary"
-                        mat-icon-button
-                        type="button">
-                        <mat-icon>save_as</mat-icon>
-                      </button>
-                      <button
-                        (click)="cancelEditRealm()"
-                        aria-label="Cancel edit"
-                        class="red"
-                        mat-icon-button
-                        type="button">
-                        <mat-icon>cancel</mat-icon>
-                      </button>
+                      @if (authService.actionAllowed("resolverwrite")) {
+                        <button
+                          (click)="saveEditedRealm(element)"
+                          [disabled]="!canSaveEditedRealm(element)"
+                          aria-label="Save realm"
+                          color="primary"
+                          mat-icon-button
+                          type="button">
+                          <mat-icon>save_as</mat-icon>
+                        </button>
+                        <button
+                          (click)="cancelEditRealm()"
+                          aria-label="Cancel edit"
+                          class="red"
+                          mat-icon-button
+                          type="button">
+                          <mat-icon>cancel</mat-icon>
+                        </button>
+                      }
                     } @else {
-                      <button
-                        matTooltip="Edit realm"
-                        (click)="startEditRealm(element)"
-                        aria-label="Edit realm"
-                        mat-icon-button
-                        type="button">
-                        <mat-icon>edit</mat-icon>
-                      </button>
-                      <button
-                        matTooltip="Delete realm"
-                        (click)="onDeleteRealm(element)"
-                        aria-label="Delete realm"
-                        color="warn"
-                        mat-icon-button
-                        type="button">
-                        <mat-icon>delete</mat-icon>
-                      </button>
+                      @if (authService.actionAllowed("resolverdelete")) {
+                        <button
+                          (click)="startEditRealm(element)"
+                          aria-label="Edit realm"
+                          mat-icon-button
+                          matTooltip="Edit realm"
+                          type="button">
+                          <mat-icon>edit</mat-icon>
+                        </button>
+                        <button
+                          (click)="onDeleteRealm(element)"
+                          aria-label="Delete realm"
+                          color="warn"
+                          mat-icon-button
+                          matTooltip="Delete realm"
+                          type="button">
+                          <mat-icon>delete</mat-icon>
+                        </button>
+                      }
                     }
                   </div>
                 }

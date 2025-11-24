@@ -22,11 +22,7 @@
 }
 
 .icon-true {
-  color: var(--mdc-theme-success, var(--green-base));
-}
-
-.icon-false {
-  color: var(--mdc-theme-error, var(--red-base));
+  color: var(--mat-sys-primary-light);
 }
 
 .resolver-cell {
