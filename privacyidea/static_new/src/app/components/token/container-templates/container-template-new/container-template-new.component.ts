@@ -10,12 +10,15 @@ import { MatSelectModule } from "@angular/material/select";
 import { MatOptionModule } from "@angular/material/core";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { TemplateAddedTokenRowComponent } from "../template-added-token-row/template-added-token-row.component";
-import { TemplateAddTokenRowComponent } from "../template-add-token-row/template-add-token-row.component";
-import { ContainerTemplate, ContainerTemplateToken } from "../../../../services/container/container.service";
-import { ContainerTemplateService } from "../../../../services/container-template/container-template.service";
+import { ContainerTemplate } from "../../../../services/container/container.service";
+import {
+  ContainerTemplateService,
+  ContainerTemplateServiceInterface
+} from "../../../../services/container-template/container-template.service";
 import { deepCopy } from "../../../../utils/deep-copy.utils";
 import { ContainerTemplateAddTokenChipsComponent } from "../container-template-add-token-chips/container-template-add-token-chips.component";
 import { MatChipsModule } from "@angular/material/chips";
+import { ContainerTypeOption } from "../../container-create/container-create.component";
 
 @Component({
   selector: "app-container-template-new",
@@ -41,7 +44,7 @@ import { MatChipsModule } from "@angular/material/chips";
 })
 export class ContainerTemplateNewComponent {
   // Angular Inputs and Services
-  protected readonly containerTemplateService: ContainerTemplateService = inject(ContainerTemplateService);
+  protected readonly containerTemplateService: ContainerTemplateServiceInterface = inject(ContainerTemplateService);
   protected readonly isEditMode = signal<boolean>(false);
   protected readonly newTemplate = linkedSignal<any, ContainerTemplate>({
     source: () => ({
@@ -77,9 +80,13 @@ export class ContainerTemplateNewComponent {
     this.isEditMode.set(false);
   }
 
+  canSaveTemplate(): boolean {
+    return this.containerTemplateService.canSaveTemplate(this.newTemplate());
+  }
+
   // Action Methods
-  async saveTemplate(panel?: MatExpansionPanel) {
-    if (!this.containerTemplateService.canSaveTemplate()) return;
+  saveTemplate(panel?: MatExpansionPanel) {
+    if (!this.canSaveTemplate()) return;
     this.containerTemplateService.postTemplateEdits(this.newTemplate());
     this.isEditMode.set(false);
     if (panel) panel.close();
@@ -110,7 +117,7 @@ export class ContainerTemplateNewComponent {
     this._editTemplate({ name: newName });
   }
 
-  onTypeChange(newType: string) {
+  onTypeChange(newType: ContainerTypeOption) {
     this._editTemplate({ container_type: newType });
   }
 

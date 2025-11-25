@@ -3,7 +3,10 @@ import { CommonModule } from "@angular/common";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatIconModule } from "@angular/material/icon";
 import { ContainerTemplateEditComponent } from "./container-template-edit/container-template-edit.component";
-import { ContainerTemplateService } from "../../../services/container-template/container-template.service";
+import {
+  ContainerTemplateService,
+  ContainerTemplateServiceInterface
+} from "../../../services/container-template/container-template.service";
 import { ContainerTemplateNewComponent } from "./container-template-new/container-template-new.component";
 
 @Component({
@@ -20,5 +23,5 @@ import { ContainerTemplateNewComponent } from "./container-template-new/containe
   styleUrl: "./container-templates.component.scss"
 })
 export class ContainerTemplatesComponent {
-  containerTemplateService: ContainerTemplateService = inject(ContainerTemplateService);
+  containerTemplateService: ContainerTemplateServiceInterface = inject(ContainerTemplateService);
 }

@@ -3,7 +3,7 @@ import { ContainerTemplateAddTokenChipsComponent } from "./container-template-ad
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { HttpClientTestingModule } from "@angular/common/http/testing";
 
-describe("ContainerTemplateTokenTypeSelectorComponent", () => {
+describe("anyTypeSelectorComponent", () => {
   let component: ContainerTemplateAddTokenChipsComponent;
   let fixture: ComponentFixture<ContainerTemplateAddTokenChipsComponent>;
 
@@ -19,5 +19,12 @@ describe("ContainerTemplateTokenTypeSelectorComponent", () => {
 
   it("should create", () => {
     expect(component).toBeTruthy();
+  });
+
+  it("addToken should emit onAddToken with the correct token type", () => {
+    jest.spyOn(component.onAddToken, "emit");
+    const tokenType = "totp";
+    component.addToken(tokenType);
+    expect(component.onAddToken.emit).toHaveBeenCalledWith(tokenType);
   });
 });

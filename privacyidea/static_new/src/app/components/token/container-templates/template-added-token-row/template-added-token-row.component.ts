@@ -2,7 +2,6 @@ import { Component, computed, effect, EventEmitter, input, Output, signal } from
 import { CommonModule } from "@angular/common";
 import { MatIconModule } from "@angular/material/icon";
 import { MatButtonModule } from "@angular/material/button";
-import { ContainerTemplateToken } from "../../../../services/container/container.service";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { FormControl, FormsModule } from "@angular/forms";
 import { MatSlideToggleModule } from "@angular/material/slide-toggle";
@@ -65,14 +64,11 @@ export class TemplateAddedTokenRowComponent {
   updateAdditionalFormFields($event: { [key: string]: FormControl<any> }) {
     this.formControls.set($event);
     for (const controlKey of Object.keys($event)) {
-      console.log("Form Control Key:", controlKey);
       const control = $event[controlKey];
       const patch: { [key: string]: any } = {};
       if (control) {
         patch[controlKey] = control.value;
-        console.log("Form Control Value:", control.value);
         control.valueChanges.subscribe((newValue) => {
-          console.log(`Form Control '${controlKey}' Value Changed:`, newValue);
           this.updateToken({ [controlKey]: newValue });
         });
       }
@@ -99,12 +95,10 @@ export class TemplateAddedTokenRowComponent {
       // Replace the default form control values with the token's current values
       const controls = this.formControls();
       const token = this.token() as any;
-      console.log("Form Controls changed:", controls);
       for (const controlKey of Object.keys(controls)) {
         const control = controls[controlKey];
         if (control) {
           const tokenValue = token[controlKey];
-          console.log(`Syncing Form Control '${controlKey}' with Token Value:`, tokenValue);
           if (tokenValue !== undefined && tokenValue !== null && control.value !== tokenValue) {
             control.setValue(tokenValue, { emitEvent: false });
           }
@@ -113,11 +107,11 @@ export class TemplateAddedTokenRowComponent {
     });
   }
 
-  token = input.required<ContainerTemplateToken>();
+  token = input.required<any>();
   index = input.required<number>();
   isEditMode = input.required<boolean>();
   @Output() onEditToken = new EventEmitter<any>();
-  @Output() onDelete = new EventEmitter<number>();
+  @Output() onRemoveToken = new EventEmitter<number>();
 
   onClickEnroll = signal<
     | ((basicOptions: TokenEnrollmentData) => {
@@ -133,7 +127,8 @@ export class TemplateAddedTokenRowComponent {
   updateToken(patch: { [key: string]: any }) {
     this.onEditToken.emit({ ...patch });
   }
-  deleteToken() {
-    this.onDelete.emit(this.index());
+  removeToken() {
+    if (this.index() < 0) return;
+    this.onRemoveToken.emit(this.index());
   }
 }

@@ -117,22 +117,13 @@ export interface ContainerCreateData {
 }
 
 export interface ContainerTemplate {
-  container_type: string;
+  container_type: ContainerTypeOption | "";
   default: boolean;
   name: string;
   template_options: {
     options: any;
-    tokens: Array<ContainerTemplateToken>;
+    tokens: Array<any>;
   };
-}
-
-export interface ContainerTemplateToken {
-  genkey: boolean;
-  hashlib: string;
-  otplen: number;
-  timeStep: number;
-  type: string;
-  user: boolean;
 }
 
 export interface ContainerRegisterData {

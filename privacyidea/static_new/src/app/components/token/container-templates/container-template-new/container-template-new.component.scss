@@ -54,9 +54,6 @@
         width: 300px;
       }
 
-      // The mat-select is "naked" (not in a mat-form-field), so it's invisible by default.
-      // We apply a border to the bottom of the trigger to make it look like a standard
-      // material input field, similar to how it appears in other parts of the application like the policy editor.
       ::ng-deep .mat-mdc-select-trigger {
         border-bottom: 1px solid var(--mat-sys-outline-variant);
       }

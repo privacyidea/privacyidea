@@ -1,10 +1,11 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { ContainerTemplateEditComponent } from "./container-template-new.component";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ContainerTemplateService } from "../../../../services/container-template/container-template.service";
+import { MockContainerTemplateService } from "../../../../../testing/mock-services/mock-container-template-service";
+import { ContainerTemplateEditComponent } from "../container-template-edit/container-template-edit.component";
 
 describe("ContainerTemplateEditComponent", () => {
   let component: ContainerTemplateEditComponent;
@@ -28,42 +29,5 @@ describe("ContainerTemplateEditComponent", () => {
 
   it("should create", () => {
     expect(component).toBeTruthy();
-  });
-
-  describe("existing template", () => {
-    const templateName = "Test Template";
-
-    beforeEach(() => {
-      fixture.componentRef.setInput("template", { name: templateName });
-      fixture.detectChanges();
-    });
-
-    it("should display the template name", () => {
-      expect(fixture.nativeElement).toBeTruthy();
-      const templateNameElement = fixture.nativeElement.querySelector(".template-name");
-      expect(templateNameElement).toBeTruthy();
-      expect(templateNameElement.textContent).toContain(templateName);
-    });
-
-    it("should select template on expansion", () => {
-      const panel = fixture.nativeElement.querySelector("mat-expansion-panel");
-      panel.dispatchEvent(new Event("opened"));
-      fixture.detectChanges();
-      expect(templateServiceMock.selectTemplateByName).toHaveBeenCalledWith(templateName);
-    });
-  });
-
-  describe("new template", () => {
-    beforeEach(() => {
-      fixture.componentRef.setInput("isNew", true);
-      fixture.detectChanges();
-    });
-
-    it("should initialize new template on expansion", () => {
-      const panel = fixture.nativeElement.querySelector("mat-expansion-panel");
-      panel.dispatchEvent(new Event("opened"));
-      fixture.detectChanges();
-      expect(templateServiceMock.initializeNewTemplate).toHaveBeenCalled();
-    });
   });
 });

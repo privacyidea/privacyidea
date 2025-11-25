@@ -8,12 +8,16 @@ import { MatExpansionModule, MatExpansionPanel } from "@angular/material/expansi
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatSelectModule } from "@angular/material/select";
 import { MatOptionModule } from "@angular/material/core";
-import { ContainerTemplate, ContainerTemplateToken } from "../../../../services/container/container.service";
-import { ContainerTemplateService } from "../../../../services/container-template/container-template.service";
+import { ContainerTemplate } from "../../../../services/container/container.service";
+import {
+  ContainerTemplateService,
+  ContainerTemplateServiceInterface
+} from "../../../../services/container-template/container-template.service";
 import { TemplateAddedTokenRowComponent } from "../template-added-token-row/template-added-token-row.component";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { deepCopy } from "../../../../utils/deep-copy.utils";
 import { ContainerTemplateAddTokenChipsComponent } from "../container-template-add-token-chips/container-template-add-token-chips.component";
+import { ContainerTypeOption } from "../../container-create/container-create.component";
 
 @Component({
   selector: "app-container-template-edit",
@@ -38,8 +42,8 @@ import { ContainerTemplateAddTokenChipsComponent } from "../container-template-a
 export class ContainerTemplateEditComponent {
   // Angular Inputs and Services
   readonly templateOriginal = input.required<ContainerTemplate>();
-  protected readonly containerTemplateService: ContainerTemplateService = inject(ContainerTemplateService);
-  protected readonly templateEdited = linkedSignal({
+  readonly containerTemplateService: ContainerTemplateServiceInterface = inject(ContainerTemplateService);
+  readonly templateEdited = linkedSignal({
     source: () => ({
       templateOrigianl: this.templateOriginal(),
       isEditMode: this.isEditMode()
@@ -48,12 +52,10 @@ export class ContainerTemplateEditComponent {
       return deepCopy(source.templateOrigianl);
     }
   });
-  protected readonly isEditMode = signal<boolean>(false);
-  protected readonly currentTemplate = computed(() =>
-    this.isEditMode() ? this.templateEdited() : this.templateOriginal()
-  );
+  readonly isEditMode = signal<boolean>(false);
+  readonly currentTemplate = computed(() => (this.isEditMode() ? this.templateEdited() : this.templateOriginal()));
 
-  protected readonly isTemplateEdited = computed(() => {
+  readonly isTemplateEdited = computed(() => {
     if (!this.isEditMode()) return false;
     return JSON.stringify(this.templateOriginal()) !== JSON.stringify(this.templateEdited());
   });
@@ -66,9 +68,13 @@ export class ContainerTemplateEditComponent {
     this.isEditMode.set(false);
   }
 
+  canSaveTemplate(): boolean {
+    return this.containerTemplateService.canSaveTemplate(this.templateEdited());
+  }
+
   // Action Methods
   saveTemplate() {
-    if (!this.containerTemplateService.canSaveTemplate()) return;
+    if (!this.canSaveTemplate()) return;
     this.containerTemplateService.postTemplateEdits(this.templateEdited());
     this.isEditMode.set(false);
   }
@@ -98,7 +104,7 @@ export class ContainerTemplateEditComponent {
     this._editTemplate({ name: newName });
   }
 
-  onTypeChange(newType: string) {
+  onTypeChange(newType: ContainerTypeOption) {
     this._editTemplate({ container_type: newType });
   }
 
@@ -108,7 +114,7 @@ export class ContainerTemplateEditComponent {
 
   onAddToken(tokenType: string) {
     if (!this.isEditMode()) return;
-    const containerTemplateToken: ContainerTemplateToken = {
+    const containerTemplateToken: any = {
       type: tokenType,
       genkey: false,
       hashlib: "",
@@ -125,7 +131,7 @@ export class ContainerTemplateEditComponent {
     });
   }
 
-  onEditToken(patch: Partial<ContainerTemplateToken>, index: number) {
+  onEditToken(patch: Partial<any>, index: number) {
     if (!this.isEditMode()) return;
     const updatedTokens = this.templateEdited().template_options.tokens.map((token, i) =>
       i === index ? { ...token, ...patch } : token

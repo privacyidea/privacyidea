@@ -62,7 +62,7 @@
           @if (isEditMode()) {
             <button
               mat-icon-button
-              [disabled]="!containerTemplateService.canSaveTemplate()"
+              [disabled]="!canSaveTemplate()"
               (click)="$event.stopPropagation(); saveTemplate()">
               <mat-icon>save</mat-icon>
             </button>
@@ -103,7 +103,7 @@
             [index]="$index"
             [isEditMode]="isEditMode()"
             (onEditToken)="onEditToken($event, $index)"
-            (onDelete)="onDeleteToken($event)">
+            (onRemoveToken)="onDeleteToken($event)">
           </app-template-added-token-row>
         }
       </div>

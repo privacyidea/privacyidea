@@ -401,7 +401,7 @@ export class MockContainerService implements ContainerServiceInterface {
   stopPolling$: Subject<void> = new Subject<void>();
   eventPageSize: number = 10;
   states = signal<string[]>([]);
-  selectedContainerType = signal<ContainerType>({ containerType: "generic", description: "", token_types: [] });
+  selectedContainerType = signal<ContainerType | undefined>(undefined);
   containerDetail = signal<ContainerDetails>({ containers: [], count: 0 });
   addToken = jest.fn().mockReturnValue(of(null));
   removeToken = jest.fn().mockReturnValue(of(null));

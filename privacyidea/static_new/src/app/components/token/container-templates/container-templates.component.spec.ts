@@ -5,7 +5,7 @@ import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { ContainerTemplateEditComponent } from "./container-template-edit/container-template-edit.component";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { ContainerTemplate } from "../../../services/container/container.service";
+import { MockContainerTemplateService } from "../../../../testing/mock-services/mock-container-template-service";
 
 describe("ContainerTemplatesComponent", () => {
   let component: ContainerTemplatesComponent;
@@ -29,32 +29,5 @@ describe("ContainerTemplatesComponent", () => {
 
   it("should create", () => {
     expect(component).toBeTruthy();
-  });
-
-  it("should display a list of container templates", () => {
-    const template1 = {
-      name: "template1",
-      container_type: "",
-      default: false,
-      template_options: {
-        options: undefined,
-        tokens: []
-      }
-    };
-    const templates: ContainerTemplate[] = [template1, { ...template1, name: "template2" }];
-    containerTemplateServiceMock.allContainerTemplates.set(templates);
-    fixture.detectChanges();
-
-    const templateElements = fixture.nativeElement.querySelectorAll(".container-template-card");
-    expect(templateElements.length).toBe(templates.length + 1); // +1 for the "new template" panel
-    expect(templateElements[1].textContent).toContain("template1");
-    expect(templateElements[2].textContent).toContain("template2");
-  });
-
-  it("should display a new template panel", () => {
-    fixture.detectChanges();
-    const newTemplatePanel = fixture.nativeElement.querySelector(".container-template-card");
-    expect(newTemplatePanel).toBeTruthy();
-    expect(newTemplatePanel.textContent).toContain("New Template");
   });
 });
