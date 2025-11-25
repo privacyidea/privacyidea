@@ -299,7 +299,7 @@ class IdResolver(UserIdResolver):
         self.serverpool = None
         self.keytabfile = None
         self.recursive_group_search = False
-        self.group_base_dn = ""
+        self.group_base_dn = None
         self.group_name_attribute = ""
         self.group_search_filter = ""
         self.group_attribute_mapping_key = ""
