@@ -299,6 +299,7 @@ class IdResolver(UserIdResolver):
         self.serverpool = None
         self.keytabfile = None
         self.recursive_group_search = False
+        self.group_base_dn = ""
         self.group_name_attribute = ""
         self.group_search_filter = ""
         self.group_attribute_mapping_key = ""
@@ -636,7 +637,7 @@ class IdResolver(UserIdResolver):
         log.debug(f"Searching for groups with filter: {search_filter}")
 
         try:
-            search_result = self._search(search_base=self.basedn, search_filter=search_filter,
+            search_result = self._search(search_base=self.group_base_dn or self.basedn, search_filter=search_filter,
                                          attributes=[self.group_name_attribute])
         except Exception as error:
             search_result = []
@@ -929,6 +930,7 @@ class IdResolver(UserIdResolver):
 
         # settings for recursive search of groups
         self.recursive_group_search = is_true(config.get("recursive_group_search", False))
+        self.group_base_dn = config.get("group_base_dn")
         self.group_name_attribute = config.get("group_name_attribute")
         self.group_search_filter = config.get("group_search_filter")
         self.group_attribute_mapping_key = config.get("group_attribute_mapping_key")

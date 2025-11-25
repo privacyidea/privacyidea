@@ -272,10 +272,15 @@ Active Directory only returns the direct group memberships of a user. If you are
 in all group memberships, you can use this option. The resolver will then perform another search to retrieve all groups
 of the user, according to the defined search filter.
 
+**Base DN of User Groups**
+
+Define the groups container base DN. If your groups are located under the same base DN as defined in ``Base DN`` for
+the users you can leave this field empty.
+
 **Search Filter for User Groups**
 
 Define a search filter to get the groups of the user. The following tags can be used:
-    * ``{base_dn}``: The base DN of the LDAP resolver as defined in ``Base DN``
+    * ``{base_dn}``: The base DN of the users as defined in ``Base DN``
     * ``{username}``: The username of the user to search for
     * All keys defined in the attribute mapping surrounded by curly braces
 

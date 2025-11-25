@@ -1085,7 +1085,7 @@ myApp.controller("LdapResolverController", ["$scope", "ConfigFactory", "$state",
             $scope.params.EDITABLE = false;
             $scope.params.UIDTYPE = "objectGUID";
             $scope.params.recursive_group_search = false;
-            $scope.params.group_search_filter = "(&(sAMAccountName=*)(objectCategory=group)(member:1.2.840.113556.1.4.1941:=cn={distinguishedName},{base_dn}))";
+            $scope.params.group_search_filter = "(&(sAMAccountName=*)(objectCategory=group)(member:1.2.840.113556.1.4.1941:=cn={username},{base_dn}))";
             $scope.params.group_name_attribute = "distinguishedName";
             $scope.params.group_attribute_mapping_key = "groups";
         };
@@ -1101,6 +1101,7 @@ myApp.controller("LdapResolverController", ["$scope", "ConfigFactory", "$state",
 
         $scope.setLDAPResolver = function () {
             if (!$scope.params.recursive_group_search) {
+                $scope.params.group_base_dn = "";
                 $scope.params.group_name_attribute = "";
                 $scope.params.group_search_filter = "";
                 $scope.params.group_attribute_mapping_key = "";
