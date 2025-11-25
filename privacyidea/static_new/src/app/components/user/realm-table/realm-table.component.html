@@ -202,7 +202,7 @@
                         </button>
                       }
                     } @else {
-                      @if (authService.actionAllowed("resolverdelete")) {
+                      @if (authService.actionAllowed("resolverwrite")) {
                         <button
                           (click)="startEditRealm(element)"
                           aria-label="Edit realm"
@@ -211,6 +211,8 @@
                           type="button">
                           <mat-icon>edit</mat-icon>
                         </button>
+                      }
+                      @if (authService.actionAllowed("resolverdelete")) {
                         <button
                           (click)="onDeleteRealm(element)"
                           aria-label="Delete realm"
