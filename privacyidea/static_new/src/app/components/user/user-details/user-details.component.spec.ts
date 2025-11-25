@@ -31,7 +31,6 @@ import { TokenService } from "../../../services/token/token.service";
 import { UserService } from "../../../services/user/user.service";
 import { MatDialog } from "@angular/material/dialog";
 import {
-  MockAuthService,
   MockContentService,
   MockLocalService,
   MockNotificationService,
@@ -40,6 +39,7 @@ import {
   MockUserService
 } from "../../../../testing/mock-services";
 import { ActivatedRoute } from "@angular/router";
+import { MockAuthService } from "../../../../testing/mock-services/mock-auth-service";
 
 class MockMatDialog {
   open = jest.fn().mockReturnValue({
@@ -120,51 +120,59 @@ describe("UserDetailsComponent", () => {
     } as any);
     fixture.detectChanges();
 
-    expect(component.tokenDataSource().data.map(t => t.serial)).toEqual(["T-1", "T-2"]);
+    expect(component.tokenDataSource().data.map((t) => t.serial)).toEqual(["T-1", "T-2"]);
     expect(component.total()).toBe(2);
 
     tokenServiceMock.tokenResource.value.set(undefined as any);
     fixture.detectChanges();
 
-    expect(component.tokenDataSource().data.map(t => t.serial)).toEqual(["T-1", "T-2"]);
+    expect(component.tokenDataSource().data.map((t) => t.serial)).toEqual(["T-1", "T-2"]);
     expect(component.total()).toBe(2);
   });
 
   it("switches key mode between input/select as expected", () => {
-    expect(component["keyMode"]()).toBe("select");
+    expect(component.keyMode()).toBe("select");
 
     component.switchToCustomKey();
-    expect(component["keyMode"]()).toBe("input");
-    expect(component["selectedKey"]()).toBeNull();
+    expect(component.keyMode()).toBe("input");
+    expect(component.selectedKey()).toBeNull();
 
     component.switchToSelectKey();
-    expect(component["keyMode"]()).toBe("select");
-    expect(component["addKeyInput"]()).toBe("");
+    expect(component.keyMode()).toBe("select");
+    expect(component.addKeyInput()).toBe("");
   });
 
   it("valueOptions / isValueInput / canAddAttribute computed helpers", () => {
-    component["selectedKey"].set("department");
-    expect(component["valueOptions"]()).toEqual(["sales", "finance"]);
-    expect(component["isValueInput"]()).toBe(false);
+    userServiceMock.attributeSetMap.set({
+      department: ["sales", "finance"],
+      customKey: ["2", "1"]
+    });
+    component.selectedKey.set("department");
+    expect(component.valueOptions()).toEqual(["sales", "finance"]);
+    expect(component.isValueInput()).toBe(false);
 
-    component["selectedValue"].set("sales");
-    expect(component["canAddAttribute"]()).toBe(true);
+    component.selectedValue.set("sales");
+    expect(component.canAddAttribute()).toBe(true);
 
     component.switchToCustomKey();
-    component["addKeyInput"].set("customKey");
-    expect(component["valueOptions"]()).toEqual(["2", "1"]);
-    expect(component["isValueInput"]()).toBe(false);
+    component.addKeyInput.set("customKey");
+    expect(component.valueOptions()).toEqual(["2", "1"]);
+    expect(component.isValueInput()).toBe(false);
 
-    component["selectedValue"].set("");
-    expect(component["canAddAttribute"]()).toBe(false);
-    component["selectedValue"].set("foo");
-    expect(component["canAddAttribute"]()).toBe(true);
+    component.selectedValue.set("");
+    expect(component.canAddAttribute()).toBe(false);
+    component.selectedValue.set("foo");
+    expect(component.canAddAttribute()).toBe(true);
   });
 
   it("addCustomAttribute calls setUserAttribute and reloads userAttributesResource, then clears inputs", () => {
-    component["keyMode"].set("select");
-    component["selectedKey"].set("department");
-    component["selectedValue"].set("sales");
+    userServiceMock.attributeSetMap.set({
+      department: ["sales", "finance"],
+      customKey: ["2", "1"]
+    });
+    component.keyMode.set("select");
+    component.selectedKey.set("department");
+    component.selectedValue.set("sales");
 
     const setSpy = jest.spyOn(userServiceMock, "setUserAttribute");
     const reloadSpy = jest.spyOn(userServiceMock.userAttributesResource, "reload");
@@ -173,10 +181,10 @@ describe("UserDetailsComponent", () => {
     expect(setSpy).toHaveBeenCalledWith("department", "sales");
     expect(reloadSpy).toHaveBeenCalledTimes(1);
 
-    expect(component["addKeyInput"]()).toBe("");
-    expect(component["addValueInput"]()).toBe("");
-    expect(component["selectedKey"]()).toBeNull();
-    expect(component["selectedValue"]()).toBeNull();
+    expect(component.addKeyInput()).toBe("");
+    expect(component.addValueInput()).toBe("");
+    expect(component.selectedKey()).toBeNull();
+    expect(component.selectedValue()).toBeNull();
   });
 
   it("deleteCustomAttribute calls deleteUserAttribute and reloads", () => {

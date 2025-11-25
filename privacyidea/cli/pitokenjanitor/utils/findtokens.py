@@ -46,7 +46,7 @@ from dateutil.tz import tzlocal
 from flask.cli import AppGroup
 from yaml import safe_dump as yaml_safe_dump
 
-from privacyidea.lib.container import find_container_for_token
+from privacyidea.lib.container import find_container_for_token, add_multiple_tokens_to_container
 from privacyidea.lib.error import ResolverError
 from privacyidea.lib.importotp import export_pskc
 from privacyidea.lib.token import unassign_token, remove_token, get_tokens_paginated_generator, export_tokens
@@ -330,11 +330,11 @@ def export_user_data(token_list: list, user_attributes: list = None) -> dict:
     return users
 
 
-def _get_tokenlist(assigned: Union[bool, None], active: Union[bool, None], range_of_serial: str,
-                   tokeninfo_filter, tokenattribute_filter: list[tuple[str, Callable]],
-                   tokenowner_filter, tokencontaner_filter, tokentype, realm, resolver, rollout_state,
-                   orphaned: Union[bool, None], chunksize: int, has_not_tokeninfo_key, has_tokeninfo_key,
-                   orphaned_on_error: bool = False) -> Generator[TokenClass, None, None]:
+def _get_token_list(assigned: Union[bool, None], active: Union[bool, None], range_of_serial: str,
+                    tokeninfo_filter, tokenattribute_filter: list[tuple[str, Callable]],
+                    tokenowner_filter, tokencontainer_filter, tokentype, realm, resolver, rollout_state,
+                    orphaned: Union[bool, None], chunksize: int, has_not_tokeninfo_key, has_tokeninfo_key,
+                    orphaned_on_error: bool = False) -> Generator[TokenClass, None, None]:
     if assigned is not None:
         assigned = is_true(assigned)
     if active is not None:
@@ -396,21 +396,14 @@ def _get_tokenlist(assigned: Union[bool, None], active: Union[bool, None], range
                 except ResolverError:
                     # Unable to resolve user, no filter applicable
                     add = False
-            if tokencontaner_filter:
-                for tokenowner_key in tokencontaner_filter:
+            if tokencontainer_filter:
+                for tokencontainer_key, tokencontainer_comparator in tokencontainer_filter:
                     container = find_container_for_token(token_obj.token.serial)
                     if container is not None:
-                        container_info = vars(container)
-                        container_info["serial"] = container.serial
-                        container_info["type"] = container.type
-                        container_info["description"] = container.description
-                        container_info["realm"] = container.realms
-                        container_info["last_seen"] = container.last_seen
-                        container_info["last_update"] = container.last_updated
-                        value = container_info.get(tokenowner_key[0])
-                        if value is None:
-                            add = False
-                        elif not all(comparator(value) for comparator in tokenowner_key[1]):
+                        if value := getattr(container, tokencontainer_key, None):
+                            if not tokencontainer_comparator(value):
+                                add = False
+                        else:
                             add = False
                     else:
                         add = False
@@ -499,14 +492,14 @@ def findtokens(ctx, chunksize, has_not_tokeninfo_key, has_tokeninfo_key,
 
     ctx.obj = dict()
 
-    ctx.obj['tokens'] = _get_tokenlist(assigned=assigned, active=active, range_of_serial=range_of_serial,
-                                       tokeninfo_filter=ti_filter, tokenattribute_filter=ta_filter,
-                                       tokenowner_filter=to_filter, tokencontaner_filter=tc_filter,
-                                       tokentype=None, realm=None, resolver=None,
-                                       rollout_state=None, orphaned=orphaned,
-                                       chunksize=chunksize, has_not_tokeninfo_key=has_not_tokeninfo_key,
-                                       has_tokeninfo_key=has_tokeninfo_key,
-                                       orphaned_on_error=orphaned_on_error)
+    ctx.obj['tokens'] = _get_token_list(assigned=assigned, active=active, range_of_serial=range_of_serial,
+                                        tokeninfo_filter=ti_filter, tokenattribute_filter=ta_filter,
+                                        tokenowner_filter=to_filter, tokencontainer_filter=tc_filter,
+                                        tokentype=None, realm=None, resolver=None,
+                                        rollout_state=None, orphaned=orphaned,
+                                        chunksize=chunksize, has_not_tokeninfo_key=has_not_tokeninfo_key,
+                                        has_tokeninfo_key=has_tokeninfo_key,
+                                        orphaned_on_error=orphaned_on_error)
 
     if ctx.invoked_subcommand is None:
         ctx.invoke(list_cmd)
@@ -745,3 +738,60 @@ def remove_tokeninfo(ctx, tokeninfo_key):
             token_obj.del_tokeninfo(tokeninfo_key)
             token_obj.save()
             click.echo(f"Removed tokeninfo '{tokeninfo_key}' for token {token_obj.token.serial}")
+
+
+@findtokens.command('list_containers')
+@click.option('--key', '-k', type=str, multiple=True, help='The key of the information to display.')
+@click.pass_context
+def list_containers(ctx, key):
+    """
+    List containers of the found tokens.
+    """
+    for tlist in ctx.obj['tokens']:
+        for token_obj in tlist:
+            container = find_container_for_token(token_obj.token.serial)
+            output = []
+            if container:
+                output.append(f"Token_Serial: {token_obj.token.serial}")
+                output.append(f"Container_Serial: {container.serial}")
+                container_dict = container.get_as_dict()
+                if not key:
+                    key = ['type', 'tokens', 'users', 'realms', 'description']
+                for k in key:
+                    output.append(f"{k}: {container_dict.get(k, 'N/A')}")
+            else:
+                output.append(f"Token {token_obj.token.serial} is in no container.")
+            click.echo(", ".join(output))
+
+
+@findtokens.command('add_to_container')
+@click.argument('container_serial', type=str)
+@click.pass_context
+def add_to_container(ctx, container_serial):
+    """
+    Add the found tokens to the given container.
+    """
+    token_serials = []
+    for tlist in ctx.obj['tokens']:
+        for token_obj in tlist:
+            token_serials.append(token_obj.token.serial)
+    ret = add_multiple_tokens_to_container(container_serial, token_serials)
+    for serial, result in ret.items():
+        if not result:
+            click.echo(f"Failed to add token {serial} to container {container_serial}")
+
+
+@findtokens.command('remove_from_container')
+@click.pass_context
+def remove_from_container(ctx):
+    """
+    Remove the found tokens from their containers.
+    """
+    for tlist in ctx.obj['tokens']:
+        for token_obj in tlist:
+            container = find_container_for_token(token_obj.token.serial)
+            if container:
+                container.remove_token(token_obj.token.serial)
+                click.echo(f"Removed token {token_obj.token.serial} from container {container.serial}")
+            else:
+                click.echo(f"Token {token_obj.token.serial} is in no container.")

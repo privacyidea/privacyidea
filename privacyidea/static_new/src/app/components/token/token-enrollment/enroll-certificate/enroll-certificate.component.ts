@@ -20,10 +20,9 @@ import { Component, computed, EventEmitter, inject, linkedSignal, OnInit, Output
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatButtonToggle, MatButtonToggleGroup } from "@angular/material/button-toggle";
 import { ErrorStateMatcher, MatOption } from "@angular/material/core";
-import { MatFormField, MatLabel } from "@angular/material/form-field";
+import { MatFormField, MatLabel, MatSuffix } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { MatError, MatSelect } from "@angular/material/select";
-import { CaConnectors } from "../../../../services/ca-connector/ca-connector.service";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 
 import { Observable, of } from "rxjs";
@@ -33,6 +32,8 @@ import {
 } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
 import { CertificateApiPayloadMapper } from "../../../../mappers/token-api-payload/certificate-token-api-payload.mapper";
 import { SystemService, SystemServiceInterface } from "../../../../services/system/system.service";
+import { ClearButtonComponent } from "../../../shared/clear-button/clear-button.component";
+import { toSignal } from "@angular/core/rxjs-interop";
 
 export interface CertificateEnrollmentOptions extends TokenEnrollmentData {
   type: "certificate";
@@ -61,7 +62,9 @@ export class CaConnectorErrorStateMatcher implements ErrorStateMatcher {
     FormsModule,
     MatOption,
     MatSelect,
-    MatError
+    MatError,
+    ClearButtonComponent,
+    MatSuffix
   ],
   templateUrl: "./enroll-certificate.component.html",
   styleUrl: "./enroll-certificate.component.scss"
@@ -96,11 +99,12 @@ export class EnrollCertificateComponent implements OnInit {
     () => this.systemService.caConnectorResource?.value()?.result?.value.map((config: any) => config.connectorname) || []
   );
 
+  caConnectorValueSignal = toSignal(this.caConnectorControl.valueChanges, { initialValue: this.caConnectorControl.value });
+
   certTemplateOptions = linkedSignal({
-    source: () => this.systemService.caConnectors?.() ?? [],
-    computation: (caConnectors: CaConnectors) => {
-      const selectedConnectorName = this.caConnectorControl.value;
-      const selectedConnector = Object.values(caConnectors).find((c) => c.connectorname === selectedConnectorName);
+    source: () => [this.systemService.caConnectors?.(), this.caConnectorValueSignal()],
+    computation: ([caConnectors, selectedConnectorName]) => {
+      const selectedConnector = Object.values(caConnectors ?? {}).find((c) => c.connectorname === selectedConnectorName);
       return selectedConnector && selectedConnector.templates ? Object.keys(selectedConnector.templates) : [];
     }
   });
@@ -133,10 +137,13 @@ export class EnrollCertificateComponent implements OnInit {
   }
 
   onClickEnroll = (basicOptions: TokenEnrollmentData): Observable<EnrollmentResponse | null> => {
-    if (this.certificateForm.invalid) {
-      this.certificateForm.markAllAsTouched();
-      return of(null);
+    for (const [name, control] of Object.entries(this.certificateForm.controls)) {
+      if (control.invalid) {
+        control.markAsTouched();
+        return of(null);
+      }
     }
+
     const enrollmentData: CertificateEnrollmentOptions = {
       ...basicOptions,
       type: "certificate",
@@ -151,4 +158,8 @@ export class EnrollCertificateComponent implements OnInit {
       mapper: this.enrollmentMapper
     });
   };
+
+  clearTemplateSelection(): void {
+    this.certTemplateControl.setValue("");
+  }
 }

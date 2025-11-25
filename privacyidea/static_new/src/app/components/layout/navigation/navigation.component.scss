@@ -87,6 +87,17 @@
   display: none;
 }
 
+.policy-header {
+  cursor: pointer !important;
+  --mat-expansion-header-text-color: var(--mat-sys-on-surface);
+  --mat-expansion-header-text-color-hover: var(--mat-sys-on-surface);
+  --mat-expansion-header-text-color-focus: var(--mat-sys-on-surface);
+}
+
+.policy-header .mat-expansion-panel-header {
+  color: var(--mat-expansion-header-text-color, var(--mat-sys-on-surface));
+}
+
 .sticky-actions {
   position: sticky;
   bottom: 0;

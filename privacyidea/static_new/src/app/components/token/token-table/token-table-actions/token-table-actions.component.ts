@@ -35,15 +35,16 @@ import {
   NotificationService,
   NotificationServiceInterface
 } from "../../../../services/notification/notification.service";
+
+import {
+  DocumentationService,
+  DocumentationServiceInterface
+} from "../../../../services/documentation/documentation.service";
 import { Router, RouterLink } from "@angular/router";
 
 @Component({
   selector: "app-token-table-actions",
-  imports: [
-    MatButtonModule,
-    MatIcon,
-    RouterLink
-  ],
+  imports: [MatButtonModule, MatIcon, RouterLink],
   templateUrl: "./token-table-actions.component.html",
   styleUrl: "./token-table-actions.component.scss"
 })
@@ -51,6 +52,7 @@ export class TokenTableActionsComponent {
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly versioningService: VersioningServiceInterface = inject(VersioningService);
+  protected readonly documentationService: DocumentationServiceInterface = inject(DocumentationService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly dialog: MatDialog = inject(MatDialog);
   protected readonly auditService: AuditServiceInterface = inject(AuditService);
@@ -126,7 +128,7 @@ export class TokenTableActionsComponent {
 
   deleteSelectedTokens(): void {
     const serialList = this.tokenSelection().map((token) => token.serial);
-    this.tokenService.bulkDeleteWithConfirmDialog(serialList, this.dialog, this.tokenService.tokenResource.reload);
+    this.tokenService.bulkDeleteWithConfirmDialog(serialList, this.dialog, () => this.tokenService.tokenResource.reload());
   }
 
   assignSelectedTokens() {

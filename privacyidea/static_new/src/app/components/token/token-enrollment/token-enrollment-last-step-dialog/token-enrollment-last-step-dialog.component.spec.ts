@@ -30,12 +30,14 @@ import { ContentService, ContentServiceInterface } from "../../../../services/co
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 import { UserData } from "../../../../services/user/user.service";
 import { TokenEnrollmentLastStepDialogWizardComponent } from "./token-enrollment-last-step-dialog.wizard.component";
-import { HttpClient } from "@angular/common/http";
+import { HttpClient, provideHttpClient } from "@angular/common/http";
 import { AuthService } from "../../../../services/auth/auth.service";
-import { MockAuthService, MockLocalService, MockNotificationService } from "../../../../../testing/mock-services";
+import { MockLocalService, MockNotificationService } from "../../../../../testing/mock-services";
 import { LocalService } from "../../../../services/local/local.service";
 import { NotificationService } from "../../../../services/notification/notification.service";
 import { ActivatedRoute, Router } from "@angular/router";
+import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { MockAuthService } from "../../../../../testing/mock-services/mock-auth-service";
 
 const buildBaseData = (): TokenEnrollmentLastStepDialogData => ({
   tokentype: { key: "hotp", name: "HOTP", text: "HOTP Token", info: "" },
@@ -74,6 +76,7 @@ describe("TokenEnrollmentLastStepDialogComponent", () => {
   beforeEach(async () => {
     mockDialogData = buildBaseData();
     afterClosedSubject = new Subject<void>();
+
     const dialogRefMock = {
       close: jest.fn(),
       afterClosed: jest.fn().mockReturnValue(afterClosedSubject.asObservable())
@@ -149,12 +152,12 @@ describe("TokenEnrollmentLastStepDialogComponent", () => {
       expect(otpElements[1].textContent).toContain("654321");
     });
 
-    it("should have regenerate button text \"QR Code\" for hotp", async () => {
+    it('should have regenerate button text "QR Code" for hotp', async () => {
       await detectChangesStable(fixture);
       expect(component.regenerateButtonText()).toBe("QR Code");
     });
 
-    it("should have regenerate button text \"Values\" for paper", async () => {
+    it('should have regenerate button text "Values" for paper', async () => {
       component.data.tokentype = { key: "paper", text: "Paper Token", info: "" } as any;
       await detectChangesStable(fixture);
       expect(component.regenerateButtonText()).toBe("Values");
@@ -240,6 +243,10 @@ describe("TokenEnrollmentLastStepDialogWizardComponent", () => {
 
   beforeEach(async () => {
     mockDialogData = buildBaseData();
+    httpClientMock = {
+      get: jest.fn().mockReturnValue(of(""))
+    };
+
     const dialogRefMock = {
       close: jest.fn(),
       afterClosed: jest.fn().mockReturnValue(new Subject<void>().asObservable())
@@ -255,25 +262,23 @@ describe("TokenEnrollmentLastStepDialogWizardComponent", () => {
       navigate: jest.fn().mockResolvedValue(true)
     };
 
-    httpClientMock = {
-      get: jest.fn().mockReturnValue(of(""))
-    };
-
     TestBed.resetTestingModule();
     await TestBed.configureTestingModule({
       imports: [TokenEnrollmentLastStepDialogWizardComponent, NoopAnimationsModule],
       providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
         provideExperimentalZonelessChangeDetection(),
         { provide: MatDialogRef, useValue: dialogRefMock },
         { provide: MAT_DIALOG_DATA, useValue: mockDialogData },
         { provide: TokenService, useValue: tokenServiceMock },
         { provide: ContentService, useValue: contentServiceMock },
-        { provide: HttpClient, useValue: httpClientMock },
         { provide: AuthService, useClass: MockAuthService },
         { provide: LocalService, useClass: MockLocalService },
         { provide: NotificationService, useClass: MockNotificationService },
         { provide: Router, useValue: routerMock },
         { provide: ActivatedRoute, useValue: { params: of({ id: "123" }) } },
+        { provide: HttpClient, useValue: httpClientMock },
         MockLocalService,
         MockNotificationService
       ]
@@ -294,7 +299,7 @@ describe("TokenEnrollmentLastStepDialogWizardComponent", () => {
 
   it("shows Create Container button when containerWizard.enabled is true", async () => {
     authService.authData.set({
-      ...authService.authData(),
+      ...authService.authData()!,
       container_wizard: { enabled: true, type: "generic", registration: false, template: null },
       token_wizard: true
     });
@@ -308,7 +313,7 @@ describe("TokenEnrollmentLastStepDialogWizardComponent", () => {
 
   it("shows Logout button when containerWizard.enabled is false", async () => {
     authService.authData.set({
-      ...authService.authData(),
+      ...authService.authData()!,
       container_wizard: { enabled: false, type: "generic", registration: false, template: null },
       token_wizard: true
     });
@@ -322,7 +327,7 @@ describe("TokenEnrollmentLastStepDialogWizardComponent", () => {
 
   it("shows Logout button as long as tokenWizard is true, even if tokenWizard2nd id also true", async () => {
     authService.authData.set({
-      ...authService.authData(),
+      ...authService.authData()!,
       container_wizard: { enabled: false, type: "generic", registration: false, template: null },
       token_wizard: true,
       token_wizard_2nd: true
@@ -337,7 +342,7 @@ describe("TokenEnrollmentLastStepDialogWizardComponent", () => {
 
   it("shows Close button when tokenWizard is false, but tokenWizard2nd is true", async () => {
     authService.authData.set({
-      ...authService.authData(),
+      ...authService.authData()!,
       container_wizard: { enabled: false, type: "generic", registration: false, template: null },
       token_wizard: false,
       token_wizard_2nd: true
@@ -351,7 +356,7 @@ describe("TokenEnrollmentLastStepDialogWizardComponent", () => {
 
   it("show loaded templates if not empty", async () => {
     authService.authData.set({
-      ...authService.authData(),
+      ...authService.authData()!,
       token_wizard: true
     });
     httpClientMock.get.mockReturnValueOnce(of("Mock TOP HTML")).mockReturnValueOnce(of("Mock BOTTOM HTML"));
@@ -364,7 +369,7 @@ describe("TokenEnrollmentLastStepDialogWizardComponent", () => {
 
   it("show default content if customization templates are empty", async () => {
     authService.authData.set({
-      ...authService.authData(),
+      ...authService.authData()!,
       token_wizard: true
     });
     httpClientMock.get.mockReturnValue(of(""));

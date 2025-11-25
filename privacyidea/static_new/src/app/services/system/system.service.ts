@@ -18,10 +18,18 @@
  **/
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { httpResource, HttpResourceRef } from "@angular/common/http";
-import { inject, Injectable, linkedSignal, WritableSignal } from "@angular/core";
+import { computed, inject, Injectable, linkedSignal, Signal, WritableSignal } from "@angular/core";
 
 import { environment } from "../../../environments/environment";
+import { PiResponse } from "../../app.component";
 import { CaConnectors } from "../ca-connector/ca-connector.service";
+import { ContentService, ContentServiceInterface } from "../content/content.service";
+import { ROUTE_PATHS } from "../../route_paths";
+
+export type PiNode = {
+  name: string;
+  uuid: string;
+};
 
 export interface NodeInfo {
   name: string;
@@ -35,33 +43,69 @@ export interface SystemServiceInterface {
   caConnectors?: WritableSignal<CaConnectors>;
   nodesResource: HttpResourceRef<any>;
   nodes: WritableSignal<NodeInfo[]>;
+  systemConfig: Signal<any>;
+  nodes: Signal<PiNode[]>;
 }
 
 @Injectable({
   providedIn: "root"
 })
 export class SystemService implements SystemServiceInterface {
+  private readonly systemBaseUrl = environment.proxyUrl + "/system/";
+
   private readonly authService: AuthServiceInterface = inject(AuthService);
-  systemConfigResource = httpResource<any>(() => ({
-    url: environment.proxyUrl + "/system/",
-    method: "GET",
-    headers: this.authService.getHeaders()
-  }));
+  private readonly contentService: ContentServiceInterface = inject(ContentService);
+  systemConfigResource = httpResource<any>(() => {
+    if ([ROUTE_PATHS.TOKENS_ENROLLMENT, ROUTE_PATHS.TOKENS_WIZARD].includes(this.contentService.routeUrl())) {
+      return {
+        url: this.systemBaseUrl,
+        method: "GET",
+        headers: this.authService.getHeaders()
+      };
+    }
+    return undefined;
+  });
 
-  radiusServerResource = httpResource<any>(() => ({
-    url: environment.proxyUrl + "/system/names/radius",
-    method: "GET",
-    headers: this.authService.getHeaders()
-  }));
+  radiusServerResource = httpResource<any>(() => {
+    if (this.authService.actionAllowed("enrollRADIUS") &&
+      [ROUTE_PATHS.TOKENS_ENROLLMENT, ROUTE_PATHS.TOKENS_WIZARD].includes(this.contentService.routeUrl())) {
+      return {
+        url: this.systemBaseUrl + "/names/radius",
+        method: "GET",
+        headers: this.authService.getHeaders()
+      };
+    }
+    return undefined;
+  });
 
-  caConnectorResource = httpResource<any>(() => ({
-    url: environment.proxyUrl + "/system/names/caconnector",
+  nodesResource = httpResource<PiResponse<PiNode[]>>({
+    url: this.systemBaseUrl + "nodes",
     method: "GET",
     headers: this.authService.getHeaders()
-  }));
+  });
+
+  systemConfig = computed<any>(() => {
+    return this.systemConfigResource.value()?.result?.value ?? {};
+  });
+
+  nodes = computed<PiNode[]>(() => {
+    return this.nodesResource.value()?.result?.value ?? [];
+  });
+
+  caConnectorResource = httpResource<any>(() => {
+    if (this.authService.actionAllowed("enrollCERTIFICATE") &&
+      [ROUTE_PATHS.TOKENS_ENROLLMENT, ROUTE_PATHS.TOKENS_WIZARD].includes(this.contentService.routeUrl())) {
+      return {
+        url: environment.proxyUrl + "/system/names/caconnector",
+        method: "GET",
+        headers: this.authService.getHeaders()
+      };
+    }
+    return undefined;
+  });
 
   caConnectors: WritableSignal<CaConnectors> = linkedSignal({
-    source: this.caConnectorResource.value,
+    source: this.caConnectorResource?.value,
     computation: (source, previous) => source?.result?.value ?? previous?.value ?? []
   });
 

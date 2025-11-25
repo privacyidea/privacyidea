@@ -19,8 +19,10 @@
 export const ROUTE_PATHS = {
   LOGIN: "/login",
   AUDIT: "/audit",
+  CLIENTS: "/audit/clients",
   TOKENS: "/tokens",
   USERS: "/users",
+  POLICIES: "/policies",
   TOKENS_DETAILS: "/tokens/details/",
   TOKENS_ENROLLMENT: "/tokens/enrollment",
   TOKENS_CHALLENGES: "/tokens/challenges",

@@ -42,6 +42,11 @@
           <mat-option [value]="option">{{ option }}</mat-option>
         }
       </mat-select>
+      @if (certTemplateControl.value) {
+        <app-clear-button
+          matSuffix
+          (onClick)="clearTemplateSelection()"></app-clear-button>
+      }
     </mat-form-field>
 
     <span class="width-33"></span>

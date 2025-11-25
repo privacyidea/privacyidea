@@ -11,7 +11,6 @@ const detectChangesStable = async (fixture: ComponentFixture<any>) => {
   fixture.detectChanges();
 };
 
-
 describe("ContainerRegistrationFinalizeDialogComponent", () => {
   let component: ContainerRegistrationFinalizeDialogComponent;
   let fixture: ComponentFixture<ContainerRegistrationFinalizeDialogComponent>;
@@ -36,10 +35,7 @@ describe("ContainerRegistrationFinalizeDialogComponent", () => {
     await TestBed.resetTestingModule();
     await TestBed.configureTestingModule({
       imports: [ContainerRegistrationFinalizeDialogComponent],
-      providers: [
-        provideHttpClient(),
-        { provide: MAT_DIALOG_DATA, useValue: mockData }
-      ],
+      providers: [provideHttpClient(), { provide: MAT_DIALOG_DATA, useValue: mockData }],
       schemas: [NO_ERRORS_SCHEMA]
     }).compileComponents();
 
@@ -63,17 +59,16 @@ describe("ContainerRegistrationFinalizeDialogComponent", () => {
     await TestBed.resetTestingModule();
     await TestBed.configureTestingModule({
       imports: [ContainerRegistrationFinalizeDialogComponent],
-      providers: [
-        provideHttpClient(),
-        { provide: MAT_DIALOG_DATA, useValue: rolloverData }
-      ],
+      providers: [provideHttpClient(), { provide: MAT_DIALOG_DATA, useValue: rolloverData }],
       schemas: [NO_ERRORS_SCHEMA]
     }).compileComponents();
     fixture = TestBed.createComponent(ContainerRegistrationFinalizeDialogComponent);
     component = fixture.componentInstance;
     await detectChangesStable(fixture);
     const titles = fixture.nativeElement.querySelectorAll("h2");
-    const titleText = Array.from(titles).map((el: any) => el.textContent.trim()).join(" ");
+    const titleText = Array.from(titles)
+      .map((el: any) => el.textContent.trim())
+      .join(" ");
     expect(titleText).toContain("Container Rollover");
   });
 

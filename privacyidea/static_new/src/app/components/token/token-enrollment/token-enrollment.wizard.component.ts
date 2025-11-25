@@ -18,7 +18,7 @@
  **/
 import { AsyncPipe, NgClass } from "@angular/common";
 import { HttpClient } from "@angular/common/http";
-import { Component, computed, inject } from "@angular/core";
+import { Component, computed, inject, SecurityContext } from "@angular/core";
 import { FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { MatButton, MatIconButton } from "@angular/material/button";
 import { MatNativeDateModule } from "@angular/material/core";
@@ -26,7 +26,7 @@ import { MatDatepickerModule } from "@angular/material/datepicker";
 import { MatIcon } from "@angular/material/icon";
 import { MatTooltip } from "@angular/material/tooltip";
 import { DomSanitizer } from "@angular/platform-browser";
-import { catchError, map, of } from "rxjs";
+import { map } from "rxjs";
 import { EnrollmentResponse } from "../../../mappers/token-api-payload/_token-api-payload.mapper";
 import { ContainerService, ContainerServiceInterface } from "../../../services/container/container.service";
 import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
@@ -159,21 +159,24 @@ export class TokenEnrollmentWizardComponent extends TokenEnrollmentComponent {
     });
   }
 
+  // TODO: Get custom path from pi.cfg
+  customizationPath = "/static/public/customize/";
+
   readonly preTopHtml$ = this.http
-    .get(environment.proxyUrl + "/static/public/customize/token-enrollment.wizard.pre.top.html", {
+    .get(environment.proxyUrl + this.customizationPath + "token-enrollment.wizard.pre.top.html", {
       responseType: "text"
     })
     .pipe(
       map((raw) => ({
         hasContent: !!raw && raw.trim().length > 0,
-        sanitized: this.sanitizer.bypassSecurityTrustHtml(raw)
+        sanitized: this.sanitizer.sanitize(SecurityContext.HTML, raw)
       }))
     );
   readonly preBottomHtml$ = this.http
-    .get(environment.proxyUrl + "/static/public/customize/token-enrollment.wizard.pre.bottom.html", {
+    .get(environment.proxyUrl + this.customizationPath + "token-enrollment.wizard.pre.bottom.html", {
       responseType: "text"
     })
-    .pipe(map((raw) => this.sanitizer.bypassSecurityTrustHtml(raw)));
+    .pipe(map((raw) => this.sanitizer.sanitize(SecurityContext.HTML, raw)));
 
   constructor() {
     super();

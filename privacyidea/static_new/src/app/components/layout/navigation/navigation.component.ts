@@ -47,6 +47,10 @@ import {
 } from "../../../services/session-timer/session-timer.service";
 import { VersioningService, VersioningServiceInterface } from "../../../services/version/version.service";
 import { MatTooltipModule } from "@angular/material/tooltip";
+import {
+  DocumentationService,
+  DocumentationServiceInterface
+} from "../../../services/documentation/documentation.service";
 import { FormsModule } from "@angular/forms";
 import { RealmService, RealmServiceInterface } from "../../../services/realm/realm.service";
 
@@ -88,6 +92,7 @@ export class NavigationComponent {
   protected readonly userService: UserServiceInterface = inject(UserService);
   protected readonly realmService: RealmServiceInterface = inject(RealmService);
   protected readonly versioningService: VersioningServiceInterface = inject(VersioningService);
+  protected readonly documentationService: DocumentationServiceInterface = inject(DocumentationService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly auditService: AuditServiceInterface = inject(AuditService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
@@ -145,5 +150,13 @@ export class NavigationComponent {
       case ROUTE_PATHS.USERS_REALMS:
         this.realmService.realmResource.reload();
     }
+  }
+
+  onPoliciesHeaderClick(event: MouseEvent): void {
+    event.preventDefault();
+    (event as any).stopImmediatePropagation?.();
+    event.stopPropagation();
+
+    this.router.navigate([ROUTE_PATHS.POLICIES]);
   }
 }

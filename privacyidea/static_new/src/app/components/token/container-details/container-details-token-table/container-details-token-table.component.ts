@@ -101,12 +101,7 @@ export class ContainerDetailsTokenTableComponent {
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
 
-  readonly columnsKeyMap = this.tableUtilsService.pickColumns(
-    "serial",
-    "tokentype",
-    "active",
-    "username"
-  );
+  readonly columnsKeyMap = this.tableUtilsService.pickColumns("serial", "tokentype", "active", "username");
   readonly columnKeys = [...this.tableUtilsService.getColumnKeys(this.columnsKeyMap)];
   displayedColumns: string[] = [...this.columnsKeyMap.map((column) => column.key)];
   pageSize = 10;
@@ -222,6 +217,15 @@ export class ContainerDetailsTokenTableComponent {
         this.containerService.containerDetailResource.reload();
       }
     });
+  }
+
+  deleteAllTokens() {
+    const serialList = this.containerTokenData().data.map((token) => token.serial);
+    this.tokenService.bulkDeleteWithConfirmDialog(
+      serialList,
+      this.dialog,
+      this.containerService.containerDetailResource.reload
+    );
   }
 
   deleteTokenFromContainer(tokenSerial: string) {

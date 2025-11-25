@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import "@angular/localize/init";
+
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideExperimentalZonelessChangeDetection } from "@angular/core";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
@@ -110,7 +110,7 @@ describe("EnrollWebauthnComponent", () => {
         { provide: Base64Service, useValue: base64 },
         { provide: WebAuthnApiPayloadMapper, useValue: {} },
         { provide: WebAuthnFinalizeApiPayloadMapper, useValue: {} },
-        { provide: DialogService, useValue: dialogStub },
+        { provide: DialogService, useValue: dialogStub }
       ]
     }).compileComponents();
 
@@ -141,7 +141,6 @@ describe("EnrollWebauthnComponent", () => {
     expect(additionalEmits[0]).toEqual({});
     expect(typeof emittedHandler).toBe("function");
   });
-
 
   it("should notify when WebAuthn API is unavailable", async () => {
     (navigator as any).credentials = undefined;
@@ -214,9 +213,7 @@ describe("EnrollWebauthnComponent", () => {
     expect(openDialog).toHaveBeenCalled();
     expect(closeDialog).toHaveBeenCalled();
     expect(res).toBeNull();
-    expect(notification.openSnackBar).toHaveBeenCalledWith(
-      "WebAuthn credential creation failed: blocked"
-    );
+    expect(notification.openSnackBar).toHaveBeenCalledWith("WebAuthn credential creation failed: blocked");
   });
 
   it("should complete full happy path and return final response", async () => {

@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import "@angular/localize/init";
+
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { provideNoopAnimations } from "@angular/platform-browser/animations";
@@ -46,10 +46,7 @@ import { ContentService } from "../../../../services/content/content.service";
 import { AuthService } from "../../../../services/auth/auth.service";
 import { AuditService } from "../../../../services/audit/audit.service";
 
-import {
-  MockPiResponse,
-  MockTokenService
-} from "../../../../../testing/mock-services";
+import { MockPiResponse, MockTokenService } from "../../../../../testing/mock-services";
 
 describe("TokenTableActionsComponent", () => {
   let component: TokenTableActionsComponent;
@@ -121,9 +118,7 @@ describe("TokenTableActionsComponent", () => {
 
     tokenService = TestBed.inject(TokenService) as unknown as jest.Mocked<MockTokenService>;
     dialog = TestBed.inject(MatDialog) as unknown as jest.Mocked<MatDialog>;
-    notificationService = TestBed.inject(
-      NotificationService
-    ) as unknown as jest.Mocked<NotificationServiceInterface>;
+    notificationService = TestBed.inject(NotificationService) as unknown as jest.Mocked<NotificationServiceInterface>;
     router = TestBed.inject(Router) as unknown as jest.Mocked<Router>;
 
     fixture.detectChanges();
@@ -135,6 +130,7 @@ describe("TokenTableActionsComponent", () => {
 
   describe("toggleActive()", () => {
     it("calls service, then reloads details", () => {
+      component.tokenSerial.set("MOCK_SERIAL");
       jest.spyOn(tokenService, "toggleActive");
       jest.spyOn(tokenService.tokenDetailResource, "reload");
       component.toggleActive();
@@ -145,6 +141,7 @@ describe("TokenTableActionsComponent", () => {
 
   describe("revokeToken()", () => {
     it("opens confirm dialog, revokes, reloads details", () => {
+      component.tokenSerial.set("MOCK_SERIAL");
       jest.spyOn(tokenService, "revokeToken");
       jest.spyOn(tokenService, "getTokenDetails");
       jest.spyOn(tokenService.tokenDetailResource, "reload");
@@ -160,6 +157,7 @@ describe("TokenTableActionsComponent", () => {
 
   describe("deleteToken()", () => {
     it("opens confirm dialog, deletes and navigates", () => {
+      component.tokenSerial.set("MOCK_SERIAL");
       component.deleteToken();
 
       expect(dialog.open).toHaveBeenCalled();
@@ -169,91 +167,17 @@ describe("TokenTableActionsComponent", () => {
   });
 
   describe("deleteSelectedTokens()", () => {
-    const mockTokens = [{ serial: "TOKEN1" }, { serial: "TOKEN2" }] as TokenDetails[];
-
-    beforeEach(() => {
+    it("should call bulkDeleteWithConfirmDialog with the selected token serials", () => {
+      const mockTokens = [{ serial: "TOKEN1" }, { serial: "TOKEN2" }] as TokenDetails[];
       tokenService.tokenSelection.set(mockTokens);
-    });
-
-    it("should do nothing if dialog is cancelled", () => {
-      (dialog.open as jest.Mock).mockReturnValue({ afterClosed: () => of(false) });
-      component.deleteSelectedTokens();
-      expect(tokenService.bulkDeleteTokens).not.toHaveBeenCalled();
-    });
-
-    it("should call bulkDeleteTokens and reload on success", () => {
-      const response = new MockPiResponse<BulkResult, any>({
-        detail: {},
-        result: {
-          status: true,
-          value: { count_success: 2, failed: [], unauthorized: [] }
-        }
-      });
-      tokenService.bulkDeleteTokens.mockReturnValue(of(response));
+      fixture.detectChanges();
 
       component.deleteSelectedTokens();
 
-      expect(tokenService.bulkDeleteTokens).toHaveBeenCalledWith(
-        mockTokens.map(t => t.serial)
-      );
-      expect(tokenService.tokenResource.reload).toHaveBeenCalled();
-      expect(notificationService.openSnackBar).toHaveBeenCalledWith(
-        "Successfully deleted 2 tokens."
-      );
-    });
-
-    it("should call bulkDeleteTokens and reload on success with singular token", () => {
-      const single = [{ serial: "TOKEN1" }] as TokenDetails[];
-      tokenService.tokenSelection.set(single);
-
-      const response = new MockPiResponse<BulkResult, any>({
-        detail: {},
-        result: {
-          status: true,
-          value: { count_success: 1, failed: [], unauthorized: [] }
-        }
-      });
-      tokenService.bulkDeleteTokens.mockReturnValue(of(response));
-
-      component.deleteSelectedTokens();
-
-      expect(tokenService.bulkDeleteTokens).toHaveBeenCalledWith(["TOKEN1"]);
-      expect(tokenService.tokenResource.reload).toHaveBeenCalled();
-      expect(notificationService.openSnackBar).toHaveBeenCalledWith(
-        "Successfully deleted 1 token."
-      );
-    });
-
-    it("should show a notification if some tokens failed or were unauthorized", () => {
-      const response = new MockPiResponse<BulkResult, any>({
-        detail: {},
-        result: {
-          status: true,
-          value: {
-            count_success: 1,
-            failed: ["TOKEN1"],
-            unauthorized: ["TOKEN2"]
-          }
-        }
-      });
-      tokenService.bulkDeleteTokens.mockReturnValue(of(response));
-
-      component.deleteSelectedTokens();
-
-      expect(notificationService.openSnackBar).toHaveBeenCalledWith(
-        "Successfully deleted 1 token.\nThe following tokens failed to delete: TOKEN1\nYou are not authorized to delete the following tokens: TOKEN2"
-      );
-    });
-
-    it("should handle API errors gracefully", () => {
-      tokenService.bulkDeleteTokens.mockReturnValue(
-        throwError(() => new Error("API Error"))
-      );
-
-      component.deleteSelectedTokens();
-
-      expect(notificationService.openSnackBar).toHaveBeenCalledWith(
-        "An error occurred while deleting tokens."
+      expect(tokenService.bulkDeleteWithConfirmDialog).toHaveBeenCalledWith(
+        ["TOKEN1", "TOKEN2"],
+        expect.objectContaining({ open: expect.any(Function) }),
+        expect.any(Function)
       );
     });
   });
@@ -265,8 +189,8 @@ describe("TokenTableActionsComponent", () => {
       tokenService.tokenSelection.set(mockTokens);
     });
 
-    it("should call bulkUnassignTokens and reload on success", () => {
-      const response = new MockPiResponse<BulkResult, any>({
+    it("should call bulkUnassignTokens and reload when dialog result is true", () => {
+      const bulkUnassignResponse = new MockPiResponse<BulkResult, any>({
         detail: {},
         result: {
           status: true,
@@ -274,15 +198,29 @@ describe("TokenTableActionsComponent", () => {
         }
       });
 
-      jest.spyOn(tokenService, "bulkUnassignTokens").mockReturnValue(of(response));
+      const bulkUnassignSpy = jest.spyOn(tokenService, "bulkUnassignTokens").mockReturnValue(of(bulkUnassignResponse));
 
+      const reloadSpy = jest.spyOn(tokenService.tokenResource, "reload");
+
+      const dialogSpy = jest.spyOn(dialog, "open").mockReturnValue({
+        afterClosed: () => of(true)
+      } as any);
+
+      component.tokenSelection.set(mockTokens);
       component.unassignSelectedTokens();
 
-      expect(tokenService.bulkUnassignTokens).toHaveBeenCalledWith(mockTokens);
-      expect(tokenService.tokenResource.reload).toHaveBeenCalled();
-      expect(notificationService.openSnackBar).toHaveBeenCalledWith(
-        "Successfully unassigned 1 token."
-      );
+      expect(dialogSpy).toHaveBeenCalledWith(ConfirmationDialogComponent, {
+        data: {
+          serialList: ["TOKEN1"],
+          title: "Unassign Selected Tokens",
+          type: "token",
+          action: "unassign",
+          numberOfTokens: 1
+        }
+      });
+      expect(bulkUnassignSpy).toHaveBeenCalledWith(mockTokens);
+      expect(notificationService.openSnackBar).toHaveBeenCalledWith("Successfully unassigned 1 token.");
+      expect(reloadSpy).toHaveBeenCalled();
     });
   });
 

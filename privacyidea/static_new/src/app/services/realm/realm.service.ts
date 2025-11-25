@@ -16,6 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { httpResource, HttpResourceRef } from "@angular/common/http";
+import { computed, inject, Injectable, Signal, signal, WritableSignal } from "@angular/core";
 import { HttpClient, HttpErrorResponse, httpResource, HttpResourceRef } from "@angular/common/http";
 import { computed, effect, inject, Injectable, Signal, signal, WritableSignal } from "@angular/core";
 import { environment } from "../../../environments/environment";
@@ -26,7 +28,7 @@ import { ContentService, ContentServiceInterface } from "../content/content.serv
 import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
 import { Observable } from "rxjs";
 
-export type Realms = Map<string, Realm>;
+export type Realms = { [key: string]: Realm };
 
 export interface Realm {
   default: boolean;
@@ -86,7 +88,6 @@ export interface RealmServiceInterface {
 })
 export class RealmService implements RealmServiceInterface {
   private readonly authService: AuthServiceInterface = inject(AuthService);
-  private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly http: HttpClient = inject(HttpClient);
   selectedRealms = signal<string[]>([]);
@@ -102,6 +103,7 @@ export class RealmService implements RealmServiceInterface {
           ROUTE_PATHS.TOKENS_CONTAINERS_CREATE,
           ROUTE_PATHS.TOKENS_ENROLLMENT,
           ROUTE_PATHS.TOKENS_IMPORT,
+          ROUTE_PATHS.POLICIES,
           ROUTE_PATHS.USERS_REALMS
         ].includes(this.contentService.routeUrl()))
     ) {
@@ -128,7 +130,8 @@ export class RealmService implements RealmServiceInterface {
           ROUTE_PATHS.USERS,
           ROUTE_PATHS.TOKENS_CONTAINERS_CREATE,
           ROUTE_PATHS.TOKENS_ENROLLMENT,
-          ROUTE_PATHS.TOKENS_IMPORT
+          ROUTE_PATHS.TOKENS_IMPORT,
+          ROUTE_PATHS.POLICIES
         ].includes(this.contentService.routeUrl()))
     ) {
       return undefined;
