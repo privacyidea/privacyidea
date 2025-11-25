@@ -64,6 +64,7 @@ import { NotificationService, NotificationServiceInterface } from "../../../serv
 import { ConfirmationDialogComponent } from "../../shared/confirmation-dialog/confirmation-dialog.component";
 import { MatTooltip } from "@angular/material/tooltip";
 import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
+import { ResolverService, ResolverServiceInterface } from "../../../services/resolver/resolver.service";
 
 type ResolverWithPriority = { name: string; priority: number | null };
 type NodeResolversMap = { [nodeId: string]: ResolverWithPriority[] };
@@ -125,6 +126,7 @@ export class RealmTableComponent {
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   protected readonly dialog: MatDialog = inject(MatDialog);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
+  protected readonly resolverService: ResolverServiceInterface = inject(ResolverService);
 
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
@@ -165,21 +167,16 @@ export class RealmTableComponent {
     ];
   });
 
+  /**
+   * Resolver options are now loaded from the resolver API via ResolverService,
+   * not derived from realmResource.
+   */
   resolverOptions = computed(() => {
-    const realmResource = this.realmService.realmResource.value();
-    const realms = realmResource?.result?.value;
-    if (!realms) {
-      return [];
-    }
-    const map = new Map<string, string>();
-    Object.values(realms as any).forEach((realm: any) => {
-      (realm.resolver ?? []).forEach((r: any) => {
-        if (!map.has(r.name)) {
-          map.set(r.name, r.type);
-        }
-      });
-    });
-    return Array.from(map.entries()).map(([name, type]) => ({ name, type }));
+    const resolvers = this.resolverService.resolvers();
+    return resolvers.map((resolver) => ({
+      name: resolver.resolvername,
+      type: resolver.type
+    }));
   });
 
   realmRows = computed<RealmRow[]>(() => {
