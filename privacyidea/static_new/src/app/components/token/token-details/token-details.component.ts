@@ -341,7 +341,13 @@ export class TokenDetailsComponent {
   }
 
   removeFromContainer() {
-    this.containerService.removeToken(this.tokenSerial(), this.tokenDetails().container_serial).subscribe({
+    const containerSerial = this.tokenDetails().container_serial;
+
+    if (!containerSerial) {
+      return;
+    }
+
+    this.containerService.removeToken(this.tokenSerial(), containerSerial).subscribe({
       next: () => {
         this.containerService.selectedContainer.set("");
         this.tokenDetailResource.reload();

@@ -397,6 +397,7 @@ export class ContainerService implements ContainerServiceInterface {
   });
 
   containerTypesResource = httpResource<PiResponse<ContainerTypes>>(() => {
+    // Only load container types on routes with a container type list or selection.
     const onAllowedRoute =
       this.contentService.onTokensContainersCreate() ||
       this.contentService.onTokensContainersWizard() ||

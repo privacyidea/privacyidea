@@ -19,7 +19,7 @@
 import { TestBed } from "@angular/core/testing";
 import { provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
-import { UserData, UserService } from "./user.service";
+import { UserAttributePolicy, UserData, UserService } from "./user.service";
 import { RealmService } from "../realm/realm.service";
 import { AuthService } from "../auth/auth.service";
 import { ContentService } from "../content/content.service";
@@ -194,8 +194,6 @@ describe("UserService", () => {
 
   describe("attribute policy + attributes (no HTTP; drive signals directly)", () => {
     it("attributePolicy defaults when attributesResource has no value", () => {
-      (userService as any).attributesResource = new MockHttpResourceRef<any | undefined>(undefined as any);
-
       expect(userService.attributePolicy()).toEqual({ delete: [], set: {} });
       expect(userService.deletableAttributes()).toEqual([]);
       expect(userService.attributeSetMap()).toEqual({});
@@ -203,8 +201,8 @@ describe("UserService", () => {
       expect(userService.keyOptions()).toEqual([]);
     });
 
-    it("derives deletableAttributes, wildcard, and sorted keyOptions from attributesResource value", () => {
-      const policy = {
+    it("derives deletableAttributes, wildcard, and sorted keyOptions from editableAttributesResource value", () => {
+      const policy: UserAttributePolicy = {
         delete: ["department", "attr2", "attr1"],
         set: {
           "*": ["2", "1"],
@@ -213,7 +211,9 @@ describe("UserService", () => {
         }
       };
 
-      (userService as any).attributesResource = new MockHttpResourceRef(MockPiResponse.fromValue(policy));
+      (userService as any).editableAttributesResource = new MockHttpResourceRef(
+        MockPiResponse.fromValue(policy)
+      );
 
       expect(userService.attributePolicy()).toEqual(policy);
       expect(userService.deletableAttributes()).toEqual(["department", "attr2", "attr1"]);

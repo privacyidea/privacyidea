@@ -160,7 +160,12 @@ describe("TokenDetailsComponent", () => {
   });
 
   it("removeFromContainer removes token and reloads when selected", () => {
-    containerSvc.selectedContainer.set("container1");
+    component.tokenDetails.set({
+      ...component.tokenDetails(),
+      serial: "Mock serial",
+      container_serial: "container1"
+    });
+
     const reloadSpy = tokenSvc.tokenDetailResource.reload as jest.Mock;
     reloadSpy.mockClear();
 
@@ -171,7 +176,12 @@ describe("TokenDetailsComponent", () => {
   });
 
   it("removeFromContainer does nothing when no container selected", () => {
-    containerSvc.selectedContainer.set("");
+    component.tokenDetails.set({
+      ...component.tokenDetails(),
+      serial: "Mock serial",
+      container_serial: ""
+    });
+
     (containerSvc.removeToken as jest.Mock).mockClear();
 
     component.removeFromContainer();
