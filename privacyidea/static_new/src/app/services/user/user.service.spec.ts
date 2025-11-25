@@ -345,7 +345,7 @@ describe("UserService", () => {
 
     it("should do request if route is USER_DETAILS", async () => {
       const realm = "test-realm";
-      const user = "alice"
+      const user = "alice";
       contentServiceMock.routeUrl.update(() => ROUTE_PATHS.USERS_DETAILS + "/" + user);
       userService.detailsUsername.set(user);
       userService.selectedUserRealm.set(realm);
