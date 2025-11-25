@@ -20,21 +20,25 @@ import { TestBed } from "@angular/core/testing";
 import { of } from "rxjs";
 
 import { RealmTableComponent } from "./realm-table.component";
-import { RealmService } from "../../../services/realm/realm.service";
+import { RealmService, Realms } from "../../../services/realm/realm.service";
 import { TableUtilsService } from "../../../services/table-utils/table-utils.service";
 import { ContentService } from "../../../services/content/content.service";
 import { SystemService } from "../../../services/system/system.service";
 import { NotificationService } from "../../../services/notification/notification.service";
 import { MatDialog } from "@angular/material/dialog";
-import { Realms } from "../../../services/realm/realm.service";
 import {
-  MockContentService, MockHttpResourceRef,
-  MockNotificationService, MockPiResponse,
-  MockRealmService, MockSystemService,
-  MockTableUtilsService
+  MockContentService,
+  MockHttpResourceRef,
+  MockNotificationService,
+  MockPiResponse,
+  MockRealmService,
+  MockSystemService,
+  MockTableUtilsService,
 } from "../../../../testing/mock-services";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { ResolverService } from "../../../services/resolver/resolver.service";
+import { MockResolverService } from "../../../../testing/mock-services/mock-resolver-service";
 
 class LocalMockMatDialog {
   result$ = of(true);
@@ -50,6 +54,7 @@ describe("RealmTableComponent", () => {
   let systemService: MockSystemService;
   let notificationService: MockNotificationService;
   let dialog: LocalMockMatDialog;
+  let resolverService: MockResolverService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -62,7 +67,8 @@ describe("RealmTableComponent", () => {
         { provide: SystemService, useClass: MockSystemService },
         { provide: ContentService, useClass: MockContentService },
         { provide: NotificationService, useClass: MockNotificationService },
-        { provide: MatDialog, useClass: LocalMockMatDialog }
+        { provide: MatDialog, useClass: LocalMockMatDialog },
+        { provide: ResolverService, useClass: MockResolverService }
       ]
     }).compileComponents();
 
@@ -73,6 +79,7 @@ describe("RealmTableComponent", () => {
     systemService = TestBed.inject(SystemService) as unknown as MockSystemService;
     notificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
     dialog = TestBed.inject(MatDialog) as unknown as LocalMockMatDialog;
+    resolverService = TestBed.inject(ResolverService) as unknown as MockResolverService;
 
     fixture.detectChanges();
   });
@@ -101,31 +108,34 @@ describe("RealmTableComponent", () => {
     expect(groups[2]).toEqual({ id: "node-2", label: "Node 2" });
   });
 
-  it("resolverOptions should aggregate unique resolver names with type", () => {
-    const realms = {
-      realmA: {
-        resolver: [
-          { name: "res1", type: "ldap" },
-          { name: "res2", type: "sql" }
-        ]
+  it("resolverOptions should map resolvername and type from ResolverService", () => {
+    resolverService.setResolvers([
+      {
+        resolvername: "res1",
+        type: "ldapresolver",
+        censor_keys: [],
+        data: {}
       },
-      realmB: {
-        resolver: [
-          { name: "res1", type: "ldap" },
-          { name: "res3", type: "http" }
-        ]
+      {
+        resolvername: "res2",
+        type: "sqlresolver",
+        censor_keys: [],
+        data: {}
+      },
+      {
+        resolvername: "res3",
+        type: "scimresolver",
+        censor_keys: [],
+        data: {}
       }
-    } as any;
-
-    const ref = realmService.realmResource as unknown as MockHttpResourceRef<MockPiResponse<Realms> | undefined>;
-    ref.set(MockPiResponse.fromValue<Realms>(realms as any));
+    ]);
 
     const options = component.resolverOptions();
     expect(options).toEqual(
       expect.arrayContaining([
-        { name: "res1", type: "ldap" },
-        { name: "res2", type: "sql" },
-        { name: "res3", type: "http" }
+        { name: "res1", type: "ldapresolver" },
+        { name: "res2", type: "sqlresolver" },
+        { name: "res3", type: "scimresolver" }
       ])
     );
     expect(options.length).toBe(3);

@@ -37,7 +37,7 @@ import { ContentService, ContentServiceInterface } from "../content/content.serv
 import { ConfirmationDialogComponent } from "../../components/shared/confirmation-dialog/confirmation-dialog.component";
 import { StringUtils } from "../../utils/string.utils";
 
-type TokenTypeKey =
+export type TokenTypeKey =
   | "hotp"
   | "totp"
   | "spass"
