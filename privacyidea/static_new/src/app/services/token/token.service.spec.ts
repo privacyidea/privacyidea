@@ -863,7 +863,7 @@ describe("TokenService", () => {
       const user = "alice";
       contentServiceMock.routeUrl.update(() => ROUTE_PATHS.USERS_DETAILS + "/" + user);
       contentServiceMock.detailsUsername.set(user);
-      tokenService.userRealm.set(realm)
+      tokenService.userRealm.set(realm);
       const mockBackend = TestBed.inject(HttpTestingController);
       TestBed.flushEffects();
 
