@@ -859,6 +859,8 @@ In the web UI, a corresponding input field for the key is disabled/hidden.
 
 Default value is *false*.
 
+.. note:: If two step enrollment :ref:`admin_policy_2step` is activated, this policy is not applied.
+
 totp_timestep
 ~~~~~~~~~~~~~
 
