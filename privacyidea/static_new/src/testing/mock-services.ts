@@ -620,6 +620,7 @@ export class MockTokenService implements TokenServiceInterface {
   hiddenApiFilter: string[] = [];
   stopPolling$: Subject<void> = new Subject<void>();
   tokenBaseUrl: string = "mockEnvironment.proxyUrl + '/token'";
+  userRealm = signal("");
 
   tokenSerial = signal("");
   selectedTokenType: WritableSignal<TokenType> = signal({
