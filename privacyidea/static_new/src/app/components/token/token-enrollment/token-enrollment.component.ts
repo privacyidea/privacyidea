@@ -278,14 +278,14 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
   @ViewChild(UserAssignmentComponent)
   userAssignmentComponent!: UserAssignmentComponent;
   enrollmentArgsGetter?: enrollmentArgsGetterFn;
-  reopenDialogSignal = linkedSignal<TokenType, ReopenDialogFn | undefined>({
+  reopenDialog = linkedSignal<TokenType, ReopenDialogFn | undefined>({
     source: this.tokenService.selectedTokenType,
     computation: () => undefined
   });
   additionalFormFields: WritableSignal<{
     [key: string]: FormControl<any>;
   }> = signal({});
-  onEnrollmentResponse = linkedSignal<any, OnEnrollmentResponseFn | undefined>({
+  onEnrollmentResponse = linkedSignal<TokenType, OnEnrollmentResponseFn | undefined>({
     source: this.tokenService.selectedTokenType,
     computation: () => undefined
   });
@@ -316,9 +316,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     source: this.tokenService.selectedTokenType,
     computation: () => null
   });
-  canReopenEnrollmentDialog = computed(
-    () => !!this.reopenDialogSignal() || !!this._lastTokenEnrollmentLastStepDialogData()
-  );
+  canReopenEnrollmentDialog = computed(() => !!this.reopenDialog() || !!this._lastTokenEnrollmentLastStepDialogData());
 
   selectedUserRealmControl = new FormControl<string>("", { nonNullable: true });
   userFilterControl = new FormControl<string | UserData | null>("", { nonNullable: true });
@@ -338,7 +336,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
   }
 
   updateReopenDialog(event: ReopenDialogFn): void {
-    this.reopenDialogSignal.set(event);
+    this.reopenDialog.set(event);
   }
 
   updateAdditionalFormFields(event: { [key: string]: FormControl<any> | undefined | null }): void {
@@ -416,7 +414,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
   }
 
   reopenEnrollmentDialog() {
-    const reopenFunction = this.reopenDialogSignal();
+    const reopenFunction = this.reopenDialog();
     if (reopenFunction) {
       reopenFunction();
       return;
