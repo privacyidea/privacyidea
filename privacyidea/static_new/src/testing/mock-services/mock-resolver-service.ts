@@ -17,23 +17,33 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { signal, computed, Signal, WritableSignal } from "@angular/core";
-import { of } from "rxjs";
+import { signal, Signal, WritableSignal } from "@angular/core";
+import { Observable, of } from "rxjs";
 import { Resolver, ResolverServiceInterface } from "../../app/services/resolver/resolver.service";
 import { PiResponse } from "../../app/app.component";
 
 export class MockResolverService implements ResolverServiceInterface {
-  selectedResolverName: WritableSignal<string> = signal("");
-
   private _resolversValue: WritableSignal<Resolver[]> = signal([]);
-  resolvers: Signal<Resolver[]> = this._resolversValue.asReadonly();
-
   private _resolverOptionsValue: WritableSignal<string[]> = signal([]);
+  resolversResource: any = {
+    value: () => undefined,
+    reload: jest.fn()
+  };
+  selectedResolverName: WritableSignal<string> = signal("");
+  resolvers: Signal<Resolver[]> = this._resolversValue.asReadonly();
   resolverOptions: Signal<string[]> = this._resolverOptionsValue.asReadonly();
 
-  postResolverTest = jest.fn().mockReturnValue(of({} as PiResponse<any>));
-  postResolver = jest.fn().mockReturnValue(of({} as PiResponse<any>));
-  deleteResolver = jest.fn().mockReturnValue(of({} as PiResponse<any>));
+  postResolverTest(): Observable<any> {
+    return of({} as PiResponse<any>);
+  }
+
+  postResolver(resolverName: string, data: any): Observable<any> {
+    return of({} as PiResponse<any>);
+  }
+
+  deleteResolver(resolverName: string): Observable<any> {
+    return of({} as PiResponse<any>);
+  }
 
   setResolvers(data: Resolver[]): void {
     this._resolversValue.set(data);

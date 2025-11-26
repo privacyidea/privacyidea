@@ -88,7 +88,11 @@ export interface SCIMResolverData extends ResolverData {
 }
 
 export interface ResolverServiceInterface {
+  resolversResource: HttpResourceRef<PiResponse<Resolvers> | undefined>;
   selectedResolverName: WritableSignal<string>;
+  resolvers: Signal<Resolver[]>;
+  resolverOptions: Signal<string[]>;
+
   postResolverTest(): Observable<any>;
   postResolver(resolverName: string, data: any): Observable<any>;
   deleteResolver(resolverName: string): Observable<any>;
@@ -112,6 +116,7 @@ export class ResolverService implements ResolverServiceInterface {
       })
     );
   }
+
   resolversResource = httpResource<PiResponse<Resolvers>>({
     url: this.resolverBaseUrl,
     method: "GET",
@@ -127,6 +132,7 @@ export class ResolverService implements ResolverServiceInterface {
     const resolvers = this.resolversResource.value()?.result?.value;
     return resolvers ? Object.keys(resolvers) : [];
   });
+
   selectedResolverResource = httpResource<PiResponse<any>>(() => {
     const resolverName = this.selectedResolverName();
     if (resolverName === "") {

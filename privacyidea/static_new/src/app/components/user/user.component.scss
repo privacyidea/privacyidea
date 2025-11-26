@@ -5,25 +5,6 @@
   display: flex;
 }
 
-.user-drawer {
-  border: solid 2px var(--mat-sys-outline-variant);
-  height: fit-content;
-  @include mat.elevation(5);
-  border-radius: var(--border-radius);
-  position: fixed;
-  margin-top: 94px;
-}
-
-.user-drawer-overflow {
-  border: solid 2px var(--mat-sys-outline-variant);
-  height: auto;
-  @include mat.elevation(5);
-  border-radius: var(--border-radius);
-  position: fixed;
-  margin-top: 94px;
-  overflow: auto;
-}
-
 $margin-bottom-main: 136px;
 
 .main-margin-overflow {
@@ -64,12 +45,6 @@ $margin-bottom-main: 136px;
   .mat-drawer-backdrop {
     opacity: 0.5;
   }
-}
-
-.token-selfservice-layout {
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
 }
 
 .tile-header {
