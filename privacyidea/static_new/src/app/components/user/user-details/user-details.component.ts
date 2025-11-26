@@ -265,4 +265,6 @@ export class UserDetailsComponent {
   showUserAuditLog() {
     this.auditService.auditFilter.set(new FilterValue({ value: `user: ${this.userService.detailsUsername()}` }));
   }
+
+  protected readonly Array = Array;
 }
