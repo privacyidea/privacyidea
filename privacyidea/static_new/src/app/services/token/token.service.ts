@@ -281,6 +281,7 @@ export class TokenService implements TokenServiceInterface {
   stopPolling$ = new Subject<void>();
   tokenBaseUrl = environment.proxyUrl + "/token/";
   eventPageSize = 10;
+  detailsUsername = this.contentService.detailsUsername;
   tokenSerial = this.contentService.tokenSerial;
   filterParams = computed<Record<string, string>>(() => {
     const allowed = [...this.apiFilter, ...this.advancedApiFilter, ...this.hiddenApiFilter];
@@ -304,7 +305,7 @@ export class TokenService implements TokenServiceInterface {
       .map(([key, v]) => [key, plainKeys.has(key) ? v : `*${v}*`] as const);
 
     return Object.fromEntries(entries) as Record<string, string>;
-  });  detailsUsername = this.contentService.detailsUsername;
+  });
 
   constructor() {
     effect(() => {
@@ -321,7 +322,9 @@ export class TokenService implements TokenServiceInterface {
         this.notificationService.openSnackBar(tokenTypesResourceError.message);
       }
     });
-  };  selectedTokenType = linkedSignal({
+  };
+
+  selectedTokenType = linkedSignal({
     source: () => ({
       tokenTypeOptions: this.tokenTypeOptions(),
       routeUrl: this.contentService.routeUrl()
@@ -331,7 +334,6 @@ export class TokenService implements TokenServiceInterface {
       source.tokenTypeOptions[0] ||
       ({ key: "hotp", info: "", text: "" } as TokenType)
   });
-
 
 
   showOnlyTokenNotInContainer = linkedSignal({

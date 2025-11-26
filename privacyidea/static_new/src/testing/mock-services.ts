@@ -35,7 +35,8 @@ import {
   Tokens,
   TokenService,
   TokenServiceInterface,
-  TokenType
+  TokenType,
+  TokenTypeKey
 } from "../app/services/token/token.service";
 import { Machines, MachineServiceInterface, TokenApplication } from "../app/services/machine/machine.service";
 import { Observable, of, Subject, Subscription } from "rxjs";
@@ -54,7 +55,6 @@ import { Router } from "@angular/router";
 import { Sort } from "@angular/material/sort";
 import { ColumnDef, ColumnKey, TableUtilsServiceInterface } from "../app/services/table-utils/table-utils.service";
 import { TokenEnrollmentLastStepDialogData } from "../app/components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
-import { TokenTypeKey } from "../app/services/token/token.service";
 
 export function makeResource<T>(initial: T) {
   return {
@@ -246,17 +246,23 @@ export class MockUserService implements UserServiceInterface {
   attributeSetMap = signal<Record<string, string[]>>({});
   hasWildcardKey: Signal<boolean> = signal(false);
   keyOptions: Signal<string[]> = signal([]);
-  selectedUser: Signal<UserData | null> = signal(null);  detailsUsername: WritableSignal<string> = signal("");
+  selectedUser: Signal<UserData | null> = signal(null);
   usersOfRealmResource: HttpResourceRef<PiResponse<UserData[], undefined> | undefined> = new MockHttpResourceRef(
     MockPiResponse.fromValue([])
-  );  setUserAttribute = jest.fn().mockReturnValue(of({}));
-  selectedUsername = signal("");  deleteUserAttribute = jest.fn().mockReturnValue(of({}));
+  );
+  selectedUsername = signal("");
   setDefaultRealm = jest.fn();
 
   resetUserSelection() {
     this.selectionFilter.set("");
     this.selectedUserRealm.set("");
   }
+
+  detailsUsername: WritableSignal<string> = signal("");
+
+  setUserAttribute = jest.fn().mockReturnValue(of({}));
+
+  deleteUserAttribute = jest.fn().mockReturnValue(of({}));
 
   resetFilter = jest.fn().mockImplementation(() => {
     this.apiUserFilter.set(new FilterValue());
