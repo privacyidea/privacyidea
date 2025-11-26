@@ -37,6 +37,7 @@ export interface ContentServiceInterface {
   onPolicies: Signal<boolean>;
   onTokenDetails: Signal<boolean>;
   onUserDetails: Signal<boolean>;
+  onUserRealms: Signal<boolean>;
   onTokensEnrollment: Signal<boolean>;
   onTokensChallenges: Signal<boolean>;
   onTokensApplications: Signal<boolean>;
@@ -84,6 +85,7 @@ export class ContentService implements ContentServiceInterface {
   onUserDetails = computed(() =>
     this.routeUrl().startsWith(ROUTE_PATHS.USERS_DETAILS + "/")
   );
+  onUserRealms = computed(() => this.routeUrl() === ROUTE_PATHS.USERS_REALMS);
   onTokensEnrollment = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS_ENROLLMENT);
   onTokensChallenges = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS_CHALLENGES);
   onTokensApplications = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS_APPLICATIONS);
