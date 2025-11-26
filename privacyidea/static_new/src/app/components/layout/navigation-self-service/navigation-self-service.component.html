@@ -1,7 +1,38 @@
-<div
-  [@componentFade]
-  class="navigation-self-service-column">
+<div class="navigation-self-service-column">
+  <mat-accordion>
+    <mat-expansion-panel class="user-details-panel">
+      <mat-expansion-panel-header>
+        <mat-panel-title>
+          <mat-icon class="tile-icon">
+            supervised_user_circle
+          </mat-icon>
+          <span class="username">
+        {{ userData().username || "-" }}
+      </span>
+        </mat-panel-title>
+      </mat-expansion-panel-header>
 
+      <div class="user-details-column">
+        @for (item of detailsEntries(); track item.key) {
+          <div class="label">
+            {{ item.label }}:
+          </div>
+
+          @if (isArray(item.value) && item.value.length > 1) {
+            <div class="value">
+              <ul class="no-indention margin-0">
+                @for (val of item.value; track val) {
+                  <li>{{ val }}</li>
+                }
+              </ul>
+            </div>
+          } @else {
+            <div class="value">{{ item.value }}</div>
+          }
+        }
+      </div>
+    </mat-expansion-panel>
+  </mat-accordion>
   @if (!authService.tokenWizard() && !authService.containerWizard().enabled) {
     <app-navigation-self-service-button
       i18n-title

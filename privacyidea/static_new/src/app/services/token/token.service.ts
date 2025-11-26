@@ -24,7 +24,6 @@ import { catchError, shareReplay, takeUntil, takeWhile } from "rxjs/operators";
 import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
 import { ROUTE_PATHS } from "../../route_paths";
-import { TokenTypeOption as TokenTypeKey } from "../../components/token/token.component";
 import {
   EnrollmentResponse,
   TokenApiPayloadMapper,
@@ -37,6 +36,34 @@ import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
 import { ConfirmationDialogComponent } from "../../components/shared/confirmation-dialog/confirmation-dialog.component";
 import { StringUtils } from "../../utils/string.utils";
+
+export type TokenTypeKey =
+  | "hotp"
+  | "totp"
+  | "spass"
+  | "motp"
+  | "sshkey"
+  | "yubikey"
+  | "remote"
+  | "yubico"
+  | "radius"
+  | "sms"
+  | "4eyes"
+  | "applspec"
+  | "certificate"
+  | "daypassword"
+  | "email"
+  | "indexedsecret"
+  | "paper"
+  | "push"
+  | "question"
+  | "registration"
+  | "tan"
+  | "tiqr"
+  | "u2f"
+  | "vasco"
+  | "webauthn"
+  | "passkey";
 
 const apiFilter = [
   "serial",
@@ -163,7 +190,6 @@ export interface TokenServiceInterface {
   pageSize: WritableSignal<number>;
   tokenIsActive: WritableSignal<boolean>;
   tokenIsRevoked: WritableSignal<boolean>;
-  // tokenIsLost: WritableSignal<boolean>;
   defaultSizeOptions: number[];
   apiFilter: string[];
   advancedApiFilter: string[];
@@ -256,14 +282,21 @@ export class TokenService implements TokenServiceInterface {
   stopPolling$ = new Subject<void>();
   tokenBaseUrl = environment.proxyUrl + "/token/";
   eventPageSize = 10;
-  tokenSerial = this.contentService.tokenSerial;
   detailsUsername = this.contentService.detailsUsername;
+  tokenSerial = this.contentService.tokenSerial;
   userRealm = signal("");
 
   filterParams = computed<Record<string, string>>(() => {
     const allowed = [...this.apiFilter, ...this.advancedApiFilter, ...this.hiddenApiFilter];
 
-    const plainKeys = new Set(["user", "infokey", "infovalue", "active", "assigned", "container_serial"]);
+    const plainKeys = new Set([
+      "user",
+      "infokey",
+      "infovalue",
+      "active",
+      "assigned",
+      "container_serial"
+    ]);
 
     const entries = [
       ...Array.from(this.tokenFilter().filterMap.entries()),
@@ -277,16 +310,6 @@ export class TokenService implements TokenServiceInterface {
     return Object.fromEntries(entries) as Record<string, string>;
   });
 
-  selectedTokenType = linkedSignal({
-    source: () => ({
-      tokenTypeOptions: this.tokenTypeOptions(),
-      routeUrl: this.contentService.routeUrl()
-    }),
-    computation: (source) =>
-      source.tokenTypeOptions.find((type) => type.key === this.authService.defaultTokentype()) ||
-      source.tokenTypeOptions[0] ||
-      ({ key: "hotp", info: "", text: "" } as TokenType)
-  });
   constructor() {
     effect(() => {
       if (this.tokenResource.error()) {
@@ -302,7 +325,20 @@ export class TokenService implements TokenServiceInterface {
         this.notificationService.openSnackBar(tokenTypesResourceError.message);
       }
     });
-  }
+  };
+
+  selectedTokenType = linkedSignal({
+    source: () => ({
+      tokenTypeOptions: this.tokenTypeOptions(),
+      routeUrl: this.contentService.routeUrl()
+    }),
+    computation: (source) =>
+      source.tokenTypeOptions.find((type) => type.key === this.authService.defaultTokentype()) ||
+      source.tokenTypeOptions[0] ||
+      ({ key: "hotp", info: "", text: "" } as TokenType)
+  });
+
+
   showOnlyTokenNotInContainer = linkedSignal({
     source: this.contentService.routeUrl,
     computation: (routeUrl) => {

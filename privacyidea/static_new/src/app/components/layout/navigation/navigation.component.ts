@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, inject } from "@angular/core";
+import { Component, effect, inject } from "@angular/core";
 import { DatePipe, NgClass, NgOptimizedImage } from "@angular/common";
 import {
   MatAccordion,
@@ -52,8 +52,8 @@ import {
   DocumentationServiceInterface
 } from "../../../services/documentation/documentation.service";
 import { FormsModule } from "@angular/forms";
-import { MatOption, MatSelect } from "@angular/material/select";
 import { RealmService, RealmServiceInterface } from "../../../services/realm/realm.service";
+import { ResolverService, ResolverServiceInterface } from "../../../services/resolver/resolver.service";
 
 @Component({
   selector: "app-navigation",
@@ -80,9 +80,7 @@ import { RealmService, RealmServiceInterface } from "../../../services/realm/rea
     NgClass,
     MatAnchor,
     MatTooltipModule,
-    MatSelect,
-    FormsModule,
-    MatOption
+    FormsModule
   ],
   templateUrl: "./navigation.component.html",
   styleUrl: "./navigation.component.scss"
@@ -101,6 +99,7 @@ export class NavigationComponent {
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   protected readonly sessionTimerService: SessionTimerServiceInterface = inject(SessionTimerService);
+  private readonly resolverService: ResolverServiceInterface = inject(ResolverService);
   protected readonly router: Router = inject(Router);
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
 
@@ -150,6 +149,9 @@ export class NavigationComponent {
       case ROUTE_PATHS.USERS:
         this.userService.usersResource.reload();
         break;
+      case ROUTE_PATHS.USERS_REALMS:
+        this.realmService.realmResource.reload();
+        this.resolverService.resolversResource.reload();
     }
   }
 

@@ -127,7 +127,7 @@ describe("UserService", () => {
 
   it("selectedUserRealm should expose the current defaultRealm", () => {
     expect(userService.selectedUserRealm()).toBe("realm1");
-    realmService.defaultRealm.set("someRealm");
+    realmService.setDefaultRealm("someRealm");
     expect(userService.selectedUserRealm()).toBe("someRealm");
   });
 
@@ -176,7 +176,7 @@ describe("UserService", () => {
 
     it("deleteUserAttribute issues DELETE /user/attribute/<key>/<user>/<realm> with proper encoding", () => {
       userService.detailsUsername.set("Alice Smith");
-      realmService.defaultRealm.set("r 1");
+      realmService.setDefaultRealm("r 1");
 
       const key = "department/role";
       userService.deleteUserAttribute(key).subscribe();
