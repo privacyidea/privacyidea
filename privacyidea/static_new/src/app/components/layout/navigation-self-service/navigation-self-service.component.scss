@@ -1,4 +1,5 @@
 @use "../../../../styles/styles";
+@use "@angular/material" as mat;
 
 .navigation-self-service-column {
   display: flex;
@@ -13,4 +14,57 @@
   box-sizing: border-box;
   height: 100vh;
   background: var(--mat-sys-surface-container-high);
+}
+
+.user-details-container {
+  width: 12rem;
+  max-width: 12vw;
+  border-radius: var(--border-radius);
+  background-color: var(--mat-sys-surface-container-low);
+  @include mat.elevation(3);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.user-details-panel {
+  min-width: 12rem;
+}
+
+.top-content {
+  flex: 3;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.tile-icon {
+  color: var(--mat-sys-primary) !important;
+  font-size: calc(6rem / 2.7);
+  width: calc(6rem / 2.7);
+  max-width: calc(6rem / 2.7);
+  height: calc(6rem / 2.7);
+  max-height: calc(6rem / 2.7);
+}
+
+.user-details-column {
+  grid-template-columns: auto 1fr;
+  row-gap: 16px;
+  display: grid;
+  column-gap: 8px;
+}
+
+.username {
+  color: var(--mat-sys-primary);
+  font-weight: bold;
+}
+
+.label {
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.value {
+  font-size: 14px;
 }

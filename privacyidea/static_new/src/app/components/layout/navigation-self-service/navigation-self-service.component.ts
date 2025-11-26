@@ -20,16 +20,27 @@ import { Component, inject } from "@angular/core";
 import { NavigationSelfServiceButtonComponent } from "./navigation-self-service-button/navigation-self-service-button.component";
 import { ROUTE_PATHS } from "../../../route_paths";
 import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
-import { TokenService, TokenServiceInterface } from "../../../services/token/token.service";
+import { MatIcon } from "@angular/material/icon";
+import { UserService, UserServiceInterface } from "../../../services/user/user.service";
+import {
+  MatAccordion,
+  MatExpansionPanel,
+  MatExpansionPanelHeader,
+  MatExpansionPanelTitle
+} from "@angular/material/expansion";
 
 @Component({
   selector: "app-navigation-self-service",
   standalone: true,
-  imports: [NavigationSelfServiceButtonComponent],
+  imports: [NavigationSelfServiceButtonComponent, MatIcon, MatExpansionPanel, MatExpansionPanelHeader, MatExpansionPanelTitle, MatAccordion],
   templateUrl: "./navigation-self-service.component.html",
   styleUrl: "./navigation-self-service.component.scss"
 })
 export class NavigationSelfServiceComponent {
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
   protected readonly authService: AuthServiceInterface = inject(AuthService);
+  protected readonly Boolean = Boolean;
+  private readonly userService: UserServiceInterface = inject(UserService);
+
+  userData = this.userService.user;
 }
