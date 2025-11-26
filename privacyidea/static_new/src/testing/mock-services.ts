@@ -232,7 +232,7 @@ export class MockPiResponse<Value, Detail = unknown> implements PiResponse<Value
 
 export class MockUserService implements UserServiceInterface {
   userAttributes: Signal<Record<string, string>> = signal({});
-  userAttributesList: Signal<{ key: string; value: string }[]> = signal([]);
+  userAttributesList: WritableSignal<{ key: string; value: string }[]> = signal([]);
   userAttributesResource: HttpResourceRef<PiResponse<Record<string, string>, unknown> | undefined> =
     new MockHttpResourceRef(MockPiResponse.fromValue({}));
   deletableAttributes: Signal<string[]> = signal([]);

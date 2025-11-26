@@ -44,6 +44,7 @@ export interface UserData {
   surname: string;
   userid: string;
   username: string;
+  [key: string]: unknown; // Allow additional custom properties
 }
 
 export interface UserAttributePolicy {
