@@ -33,6 +33,7 @@ import { AuditComponent } from "./components/audit/audit.component";
 import { PoliciesComponent } from "./components/policies/policies.component";
 import { TokenImportComponent } from "./components/token/token-import/token-import.component";
 import { ContainerTemplatesComponent } from "./components/token/container-templates/container-templates.component";
+import { ClientsComponent } from "./components/audit/clients/clients.component";
 
 export const routes: Routes = [
   {
@@ -73,6 +74,9 @@ export const routes: Routes = [
   {
     path: "audit",
     component: TokenComponent,
-    children: [{ path: "", component: AuditComponent }]
+    children: [
+      { path: "", component: AuditComponent },
+      { path: "clients", component: ClientsComponent }
+    ]
   }
 ];
