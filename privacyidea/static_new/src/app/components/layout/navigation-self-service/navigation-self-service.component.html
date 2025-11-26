@@ -1,6 +1,4 @@
-<div
-  [@componentFade]
-  class="navigation-self-service-column">
+<div class="navigation-self-service-column">
 
   @if (!authService.tokenWizard() && !authService.containerWizard().enabled) {
     <app-navigation-self-service-button

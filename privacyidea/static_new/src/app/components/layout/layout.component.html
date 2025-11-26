@@ -14,7 +14,7 @@
           <app-navigation />
         </mat-drawer>
         <mat-drawer-content class="drawer-content padding-32">
-          <router-outlet></router-outlet>
+            <router-outlet></router-outlet>
         </mat-drawer-content>
       </mat-drawer-container>
     } @else {
@@ -26,9 +26,7 @@
           <app-navigation-self-service class="flex-size-1" />
         }
         <div class="flex-size-8 flex-top-center">
-          <div
-            [@componentFade]
-            class="selfservice-content-container">
+          <div class="selfservice-content-container">
             <router-outlet></router-outlet>
           </div>
         </div>
