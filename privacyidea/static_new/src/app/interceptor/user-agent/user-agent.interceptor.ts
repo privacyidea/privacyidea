@@ -16,17 +16,18 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, inject } from "@angular/core";
-import { MatCardContent, MatCardModule } from "@angular/material/card";
-import { UserService, UserServiceInterface } from "../../services/user/user.service";
 
-@Component({
-  selector: "app-user-self-service",
-  imports: [MatCardModule, MatCardContent],
-  templateUrl: "./user.self-service.component.html",
-  styleUrl: "./user.component.scss"
-})
-export class UserSelfServiceComponent {
-  private readonly userService: UserServiceInterface = inject(UserService);
-  userData = this.userService.user;
-}
+import { HttpInterceptorFn } from "@angular/common/http";
+import { VersioningService, VersioningServiceInterface } from "../../services/version/version.service";
+import { inject } from "@angular/core";
+
+export const userAgentInterceptor: HttpInterceptorFn = (req, next) => {
+  const versioningService: VersioningServiceInterface = inject(VersioningService);
+  const userAgentReq = req.clone({
+    // TODO: include the original user-agent
+    setHeaders: {
+      "User-Agent": "privacyIDEA-WebUI/" + versioningService.getVersion()
+    }
+  });
+  return next(userAgentReq);
+};

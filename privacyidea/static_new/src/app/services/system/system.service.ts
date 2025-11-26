@@ -30,11 +30,17 @@ export type PiNode = {
   uuid: string;
 };
 
+export interface NodeInfo {
+  name: string;
+  uuid: string;
+}
+
 export interface SystemServiceInterface {
   systemConfigResource: HttpResourceRef<any>;
   radiusServerResource: HttpResourceRef<any>;
   caConnectorResource?: HttpResourceRef<any>;
   caConnectors?: WritableSignal<CaConnectors>;
+  nodesResource: HttpResourceRef<any>;
   systemConfig: Signal<any>;
   nodes: Signal<PiNode[]>;
 }

@@ -39,7 +39,7 @@
       <div class="user-details-column">
         @for (item of col; track item.key) {
           <div class="label">{{ item.label }}:</div>
-          @if (typeof item.value === 'object' && item.value.length > 1) {
+          @if (Array.isArray(item.value) && item.value.length > 1) {
             <div class="value">
               <ul class="no-indention margin-0">
                 @for (val of item.value; track val) {

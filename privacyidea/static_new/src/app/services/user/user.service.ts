@@ -44,6 +44,7 @@ export interface UserData {
   surname: string;
   userid: string;
   username: string;
+  [key: string]: unknown; // Allow additional custom properties
 }
 
 export interface UserAttributePolicy {
@@ -239,7 +240,8 @@ export class UserService implements UserServiceInterface {
       method: "GET",
       headers: this.authService.getHeaders(),
       params: {
-        ...(this.detailsUsername() && { user: this.detailsUsername() })
+        ...(this.detailsUsername() && { user: this.detailsUsername() }),
+        ...(this.selectedUserRealm() && { realm: this.selectedUserRealm() })
       }
     };
   });

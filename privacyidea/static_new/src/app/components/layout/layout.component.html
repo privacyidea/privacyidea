@@ -17,13 +17,39 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div
-  class="layout"
   aria-label="Layout"
+  class="layout"
   i18n-aria-label>
   <main
     aria-label="Main Router Outlet"
     i18n-aria-label>
-    <router-outlet></router-outlet>
+    @if (authService.role() === 'admin') {
+      <mat-drawer-container class="drawer-container">
+        <mat-drawer
+          class="drawer"
+          mode="side"
+          opened>
+          <app-navigation />
+        </mat-drawer>
+        <mat-drawer-content class="drawer-content padding-32">
+            <router-outlet></router-outlet>
+        </mat-drawer-content>
+      </mat-drawer-container>
+    } @else {
+      <div
+        class="selfservice-layout">
+        @if (authService.tokenWizard() || authService.containerWizard().enabled) {
+          <app-navigation-self-service-wizard class="flex-size-1" />
+        } @else {
+          <app-navigation-self-service class="flex-size-1" />
+        }
+        <div class="flex-size-8 flex-top-center">
+          <div class="selfservice-content-container">
+            <router-outlet></router-outlet>
+          </div>
+        </div>
+      </div>
+    }
     @if (showProgressBar()) {
       <div class="loading-urls-container">
         @for (l of loadingUrls(); track l.key) {

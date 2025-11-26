@@ -309,7 +309,7 @@ describe("AuthService", () => {
     expect(console.error).toHaveBeenCalled();
   });
 
-  it("authenticate(): sets version, saves token, decodes jwt, sets isAuthenticated", () => {
+  it("authenticate(): saves token, decodes jwt, sets isAuthenticated", () => {
     const payload: JwtData = {
       username: "alice",
       realm: "def",
@@ -376,7 +376,6 @@ describe("AuthService", () => {
     };
     req.flush(body);
 
-    expect(mockVersioning.version.set).toHaveBeenCalledWith("3.12.4");
     expect(mockLocal.saveData).toHaveBeenCalled();
     expect((authService as any).authData()).not.toBeNull();
     expect((authService as any).jwtData()).toMatchObject(payload);

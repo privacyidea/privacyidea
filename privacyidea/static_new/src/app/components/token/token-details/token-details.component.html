@@ -116,7 +116,7 @@
                       class="details-scrollable-container"
                       [ngClass]="{ 'details-list': element.value.length > 2 }">
                       @for (realm of element.value; track realm) {
-                        <mat-list-item class="height-auto">
+                        <mat-list-item class="height-auto pad-0">
                           <span class="font-14">• {{ realm }}</span>
                         </mat-list-item>
                       }
@@ -151,7 +151,7 @@
                         'details-list': element.value.length > 2
                       }">
                       @for (tokengroup of element.value; track tokengroup) {
-                        <mat-list-item class="height-auto">
+                        <mat-list-item class="height-auto pad-0">
                           <span class="font-14">• {{ tokengroup }}</span>
                         </mat-list-item>
                       }

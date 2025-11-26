@@ -16,20 +16,19 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<div
-  aria-label="Token Selfservice Layout"
-  class="token-selfservice-layout">
-  @if (authService.tokenWizard() || authService.containerWizard().enabled) {
-    <app-navigation-self-service-wizard class="flex-size-1" />
-  } @else {
-    <app-navigation-self-service class="flex-size-1" />
+<div class="navigation-self-service-column">
+  @if (authService.tokenWizard()) {
+    <app-navigation-self-service-button
+      i18n-title
+      key="{{ this.ROUTE_PATHS.TOKENS_WIZARD }}"
+      matIconName="auto_awesome"
+      title="Token Enrollment Wizard" />
   }
-  <div class="flex-size-8 flex-top-center">
-    <div
-      [@componentFade]
-      class="main-content-container">
-      <router-outlet></router-outlet>
-    </div>
-  </div>
-  <div class="flex-size-1"></div>
+  @if (authService.containerWizard().enabled) {
+    <app-navigation-self-service-button
+      i18n-title
+      key="{{ this.ROUTE_PATHS.TOKENS_CONTAINERS_WIZARD }}"
+      matIconName="folder_special"
+      title="Container Wizard" />
+  }
 </div>

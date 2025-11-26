@@ -19,6 +19,7 @@
 export const ROUTE_PATHS = {
   LOGIN: "/login",
   AUDIT: "/audit",
+  CLIENTS: "/audit/clients",
   TOKENS: "/tokens",
   USERS: "/users",
   POLICIES: "/policies",
@@ -34,5 +35,6 @@ export const ROUTE_PATHS = {
   TOKENS_ASSIGN_TOKEN: "/tokens/assign-token",
   USERS_DETAILS: "/users/details",
   TOKENS_WIZARD: "/tokens/wizard",
-  TOKENS_CONTAINERS_WIZARD: "/tokens/containers/wizard"
+  TOKENS_CONTAINERS_WIZARD: "/tokens/containers/wizard",
+  USERS_REALMS: "/users/realms"
 };
