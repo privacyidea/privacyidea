@@ -231,7 +231,7 @@ export class MockPiResponse<Value, Detail = unknown> implements PiResponse<Value
 
 export class MockUserService implements UserServiceInterface {
   userAttributes: Signal<Record<string, string>> = signal({});
-  userAttributesList: Signal<{ key: string; value: string }[]> = signal([]);
+  userAttributesList: WritableSignal<{ key: string; value: string }[]> = signal([]);
   userAttributesResource: HttpResourceRef<PiResponse<Record<string, string>, unknown> | undefined> =
     new MockHttpResourceRef(MockPiResponse.fromValue({}));
   attributePolicy: Signal<UserAttributePolicy> = signal<UserAttributePolicy>({
@@ -733,6 +733,8 @@ export class MockTokenService implements TokenServiceInterface {
   stopPolling$: Subject<void> = new Subject<void>();
   tokenBaseUrl: string = "mockEnvironment.proxyUrl + '/token'";
   readonly eventPageSize = 10;
+  userRealm = signal("");
+
   tokenSerial = signal("");
   selectedTokenType: WritableSignal<TokenType> = signal({
     key: "hotp",

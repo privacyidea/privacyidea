@@ -185,6 +185,7 @@ export interface TokenServiceInterface {
   tokenTypesResource: HttpResourceRef<PiResponse<{}> | undefined>;
   userTokenResource: HttpResourceRef<PiResponse<Tokens> | undefined>;
   detailsUsername: WritableSignal<string>;
+  userRealm: WritableSignal<string>;
   tokenTypeOptions: Signal<TokenType[]>;
   pageSize: WritableSignal<number>;
   tokenIsActive: WritableSignal<boolean>;
@@ -283,6 +284,8 @@ export class TokenService implements TokenServiceInterface {
   eventPageSize = 10;
   detailsUsername = this.contentService.detailsUsername;
   tokenSerial = this.contentService.tokenSerial;
+  userRealm = signal("");
+
   filterParams = computed<Record<string, string>>(() => {
     const allowed = [...this.apiFilter, ...this.advancedApiFilter, ...this.hiddenApiFilter];
 
@@ -425,7 +428,7 @@ export class TokenService implements TokenServiceInterface {
       url: this.tokenBaseUrl,
       method: "GET",
       headers: this.authService.getHeaders(),
-      params: { user: this.detailsUsername() }
+      params: { user: this.detailsUsername(), realm: this.userRealm() }
     };
   });
   tokenTypeOptions = computed<TokenType[]>(() => {

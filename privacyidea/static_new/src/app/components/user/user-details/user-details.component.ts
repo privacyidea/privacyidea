@@ -22,7 +22,7 @@ import {
   effect,
   ElementRef,
   inject,
-  linkedSignal,
+  linkedSignal, Signal,
   signal,
   ViewChild,
   WritableSignal
@@ -97,6 +97,10 @@ export class UserDetailsComponent {
     resolver: 'Resolver'
   };
   readonly excludedKeys = new Set(['editable']);
+  customAttributeKeys: Signal<Set<string>> = computed(() => {
+    const attributeKeys = Object.entries(this.userService.userAttributesList()).map(([_, attribute]) => attribute.key);
+    return new Set(attributeKeys);
+  });
 
   userData = this.userService.user;
   tokenResource = this.tokenService.tokenResource;
@@ -174,7 +178,7 @@ export class UserDetailsComponent {
 
   detailsEntries = computed(() =>
     Object.entries(this.userData() ?? {})
-      .filter(([key]) => !this.excludedKeys.has(key))
+      .filter(([key]) => !this.excludedKeys.has(key) && !this.customAttributeKeys().has(key))
       .map(([key, value]) => ({
         key,
         label: this.labels[key] ?? key,
@@ -261,4 +265,6 @@ export class UserDetailsComponent {
   showUserAuditLog() {
     this.auditService.auditFilter.set(new FilterValue({ value: `user: ${this.userService.detailsUsername()}` }));
   }
+
+  protected readonly Array = Array;
 }

@@ -44,6 +44,7 @@ export interface UserData {
   surname: string;
   userid: string;
   username: string;
+  [key: string]: unknown; // Allow additional custom properties
 }
 
 export interface UserAttributePolicy {
@@ -206,7 +207,7 @@ export class UserService implements UserServiceInterface {
     return filter?.username ?? "";
   });
   userResource = httpResource<PiResponse<UserData[]>>(() => {
-    if (!this.authService.actionAllowed("userlist")) {
+    if (!this.authService.actionAllowed("userlist") || !this.contentService.routeUrl().startsWith(ROUTE_PATHS.USERS_DETAILS)) {
       return undefined;
     }
     return {
@@ -214,7 +215,8 @@ export class UserService implements UserServiceInterface {
       method: "GET",
       headers: this.authService.getHeaders(),
       params: {
-        ...(this.detailsUsername() && { user: this.detailsUsername() })
+        ...(this.detailsUsername() && { user: this.detailsUsername() }),
+        ...(this.selectedUserRealm() && { realm: this.selectedUserRealm() })
       }
     };
   });
@@ -247,7 +249,6 @@ export class UserService implements UserServiceInterface {
       !this.authService.actionAllowed("userlist") ||
       (!this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_DETAILS) &&
         !this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS) &&
-        !this.contentService.routeUrl().startsWith(ROUTE_PATHS.USERS_DETAILS) &&
         ![
           ROUTE_PATHS.TOKENS,
           ROUTE_PATHS.USERS,

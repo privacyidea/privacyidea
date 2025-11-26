@@ -37,6 +37,7 @@ import {
 import { ROUTE_PATHS } from "../../route_paths";
 import { PiResponse } from "../../app.component";
 import { MockAuthService } from "../../../testing/mock-services/mock-auth-service";
+import { environment } from "../../../environments/environment";
 
 function buildUser(username: string): UserData {
   return {
@@ -82,6 +83,8 @@ describe("UserService", () => {
   let userService: UserService;
   let realmService: MockRealmService;
   let httpMock: HttpTestingController;
+  let contentServiceMock: MockContentService;
+  let authServiceMock: MockAuthService;
 
   let users: UserData[];
   let alice: UserData;
@@ -105,6 +108,8 @@ describe("UserService", () => {
     userService = TestBed.inject(UserService);
     realmService = TestBed.inject(RealmService) as unknown as MockRealmService;
     httpMock = TestBed.inject(HttpTestingController);
+    contentServiceMock = TestBed.inject(ContentService) as unknown as MockContentService;
+    authServiceMock = TestBed.inject(AuthService) as unknown as MockAuthService;
 
     alice = buildUser("Alice");
     users = [alice, buildUser("Bob"), buildUser("Charlie")];
@@ -318,6 +323,46 @@ describe("UserService", () => {
 
       userService.selectionFilter.set("");
       expect(userService.selectedUser()).toEqual(users[2]);
+    });
+  });
+
+  describe("userResource", () => {
+    beforeEach(() => {
+      jest.spyOn(authServiceMock, "actionAllowed").mockImplementation((action: string) => action === "userlist");
+    });
+
+    it("should return undefined if route is not USER_DETAILS", async () => {
+      contentServiceMock.routeUrl.update(() => ROUTE_PATHS.TOKENS);
+      const mockBackend = TestBed.inject(HttpTestingController);
+      TestBed.flushEffects();
+
+      // Expect and flush the HTTP request
+      mockBackend.expectNone(environment.proxyUrl + "/user/");
+      await Promise.resolve();
+
+      expect(userService.userResource.value()).toBeUndefined();
+    });
+
+    it("should do request if route is USER_DETAILS", async () => {
+      const realm = "test-realm";
+      const user = "alice";
+      contentServiceMock.routeUrl.update(() => ROUTE_PATHS.USERS_DETAILS + "/" + user);
+      userService.detailsUsername.set(user);
+      userService.selectedUserRealm.set(realm);
+      const mockBackend = TestBed.inject(HttpTestingController);
+      TestBed.flushEffects();
+
+      // Expect and flush the main user details request
+      const req = mockBackend.expectOne(environment.proxyUrl + "/user/?user=" + user + "&realm=" + realm);
+      req.flush({ result: {} });
+
+      // Ignore and flush all other open requests
+      httpMock.match(() => true).forEach(r => r.flush({ result: {} }));
+
+      await Promise.resolve();
+
+      expect(userService.userResource.value()).toBeDefined();
+      expect(userService.usersResource.value()).toBeUndefined();
     });
   });
 });
