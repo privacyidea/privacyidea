@@ -69,11 +69,11 @@ export class SystemService implements SystemServiceInterface {
   });
 
   radiusServerResource = httpResource<any>(() => {
-    // Do not load CA connectors details if the action is not allowed.
+    // Do not load RADIUS server details if the action is not allowed.
     if (!this.authService.actionAllowed("enrollRADIUS")) {
       return undefined;
     }
-    // Only load CA connectors on enrollment or token wizard routes.
+    // Only load RADIUS server details on enrollment or token wizard routes.
     if (!this.contentService.onTokensEnrollment() &&
       !this.contentService.onTokensWizard()) {
       return undefined;
@@ -85,6 +85,7 @@ export class SystemService implements SystemServiceInterface {
       headers: this.authService.getHeaders()
     };
   });
+
   caConnectorResource = httpResource<any>(() => {
     // Do not load CA connectors details if the action is not allowed.
     if (!this.authService.actionAllowed("enrollCERTIFICATE")) {
