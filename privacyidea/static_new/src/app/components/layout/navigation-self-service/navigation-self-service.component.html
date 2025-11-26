@@ -1,53 +1,35 @@
 <div class="navigation-self-service-column">
   <mat-accordion>
-    <mat-expansion-panel
-      class="user-details-panel">
+    <mat-expansion-panel class="user-details-panel">
       <mat-expansion-panel-header>
         <mat-panel-title>
           <mat-icon class="tile-icon">
             supervised_user_circle
           </mat-icon>
           <span class="username">
-          {{ userData().username || "-" }}
-        </span>
+        {{ userData().username || "-" }}
+      </span>
         </mat-panel-title>
       </mat-expansion-panel-header>
+
       <div class="user-details-column">
-        <div
-          class="label"
-          i18n>Given name:
-        </div>
-        <div class="value">{{ userData().givenname || "-" }}</div>
+        @for (item of detailsEntries(); track item.key) {
+          <div class="label">
+            {{ item.label }}:
+          </div>
 
-        <div
-          class="label"
-          i18n>Surname:
-        </div>
-        <div class="value">{{ userData().surname || "-" }}</div>
-
-        <div
-          class="label"
-          i18n>Description:
-        </div>
-        <div class="value">{{ userData().description || "-" }}</div>
-
-        <div
-          class="label"
-          i18n>Email:
-        </div>
-        <div class="value">{{ userData().email || "-" }}</div>
-
-        <div
-          class="label"
-          i18n>Phone:
-        </div>
-        <div class="value">{{ userData().phone || "-" }}</div>
-
-        <div
-          class="label"
-          i18n>Mobile:
-        </div>
-        <div class="value">{{ userData().mobile || "-" }}</div>
+          @if (isArray(item.value) && item.value.length > 1) {
+            <div class="value">
+              <ul class="no-indention margin-0">
+                @for (val of item.value; track val) {
+                  <li>{{ val }}</li>
+                }
+              </ul>
+            </div>
+          } @else {
+            <div class="value">{{ item.value }}</div>
+          }
+        }
       </div>
     </mat-expansion-panel>
   </mat-accordion>
