@@ -55,12 +55,6 @@ import { Router } from "@angular/router";
 import { Sort } from "@angular/material/sort";
 import { ColumnDef, ColumnKey, TableUtilsServiceInterface } from "../app/services/table-utils/table-utils.service";
 import { TokenEnrollmentLastStepDialogData } from "../app/components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
-import { TokenTypeOption } from "../app/components/token/token.component";
-import {
-  EnrollmentResponse,
-  TokenApiPayloadMapper,
-  TokenEnrollmentData
-} from "../app/mappers/token-api-payload/_token-api-payload.mapper";
 import { ROUTE_PATHS } from "../app/route_paths";
 
 export function makeResource<T>(initial: T) {
@@ -541,6 +535,9 @@ export class MockContentService implements ContentServiceInterface {
   onUserDetails: Signal<boolean> = computed(
     () => this.routeUrl().startsWith(ROUTE_PATHS.USERS_DETAILS + "/")
   );
+
+  onUserRealms: Signal<boolean> = computed(
+    () => this.routeUrl() === ROUTE_PATHS.USERS);
 
   onTokensEnrollment: Signal<boolean> = computed(
     () => this.routeUrl() === ROUTE_PATHS.TOKENS_ENROLLMENT
