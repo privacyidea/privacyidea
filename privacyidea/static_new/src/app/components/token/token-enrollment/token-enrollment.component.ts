@@ -66,7 +66,7 @@ import { ContainerService, ContainerServiceInterface } from "../../../services/c
 import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
 import { NotificationService, NotificationServiceInterface } from "../../../services/notification/notification.service";
 import { RealmService, RealmServiceInterface } from "../../../services/realm/realm.service";
-import { TokenService, TokenServiceInterface } from "../../../services/token/token.service";
+import { TokenService, TokenServiceInterface, TokenType } from "../../../services/token/token.service";
 import { UserData, UserService, UserServiceInterface } from "../../../services/user/user.service";
 import { VersioningService, VersioningServiceInterface } from "../../../services/version/version.service";
 import { EnrollApplspecComponent } from "./enroll-asp/enroll-applspec.component";
@@ -112,6 +112,7 @@ import {
   WebauthnEnrollmentResponse,
   WebAuthnEnrollmentData
 } from "../../../mappers/token-api-payload/webauthn-token-api-payload.mapper";
+import { TokenTypeOption } from "../token.component";
 
 export type enrollmentArgsGetterFn<T extends TokenEnrollmentData = TokenEnrollmentData> = (
   enrollmentOptions: TokenEnrollmentData
@@ -277,7 +278,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
   @ViewChild(UserAssignmentComponent)
   userAssignmentComponent!: UserAssignmentComponent;
   enrollmentArgsGetter?: enrollmentArgsGetterFn;
-  reopenDialogSignal = linkedSignal<any, ReopenDialogFn | undefined>({
+  reopenDialogSignal = linkedSignal<TokenType, ReopenDialogFn | undefined>({
     source: this.tokenService.selectedTokenType,
     computation: () => undefined
   });

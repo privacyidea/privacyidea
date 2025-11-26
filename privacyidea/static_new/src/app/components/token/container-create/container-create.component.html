@@ -63,7 +63,7 @@
       (containerService.selectedContainerType()?.token_types?.length ?? 0) >= tokenService.tokenTypeOptions().length
     ) {
       All
-    } @else if (containerService.selectedContainerType()?.token_types?.length ?? 0 > 1) {
+    } @else if ((containerService.selectedContainerType()?.token_types?.length ?? 0) > 1) {
       {{ containerService.selectedContainerType()?.token_types?.join(", ") }}
     } @else {
       {{ containerService.selectedContainerType()?.token_types?.[0] }}
