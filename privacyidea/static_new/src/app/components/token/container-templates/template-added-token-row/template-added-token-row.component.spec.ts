@@ -51,7 +51,5 @@ describe("TemplateAddedTokenRowComponent", () => {
       component.removeToken();
       expect(component.onRemoveToken.emit).not.toHaveBeenCalled();
     });
-
-    it;
   });
 });

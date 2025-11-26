@@ -1,15 +1,21 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { ContainerTemplateAddTokenChipsComponent } from "./container-template-add-token-chips.component";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { HttpClientTestingModule } from "@angular/common/http/testing";
+import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { provideHttpClient } from "@angular/common/http";
 
-describe("anyTypeSelectorComponent", () => {
+describe("ContainerTemplateAddTokenChipsComponent", () => {
   let component: ContainerTemplateAddTokenChipsComponent;
   let fixture: ComponentFixture<ContainerTemplateAddTokenChipsComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ContainerTemplateAddTokenChipsComponent, NoopAnimationsModule, HttpClientTestingModule]
+      imports: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        ContainerTemplateAddTokenChipsComponent,
+        NoopAnimationsModule
+      ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(ContainerTemplateAddTokenChipsComponent);

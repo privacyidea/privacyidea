@@ -7,7 +7,7 @@ import { ContainerTemplateService } from "../../../../services/container-templat
 import { MockContainerTemplateService } from "../../../../../testing/mock-services/mock-container-template-service";
 import { ContainerTemplateEditComponent } from "../container-template-edit/container-template-edit.component";
 
-describe("ContainerTemplateEditComponent", () => {
+describe("ContainerTemplateNewComponent", () => {
   let component: ContainerTemplateEditComponent;
   let fixture: ComponentFixture<ContainerTemplateEditComponent>;
   let templateServiceMock: MockContainerTemplateService;

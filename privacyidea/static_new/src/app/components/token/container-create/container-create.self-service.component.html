@@ -59,7 +59,9 @@
     class="container-type-hint"
     i18n>
     Supported Token Types:
-    @if (containerService.selectedContainerType()?.token_types?.length ?? 0 >= tokenService.tokenTypeOptions().length) {
+    @if (
+      (containerService.selectedContainerType()?.token_types?.length ?? 0) >= tokenService.tokenTypeOptions().length
+    ) {
       All
     } @else if (containerService.selectedContainerType()?.token_types?.length ?? 0 > 1) {
       {{ containerService.selectedContainerType()?.token_types?.join(", ") }}

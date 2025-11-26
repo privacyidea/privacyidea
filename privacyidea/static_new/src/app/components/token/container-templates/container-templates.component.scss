@@ -25,6 +25,6 @@
 .button-hover:hover:not(:disabled):not(.button-active) {
   background-color: var(--mat-sys-primary-base-hover);
   color: var(--mat-sys-on-primary);
-  font-size: 600;
+  font-weight: 600;
   cursor: pointer;
 }

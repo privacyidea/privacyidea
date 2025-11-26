@@ -45,11 +45,11 @@ export class ContainerTemplateEditComponent {
   readonly containerTemplateService: ContainerTemplateServiceInterface = inject(ContainerTemplateService);
   readonly templateEdited = linkedSignal({
     source: () => ({
-      templateOrigianl: this.templateOriginal(),
+      templateOriginal: this.templateOriginal(),
       isEditMode: this.isEditMode()
     }),
     computation: (source) => {
-      return deepCopy(source.templateOrigianl);
+      return deepCopy(source.templateOriginal);
     }
   });
   readonly isEditMode = signal<boolean>(false);
