@@ -266,7 +266,7 @@ describe("TokenEnrollmentComponent", () => {
       component.setPinControl.setValue("1234");
       component.repeatPinControl.setValue("1234");
 
-      component.getEnrollmentArgs = undefined;
+      component.enrollmentArgsGetter = undefined;
 
       await component.enrollToken();
 
@@ -285,8 +285,8 @@ describe("TokenEnrollmentComponent", () => {
 
       const response = { detail: { rollout_state: "done" } } as any;
 
-      const getEnrollmentArgsFn = jest.fn().mockReturnValue(of(response));
-      component.updateGetEnrollmentArgs(getEnrollmentArgsFn);
+      const enrollmentArgsGetterFn = jest.fn().mockReturnValue(of(response));
+      component.updateEnrollmentArgsGetter(enrollmentArgsGetterFn);
       const onEnrollmentResponseFn = jest.fn().mockReturnValue(lastValueFrom(of(response)));
       component.updateOnEnrollmentResponse(onEnrollmentResponseFn);
 
@@ -294,7 +294,7 @@ describe("TokenEnrollmentComponent", () => {
 
       await component.enrollToken();
 
-      expect(getEnrollmentArgsFn).toHaveBeenCalledTimes(1);
+      expect(enrollmentArgsGetterFn).toHaveBeenCalledTimes(1);
       expect(component.enrollResponse()).toBe(response);
       expect(spyOpen).toHaveBeenCalledWith({ response, user: null });
     });
@@ -305,8 +305,8 @@ describe("TokenEnrollmentComponent", () => {
       component.repeatPinControl.setValue("1111");
 
       const error = { error: { result: { error: { message: "nope" } } } };
-      const getEnrollmentArgsFn = jest.fn().mockReturnValue({});
-      component.updateGetEnrollmentArgs(getEnrollmentArgsFn);
+      const enrollmentArgsGetterFn = jest.fn().mockReturnValue({});
+      component.updateEnrollmentArgsGetter(enrollmentArgsGetterFn);
       tokenSvc.enrollToken.mockReturnValue(Promise.reject(error));
 
       await component.enrollToken().catch(() => undefined);

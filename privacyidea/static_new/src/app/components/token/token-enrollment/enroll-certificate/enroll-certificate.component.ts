@@ -75,7 +75,7 @@ export class EnrollCertificateComponent implements OnInit {
   @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
-  @Output() getEnrollmentDataChange = new EventEmitter<
+  @Output() enrollmentArgsGetterChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => {
       data: CertificateEnrollmentData;
       mapper: CertificateApiPayloadMapper;
@@ -133,7 +133,7 @@ export class EnrollCertificateComponent implements OnInit {
       pem: this.pemControl,
       intentionToggle: this.intentionToggleControl
     });
-    this.getEnrollmentDataChange.emit(this.getEnrollmentData);
+    this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
 
     this.intentionToggleControl.valueChanges.subscribe((intention) => {
       if (intention === "uploadRequest" || intention === "uploadCert") {
@@ -151,7 +151,7 @@ export class EnrollCertificateComponent implements OnInit {
     });
   }
 
-  getEnrollmentData = (
+  enrollmentArgsGetter = (
     basicOptions: TokenEnrollmentData
   ): {
     data: CertificateEnrollmentData;

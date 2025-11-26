@@ -70,7 +70,7 @@ export class EnrollSmsComponent implements OnInit {
   @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
-  @Output() getEnrollmentDataChange = new EventEmitter<
+  @Output() enrollmentArgsGetterChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => {
       data: SmsEnrollmentData;
       mapper: TokenApiPayloadMapper<SmsEnrollmentData>;
@@ -122,7 +122,7 @@ export class EnrollSmsComponent implements OnInit {
       phoneNumber: this.phoneNumberControl,
       readNumberDynamically: this.readNumberDynamicallyControl
     });
-    this.getEnrollmentDataChange.emit(this.getEnrollmentData);
+    this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
 
     this._applyPolicies();
   }
@@ -140,7 +140,7 @@ export class EnrollSmsComponent implements OnInit {
     });
   }
 
-  getEnrollmentData = (
+  enrollmentArgsGetter = (
     basicOptions: TokenEnrollmentData
   ): {
     data: SmsEnrollmentData;

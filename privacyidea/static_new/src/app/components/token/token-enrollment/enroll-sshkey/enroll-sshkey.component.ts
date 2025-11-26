@@ -49,7 +49,7 @@ export class EnrollSshkeyComponent {
 
   sshPublicKeyFormControl = new FormControl<string>("", [Validators.required, EnrollSshkeyComponent.sshKeyValidator]);
 
-  @Output() getEnrollmentDataChange = new EventEmitter<
+  @Output() enrollmentArgsGetterChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => {
       data: SshkeyEnrollmentData;
       mapper: TokenApiPayloadMapper<SshkeyEnrollmentData>;
@@ -80,10 +80,10 @@ export class EnrollSshkeyComponent {
     this.additionalFormFieldsChange.emit({
       sshPublicKey: this.sshPublicKeyFormControl
     });
-    this.getEnrollmentDataChange.emit(this.getEnrollmentData);
+    this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
   }
 
-  getEnrollmentData = (
+  enrollmentArgsGetter = (
     basicOptions: TokenEnrollmentData
   ): {
     data: SshkeyEnrollmentData;

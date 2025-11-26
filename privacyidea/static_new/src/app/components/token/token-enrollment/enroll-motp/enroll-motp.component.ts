@@ -63,7 +63,7 @@ export class EnrollMotpComponent implements OnInit {
   @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
-  @Output() getEnrollmentDataChange = new EventEmitter<
+  @Output() enrollmentArgsGetterChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => {
       data: MotpEnrollmentData;
       mapper: TokenApiPayloadMapper<MotpEnrollmentData>;
@@ -98,7 +98,7 @@ export class EnrollMotpComponent implements OnInit {
       motpPin: this.motpPinControl,
       repeatMotpPin: this.repeatMotpPinControl
     });
-    this.getEnrollmentDataChange.emit(this.getEnrollmentData);
+    this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
     this._applyPolicies();
     this.motpPinControl.valueChanges.subscribe(() => {
       this.repeatMotpPinControl.updateValueAndValidity();
@@ -122,7 +122,7 @@ export class EnrollMotpComponent implements OnInit {
     }
   }
 
-  getEnrollmentData = (
+  enrollmentArgsGetter = (
     basicOptions: TokenEnrollmentData
   ): {
     data: MotpEnrollmentData;

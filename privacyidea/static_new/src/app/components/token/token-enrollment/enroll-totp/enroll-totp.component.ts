@@ -77,7 +77,7 @@ export class EnrollTotpComponent implements OnInit {
   @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
-  @Output() getEnrollmentDataChange = new EventEmitter<
+  @Output() enrollmentArgsGetterChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => {
       data: TotpEnrollmentData;
       mapper: TokenApiPayloadMapper<TotpEnrollmentData>;
@@ -110,7 +110,7 @@ export class EnrollTotpComponent implements OnInit {
       hashAlgorithm: this.hashAlgorithmControl,
       timeStep: this.timeStepControl
     });
-    this.getEnrollmentDataChange.emit(this.getEnrollmentData);
+    this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
     this._applyPolicies();
   }
 
@@ -131,7 +131,7 @@ export class EnrollTotpComponent implements OnInit {
     }
   }
 
-  getEnrollmentData = (
+  enrollmentArgsGetter = (
     basicOptions: TokenEnrollmentData
   ): {
     data: TotpEnrollmentData;

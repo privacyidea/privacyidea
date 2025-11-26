@@ -47,7 +47,7 @@ export class EnrollU2fComponent implements OnInit {
   @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
-  @Output() getEnrollmentDataChange = new EventEmitter<
+  @Output() enrollmentArgsGetterChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => {
       data: U2fEnrollmentData;
       mapper: TokenApiPayloadMapper<U2fEnrollmentData>;
@@ -58,10 +58,10 @@ export class EnrollU2fComponent implements OnInit {
 
   ngOnInit(): void {
     this.additionalFormFieldsChange.emit({});
-    this.getEnrollmentDataChange.emit(this.getEnrollmentData);
+    this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
   }
 
-  getEnrollmentData = (
+  enrollmentArgsGetter = (
     basicOptions: TokenEnrollmentData
   ): {
     data: U2fEnrollmentData;

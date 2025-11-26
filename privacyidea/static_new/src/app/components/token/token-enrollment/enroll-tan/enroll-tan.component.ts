@@ -48,7 +48,7 @@ export class EnrollTanComponent implements OnInit {
   @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
-  @Output() getEnrollmentDataChange = new EventEmitter<
+  @Output() enrollmentArgsGetterChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => {
       data: TanEnrollmentData;
       mapper: TokenApiPayloadMapper<TanEnrollmentData>;
@@ -57,10 +57,10 @@ export class EnrollTanComponent implements OnInit {
 
   ngOnInit(): void {
     this.additionalFormFieldsChange.emit({});
-    this.getEnrollmentDataChange.emit(this.getEnrollmentData);
+    this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
   }
 
-  getEnrollmentData = (
+  enrollmentArgsGetter = (
     basicOptions: TokenEnrollmentData
   ): {
     data: TanEnrollmentData;

@@ -113,7 +113,7 @@ import {
   WebAuthnEnrollmentData
 } from "../../../mappers/token-api-payload/webauthn-token-api-payload.mapper";
 
-export type GetEnrollmentArgsFn<T extends TokenEnrollmentData = TokenEnrollmentData> = (
+export type enrollmentArgsGetterFn<T extends TokenEnrollmentData = TokenEnrollmentData> = (
   enrollmentOptions: TokenEnrollmentData
 ) => {
   data: T;
@@ -276,7 +276,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
   @ViewChild("stickySentinel") stickySentinel!: ElementRef<HTMLElement>;
   @ViewChild(UserAssignmentComponent)
   userAssignmentComponent!: UserAssignmentComponent;
-  getEnrollmentArgs?: GetEnrollmentArgsFn;
+  enrollmentArgsGetter?: enrollmentArgsGetterFn;
   reopenDialogSignal = linkedSignal<any, ReopenDialogFn | undefined>({
     source: this.tokenService.selectedTokenType,
     computation: () => undefined
@@ -332,8 +332,8 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     return setPin && repeatPin && setPin.value !== repeatPin.value ? { pinMismatch: true } : null;
   }
 
-  updateGetEnrollmentArgs(event: GetEnrollmentArgsFn): void {
-    this.getEnrollmentArgs = event;
+  updateEnrollmentArgsGetter(event: enrollmentArgsGetterFn): void {
+    this.enrollmentArgsGetter = event;
   }
 
   updateReopenDialog(event: ReopenDialogFn): void {
@@ -502,7 +502,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
       return;
     }
 
-    if (!this.getEnrollmentArgs) {
+    if (!this.enrollmentArgsGetter) {
       this.notificationService.openSnackBar("Enrollment action is not available for the selected token type.");
       return;
     }
@@ -537,7 +537,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
       serial: this.serial()
     };
 
-    const enrollmentArgs = this.getEnrollmentArgs(basicOptions);
+    const enrollmentArgs = this.enrollmentArgsGetter(basicOptions);
     if (!enrollmentArgs) return;
     const enrollResponse = this.tokenService.enrollToken(enrollmentArgs);
 

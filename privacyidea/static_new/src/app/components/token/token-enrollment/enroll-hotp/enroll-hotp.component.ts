@@ -69,7 +69,7 @@ export class EnrollHotpComponent implements OnInit {
     { value: "sha512", viewValue: "SHA512" }
   ];
   @Input() wizard: boolean = false;
-  @Output() getEnrollmentDataChange = new EventEmitter<
+  @Output() enrollmentArgsGetterChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => {
       data: HotpEnrollmentData;
       mapper: TokenApiPayloadMapper<HotpEnrollmentData>;
@@ -95,7 +95,7 @@ export class EnrollHotpComponent implements OnInit {
       otpKey: this.otpKeyFormControl,
       hashAlgorithm: this.hashAlgorithmFormControl
     });
-    this.getEnrollmentDataChange.emit(this.getEnrollmentData);
+    this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
     this._applyPolicies();
   }
 
@@ -116,7 +116,7 @@ export class EnrollHotpComponent implements OnInit {
     }
   }
 
-  getEnrollmentData = (
+  enrollmentArgsGetter = (
     basicOptions: TokenEnrollmentData
   ): {
     data: HotpEnrollmentData;

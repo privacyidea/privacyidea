@@ -72,7 +72,7 @@ export class EnrollDaypasswordComponent implements OnInit {
   @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
-  @Output() getEnrollmentDataChange = new EventEmitter<
+  @Output() enrollmentArgsGetterChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => {
       data: DaypasswordEnrollmentData;
       mapper: DaypasswordApiPayloadMapper;
@@ -105,7 +105,7 @@ export class EnrollDaypasswordComponent implements OnInit {
       timeStep: this.timeStepControl,
       generateOnServer: this.generateOnServerControl
     });
-    this.getEnrollmentDataChange.emit(this.getEnrollmentData);
+    this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
     this._applyPolicies();
   }
 
@@ -121,7 +121,7 @@ export class EnrollDaypasswordComponent implements OnInit {
     }
   }
 
-  getEnrollmentData = (
+  enrollmentArgsGetter = (
     basicOptions: TokenEnrollmentData
   ): {
     data: DaypasswordEnrollmentData;

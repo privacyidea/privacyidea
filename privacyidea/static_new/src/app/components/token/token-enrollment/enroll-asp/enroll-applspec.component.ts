@@ -75,7 +75,7 @@ export class EnrollApplspecComponent implements OnInit {
   @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
-  @Output() getEnrollmentDataChange = new EventEmitter<
+  @Output() enrollmentArgsGetterChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => {
       data: ApplspecEnrollmentData;
       mapper: ApplspecApiPayloadMapper;
@@ -106,7 +106,7 @@ export class EnrollApplspecComponent implements OnInit {
       generateOnServer: this.generateOnServerControl,
       otpKey: this.otpKeyFormControl
     });
-    this.getEnrollmentDataChange.emit(this.getEnrollmentData);
+    this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
     this._applyPolicies();
   }
 
@@ -127,7 +127,7 @@ export class EnrollApplspecComponent implements OnInit {
     }
   }
 
-  getEnrollmentData = (
+  enrollmentArgsGetter = (
     basicOptions: TokenEnrollmentData
   ): {
     data: ApplspecEnrollmentData;

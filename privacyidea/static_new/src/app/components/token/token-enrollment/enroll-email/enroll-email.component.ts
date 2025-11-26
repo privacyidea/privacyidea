@@ -53,7 +53,7 @@ export class EnrollEmailComponent implements OnInit {
   @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
-  @Output() getEnrollmentDataChange = new EventEmitter<
+  @Output() enrollmentArgsGetterChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => {
       data: EmailEnrollmentData;
       mapper: TokenApiPayloadMapper<EmailEnrollmentData>;
@@ -84,7 +84,7 @@ export class EnrollEmailComponent implements OnInit {
       emailAddress: this.emailAddressControl,
       readEmailDynamically: this.readEmailDynamicallyControl
     });
-    this.getEnrollmentDataChange.emit(this.getEnrollmentData);
+    this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
 
     this.readEmailDynamicallyControl.valueChanges.subscribe((readEmailDynamic) => {
       if (!readEmailDynamic) {
@@ -96,7 +96,7 @@ export class EnrollEmailComponent implements OnInit {
     });
   }
 
-  getEnrollmentData = (
+  enrollmentArgsGetter = (
     basicOptions: TokenEnrollmentData
   ): {
     data: EmailEnrollmentData;

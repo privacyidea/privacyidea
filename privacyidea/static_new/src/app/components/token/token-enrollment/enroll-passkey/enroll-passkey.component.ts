@@ -61,7 +61,7 @@ export class EnrollPasskeyComponent implements OnInit {
   @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
-  @Output() getEnrollmentDataChange = new EventEmitter<
+  @Output() enrollmentArgsGetterChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => {
       data: PasskeyEnrollmentData;
       mapper: TokenApiPayloadMapper<PasskeyEnrollmentData>;
@@ -76,11 +76,11 @@ export class EnrollPasskeyComponent implements OnInit {
 
   ngOnInit(): void {
     this.additionalFormFieldsChange.emit({});
-    this.getEnrollmentDataChange.emit(this.getEnrollmentData);
+    this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
     this.onEnrollmentResponseChange.emit(this.onEnrollmentResponse.bind(this));
   }
 
-  getEnrollmentData = (
+  enrollmentArgsGetter = (
     basicEnrollmentData: TokenEnrollmentData
   ): {
     data: PasskeyEnrollmentData;

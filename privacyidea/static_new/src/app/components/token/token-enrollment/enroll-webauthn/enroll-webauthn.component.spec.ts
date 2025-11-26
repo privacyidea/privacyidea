@@ -138,7 +138,7 @@ describe("EnrollWebauthnComponent", () => {
     let emittedHandler: ((...args: any[]) => any) | undefined;
 
     component.additionalFormFieldsChange.subscribe((v) => additionalEmits.push(v));
-    component.getEnrollmentDataChange.subscribe((fn) => (emittedHandler = fn));
+    component.enrollmentArgsGetterChange.subscribe((fn) => (emittedHandler = fn));
 
     await detectChangesStable();
 
@@ -149,7 +149,7 @@ describe("EnrollWebauthnComponent", () => {
   it("should notify when WebAuthn API is unavailable", async () => {
     (navigator as any).credentials = undefined;
     await detectChangesStable();
-    const enrollemntData = component.getEnrollmentData(BASIC);
+    const enrollemntData = component.enrollmentArgsGetter(BASIC);
     expect(enrollemntData).toBeNull();
     expect(notification.openSnackBar).toHaveBeenCalledWith("WebAuthn is not supported by this browser.");
   });
@@ -160,7 +160,7 @@ describe("EnrollWebauthnComponent", () => {
   //   setNavigatorCreate(async () => makePublicKeyCredential());
   //   tokenService.enrollToken.mockReturnValue(throwError(() => new Error("boom")) as any);
   //   await detectChangesStable();
-  //   const res = await component.getEnrollmentData(BASIC);
+  //   const res = await component.enrollmentArgsGetter(BASIC);
 
   //   expect(res).toBeNull();
   //   expect(notification.openSnackBar).toHaveBeenCalledWith("WebAuthn registration process failed: boom");
@@ -170,11 +170,11 @@ describe("EnrollWebauthnComponent", () => {
     setNavigatorCreate(async () => makePublicKeyCredential());
     tokenService.enrollToken.mockReturnValue(of({ detail: undefined, type: "webauthn" } as any) as any);
     await detectChangesStable();
-    const enrollmentData = component.getEnrollmentData(BASIC);
-    const initResponse = await lastValueFrom(tokenService.enrollToken(enrollmentData!));
+    const enrollmentArgs = component.enrollmentArgsGetter(BASIC);
+    const initResponse = await lastValueFrom(tokenService.enrollToken(enrollmentArgs!));
     const finalResponse = await component.onEnrollmentResponse(
       initResponse as EnrollmentResponse,
-      enrollmentData!.data
+      enrollmentArgs!.data
     );
     expect(finalResponse).toBeNull();
     expect(notification.openSnackBar).toHaveBeenCalledWith(
@@ -188,11 +188,11 @@ describe("EnrollWebauthnComponent", () => {
       of({ detail: { webAuthnRegisterRequest: undefined }, type: "webauthn" } as any) as any
     );
     await detectChangesStable();
-    const enrollmentData = component.getEnrollmentData(BASIC);
-    const initResponse = await lastValueFrom(tokenService.enrollToken(enrollmentData!));
+    const enrollmentArgs = component.enrollmentArgsGetter(BASIC);
+    const initResponse = await lastValueFrom(tokenService.enrollToken(enrollmentArgs!));
     const finalResponse = await component.onEnrollmentResponse(
       initResponse as EnrollmentResponse,
-      enrollmentData!.data
+      enrollmentArgs!.data
     );
     expect(finalResponse).toBeNull();
     expect(notification.openSnackBar).toHaveBeenCalledWith(
@@ -209,11 +209,11 @@ describe("EnrollWebauthnComponent", () => {
       } as any) as any
     );
     await detectChangesStable();
-    const enrollmentData = component.getEnrollmentData(BASIC);
-    const initResponse = await lastValueFrom(tokenService.enrollToken(enrollmentData!));
+    const enrollmentArgs = component.enrollmentArgsGetter(BASIC);
+    const initResponse = await lastValueFrom(tokenService.enrollToken(enrollmentArgs!));
     const finalResponse = await component.onEnrollmentResponse(
       initResponse as EnrollmentResponse,
-      enrollmentData!.data
+      enrollmentArgs!.data
     );
     expect(finalResponse).toBeNull();
     expect(notification.openSnackBar).toHaveBeenCalledWith(
@@ -236,11 +236,11 @@ describe("EnrollWebauthnComponent", () => {
     tokenService.enrollToken.mockReturnValue(of(makeEnrollInitResponse() as any) as any);
 
     await detectChangesStable();
-    const enrollmentData = component.getEnrollmentData(BASIC);
-    const initResponse = await lastValueFrom(tokenService.enrollToken(enrollmentData!));
+    const enrollmentArgs = component.enrollmentArgsGetter(BASIC);
+    const initResponse = await lastValueFrom(tokenService.enrollToken(enrollmentArgs!));
     const finalResponse = await component.onEnrollmentResponse(
       initResponse as EnrollmentResponse,
-      enrollmentData!.data
+      enrollmentArgs!.data
     );
     expect(openDialog).toHaveBeenCalled();
     expect(closeDialog).toHaveBeenCalled();
@@ -263,11 +263,11 @@ describe("EnrollWebauthnComponent", () => {
       .mockReturnValueOnce(of({ detail: { serial: "" }, type: "webauthn" } as any) as any);
 
     await detectChangesStable();
-    const enrollmentData = component.getEnrollmentData(BASIC);
-    const initResponse = await lastValueFrom(tokenService.enrollToken(enrollmentData!));
+    const enrollmentArgs = component.enrollmentArgsGetter(BASIC);
+    const initResponse = await lastValueFrom(tokenService.enrollToken(enrollmentArgs!));
     const finalResponse = await component.onEnrollmentResponse(
       initResponse as EnrollmentResponse,
-      enrollmentData!.data
+      enrollmentArgs!.data
     );
 
     expect(openDialog).toHaveBeenCalled();
@@ -292,28 +292,28 @@ describe("EnrollWebauthnComponent", () => {
       .mockReturnValueOnce(throwError(() => new Error("finalize-fail")) as any);
 
     await detectChangesStable();
-    const enrollmentData = component.getEnrollmentData(BASIC);
-    const initResponse = await lastValueFrom(tokenService.enrollToken(enrollmentData!));
+    const enrollmentArgs = component.enrollmentArgsGetter(BASIC);
+    const initResponse = await lastValueFrom(tokenService.enrollToken(enrollmentArgs!));
     const finalResponse = await component.onEnrollmentResponse(
       initResponse as EnrollmentResponse,
-      enrollmentData!.data
+      enrollmentArgs!.data
     );
     expect(finalResponse).toBeNull();
     expect(notification.openSnackBar).toHaveBeenCalledWith("WebAuthn finalization failed: finalize-fail");
   });
 
-  it("getEnrollmentDataChange should wrap getEnrollmentData into an observable", async () => {
+  it("enrollmentArgsGetterChange should wrap enrollmentArgsGetter into an observable", async () => {
     let handler: ((data: any) => any) | undefined;
-    component.getEnrollmentDataChange.subscribe((fn) => (handler = fn));
+    component.enrollmentArgsGetterChange.subscribe((fn) => (handler = fn));
 
     (navigator as any).credentials = { create: jest.fn().mockResolvedValue(makePublicKeyCredential()) };
 
     await detectChangesStable();
 
     expect(typeof handler).toBe("function");
-    const enrollmentData = handler!(BASIC);
+    const enrollmentArgs = handler!(BASIC);
 
-    expect(enrollmentData).toEqual({
+    expect(enrollmentArgs).toEqual({
       data: { realm: "default", type: "webauthn", user: "alice" },
       mapper: expect.any(Object)
     });

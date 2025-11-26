@@ -56,7 +56,7 @@ describe("EnrollHotpComponent", () => {
     tokenService = TestBed.inject(TokenService) as unknown as MockTokenService;
     authService = TestBed.inject(AuthService) as unknown as MockAuthService;
     jest.spyOn(component.additionalFormFieldsChange, "emit");
-    jest.spyOn(component.getEnrollmentDataChange, "emit");
+    jest.spyOn(component.enrollmentArgsGetterChange, "emit");
     fixture.detectChanges();
   }
 
@@ -72,7 +72,7 @@ describe("EnrollHotpComponent", () => {
     const fieldsArg = (component.additionalFormFieldsChange.emit as jest.Mock).mock.calls[0][0];
     expect(Object.keys(fieldsArg)).toEqual(["generateOnServer", "otpLength", "otpKey", "hashAlgorithm"]);
 
-    expect(component.getEnrollmentDataChange.emit).toHaveBeenCalledWith(component.getEnrollmentData);
+    expect(component.enrollmentArgsGetterChange.emit).toHaveBeenCalledWith(component.enrollmentArgsGetter);
   });
 
   it("disables generateOnServer when policy forces server-side key generation", () => {
@@ -106,14 +106,14 @@ describe("EnrollHotpComponent", () => {
     expect(component.otpKeyFormControl.disabled).toBe(true);
   });
 
-  it("getEnrollmentData returns null and marks controls when manual key is required but missing", (done) => {
+  it("enrollmentArgsGetter returns null and marks controls when manual key is required but missing", (done) => {
     (TestBed.inject(AuthService) as unknown as MockAuthService).checkForceServerGenerateOTPKey.mockReturnValue(false);
     createAndInit();
 
     component.generateOnServerFormControl.setValue(false);
     component.otpKeyFormControl.setValue("");
 
-    const res = component.getEnrollmentData({} as any);
+    const res = component.enrollmentArgsGetter({} as any);
 
     expect(res).toBeNull();
     expect(component.generateOnServerFormControl.touched).toBe(true);
@@ -132,7 +132,7 @@ describe("EnrollHotpComponent", () => {
     component.hashAlgorithmFormControl.setValue("sha256");
 
     const basic = { realm: "r", username: "u" } as any;
-    const args = component.getEnrollmentData(basic);
+    const args = component.enrollmentArgsGetter(basic);
     expect(args).not.toBeNull();
     expect(args!.data).toEqual(
       expect.objectContaining({
@@ -154,7 +154,7 @@ describe("EnrollHotpComponent", () => {
     component.otpKeyFormControl.setValue("  ABC123  ");
 
     const basic = { foo: "bar" } as any;
-    const args = component.getEnrollmentData(basic);
+    const args = component.enrollmentArgsGetter(basic);
     expect(args).not.toBeNull();
     expect(args!.data).toEqual(
       expect.objectContaining({
