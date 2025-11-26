@@ -32,6 +32,11 @@
   min-width: 12rem;
 }
 
+.user-details-panel:not(.mat-expanded) {
+  max-width: 12rem;
+  width: 100%;
+}
+
 .top-content {
   flex: 3;
   display: flex;
