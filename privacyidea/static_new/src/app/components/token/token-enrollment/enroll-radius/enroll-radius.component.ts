@@ -71,7 +71,7 @@ export class EnrollRadiusComponent implements OnInit {
   @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
-  @Output() clickEnrollChange = new EventEmitter<
+  @Output() getEnrollmentDataChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => {
       data: RadiusEnrollmentData;
       mapper: TokenApiPayloadMapper<RadiusEnrollmentData>;
@@ -114,10 +114,10 @@ export class EnrollRadiusComponent implements OnInit {
       radiusServerConfiguration: this.radiusServerConfigurationControl,
       checkPinLocally: this.checkPinLocallyControl
     });
-    this.clickEnrollChange.emit(this.onClickEnroll);
+    this.getEnrollmentDataChange.emit(this.getEnrollmentData);
   }
 
-  onClickEnroll = (
+  getEnrollmentData = (
     basicOptions: TokenEnrollmentData
   ): {
     data: RadiusEnrollmentData;

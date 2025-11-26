@@ -23,7 +23,10 @@ import {
   TokenApiPayloadMapper,
   TokenEnrollmentData
 } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
-import { PaperApiPayloadMapper, PaperEnrollmentData } from "../../../../mappers/token-api-payload/paper-token-api-payload.mapper";
+import {
+  PaperApiPayloadMapper,
+  PaperEnrollmentData
+} from "../../../../mappers/token-api-payload/paper-token-api-payload.mapper";
 
 export interface PaperEnrollmentOptions extends TokenEnrollmentData {
   type: "paper";
@@ -44,7 +47,7 @@ export class EnrollPaperComponent implements OnInit {
   @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
-  @Output() clickEnrollChange = new EventEmitter<
+  @Output() getEnrollmentDataChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => {
       data: PaperEnrollmentData;
       mapper: TokenApiPayloadMapper<PaperEnrollmentData>;
@@ -55,10 +58,10 @@ export class EnrollPaperComponent implements OnInit {
 
   ngOnInit(): void {
     this.additionalFormFieldsChange.emit({});
-    this.clickEnrollChange.emit(this.onClickEnroll);
+    this.getEnrollmentDataChange.emit(this.getEnrollmentData);
   }
 
-  onClickEnroll = (
+  getEnrollmentData = (
     basicOptions: TokenEnrollmentData
   ): {
     data: PaperEnrollmentData;

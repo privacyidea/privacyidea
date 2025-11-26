@@ -71,7 +71,7 @@ export class EnrollRemoteComponent implements OnInit {
   @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
-  @Output() clickEnrollChange = new EventEmitter<
+  @Output() getEnrollmentDataChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => {
       data: RemoteEnrollmentData;
       mapper: TokenApiPayloadMapper<RemoteEnrollmentData>;
@@ -113,10 +113,10 @@ export class EnrollRemoteComponent implements OnInit {
       remoteRealm: this.remoteRealmControl,
       remoteResolver: this.remoteResolverControl
     });
-    this.clickEnrollChange.emit(this.onClickEnroll);
+    this.getEnrollmentDataChange.emit(this.getEnrollmentData);
   }
 
-  onClickEnroll = (
+  getEnrollmentData = (
     basicOptions: TokenEnrollmentData
   ): {
     data: RemoteEnrollmentData;

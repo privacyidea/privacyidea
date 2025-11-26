@@ -41,7 +41,7 @@ import { VersioningService } from "../../../services/version/version.service";
 import { ContentService } from "../../../services/content/content.service";
 import { DialogService } from "../../../services/dialog/dialog.service";
 import { FormControl, FormGroup } from "@angular/forms";
-import { of, throwError } from "rxjs";
+import { lastValueFrom, of, throwError } from "rxjs";
 import { signal } from "@angular/core";
 import { provideHttpClient } from "@angular/common/http";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
@@ -266,9 +266,9 @@ describe("TokenEnrollmentComponent", () => {
       component.setPinControl.setValue("1234");
       component.repeatPinControl.setValue("1234");
 
-      (component as any).clickEnroll = undefined;
+      component.getEnrollmentArgs = undefined;
 
-      await (component as any).enrollToken();
+      await component.enrollToken();
 
       expect(notifications.openSnackBar).toHaveBeenCalledWith(
         "Enrollment action is not available for the selected token type."
@@ -285,14 +285,16 @@ describe("TokenEnrollmentComponent", () => {
 
       const response = { detail: { rollout_state: "done" } } as any;
 
-      const clickEnrollFn = jest.fn().mockReturnValue(of(response));
-      component.updateClickEnroll(clickEnrollFn);
+      const getEnrollmentArgsFn = jest.fn().mockReturnValue(of(response));
+      component.updateGetEnrollmentArgs(getEnrollmentArgsFn);
+      const onEnrollmentResponseFn = jest.fn().mockReturnValue(lastValueFrom(of(response)));
+      component.updateOnEnrollmentResponse(onEnrollmentResponseFn);
 
       const spyOpen = jest.spyOn(component as any, "openLastStepDialog");
 
-      await (component as any).enrollToken();
+      await component.enrollToken();
 
-      expect(clickEnrollFn).toHaveBeenCalledTimes(1);
+      expect(getEnrollmentArgsFn).toHaveBeenCalledTimes(1);
       expect(component.enrollResponse()).toBe(response);
       expect(spyOpen).toHaveBeenCalledWith({ response, user: null });
     });
@@ -303,10 +305,11 @@ describe("TokenEnrollmentComponent", () => {
       component.repeatPinControl.setValue("1111");
 
       const error = { error: { result: { error: { message: "nope" } } } };
-      const clickEnrollFn = jest.fn().mockReturnValue(throwError(() => error));
-      component.updateClickEnroll(clickEnrollFn);
+      const getEnrollmentArgsFn = jest.fn().mockReturnValue({});
+      component.updateGetEnrollmentArgs(getEnrollmentArgsFn);
+      tokenSvc.enrollToken.mockReturnValue(Promise.reject(error));
 
-      await (component as any).enrollToken().catch(() => undefined);
+      await component.enrollToken().catch(() => undefined);
 
       expect(notifications.openSnackBar).toHaveBeenCalledWith("Failed to enroll token: nope");
     });
@@ -315,14 +318,14 @@ describe("TokenEnrollmentComponent", () => {
       tokenSvc.selectedTokenType.set({ key: "hotp", name: "HOTP", info: "", text: "" });
       component.setPinControl.setValue("0000");
       component.repeatPinControl.setValue("0000");
+      TestBed.flushEffects();
 
       const response = { detail: { rollout_state: "clientwait" } } as any;
-      const clickEnrollFn = jest.fn().mockReturnValue(of(response));
-      component.updateClickEnroll(clickEnrollFn);
+      tokenSvc.enrollToken.mockReturnValue(of(response));
 
       const spyOpen = jest.spyOn(component as any, "openLastStepDialog");
 
-      await (component as any).enrollToken();
+      await component.enrollToken();
 
       expect(spyOpen).not.toHaveBeenCalled();
     });

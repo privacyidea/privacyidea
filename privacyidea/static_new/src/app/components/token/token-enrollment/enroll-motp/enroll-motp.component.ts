@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, EventEmitter, inject, Input, OnInit, Output } from "@angular/core";
+import { Component, effect, EventEmitter, inject, input, Input, OnInit, Output } from "@angular/core";
 import {
   AbstractControl,
   FormControl,
@@ -63,7 +63,7 @@ export class EnrollMotpComponent implements OnInit {
   @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
-  @Output() clickEnrollChange = new EventEmitter<
+  @Output() getEnrollmentDataChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => {
       data: MotpEnrollmentData;
       mapper: TokenApiPayloadMapper<MotpEnrollmentData>;
@@ -85,6 +85,12 @@ export class EnrollMotpComponent implements OnInit {
     return null;
   }
 
+  disabled = input<boolean>(false);
+
+  constructor() {
+    effect(() => (this.disabled() ? this._disableFormControls() : this._enableFormControls()));
+  }
+
   ngOnInit(): void {
     this.additionalFormFieldsChange.emit({
       generateOnServer: this.generateOnServerControl,
@@ -92,8 +98,14 @@ export class EnrollMotpComponent implements OnInit {
       motpPin: this.motpPinControl,
       repeatMotpPin: this.repeatMotpPinControl
     });
-    this.clickEnrollChange.emit(this.onClickEnroll);
+    this.getEnrollmentDataChange.emit(this.getEnrollmentData);
+    this._applyPolicies();
+    this.motpPinControl.valueChanges.subscribe(() => {
+      this.repeatMotpPinControl.updateValueAndValidity();
+    });
+  }
 
+  private _applyPolicies() {
     if (this.authService.checkForceServerGenerateOTPKey("motp")) {
       this.generateOnServerControl.disable({ emitEvent: false });
     } else {
@@ -108,13 +120,9 @@ export class EnrollMotpComponent implements OnInit {
         this.otpKeyFormControl.updateValueAndValidity();
       });
     }
-
-    this.motpPinControl.valueChanges.subscribe(() => {
-      this.repeatMotpPinControl.updateValueAndValidity();
-    });
   }
 
-  onClickEnroll = (
+  getEnrollmentData = (
     basicOptions: TokenEnrollmentData
   ): {
     data: MotpEnrollmentData;
@@ -134,4 +142,18 @@ export class EnrollMotpComponent implements OnInit {
       mapper: this.enrollmentMapper
     };
   };
+
+  private _disableFormControls(): void {
+    this.generateOnServerControl.disable();
+    this.otpKeyFormControl.disable();
+    this.motpPinControl.disable();
+    this.repeatMotpPinControl.disable();
+  }
+
+  private _enableFormControls(): void {
+    this.generateOnServerControl.enable({ emitEvent: false });
+    this.motpPinControl.enable({ emitEvent: false });
+    this.repeatMotpPinControl.enable({ emitEvent: false });
+    this._applyPolicies();
+  }
 }

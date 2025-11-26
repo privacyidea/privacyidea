@@ -62,7 +62,7 @@ export class EnrollVascoComponent implements OnInit {
   @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
-  @Output() clickEnrollChange = new EventEmitter<
+  @Output() getEnrollmentDataChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => {
       data: VascoEnrollmentData;
       mapper: TokenApiPayloadMapper<VascoEnrollmentData>;
@@ -104,7 +104,7 @@ export class EnrollVascoComponent implements OnInit {
       useVascoSerial: this.useVascoSerialControl,
       vascoSerial: this.vascoSerialControl
     });
-    this.clickEnrollChange.emit(this.onClickEnroll);
+    this.getEnrollmentDataChange.emit(this.getEnrollmentData);
 
     this.useVascoSerialControl.valueChanges.subscribe((useSerial) => {
       if (useSerial) {
@@ -120,7 +120,7 @@ export class EnrollVascoComponent implements OnInit {
     this.useVascoSerialControl.updateValueAndValidity();
   }
 
-  onClickEnroll = (
+  getEnrollmentData = (
     basicOptions: TokenEnrollmentData
   ): {
     data: VascoEnrollmentData;

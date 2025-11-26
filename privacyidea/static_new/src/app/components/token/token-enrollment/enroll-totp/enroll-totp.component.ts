@@ -77,7 +77,7 @@ export class EnrollTotpComponent implements OnInit {
   @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
-  @Output() clickEnrollChange = new EventEmitter<
+  @Output() getEnrollmentDataChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => {
       data: TotpEnrollmentData;
       mapper: TokenApiPayloadMapper<TotpEnrollmentData>;
@@ -99,9 +99,7 @@ export class EnrollTotpComponent implements OnInit {
   disabled = input<boolean>(false);
 
   constructor() {
-    effect(() =>
-      this.disabled() ? this.totpForm.disable({ emitEvent: false }) : this.totpForm.enable({ emitEvent: false })
-    );
+    effect(() => (this.disabled() ? this.totpForm.disable({ emitEvent: false }) : this._enableFormControls()));
   }
 
   ngOnInit(): void {
@@ -112,8 +110,11 @@ export class EnrollTotpComponent implements OnInit {
       hashAlgorithm: this.hashAlgorithmControl,
       timeStep: this.timeStepControl
     });
-    this.clickEnrollChange.emit(this.onClickEnroll);
+    this.getEnrollmentDataChange.emit(this.getEnrollmentData);
+    this._applyPolicies();
+  }
 
+  private _applyPolicies() {
     if (this.authService.checkForceServerGenerateOTPKey("totp")) {
       this.generateOnServerFormControl.disable({ emitEvent: false });
     } else {
@@ -130,7 +131,7 @@ export class EnrollTotpComponent implements OnInit {
     }
   }
 
-  onClickEnroll = (
+  getEnrollmentData = (
     basicOptions: TokenEnrollmentData
   ): {
     data: TotpEnrollmentData;
@@ -161,4 +162,8 @@ export class EnrollTotpComponent implements OnInit {
       mapper: this.enrollmentMapper
     };
   };
+  private _enableFormControls(): void {
+    this.totpForm.enable({ emitEvent: false });
+    this._applyPolicies();
+  }
 }

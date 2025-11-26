@@ -239,7 +239,7 @@ export class MockUserService implements UserServiceInterface {
   attributeSetMap = signal<Record<string, string[]>>({});
   hasWildcardKey: Signal<boolean> = signal(false);
   keyOptions: Signal<string[]> = signal([]);
-  selectedUser: Signal<UserData | null> = signal(null);
+  selectedUser = signal(null);
   detailsUsername: WritableSignal<string> = signal("");
   setUserAttribute = jest.fn().mockReturnValue(of({}));
   deleteUserAttribute = jest.fn().mockReturnValue(of({}));

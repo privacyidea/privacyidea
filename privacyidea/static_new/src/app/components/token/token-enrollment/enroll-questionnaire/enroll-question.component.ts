@@ -76,7 +76,7 @@ export class EnrollQuestionComponent implements OnInit {
   private readonly guardControl = new FormControl<boolean>(false, { nonNullable: true });
   private valueSubscription?: Subscription;
   @Output() additionalFormFieldsChange = new EventEmitter<{ [key: string]: FormControl<unknown> }>();
-  @Output() clickEnrollChange = new EventEmitter<
+  @Output() getEnrollmentDataChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => {
       data: QuestionEnrollmentData;
       mapper: TokenApiPayloadMapper<QuestionEnrollmentData>;
@@ -123,10 +123,10 @@ export class EnrollQuestionComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.clickEnrollChange.emit(this.onClickEnroll);
+    this.getEnrollmentDataChange.emit(this.getEnrollmentData);
   }
 
-  onClickEnroll = (
+  getEnrollmentData = (
     basicOptions: TokenEnrollmentData
   ): {
     data: QuestionEnrollmentData;

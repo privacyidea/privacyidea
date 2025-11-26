@@ -64,7 +64,7 @@ export class EnrollYubicoComponent implements OnInit {
   @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
-  @Output() clickEnrollChange = new EventEmitter<
+  @Output() getEnrollmentDataChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => {
       data: YubicoEnrollmentData;
       mapper: TokenApiPayloadMapper<YubicoEnrollmentData>;
@@ -96,10 +96,10 @@ export class EnrollYubicoComponent implements OnInit {
     this.additionalFormFieldsChange.emit({
       yubikeyIdentifier: this.yubikeyIdentifierControl
     });
-    this.clickEnrollChange.emit(this.onClickEnroll);
+    this.getEnrollmentDataChange.emit(this.getEnrollmentData);
   }
 
-  onClickEnroll = (
+  getEnrollmentData = (
     basicOptions: TokenEnrollmentData
   ): {
     data: YubicoEnrollmentData;

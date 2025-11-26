@@ -60,7 +60,7 @@ export class EnrollFoureyesComponent implements OnInit {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
 
   @Output() additionalFormFieldsChange = new EventEmitter<{ [key: string]: FormControl<any> }>();
-  @Output() clickEnrollChange = new EventEmitter<
+  @Output() getEnrollmentDataChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => {
       data: FourEyesEnrollmentData;
       mapper: TokenApiPayloadMapper<FourEyesEnrollmentData>;
@@ -91,7 +91,7 @@ export class EnrollFoureyesComponent implements OnInit {
       separator: this.separatorControl,
       requiredTokensOfRealms: this.requiredTokensOfRealmsControl
     });
-    this.clickEnrollChange.emit(this.onClickEnroll);
+    this.getEnrollmentDataChange.emit(this.getEnrollmentData);
   }
 
   getTokenCount(realm: string): number {
@@ -103,7 +103,7 @@ export class EnrollFoureyesComponent implements OnInit {
     else this.tokensByRealm.set(realm, tokens);
   }
 
-  onClickEnroll = (
+  getEnrollmentData = (
     basicOptions: TokenEnrollmentData
   ): {
     data: FourEyesEnrollmentData;

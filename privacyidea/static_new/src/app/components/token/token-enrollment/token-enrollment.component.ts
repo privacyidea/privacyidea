@@ -113,7 +113,7 @@ import {
   WebAuthnEnrollmentData
 } from "../../../mappers/token-api-payload/webauthn-token-api-payload.mapper";
 
-export type ClickEnrollFn<T extends TokenEnrollmentData = TokenEnrollmentData> = (
+export type GetEnrollmentArgsFn<T extends TokenEnrollmentData = TokenEnrollmentData> = (
   enrollmentOptions: TokenEnrollmentData
 ) => {
   data: T;
@@ -276,7 +276,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
   @ViewChild("stickySentinel") stickySentinel!: ElementRef<HTMLElement>;
   @ViewChild(UserAssignmentComponent)
   userAssignmentComponent!: UserAssignmentComponent;
-  clickEnroll?: ClickEnrollFn;
+  getEnrollmentArgs?: GetEnrollmentArgsFn;
   reopenDialogSignal = linkedSignal<any, ReopenDialogFn | undefined>({
     source: this.tokenService.selectedTokenType,
     computation: () => undefined
@@ -332,8 +332,8 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     return setPin && repeatPin && setPin.value !== repeatPin.value ? { pinMismatch: true } : null;
   }
 
-  updateClickEnroll(event: ClickEnrollFn): void {
-    this.clickEnroll = event;
+  updateGetEnrollmentArgs(event: GetEnrollmentArgsFn): void {
+    this.getEnrollmentArgs = event;
   }
 
   updateReopenDialog(event: ReopenDialogFn): void {
@@ -479,7 +479,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     }
   });
 
-  protected async enrollToken(): Promise<void> {
+  async enrollToken(): Promise<void> {
     const currentTokenType = this.tokenService.selectedTokenType();
     let everythingIsValid = true;
     if (!currentTokenType) {
@@ -502,7 +502,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
       return;
     }
 
-    if (!this.clickEnroll) {
+    if (!this.getEnrollmentArgs) {
       this.notificationService.openSnackBar("Enrollment action is not available for the selected token type.");
       return;
     }
@@ -537,7 +537,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
       serial: this.serial()
     };
 
-    const enrollmentArgs = this.clickEnroll(basicOptions);
+    const enrollmentArgs = this.getEnrollmentArgs(basicOptions);
     if (!enrollmentArgs) return;
     const enrollResponse = this.tokenService.enrollToken(enrollmentArgs);
 

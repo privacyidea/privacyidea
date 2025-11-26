@@ -113,7 +113,7 @@ export class TemplateAddedTokenRowComponent {
   @Output() onEditToken = new EventEmitter<any>();
   @Output() onRemoveToken = new EventEmitter<number>();
 
-  onClickEnroll = signal<
+  getEnrollmentData = signal<
     | ((basicOptions: TokenEnrollmentData) => {
         data: TokenEnrollmentData;
         mapper: TokenApiPayloadMapper<TokenEnrollmentData>;

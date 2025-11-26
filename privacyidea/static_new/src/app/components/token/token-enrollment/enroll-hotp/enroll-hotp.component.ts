@@ -69,7 +69,7 @@ export class EnrollHotpComponent implements OnInit {
     { value: "sha512", viewValue: "SHA512" }
   ];
   @Input() wizard: boolean = false;
-  @Output() clickEnrollChange = new EventEmitter<
+  @Output() getEnrollmentDataChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => {
       data: HotpEnrollmentData;
       mapper: TokenApiPayloadMapper<HotpEnrollmentData>;
@@ -95,8 +95,11 @@ export class EnrollHotpComponent implements OnInit {
       otpKey: this.otpKeyFormControl,
       hashAlgorithm: this.hashAlgorithmFormControl
     });
-    this.clickEnrollChange.emit(this.onClickEnroll);
+    this.getEnrollmentDataChange.emit(this.getEnrollmentData);
+    this._applyPolicies();
+  }
 
+  private _applyPolicies() {
     if (this.authService.checkForceServerGenerateOTPKey("hotp")) {
       this.generateOnServerFormControl.disable({ emitEvent: false });
     } else {
@@ -113,7 +116,7 @@ export class EnrollHotpComponent implements OnInit {
     }
   }
 
-  onClickEnroll = (
+  getEnrollmentData = (
     basicOptions: TokenEnrollmentData
   ): {
     data: HotpEnrollmentData;
@@ -165,5 +168,6 @@ export class EnrollHotpComponent implements OnInit {
       this.otpKeyFormControl.enable();
     }
     this.hashAlgorithmFormControl.enable();
+    this._applyPolicies();
   }
 }

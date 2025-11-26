@@ -72,7 +72,7 @@ export class EnrollDaypasswordComponent implements OnInit {
   @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
-  @Output() clickEnrollChange = new EventEmitter<
+  @Output() getEnrollmentDataChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => {
       data: DaypasswordEnrollmentData;
       mapper: DaypasswordApiPayloadMapper;
@@ -94,11 +94,7 @@ export class EnrollDaypasswordComponent implements OnInit {
   });
 
   constructor() {
-    effect(() =>
-      this.disabled()
-        ? this.daypasswordForm.disable({ emitEvent: false })
-        : this.daypasswordForm.enable({ emitEvent: false })
-    );
+    effect(() => (this.disabled() ? this.daypasswordForm.disable({ emitEvent: false }) : this._enableFormControls()));
   }
 
   ngOnInit(): void {
@@ -109,8 +105,11 @@ export class EnrollDaypasswordComponent implements OnInit {
       timeStep: this.timeStepControl,
       generateOnServer: this.generateOnServerControl
     });
-    this.clickEnrollChange.emit(this.onClickEnroll);
+    this.getEnrollmentDataChange.emit(this.getEnrollmentData);
+    this._applyPolicies();
+  }
 
+  private _applyPolicies() {
     this.updateOtpKeyControlState(this.generateOnServerControl.value ?? true);
 
     if (this.authService.checkForceServerGenerateOTPKey("daypassword")) {
@@ -122,7 +121,7 @@ export class EnrollDaypasswordComponent implements OnInit {
     }
   }
 
-  onClickEnroll = (
+  getEnrollmentData = (
     basicOptions: TokenEnrollmentData
   ): {
     data: DaypasswordEnrollmentData;
@@ -161,5 +160,10 @@ export class EnrollDaypasswordComponent implements OnInit {
       this.otpKeyFormControl.setValidators([Validators.required, Validators.minLength(16)]);
     }
     this.otpKeyFormControl.updateValueAndValidity();
+  }
+
+  private _enableFormControls(): void {
+    this.daypasswordForm.enable({ emitEvent: false });
+    this._applyPolicies();
   }
 }

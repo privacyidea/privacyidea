@@ -59,7 +59,7 @@ export class EnrollWebauthnComponent implements OnInit {
   @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
-  @Output() clickEnrollChange = new EventEmitter<
+  @Output() getEnrollmentDataChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => {
       data: WebAuthnEnrollmentData;
       mapper: TokenApiPayloadMapper<WebAuthnEnrollmentData>;
@@ -74,11 +74,11 @@ export class EnrollWebauthnComponent implements OnInit {
 
   ngOnInit(): void {
     this.additionalFormFieldsChange.emit({});
-    this.clickEnrollChange.emit(this.onClickEnroll);
+    this.getEnrollmentDataChange.emit(this.getEnrollmentData);
     this.onEnrollmentResponseChange.emit(this.onEnrollmentResponse.bind(this));
   }
 
-  onClickEnroll = (
+  getEnrollmentData = (
     basicEnrollmentData: TokenEnrollmentData
   ): {
     data: WebAuthnEnrollmentData;

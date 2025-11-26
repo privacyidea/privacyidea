@@ -50,7 +50,7 @@ export class EnrollIndexedsecretComponent implements OnInit {
   @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
-  @Output() clickEnrollChange = new EventEmitter<
+  @Output() getEnrollmentDataChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => {
       data: IndexedSecretEnrollmentData;
       mapper: TokenApiPayloadMapper<IndexedSecretEnrollmentData>;
@@ -67,10 +67,10 @@ export class EnrollIndexedsecretComponent implements OnInit {
     this.additionalFormFieldsChange.emit({
       otpKey: this.otpKeyControl
     });
-    this.clickEnrollChange.emit(this.onClickEnroll);
+    this.getEnrollmentDataChange.emit(this.getEnrollmentData);
   }
 
-  onClickEnroll = (
+  getEnrollmentData = (
     basicOptions: TokenEnrollmentData
   ): {
     data: IndexedSecretEnrollmentData;

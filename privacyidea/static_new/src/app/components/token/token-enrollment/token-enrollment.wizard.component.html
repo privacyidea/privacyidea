@@ -37,146 +37,146 @@
         <app-enroll-hotp
           [wizard]="wizard"
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (clickEnrollChange)="updateClickEnroll($event)" />
+          (clickEnrollChange)="updateGetEnrollmentArgs($event)" />
       }
       @case ("totp") {
         <app-enroll-totp
           [wizard]="wizard"
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (clickEnrollChange)="updateClickEnroll($event)" />
+          (clickEnrollChange)="updateGetEnrollmentArgs($event)" />
       }
       @case ("spass") {
         <app-enroll-spass
           [wizard]="wizard"
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (clickEnrollChange)="updateClickEnroll($event)" />
+          (clickEnrollChange)="updateGetEnrollmentArgs($event)" />
       }
       @case ("motp") {
         <app-enroll-motp
           [wizard]="wizard"
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (clickEnrollChange)="updateClickEnroll($event)" />
+          (clickEnrollChange)="updateGetEnrollmentArgs($event)" />
       }
       @case ("sshkey") {
         <app-enroll-sshkey
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (clickEnrollChange)="updateClickEnroll($event)" />
+          (clickEnrollChange)="updateGetEnrollmentArgs($event)" />
       }
       @case ("yubikey") {
         <app-enroll-yubikey
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (clickEnrollChange)="updateClickEnroll($event)" />
+          (clickEnrollChange)="updateGetEnrollmentArgs($event)" />
       }
       @case ("remote") {
         <app-enroll-remote
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (clickEnrollChange)="updateClickEnroll($event)" />
+          (clickEnrollChange)="updateGetEnrollmentArgs($event)" />
       }
       @case ("yubico") {
         <app-enroll-yubico
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (clickEnrollChange)="updateClickEnroll($event)" />
+          (clickEnrollChange)="updateGetEnrollmentArgs($event)" />
       }
       @case ("radius") {
         <app-enroll-radius
           [wizard]="wizard"
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (clickEnrollChange)="updateClickEnroll($event)" />
+          (clickEnrollChange)="updateGetEnrollmentArgs($event)" />
       }
       @case ("sms") {
         <app-enroll-sms
           [wizard]="wizard"
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (clickEnrollChange)="updateClickEnroll($event)" />
+          (clickEnrollChange)="updateGetEnrollmentArgs($event)" />
       }
       @case ("4eyes") {
         <app-enroll-foureyes
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (clickEnrollChange)="updateClickEnroll($event)" />
+          (clickEnrollChange)="updateGetEnrollmentArgs($event)" />
       }
       @case ("applspec") {
         <app-enroll-applspec
           [wizard]="wizard"
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (clickEnrollChange)="updateClickEnroll($event)" />
+          (clickEnrollChange)="updateGetEnrollmentArgs($event)" />
       }
       @case ("daypassword") {
         <app-enroll-daypassword
           [wizard]="wizard"
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (clickEnrollChange)="updateClickEnroll($event)" />
+          (clickEnrollChange)="updateGetEnrollmentArgs($event)" />
       }
       @case ("certificate") {
         <app-enroll-certificate
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (clickEnrollChange)="updateClickEnroll($event)" />
+          (clickEnrollChange)="updateGetEnrollmentArgs($event)" />
       }
       @case ("email") {
         <app-enroll-email
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (clickEnrollChange)="updateClickEnroll($event)" />
+          (clickEnrollChange)="updateGetEnrollmentArgs($event)" />
       }
       @case ("indexedsecret") {
         <app-enroll-indexedsecret
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (clickEnrollChange)="updateClickEnroll($event)" />
+          (clickEnrollChange)="updateGetEnrollmentArgs($event)" />
       }
       @case ("paper") {
         <app-enroll-paper
           [wizard]="wizard"
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (clickEnrollChange)="updateClickEnroll($event)" />
+          (clickEnrollChange)="updateGetEnrollmentArgs($event)" />
       }
       @case ("push") {
         <app-enroll-push
           [wizard]="wizard"
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (clickEnrollChange)="updateClickEnroll($event)"
+          (clickEnrollChange)="updateGetEnrollmentArgs($event)"
           (reopenDialogChange)="updateReopenDialog($event)" />
       }
       @case ("question") {
         <app-enroll-question
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (clickEnrollChange)="updateClickEnroll($event)" />
+          (clickEnrollChange)="updateGetEnrollmentArgs($event)" />
       }
       @case ("registration") {
         <app-enroll-registration
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (clickEnrollChange)="updateClickEnroll($event)" />
+          (clickEnrollChange)="updateGetEnrollmentArgs($event)" />
       }
       @case ("tan") {
         <app-enroll-tan
           [wizard]="wizard"
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (clickEnrollChange)="updateClickEnroll($event)" />
+          (clickEnrollChange)="updateGetEnrollmentArgs($event)" />
       }
       @case ("tiqr") {
         <app-enroll-tiqr
           [wizard]="wizard"
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (clickEnrollChange)="updateClickEnroll($event)" />
+          (clickEnrollChange)="updateGetEnrollmentArgs($event)" />
       }
       @case ("u2f") {
         <app-enroll-u2f
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (clickEnrollChange)="updateClickEnroll($event)" />
+          (clickEnrollChange)="updateGetEnrollmentArgs($event)" />
       }
       @case ("vasco") {
         <app-enroll-vasco
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (clickEnrollChange)="updateClickEnroll($event)" />
+          (clickEnrollChange)="updateGetEnrollmentArgs($event)" />
       }
       @case ("webauthn") {
         <app-enroll-webauthn
           [wizard]="wizard"
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (clickEnrollChange)="updateClickEnroll($event)" />
+          (clickEnrollChange)="updateGetEnrollmentArgs($event)" />
       }
       @case ("passkey") {
         <app-enroll-passkey
           [wizard]="wizard"
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (clickEnrollChange)="updateClickEnroll($event)"
+          (clickEnrollChange)="updateGetEnrollmentArgs($event)"
           (reopenDialogChange)="updateReopenDialog($event)" />
       }
     }

@@ -36,7 +36,7 @@ import {
   EnrollmentResponse,
   TokenEnrollmentData
 } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
-import { of, throwError } from "rxjs";
+import { lastValueFrom, of, throwError } from "rxjs";
 
 describe("EnrollPasskeyComponent", () => {
   let component: EnrollPasskeyComponent;
@@ -93,38 +93,14 @@ describe("EnrollPasskeyComponent", () => {
     expect(component).toBeTruthy();
   });
 
-  it("rejects and notifies when WebAuthn is unsupported", async () => {
+  it("rejects and notifies when WebAuthn is unsupported", () => {
     setNavigatorCredentials(undefined);
-
-    await expect(component.onClickEnroll({} as TokenEnrollmentData)).rejects.toThrow(
-      /Passkey\/WebAuthn is not supported/i
-    );
-
+    expect(() => component.getEnrollmentData({} as TokenEnrollmentData)).toThrow(/Passkey\/WebAuthn is not supported/i);
     expect(notif.openSnackBar).toHaveBeenCalledWith("Passkey/WebAuthn is not supported by this browser.");
   });
 
   it("happy path: init -> open dialog -> create cred -> finalize -> close", async () => {
-    const initResp = {
-      detail: {
-        transaction_id: "tid-1",
-        serial: "S-1",
-        passkey_registration: {
-          rp: { name: "Example", id: "example.com" },
-          user: { id: "AA", name: "alice", displayName: "Alice" },
-          challenge: "xyz",
-          pubKeyCredParams: [],
-          excludeCredentials: [{ id: "CCD", type: "public-key" }],
-          authenticatorSelection: {},
-          timeout: 10000,
-          extensions: {},
-          attestation: "none"
-        }
-      }
-    };
-
-    const finalResp = { detail: {} };
-
-    tokenSvc.enrollToken.mockReturnValueOnce(of(initResp)).mockReturnValueOnce(of(finalResp));
+    const finalResp = { detail: { serial: "S-1" } };
 
     const createdCred = {
       id: "cred-1",
@@ -143,7 +119,32 @@ describe("EnrollPasskeyComponent", () => {
 
     const reopenSpy = jest.spyOn(component.reopenDialogChange, "emit");
 
-    const res = await component.onClickEnroll({ description: "x" } as any);
+    const initResp = {
+      detail: {
+        transaction_id: "tid-1",
+        serial: "S-1",
+        passkey_registration: {
+          rp: { name: "Example", id: "example.com" },
+          user: { id: "AA", name: "alice", displayName: "Alice" },
+          challenge: "xyz",
+          pubKeyCredParams: [],
+          excludeCredentials: [{ id: "CCD", type: "public-key" }],
+          authenticatorSelection: {},
+          timeout: 10000,
+          extensions: {},
+          attestation: "none"
+        }
+      }
+    };
+    const initData = {
+      description: "x",
+      passkeyRegOptions: {}
+    } as any;
+    const args = component.getEnrollmentData(initData);
+    expect(args).not.toBeNull();
+    tokenSvc.enrollToken.mockReturnValueOnce(lastValueFrom(of(initResp)));
+    const initResponse = await tokenSvc.enrollToken(args);
+    const res = await component.onEnrollmentResponse(initResponse, args!.data);
 
     expect(tokenSvc.enrollToken).toHaveBeenCalledTimes(2);
     expect(dialogSvc.openTokenEnrollmentFirstStepDialog).toHaveBeenCalledTimes(1);
@@ -152,26 +153,11 @@ describe("EnrollPasskeyComponent", () => {
     expect(b64.base64URLToBytes).toHaveBeenCalled();
     expect(b64.bytesToBase64).toHaveBeenCalled();
 
-    expect(res).toBe(finalResp);
+    expect(res).toStrictEqual(finalResp);
     expect(res?.detail.serial).toBe("S-1");
 
     const lastReopenArg = reopenSpy.mock.calls[reopenSpy.mock.calls.length - 1][0];
     expect(lastReopenArg).toBeUndefined();
-  });
-
-  it("propagates init error and notifies", async () => {
-    tokenSvc.enrollToken.mockReturnValueOnce(throwError(() => new Error("boom-init")));
-
-    setNavigatorCredentials({
-      create: jest.fn()
-    });
-
-    await expect(component.onClickEnroll({} as any)).rejects.toThrow(/Passkey registration process failed/i);
-
-    expect(notif.openSnackBar).toHaveBeenCalledWith(
-      expect.stringMatching(/Passkey registration process failed: boom-init/)
-    );
-    expect(dialogSvc.openTokenEnrollmentFirstStepDialog).not.toHaveBeenCalled();
   });
 
   it("handles invalid server response (no passkey_registration)", async () => {
@@ -182,7 +168,11 @@ describe("EnrollPasskeyComponent", () => {
       create: jest.fn()
     });
 
-    await expect(component.onClickEnroll({} as any)).rejects.toThrow(/Invalid server response/i);
+    const enrollmentData = component.getEnrollmentData({} as any);
+    const initResponse = await lastValueFrom(tokenSvc.enrollToken(enrollmentData));
+    const finalResponse = component.onEnrollmentResponse(initResponse as EnrollmentResponse, enrollmentData!.data);
+
+    await expect(finalResponse).rejects.toThrow(/Invalid server response/i);
 
     expect(notif.openSnackBar).toHaveBeenCalledWith(
       "Failed to initiate Passkey registration: Invalid server response."
@@ -226,7 +216,11 @@ describe("EnrollPasskeyComponent", () => {
       create: jest.fn().mockResolvedValue(createdCred)
     });
 
-    await expect(component.onClickEnroll({} as any)).rejects.toThrow();
+    const enrollmentData = component.getEnrollmentData({} as any);
+    const initResponse = await lastValueFrom(tokenSvc.enrollToken(enrollmentData));
+    const finalResponse = component.onEnrollmentResponse(initResponse as EnrollmentResponse, enrollmentData!.data);
+
+    await expect(finalResponse).rejects.toThrow();
 
     expect(notif.openSnackBar).toHaveBeenCalledWith(
       "Error during final Passkey registration step. Attempting to clean up token."
@@ -277,8 +271,13 @@ describe("EnrollPasskeyComponent", () => {
 
     component.reopenDialogChange.subscribe((fn) => (reopenCb = fn as any));
 
-    const res1 = await component.onClickEnroll({} as TokenEnrollmentData);
-    expect(res1).toEqual(finalize("S-1"));
+    const enrollmentData = component.getEnrollmentData({} as any);
+    const initResponse = await lastValueFrom(tokenSvc.enrollToken(enrollmentData));
+    const finalResponse = await component.onEnrollmentResponse(
+      initResponse as EnrollmentResponse,
+      enrollmentData!.data
+    );
+    expect(finalResponse).toEqual(finalize("S-1"));
     expect(dialogSvc.openTokenEnrollmentFirstStepDialog).toHaveBeenCalledTimes(1);
     expect(dialogSvc.closeTokenEnrollmentFirstStepDialog).toHaveBeenCalledTimes(1);
 

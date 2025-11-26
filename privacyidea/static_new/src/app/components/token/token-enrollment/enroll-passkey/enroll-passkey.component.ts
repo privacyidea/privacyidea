@@ -61,7 +61,7 @@ export class EnrollPasskeyComponent implements OnInit {
   @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
-  @Output() clickEnrollChange = new EventEmitter<
+  @Output() getEnrollmentDataChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => {
       data: PasskeyEnrollmentData;
       mapper: TokenApiPayloadMapper<PasskeyEnrollmentData>;
@@ -76,11 +76,11 @@ export class EnrollPasskeyComponent implements OnInit {
 
   ngOnInit(): void {
     this.additionalFormFieldsChange.emit({});
-    this.clickEnrollChange.emit(this.onClickEnroll);
+    this.getEnrollmentDataChange.emit(this.getEnrollmentData);
     this.onEnrollmentResponseChange.emit(this.onEnrollmentResponse.bind(this));
   }
 
-  onClickEnroll = (
+  getEnrollmentData = (
     basicEnrollmentData: TokenEnrollmentData
   ): {
     data: PasskeyEnrollmentData;
@@ -89,7 +89,7 @@ export class EnrollPasskeyComponent implements OnInit {
     if (!navigator.credentials?.create) {
       const errorMsg = "Passkey/WebAuthn is not supported by this browser.";
       this.notificationService.openSnackBar(errorMsg);
-      return null;
+      throw new Error(errorMsg);
     }
 
     const enrollmentInitData: PasskeyEnrollmentData = {

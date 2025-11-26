@@ -28,13 +28,14 @@ import { MockDialogService, MockTokenService } from "../../../../../testing/mock
 import { Tokens, TokenService } from "../../../../services/token/token.service";
 import { DialogService } from "../../../../services/dialog/dialog.service";
 import { PushApiPayloadMapper } from "../../../../mappers/token-api-payload/push-token-api-payload.mapper";
-import { of, throwError } from "rxjs";
+import { lastValueFrom, of, throwError } from "rxjs";
 import { ReopenDialogFn } from "../token-enrollment.component";
 
 function makeInitResp(serial = "S-1"): EnrollmentResponse {
   return {
     result: { status: true, value: true },
-    detail: { serial } as any
+    detail: { serial } as any,
+    type: "push"
   } as EnrollmentResponse;
 }
 
@@ -88,7 +89,7 @@ describe("EnrollPushComponent", () => {
 
   it("ngOnInit emits additionalFormFields and clickEnroll handler", () => {
     const addSpy = jest.spyOn(component.additionalFormFieldsChange, "emit");
-    const clickSpy = jest.spyOn(component.clickEnrollChange, "emit");
+    const clickSpy = jest.spyOn(component.getEnrollmentDataChange, "emit");
 
     component.ngOnInit();
 
@@ -105,9 +106,10 @@ describe("EnrollPushComponent", () => {
     tokenSvc.enrollToken.mockReturnValue(of(initResp) as any);
     tokenSvc.pollTokenRolloutState.mockReturnValue(of(pollResp) as any);
 
-    const res = await component.onClickEnroll({} as any);
+    const enrollmentData = component.getEnrollmentData({} as any);
+    const initResponse = await lastValueFrom(tokenSvc.enrollToken(enrollmentData));
+    await component.onEnrollmentResponse(initResponse as EnrollmentResponse);
 
-    expect(res).toBe(initResp);
     expect(tokenSvc.enrollToken).toHaveBeenCalledTimes(1);
     expect(dialogSvc.openTokenEnrollmentFirstStepDialog).toHaveBeenCalledTimes(1);
     expect(tokenSvc.pollTokenRolloutState).toHaveBeenCalledTimes(1);
@@ -115,22 +117,26 @@ describe("EnrollPushComponent", () => {
     expect(component.pollResponse()).toBeUndefined();
   });
 
-  it("returns null when enrollToken errors", async () => {
-    tokenSvc.enrollToken.mockReturnValue(throwError(() => new Error("boom")) as any);
+  // Is now handled by generic token enrollment component
+  //
+  // it("returns null when enrollToken errors", async () => {
+  //   tokenSvc.enrollToken.mockReturnValue(throwError(() => new Error("boom")) as any);
 
-    const res = await component.onClickEnroll({} as any);
+  //   const res = await component.getEnrollmentData({} as any);
 
-    expect(res).toBeNull();
-    expect(dialogSvc.openTokenEnrollmentFirstStepDialog).not.toHaveBeenCalled();
-  });
+  //   expect(res).toBeNull();
+  //   expect(dialogSvc.openTokenEnrollmentFirstStepDialog).not.toHaveBeenCalled();
+  // });
 
   it("keeps dialog open when rollout_state is clientwait", async () => {
     tokenSvc.enrollToken.mockReturnValue(of(makeInitResp()) as any);
     tokenSvc.pollTokenRolloutState.mockReturnValue(of(makePollResp("clientwait")) as any);
 
-    const res = await component.onClickEnroll({} as any);
+    const enrollmentData = component.getEnrollmentData({} as any);
+    const initResponse = await lastValueFrom(tokenSvc.enrollToken(enrollmentData));
+    await component.onEnrollmentResponse(initResponse as EnrollmentResponse);
 
-    expect(res).not.toBeNull();
+    expect(initResponse).not.toBeNull();
     expect(dialogSvc.openTokenEnrollmentFirstStepDialog).toHaveBeenCalled();
     expect(dialogSvc.closeTokenEnrollmentFirstStepDialog).not.toHaveBeenCalled();
   });
@@ -144,15 +150,19 @@ describe("EnrollPushComponent", () => {
     let reopenFn: ReopenDialogFn;
     component.reopenDialogChange.subscribe((fn) => (reopenFn = fn));
 
-    await component.onClickEnroll({} as any);
-    expect(typeof reopenFn).toBe("function");
+    // await component.getEnrollmentData({} as any);
+    const enrollmentData = component.getEnrollmentData({} as any);
+    const initResponse = await lastValueFrom(tokenSvc.enrollToken(enrollmentData));
+    await component.onEnrollmentResponse(initResponse as EnrollmentResponse);
+
+    expect(typeof reopenFn!).toBe("function");
 
     dialogSvc.isTokenEnrollmentFirstStepDialogOpen = true;
-    const r1 = await (reopenFn as any)();
+    const r1 = await reopenFn!();
     expect(r1).toBeNull();
 
     dialogSvc.isTokenEnrollmentFirstStepDialogOpen = false;
-    const r2 = await (reopenFn as any)();
+    const r2 = await reopenFn!();
     expect(r2).toEqual(initResp);
     expect(tokenSvc.pollTokenRolloutState).toHaveBeenCalledTimes(2);
   });
@@ -163,7 +173,9 @@ describe("EnrollPushComponent", () => {
     tokenSvc.enrollToken.mockReturnValue(of(initResp) as any);
     tokenSvc.pollTokenRolloutState.mockReturnValue(of(pollResp) as any);
 
-    await component.onClickEnroll({} as any);
+    const enrollmentData = component.getEnrollmentData({} as any);
+    const initResponse = await lastValueFrom(tokenSvc.enrollToken(enrollmentData));
+    await component.onEnrollmentResponse(initResponse as EnrollmentResponse);
 
     expect(tokenSvc.stopPolling).toHaveBeenCalled();
   });

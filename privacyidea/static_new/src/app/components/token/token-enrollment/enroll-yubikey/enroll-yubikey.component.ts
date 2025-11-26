@@ -48,7 +48,7 @@ export class EnrollYubikeyComponent implements OnInit {
   @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
-  @Output() clickEnrollChange = new EventEmitter<
+  @Output() getEnrollmentDataChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => {
       data: YubikeyEnrollmentData;
       mapper: TokenApiPayloadMapper<YubikeyEnrollmentData>;
@@ -63,7 +63,7 @@ export class EnrollYubikeyComponent implements OnInit {
     otpKey: this.otpKeyControl,
     otpLength: this.otpLengthControl
   });
-  onClickEnroll = (
+  getEnrollmentData = (
     basicOptions: TokenEnrollmentData
   ): {
     data: YubikeyEnrollmentData;
@@ -93,11 +93,14 @@ export class EnrollYubikeyComponent implements OnInit {
       otpKey: this.otpKeyControl,
       otpLength: this.otpLengthControl
     });
-    this.clickEnrollChange.emit(this.onClickEnroll);
+    this.getEnrollmentDataChange.emit(this.getEnrollmentData);
 
     this.testYubiKeyControl.valueChanges
-      .pipe(map(v => Math.max(32, (v ?? "").length)), distinctUntilChanged())
-      .subscribe(len => {
+      .pipe(
+        map((v) => Math.max(32, (v ?? "").length)),
+        distinctUntilChanged()
+      )
+      .subscribe((len) => {
         if (this.otpLengthControl.value !== len) {
           this.otpLengthControl.setValue(len, { emitEvent: false });
         }
