@@ -98,7 +98,7 @@ export class UserDetailsComponent {
   };
   readonly excludedKeys = new Set(['editable']);
   customAttributeKeys: Signal<Set<string>> = computed(() => {
-    const attributeKeys = Object.entries(this.userService.userAttributesList()).map(([idx, attribute]) => attribute.key);
+    const attributeKeys = Object.entries(this.userService.userAttributesList()).map(([_, attribute]) => attribute.key);
     return new Set(attributeKeys);
   });
 
