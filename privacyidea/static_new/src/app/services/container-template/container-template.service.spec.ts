@@ -135,7 +135,7 @@ describe("ContainerTemplateService", () => {
       await Promise.resolve();
 
       // Assertion
-      const value = service.templateTokentypesResource.value();
+      const value = service.templateTokenTypesResource.value();
       expect(value).toBeDefined();
       expect(value?.result?.value).toEqual(mockTokenTypes);
       expect(service.templateTokenTypes()).toEqual(mockTokenTypes);
@@ -148,7 +148,7 @@ describe("ContainerTemplateService", () => {
 
       // Assertion
       httpMock.expectNone(`${environment.proxyUrl}/container/template/tokentypes`);
-      const value = service.templateTokentypesResource.value();
+      const value = service.templateTokenTypesResource.value();
       expect(value).toBeUndefined();
       expect(service.templateTokenTypes()).toEqual({});
     });
@@ -159,7 +159,7 @@ describe("ContainerTemplateService", () => {
 
       // Assertion
       httpMock.expectNone(`${environment.proxyUrl}/container/template/tokentypes`);
-      const value = service.templateTokentypesResource.value();
+      const value = service.templateTokenTypesResource.value();
       expect(value).toBeUndefined();
       expect(service.templateTokenTypes()).toEqual({});
     });

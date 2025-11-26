@@ -13,7 +13,7 @@ export class MockContainerTemplateService implements ContainerTemplateServiceInt
     undefined
   );
   templates = signal<ContainerTemplate[]>([]);
-  templateTokentypesResource = new MockHttpResourceRef<PiResponse<TemplateTokenTypes, unknown> | undefined>(undefined);
+  templateTokenTypesResource = new MockHttpResourceRef<PiResponse<TemplateTokenTypes, unknown> | undefined>(undefined);
   templateTokenTypes = signal<TemplateTokenTypes>({});
   availableContainerTypes = signal<string[]>([]);
   getTokenTypesForContainerType = jest.fn(() => []);

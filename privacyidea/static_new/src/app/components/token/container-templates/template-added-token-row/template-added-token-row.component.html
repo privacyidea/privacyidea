@@ -30,7 +30,9 @@
       <app-enroll-spass (additionalFormFieldsChange)="updateAdditionalFormFields($event)" />
     }
     @case ("remote") {
-      <app-enroll-remote (additionalFormFieldsChange)="updateAdditionalFormFields($event)" />
+      <app-enroll-remote
+        (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
+        [disabled]="!isEditMode()" />
     }
     @case ("sms") {
       <app-enroll-sms (additionalFormFieldsChange)="updateAdditionalFormFields($event)" />

@@ -20,7 +20,7 @@ export interface ContainerTemplateServiceInterface {
   templates: WritableSignal<ContainerTemplate[]>;
   templatesResource: HttpResourceRef<PiResponse<{ templates: ContainerTemplate[] }, unknown> | undefined>;
   templateTokenTypes: Signal<TemplateTokenTypes>;
-  templateTokentypesResource: HttpResourceRef<PiResponse<TemplateTokenTypes, unknown> | undefined>;
+  templateTokenTypesResource: HttpResourceRef<PiResponse<TemplateTokenTypes, unknown> | undefined>;
 }
 
 export interface TemplateTokenTypes {
@@ -80,9 +80,9 @@ export class ContainerTemplateService implements ContainerTemplateServiceInterfa
     };
   });
   templateTokenTypes = computed<TemplateTokenTypes>(() => {
-    return this.templateTokentypesResource.value()?.result?.value ?? {};
+    return this.templateTokenTypesResource.value()?.result?.value ?? {};
   });
-  templateTokentypesResource = httpResource<PiResponse<TemplateTokenTypes>>(() => {
+  templateTokenTypesResource = httpResource<PiResponse<TemplateTokenTypes>>(() => {
     if (
       (this.contentService.routeUrl() !== ROUTE_PATHS.TOKENS_CONTAINERS_CREATE &&
         this.contentService.routeUrl() !== ROUTE_PATHS.TOKENS_CONTAINERS_TEMPLATES) ||
