@@ -314,7 +314,7 @@ export class ContainerService implements ContainerServiceInterface {
   });
 
   containerResource = httpResource<PiResponse<ContainerDetails>>(() => {
-    // Do not load users if the action is not allowed.
+    // Do not load containers if the action is not allowed.
     if (!this.authService.actionAllowed("container_list")) {
       return undefined;
     }

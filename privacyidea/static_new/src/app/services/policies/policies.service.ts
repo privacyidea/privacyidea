@@ -83,10 +83,6 @@ export type SectionOption =
   | "tokeninfo"
   | "userinfo";
 
-/**
- * Get a list of strings from the SectionOption type.
- * @returns {string[]} The list of strings.
- */
 export const allSectionOptions: SectionOption[] = [
   "HTTP Environment",
   "HTTP Request header",
@@ -429,7 +425,7 @@ export class PolicyService implements PolicyServiceInterface {
   }));
 
   readonly allPoliciesRecource = httpResource<PiResponse<PolicyDetail[]>>(() => {
-    // Only load policies if the action is not allowed.
+    // Only load policies if the action is allowed.
     if (!this.authService.actionAllowed("policyread")) {
       return undefined;
     }

@@ -74,8 +74,8 @@ export class SystemService implements SystemServiceInterface {
       return undefined;
     }
     // Only load CA connectors on enrollment or token wizard routes.
-    if (!this.contentService.onTokensEnrollment() ||
-      this.contentService.onTokensWizard()) {
+    if (!this.contentService.onTokensEnrollment() &&
+      !this.contentService.onTokensWizard()) {
       return undefined;
     }
 
@@ -92,7 +92,7 @@ export class SystemService implements SystemServiceInterface {
     }
     // Only load CA connectors on enrollment or token wizard routes.
     if (!this.contentService.onTokensEnrollment() ||
-      this.contentService.onTokensWizard()) {
+      !this.contentService.onTokensWizard()) {
       return undefined;
     }
 
@@ -107,17 +107,14 @@ export class SystemService implements SystemServiceInterface {
     source: this.caConnectorResource?.value,
     computation: (source, previous) => source?.result?.value ?? previous?.value ?? []
   });
-
-  systemConfig = computed<any>(() => {
-    return this.systemConfigResource.value()?.result?.value ?? {};
-  });
-
   nodesResource = httpResource<PiResponse<PiNode[]>>({
     url: this.systemBaseUrl + "nodes",
     method: "GET",
     headers: this.authService.getHeaders()
   });
-
+  systemConfig = computed<any>(() => {
+    return this.systemConfigResource.value()?.result?.value ?? {};
+  });
   nodes = computed<PiNode[]>(() => {
     return this.nodesResource.value()?.result?.value ?? [];
   });
