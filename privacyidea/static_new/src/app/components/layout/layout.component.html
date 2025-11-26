@@ -1,6 +1,6 @@
 <div
-  class="layout"
   aria-label="Layout"
+  class="layout"
   i18n-aria-label>
   <main
     aria-label="Main Router Outlet"
@@ -18,7 +18,21 @@
         </mat-drawer-content>
       </mat-drawer-container>
     } @else {
-      <router-outlet></router-outlet>
+      <div
+        class="selfservice-layout">
+        @if (authService.tokenWizard() || authService.containerWizard().enabled) {
+          <app-navigation-self-service-wizard class="flex-size-1" />
+        } @else {
+          <app-navigation-self-service class="flex-size-1" />
+        }
+        <div class="flex-size-8 flex-top-center">
+          <div
+            [@componentFade]
+            class="selfservice-content-container">
+            <router-outlet></router-outlet>
+          </div>
+        </div>
+      </div>
     }
     @if (showProgressBar()) {
       <div class="loading-urls-container">

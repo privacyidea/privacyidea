@@ -60,6 +60,20 @@
   gap: 20px;
 }
 
+.selfservice-layout {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.selfservice-content-container {
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  height: calc(var(--main-height) - var(--global-padding) * 2);
+  padding: calc(2 * var(--global-padding));
+}
+
 ::ng-deep {
   .mat-drawer-backdrop {
     opacity: 0.5;

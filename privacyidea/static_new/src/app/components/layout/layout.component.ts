@@ -25,12 +25,14 @@ import { MatDrawer, MatDrawerContainer, MatDrawerContent } from "@angular/materi
 import { NavigationComponent } from "./navigation/navigation.component";
 import { OverflowService, OverflowServiceInterface } from "../../services/overflow/overflow.service";
 import { ContentService, ContentServiceInterface } from "../../services/content/content.service";
+import { NavigationSelfServiceComponent } from "./navigation-self-service/navigation-self-service.component";
+import { NavigationSelfServiceWizardComponent } from "./navigation-self-service/navigation-self-service.wizard.component";
 
 @Component({
   selector: "layout",
   templateUrl: "layout.component.html",
   standalone: true,
-  imports: [RouterOutlet, MatProgressBar, MatDrawer, MatDrawerContainer, MatDrawerContent, NavigationComponent],
+  imports: [RouterOutlet, MatProgressBar, MatDrawer, MatDrawerContainer, MatDrawerContent, NavigationComponent, NavigationSelfServiceComponent, NavigationSelfServiceWizardComponent],
   styleUrl: "./layout.component.scss"
 })
 export class LayoutComponent {
