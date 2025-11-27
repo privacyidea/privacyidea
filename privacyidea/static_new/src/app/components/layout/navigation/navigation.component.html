@@ -356,8 +356,8 @@
     @if (authService.actionAllowed("policyread")) {
       <mat-expansion-panel
         [disabled]="true"
-        [ngClass]="{'policy-header-active': this.contentService.onPolicies()}"
-        class="nav-expension-panel policy-header">
+        [ngClass]="{'childless-expension-panel-header-active': this.contentService.onPolicies()}"
+        class="childless-expension-panel-header">
         <mat-expansion-panel-header
           (click)="onPoliciesHeaderClick($event)"
           class="nav-header-button">
