@@ -16,24 +16,13 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { AsyncPipe } from "@angular/common";
+import { AsyncPipe, NgClass, TitleCasePipe } from "@angular/common";
 import { HttpClient } from "@angular/common/http";
-import { Component, inject } from "@angular/core";
+import { Component, inject, linkedSignal, SecurityContext, WritableSignal } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { MatButton, MatIconButton } from "@angular/material/button";
-import { MatCheckbox } from "@angular/material/checkbox";
-import { MatOption } from "@angular/material/core";
 import { MatDialog } from "@angular/material/dialog";
-import {
-  MatAccordion,
-  MatExpansionPanel,
-  MatExpansionPanelHeader,
-  MatExpansionPanelTitle
-} from "@angular/material/expansion";
-import { MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
-import { MatInput } from "@angular/material/input";
-import { MatSelect } from "@angular/material/select";
 import { DomSanitizer } from "@angular/platform-browser";
 import { map } from "rxjs";
 import { ContainerService, ContainerServiceInterface } from "../../../services/container/container.service";
@@ -45,27 +34,21 @@ import { UserService, UserServiceInterface } from "../../../services/user/user.s
 import { VersioningService, VersioningServiceInterface } from "../../../services/version/version.service";
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { ContainerCreateComponent } from "./container-create.component";
+import { MatTooltip } from "@angular/material/tooltip";
+import { environment } from "../../../../environments/environment";
 
 @Component({
   selector: "app-container-create-wizard",
   imports: [
     MatButton,
-    MatFormField,
-    MatHint,
     MatIcon,
-    MatOption,
-    MatSelect,
     FormsModule,
-    MatInput,
-    MatLabel,
-    MatCheckbox,
     MatIconButton,
-    MatAccordion,
-    MatExpansionPanel,
-    MatExpansionPanelTitle,
-    MatExpansionPanelHeader,
     AsyncPipe,
-    ScrollToTopDirective
+    ScrollToTopDirective,
+    MatTooltip,
+    NgClass,
+    TitleCasePipe
   ],
   templateUrl: "./container-create.wizard.component.html",
   styleUrl: "./container-create.component.scss"
@@ -78,18 +61,44 @@ export class ContainerCreateWizardComponent extends ContainerCreateComponent {
   protected override readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   protected override readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected override readonly contentService: ContentServiceInterface = inject(ContentService);
+  protected override readonly wizard: boolean = true;
+
+  override generateQRCode: WritableSignal<boolean> = linkedSignal({
+      source: this.authService.containerWizard,
+      computation: (containerWizard) => containerWizard.registration
+    }
+  );
+  override selectedTemplate = linkedSignal({
+    source: this.authService.containerWizard,
+    computation: (containerWizard) => containerWizard.template || ""
+  });
+
+  protected override resetCreateOptions = () => {
+    this.registerResponse.set(null);
+    this.pollResponse.set(null);
+    this.passphrasePrompt.set("");
+    this.passphraseResponse.set("");
+    this.description.set("");
+  };
+
+  // TODO: Get custom path from pi.cfg
+  customizationPath = "/static/public/customize/";
 
   readonly preTopHtml$ = this.http
-    .get("/customize/container-create.wizard.pre.top.html", {
+    .get(environment.proxyUrl + this.customizationPath + "container-create.wizard.pre.top.html", {
       responseType: "text"
     })
-    .pipe(map((raw) => this.sanitizer.bypassSecurityTrustHtml(raw)));
+    .pipe(map((raw) => ({
+        hasContent: !!raw && raw.trim().length > 0,
+        sanitized: this.sanitizer.sanitize(SecurityContext.HTML, raw)
+      }))
+    );
 
   readonly preBottomHtml$ = this.http
-    .get("/customize/container-create.wizard.pre.bottom.html", {
+    .get(environment.proxyUrl + this.customizationPath + "container-create.wizard.pre.bottom.html", {
       responseType: "text"
     })
-    .pipe(map((raw) => this.sanitizer.bypassSecurityTrustHtml(raw)));
+    .pipe(map((raw) => this.sanitizer.sanitize(SecurityContext.HTML, raw)));
 
   constructor(
     private http: HttpClient,
@@ -99,3 +108,4 @@ export class ContainerCreateWizardComponent extends ContainerCreateComponent {
     super(registrationDialog);
   }
 }
+

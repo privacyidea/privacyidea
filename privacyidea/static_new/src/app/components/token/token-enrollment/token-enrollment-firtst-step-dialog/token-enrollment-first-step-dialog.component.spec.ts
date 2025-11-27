@@ -23,16 +23,13 @@ import { ReactiveFormsModule } from "@angular/forms";
 import { TokenEnrollmentFirstStepDialogComponent } from "./token-enrollment-first-step-dialog.component";
 import { provideHttpClient } from "@angular/common/http";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
-import "@angular/localize/init";
 
 describe("TokenEnrollmentFirstStepDialogComponent", () => {
   let component: TokenEnrollmentFirstStepDialogComponent;
   let fixture: ComponentFixture<TokenEnrollmentFirstStepDialogComponent>;
   const dialogRefMock = {
     close: jest.fn()
-  } as unknown as jest.Mocked<
-    MatDialogRef<TokenEnrollmentFirstStepDialogComponent, string | null>
-  >;
+  } as unknown as jest.Mocked<MatDialogRef<TokenEnrollmentFirstStepDialogComponent, string | null>>;
 
   const dialogDataStub = {
     enrollmentResponse: {
@@ -83,12 +80,7 @@ describe("TokenEnrollmentFirstStepDialogComponent", () => {
         { provide: MatDialogRef, useValue: dialogRefMock },
         { provide: MAT_DIALOG_DATA, useValue: dialogDataStub }
       ],
-      imports: [
-        MatFormFieldModule,
-        MatAutocompleteModule,
-        ReactiveFormsModule,
-        TokenEnrollmentFirstStepDialogComponent
-      ]
+      imports: [MatFormFieldModule, MatAutocompleteModule, ReactiveFormsModule, TokenEnrollmentFirstStepDialogComponent]
     }).compileComponents();
 
     fixture = TestBed.createComponent(TokenEnrollmentFirstStepDialogComponent);

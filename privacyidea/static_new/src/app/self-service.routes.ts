@@ -25,14 +25,14 @@ import { ContainerTableSelfServiceComponent } from "./components/token/container
 import { TokenDetailsSelfServiceComponent } from "./components/token/token-details/token-details.self-service.component";
 import { TokenEnrollmentSelfServiceComponent } from "./components/token/token-enrollment/token-enrollment.self-service.component";
 import { TokenTableSelfServiceComponent } from "./components/token/token-table/token-table.self-service.component";
-import { TokenSelfServiceComponent } from "./components/token/token.self-service.component";
 import { UserSelfServiceComponent } from "./components/user/user.self-service.component";
-import { AuditComponentSelfServiceComponent } from "./components/audit/audit.self-service.component";
+import { AuditSelfServiceComponent } from "./components/audit/audit.self-service.component";
+import { TokenEnrollmentWizardComponent } from "./components/token/token-enrollment/token-enrollment.wizard.component";
+import { ContainerCreateWizardComponent } from "./components/token/container-create/container-create.wizard.component";
 
 export const routes: Routes = [
   {
     path: "tokens",
-    component: TokenSelfServiceComponent,
     children: [
       {
         path: "",
@@ -49,10 +49,12 @@ export const routes: Routes = [
           {
             path: "details/:serial",
             component: ContainerDetailsSelfServiceComponent
-          }
+          },
+          { path: "wizard", component: ContainerCreateWizardComponent }
         ]
       },
-      { path: "details/:serial", component: TokenDetailsSelfServiceComponent }
+      { path: "details/:serial", component: TokenDetailsSelfServiceComponent },
+      { path: "wizard", component: TokenEnrollmentWizardComponent }
     ]
   },
   {
@@ -61,6 +63,6 @@ export const routes: Routes = [
   },
   {
     path: "audit",
-    component: AuditComponentSelfServiceComponent
+    component: AuditSelfServiceComponent
   }
 ];

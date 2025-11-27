@@ -17,7 +17,6 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { inject, Injectable } from "@angular/core";
-import { ROUTE_PATHS } from "../../route_paths";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
 
 export interface OverflowServiceInterface {
@@ -45,43 +44,34 @@ export class OverflowService implements OverflowServiceInterface {
 
     if (params.threshold !== undefined) {
       return element.clientHeight < params.threshold;
-    } else if (params.thresholdSelector) {
+    }
+
+    if (params.thresholdSelector) {
       const thresholdElement = document.querySelector<HTMLElement>(params.thresholdSelector);
       if (!thresholdElement) return false;
+
       const computedStyle = window.getComputedStyle(thresholdElement);
       const paddingBottom = parseFloat(computedStyle.paddingBottom) || 0;
-      const thresholdHeightWithoutPadding = thresholdElement.clientHeight - paddingBottom;
-      return element.clientHeight < thresholdHeightWithoutPadding;
-    } else {
-      return false;
+      const threshold = thresholdElement.clientHeight - paddingBottom;
+      return element.clientHeight < threshold;
     }
+
+    return false;
   }
 
   getOverflowThreshold(): number {
-    if (this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_DETAILS)) {
-      return 1880;
-    }
-    if (this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS)) {
-      return 1880;
-    }
-    switch (this.contentService.routeUrl()) {
-      case ROUTE_PATHS.TOKENS:
-        return 1880;
-      case ROUTE_PATHS.TOKENS_CONTAINERS:
-        return 1880;
-      case ROUTE_PATHS.TOKENS_CHALLENGES:
-        return 1880;
-      case ROUTE_PATHS.USERS:
-        return 1880;
-      case ROUTE_PATHS.TOKENS_APPLICATIONS:
-        return 1500;
-      case ROUTE_PATHS.TOKENS_ENROLLMENT:
-        return 1240;
-      case ROUTE_PATHS.TOKENS_CONTAINERS_CREATE:
-        return 1240;
-      case ROUTE_PATHS.TOKENS_GET_SERIAL:
-        return 1240;
-    }
+    if (this.contentService.onTokenDetails()) return 1880;
+    if (this.contentService.onTokensContainersDetails()) return 1880;
+    if (this.contentService.onUserDetails()) return 1500;
+    if (this.contentService.onTokens()) return 1880;
+    if (this.contentService.onTokensContainers()) return 1880;
+    if (this.contentService.onTokensChallenges()) return 1880;
+    if (this.contentService.onUsers()) return 1880;
+    if (this.contentService.onTokensApplications()) return 1500;
+    if (this.contentService.onTokensEnrollment()) return 1240;
+    if (this.contentService.onTokensContainersCreate()) return 1240;
+    if (this.contentService.onTokensGetSerial()) return 1240;
+
     return 1920;
   }
 }

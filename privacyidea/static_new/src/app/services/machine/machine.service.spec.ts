@@ -52,9 +52,7 @@ describe("MachineService (with mock classes)", () => {
         { provide: LocalService, useClass: MockLocalService },
         { provide: TableUtilsService, useClass: MockTableUtilsService },
         { provide: ContentService, useClass: MockContentService },
-        MachineService,
-        MockLocalService,
-        MockNotificationService
+        MachineService
       ]
     });
 
@@ -201,5 +199,22 @@ describe("MachineService (with mock classes)", () => {
       active: "hostname",
       direction: "desc"
     });
+  });
+
+  it("should not include empty filter values in filterParams", () => {
+    machineService.machineFilter.set({
+      filterMap: new Map([
+        ["serial", ""],
+        ["service_id", "123"],
+        ["hostname", "   "],
+        ["machineid", "*"]
+      ])
+    } as any);
+
+    const params = machineService.filterParams();
+    expect(params).not.toHaveProperty("serial");
+    expect(params).toHaveProperty("service_id", "*123*");
+    expect(params).not.toHaveProperty("hostname");
+    expect(params).not.toHaveProperty("machineid");
   });
 });

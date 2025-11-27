@@ -1,6 +1,24 @@
+<!--
+ (c) NetKnights GmbH 2025,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
 <div class="flex-column">
   <h4 class="enroll-h4">Token Configuration</h4>
-  @if (!defaultRadiusServerIsSet()) {
+  @if (!defaultRadiusServerIsSet() && authService.role() === "admin") {
     <span
       i18n
       class="inline-hint">To ease the enrolling of RADIUS tokens you can set default values in the
@@ -12,23 +30,25 @@
     Check the PIN locally
   </mat-checkbox>
   <div class="flex-row gap-1">
-    <mat-form-field class="width-66">
-      <mat-label i18n>RADIUS server configuration</mat-label>
-      <mat-hint i18n>
-        Select a predefined
-        <a href="#">RADIUS server configuration</a>
-        . The RADIUS request will be forwarded to this RADIUS server.
-      </mat-hint>
-      <mat-select
-        [formControl]="radiusServerConfigurationControl"
-        [value]="radiusServerConfigurationControl.value"
-        required>
-        @for (option of radiusServerConfigurationOptions(); track option) {
-          <mat-option [value]="option">{{ option }}</mat-option>
-        }
-      </mat-select>
-      <mat-error i18n>RADIUS Server is <strong>required</strong></mat-error>
-    </mat-form-field>
+    @if (!wizard || !defaultRadiusServerIsSet()) {
+      <mat-form-field class="width-66">
+        <mat-label i18n>RADIUS server configuration</mat-label>
+        <mat-hint i18n>
+          Select a predefined
+          <a href="#">RADIUS server configuration</a>
+          . The RADIUS request will be forwarded to this RADIUS server.
+        </mat-hint>
+        <mat-select
+          [formControl]="radiusServerConfigurationControl"
+          [value]="radiusServerConfigurationControl.value"
+          required>
+          @for (option of radiusServerConfigurationOptions(); track option) {
+            <mat-option [value]="option">{{ option }}</mat-option>
+          }
+        </mat-select>
+        <mat-error i18n>RADIUS Server is <strong>required</strong></mat-error>
+      </mat-form-field>
+    }
     <mat-form-field class="input-height width-33">
       <mat-label i18n>RADIUS User</mat-label>
       <input

@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, EventEmitter, inject, OnInit, Output } from "@angular/core";
+import { Component, EventEmitter, inject, Input, OnInit, Output } from "@angular/core";
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 
@@ -42,14 +42,13 @@ export class EnrollSpassComponent implements OnInit {
   protected readonly enrollmentMapper: SpassApiPayloadMapper = inject(SpassApiPayloadMapper);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
 
+  @Input() wizard: boolean = false;
   @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
   @Output() clickEnrollChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => Observable<EnrollmentResponse | null>
   >();
-
-  spassForm = new FormGroup({});
 
   ngOnInit(): void {
     this.additionalFormFieldsChange.emit({});

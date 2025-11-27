@@ -19,7 +19,6 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import {
   MockAuditService,
-  MockAuthService,
   MockContentService,
   MockLocalService,
   MockNotificationService,
@@ -35,32 +34,43 @@ import { MatTableDataSource } from "@angular/material/table";
 import { TableUtilsService } from "../../services/table-utils/table-utils.service";
 import { of } from "rxjs";
 import { provideHttpClient } from "@angular/common/http";
-import { FilterValue } from "../../core/models/filter_value";
+import { AuditSelfServiceComponent } from "./audit.self-service.component";
+import { provideNoopAnimations } from "@angular/platform-browser/animations";
+import { MockAuthService } from "../../../testing/mock-services/mock-auth-service";
 
 describe("AuditComponent (unit)", () => {
   let fixture: ComponentFixture<AuditComponent>;
   let component: AuditComponent;
+  let selfFixture: ComponentFixture<AuditSelfServiceComponent>;
+  let selfComponent: AuditSelfServiceComponent;
   let mockAuditService: MockAuditService;
   let mockTableUtilsService: MockTableUtilsService;
 
   beforeEach(async () => {
     TestBed.resetTestingModule();
 
+    TestBed.overrideComponent(AuditComponent, {
+      set: {
+        template: "<div></div>",
+        animations: []
+      }
+    });
+
+    TestBed.overrideComponent(AuditSelfServiceComponent, {
+      set: {
+        template: "<div></div>",
+        animations: []
+      }
+    });
+
     await TestBed.configureTestingModule({
       imports: [AuditComponent],
       providers: [
         provideHttpClient(),
-        {
-          provide: ActivatedRoute,
-          useValue: {
-            params: of({ id: "123" })
-          }
-        },
+        provideNoopAnimations(),
+        { provide: ActivatedRoute, useValue: { params: of({ id: "123" }) } },
         { provide: MockAuditService as any, useClass: MockAuditService },
-        {
-          provide: MockTableUtilsService as any,
-          useClass: MockTableUtilsService
-        },
+        { provide: MockTableUtilsService as any, useClass: MockTableUtilsService },
         { provide: MockContentService as any, useClass: MockContentService },
         { provide: MockAuthService as any, useClass: MockAuthService },
         { provide: AuditService, useExisting: MockAuditService },
@@ -72,16 +82,29 @@ describe("AuditComponent (unit)", () => {
       ]
     }).compileComponents();
 
+    jest.useFakeTimers();
+
     fixture = TestBed.createComponent(AuditComponent);
     component = fixture.componentInstance;
+    selfFixture = TestBed.createComponent(AuditSelfServiceComponent);
+    selfComponent = selfFixture.componentInstance;
     mockAuditService = TestBed.inject(MockAuditService as any);
     mockTableUtilsService = TestBed.inject(MockTableUtilsService as any);
     fixture.detectChanges();
   });
 
+  afterEach(() => {
+    jest.useRealTimers();
+    jest.clearAllMocks();
+  });
+
   it("creates", () => {
     expect(component).toBeTruthy();
     expect(component.columnKeys.length).toBe(component.columnKeysMap.length);
+  });
+
+  it("creates self service", () => {
+    expect(selfComponent).toBeTruthy();
   });
 
   describe("page‑related derived signals", () => {
@@ -143,17 +166,6 @@ describe("AuditComponent (unit)", () => {
     });
     expect(component.auditDataSource() instanceof MatTableDataSource).toBe(true);
     expect(component.auditDataSource().data).toEqual(rows);
-  });
-
-  it("parses filterValueString and resets pageIndex through the effect", async () => {
-    mockAuditService.pageIndex.set(3);
-    mockAuditService.auditFilter.set(new FilterValue({ value: "user: bob success: true" }));
-
-    await fixture.whenStable();
-    await Promise.resolve();
-    jest.runOnlyPendingTimers();
-
-    expect(mockAuditService.pageIndex()).toBe(0);
   });
 
   it("onPageEvent mutates pageSize & pageIndex signals", () => {

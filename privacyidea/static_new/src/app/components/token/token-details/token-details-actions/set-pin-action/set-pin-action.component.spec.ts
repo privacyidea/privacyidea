@@ -24,9 +24,10 @@ import { TokenService } from "../../../../../services/token/token.service";
 import { signal } from "@angular/core";
 import { NotificationService } from "../../../../../services/notification/notification.service";
 import { AuthService } from "../../../../../services/auth/auth.service";
-import { MockAuthService, MockLocalService, MockNotificationService } from "../../../../../../testing/mock-services";
+import { MockLocalService, MockNotificationService } from "../../../../../../testing/mock-services";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { MockAuthService } from "../../../../../../testing/mock-services/mock-auth-service";
 
 describe("SetPinActionComponent", () => {
   let component: SetPinActionComponent;
@@ -64,8 +65,7 @@ describe("SetPinActionComponent", () => {
         MockLocalService,
         MockNotificationService
       ]
-    })
-      .compileComponents();
+    }).compileComponents();
 
     fixture = TestBed.createComponent(SetPinActionComponent);
     component = fixture.componentInstance;

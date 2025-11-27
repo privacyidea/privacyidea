@@ -1,3 +1,21 @@
+<!--
+ (c) NetKnights GmbH 2025,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
 <div
   appScrollToTop
   aria-label="Details"
@@ -11,6 +29,13 @@
         <h3 i18n>{{ " (Offline)" }}</h3>
       }
       <app-copy-button [copyText]="tokenSerial()"></app-copy-button>
+      <button
+        (click)="showTokenAuditLog()"
+        [routerLink]="[ROUTE_PATHS.AUDIT]"
+        mat-icon-button
+        matTooltip="Show token in audit log">
+        <mat-icon>receipt_long</mat-icon>
+      </button>
     </div>
     <div
       [ngClass]="[overflowService.isWidthOverflowing('body', 1310) ? 'flex-column' : 'flex-row']"
@@ -91,7 +116,7 @@
                       class="details-scrollable-container"
                       [ngClass]="{ 'details-list': element.value.length > 2 }">
                       @for (realm of element.value; track realm) {
-                        <mat-list-item class="height-auto">
+                        <mat-list-item class="height-auto pad-0">
                           <span class="font-14">• {{ realm }}</span>
                         </mat-list-item>
                       }
@@ -126,7 +151,7 @@
                         'details-list': element.value.length > 2
                       }">
                       @for (tokengroup of element.value; track tokengroup) {
-                        <mat-list-item class="height-auto">
+                        <mat-list-item class="height-auto pad-0">
                           <span class="font-14">• {{ tokengroup }}</span>
                         </mat-list-item>
                       }
@@ -218,7 +243,7 @@
                     <button
                       mat-icon-button
                       class="red"
-                      (click)="deleteContainer()"
+                      (click)="removeFromContainer()"
                       i18n-aria-label="Delete Container">
                       <mat-icon>folder_delete</mat-icon>
                     </button>

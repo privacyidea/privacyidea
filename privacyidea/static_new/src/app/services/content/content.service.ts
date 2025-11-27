@@ -23,18 +23,43 @@ import { filter, map, pairwise, startWith } from "rxjs";
 import { ROUTE_PATHS } from "../../route_paths";
 
 export interface ContentServiceInterface {
+  detailsUsername: WritableSignal<string>;
   router: Router;
   routeUrl: Signal<string>;
   previousUrl: Signal<string>;
-  isProgrammaticTabChange: WritableSignal<boolean>;
   tokenSerial: WritableSignal<string>;
   containerSerial: WritableSignal<string>;
+
+  onLogin: Signal<boolean>;
+  onAudit: Signal<boolean>;
+  onTokens: Signal<boolean>;
+  onUsers: Signal<boolean>;
+  onPolicies: Signal<boolean>;
+  onTokenDetails: Signal<boolean>;
+  onUserDetails: Signal<boolean>;
+  onUserRealms: Signal<boolean>;
+  onTokensEnrollment: Signal<boolean>;
+  onTokensChallenges: Signal<boolean>;
+  onTokensApplications: Signal<boolean>;
+  onTokensGetSerial: Signal<boolean>;
+  onTokensImport: Signal<boolean>;
+  onTokensContainers: Signal<boolean>;
+  onTokensContainersCreate: Signal<boolean>;
+  onTokensContainersDetails: Signal<boolean>;
+  onTokensAssignToken: Signal<boolean>;
+  onTokensWizard: Signal<boolean>;
+  onTokensContainersWizard: Signal<boolean>;
+  onAnyTokensRoute: Signal<boolean>;
+  onAnyUsersRoute: Signal<boolean>;
+
   tokenSelected: (serial: string) => void;
   containerSelected: (containerSerial: string) => void;
+  userSelected: (username: any) => void;
 }
 
 @Injectable({ providedIn: "root" })
-export class ContentService {
+export class ContentService implements ContentServiceInterface {
+  detailsUsername = signal("");
   router = inject(Router);
   private readonly _urlPair = toSignal(
     this.router.events.pipe(
@@ -47,23 +72,54 @@ export class ContentService {
   );
   readonly routeUrl = computed(() => this._urlPair()[1]);
   readonly previousUrl = computed(() => this._urlPair()[0]);
-  isProgrammaticTabChange = signal(false);
   tokenSerial = signal("");
   containerSerial = signal("");
+  onLogin = computed(() => this.routeUrl() === ROUTE_PATHS.LOGIN);
+  onAudit = computed(() => this.routeUrl() === ROUTE_PATHS.AUDIT);
+  onTokens = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS);
+  onUsers = computed(() => this.routeUrl() === ROUTE_PATHS.USERS);
+  onPolicies = computed(() => this.routeUrl() === ROUTE_PATHS.POLICIES);
+  onTokenDetails = computed(() =>
+    this.routeUrl().startsWith(ROUTE_PATHS.TOKENS_DETAILS)
+  );
+  onUserDetails = computed(() =>
+    this.routeUrl().startsWith(ROUTE_PATHS.USERS_DETAILS + "/")
+  );
+  onUserRealms = computed(() => this.routeUrl() === ROUTE_PATHS.USERS_REALMS);
+  onTokensEnrollment = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS_ENROLLMENT);
+  onTokensChallenges = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS_CHALLENGES);
+  onTokensApplications = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS_APPLICATIONS);
+  onTokensGetSerial = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS_GET_SERIAL);
+  onTokensImport = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS_IMPORT);
+  onTokensContainers = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS_CONTAINERS);
+  onTokensContainersCreate = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS_CONTAINERS_CREATE);
+  onTokensContainersDetails = computed(() =>
+    this.routeUrl().startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS)
+  );
+  onTokensAssignToken = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS_ASSIGN_TOKEN);
+  onTokensWizard = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS_WIZARD);
+  onTokensContainersWizard = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS_CONTAINERS_WIZARD);
+  onAnyTokensRoute = computed(() =>
+    this.routeUrl() === ROUTE_PATHS.TOKENS ||
+    this.routeUrl().startsWith(ROUTE_PATHS.TOKENS + "/")
+  );
+  onAnyUsersRoute = computed(() =>
+    this.routeUrl() === ROUTE_PATHS.USERS ||
+    this.routeUrl().startsWith(ROUTE_PATHS.USERS + "/")
+  );
 
-  tokenSelected(serial: string) {
-    if (this.routeUrl().includes("containers")) {
-      this.isProgrammaticTabChange.set(true);
-    }
+  tokenSelected(serial: string): void {
     this.router.navigateByUrl(ROUTE_PATHS.TOKENS_DETAILS + serial);
     this.tokenSerial.set(serial);
   }
 
-  containerSelected(containerSerial: string) {
-    if (!this.routeUrl().includes("containers")) {
-      this.isProgrammaticTabChange.set(true);
-    }
+  containerSelected(containerSerial: string): void {
     this.router.navigateByUrl(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + containerSerial);
     this.containerSerial.set(containerSerial);
+  }
+
+  userSelected(username: any): void {
+    this.router.navigateByUrl(ROUTE_PATHS.USERS_DETAILS + "/" + username);
+    this.detailsUsername.set(username);
   }
 }

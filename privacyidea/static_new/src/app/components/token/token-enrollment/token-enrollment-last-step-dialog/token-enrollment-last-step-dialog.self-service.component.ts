@@ -16,33 +16,19 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, inject, WritableSignal } from "@angular/core";
-import { MatButton, MatIconButton } from "@angular/material/button";
-import {
-  MAT_DIALOG_DATA,
-  MatDialogActions,
-  MatDialogClose,
-  MatDialogContent,
-  MatDialogRef,
-  MatDialogTitle
-} from "@angular/material/dialog";
-import {
-  MatAccordion,
-  MatExpansionPanel,
-  MatExpansionPanelHeader,
-  MatExpansionPanelTitle
-} from "@angular/material/expansion";
+import { Component, WritableSignal } from "@angular/core";
+import { MatButton } from "@angular/material/button";
+import { MatDialogActions, MatDialogClose, MatDialogContent, MatDialogTitle } from "@angular/material/dialog";
 import { MatIcon } from "@angular/material/icon";
 import { EnrollmentResponse } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
-import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
-import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
-import { UserData } from "../../../../services/user/user.service";
 import { TokenType } from "../../../../services/token/token.service";
-import {
-  NO_QR_CODE_TOKEN_TYPES,
-  NO_REGENERATE_TOKEN_TYPES,
-  REGENERATE_AS_VALUES_TOKEN_TYPES
-} from "../token-enrollment.constants";
+import { UserData } from "../../../../services/user/user.service";
+import { TokenEnrollmentLastStepDialogComponent } from "./token-enrollment-last-step-dialog.component";
+import { QrCodeTextComponent } from "./qr-code-text/qr-code-text.component";
+import { OtpKeyComponent } from "./otp-key/otp-key.component";
+import { TiqrEnrollUrlComponent } from "./tiqr-enroll-url/tiqr-enroll-url.component";
+import { RegistrationCodeComponent } from "./registration-code/registration-code.component";
+import { OtpValuesComponent } from "./otp-values/otp-values.component";
 
 export type TokenEnrollmentLastStepDialogData = {
   tokentype: TokenType;
@@ -62,76 +48,15 @@ export type TokenEnrollmentLastStepDialogData = {
     MatDialogClose,
     MatDialogContent,
     MatDialogTitle,
-    MatAccordion,
-    MatExpansionPanel,
-    MatExpansionPanelHeader,
-    MatExpansionPanelTitle,
     MatIcon,
-    MatIconButton
+    QrCodeTextComponent,
+    OtpKeyComponent,
+    TiqrEnrollUrlComponent,
+    RegistrationCodeComponent,
+    OtpValuesComponent
   ],
   templateUrl: "./token-enrollment-last-step-dialog.self-service.component.html",
   styleUrl: "./token-enrollment-last-step-dialog.component.scss"
 })
-export class TokenEnrollmentLastStepDialogSelfServiceComponent {
-  protected readonly dialogRef: MatDialogRef<TokenEnrollmentLastStepDialogSelfServiceComponent> = inject(MatDialogRef);
-  public readonly data: TokenEnrollmentLastStepDialogData = inject(MAT_DIALOG_DATA);
-  protected readonly tokenService: TokenServiceInterface = inject(TokenService);
-  protected readonly contentService: ContentServiceInterface = inject(ContentService);
-
-  protected readonly Object = Object;
-
-  protected readonly showQRCode = computed(() => !NO_QR_CODE_TOKEN_TYPES.includes(this.data.tokentype?.key));
-  protected readonly showRegenerateButton = computed(() => !NO_REGENERATE_TOKEN_TYPES.includes(this.data.tokentype?.key));
-  protected readonly regenerateButtonText = computed(() => {
-    return REGENERATE_AS_VALUES_TOKEN_TYPES.includes(this.data.tokentype?.key) ? "Values" : "QR Code";
-  });
-
-  tokenSelected(tokenSerial: string) {
-    this.dialogRef.close();
-    this.contentService.tokenSelected(tokenSerial);
-  }
-
-  regenerateQRCode() {
-    this.data.serial.set(this.data.response.detail?.serial ?? null);
-    this.data.enrollToken();
-    this.data.serial.set(null);
-    this.dialogRef.close();
-  }
-
-  containerSelected(containerSerial: string) {
-    this.dialogRef.close();
-    this.contentService.containerSelected(containerSerial);
-  }
-
-  printOtps(): void {
-    const printContents = document.getElementById("otp-values")?.innerHTML;
-    if (printContents) {
-      const printWindow = window.open("", "_blank", "width=800,height=600");
-      if (printWindow) {
-        printWindow.document.open();
-        printWindow.document.write(`
-          <html lang="en">
-              <style>
-                .otp-values {
-                  display: flex;
-                  flex-wrap: wrap;
-                  gap: 8px;
-                }
-                .otp-value {
-                  min-width: 6rem;
-                  border: 1px solid #e2e2e2;
-                  padding: 6px;
-                  border-radius: 6px;
-                }
-              </style>
-              ${printContents}
-          </html>
-        `);
-        printWindow.document.close();
-        printWindow.focus();
-        printWindow.print();
-        printWindow.close();
-      }
-    }
-  }
+export class TokenEnrollmentLastStepDialogSelfServiceComponent extends TokenEnrollmentLastStepDialogComponent {
 }

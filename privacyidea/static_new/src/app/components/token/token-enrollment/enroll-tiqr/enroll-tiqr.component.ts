@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, EventEmitter, inject, OnInit, Output } from "@angular/core";
+import { Component, computed, EventEmitter, inject, Input, OnInit, Output } from "@angular/core";
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { SystemService, SystemServiceInterface } from "../../../../services/system/system.service";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
@@ -44,6 +44,7 @@ export class EnrollTiqrComponent implements OnInit {
   protected readonly systemService: SystemServiceInterface = inject(SystemService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
 
+  @Input() wizard: boolean = false;
   @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
@@ -55,8 +56,6 @@ export class EnrollTiqrComponent implements OnInit {
     const cfg = this.systemService.systemConfigResource.value()?.result?.value;
     return !!(cfg?.["tiqr.infoUrl"] && cfg?.["tiqr.logoUrl"] && cfg?.["tiqr.regServer"]);
   });
-
-  tiqrForm = new FormGroup({});
 
   ngOnInit(): void {
     this.additionalFormFieldsChange.emit({});

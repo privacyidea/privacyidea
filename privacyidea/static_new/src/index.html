@@ -1,3 +1,21 @@
+<!--
+ (c) NetKnights GmbH 2025,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
 <!doctype html>
 <html lang="en">
   <head>
@@ -13,32 +31,31 @@
       type="image/x-icon" />
 
     <script>
-      window.appConfig = {{
+      window.appConfig =
         {
-          instance: instance | safe,
-          backendUrl: backendUrl | safe,
-          browserLang: browser_lang | safe,
-          remoteUser: remote_user | safe,
-          forceRemoteUser: force_remote_user | safe,
-          theme: theme | safe,
-          translationWarning: translation_warning | safe,
-          passwordReset: password_reset | safe,
-          hsmReady: hsm_ready | safe,
-          hasJobQueue: has_job_queue | safe,
-          customization: customization | safe,
-          customCss: custom_css | safe,
-          customizationMenuFile: customization_menu_file | safe,
-          customizationBaselineFile: customization_baseline_file | safe,
-          realms: realms | safe,
-          showNode: show_node | safe,
-          externalLinks: external_links | safe,
-          loginText: login_text | safe,
-          gdprLink: gdpr_link | safe,
-          logo: logo | safe,
-          pageTitle: page_title | safe,
-          otpPinSetRandomUser: otp_pin_set_random_user | safe
-        }
-      }};
+          instance: {{ instance | safe }},
+          backendUrl: {{ backendUrl | safe }},
+          browserLang: {{ browser_lang | safe }},
+          remoteUser: {{ remote_user | safe }},
+          forceRemoteUser: {{ force_remote_user | safe }},
+          theme: {{ theme | safe }},
+          translationWarning: {{ translation_warning | safe }},
+          passwordReset: {{ password_reset | safe }},
+          hsmReady: {{ hsm_ready | safe }},
+          hasJobQueue: {{ has_job_queue | safe }},
+          customization: {{ customization | safe }},
+          customCss: {{ custom_css | safe }},
+          customizationMenuFile: {{ customization_menu_file | safe }},
+          customizationBaselineFile: {{ customization_baseline_file | safe }},
+          realms: {{ realms | safe }},
+          showNode: {{ show_node | safe }},
+          externalLinks: {{ external_links | safe }},
+          loginText: {{ login_text | safe }},
+          gdprLink: {{ gdpr_link | safe }},
+          logo: {{ logo | safe }},
+          pageTitle: {{ page_title | safe }},
+          otpPinSetRandomUser: {{ otp_pin_set_random_user | safe }}
+        };
     </script>
   </head>
   <body class="mat-typography">

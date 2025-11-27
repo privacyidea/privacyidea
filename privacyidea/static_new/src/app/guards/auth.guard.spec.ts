@@ -21,9 +21,10 @@ import { Route, Router, UrlSegment } from "@angular/router";
 import { AuthService } from "../services/auth/auth.service";
 import { NotificationService } from "../services/notification/notification.service";
 import { adminMatch, AuthGuard, selfServiceMatch } from "./auth.guard";
-import { MockAuthService, MockLocalService, MockNotificationService } from "../../testing/mock-services";
+import { MockLocalService, MockNotificationService } from "../../testing/mock-services";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { MockAuthService } from "../../testing/mock-services/mock-auth-service";
 
 const flushPromises = () => new Promise((r) => setTimeout(r, 0));
 
@@ -33,6 +34,7 @@ const routerMock = {
 
 describe("AuthGuard — CanMatch helpers", () => {
   const runMatch = (fn: any) => TestBed.runInInjectionContext(() => fn({} as Route, [] as UrlSegment[])) as boolean;
+  let authMock: MockAuthService;
 
   beforeEach(() => {
     TestBed.resetTestingModule();
@@ -45,25 +47,30 @@ describe("AuthGuard — CanMatch helpers", () => {
         MockNotificationService
       ]
     });
+
+    authMock = TestBed.inject(AuthService) as unknown as MockAuthService;
   });
 
-  it("adminMatch returns true only for role \"admin\"", () => {
-    const auth = TestBed.inject(AuthService) as unknown as MockAuthService;
-
-    auth.role.set("admin");
+  it('adminMatch returns true only for role "admin"', () => {
+    authMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, role: "admin" });
     expect(runMatch(adminMatch)).toBe(true);
 
-    auth.role.set("user");
+    authMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, role: "user" });
     expect(runMatch(adminMatch)).toBe(false);
   });
 
-  it("selfServiceMatch returns true only for role \"user\"", () => {
-    const auth = TestBed.inject(AuthService) as unknown as MockAuthService;
-
-    auth.role.set("user");
+  it('selfServiceMatch returns true only for role "user"', () => {
+    authMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, role: "user" });
     expect(runMatch(selfServiceMatch)).toBe(true);
 
-    auth.role.set("admin");
+    authMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, role: "admin" });
+    expect(runMatch(selfServiceMatch)).toBe(false);
+  });
+
+  it("adminMatch/selfServiceMatch are false for unknown role", () => {
+    authMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, role: "" });
+    expect(authMock.role()).toBe("");
+    expect(runMatch(adminMatch)).toBe(false);
     expect(runMatch(selfServiceMatch)).toBe(false);
   });
 });
@@ -92,8 +99,7 @@ describe("AuthGuard class", () => {
     authService = TestBed.inject(AuthService) as unknown as MockAuthService;
     notificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
 
-    jest.spyOn(console, "warn").mockImplementation(() => {
-    });
+    jest.spyOn(console, "warn").mockImplementation(() => {});
     (routerMock.navigate as jest.Mock).mockClear();
   });
 
@@ -118,5 +124,36 @@ describe("AuthGuard class", () => {
 
     await flushPromises();
     expect(notificationService.openSnackBar).toHaveBeenCalledWith("Navigation blocked by AuthGuard!");
+  });
+
+  it("calls navigate and shows snackbar twice when both canActivate + canActivateChild deny access", async () => {
+    authService.isAuthenticated.set(false);
+    (routerMock.navigate as jest.Mock).mockResolvedValue(true);
+
+    expect(guard.canActivate()).toBe(false);
+    expect(guard.canActivateChild()).toBe(false);
+
+    expect(routerMock.navigate).toHaveBeenCalledTimes(2);
+    expect(routerMock.navigate).toHaveBeenNthCalledWith(1, ["/login"]);
+    expect(routerMock.navigate).toHaveBeenNthCalledWith(2, ["/login"]);
+
+    await flushPromises(); // resolve both .then handlers
+
+    expect(notificationService.openSnackBar).toHaveBeenCalledTimes(2);
+    expect(notificationService.openSnackBar).toHaveBeenNthCalledWith(1, "Navigation blocked by AuthGuard!");
+    expect(notificationService.openSnackBar).toHaveBeenNthCalledWith(2, "Navigation blocked by AuthGuard!");
+  });
+
+  it("does not show snackbar if router.navigate never resolves (simulates failure without unhandled rejection)", async () => {
+    authService.isAuthenticated.set(false);
+
+    (routerMock.navigate as jest.Mock).mockImplementationOnce(() => new Promise<boolean>(() => {}));
+
+    expect(guard.canActivate()).toBe(false);
+    expect(routerMock.navigate).toHaveBeenCalledWith(["/login"]);
+
+    await flushPromises();
+
+    expect(notificationService.openSnackBar).not.toHaveBeenCalled();
   });
 });

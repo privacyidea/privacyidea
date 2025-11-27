@@ -44,8 +44,7 @@
               "@angular/material/prebuilt-themes/azure-blue.css",
               "src/styles/styles.scss"
             ],
-            "scripts": [],
-            "optimization": true
+            "scripts": []
           },
           "configurations": {
             "production": {
@@ -101,7 +100,12 @@
           "builder": "@angular-builders/jest:run",
           "options": {
             "configPath": "./jest.config.ts",
-            "tsConfig": "tsconfig.spec.json"
+            "tsConfig": "tsconfig.spec.json",
+            "codeCoverageExclude": [
+              "src/main.ts",
+              "src/polyfills.ts",
+              "src/testing/**"
+            ]
           }
         }
       }
