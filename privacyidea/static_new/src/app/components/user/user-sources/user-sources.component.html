@@ -1,0 +1,126 @@
+<div
+  aria-label="User Sources Layout"
+  class="user-sources-layout"
+  i18n-aria-label>
+  <div
+    appScrollToTop
+    class="user-sources-table-container">
+    <div class="filter-paginator-container margin-bottom-1">
+      <mat-form-field
+        class="table-filter"
+        subscriptSizing="dynamic">
+        <mat-label i18n>Filter Resolvers...</mat-label>
+        <app-clearable-input
+          (onClick)="resetFilter()"
+          [showClearButton]="filterString().length > 0">
+          <input
+            #filterHTMLInputElement
+            (input)="onFilterInput(filterHTMLInputElement.value)"
+            [value]="filterString()"
+            aria-label="Filter Input"
+            i18n-aria-label
+            i18n-placeholder
+            matInput
+            placeholder="Filter by name or type" />
+        </app-clearable-input>
+      </mat-form-field>
+      <mat-paginator
+        [length]="resolversDataSource().data.length"
+        [pageSizeOptions]="pageSizeOptions()"
+        [pageSize]="pageSizeOptions()[0]"
+        showFirstLastButtons></mat-paginator>
+    </div>
+
+    <div class="audit-table-overflow">
+      <table
+        [dataSource]="resolversDataSource()"
+        aria-label="Resolvers Table"
+        class="user-sources-table"
+        mat-table
+        matSort>
+        <ng-container matColumnDef="resolvername">
+          <th
+            *matHeaderCellDef
+            mat-header-cell
+            mat-sort-header>
+            <span i18n>Name</span>
+          </th>
+          <td
+            *matCellDef="let element"
+            mat-cell>
+            {{ element.resolvername }}
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="type">
+          <th
+            *matHeaderCellDef
+            mat-header-cell
+            mat-sort-header>
+            <span i18n>Type</span>
+          </th>
+          <td
+            *matCellDef="let element"
+            mat-cell>
+            {{ element.type }}
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="actions">
+          <th
+            *matHeaderCellDef
+            disabled
+            mat-header-cell>
+            <span i18n>Actions</span>
+          </th>
+          <td
+            *matCellDef="let element"
+            class="actions-cell"
+            mat-cell>
+            <div class="actions-buttons">
+              @if (authService.actionAllowed("resolverwrite")) {
+                <button
+                  (click)="onEditResolver(element)"
+                  aria-label="Edit resolver"
+                  mat-icon-button
+                  matTooltip="Edit resolver"
+                  type="button">
+                  <mat-icon>edit</mat-icon>
+                </button>
+              }
+              @if (authService.actionAllowed("resolverdelete")) {
+                <button
+                  (click)="onDeleteResolver(element)"
+                  aria-label="Delete resolver"
+                  color="warn"
+                  mat-icon-button
+                  matTooltip="Delete resolver"
+                  type="button">
+                  <mat-icon>delete</mat-icon>
+                </button>
+              }
+            </div>
+          </td>
+        </ng-container>
+
+        <tr
+          *matHeaderRowDef="columnKeys"
+          mat-header-row></tr>
+
+        <tr
+          *matRowDef="let row; columns: columnKeys"
+          mat-row></tr>
+
+        <tr
+          *matNoDataRow
+          mat-no-data-row>
+          <td
+            [attr.colspan]="columnKeys.length"
+            aria-label="No Data Cell">
+            No data matching the filter.
+          </td>
+        </tr>
+      </table>
+    </div>
+  </div>
+</div>
