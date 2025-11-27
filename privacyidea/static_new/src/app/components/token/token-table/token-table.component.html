@@ -86,27 +86,29 @@
                 <div class="flex ali-center">
                   {{ column.label }}
                   @if (column.key !== 'number') {
-                    <button
-                      (click)="keywordFilterHTMLElement.onKeywordClick(column.key)"
-                      class="filter-button"
-                      mat-icon-button>
-                      <mat-icon
-                        [ngClass]="{
-                          change_circle: 'change-keyword',
-                          remove_circle: 'remove-keyword',
-                          add_circle: 'add-keyword',
+                    <div class="margin-left-1 flex-row">
+                      <button
+                        (click)="keywordFilterHTMLElement.onKeywordClick(column.key)"
+                        class="filter-button"
+                        mat-icon-button>
+                        <mat-icon
+                          [ngClass]="{
+                          change_circle: 'yellow-light',
+                          remove_circle: 'red-light',
+                          add_circle: 'grey-light-active',
               }[keywordFilterHTMLElement.getFilterIconName(column.key)]"
-                        class="keyword-button-icon margin-left-0">
-                        {{ keywordFilterHTMLElement.getFilterIconName(column.key) }}
-                      </mat-icon>
-                    </button>
-                    <button
-                      (click)="onSortButtonClick(column.key)"
-                      class="sort-button"
-                      mat-icon-button
-                      type="button">
-                      <mat-icon>{{ tableUtilsService.getSortIcon(column.key, sort()) }}</mat-icon>
-                    </button>
+                          class="keyword-button-icon margin-left-0">
+                          {{ keywordFilterHTMLElement.getFilterIconName(column.key) }}
+                        </mat-icon>
+                      </button>
+                      <button
+                        (click)="onSortButtonClick(column.key)"
+                        class="sort-button"
+                        mat-icon-button
+                        type="button">
+                        <mat-icon>{{ tableUtilsService.getSortIcon(column.key, sort()) }}</mat-icon>
+                      </button>
+                    </div>
                   }
                 </div>
               </th>

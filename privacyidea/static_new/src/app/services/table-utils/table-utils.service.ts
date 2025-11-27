@@ -381,6 +381,6 @@ export class TableUtilsService implements TableUtilsServiceInterface {
     if (sort.active !== columnKey || !sort.direction) {
       return "unfold_more";
     }
-    return sort.direction === "asc" ? "arrow_upward" : "arrow_downward";
+    return sort.direction === "asc" ? "keyboard_arrow_upward" : "keyboard_arrow_downward";
   }
 }
