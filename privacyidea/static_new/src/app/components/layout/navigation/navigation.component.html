@@ -336,11 +336,22 @@
         }
         <mat-list-item>
           <button
-            class="card-button-1"
-            disabled
+            [routerLink]="[ROUTE_PATHS.USERS_SOURCES]"
+            [ngClass]="contentService.routeUrl() === ROUTE_PATHS.USERS_SOURCES ?
+                  'card-button-active' : 'card-button-1'"
             mat-stroked-button>
             <mat-icon class="ms--database"></mat-icon>
             Sources
+          </button>
+        </mat-list-item>
+        <mat-list-item>
+          <button
+            [routerLink]="[ROUTE_PATHS.USERS_SOURCES]"
+            [ngClass]="contentService.routeUrl() === ROUTE_PATHS.USERS_SOURCES ?
+                  'card-button-active' : 'card-button-1'"
+            mat-stroked-button>
+            <mat-icon class="ms--add-database"></mat-icon>
+            New Resolver
           </button>
         </mat-list-item>
         <mat-list-item>
