@@ -20,6 +20,7 @@ import { inject, Injectable, signal, WritableSignal } from "@angular/core";
 import { MatTableDataSource } from "@angular/material/table";
 import { FilterValue } from "../../core/models/filter_value";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
+import { Sort } from "@angular/material/sort";
 
 export interface FilterPair {
   key: string;
@@ -116,6 +117,8 @@ export interface TableUtilsServiceInterface {
   pickColumns<const K extends readonly ColumnKey[]>(...keys: K): ColumnsTuple<K>;
 
   getColumnKeys<const C extends readonly ColumnDef[]>(cols: C): KeysOfColumns<C>;
+
+  getSortIcon(columnKey: string, sort: Sort): string;
 }
 
 @Injectable({
@@ -371,5 +374,13 @@ export class TableUtilsService implements TableUtilsServiceInterface {
     return cols.map(c => c.key) as {
       readonly [I in keyof C]: C[I] extends ColumnDef<infer KK> ? KK : never;
     };
+  }
+
+  getSortIcon(columnKey: string, sort: Sort): string {
+
+    if (sort.active !== columnKey || !sort.direction) {
+      return "unfold_more";
+    }
+    return sort.direction === "asc" ? "arrow_upward" : "arrow_downward";
   }
 }

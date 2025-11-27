@@ -46,11 +46,11 @@
       [pageSize]="auditService.pageSize()"
       showFirstLastButtons></mat-paginator>
   </div>
-  <app-keyword-filter
-    [advancedApiFilter]="auditService.advancedApiFilter"
-    [apiFilter]="auditService.apiFilter"
-    [filterHTMLInputElement]="filterHTMLInputElement"
-    [filterValue]="auditService.auditFilter"></app-keyword-filter>
+  <app-keyword-filter #keywordFilterHTMLElement
+                      [advancedApiFilter]="[]"
+                      [apiFilter]="[]"
+                      [filterHTMLInputElement]="filterHTMLInputElement"
+                      [filterValue]="auditService.auditFilter" />
   <table
     [dataSource]="auditDataSource()"
     aria-label="Audit Data Table"
@@ -63,7 +63,24 @@
           *matHeaderCellDef
           attr.aria-label="{{ column.label }} Header"
           mat-header-cell>
-          {{ column.label }}
+          <div class="flex ali-center">
+            {{ column.label }}
+            @if (column.key !== 'number') {
+              <button mat-fab
+                      extended
+                      (click)="keywordFilterHTMLElement.onKeywordClick(column.key)"
+                      class="keyword-button audit-keyword-button">
+                <mat-icon class="keyword-button-icon margin-left-0"
+                          [ngClass]="{
+                              change_circle: 'change-keyword',
+                              remove_circle: 'remove-keyword',
+                              add_circle: 'add-keyword',
+                            }[keywordFilterHTMLElement.getFilterIconName(column.key)]">
+                  {{ keywordFilterHTMLElement.getFilterIconName(column.key) }}
+                </mat-icon>
+              </button>
+            }
+          </div>
         </th>
         <td
           *matCellDef="let element; let row"
