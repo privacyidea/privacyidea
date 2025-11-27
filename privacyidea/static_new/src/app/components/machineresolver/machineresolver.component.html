@@ -22,8 +22,8 @@
   <h2 i18n>Machinersolver</h2>
   <mat-accordion class="machineresolver-list-layout">
     <app-machineresolver-panel-new />
-    @for (machineresolver of machineresolvers(); track machineresolver.resolvername) {
-      <app-machineresolver-panel-edit [machineresolver]="machineresolver"> </app-machineresolver-panel-edit>
+    @for (machineresolver of machineresolverService.machineresolvers(); track machineresolver.resolvername) {
+      <app-machineresolver-panel-edit [originalMachineresolver]="machineresolver"> </app-machineresolver-panel-edit>
     }
   </mat-accordion>
 </div>

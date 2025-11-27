@@ -29,42 +29,44 @@
           <input
             type="text"
             class="machineresolver-name-input"
-            placeholder="Policy Name"
+            placeholder="Name"
             [ngModel]="newMachineresolver().resolvername"
-            (ngModelChange)="onUpdateName($event)"
+            (ngModelChange)="onResolvernameChange($event)"
             (click)="$event.stopPropagation(); panel.expanded = true"
             (keydown)="$event.stopPropagation()" />
         } @else {
-          <p i18n>New Policy</p>
+          <p i18n>New Machineresolver</p>
         }
       </mat-panel-title>
       <mat-panel-description class="header-description">
-        <div class="machineresolver-scope-label">
-          <mat-form-field
-            appearance="fill"
-            class="machineresolver-scope-dropdown"
-            (click)="$event.stopPropagation()">
-            <mat-label i18n>Type</mat-label>
-            <mat-select
-              [value]="newMachineresolver().type"
-              (selectionChange)="onSelectMachineResolverType($event.value)">
-              @for (machineresolverType of machineresolverTypes; track machineresolverType) {
-                <mat-option [value]="machineresolverType">{{ machineresolverType }}</mat-option>
-              }
-            </mat-select>
-          </mat-form-field>
+        <div class="machineresolver-type-label">
+          @if (panel.expanded) {
+            <mat-form-field
+              appearance="fill"
+              class="machineresolver-type-dropdown"
+              (click)="$event.stopPropagation()">
+              <mat-label i18n>Type</mat-label>
+              <mat-select
+                [value]="newMachineresolver().type"
+                (selectionChange)="onMachineresolverTypeChange($event.value)">
+                @for (machineresolverType of machineresolverTypes; track machineresolverType) {
+                  <mat-option [value]="machineresolverType">{{ machineresolverType }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+          }
         </div>
         <div class="machineresolver-actions">
           @if (panel.expanded) {
             <button
               mat-icon-button
-              [disabled]="!canSaveMachineResolver()"
-              (click)="$event.stopPropagation(); saveMachineResolver(panel)">
+              [disabled]="!canSaveMachineresolver()"
+              (click)="$event.stopPropagation(); saveMachineresolver(panel)">
               <mat-icon>save</mat-icon>
             </button>
             <button
               mat-icon-button
-              (click)="$event.stopPropagation(); saveMachineResolver(panel)">
+              (click)="$event.stopPropagation(); handleCollapse(panel)">
               <mat-icon>close</mat-icon>
             </button>
           }
@@ -73,7 +75,13 @@
     </mat-expansion-panel-header>
     <div class="mat-expansion-panel-body">
       @switch (newMachineresolver().type) {
-        @case ("hosts") {}
+        @case ("hosts") {
+          <app-machineresolver-hosts-tab
+            [isEditMode]="true"
+            [machineresolverData]="newMachineresolver().data"
+            (onDataChange)="onDataChange($event)"
+            (onValidatorChange)="onDataValidatorChange($event)" />
+        }
         @case ("ldap") {}
         @default {
           <!-- Fallback for unknown types -->

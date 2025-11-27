@@ -1,24 +1,118 @@
-<div class="policy-card">
+<!--
+ (c) NetKnights GmbH 2025,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+
+<div class="machineresolver-card">
   <mat-expansion-panel
     #panel
-    class="margin-4">
+    class="margin-4"
+    [disabled]="isEdited()"
+    (closed)="handleCollapse(panel)">
     <mat-expansion-panel-header class="mat-expansion-panel-header">
       <mat-panel-title>
-        {{ machineresolver().resolvername }}
+        @if (isEditMode()) {
+          <input
+            type="text"
+            class="machineresolver-name-input"
+            placeholder="Name"
+            [ngModel]="currentMachineresolver().resolvername"
+            (ngModelChange)="onResolvernameChange($event)"
+            (click)="$event.stopPropagation(); panel.expanded = true"
+            (keydown)="$event.stopPropagation()" />
+        } @else {
+          <div class="machineresolver-name">
+            {{ currentMachineresolver().resolvername }}
+          </div>
+        }
       </mat-panel-title>
       <mat-panel-description class="header-description">
-        <div class="policy-actions">
-          <button mat-icon-button>
-            <mat-icon>edit</mat-icon>
-          </button>
-          <button mat-icon-button>
-            <mat-icon>delete</mat-icon>
-          </button>
+        <div class="machineresolver-type-label">
+          @if (isEditMode()) {
+            <mat-form-field
+              appearance="fill"
+              class="machineresolver-type-dropdown"
+              (click)="$event.stopPropagation()">
+              <mat-label i18n>Type</mat-label>
+              <mat-select
+                [value]="currentMachineresolver().type"
+                (selectionChange)="onMachineresolverTypeChange($event.value)">
+                @for (typeOption of machineresolverService.allMachineresolverTypes; track typeOption) {
+                  <mat-option [value]="typeOption">{{ typeOption }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+          } @else {
+            <span>
+              {{ currentMachineresolver().type }}
+            </span>
+          }
+        </div>
+        <div class="machineresolver-actions">
+          @if (panel.expanded) {
+            @if (isEditMode()) {
+              <button
+                mat-icon-button
+                [disabled]="!canSaveMachineresolver()"
+                (click)="$event.stopPropagation(); saveMachineresolver()">
+                <mat-icon>save</mat-icon>
+              </button>
+              <button
+                mat-icon-button
+                class="action-button"
+                (click)="$event.stopPropagation(); cancelEditMode()">
+                <mat-icon>cancel</mat-icon>
+              </button>
+            } @else {
+              <button
+                mat-icon-button
+                (click)="$event.stopPropagation(); isEditMode.set(true)">
+                <mat-icon>edit</mat-icon>
+              </button>
+            }
+            <button
+              mat-icon-button
+              (click)="$event.stopPropagation(); deleteMachineresolver(currentMachineresolver().resolvername)">
+              <mat-icon>delete</mat-icon>
+            </button>
+          }
         </div>
       </mat-panel-description>
     </mat-expansion-panel-header>
     <div class="mat-expansion-panel-body">
-      <p>Description: {{ machineresolver().data }}</p>
+      @switch (getType(currentMachineresolver())) {
+        @case ("hosts") {
+          <app-machineresolver-hosts-tab
+            [isEditMode]="isEditMode()"
+            [machineresolverData]="currentMachineresolver().data"
+            (onDataChange)="onDataChange($event)"
+            (onValidatorChange)="onDataValidatorChange($event)" />
+        }
+        @case ("ldap") {
+          <!-- <app-machineresolver-ldap-tab
+            [isEditMode]="isEditMode()"
+            [machineresolverData]="currentMachineresolver().data"
+            (onDataChange)="onDataValidatorChange($event)" /> -->
+        }
+        @default {
+          <!-- Fallback for unknown types -->
+          <p i18n>Unknown machine resolver type: {{ currentMachineresolver().type }}</p>
+        }
+      }
     </div>
   </mat-expansion-panel>
 </div>

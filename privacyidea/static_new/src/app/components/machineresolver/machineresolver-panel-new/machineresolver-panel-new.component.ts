@@ -19,6 +19,7 @@ import {
   MatDialogConfigRequired
 } from "../../../services/dialog/dialog.service";
 import { ConfirmationDialogData } from "../../shared/confirmation-dialog/confirmation-dialog.component";
+import { MachineresolverHostsTabComponent } from "../machineresolver-hosts-tab/machineresolver-hosts-tab.component";
 
 @Component({
   selector: "app-machineresolver-panel-new",
@@ -36,7 +37,8 @@ import { ConfirmationDialogData } from "../../shared/confirmation-dialog/confirm
     MatInputModule,
     MatAutocompleteModule,
     MatSelectModule,
-    MatIcon
+    MatIcon,
+    MachineresolverHostsTabComponent
   ]
 })
 export class MachineresolverPanelNewComponent {
@@ -49,21 +51,26 @@ export class MachineresolverPanelNewComponent {
     data: { resolver: "", type: "hosts" }
   };
   readonly newMachineresolver = signal<Machineresolver>(this.machineresolverDetault);
-  readonly machineresolverTypes = this.machineresolverService.machineresolverTypes;
+  readonly machineresolverTypes = this.machineresolverService.allMachineresolverTypes;
   readonly machineresolvers = this.machineresolverService.machineresolvers();
   readonly isEdited = computed(() => {
     const current = this.newMachineresolver();
-    if (!current.resolvername) return false;
-    if (Object.keys(current.data).length <= 2) return false; // Only resolver and type present
-    return true;
+    if (current.resolvername.trim() != "") return true;
+    if (Object.keys(current.data).length > 2) return true; // More than resolver and type fields
+    return false;
   });
   readonly dataValidatorSignal = signal<(data: MachineresolverData) => boolean>(() => true);
 
-  onDataValidatorChange(newValidator: (data: MachineresolverData) => boolean) {
-    this.dataValidatorSignal.set(newValidator);
+  onDataChange($event: Event) {
+    console.log($event);
+  }
+  // onDataValidatorChange(newValidator: (data: MachineresolverData) => boolean) {
+  onDataValidatorChange($event: Event) {
+    console.log($event);
+    // this.dataValidatorSignal.set(newValidator);
   }
 
-  readonly canSaveMachineResolver = computed(() => {
+  readonly canSaveMachineresolver = computed(() => {
     const current = this.newMachineresolver();
     if (!current.resolvername) return false;
 
@@ -71,8 +78,9 @@ export class MachineresolverPanelNewComponent {
     return dataValidator(current.data);
   });
 
-  onSelectMachineResolverType($event: Event) {
-    const newType = ($event.target as HTMLSelectElement).value;
+  onMachineresolverTypeChange(newType: string) {
+    // console.log("Type selection event:", $event);
+    // const newType = ($event.target as HTMLSelectElement).value;
     const current = this.newMachineresolver();
     this.newMachineresolver.set({
       ...current,
@@ -80,8 +88,9 @@ export class MachineresolverPanelNewComponent {
       data: { resolver: current.resolvername, type: newType } // Reset data to only have resolver field
     });
   }
-  onUpdateName($event: Event) {
-    const newName = ($event.target as HTMLInputElement).value;
+  onResolvernameChange(newName: string) {
+    // console.log("Name update event:", $event);
+    // const newName = ($event.target as HTMLInputElement).value;
     const current = this.newMachineresolver();
     this.newMachineresolver.set({
       ...current,
@@ -102,7 +111,7 @@ export class MachineresolverPanelNewComponent {
     });
   }
 
-  saveMachineResolver($panel: MatExpansionPanel) {
+  saveMachineresolver($panel: MatExpansionPanel) {
     // ...
 
     this.handleCollapse($panel);
@@ -125,6 +134,7 @@ export class MachineresolverPanelNewComponent {
       .then((result) => {
         if (result) {
           this.newMachineresolver.set(this.machineresolverDetault);
+          $panel.close();
         } else {
           $panel.open();
         }

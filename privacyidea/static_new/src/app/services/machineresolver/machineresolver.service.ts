@@ -45,9 +45,9 @@ export interface LdapMachineresolver extends Machineresolver {
 }
 
 export interface MachineresolverServiceInterface {
-  readonly machineresolverTypes: string[];
+  readonly allMachineresolverTypes: string[];
 
-  readonly machineresolvers: WritableSignal<Machineresolver[]>;
+  readonly machineresolvers: Signal<Machineresolver[]>;
 
   createMachineresolver(resolver: Machineresolver): Promise<boolean>;
   updateMachineresolver(resolver: Machineresolver): Promise<boolean>;
@@ -58,7 +58,7 @@ export interface MachineresolverServiceInterface {
   providedIn: "root"
 })
 export class MachineresolverService implements MachineresolverServiceInterface {
-  readonly machineresolverTypes: string[] = ["hosts", "ldap"];
+  readonly allMachineresolverTypes: string[] = ["hosts", "ldap"];
   readonly machineresolverBaseUrl = environment.proxyUrl + "/machineresolver/";
 
   readonly authService: AuthServiceInterface = inject(AuthService);
@@ -78,12 +78,9 @@ export class MachineresolverService implements MachineresolverServiceInterface {
     };
   });
 
-  readonly machineresolvers = linkedSignal<any, Machineresolver[]>({
-    source: () => this.machineresolverResource.value(),
-    computation: (res, prev) => {
-      // Convert the machineresolver object to an array for easier iteration in templates.
-      return res?.result ? Object.values(res.result) : [];
-    }
+  readonly machineresolvers = computed<Machineresolver[]>(() => {
+    const res = this.machineresolverResource.value();
+    return res?.result?.value ? Object.values(res.result.value) : [];
   });
 
   async createMachineresolver(resolver: Machineresolver): Promise<boolean> {
