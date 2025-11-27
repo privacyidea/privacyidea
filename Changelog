@@ -2,7 +2,10 @@ Version 3.12.2
 
   Enhancements:
   * The WebUI Preview is updated to the current development version.
-    Notably with the new main menu, user details, token and container wizard, and policy feature, which is not complete yet.
+    Notably with the new main menu, user details, realms, token and container wizard, and policy feature,
+    which is not complete yet.
+  * Introduced authentication policy action 'set_realm' to set / overwrite the realm parameter for authentication
+    requests (#4813)
 
   Fixes:
   * Sanitize 'page' and 'page_size' parameter for querying the Audit-Log (#4758)
@@ -11,6 +14,8 @@ Version 3.12.2
     which would cause an error (#4778)
   * The disabled_token_types policy now works correctly for FIDO2 token (#4800)
   * Apply all user conditions (username, realm, resolver) to the change pin policies (#4744)
+  * Allow to specify a deviating base dn for LDAP group searches (#4829)
+  * Fixed interaction of force_server_generate and 2step_enrollment policies (#4826)
 
 Version 3.12.1, 2025-10-07
 
