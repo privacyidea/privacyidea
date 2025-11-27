@@ -47,6 +47,9 @@ import { MatInput } from "@angular/material/input";
 import { NgClass } from "@angular/common";
 import { RouterLink } from "@angular/router";
 import { ScrollToTopDirective } from "../shared/directives/app-scroll-to-top.directive";
+import { MatFabButton } from "@angular/material/button";
+import { MatIcon } from "@angular/material/icon";
+import { MatSortHeader } from "@angular/material/sort";
 
 const columnKeysMap = [
   { key: "number", label: "Number" },
@@ -103,7 +106,10 @@ const columnKeysMap = [
     RouterLink,
     ScrollToTopDirective,
     ClearableInputComponent,
-    RouterLink
+    RouterLink,
+    MatFabButton,
+    MatIcon,
+    MatSortHeader
   ],
   templateUrl: "./audit.component.html",
   styleUrl: "./audit.component.scss"

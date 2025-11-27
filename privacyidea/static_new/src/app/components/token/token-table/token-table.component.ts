@@ -37,6 +37,7 @@ import { NgClass } from "@angular/common";
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
 import { TokenTableActionsComponent } from "./token-table-actions/token-table-actions.component";
+import { MatFabButton, MatIconButton } from "@angular/material/button";
 
 const columnKeysMap = [
   { key: "select", label: "" },
@@ -69,7 +70,9 @@ const columnKeysMap = [
     ScrollToTopDirective,
     ClearableInputComponent,
     CopyButtonComponent,
-    TokenTableActionsComponent
+    TokenTableActionsComponent,
+    MatFabButton,
+    MatIconButton
   ],
   templateUrl: "./token-table.component.html",
   styleUrl: "./token-table.component.scss"
@@ -179,11 +182,23 @@ export class TokenTableComponent {
     this.pageIndex.set(event.pageIndex);
   }
 
-  onSortEvent($event: Sort) {
-    if ($event.direction === "") {
-      this.sort.set({ active: "serial", direction: "asc" });
-      return;
+
+  onSortButtonClick(columnKey: string): void {
+    const current = this.sort();
+    let direction: Sort["direction"] = "asc";
+
+    if (current.active === columnKey) {
+      if (current.direction === "asc") {
+        direction = "desc";
+      } else if (current.direction === "desc") {
+        direction = "";
+      }
     }
-    this.sort.set($event);
+
+    if (direction === "") {
+      this.sort.set({ active: "serial", direction: "asc" });
+    } else {
+      this.sort.set({ active: columnKey, direction });
+    }
   }
 }

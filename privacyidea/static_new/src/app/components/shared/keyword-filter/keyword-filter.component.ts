@@ -60,12 +60,12 @@ export class KeywordFilterComponent {
     if (keyword === "active" || keyword === "assigned" || keyword === "success") {
       const value = this.filterValue()?.getValueOfKey(keyword)?.toLowerCase();
       if (!value) {
-        return "add_circle";
+        return "filter_alt";
       }
-      return value === "true" ? "change_circle" : value === "false" ? "remove_circle" : "add_circle";
+      return value === "true" ? "screen_rotation_alt" : value === "false" ? "filter_alt_off" : "filter_alt";
     } else {
       const isSelected = this.isFilterSelected(keyword, this.filterValue());
-      return isSelected ? "remove_circle" : "add_circle";
+      return isSelected ? "filter_alt_off" : "filter_alt";
     }
   }
 
