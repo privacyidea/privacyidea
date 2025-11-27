@@ -107,7 +107,7 @@
   }
 }
 
-.policy-arrow {
+.childless-expansion-panel-arrow {
   color: var(--mat-sys-on-surface-variant);
   transform: rotate(90deg);
   transition: transform 200ms ease;
@@ -116,7 +116,7 @@
   position: absolute;
 }
 
-.policy-arrow.active {
+.childless-expansion-panel-arrow.active {
   transform: unset;
 }
 

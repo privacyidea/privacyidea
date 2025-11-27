@@ -359,15 +359,14 @@
         [ngClass]="{'childless-expension-panel-header-active': this.contentService.onPolicies()}"
         class="childless-expension-panel-header">
         <mat-expansion-panel-header
-          (click)="onPoliciesHeaderClick($event)"
-          class="nav-header-button">
+          (click)="onPoliciesHeaderClick($event)">
           <mat-panel-title>
             <mat-icon>gavel</mat-icon>
             Policies
           </mat-panel-title>
           <mat-icon
             [class.active]="router.url.startsWith(ROUTE_PATHS.POLICIES)"
-            class="policy-arrow">
+            class="childless-expansion-panel-arrow">
             chevron_right
           </mat-icon>
         </mat-expansion-panel-header>
