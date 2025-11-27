@@ -24,7 +24,6 @@ import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
 import { CaConnectors } from "../ca-connector/ca-connector.service";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
-import { ROUTE_PATHS } from "../../route_paths";
 
 export type PiNode = {
   name: string;
@@ -54,57 +53,70 @@ export class SystemService implements SystemServiceInterface {
 
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
+
   systemConfigResource = httpResource<any>(() => {
-    if ([ROUTE_PATHS.TOKENS_ENROLLMENT, ROUTE_PATHS.TOKENS_WIZARD].includes(this.contentService.routeUrl())) {
-      return {
-        url: this.systemBaseUrl,
-        method: "GET",
-        headers: this.authService.getHeaders()
-      };
+    // Only load system config on enrollment or wizard routes.
+    if (!this.contentService.onTokensEnrollment() ||
+      this.contentService.onTokensWizard()) {
+      return undefined;
     }
-    return undefined;
+
+    return {
+      url: this.systemBaseUrl,
+      method: "GET",
+      headers: this.authService.getHeaders()
+    };
   });
 
   radiusServerResource = httpResource<any>(() => {
-    if (this.authService.actionAllowed("enrollRADIUS") &&
-      [ROUTE_PATHS.TOKENS_ENROLLMENT, ROUTE_PATHS.TOKENS_WIZARD].includes(this.contentService.routeUrl())) {
-      return {
-        url: this.systemBaseUrl + "/names/radius",
-        method: "GET",
-        headers: this.authService.getHeaders()
-      };
+    // Do not load RADIUS server details if the action is not allowed.
+    if (!this.authService.actionAllowed("enrollRADIUS")) {
+      return undefined;
     }
-    return undefined;
-  });
+    // Only load RADIUS server details on enrollment or token wizard routes.
+    if (!this.contentService.onTokensEnrollment() &&
+      !this.contentService.onTokensWizard()) {
+      return undefined;
+    }
 
-  nodesResource = httpResource<PiResponse<PiNode[]>>({
-    url: this.systemBaseUrl + "nodes",
-    method: "GET",
-    headers: this.authService.getHeaders()
-  });
-
-  systemConfig = computed<any>(() => {
-    return this.systemConfigResource.value()?.result?.value ?? {};
-  });
-
-  nodes = computed<PiNode[]>(() => {
-    return this.nodesResource.value()?.result?.value ?? [];
+    return {
+      url: this.systemBaseUrl + "/names/radius",
+      method: "GET",
+      headers: this.authService.getHeaders()
+    };
   });
 
   caConnectorResource = httpResource<any>(() => {
-    if (this.authService.actionAllowed("enrollCERTIFICATE") &&
-      [ROUTE_PATHS.TOKENS_ENROLLMENT, ROUTE_PATHS.TOKENS_WIZARD].includes(this.contentService.routeUrl())) {
-      return {
-        url: environment.proxyUrl + "/system/names/caconnector",
-        method: "GET",
-        headers: this.authService.getHeaders()
-      };
+    // Do not load CA connectors details if the action is not allowed.
+    if (!this.authService.actionAllowed("enrollCERTIFICATE")) {
+      return undefined;
     }
-    return undefined;
+    // Only load CA connectors on enrollment or token wizard routes.
+    if (!this.contentService.onTokensEnrollment() ||
+      !this.contentService.onTokensWizard()) {
+      return undefined;
+    }
+
+    return {
+      url: environment.proxyUrl + "/system/names/caconnector",
+      method: "GET",
+      headers: this.authService.getHeaders()
+    };
   });
 
   caConnectors: WritableSignal<CaConnectors> = linkedSignal({
     source: this.caConnectorResource?.value,
     computation: (source, previous) => source?.result?.value ?? previous?.value ?? []
+  });
+  nodesResource = httpResource<PiResponse<PiNode[]>>({
+    url: this.systemBaseUrl + "nodes",
+    method: "GET",
+    headers: this.authService.getHeaders()
+  });
+  systemConfig = computed<any>(() => {
+    return this.systemConfigResource.value()?.result?.value ?? {};
+  });
+  nodes = computed<PiNode[]>(() => {
+    return this.nodesResource.value()?.result?.value ?? [];
   });
 }

@@ -55,6 +55,7 @@ import { Router } from "@angular/router";
 import { Sort } from "@angular/material/sort";
 import { ColumnDef, ColumnKey, TableUtilsServiceInterface } from "../app/services/table-utils/table-utils.service";
 import { TokenEnrollmentLastStepDialogData } from "../app/components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
+import { ROUTE_PATHS } from "../app/route_paths";
 
 export function makeResource<T>(initial: T) {
   return {
@@ -495,20 +496,113 @@ export class MockRealmService implements RealmServiceInterface {
 
 export class MockContentService implements ContentServiceInterface {
   detailsUsername: WritableSignal<string> = signal("");
+
   router: Router = {
     url: "/home",
     events: of({} as any)
   } as any;
+
   routeUrl: WritableSignal<string> = signal("/home");
   previousUrl: Signal<string> = signal("/home");
+
   tokenSerial: WritableSignal<string> = signal("");
   containerSerial: WritableSignal<string> = signal("");
+
+  onLogin: Signal<boolean> = computed(
+    () => this.routeUrl() === ROUTE_PATHS.LOGIN
+  );
+
+  onAudit: Signal<boolean> = computed(
+    () => this.routeUrl() === ROUTE_PATHS.AUDIT
+  );
+
+  onTokens: Signal<boolean> = computed(
+    () => this.routeUrl() === ROUTE_PATHS.TOKENS
+  );
+
+  onUsers: Signal<boolean> = computed(
+    () => this.routeUrl() === ROUTE_PATHS.USERS
+  );
+
+  onPolicies: Signal<boolean> = computed(
+    () => this.routeUrl() === ROUTE_PATHS.POLICIES
+  );
+
+  onTokenDetails: Signal<boolean> = computed(
+    () => this.routeUrl().startsWith(ROUTE_PATHS.TOKENS_DETAILS)
+  );
+
+  onUserDetails: Signal<boolean> = computed(
+    () => this.routeUrl().startsWith(ROUTE_PATHS.USERS_DETAILS + "/")
+  );
+
+  onUserRealms: Signal<boolean> = computed(
+    () => this.routeUrl() === ROUTE_PATHS.USERS);
+
+  onTokensEnrollment: Signal<boolean> = computed(
+    () => this.routeUrl() === ROUTE_PATHS.TOKENS_ENROLLMENT
+  );
+
+  onTokensChallenges: Signal<boolean> = computed(
+    () => this.routeUrl() === ROUTE_PATHS.TOKENS_CHALLENGES
+  );
+
+  onTokensApplications: Signal<boolean> = computed(
+    () => this.routeUrl() === ROUTE_PATHS.TOKENS_APPLICATIONS
+  );
+
+  onTokensGetSerial: Signal<boolean> = computed(
+    () => this.routeUrl() === ROUTE_PATHS.TOKENS_GET_SERIAL
+  );
+
+  onTokensImport: Signal<boolean> = computed(
+    () => this.routeUrl() === ROUTE_PATHS.TOKENS_IMPORT
+  );
+
+  onTokensContainers: Signal<boolean> = computed(
+    () => this.routeUrl() === ROUTE_PATHS.TOKENS_CONTAINERS
+  );
+
+  onTokensContainersCreate: Signal<boolean> = computed(
+    () => this.routeUrl() === ROUTE_PATHS.TOKENS_CONTAINERS_CREATE
+  );
+
+  onTokensContainersDetails: Signal<boolean> = computed(
+    () => this.routeUrl().startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS)
+  );
+
+  onTokensAssignToken: Signal<boolean> = computed(
+    () => this.routeUrl() === ROUTE_PATHS.TOKENS_ASSIGN_TOKEN
+  );
+
+  onTokensWizard: Signal<boolean> = computed(
+    () => this.routeUrl() === ROUTE_PATHS.TOKENS_WIZARD
+  );
+
+  onTokensContainersWizard: Signal<boolean> = computed(
+    () => this.routeUrl() === ROUTE_PATHS.TOKENS_CONTAINERS_WIZARD
+  );
+
+  onAnyTokensRoute: Signal<boolean> = computed(
+    () =>
+      this.routeUrl() === ROUTE_PATHS.TOKENS ||
+      this.routeUrl().startsWith(ROUTE_PATHS.TOKENS + "/")
+  );
+
+  onAnyUsersRoute: Signal<boolean> = computed(
+    () =>
+      this.routeUrl() === ROUTE_PATHS.USERS ||
+      this.routeUrl().startsWith(ROUTE_PATHS.USERS + "/")
+  );
+
   tokenSelected = jest.fn().mockImplementation((serial: string) => {
     this.tokenSerial.set(serial);
   });
+
   containerSelected = jest.fn().mockImplementation((serial: string) => {
     this.containerSerial.set(serial);
   });
+
   userSelected: (username: any) => void = jest.fn();
 }
 

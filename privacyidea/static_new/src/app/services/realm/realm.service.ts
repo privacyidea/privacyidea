@@ -20,7 +20,6 @@ import { HttpClient, HttpErrorResponse, httpResource, HttpResourceRef } from "@a
 import { computed, effect, inject, Injectable, Signal, signal, WritableSignal } from "@angular/core";
 import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
-import { ROUTE_PATHS } from "../../route_paths";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
 import { Observable } from "rxjs";
@@ -89,58 +88,62 @@ export class RealmService implements RealmServiceInterface {
   private readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly http: HttpClient = inject(HttpClient);
+
   selectedRealms = signal<string[]>([]);
 
+  private onAllowedRoute(): boolean {
+    return (
+      this.contentService.onTokenDetails() ||
+      this.contentService.onTokensContainersDetails() ||
+      this.contentService.onTokens() ||
+      this.contentService.onUsers() ||
+      this.contentService.onTokensContainersCreate() ||
+      this.contentService.onTokensEnrollment() ||
+      this.contentService.onTokensImport() ||
+      this.contentService.onPolicies() ||
+      this.contentService.onUserRealms()
+    );
+  }
+
   realmResource = httpResource<PiResponse<Realms>>(() => {
-    if (
-      this.authService.role() === "user" ||
-      (!this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_DETAILS) &&
-        !this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS) &&
-        ![
-          ROUTE_PATHS.TOKENS,
-          ROUTE_PATHS.USERS,
-          ROUTE_PATHS.TOKENS_CONTAINERS_CREATE,
-          ROUTE_PATHS.TOKENS_ENROLLMENT,
-          ROUTE_PATHS.TOKENS_IMPORT,
-          ROUTE_PATHS.POLICIES,
-          ROUTE_PATHS.USERS_REALMS
-        ].includes(this.contentService.routeUrl()))
-    ) {
+    // Do not load the default realm for non-admin users.
+    if (this.authService.role() === "user") {
       return undefined;
     }
+    // Only load the default realm on relevant routes.
+    if (!this.onAllowedRoute()) {
+      return undefined;
+    }
+
     return {
       url: environment.proxyUrl + "/realm/",
       method: "GET",
       headers: this.authService.getHeaders()
     };
   });
+
   realmOptions = computed(() => {
     const realms = this.realmResource.value()?.result?.value;
     return realms ? Object.keys(realms) : [];
   });
 
   defaultRealmResource = httpResource<PiResponse<Realms>>(() => {
-    if (
-      this.authService.role() === "user" ||
-      (!this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_DETAILS) &&
-        !this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS) &&
-        ![
-          ROUTE_PATHS.TOKENS,
-          ROUTE_PATHS.USERS,
-          ROUTE_PATHS.TOKENS_CONTAINERS_CREATE,
-          ROUTE_PATHS.TOKENS_ENROLLMENT,
-          ROUTE_PATHS.TOKENS_IMPORT,
-          ROUTE_PATHS.POLICIES
-        ].includes(this.contentService.routeUrl()))
-    ) {
+    // Do not load the default realm for non-admin users.
+    if (this.authService.role() === "user") {
       return undefined;
     }
+    // Only load the default realm on relevant routes.
+    if (!this.onAllowedRoute()) {
+      return undefined;
+    }
+
     return {
       url: environment.proxyUrl + "/defaultrealm",
       method: "GET",
       headers: this.authService.getHeaders()
     };
   });
+
   defaultRealm = computed<string>(() => {
     const data = this.defaultRealmResource.value();
     if (data?.result?.value) {
