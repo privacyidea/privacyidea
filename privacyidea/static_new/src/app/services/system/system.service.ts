@@ -53,11 +53,13 @@ export class SystemService implements SystemServiceInterface {
 
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
+  private onAllowedRoutes = computed(() => {
+    return this.contentService.onTokensEnrollment() || this.contentService.onTokensWizard();
+  });
 
   systemConfigResource = httpResource<any>(() => {
     // Only load system config on enrollment or wizard routes.
-    if (!this.contentService.onTokensEnrollment() ||
-      this.contentService.onTokensWizard()) {
+    if (!this.onAllowedRoutes()) {
       return undefined;
     }
 
@@ -67,15 +69,13 @@ export class SystemService implements SystemServiceInterface {
       headers: this.authService.getHeaders()
     };
   });
-
   radiusServerResource = httpResource<any>(() => {
     // Do not load RADIUS server details if the action is not allowed.
     if (!this.authService.actionAllowed("enrollRADIUS")) {
       return undefined;
     }
     // Only load RADIUS server details on enrollment or token wizard routes.
-    if (!this.contentService.onTokensEnrollment() &&
-      !this.contentService.onTokensWizard()) {
+    if (!this.onAllowedRoutes()) {
       return undefined;
     }
 
@@ -85,15 +85,13 @@ export class SystemService implements SystemServiceInterface {
       headers: this.authService.getHeaders()
     };
   });
-
   caConnectorResource = httpResource<any>(() => {
     // Do not load CA connectors details if the action is not allowed.
     if (!this.authService.actionAllowed("enrollCERTIFICATE")) {
       return undefined;
     }
     // Only load CA connectors on enrollment or token wizard routes.
-    if (!this.contentService.onTokensEnrollment() ||
-      !this.contentService.onTokensWizard()) {
+    if (!this.onAllowedRoutes()) {
       return undefined;
     }
 
