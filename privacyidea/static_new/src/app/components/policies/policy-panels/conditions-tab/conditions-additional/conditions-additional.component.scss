@@ -1,0 +1,140 @@
+@use "../../../../../../styles" as styles;
+@use "../../../policies.component.scss";
+@use "@angular/material" as mat;
+
+.additional-conditions-container {
+  background-color: var(--mat-sys-surface-container);
+  border: 1px solid var(--mat-sys-outline-variant);
+  box-shadow: var(--mat-sys-level1);
+  border-radius: var(--border-radius);
+  padding: var(--half-global-padding) var(--three-quarters-global-padding);
+}
+
+.additional-conditions-title {
+  font-size: 1.2em;
+  font-weight: 500;
+  margin: 0;
+  margin-bottom: var(--half-global-padding);
+}
+
+.additional-conditions-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--half-global-padding);
+}
+
+.additional-condition-row {
+  display: grid;
+  grid-template-columns: 0.8fr 3fr 2fr 4fr 2fr 3fr;
+  gap: 16px;
+  place-items: center;
+  text-align: center;
+
+  background-color: var(--mat-sys-surface-container-high);
+  border-radius: var(--border-radius);
+  box-shadow: var(--mat-sys-level1);
+  font-weight: 500;
+  padding: var(--half-global-padding) var(--three-quarters-global-padding);
+
+  &.new-condition-row {
+    border-top: 1px solid var(--mat-sys-outline-variant);
+    padding-top: 16px;
+    margin-top: 8px;
+  }
+
+  &.edit-mode {
+    grid-template-columns: 1.2fr 3fr 2fr 4fr 2fr 3fr 1fr;
+  }
+
+  &.hover-highlight:hover {
+    cursor: pointer;
+    background-color: var(--mat-sys-primary-light);
+    color: var(--mat-sys-on-primary);
+  }
+
+  &.selected {
+    background-color: var(--mat-sys-primary-base);
+    color: var(--mat-sys-on-primary);
+    font-weight: 600;
+
+    .mat-mdc-slide-toggle {
+      --mdc-switch-selected-handle-color: var(--mat-sys-on-primary);
+      --mdc-switch-selected-track-color: rgba(var(--mat-sys-on-primary-rgb), 0.5);
+      --mdc-switch-selected-focus-handle-color: var(--mat-sys-on-primary);
+      --mdc-switch-selected-hover-handle-color: var(--mat-sys-on-primary);
+      --mdc-switch-selected-pressed-handle-color: var(--mat-sys-on-primary);
+      --mdc-switch-selected-focus-track-color: rgba(var(--mat-sys-on-primary-rgb), 0.5);
+      --mdc-switch-selected-hover-track-color: rgba(var(--mat-sys-on-primary-rgb), 0.5);
+      --mdc-switch-selected-pressed-track-color: rgba(var(--mat-sys-on-primary-rgb), 0.5);
+    }
+  }
+}
+
+.action-buttons {
+  display: flex;
+  justify-content: flex-end;
+
+  .mat-mdc-icon-button {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+.additional-condition-header {
+  display: grid;
+  grid-template-columns: 0.8fr 3fr 2fr 4fr 2fr 3fr;
+  gap: 16px;
+  place-items: center;
+  text-align: center;
+  padding: var(--half-global-padding) var(--three-quarters-global-padding);
+  font-weight: 600;
+
+  &.edit-mode {
+    grid-template-columns: 1.2fr 3fr 2fr 4fr 2fr 3fr 1fr;
+  }
+}
+
+mat-form-field {
+  width: 100%;
+}
+
+mat-checkbox {
+  display: flex;
+  align-items: center;
+}
+
+::ng-deep .auto-width-dropdown {
+  width: auto !important;
+  min-width: fit-content !important;
+}
+
+.new-condition-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.form-row {
+  display: flex;
+  gap: 16px;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+.add-condition-button-container {
+  justify-content: end;
+  display: flex;
+}
+
+.divider-margin {
+  margin-top: 16px;
+  margin-bottom: 16px;
+}

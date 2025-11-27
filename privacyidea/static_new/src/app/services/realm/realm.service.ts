@@ -88,22 +88,20 @@ export class RealmService implements RealmServiceInterface {
   private readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly http: HttpClient = inject(HttpClient);
+  private onAllowedRoute = computed(() => {
+      return this.contentService.onTokenDetails() ||
+        this.contentService.onTokensContainersDetails() ||
+        this.contentService.onTokens() ||
+        this.contentService.onUsers() ||
+        this.contentService.onTokensContainersCreate() ||
+        this.contentService.onTokensEnrollment() ||
+        this.contentService.onTokensImport() ||
+        this.contentService.onPolicies() ||
+        this.contentService.onUserRealms();
+    }
+  );
 
   selectedRealms = signal<string[]>([]);
-
-  private onAllowedRoute(): boolean {
-    return (
-      this.contentService.onTokenDetails() ||
-      this.contentService.onTokensContainersDetails() ||
-      this.contentService.onTokens() ||
-      this.contentService.onUsers() ||
-      this.contentService.onTokensContainersCreate() ||
-      this.contentService.onTokensEnrollment() ||
-      this.contentService.onTokensImport() ||
-      this.contentService.onPolicies() ||
-      this.contentService.onUserRealms()
-    );
-  }
 
   realmResource = httpResource<PiResponse<Realms>>(() => {
     // Do not load the default realm for non-admin users.

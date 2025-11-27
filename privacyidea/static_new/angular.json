@@ -44,7 +44,8 @@
               "@angular/material/prebuilt-themes/azure-blue.css",
               "src/styles/styles.scss"
             ],
-            "scripts": []
+            "scripts": [],
+            "optimization": true
           },
           "configurations": {
             "production": {
