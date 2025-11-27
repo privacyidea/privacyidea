@@ -33,7 +33,7 @@ import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "../../route_paths";
 
-class MatDialogConfigRequired<D = any> extends MatDialogConfig<D> {
+export class MatDialogConfigRequired<D = any> extends MatDialogConfig<D> {
   override data!: D;
 
   constructor(data: D) {
@@ -123,22 +123,27 @@ export class DialogService implements DialogServiceInterface {
       this._tokenEnrollmentLastStepRef.close();
     }
 
-    const [{ TokenEnrollmentLastStepDialogComponent }, { TokenEnrollmentLastStepDialogSelfServiceComponent }, { TokenEnrollmentLastStepDialogWizardComponent }] =
-      await Promise.all([
-        import(
-          "../../components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component"
-          ),
-        import(
-          "../../components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.self-service.component"
-          ),
-        import(
-          "../../components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.wizard.component"
-          )
-      ]);
+    const [
+      { TokenEnrollmentLastStepDialogComponent },
+      { TokenEnrollmentLastStepDialogSelfServiceComponent },
+      { TokenEnrollmentLastStepDialogWizardComponent }
+    ] = await Promise.all([
+      import(
+        "../../components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component"
+      ),
+      import(
+        "../../components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.self-service.component"
+      ),
+      import(
+        "../../components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.wizard.component"
+      )
+    ]);
 
     const isWizardRoute = this.router.url.includes(ROUTE_PATHS.TOKENS_WIZARD);
     const component = this.isSelfServing()
-      ? (isWizardRoute ? TokenEnrollmentLastStepDialogWizardComponent : TokenEnrollmentLastStepDialogSelfServiceComponent)
+      ? isWizardRoute
+        ? TokenEnrollmentLastStepDialogWizardComponent
+        : TokenEnrollmentLastStepDialogSelfServiceComponent
       : TokenEnrollmentLastStepDialogComponent;
 
     this._tokenEnrollmentLastStepRef = this.dialog.open(component as any, config);

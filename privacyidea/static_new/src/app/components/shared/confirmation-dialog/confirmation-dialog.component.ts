@@ -29,18 +29,10 @@ import {
 
 @Component({
   selector: "app-confirmation-dialog",
-  imports: [
-    MatDialogContent,
-    MatDialogTitle,
-    MatDialogActions,
-    MatButton,
-    MatDialogClose,
-    NgClass
-  ],
+  imports: [MatDialogContent, MatDialogTitle, MatDialogActions, MatButton, MatDialogClose],
   templateUrl: "./confirmation-dialog.component.html",
   styleUrl: "./confirmation-dialog.component.scss"
 })
-
 export class ConfirmationDialogComponent {
   public readonly data: ConfirmationDialogData = inject(MAT_DIALOG_DATA);
 }
@@ -50,5 +42,5 @@ export type ConfirmationDialogData = {
   type: "token" | string;
   serialList?: string[];
   title: string;
-  action: "remove" | "delete" | "revoke" | "search" | "unassign";
+  action: "remove" | "delete" | "revoke" | "search" | "unassign" | "discard";
 };

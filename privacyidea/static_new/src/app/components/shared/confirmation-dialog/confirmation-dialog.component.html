@@ -22,6 +22,9 @@
       This could take a lot of time and could even time out.
     </p>
   }
+  @if (data.action === "discard") {
+    <p i18n>You have unsaved changes. Are you sure you want to discard these changes?</p>
+  }
 </mat-dialog-content>
 
 <mat-dialog-actions>
@@ -34,7 +37,9 @@
   </button>
   <button
     [mat-dialog-close]="true"
-    [ngClass]="{ 'dialog-button-delete': data.action === 'remove' || data.action === 'delete' }"
+    [class.dialog-button-delete]="data.action === 'remove' || data.action === 'delete'"
+    [class.dialog-button-warn]="data.action === 'revoke' || data.action === 'discard'"
+    [class.dialog-button-primary]="data.action === 'search' || data.action === 'unassign'"
     mat-button>
     {{ data.action.charAt(0).toUpperCase() + data.action.slice(1) }}
   </button>

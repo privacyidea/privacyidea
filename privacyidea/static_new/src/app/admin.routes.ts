@@ -33,6 +33,7 @@ import { AuditComponent } from "./components/audit/audit.component";
 import { PoliciesComponent } from "./components/policies/policies.component";
 import { TokenImportComponent } from "./components/token/token-import/token-import.component";
 import { ClientsComponent } from "./components/audit/clients/clients.component";
+import { MachineresolverComponent } from "./components/machineresolver/machineresolver.component";
 
 export const routes: Routes = [
   {
@@ -70,11 +71,16 @@ export const routes: Routes = [
     children: [{ path: "", component: PoliciesComponent }]
   },
   {
+    path: "settings",
+    component: TokenComponent,
+    children: [{ path: "machineresolver", component: MachineresolverComponent }]
+  },
+  {
     path: "audit",
     component: TokenComponent,
     children: [
       { path: "", component: AuditComponent },
-      { path: "clients", component: ClientsComponent}
+      { path: "clients", component: ClientsComponent }
     ]
   }
 ];

@@ -1,0 +1,24 @@
+<div class="policy-card">
+  <mat-expansion-panel
+    #panel
+    class="margin-4">
+    <mat-expansion-panel-header class="mat-expansion-panel-header">
+      <mat-panel-title>
+        {{ machineresolver().resolvername }}
+      </mat-panel-title>
+      <mat-panel-description class="header-description">
+        <div class="policy-actions">
+          <button mat-icon-button>
+            <mat-icon>edit</mat-icon>
+          </button>
+          <button mat-icon-button>
+            <mat-icon>delete</mat-icon>
+          </button>
+        </div>
+      </mat-panel-description>
+    </mat-expansion-panel-header>
+    <div class="mat-expansion-panel-body">
+      <p>Description: {{ machineresolver().data }}</p>
+    </div>
+  </mat-expansion-panel>
+</div>
