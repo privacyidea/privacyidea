@@ -93,26 +93,23 @@
         </div>
       </mat-panel-description>
     </mat-expansion-panel-header>
-    <div class="mat-expansion-panel-body">
-      @switch (getType(currentMachineresolver())) {
-        @case ("hosts") {
-          <app-machineresolver-hosts-tab
-            [isEditMode]="isEditMode()"
-            [machineresolverData]="currentMachineresolver().data"
-            (onDataChange)="onDataChange($event)"
-            (onValidatorChange)="onDataValidatorChange($event)" />
-        }
-        @case ("ldap") {
-          <!-- <app-machineresolver-ldap-tab
-            [isEditMode]="isEditMode()"
-            [machineresolverData]="currentMachineresolver().data"
-            (onDataChange)="onDataValidatorChange($event)" /> -->
-        }
-        @default {
-          <!-- Fallback for unknown types -->
-          <p i18n>Unknown machine resolver type: {{ currentMachineresolver().type }}</p>
-        }
+    @switch (getType(currentMachineresolver())) {
+      @case ("hosts") {
+        <app-machineresolver-hosts-tab
+          [isEditMode]="isEditMode()"
+          [machineresolverData]="currentMachineresolver().data"
+          (onDataChange)="onDataChange($event)"
+          (onDataValidation)="onDataValidatorChange($event)" />
       }
-    </div>
+      @case ("ldap") {
+        <app-machineresolver-ldap-tab
+          [isEditMode]="isEditMode()"
+          [machineresolverData]="currentMachineresolver().data"
+          (onDataChange)="onDataValidatorChange($event)" />
+      }
+      @default {
+        <p i18n>Unknown machine resolver type: {{ currentMachineresolver().type }}</p>
+      }
+    }
   </mat-expansion-panel>
 </div>

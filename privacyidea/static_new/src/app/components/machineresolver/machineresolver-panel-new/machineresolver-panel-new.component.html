@@ -73,21 +73,19 @@
         </div>
       </mat-panel-description>
     </mat-expansion-panel-header>
-    <div class="mat-expansion-panel-body">
-      @switch (newMachineresolver().type) {
-        @case ("hosts") {
-          <app-machineresolver-hosts-tab
-            [isEditMode]="true"
-            [machineresolverData]="newMachineresolver().data"
-            (onDataChange)="onDataChange($event)"
-            (onValidatorChange)="onDataValidatorChange($event)" />
-        }
-        @case ("ldap") {}
-        @default {
-          <!-- Fallback for unknown types -->
-          <p i18n>Unknown machine resolver type: {{ newMachineresolver().type }}</p>
-        }
+    @switch (newMachineresolver().type) {
+      @case ("hosts") {
+        <app-machineresolver-hosts-tab
+          [isEditMode]="true"
+          [machineresolverData]="newMachineresolver().data"
+          (onDataChange)="onDataChange($event)"
+          (onDataValidation)="onDataValidatorChange($event)" />
       }
-    </div>
+      @case ("ldap") {}
+      @default {
+        <!-- Fallback for unknown types -->
+        <p i18n>Unknown machine resolver type: {{ newMachineresolver().type }}</p>
+      }
+    }
   </mat-expansion-panel>
 </div>

@@ -183,10 +183,3 @@
     height: 100%;
   }
 }
-
-.mat-expansion-panel-body {
-  gap: var(--global-gap);
-  display: flex;
-  flex-direction: column;
-  border-radius: var(--border-radius);
-}

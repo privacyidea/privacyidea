@@ -20,6 +20,7 @@ import {
 } from "../../../services/dialog/dialog.service";
 import { ConfirmationDialogData } from "../../shared/confirmation-dialog/confirmation-dialog.component";
 import { MachineresolverHostsTabComponent } from "../machineresolver-hosts-tab/machineresolver-hosts-tab.component";
+import { MachineresolverLdapTabComponent } from "../machineresolver-ldap-tab/machineresolver-ldap-tab.component";
 
 @Component({
   selector: "app-machineresolver-panel-edit",
@@ -38,7 +39,8 @@ import { MachineresolverHostsTabComponent } from "../machineresolver-hosts-tab/m
     MatAutocompleteModule,
     MatSelectModule,
     MatIcon,
-    MachineresolverHostsTabComponent
+    MachineresolverHostsTabComponent,
+    MachineresolverLdapTabComponent
   ]
 })
 export class MachineresolverPanelEditComponent {
