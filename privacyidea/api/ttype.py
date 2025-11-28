@@ -39,9 +39,9 @@ from ..lib.framework import get_app_config_value
 from ..lib.log import log_with
 from flask import g, jsonify, current_app
 import logging
-from privacyidea.api.lib.utils import get_all_params
+from privacyidea.api.lib.utils import get_all_params, map_error_to_code, send_error
 from privacyidea.lib.error import ParameterError
-from privacyidea.lib.policy import PolicyClass
+from privacyidea.lib.policy import PolicyClass, PolicyAction, SCOPE, Match
 from privacyidea.lib.audit import getAudit
 from privacyidea.lib.config import (get_token_class, get_from_config,
                                     SYSCONF, ensure_no_config_object, get_privacyidea_node)
@@ -104,7 +104,16 @@ def token(ttype=None):
     if tokenc is None:
         log.error("Invalid tokentype provided. ttype: {}".format(ttype.lower()))
         raise ParameterError("Invalid tokentype provided. ttype: {}".format(ttype.lower()))
-    res = tokenc.api_endpoint(request, g)
+    try:
+        res = tokenc.api_endpoint(request, g)
+    except Exception as e:
+        if Match.action_only(
+            g,
+            scope=SCOPE.TOKEN,
+            action=PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE_FOR_TTYPE,
+        ).any():
+            return send_error("Failed special token function"), map_error_to_code(e)
+        raise
     serial = getParam(request.all_data, "serial")
     user = get_user_from_param(request.all_data)
     g.audit_object.log({"success": 1,
