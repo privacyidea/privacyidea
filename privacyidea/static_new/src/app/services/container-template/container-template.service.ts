@@ -62,7 +62,7 @@ export class ContainerTemplateService implements ContainerTemplateServiceInterfa
       return undefined;
     }
     // Only load templates on the container create route.
-    if (!this.contentService.onTokensContainersCreate()) {
+    if (!this.contentService.onTokensContainersCreate() && !this.contentService.onTokensContainersTemplates()) {
       return undefined;
     }
 
@@ -91,11 +91,10 @@ export class ContainerTemplateService implements ContainerTemplateServiceInterfa
   });
 
   templateTokenTypesResource = httpResource<PiResponse<TemplateTokenTypes>>(() => {
-    if (
-      (this.contentService.routeUrl() !== ROUTE_PATHS.TOKENS_CONTAINERS_CREATE &&
-        this.contentService.routeUrl() !== ROUTE_PATHS.TOKENS_CONTAINERS_TEMPLATES) ||
-      !this.authService.actionAllowed("container_template_list")
-    ) {
+    if (!this.authService.actionAllowed("container_template_list")) {
+      return undefined;
+    }
+    if (!this.contentService.onTokensContainersCreate() && !this.contentService.onTokensContainersTemplates()) {
       return undefined;
     }
     return {

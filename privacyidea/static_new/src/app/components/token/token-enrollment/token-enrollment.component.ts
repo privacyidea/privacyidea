@@ -108,11 +108,6 @@ import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.
 import { TokenEnrollmentLastStepDialogData } from "./token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
 import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
 import { UserAssignmentComponent } from "../user-assignment/user-assignment.component";
-import {
-  WebauthnEnrollmentResponse,
-  WebAuthnEnrollmentData
-} from "../../../mappers/token-api-payload/webauthn-token-api-payload.mapper";
-import { TokenTypeOption } from "../token.component";
 
 export type enrollmentArgsGetterFn<T extends TokenEnrollmentData = TokenEnrollmentData> = (
   enrollmentOptions: TokenEnrollmentData

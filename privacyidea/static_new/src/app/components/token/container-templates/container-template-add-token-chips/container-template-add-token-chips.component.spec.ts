@@ -10,12 +10,8 @@ describe("ContainerTemplateAddTokenChipsComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [
-        provideHttpClient(),
-        provideHttpClientTesting(),
-        ContainerTemplateAddTokenChipsComponent,
-        NoopAnimationsModule
-      ]
+      imports: [ContainerTemplateAddTokenChipsComponent, NoopAnimationsModule],
+      providers: [provideHttpClient(), provideHttpClientTesting()]
     }).compileComponents();
 
     fixture = TestBed.createComponent(ContainerTemplateAddTokenChipsComponent);
