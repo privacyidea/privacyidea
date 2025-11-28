@@ -46,6 +46,7 @@ from privacyidea.lib.tokens.passwordtoken import DEFAULT_LENGTH as DEFAULT_LENGT
 from privacyidea.lib.tokens.pushtoken import PUSH_ACTION, strip_key, POLL_ONLY
 from privacyidea.lib.tokens.registrationtoken import DEFAULT_LENGTH as DEFAULT_LENGTH_REG
 from privacyidea.lib.tokens.registrationtoken import RegistrationTokenClass
+from privacyidea.lib.tokens.smstoken import SmsTokenClass
 from privacyidea.lib.tokens.totptoken import HotpTokenClass
 from privacyidea.lib.tokens.yubikeytoken import YubikeyTokenClass
 from privacyidea.lib.user import (User)
@@ -4405,6 +4406,62 @@ class MultiChallenge(MyApiTestCase):
         delete_policy("push")
         remove_token(serial)
         hotp.delete_token()
+
+    def test_07_preferred_client_mode_for_user_sms(self):
+        """
+        Test that the preferred token type is set for the user in validate check after a successful authentication with
+        sms token.
+        """
+        user = User("selfservice", self.realm1)
+        pin = "1234"
+
+        # create sms and totp token for the user with same PIN
+        sms = init_token({"type": "sms", "genkey": True, "phone": "123456", "pin": pin}, user=user)
+        totp = init_token({"type": "totp", "genkey": True, "pin": pin}, user=user)
+
+        # set policy for challenge response and client mode per user
+        set_policy("auth", scope=SCOPE.AUTH,
+                   action=f"{PolicyAction.CHALLENGERESPONSE}=hotp totp sms, {PolicyAction.CLIENT_MODE_PER_USER}")
+
+        # authenticate with PIN to trigger challenge-response: first auth, custom user attribute not set
+        with mock.patch.object(SmsTokenClass, '_send_sms', return_value=(True, "SMS sent successfully")):
+            with self.app.test_request_context('/validate/check',
+                                               method='POST',
+                                               data={"user": "selfservice", "realm": self.realm1, "pass": pin}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(res.status_code, 200)
+                detail = res.json.get("detail")
+                transaction_id = detail.get("transaction_id")
+                # custom user attribute not set yet: use default
+                self.assertEqual("interactive", detail.get("preferred_client_mode"))
+                self.assertIsNone(user.attributes.get(InternalCustomUserAttributes.LAST_USED_TOKEN))
+
+            # answer challenge with sms otp: custom user attribute shall be set
+            with self.app.test_request_context('/validate/check',
+                                               method='POST',
+                                               data={"user": "selfservice", "realm": self.realm1,
+                                                     "pass": sms.get_otp()[2], "transaction_id": transaction_id},
+                                               headers={"user_agent": "privacyidea-cp/2.0"}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(res.status_code, 200)
+                preferred_token_types = user.attributes.get(
+                    f"{InternalCustomUserAttributes.LAST_USED_TOKEN}_privacyidea-cp")
+                self.assertEqual("sms", preferred_token_types)
+
+            # authenticate with PIN to trigger challenge-response: second auth, custom user attribute set
+            with self.app.test_request_context('/validate/check',
+                                               method='POST',
+                                               data={"user": "selfservice", "realm": self.realm1, "pass": pin},
+                                               headers={"user_agent": "privacyidea-cp/2.0"}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(res.status_code, 200)
+                detail = res.json.get("detail")
+                # custom user attribute set from last auth to interactive
+                self.assertEqual("interactive", detail.get("preferred_client_mode"))
+
+        delete_policy("auth")
+        sms.delete_token()
+        totp.delete_token()
 
 
 class PushChallengeTags(MyApiTestCase):
