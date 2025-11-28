@@ -1,4 +1,4 @@
-import { Component, input, linkedSignal, output } from "@angular/core";
+import { Component, input, linkedSignal, output, ViewEncapsulation } from "@angular/core";
 import {
   HostsMachineresolverData,
   MachineresolverData
@@ -12,7 +12,8 @@ import { FormsModule } from "@angular/forms";
   templateUrl: "./machineresolver-hosts-tab.component.html",
   styleUrls: ["./machineresolver-hosts-tab.component.scss"],
   imports: [MatFormFieldModule, MatInputModule, FormsModule],
-  standalone: true
+  standalone: true,
+  encapsulation: ViewEncapsulation.None
 })
 export class MachineresolverHostsTabComponent {
   readonly isEditMode = input.required<boolean>();
@@ -20,15 +21,38 @@ export class MachineresolverHostsTabComponent {
   readonly hostsData = linkedSignal<HostsMachineresolverData>(
     () => this.machineresolverData() as HostsMachineresolverData
   );
-  readonly dataChange = output<MachineresolverData>();
-  readonly dataValidator = output<(data: HostsMachineresolverData) => boolean>();
+  readonly onNewData = output<MachineresolverData>();
+  readonly onNewValidator = output<(data: MachineresolverData) => boolean>();
 
   constructor() {
-    this.dataValidator.emit(this.isValid.bind(this));
+    this.onNewValidator.emit(this.isValid.bind(this));
   }
 
-  onDataChange(patch: Partial<HostsMachineresolverData>) {
-    this.dataChange.emit({ ...this.machineresolverData(), ...patch });
+  updateData(
+    args:
+      | { patch: Partial<HostsMachineresolverData>; remove?: (keyof HostsMachineresolverData)[] }
+      | { patch?: Partial<HostsMachineresolverData>; remove: (keyof HostsMachineresolverData)[] }
+      | Partial<HostsMachineresolverData>
+  ) {
+    let patch: Partial<HostsMachineresolverData> = {};
+    let remove: (keyof HostsMachineresolverData)[] = [];
+    if ("remove" in args || "patch" in args) {
+      const complexArgs = args as {
+        patch?: Partial<HostsMachineresolverData>;
+        remove?: (keyof HostsMachineresolverData)[];
+      };
+      patch = complexArgs.patch || {};
+      remove = complexArgs.remove || [];
+    } else {
+      patch = args as Partial<HostsMachineresolverData>;
+    }
+    const newData = { ...this.machineresolverData(), ...patch, type: "ldap" };
+    if (remove.length > 0) {
+      remove.forEach((key) => {
+        delete newData[key];
+      });
+    }
+    this.onNewData.emit(newData);
   }
 
   isValid(data: MachineresolverData): boolean {

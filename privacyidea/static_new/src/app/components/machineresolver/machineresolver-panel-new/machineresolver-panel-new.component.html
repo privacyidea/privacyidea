@@ -78,8 +78,8 @@
         <app-machineresolver-hosts-tab
           [isEditMode]="true"
           [machineresolverData]="newMachineresolver().data"
-          (onDataChange)="onDataChange($event)"
-          (onDataValidation)="onDataValidatorChange($event)" />
+          (onNewData)="onNewData($event)"
+          (onNewValidator)="onNewValidator($event)" />
       }
       @case ("ldap") {}
       @default {

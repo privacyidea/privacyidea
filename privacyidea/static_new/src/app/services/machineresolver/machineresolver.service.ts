@@ -33,24 +33,21 @@ export interface HostsMachineresolver extends Machineresolver {
 
 export interface LdapMachineresolverData extends MachineresolverData {
   type: "ldap";
-  data: {
-    type: "ldap";
-    AUTHTYPE: string;
-    TLS_VERIFY: boolean;
-    START_TLS: boolean;
-    LDAPURI: string;
-    TLS_CA_FILE: string;
-    LDAPBASE: string;
-    BINDDN: string;
-    BINDPW: string;
-    TIMEOUT: string;
-    SIZELIMIT: string;
-    SEARCHFILTER: string;
-    IDATTRIBUTE: string;
-    IPATTRIBUTE: string;
-    HOSTNAMEATTRIBUTE: string;
-    NOREFERRALS: boolean;
-  };
+  AUTHTYPE: string;
+  TLS_VERIFY: boolean;
+  START_TLS: boolean;
+  LDAPURI: string;
+  TLS_CA_FILE: string;
+  LDAPBASE: string;
+  BINDDN: string;
+  BINDPW: string;
+  TIMEOUT: string;
+  SIZELIMIT: string;
+  SEARCHFILTER: string;
+  IDATTRIBUTE: string;
+  IPATTRIBUTE: string;
+  HOSTNAMEATTRIBUTE: string;
+  NOREFERRALS: boolean;
 }
 
 export interface LdapMachineresolver extends Machineresolver {

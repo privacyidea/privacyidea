@@ -2,6 +2,13 @@
   width: 100%;
 }
 
-mat-form-field {
-  margin-bottom: 16px;
+.mat-mdc-select-disabled,
+*:disabled {
+  color: var(--mat-sys-on-surface) !important;
+}
+
+.mat-mdc-checkbox.mat-mdc-checkbox-disabled label,
+.mdc-text-field--filled.mdc-text-field--disabled .mdc-floating-label,
+*:disabled {
+  color: var(--mat-sys-on-surface) !important;
 }

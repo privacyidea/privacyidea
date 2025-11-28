@@ -1,4 +1,4 @@
-import { Component, computed, inject, input, linkedSignal, signal, WritableSignal } from "@angular/core";
+import { Component, computed, effect, inject, input, linkedSignal, signal, WritableSignal } from "@angular/core";
 import { MatExpansionModule, MatExpansionPanel } from "@angular/material/expansion";
 import { MatIcon, MatIconModule } from "@angular/material/icon";
 import {
@@ -70,13 +70,18 @@ export class MachineresolverPanelEditComponent {
   readonly currentMachineresolver = linkedSignal<Machineresolver>(() =>
     this.isEditMode() ? this.editedMachineresolver() : this.originalMachineresolver()
   );
-  onDataChange($event: Event) {
-    console.log($event);
+  constructor() {
+    effect(() => {
+      console.log("Current machineresolver data changed:", this.currentMachineresolver().data);
+    });
   }
-  // onDataValidatorChange(newValidator: (data: MachineresolverData) => boolean) {
-  onDataValidatorChange($event: Event) {
-    console.log($event);
-    // this.dataValidatorSignal.set(newValidator);
+
+  onNewData(newData: MachineresolverData) {
+    console.log("New data received:", newData);
+    this.editedMachineresolver.set({ ...this.currentMachineresolver(), data: newData });
+  }
+  onNewValidator(newValidator: (data: MachineresolverData) => boolean) {
+    this.dataValidatorSignal.set(newValidator);
   }
   readonly canSaveMachineresolver = computed(() => {
     const current = this.currentMachineresolver();
@@ -97,10 +102,7 @@ export class MachineresolverPanelEditComponent {
       data: { resolver: current.resolvername, type: newType } // Reset data to only have resolver field
     });
   }
-  getType(m: Machineresolver): string {
-    console.log("Getting type for machineresolver:", m);
-    return m.type;
-  }
+
   onResolvernameChange(newName: string) {
     // console.log("Name update event:", $event);
     // const newName = ($event.target as HTMLInputElement).value;

@@ -1,9 +1,157 @@
-<mat-form-field class="full-width">
-  <mat-label>Resolver filename</mat-label>
-  <!-- <input
-    matInput
-    [disabled]="!isEditMode()"
-    placeholder="/etc/hosts"
-    [ngModel]="hostsData().filename"
-    (ngModelChange)="onDataChange({ filename: $event })" /> -->
-</mat-form-field>
+<div class="ldap-config-container">
+  <div class="ldap-config-section">
+    <div class="row-container">
+      <mat-form-field>
+        <mat-label i18n="@@ldapUri">LDAP URI</mat-label>
+        <input
+          matInput
+          [disabled]="!isEditMode()"
+          [ngModel]="hostsData().LDAPURI"
+          (ngModelChange)="updateData({ LDAPURI: $event })" />
+      </mat-form-field>
+    </div>
+    <div class="row-container">
+      <div class="checkbox-container">
+        <mat-checkbox
+          matInput
+          [disabled]="!isEditMode()"
+          [ngModel]="hostsData().TLS_VERIFY"
+          (ngModelChange)="updateTlsVerify($event)"
+          i18n="@@tlsVerify">
+          TLS Verify
+        </mat-checkbox>
+      </div>
+      @if (hostsData().TLS_VERIFY) {
+        <mat-form-field>
+          <mat-label i18n="@@tlsCaFile">TLS CA File</mat-label>
+          <input
+            matInput
+            [disabled]="!isEditMode()"
+            [ngModel]="hostsData().TLS_CA_FILE"
+            (ngModelChange)="updateData({ TLS_CA_FILE: $event })" />
+        </mat-form-field>
+      } @else {
+        <div></div>
+      }
+    </div>
+    <div class="row-container">
+      <mat-form-field>
+        <mat-label i18n="@@ldapBase">LDAP Base</mat-label>
+        <input
+          matInput
+          [disabled]="!isEditMode()"
+          [ngModel]="hostsData().LDAPBASE"
+          (ngModelChange)="updateData({ LDAPBASE: $event })" />
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label i18n="@@bindDn">Bind DN</mat-label>
+        <input
+          matInput
+          [disabled]="!isEditMode()"
+          [ngModel]="hostsData().BINDDN"
+          (ngModelChange)="updateData({ BINDDN: $event })" />
+      </mat-form-field>
+    </div>
+
+    <div class="row-container">
+      <mat-form-field>
+        <mat-label i18n="@@bindPw">Bind Password</mat-label>
+        <input
+          type="password"
+          matInput
+          [disabled]="!isEditMode()"
+          [ngModel]="hostsData().BINDPW"
+          (ngModelChange)="updateData({ BINDPW: $event })" />
+      </mat-form-field>
+
+      <mat-form-field>
+        <mat-label i18n="@@authType">Authentication Type</mat-label>
+        <mat-select
+          matInput
+          [disabled]="!isEditMode()"
+          [ngModel]="hostsData().AUTHTYPE"
+          (ngModelChange)="updateData({ AUTHTYPE: $event })">
+          <mat-option value="Simple">simple</mat-option>
+          <mat-option value="SASL Digest-MD5">SASL Digest-MD5</mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+
+    <div class="row-container">
+      <mat-form-field>
+        <mat-label i18n="@@timeout">Timeout</mat-label>
+        <input
+          type="number"
+          matInput
+          [disabled]="!isEditMode()"
+          [ngModel]="hostsData().TIMEOUT"
+          (ngModelChange)="updateData({ TIMEOUT: $event })" />
+      </mat-form-field>
+
+      <mat-form-field>
+        <mat-label i18n="@@sizeLimit">Size Limit</mat-label>
+        <input
+          type="number"
+          matInput
+          [disabled]="!isEditMode()"
+          [ngModel]="hostsData().SIZELIMIT"
+          (ngModelChange)="updateData({ SIZELIMIT: $event })" />
+      </mat-form-field>
+    </div>
+  </div>
+
+  <div class="ldap-config-section">
+    <div class="row-container">
+      <div class="checkbox-container">
+        <mat-checkbox
+          matInput
+          [disabled]="!isEditMode()"
+          [ngModel]="hostsData().NOREFERRALS"
+          (ngModelChange)="updateData({ NOREFERRALS: $event })"
+          i18n="@@noReferrals">
+          <p>Pre-assign Active Directory</p>
+          <p>Referrals are not tracked (anonymously)</p>
+        </mat-checkbox>
+      </div>
+    </div>
+
+    <div class="row-container">
+      <mat-form-field>
+        <mat-label i18n="@@idAttribute">ID Attribute</mat-label>
+        <input
+          matInput
+          [disabled]="!isEditMode()"
+          [ngModel]="hostsData().IDATTRIBUTE"
+          (ngModelChange)="updateData({ IDATTRIBUTE: $event })" />
+      </mat-form-field>
+
+      <mat-form-field>
+        <mat-label i18n="@@searchFilter">Search Filter</mat-label>
+        <input
+          matInput
+          [disabled]="!isEditMode()"
+          [ngModel]="hostsData().SEARCHFILTER"
+          (ngModelChange)="updateData({ SEARCHFILTER: $event })" />
+      </mat-form-field>
+    </div>
+
+    <div class="row-container">
+      <mat-form-field>
+        <mat-label i18n="@@hostnameAttribute">Hostname Attribute</mat-label>
+        <input
+          matInput
+          [disabled]="!isEditMode()"
+          [ngModel]="hostsData().HOSTNAMEATTRIBUTE"
+          (ngModelChange)="updateData({ HOSTNAMEATTRIBUTE: $event })" />
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label i18n="@@ipAttribute">IP Attribute</mat-label>
+        <input
+          matInput
+          [disabled]="!isEditMode()"
+          [ngModel]="hostsData().IPATTRIBUTE"
+          (ngModelChange)="updateData({ IPATTRIBUTE: $event })" />
+      </mat-form-field>
+    </div>
+  </div>
+</div>

@@ -61,13 +61,12 @@ export class MachineresolverPanelNewComponent {
   });
   readonly dataValidatorSignal = signal<(data: MachineresolverData) => boolean>(() => true);
 
-  onDataChange($event: Event) {
-    console.log($event);
+  onNewData(newData: MachineresolverData) {
+    this.newMachineresolver.set({ ...this.newMachineresolver(), data: newData });
   }
   // onDataValidatorChange(newValidator: (data: MachineresolverData) => boolean) {
-  onDataValidatorChange($event: Event) {
-    console.log($event);
-    // this.dataValidatorSignal.set(newValidator);
+  onNewValidator(newValidator: (data: MachineresolverData) => boolean) {
+    this.dataValidatorSignal.set(newValidator);
   }
 
   readonly canSaveMachineresolver = computed(() => {

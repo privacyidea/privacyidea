@@ -1,7 +1,44 @@
-.full-width {
+.row-container {
+  display: flex;
   width: 100%;
+  flex-wrap: wrap;
+  gap: 20px;
+  margin-bottom: 16px;
 }
 
-mat-form-field {
-  margin-bottom: 16px;
+.row-container > * {
+  flex: 1;
+  min-width: 0;
+}
+
+.row-container .checkbox-container {
+  flex: 0 0 auto;
+  align-self: center;
+  margin-top: 10px;
+}
+
+.row-container mat-form-field {
+  margin-bottom: 0;
+}
+
+.ldap-config-container {
+  gap: var(--global-gap);
+  display: flex;
+  flex-direction: column;
+
+  .mat-mdc-select-disabled,
+  *:disabled {
+    color: var(--mat-sys-on-surface) !important;
+  }
+
+  .mat-mdc-checkbox.mat-mdc-checkbox-disabled label,
+  .mdc-text-field--filled.mdc-text-field--disabled .mdc-floating-label {
+    color: var(--mat-sys-on-surface-variant) !important;
+  }
+}
+
+.ldap-config-section {
+  padding: 20px;
+  border-radius: var(--border-radius);
+  background-color: var(--mat-sys-surface-container);
 }

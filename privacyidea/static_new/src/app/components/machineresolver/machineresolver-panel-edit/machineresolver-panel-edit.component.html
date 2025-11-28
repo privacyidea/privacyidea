@@ -36,7 +36,7 @@
             (keydown)="$event.stopPropagation()" />
         } @else {
           <div class="machineresolver-name">
-            {{ currentMachineresolver().resolvername }}
+            <p>{{ currentMachineresolver().resolvername }}</p>
           </div>
         }
       </mat-panel-title>
@@ -93,19 +93,20 @@
         </div>
       </mat-panel-description>
     </mat-expansion-panel-header>
-    @switch (getType(currentMachineresolver())) {
+    @switch (currentMachineresolver().type) {
       @case ("hosts") {
         <app-machineresolver-hosts-tab
           [isEditMode]="isEditMode()"
           [machineresolverData]="currentMachineresolver().data"
-          (onDataChange)="onDataChange($event)"
-          (onDataValidation)="onDataValidatorChange($event)" />
+          (onNewData)="onNewData($event)"
+          (onNewValidator)="onNewValidator($event)" />
       }
       @case ("ldap") {
         <app-machineresolver-ldap-tab
           [isEditMode]="isEditMode()"
           [machineresolverData]="currentMachineresolver().data"
-          (onDataChange)="onDataValidatorChange($event)" />
+          (onNewData)="onNewData($event)"
+          (onNewValidator)="onNewValidator($event)" />
       }
       @default {
         <p i18n>Unknown machine resolver type: {{ currentMachineresolver().type }}</p>

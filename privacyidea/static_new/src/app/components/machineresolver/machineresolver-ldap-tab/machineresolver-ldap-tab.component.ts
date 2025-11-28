@@ -1,40 +1,82 @@
-import { Component, input, linkedSignal, output } from "@angular/core";
+import { Component, input, linkedSignal, output, ViewEncapsulation } from "@angular/core";
 import {
-  HostsMachineresolverData,
   LdapMachineresolverData,
   MachineresolverData
 } from "../../../services/machineresolver/machineresolver.service";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { FormsModule } from "@angular/forms";
+import { MatCheckboxModule } from "@angular/material/checkbox";
+import { MatSelectModule } from "@angular/material/select";
 
 @Component({
   selector: "app-machineresolver-ldap-tab",
   templateUrl: "./machineresolver-ldap-tab.component.html",
   styleUrls: ["./machineresolver-ldap-tab.component.scss"],
-  imports: [MatFormFieldModule, MatInputModule, FormsModule],
-  standalone: true
+  imports: [FormsModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatCheckboxModule],
+  standalone: true,
+  encapsulation: ViewEncapsulation.None
 })
 export class MachineresolverLdapTabComponent {
   readonly isEditMode = input.required<boolean>();
   readonly machineresolverData = input.required<MachineresolverData>();
-  readonly hostsData = linkedSignal<LdapMachineresolverData>(
-    () => this.machineresolverData() as LdapMachineresolverData
-  );
-  readonly dataChange = output<MachineresolverData>();
-  readonly dataValidator = output<(data: LdapMachineresolverData) => boolean>();
+  readonly hostsData = linkedSignal<LdapMachineresolverData>(() => {
+    console.log("New LDAP data:", this.machineresolverData());
+    return this.machineresolverData() as LdapMachineresolverData;
+  });
+  readonly onNewData = output<MachineresolverData>();
+  readonly onNewValidator = output<(data: MachineresolverData) => boolean>();
 
   constructor() {
-    this.dataValidator.emit(this.isValid.bind(this));
+    this.onNewValidator.emit(this.isValid.bind(this));
   }
 
-  onDataChange(patch: Partial<LdapMachineresolverData>) {
-    this.dataChange.emit({ ...this.machineresolverData(), ...patch });
+  updateData(
+    args:
+      | { patch: Partial<LdapMachineresolverData>; remove?: (keyof LdapMachineresolverData)[] }
+      | { patch?: Partial<LdapMachineresolverData>; remove: (keyof LdapMachineresolverData)[] }
+      | Partial<LdapMachineresolverData>
+  ) {
+    let patch: Partial<LdapMachineresolverData> = {};
+    let remove: (keyof LdapMachineresolverData)[] = [];
+    if ("remove" in args || "patch" in args) {
+      const complexArgs = args as {
+        patch?: Partial<LdapMachineresolverData>;
+        remove?: (keyof LdapMachineresolverData)[];
+      };
+      patch = complexArgs.patch || {};
+      remove = complexArgs.remove || [];
+    } else {
+      patch = args as Partial<LdapMachineresolverData>;
+    }
+    const newData = { ...this.machineresolverData(), ...patch, type: "ldap" };
+    if (remove.length > 0) {
+      remove.forEach((key) => {
+        delete newData[key];
+      });
+    }
+    this.onNewData.emit(newData);
+  }
+  updateTlsVerify($event: boolean) {
+    this.updateData({ patch: { TLS_VERIFY: $event, TLS_CA_FILE: undefined }, remove: ["TLS_CA_FILE"] });
   }
 
   isValid(data: MachineresolverData): boolean {
     if (data.type !== "ldap") return false;
-    const ldapData = data as HostsMachineresolverData;
+    const ldapData = data as LdapMachineresolverData;
+
+    if (!ldapData.LDAPURI || ldapData.LDAPURI.trim() === "") {
+      return false;
+    }
+    if (!ldapData.LDAPBASE || ldapData.LDAPBASE.trim() === "") {
+      return false;
+    }
+    if (!ldapData.BINDDN || ldapData.BINDDN.trim() === "") {
+      return false;
+    }
+    if (!ldapData.BINDPW || ldapData.BINDPW.trim() === "") {
+      return false;
+    }
 
     console.log("LdapMachineresolverData is valid:", data);
     return true;
