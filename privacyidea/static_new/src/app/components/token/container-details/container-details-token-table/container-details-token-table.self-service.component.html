@@ -1,3 +1,21 @@
+<!--
+ (c) NetKnights GmbH 2025,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
 <div
   aria-label="Container Details Token Table"
   class="container-details-token-table-layout"
@@ -50,8 +68,7 @@
           <td
             *matCellDef="let element"
             attr.aria-label="{{ column.label }} Cell"
-            mat-cell
-            [ngClass]="{ 'width-18rem': column.key === 'description' }">
+            mat-cell>
             <ng-container>
               <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
                 @switch (column.key) {
@@ -178,69 +195,5 @@
         </td>
       </tr>
     </table>
-    <div
-      [ngClass]="[
-        overflowService.isWidthOverflowing('body', 1580)
-          ? 'container-details-action-column'
-          : 'container-details-action-row'
-      ]">
-      @if (authService.actionAllowed("assign")) {
-        <button
-          (click)="assignToAllToken()"
-          [disabled]="!isAssignableToAllToken()"
-          [ngClass]="[isAssignableToAllToken() ? 'card-button' : 'card-button-disabled']"
-          i18n
-          mat-flat-button>
-          <mat-icon>playlist_add</mat-icon>
-          "Assign to All Tokens"
-        </button>
-      }
-      @if (authService.actionAllowed("unassign")) {
-        <button
-          (click)="unassignFromAllToken()"
-          [disabled]="!isUnassignableFromAllToken()"
-          [ngClass]="[isUnassignableFromAllToken() ? 'card-button' : 'card-button-disabled']"
-          mat-flat-button>
-          <mat-icon>playlist_remove</mat-icon>
-          <span i18n>Unassign from All Tokens</span>
-        </button>
-      }
-      @if (authService.actionAllowed("enable")) {
-        <button
-          (click)="toggleAll('activate')"
-          class="card-button-activate"
-          mat-flat-button>
-          <mat-icon>playlist_play</mat-icon>
-          <span i18n>Activate All Tokens</span>
-        </button>
-      }
-      @if (authService.actionAllowed("disable")) {
-        <button
-          (click)="toggleAll('deactivate')"
-          class="card-button-delete"
-          mat-flat-button>
-          <mat-icon class="mdi--list-lock"/>
-          <span i18n>Deactivate All Tokens</span>
-        </button>
-      }
-      @if (authService.actionAllowed("container_remove_token")) {
-        <button
-          (click)="removeAll()"
-          class="card-button-delete"
-          mat-flat-button>
-          <mat-icon> playlist_remove</mat-icon>
-          <span i18n>Remove All Tokens</span>
-        </button>
-      }
-      @if (authService.actionAllowed("delete")) {
-        <button
-          (click)="deleteAllTokens()"
-          class="card-button-delete"
-          mat-flat-button>
-          <mat-icon> delete_sweep</mat-icon>
-          <span i18n>Delete All Tokens</span>
-        </button>
-      }
-    </div>
   </div>
 </div>

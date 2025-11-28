@@ -30,15 +30,21 @@ import { routes } from "./app.routes";
 import { loadingInterceptor } from "./interceptor/loading/loading.interceptor";
 import { AuthService } from "./services/auth/auth.service";
 import { ThemeService } from "./services/theme/theme.service";
+import { ConfigService } from "./services/config/config.service";
+import { userAgentInterceptor } from "./interceptor/user-agent/user-agent.interceptor";
 
 export const appConfig: ApplicationConfig = {
   providers: [
+    provideAppInitializer(() => {
+      const configService = inject(ConfigService);
+      configService.loadConfig();
+    }),
     provideExperimentalZonelessChangeDetection(),
     provideRouter(routes),
     provideAnimationsAsync(),
     { provide: APP_BASE_HREF, useValue: "/app/v2/" },
     AuthService,
-    provideHttpClient(withInterceptors([loadingInterceptor])),
+    provideHttpClient(withInterceptors([loadingInterceptor, userAgentInterceptor])),
     provideAppInitializer(() => {
       const themeService = inject(ThemeService);
       themeService.initializeTheme();

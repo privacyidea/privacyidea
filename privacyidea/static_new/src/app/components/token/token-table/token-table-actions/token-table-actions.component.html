@@ -1,0 +1,61 @@
+<!--
+ (c) NetKnights GmbH 2025,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<div class="flex-row margin-bottom-1 gap-8">
+  <button
+    [routerLink]="[ROUTE_PATHS.TOKENS_ENROLLMENT]"
+    class="action-button-1"
+    mat-stroked-button>
+    <mat-icon> add_moderator</mat-icon>
+    Enroll Token
+  </button>
+  @if (authService.oneActionAllowed(["delete", "assign", "unassign"])) {
+    @if (authService.actionAllowed("delete")) {
+        <button
+          mat-stroked-button
+          class="action-button-delete"
+          (click)="deleteSelectedTokens()"
+          [disabled]="tokenSelection().length === 0"
+          i18n>
+          <mat-icon> delete_sweep</mat-icon>
+          Delete Selected
+        </button>
+    }
+    @if (authService.actionAllowed("assign")) {
+        <button
+          mat-stroked-button
+          class="action-button-1"
+          (click)="assignSelectedTokens()"
+          [disabled]="tokenSelection().length === 0"
+          i18n>
+          <mat-icon> person_add</mat-icon>
+          Assign Selected
+        </button>
+    }
+    @if (authService.actionAllowed("unassign")) {
+        <button
+          mat-stroked-button
+          class="action-button-1"
+          (click)="unassignSelectedTokens()"
+          [disabled]="tokenSelection().length === 0">
+          <mat-icon> person_remove</mat-icon>
+          Unassign Selected
+        </button>
+    }
+  }
+</div>

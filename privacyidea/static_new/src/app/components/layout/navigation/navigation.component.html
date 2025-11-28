@@ -1,0 +1,565 @@
+<!--
+ (c) NetKnights GmbH 2025,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<div class="drawer-div">
+  <div class="brand">
+    <div class="brand-row">
+      <a
+        [routerLink]="[ROUTE_PATHS.TOKENS]"
+        aria-label="Go to Token Overview"
+        class="clickable-logo">
+        <img
+          alt="logo"
+          aria-label="Logo"
+          class="logo"
+          height="307"
+          i18n-alt
+          i18n-aria-label
+          ngSrc="assets/privacyIDEA1.png"
+          ngSrcset="1x"
+          sizes="(max-width: 307px) 100vw, 307px"
+          width="307" />
+      </a>
+
+      <h4
+        class="preview"
+        i18n>
+        Preview
+      </h4>
+    </div>
+
+    <a
+      [routerLink]="[ROUTE_PATHS.TOKENS]"
+      aria-label="Go to Token Overview"
+      class="clickable-logo-text">
+      <img
+        alt="logo-text"
+        aria-label="Logo Text"
+        class="logo-text"
+        height="109"
+        i18n-alt
+        i18n-aria-label
+        ngSrc="assets/logo-text.png"
+        ngSrcset="1x"
+        sizes="(max-width: 575px) 100vw, 575px"
+        width="575" />
+    </a>
+    <p
+      class="margin-0"
+      style="font-size: 12px">
+      Version {{ versioningService.version() }}
+    </p>
+    <p style="font-size: 12px; margin-bottom: 6px">
+      An open-source project
+      <a
+        href="https://netknights.it/"
+        target="_blank"
+        >maintained by NetKnights
+      </a>
+      <br />
+      in collaboration with
+      <a
+        href="https://github.com/privacyidea/privacyidea"
+        target="_blank"
+        >community contributors
+      </a>
+    </p>
+  </div>
+
+  <div class="utils-group">
+    <div class="account-div">
+      <mat-icon>account_box</mat-icon>
+      <h4>{{ profileText }}</h4>
+      <button
+        (click)="logout()"
+        aria-label="Logout"
+        class="logout-btn"
+        i18n-aria-label
+        mat-icon-button
+        matTooltip="Return to login">
+        <mat-icon>logout</mat-icon>
+      </button>
+    </div>
+
+    <div class="utils">
+      <app-theme-switcher></app-theme-switcher>
+      <button
+        (click)="refreshPage()"
+        class="refresh-btn"
+        mat-fab
+        matTooltip="Refresh resources">
+        <mat-icon>refresh</mat-icon>
+      </button>
+      <div
+        [ngClass]="[
+          sessionTimerService.remainingTime()! < 31000
+            ? 'red-light'
+            : sessionTimerService.remainingTime()! < 60000
+              ? 'yellow-light'
+              : 'surface-highest'
+        ]"
+        class="session-timer"
+        matTooltip="Time until session expires">
+        @if (sessionTimerService.remainingTime()! < 599500) {
+          {{ sessionTimerService.remainingTime() | date: "m:ss" : "UTC" }}
+        } @else if (sessionTimerService.remainingTime()! < 3600000) {
+          {{ sessionTimerService.remainingTime() | date: "m" : "UTC" }}min
+        } @else {
+          {{ sessionTimerService.remainingTime() | date: "H'h' mm'min'" : "UTC" }}
+        }
+      </div>
+    </div>
+  </div>
+
+  @if (false) {
+    <form class="width-100">
+      <mat-form-field class="width-100">
+        <mat-label>Search</mat-label>
+        <input
+          disabled
+          matInput />
+        <mat-icon matSuffix>search</mat-icon>
+      </mat-form-field>
+    </form>
+  }
+
+  <mat-accordion>
+    <mat-expansion-panel
+      [expanded]="router.url.startsWith(ROUTE_PATHS.TOKENS) && !router.url.includes('containers')"
+      class="nav-expension-panel">
+      <mat-expansion-panel-header (click)="router.navigate([ROUTE_PATHS.TOKENS])">
+        <mat-panel-title>
+          <mat-icon>shield</mat-icon>
+          Token
+        </mat-panel-title>
+      </mat-expansion-panel-header>
+      <mat-list>
+        <mat-list-item>
+          <button
+            [ngClass]="contentService.routeUrl() === ROUTE_PATHS.TOKENS ? 'card-button-active' : 'card-button-1'"
+            [routerLink]="[ROUTE_PATHS.TOKENS]"
+            i18n
+            mat-stroked-button>
+            <mat-icon class="ms--shield-list"></mat-icon>
+            Overview
+          </button>
+        </mat-list-item>
+        @if (contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_DETAILS)) {
+          <mat-list-item>
+            <button
+              class="card-button-active"
+              i18n
+              mat-stroked-button>
+              <mat-icon>privacy_tip</mat-icon>
+              Details
+            </button>
+          </mat-list-item>
+        }
+        @if (authService.tokenEnrollmentAllowed()) {
+          <mat-list-item>
+            <button
+              [ngClass]="
+                contentService.routeUrl() === ROUTE_PATHS.TOKENS_ENROLLMENT ? 'card-button-active' : 'card-button-1'
+              "
+              [routerLink]="[ROUTE_PATHS.TOKENS_ENROLLMENT]"
+              i18n
+              mat-stroked-button>
+              <mat-icon>add_moderator</mat-icon>
+              Enrollment
+            </button>
+          </mat-list-item>
+        }
+        @if (authService.actionAllowed("importtokens")) {
+          <mat-list-item>
+            <button
+              [ngClass]="
+                contentService.routeUrl() === ROUTE_PATHS.TOKENS_IMPORT ? 'card-button-active' : 'card-button-1'
+              "
+              [routerLink]="[ROUTE_PATHS.TOKENS_IMPORT]"
+              i18n
+              mat-stroked-button>
+              <mat-icon>input</mat-icon>
+              Import
+            </button>
+          </mat-list-item>
+        }
+        @if (authService.actionAllowed("getchallenges")) {
+          <mat-list-item>
+            <button
+              [ngClass]="
+                contentService.routeUrl() === ROUTE_PATHS.TOKENS_CHALLENGES ? 'card-button-active' : 'card-button-1'
+              "
+              [routerLink]="[ROUTE_PATHS.TOKENS_CHALLENGES]"
+              i18n
+              mat-stroked-button>
+              <mat-icon>cached</mat-icon>
+              Challenges
+            </button>
+          </mat-list-item>
+        }
+        @if (authService.actionsAllowed(["machinelist", "manage_machine_tokens"])) {
+          <mat-list-item>
+            <button
+              [ngClass]="
+                contentService.routeUrl() === ROUTE_PATHS.TOKENS_APPLICATIONS ? 'card-button-active' : 'card-button-1'
+              "
+              [routerLink]="[ROUTE_PATHS.TOKENS_APPLICATIONS]"
+              i18n
+              mat-stroked-button>
+              <mat-icon>now_widgets</mat-icon>
+              Applications
+            </button>
+          </mat-list-item>
+        }
+      </mat-list>
+    </mat-expansion-panel>
+
+    <mat-expansion-panel [expanded]="router.url.startsWith(ROUTE_PATHS.TOKENS_CONTAINERS)">
+      <mat-expansion-panel-header (click)="router.navigate([ROUTE_PATHS.TOKENS_CONTAINERS])">
+        <mat-panel-title>
+          <mat-icon>folder</mat-icon>
+          Container
+        </mat-panel-title>
+      </mat-expansion-panel-header>
+
+      <mat-list>
+        <mat-list-item>
+          <button
+            [ngClass]="
+              contentService.routeUrl() === ROUTE_PATHS.TOKENS_CONTAINERS ? 'card-button-active' : 'card-button-1'
+            "
+            [routerLink]="[ROUTE_PATHS.TOKENS_CONTAINERS]"
+            i18n
+            mat-stroked-button>
+            <mat-icon class="mdi--folder-list"></mat-icon>
+            Overview
+          </button>
+        </mat-list-item>
+        @if (contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS)) {
+          <mat-list-item>
+            <button
+              class="card-button-active"
+              i18n
+              mat-stroked-button>
+              <mat-icon>source</mat-icon>
+              Details
+            </button>
+          </mat-list-item>
+        }
+        @if (authService.actionAllowed("container_create")) {
+          <mat-list-item>
+            <button
+              [ngClass]="
+                this.contentService.routeUrl() === ROUTE_PATHS.TOKENS_CONTAINERS_CREATE
+                  ? 'card-button-active'
+                  : 'card-button-1'
+              "
+              [routerLink]="[ROUTE_PATHS.TOKENS_CONTAINERS_CREATE]"
+              i18n
+              mat-stroked-button>
+              <mat-icon>create_new_folder</mat-icon>
+              Create
+            </button>
+          </mat-list-item>
+        }
+        @if (authService.oneActionAllowed(["container_template_list", "container_template_create"])) {
+          @if (authService.actionAllowed("container_template_list")) {
+            <mat-list-item>
+              <button
+                class="card-button-1"
+                disabled
+                i18n
+                mat-stroked-button>
+                <mat-icon>plagiarism</mat-icon>
+                Templates
+              </button>
+            </mat-list-item>
+          }
+          @if (authService.actionAllowed("container_template_create")) {
+            <mat-list-item>
+              <button
+                class="card-button-1"
+                disabled
+                mat-stroked-button>
+                <mat-icon>note_add</mat-icon>
+                Create Template
+              </button>
+            </mat-list-item>
+          }
+        }
+      </mat-list>
+    </mat-expansion-panel>
+
+    <mat-expansion-panel [expanded]="router.url.startsWith(ROUTE_PATHS.USERS)">
+      <mat-expansion-panel-header (click)="router.navigate([ROUTE_PATHS.USERS])">
+        <mat-panel-title>
+          <mat-icon>supervised_user_circle</mat-icon>
+          Users
+        </mat-panel-title>
+      </mat-expansion-panel-header>
+      <mat-list>
+        <mat-list-item>
+          <button
+            [ngClass]="contentService.routeUrl() === ROUTE_PATHS.USERS ? 'card-button-active' : 'card-button-1'"
+            [routerLink]="[ROUTE_PATHS.USERS]"
+            i18n
+            mat-stroked-button>
+            <mat-icon class="ms--person-list"></mat-icon>
+            Overview
+          </button>
+        </mat-list-item>
+        @if (contentService.routeUrl().startsWith(ROUTE_PATHS.USERS_DETAILS)) {
+          <mat-list-item>
+            <button
+              class="card-button-active"
+              i18n
+              mat-stroked-button>
+              <mat-icon>manage_accounts</mat-icon>
+              Details
+            </button>
+          </mat-list-item>
+        }
+        <mat-list-item>
+          <button
+            class="card-button-1"
+            disabled
+            mat-stroked-button>
+            <mat-icon class="ms--database"></mat-icon>
+            Sources
+          </button>
+        </mat-list-item>
+        <mat-list-item>
+          <button
+            [routerLink]="[ROUTE_PATHS.USERS_REALMS]"
+            [ngClass]="contentService.routeUrl() === ROUTE_PATHS.USERS_REALMS ?
+                  'card-button-active' : 'card-button-1'"
+            mat-stroked-button>
+            <mat-icon>public</mat-icon>
+            Realms
+          </button>
+        </mat-list-item>
+      </mat-list>
+    </mat-expansion-panel>
+    @if (authService.actionAllowed("policyread")) {
+      <mat-expansion-panel
+        class="nav-expension-panel policy-header"
+        [disabled]="true">
+        <mat-expansion-panel-header
+          (click)="onPoliciesHeaderClick($event)"
+          class="nav-header-button">
+          <mat-panel-title>
+            <mat-icon>gavel</mat-icon>
+            Policies
+          </mat-panel-title>
+        </mat-expansion-panel-header>
+      </mat-expansion-panel>
+    }
+    <mat-expansion-panel disabled>
+      <mat-expansion-panel-header>
+        <mat-panel-title>
+          <mat-icon>flag</mat-icon>
+          Events
+        </mat-panel-title>
+      </mat-expansion-panel-header>
+      <mat-list>
+        <mat-list-item></mat-list-item>
+      </mat-list>
+    </mat-expansion-panel>
+
+    <mat-expansion-panel [expanded]="router.url.startsWith(ROUTE_PATHS.AUDIT)">
+      <mat-expansion-panel-header (click)="router.navigate([ROUTE_PATHS.AUDIT])">
+        <mat-panel-title>
+          <mat-icon>receipt_long</mat-icon>
+          Audit
+        </mat-panel-title>
+      </mat-expansion-panel-header>
+      <mat-list>
+        <mat-list-item>
+          <button
+            [ngClass]="contentService.routeUrl() === ROUTE_PATHS.AUDIT ? 'card-button-active' : 'card-button-1'"
+            [routerLink]="[ROUTE_PATHS.AUDIT]"
+            mat-stroked-button>
+            <mat-icon>list_alt</mat-icon>
+            Log
+          </button>
+        </mat-list-item>
+        @if (authService.actionAllowed("clienttype")) {
+        <mat-list-item>
+          <button
+            [ngClass]="contentService.routeUrl() === ROUTE_PATHS.CLIENTS ? 'card-button-active' : 'card-button-1'"
+            [routerLink]="[ROUTE_PATHS.CLIENTS]"
+            mat-stroked-button>
+            <mat-icon>recent_actors</mat-icon>
+            Known Clients
+          </button>
+        </mat-list-item>
+        }
+      </mat-list>
+    </mat-expansion-panel>
+
+    <mat-expansion-panel>
+      <mat-expansion-panel-header>
+        <mat-panel-title>
+          <mat-icon>hub</mat-icon>
+          External Services
+        </mat-panel-title>
+      </mat-expansion-panel-header>
+      <mat-list>
+        <mat-list-item>
+          <button
+            class="card-button-1"
+            disabled
+            mat-stroked-button>
+            <mat-icon>email</mat-icon>
+            SMTP Servers
+          </button>
+        </mat-list-item>
+        <mat-list-item>
+          <button
+            class="card-button-1"
+            disabled
+            mat-stroked-button>
+            <mat-icon>vpn_lock</mat-icon>
+            RADIUS Servers
+          </button>
+        </mat-list-item>
+        <mat-list-item>
+          <button
+            class="card-button-1"
+            disabled
+            mat-stroked-button>
+            <mat-icon>sms</mat-icon>
+            SMS Gateways
+          </button>
+        </mat-list-item>
+        <mat-list-item>
+          <button
+            class="card-button-1"
+            disabled
+            mat-stroked-button>
+            <mat-icon>assured_workload</mat-icon>
+            CAs
+          </button>
+        </mat-list-item>
+        <mat-list-item>
+          <button
+            class="card-button-1"
+            disabled
+            mat-stroked-button>
+            <mat-icon class="mdi--pi-logo"></mat-icon>
+            PrivacyIDEA Servers
+          </button>
+        </mat-list-item>
+        <mat-list-item>
+          <button
+            class="card-button-1"
+            disabled
+            mat-stroked-button>
+            <mat-icon>local_police</mat-icon>
+            Tokengroups
+          </button>
+        </mat-list-item>
+        <mat-list-item>
+          <button
+            class="card-button-1"
+            disabled
+            mat-stroked-button>
+            <mat-icon>storage</mat-icon>
+            Service IDs
+          </button>
+        </mat-list-item>
+      </mat-list>
+    </mat-expansion-panel>
+
+    <mat-expansion-panel>
+      <mat-expansion-panel-header>
+        <mat-panel-title>
+          <mat-icon>miscellaneous_services</mat-icon>
+          Configuration
+        </mat-panel-title>
+      </mat-expansion-panel-header>
+      <mat-list>
+        <mat-list-item>
+          <button
+            class="card-button-1"
+            disabled
+            mat-stroked-button>
+            <mat-icon>build</mat-icon>
+            System
+          </button>
+        </mat-list-item>
+        <mat-list-item>
+          <button
+            class="card-button-1"
+            disabled
+            mat-stroked-button>
+            <mat-icon>safety_check</mat-icon>
+            Tokentypes
+          </button>
+        </mat-list-item>
+        <mat-list-item>
+          <button
+            class="card-button-1"
+            disabled
+            mat-stroked-button>
+            <mat-icon>point_of_sale</mat-icon>
+            Machines
+          </button>
+        </mat-list-item>
+        <mat-list-item>
+          <button
+            class="card-button-1"
+            disabled
+            mat-stroked-button>
+            <mat-icon>lan</mat-icon>
+            Machine Resolver
+          </button>
+        </mat-list-item>
+      </mat-list>
+    </mat-expansion-panel>
+  </mat-accordion>
+
+  <div class="sticky-actions">
+    <a
+      aria-label="Support"
+      class="card-button-support"
+      href="https://netknights.it/support_link_admin"
+      i18n-aria-label
+      mat-stroked-button
+      matTooltip="&#8249; Visit Enterprise Support"
+      matTooltipHideDelay="1600"
+      matTooltipPosition="right"
+      target="_blank">
+      <mat-icon>support_agent</mat-icon>
+      <h4 i18n>Support</h4>
+    </a>
+
+    <a
+      (click)="documentationService.openDocumentation(contentService.routeUrl())"
+      aria-label="Documentation"
+      class="card-button-docs"
+      i18n-aria-label
+      mat-stroked-button
+      matTooltip="&#8249; Visit Documentation"
+      matTooltipPosition="right"
+      target="_blank">
+      <mat-icon>info_outline</mat-icon>
+      <h4 i18n>Documentation</h4>
+    </a>
+  </div>
+</div>

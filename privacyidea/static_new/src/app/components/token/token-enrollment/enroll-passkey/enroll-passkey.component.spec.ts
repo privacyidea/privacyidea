@@ -16,29 +16,272 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
+import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { EnrollPasskeyComponent } from "./enroll-passkey.component";
-import "@angular/localize/init";
+import {
+  MockBase64Service,
+  MockDialogService,
+  MockNotificationService,
+  MockTokenService
+} from "../../../../../testing/mock-services";
+import { TokenService } from "../../../../services/token/token.service";
+import { DialogService } from "../../../../services/dialog/dialog.service";
+import { Base64Service } from "../../../../services/base64/base64.service";
+import { NotificationService } from "../../../../services/notification/notification.service";
+import {
+  EnrollmentResponse,
+  TokenEnrollmentData
+} from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
+import { of, throwError } from "rxjs";
 
 describe("EnrollPasskeyComponent", () => {
   let component: EnrollPasskeyComponent;
   let fixture: ComponentFixture<EnrollPasskeyComponent>;
 
+  let tokenSvc: MockTokenService;
+  let dialogSvc: MockDialogService;
+  let b64: MockBase64Service;
+  let notif: MockNotificationService;
+
+  const origCreds = navigator.credentials;
+
+  function setNavigatorCredentials(obj: any) {
+    Object.defineProperty(navigator, "credentials", {
+      configurable: true,
+      get: () => obj
+    });
+  }
+
   beforeEach(async () => {
+    jest.clearAllMocks();
+
     await TestBed.configureTestingModule({
-      imports: [EnrollPasskeyComponent, BrowserAnimationsModule],
-      providers: [provideHttpClient(), provideHttpClientTesting()]
+      imports: [EnrollPasskeyComponent, NoopAnimationsModule],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: TokenService, useClass: MockTokenService },
+        { provide: DialogService, useClass: MockDialogService },
+        { provide: Base64Service, useClass: MockBase64Service },
+        { provide: NotificationService, useClass: MockNotificationService }
+      ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(EnrollPasskeyComponent);
     component = fixture.componentInstance;
+
+    tokenSvc = TestBed.inject(TokenService) as any;
+    dialogSvc = TestBed.inject(DialogService) as any;
+    b64 = TestBed.inject(Base64Service) as any;
+    notif = TestBed.inject(NotificationService) as any;
+
     fixture.detectChanges();
+  });
+
+  afterAll(() => {
+    Object.defineProperty(navigator, "credentials", {
+      configurable: true,
+      get: () => origCreds
+    });
   });
 
   it("should create", () => {
     expect(component).toBeTruthy();
+  });
+
+  it("rejects and notifies when WebAuthn is unsupported", async () => {
+    setNavigatorCredentials(undefined);
+
+    await expect(component.onClickEnroll({} as TokenEnrollmentData)).rejects.toThrow(
+      /Passkey\/WebAuthn is not supported/i
+    );
+
+    expect(notif.openSnackBar).toHaveBeenCalledWith("Passkey/WebAuthn is not supported by this browser.");
+  });
+
+  it("happy path: init -> open dialog -> create cred -> finalize -> close", async () => {
+    const initResp = {
+      detail: {
+        transaction_id: "tid-1",
+        serial: "S-1",
+        passkey_registration: {
+          rp: { name: "Example", id: "example.com" },
+          user: { id: "AA", name: "alice", displayName: "Alice" },
+          challenge: "xyz",
+          pubKeyCredParams: [],
+          excludeCredentials: [{ id: "CCD", type: "public-key" }],
+          authenticatorSelection: {},
+          timeout: 10000,
+          extensions: {},
+          attestation: "none"
+        }
+      }
+    };
+
+    const finalResp = { detail: {} };
+
+    tokenSvc.enrollToken.mockReturnValueOnce(of(initResp)).mockReturnValueOnce(of(finalResp));
+
+    const createdCred = {
+      id: "cred-1",
+      rawId: new Uint8Array([9, 9]).buffer,
+      authenticatorAttachment: "platform",
+      response: {
+        attestationObject: new Uint8Array([7]).buffer,
+        clientDataJSON: new Uint8Array([8]).buffer
+      },
+      getClientExtensionResults: () => ({ credProps: { rk: true } })
+    };
+
+    setNavigatorCredentials({
+      create: jest.fn().mockResolvedValue(createdCred)
+    });
+
+    const reopenSpy = jest.spyOn(component.reopenDialogChange, "emit");
+
+    const res = await component.onClickEnroll({ description: "x" } as any);
+
+    expect(tokenSvc.enrollToken).toHaveBeenCalledTimes(2);
+    expect(dialogSvc.openTokenEnrollmentFirstStepDialog).toHaveBeenCalledTimes(1);
+    expect(dialogSvc.closeTokenEnrollmentFirstStepDialog).toHaveBeenCalledTimes(1);
+
+    expect(b64.base64URLToBytes).toHaveBeenCalled();
+    expect(b64.bytesToBase64).toHaveBeenCalled();
+
+    expect(res).toBe(finalResp);
+    expect(res?.detail.serial).toBe("S-1");
+
+    const lastReopenArg = reopenSpy.mock.calls[reopenSpy.mock.calls.length - 1][0];
+    expect(lastReopenArg).toBeUndefined();
+  });
+
+  it("propagates init error and notifies", async () => {
+    tokenSvc.enrollToken.mockReturnValueOnce(throwError(() => new Error("boom-init")));
+
+    setNavigatorCredentials({
+      create: jest.fn()
+    });
+
+    await expect(component.onClickEnroll({} as any)).rejects.toThrow(/Passkey registration process failed/i);
+
+    expect(notif.openSnackBar).toHaveBeenCalledWith(
+      expect.stringMatching(/Passkey registration process failed: boom-init/)
+    );
+    expect(dialogSvc.openTokenEnrollmentFirstStepDialog).not.toHaveBeenCalled();
+  });
+
+  it("handles invalid server response (no passkey_registration)", async () => {
+    const initResp = { detail: { transaction_id: "t", serial: "S-9" } };
+    tokenSvc.enrollToken.mockReturnValueOnce(of(initResp));
+
+    setNavigatorCredentials({
+      create: jest.fn()
+    });
+
+    await expect(component.onClickEnroll({} as any)).rejects.toThrow(/Invalid server response/i);
+
+    expect(notif.openSnackBar).toHaveBeenCalledWith(
+      "Failed to initiate Passkey registration: Invalid server response."
+    );
+    expect(dialogSvc.openTokenEnrollmentFirstStepDialog).not.toHaveBeenCalled();
+  });
+
+  it("finalize error: deletes token and notifies", async () => {
+    const initResp = {
+      detail: {
+        transaction_id: "tid-2",
+        serial: "S-2",
+        passkey_registration: {
+          rp: { name: "Example2", id: "example.com" },
+          user: { id: "AA", name: "bob", displayName: "Bob" },
+          challenge: "xyz",
+          pubKeyCredParams: [],
+          excludeCredentials: [],
+          authenticatorSelection: {},
+          timeout: 10000,
+          extensions: {},
+          attestation: "none"
+        }
+      }
+    };
+
+    tokenSvc.enrollToken.mockReturnValueOnce(of(initResp)).mockReturnValueOnce(throwError(() => new Error("fin")));
+
+    const createdCred = {
+      id: "cred-2",
+      rawId: new Uint8Array([1]).buffer,
+      authenticatorAttachment: null,
+      response: {
+        attestationObject: new Uint8Array([2]).buffer,
+        clientDataJSON: new Uint8Array([3]).buffer
+      },
+      getClientExtensionResults: () => ({})
+    };
+
+    setNavigatorCredentials({
+      create: jest.fn().mockResolvedValue(createdCred)
+    });
+
+    await expect(component.onClickEnroll({} as any)).rejects.toThrow();
+
+    expect(notif.openSnackBar).toHaveBeenCalledWith(
+      "Error during final Passkey registration step. Attempting to clean up token."
+    );
+    expect(tokenSvc.deleteToken).toHaveBeenCalledWith("S-2");
+  });
+
+  it("reopen dialog callback re-runs passkey init+finalize when dialog is closed", async () => {
+    const createdCred = {
+      id: "cred-1",
+      rawId: new Uint8Array([1]).buffer,
+      authenticatorAttachment: "platform",
+      response: {
+        attestationObject: new Uint8Array([2]).buffer,
+        clientDataJSON: new Uint8Array([3]).buffer
+      },
+      getClientExtensionResults: () => ({})
+    };
+    Object.defineProperty(navigator, "credentials", {
+      configurable: true,
+      get: () => ({ create: jest.fn().mockResolvedValue(createdCred) })
+    });
+
+    const passkeyInit = (serial: string, tx: string) =>
+      ({
+        detail: {
+          serial,
+          transaction_id: tx,
+          passkey_registration: {
+            rp: { name: "Example", id: "example.com" },
+            user: { id: "AA", name: "alice", displayName: "Alice" },
+            challenge: "AAAA",
+            pubKeyCredParams: [],
+            excludeCredentials: [],
+            authenticatorSelection: {},
+            timeout: 10000,
+            extensions: {},
+            attestation: "none"
+          }
+        }
+      }) as EnrollmentResponse;
+
+    const finalize = (serial: string) => ({ detail: { serial } });
+
+    tokenSvc.enrollToken.mockReturnValueOnce(of(passkeyInit("S-1", "tx-1"))).mockReturnValueOnce(of(finalize("S-1")));
+
+    let reopenCb: (() => Promise<EnrollmentResponse | null>) | undefined;
+
+    component.reopenDialogChange.subscribe((fn) => (reopenCb = fn as any));
+
+    const res1 = await component.onClickEnroll({} as TokenEnrollmentData);
+    expect(res1).toEqual(finalize("S-1"));
+    expect(dialogSvc.openTokenEnrollmentFirstStepDialog).toHaveBeenCalledTimes(1);
+    expect(dialogSvc.closeTokenEnrollmentFirstStepDialog).toHaveBeenCalledTimes(1);
+
+    expect(reopenCb).toBeUndefined();
   });
 });

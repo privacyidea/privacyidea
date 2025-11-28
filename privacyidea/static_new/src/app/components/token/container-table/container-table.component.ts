@@ -40,17 +40,7 @@ import { MatInputModule } from "@angular/material/input";
 import { NgClass } from "@angular/common";
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
-
-const columnsKeyMap = [
-  { key: "select", label: "" },
-  { key: "serial", label: "Serial" },
-  { key: "type", label: "Type" },
-  { key: "states", label: "Status" },
-  { key: "description", label: "Description" },
-  { key: "user_name", label: "User" },
-  { key: "user_realm", label: "Realm" },
-  { key: "realms", label: "Container Realms" }
-];
+import { ContainerTableActionsComponent } from "./container-table-actions/container-table-actions.component";
 
 @Component({
   selector: "app-container-table",
@@ -67,7 +57,8 @@ const columnsKeyMap = [
     MatCheckboxModule,
     FormsModule,
     ScrollToTopDirective,
-    ClearableInputComponent
+    ClearableInputComponent,
+    ContainerTableActionsComponent
   ],
   templateUrl: "./container-table.component.html",
   styleUrl: "./container-table.component.scss",
@@ -86,8 +77,17 @@ export class ContainerTableComponent {
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
 
-  readonly columnsKeyMap = columnsKeyMap;
-  readonly columnKeys: string[] = columnsKeyMap.map((column) => column.key);
+  readonly columnsKeyMap = this.tableUtilsService.pickColumns(
+    "select",
+    "serial",
+    "type",
+    "states",
+    "description",
+    "user_name",
+    "user_realm",
+    "realms"
+  );
+  readonly columnKeys = [...this.tableUtilsService.getColumnKeys(this.columnsKeyMap)];
   readonly apiFilter = this.containerService.apiFilter;
   readonly advancedApiFilter = this.containerService.advancedApiFilter;
   containerSelection = this.containerService.containerSelection;

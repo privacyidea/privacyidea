@@ -1,25 +1,45 @@
+<!--
+ (c) NetKnights GmbH 2025,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
 <div class="flex-column">
   <h4 class="enroll-h4">Token Configuration</h4>
-  <mat-checkbox
-    [formControl]="generateOnServerControl"
-    class="server-checkbox"
-    i18n>
-    Generate the OTP key on the server and show a QR code to scan.
-  </mat-checkbox>
-  <div class="otp-inputs-container">
-    @if (!this.authService.checkForceServerGenerateOTPKey("motp")) {
-      <mat-form-field class="width-33 input-height">
-        <mat-label i18n>OTP Key</mat-label>
-        <input
-          matInput
-          [formControl]="otpKeyFormControl"
-          i18n-placeholder
-          placeholder="Enter OTP key"
-          required />
-        <mat-error i18n>OTP key is <strong>required</strong></mat-error>
-      </mat-form-field>
-    }
-  </div>
+  @if (!wizard) {
+    <mat-checkbox
+      [formControl]="generateOnServerControl"
+      class="server-checkbox"
+      i18n>
+      Generate the OTP key on the server and show a QR code to scan.
+    </mat-checkbox>
+    <div class="otp-inputs-container">
+      @if (!this.authService.checkForceServerGenerateOTPKey("motp")) {
+        <mat-form-field class="width-33 input-height">
+          <mat-label i18n>OTP Key</mat-label>
+          <input
+            matInput
+            [formControl]="otpKeyFormControl"
+            i18n-placeholder
+            placeholder="Enter OTP key"
+            required />
+          <mat-error i18n>OTP key is <strong>required</strong></mat-error>
+        </mat-form-field>
+      }
+    </div>
+  }
 </div>
 <div class="flex-column">
   <input

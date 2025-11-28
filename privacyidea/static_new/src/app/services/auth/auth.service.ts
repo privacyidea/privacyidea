@@ -27,6 +27,8 @@ import { LocalService, LocalServiceInterface } from "../local/local.service";
 import { VersioningService, VersioningServiceInterface } from "../version/version.service";
 import { tokenTypes } from "../../utils/token.utils";
 import { PolicyAction } from "./policy-actions";
+import { Router } from "@angular/router";
+import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
 
 export type AuthResponse = PiResponse<AuthData, AuthDetail>;
 
@@ -68,6 +70,9 @@ export interface AuthData {
   rss_age: number;
   container_wizard: {
     enabled: boolean;
+    type: string;
+    registration: boolean;
+    template: string | null;
   };
 }
 
@@ -112,103 +117,118 @@ export interface AuthDetail {
 }
 
 export interface AuthServiceInterface {
-  authUrl: string;
-  jwtData: WritableSignal<JwtData | null>;
-  jwtNonce: Signal<string>;
-  authtype: Signal<"cookie" | "none">;
-  jwtExpDate: Signal<Date | null>;
+  // Properties
+  readonly authUrl: string;
 
-  authData: Signal<AuthData | null>;
-  authenticationAccepted: Signal<boolean>;
+  // Writable Signals
+  readonly jwtData: WritableSignal<JwtData | null>;
+  readonly authData: WritableSignal<AuthData | null>;
+  readonly authenticationAccepted: WritableSignal<boolean>;
 
-  isAuthenticated: Signal<boolean>;
+  // Signals
+  readonly jwtNonce: Signal<string>;
+  readonly authtype: Signal<"cookie" | "none">;
+  readonly jwtExpDate: Signal<Date | null>;
+  readonly isAuthenticated: Signal<boolean>;
+  readonly logLevel: Signal<number>;
+  readonly menus: Signal<string[]>;
+  readonly realm: Signal<string>;
+  readonly rights: Signal<string[]>;
+  readonly role: Signal<AuthRole>;
+  readonly token: Signal<string>;
+  readonly username: Signal<string>;
+  readonly logoutTimeSeconds: Signal<number | null>;
+  readonly auditPageSize: Signal<number>;
+  readonly tokenPageSize: Signal<number | null>;
+  readonly userPageSize: Signal<number>;
+  readonly policyTemplateUrl: Signal<string>;
+  readonly defaultTokentype: Signal<string>;
+  readonly defaultContainerType: Signal<string>;
+  readonly userDetails: Signal<boolean>;
+  readonly tokenWizard: Signal<boolean>;
+  readonly tokenWizard2nd: Signal<boolean>;
+  readonly adminDashboard: Signal<boolean>;
+  readonly dialogNoToken: Signal<boolean>;
+  readonly searchOnEnter: Signal<boolean>;
+  readonly timeoutAction: Signal<string>;
+  readonly tokenRollover: Signal<any>;
+  readonly hideWelcome: Signal<boolean>;
+  readonly hideButtons: Signal<boolean>;
+  readonly deletionConfirmation: Signal<boolean>;
+  readonly showSeed: Signal<boolean>;
+  readonly showNode: Signal<string>;
+  readonly subscriptionStatus: Signal<number>;
+  readonly subscriptionStatusPush: Signal<number>;
+  readonly qrImageAndroid: Signal<string | null>;
+  readonly qrImageIOS: Signal<string | null>;
+  readonly qrImageCustom: Signal<string | null>;
+  readonly logoutRedirectUrl: Signal<string>;
+  readonly requireDescription: Signal<string[]>;
+  readonly rssAge: Signal<number>;
+  readonly containerWizard: Signal<{
+    enabled: boolean;
+    type: string | null;
+    registration: boolean;
+    template: string | null;
+  }>;
+  readonly isSelfServiceUser: Signal<boolean>;
 
-  getHeaders: () => HttpHeaders;
+  // Methods
+  getHeaders(): HttpHeaders;
 
-  logLevel: Signal<number>;
-  menus: Signal<string[]>;
-  realm: Signal<string>;
-  rights: Signal<string[]>;
-  role: Signal<AuthRole>;
-  token: Signal<string>;
-  username: Signal<string>;
-  logoutTimeSeconds: Signal<number | null>;
-  auditPageSize: Signal<number>;
-  tokenPageSize: Signal<number | null>;
-  userPageSize: Signal<number>;
-  policyTemplateUrl: Signal<string>;
-  defaultTokentype: Signal<string>;
-  defaultContainerType: Signal<string>;
-  userDetails: Signal<boolean>;
-  tokenWizard: Signal<boolean>;
-  tokenWizard2nd: Signal<boolean>;
-  adminDashboard: Signal<boolean>;
-  dialogNoToken: Signal<boolean>;
-  searchOnEnter: Signal<boolean>;
-  timeoutAction: Signal<string>;
-  tokenRollover: Signal<any>;
-  hideWelcome: Signal<boolean>;
-  hideButtons: Signal<boolean>;
-  deletionConfirmation: Signal<boolean>;
-  showSeed: Signal<boolean>;
-  showNode: Signal<string>;
-  subscriptionStatus: Signal<number>;
-  subscriptionStatusPush: Signal<number>;
-  qrImageAndroid: Signal<string | null>;
-  qrImageIOS: Signal<string | null>;
-  qrImageCustom: Signal<string | null>;
-  logoutRedirectUrl: Signal<string>;
-  requireDescription: Signal<string[]>;
-  rssAge: Signal<number>;
-  // TODO: When enabled there are more entries in the dict. We need to adapt the type accordingly.
-  containerWizard: Signal<{ enabled: boolean }>;
+  authenticate(params: any): Observable<AuthResponse>;
 
-  isSelfServiceUser: Signal<boolean>;
-  authenticate: (params: any) => Observable<AuthResponse>;
+  acceptAuthentication(): void;
 
-  acceptAuthentication: () => void;
-  logout: () => void;
+  logout(): void;
 
-  actionAllowed: (action: PolicyAction) => boolean;
-  actionsAllowed: (actions: PolicyAction[]) => boolean;
-  oneActionAllowed: (actions: PolicyAction[]) => boolean;
-  anyContainerActionAllowed: () => boolean;
-  tokenEnrollmentAllowed: () => boolean;
-  anyTokenActionAllowed: () => boolean;
-  checkForceServerGenerateOTPKey: (tokenType: string) => boolean;
+  actionAllowed(action: PolicyAction): boolean;
+
+  actionsAllowed(actions: PolicyAction[]): boolean;
+
+  oneActionAllowed(actions: PolicyAction[]): boolean;
+
+  anyContainerActionAllowed(): boolean;
+
+  tokenEnrollmentAllowed(): boolean;
+
+  anyTokenActionAllowed(): boolean;
+
+  checkForceServerGenerateOTPKey(tokenType: string): boolean;
 }
 
 @Injectable({
   providedIn: "root"
 })
 export class AuthService implements AuthServiceInterface {
+  protected readonly router: Router = inject(Router);
+  protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   readonly authUrl = environment.proxyUrl + "/auth";
-  jwtData = signal<JwtData | null>(null);
-  jwtNonce = computed(() => this.jwtData()?.nonce || "");
-  authtype = computed(() => (this.jwtData()?.authtype || this.jwtData() ? "cookie" : "none"));
-  jwtExpDate = computed(() => {
+  private readonly http: HttpClient = inject(HttpClient);
+  private readonly versioningService: VersioningServiceInterface = inject(VersioningService);
+  protected readonly localService: LocalServiceInterface = inject(LocalService);
+
+  // Writable Signals
+  readonly jwtData = signal<JwtData | null>(null);
+  readonly authData = signal<AuthData | null>(null);
+  readonly authenticationAccepted = signal<boolean>(false);
+
+  // Computed signals
+  readonly jwtNonce = computed(() => this.jwtData()?.nonce || "");
+  readonly authtype = computed(() => (this.jwtData()?.authtype || this.jwtData() ? "cookie" : "none"));
+  readonly jwtExpDate = computed(() => {
     const exp = this.jwtData()?.exp;
     return exp ? new Date(exp * 1000) : null;
   });
-  authData = signal<AuthData | null>(null);
-  authenticationAccepted = signal<boolean>(false);
-
-  isAuthenticated = computed(() => this.authenticationAccepted() && !!this.authData());
-
-  public getHeaders(): HttpHeaders {
-    return new HttpHeaders({
-      "PI-Authorization": this.localService.getData(BEARER_TOKEN_STORAGE_KEY) || ""
-    });
-  }
-
-  logLevel = computed(() => this.authData()?.log_level || 0);
-  menus = computed(() => this.authData()?.menus || []);
-  realm = computed(() => this.jwtData()?.realm || this.authData()?.realm || "");
-  rights = computed(() => this.jwtData()?.rights || this.authData()?.rights || []);
-  role = computed(() => this.jwtData()?.role || this.authData()?.role || "");
-  token = computed(() => this.authData()?.token || "");
-  username = computed(() => this.jwtData()?.username || this.authData()?.username || "");
-  logoutTimeSeconds = computed(() => {
+  readonly isAuthenticated = computed(() => this.authenticationAccepted() && !!this.authData());
+  readonly logLevel = computed(() => this.authData()?.log_level || 0);
+  readonly menus = computed(() => this.authData()?.menus || []);
+  readonly realm = computed(() => this.jwtData()?.realm || this.authData()?.realm || "");
+  readonly rights = computed(() => this.jwtData()?.rights || this.authData()?.rights || []);
+  readonly role = computed(() => this.jwtData()?.role || this.authData()?.role || "");
+  readonly token = computed(() => this.authData()?.token || "");
+  readonly username = computed(() => this.jwtData()?.username || this.authData()?.username || "");
+  readonly logoutTimeSeconds = computed(() => {
     const jwtExpDate = this.jwtExpDate()!;
     let jwtLogoutTime: number | null = null;
     const authDataLogoutTime = this.authData()?.logout_time || null;
@@ -220,37 +240,50 @@ export class AuthService implements AuthServiceInterface {
     if (authDataLogoutTime === null) return jwtLogoutTime;
     return Math.min(jwtLogoutTime, authDataLogoutTime);
   });
-  auditPageSize = computed(() => this.authData()?.audit_page_size || 10);
-  tokenPageSize = computed(() => this.authData()?.token_page_size || null);
-  userPageSize = computed(() => this.authData()?.user_page_size || 10);
-  policyTemplateUrl = computed(() => this.authData()?.policy_template_url || "");
-  defaultTokentype = computed(() => this.authData()?.default_tokentype || "hotp");
-  defaultContainerType = computed(() => this.authData()?.default_container_type || "generic");
-  userDetails = computed(() => this.authData()?.user_details || false);
-  tokenWizard = computed(() => this.authData()?.token_wizard || false);
-  tokenWizard2nd = computed(() => this.authData()?.token_wizard_2nd || false);
-  adminDashboard = computed(() => this.authData()?.admin_dashboard || false);
-  dialogNoToken = computed(() => this.authData()?.dialog_no_token || false);
-  searchOnEnter = computed(() => this.authData()?.search_on_enter || false);
-  timeoutAction = computed(() => this.authData()?.timeout_action || "logout");
-  tokenRollover = computed(() => this.authData()?.token_rollover || {});
-  hideWelcome = computed(() => this.authData()?.hide_welcome || false);
-  hideButtons = computed(() => this.authData()?.hide_buttons || false);
-  deletionConfirmation = computed(() => this.authData()?.deletion_confirmation || false);
-  showSeed = computed(() => this.authData()?.show_seed || false);
-  showNode = computed(() => this.authData()?.show_node || "");
-  subscriptionStatus = computed(() => this.authData()?.subscription_status || 0);
-  subscriptionStatusPush = computed(() => this.authData()?.subscription_status_push || 0);
-  qrImageAndroid = computed(() => this.authData()?.qr_image_android || null);
-  qrImageIOS = computed(() => this.authData()?.qr_image_ios || null);
-  qrImageCustom = computed(() => this.authData()?.qr_image_custom || null);
-  logoutRedirectUrl = computed(() => this.authData()?.logout_redirect_url || "");
-  requireDescription = computed(() => this.authData()?.require_description || []);
-  rssAge = computed(() => this.authData()?.rss_age || 0);
-  containerWizard = computed(() => this.authData()?.container_wizard || { enabled: false });
-  isSelfServiceUser = computed(() => {
-    return this.role() === "user";
-  });
+  readonly auditPageSize = computed(() => this.authData()?.audit_page_size || 10);
+  readonly tokenPageSize = computed(() => this.authData()?.token_page_size || null);
+  readonly userPageSize = computed(() => this.authData()?.user_page_size || 10);
+  readonly policyTemplateUrl = computed(() => this.authData()?.policy_template_url || "");
+  readonly defaultTokentype = computed(() => this.authData()?.default_tokentype || "hotp");
+  readonly defaultContainerType = computed(() => this.authData()?.default_container_type || "generic");
+  readonly userDetails = computed(() => this.authData()?.user_details || false);
+  readonly tokenWizard = computed(() => this.authData()?.token_wizard || false);
+  readonly tokenWizard2nd = computed(() => this.authData()?.token_wizard_2nd || false);
+  readonly adminDashboard = computed(() => this.authData()?.admin_dashboard || false);
+  readonly dialogNoToken = computed(() => this.authData()?.dialog_no_token || false);
+  readonly searchOnEnter = computed(() => this.authData()?.search_on_enter || false);
+  readonly timeoutAction = computed(() => this.authData()?.timeout_action || "logout");
+  readonly tokenRollover = computed(() => this.authData()?.token_rollover || {});
+  readonly hideWelcome = computed(() => this.authData()?.hide_welcome || false);
+  readonly hideButtons = computed(() => this.authData()?.hide_buttons || false);
+  readonly deletionConfirmation = computed(() => this.authData()?.deletion_confirmation || false);
+  readonly showSeed = computed(() => this.authData()?.show_seed || false);
+  readonly showNode = computed(() => this.authData()?.show_node || "");
+  readonly subscriptionStatus = computed(() => this.authData()?.subscription_status || 0);
+  readonly subscriptionStatusPush = computed(() => this.authData()?.subscription_status_push || 0);
+  readonly qrImageAndroid = computed(() => this.authData()?.qr_image_android || null);
+  readonly qrImageIOS = computed(() => this.authData()?.qr_image_ios || null);
+  readonly qrImageCustom = computed(() => this.authData()?.qr_image_custom || null);
+  readonly logoutRedirectUrl = computed(() => this.authData()?.logout_redirect_url || "");
+  readonly requireDescription = computed(() => this.authData()?.require_description || []);
+  readonly rssAge = computed(() => this.authData()?.rss_age || 0);
+  readonly containerWizard = computed(
+    () =>
+      this.authData()?.container_wizard || {
+        enabled: false,
+        type: null,
+        registration: false,
+        template: null
+      }
+  );
+  readonly isSelfServiceUser = computed(() => this.role() === "user");
+
+  // Public methods
+  getHeaders(): HttpHeaders {
+    return new HttpHeaders({
+      "PI-Authorization": this.localService.getData(BEARER_TOKEN_STORAGE_KEY) || ""
+    });
+  }
 
   authenticate(params: any): Observable<AuthResponse> {
     return this.http
@@ -263,7 +296,6 @@ export class AuthService implements AuthServiceInterface {
       })
       .pipe(
         tap((response) => {
-          this.versioningService.version.set(response.versionnumber);
           const value = response.result?.value;
           if (response?.result?.status && value) {
             this.acceptAuthentication();
@@ -287,6 +319,7 @@ export class AuthService implements AuthServiceInterface {
     this.jwtData.set(null);
     this.localService.removeData(BEARER_TOKEN_STORAGE_KEY);
     this.authenticationAccepted.set(false);
+    this.router.navigate(["login"]).then(() => this.notificationService.openSnackBar("Logout successful."));
   }
 
   actionAllowed(action: PolicyAction): boolean {
@@ -323,10 +356,6 @@ export class AuthService implements AuthServiceInterface {
   checkForceServerGenerateOTPKey(tokenType: string): boolean {
     return this.actionAllowed((tokenType + "_force_server_generate") as PolicyAction);
   }
-
-  private readonly http: HttpClient = inject(HttpClient);
-  private readonly versioningService: VersioningServiceInterface = inject(VersioningService);
-  protected readonly localService: LocalServiceInterface = inject(LocalService);
 
   decodeJwtPayload(token: string): JwtData | null {
     try {

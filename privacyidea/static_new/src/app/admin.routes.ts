@@ -26,16 +26,17 @@ import { TokenDetailsComponent } from "./components/token/token-details/token-de
 import { TokenEnrollmentComponent } from "./components/token/token-enrollment/token-enrollment.component";
 import { TokenGetSerialComponent } from "./components/token/token-get-serial/token-get-serial.component";
 import { TokenTableComponent } from "./components/token/token-table/token-table.component";
-import { TokenComponent } from "./components/token/token.component";
 import { UserDetailsComponent } from "./components/user/user-details/user-details.component";
 import { UserTableComponent } from "./components/user/user-table/user-table.component";
-import { UserComponent } from "./components/user/user.component";
 import { AuditComponent } from "./components/audit/audit.component";
+import { PoliciesComponent } from "./components/policies/policies.component";
+import { TokenImportComponent } from "./components/token/token-import/token-import.component";
+import { RealmTableComponent } from "./components/user/realm-table/realm-table.component";
+import { ClientsComponent } from "./components/audit/clients/clients.component";
 
 export const routes: Routes = [
   {
     path: "tokens",
-    component: TokenComponent,
     children: [
       { path: "", component: TokenTableComponent },
       { path: "enrollment", component: TokenEnrollmentComponent },
@@ -50,19 +51,27 @@ export const routes: Routes = [
           { path: "details/:serial", component: ContainerDetailsComponent }
         ]
       },
-      { path: "details/:serial", component: TokenDetailsComponent }
+      { path: "details/:serial", component: TokenDetailsComponent },
+      { path: "import", component: TokenImportComponent }
     ]
   },
   {
     path: "users",
-    component: UserComponent,
     children: [
       { path: "", component: UserTableComponent },
-      { path: "details/:username", component: UserDetailsComponent }
+      { path: "details/:username", component: UserDetailsComponent },
+      { path: "realms", component: RealmTableComponent }
     ]
   },
   {
+    path: "policies",
+    children: [{ path: "", component: PoliciesComponent }]
+  },
+  {
     path: "audit",
-    component: AuditComponent
+    children: [
+      { path: "", component: AuditComponent },
+      { path: "clients", component: ClientsComponent}
+    ]
   }
 ];

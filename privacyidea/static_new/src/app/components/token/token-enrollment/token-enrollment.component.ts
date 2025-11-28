@@ -95,17 +95,15 @@ import { EnrollVascoComponent } from "./enroll-vasco/enroll-vasco.component";
 import { EnrollWebauthnComponent } from "./enroll-webauthn/enroll-webauthn.component";
 import { EnrollYubicoComponent } from "./enroll-yubico/enroll-yubico.component";
 import { EnrollYubikeyComponent } from "./enroll-yubikey/enroll-yubikey.component";
-
-import { MatCheckbox } from "@angular/material/checkbox";
 import { MAT_TOOLTIP_DEFAULT_OPTIONS, MatTooltipDefaultOptions, MatTooltipModule } from "@angular/material/tooltip";
 import { lastValueFrom, Observable } from "rxjs";
 import { EnrollmentResponse, TokenEnrollmentData } from "../../../mappers/token-api-payload/_token-api-payload.mapper";
-import { QuestionApiPayloadMapper } from "../../../mappers/token-api-payload/question-token-api-payload.mapper";
 import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
 import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { TokenEnrollmentLastStepDialogData } from "./token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
 import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
+import { UserAssignmentComponent } from "../user-assignment/user-assignment.component";
 
 export type ClickEnrollFn = (
   enrollmentOptions: TokenEnrollmentData
@@ -218,9 +216,9 @@ export class CustomDateAdapter extends NativeDateAdapter {
     MatError,
     EnrollPasskeyComponent,
     MatTooltipModule,
-    MatCheckbox,
     ClearableInputComponent,
-    ScrollToTopDirective
+    ScrollToTopDirective,
+    UserAssignmentComponent
   ],
   providers: [
     provideNativeDateAdapter(),
@@ -246,6 +244,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   private observer!: IntersectionObserver;
   timezoneOptions = TIMEZONE_OFFSETS;
+  protected wizard = false;
 
   enrollResponse: WritableSignal<EnrollmentResponse | null> = linkedSignal({
     source: this.tokenService.selectedTokenType,
@@ -261,6 +260,8 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
   @ViewChild("scrollContainer") scrollContainer!: ElementRef<HTMLElement>;
   @ViewChild("stickyHeader") stickyHeader!: ElementRef<HTMLElement>;
   @ViewChild("stickySentinel") stickySentinel!: ElementRef<HTMLElement>;
+  @ViewChild(UserAssignmentComponent)
+  userAssignmentComponent!: UserAssignmentComponent;
   clickEnroll?: ClickEnrollFn;
   reopenDialogSignal: WritableSignal<ReopenDialogFn> = linkedSignal({
     source: this.tokenService.selectedTokenType,
@@ -273,13 +274,6 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     nonNullable: true,
     validators: [Validators.maxLength(80)]
   });
-  selectedUserRealmControl = new FormControl<string>(this.userService.selectedUserRealm(), {
-    nonNullable: true
-  });
-  userFilterControl = new FormControl<string | UserData | null>(this.userService.selectionFilter(), {
-    nonNullable: true
-  });
-  onlyAddToRealmControl = new FormControl<boolean>(false, { nonNullable: true });
   setPinControl = new FormControl<string>("", { nonNullable: true });
   repeatPinControl = new FormControl<string>("", { nonNullable: true });
   selectedContainerControl = new FormControl(this.containerService.selectedContainer(), { nonNullable: true });
@@ -306,14 +300,8 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     () => !!this.reopenDialogSignal() || !!this._lastTokenEnrollmentLastStepDialogData()
   );
 
-  constructor() {
-    effect(() => {
-      const users = this.userService.selectionFilteredUsers();
-      if (users.length === 1 && this.userFilterControl.value === users[0].username) {
-        this.userFilterControl.setValue(users[0]);
-      }
-    });
-  }
+  selectedUserRealmControl = new FormControl<string>("", { nonNullable: true });
+  userFilterControl = new FormControl<string | UserData | null>("", { nonNullable: true });
 
   get isUserRequired() {
     return ["tiqr", "webauthn", "passkey", "certificate"].includes(this.tokenService.selectedTokenType()?.key ?? "");
@@ -349,34 +337,6 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     this.selectedContainerControl.valueChanges.subscribe((value) =>
       this.containerService.selectedContainer.set(value ?? "")
     );
-    this.userFilterControl.valueChanges.subscribe((value) => {
-      this.userService.selectionFilter.set(value ?? "");
-      if (value) {
-        this.onlyAddToRealmControl.setValue(false, {});
-        this.onlyAddToRealmControl.disable({ emitEvent: false });
-      } else {
-        this.onlyAddToRealmControl.enable({ emitEvent: false });
-      }
-    });
-    this.selectedUserRealmControl.valueChanges.subscribe((value) => {
-      this.userFilterControl.reset("", { emitEvent: false });
-      if (!value) {
-        this.userFilterControl.disable({ emitEvent: false });
-      } else {
-        this.userFilterControl.enable({ emitEvent: false });
-      }
-
-      if (value !== this.userService.selectedUserRealm()) {
-        this.userService.selectedUserRealm.set(value ?? "");
-      }
-    });
-    this.onlyAddToRealmControl.valueChanges.subscribe((value) => {
-      if (value) {
-        this.userFilterControl.disable({ emitEvent: false });
-      } else {
-        this.userFilterControl.enable({ emitEvent: false });
-      }
-    });
   }
 
   ngAfterViewInit(): void {
@@ -405,6 +365,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.containerService.compatibleWithSelectedTokenType.set(null);
     if (this.observer) {
       this.observer.disconnect();
     }
@@ -448,7 +409,8 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
 
   userExistsValidator: ValidatorFn = (control: AbstractControl<string | UserData | null>): ValidationErrors | null => {
     const value = control.value;
-    if (typeof value === "string" && value !== "") {
+    // logged-in users always exist, no need for an additional check (and also not possible)
+    if (typeof value === "string" && value !== "" && this.authService.role() == "admin") {
       const users = this.userService.users();
       const userFound = users.some((user) => user.username === value);
       return userFound ? null : { userNotInRealm: { value: value } };
@@ -468,7 +430,8 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
       this.selectedUserRealmControl.setValidators(this.isUserRequired ? [Validators.required] : []);
 
       this.userFilterControl.setValidators(
-        this.isUserRequired ? [Validators.required, this.userExistsValidator] : [this.userExistsValidator]
+        this.authService.role() == "user" ? [] : this.isUserRequired ? [Validators.required, this.userExistsValidator] :
+          [this.userExistsValidator]
       );
 
       return new FormGroup(
@@ -476,7 +439,6 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
           description: this.descriptionControl,
           selectedUserRealm: this.selectedUserRealmControl,
           userFilter: this.userFilterControl,
-          onlyAddToRealm: this.onlyAddToRealmControl,
           setPin: this.setPinControl,
           repeatPin: this.repeatPinControl,
           selectedContainer: this.selectedContainerControl,
@@ -545,7 +507,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
       validityPeriodEnd: validityPeriodEnd,
       user: user?.username ?? "",
       realm: this.selectedUserRealmControl.value ?? "",
-      onlyAddToRealm: this.onlyAddToRealmControl.value ?? false,
+      onlyAddToRealm: this.userAssignmentComponent?.onlyAddToRealm() ?? false,
       pin: this.setPinControl.value ?? "",
       serial: this.serial()
     };
@@ -585,7 +547,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
       enrollToken: this.enrollToken.bind(this),
       user: user,
       userRealm: this.userService.selectedUserRealm(),
-      onlyAddToRealm: this.onlyAddToRealmControl.value
+      onlyAddToRealm: this.userAssignmentComponent?.onlyAddToRealm() ?? false
     };
     this._lastTokenEnrollmentLastStepDialogData.set(dialogData);
     this.dialogService.openTokenEnrollmentLastStepDialog({

@@ -39,7 +39,7 @@ import { MatPaginator } from "@angular/material/paginator";
 import { MatDrawer, MatDrawerContainer, MatDrawerContent } from "@angular/material/sidenav";
 import { MatIcon } from "@angular/material/icon";
 import { MatButtonModule } from "@angular/material/button";
-import { NavigationSelfServiceComponent } from "../token/navigation-self-service/navigation-self-service.component";
+import { NavigationSelfServiceComponent } from "../layout/navigation-self-service/navigation-self-service.component";
 import { RouterLink } from "@angular/router";
 import { ClearableInputComponent } from "../shared/clearable-input/clearable-input.component";
 import { CopyButtonComponent } from "../shared/copy-button/copy-button.component";
@@ -83,5 +83,5 @@ import { AuditComponent } from "./audit.component";
   templateUrl: "./audit.self-service.component.html",
   styleUrl: "./audit.component.scss"
 })
-export class AuditComponentSelfServiceComponent extends AuditComponent {
+export class AuditSelfServiceComponent extends AuditComponent {
 }

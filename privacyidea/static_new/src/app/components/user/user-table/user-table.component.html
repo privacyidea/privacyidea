@@ -1,3 +1,21 @@
+<!--
+ (c) NetKnights GmbH 2025,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
 <div
   aria-label="User Layout"
   class="user-layout"
@@ -9,7 +27,7 @@
       <mat-form-field
         class="token-table-filter"
         subscriptSizing="dynamic">
-        <mat-label i18n>Enter Filter</mat-label>
+        <mat-label i18n>Filter Users...</mat-label>
         <app-clearable-input
           (onClick)="userService.resetFilter()"
           [showClearButton]="filterHTMLInputElement.value.length > 0">
@@ -34,7 +52,8 @@
       [advancedApiFilter]="userService.advancedApiFilterOptions"
       [apiFilter]="userService.apiFilterOptions"
       [filterHTMLInputElement]="filterHTMLInputElement"
-      [filterValue]="userService.apiUserFilter"></app-keyword-filter>
+      [filterValue]="userService.apiUserFilter"/>
+    <app-user-table-actions />
     <div class="audit-table-overflow">
       <table
         [dataSource]="usersDataSource()"
@@ -47,25 +66,27 @@
             <th
               *matHeaderCellDef
               attr.aria-label="{{ column.label }} Header"
-              mat-sort-header
-              mat-header-cell>
+              mat-header-cell
+              mat-sort-header>
               {{ column.label }}
             </th>
             <td
               *matCellDef="let element; let row"
-              attr.aria-label="{{ column.label }} Cell"
-              mat-cell
               [ngClass]="{
                 'width-18rem': column.key === 'description',
                 'table-checkbox': column.key === 'select'
-              }">
+              }"
+              attr.aria-label="{{ column.label }} Cell"
+              mat-cell>
               <div>
                 @switch (column.key) {
                   @case ("username") {
-                    <span
-                      attr.aria-label="{{ column.label }} Link">
+                    <a
+                      (click)="onClickUsername(element)"
+                      attr.aria-label="{{ column.label }} Link"
+                      routerLink="/users/details/{{ element.username }}">
                       {{ element[column.key] }}
-                    </span>
+                   </a>
                   }
                   @default {
                     <span>
