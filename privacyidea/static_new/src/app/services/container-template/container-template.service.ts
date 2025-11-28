@@ -36,13 +36,6 @@ export interface TemplateTokenType {
   providedIn: "root"
 })
 export class ContainerTemplateService implements ContainerTemplateServiceInterface {
-  authService: AuthServiceInterface = inject(AuthService);
-  availableContainerTypes = computed(() => {
-    return Object.keys(this.templateTokenTypes());
-  });
-  containerService: ContainerServiceInterface = inject(ContainerService);
-  containerTemplateBaseUrl = environment.proxyUrl + "/container/templates";
-  contentService: ContentServiceInterface = inject(ContentService);
   readonly emptyContainerTemplate: ContainerTemplate = {
     container_type: "",
     default: false,
@@ -52,26 +45,34 @@ export class ContainerTemplateService implements ContainerTemplateServiceInterfa
       tokens: []
     }
   };
-  http = inject(HttpClient);
-  notificationService: NotificationServiceInterface = inject(NotificationService);
-  templates: WritableSignal<ContainerTemplate[]> = linkedSignal({
-    source: () => this.templatesResource.value(),
-    computation: (templatesResource, previous) => templatesResource?.result?.value?.templates ?? previous?.value ?? []
+
+  authService: AuthServiceInterface = inject(AuthService);
+  availableContainerTypes = computed(() => {
+    return Object.keys(this.templateTokenTypes());
   });
+  containerService: ContainerServiceInterface = inject(ContainerService);
+  containerTemplateBaseUrl = environment.proxyUrl + "/container/templates";
+  contentService: ContentServiceInterface = inject(ContentService);
+  http = inject(HttpClient);
+
+  notificationService: NotificationServiceInterface = inject(NotificationService);
   templatesResource = httpResource<PiResponse<{ templates: ContainerTemplate[] }>>(() => {
-    if (
-      (this.contentService.routeUrl() !== ROUTE_PATHS.TOKENS_CONTAINERS_CREATE &&
-        this.contentService.routeUrl() !== ROUTE_PATHS.TOKENS_CONTAINERS_TEMPLATES) ||
-      !this.authService.actionAllowed("container_template_list")
-    ) {
+    // Do not load templates if the action is not allowed.
+    if (!this.authService.actionAllowed("container_template_list")) {
       return undefined;
     }
-    let params = {};
+    // Only load templates on the container create route.
+    if (!this.contentService.onTokensContainersCreate()) {
+      return undefined;
+    }
+
+    let params: any = {};
     if (this.containerService.selectedContainerType()) {
       params = {
-        container_type: this.containerService.selectedContainerType()?.containerType
+        container_type: this.containerService.selectedContainerType()!.containerType
       };
     }
+
     return {
       url: `${this.containerTemplateBaseUrl}`,
       method: "GET",
@@ -79,9 +80,16 @@ export class ContainerTemplateService implements ContainerTemplateServiceInterfa
       headers: this.authService.getHeaders()
     };
   });
+
+  templates: WritableSignal<ContainerTemplate[]> = linkedSignal({
+    source: () => this.templatesResource.value(),
+    computation: (templatesResource, previous) => templatesResource?.result?.value?.templates ?? previous?.value ?? []
+  });
+
   templateTokenTypes = computed<TemplateTokenTypes>(() => {
     return this.templateTokenTypesResource.value()?.result?.value ?? {};
   });
+
   templateTokenTypesResource = httpResource<PiResponse<TemplateTokenTypes>>(() => {
     if (
       (this.contentService.routeUrl() !== ROUTE_PATHS.TOKENS_CONTAINERS_CREATE &&
