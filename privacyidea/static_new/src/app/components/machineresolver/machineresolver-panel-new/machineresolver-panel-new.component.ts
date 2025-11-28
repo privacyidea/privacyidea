@@ -20,6 +20,7 @@ import {
 } from "../../../services/dialog/dialog.service";
 import { ConfirmationDialogData } from "../../shared/confirmation-dialog/confirmation-dialog.component";
 import { MachineresolverHostsTabComponent } from "../machineresolver-hosts-tab/machineresolver-hosts-tab.component";
+import { MachineresolverLdapTabComponent } from "../machineresolver-ldap-tab/machineresolver-ldap-tab.component";
 
 @Component({
   selector: "app-machineresolver-panel-new",
@@ -38,7 +39,8 @@ import { MachineresolverHostsTabComponent } from "../machineresolver-hosts-tab/m
     MatAutocompleteModule,
     MatSelectModule,
     MatIcon,
-    MachineresolverHostsTabComponent
+    MachineresolverHostsTabComponent,
+    MachineresolverLdapTabComponent
   ]
 })
 export class MachineresolverPanelNewComponent {
@@ -51,6 +53,9 @@ export class MachineresolverPanelNewComponent {
     data: { resolver: "", type: "hosts" }
   };
   readonly newMachineresolver = signal<Machineresolver>(this.machineresolverDetault);
+  resetMachineresolver() {
+    this.newMachineresolver.set(this.machineresolverDetault);
+  }
   readonly machineresolverTypes = this.machineresolverService.allMachineresolverTypes;
   readonly machineresolvers = this.machineresolverService.machineresolvers();
   readonly isEdited = computed(() => {
@@ -64,7 +69,6 @@ export class MachineresolverPanelNewComponent {
   onNewData(newData: MachineresolverData) {
     this.newMachineresolver.set({ ...this.newMachineresolver(), data: newData });
   }
-  // onDataValidatorChange(newValidator: (data: MachineresolverData) => boolean) {
   onNewValidator(newValidator: (data: MachineresolverData) => boolean) {
     this.dataValidatorSignal.set(newValidator);
   }
@@ -78,8 +82,6 @@ export class MachineresolverPanelNewComponent {
   });
 
   onMachineresolverTypeChange(newType: string) {
-    // console.log("Type selection event:", $event);
-    // const newType = ($event.target as HTMLSelectElement).value;
     const current = this.newMachineresolver();
     this.newMachineresolver.set({
       ...current,
@@ -88,8 +90,6 @@ export class MachineresolverPanelNewComponent {
     });
   }
   onResolvernameChange(newName: string) {
-    // console.log("Name update event:", $event);
-    // const newName = ($event.target as HTMLInputElement).value;
     const current = this.newMachineresolver();
     this.newMachineresolver.set({
       ...current,
@@ -110,10 +110,28 @@ export class MachineresolverPanelNewComponent {
     });
   }
 
-  saveMachineresolver($panel: MatExpansionPanel) {
-    // ...
-
-    this.handleCollapse($panel);
+  async saveMachineresolver(panel: MatExpansionPanel) {
+    const current = this.newMachineresolver();
+    let errorMessage = await this.machineresolverService.postTestMachineresolver(current);
+    if (errorMessage) {
+      if (errorMessage === "post-failed") {
+        const dialogData: MatDialogConfigRequired<ConfirmationDialogData> = {
+          data: {
+            type: "machineresolver",
+            title: "Save machineresolver despite test failure?",
+            action: "proceed-despite-error"
+          }
+        };
+        const result = await this.dialogService.confirm(dialogData);
+        if (!result) return;
+      } else {
+        return;
+      }
+    }
+    errorMessage = await this.machineresolverService.postMachineresolver(current);
+    if (errorMessage) return;
+    this.resetMachineresolver();
+    panel.close();
   }
 
   handleCollapse($panel: MatExpansionPanel) {
@@ -132,7 +150,7 @@ export class MachineresolverPanelNewComponent {
       .confirm(dialogData)
       .then((result) => {
         if (result) {
-          this.newMachineresolver.set(this.machineresolverDetault);
+          this.resetMachineresolver();
           $panel.close();
         } else {
           $panel.open();

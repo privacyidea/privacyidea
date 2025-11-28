@@ -1,4 +1,4 @@
-import { Component, computed, effect, inject, input, linkedSignal, signal, WritableSignal } from "@angular/core";
+import { Component, computed, inject, input, linkedSignal, signal, WritableSignal } from "@angular/core";
 import { MatExpansionModule, MatExpansionPanel } from "@angular/material/expansion";
 import { MatIcon, MatIconModule } from "@angular/material/icon";
 import {
@@ -21,6 +21,7 @@ import {
 import { ConfirmationDialogData } from "../../shared/confirmation-dialog/confirmation-dialog.component";
 import { MachineresolverHostsTabComponent } from "../machineresolver-hosts-tab/machineresolver-hosts-tab.component";
 import { MachineresolverLdapTabComponent } from "../machineresolver-ldap-tab/machineresolver-ldap-tab.component";
+import { NotificationService, NotificationServiceInterface } from "../../../services/notification/notification.service";
 
 @Component({
   selector: "app-machineresolver-panel-edit",
@@ -44,19 +45,15 @@ import { MachineresolverLdapTabComponent } from "../machineresolver-ldap-tab/mac
   ]
 })
 export class MachineresolverPanelEditComponent {
-  deleteMachineresolver(arg0: string) {
-    throw new Error("Method not implemented.");
-  }
   readonly machineresolverService: MachineresolverServiceInterface = inject(MachineresolverService);
   readonly dialogService: DialogServiceInterface = inject(DialogService);
+  readonly notificationService: NotificationServiceInterface = inject(NotificationService);
 
   readonly machineresolverTypes = this.machineresolverService.allMachineresolverTypes;
   readonly machineresolvers = this.machineresolverService.machineresolvers();
-  readonly isEdited = computed(() => {
-    const current = this.currentMachineresolver();
-    const original = this.originalMachineresolver();
-    return JSON.stringify(current) !== JSON.stringify(original);
-  });
+  readonly isEdited = computed(
+    () => JSON.stringify(this.currentMachineresolver()) !== JSON.stringify(this.originalMachineresolver())
+  );
   readonly dataValidatorSignal = signal<(data: MachineresolverData) => boolean>(() => true);
   readonly isEditMode = signal<boolean>(false);
 
@@ -70,14 +67,8 @@ export class MachineresolverPanelEditComponent {
   readonly currentMachineresolver = linkedSignal<Machineresolver>(() =>
     this.isEditMode() ? this.editedMachineresolver() : this.originalMachineresolver()
   );
-  constructor() {
-    effect(() => {
-      console.log("Current machineresolver data changed:", this.currentMachineresolver().data);
-    });
-  }
 
   onNewData(newData: MachineresolverData) {
-    console.log("New data received:", newData);
     this.editedMachineresolver.set({ ...this.currentMachineresolver(), data: newData });
   }
   onNewValidator(newValidator: (data: MachineresolverData) => boolean) {
@@ -86,15 +77,11 @@ export class MachineresolverPanelEditComponent {
   readonly canSaveMachineresolver = computed(() => {
     const current = this.currentMachineresolver();
     if (!current.resolvername) return false;
-
     const dataValidator = this.dataValidatorSignal();
     return dataValidator(current.data);
   });
 
   onMachineresolverTypeChange(newType: string) {
-    // console.log("Type selection event:", $event);
-    // const newType = ($event.target as HTMLSelectElement).value;
-    console.log("Changing type to:", newType);
     const current = this.currentMachineresolver();
     this.editedMachineresolver.set({
       ...current,
@@ -104,8 +91,6 @@ export class MachineresolverPanelEditComponent {
   }
 
   onResolvernameChange(newName: string) {
-    // console.log("Name update event:", $event);
-    // const newName = ($event.target as HTMLInputElement).value;
     const current = this.currentMachineresolver();
     this.editedMachineresolver.set({
       ...current,
@@ -126,8 +111,54 @@ export class MachineresolverPanelEditComponent {
     });
   }
 
-  saveMachineresolver() {
-    // ...
+  async saveMachineresolver() {
+    const current = this.currentMachineresolver();
+    let errorMessage = await this.machineresolverService.postTestMachineresolver(current);
+    if (errorMessage) {
+      if (errorMessage === "post-failed") {
+        // ask user if they want to save anyway
+        const dialogData: MatDialogConfigRequired<ConfirmationDialogData> = {
+          data: {
+            type: "machineresolver",
+            title: "Save machineresolver despite test failure?",
+            action: "proceed-despite-error"
+          }
+        };
+        const result = await this.dialogService.confirm(dialogData);
+        if (!result) return;
+      } else {
+        return;
+      }
+    }
+    errorMessage = await this.machineresolverService.postMachineresolver(current);
+    if (errorMessage) return;
+    this.isEditMode.set(false);
+  }
+
+  async deleteMachineresolver() {
+    const dialogData: MatDialogConfigRequired<ConfirmationDialogData> = {
+      data: {
+        type: "machineresolver",
+        title: "Delete machineresolver",
+        action: "delete",
+        serialList: [this.currentMachineresolver().resolvername]
+      }
+    };
+    this.dialogService
+      .confirm(dialogData)
+      .then(async (result) => {
+        if (result) {
+          if (!result) return;
+          const errorMessage = await this.machineresolverService.deleteMachineresolver(
+            this.currentMachineresolver().resolvername
+          );
+          if (errorMessage) return;
+        }
+      })
+      .catch((err) => {
+        console.error("Error handling delete machineresolver dialog:", err);
+      });
+    return;
   }
 
   cancelEditMode() {

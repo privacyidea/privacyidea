@@ -57,12 +57,11 @@ export interface LdapMachineresolver extends Machineresolver {
 
 export interface MachineresolverServiceInterface {
   readonly allMachineresolverTypes: string[];
-
   readonly machineresolvers: Signal<Machineresolver[]>;
 
-  createMachineresolver(resolver: Machineresolver): Promise<boolean>;
-  updateMachineresolver(resolver: Machineresolver): Promise<boolean>;
-  deleteMachineresolver(name: string): void;
+  postMachineresolver(resolver: Machineresolver): Promise<string | null>;
+  postTestMachineresolver(resolver: Machineresolver): Promise<string | null>;
+  deleteMachineresolver(name: string): Promise<string | null>;
 }
 
 @Injectable({
@@ -94,77 +93,63 @@ export class MachineresolverService implements MachineresolverServiceInterface {
     return res?.result?.value ? Object.values(res.result.value) : [];
   });
 
-  async createMachineresolver(resolver: Machineresolver): Promise<boolean> {
+  async postTestMachineresolver(resolver: Machineresolver): Promise<string | null> {
     if (!this.authService.actionAllowed("mresolverwrite")) {
-      this.notificationService.openSnackBar("You are not allowed to create machineresolvers.");
-      return false;
+      this.notificationService.openSnackBar("You are not allowed to update machineresolvers.");
+      return Promise.resolve("not-allowed");
     }
-    const url = `${this.machineresolverBaseUrl}${resolver.resolvername}`;
-    const body = {
-      type: resolver.type,
-      data: resolver.data
-    };
-    const request = this.http.post<PiResponse<any>>(url, body, { headers: this.authService.getHeaders() });
-
+    const url = `${this.machineresolverBaseUrl}test`;
+    const request = this.http.post<PiResponse<any>>(url, resolver.data, { headers: this.authService.getHeaders() });
     return lastValueFrom(request)
-      .then(() => {
-        this.notificationService.openSnackBar(`Successfully created machineresolver.`);
-        this.machineresolverResource.reload();
-        return true;
-      })
+      .then(() => null)
       .catch((error) => {
-        console.warn("Failed to create machineresolver:", error);
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar("Failed to create machineresolver. " + message);
-        return false;
+        this.notificationService.openSnackBar("Failed to update machineresolver. " + message);
+        return "post-failed";
       });
   }
 
-  async updateMachineresolver(resolver: Machineresolver): Promise<boolean> {
+  async postMachineresolver(resolver: Machineresolver): Promise<string | null> {
     if (!this.authService.actionAllowed("mresolverwrite")) {
       this.notificationService.openSnackBar("You are not allowed to update machineresolvers.");
-      return false;
+      return Promise.resolve("not-allowed");
     }
     const url = `${this.machineresolverBaseUrl}${resolver.resolvername}`;
-    const request = this.http.put<PiResponse<any>>(url, resolver.data, { headers: this.authService.getHeaders() });
+    const request = this.http.post<PiResponse<any>>(url, resolver.data, { headers: this.authService.getHeaders() });
 
     return lastValueFrom(request)
       .then(() => {
         this.notificationService.openSnackBar(`Successfully updated machineresolver.`);
         this.machineresolverResource.reload();
-        return true;
+        return null;
       })
       .catch((error) => {
         console.warn("Failed to update machineresolver:", error);
         const message = error.error?.result?.error?.message || "";
         this.notificationService.openSnackBar("Failed to update machineresolver. " + message);
-        return false;
+        return "post-failed";
       });
   }
 
-  deleteMachineresolver(name: string) {
+  async deleteMachineresolver(name: string): Promise<string | null> {
     if (!this.authService.actionAllowed("mresolverdelete")) {
       this.notificationService.openSnackBar("You are not allowed to delete machineresolvers.");
-      return;
+      return Promise.resolve("not-allowed");
     }
-    this.http
-      .delete<PiResponse<any>>(`${this.machineresolverBaseUrl}${name}`, {
-        headers: this.authService.getHeaders()
+    const request = this.http.delete<PiResponse<any>>(`${this.machineresolverBaseUrl}${name}`, {
+      headers: this.authService.getHeaders()
+    });
+    return lastValueFrom(request)
+      .then(() => {
+        this.notificationService.openSnackBar(`Successfully deleted machineresolver: ${name}.`);
+        this.machineresolverResource.reload();
+        return null;
       })
-      .pipe(
-        catchError((error) => {
-          console.warn("Failed to delete machineresolver:", error);
-          const message = error.error?.result?.error?.message || "";
-          this.notificationService.openSnackBar("Failed to delete machineresolver. " + message);
-          return throwError(() => error);
-        })
-      )
-      .subscribe({
-        next: (response) => {
-          console.log("Machineresolver successfully deleted:", response);
-          this.machineresolverResource.reload();
-          this.notificationService.openSnackBar("Successfully deleted machineresolver.");
-        }
+      .catch((error) => {
+        console.warn("Failed to delete machineresolver:", error);
+        const message = error.error?.result?.error?.message || "";
+        this.notificationService.openSnackBar("Failed to delete machineresolver. " + message);
+        return "post-failed";
       });
   }
 }

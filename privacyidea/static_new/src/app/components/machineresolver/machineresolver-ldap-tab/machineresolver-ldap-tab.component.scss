@@ -2,8 +2,7 @@
   display: flex;
   width: 100%;
   flex-wrap: wrap;
-  gap: 20px;
-  margin-bottom: 16px;
+  gap: var(--global-gap);
 }
 
 .row-container > * {

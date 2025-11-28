@@ -60,7 +60,7 @@
           @if (panel.expanded) {
             <button
               mat-icon-button
-              [disabled]="!canSaveMachineresolver()"
+              [disabled]="!canSaveMachineresolver() || !isEdited()"
               (click)="$event.stopPropagation(); saveMachineresolver(panel)">
               <mat-icon>save</mat-icon>
             </button>
@@ -81,7 +81,13 @@
           (onNewData)="onNewData($event)"
           (onNewValidator)="onNewValidator($event)" />
       }
-      @case ("ldap") {}
+      @case ("ldap") {
+        <app-machineresolver-ldap-tab
+          [isEditMode]="true"
+          [machineresolverData]="newMachineresolver().data"
+          (onNewData)="onNewData($event)"
+          (onNewValidator)="onNewValidator($event)" />
+      }
       @default {
         <!-- Fallback for unknown types -->
         <p i18n>Unknown machine resolver type: {{ newMachineresolver().type }}</p>

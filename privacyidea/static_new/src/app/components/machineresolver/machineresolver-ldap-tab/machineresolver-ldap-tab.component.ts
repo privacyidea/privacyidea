@@ -15,19 +15,18 @@ import { MatSelectModule } from "@angular/material/select";
   styleUrls: ["./machineresolver-ldap-tab.component.scss"],
   imports: [FormsModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatCheckboxModule],
   standalone: true,
-  encapsulation: ViewEncapsulation.None
+  encapsulation: ViewEncapsulation.ShadowDom
 })
 export class MachineresolverLdapTabComponent {
   readonly isEditMode = input.required<boolean>();
   readonly machineresolverData = input.required<MachineresolverData>();
-  readonly hostsData = linkedSignal<LdapMachineresolverData>(() => {
-    console.log("New LDAP data:", this.machineresolverData());
-    return this.machineresolverData() as LdapMachineresolverData;
-  });
+  readonly hostsData = linkedSignal<LdapMachineresolverData>(
+    () => this.machineresolverData() as LdapMachineresolverData
+  );
   readonly onNewData = output<MachineresolverData>();
   readonly onNewValidator = output<(data: MachineresolverData) => boolean>();
 
-  constructor() {
+  ngOnInit(): void {
     this.onNewValidator.emit(this.isValid.bind(this));
   }
 
@@ -78,7 +77,6 @@ export class MachineresolverLdapTabComponent {
       return false;
     }
 
-    console.log("LdapMachineresolverData is valid:", data);
     return true;
   }
 }

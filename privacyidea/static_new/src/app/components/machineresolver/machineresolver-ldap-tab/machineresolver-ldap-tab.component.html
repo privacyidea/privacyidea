@@ -5,6 +5,7 @@
         <mat-label i18n="@@ldapUri">LDAP URI</mat-label>
         <input
           matInput
+          placeholder="ldap://privacyidea.server1, ldap://privacyidea.server2"
           [disabled]="!isEditMode()"
           [ngModel]="hostsData().LDAPURI"
           (ngModelChange)="updateData({ LDAPURI: $event })" />
@@ -26,6 +27,7 @@
           <mat-label i18n="@@tlsCaFile">TLS CA File</mat-label>
           <input
             matInput
+            placeholder="/etc/privacyidea/ldap-ca.crt"
             [disabled]="!isEditMode()"
             [ngModel]="hostsData().TLS_CA_FILE"
             (ngModelChange)="updateData({ TLS_CA_FILE: $event })" />
@@ -39,6 +41,7 @@
         <mat-label i18n="@@ldapBase">LDAP Base</mat-label>
         <input
           matInput
+          placeholder="ou=users,dc=domain,dc=tld"
           [disabled]="!isEditMode()"
           [ngModel]="hostsData().LDAPBASE"
           (ngModelChange)="updateData({ LDAPBASE: $event })" />
@@ -47,6 +50,7 @@
         <mat-label i18n="@@bindDn">Bind DN</mat-label>
         <input
           matInput
+          placeholder="cn=admin,ou=users,dc=domain,dc=tld"
           [disabled]="!isEditMode()"
           [ngModel]="hostsData().BINDDN"
           (ngModelChange)="updateData({ BINDDN: $event })" />
@@ -59,6 +63,7 @@
         <input
           type="password"
           matInput
+          placeholder="topsecret"
           [disabled]="!isEditMode()"
           [ngModel]="hostsData().BINDPW"
           (ngModelChange)="updateData({ BINDPW: $event })" />
@@ -83,6 +88,7 @@
         <input
           type="number"
           matInput
+          placeholder="5"
           [disabled]="!isEditMode()"
           [ngModel]="hostsData().TIMEOUT"
           (ngModelChange)="updateData({ TIMEOUT: $event })" />
@@ -93,6 +99,7 @@
         <input
           type="number"
           matInput
+          placeholder="500"
           [disabled]="!isEditMode()"
           [ngModel]="hostsData().SIZELIMIT"
           (ngModelChange)="updateData({ SIZELIMIT: $event })" />
@@ -120,6 +127,7 @@
         <mat-label i18n="@@idAttribute">ID Attribute</mat-label>
         <input
           matInput
+          placeholder="Ein Attribut oder DN zur Identifizierung der Maschine"
           [disabled]="!isEditMode()"
           [ngModel]="hostsData().IDATTRIBUTE"
           (ngModelChange)="updateData({ IDATTRIBUTE: $event })" />
@@ -129,6 +137,7 @@
         <mat-label i18n="@@searchFilter">Search Filter</mat-label>
         <input
           matInput
+          placeholder="(objectClass=computer)"
           [disabled]="!isEditMode()"
           [ngModel]="hostsData().SEARCHFILTER"
           (ngModelChange)="updateData({ SEARCHFILTER: $event })" />
@@ -140,6 +149,7 @@
         <mat-label i18n="@@hostnameAttribute">Hostname Attribute</mat-label>
         <input
           matInput
+          placeholder="dNSHostName"
           [disabled]="!isEditMode()"
           [ngModel]="hostsData().HOSTNAMEATTRIBUTE"
           (ngModelChange)="updateData({ HOSTNAMEATTRIBUTE: $event })" />
@@ -148,6 +158,7 @@
         <mat-label i18n="@@ipAttribute">IP Attribute</mat-label>
         <input
           matInput
+          placeholder="Ein Attribut, das die IP-Adresse der Maschine enthält."
           [disabled]="!isEditMode()"
           [ngModel]="hostsData().IPATTRIBUTE"
           (ngModelChange)="updateData({ IPATTRIBUTE: $event })" />

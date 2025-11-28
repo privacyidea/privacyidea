@@ -67,7 +67,7 @@
             @if (isEditMode()) {
               <button
                 mat-icon-button
-                [disabled]="!canSaveMachineresolver()"
+                [disabled]="!canSaveMachineresolver() || !isEdited()"
                 (click)="$event.stopPropagation(); saveMachineresolver()">
                 <mat-icon>save</mat-icon>
               </button>
@@ -86,7 +86,7 @@
             }
             <button
               mat-icon-button
-              (click)="$event.stopPropagation(); deleteMachineresolver(currentMachineresolver().resolvername)">
+              (click)="$event.stopPropagation(); deleteMachineresolver()">
               <mat-icon>delete</mat-icon>
             </button>
           }

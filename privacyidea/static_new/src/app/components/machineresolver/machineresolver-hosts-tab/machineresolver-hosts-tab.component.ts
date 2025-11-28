@@ -13,7 +13,7 @@ import { FormsModule } from "@angular/forms";
   styleUrls: ["./machineresolver-hosts-tab.component.scss"],
   imports: [MatFormFieldModule, MatInputModule, FormsModule],
   standalone: true,
-  encapsulation: ViewEncapsulation.None
+  encapsulation: ViewEncapsulation.ShadowDom
 })
 export class MachineresolverHostsTabComponent {
   readonly isEditMode = input.required<boolean>();
@@ -24,7 +24,7 @@ export class MachineresolverHostsTabComponent {
   readonly onNewData = output<MachineresolverData>();
   readonly onNewValidator = output<(data: MachineresolverData) => boolean>();
 
-  constructor() {
+  ngOnInit(): void {
     this.onNewValidator.emit(this.isValid.bind(this));
   }
 
@@ -46,7 +46,7 @@ export class MachineresolverHostsTabComponent {
     } else {
       patch = args as Partial<HostsMachineresolverData>;
     }
-    const newData = { ...this.machineresolverData(), ...patch, type: "ldap" };
+    const newData = { ...this.machineresolverData(), ...patch, type: "hosts" };
     if (remove.length > 0) {
       remove.forEach((key) => {
         delete newData[key];
@@ -58,7 +58,6 @@ export class MachineresolverHostsTabComponent {
   isValid(data: MachineresolverData): boolean {
     if (data.type !== "hosts") return false;
     if ((data as HostsMachineresolverData).filename?.trim() === "") return false;
-    console.log("HostsMachineresolverData is valid:", data);
     return true;
   }
 }
