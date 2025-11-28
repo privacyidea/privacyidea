@@ -24,14 +24,13 @@ import { NotificationService } from "../notification/notification.service";
 import { PiResponse } from "../../app.component";
 import { TestBed } from "@angular/core/testing";
 import { TokenService } from "./token.service";
-import { signal } from "@angular/core";
 import { AuthService } from "../auth/auth.service";
 import { FilterValue } from "../../core/models/filter_value";
 import { MockContentService } from "../../../testing/mock-services";
-
-class MockAuthService {
-  getHeaders = jest.fn().mockReturnValue({ Authorization: "Bearer FAKE_TOKEN" });
-}
+import { ROUTE_PATHS } from "../../route_paths";
+import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
+import { environment } from "../../../environments/environment";
+import { MockAuthService } from "../../../testing/mock-services/mock-auth-service";
 
 class MockNotificationService {
   openSnackBar = jest.fn();
@@ -52,6 +51,7 @@ describe("TokenService", () => {
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(),
+        provideHttpClientTesting(),
         TokenService,
         { provide: AuthService, useClass: MockAuthService },
         { provide: NotificationService, useClass: MockNotificationService },
@@ -150,7 +150,7 @@ describe("TokenService", () => {
   });
 
   describe("saveTokenDetail()", () => {
-    it('maps "maxfail" to "max_failcount"', () => {
+    it("maps 'maxfail' to 'max_failcount'", () => {
       postSpy.mockReturnValue(of({ success: true } as any));
 
       tokenService.saveTokenDetail("serial", "maxfail", 3).subscribe();
@@ -276,7 +276,7 @@ describe("TokenService", () => {
     jest.useRealTimers();
   });
 
-  it('polls until rollout_state !== "clientwait"', async () => {
+  it("polls until rollout_state !== 'clientwait'", async () => {
     jest.useFakeTimers();
     const first = {
       result: { value: { tokens: [{ rollout_state: "clientwait" }] } }
@@ -843,5 +843,36 @@ describe("TokenService", () => {
     expect(params).toHaveProperty("type", "*hotp*");
     expect(params).not.toHaveProperty("description");
     expect(params).not.toHaveProperty("rollout_state");
+  });
+
+  describe("userTokenResource", () => {
+    it("should return undefined if route is not USER_DETAILS", async () => {
+      contentServiceMock.routeUrl.update(() => ROUTE_PATHS.TOKENS);
+      const mockBackend = TestBed.inject(HttpTestingController);
+      TestBed.flushEffects();
+
+      // Expect and flush the HTTP request
+      mockBackend.expectNone(environment.proxyUrl + "/token/");
+      await Promise.resolve();
+
+      expect(tokenService.userTokenResource.value()).toBeUndefined();
+    });
+
+    it("should do request if route is USER_DETAILS", async () => {
+      const realm = "test-realm";
+      const user = "alice";
+      contentServiceMock.routeUrl.update(() => ROUTE_PATHS.USERS_DETAILS + "/" + user);
+      contentServiceMock.detailsUsername.set(user);
+      tokenService.userRealm.set(realm);
+      const mockBackend = TestBed.inject(HttpTestingController);
+      TestBed.flushEffects();
+
+      // Expect and flush the HTTP request
+      const req = mockBackend.expectOne(environment.proxyUrl + "/token/?user=" + user + "&realm=" + realm);
+      req.flush({ result: {} });
+      await Promise.resolve();
+
+      expect(tokenService.userTokenResource.value()).toBeDefined();
+    });
   });
 });

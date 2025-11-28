@@ -73,7 +73,7 @@ export class ConditionsNodesComponent {
   isAllNodesSelected = computed(() => this.selectedPinodes().length === this.availablePinodesList().length);
 
   availableUserAgents = signal<string[]>([
-    "Credential Provicer",
+    "Credential Provider",
     "Keycloak",
     "AD FS",
     "SimpleSAMLphp",
@@ -82,7 +82,8 @@ export class ConditionsNodesComponent {
     "Nextcloud",
     "FreeRADIUS",
     "LDAP Proxy",
-    "privacyIDEA Authenticator"
+    "privacyIDEA Authenticator",
+    "privacyIDEA WebUI"
   ]);
 
   constructor() {

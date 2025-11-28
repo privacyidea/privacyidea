@@ -6,7 +6,6 @@ $keyword-height: 28px;
 $keyword-padding: 2px 8px;
 $button-gap-small: 10px;
 $padding-horizontal: 16px;
-$detail-icon-font-size: 18px;
 $margin-bottom-small: 0;
 $keyword-font-size: 18px;
 $button-border-radius: var(--border-radius);
@@ -168,7 +167,7 @@ $button-low-contrast-variant: linear-gradient(
   min-width: $button-width;
 
   mat-icon.mat-icon.notranslate.material-icons {
-    font-size: $detail-icon-font-size;
+    font-size: 20px;
   }
 }
 
@@ -428,7 +427,7 @@ $button-low-contrast-variant: linear-gradient(
   justify-content: start;
 
   mat-icon.mat-icon.notranslate.material-icons {
-    font-size: $detail-icon-font-size;
+    font-size: 20px;
   }
 }
 

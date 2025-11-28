@@ -18,14 +18,13 @@
  **/
 import { AuthService, AuthServiceInterface } from "../../auth/auth.service";
 import { ContentService, ContentServiceInterface } from "../../content/content.service";
-import { HttpResourceRef, httpResource } from "@angular/common/http";
-import { Injectable, WritableSignal, computed, inject, linkedSignal, signal } from "@angular/core";
+import { httpResource, HttpResourceRef } from "@angular/common/http";
+import { computed, inject, Injectable, linkedSignal, signal, WritableSignal } from "@angular/core";
 import { TokenService, TokenServiceInterface } from "../token.service";
 
 import { FilterValue } from "../../../core/models/filter_value";
 import { PiResponse } from "../../../app.component";
 import { Sort } from "@angular/material/sort";
-import { ROUTE_PATHS } from "../../../route_paths";
 import { StringUtils } from "../../../utils/string.utils";
 
 const apiFilter = ["serial", "transaction_id"];
@@ -60,7 +59,9 @@ export interface ChallengesServiceInterface {
   pageIndex: WritableSignal<number>;
   sort: WritableSignal<Sort>;
   challengesResource: HttpResourceRef<PiResponse<Challenges> | undefined>;
+
   clearFilter(): void;
+
   handleFilterInput($event: Event): void;
 }
 
@@ -71,10 +72,8 @@ export class ChallengesService implements ChallengesServiceInterface {
   private readonly tokenService: TokenServiceInterface = inject(TokenService);
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
-
   readonly apiFilter = apiFilter;
   readonly advancedApiFilter = advancedApiFilter;
-  tokenBaseUrl = this.tokenService.tokenBaseUrl;
   challengesFilter = linkedSignal({
     source: this.contentService.routeUrl,
     computation: () => new FilterValue()
@@ -92,6 +91,7 @@ export class ChallengesService implements ChallengesServiceInterface {
     computation: () => 0
   });
   sort = signal({ active: "timestamp", direction: "asc" } as Sort);
+  tokenBaseUrl = this.tokenService.tokenBaseUrl;
   filterParams = computed(() => {
     const allowed = [...this.apiFilter, ...this.advancedApiFilter];
 
@@ -112,12 +112,16 @@ export class ChallengesService implements ChallengesServiceInterface {
 
     return result;
   });
+
   challengesResource = httpResource<PiResponse<Challenges>>(() => {
-    if (this.contentService.routeUrl() !== ROUTE_PATHS.TOKENS_CHALLENGES) {
+    // Only load challenges on the challenges route.
+    if (!this.contentService.onTokensChallenges()) {
       return undefined;
     }
+
     const { params: filterParams, serial } = this.filterParams();
     const url = serial ? `${this.tokenBaseUrl}challenges/${serial}` : `${this.tokenBaseUrl}challenges/`;
+
     return {
       url,
       method: "GET",
@@ -137,6 +141,7 @@ export class ChallengesService implements ChallengesServiceInterface {
   clearFilter(): void {
     this.challengesFilter.set(new FilterValue());
   }
+
   handleFilterInput($event: Event): void {
     const input = $event.target as HTMLInputElement;
     const newFilter = this.challengesFilter().copyWith({ value: input.value });

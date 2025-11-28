@@ -24,7 +24,6 @@ import { NotificationService, NotificationServiceInterface } from "../notificati
 import { catchError, forkJoin, Observable, of, Subject, throwError } from "rxjs";
 import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
-import { ROUTE_PATHS } from "../../route_paths";
 import { ContainerTypeOption } from "../../components/token/container-create/container-create.component";
 import { EnrollmentUrl } from "../../mappers/token-api-payload/_token-api-payload.mapper";
 import { FilterValue } from "../../core/models/filter_value";
@@ -239,14 +238,14 @@ export class ContainerService implements ContainerServiceInterface {
 
   states = signal<string[]>([]);
   containerSerial = this.contentService.containerSerial;
+
   selectedContainer: WritableSignal<string | null> = linkedSignal({
-    source: () => ({
-      routeUrl: this.contentService.routeUrl()
-    }),
-    computation: (source, previous) =>
-      source.routeUrl === ROUTE_PATHS.TOKENS_ENROLLMENT ? (previous?.value ?? "") : ""
+    source: () => this.contentService.routeUrl(),
+    computation: (routeUrl, previous) => (this.contentService.onTokensEnrollment() ? (previous?.value ?? "") : "")
   });
+
   sort = signal<Sort>({ active: "serial", direction: "asc" });
+
   containerFilter: WritableSignal<FilterValue> = linkedSignal({
     source: this.contentService.routeUrl,
     computation: () => new FilterValue()
@@ -282,12 +281,7 @@ export class ContainerService implements ContainerServiceInterface {
     computation: () => 0
   });
 
-  loadAllContainers = computed(() => {
-    return (
-      [ROUTE_PATHS.TOKENS_ENROLLMENT].includes(this.contentService.routeUrl()) ||
-      this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_DETAILS)
-    );
-  });
+  loadAllContainers = computed(() => this.contentService.onTokensEnrollment() || this.contentService.onTokenDetails());
 
   private readonly uniqueCompatibleType = computed<string | null>(() => {
     const tt = this.compatibleWithSelectedTokenType();
@@ -306,21 +300,36 @@ export class ContainerService implements ContainerServiceInterface {
   });
 
   containerResource = httpResource<PiResponse<ContainerDetails>>(() => {
-    if (this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_DETAILS)) {
-      const tokenRes = this.tokenService.tokenDetailResource.value();
-      if (!tokenRes) return undefined;
-      if (this.tokenInContainer()) return undefined;
+    // Do not load containers if the action is not allowed.
+    if (!this.authService.actionAllowed("container_list")) {
+      return undefined;
     }
 
-    if (
-      (!this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_DETAILS) &&
-        !this.contentService.routeUrl().startsWith(ROUTE_PATHS.USERS_DETAILS) &&
-        ![ROUTE_PATHS.TOKENS_CONTAINERS, ROUTE_PATHS.TOKENS_ENROLLMENT, ROUTE_PATHS.TOKENS].includes(
-          this.contentService.routeUrl()
-        )) ||
-      (this.authService.role() === "admin" && this.contentService.routeUrl() === ROUTE_PATHS.TOKENS) ||
-      !this.authService.actionAllowed("container_list")
-    ) {
+    // On token details only load containers if details are available and the token is not already in a container.
+    if (this.contentService.onTokenDetails()) {
+      const tokenRes = this.tokenService.tokenDetailResource.value();
+      if (!tokenRes) {
+        return undefined;
+      }
+      if (this.tokenInContainer()) {
+        return undefined;
+      }
+    }
+
+    // Only load containers on routes with a container list or selection.
+    const onAllowedRoute =
+      this.contentService.onTokenDetails() ||
+      this.contentService.onUserDetails() ||
+      this.contentService.onTokensContainers() ||
+      this.contentService.onTokensEnrollment() ||
+      this.contentService.onTokens();
+
+    if (!onAllowedRoute) {
+      return undefined;
+    }
+
+    // Admin does not need to load containers on the tokens route.
+    if (this.authService.role() === "admin" && this.contentService.onTokens()) {
       return undefined;
     }
 
@@ -329,11 +338,13 @@ export class ContainerService implements ContainerServiceInterface {
         page: this.pageIndex() + 1,
         pagesize: this.pageSize()
       }),
-      ...(this.loadAllContainers() && { no_token: 1 }),
+      ...(this.loadAllContainers() && {
+        no_token: 1,
+        user: this.userService.selectedUser()?.username ?? ""
+      }),
       sortby: this.sort().active,
       sortdir: this.sort().direction,
-      ...this.filterParams(),
-      user: this.userService.selectedUser()?.username ?? ""
+      ...this.filterParams()
     };
 
     const compatibleType = this.uniqueCompatibleType();
@@ -372,17 +383,17 @@ export class ContainerService implements ContainerServiceInterface {
   });
 
   containerTypesResource = httpResource<PiResponse<ContainerTypes>>(() => {
-    const route = this.contentService.routeUrl();
-    if (
-      ![
-        ROUTE_PATHS.TOKENS_CONTAINERS_CREATE,
-        ROUTE_PATHS.TOKENS_CONTAINERS_WIZARD,
-        ROUTE_PATHS.TOKENS_ENROLLMENT
-      ].includes(route) &&
-      !route.startsWith(ROUTE_PATHS.TOKENS_DETAILS)
-    ) {
+    // Only load container types on routes with a container type list or selection.
+    const onAllowedRoute =
+      this.contentService.onTokensContainersCreate() ||
+      this.contentService.onTokensContainersWizard() ||
+      this.contentService.onTokensEnrollment() ||
+      this.contentService.onTokenDetails();
+
+    if (!onAllowedRoute) {
       return undefined;
     }
+
     return {
       url: `${this.containerBaseUrl}types`,
       method: "GET",
@@ -406,10 +417,11 @@ export class ContainerService implements ContainerServiceInterface {
     source: this.contentService.routeUrl,
     computation: (routeUrl) => {
       let containerType = this.authService.defaultContainerType();
-      if (this.contentService.routeUrl() === ROUTE_PATHS.TOKENS_CONTAINERS_WIZARD) {
+
+      if (this.contentService.onTokensContainersWizard()) {
         containerType = this.authService.containerWizard().type || containerType;
       }
-      if (routeUrl === ROUTE_PATHS.TOKENS_CONTAINERS_TEMPLATES) {
+      if (this.contentService.onTokensContainersTemplates()) {
         return undefined;
       }
       return (
@@ -455,58 +467,6 @@ export class ContainerService implements ContainerServiceInterface {
       );
     }
   });
-
-  constructor() {
-    effect(() => {
-      if (this.containerDetailResource.error()) {
-        const containerDetailError = this.containerDetailResource.error() as HttpErrorResponse;
-        console.error("Failed to get container details.", containerDetailError.message);
-        const message = containerDetailError.error?.result?.error?.message || containerDetailError.message;
-        this.notificationService.openSnackBar("Failed to get container details." + message);
-      }
-    });
-    effect(() => {
-      if (this.containerResource.error()) {
-        const error = this.containerResource.error() as HttpErrorResponse;
-        this.notificationService.openSnackBar(error.message);
-      }
-    });
-
-    effect(() => {
-      clearTimeout(this.pollingTimeoutId);
-      this.pollingTrigger();
-      const serial = this.containerSerial();
-      const resourceValue = this.containerDetailResource.value();
-      const active = this.isPollingActive();
-
-      const routeUrl = this.contentService.routeUrl();
-      const onAllowedRoute =
-        routeUrl === ROUTE_PATHS.TOKENS_CONTAINERS_CREATE || routeUrl.startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS);
-
-      if (!active || !serial || !resourceValue?.result?.value || !onAllowedRoute) {
-        return;
-      }
-
-      const containerData = resourceValue.result.value.containers[0];
-      const registrationState = containerData?.info?.registration_state;
-
-      if (registrationState !== "registered") {
-        this.pollingTimeoutId = setTimeout(() => {
-          this.pollingTrigger.update((count) => count + 1);
-        }, 2000);
-      } else {
-        const isRollover = this.isRolloverPolling();
-        if (isRollover) {
-          this.notificationService.openSnackBar("Container rollover completed successfully.");
-        } else if (routeUrl !== ROUTE_PATHS.TOKENS_CONTAINERS_CREATE) {
-          // container create shows a dialog on successful registration
-          this.notificationService.openSnackBar("Container registered successfully.");
-        }
-        this.isPollingActive.set(false);
-        this.isRolloverPolling.set(false);
-      }
-    });
-  }
 
   addToken(tokenSerial: string, containerSerial: string): Observable<any> {
     const headers = this.authService.getHeaders();
@@ -874,4 +834,54 @@ export class ContainerService implements ContainerServiceInterface {
   }
 
   private pollingTimeoutId: any;
+
+  constructor() {
+    effect(() => {
+      if (this.containerDetailResource.error()) {
+        const containerDetailError = this.containerDetailResource.error() as HttpErrorResponse;
+        console.error("Failed to get container details.", containerDetailError.message);
+        const message = containerDetailError.error?.result?.error?.message || containerDetailError.message;
+        this.notificationService.openSnackBar("Failed to get container details." + message);
+      }
+    });
+    effect(() => {
+      if (this.containerResource.error()) {
+        const error = this.containerResource.error() as HttpErrorResponse;
+        this.notificationService.openSnackBar(error.message);
+      }
+    });
+
+    effect(() => {
+      clearTimeout(this.pollingTimeoutId);
+      this.pollingTrigger();
+      const serial = this.containerSerial();
+      const resourceValue = this.containerDetailResource.value();
+      const active = this.isPollingActive();
+
+      const onAllowedRoute =
+        this.contentService.onTokensContainersCreate() || this.contentService.onTokensContainersDetails();
+
+      if (!active || !serial || !resourceValue?.result?.value || !onAllowedRoute) {
+        return;
+      }
+
+      const containerData = resourceValue.result.value.containers[0];
+      const registrationState = containerData?.info?.registration_state;
+
+      if (registrationState !== "registered") {
+        this.pollingTimeoutId = setTimeout(() => {
+          this.pollingTrigger.update((count) => count + 1);
+        }, 2000);
+      } else {
+        const isRollover = this.isRolloverPolling();
+        if (isRollover) {
+          this.notificationService.openSnackBar("Container rollover completed successfully.");
+        } else if (!this.contentService.onTokensContainersCreate()) {
+          this.notificationService.openSnackBar("Container registered successfully.");
+        }
+        this.isPollingActive.set(false);
+        this.isRolloverPolling.set(false);
+      }
+    });
+  }
 }

@@ -63,7 +63,6 @@ import { TokenService, TokenServiceInterface } from "../../../services/token/tok
 import { UserService, UserServiceInterface } from "../../../services/user/user.service";
 import { VersioningService, VersioningServiceInterface } from "../../../services/version/version.service";
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
-import { TokenComponent } from "../token.component";
 import {
   ContainerCreatedDialogComponent,
   ContainerCreationDialogData
@@ -120,7 +119,6 @@ export class ContainerCreateComponent {
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
-  protected readonly TokenComponent = TokenComponent;
   protected readonly renderer: Renderer2 = inject(Renderer2);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly wizard: boolean = false;

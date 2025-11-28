@@ -83,10 +83,6 @@ export type SectionOption =
   | "tokeninfo"
   | "userinfo";
 
-/**
- * Get a list of strings from the SectionOption type.
- * @returns {string[]} The list of strings.
- */
 export const allSectionOptions: SectionOption[] = [
   "HTTP Environment",
   "HTTP Request header",
@@ -219,6 +215,7 @@ export class PolicyService implements PolicyServiceInterface {
     };
     this.updateSelectedPolicy({ action: updatedAction });
   }
+
   private readonly contentService: ContentServiceInterface = inject(ContentService);
 
   updateActionValue(actionName: string, newValue: boolean) {
@@ -239,6 +236,7 @@ export class PolicyService implements PolicyServiceInterface {
       this.selectPolicy(policy);
     }
   }
+
   canSaveSelectedPolicy(): boolean {
     const policy = this.selectedPolicy();
     if (!policy) return false;
@@ -315,6 +313,7 @@ export class PolicyService implements PolicyServiceInterface {
     this.selectPolicy(selectedPolicy);
     return promise;
   }
+
   savePolicyEditsAsNew(): Promise<void> | undefined {
     const selectedPolicy = this.selectedPolicy();
     if (!selectedPolicy) return;
@@ -373,6 +372,7 @@ export class PolicyService implements PolicyServiceInterface {
     user_agents: [],
     user_case_insensitive: false
   };
+
   initializeNewPolicy() {
     this._selectedPolicy.set({ ...this.emptyPolicy });
     this._selectedPolicyOriginal.set({ ...this.emptyPolicy });
@@ -391,6 +391,7 @@ export class PolicyService implements PolicyServiceInterface {
       return JSON.stringify(selectedPolicy) !== JSON.stringify(originalPolicy);
     }
   });
+
   selectPolicy(policy: PolicyDetail) {
     this._selectedPolicy.set(policy);
     this._selectedPolicyOriginal.set({ ...policy });
@@ -406,24 +407,11 @@ export class PolicyService implements PolicyServiceInterface {
     this._selectedPolicy.set(updatedPolicy);
   }
 
-  // ===================================
-  // 1. PROPERTIES & INJECTED SERVICES
-  // ===================================
-
   readonly policyBaseUrl = environment.proxyUrl + "/policy/";
 
   private readonly http: HttpClient = inject(HttpClient);
   private readonly authService: AuthServiceInterface = inject(AuthService);
 
-  // ===================================
-  // 2. STATE (RESOURCES & SIGNALS)
-  // ===================================
-
-  // -----------------------------------
-  // 2.1 API Resources
-  // -----------------------------------
-
-  // GET /policy/defs
   readonly policyActionResource = httpResource<PiResponse<ScopedPolicyActions>>(() => ({
     url: `${this.policyBaseUrl}defs`,
     method: "GET",
@@ -437,7 +425,12 @@ export class PolicyService implements PolicyServiceInterface {
   }));
 
   readonly allPoliciesRecource = httpResource<PiResponse<PolicyDetail[]>>(() => {
-    if (!this.authService.actionAllowed("policyread") || !this.contentService.routeUrl().includes("policies")) {
+    // Only load policies if the action is allowed.
+    if (!this.authService.actionAllowed("policyread")) {
+      return undefined;
+    }
+    // Only load policies on policies route.
+    if (!this.contentService.onPolicies()) {
       return undefined;
     }
     return {
@@ -447,25 +440,19 @@ export class PolicyService implements PolicyServiceInterface {
     };
   });
 
-  // -----------------------------------
-  // 2.2 Writable Signals (State)
-  // -----------------------------------
-
-  // Signals for selecting and editing selected policy
   private readonly _selectedPolicy = signal<PolicyDetail | null>(null);
-  readonly selectedPolicy = computed(() => {
-    return this._selectedPolicy();
-  });
+  readonly selectedPolicy = computed(() => this._selectedPolicy());
+
   private _selectedPolicyOriginal = signal<PolicyDetail | null>(null);
   selectedPolicyOriginal = computed(() => this._selectedPolicyOriginal());
 
-  // Signals for action handling
   actionFilter = linkedSignal({
     source: () => {
       this._selectedPolicyOriginal();
     },
     computation: (_) => ""
   });
+
   selectedActionGroup: WritableSignal<string> = linkedSignal({
     source: () => this.policyActionGroupNames(),
     computation: (source, previous) => {
@@ -611,6 +598,7 @@ export class PolicyService implements PolicyServiceInterface {
   _allPolicies = computed(() => {
     return this.allPoliciesRecource.value()?.result?.value ?? [];
   });
+
   allPolicies = linkedSignal({
     source: () => this._allPolicies(),
     computation: (source) => {
@@ -653,14 +641,6 @@ export class PolicyService implements PolicyServiceInterface {
     if (!scope || !actionsByGroup[scope]) return [];
     return Object.keys(actionsByGroup[scope][group] || {});
   });
-
-  // ===================================
-  // 3. PUBLIC METHODS
-  // ===================================
-
-  // -----------------------------------
-  // 3.1 API Methods
-  // -----------------------------------
 
   createPolicy(policyData: PolicyDetail): Promise<PiResponse<any>> {
     const allPoliciesCopy = [...this.allPolicies()];
@@ -716,10 +696,6 @@ export class PolicyService implements PolicyServiceInterface {
     return lastValueFrom(this.http.post<PiResponse<any>>(`${this.policyBaseUrl}disable/${name}`, {}, { headers }));
   }
 
-  // -----------------------------------
-  // 3.2 Local State Methods
-  // -----------------------------------
-
   addActionToSelectedPolicy() {
     const selectedAction = this.selectedAction();
     const selectedActionDetail = this.selectedActionDetail();
@@ -753,10 +729,6 @@ export class PolicyService implements PolicyServiceInterface {
     };
     this._selectedPolicy.set(updatedPolicy);
   }
-
-  // -----------------------------------
-  // 3.3 Helper Methods
-  // -----------------------------------
 
   isScopeChangeable(policy: PolicyDetail): boolean {
     if (!policy.action) return true;

@@ -272,6 +272,10 @@ body {
   padding: 0 !important;
 }
 
+.height-fit {
+  height: fit-content;
+}
+
 .margin-left-2 {
   margin-left: 32px;
 }
@@ -509,11 +513,12 @@ body {
   align-items: stretch;
   gap: var(--global-gap);
 }
+
 .flex-column {
   display: flex;
   flex-direction: column;
-  gap: var(--global-gap);
 }
+
 .flex-grow-1 {
   flex-grow: 1;
 }
