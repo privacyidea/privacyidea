@@ -21,8 +21,9 @@
   @if (!defaultRadiusServerIsSet() && authService.role() === "admin") {
     <span
       i18n
-      class="inline-hint">To ease the enrolling of RADIUS tokens you can set default values in the
-      <a href="#">RADIUS Token Config</a>.</span>
+      class="inline-hint"
+      >To ease the enrolling of RADIUS tokens you can set default values in the <a href="#">RADIUS Token Config</a>.
+    </span>
   }
   <mat-checkbox
     [formControl]="checkPinLocallyControl"

@@ -17,12 +17,14 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 export interface EnrollmentResponse<D extends EnrollmentResponseDetail = EnrollmentResponseDetail> {
+  type: string;
   detail: D;
 
   [key: string]: any;
 }
 
 export interface EnrollmentResponseDetail {
+  type: string;
   serial: string;
   rollout_state?: string;
   threadid?: number;

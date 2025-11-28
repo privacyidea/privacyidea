@@ -23,9 +23,9 @@ import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 
 import { MatOptionModule } from "@angular/material/core";
-import { distinctUntilChanged, map, Observable, of } from "rxjs";
+import { distinctUntilChanged, map } from "rxjs";
 import {
-  EnrollmentResponse,
+  TokenApiPayloadMapper,
   TokenEnrollmentData
 } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
 import {
@@ -48,8 +48,11 @@ export class EnrollYubikeyComponent implements OnInit {
   @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
-  @Output() clickEnrollChange = new EventEmitter<
-    (basicOptions: TokenEnrollmentData) => Observable<EnrollmentResponse | null>
+  @Output() enrollmentArgsGetterChange = new EventEmitter<
+    (basicOptions: TokenEnrollmentData) => {
+      data: YubikeyEnrollmentData;
+      mapper: TokenApiPayloadMapper<YubikeyEnrollmentData>;
+    } | null
   >();
 
   testYubiKeyControl = new FormControl("");
@@ -60,11 +63,16 @@ export class EnrollYubikeyComponent implements OnInit {
     otpKey: this.otpKeyControl,
     otpLength: this.otpLengthControl
   });
-  onClickEnroll = (basicOptions: TokenEnrollmentData): Observable<EnrollmentResponse | null> => {
+  enrollmentArgsGetter = (
+    basicOptions: TokenEnrollmentData
+  ): {
+    data: YubikeyEnrollmentData;
+    mapper: TokenApiPayloadMapper<YubikeyEnrollmentData>;
+  } | null => {
     this.yubikeyForm.updateValueAndValidity();
     if (this.yubikeyForm.invalid) {
       this.yubikeyForm.markAllAsTouched();
-      return of(null);
+      return null;
     }
 
     const enrollmentData: YubikeyEnrollmentData = {
@@ -74,10 +82,10 @@ export class EnrollYubikeyComponent implements OnInit {
       otpLength: this.otpLengthControl.value
     };
 
-    return this.tokenService.enrollToken({
+    return {
       data: enrollmentData,
       mapper: this.enrollmentMapper
-    });
+    };
   };
 
   ngOnInit(): void {
@@ -85,11 +93,14 @@ export class EnrollYubikeyComponent implements OnInit {
       otpKey: this.otpKeyControl,
       otpLength: this.otpLengthControl
     });
-    this.clickEnrollChange.emit(this.onClickEnroll);
+    this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
 
     this.testYubiKeyControl.valueChanges
-      .pipe(map(v => Math.max(32, (v ?? "").length)), distinctUntilChanged())
-      .subscribe(len => {
+      .pipe(
+        map((v) => Math.max(32, (v ?? "").length)),
+        distinctUntilChanged()
+      )
+      .subscribe((len) => {
         if (this.otpLengthControl.value !== len) {
           this.otpLengthControl.setValue(len, { emitEvent: false });
         }

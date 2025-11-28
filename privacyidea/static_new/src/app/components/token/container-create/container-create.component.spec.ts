@@ -199,6 +199,7 @@ describe("ContainerCreateComponent", () => {
   });
 
   it("shows snack if createContainer returns no serial", () => {
+    containerServiceMock.selectedContainerType.set({ containerType: "generic", description: "", token_types: [] });
     (containerServiceMock.createContainer as jest.Mock).mockReturnValueOnce(of({ result: { value: {} } } as any));
 
     component.createContainer();
@@ -337,6 +338,7 @@ describe("ContainerCreateComponent", () => {
     });
 
     it("show default content if customization templates are empty", async () => {
+      containerServiceMock.selectedContainerType.set({ containerType: "generic", description: "", token_types: [] });
       authService.authData.set({
         ...authService.authData()!,
         container_wizard: { enabled: true, type: "generic", registration: false, template: null }
@@ -380,6 +382,7 @@ describe("ContainerCreateComponent", () => {
     });
 
     it("container wizard creates generic container without template and without registration", () => {
+      containerServiceMock.selectedContainerType.set({ containerType: "generic", description: "", token_types: [] });
       // Arrange: set container_wizard data in authService
       authService.authData.set({
         ...authService.authData()!,
