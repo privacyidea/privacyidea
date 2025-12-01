@@ -6,9 +6,9 @@ permissions: {}
 jobs:
   reviewdog-codespell:
     permissions:
-      checks: write
+      checks: write # to allow codespell to mark the action as failed
       contents: read
-      pull-requests: write
+      pull-requests: write # to allow codespell to comment on the PR
     name: reviewdog / codespell
     runs-on: ubuntu-latest
     steps:
