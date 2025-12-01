@@ -173,6 +173,7 @@ def before_request():
     realm = get_realm_for_authentication(g, username, realm)
     resolver = request.all_data.get("resolver")
     request.User = User(username, realm, resolver)
+    request.all_data["realm"] = realm
 
     g.audit_object.log({"success": False,
                         "action_detail": "",
