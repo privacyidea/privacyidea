@@ -34,5 +34,6 @@ export const ROUTE_PATHS = {
   TOKENS_ASSIGN_TOKEN: "/tokens/assign-token",
   USERS_DETAILS: "/users/details",
   TOKENS_WIZARD: "/tokens/wizard",
-  TOKENS_CONTAINERS_WIZARD: "/tokens/containers/wizard"
+  TOKENS_CONTAINERS_WIZARD: "/tokens/containers/wizard",
+  CONFIGURATION_PERIODIC_TASKS: "/configuration/periodic-tasks"
 };

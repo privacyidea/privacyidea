@@ -1,0 +1,10 @@
+@use "../../../../../../styles/index" as styles;
+
+.options-flex-row {
+  display: flex;
+  gap: calc(var(--global-gap) / 4 * 3);
+  flex-direction: row;
+  margin-bottom: var(--global-gap);
+  min-width: 0;
+  width: 100%;
+}

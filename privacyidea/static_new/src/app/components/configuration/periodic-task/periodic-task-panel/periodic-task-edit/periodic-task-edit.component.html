@@ -1,0 +1,157 @@
+<!--
+ (c) NetKnights GmbH 2025,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<div class="flex-column">
+  @if (isNewTask()) {
+    <mat-form-field>
+      <mat-label i18n>Name</mat-label>
+      <input
+        matInput
+        [(ngModel)]="editTask().name"
+        required />
+      <mat-hint i18n>Unique name of the periodic task.</mat-hint>
+    </mat-form-field>
+    <mat-form-field
+      subscriptSizing="dynamic">
+      <mat-label i18n>Task Module</mat-label>
+      <mat-select
+        [ngModel]="editTask().taskmodule"
+        (ngModelChange)="onTaskModuleChange($event)"
+        required>
+        @for (module of taskModules(); track module) {
+          <mat-option [value]="module">
+            {{ module }}
+          </mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+  }
+
+  <mat-form-field
+    subscriptSizing="dynamic">
+    <mat-label i18n>Interval</mat-label>
+    <input
+      matInput
+      [(ngModel)]="editTask().interval"
+      required />
+    <mat-hint i18n>Use crontab notation to specify the times at which the periodic task should be run.</mat-hint>
+  </mat-form-field>
+  <!--  TODO: Info box with examples -->
+  <mat-form-field
+    subscriptSizing="dynamic">
+    <mat-label i18n>Nodes</mat-label>
+    <mat-select
+      (selectionChange)="onNodeSelectionChange($event.value)"
+      [multiple]="true"
+      [value]="editTask().nodes"
+      required>
+      @for (node of nodes(); track node.value) {
+        <mat-option [value]="node.label">
+          {{ node.label }}
+        </mat-option>
+      }
+    </mat-select>
+    <mat-hint i18n>Select the nodes on which the periodic task should be executed.</mat-hint>
+  </mat-form-field>
+  <mat-form-field
+    subscriptSizing="dynamic">
+    <mat-label i18n>Ordering</mat-label>
+    <input
+      matInput
+      type="number"
+      [(ngModel)]="editTask().ordering"
+      required />
+    <mat-hint i18n>Tasks with lower ordering number are executed first.</mat-hint>
+  </mat-form-field>
+  <mat-checkbox
+    [(ngModel)]="editTask().retry_if_failed"
+    class="server-checkbox"
+    i18n>
+    Retry to execute this periodic task if it fails.
+  </mat-checkbox>
+</div>
+
+<h3>Options</h3>
+<div class="options-flex-row">
+  <div class="flex-size-2">
+    @if (Object.keys(editTask().options).length === 0) {
+      <span
+        class="italic"
+        i18n>No options have been set for this periodic task yet.</span>
+    }
+    <div class="selected-actions-container">
+      @for (option of Object.keys(editTask().options); track option) {
+        <div
+          class="action-card"
+          [class.action-card-selected]="selectedOption().name === option"
+          (click)="onOptionSelection(option, taskModuleOptions()[option], editTask().options[option])">
+          <div class="action-row">
+            <span class="action-label">{{ option }}</span>
+            @if (!isBooleanAction(editTask().options[option])) {
+              <div class="action-value">
+                {{ editTask().options[option] }}
+              </div>
+            }
+            <div class="actions margin-left-1">
+              <button
+                (click)="deleteOption(option)"
+                mat-icon-button>
+                <mat-icon>delete</mat-icon>
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+
+    @if (Object.keys(notUsedOptions()).length > 0) {
+      <h4 i18n>Add Option</h4>
+    }
+    <div class="selected-actions-container">
+      @for (option of Object.keys(notUsedOptions()); track option) {
+        <div
+          class="action-card"
+          [class.action-card-selected]="selectedOption().name === option"
+          (click)="onOptionSelection(option, notUsedOptions()[option])">
+          <div class="action-row">
+            <span class="action-label">{{ option }}</span>
+            @if (editOption() === option && notUsedOptions()[option].type === 'str') {
+              <div class="action-value">
+                <mat-form-field>
+                  <input
+                    matInput
+                    [(ngModel)]="newOptionValues()[option]"
+                    [value]="newOptionValues()[option]" />
+                </mat-form-field>
+              </div>
+            }
+          </div>
+        </div>
+      }
+    </div>
+
+  </div>
+  <div class="flex-size-1">
+    @if (selectedOption().name) {
+      <app-periodic-task-option-detail
+        [option]="selectedOption()"
+        [showAddButton]="Object.prototype.hasOwnProperty.call(notUsedOptions(), selectedOption().name)"
+        (newValue)="addOption($event)"></app-periodic-task-option-detail>
+    }
+  </div>
+</div>

@@ -32,6 +32,7 @@ import { UserTableComponent } from "./components/user/user-table/user-table.comp
 import { AuditComponent } from "./components/audit/audit.component";
 import { PoliciesComponent } from "./components/policies/policies.component";
 import { TokenImportComponent } from "./components/token/token-import/token-import.component";
+import { PeriodicTaskComponent } from "./components/configuration/periodic-task/periodic-task.component";
 
 export const routes: Routes = [
   {
@@ -72,5 +73,10 @@ export const routes: Routes = [
     path: "audit",
     component: TokenComponent,
     children: [{ path: "", component: AuditComponent }]
+  },
+  {
+    path: "configuration",
+    component: TokenComponent,
+    children: [{ path: "periodic-tasks", component: PeriodicTaskComponent }]
   }
 ];

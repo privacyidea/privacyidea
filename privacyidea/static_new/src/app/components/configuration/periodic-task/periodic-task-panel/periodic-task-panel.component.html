@@ -1,0 +1,87 @@
+<!--
+ (c) NetKnights GmbH 2025,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<div class="list-item-card">
+  <mat-expansion-panel
+    #panel
+    class="margin-4">
+    <mat-expansion-panel-header class="mat-expansion-panel-header">
+      <mat-panel-title>
+        @if (isNewTask()) {
+          <div class="task-name" i18n>
+            Create New Periodic Task
+          </div>
+        } @else {
+          <div class="task-name">
+            {{ task().name }}
+          </div>
+        }
+      </mat-panel-title>
+      <mat-panel-description class="header-description">
+        <div class="description-label">
+          {{ task().taskmodule }}
+        </div>
+        <div class="actions">
+          @if (panel.expanded) {
+            @if (isEditMode() || isNewTask()) {
+              <button
+                mat-icon-button
+                (click)="$event.stopPropagation(); savePeriodicTask();">
+                <mat-icon>save</mat-icon>
+              </button>
+              <button
+                mat-icon-button
+                (click)="$event.stopPropagation(); cancelEdit()">
+                <mat-icon>cancel</mat-icon>
+              </button>
+            } @else {
+              <button
+                mat-icon-button
+                (click)="$event.stopPropagation(); isEditMode.set(true);">
+                <mat-icon>edit</mat-icon>
+              </button>
+            }
+            @if (authService.actionAllowed("delete") && !isNewTask()) {
+              <button
+                mat-icon-button
+                (click)="$event.stopPropagation(); deleteTask()">
+                <mat-icon>delete</mat-icon>
+              </button>
+            }
+          }
+          <div>
+            <mat-slide-toggle
+              [checked]="task().active"
+              (change)="toggleActive($event.checked)"
+              (click)="$event.stopPropagation()"
+              [disableRipple]="true"></mat-slide-toggle>
+          </div>
+        </div>
+      </mat-panel-description>
+    </mat-expansion-panel-header>
+    <div class="mat-expansion-panel-body">
+      @if (isEditMode() || isNewTask()) {
+        <app-periodic-task-edit
+          [task]="task()"
+          [isNewTask]="isNewTask()"></app-periodic-task-edit>
+      } @else {
+        <app-periodic-task-read [task]="task()"></app-periodic-task-read>
+      }
+    </div>
+  </mat-expansion-panel>
+</div>

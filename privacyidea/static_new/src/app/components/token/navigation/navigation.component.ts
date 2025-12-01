@@ -54,6 +54,7 @@ import {
 import { FormsModule } from "@angular/forms";
 import { MatOption, MatSelect } from "@angular/material/select";
 import { RealmService, RealmServiceInterface } from "../../../services/realm/realm.service";
+import { PeriodicTaskService } from "../../../services/periodic-task/periodic-task.service";
 
 @Component({
   selector: "app-navigation",
@@ -101,6 +102,7 @@ export class NavigationComponent {
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   protected readonly sessionTimerService: SessionTimerServiceInterface = inject(SessionTimerService);
+  protected readonly periodicTaskService = inject(PeriodicTaskService);
   protected readonly router: Router = inject(Router);
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
 
@@ -149,6 +151,9 @@ export class NavigationComponent {
         break;
       case ROUTE_PATHS.USERS:
         this.userService.usersResource.reload();
+        break;
+      case ROUTE_PATHS.CONFIGURATION_PERIODIC_TASKS:
+        this.periodicTaskService.periodicTasksResource.reload();
         break;
     }
   }
