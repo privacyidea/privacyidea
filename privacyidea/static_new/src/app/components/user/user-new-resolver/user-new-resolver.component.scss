@@ -1,0 +1,41 @@
+@use "../../../../styles";
+
+.user-new-resolver-layout {
+  display: flex;
+  justify-content: center;
+}
+
+.user-new-resolver-container {
+  @include styles.table-container-styles;
+  @include styles.base-table-structure(".token-table", ".token-table-filter", ".table-scroll-container");
+  max-height: var(--max-height);
+  max-width: calc(100vw - var(--global-padding) * 5 - 48px);
+  display: grid;
+  overflow: auto;
+}
+
+.form-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1rem;
+
+  .field-md {
+    flex: 1 1 260px;
+  }
+}
+
+.type-section {
+  margin-top: 1rem;
+
+  h3 {
+    margin-bottom: 0.5rem;
+  }
+}
+
+::ng-deep {
+  .mat-mdc-form-field-infix {
+    width: unset;
+    margin-right: 16px;
+  }
+}

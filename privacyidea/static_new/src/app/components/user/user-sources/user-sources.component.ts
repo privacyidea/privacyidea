@@ -67,7 +67,15 @@ export class UserSourcesComponent {
   newResolverType = signal<string>("");
   isCreatingResolver = signal<boolean>(false);
 
-  resolverTypes = ["passwdresolver", "ldapresolver", "sqlresolver", "scimresolver"];
+  resolverTypes = [
+    "passwdresolver",
+    "ldapresolver",
+    "sqlresolver",
+    "scimresolver",
+    "httpresolver",
+    "entraidresolver",
+    "keycloakresolver"
+  ];
 
   resolversDataSource: WritableSignal<MatTableDataSource<Resolver>> = linkedSignal({
     source: this.resolverService.resolvers,
@@ -124,7 +132,7 @@ export class UserSourcesComponent {
   }
 
   onEditResolver(resolver: Resolver): void {
-    this.router.navigate(["edit", resolver.type, resolver.resolvername], { relativeTo: this.route });
+    this.router.navigate(["users/new-resolver"]);
   }
 
   onDeleteResolver(resolver: Resolver): void {

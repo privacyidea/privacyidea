@@ -34,6 +34,7 @@ import { TokenImportComponent } from "./components/token/token-import/token-impo
 import { RealmTableComponent } from "./components/user/realm-table/realm-table.component";
 import { ClientsComponent } from "./components/audit/clients/clients.component";
 import { UserSourcesComponent } from "./components/user/user-sources/user-sources.component";
+import { UserNewResolverComponent } from "./components/user/user-new-resolver/user-new-resolver.component";
 
 export const routes: Routes = [
   {
@@ -62,7 +63,8 @@ export const routes: Routes = [
       { path: "", component: UserTableComponent },
       { path: "details/:username", component: UserDetailsComponent },
       { path: "realms", component: RealmTableComponent },
-      { path: "sources", component: UserSourcesComponent }
+      { path: "sources", component: UserSourcesComponent },
+      { path: "new-resolver", component: UserNewResolverComponent }
     ]
   },
   {

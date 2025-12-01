@@ -26,7 +26,9 @@ import { catchError, Observable, throwError } from "rxjs";
 
 export type ResolverType = "ldapresolver" | "sqlresolver" | "passwdresolver" | "scimresolver";
 
-export interface ResolverData {}
+export interface ResolverData {
+  [key: string]: unknown;
+}
 
 export type Resolvers = { [key: string]: Resolver };
 

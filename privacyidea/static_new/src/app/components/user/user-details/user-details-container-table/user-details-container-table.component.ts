@@ -106,19 +106,11 @@ export class UserDetailsContainerTableComponent {
   userContainers: WritableSignal<ContainerDetailData[]> = linkedSignal({
     source: this.containerService.containerResource.value,
     computation: (containerResource, previous) => {
-      const username = this.userService.detailsUsername();
-      const realm = this.userService.selectedUserRealm();
-
       if (!containerResource?.result?.value) {
         return previous?.value ?? [];
       }
 
-      const all = containerResource.result.value.containers ?? [];
-      const filtered = all.filter((c: ContainerDetailData) =>
-        (c.users ?? []).some(u => u.user_name === username && u.user_realm === realm)
-      );
-
-      return filtered;
+      return containerResource.result.value.containers ?? [];
     }
   });
 
