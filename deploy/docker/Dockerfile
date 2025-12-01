@@ -71,6 +71,10 @@ RUN mkdir /etc/privacyidea && \
 # Switch to non-root user
 USER nonroot
 
+# Copy necessary configuration files from the deploy directory
+COPY --chown=nonroot:nonroot ./deploy/privacyidea/NetKnights.pem /etc/privacyidea/
+COPY --chown=nonroot:nonroot ./deploy/privacyidea/dictionary* /etc/privacyidea/
+
 VOLUME /etc/privacyidea
 
 EXPOSE 8080
