@@ -1080,6 +1080,18 @@ class AuthApiTestCase(MyApiTestCase):
             self.assertTrue(result.get("status"), result)
             self.assertEqual(self.realm3, result.get("value").get("realm"))
 
+        # pass non-existing realm
+        with self.app.test_request_context("/auth",
+                                           method="POST",
+                                           data={"username": "corny",
+                                                 "realm": "random",
+                                                 "password": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"), result)
+            self.assertEqual(self.realm3, result.get("value").get("realm"))
+
         token.delete_token()
         delete_policy("realm_auth")
         delete_policy("login-mode")

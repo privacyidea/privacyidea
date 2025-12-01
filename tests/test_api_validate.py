@@ -3552,6 +3552,20 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertTrue(result.get("value"), result)
             self.assertEqual("ACCEPT", result.get("authentication"), result)
 
+        # pass non-existing different realm
+        self.set_default_g_variables()
+        with self.app.test_request_context("/validate/check",
+                                           method="POST",
+                                           data={"user": "corny",
+                                                 "realm": "random",
+                                                 "pass": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"), result)
+            self.assertTrue(result.get("value"), result)
+            self.assertEqual("ACCEPT", result.get("authentication"), result)
+
         # set_realm takes precedence over mangle and setrealm policy
         set_policy("mangle", scope=SCOPE.AUTH, action=f"{PolicyAction.MANGLE}=realm/.*/mangledRealm/")
         set_policy("setrealm", scope=SCOPE.AUTHZ, action=f"{PolicyAction.SETREALM}=setrealm")
