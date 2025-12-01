@@ -430,12 +430,6 @@ export class PolicyService implements PolicyServiceInterface {
     headers: this.authService.getHeaders()
   }));
 
-  readonly policyDefinitions = httpResource(() => ({
-    url: `${this.policyBaseUrl}defs`,
-    method: "GET",
-    headers: this.authService.getHeaders()
-  }));
-
   readonly allPoliciesRecource = httpResource<PiResponse<PolicyDetail[]>>(() => {
     if (!this.authService.actionAllowed("policyread") || !this.contentService.routeUrl().includes("policies")) {
       return undefined;
