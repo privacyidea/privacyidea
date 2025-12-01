@@ -37,7 +37,7 @@ jobs:
   test:
     name: 'Run tests with Python'
     permissions:
-      checks: write
+      checks: write # allow the python tests to mark an action run as failed
     runs-on: ubuntu-latest
     strategy:
       # Do not cancel running matrix tests when one test fails

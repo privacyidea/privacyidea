@@ -10,9 +10,10 @@ permissions: {}
 
 jobs:
   zizmor:
+    name: Run zizmor on GitHub actions
     runs-on: ubuntu-latest
     permissions:
-      security-events: write
+      security-events: write # allow zizmor to update/create a code scanning alert
     steps:
       - name: Checkout repository
         uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0

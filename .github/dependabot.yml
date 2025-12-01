@@ -5,6 +5,8 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    cooldown:
+      default-days: 7
 
   - package-ecosystem: "pip"
     # Check Python requirements daily for updates but only create PRs for security updates
@@ -16,6 +18,8 @@ updates:
       interval: "daily"
     # Don't create PRs for version updates
     open-pull-requests-limit: 0
+    cooldown:
+      default-days: 7
 
   - package-ecosystem: "npm"
     # Check JS packages daily for updates
@@ -24,3 +28,5 @@ updates:
       interval: "daily"
     # Don't create PRs for version updates
     open-pull-requests-limit: 0
+    cooldown:
+      default-days: 7
