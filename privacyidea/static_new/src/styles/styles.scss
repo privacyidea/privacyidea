@@ -11,6 +11,8 @@
 @include meta.load-css("dialog.scss");
 @include meta.load-css("enroll.scss");
 @include meta.load-css("panel.scss");
+@include meta.load-css("list.scss");
+@include meta.load-css("actions.scss");
 
 html,
 body {
