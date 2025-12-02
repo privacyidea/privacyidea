@@ -277,10 +277,12 @@ class HotpTokenClass(TokenClass):
                                     issuer=tokenissuer,
                                     user_obj=user,
                                     extra_data=extra_data)
-                response_detail["googleurl"] = {"description": _("URL for google Authenticator"),
-                                                "value": goo_url,
-                                                "img": create_img(goo_url)
-                                                }
+
+                response_detail["googleurl"] = {
+                    "description": _("URL for google Authenticator"),
+                    "value": goo_url,
+                    "img": create_img(goo_url)
+                }
 
                 oath_url = cr_oath(otpkey=otpkey,
                                    user=user.login,
@@ -289,12 +291,14 @@ class HotpTokenClass(TokenClass):
                                    serial=self.get_serial(),
                                    tokenlabel=tokenlabel,
                                    extra_data=extra_data)
-                response_detail["oathurl"] = {"description": _("URL for"
-                                                               " OATH "
-                                                               "token"),
-                                              "value": oath_url,
-                                              "img": create_img(oath_url)
-                                              }
+
+                response_detail["oathurl"] = {
+                    "description": _("URL for"
+                                     " OATH "
+                                     "token"),
+                    "value": oath_url,
+                    "img": create_img(oath_url)
+                }
             except KeyError as ex:
                 log.debug("{0!s}".format((traceback.format_exc())))
                 log.error('Unknown Tag {0!s} in one of your policy definition'
