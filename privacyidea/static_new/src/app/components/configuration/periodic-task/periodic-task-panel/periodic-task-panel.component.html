@@ -28,7 +28,7 @@
       </mat-panel-title>
       <mat-panel-description class="header-description">
         <div class="description-label">
-          {{ task().taskmodule }}
+          {{ getModuleLabel(task().taskmodule) }}
         </div>
         <div class="actions">
           @if (panel.expanded) {

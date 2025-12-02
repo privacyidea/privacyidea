@@ -88,10 +88,14 @@ export const EMPTY_PERIODIC_TASK_OPTION: PeriodicTaskOption = {
 
 export type PeriodicTaskModule = "SimpleStats" | "EventCounter";
 export const PERIODIC_TASK_MODULES: PeriodicTaskModule[] = ["SimpleStats", "EventCounter"];
+export const PERIODIC_TASK_MODULE_MAPPING: Record<PeriodicTaskModule, string> = {
+  SimpleStats: "Simple Statistics",
+  EventCounter: "Event Counter"
+};
 
 export interface PeriodicTaskServiceInterface {
   periodicTasksResource: HttpResourceRef<PiResponse<PeriodicTask[]> | undefined>;
-  periodicTaskModuleResource: HttpResourceRef<PiResponse<string[]> | undefined>;
+  periodicTaskModuleResource: HttpResourceRef<PiResponse<PeriodicTaskModule[]> | undefined>;
   moduleOptions: WritableSignal<Record<string, Record<string, PeriodicTaskOption>>>;
 
   enablePeriodicTask(taskId: string): Promise<any>;
@@ -124,7 +128,7 @@ export class PeriodicTaskService implements PeriodicTaskServiceInterface {
     };
   });
 
-  periodicTaskModuleResource = httpResource<PiResponse<string[]>>(() => {
+  periodicTaskModuleResource = httpResource<PiResponse<PeriodicTaskModule[]>>(() => {
     if (this.contentService.routeUrl() !== ROUTE_PATHS.CONFIGURATION_PERIODIC_TASKS) {
       return undefined;
     }

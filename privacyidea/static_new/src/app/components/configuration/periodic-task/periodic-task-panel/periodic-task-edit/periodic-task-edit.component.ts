@@ -33,7 +33,9 @@ import {
 import {
   EMPTY_PERIODIC_TASK,
   EMPTY_PERIODIC_TASK_OPTION,
+  PERIODIC_TASK_MODULE_MAPPING,
   PeriodicTask,
+  PeriodicTaskModule,
   PeriodicTaskOption,
   PeriodicTaskService
 } from "../../../../../services/periodic-task/periodic-task.service";
@@ -110,10 +112,10 @@ export class PeriodicTaskEditComponent {
     return EMPTY_PERIODIC_TASK_OPTION;
   });
 
-  taskModules: WritableSignal<any> = linkedSignal({
+  taskModules: WritableSignal<PeriodicTaskModule[]> = linkedSignal({
     source: this.periodicTaskService.periodicTaskModuleResource.value,
     computation: (moduleResource) => {
-      if (moduleResource) {
+      if (moduleResource?.result?.value) {
         return moduleResource?.result?.value;
       }
       return [];
@@ -159,5 +161,9 @@ export class PeriodicTaskEditComponent {
     const options = { ...this.editTask().options };
     delete options[optionKey];
     this.editTask.set({ ...this.editTask(), options });
+  }
+
+  getModuleLabel(module: string): string {
+    return PERIODIC_TASK_MODULE_MAPPING[module as PeriodicTaskModule] ?? module;
   }
 }

@@ -19,8 +19,8 @@
 import { Component, inject, input, signal, ViewChild } from "@angular/core";
 import { MatExpansionModule, MatExpansionPanel, MatExpansionPanelTitle } from "@angular/material/expansion";
 import {
-  EMPTY_PERIODIC_TASK,
-  PeriodicTask,
+  EMPTY_PERIODIC_TASK, PERIODIC_TASK_MODULE_MAPPING,
+  PeriodicTask, PeriodicTaskModule,
   PeriodicTaskService
 } from "../../../../services/periodic-task/periodic-task.service";
 import { MatSlideToggle } from "@angular/material/slide-toggle";
@@ -94,5 +94,9 @@ export class PeriodicTaskPanelComponent {
         }
       });
     }
+  }
+
+  getModuleLabel(module: string): string {
+    return PERIODIC_TASK_MODULE_MAPPING[module as PeriodicTaskModule] ?? module;
   }
 }
