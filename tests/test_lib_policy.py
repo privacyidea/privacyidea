@@ -2253,9 +2253,9 @@ class PolicyTestCase(MyTestCase):
             validate_actions(SCOPE.WEBUI, action_str)
         check_realms_in_exception(exception, {"invalid_realm", "random"})
 
-        ation_dict = {PolicyAction.REALMDROPDOWN: f"invalid_realm {self.realm1} random"}
+        action_dict = {PolicyAction.REALMDROPDOWN: f"invalid_realm {self.realm1} random"}
         with self.assertRaises(ParameterError) as exception:
-            validate_actions(SCOPE.WEBUI, ation_dict)
+            validate_actions(SCOPE.WEBUI, action_dict)
         check_realms_in_exception(exception, {"invalid_realm", "random"})
 
         # No realm defined
