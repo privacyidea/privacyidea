@@ -137,6 +137,7 @@ def before_request():
             realm = realm or get_default_realm()
             # Check if realm should be overwritten
             realm = get_realm_for_authentication(g, login_name, realm)
+            request.all_data["realm"] = realm
             try:
                 request.User = User(login_name, realm)
             except Exception as e:
