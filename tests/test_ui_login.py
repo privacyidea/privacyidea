@@ -58,12 +58,14 @@ class LoginUITestCase(MyTestCase):
         self.app.config['PI_UI_DEACTIVATED'] = False
 
     def test_03_realm_dropdown(self):
+        self.setUp_user_realms()
+        self.setUp_user_realm2()
         set_policy("realmdrop", scope=SCOPE.WEBUI,
-                   action="{0!s}=Hello World".format(PolicyAction.REALMDROPDOWN))
+                   action=f"{PolicyAction.REALMDROPDOWN}={self.realm1} {self.realm2}")
         with self.app.test_request_context('/', method='GET'):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            self.assertIsNotNone(re.search(r'id="REALMS" value=".*World.*"',
+            self.assertIsNotNone(re.search(r'id="REALMS" value=".*realm1.*realm2.*"',
                                            to_unicode(res.data)), res)
 
     def test_04_custom_menu_baseline(self):
