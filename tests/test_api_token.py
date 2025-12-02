@@ -763,6 +763,28 @@ class APITokenTestCase(MyApiTestCase):
             self.assertTrue("OATH" in serial, detail)
             remove_token(serial)
 
+        # Init only with realm
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"type": "hotp",
+                                                 "genkey": True,
+                                                 "realm": self.realm1},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            data = res.json
+            self.assertEqual(200, res.status_code, res)
+            result = data.get("result")
+            detail = data.get("detail")
+            self.assertTrue(result.get("status"), result)
+            self.assertTrue(result.get("value"), result)
+            self.assertIn("googleurl", detail, detail)
+            self.assertIn("value", detail.get("googleurl"), detail)
+            serial = detail.get("serial")
+            token = get_one_token(serial=serial)
+            self.assertIn(self.realm1, token.get_realms())
+            self.assertIsNone(token.user)
+            token.delete_token()
+
         container_serial = init_container({"type": "generic"})["container_serial"]
         with self.app.test_request_context('/token/init',
                                            method='POST',
