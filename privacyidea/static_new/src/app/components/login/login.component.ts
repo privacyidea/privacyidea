@@ -30,7 +30,7 @@ import {
 } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
-import { MatFormField, MatLabel } from "@angular/material/form-field";
+import { MatFormField, MatLabel, MatSuffix } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
 import { Router } from "@angular/router";
@@ -44,6 +44,7 @@ import { SessionTimerService, SessionTimerServiceInterface } from "../../service
 import { ValidateService, ValidateServiceInterface } from "../../services/validate/validate.service";
 import { ConfigService } from "../../services/config/config.service";
 import { MatOption, MatSelect } from "@angular/material/select";
+import { ClearButtonComponent } from "../shared/clear-button/clear-button.component";
 
 const PUSH_POLLING_INTERVAL_MS = 500;
 const PUSH_POLLING_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
@@ -62,7 +63,9 @@ const PUSH_POLLING_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
     MatIconModule,
     MatButtonModule,
     MatSelect,
-    MatOption
+    MatOption,
+    ClearButtonComponent,
+    MatSuffix
   ],
   styleUrl: "./login.component.scss"
 })
@@ -97,11 +100,7 @@ export class LoginComponent implements OnDestroy {
   });
 
   realms = computed(() => {
-    let realms = (this.configService.config()?.realms || "").split(",").map((r: string) => r.trim()).filter((r: string) => r);
-    if (realms.length > 0) {
-      realms.push("-"); // Add empty option for default realm / no realm for local admins
-    }
-    return realms;
+    return (this.configService.config()?.realms || "").split(",").map((r: string) => r.trim()).filter((r: string) => r);
   });
 
   realm = linkedSignal({
@@ -139,7 +138,7 @@ export class LoginComponent implements OnDestroy {
     const password = isChallengeResponse ? this.otp() : this.password();
 
     let params: any = { username, password };
-    if (this.realm() && this.realm() !== "-") {
+    if (this.realm()) {
       params.realm = this.realm();
     }
 
@@ -337,5 +336,9 @@ export class LoginComponent implements OnDestroy {
         setTimeout(() => this.otpInput?.nativeElement.focus(), 0);
       }
     }
+  }
+
+  clearRealmSelection(): void {
+    this.realm.set("");
   }
 }

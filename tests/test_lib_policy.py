@@ -3,6 +3,8 @@ This test file tests the lib.policy.py
 
 The lib.policy.py only depends on the database model.
 """
+import re
+
 import dateutil
 import mock
 from werkzeug.datastructures.headers import Headers, EnvironHeaders
@@ -2177,35 +2179,34 @@ class PolicyTestCase(MyTestCase):
         self.assertTrue(validate_actions(SCOPE.USER, action_dict))
         self.assertTrue(validate_actions(SCOPE.USER, action_str))
 
+        def check_actions_in_exception(exception, expected_actions):
+            self.assertTrue(exception.exception.message.startswith("Invalid actions "))
+            invalid_actions = re.findall(r"\[(.*?)\]", exception.exception.message)[0].split(", ")
+            self.assertSetEqual(expected_actions, set([action.strip("'") for action in invalid_actions]))
+
         # Invalid actions for enroll scope
         with self.assertRaises(ParameterError) as exception:
             validate_actions(SCOPE.ENROLL, action_dict)
-            self.assertEqual(
-                f"Invalid actions [{PolicyAction.ENABLE}, {PolicyAction.HIDE_TOKENINFO}, {PolicyAction.DISABLE}]",
-                exception.exception.message)
+        check_actions_in_exception(exception, {PolicyAction.ENABLE, PolicyAction.HIDE_TOKENINFO, PolicyAction.DISABLE})
+
         with self.assertRaises(ParameterError) as exception:
             validate_actions(SCOPE.ENROLL, action_str)
-            self.assertEqual(
-                f"Invalid actions [{PolicyAction.ENABLE}, {PolicyAction.HIDE_TOKENINFO}, {PolicyAction.DISABLE}]",
-                exception.exception.message)
+        check_actions_in_exception(exception, {PolicyAction.ENABLE, PolicyAction.HIDE_TOKENINFO, PolicyAction.DISABLE})
 
         # Invalid for non-existing scope
         with self.assertRaises(ParameterError) as exception:
             validate_actions("non-exisiting-scope", action_dict)
-            self.assertEqual(
-                f"Invalid actions [{PolicyAction.ENABLE}, {PolicyAction.HIDE_TOKENINFO}, {PolicyAction.DISABLE}]",
-                exception.exception.message)
+        check_actions_in_exception(exception, {PolicyAction.ENABLE, PolicyAction.HIDE_TOKENINFO, PolicyAction.DISABLE})
+
         with self.assertRaises(ParameterError) as exception:
             validate_actions("non-exisiting-scope", action_str)
-            self.assertEqual(
-                f"Invalid actions [{PolicyAction.ENABLE}, {PolicyAction.HIDE_TOKENINFO}, {PolicyAction.DISABLE}]",
-                exception.exception.message)
+        check_actions_in_exception(exception, {PolicyAction.ENABLE, PolicyAction.HIDE_TOKENINFO, PolicyAction.DISABLE})
 
         # Invalid action type
         with self.assertRaises(ParameterError) as exception:
             validate_actions(SCOPE.ADMIN, action_list)
-            self.assertEqual("Invalid actions type 'list'. Must be a string or a dictionary.",
-                             exception.exception.message)
+        self.assertEqual("Invalid actions type <class 'list'>. Must be a string or a dictionary.",
+                         exception.exception.message)
 
         # Use wildcard
         self.assertTrue(validate_actions(SCOPE.ADMIN, "*"))
@@ -2217,20 +2218,54 @@ class PolicyTestCase(MyTestCase):
         # Exclude invalid actions passes (excluded actions are not checked anyway)
         with self.assertRaises(ParameterError) as exception:
             validate_actions(SCOPE.ADMIN, f"*, -i_am_invalid, {PolicyAction.DISABLE}, !not-existing")
-            self.assertEqual("Invalid actions: ['i_am_invalid', 'not-existing']", exception.exception.message)
+        check_actions_in_exception(exception, {'i_am_invalid', 'not-existing'})
 
         # Invalid action set to false are also not accepted
         with self.assertRaises(ParameterError) as exception:
             validate_actions(SCOPE.ADMIN, {"i_am_invalid": False})
-            self.assertEqual("Invalid actions: ['i_am_invalid']", exception.exception.message)
+        check_actions_in_exception(exception, {'i_am_invalid'})
 
         # Invalid action string (actions can not be extracted correctly)
         action_str = (f"{PolicyAction.ENABLE}, {PolicyAction.HIDE_TOKENINFO}:hashlib private_server_key ,"
                       f"{PolicyAction.DISABLE}; {PolicyAction.DELETE}")
         with self.assertRaises(ParameterError) as exception:
             validate_actions(SCOPE.ADMIN, action_str)
-            self.assertEqual(f"Invalid actions: ['{PolicyAction.HIDE_TOKENINFO}:hashlib private_server_key', "
-                             f"'{PolicyAction.DISABLE}; {PolicyAction.DELETE}']", exception.exception.message)
+        check_actions_in_exception(exception,
+                                   {f'{PolicyAction.HIDE_TOKENINFO}:hashlib private_server_key',
+                                    f"{PolicyAction.DISABLE}; {PolicyAction.DELETE}"})
+
+        # Valid realm list
+        self.setUp_user_realms()
+        self.setUp_user_realm2()
+        action_str = f"{PolicyAction.REALMDROPDOWN}={self.realm1} {self.realm2}"
+        self.assertTrue(validate_actions(SCOPE.WEBUI, action_str))
+
+        # Invalid realm in realm list
+        def check_realms_in_exception(exception, expected_realms):
+            self.assertTrue(
+                exception.exception.message.startswith(f"Invalid value for action '{PolicyAction.REALMDROPDOWN}': The following realms do not exist: "),
+                exception.exception.message)
+            invalid_realms = re.findall(r"\[(.*?)\]", exception.exception.message)[0].split(", ")
+            self.assertSetEqual(expected_realms, set([realm.strip("'") for realm in invalid_realms]))
+
+        action_str = f"{PolicyAction.REALMDROPDOWN}=invalid_realm {self.realm1} random"
+        with self.assertRaises(ParameterError) as exception:
+            validate_actions(SCOPE.WEBUI, action_str)
+        check_realms_in_exception(exception, {"invalid_realm", "random"})
+
+        action_dict = {PolicyAction.REALMDROPDOWN: f"invalid_realm {self.realm1} random"}
+        with self.assertRaises(ParameterError) as exception:
+            validate_actions(SCOPE.WEBUI, action_dict)
+        check_realms_in_exception(exception, {"invalid_realm", "random"})
+
+        # No realm defined
+        with self.assertRaises(ParameterError) as exception:
+            validate_actions(SCOPE.WEBUI, f"{PolicyAction.REALMDROPDOWN}=")
+        self.assertEqual(f"Invalid value for action '{PolicyAction.REALMDROPDOWN}': No realms specified!", exception.exception.message)
+
+        with self.assertRaises(ParameterError) as exception:
+            validate_actions(SCOPE.WEBUI, {PolicyAction.REALMDROPDOWN: ""})
+        self.assertEqual(f"Invalid value for action '{PolicyAction.REALMDROPDOWN}': No realms specified!", exception.exception.message)
 
     def test_53_set_policy_validate_realms(self):
         """
@@ -3310,7 +3345,6 @@ class PolicyMatchTestCase(MyTestCase):
         token_corny.delete_token()
         token_hans.delete_token()
         token_no_user.delete_token()
-
 
     @classmethod
     def tearDownClass(cls):

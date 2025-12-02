@@ -42,9 +42,9 @@
 
         <div class="container">
             <div class="text-center">
-                    <img ng-src="{{ instanceUrl }}/static/css/{{ piLogo }}"
-                         width="90px" alt="">
-                </div>
+                <img ng-src="{{ instanceUrl }}/static/css/{{ piLogo }}"
+                     width="90px" alt="">
+            </div>
             <div class="text-center">
                 <h2 ng-hide="piLoginText" class="form-signin-heading" translate>Please sign in</h2>
                 <h2 ng-show="piLoginText" class="form-signin-heading">{{ piLoginText }}</h2>
@@ -63,10 +63,9 @@
                         ng-show="piRealms.length > 0"
                         id="realm"
                         ng-model="login.realm"
-                        ng-options="realm for realm in piRealms"
-                        ng-disabled="piRealms.length == 1">
-                    <!-- We add a placeholder, if we do not have an empty realm -->
-                    <option ng-hide="piRealms[0]===''" value="" selected translate>Choose a realm...</option>
+                        ng-options="realm for realm in piRealms">
+                    <!-- We add a placeholder for an empty realm -->
+                    <option ng-hide="piRealms[0]===''" value="" selected translate>No Realm</option>
                 </select>
                 <label for="password" class="sr-only" translate>Password</label>
                 <input name="password" type="password"

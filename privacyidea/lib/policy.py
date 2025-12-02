@@ -201,6 +201,7 @@ from privacyidea.lib.utils.export import (register_import, register_export)
 from .log import log_with
 from .policies.actions import PolicyAction
 from .policies.conditions import PolicyConditionClass, ConditionCheck, ConditionSection
+from .policies.evaluators import EVALUATOR_FUNCTIONS
 from ..api.lib.utils import check_policy_name
 from ..models import (Policy, db, save_config_timestamp, PolicyDescription, PolicyCondition)
 
@@ -1150,15 +1151,23 @@ def validate_actions(scope: str, action: Union[str, dict]) -> bool:
     from .token import get_dynamic_policy_definitions
     policy_definitions_static = get_static_policy_definitions(scope)
     policy_definitions_dynamic = get_dynamic_policy_definitions(scope)
-    allowed_actions = set(policy_definitions_static.keys()) | set(policy_definitions_dynamic.keys())
+    policy_definitions = policy_definitions_static | policy_definitions_dynamic
+    allowed_actions = set(policy_definitions.keys())
+    actions = {}
     if isinstance(action, dict):
         action_keys = list(action.keys())
+        actions = action
     elif isinstance(action, str):
         # This is similarly implemented in models.py in Policy.get(), but with the actual code structure there is no
         # possibility to use the same function without mixing up the layers
-        action_keys = [x.strip().split("=", 1)[0] for x in re.split(r'(?<!\\),', action or "")]
+        for x in re.split(r'(?<!\\),', action or ""):
+            action_tmp = x.strip().split("=", 1)
+            action_key = action_tmp[0]
+            action_value = action_tmp[1] if len(action_tmp) == 2 else True
+            actions[action_key] = action_value
+        action_keys = list(actions.keys())
     else:
-        raise ParameterError(f"Invalid actions type '{type(action)}'. Must be a string or a dictionary.")
+        raise ParameterError(f"Invalid actions type {type(action)}. Must be a string or a dictionary.")
 
     raw_actions = remove_wildcards_and_negations(action_keys)
     invalid_actions = list(set(raw_actions) - allowed_actions)
@@ -1166,8 +1175,17 @@ def validate_actions(scope: str, action: Union[str, dict]) -> bool:
     if len(invalid_actions) > 0:
         log.error(f"The following actions are not valid for scope '{scope}': {invalid_actions}")
         raise ParameterError(f"Invalid actions {invalid_actions}!")
-    else:
-        return True
+
+    # Evaluate the action values
+    for action_key, action_value in actions.items():
+        evaluator = EVALUATOR_FUNCTIONS.get(action_key)
+        if evaluator:
+            try:
+                evaluator(action_value)
+            except ParameterError as e:
+                raise ParameterError(f"Invalid value for action '{action_key}': {e.message}")
+
+    return True
 
 
 def validate_values(values: Union[str, list, None], allowed_values: list, name: str) -> bool:
@@ -2573,7 +2591,7 @@ def get_static_policy_definitions(scope=None):
                 'type': 'str',
                 'value': realms,
                 'desc': _('In authentication requests, sets or overwrites the realm parameter. It takes precedence '
-                          'over the mangle and setrealm policies.' )
+                          'over the mangle and setrealm policies.')
             },
             PolicyAction.RESETALLTOKENS: {
                 'type': 'bool',
