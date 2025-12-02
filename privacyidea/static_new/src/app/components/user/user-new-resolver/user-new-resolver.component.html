@@ -1,0 +1,108 @@
+<!--
+ (c) NetKnights GmbH 2025,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<div
+  aria-label="User Resolver Editor"
+  class="user-new-resolver-layout"
+  i18n-aria-label>
+  <div
+    appScrollToTop
+    class="user-new-resolver-container">
+    @if (isEditMode) {
+      <h3 class="margin-left-1" i18n>Edit user source</h3>
+    } @else {
+      <h3 class="margin-left-1" i18n>Create user source</h3>
+    }
+
+    <div class="form-row">
+      <mat-form-field class="field-md">
+        <mat-label i18n>Resolver name</mat-label>
+        <mat-hint>
+          @if (isEditMode) {
+            <span i18n>Change the configuration of the selected resolver.</span>
+          } @else {
+            <span i18n>Define a new resolver used as a user source.</span>
+          }
+        </mat-hint>
+        <input
+          [(ngModel)]="resolverName"
+          [disabled]="isEditMode"
+          matInput />
+      </mat-form-field>
+
+      <mat-form-field class="field-md">
+        <mat-label i18n>Type</mat-label>
+        <mat-select
+          [(ngModel)]="resolverType"
+          [disabled]="isEditMode">
+          <mat-option [value]="'ldapresolver'">LDAP</mat-option>
+          <mat-option [value]="'sqlresolver'">SQL</mat-option>
+          <mat-option [value]="'passwdresolver'">Passwd</mat-option>
+          <mat-option [value]="'scimresolver'">SCIM</mat-option>
+          <mat-option [value]="'httpesolver'">HTTP</mat-option>
+          <mat-option [value]="'entraidresolver'">EntraID</mat-option>
+          <mat-option [value]="'keycloakresolver'">Keycloak</mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+
+    @if (resolverType === 'ldapresolver') {
+      <app-ldap-resolver
+        (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
+        [data]="isEditMode ? formData : {}" />
+    }
+
+    @if (resolverType === 'sqlresolver') {
+      <app-sql-resolver
+        (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
+        [data]="isEditMode ? formData : {}" />
+    }
+
+    @if (resolverType === 'passwdresolver') {
+      <app-passwd-resolver
+        (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
+        [data]="isEditMode ? formData : {}" />
+    }
+
+    @if (resolverType === 'scimresolver') {
+      <app-scim-resolver
+        (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
+        [data]="isEditMode ? formData : {}" />
+    }
+
+    <div class="flex-row gap-1 margin-top-1">
+      <button
+      (click)="onTest()"
+      [disabled]="isSaving || isTesting || !resolverType"
+      class="action-button-1 width-238"
+      mat-stroked-button>
+      <mat-icon>wifi</mat-icon>
+      <span i18n>Test connection</span>
+    </button>
+
+    <button
+      (click)="onSave()"
+      [disabled]="!resolverName || !resolverType"
+      class="action-button-1 width-238"
+      mat-stroked-button>
+      <mat-icon>add</mat-icon>
+      Save
+    </button>
+    </div>
+  </div>
+</div>

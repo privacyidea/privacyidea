@@ -24,9 +24,11 @@ import { AuthService } from "../auth/auth.service";
 import { computed, effect, inject, Injectable, Signal, signal, WritableSignal } from "@angular/core";
 import { catchError, Observable, throwError } from "rxjs";
 
-type ResolverType = "ldapresolver" | "sqlresolver" | "passwdresolver" | "scimresolver";
+export type ResolverType = "ldapresolver" | "sqlresolver" | "passwdresolver" | "scimresolver";
 
-export interface ResolverData {}
+export interface ResolverData {
+  [key: string]: unknown;
+}
 
 export type Resolvers = { [key: string]: Resolver };
 
