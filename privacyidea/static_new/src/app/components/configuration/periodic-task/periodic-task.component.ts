@@ -60,7 +60,6 @@ export class PeriodicTaskComponent {
     this.periodicTaskService.fetchAllModuleOptions();
   }
 
-
   resetNewTask() {
     this.newTask = EMPTY_PERIODIC_TASK;
   }

@@ -18,8 +18,6 @@
  **/
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-
-import { PeriodicTaskPanelNewComponent } from "./periodic-task-panel-new.component";
 import { PeriodicTaskPanelComponent } from "./periodic-task-panel.component";
 import { EMPTY_PERIODIC_TASK, PeriodicTaskService } from "../../../../services/periodic-task/periodic-task.service";
 import { provideHttpClient } from "@angular/common/http";
@@ -27,15 +25,25 @@ import { AuthService } from "../../../../services/auth/auth.service";
 import { MockAuthService } from "../../../../../testing/mock-services/mock-auth-service";
 import { MockPeriodicTaskService } from "../../../../../testing/mock-services/mock-periodic-task-service";
 
-describe("PeriodicTaskPanelNewComponent", () => {
-  let component: PeriodicTaskPanelNewComponent;
-  let fixture: ComponentFixture<PeriodicTaskPanelNewComponent>;
+describe("PeriodicTaskPanelComponent", () => {
+  let component: PeriodicTaskPanelComponent;
+  let fixture: ComponentFixture<PeriodicTaskPanelComponent>;
+  let task = {
+    ...EMPTY_PERIODIC_TASK,
+    id: "1",
+    name: "Test Task",
+    active: true,
+    interval: "*/5 * * * *",
+    nodes: ["localnode"],
+    taskmodule: "SimpleStats",
+    retry_if_failed: true,
+    ordering: 0
+  };
   let periodicTaskServiceMock: MockPeriodicTaskService;
-  let task = {...EMPTY_PERIODIC_TASK};
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [PeriodicTaskPanelNewComponent, PeriodicTaskPanelComponent],
+      imports: [PeriodicTaskPanelComponent],
       providers: [
         provideHttpClient(),
         { provide: AuthService, useClass: MockAuthService },
@@ -44,28 +52,54 @@ describe("PeriodicTaskPanelNewComponent", () => {
     })
       .compileComponents();
 
-    fixture = TestBed.createComponent(PeriodicTaskPanelNewComponent);
+    fixture = TestBed.createComponent(PeriodicTaskPanelComponent);
     component = fixture.componentInstance;
     fixture.componentRef.setInput("task", task);
     periodicTaskServiceMock = TestBed.inject(PeriodicTaskService) as unknown as MockPeriodicTaskService;
     fixture.detectChanges();
   });
 
-
   it("should create", () => {
     expect(component).toBeTruthy();
   });
 
-  it("should call savePeriodicTask, reload resource, close panel, and emit taskSaved", () => {
-    const editComponentMock = { editTask: jest.fn().mockReturnValue({ ...EMPTY_PERIODIC_TASK, name: "EditedNew" }) };
+  it("savePeriodicTask", () => {
+    const editComponentMock = { editTask: jest.fn().mockReturnValue({ ...EMPTY_PERIODIC_TASK, name: "Edited" }) };
     component.editComponent = editComponentMock as any;
     const reloadSpy = jest.spyOn(periodicTaskServiceMock.periodicTasksResource, "reload");
-    const emitSpy = jest.spyOn(component.taskSaved, "emit");
-    const panelCloseSpy = jest.spyOn(component.panel, "close");
     component.savePeriodicTask();
     expect(editComponentMock.editTask).toHaveBeenCalled();
     expect(reloadSpy).toHaveBeenCalled();
-    expect(panelCloseSpy).toHaveBeenCalled();
-    expect(emitSpy).toHaveBeenCalled();
+  });
+
+  it("cancelEdit should set isEditMode to false", () => {
+    component.isEditMode.set(true);
+    component.cancelEdit();
+    expect(component.isEditMode()).toBe(false);
+  });
+
+  it("toggleActive should call enablePeriodicTask if activate is true", () => {
+    const enableSpy = jest.spyOn(component.periodicTaskService, "enablePeriodicTask");
+    component.toggleActive(true);
+    expect(enableSpy).toHaveBeenCalledWith("1");
+  });
+
+  it("toggleActive fails if no task is provided", () => {
+    fixture.componentRef.setInput("task", null);
+    const enableSpy = jest.spyOn(component.periodicTaskService, "enablePeriodicTask");
+    component.toggleActive(true);
+    expect(enableSpy).not.toHaveBeenCalled();
+  });
+
+  it("toggleActive should call disablePeriodicTask if activate is false", () => {
+    const disableSpy = jest.spyOn(component.periodicTaskService, "disablePeriodicTask");
+    component.toggleActive(false);
+    expect(disableSpy).toHaveBeenCalledWith("1");
+  });
+
+  it("deleteTask should reload resource", () => {
+    const deleteSpy = jest.spyOn(periodicTaskServiceMock, "deleteWithConfirmDialog");
+    component.deleteTask();
+    expect(deleteSpy).toHaveBeenCalled();
   });
 });

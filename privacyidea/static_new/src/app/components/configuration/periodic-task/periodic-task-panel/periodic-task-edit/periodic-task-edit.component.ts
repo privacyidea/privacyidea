@@ -69,13 +69,9 @@ import { PeriodicTaskOptionDetailComponent } from "./periodic-task-option-detail
 export class PeriodicTaskEditComponent {
   private readonly systemService = inject(SystemService);
   private readonly periodicTaskService = inject(PeriodicTaskService);
+
   isNewTask = input<boolean>(false);
   task = input<PeriodicTask>(EMPTY_PERIODIC_TASK);
-  editTask = linkedSignal(this.task);
-
-  onOptionSelection(optionName: string, option: PeriodicTaskOption, value?: string) {
-    this.selectedOption.set({ ...option, name: optionName, value: value || "" });
-  }
 
   @Output() editedTask = new EventEmitter<PeriodicTask>();
 
@@ -85,14 +81,12 @@ export class PeriodicTaskEditComponent {
 
   @ViewChild(PeriodicTaskOptionDetailComponent) optionDetailComponent!: PeriodicTaskOptionDetailComponent;
 
-  addOption(value: string): void {
-    const optionName = this.selectedOption().name;
-    if (!optionName) return;
-    const newOptions = { ...this.editTask().options, [optionName]: value };
-    this.editTask.set({ ...this.editTask(), options: newOptions });
-  }
-
+  editTask = linkedSignal(this.task);
+  newOptionValues: WritableSignal<Record<string, string>> = signal({});
   editOption = signal("");
+
+  protected readonly Object = Object;
+  protected readonly parseBooleanValue = parseBooleanValue;
 
   notUsedOptions: Signal<Record<string, PeriodicTaskOption>> = computed(() => {
       const allOptions = this.taskModuleOptions() || {};
@@ -146,8 +140,19 @@ export class PeriodicTaskEditComponent {
     this.editTask.set({ ...this.editTask(), taskmodule: module });
   }
 
+  onOptionSelection(optionName: string, option: PeriodicTaskOption, value?: string) {
+    this.selectedOption.set({ ...option, name: optionName, value: value || "" });
+  }
+
   isBooleanAction(param: any) {
     return ["true", "false"].includes(String(param).toLowerCase());
+  }
+
+  addOption(value: string): void {
+    const optionName = this.selectedOption().name;
+    if (!optionName) return;
+    const newOptions = { ...this.editTask().options, [optionName]: value };
+    this.editTask.set({ ...this.editTask(), options: newOptions });
   }
 
   deleteOption(optionKey: string) {
@@ -155,9 +160,4 @@ export class PeriodicTaskEditComponent {
     delete options[optionKey];
     this.editTask.set({ ...this.editTask(), options });
   }
-
-  newOptionValues: WritableSignal<Record<string, string>> = signal({});
-
-  protected readonly Object = Object;
-  protected readonly parseBooleanValue = parseBooleanValue;
 }

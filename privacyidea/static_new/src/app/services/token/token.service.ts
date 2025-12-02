@@ -162,7 +162,6 @@ export interface TokenServiceInterface {
   pageSize: WritableSignal<number>;
   tokenIsActive: WritableSignal<boolean>;
   tokenIsRevoked: WritableSignal<boolean>;
-  // tokenIsLost: WritableSignal<boolean>;
   defaultSizeOptions: number[];
   apiFilter: string[];
   advancedApiFilter: string[];

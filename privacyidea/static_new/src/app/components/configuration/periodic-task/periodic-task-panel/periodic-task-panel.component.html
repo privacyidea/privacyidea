@@ -22,15 +22,9 @@
     class="margin-4">
     <mat-expansion-panel-header class="mat-expansion-panel-header">
       <mat-panel-title>
-        @if (isNewTask()) {
-          <div class="task-name" i18n>
-            Create New Periodic Task
-          </div>
-        } @else {
-          <div class="task-name">
-            {{ task().name }}
-          </div>
-        }
+        <div class="task-name">
+          {{ task().name }}
+        </div>
       </mat-panel-title>
       <mat-panel-description class="header-description">
         <div class="description-label">
@@ -78,7 +72,7 @@
       @if (isEditMode() || isNewTask()) {
         <app-periodic-task-edit
           [task]="task()"
-          [isNewTask]="isNewTask()"></app-periodic-task-edit>
+          [isNewTask]="false"></app-periodic-task-edit>
       } @else {
         <app-periodic-task-read [task]="task()"></app-periodic-task-read>
       }

@@ -17,10 +17,10 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
-import { inject, Injectable, signal } from "@angular/core";
+import { inject, Injectable, signal, WritableSignal } from "@angular/core";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
 import { environment } from "../../../environments/environment";
-import { HttpClient, httpResource } from "@angular/common/http";
+import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
 import { PiResponse } from "../../app.component";
 import { ROUTE_PATHS } from "../../route_paths";
 import { forkJoin, lastValueFrom, Observable, of, throwError } from "rxjs";
@@ -75,6 +75,7 @@ export type PeriodicTaskOption = {
   name: string;
   description: string;
   type: string;
+  required?: boolean;
   value?: string;
 };
 
@@ -88,10 +89,23 @@ export const EMPTY_PERIODIC_TASK_OPTION: PeriodicTaskOption = {
 export type PeriodicTaskModule = "SimpleStats" | "EventCounter";
 export const PERIODIC_TASK_MODULES: PeriodicTaskModule[] = ["SimpleStats", "EventCounter"];
 
+export interface PeriodicTaskServiceInterface {
+  periodicTasksResource: HttpResourceRef<PiResponse<PeriodicTask[]> | undefined>;
+  periodicTaskModuleResource: HttpResourceRef<PiResponse<string[]> | undefined>;
+  moduleOptions: WritableSignal<Record<string, Record<string, PeriodicTaskOption>>>;
+
+  enablePeriodicTask(taskId: string): Promise<any>;
+  disablePeriodicTask(taskId: string): Promise<any>;
+  deletePeriodicTask(taskId: string): Observable<PiResponse<number, any>>;
+  deleteWithConfirmDialog(task: PeriodicTask, dialog: any, afterDelete?: () => void): void;
+  savePeriodicTask(task: PeriodicTask): Observable<PiResponse<PeriodicTask, any>>;
+  fetchAllModuleOptions(): void;
+}
+
 @Injectable({
   providedIn: "root"
 })
-export class PeriodicTaskService {
+export class PeriodicTaskService implements PeriodicTaskServiceInterface {
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly http: HttpClient = inject(HttpClient);
@@ -110,7 +124,7 @@ export class PeriodicTaskService {
     };
   });
 
-  periodicTaskModuleResource = httpResource<PiResponse<any>>(() => {
+  periodicTaskModuleResource = httpResource<PiResponse<string[]>>(() => {
     if (this.contentService.routeUrl() !== ROUTE_PATHS.CONFIGURATION_PERIODIC_TASKS) {
       return undefined;
     }
@@ -154,10 +168,10 @@ export class PeriodicTaskService {
     return lastValueFrom(response$);
   }
 
-  deletePeriodicTask(taskId: string): Observable<PiResponse<BulkResult, any>> {
+  deletePeriodicTask(taskId: string): Observable<PiResponse<number, any>> {
     const headers = this.authService.getHeaders();
 
-    return this.http.delete<PiResponse<BulkResult, any>>(
+    return this.http.delete<PiResponse<number, any>>(
       this.periodicTaskBaseUrl + taskId,
       { headers }
     ).pipe(
@@ -186,7 +200,7 @@ export class PeriodicTaskService {
         next: (result: any) => {
           if (result) {
             this.deletePeriodicTask(task.id).subscribe({
-              next: (response: PiResponse<BulkResult, any>) => {
+              next: (response: PiResponse<number, any>) => {
                 this.notificationService.openSnackBar("Successfully deleted periodic task.");
                 if (afterDelete) {
                   afterDelete();
@@ -249,5 +263,4 @@ export class PeriodicTaskService {
       }
     });
   }
-
 }

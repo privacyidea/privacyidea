@@ -16,3 +16,50 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { PeriodicTaskComponent } from "./periodic-task.component";
+import { EMPTY_PERIODIC_TASK, PeriodicTaskService } from "../../../services/periodic-task/periodic-task.service";
+import { MockPeriodicTaskService } from "../../../../testing/mock-services/mock-periodic-task-service";
+import { provideHttpClient } from "@angular/common/http";
+
+describe("PeriodicTaskComponent", () => {
+  let component: PeriodicTaskComponent;
+  let fixture: ComponentFixture<PeriodicTaskComponent>;
+  let periodicTaskService: PeriodicTaskService;
+
+  beforeEach(async () => {
+    periodicTaskService = new MockPeriodicTaskService() as any;
+
+    await TestBed.configureTestingModule({
+      imports: [PeriodicTaskComponent],
+      providers: [
+        provideHttpClient(),
+        { provide: PeriodicTaskService, useValue: periodicTaskService }
+      ]
+    }).compileComponents();
+
+    fixture = TestBed.createComponent(PeriodicTaskComponent);
+    component = fixture.componentInstance;
+  });
+
+  it("should create", () => {
+    expect(component).toBeTruthy();
+  });
+
+  it("should call fetchAllModuleOptions on ngOnInit", () => {
+    const spy = jest.spyOn(periodicTaskService, "fetchAllModuleOptions");
+    component.ngOnInit();
+    expect(spy).toHaveBeenCalled();
+  });
+
+  it("should reset newTask to EMPTY_PERIODIC_TASK", () => {
+    component.newTask = { ...EMPTY_PERIODIC_TASK, name: "test" };
+    component.resetNewTask();
+    expect(component.newTask).toEqual(EMPTY_PERIODIC_TASK);
+  });
+
+  it("should initialize periodicTasks signal", () => {
+    expect(component.periodicTasks).toBeDefined();
+  });
+});

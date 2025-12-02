@@ -34,23 +34,21 @@ import { parseBooleanValue } from "../../../../../utils/parse-boolean-value";
 export class PeriodicTaskReadComponent {
   task = input<PeriodicTask>(EMPTY_PERIODIC_TASK);
 
-  isDateValue(val: unknown): val is string | number | Date {
-    return typeof val === "string" || typeof val === "number" || val instanceof Date;
-  }
-
-  lastRunsEntries(obj: unknown): { key: string, value: any }[] {
-    if (obj && typeof obj === "object" && !Array.isArray(obj)) {
-      return Object.entries(obj as Record<string, any>).map(([key, value]) => ({ key, value }));
-    }
-    return [];
-  }
-
   protected readonly Array = Array;
   protected readonly Object = Object;
+  protected readonly parseBooleanValue = parseBooleanValue;
+
+  isDateValue(val: unknown): val is string | number | Date {
+    if (typeof val === "number" || val instanceof Date) {
+      return true;
+    }
+    if (typeof val === "string") {
+      return !isNaN(Date.parse(val));
+    }
+    return false;
+  }
 
   isBooleanAction(param: any) {
     return ["true", "false"].includes(param.toLowerCase());
   }
-
-  protected readonly parseBooleanValue = parseBooleanValue;
 }
