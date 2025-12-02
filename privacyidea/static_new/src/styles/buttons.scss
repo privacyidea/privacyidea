@@ -493,3 +493,24 @@ $button-low-contrast-variant: linear-gradient(
       height: 36px !important;
    }
 }
+
+.scroll-to-top-fab {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: var(--mat-sys-surface-container-lowest);
+  height: 48px;
+  width: 48px;
+  color: var(--mat-sys-on-surface-variant);
+  border-radius: var(--border-radius);
+  border: unset;
+  @include mat.elevation(5);
+
+  &:hover {
+    @include mat.elevation(8);
+  }
+}
+
+.scroll-to-top-fab-icon {
+  width: 24px;
+}

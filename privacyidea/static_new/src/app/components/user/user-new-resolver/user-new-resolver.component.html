@@ -30,7 +30,7 @@
     }
 
     <div class="form-row">
-      <mat-form-field class="field-md">
+      <mat-form-field>
         <mat-label i18n>Resolver name</mat-label>
         <mat-hint>
           @if (isEditMode) {
@@ -42,10 +42,11 @@
         <input
           [(ngModel)]="resolverName"
           [disabled]="isEditMode"
+          placeholder="resolver1"
           matInput />
       </mat-form-field>
 
-      <mat-form-field class="field-md">
+      <mat-form-field>
         <mat-label i18n>Type</mat-label>
         <mat-select
           [(ngModel)]="resolverType"

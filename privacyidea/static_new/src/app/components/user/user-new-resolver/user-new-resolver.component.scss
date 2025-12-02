@@ -19,10 +19,8 @@
   flex-wrap: wrap;
   gap: 1rem;
   margin-bottom: 1rem;
-
-  .field-md {
-    flex: 1 1 260px;
-  }
+  flex-direction: column;
+  width: 492px;
 }
 
 .type-section {

@@ -1,13 +1,318 @@
-<div class="type-section">
-  <h3 i18n>LDAP settings</h3>
-  <div class="form-grid">
+<div class="type-sections-container">
+  <div class="type-section">
+    <div class="form-grid">
+      <mat-form-field class="field-lg">
+        <mat-label i18n>Server URI</mat-label>
+        <input
+          [(ngModel)]="data['ldapuri']"
+          matInput
+          placeholder="ldap://privacyidea.server1, ldap://privacyidea.server2" />
+      </mat-form-field>
 
-    <mat-form-field>
-      <mat-label>Server URI</mat-label>
-      <input
-        [(ngModel)]="data['LDAPURI']"
-        matInput />
-    </mat-form-field>
+      <mat-form-field>
+        <mat-label i18n>TLS version</mat-label>
+        <mat-select [(ngModel)]="data['tls_version']">
+          <mat-option
+            i18n
+            value="TLSv1">TLS v1.0
+          </mat-option>
+          <mat-option
+            i18n
+            value="TLSv1_1">TLS v1.1
+          </mat-option>
+          <mat-option
+            i18n
+            value="TLSv1_2">TLS v1.2
+          </mat-option>
+          <mat-option
+            i18n
+            value="TLSv1_3">TLS v1.3
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
 
+      <mat-checkbox
+        [(ngModel)]="data['tls_verify']"
+        class="checkbox-inline"
+        i18n>
+        Verify TLS certificate of the server.
+      </mat-checkbox>
+
+      @if (data['tls_verify']) {
+        <mat-form-field class="margin-bottom-1">
+          <mat-label i18n>CA certificate</mat-label>
+          <mat-hint i18n>
+            The file containing the CA certificate which signed the LDAP TLS certificate.
+          </mat-hint>
+          <input
+            [(ngModel)]="data['tls_cacert']"
+            matInput
+            placeholder="/etc/privacyidea/ldap-ca.crt" />
+        </mat-form-field>
+      }
+
+      <mat-form-field class="field-lg">
+        <mat-label i18n>Base DN</mat-label>
+        <input
+          [(ngModel)]="data['ldapbase']"
+          matInput />
+      </mat-form-field>
+
+      <mat-form-field>
+        <mat-label i18n>Scope</mat-label>
+        <mat-select [(ngModel)]="data['SCOPE']">
+          <mat-option
+            i18n
+            value="SUBTREE">SUBTREE
+          </mat-option>
+          <mat-option
+            i18n
+            value="BASE">BASE
+          </mat-option>
+          <mat-option
+            i18n
+            value="LEVEL">LEVEL
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+
+    </div>
+  </div>
+
+  <div class="type-section">
+    <div class="form-grid">
+      <mat-form-field>
+        <mat-label i18n>Bind type</mat-label>
+        <mat-select [(ngModel)]="data['authtype']">
+          <mat-option
+            i18n
+            value="simple">Simple
+          </mat-option>
+          <mat-option
+            i18n
+            value="anonymous">Anonymous
+          </mat-option>
+          <mat-option
+            i18n
+            value="SASL Digest-MD5">SASL Digest-MD5
+          </mat-option>
+          <mat-option
+            i18n
+            value="NTML">NTML
+          </mat-option>
+          <mat-option
+            i18n
+            value="SASL Kerberos">SASL Kerberos
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field class="field-lg">
+        <mat-label i18n>Bind DN</mat-label>
+        <input
+          [(ngModel)]="data['binddn']"
+          matInput
+          placeholder="cn=admin,ou=user,dc=domain,dc=tld" />
+      </mat-form-field>
+
+      <mat-form-field class="field-md">
+        <mat-label i18n>Bind password</mat-label>
+        <input
+          [(ngModel)]="data['bindpw']"
+          matInput
+          placeholder="topsecret"
+          type="password" />
+      </mat-form-field>
+    </div>
   </div>
 </div>
+
+<div class="type-sections-container">
+  <div class="type-section">
+    <div class="form-grid">
+      <mat-form-field>
+        <mat-label i18n>Timeout (seconds)</mat-label>
+        <input
+          [(ngModel)]="data['timeout']"
+          matInput
+          type="number" />
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label i18n>Cache timeout (seconds)</mat-label>
+        <input
+          [(ngModel)]="data['cache_timeout']"
+          matInput
+          type="number" />
+      </mat-form-field>
+
+      <mat-form-field>
+        <mat-label i18n>Size limit</mat-label>
+        <input
+          [(ngModel)]="data['sizelimit']"
+          matInput
+          type="number" />
+      </mat-form-field>
+
+      <mat-form-field>
+        <mat-label i18n>Server pool retry rounds</mat-label>
+        <input
+          [(ngModel)]="data['SERVERPOOL_ROUNDS']"
+          matInput
+          type="number" />
+      </mat-form-field>
+
+      <mat-form-field>
+        <mat-label i18n>Server pool skip timeout (seconds)</mat-label>
+        <input
+          [(ngModel)]="data['SERVERPOOL_SKIP']"
+          matInput
+          type="number" />
+      </mat-form-field>
+
+      <div class="flex-column">
+        <mat-checkbox
+          [(ngModel)]="data['SERVERPOOL_PERSISTENT']"
+          i18n>
+          Per-process server pool
+        </mat-checkbox>
+        <span class="hint">This setting activates a LDAP server pool that is persisted between requests.</span>
+      </div>
+
+      <div class="flex-column">
+        <mat-checkbox
+          [(ngModel)]="data['EDITABLE']"
+          i18n>
+          Edit user store
+        </mat-checkbox>
+        <span class="hint">The user data in this database can be modified from within privacyIDEA.</span>
+      </div>
+
+      @if (data['EDITABLE']) {
+        <mat-form-field>
+          <mat-label i18n> Object classes of a new created user object</mat-label>
+          <input
+            [(ngModel)]="data['newuserobjectclasses']"
+            matInput />
+        </mat-form-field>
+
+        <mat-form-field>
+          <mat-label i18n> DN of a new created user object</mat-label>
+          <input
+            [(ngModel)]="data['newuserbasedn']"
+            matInput
+            placeholder="CN=<username>,<basendn>" />
+        </mat-form-field>
+      }
+    </div>
+  </div>
+
+  <div class="type-section">
+    <div class="form-grid">
+      <mat-form-field>
+        <mat-label i18n>Loginname attribute</mat-label>
+        <input
+          [(ngModel)]="data['loginnameattribute']"
+          matInput
+          placeholder="sAMAccountName" />
+      </mat-form-field>
+
+      <mat-form-field class="field-lg">
+        <mat-label i18n>Search filter</mat-label>
+        <input
+          [(ngModel)]="data['ldapsearchfilter']"
+          matInput
+          placeholder="(sAMAccountName=*)(objectClass=person)" />
+      </mat-form-field>
+
+      <mat-form-field class="field-lg">
+        <mat-label i18n>Attribute mapping</mat-label>
+        <input
+          [(ngModel)]="data['ldapfilter']"
+          matInput
+          placeholder='{"phone:" : "telephoneNumber", "mobile": "mobile", "email" : "mail", "surname" : "sn",
+           "givenname" : "givenName"}' />
+      </mat-form-field>
+
+      <mat-form-field>
+        <mat-label i18n>Multivalue attributes</mat-label>
+        <input
+          [(ngModel)]="data['multivalueattributes']"
+          matInput
+          placeholder='["mobile"]' />
+      </mat-form-field>
+
+      <mat-form-field class="field-lg">
+        <mat-label i18n>User info mapping</mat-label>
+        <textarea
+          [(ngModel)]="data['userinfo']"
+          matInput
+          rows="3"></textarea>
+      </mat-form-field>
+
+      <mat-form-field>
+        <mat-label i18n>UID type</mat-label>
+        <input
+          [(ngModel)]="data['uidtype']"
+          matInput
+          placeholder="DN" />
+      </mat-form-field>
+
+      <mat-checkbox
+        [(ngModel)]="data['noreferrals']"
+        i18n>
+        Recursive Search of User Groups
+      </mat-checkbox>
+
+      @if (data['noreferrals']) {
+        <mat-form-field>
+          <mat-label i18n>
+            Search Filter for User Groups
+          </mat-label>
+          <mat-hint>
+            Possible tags: {{ '{' }}base_dn{{ '}' }}, {{ '{' }}username{{ '}' }}
+          </mat-hint>
+          <input
+            [(ngModel)]="data['uidtype']"
+            matInput
+            placeholder="(&(sAMAccountName=*)(objectCategory=group)
+            (member:1.2.840.113556.1.4.1941:=cn={distinguishedName},{base_dn}))" />
+        </mat-form-field>
+
+        <mat-form-field>
+          <mat-label i18n>Group Name Attribute</mat-label>
+          <mat-hint>
+            The group attribute defining the group's name, which should be stored in the user info.
+          </mat-hint>
+          <input
+            [(ngModel)]="data['uidtype']"
+            matInput
+            placeholder="distinguishedName" />
+        </mat-form-field>
+
+        <mat-form-field>
+          <mat-label i18n>User Info Key</mat-label>
+          <mat-hint>
+            The key to store the groups in the user info (attribute mapping key).
+          </mat-hint>
+          <input
+            [(ngModel)]="data['uidtype']"
+            matInput
+            placeholder="groups" />
+        </mat-form-field>
+      }
+
+      <mat-checkbox
+        [(ngModel)]="data['noschemas']"
+        i18n>
+        No anonymous referral chasing
+      </mat-checkbox>
+
+      <mat-checkbox
+        [(ngModel)]="data['editable']"
+        i18n>
+        No retrieval of schema information
+      </mat-checkbox>
+    </div>
+  </div>
+</div>
+
