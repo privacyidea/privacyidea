@@ -1,24 +1,95 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { MachineresolverComponent } from './machineresolver.component';
-import { MachineresolverModule } from './machineresolver.module';
-import { NoopAnimationsModule } from '@angular/platform-browser/animations';
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { MachineresolverComponent } from "./machineresolver.component";
+import { NoopAnimationsModule } from "@angular/platform-browser/animations";
+import { MachineresolverService } from "../../services/machineresolver/machineresolver.service";
+import { MockMachineresolverService } from "../../../testing/mock-services/mock-machineresolver-service";
+import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { provideHttpClient } from "@angular/common/http";
+import { Component } from "@angular/core";
+import { MatExpansionModule } from "@angular/material/expansion";
 
-describe('MachineresolverComponent', () => {
+@Component({
+  standalone: true,
+  selector: "app-machineresolver-panel-new",
+  template: ""
+})
+class MockMachineresolverPanelNewComponent {}
+
+@Component({
+  standalone: true,
+  selector: "app-machineresolver-panel-edit",
+  template: ""
+})
+class MockMachineresolverPanelEditComponent {}
+
+describe("MachineresolverComponent", () => {
   let component: MachineresolverComponent;
   let fixture: ComponentFixture<MachineresolverComponent>;
+  let machineresolverServiceMock: MockMachineresolverService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ MachineresolverModule, NoopAnimationsModule ]
+      imports: [MachineresolverComponent, NoopAnimationsModule],
+      providers: [{ provide: MachineresolverService, useClass: MockMachineresolverService }]
     })
-    .compileComponents();
+      .overrideComponent(MachineresolverComponent, {
+        set: {
+          imports: [MockMachineresolverPanelNewComponent, MockMachineresolverPanelEditComponent, MatExpansionModule]
+        }
+      })
+      .compileComponents();
 
     fixture = TestBed.createComponent(MachineresolverComponent);
     component = fixture.componentInstance;
+    machineresolverServiceMock = TestBed.inject(MachineresolverService) as unknown as MockMachineresolverService;
     fixture.detectChanges();
   });
 
-  it('should create', () => {
+  it("should create", () => {
     expect(component).toBeTruthy();
+  });
+
+  it("should inject the machineresolver service", () => {
+    expect(component.machineresolverService).toBeTruthy();
+  });
+
+  it("should show MockMachineresolverPanelNewComponent one time", () => {
+    const compiled = fixture.nativeElement as HTMLElement;
+    machineresolverServiceMock.machineresolvers.set([{}, {}] as any);
+    fixture.detectChanges();
+    const newPanels = compiled.querySelectorAll("app-machineresolver-panel-new");
+    const editPanels = compiled.querySelectorAll("app-machineresolver-panel-edit");
+
+    expect(newPanels.length).toBe(1);
+    expect(editPanels.length).toBe(2);
+  });
+
+  describe("should show MockMachineresolverPanelEditComponent as many as there are machineresolvers", () => {
+    it("when there are 0 machineresolvers", () => {
+      const compiled = fixture.nativeElement as HTMLElement;
+      machineresolverServiceMock.machineresolvers.set([]);
+      fixture.detectChanges();
+      const editPanels = compiled.querySelectorAll("app-machineresolver-panel-edit");
+
+      expect(editPanels.length).toBe(0);
+    });
+
+    it("when there is 1 machineresolver", () => {
+      const compiled = fixture.nativeElement as HTMLElement;
+      machineresolverServiceMock.machineresolvers.set([{}] as any);
+      fixture.detectChanges();
+      const editPanels = compiled.querySelectorAll("app-machineresolver-panel-edit");
+
+      expect(editPanels.length).toBe(1);
+    });
+
+    it("when there are 3 machineresolvers", () => {
+      const compiled = fixture.nativeElement as HTMLElement;
+      machineresolverServiceMock.machineresolvers.set([{}, {}, {}] as any);
+      fixture.detectChanges();
+      const editPanels = compiled.querySelectorAll("app-machineresolver-panel-edit");
+
+      expect(editPanels.length).toBe(3);
+    });
   });
 });

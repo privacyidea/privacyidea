@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { computed, inject, Injectable } from "@angular/core";
+import { computed, inject, Injectable, Signal } from "@angular/core";
 import { MatDialog, MatDialogConfig, MatDialogRef } from "@angular/material/dialog";
 
 import {
@@ -46,7 +46,7 @@ export class MatDialogConfigRequired<D = any> extends MatDialogConfig<D> {
 }
 
 export interface DialogServiceInterface {
-  isSelfServing: () => boolean;
+  isSelfServing: Signal<boolean>;
   tokenEnrollmentFirstStepRef: MatDialogRef<TokenEnrollmentFirstStepDialogComponent, any> | null;
   isTokenEnrollmentFirstStepDialogOpen: boolean;
   tokenEnrollmentLastStepRef: MatDialogRef<TokenEnrollmentLastStepDialogComponent, any> | null;
