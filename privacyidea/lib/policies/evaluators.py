@@ -28,7 +28,7 @@ def check_realm_list(realms: str):
     Evaluates if the realms in a space separated list exist. If at least one realm not exist a Parameter error is
     raised containing a list of all invalid realms.
 
-    :param realms: Space separate list of realms
+    :param realms: Space separated list of realms
     """
     if not realms:
         raise ParameterError("No realms specified!")
