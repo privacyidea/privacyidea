@@ -43,17 +43,37 @@
     </mat-form-field>
   }
 
-  <mat-form-field
-    subscriptSizing="dynamic">
-    <mat-label i18n>Interval</mat-label>
-    <input
-      matInput
-      [(ngModel)]="editTask().interval"
-      (ngModelChange)="emitAllowSave()"
-      required />
-    <mat-hint i18n>Use crontab notation to specify the times at which the periodic task should be run.</mat-hint>
-  </mat-form-field>
-  <!--  TODO: Info box with examples -->
+  <div class="flex-row">
+    <div class="flex-size-1">
+      <mat-form-field
+        subscriptSizing="dynamic">
+        <mat-label i18n>Interval</mat-label>
+        <input
+          matInput
+          [(ngModel)]="editTask().interval"
+          (ngModelChange)="emitAllowSave()"
+          required />
+        <mat-hint i18n>Use crontab notation to specify the times at which the periodic task should be run.</mat-hint>
+      </mat-form-field>
+    </div>
+    <div class="flex-size-1">
+      <mat-expansion-panel>
+        <mat-expansion-panel-header>
+          <mat-panel-title>
+            <span i18n>Examples</span>
+          </mat-panel-title>
+        </mat-expansion-panel-header>
+        <div class="example-grid">
+          <div class="bold">5 10 * * *</div>
+          <div>Every day at 10:05 am</div>
+          <div class="bold">*/10 * * * *</div>
+          <div>Every 10 minutes</div>
+          <div class="bold">1 23 * * 7</div>
+          <div>Every sunday at 11:01 pm</div>
+        </div>
+      </mat-expansion-panel>
+    </div>
+  </div>
   <mat-form-field
     subscriptSizing="dynamic">
     <mat-label i18n>Nodes</mat-label>
@@ -106,8 +126,8 @@
           <div class="action-row">
             <span class="action-label">
               {{ option }}
-              @if (taskModuleOptions()[option]?.required && (editTask().options[option] === '' || editTask().options[option] === undefined || editTask().options[option] === null)) {
-                <span class="required-star" style="color: red">*</span>
+              @if (taskModuleOptions()[option].required) {
+                <span>*</span>
               }
             </span>
             @if (!isBooleanAction(editTask().options[option])) {
@@ -116,14 +136,14 @@
               </div>
             }
             <div class="actions margin-left-1 height-48">
-                @if (taskModuleOptions()[option] && !taskModuleOptions()[option].required ) {
-                  <button
-                    (click)="deleteOption(option)"
-                    mat-icon-button
-                    matTooltip="Remove Option">
-                    <mat-icon>delete</mat-icon>
-                  </button>
-                }
+              @if (taskModuleOptions()[option] && !taskModuleOptions()[option].required) {
+                <button
+                  (click)="deleteOption(option)"
+                  mat-icon-button
+                  matTooltip="Remove Option">
+                  <mat-icon>delete</mat-icon>
+                </button>
+              }
             </div>
           </div>
         </div>

@@ -50,6 +50,7 @@ import { MatIcon } from "@angular/material/icon";
 import { MatIconButton } from "@angular/material/button";
 import { PeriodicTaskOptionDetailComponent } from "./periodic-task-option-detail/periodic-task-option-detail.component";
 import { MatTooltip } from "@angular/material/tooltip";
+import { MatExpansionPanel, MatExpansionPanelHeader, MatExpansionPanelTitle } from "@angular/material/expansion";
 
 @Component({
   selector: "app-periodic-task-edit",
@@ -65,7 +66,10 @@ import { MatTooltip } from "@angular/material/tooltip";
     MatIcon,
     MatIconButton,
     PeriodicTaskOptionDetailComponent,
-    MatTooltip
+    MatTooltip,
+    MatExpansionPanel,
+    MatExpansionPanelTitle,
+    MatExpansionPanelHeader
   ],
   templateUrl: "./periodic-task-edit.component.html",
   styleUrl: "./periodic-task-edit.component.scss"

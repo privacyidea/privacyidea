@@ -12,3 +12,12 @@
 .height-48 {
   height: 48px;
 }
+
+.example-grid {
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 16px;
+  padding: 0;
+  border: 0;
+  margin-bottom: auto;
+}
