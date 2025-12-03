@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, WritableSignal, inject, linkedSignal } from "@angular/core";
+import { Component, inject, linkedSignal, WritableSignal } from "@angular/core";
 import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
 import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
 import { MatPaginatorModule, PageEvent } from "@angular/material/paginator";
@@ -37,7 +37,7 @@ import { NgClass } from "@angular/common";
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
 import { TokenTableActionsComponent } from "./token-table-actions/token-table-actions.component";
-import { MatFabButton, MatIconButton } from "@angular/material/button";
+import { MatIconButton } from "@angular/material/button";
 
 const columnKeysMap = [
   { key: "select", label: "" },
@@ -71,7 +71,6 @@ const columnKeysMap = [
     ClearableInputComponent,
     CopyButtonComponent,
     TokenTableActionsComponent,
-    MatFabButton,
     MatIconButton
   ],
   templateUrl: "./token-table.component.html",
