@@ -23,10 +23,12 @@
   i18n-aria-label>
   <h3 i18n>Periodic Tasks</h3>
   <mat-accordion class="list-layout">
-    <app-periodic-task-panel-new
-      [task]="newTask"
-      (taskSaved)="resetNewTask()"></app-periodic-task-panel-new>
-    <mat-divider class="margin-top-1 margin-bottom-1"></mat-divider>
+    @if (authService.actionAllowed("periodictask_write")) {
+      <app-periodic-task-panel-new
+        [task]="newTask"
+        (taskSaved)="resetNewTask()"></app-periodic-task-panel-new>
+      <mat-divider class="margin-top-1 margin-bottom-1"></mat-divider>
+    }
     @for (task of periodicTasks(); track task.name) {
       <app-periodic-task-panel
         [task]="task"></app-periodic-task-panel>

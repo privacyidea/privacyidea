@@ -31,7 +31,7 @@
           {{ getModuleLabel(task().taskmodule) }}
         </div>
         <div class="actions">
-          @if (panel.expanded) {
+          @if (panel.expanded && authService.actionAllowed("periodictask_write")) {
             @if (isEditMode() || isNewTask()) {
               <button
                 mat-icon-button
@@ -69,6 +69,7 @@
               [checked]="task().active"
               (change)="toggleActive($event.checked)"
               (click)="$event.stopPropagation()"
+              [disabled]="!authService.actionAllowed('periodictask_write')"
               [disableRipple]="true"></mat-slide-toggle>
           </div>
         </div>

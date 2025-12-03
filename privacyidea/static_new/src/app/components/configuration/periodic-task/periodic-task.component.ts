@@ -27,6 +27,7 @@ import { MatAccordion } from "@angular/material/expansion";
 import { PeriodicTaskPanelComponent } from "./periodic-task-panel/periodic-task-panel.component";
 import {PeriodicTaskPanelNewComponent} from "./periodic-task-panel/periodic-task-panel-new.component";
 import {MatDivider} from "@angular/material/divider";
+import { AuthService } from "../../../services/auth/auth.service";
 
 @Component({
   selector: "app-periodic-task",
@@ -43,6 +44,7 @@ import {MatDivider} from "@angular/material/divider";
 })
 export class PeriodicTaskComponent {
   protected readonly periodicTaskService = inject(PeriodicTaskService);
+  protected readonly authService = inject(AuthService);
 
   periodicTasks: WritableSignal<PeriodicTask[] | undefined> = linkedSignal({
     source: this.periodicTaskService.periodicTasksResource.value,
