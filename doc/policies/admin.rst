@@ -887,8 +887,8 @@ sms_gateways
 type: ``string``
 
 Usually an SMS token sends the SMS via the SMS gateway that is defined
-system-wide in the token settings.
-This policy takes a blank-separated list of configured SMS gateways.
+system-wide in the :ref:`token settings <sms_token_config>`.
+This policy takes a blank-separated list of configured :ref:`SMS gateways <sms_gateway_config>`.
 It allows the administrator to select an individual SMS gateway during token enrollment.
 
 .. versionadded:: 3.0
@@ -932,8 +932,6 @@ set_custom_user_attributes
 
 type: ``string``
 
-.. versionadded:: 3.6
-
 This policy defines which additional attributes an administrator is allowed to set.
 It can also define, to which value the admin is allowed to set such attribute.
 For allowing all values, the asterisk ("*") is used.
@@ -957,6 +955,7 @@ attribute "department" with the allowed values of "sales" or "finance".
 ``:*: 1 2`` means that the administrator can set any other additional attribute
 either to the value "1" or to the value "2".
 
+.. versionadded:: 3.6
 
 .. _admin_delete_custom_user_attributes:
 
@@ -1105,7 +1104,6 @@ Note that the condition ``realm`` for this action is also evaluated to true if t
 
 container_unassign_user
 ~~~~~~~~~~~~~~~~~~~~~~~
-
 type: ``bool``
 
 The administrator is allowed to unassign users from containers.
@@ -1114,78 +1112,69 @@ The administrator is allowed to unassign users from containers.
 
 container_realms
 ~~~~~~~~~~~~~~~~
-
 type: ``bool``
 
 The administrator is allowed to edit the container realms.
 
 .. versionadded:: 3.10
 
-
 .. _admin_policy_container_register:
 
 container_register
 ~~~~~~~~~~~~~~~~~~
-
-type: bool
+type: ``bool``
 
 The administrator is allowed to generate the QR code for the registration of a container.
 
-New in version 3.11
+.. versionadded:: 3.11
 
 container_unregister
 ~~~~~~~~~~~~~~~~~~~~
-
-type: bool
+type: ``bool``
 
 The administrator is allowed to unregister a container. This terminates the possibility to synchronize the container
 with the server.
 
-New in version 3.11
+.. versionadded:: 3.11
 
 container_rollover
 ~~~~~~~~~~~~~~~~~~
-
-type: bool
+type: ``bool``
 
 The administrator is allowed to perform a rollover of a container and all contained tokens.
 
-New in version 3.11
+.. versionadded:: 3.11
 
 container_template_create
 ~~~~~~~~~~~~~~~~~~~~~~~~~
-
-type: bool
+type: ``bool``
 
 The administrator is allowed to create and edit container templates.
 
-New in version 3.11
+.. versionadded:: 3.11
 
 container_template_delete
 ~~~~~~~~~~~~~~~~~~~~~~~~~
-
-type: bool
+type: ``bool``
 
 The administrator is allowed to delete container templates.
 
-New in version 3.11
+.. versionadded:: 3.11
 
 container_template_list
 ~~~~~~~~~~~~~~~~~~~~~~~
-
-type: bool
+type: ``bool``
 
 The administrator is allowed to list container templates and see the template properties.
 In combination with the ```container_list`` policy, the administrator is allowed to compare templates with containers.
 
-New in version 3.11
+.. versionadded:: 3.11
 
 hide_container_info
 ~~~~~~~~~~~~~~~~~~~~
-
-type: string
+type: ``string``
 
 This specifies a whitespace-separated list of container info keys that should be removed from the response of the
 :http:get:`/container/` endpoint and therefore will not be shown in the WebUI on the container details page.
 
-New in version 3.12
+.. versionadded:: 3.12

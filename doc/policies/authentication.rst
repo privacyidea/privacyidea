@@ -287,6 +287,7 @@ the user should not be unnecessarily annoyed with a realm selection.
 
 .. note:: This policy takes precedence over the :ref:`policy_mangle` and :ref:`policy_setrealm` policies.
 
+.. versionadded:: 3.12
 
 .. _policy_mangle:
 
@@ -368,6 +369,8 @@ type: ``string``
 
 This is a list of token types that are not allowed to be used during authentication.
 The list is separated by whitespaces like *"hotp totp"*.
+
+.. versionadded:: 3.12
 
 .. _policy_change_pin_via_validate:
 
@@ -509,6 +512,7 @@ If this policy contains an invalid template name, the container is enrolled anyw
 
 The policy :ref:`policy_enroll_via_multichallenge` has to be set to `smartphone` for this policy to take effect.
 
+.. versionadded:: 3.12
 
 .. _policy_u2f_facets:
 
@@ -1006,6 +1010,8 @@ client you are using will show the correct login for the user's preferred client
 used a TOTP token to authenticate, an input field to enter the OTP value is displayed.
 
 This policy takes precedence over the `preferred_client_mode` policy.
+
+.. versionadded:: 3.12
 
 passkey_trigger_by_pin
 ~~~~~~~~~~~~~~~~~~~~~~
