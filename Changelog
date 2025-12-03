@@ -16,6 +16,7 @@ Version 3.12.2
   * Apply all user conditions (username, realm, resolver) to the change pin policies (#4744)
   * Allow to specify a deviating base dn for LDAP group searches (#4829)
   * Fixed interaction of force_server_generate and 2step_enrollment policies (#4826)
+  * Enrolling a token with only realm assignment now correctly displays the QR Code (#4861)
 
 Version 3.12.1, 2025-10-07
 
