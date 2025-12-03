@@ -132,7 +132,7 @@ describe("PeriodicTaskService", () => {
   it("should save a periodic task", (done) => {
     const mockResponse = { result: EMPTY_PERIODIC_TASK };
     service.savePeriodicTask(EMPTY_PERIODIC_TASK).subscribe((res) => {
-      expect(res.result).toEqual(EMPTY_PERIODIC_TASK);
+      expect(res?.result).toEqual(EMPTY_PERIODIC_TASK);
       done();
     });
     const req = httpTestingController.expectOne(r => r.url.includes("/periodictask/") && r.method === "POST");
@@ -140,14 +140,13 @@ describe("PeriodicTaskService", () => {
   });
 
   it("should handle error when saving a periodic task", (done) => {
-    service.savePeriodicTask(EMPTY_PERIODIC_TASK).subscribe({
-      error: (err) => {
-        expect(notificationMock.openSnackBar).toHaveBeenCalledWith("Failed to save periodic task. ");
+    service.savePeriodicTask(EMPTY_PERIODIC_TASK).subscribe((response) => {
+        expect(response).toBeUndefined();
+        expect(notificationMock.openSnackBar).toHaveBeenCalledWith("Failed to save periodic task. failure message");
         done();
-      }
     });
     const req = httpTestingController.expectOne(r => r.url.includes("/periodictask/") && r.method === "POST");
-    req.flush({ result: { error: { message: "fail" } } }, { status: 400, statusText: "Bad Request" });
+    req.flush({ result: { error: { message: "failure message" } } }, { status: 400, statusText: "Bad Request" });
   });
 
   it("should fetch all module options", () => {

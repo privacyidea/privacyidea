@@ -75,7 +75,7 @@ import { MatExpansionPanel, MatExpansionPanelHeader, MatExpansionPanelTitle } fr
   styleUrl: "./periodic-task-edit.component.scss"
 })
 export class PeriodicTaskEditComponent {
-  private readonly systemService = inject(SystemService);
+  protected readonly systemService = inject(SystemService);
   private readonly periodicTaskService = inject(PeriodicTaskService);
 
   isNewTask = input<boolean>(false);
@@ -156,16 +156,6 @@ export class PeriodicTaskEditComponent {
   });
 
   taskModuleOptions = computed(() => this.periodicTaskService.moduleOptions()[this.editTask().taskmodule]);
-
-  nodes = computed(() => {
-    const nodes = this.systemService.nodes();
-    return [
-      ...nodes.map((n) => ({
-        label: n.name,
-        value: n.uuid
-      }))
-    ];
-  });
 
   onNodeSelectionChange(nodes: string[]) {
     this.editTask.set({ ...this.editTask(), nodes });

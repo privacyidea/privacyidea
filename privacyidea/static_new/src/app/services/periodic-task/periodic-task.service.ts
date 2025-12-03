@@ -102,7 +102,7 @@ export interface PeriodicTaskServiceInterface {
   disablePeriodicTask(taskId: string): Promise<any>;
   deletePeriodicTask(taskId: string): Observable<PiResponse<number, any>>;
   deleteWithConfirmDialog(task: PeriodicTask, dialog: any, afterDelete?: () => void): void;
-  savePeriodicTask(task: PeriodicTask): Observable<PiResponse<PeriodicTask, any>>;
+  savePeriodicTask(task: PeriodicTask): Observable<PiResponse<number, any> | undefined>;
   fetchAllModuleOptions(): void;
 }
 
@@ -219,23 +219,23 @@ export class PeriodicTaskService implements PeriodicTaskServiceInterface {
       });
   }
 
-  savePeriodicTask(task: PeriodicTask): Observable<PiResponse<PeriodicTask, any>> {
+  savePeriodicTask(task: PeriodicTask): Observable<PiResponse<number, any> | undefined> {
     const headers = this.authService.getHeaders();
-    let params = task as any;
+    let params = { ...task } as any;
     if (!params.id) {
       delete params.id;
     }
     params.nodes = Array.isArray(params.nodes) ? params.nodes.join(",") : params.nodes;
-    return this.http.post<PiResponse<PeriodicTask, any>>(
+    return this.http.post<PiResponse<number, any>>(
       this.periodicTaskBaseUrl,
-      task,
+      params,
       { headers }
     ).pipe(
       catchError((error) => {
-        console.error("Failed to save periodic task.", error);
-        const message = error.result?.error?.message || "";
+        console.error("Failed to save periodic task.", error.error);
+        const message = error.error.result?.error?.message || "";
         this.notificationService.openSnackBar("Failed to save periodic task. " + message);
-        return throwError(() => error);
+        return of(undefined);
       })
     );
   }

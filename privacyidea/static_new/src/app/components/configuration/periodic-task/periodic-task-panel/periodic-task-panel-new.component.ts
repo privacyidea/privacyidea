@@ -64,10 +64,13 @@ export class PeriodicTaskPanelNewComponent extends PeriodicTaskPanelComponent {
     const editedTask = this.editComponent?.editTask();
     if (editedTask && this.canSave) {
       this.periodicTaskService.savePeriodicTask(editedTask).subscribe({
-        next: () => {
-          this.periodicTaskService.periodicTasksResource.reload();
-          this.panel.close();
-          this.taskSaved.emit();
+        next: (response) => {
+          if (response?.result?.value !== undefined) {
+            this.periodicTaskService.periodicTasksResource.reload();
+            this.panel.close();
+            this.taskSaved.emit();
+            this.editComponent?.editTask.set(EMPTY_PERIODIC_TASK);
+          }
         }
       });
     }

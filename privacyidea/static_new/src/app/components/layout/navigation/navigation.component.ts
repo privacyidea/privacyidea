@@ -154,6 +154,7 @@ export class NavigationComponent {
       case ROUTE_PATHS.USERS_REALMS:
         this.realmService.realmResource.reload();
         this.resolverService.resolversResource.reload();
+        break;
       case ROUTE_PATHS.CONFIGURATION_PERIODIC_TASKS:
         this.periodicTaskService.periodicTasksResource.reload();
         break;

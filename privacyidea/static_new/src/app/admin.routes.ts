@@ -77,7 +77,6 @@ export const routes: Routes = [
   },
   {
     path: "configuration",
-    component: TokenComponent,
     children: [{ path: "periodic-tasks", component: PeriodicTaskComponent }]
   }
 ];

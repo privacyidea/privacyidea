@@ -16,7 +16,7 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<div class="flex-column">
+<div class="flex-column gap-16">
   @if (isNewTask()) {
     <mat-form-field>
       <mat-label i18n>Name</mat-label>
@@ -82,9 +82,9 @@
       [multiple]="true"
       [value]="editTask().nodes"
       required>
-      @for (node of nodes(); track node.value) {
-        <mat-option [value]="node.label">
-          {{ node.label }}
+      @for (node of systemService.nodes(); track node) {
+        <mat-option [value]="node.name">
+          {{ node.name }}
         </mat-option>
       }
     </mat-select>

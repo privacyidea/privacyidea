@@ -24,6 +24,7 @@ import { provideHttpClient } from "@angular/common/http";
 import { MockPeriodicTaskService } from "../../../../../../testing/mock-services/mock-periodic-task-service";
 import { EMPTY_PERIODIC_TASK, PeriodicTaskService } from "../../../../../services/periodic-task/periodic-task.service";
 import { SystemService } from "../../../../../services/system/system.service";
+import { MockSystemService } from "../../../../../../testing/mock-services/mock-system-service";
 
 describe("PeriodicTaskEditComponent", () => {
   let component: PeriodicTaskEditComponent;
@@ -46,7 +47,7 @@ describe("PeriodicTaskEditComponent", () => {
       providers: [
         provideHttpClient(),
         { provide: PeriodicTaskService, useClass: MockPeriodicTaskService },
-        { provide: SystemService, useValue: { nodes: () => [{ name: "node1", uuid: "node1" }] } }
+        { provide: SystemService, useClass: MockSystemService }
       ]
     })
       .compileComponents();
@@ -54,6 +55,8 @@ describe("PeriodicTaskEditComponent", () => {
     fixture = TestBed.createComponent(PeriodicTaskEditComponent);
     component = fixture.componentInstance;
     fixture.componentRef.setInput("task", mockTask);
+    fixture.detectChanges();
+    await Promise.resolve();
     fixture.detectChanges();
   });
 

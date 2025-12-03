@@ -84,6 +84,6 @@ export class MockPeriodicTaskService implements PeriodicTaskServiceInterface {
   disablePeriodicTask = jest.fn().mockResolvedValue({});
   deletePeriodicTask = jest.fn().mockReturnValue(of({} as PiResponse<number, any>));
   deleteWithConfirmDialog = jest.fn();
-  savePeriodicTask = jest.fn().mockReturnValue(of({} as PiResponse<PeriodicTask, any>));
+  savePeriodicTask = jest.fn().mockReturnValue(of({result: {value: "3"}}));
   fetchAllModuleOptions = jest.fn();
 }

@@ -89,13 +89,17 @@ export class PeriodicTaskPanelComponent {
   canSave = false;
 
   savePeriodicTask(): void {
-    this.isEditMode.set(false);
     // Get the edited task from the edit component
     const editedTask = this.editComponent?.editTask();
+    console.log(editedTask);
     if (editedTask && this.canSave) {
       this.periodicTaskService.savePeriodicTask(editedTask).subscribe({
-        next: () => {
-          this.periodicTaskService.periodicTasksResource.reload();
+        next: (response) => {
+          if (response?.result?.value !== undefined) {
+            this.periodicTaskService.periodicTasksResource.reload();
+            this.isEditMode.set(false);
+          }
+          console.log(this.editComponent?.editTask());
         }
       });
     }
