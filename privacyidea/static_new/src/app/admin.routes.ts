@@ -70,7 +70,6 @@ export const routes: Routes = [
   },
   {
     path: "settings",
-    component: TokenComponent,
     children: [{ path: "machineresolver", component: MachineresolverComponent }]
   },
   {
