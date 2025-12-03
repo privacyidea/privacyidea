@@ -127,7 +127,7 @@
         <mat-label i18n="@@idAttribute">ID Attribute</mat-label>
         <input
           matInput
-          placeholder="Ein Attribut oder DN zur Identifizierung der Maschine"
+          placeholder="An attribute or DN to identify the machine"
           [disabled]="!isEditMode()"
           [ngModel]="hostsData().IDATTRIBUTE"
           (ngModelChange)="updateData({ IDATTRIBUTE: $event })" />
@@ -158,7 +158,7 @@
         <mat-label i18n="@@ipAttribute">IP Attribute</mat-label>
         <input
           matInput
-          placeholder="Ein Attribut, das die IP-Adresse der Maschine enthält."
+          placeholder="An attribute that contains the IP address of the machine."
           [disabled]="!isEditMode()"
           [ngModel]="hostsData().IPATTRIBUTE"
           (ngModelChange)="updateData({ IPATTRIBUTE: $event })" />
