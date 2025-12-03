@@ -259,50 +259,53 @@ class HotpTokenClass(TokenClass):
             extra_data.update({'pin': True})
         if otpkey:
             tok_type = self.type.lower()
-            if user is not None:
-                time_step = self.get_tokeninfo("timeStep", default="30")
-                try:
-                    key_bin = binascii.unhexlify(otpkey)
-                    # also strip the padding =, as it will get problems with the google app.
-                    value_b32_str = b32encode_and_unicode(key_bin).strip('=')
-                    response_detail["otpkey"]["value_b32"] = value_b32_str
-                    goo_url = cr_google(key=otpkey,
-                                        user=user.login,
-                                        realm=user.realm,
-                                        tokentype=tok_type.lower(),
-                                        serial=self.get_serial(),
-                                        tokenlabel=tokenlabel,
-                                        hash_algo=self.hashlib,
-                                        digits=params.get("otplen", 6),
-                                        period=time_step,
-                                        issuer=tokenissuer,
-                                        user_obj=user,
-                                        extra_data=extra_data)
-                    response_detail["googleurl"] = {"description": _("URL for google Authenticator"),
-                                                    "value": goo_url,
-                                                    "img": create_img(goo_url)
-                                                    }
+            time_step = self.get_tokeninfo("timeStep", default="30")
+            try:
+                key_bin = binascii.unhexlify(otpkey)
+                # also strip the padding =, as it will get problems with the google app.
+                value_b32_str = b32encode_and_unicode(key_bin).strip('=')
+                response_detail["otpkey"]["value_b32"] = value_b32_str
+                goo_url = cr_google(key=otpkey,
+                                    user=user.login if user else None,
+                                    realm=user.realm if user else None,
+                                    tokentype=tok_type.lower(),
+                                    serial=self.get_serial(),
+                                    tokenlabel=tokenlabel,
+                                    hash_algo=self.hashlib,
+                                    digits=params.get("otplen", 6),
+                                    period=time_step,
+                                    issuer=tokenissuer,
+                                    user_obj=user,
+                                    extra_data=extra_data)
 
-                    oath_url = cr_oath(otpkey=otpkey,
-                                       user=user.login,
-                                       realm=user.realm,
-                                       type=tok_type,
-                                       serial=self.get_serial(),
-                                       tokenlabel=tokenlabel,
-                                       extra_data=extra_data)
-                    response_detail["oathurl"] = {"description": _("URL for"
-                                                                   " OATH "
-                                                                   "token"),
-                                                  "value": oath_url,
-                                                  "img": create_img(oath_url)
-                                                  }
-                except KeyError as ex:
-                    log.debug("{0!s}".format((traceback.format_exc())))
-                    log.error('Unknown Tag {0!s} in one of your policy definition'
-                              .format(ex))
-                except Exception as ex:  # pragma: no cover
-                    log.debug("{0!s}".format((traceback.format_exc())))
-                    log.error('failed to set oath or google url: {0!r}'.format(ex))
+                response_detail["googleurl"] = {
+                    "description": _("URL for google Authenticator"),
+                    "value": goo_url,
+                    "img": create_img(goo_url)
+                }
+
+                oath_url = cr_oath(otpkey=otpkey,
+                                   user=user.login,
+                                   realm=user.realm,
+                                   type=tok_type,
+                                   serial=self.get_serial(),
+                                   tokenlabel=tokenlabel,
+                                   extra_data=extra_data)
+
+                response_detail["oathurl"] = {
+                    "description": _("URL for"
+                                     " OATH "
+                                     "token"),
+                    "value": oath_url,
+                    "img": create_img(oath_url)
+                }
+            except KeyError as ex:
+                log.debug("{0!s}".format((traceback.format_exc())))
+                log.error('Unknown Tag {0!s} in one of your policy definition'
+                          .format(ex))
+            except Exception as ex:  # pragma: no cover
+                log.debug("{0!s}".format((traceback.format_exc())))
+                log.error('failed to set oath or google url: {0!r}'.format(ex))
 
         return response_detail
 
