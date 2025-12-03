@@ -19,14 +19,16 @@
 
 import { TestBed } from "@angular/core/testing";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
-import { ConfigService, AppConfig } from "./config.service";
+import { AppConfig, ConfigService } from "./config.service";
 import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
 import { provideHttpClient } from "@angular/common/http";
+import { VersioningService, VersioningServiceInterface } from "../version/version.service";
 
 describe("ConfigService", () => {
   let service: ConfigService;
   let httpMock: HttpTestingController;
+  let versioningService: VersioningServiceInterface;
 
   const mockConfig: AppConfig = {
     remote_user: "testUser",
@@ -49,10 +51,12 @@ describe("ConfigService", () => {
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
-        ConfigService]
+        ConfigService,
+        VersioningService]
     });
     service = TestBed.inject(ConfigService);
     httpMock = TestBed.inject(HttpTestingController);
+    versioningService = TestBed.inject(VersioningService);
   });
 
   afterEach(() => {
@@ -100,6 +104,7 @@ describe("ConfigService", () => {
     req.flush(mockResponse);
 
     expect(service.config()).toEqual(mockConfig);
+    expect(versioningService.getVersion()).toBe("3.8");
   });
 
   it("should handle error and keep default config", () => {

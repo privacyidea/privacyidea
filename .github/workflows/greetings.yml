@@ -12,6 +12,7 @@ permissions: {}
 
 jobs:
   greeting:
+    name: Greet the creator of a new PR/issue
     runs-on: ubuntu-latest
     permissions:
       issues: write  # for actions/first-interaction to comment on first issue

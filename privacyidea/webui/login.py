@@ -39,7 +39,7 @@ from privacyidea.lib.realm import get_realms
 from privacyidea.lib.policy import PolicyClass, SCOPE, Match, REMOTE_USER
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.subscriptions import subscription_status
-from privacyidea.lib.utils import get_client_ip
+from privacyidea.lib.utils import get_client_ip, get_version_number
 from privacyidea.lib.config import get_from_config, SYSCONF, get_privacyidea_node
 from privacyidea.lib.queue import has_job_queue
 
@@ -201,6 +201,7 @@ def get_render_context():
         'logo': logo,
         'page_title': page_title,
         'otp_pin_set_random_user': otp_pin_set_random_user,
+        'privacyideaVersionNumber': get_version_number()
     }
     return render_context
 

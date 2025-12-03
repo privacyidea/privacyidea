@@ -1,3 +1,21 @@
+<!--
+ (c) NetKnights GmbH 2025,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
 <div class="drawer-div">
   <div class="brand">
     <div class="brand-row">
@@ -120,7 +138,7 @@
 
   <mat-accordion>
     <mat-expansion-panel
-      [expanded]="router.url.startsWith(ROUTE_PATHS.TOKENS)"
+      [expanded]="router.url.startsWith(ROUTE_PATHS.TOKENS) && !router.url.includes('containers')"
       class="nav-expension-panel">
       <mat-expansion-panel-header (click)="router.navigate([ROUTE_PATHS.TOKENS])">
         <mat-panel-title>
@@ -303,20 +321,6 @@
             Overview
           </button>
         </mat-list-item>
-        @if (contentService.routeUrl() === ROUTE_PATHS.USERS) {
-          <mat-list-item class="height-auto">
-            <mat-form-field class="width-100">
-              <mat-label>Select Realm for Overview</mat-label>
-              <mat-select
-                [(ngModel)]="userService.selectedUserRealm"
-                [value]="userService.selectedUserRealm()">
-                @for (option of realmService.realmOptions(); track option) {
-                  <mat-option [value]="option">{{ option }}</mat-option>
-                }
-              </mat-select>
-            </mat-form-field>
-          </mat-list-item>
-        }
         @if (contentService.routeUrl().startsWith(ROUTE_PATHS.USERS_DETAILS)) {
           <mat-list-item>
             <button
@@ -339,8 +343,9 @@
         </mat-list-item>
         <mat-list-item>
           <button
-            class="card-button-1"
-            disabled
+            [ngClass]="contentService.routeUrl() === ROUTE_PATHS.USERS_REALMS ?
+                  'card-button-active' : 'card-button-1'"
+            [routerLink]="[ROUTE_PATHS.USERS_REALMS]"
             mat-stroked-button>
             <mat-icon>public</mat-icon>
             Realms
@@ -350,15 +355,20 @@
     </mat-expansion-panel>
     @if (authService.actionAllowed("policyread")) {
       <mat-expansion-panel
-        class="nav-expension-panel policy-header"
-        [disabled]="true">
+        [disabled]="true"
+        [ngClass]="{'childless-expension-panel-header-active': this.contentService.onPolicies()}"
+        class="childless-expension-panel-header">
         <mat-expansion-panel-header
-          (click)="onPoliciesHeaderClick($event)"
-          class="nav-header-button">
+          (click)="onPoliciesHeaderClick($event)">
           <mat-panel-title>
             <mat-icon>gavel</mat-icon>
             Policies
           </mat-panel-title>
+          <mat-icon
+            [class.active]="router.url.startsWith(ROUTE_PATHS.POLICIES)"
+            class="childless-expansion-panel-arrow">
+            chevron_right
+          </mat-icon>
         </mat-expansion-panel-header>
       </mat-expansion-panel>
     }
@@ -391,15 +401,17 @@
             Log
           </button>
         </mat-list-item>
-        <mat-list-item>
-          <button
-            class="card-button-1"
-            disabled
-            mat-stroked-button>
-            <mat-icon>recent_actors</mat-icon>
-            Known Clients
-          </button>
-        </mat-list-item>
+        @if (authService.actionAllowed("clienttype")) {
+          <mat-list-item>
+            <button
+              [ngClass]="contentService.routeUrl() === ROUTE_PATHS.CLIENTS ? 'card-button-active' : 'card-button-1'"
+              [routerLink]="[ROUTE_PATHS.CLIENTS]"
+              mat-stroked-button>
+              <mat-icon>recent_actors</mat-icon>
+              Known Clients
+            </button>
+          </mat-list-item>
+        }
       </mat-list>
     </mat-expansion-panel>
 

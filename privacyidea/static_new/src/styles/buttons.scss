@@ -6,7 +6,6 @@ $keyword-height: 28px;
 $keyword-padding: 2px 8px;
 $button-gap-small: 10px;
 $padding-horizontal: 16px;
-$detail-icon-font-size: 18px;
 $margin-bottom-small: 0;
 $keyword-font-size: 18px;
 $button-border-radius: var(--border-radius);
@@ -168,7 +167,7 @@ $button-low-contrast-variant: linear-gradient(
   min-width: $button-width;
 
   mat-icon.mat-icon.notranslate.material-icons {
-    font-size: $detail-icon-font-size;
+    font-size: 20px;
   }
 }
 
@@ -428,7 +427,7 @@ $button-low-contrast-variant: linear-gradient(
   justify-content: start;
 
   mat-icon.mat-icon.notranslate.material-icons {
-    font-size: $detail-icon-font-size;
+    font-size: 20px;
   }
 }
 
@@ -454,4 +453,29 @@ $button-low-contrast-variant: linear-gradient(
   &:not([disabled]) {
     @include action-button-variant(var(--red-base), var(--rose-bg));
   }
+}
+
+.small-icon-button {
+   width: 36px !important;
+   height: 36px !important;
+   padding: 0px !important;
+   display: inline-flex !important;
+   align-items: center;
+   justify-content: center;
+
+   & > *[role=img] {
+      width: 18px;
+      height: 18px;
+      font-size: 18px;
+
+      svg {
+         width: 18px;
+         height: 18px;
+      }
+   }
+
+   .mat-mdc-button-touch-target {
+      width: 36px !important;
+      height: 36px !important;
+   }
 }

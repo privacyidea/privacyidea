@@ -19,7 +19,7 @@
 import { TestBed } from "@angular/core/testing";
 import { provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
-import { UserData, UserService } from "./user.service";
+import { UserAttributePolicy, UserData, UserService } from "./user.service";
 import { RealmService } from "../realm/realm.service";
 import { AuthService } from "../auth/auth.service";
 import { ContentService } from "../content/content.service";
@@ -37,6 +37,7 @@ import {
 import { ROUTE_PATHS } from "../../route_paths";
 import { PiResponse } from "../../app.component";
 import { MockAuthService } from "../../../testing/mock-services/mock-auth-service";
+import { environment } from "../../../environments/environment";
 
 function buildUser(username: string): UserData {
   return {
@@ -82,6 +83,8 @@ describe("UserService", () => {
   let userService: UserService;
   let realmService: MockRealmService;
   let httpMock: HttpTestingController;
+  let contentServiceMock: MockContentService;
+  let authServiceMock: MockAuthService;
 
   let users: UserData[];
   let alice: UserData;
@@ -105,6 +108,8 @@ describe("UserService", () => {
     userService = TestBed.inject(UserService);
     realmService = TestBed.inject(RealmService) as unknown as MockRealmService;
     httpMock = TestBed.inject(HttpTestingController);
+    contentServiceMock = TestBed.inject(ContentService) as unknown as MockContentService;
+    authServiceMock = TestBed.inject(AuthService) as unknown as MockAuthService;
 
     alice = buildUser("Alice");
     users = [alice, buildUser("Bob"), buildUser("Charlie")];
@@ -122,7 +127,7 @@ describe("UserService", () => {
 
   it("selectedUserRealm should expose the current defaultRealm", () => {
     expect(userService.selectedUserRealm()).toBe("realm1");
-    realmService.defaultRealm.set("someRealm");
+    realmService.setDefaultRealm("someRealm");
     expect(userService.selectedUserRealm()).toBe("someRealm");
   });
 
@@ -171,7 +176,7 @@ describe("UserService", () => {
 
     it("deleteUserAttribute issues DELETE /user/attribute/<key>/<user>/<realm> with proper encoding", () => {
       userService.detailsUsername.set("Alice Smith");
-      realmService.defaultRealm.set("r 1");
+      realmService.setDefaultRealm("r 1");
 
       const key = "department/role";
       userService.deleteUserAttribute(key).subscribe();
@@ -194,8 +199,6 @@ describe("UserService", () => {
 
   describe("attribute policy + attributes (no HTTP; drive signals directly)", () => {
     it("attributePolicy defaults when attributesResource has no value", () => {
-      (userService as any).attributesResource = new MockHttpResourceRef<any | undefined>(undefined as any);
-
       expect(userService.attributePolicy()).toEqual({ delete: [], set: {} });
       expect(userService.deletableAttributes()).toEqual([]);
       expect(userService.attributeSetMap()).toEqual({});
@@ -203,8 +206,8 @@ describe("UserService", () => {
       expect(userService.keyOptions()).toEqual([]);
     });
 
-    it("derives deletableAttributes, wildcard, and sorted keyOptions from attributesResource value", () => {
-      const policy = {
+    it("derives deletableAttributes, wildcard, and sorted keyOptions from editableAttributesResource value", () => {
+      const policy: UserAttributePolicy = {
         delete: ["department", "attr2", "attr1"],
         set: {
           "*": ["2", "1"],
@@ -213,7 +216,9 @@ describe("UserService", () => {
         }
       };
 
-      (userService as any).attributesResource = new MockHttpResourceRef(MockPiResponse.fromValue(policy));
+      (userService as any).editableAttributesResource = new MockHttpResourceRef(
+        MockPiResponse.fromValue(policy)
+      );
 
       expect(userService.attributePolicy()).toEqual(policy);
       expect(userService.deletableAttributes()).toEqual(["department", "attr2", "attr1"]);
@@ -318,6 +323,46 @@ describe("UserService", () => {
 
       userService.selectionFilter.set("");
       expect(userService.selectedUser()).toEqual(users[2]);
+    });
+  });
+
+  describe("userResource", () => {
+    beforeEach(() => {
+      jest.spyOn(authServiceMock, "actionAllowed").mockImplementation((action: string) => action === "userlist");
+    });
+
+    it("should return undefined if route is not USER_DETAILS", async () => {
+      contentServiceMock.routeUrl.update(() => ROUTE_PATHS.TOKENS);
+      const mockBackend = TestBed.inject(HttpTestingController);
+      TestBed.flushEffects();
+
+      // Expect and flush the HTTP request
+      mockBackend.expectNone(environment.proxyUrl + "/user/");
+      await Promise.resolve();
+
+      expect(userService.userResource.value()).toBeUndefined();
+    });
+
+    it("should do request if route is USER_DETAILS", async () => {
+      const realm = "test-realm";
+      const user = "alice";
+      contentServiceMock.routeUrl.update(() => ROUTE_PATHS.USERS_DETAILS + "/" + user);
+      userService.detailsUsername.set(user);
+      userService.selectedUserRealm.set(realm);
+      const mockBackend = TestBed.inject(HttpTestingController);
+      TestBed.flushEffects();
+
+      // Expect and flush the main user details request
+      const req = mockBackend.expectOne(environment.proxyUrl + "/user/?user=" + user + "&realm=" + realm);
+      req.flush({ result: {} });
+
+      // Ignore and flush all other open requests
+      httpMock.match(() => true).forEach(r => r.flush({ result: {} }));
+
+      await Promise.resolve();
+
+      expect(userService.userResource.value()).toBeDefined();
+      expect(userService.usersResource.value()).toBeUndefined();
     });
   });
 });

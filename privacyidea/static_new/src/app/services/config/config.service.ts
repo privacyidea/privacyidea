@@ -22,6 +22,7 @@ import { catchError } from "rxjs/operators";
 import { of } from "rxjs";
 import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
+import { VersioningService, VersioningServiceInterface } from "../version/version.service";
 
 export interface AppConfig {
   remote_user: string;
@@ -43,6 +44,7 @@ export interface AppConfig {
   providedIn: "root"
 })
 export class ConfigService {
+  private readonly versioningService: VersioningServiceInterface = inject(VersioningService);
   http: HttpClient = inject(HttpClient);
   config = signal({
     remote_user: "",
@@ -79,6 +81,7 @@ export class ConfigService {
       )
       .subscribe((data) => {
         this.config.set(data.result?.value as AppConfig);
+        this.versioningService.version.set(data.versionnumber);
       });
   }
 }

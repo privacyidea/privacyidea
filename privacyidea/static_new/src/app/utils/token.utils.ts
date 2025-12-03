@@ -1,5 +1,3 @@
-import { TokenType } from "../services/token/token.service";
-
 /**
  * (c) NetKnights GmbH 2025,  https://netknights.it
  *
@@ -18,6 +16,8 @@ import { TokenType } from "../services/token/token.service";
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { TokenType } from "../services/token/token.service";
+
 export const tokenTypes: TokenType[] = [
   {
     key: "hotp",

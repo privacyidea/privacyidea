@@ -24,14 +24,10 @@ import { provideHttpClient } from "@angular/common/http";
 import { signal } from "@angular/core";
 import { AuthService } from "../auth/auth.service";
 import { FilterValue } from "../../core/models/filter_value";
-import { MockLocalService, MockNotificationService } from "../../../testing/mock-services";
+import { MockContentService, MockLocalService, MockNotificationService } from "../../../testing/mock-services";
 import { MockAuthService } from "../../../testing/mock-services/mock-auth-service";
 
 environment.proxyUrl = "/api";
-
-class MockContentService implements Partial<ContentService> {
-  routeUrl = signal("/tokens");
-}
 
 describe("AuditService (signals & helpers)", () => {
   let auditService: AuditService;

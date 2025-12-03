@@ -19,10 +19,10 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { ConditionsUserComponent } from "./conditions-user.component";
 import { PolicyService } from "../../../../../services/policies/policies.service";
-import { RealmService } from "../../../../../services/realm/realm.service";
+import { Realm, Realms, RealmService } from "../../../../../services/realm/realm.service";
 import { ResolverService } from "../../../../../services/resolver/resolver.service";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { MockRealmService } from "../../../../../../testing/mock-services";
+import { MockHttpResourceRef, MockPiResponse, MockRealmService } from "../../../../../../testing/mock-services";
 import { MockPolicyService } from "../../../../../../testing/mock-services/mock-policies-service";
 
 import { MockResolverService } from "../../../../../../testing/mock-services/mock-resolver-service";
@@ -62,6 +62,14 @@ describe("ConditionsUserComponent", () => {
   });
 
   it("should toggle all realms", () => {
+    const ref = realmServiceMock.realmResource as unknown as MockHttpResourceRef<MockPiResponse<Realms> | undefined>;
+    ref.set(
+      MockPiResponse.fromValue<Realms>({
+        realm1: { default: false, id: 1, option: "", resolver: [] } as Realm,
+        realm2: { default: false, id: 2, option: "", resolver: [] } as Realm
+      } as any)
+    );
+
     component.toggleAllRealms();
     expect(policyServiceMock.updateSelectedPolicy).toHaveBeenCalledWith({ realm: ["realm1", "realm2"] });
 
