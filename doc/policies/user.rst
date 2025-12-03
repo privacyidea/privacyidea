@@ -500,7 +500,7 @@ This action allows users to unassign themselves from containers.
 container_register
 ~~~~~~~~~~~~~~~~~~
 
-type: bool
+type: ``bool``
 
 This action allows users to generate the QR code for the registration of a container.
 
@@ -509,7 +509,7 @@ This action allows users to generate the QR code for the registration of a conta
 container_unregister
 ~~~~~~~~~~~~~~~~~~~~
 
-type: bool
+type: ``bool``
 
 This action allows users to unregister a container. This terminates the possibility to synchronize the container
 with the server.
@@ -519,7 +519,7 @@ with the server.
 container_rollover
 ~~~~~~~~~~~~~~~~~~
 
-type: bool
+type: ``bool``
 
 This action allows users to perform a rollover of a container and all contained tokens.
 
@@ -528,7 +528,7 @@ This action allows users to perform a rollover of a container and all contained 
 container_template_create
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-type: bool
+type: ``bool``
 
 This action allows users to create and edit container templates.
 
@@ -537,7 +537,7 @@ This action allows users to create and edit container templates.
 container_template_delete
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-type: bool
+type: ``bool``
 
 This action allows users to delete container templates.
 
@@ -546,7 +546,7 @@ This action allows users to delete container templates.
 container_template_list
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-type: bool
+type: ``bool``
 
 This action allows users to list container templates and see the template properties.
 In combination with the ```container_list`` policy, the users are allowed to compare templates with containers.
@@ -556,7 +556,7 @@ In combination with the ```container_list`` policy, the users are allowed to com
 hide_container_info
 ~~~~~~~~~~~~~~~~~~~~
 
-type: string
+type: ``string``
 
 This specifies a whitespace-separated list of container info keys that should be removed from the response of the
 :http:get:`/container/` endpoint and therefore will not be shown in the WebUI on the container details page.
