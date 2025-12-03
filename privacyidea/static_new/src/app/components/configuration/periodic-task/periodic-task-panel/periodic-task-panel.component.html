@@ -35,17 +35,21 @@
             @if (isEditMode() || isNewTask()) {
               <button
                 mat-icon-button
+                matTooltip="Save Changes"
+                [disabled]="!canSave"
                 (click)="$event.stopPropagation(); savePeriodicTask();">
                 <mat-icon>save</mat-icon>
               </button>
               <button
                 mat-icon-button
+                matTooltip="Cancel Edit"
                 (click)="$event.stopPropagation(); cancelEdit()">
                 <mat-icon>cancel</mat-icon>
               </button>
             } @else {
               <button
                 mat-icon-button
+                matTooltip="Edit Periodic Task"
                 (click)="$event.stopPropagation(); isEditMode.set(true);">
                 <mat-icon>edit</mat-icon>
               </button>
@@ -53,6 +57,7 @@
             @if (authService.actionAllowed("delete") && !isNewTask()) {
               <button
                 mat-icon-button
+                matTooltip="Delete Periodic Task"
                 (click)="$event.stopPropagation(); deleteTask()">
                 <mat-icon>delete</mat-icon>
               </button>
@@ -60,6 +65,7 @@
           }
           <div>
             <mat-slide-toggle
+              matTooltip="Toggle Active Status"
               [checked]="task().active"
               (change)="toggleActive($event.checked)"
               (click)="$event.stopPropagation()"
@@ -72,7 +78,8 @@
       @if (isEditMode() || isNewTask()) {
         <app-periodic-task-edit
           [task]="task()"
-          [isNewTask]="false"></app-periodic-task-edit>
+          [isNewTask]="false"
+          (allowSaveChanges)="canSave = $event"></app-periodic-task-edit>
       } @else {
         <app-periodic-task-read [task]="task()"></app-periodic-task-read>
       }

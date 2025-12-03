@@ -36,16 +36,20 @@
           @if (panel.expanded) {
             <button
               mat-icon-button
+              matTooltip="Save Periodic Task"
+              [disabled]="!canSave"
               (click)="$event.stopPropagation(); savePeriodicTask();">
               <mat-icon>save</mat-icon>
             </button>
             <button
               mat-icon-button
+              matTooltip="Cancel Creation"
               (click)="$event.stopPropagation(); cancelEdit()">
               <mat-icon>cancel</mat-icon>
             </button>
             <div>
               <mat-slide-toggle
+                matTooltip="Toggle Active Status"
                 [checked]="task().active"
                 (change)="toggleActive($event.checked)"
                 (click)="$event.stopPropagation()"
@@ -58,7 +62,8 @@
     <div class="mat-expansion-panel-body">
         <app-periodic-task-edit
           [task]="task()"
-          [isNewTask]="true"></app-periodic-task-edit>
+          [isNewTask]="true"
+          (allowSaveChanges)="canSave = $event"></app-periodic-task-edit>
     </div>
   </mat-expansion-panel>
 </div>

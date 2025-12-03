@@ -63,12 +63,27 @@ describe("PeriodicTaskPanelComponent", () => {
     expect(component).toBeTruthy();
   });
 
-  it("savePeriodicTask", () => {
+  it("savePeriodicTask does not save if not allowed", () => {
     const editComponentMock = { editTask: jest.fn().mockReturnValue({ ...EMPTY_PERIODIC_TASK, name: "Edited" }) };
     component.editComponent = editComponentMock as any;
+    component.canSave = false;
+    const saveSpy = jest.spyOn(periodicTaskServiceMock, "savePeriodicTask");
     const reloadSpy = jest.spyOn(periodicTaskServiceMock.periodicTasksResource, "reload");
     component.savePeriodicTask();
     expect(editComponentMock.editTask).toHaveBeenCalled();
+    expect(saveSpy).not.toHaveBeenCalled();
+    expect(reloadSpy).not.toHaveBeenCalled();
+  });
+
+  it("savePeriodicTask should save if allowed", () => {
+    const editComponentMock = { editTask: jest.fn().mockReturnValue({ ...EMPTY_PERIODIC_TASK, name: "Edited" }) };
+    component.editComponent = editComponentMock as any;
+    component.canSave = true;
+    const saveSpy = jest.spyOn(periodicTaskServiceMock, "savePeriodicTask");
+    const reloadSpy = jest.spyOn(periodicTaskServiceMock.periodicTasksResource, "reload");
+    component.savePeriodicTask();
+    expect(editComponentMock.editTask).toHaveBeenCalled();
+    expect(saveSpy).toHaveBeenCalled();
     expect(reloadSpy).toHaveBeenCalled();
   });
 

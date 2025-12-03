@@ -63,12 +63,6 @@ describe("PeriodicTaskEditComponent", () => {
     expect(component).toBeTruthy();
   });
 
-  it("should emit edited task", () => {
-    const spy = jest.spyOn(component.editedTask, "emit");
-    component.emitEditedTask();
-    expect(spy).toHaveBeenCalledWith(component.editTask());
-  });
-
   it("should select an option", () => {
     component.onOptionSelection("total_tokens", { name: "total_tokens", description: "", type: "bool" });
     expect(component.selectedOption().name).toBe("total_tokens");

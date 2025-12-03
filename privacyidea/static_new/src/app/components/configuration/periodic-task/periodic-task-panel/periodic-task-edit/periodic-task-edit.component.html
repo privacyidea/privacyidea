@@ -23,6 +23,7 @@
       <input
         matInput
         [(ngModel)]="editTask().name"
+        (ngModelChange)="emitAllowSave()"
         required />
       <mat-hint i18n>Unique name of the periodic task.</mat-hint>
     </mat-form-field>
@@ -48,6 +49,7 @@
     <input
       matInput
       [(ngModel)]="editTask().interval"
+      (ngModelChange)="emitAllowSave()"
       required />
     <mat-hint i18n>Use crontab notation to specify the times at which the periodic task should be run.</mat-hint>
   </mat-form-field>
@@ -75,6 +77,7 @@
       matInput
       type="number"
       [(ngModel)]="editTask().ordering"
+      (ngModelChange)="emitAllowSave()"
       required />
     <mat-hint i18n>Tasks with lower ordering number are executed first.</mat-hint>
   </mat-form-field>
@@ -110,7 +113,8 @@
             <div class="actions margin-left-1">
               <button
                 (click)="deleteOption(option)"
-                mat-icon-button>
+                mat-icon-button
+                matTooltip="Remove Option">
                 <mat-icon>delete</mat-icon>
               </button>
             </div>

@@ -29,6 +29,8 @@ import { MatSlideToggle } from "@angular/material/slide-toggle";
 import { PeriodicTaskEditComponent } from "./periodic-task-edit/periodic-task-edit.component";
 import { MatIcon } from "@angular/material/icon";
 import { MatIconButton } from "@angular/material/button";
+import { MatTooltip } from "@angular/material/tooltip";
+import { EMPTY_PERIODIC_TASK } from "../../../../services/periodic-task/periodic-task.service";
 
 @Component({
   selector: "app-periodic-task-panel-new",
@@ -40,7 +42,8 @@ import { MatIconButton } from "@angular/material/button";
     MatIcon,
     MatIconButton,
     MatSlideToggle,
-    PeriodicTaskEditComponent
+    PeriodicTaskEditComponent,
+    MatTooltip
   ],
   templateUrl: "./periodic-task-panel-new.component.html",
   styleUrl: "./periodic-task-panel.component.scss"
@@ -49,11 +52,17 @@ export class PeriodicTaskPanelNewComponent extends PeriodicTaskPanelComponent {
   @ViewChild('panel') panel!: MatExpansionPanel;
   @Output() taskSaved = new EventEmitter<void>();
 
+  override cancelEdit(): void {
+    this.isEditMode.set(false);
+    this.editComponent?.editTask.set(EMPTY_PERIODIC_TASK);
+    this.panel.close();
+  }
+
   override savePeriodicTask(): void {
     this.isEditMode.set(false);
     // Get the edited task from the edit component
     const editedTask = this.editComponent?.editTask();
-    if (editedTask) {
+    if (editedTask && this.canSave) {
       this.periodicTaskService.savePeriodicTask(editedTask).subscribe({
         next: () => {
           this.periodicTaskService.periodicTasksResource.reload();

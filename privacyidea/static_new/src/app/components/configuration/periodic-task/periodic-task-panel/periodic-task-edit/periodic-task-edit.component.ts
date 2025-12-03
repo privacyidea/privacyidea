@@ -49,6 +49,7 @@ import { parseBooleanValue } from "../../../../../utils/parse-boolean-value";
 import { MatIcon } from "@angular/material/icon";
 import { MatIconButton } from "@angular/material/button";
 import { PeriodicTaskOptionDetailComponent } from "./periodic-task-option-detail/periodic-task-option-detail.component";
+import { MatTooltip } from "@angular/material/tooltip";
 
 @Component({
   selector: "app-periodic-task-edit",
@@ -63,7 +64,8 @@ import { PeriodicTaskOptionDetailComponent } from "./periodic-task-option-detail
     MatHint,
     MatIcon,
     MatIconButton,
-    PeriodicTaskOptionDetailComponent
+    PeriodicTaskOptionDetailComponent,
+    MatTooltip
   ],
   templateUrl: "./periodic-task-edit.component.html",
   styleUrl: "./periodic-task-edit.component.scss"
@@ -75,20 +77,30 @@ export class PeriodicTaskEditComponent {
   isNewTask = input<boolean>(false);
   task = input<PeriodicTask>(EMPTY_PERIODIC_TASK);
 
-  @Output() editedTask = new EventEmitter<PeriodicTask>();
+  @Output() allowSaveChanges = new EventEmitter<boolean>();
 
-  emitEditedTask() {
-    this.editedTask.emit(this.editTask());
+  emitAllowSave() {
+    this.allowSaveChanges.emit(this.allowSave);
   }
 
   @ViewChild(PeriodicTaskOptionDetailComponent) optionDetailComponent!: PeriodicTaskOptionDetailComponent;
 
-  editTask = linkedSignal(this.task);
+  editTask = linkedSignal(() => this.task());
   newOptionValues: WritableSignal<Record<string, string>> = signal({});
   editOption = signal("");
 
   protected readonly Object = Object;
   protected readonly parseBooleanValue = parseBooleanValue;
+
+  get allowSave() {
+    if (this.editTask().name === "") return false;
+    if (this.editTask().taskmodule === "") return false;
+    if (this.editTask().interval === "") return false;
+    if (this.editTask().nodes.length === 0) return false;
+    if (this.editTask().ordering === null) return false;
+    if (Object.keys(this.editTask().options).length == 0) return false;
+    return true;
+  }
 
   notUsedOptions: Signal<Record<string, PeriodicTaskOption>> = computed(() => {
       const allOptions = this.taskModuleOptions() || {};
@@ -136,10 +148,12 @@ export class PeriodicTaskEditComponent {
 
   onNodeSelectionChange(nodes: string[]) {
     this.editTask.set({ ...this.editTask(), nodes });
+    this.emitAllowSave();
   }
 
   onTaskModuleChange(module: string) {
     this.editTask.set({ ...this.editTask(), taskmodule: module });
+    this.emitAllowSave();
   }
 
   onOptionSelection(optionName: string, option: PeriodicTaskOption, value?: string) {
@@ -155,12 +169,14 @@ export class PeriodicTaskEditComponent {
     if (!optionName) return;
     const newOptions = { ...this.editTask().options, [optionName]: value };
     this.editTask.set({ ...this.editTask(), options: newOptions });
+    this.emitAllowSave();
   }
 
   deleteOption(optionKey: string) {
     const options = { ...this.editTask().options };
     delete options[optionKey];
     this.editTask.set({ ...this.editTask(), options });
+    this.emitAllowSave();
   }
 
   getModuleLabel(module: string): string {

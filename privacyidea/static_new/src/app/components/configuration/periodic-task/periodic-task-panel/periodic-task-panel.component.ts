@@ -16,11 +16,13 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, inject, input, signal, ViewChild } from "@angular/core";
+import { ChangeDetectorRef, Component, inject, input, signal, ViewChild } from "@angular/core";
 import { MatExpansionModule, MatExpansionPanel, MatExpansionPanelTitle } from "@angular/material/expansion";
 import {
-  EMPTY_PERIODIC_TASK, PERIODIC_TASK_MODULE_MAPPING,
-  PeriodicTask, PeriodicTaskModule,
+  EMPTY_PERIODIC_TASK,
+  PERIODIC_TASK_MODULE_MAPPING,
+  PeriodicTask,
+  PeriodicTaskModule,
   PeriodicTaskService
 } from "../../../../services/periodic-task/periodic-task.service";
 import { MatSlideToggle } from "@angular/material/slide-toggle";
@@ -31,6 +33,7 @@ import { PeriodicTaskReadComponent } from "./periodic-task-read/periodic-task-re
 import { MatDialog } from "@angular/material/dialog";
 import { AuthService } from "../../../../services/auth/auth.service";
 import { PeriodicTaskEditComponent } from "./periodic-task-edit/periodic-task-edit.component";
+import { MatTooltip } from "@angular/material/tooltip";
 
 @Component({
   selector: "app-periodic-task-panel",
@@ -45,7 +48,8 @@ import { PeriodicTaskEditComponent } from "./periodic-task-edit/periodic-task-ed
     MatIcon,
     MatIconButton,
     PeriodicTaskReadComponent,
-    PeriodicTaskEditComponent
+    PeriodicTaskEditComponent,
+    MatTooltip
   ],
   styleUrls: ["periodic-task-panel.component.scss"]
 })
@@ -81,13 +85,15 @@ export class PeriodicTaskPanelComponent {
     this.isEditMode.set(false);
   }
 
-  @ViewChild(PeriodicTaskEditComponent) editComponent!: PeriodicTaskEditComponent;
+  @ViewChild(PeriodicTaskEditComponent) editComponent?: PeriodicTaskEditComponent;
+
+  canSave = false;
 
   savePeriodicTask(): void {
     this.isEditMode.set(false);
     // Get the edited task from the edit component
     const editedTask = this.editComponent?.editTask();
-    if (editedTask) {
+    if (editedTask && this.canSave) {
       this.periodicTaskService.savePeriodicTask(editedTask).subscribe({
         next: () => {
           this.periodicTaskService.periodicTasksResource.reload();

@@ -56,16 +56,35 @@ describe("PeriodicTaskPanelNewComponent", () => {
     expect(component).toBeTruthy();
   });
 
-  it("should call savePeriodicTask, reload resource, close panel, and emit taskSaved", () => {
+  it("should call savePeriodicTask, reload resource, close panel, and emit taskSaved if allowed", () => {
     const editComponentMock = { editTask: jest.fn().mockReturnValue({ ...EMPTY_PERIODIC_TASK, name: "EditedNew" }) };
     component.editComponent = editComponentMock as any;
+    component.canSave = true;
+    const saveSpy = jest.spyOn(periodicTaskServiceMock, "savePeriodicTask");
     const reloadSpy = jest.spyOn(periodicTaskServiceMock.periodicTasksResource, "reload");
     const emitSpy = jest.spyOn(component.taskSaved, "emit");
     const panelCloseSpy = jest.spyOn(component.panel, "close");
     component.savePeriodicTask();
     expect(editComponentMock.editTask).toHaveBeenCalled();
+    expect(saveSpy).toHaveBeenCalledWith({ ...EMPTY_PERIODIC_TASK, name: "EditedNew" });
     expect(reloadSpy).toHaveBeenCalled();
     expect(panelCloseSpy).toHaveBeenCalled();
     expect(emitSpy).toHaveBeenCalled();
+  });
+
+  it("should not call savePeriodicTask, reload resource, close panel, and emit taskSaved if not allowed", () => {
+    const editComponentMock = { editTask: jest.fn().mockReturnValue({ ...EMPTY_PERIODIC_TASK, name: "EditedNew" }) };
+    component.editComponent = editComponentMock as any;
+    component.canSave = false;
+    const saveSpy = jest.spyOn(periodicTaskServiceMock, "savePeriodicTask");
+    const reloadSpy = jest.spyOn(periodicTaskServiceMock.periodicTasksResource, "reload");
+    const emitSpy = jest.spyOn(component.taskSaved, "emit");
+    const panelCloseSpy = jest.spyOn(component.panel, "close");
+    component.savePeriodicTask();
+    expect(editComponentMock.editTask).toHaveBeenCalled();
+    expect(saveSpy).not.toHaveBeenCalled();
+    expect(reloadSpy).not.toHaveBeenCalled();
+    expect(panelCloseSpy).not.toHaveBeenCalled();
+    expect(emitSpy).not.toHaveBeenCalled();
   });
 });
