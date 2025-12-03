@@ -2,34 +2,32 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MachineresolverPanelNewComponent } from "./machineresolver-panel-new.component";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import {
-  Machineresolver,
-  MachineresolverData,
-  MachineresolverService,
+  HostsMachineresolverData,
+  LdapMachineresolverData,
+  MachineresolverService
 } from "../../../services/machineresolver/machineresolver.service";
 import { DialogService } from "../../../services/dialog/dialog.service";
-import { MockMachineresolverService } from "../../../testing/mock-services/mock-machineresolver-service";
+import { MockDialogService } from "../../../../testing/mock-services/mock-dialog-service";
+import { MockMachineresolverService } from "../../../../testing/mock-services/mock-machineresolver-service";
 
 describe("MachineresolverPanelNewComponent", () => {
   let component: MachineresolverPanelNewComponent;
   let fixture: ComponentFixture<MachineresolverPanelNewComponent>;
-  let machineresolverService: MockMachineresolverService;
-  let dialogService: jasmine.SpyObj<DialogService>;
+  let machineresolverServiceMock: MockMachineresolverService;
+  let dialogServiceMock: MockDialogService;
 
   beforeEach(async () => {
-    const dialogServiceSpy = jasmine.createSpyObj("DialogService", ["confirm"]);
-
     await TestBed.configureTestingModule({
       imports: [MachineresolverPanelNewComponent, NoopAnimationsModule],
       providers: [
         { provide: MachineresolverService, useClass: MockMachineresolverService },
-        { provide: DialogService, useValue: dialogServiceSpy },
-      ],
+        { provide: DialogService, useClass: MockDialogService }
+      ]
     }).compileComponents();
-
     fixture = TestBed.createComponent(MachineresolverPanelNewComponent);
     component = fixture.componentInstance;
-    machineresolverService = TestBed.inject(MachineresolverService) as unknown as MockMachineresolverService;
-    dialogService = TestBed.inject(DialogService) as jasmine.SpyObj<DialogService>;
+    machineresolverServiceMock = TestBed.inject(MachineresolverService) as unknown as MockMachineresolverService;
+    dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
     fixture.detectChanges();
   });
 
@@ -50,49 +48,72 @@ describe("MachineresolverPanelNewComponent", () => {
   });
 
   it("should update resolver data", () => {
-    const newData: MachineresolverData = { type: "hosts", filename: "newfile" };
+    const newData: HostsMachineresolverData = {
+      type: "hosts",
+      filename: "newfile",
+      resolver: "name"
+    };
     component.onUpdateResolverData(newData);
     expect(component.newMachineresolver().data).toEqual(newData);
   });
 
   it("should save machineresolver", async () => {
     const panel = { close: () => {} } as any;
-    spyOn(panel, "close");
-    spyOn(machineresolverService, "postTestMachineresolver").and.returnValue(Promise.resolve(null));
-    spyOn(machineresolverService, "postMachineresolver").and.returnValue(Promise.resolve(null));
+    jest.spyOn(panel, "close");
+    machineresolverServiceMock.postMachineresolver.mockReturnValue(Promise.resolve(null));
+    machineresolverServiceMock.postMachineresolver.mockReturnValue(Promise.resolve(null));
     await component.saveMachineresolver(panel);
-    expect(machineresolverService.postTestMachineresolver).toHaveBeenCalled();
-    expect(machineresolverService.postMachineresolver).toHaveBeenCalled();
+    expect(machineresolverServiceMock.postTestMachineresolver).toHaveBeenCalled();
+    expect(machineresolverServiceMock.postMachineresolver).toHaveBeenCalled();
     expect(panel.close).toHaveBeenCalled();
   });
 
   it("should handle collapse", () => {
     const panel = { close: () => {}, open: () => {} } as any;
-    spyOn(panel, "close");
-    spyOn(panel, "open");
+    jest.spyOn(panel, "close");
+    jest.spyOn(panel, "open");
     component.newMachineresolver.set({ ...component.newMachineresolver(), resolvername: "test" });
-    dialogService.confirm.and.returnValue(Promise.resolve(true));
+    dialogServiceMock.confirm.mockReturnValue(Promise.resolve(true));
     component.handleCollapse(panel);
-    expect(dialogService.confirm).toHaveBeenCalled();
+    expect(dialogServiceMock.confirm).toHaveBeenCalled();
   });
 
   it("should check if machineresolver can be saved", () => {
     component.dataValidatorSignal.set(() => true);
     component.newMachineresolver.set({ ...component.newMachineresolver(), resolvername: " " });
-    expect(component.canSaveMachineresolver()).toBeFalse();
+    expect(component.canSaveMachineresolver()).toBeFalsy();
 
     component.newMachineresolver.set({ ...component.newMachineresolver(), resolvername: "test" });
-    expect(component.canSaveMachineresolver()).toBeTrue();
+    expect(component.canSaveMachineresolver()).toBeTruthy();
 
     component.dataValidatorSignal.set(() => false);
-    expect(component.canSaveMachineresolver()).toBeFalse();
+    expect(component.canSaveMachineresolver()).toBeFalsy();
   });
 
   it("should reset machineresolver", () => {
+    const data: LdapMachineresolverData = {
+      type: "ldap",
+      LDAPURI: "ldap://test",
+      AUTHTYPE: "",
+      TLS_VERIFY: false,
+      START_TLS: false,
+      TLS_CA_FILE: "",
+      LDAPBASE: "",
+      BINDDN: "",
+      BINDPW: "",
+      TIMEOUT: "",
+      SIZELIMIT: "",
+      SEARCHFILTER: "",
+      IDATTRIBUTE: "",
+      IPATTRIBUTE: "",
+      HOSTNAMEATTRIBUTE: "",
+      NOREFERRALS: false,
+      resolver: ""
+    };
     component.newMachineresolver.set({
       resolvername: "test",
       type: "ldap",
-      data: { type: "ldap", LDAPURI: "ldap://test" },
+      data: data
     });
     component.resetMachineresolver();
     expect(component.newMachineresolver()).toEqual(component.machineresolverDetault);

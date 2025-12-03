@@ -7,7 +7,7 @@ import { ContentService, ContentServiceInterface } from "../content/content.serv
 import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
 import { catchError, lastValueFrom, throwError } from "rxjs";
 
-export type MachineresolversObject = {
+export type Machineresolvers = {
   [key: string]: Machineresolver;
 };
 export interface MachineresolverData {
@@ -73,10 +73,10 @@ export class MachineresolverService implements MachineresolverServiceInterface {
 
   readonly authService: AuthServiceInterface = inject(AuthService);
   readonly contentService: ContentServiceInterface = inject(ContentService);
-  readonly http: HttpClient = inject(HttpClient);
   readonly notificationService: NotificationServiceInterface = inject(NotificationService);
+  readonly http: HttpClient = inject(HttpClient);
 
-  readonly machineresolverResource = httpResource<PiResponse<MachineresolversObject>>(() => {
+  readonly machineresolverResource = httpResource<PiResponse<Machineresolvers>>(() => {
     if (!this.authService.actionAllowed("mresolverread")) {
       this.notificationService.openSnackBar("You are not allowed to read machineresolvers.");
       return undefined;
