@@ -59,9 +59,9 @@ export interface MachineresolverServiceInterface {
   readonly allMachineresolverTypes: string[];
   readonly machineresolvers: Signal<Machineresolver[]>;
 
-  postMachineresolver(resolver: Machineresolver): Promise<string | null>;
-  postTestMachineresolver(resolver: Machineresolver): Promise<string | null>;
-  deleteMachineresolver(name: string): Promise<string | null>;
+  postMachineresolver(resolver: Machineresolver): Promise<void>;
+  postTestMachineresolver(resolver: Machineresolver): Promise<void>;
+  deleteMachineresolver(name: string): Promise<void>;
 }
 
 @Injectable({
@@ -93,26 +93,26 @@ export class MachineresolverService implements MachineresolverServiceInterface {
     return res?.result?.value ? Object.values(res.result.value) : [];
   });
 
-  async postTestMachineresolver(resolver: Machineresolver): Promise<string | null> {
+  async postTestMachineresolver(resolver: Machineresolver): Promise<void> {
     if (!this.authService.actionAllowed("mresolverwrite")) {
       this.notificationService.openSnackBar("You are not allowed to update machineresolvers.");
-      return Promise.resolve("not-allowed");
+      throw new Error("not-allowed");
     }
     const url = `${this.machineresolverBaseUrl}test`;
     const request = this.http.post<PiResponse<any>>(url, resolver.data, { headers: this.authService.getHeaders() });
     return lastValueFrom(request)
-      .then(() => null)
+      .then(() => {})
       .catch((error) => {
         const message = error.error?.result?.error?.message || "";
         this.notificationService.openSnackBar("Failed to update machineresolver. " + message);
-        return "post-failed";
+        throw new Error("post-failed");
       });
   }
 
-  async postMachineresolver(resolver: Machineresolver): Promise<string | null> {
+  async postMachineresolver(resolver: Machineresolver): Promise<void> {
     if (!this.authService.actionAllowed("mresolverwrite")) {
       this.notificationService.openSnackBar("You are not allowed to update machineresolvers.");
-      return Promise.resolve("not-allowed");
+      throw new Error("not-allowed");
     }
     const url = `${this.machineresolverBaseUrl}${resolver.resolvername}`;
     const request = this.http.post<PiResponse<any>>(url, resolver.data, { headers: this.authService.getHeaders() });
@@ -121,20 +121,19 @@ export class MachineresolverService implements MachineresolverServiceInterface {
       .then(() => {
         this.notificationService.openSnackBar(`Successfully updated machineresolver.`);
         this.machineresolverResource.reload();
-        return null;
       })
       .catch((error) => {
         console.warn("Failed to update machineresolver:", error);
         const message = error.error?.result?.error?.message || "";
         this.notificationService.openSnackBar("Failed to update machineresolver. " + message);
-        return "post-failed";
+        throw new Error("post-failed");
       });
   }
 
-  async deleteMachineresolver(name: string): Promise<string | null> {
+  async deleteMachineresolver(name: string): Promise<void> {
     if (!this.authService.actionAllowed("mresolverdelete")) {
       this.notificationService.openSnackBar("You are not allowed to delete machineresolvers.");
-      return Promise.resolve("not-allowed");
+      throw new Error("not-allowed");
     }
     const request = this.http.delete<PiResponse<any>>(`${this.machineresolverBaseUrl}${name}`, {
       headers: this.authService.getHeaders()
@@ -143,13 +142,12 @@ export class MachineresolverService implements MachineresolverServiceInterface {
       .then(() => {
         this.notificationService.openSnackBar(`Successfully deleted machineresolver: ${name}.`);
         this.machineresolverResource.reload();
-        return null;
       })
       .catch((error) => {
         console.warn("Failed to delete machineresolver:", error);
         const message = error.error?.result?.error?.message || "";
         this.notificationService.openSnackBar("Failed to delete machineresolver. " + message);
-        return "post-failed";
+        throw new Error("post-failed");
       });
   }
 }

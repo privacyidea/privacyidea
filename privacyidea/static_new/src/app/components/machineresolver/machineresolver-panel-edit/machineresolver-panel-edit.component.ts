@@ -113,10 +113,11 @@ export class MachineresolverPanelEditComponent {
 
   async saveMachineresolver() {
     const current = this.currentMachineresolver();
-    let errorMessage = await this.machineresolverService.postTestMachineresolver(current);
-    if (errorMessage) {
+    try {
+      await this.machineresolverService.postTestMachineresolver(current);
+    } catch (error) {
+      const errorMessage = (error as Error).message;
       if (errorMessage === "post-failed") {
-        // ask user if they want to save anyway
         const dialogData: MatDialogConfigRequired<ConfirmationDialogData> = {
           data: {
             type: "machineresolver",
@@ -130,8 +131,11 @@ export class MachineresolverPanelEditComponent {
         return;
       }
     }
-    errorMessage = await this.machineresolverService.postMachineresolver(current);
-    if (errorMessage) return;
+    try {
+      await this.machineresolverService.postMachineresolver(current);
+    } catch (error) {
+      return;
+    }
     this.isEditMode.set(false);
   }
 
@@ -149,10 +153,11 @@ export class MachineresolverPanelEditComponent {
       .then(async (result) => {
         if (result) {
           if (!result) return;
-          const errorMessage = await this.machineresolverService.deleteMachineresolver(
-            this.currentMachineresolver().resolvername
-          );
-          if (errorMessage) return;
+          try {
+            await this.machineresolverService.deleteMachineresolver(this.currentMachineresolver().resolvername);
+          } catch (error) {
+            return;
+          }
         }
       })
       .catch((err) => {

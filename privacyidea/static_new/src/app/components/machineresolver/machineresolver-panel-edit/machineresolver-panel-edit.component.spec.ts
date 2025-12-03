@@ -116,7 +116,7 @@ describe("MachineresolverPanelEditComponent", () => {
   });
 
   it("should save machineresolver despite test failure if confirmed", async () => {
-    machineresolverServiceMock.postTestMachineresolver.mockReturnValue(Promise.resolve("post-failed"));
+    machineresolverServiceMock.postTestMachineresolver.mockReturnValue(Promise.reject(Error("post-failed")));
     machineresolverServiceMock.postMachineresolver.mockReturnValue(Promise.resolve(null));
     dialogServiceMock.confirm.mockReturnValue(Promise.resolve(true));
     component.isEditMode.set(true);
@@ -128,7 +128,7 @@ describe("MachineresolverPanelEditComponent", () => {
   });
 
   it("should not save machineresolver if test fails and not confirmed", async () => {
-    machineresolverServiceMock.postTestMachineresolver.mockReturnValue(Promise.resolve("post-failed"));
+    machineresolverServiceMock.postTestMachineresolver.mockReturnValue(Promise.reject(Error("post-failed")));
     machineresolverServiceMock.postMachineresolver.mockReturnValue(Promise.resolve(null));
     dialogServiceMock.confirm.mockReturnValue(Promise.resolve(false));
     component.isEditMode.set(true);
@@ -141,7 +141,7 @@ describe("MachineresolverPanelEditComponent", () => {
 
   it("should not save machineresolver if post fails", async () => {
     machineresolverServiceMock.postTestMachineresolver.mockReturnValue(Promise.resolve(null));
-    machineresolverServiceMock.postMachineresolver.mockReturnValue(Promise.resolve("save-failed"));
+    machineresolverServiceMock.postMachineresolver.mockReturnValue(Promise.reject(Error("save-failed")));
     component.isEditMode.set(true);
     await component.saveMachineresolver();
     expect(machineresolverServiceMock.postTestMachineresolver).toHaveBeenCalled();

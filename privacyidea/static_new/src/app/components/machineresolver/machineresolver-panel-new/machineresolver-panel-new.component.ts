@@ -112,8 +112,10 @@ export class MachineresolverPanelNewComponent {
 
   async saveMachineresolver(panel: MatExpansionPanel) {
     const current = this.newMachineresolver();
-    let errorMessage = await this.machineresolverService.postTestMachineresolver(current);
-    if (errorMessage) {
+    try {
+      await this.machineresolverService.postTestMachineresolver(current);
+    } catch (error) {
+      const errorMessage = (error as Error).message;
       if (errorMessage === "post-failed") {
         const dialogData: MatDialogConfigRequired<ConfirmationDialogData> = {
           data: {
@@ -128,8 +130,11 @@ export class MachineresolverPanelNewComponent {
         return;
       }
     }
-    errorMessage = await this.machineresolverService.postMachineresolver(current);
-    if (errorMessage) return;
+    try {
+      await this.machineresolverService.postMachineresolver(current);
+    } catch (error) {
+      return;
+    }
     this.resetMachineresolver();
     panel.close();
   }
