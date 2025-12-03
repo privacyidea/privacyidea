@@ -33,6 +33,7 @@ import { PoliciesComponent } from "./components/policies/policies.component";
 import { TokenImportComponent } from "./components/token/token-import/token-import.component";
 import { RealmTableComponent } from "./components/user/realm-table/realm-table.component";
 import { ClientsComponent } from "./components/audit/clients/clients.component";
+import { MachineresolverComponent } from "./components/machineresolver/machineresolver.component";
 
 export const routes: Routes = [
   {
@@ -68,10 +69,14 @@ export const routes: Routes = [
     children: [{ path: "", component: PoliciesComponent }]
   },
   {
+    path: "settings",
+    children: [{ path: "machineresolver", component: MachineresolverComponent }]
+  },
+  {
     path: "audit",
     children: [
       { path: "", component: AuditComponent },
-      { path: "clients", component: ClientsComponent}
+      { path: "clients", component: ClientsComponent }
     ]
   }
 ];
