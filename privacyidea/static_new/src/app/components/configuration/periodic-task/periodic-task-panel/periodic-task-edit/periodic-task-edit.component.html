@@ -104,19 +104,26 @@
           [class.action-card-selected]="selectedOption().name === option"
           (click)="onOptionSelection(option, taskModuleOptions()[option], editTask().options[option])">
           <div class="action-row">
-            <span class="action-label">{{ option }}</span>
+            <span class="action-label">
+              {{ option }}
+              @if (taskModuleOptions()[option]?.required && (editTask().options[option] === '' || editTask().options[option] === undefined || editTask().options[option] === null)) {
+                <span class="required-star" style="color: red">*</span>
+              }
+            </span>
             @if (!isBooleanAction(editTask().options[option])) {
               <div class="action-value">
                 {{ editTask().options[option] }}
               </div>
             }
-            <div class="actions margin-left-1">
-              <button
-                (click)="deleteOption(option)"
-                mat-icon-button
-                matTooltip="Remove Option">
-                <mat-icon>delete</mat-icon>
-              </button>
+            <div class="actions margin-left-1 height-48">
+                @if (taskModuleOptions()[option] && !taskModuleOptions()[option].required ) {
+                  <button
+                    (click)="deleteOption(option)"
+                    mat-icon-button
+                    matTooltip="Remove Option">
+                    <mat-icon>delete</mat-icon>
+                  </button>
+                }
             </div>
           </div>
         </div>

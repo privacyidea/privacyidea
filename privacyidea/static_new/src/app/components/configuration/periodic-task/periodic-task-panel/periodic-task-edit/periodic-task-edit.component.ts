@@ -92,6 +92,14 @@ export class PeriodicTaskEditComponent {
   protected readonly Object = Object;
   protected readonly parseBooleanValue = parseBooleanValue;
 
+  // Add this computed signal for required options
+  requiredOptions = computed(() => {
+    const options = this.taskModuleOptions() || {};
+    return Object.fromEntries(
+      Object.entries(options).filter(([_, opt]) => opt.required)
+    );
+  });
+
   get allowSave() {
     if (this.editTask().name === "") return false;
     if (this.editTask().taskmodule === "") return false;
@@ -99,6 +107,15 @@ export class PeriodicTaskEditComponent {
     if (this.editTask().nodes.length === 0) return false;
     if (this.editTask().ordering === null) return false;
     if (Object.keys(this.editTask().options).length == 0) return false;
+
+    // Use requiredOptions signal for validation
+    for (const key of Object.keys(this.requiredOptions())) {
+      const value = this.editTask().options[key];
+      if (value === undefined || value === null || value === "") {
+        return false;
+      }
+    }
+
     return true;
   }
 
@@ -153,6 +170,20 @@ export class PeriodicTaskEditComponent {
 
   onTaskModuleChange(module: string) {
     this.editTask.set({ ...this.editTask(), taskmodule: module });
+
+    // Preselect required options if creating a new task
+    if (this.isNewTask()) {
+      const requiredOptions: Record<string, any> = {};
+      Object.entries(this.requiredOptions()).forEach(([key, opt]) => {
+        requiredOptions[key] = opt.value ?? "";
+      });
+      this.editTask.set({
+        ...this.editTask(),
+        taskmodule: module,
+        options: { ...requiredOptions }
+      });
+    }
+
     this.emitAllowSave();
   }
 

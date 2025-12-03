@@ -51,6 +51,11 @@ export class MockPeriodicTaskService implements PeriodicTaskServiceInterface {
         name: "total_tokens",
         description: "Total number of tokens",
         type: "bool"
+      },
+      "user_with_token": {
+        name: "user_with_token",
+        description: "Number of users with tokens",
+        type: "bool"
       }
     },
     "EventCounter": {

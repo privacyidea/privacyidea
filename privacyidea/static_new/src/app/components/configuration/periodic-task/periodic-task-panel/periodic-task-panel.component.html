@@ -32,7 +32,7 @@
         </div>
         <div class="actions">
           @if (panel.expanded && authService.actionAllowed("periodictask_write")) {
-            @if (isEditMode() || isNewTask()) {
+            @if (isEditMode()) {
               <button
                 mat-icon-button
                 matTooltip="Save Changes"
@@ -54,7 +54,7 @@
                 <mat-icon>edit</mat-icon>
               </button>
             }
-            @if (authService.actionAllowed("delete") && !isNewTask()) {
+            @if (authService.actionAllowed("delete")) {
               <button
                 mat-icon-button
                 matTooltip="Delete Periodic Task"
@@ -76,7 +76,7 @@
       </mat-panel-description>
     </mat-expansion-panel-header>
     <div class="mat-expansion-panel-body">
-      @if (isEditMode() || isNewTask()) {
+      @if (isEditMode()) {
         <app-periodic-task-edit
           [task]="task()"
           [isNewTask]="false"

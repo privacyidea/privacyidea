@@ -57,7 +57,6 @@ export class PeriodicTaskPanelComponent {
   periodicTaskService = inject(PeriodicTaskService);
   authService = inject(AuthService);
   private readonly dialog: MatDialog = inject(MatDialog);
-  isNewTask = input<boolean>(false);
   task = input<PeriodicTask>(EMPTY_PERIODIC_TASK);
   isEditMode = signal(false);
 

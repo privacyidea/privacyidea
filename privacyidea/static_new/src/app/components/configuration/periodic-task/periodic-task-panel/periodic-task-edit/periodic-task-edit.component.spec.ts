@@ -22,13 +22,12 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { PeriodicTaskEditComponent } from "./periodic-task-edit.component";
 import { provideHttpClient } from "@angular/common/http";
 import { MockPeriodicTaskService } from "../../../../../../testing/mock-services/mock-periodic-task-service";
-import { PeriodicTaskService } from "../../../../../services/periodic-task/periodic-task.service";
+import { EMPTY_PERIODIC_TASK, PeriodicTaskService } from "../../../../../services/periodic-task/periodic-task.service";
 import { SystemService } from "../../../../../services/system/system.service";
 
 describe("PeriodicTaskEditComponent", () => {
   let component: PeriodicTaskEditComponent;
   let fixture: ComponentFixture<PeriodicTaskEditComponent>;
-
   let mockTask = {
     id: "1",
     name: "Test Task",
@@ -55,7 +54,6 @@ describe("PeriodicTaskEditComponent", () => {
     fixture = TestBed.createComponent(PeriodicTaskEditComponent);
     component = fixture.componentInstance;
     fixture.componentRef.setInput("task", mockTask);
-    fixture.componentRef.setInput("isNewTask", false);
     fixture.detectChanges();
   });
 
@@ -97,5 +95,65 @@ describe("PeriodicTaskEditComponent", () => {
   it("should update taskmodule on change", () => {
     component.onTaskModuleChange("EventCounter");
     expect(component.editTask().taskmodule).toBe("EventCounter");
+  });
+
+  it("should compute requiredOptions correctly", () => {
+    component.editTask.set({ ...EMPTY_PERIODIC_TASK, taskmodule: "EventCounter", options: {} });
+    const required = component.requiredOptions();
+    expect(Object.keys(required)).toEqual(["event_counter", "stats_key"]);
+  });
+
+  it("should preselect required options on module change for new task", () => {
+    component.editTask.set({ ...EMPTY_PERIODIC_TASK, taskmodule: "EventCounter", options: {} });
+    fixture.componentRef.setInput("isNewTask", true);
+    component.onTaskModuleChange("EventCounter");
+    const options = component.editTask().options;
+    expect(options).toHaveProperty("event_counter");
+    expect(options).toHaveProperty("stats_key");
+    expect(options["event_counter"]).toBe("");
+    expect(options["stats_key"]).toBe("");
+  });
+
+  describe("saveAllowed", () => {
+    it("required option missing", () => {
+      component.onTaskModuleChange("EventCounter");
+      component.editTask().options = { event_counter: "test" };
+      expect(component.allowSave).toBe(false);
+    });
+
+    it("value of required option missing", () => {
+      component.onTaskModuleChange("EventCounter");
+      component.editTask().options = { event_counter: "test", stats_key: "" };
+      expect(component.allowSave).toBe(false);
+    });
+
+    it("missing name", () => {
+      component.editTask().name = "";
+      expect(component.allowSave).toBe(false);
+    });
+
+    it("missing interval", () => {
+      component.editTask().interval = "";
+      expect(component.allowSave).toBe(false);
+    });
+
+    it("empty options", () => {
+      component.editTask().options = {};
+      expect(component.allowSave).toBe(false);
+    });
+
+    it("all required options are set", () => {
+      component.editTask.set({
+        ...EMPTY_PERIODIC_TASK,
+        name: "Task",
+        interval: "* * * * *",
+        nodes: ["node1"],
+        ordering: 1,
+        taskmodule: "EventCounter",
+        options: { event_counter: "val1", stats_key: "val2" }
+      });
+      expect(component.allowSave).toBe(true);
+    });
+
   });
 });
