@@ -34,7 +34,6 @@ import { MatTableDataSource } from "@angular/material/table";
 import { TableUtilsService } from "../../services/table-utils/table-utils.service";
 import { of } from "rxjs";
 import { provideHttpClient } from "@angular/common/http";
-import { FilterValue } from "../../core/models/filter_value";
 import { AuditSelfServiceComponent } from "./audit.self-service.component";
 import { provideNoopAnimations } from "@angular/platform-browser/animations";
 import { MockAuthService } from "../../../testing/mock-services/mock-auth-service";

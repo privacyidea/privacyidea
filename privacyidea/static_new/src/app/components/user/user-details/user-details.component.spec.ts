@@ -231,4 +231,43 @@ describe("UserDetailsComponent", () => {
     expect(focus).toHaveBeenCalledTimes(1);
     expect(openPanel).toHaveBeenCalledTimes(1);
   });
+
+  it("should not include custom user attributes in detailsEntries", () => {
+    // Setup user data with standard and custom keys
+
+    userServiceMock.user.set({
+      username: "alice",
+      givenname: "Alice",
+      surname: "Smith",
+      email: "alice@example.com",
+      custom1: "customValue1",
+      custom2: "customValue2",
+      editable: false,
+      userid: "u123",
+      resolver: "default",
+      description: "",
+      mobile: "",
+      phone: ""
+    });
+
+    // Setup custom attributes list
+    userServiceMock.userAttributesList.set([
+      { key: "custom1", value: "customValue1" },
+      { key: "custom2", value: "customValue2" }
+    ]);
+
+    // detailsEntries should not include custom1 or custom2
+    const entries = component.detailsEntries();
+    const keys = entries.map(e => e.key);
+
+    expect(keys).not.toContain("custom1");
+    expect(keys).not.toContain("custom2");
+    // Should contain standard keys
+    expect(keys).toContain("username");
+    expect(keys).toContain("givenname");
+    expect(keys).toContain("surname");
+    expect(keys).toContain("email");
+    expect(keys).toContain("userid");
+    expect(keys).toContain("resolver");
+  });
 });

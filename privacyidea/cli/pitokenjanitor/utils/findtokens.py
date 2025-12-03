@@ -267,9 +267,8 @@ def export_token_data(token_list: list, token_attributes: list = None,
             for att in token_attributes:
                 if att in allowed_tokenattributes:
                     token_data[att] = f'{token_obj.token.get(att)}'
-                else:
-                    if att in token_info:
-                        export_ti[att] = f'{token_info[att]}'
+                elif att in token_info:
+                    export_ti[att] = f'{token_info[att]}'
             token_data["info"] = export_ti
         else:
             # Return all token attributes/tokeninfo

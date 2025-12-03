@@ -12,7 +12,7 @@
  * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
  *
  * You should have received a copy of the GNU Affero General Public
- * License along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
@@ -21,8 +21,7 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { provideNoopAnimations } from "@angular/platform-browser/animations";
-import { of, throwError } from "rxjs";
-import { signal } from "@angular/core";
+import { of } from "rxjs";
 import { MatDialog, MatDialogRef } from "@angular/material/dialog";
 import { ActivatedRoute, NavigationEnd, Router } from "@angular/router";
 
@@ -33,12 +32,7 @@ import {
   NotificationServiceInterface
 } from "../../../../services/notification/notification.service";
 
-import {
-  BulkResult,
-  TokenDetails,
-  TokenService,
-  TokenServiceInterface
-} from "../../../../services/token/token.service";
+import { BulkResult, TokenDetails, TokenService } from "../../../../services/token/token.service";
 
 import { VersioningService } from "../../../../services/version/version.service";
 import { ConfirmationDialogComponent } from "../../../shared/confirmation-dialog/confirmation-dialog.component";
@@ -46,7 +40,15 @@ import { ContentService } from "../../../../services/content/content.service";
 import { AuthService } from "../../../../services/auth/auth.service";
 import { AuditService } from "../../../../services/audit/audit.service";
 
-import { MockPiResponse, MockTokenService } from "../../../../../testing/mock-services";
+import {
+  MockAuditService,
+  MockContentService,
+  MockNotificationService,
+  MockPiResponse,
+  MockTokenService,
+  MockVersioningService,
+} from "../../../../../testing/mock-services";
+import { MockAuthService } from "../../../../../testing/mock-services/mock-auth-service";
 
 describe("TokenTableActionsComponent", () => {
   let component: TokenTableActionsComponent;
@@ -64,35 +66,10 @@ describe("TokenTableActionsComponent", () => {
       } as unknown as MatDialogRef<ConfirmationDialogComponent>)
     };
 
-    const versioningServiceMock = {
-      getVersion: jest.fn().mockReturnValue("1.0.0"),
-      openDocumentation: jest.fn()
-    };
-
-    const notificationServiceMock = {
-      openSnackBar: jest.fn()
-    };
-
     const routerMock = {
       navigateByUrl: jest.fn(),
       events: of(new NavigationEnd(1, "/start", "/start")),
       url: "/start"
-    };
-
-    const contentServiceMock = {
-      routeUrl: signal("/tokens"),
-      tokenSerial: "MOCK_SERIAL"
-    };
-
-    const auditServiceMock = { auditFilter: signal({}) };
-
-    const authServiceMock = {
-      hasPermission: jest.fn().mockReturnValue(true),
-      tokenEnrollmentAllowed: jest.fn().mockReturnValue(true),
-      actionAllowed: jest.fn().mockReturnValue(true),
-      actionsAllowed: jest.fn().mockReturnValue(true),
-      oneActionAllowed: jest.fn().mockReturnValue(true),
-      getHeaders: jest.fn().mockReturnValue({})
     };
 
     await TestBed.configureTestingModule({
@@ -105,14 +82,13 @@ describe("TokenTableActionsComponent", () => {
         { provide: ActivatedRoute, useValue: { params: of({ id: "123" }) } },
         { provide: TokenService, useClass: MockTokenService },
         { provide: MatDialog, useValue: dialogMock },
-        { provide: VersioningService, useValue: versioningServiceMock },
-        { provide: NotificationService, useValue: notificationServiceMock },
-        { provide: ContentService, useValue: contentServiceMock },
-        { provide: AuditService, useValue: auditServiceMock },
-        { provide: AuthService, useValue: authServiceMock }
+        { provide: VersioningService, useClass: MockVersioningService },
+        { provide: NotificationService, useClass: MockNotificationService },
+        { provide: ContentService, useClass: MockContentService },
+        { provide: AuditService, useClass: MockAuditService },
+        { provide: AuthService, useClass: MockAuthService }
       ]
     }).compileComponents();
-
     fixture = TestBed.createComponent(TokenTableActionsComponent);
     component = fixture.componentInstance;
 

@@ -44,6 +44,7 @@ export interface UserData {
   surname: string;
   userid: string;
   username: string;
+  [key: string]: unknown; // Allow additional custom properties
 }
 
 export interface UserAttributePolicy {
@@ -109,6 +110,8 @@ export class UserService implements UserServiceInterface {
   readonly advancedApiFilter = advancedApiFilter;
   private baseUrl = environment.proxyUrl + "/user/";
   filterValue = signal({} as Record<string, string>);
+  readonly advancedApiFilterOptions = advancedApiFilter;
+
   filterParams = computed<Record<string, string>>(() => {
     const allowedFilters = [...this.apiFilterOptions, ...this.advancedApiFilterOptions];
     const entries = Array.from(this.apiUserFilter().filterMap.entries())
@@ -123,13 +126,17 @@ export class UserService implements UserServiceInterface {
   readonly apiFilterOptions = apiFilter;
 
   attributePolicy = computed<UserAttributePolicy>(
-    () => this.attributesResource.value()?.result?.value ?? { delete: [], set: {} }
+    () => this.editableAttributesResource.value()?.result?.value ?? { delete: [], set: {} }
   );
+
   deletableAttributes = computed<string[]>(() => this.attributePolicy().delete ?? []);
-  attributesResource = httpResource<PiResponse<UserAttributePolicy>>(() => {
-    if (!this.contentService.routeUrl().startsWith(ROUTE_PATHS.USERS_DETAILS)) {
+
+  editableAttributesResource = httpResource<PiResponse<UserAttributePolicy>>(() => {
+    // Only load editable user attributes on the user details page.
+    if (!this.contentService.onUserDetails()) {
       return undefined;
     }
+
     return {
       url: this.baseUrl + "editable_attributes/",
       method: "GET",
@@ -137,14 +144,19 @@ export class UserService implements UserServiceInterface {
       params: { user: this.detailsUsername(), realm: this.selectedUserRealm() }
     };
   });
+
   attributeSetMap = computed<Record<string, string[]>>(() => this.attributePolicy().set ?? {});
+
   hasWildcardKey = computed<boolean>(() => Object.prototype.hasOwnProperty.call(this.attributeSetMap(), "*"));
+
   keyOptions = computed<string[]>(() =>
     Object.keys(this.attributeSetMap())
       .filter((k) => k !== "*")
       .sort()
   );
+
   userAttributes = computed<Record<string, string>>(() => this.userAttributesResource.value()?.result?.value ?? {});
+
   userAttributesList = computed(() =>
     Object.entries(this.userAttributes()).map(([key, raw]) => ({
       key,
@@ -153,9 +165,11 @@ export class UserService implements UserServiceInterface {
   );
 
   userAttributesResource = httpResource<PiResponse<Record<string, string>>>(() => {
-    if (!this.contentService.routeUrl().startsWith(ROUTE_PATHS.USERS_DETAILS)) {
+    // Only load user attributes on the user details page.
+    if (!this.contentService.onUserDetails()) {
       return undefined;
     }
+
     return {
       url: this.baseUrl + "attribute",
       method: "GET",
@@ -164,13 +178,15 @@ export class UserService implements UserServiceInterface {
     };
   });
 
-  readonly advancedApiFilterOptions = advancedApiFilter;
   detailsUsername = this.tokenService.detailsUsername;
+
   apiUserFilter = signal(new FilterValue());
+
   pageSize = linkedSignal({
     source: () => this.authService.userPageSize(),
     computation: (pageSize) => (pageSize > 0 ? pageSize : 10)
   });
+
   pageIndex = linkedSignal({
     source: () => ({
       filterValue: this.apiUserFilter(),
@@ -179,6 +195,7 @@ export class UserService implements UserServiceInterface {
     }),
     computation: () => 0
   });
+
   selectedUserRealm: WritableSignal<string> = linkedSignal({
     source: () => ({
       routeUrl: this.contentService.routeUrl(),
@@ -194,10 +211,12 @@ export class UserService implements UserServiceInterface {
       return source.authRole === "user" ? source.authRealm : source.defaultRealm;
     }
   });
+
   selectionFilter = linkedSignal<string, UserData | string>({
     source: this.selectedUserRealm,
     computation: () => ""
   });
+
   selectionUsernameFilter = computed<string>(() => {
     const filter = this.selectionFilter();
     if (typeof filter === "string") {
@@ -205,19 +224,28 @@ export class UserService implements UserServiceInterface {
     }
     return filter?.username ?? "";
   });
+
   userResource = httpResource<PiResponse<UserData[]>>(() => {
+    // Do not load user details if the action is not allowed.
     if (!this.authService.actionAllowed("userlist")) {
       return undefined;
     }
+    // Only load user details on the user details page.
+    if (!this.contentService.onUserDetails() && this.authService.role() !== "user") {
+      return undefined;
+    }
+
     return {
       url: this.baseUrl,
       method: "GET",
       headers: this.authService.getHeaders(),
       params: {
-        ...(this.detailsUsername() && { user: this.detailsUsername() })
+        ...(this.detailsUsername() && { user: this.detailsUsername() }),
+        ...(this.selectedUserRealm() && { realm: this.selectedUserRealm() })
       }
     };
   });
+
   user: WritableSignal<UserData> = linkedSignal({
     source: () => ({
       userResource: this.userResource.value,
@@ -240,23 +268,35 @@ export class UserService implements UserServiceInterface {
       );
     }
   });
+
   usersResource = httpResource<PiResponse<UserData[]>>(() => {
     const selectedUserRealm = this.selectedUserRealm();
-    if (
-      selectedUserRealm === "" ||
-      !this.authService.actionAllowed("userlist") ||
-      (!this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_DETAILS) &&
-        !this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS) &&
-        !this.contentService.routeUrl().startsWith(ROUTE_PATHS.USERS_DETAILS) &&
-        ![
-          ROUTE_PATHS.TOKENS,
-          ROUTE_PATHS.USERS,
-          ROUTE_PATHS.TOKENS_CONTAINERS_CREATE,
-          ROUTE_PATHS.TOKENS_ENROLLMENT
-        ].includes(this.contentService.routeUrl()))
-    ) {
+    const tokenSelection = this.tokenService.tokenSelection();
+    // Do not load users if the action is not allowed.
+    if (!this.authService.actionAllowed("userlist")) {
       return undefined;
     }
+    // Load users only if a realm is selected.
+    if (!selectedUserRealm) {
+      return undefined;
+    }
+    // Only load users on routes with a user list or selection.
+    const onAllowedRoute =
+      this.contentService.onTokenDetails() ||
+      this.contentService.onTokensContainersDetails() ||
+      this.contentService.onTokens() ||
+      this.contentService.onUsers() ||
+      this.contentService.onTokensContainersCreate() ||
+      this.contentService.onTokensEnrollment();
+
+    if (!onAllowedRoute) {
+      return undefined;
+    }
+    // On the tokens route we require at least one selected token before loading users.
+    if (this.contentService.onTokens() && tokenSelection.length === 0) {
+      return undefined;
+    }
+
     return {
       url: this.baseUrl,
       method: "GET",
@@ -272,10 +312,10 @@ export class UserService implements UserServiceInterface {
     source: this.usersResource.value,
     computation: (source, previous) => source?.result?.value ?? previous?.value ?? []
   });
+
   selectedUser = computed<UserData | null>(() => {
-    const onTokenDetails = this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_DETAILS);
     let tokenUsername = "";
-    if (onTokenDetails) {
+    if (this.contentService.onTokenDetails()) {
       const token = this.tokenService.tokenDetailResource.value()?.result?.value?.tokens?.[0];
       tokenUsername = token?.username ?? "";
     }
@@ -309,7 +349,9 @@ export class UserService implements UserServiceInterface {
       userid: ""
     } as UserData;
   });
+
   allUsernames = computed<string[]>(() => this.users().map((user) => user.username));
+
   selectionFilteredUsers = computed<UserData[]>(() => {
     let userFilter = this.selectionFilter();
     if (typeof userFilter !== "string" || userFilter.trim() === "") {
@@ -318,6 +360,7 @@ export class UserService implements UserServiceInterface {
     const filterValue = userFilter.toLowerCase().trim();
     return this.users().filter((user) => user.username.toLowerCase().includes(filterValue));
   });
+
   selectionFilteredUsernames = computed<string[]>(() => this.selectionFilteredUsers().map((user) => user.username));
 
   displayUser(user: UserData | string): string {

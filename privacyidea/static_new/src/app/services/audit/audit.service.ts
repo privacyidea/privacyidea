@@ -20,7 +20,6 @@ import { httpResource, HttpResourceRef } from "@angular/common/http";
 import { computed, inject, Injectable, linkedSignal, signal, WritableSignal } from "@angular/core";
 import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
-import { ROUTE_PATHS } from "../../route_paths";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
 
@@ -113,8 +112,9 @@ export class AuditService implements AuditServiceInterface {
 
   readonly apiFilter = apiFilter;
   readonly advancedApiFilter = advancedApiFilter;
-  private auditBaseUrl = environment.proxyUrl + "/audit/";
+
   auditFilter = signal(new FilterValue());
+
   filterParams = computed<Record<string, string>>(() => {
     const allowed = [...this.apiFilter, ...this.advancedApiFilter];
 
@@ -133,6 +133,7 @@ export class AuditService implements AuditServiceInterface {
     source: () => this.authService.auditPageSize(),
     computation: (pageSize) => (pageSize > 0 ? pageSize : 10)
   });
+
   pageIndex = linkedSignal({
     source: () => ({
       filterValue: this.auditFilter(),
@@ -141,10 +142,14 @@ export class AuditService implements AuditServiceInterface {
     }),
     computation: () => 0
   });
+
+  private auditBaseUrl = environment.proxyUrl + "/audit/";
   auditResource = httpResource<PiResponse<Audit>>(() => {
-    if (this.contentService.routeUrl() !== ROUTE_PATHS.AUDIT) {
+    // Only load audit logs on the audit route.
+    if (!this.contentService.onAudit()) {
       return undefined;
     }
+
     return {
       url: this.auditBaseUrl,
       method: "GET",
