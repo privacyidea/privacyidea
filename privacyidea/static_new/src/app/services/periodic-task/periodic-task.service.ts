@@ -219,13 +219,29 @@ export class PeriodicTaskService implements PeriodicTaskServiceInterface {
       });
   }
 
+  convertNodesArrayToString(nodes: any): string {
+    // Ensure params.nodes is a comma-separated string.
+    if (Array.isArray(nodes)) {
+      nodes = nodes.join(",");
+    } else if (typeof nodes === "string") {
+      // already a string, do nothing
+    } else if (nodes == null) {
+      nodes = "";
+    } else {
+      // Unexpected type, log a warning and set to empty string
+      console.warn("Unexpected type for params.nodes in savePeriodicTask:", nodes);
+      nodes = "";
+    }
+    return nodes;
+  }
+
   savePeriodicTask(task: PeriodicTask): Observable<PiResponse<number, any> | undefined> {
     const headers = this.authService.getHeaders();
     let params = { ...task } as any;
     if (!params.id) {
       delete params.id;
     }
-    params.nodes = Array.isArray(params.nodes) ? params.nodes.join(",") : params.nodes;
+    params.nodes = this.convertNodesArrayToString(params.nodes);
     return this.http.post<PiResponse<number, any>>(
       this.periodicTaskBaseUrl,
       params,

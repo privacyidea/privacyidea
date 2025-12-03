@@ -71,11 +71,9 @@ export class PeriodicTaskPanelComponent {
     this.task()!.active = activate;
     if (!this.isEditMode()) {
       if (activate) {
-        this.periodicTaskService.enablePeriodicTask(this.task()!.id).then(r => {
-        });
+        this.periodicTaskService.enablePeriodicTask(this.task()!.id);
       } else {
-        this.periodicTaskService.disablePeriodicTask(this.task()!.id).then(r => {
-        });
+        this.periodicTaskService.disablePeriodicTask(this.task()!.id);
       }
     }
   }
@@ -99,7 +97,6 @@ export class PeriodicTaskPanelComponent {
             this.periodicTaskService.periodicTasksResource.reload();
             this.isEditMode.set(false);
           }
-          console.log(this.editComponent?.editTask());
         }
       });
     }
