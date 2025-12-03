@@ -200,7 +200,7 @@ type: ``string``
 Defines the default container type when creating a new container in the WebUI. This container type will be selected
 when entering the container create dialog. If this policy is not set, the default type is `Generic`.
 
-New in version 3.11
+.. versionadded:: 3.11
 
 .. index:: Wizard, Token wizard
 .. _policy_token_wizard:

@@ -476,6 +476,8 @@ type: ``bool``
 Use the ``pia`` scheme in the enrollment URL for push tokens to automatically open the privacyIDEA Authenticator app.
 If this policy is not enabled, the ``otpauth`` scheme is used by default.
 
+.. versionadded:: 3.12
+
 .. _policy_verify_enrollment:
 
 verify_enrollment

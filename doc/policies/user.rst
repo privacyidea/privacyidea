@@ -504,7 +504,7 @@ type: bool
 
 This action allows users to generate the QR code for the registration of a container.
 
-New in version 3.11
+.. versionadded:: 3.11
 
 container_unregister
 ~~~~~~~~~~~~~~~~~~~~
@@ -514,7 +514,7 @@ type: bool
 This action allows users to unregister a container. This terminates the possibility to synchronize the container
 with the server.
 
-New in version 3.11
+.. versionadded:: 3.11
 
 container_rollover
 ~~~~~~~~~~~~~~~~~~
@@ -523,7 +523,7 @@ type: bool
 
 This action allows users to perform a rollover of a container and all contained tokens.
 
-New in version 3.11
+.. versionadded:: 3.11
 
 container_template_create
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -532,7 +532,7 @@ type: bool
 
 This action allows users to create and edit container templates.
 
-New in version 3.11
+.. versionadded:: 3.11
 
 container_template_delete
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -541,7 +541,7 @@ type: bool
 
 This action allows users to delete container templates.
 
-New in version 3.11
+.. versionadded:: 3.11
 
 container_template_list
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -551,7 +551,7 @@ type: bool
 This action allows users to list container templates and see the template properties.
 In combination with the ```container_list`` policy, the users are allowed to compare templates with containers.
 
-New in version 3.11
+.. versionadded:: 3.11
 
 hide_container_info
 ~~~~~~~~~~~~~~~~~~~~
@@ -561,4 +561,4 @@ type: string
 This specifies a whitespace-separated list of container info keys that should be removed from the response of the
 :http:get:`/container/` endpoint and therefore will not be shown in the WebUI on the container details page.
 
-New in version 3.12
+.. versionadded:: 3.12

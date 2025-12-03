@@ -268,6 +268,8 @@ can use *ipaUniqueID*.
 Recursive Search of User Groups
 """""""""""""""""""""""""""""""
 
+.. versionadded:: 3.12
+
 Active Directory only returns the direct group memberships of a user. If you are using nested groups and are interested
 in all group memberships, you can use this option. The resolver will then perform another search to retrieve all groups
 of the user, according to the defined search filter.
@@ -524,6 +526,7 @@ because privacyIDEA will match ``{ "success": false }``.
 Advanced HTTP resolver
 ~~~~~~~~~~~~~~~~~~~~~~
 .. index:: Advanced HTTP resolver
+.. versionadded:: 3.12
 
 The advanced HTTP resolver is a more complex version of the basic HTTP resolver. In the UI, first some generic settings
 are configured. Below that, you can set up the user store API endpoint for each resolver functionality.
@@ -651,8 +654,9 @@ Possible tag: ``{userid}``
 .. _entra_id_resolver:
 
 Entra ID resolver
-~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~
 .. index:: Entra ID resolver
+.. versionadded:: 3.12
 
 The EntraID resolver is a preconfigured advanced HTTP resolver to retrieve user information from Microsoft Entra ID.
 Check out the
@@ -812,8 +816,9 @@ the following required parameters are set in the request mapping:
 .. _keycloak_resolver:
 
 Keycloak resolver
-~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~
 .. index:: Keycloak resolver
+.. versionadded:: 3.12
 
 The Keycloak resolver is a preconfigured advanced HTTP resolver to retrieve user information from Keycloak.
 Check out the
