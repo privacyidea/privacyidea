@@ -423,10 +423,10 @@ def _create_token_query(tokentype=None, token_type_list=None, realm=None, assign
         # Combine all filters with the existing query using and_()
         sql_query = sql_query.where(and_(resolver_filter, realm_filter))
 
-    print(f"----------------------------- CREATE TOKEN QUERY -----------------------------")
-    from sqlalchemy.dialects import postgresql
-    print(sql_query.compile(dialect=postgresql.dialect(), compile_kwargs={"literal_binds": True}))
-    print("-------------------------------------------------------------------------------")
+    # print(f"----------------------------- CREATE TOKEN QUERY -----------------------------")
+    # from sqlalchemy.dialects import postgresql
+    # print(sql_query.compile(dialect=postgresql.dialect(), compile_kwargs={"literal_binds": True}))
+    # print("-------------------------------------------------------------------------------")
     return sql_query
 
 
