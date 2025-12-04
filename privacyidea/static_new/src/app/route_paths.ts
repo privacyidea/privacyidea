@@ -19,15 +19,22 @@
 export const ROUTE_PATHS = {
   LOGIN: "/login",
   AUDIT: "/audit",
+  CLIENTS: "/audit/clients",
   TOKENS: "/tokens",
   USERS: "/users",
+  POLICIES: "/policies",
   TOKENS_DETAILS: "/tokens/details/",
   TOKENS_ENROLLMENT: "/tokens/enrollment",
   TOKENS_CHALLENGES: "/tokens/challenges",
   TOKENS_APPLICATIONS: "/tokens/applications",
   TOKENS_GET_SERIAL: "/tokens/get-serial",
+  TOKENS_IMPORT: "/tokens/import",
   TOKENS_CONTAINERS: "/tokens/containers",
   TOKENS_CONTAINERS_CREATE: "/tokens/containers/create",
   TOKENS_CONTAINERS_DETAILS: "/tokens/containers/details/",
-  TOKENS_ASSIGN_TOKEN: "/tokens/assign-token"
+  TOKENS_ASSIGN_TOKEN: "/tokens/assign-token",
+  USERS_DETAILS: "/users/details",
+  TOKENS_WIZARD: "/tokens/wizard",
+  TOKENS_CONTAINERS_WIZARD: "/tokens/containers/wizard",
+  USERS_REALMS: "/users/realms"
 };

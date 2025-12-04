@@ -134,7 +134,7 @@ class API000TokenAdminRealmList(MyApiTestCase):
         set_policy(name="pol-all-realms", scope=SCOPE.ADMIN, action=PolicyAction.TOKENLIST, adminuser=self.testadmin)
 
         # admin is allowed to only init, not list
-        set_policy(name="pol-only-init", scope=SCOPE.ADMIN)
+        set_policy(name="pol-only-init", scope=SCOPE.ADMIN, action="enrollHOTP")
 
         with self.app.test_request_context('/token/',
                                            method='GET',
@@ -171,6 +171,10 @@ class API000TokenAdminRealmList(MyApiTestCase):
             result = res.json.get("result")
             # we have no tokens
             self.assertEqual(0, result.get("value").get("count"))
+
+        delete_policy("pol-realm1")
+        delete_policy("pol-all-realms")
+        delete_policy("pol-only-init")
 
     def test_02_two_resolver_in_realm_policy_condition(self):
         self.setUp_user_realms()
@@ -473,13 +477,13 @@ class API000TokenAdminRealmList(MyApiTestCase):
 
         # create some tokens
         # token in realm4 and no user
-        spass_token1 = init_token(param={'serial': 'SPAS01', 'type': 'spass', 'realm': self.realm4})
+        init_token(param={'serial': 'SPAS01', 'type': 'spass', 'realm': self.realm4})
         # user in realm4, token in default realm
-        spass_token2 = init_token(param={'serial': 'SPAS02', 'type': 'spass'})
+        init_token(param={'serial': 'SPAS02', 'type': 'spass'})
         # user in realm3, token in default realm
-        spass_token3 = init_token(param={'serial': 'SPAS03', 'type': 'spass'})
+        init_token(param={'serial': 'SPAS03', 'type': 'spass'})
         # user in realm3, token in realm 4
-        spass_token4 = init_token(param={'serial': 'SPAS04', 'type': 'spass', 'realm': self.realm4})
+        init_token(param={'serial': 'SPAS04', 'type': 'spass', 'realm': self.realm4})
         assign_token(user=user1, serial="SPAS02")
         assign_token(user=user3, serial="SPAS03")
         assign_token(user=user3, serial="SPAS04")
@@ -1206,7 +1210,7 @@ class APITokenTestCase(MyApiTestCase):
         self._create_temp_token("Token1")
         self._create_temp_token("Token2")
         serial_comma_list = "Token1,Token2"
-        with self.app.test_request_context(f"/token/",
+        with self.app.test_request_context("/token/",
                                            method="DELETE",
                                            data={"serial": serial_comma_list},
                                            headers={"Authorization": self.at}):
@@ -1225,7 +1229,7 @@ class APITokenTestCase(MyApiTestCase):
         self._create_temp_token("Token1")
         self._create_temp_token("Token2")
         serial_list = ["Token1", "Token1234", "Token2"]
-        with self.app.test_request_context(f"/token/",
+        with self.app.test_request_context("/token/",
                                            method="DELETE",
                                            json={"serials": serial_list},
                                            headers={"Authorization": self.at}):
@@ -2963,7 +2967,7 @@ class APITokenTestCase(MyApiTestCase):
             result = res.json.get("result")
             detail = res.json.get("detail")
             self.assertFalse(result.get("value"))
-            self.assertEqual(detail.get("message"), "matching 1 tokens, Token is not yet enrolled")
+            self.assertEqual("Token is not yet enrolled", detail.get("message"))
 
         # Now run the second step: verify enrollment, but fail with a wrong OTP value
         with self.app.test_request_context('/token/init',
@@ -3208,8 +3212,7 @@ class APITokenTestCase(MyApiTestCase):
             result = res.json.get("result")
             detail = res.json.get("detail")
             self.assertFalse(result.get("value"), result)
-            self.assertEqual(detail.get("message"),
-                             "matching 1 tokens, Token is not yet enrolled", detail)
+            self.assertEqual("Token is not yet enrolled", detail.get("message"), detail)
 
         # Now run the second step: verify enrollment, but fail with a wrong OTP value
         with self.app.test_request_context('/token/init',
@@ -3277,8 +3280,7 @@ class APITokenTestCase(MyApiTestCase):
             result = res.json.get("result")
             detail = res.json.get("detail")
             self.assertFalse(result.get("value"), result)
-            self.assertEqual(detail.get("message"),
-                             "matching 1 tokens, Token is not yet enrolled", detail)
+            self.assertEqual("Token is not yet enrolled", detail.get("message"), detail)
 
         # Now run the second step: verify enrollment, but fail with a wrong OTP value
         with self.app.test_request_context('/token/init',

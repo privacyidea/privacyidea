@@ -1,0 +1,165 @@
+<!--
+ (c) NetKnights GmbH 2025,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+
+@if (isEditMode() || policyService.selectedPolicyHasAdditionalConditions()) {
+  <div class="additional-conditions-container">
+    <h2
+      class="additional-conditions-title"
+      i18n>
+      Additional Conditions
+    </h2>
+    @if (additionalConditions().length > 0) {
+      <div
+        class="additional-condition-header"
+        [class.edit-mode]="isEditMode()">
+        <div>Active</div>
+        <div>Section</div>
+        <div>Key</div>
+        <div>Comparator</div>
+        <div>Value</div>
+        <div>If Data Missing</div>
+        @if (isEditMode()) {
+          <div>Actions</div>
+        }
+      </div>
+    }
+    <div class="additional-conditions-list">
+      @for (condition of additionalConditions(); track $index) {
+        <!-- Display Row -->
+        <div
+          class="additional-condition-row"
+          [class.edit-mode]="isEditMode()"
+          [class.hover-highlight]="isEditMode()"
+          [class.selected]="isEditMode() && editIndex() === $index"
+          (click)="isEditMode() && startEditCondition(condition, $index)">
+          <div>
+            @if (isEditMode()) {
+              <mat-slide-toggle
+                #slideToggle
+                [checked]="!condition[4]"
+                (click)="$event.stopPropagation()"
+                (change)="
+                  updateActiveState($index, $event.checked); slideToggle._switchElement.nativeElement.blur()
+                "></mat-slide-toggle>
+            } @else {
+              @if (!condition[4]) {
+                <mat-icon>check</mat-icon>
+              } @else {
+                <mat-icon>close</mat-icon>
+              }
+            }
+          </div>
+          <div>{{ condition[0] }}</div>
+          <div>{{ condition[1] }}</div>
+          <div>{{ condition[2] }}</div>
+          <div>{{ condition[3] }}</div>
+          <div>{{ condition[5] }}</div>
+          @if (isEditMode()) {
+            <div class="action-buttons">
+              <button
+                mat-icon-button
+                (click)="removeCondition($index); $event.stopPropagation()">
+                <mat-icon>delete</mat-icon>
+              </button>
+            </div>
+          }
+        </div>
+      }
+    </div>
+
+    <!-- Add New/Edit Condition Section -->
+    @if (isEditMode()) {
+      @if (additionalConditions().length > 0) {
+        <mat-divider class="divider-margin"></mat-divider>
+      }
+      @if (showAddConditionForm()) {
+        <div class="new-condition-form">
+          <div class="form-row">
+            <mat-form-field appearance="fill">
+              <mat-label>Section</mat-label>
+              <mat-select
+                [(ngModel)]="conditionSection"
+                panelClass="auto-width-dropdown">
+                @for (option of allSectionOptions; track option) {
+                  <mat-option [value]="option">{{ option }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+            <mat-form-field appearance="fill">
+              <mat-label>If Data Missing</mat-label>
+              <mat-select
+                [(ngModel)]="conditionHandleMissingData"
+                panelClass="auto-width-dropdown">
+                @for (handleMissingDataOption of allHandleMissingDataOptions; track handleMissingDataOption) {
+                  <mat-option [value]="handleMissingDataOption">{{ handleMissingDataOption }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+          </div>
+          <div class="form-row">
+            <mat-form-field appearance="fill">
+              <mat-label>Key</mat-label>
+              <input
+                matInput
+                [(ngModel)]="conditionKey" />
+            </mat-form-field>
+            <mat-form-field appearance="fill">
+              <mat-label>Comparator</mat-label>
+              <mat-select
+                [(ngModel)]="conditionComparator"
+                panelClass="auto-width-dropdown">
+                @for (comporatorOption of allComporatorOptions; track comporatorOption) {
+                  <mat-option [value]="comporatorOption">{{ comporatorOption }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+            <mat-form-field appearance="fill">
+              <mat-label>Value</mat-label>
+              <input
+                matInput
+                [(ngModel)]="conditionValue" />
+            </mat-form-field>
+          </div>
+          <div class="form-actions">
+            <button
+              mat-button
+              (click)="cancelEdit()">
+              Cancel
+            </button>
+            <button
+              mat-raised-button
+              color="primary"
+              (click)="saveCondition()">
+              {{ editIndex() !== null ? "Save Condition" : "Add Condition" }}
+            </button>
+          </div>
+        </div>
+      } @else {
+        <div class="add-condition-button-container">
+          <button
+            mat-stroked-button
+            (click)="showAddConditionForm.set(true)">
+            <mat-icon>add</mat-icon>
+            Create a New Condition
+          </button>
+        </div>
+      }
+    }
+  </div>
+}

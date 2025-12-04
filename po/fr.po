@@ -5,13 +5,14 @@
 # Julien Mutterer <Julien_M@users.noreply.hosted.weblate.org>, 2024.
 # Jelina Unger <jelina.unger@netknights.it>, 2024.
 # Gregory Bouzinac <gregory.b@orange.fr>, 2024, 2025.
+# Takoz <lucasandlauer@free.fr>, 2025.
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: translations@privacyidea.org\n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2025-04-22 23:21+0000\n"
-"Last-Translator: Gregory Bouzinac <gregory.b@orange.fr>\n"
+"PO-Revision-Date: 2025-11-07 12:51+0000\n"
+"Last-Translator: Takoz <lucasandlauer@free.fr>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-webui/fr/>\n"
 "Language: fr\n"
@@ -19,7 +20,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Weblate 5.11.1-dev\n"
+"X-Generator: Weblate 5.15-dev\n"
 
 #. level of subscription
 #: privacyidea/static/components/components/views/component.subscriptions.html:27
@@ -1239,10 +1240,8 @@ msgid "Create a new privacyIDEA server {{ params.identifier }}"
 msgstr "Créer un nouveau serveur privacyIDEA {{ params.identifier }}"
 
 #: privacyidea/static/components/config/views/config.resolvers.http.html:7
-#, fuzzy
-#| msgid "Create a new Tokengroup {{ params.groupname }}"
 msgid "Create a new {{ typeMapping[params.type] }}"
-msgstr "Créer un nouveau groupe de jetons {{ params.groupname }}"
+msgstr "Créer un nouveau {{ typeMapping[params.type] }}"
 
 #: privacyidea/static/components/dialogs/views/dialog.autocreate_realm.html:11
 msgid "Create default realm"

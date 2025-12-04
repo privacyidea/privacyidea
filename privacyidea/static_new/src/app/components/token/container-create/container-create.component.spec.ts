@@ -23,9 +23,8 @@ import { of } from "rxjs";
 import { ContainerCreateComponent } from "./container-create.component";
 import { MatDialog } from "@angular/material/dialog";
 import { NotificationService } from "../../../services/notification/notification.service";
-import { provideHttpClient } from "@angular/common/http";
+import { HttpClient, provideHttpClient } from "@angular/common/http";
 import {
-  MockAuthService,
   MockContainerService,
   MockContentService,
   MockLocalService,
@@ -42,20 +41,20 @@ import { RealmService } from "../../../services/realm/realm.service";
 import { TokenService } from "../../../services/token/token.service";
 import { UserService } from "../../../services/user/user.service";
 import { VersioningService } from "../../../services/version/version.service";
-import { Renderer2 } from "@angular/core";
+import { Renderer2, signal } from "@angular/core";
 import { ContainerCreateSelfServiceComponent } from "./container-create.self-service.component";
-
-const mockMatDialog = {
-  open: () => ({ afterClosed: () => of(null) }),
-  closeAll: () => {
-  }
-};
+import { ContainerCreateWizardComponent } from "./container-create.wizard.component";
+import { ROUTE_PATHS } from "../../../route_paths";
+import { MockAuthService } from "../../../../testing/mock-services/mock-auth-service";
 
 class MockIntersectionObserver {
   observe = jest.fn();
   disconnect = jest.fn();
 
-  constructor(private callback: any, private options?: any) {}
+  constructor(
+    private callback: any,
+    private options?: any
+  ) {}
 }
 
 Object.defineProperty(global, "IntersectionObserver", {
@@ -105,13 +104,21 @@ describe("ContainerCreateComponent", () => {
   let component: ContainerCreateComponent;
   let selfFixture: ComponentFixture<ContainerCreateSelfServiceComponent>;
   let selfComponent: ContainerCreateSelfServiceComponent;
+  let wizardFixture: ComponentFixture<ContainerCreateComponent>;
+  let wizardComponent: ContainerCreateComponent;
 
-  let containerSvc: MockContainerService;
+  let containerServiceMock: MockContainerService;
   let userSvc: MockUserService;
+  let authService: MockAuthService;
+  let httpClientMock: any;
+
+  let contentService: MockContentService;
 
   beforeEach(async () => {
     jest.clearAllMocks();
-
+    httpClientMock = {
+      get: jest.fn().mockReturnValue(of(""))
+    };
     let DummyVersioningService;
     await TestBed.configureTestingModule({
       imports: [ContainerCreateComponent, NoopAnimationsModule],
@@ -126,6 +133,7 @@ describe("ContainerCreateComponent", () => {
         { provide: RealmService, useClass: MockRealmService },
         { provide: TokenService, useClass: MockTokenService },
         { provide: UserService, useClass: MockUserService },
+        { provide: HttpClient, useValue: httpClientMock },
         { provide: VersioningService, useClass: DummyVersioningService },
         MockLocalService,
         MockNotificationService
@@ -136,17 +144,21 @@ describe("ContainerCreateComponent", () => {
     component = fixture.componentInstance;
     selfFixture = TestBed.createComponent(ContainerCreateSelfServiceComponent);
     selfComponent = selfFixture.componentInstance;
+    wizardFixture = TestBed.createComponent(ContainerCreateWizardComponent);
+    wizardComponent = wizardFixture.componentInstance;
 
-    containerSvc = TestBed.inject(ContainerService) as unknown as MockContainerService;
+    containerServiceMock = TestBed.inject(ContainerService) as unknown as MockContainerService;
     userSvc = TestBed.inject(UserService) as unknown as MockUserService;
+    authService = TestBed.inject(AuthService) as unknown as MockAuthService;
+    contentService = TestBed.inject(ContentService) as unknown as MockContentService;
 
-    jest.spyOn(containerSvc, "createContainer").mockReturnValue(
-      of({ result: { value: { container_serial: "C-001" } } } as any)
-    );
-    jest.spyOn(containerSvc, "registerContainer").mockReturnValue(
-      of({ result: { value: {} }, detail: { info: "registered" } } as any)
-    );
-    jest.spyOn(containerSvc, "pollContainerRolloutState").mockReturnValue(
+    jest
+      .spyOn(containerServiceMock, "createContainer")
+      .mockReturnValue(of({ result: { value: { container_serial: "C-001" } } } as any));
+    jest
+      .spyOn(containerServiceMock, "registerContainer")
+      .mockReturnValue(of({ result: { value: {} }, detail: { info: "registered" } } as any));
+    jest.spyOn(containerServiceMock, "pollContainerRolloutState").mockReturnValue(
       of({
         result: { value: { containers: [{ info: { registration_state: "ok" } }] } }
       } as any)
@@ -163,29 +175,31 @@ describe("ContainerCreateComponent", () => {
     expect(selfComponent).toBeTruthy();
   });
 
+  it("creates wizard", () => {
+    expect(wizardComponent).toBeTruthy();
+  });
+
   it("non-QR create: navigates and sets containerSerial", () => {
-    containerSvc.selectedContainerType.set({ containerType: "generic", description: "", token_types: [] });
+    containerServiceMock.selectedContainerType.set({ containerType: "generic", description: "", token_types: [] });
 
     const regSpy = jest.spyOn(component as any, "registerContainer");
 
     component.createContainer();
 
-    expect(containerSvc.createContainer).toHaveBeenCalledWith(
+    expect(containerServiceMock.createContainer).toHaveBeenCalledWith(
       expect.objectContaining({
         container_type: "generic",
         description: "",
-        template: "",
-        user: userSvc.selectionUsernameFilter(),
-        realm: ""
+        user: userSvc.selectionUsernameFilter()
       })
     );
     expect(regSpy).not.toHaveBeenCalled();
     expect(navigateByUrl).toHaveBeenCalledWith(expect.stringMatching("/tokens/containers/details/C-001"));
-    expect(containerSvc.containerSerial()).toBe("C-001");
+    expect(containerServiceMock.containerSerial()).toBe("C-001");
   });
 
   it("shows snack if createContainer returns no serial", () => {
-    (containerSvc.createContainer as jest.Mock).mockReturnValueOnce(of({ result: { value: {} } } as any));
+    (containerServiceMock.createContainer as jest.Mock).mockReturnValueOnce(of({ result: { value: {} } } as any));
 
     component.createContainer();
 
@@ -193,62 +207,91 @@ describe("ContainerCreateComponent", () => {
     expect(navigateByUrl).not.toHaveBeenCalled();
   });
 
-  it("QR path (smartphone): calls registerContainer", () => {
-    containerSvc.selectedContainerType.set({ containerType: "smartphone", description: "", token_types: [] });
+  it("QR path (smartphone): calls registerContainer", async () => {
+    containerServiceMock.selectedContainerType.set({ containerType: "smartphone", description: "", token_types: [] });
 
     fixture.detectChanges();
 
     const regSpy = jest.spyOn(component as any, "registerContainer");
     component.createContainer();
 
-    expect(containerSvc.createContainer).toHaveBeenCalled();
+    expect(containerServiceMock.createContainer).toHaveBeenCalled();
     expect(regSpy).toHaveBeenCalledWith("C-001");
   });
 
   it("registerContainer: stores response, opens dialog, and starts polling with 5000", () => {
-    const pollSpy = jest.spyOn(containerSvc, "pollContainerRolloutState");
+    const pollSpy = jest.spyOn(containerServiceMock, "startPolling");
+
+    (component as any).registrationConfigComponent = {
+      passphraseResponse: signal(""),
+      passphrasePrompt: signal("")
+    };
 
     (component as any).registerContainer("C-001");
 
-    expect(containerSvc.registerContainer).toHaveBeenCalledWith({
+    expect(containerServiceMock.registerContainer).toHaveBeenCalledWith({
       container_serial: "C-001",
+      passphrase_user: false,
       passphrase_response: "",
       passphrase_prompt: ""
     });
     expect(matDialogMock.open).toHaveBeenCalled();
-    expect(pollSpy).toHaveBeenCalledWith("C-001", 5000);
+    expect(pollSpy).toHaveBeenCalledWith("C-001");
   });
 
-  it("reopenEnrollmentDialog opens dialog and polls again (startTime=2000)", () => {
+  it("reopenEnrollmentDialog opens dialog and polls again", () => {
     (component as any).registerResponse.set({ result: { value: {} } } as any);
-    containerSvc.containerSerial.set("CONT-42");
+    containerServiceMock.containerSerial.set("CONT-42");
 
-    const pollSpy = jest.spyOn(containerSvc, "pollContainerRolloutState");
+    const pollSpy = jest.spyOn(containerServiceMock, "startPolling");
 
     component.reopenEnrollmentDialog();
 
     expect(matDialogMock.open).toHaveBeenCalled();
-    expect(pollSpy).toHaveBeenCalledWith("CONT-42", 2000);
+    expect(pollSpy).toHaveBeenCalledWith("CONT-42");
   });
 
-  it("pollContainerRolloutState: closes dialog and navigates when state !== 'client_wait'", () => {
-    (component as any)["pollContainerRolloutState"]("C-9", 1000);
+  it("pollContainerRolloutState: closes dialog and opens completed dialog when state === 'registered'", () => {
+    const dialog = TestBed.inject(MatDialog) as unknown as { closeAll: jest.Mock; open: jest.Mock };
+    const closeSpy = jest.spyOn(dialog, "closeAll");
+    const openSpy = jest.spyOn(dialog, "open");
 
-    expect(matDialogMock.closeAll).toHaveBeenCalled();
-    expect(navigateByUrl).toHaveBeenCalledWith(expect.stringMatching("/tokens/containers/details/C-9"));
+    const stopPollingSpy = jest.spyOn(containerServiceMock, "stopPolling");
+
+    jest.spyOn(containerServiceMock.containerDetailResource, "value").mockReturnValue({
+      result: { value: { containers: [{ info: { registration_state: "registered" } }] } }
+    } as any);
+
+    containerServiceMock.containerSerial.set("CONT-OK");
+
+    fixture.detectChanges();
+    TestBed.flushEffects();
+
+    expect(closeSpy).toHaveBeenCalled();
+    expect(stopPollingSpy).toHaveBeenCalled();
+
+    expect(openSpy).toHaveBeenCalled();
+    expect(openSpy.mock.calls[0][1]).toEqual({ data: { containerSerial: "CONT-OK" } });
   });
 
   it("pollContainerRolloutState: keeps dialog open when state == 'client_wait'", () => {
-    (containerSvc.pollContainerRolloutState as jest.Mock).mockReturnValueOnce(
-      of({
-        result: { value: { containers: [{ info: { registration_state: "client_wait" } }] } }
-      } as any)
-    );
+    const dialog = TestBed.inject(MatDialog) as any;
+    const closeSpy = jest.spyOn(dialog, "closeAll");
+    const openSpy = jest.spyOn(dialog, "open");
+    const stopPollingSpy = jest.spyOn(containerServiceMock, "stopPolling");
 
-    (component as any)["pollContainerRolloutState"]("C-10", 1000);
+    jest.spyOn(containerServiceMock.containerDetailResource, "value").mockReturnValue({
+      result: { value: { containers: [{ info: { registration_state: "client_wait" } }] } }
+    } as any);
 
-    expect(matDialogMock.closeAll).not.toHaveBeenCalled();
-    expect(navigateByUrl).not.toHaveBeenCalled();
+    containerServiceMock.containerSerial.set("CONT-WAIT");
+
+    fixture.detectChanges();
+    TestBed.flushEffects();
+
+    expect(closeSpy).not.toHaveBeenCalled();
+    expect(openSpy).not.toHaveBeenCalled();
+    expect(stopPollingSpy).not.toHaveBeenCalled();
   });
 
   it("ngAfterViewInit wires IO and toggles sticky class via renderer", () => {
@@ -277,5 +320,94 @@ describe("ContainerCreateComponent", () => {
 
     lastIO!.trigger([{ rootBounds: { top: 0 }, boundingClientRect: { top: 1 } } as any]);
     expect(removeClass).toHaveBeenCalledWith((component as any).stickyHeader.nativeElement, "is-sticky");
+  });
+
+  describe("wizard", () => {
+    it("show loaded templates if not empty", async () => {
+      authService.authData.set({
+        ...authService.authData()!,
+        container_wizard: { enabled: true, type: "generic", registration: false, template: null }
+      });
+      httpClientMock.get.mockReturnValueOnce(of("Mock TOP HTML")).mockReturnValueOnce(of("Mock BOTTOM HTML"));
+      wizardFixture = TestBed.createComponent(ContainerCreateWizardComponent);
+      wizardFixture.detectChanges();
+      expect(wizardFixture.nativeElement.textContent).toContain("Mock TOP HTML");
+      expect(wizardFixture.nativeElement.textContent).toContain("Mock BOTTOM HTML");
+      expect(wizardFixture.nativeElement.textContent).not.toContain("Create Generic Container");
+    });
+
+    it("show default content if customization templates are empty", async () => {
+      authService.authData.set({
+        ...authService.authData()!,
+        container_wizard: { enabled: true, type: "generic", registration: false, template: null }
+      });
+      wizardFixture.detectChanges();
+      expect(wizardFixture.nativeElement.textContent).toContain("Create Generic Container");
+    });
+
+    it("container wizard creates smartphone with template and registration", () => {
+      // Arrange: set container_wizard data in authService
+      authService.authData.set({
+        ...authService.authData()!,
+        container_wizard: {
+          enabled: true,
+          type: "smartphone",
+          registration: true,
+          template: "custom-template"
+        }
+      });
+
+      contentService.routeUrl.set(ROUTE_PATHS.TOKENS_CONTAINERS_WIZARD);
+      containerServiceMock.selectedContainerType.set({ containerType: "smartphone", description: "", token_types: [] });
+
+      // Spy on createContainer of containerSvc
+      const createSpy = jest.spyOn(containerServiceMock, "createContainer");
+      const registerSpy = jest.spyOn(containerServiceMock, "registerContainer");
+
+      // Act: call createContainer on wizardComponent
+      wizardComponent.createContainer();
+
+      // Assert: check that createContainer was called with correct data
+      expect(createSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          container_type: "smartphone",
+          template_name: "custom-template"
+        })
+      );
+      // check registration
+      expect(wizardComponent.generateQRCode()).toBe(true);
+      expect(registerSpy).toHaveBeenCalled();
+    });
+
+    it("container wizard creates generic container without template and without registration", () => {
+      // Arrange: set container_wizard data in authService
+      authService.authData.set({
+        ...authService.authData()!,
+        container_wizard: {
+          enabled: true,
+          type: "generic",
+          registration: false,
+          template: null
+        }
+      });
+      contentService.routeUrl.set(ROUTE_PATHS.TOKENS_CONTAINERS_WIZARD);
+
+      // Spy on createContainer of containerSvc
+      const createSpy = jest.spyOn(containerServiceMock, "createContainer");
+      const registerSpy = jest.spyOn(containerServiceMock, "registerContainer");
+
+      // Act: call createContainer on wizardComponent
+      wizardComponent.createContainer();
+
+      // Assert: check that createContainer was called with correct data
+      expect(createSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          container_type: "generic"
+        })
+      );
+      // check registration
+      expect(wizardComponent.generateQRCode()).toBe(false);
+      expect(registerSpy).not.toHaveBeenCalled();
+    });
   });
 });

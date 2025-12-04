@@ -17,7 +17,17 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { CommonModule, NgOptimizedImage } from "@angular/common";
-import { Component, computed, effect, ElementRef, inject, OnDestroy, signal, ViewChild } from "@angular/core";
+import {
+  Component,
+  computed,
+  effect,
+  ElementRef,
+  inject,
+  linkedSignal,
+  OnDestroy,
+  signal,
+  ViewChild
+} from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
 import { MatFormField, MatLabel } from "@angular/material/form-field";
@@ -32,6 +42,8 @@ import { LocalService, LocalServiceInterface } from "../../services/local/local.
 import { NotificationService, NotificationServiceInterface } from "../../services/notification/notification.service";
 import { SessionTimerService, SessionTimerServiceInterface } from "../../services/session-timer/session-timer.service";
 import { ValidateService, ValidateServiceInterface } from "../../services/validate/validate.service";
+import { ConfigService } from "../../services/config/config.service";
+import { MatOption, MatSelect } from "@angular/material/select";
 
 const PUSH_POLLING_INTERVAL_MS = 500;
 const PUSH_POLLING_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
@@ -48,7 +60,9 @@ const PUSH_POLLING_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
     MatLabel,
     NgOptimizedImage,
     MatIconModule,
-    MatButtonModule
+    MatButtonModule,
+    MatSelect,
+    MatOption
   ],
   styleUrl: "./login.component.scss"
 })
@@ -59,6 +73,7 @@ export class LoginComponent implements OnDestroy {
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly sessionTimerService: SessionTimerServiceInterface = inject(SessionTimerService);
   private readonly validateService: ValidateServiceInterface = inject(ValidateService);
+  protected readonly configService = inject(ConfigService);
   private transactionId = "";
   private pollingSubscription: Subscription | null = null;
   @ViewChild("otpInput") otpInput!: ElementRef<HTMLInputElement>;
@@ -81,6 +96,27 @@ export class LoginComponent implements OnDestroy {
     return !this.username() || !this.password();
   });
 
+  realms = computed(() => {
+    let realms = (this.configService.config()?.realms || "").split(",").map((r: string) => r.trim()).filter((r: string) => r);
+    if (realms.length > 0) {
+      realms.push("-"); // Add empty option for default realm / no realm for local admins
+    }
+    return realms;
+  });
+
+  realm = linkedSignal({
+    source: this.realms,
+    computation: (realms) => {
+      if (realms.length > 0) {
+        return realms[0];
+      } else {
+        return "";
+      }
+    }
+  });
+
+  loginText = computed(() => this.configService.config()?.login_text || "");
+
   constructor() {
     if (this.authService.isAuthenticated()) {
       console.warn("User is already logged in.");
@@ -102,7 +138,10 @@ export class LoginComponent implements OnDestroy {
     const isChallengeResponse = this.showOtpField();
     const password = isChallengeResponse ? this.otp() : this.password();
 
-    const params: any = { username, password };
+    let params: any = { username, password };
+    if (this.realm() && this.realm() !== "-") {
+      params.realm = this.realm();
+    }
 
     if (isChallengeResponse) {
       this.stopPushPolling();
@@ -222,7 +261,11 @@ export class LoginComponent implements OnDestroy {
       this.showOtpField.set(false);
       this.sessionTimerService.startRefreshingRemainingTime();
       this.sessionTimerService.startTimer();
-      if (this.authService.role() === "user" || this.authService.anyTokenActionAllowed()) {
+      if (this.authService.tokenWizard()) {
+        this.router.navigateByUrl(ROUTE_PATHS.TOKENS_WIZARD).then();
+      } else if (this.authService.containerWizard().enabled) {
+        this.router.navigateByUrl(ROUTE_PATHS.TOKENS_CONTAINERS_WIZARD).then();
+      } else if (this.authService.role() === "user" || this.authService.anyTokenActionAllowed()) {
         this.router.navigateByUrl(ROUTE_PATHS.TOKENS).then();
       } else if (this.authService.anyContainerActionAllowed()) {
         this.router.navigateByUrl(ROUTE_PATHS.TOKENS_CONTAINERS).then();

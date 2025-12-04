@@ -24,7 +24,6 @@ import { Router } from "@angular/router";
 import { of, throwError } from "rxjs";
 import {
   MockAuthDetail,
-  MockAuthService,
   MockLocalService,
   MockNotificationService,
   MockPiResponse,
@@ -36,6 +35,10 @@ import { NotificationService } from "../../services/notification/notification.se
 import { SessionTimerService, SessionTimerServiceInterface } from "../../services/session-timer/session-timer.service";
 import { ValidateService } from "../../services/validate/validate.service";
 import { LoginComponent } from "./login.component";
+import { ROUTE_PATHS } from "../../route_paths";
+import { MockAuthService } from "../../../testing/mock-services/mock-auth-service";
+import { ConfigService } from "../../services/config/config.service";
+import { By } from "@angular/platform-browser";
 
 describe("LoginComponent", () => {
   let fixture: ComponentFixture<LoginComponent>;
@@ -110,6 +113,45 @@ describe("LoginComponent", () => {
     });
   });
 
+  describe("wizard", () => {
+    beforeEach(() => {
+      component.username.set("test-user");
+      component.password.set("test-pass");
+    });
+
+    it("should redirect to token wizard", () => {
+      authService.authData.set({
+        ...authService.authData()!,
+        token_wizard: true
+      });
+      component.onSubmit();
+
+      expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.TOKENS_WIZARD);
+    });
+
+    it("should redirect to token wizard first if token and container wizard are enabled", () => {
+      authService.authData.set({
+        ...authService.authData()!,
+        token_wizard: true,
+        container_wizard: { enabled: true, type: "smartphone", registration: false, template: null }
+      });
+      component.onSubmit();
+
+      expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.TOKENS_WIZARD);
+    });
+
+    it("should redirect to container wizard if only container wizard is enabled", () => {
+      authService.authData.set({
+        ...authService.authData()!,
+        token_wizard: false,
+        container_wizard: { enabled: true, type: "smartphone", registration: false, template: null }
+      });
+      component.onSubmit();
+
+      expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.TOKENS_CONTAINERS_WIZARD);
+    });
+  });
+
   describe("onSubmit", () => {
     beforeEach(() => {
       component.username.set("test-user");
@@ -123,6 +165,30 @@ describe("LoginComponent", () => {
         username: "test-user",
         password: "test-pass"
       });
+      expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.TOKENS);
+    });
+
+    it("should call authService.authenticate with username/password/realm", () => {
+      component.realm.set("test-realm");
+      component.onSubmit();
+
+      expect(authService.authenticate).toHaveBeenCalledWith({
+        username: "test-user",
+        password: "test-pass",
+        realm: "test-realm"
+      });
+      expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.TOKENS);
+    });
+
+    it("should call authService.authenticate not with realm '-'", () => {
+      component.realm.set("-");
+      component.onSubmit();
+
+      expect(authService.authenticate).toHaveBeenCalledWith({
+        username: "test-user",
+        password: "test-pass"
+      });
+      expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.TOKENS);
     });
 
     it("should handle a complex multi-challenge response with WebAuthn and OTP", () => {
@@ -174,7 +240,10 @@ describe("LoginComponent", () => {
 
       component.onSubmit();
       // "please enter otp:" is not duplicated
-      expect(component.loginMessage()).toEqual(["please enter otp: ", "Please confirm with your WebAuthn token (Generic WebAuthn Token)"]);
+      expect(component.loginMessage()).toEqual([
+        "please enter otp: ",
+        "Please confirm with your WebAuthn token (Generic WebAuthn Token)"
+      ]);
       expect(component.showOtpField()).toBe(true);
       expect(component.webAuthnTriggered()).toEqual(webAuthnSignRequestData);
       expect((component as any).transactionId).toBe("02247192477167467513");
@@ -344,5 +413,66 @@ describe("LoginComponent", () => {
         expect(router.navigate).toHaveBeenCalledWith(["login"]);
       });
     });
+  });
+});
+
+describe("LoginComponent Realm Selection", () => {
+  let fixture: ComponentFixture<LoginComponent>;
+  let component: LoginComponent;
+  let configService: ConfigService;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [LoginComponent],
+      providers: [provideHttpClient(), ConfigService]
+    }).compileComponents();
+
+    fixture = TestBed.createComponent(LoginComponent);
+    component = fixture.componentInstance;
+    configService = TestBed.inject(ConfigService);
+  });
+
+  it("should display realm selection if realms are provided", () => {
+    configService.config.set({
+      ...configService.config(),
+      realms: "realm1,realm2"
+    });
+    fixture.detectChanges();
+
+    expect(component.realms()).toEqual(["realm1", "realm2", "-"]);
+    expect(component.realm()).toEqual("realm1");
+    const realmSelect = fixture.debugElement.query(By.css("mat-select"));
+    expect(realmSelect).toBeTruthy();
+
+    // Open the select dropdown to render options
+    realmSelect.componentInstance.open();
+    fixture.detectChanges();
+
+    const options = fixture.debugElement.queryAll(By.css("mat-option"));
+    expect(options.length).toBe(3);
+    expect(options[0].nativeElement.textContent).toContain("realm1");
+    expect(options[1].nativeElement.textContent).toContain("realm2");
+    expect(options[2].nativeElement.textContent).toContain("-");
+  });
+
+  it("should preselect the first realm", () => {
+    configService.config.set({
+      ...configService.config(),
+      realms: "realmA,realmB"
+    });
+    fixture.detectChanges();
+
+    expect(component.realm()).toBe("realmA");
+  });
+
+  it("should not display realm selection if realms list is empty", () => {
+    configService.config.set({
+      ...configService.config(),
+      realms: ""
+    });
+    fixture.detectChanges();
+
+    const realmSelect = fixture.debugElement.query(By.css("mat-select"));
+    expect(realmSelect).toBeFalsy();
   });
 });

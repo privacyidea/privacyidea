@@ -21,13 +21,14 @@ import { Component, computed, inject, signal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
 import { ThemeService } from "../../../services/theme/theme.service";
+import { MatTooltipModule } from "@angular/material/tooltip";
 
 type ThemeIcon = "light_mode" | "dark_mode";
 
 @Component({
   selector: "app-theme-switcher",
   standalone: true,
-  imports: [CommonModule, MatIconModule, MatButtonModule],
+  imports: [CommonModule, MatIconModule, MatButtonModule, MatTooltipModule],
   templateUrl: "./theme-switcher.component.html",
   styleUrls: ["./theme-switcher.component.scss"]
 })

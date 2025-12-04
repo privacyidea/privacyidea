@@ -21,8 +21,9 @@ import { AssignTokenSelfServiceComponent } from "./assign-token-self-service.com
 import { Router } from "@angular/router";
 import { of } from "rxjs";
 import { TokenService } from "../../../services/token/token.service";
-import { MockTokenService } from "../../../../testing/mock-services"; // adjust path if needed
-
+import { MockContentService, MockTokenService } from "../../../../testing/mock-services";
+import { provideHttpClient } from "@angular/common/http";
+import { ContentService } from "../../../services/content/content.service";
 
 describe("AssignTokenSelfServiceComponent (no zone.js)", () => {
   let fixture: ComponentFixture<AssignTokenSelfServiceComponent>;
@@ -55,8 +56,10 @@ describe("AssignTokenSelfServiceComponent (no zone.js)", () => {
     await TestBed.configureTestingModule({
       imports: [AssignTokenSelfServiceComponent],
       providers: [
+        provideHttpClient(),
         { provide: Router, useValue: routerMock },
-        { provide: TokenService, useClass: MockTokenService }
+        { provide: TokenService, useClass: MockTokenService },
+        { provide: ContentService, useClass: MockContentService }
       ]
     }).compileComponents();
 

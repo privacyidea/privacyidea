@@ -1,3 +1,21 @@
+/**
+ * (c) NetKnights GmbH 2025,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { provideHttpClient } from "@angular/common/http";
@@ -16,10 +34,11 @@ import { AuthService } from "../../../services/auth/auth.service";
 import { ContentService } from "../../../services/content/content.service";
 import { MachineService } from "../../../services/machine/machine.service";
 import {
-  MockAuthService,
   MockContainerService,
-  MockContentService, MockLocalService,
-  MockMachineService, MockNotificationService,
+  MockContentService,
+  MockLocalService,
+  MockMachineService,
+  MockNotificationService,
   MockOverflowService,
   MockRealmService,
   MockTableUtilsService,
@@ -27,6 +46,8 @@ import {
   MockValidateService
 } from "../../../../testing/mock-services";
 import { MatDialog } from "@angular/material/dialog";
+import { ActivatedRoute } from "@angular/router";
+import { MockAuthService } from "../../../../testing/mock-services/mock-auth-service";
 
 describe("TokenDetailsComponent", () => {
   let fixture: ComponentFixture<TokenDetailsComponent>;
@@ -50,6 +71,12 @@ describe("TokenDetailsComponent", () => {
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            params: of({ id: "123" })
+          }
+        },
         { provide: TokenService, useClass: MockTokenService },
         { provide: ContainerService, useClass: MockContainerService },
         { provide: ValidateService, useClass: MockValidateService },
@@ -119,37 +146,47 @@ describe("TokenDetailsComponent", () => {
 
     component.saveContainer();
 
-    expect(containerSvc.assignContainer).toHaveBeenCalledWith("Mock serial", "container1");
+    expect(containerSvc.addToken).toHaveBeenCalledWith("Mock serial", "container1");
     expect(reloadSpy).toHaveBeenCalled();
   });
 
   it("saveContainer does nothing when no container selected", () => {
     containerSvc.selectedContainer.set("");
-    (containerSvc.assignContainer as jest.Mock).mockClear();
+    (containerSvc.addToken as jest.Mock).mockClear();
 
     component.saveContainer();
 
-    expect(containerSvc.assignContainer).not.toHaveBeenCalled();
+    expect(containerSvc.addToken).not.toHaveBeenCalled();
   });
 
-  it("deleteContainer unassigns and reloads when selected", () => {
-    containerSvc.selectedContainer.set("container1");
+  it("removeFromContainer removes token and reloads when selected", () => {
+    component.tokenDetails.set({
+      ...component.tokenDetails(),
+      serial: "Mock serial",
+      container_serial: "container1"
+    });
+
     const reloadSpy = tokenSvc.tokenDetailResource.reload as jest.Mock;
     reloadSpy.mockClear();
 
-    component.deleteContainer();
+    component.removeFromContainer();
 
-    expect(containerSvc.unassignContainer).toHaveBeenCalledWith("Mock serial", "container1");
+    expect(containerSvc.removeToken).toHaveBeenCalledWith("Mock serial", "container1");
     expect(reloadSpy).toHaveBeenCalled();
   });
 
-  it("deleteContainer does nothing when no container selected", () => {
-    containerSvc.selectedContainer.set("");
-    (containerSvc.unassignContainer as jest.Mock).mockClear();
+  it("removeFromContainer does nothing when no container selected", () => {
+    component.tokenDetails.set({
+      ...component.tokenDetails(),
+      serial: "Mock serial",
+      container_serial: ""
+    });
 
-    component.deleteContainer();
+    (containerSvc.removeToken as jest.Mock).mockClear();
 
-    expect(containerSvc.unassignContainer).not.toHaveBeenCalled();
+    component.removeFromContainer();
+
+    expect(containerSvc.removeToken).not.toHaveBeenCalled();
   });
 
   it("toggleTokenEdit('tokengroup') loads tokengroups once and toggles editing", () => {
@@ -163,7 +200,7 @@ describe("TokenDetailsComponent", () => {
     component.tokengroupOptions.set([]);
     component.toggleTokenEdit(tgEl);
 
-    expect((tokenSvc.getTokengroups as any)).toHaveBeenCalled();
+    expect(tokenSvc.getTokengroups as any).toHaveBeenCalled();
     expect(component.tokengroupOptions()).toEqual(["groupA", "groupB"]);
     expect(tgEl.isEditing()).toBe(true);
   });
@@ -198,7 +235,7 @@ describe("TokenDetailsComponent", () => {
 
     component.saveTokenEdit(el);
 
-    expect((tokenSvc.setTokengroup as any)).toHaveBeenCalledWith("Mock serial", ["groupB"]);
+    expect(tokenSvc.setTokengroup as any).toHaveBeenCalledWith("Mock serial", ["groupB"]);
     expect(reloadSpy).toHaveBeenCalled();
     expect(el.isEditing()).toBe(false);
   });
@@ -230,13 +267,6 @@ describe("TokenDetailsComponent", () => {
     expect(component.isNumberElement("count_window")).toBe(true);
     expect(component.isNumberElement("sync_window")).toBe(true);
     expect(component.isNumberElement("description")).toBe(false);
-  });
-
-  it("containerSelected marks programmatic change and forwards to ContentService", () => {
-    const spy = jest.spyOn(contentSvc, "containerSelected");
-    component.containerSelected("C-9");
-    expect(component.isProgrammaticTabChange()).toBe(true);
-    expect(spy).toHaveBeenCalledWith("C-9");
   });
 
   it("openSshMachineAssignDialog opens the dialog with expected data", () => {

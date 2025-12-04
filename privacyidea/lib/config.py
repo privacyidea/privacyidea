@@ -277,7 +277,7 @@ class LocalConfigClass(object):
         # reduce the dictionary to only public keys!
         reduced_config = {}
         for ckey, cvalue in self.config.items():
-            if role == "admin" or cvalue.get("Type") == "public":
+            if role == "admin" or cvalue.get("Type") == "public" or ckey.endswith(".identifier"):
                 reduced_config[ckey] = self.config[ckey]
         if not reduced_config and role == "admin":
             reduced_config = self.config

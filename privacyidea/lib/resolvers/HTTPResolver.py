@@ -601,7 +601,7 @@ class HTTPResolver(UserIdResolver):
                     raise ParameterError(f"Invalid JSON format for headers: {self.headers}")
             else:
                 self.headers = {}
-        if CONFIG_GET_USER_BY_ID not in self.config:
+        if not self.config.get(CONFIG_GET_USER_BY_ID):
             # Basic HTTP Resolver config only contains config for getUserInfo
             self.config_get_user_by_id[ENDPOINT] = get_required(config, ENDPOINT)
             self.config_get_user_by_id[METHOD] = get_required(config, METHOD)

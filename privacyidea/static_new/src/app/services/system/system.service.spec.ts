@@ -16,23 +16,31 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { TestBed } from "@angular/core/testing";
+import { TestBed } from '@angular/core/testing';
+import { SystemService } from './system.service';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { provideHttpClient } from '@angular/common/http';
+import { AuthService } from '../auth/auth.service';
+import { MockAuthService } from '../../../testing/mock-services/mock-auth-service';
 
-import { SystemService } from "./system.service";
-import { provideHttpClient } from "@angular/common/http";
-import { provideHttpClientTesting } from "@angular/common/http/testing";
-
-describe("SystemService", () => {
-  let systemService: SystemService;
+describe('SystemService', () => {
+  let service: SystemService;
+  let httpMock: HttpTestingController;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [provideHttpClient(), provideHttpClientTesting()]
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: AuthService, useClass: MockAuthService },
+        SystemService
+      ]
     });
-    systemService = TestBed.inject(SystemService);
+    service = TestBed.inject(SystemService);
+    httpMock = TestBed.inject(HttpTestingController);
   });
 
-  it("should be created", () => {
-    expect(systemService).toBeTruthy();
+  it('should be created', () => {
+    expect(service).toBeTruthy();
   });
 });

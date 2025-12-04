@@ -31,8 +31,9 @@ import { MatTableModule } from "@angular/material/table";
 import { ContainerService, ContainerServiceInterface } from "../../../services/container/container.service";
 import { ConfirmationDialogComponent } from "../../shared/confirmation-dialog/confirmation-dialog.component";
 import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
-import { ScrollAdjusterDirective } from "../../shared/directives/scroll-adjuster.directive";
 import { TokenTableComponent } from "./token-table.component";
+import { MatTooltip } from "@angular/material/tooltip";
+import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 
 @Component({
   selector: "app-token-table-self-service",
@@ -49,7 +50,8 @@ import { TokenTableComponent } from "./token-table.component";
     FormsModule,
     MatIconButton,
     MatIcon,
-    ScrollAdjusterDirective
+    MatTooltip,
+    ScrollToTopDirective
   ],
   templateUrl: "./token-table.self-service.component.html",
   styleUrl: "./token-table.component.scss"

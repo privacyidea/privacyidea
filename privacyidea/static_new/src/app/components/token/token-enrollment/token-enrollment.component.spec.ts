@@ -17,11 +17,10 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import "@angular/localize/init";
+
 import { TokenEnrollmentComponent } from "./token-enrollment.component";
 import { UserService } from "../../../services/user/user.service";
 import {
-  MockAuthService,
   MockContainerService,
   MockContentService,
   MockDialogService,
@@ -29,7 +28,8 @@ import {
   MockNotificationService,
   MockRealmService,
   MockTokenService,
-  MockUserService
+  MockUserService,
+  MockVersioningService
 } from "../../../../testing/mock-services";
 import { TokenService } from "../../../services/token/token.service";
 import { LocalService } from "../../../services/local/local.service";
@@ -51,6 +51,10 @@ import {
   NO_REGENERATE_TOKEN_TYPES,
   REGENERATE_AS_VALUES_TOKEN_TYPES
 } from "./token-enrollment.constants";
+import { TokenEnrollmentWizardComponent } from "./token-enrollment.wizard.component";
+import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
+import { MockAuthService } from "../../../../testing/mock-services/mock-auth-service";
+import { environment } from "../../../../environments/environment";
 
 describe("TokenEnrollmentComponent", () => {
   let fixture: ComponentFixture<TokenEnrollmentComponent>;
@@ -62,6 +66,8 @@ describe("TokenEnrollmentComponent", () => {
   let userSvc: MockUserService;
   let notifications: MockNotificationService;
   let dialog: MockDialogService;
+  let authService: MockAuthService;
+  let httpTestingController: HttpTestingController;
 
   beforeAll(() => {
     Object.defineProperty(window, "matchMedia", {
@@ -89,24 +95,24 @@ describe("TokenEnrollmentComponent", () => {
   });
 
   beforeEach(async () => {
-    let MockVersioningService;
+    let mockVersioningService: MockVersioningService;
+
     await TestBed.configureTestingModule({
       imports: [TokenEnrollmentComponent],
       providers: [
         provideHttpClient(),
+        provideHttpClientTesting(),
         NoopAnimationsModule,
         MockLocalService,
         MockNotificationService,
         { provide: LocalService, useExisting: MockLocalService },
         { provide: NotificationService, useExisting: MockNotificationService },
-
         { provide: ContainerService, useClass: MockContainerService },
         { provide: RealmService, useClass: MockRealmService },
         { provide: UserService, useClass: MockUserService },
         { provide: TokenService, useClass: MockTokenService },
         { provide: ContentService, useClass: MockContentService },
         { provide: AuthService, useClass: MockAuthService },
-
         { provide: VersioningService, useClass: MockVersioningService },
         { provide: DialogService, useClass: MockDialogService }
       ]
@@ -120,12 +126,16 @@ describe("TokenEnrollmentComponent", () => {
     tokenSvc = TestBed.inject(TokenService) as unknown as MockTokenService;
     userSvc = TestBed.inject(UserService) as unknown as MockUserService;
     notifications = TestBed.inject(NotificationService) as unknown as MockNotificationService;
+    mockVersioningService = TestBed.inject(VersioningService) as unknown as MockVersioningService;
     dialog = TestBed.inject(DialogService) as unknown as MockDialogService;
+    authService = TestBed.inject(AuthService) as unknown as MockAuthService;
+    httpTestingController = TestBed.inject(HttpTestingController);
 
     fixture.detectChanges();
   });
 
   afterEach(() => {
+    httpTestingController.verify();
     jest.clearAllMocks();
   });
 
@@ -155,16 +165,16 @@ describe("TokenEnrollmentComponent", () => {
   });
 
   it("isUserRequired depends on selected token type", () => {
-    tokenSvc.selectedTokenType.set({ key: "hotp", info: "", text: "HOTP" });
+    tokenSvc.selectedTokenType.set({ key: "hotp", name: "HOTP", info: "", text: "HOTP" });
     expect(component.isUserRequired).toBe(false);
 
-    tokenSvc.selectedTokenType.set({ key: "webauthn", info: "", text: "WebAuthn" });
+    tokenSvc.selectedTokenType.set({ key: "webauthn", name: "Webauthn", info: "", text: "WebAuthn" });
     expect(component.isUserRequired).toBe(true);
 
-    tokenSvc.selectedTokenType.set({ key: "passkey", info: "", text: "Passkey" });
+    tokenSvc.selectedTokenType.set({ key: "passkey", name: "Passkey", info: "", text: "Passkey" });
     expect(component.isUserRequired).toBe(true);
 
-    tokenSvc.selectedTokenType.set({ key: "certificate", info: "", text: "Cert" });
+    tokenSvc.selectedTokenType.set({ key: "certificate", name: "Certificate", info: "", text: "Cert" });
     expect(component.isUserRequired).toBe(true);
   });
 
@@ -221,7 +231,7 @@ describe("TokenEnrollmentComponent", () => {
     });
 
     it("snacks when user is required but missing", async () => {
-      tokenSvc.selectedTokenType.set({ key: "webauthn", info: "", text: "" });
+      tokenSvc.selectedTokenType.set({ key: "webauthn", name: "Webauthn", info: "", text: "" });
       userSvc.selectedUser.set(null);
 
       component.setPinControl.setValue("1234");
@@ -237,7 +247,7 @@ describe("TokenEnrollmentComponent", () => {
     });
 
     it("snacks when form is invalid (e.g., PIN mismatch)", async () => {
-      tokenSvc.selectedTokenType.set({ key: "hotp", info: "", text: "" });
+      tokenSvc.selectedTokenType.set({ key: "hotp", name: "HOTP", info: "", text: "" });
       userSvc.selectedUser.set(null);
 
       component.setPinControl.setValue("1234");
@@ -251,7 +261,7 @@ describe("TokenEnrollmentComponent", () => {
     });
 
     it("snacks when clickEnroll is not provided", async () => {
-      tokenSvc.selectedTokenType.set({ key: "hotp", info: "", text: "" });
+      tokenSvc.selectedTokenType.set({ key: "hotp", name: "HOTP", info: "", text: "" });
 
       component.setPinControl.setValue("1234");
       component.repeatPinControl.setValue("1234");
@@ -266,7 +276,7 @@ describe("TokenEnrollmentComponent", () => {
     });
 
     it("calls clickEnroll, sets enrollResponse, opens last step dialog", async () => {
-      tokenSvc.selectedTokenType.set({ key: "hotp", info: "", text: "" });
+      tokenSvc.selectedTokenType.set({ key: "hotp", name: "HOTP", info: "", text: "" });
       component.descriptionControl.setValue("desc");
       component.setPinControl.setValue("0000");
       component.repeatPinControl.setValue("0000");
@@ -288,7 +298,7 @@ describe("TokenEnrollmentComponent", () => {
     });
 
     it("handles clickEnroll rejection by showing error snack", async () => {
-      tokenSvc.selectedTokenType.set({ key: "hotp", info: "", text: "" });
+      tokenSvc.selectedTokenType.set({ key: "hotp", name: "HOTP", info: "", text: "" });
       component.setPinControl.setValue("1111");
       component.repeatPinControl.setValue("1111");
 
@@ -301,9 +311,8 @@ describe("TokenEnrollmentComponent", () => {
       expect(notifications.openSnackBar).toHaveBeenCalledWith("Failed to enroll token: nope");
     });
 
-
     it("does NOT open dialog if rollout_state is 'clientwait'", async () => {
-      tokenSvc.selectedTokenType.set({ key: "hotp", info: "", text: "" });
+      tokenSvc.selectedTokenType.set({ key: "hotp", name: "HOTP", info: "", text: "" });
       component.setPinControl.setValue("0000");
       component.repeatPinControl.setValue("0000");
 
@@ -319,7 +328,7 @@ describe("TokenEnrollmentComponent", () => {
     });
 
     it("_handleEnrollmentResponse snacks when user is required but missing", () => {
-      tokenSvc.selectedTokenType.set({ key: "webauthn", info: "", text: "" });
+      tokenSvc.selectedTokenType.set({ key: "webauthn", name: "Webauthn", info: "", text: "" });
       (component as any)._handleEnrollmentResponse({
         response: { detail: { rollout_state: "done" } } as any,
         user: null
@@ -338,7 +347,7 @@ describe("TokenEnrollmentComponent", () => {
     });
 
     it("openLastStepDialog: stores last-step data and opens dialog", () => {
-      tokenSvc.selectedTokenType.set({ key: "hotp", info: "", text: "" });
+      tokenSvc.selectedTokenType.set({ key: "hotp", name: "HOTP", info: "", text: "" });
       const response = { detail: {} } as any;
       (component as any).openLastStepDialog({ response, user: null });
 
@@ -359,7 +368,7 @@ describe("TokenEnrollmentComponent", () => {
     });
 
     it("reopenEnrollmentDialog: falls back to last-step data", () => {
-      tokenSvc.selectedTokenType.set({ key: "hotp", info: "", text: "" });
+      tokenSvc.selectedTokenType.set({ key: "hotp", name: "HOTP", info: "", text: "" });
       (component as any)._lastTokenEnrollmentLastStepDialogData.set({
         tokentype: tokenSvc.selectedTokenType(),
         response: {},
@@ -385,45 +394,12 @@ describe("TokenEnrollmentComponent", () => {
 
       expect(containers.selectedContainer()).toBe("CONT-42");
     });
-
-    it("userFilterControl toggles onlyAddToRealmControl", () => {
-      component.ngOnInit();
-
-      component.userFilterControl.setValue("alice");
-      expect(component.onlyAddToRealmControl.disabled).toBe(true);
-
-      component.userFilterControl.setValue("");
-      expect(component.onlyAddToRealmControl.disabled).toBe(false);
-    });
-
-    it("selectedUserRealmControl resets user filter and updates service", () => {
-      const users = TestBed.inject(UserService) as unknown as MockUserService;
-      component.ngOnInit();
-
-      component.selectedUserRealmControl.setValue("realmX");
-      expect(component.userFilterControl.disabled).toBe(false);
-      expect(users.selectedUserRealm()).toBe("realmX");
-
-      component.selectedUserRealmControl.setValue("");
-      expect(component.userFilterControl.disabled).toBe(true);
-    });
-
-    it("onlyAddToRealmControl disables/enables userFilterControl", () => {
-      component.ngOnInit();
-
-      component.onlyAddToRealmControl.setValue(true);
-      expect(component.userFilterControl.disabled).toBe(true);
-
-      component.onlyAddToRealmControl.setValue(false);
-      expect(component.userFilterControl.disabled).toBe(false);
-    });
   });
 
   describe("token-enrollment constants", () => {
     const hasQr = (type: string) => !NO_QR_CODE_TOKEN_TYPES.includes(type);
     const canRegenerate = (type: string) => !NO_REGENERATE_TOKEN_TYPES.includes(type);
-    const regenerateLabel = (type: string) =>
-      REGENERATE_AS_VALUES_TOKEN_TYPES.includes(type) ? "Values" : "QR Code";
+    const regenerateLabel = (type: string) => (REGENERATE_AS_VALUES_TOKEN_TYPES.includes(type) ? "Values" : "QR Code");
 
     it("REGENERATE_AS_VALUES_TOKEN_TYPES is a subset of NO_QR_CODE_TOKEN_TYPES", () => {
       const allIn = REGENERATE_AS_VALUES_TOKEN_TYPES.every((t) => NO_QR_CODE_TOKEN_TYPES.includes(t));
@@ -473,6 +449,66 @@ describe("TokenEnrollmentComponent", () => {
       expect(hasQr("passkey")).toBe(false);
       expect(canRegenerate("passkey")).toBe(false);
       expect(regenerateLabel("passkey")).toBe("QR Code"); // label ignored when cannot regenerate
+    });
+  });
+
+  describe("wizard", () => {
+    let wizardFixture: ComponentFixture<TokenEnrollmentWizardComponent>;
+    let wizardComponent: TokenEnrollmentWizardComponent;
+
+    beforeEach(() => {
+      wizardFixture = TestBed.createComponent(TokenEnrollmentWizardComponent);
+      wizardComponent = wizardFixture.componentInstance;
+    });
+
+    it("creates", () => {
+      expect(wizardComponent).toBeTruthy();
+      wizardFixture.detectChanges();
+      const req = httpTestingController.expectOne(
+        environment.proxyUrl + "/static/public/customize/token-enrollment.wizard.pre.top.html"
+      );
+      req.flush("");
+      const req2 = httpTestingController.expectOne(
+        environment.proxyUrl + "/static/public/customize/token-enrollment.wizard.pre.bottom.html"
+      );
+      req2.flush("");
+    });
+
+    it("show default content if no custom content is defined", () => {
+      authService.authData.set({
+        ...authService.authData()!,
+        token_wizard: true
+      });
+      wizardFixture.detectChanges();
+      const req = httpTestingController.expectOne(
+        environment.proxyUrl + "/static/public/customize/token-enrollment.wizard.pre.top.html"
+      );
+      req.flush("");
+      const req2 = httpTestingController.expectOne(
+        environment.proxyUrl + "/static/public/customize/token-enrollment.wizard.pre.bottom.html"
+      );
+      req2.flush("");
+      wizardFixture.detectChanges();
+      expect(wizardFixture.nativeElement.textContent).toContain("Enroll HOTP Token");
+    });
+
+    it("show custom content if defined", () => {
+      authService.authData.set({
+        ...authService.authData()!,
+        token_wizard: true
+      });
+      wizardFixture.detectChanges();
+      const req = httpTestingController.expectOne(
+        environment.proxyUrl + "/static/public/customize/token-enrollment.wizard.pre.top.html"
+      );
+      req.flush("Custom Content");
+      const req2 = httpTestingController.expectOne(
+        environment.proxyUrl + "/static/public/customize/token-enrollment.wizard.pre.bottom.html"
+      );
+      req2.flush("");
+      wizardFixture.detectChanges();
+      expect(wizardFixture.nativeElement.textContent).toContain("Custom Content");
+      expect(wizardFixture.nativeElement.textContent).not.toContain("Enroll HOTP Token");
     });
   });
 });

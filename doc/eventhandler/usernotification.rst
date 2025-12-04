@@ -41,6 +41,10 @@ Possible recipient types are:
 Depending on the recipient type you can enter additional information. The
 recipient type *email* takes a comma separated list of email addresses.
 
+.. note:: If you select token owner or logged_in_user, you can enter a user
+    attribute from which the email address should be taken in the
+    input field 'To tokenowner' / 'To logged_in_user'.
+
 **reply_to**
 
 Adds the specified ``Reply-To`` header to the email.

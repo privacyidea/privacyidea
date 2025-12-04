@@ -4,26 +4,46 @@ This file contains the event handlers tests. It tests:
 lib/eventhandler/usernotification.py (one event handler module)
 lib/event.py (the decorator)
 """
+import os
+from collections import OrderedDict
+from datetime import datetime, timedelta, timezone
+
+import mock
 import requests.exceptions
 import responses
-from testfixtures import log_capture
-
-import os
-import mock
-
+from dateutil.parser import parse as parse_date_string
+from dateutil.tz import tzlocal
+from flask import Request, Response
 from mock import patch
+from testfixtures import log_capture
+from werkzeug.test import EnvironBuilder
 
+from privacyidea.lib.audit import getAudit
+from privacyidea.lib.config import get_config_object
 from privacyidea.lib.container import (init_container, find_container_by_serial, get_all_containers,
                                        delete_container_by_serial, add_token_to_container, create_endpoint_url)
 from privacyidea.lib.containers.container_info import TokenContainerInfoData, PI_INTERNAL
+from privacyidea.lib.counter import increase as counter_increase
+from privacyidea.lib.error import ResourceNotFoundError, ConfigAdminError
+from privacyidea.lib.event import (delete_event, set_event,
+                                   EventConfiguration, get_handler_object,
+                                   enable_event)
+from privacyidea.lib.eventhandler.base import BaseEventHandler, CONDITION
 from privacyidea.lib.eventhandler.containerhandler import (ContainerEventHandler, ACTION_TYPE as C_ACTION_TYPE)
+from privacyidea.lib.eventhandler.counterhandler import CounterEventHandler
 from privacyidea.lib.eventhandler.customuserattributeshandler import (CustomUserAttributesHandler,
                                                                       ACTION_TYPE as CUAH_ACTION_TYPE,
                                                                       USER_TYPE)
+from privacyidea.lib.eventhandler.federationhandler import FederationEventHandler
+from privacyidea.lib.eventhandler.requestmangler import RequestManglerEventHandler
+from privacyidea.lib.eventhandler.responsemangler import ResponseManglerEventHandler
+from privacyidea.lib.eventhandler.scripthandler import ScriptEventHandler, SCRIPT_WAIT
+from privacyidea.lib.eventhandler.tokenhandler import (TokenEventHandler,
+                                                       ACTION_TYPE, VALIDITY)
+from privacyidea.lib.eventhandler.usernotification import UserNotificationEventHandler
 from privacyidea.lib.eventhandler.webhookeventhandler import (ACTION_TYPE as WHEH_ACTION_TYPE,
                                                               WebHookHandler,
                                                               CONTENT_TYPE)
-from privacyidea.lib.eventhandler.usernotification import UserNotificationEventHandler
 from privacyidea.lib.machine import list_token_machines
 from .base import MyTestCase, FakeFlaskG, FakeAudit
 from privacyidea.lib.config import get_config_object
@@ -45,15 +65,11 @@ from privacyidea.lib.event import (delete_event, set_event,
 from privacyidea.lib.token import (init_token, remove_token, get_realms_of_token, get_tokens,
                                    add_tokeninfo, unassign_token, get_tokens_paginate)
 from privacyidea.lib.tokenclass import DATE_FORMAT, CHALLENGE_SESSION
-from privacyidea.models import Challenge
 from privacyidea.lib.user import User
-from privacyidea.lib.error import ResourceNotFoundError, ConfigAdminError
 from privacyidea.lib.utils import is_true
-from datetime import datetime, timedelta, timezone
-from dateutil.parser import parse as parse_date_string
-from dateutil.tz import tzlocal
-from collections import OrderedDict
-
+from privacyidea.models import Challenge
+from privacyidea.models import EventCounter, TokenOwner
+from .base import MyTestCase, FakeFlaskG, FakeAudit
 from .test_lib_tokencontainer import MockSmartphone
 
 
@@ -178,8 +194,12 @@ class BaseEventHandlerTestCase(MyTestCase):
         if resp_content_type:
             resp.content_type = resp_content_type
 
+        # fake g
+        fake_g = FakeFlaskG()
+        fake_g.audit_object = getAudit(cls.app.config)
+
         # options for the event handler
-        options = {"g": {},
+        options = {"g": fake_g,
                    "handler_def": handler_def,
                    "request": req,
                    "response": resp}
@@ -394,9 +414,7 @@ class BaseEventHandlerTestCase(MyTestCase):
         options = self.setup_request(req_data=req_data, all_data=req_data, user=user, resp_data=resp_data,
                                      resp_content_type=resp_content_type)
 
-        g = FakeFlaskG()
-        g.client_ip = "10.0.0.1"
-        options["g"] = g
+        options["g"].client_ip = "10.0.0.1"
 
         options["handler_def"] = {"conditions": {CONDITION.CLIENT_IP: "10.0.0.0/24"}}
         r = uhandler.check_condition(options)
@@ -794,35 +812,18 @@ class BaseEventHandlerTestCase(MyTestCase):
         self.setUp_user_realms()
         user = User("cornelius", "realm1")
 
-        builder = EnvironBuilder(method='POST',
-                                 data={'user': "cornelius@realm1",
-                                       "pass": "wrongvalue"},
-                                 headers={})
-        env = builder.get_environ()
-        req = Request(env)
-        req.all_data = {"user": "cornelius@realm1",
-                        "pass": "wrongvalue"}
-        req.User = User("cornelius", "realm1")
-        resp = Response()
-        resp.data = """{"result": {"value": false}}"""
+        options = self.setup_request(req_data={'user': "cornelius@realm1", "pass": "wrongvalue"},
+                                     all_data={"user": "cornelius@realm1", "pass": "wrongvalue"},
+                                     user=user,
+                                     resp_data="""{"result": {"value": false}}""",
+                                     handler_def={"conditions": {CONDITION.USER_TOKEN_NUMBER: "<1"}})
 
         event_handler = BaseEventHandler()
-        r = event_handler.check_condition(
-            {"g": {},
-             "handler_def": {"conditions": {CONDITION.USER_TOKEN_NUMBER: "<1"}},
-             "request": req,
-             "response": resp
-             }
-        )
+        r = event_handler.check_condition(options)
         self.assertTrue(r)
         init_token({"serial": "pw01", "type": "pw", "otppin": "test", "otpkey": "secret"}, user=user)
-        r = event_handler.check_condition(
-            {"g": {},
-             "handler_def": {"conditions": {CONDITION.USER_TOKEN_NUMBER: "<1"}},
-             "request": req,
-             "response": resp
-             }
-        )
+        options["handler_def"] = {"conditions": {CONDITION.USER_TOKEN_NUMBER: "<1"}}
+        r = event_handler.check_condition(options)
         self.assertFalse(r)
 
     def test_18_compare_condition_no_int(self):
@@ -841,10 +842,13 @@ class BaseEventHandlerTestCase(MyTestCase):
         resp = Response()
         resp.data = """{"result": {"value": false}}"""
 
+        fake_g = FakeFlaskG()
+        fake_g.audit_object = getAudit(self.app.config)
+
         event_handler = BaseEventHandler()
         # If the condition is not an integer, the error when converting is caught and false is returned
         r = event_handler.check_condition(
-            {"g": {},
+            {"g": fake_g,
              "handler_def": {"conditions": {CONDITION.USER_TOKEN_NUMBER: ">notaninteger"}},
              "request": req,
              "response": resp
@@ -1134,7 +1138,7 @@ class BaseEventHandlerTestCase(MyTestCase):
         uhandler = BaseEventHandler()
 
         # Prepare a fake request
-        all_data = {"type": "hotp"} # just set any data to ensure request.all_data is set
+        all_data = {"type": "hotp"}  # just set any data to ensure request.all_data is set
         resp_data = """{"result": {"value": false}}"""
         options = self.setup_request(all_data=all_data, resp_data=resp_data, user=hans)
 
@@ -1224,6 +1228,23 @@ class BaseEventHandlerTestCase(MyTestCase):
         self.assertTrue(r)
 
         token.delete_token()
+
+    def test_29_check_condition_sets_context(self):
+        self.setUp_user_realms()
+        user = User("hans", self.realm1)
+        container_serial = init_container({"type": "generic"})["container_serial"]
+        options = self.setup_request(all_data={"serial": "SPASS01", "container_serial": container_serial}, user=user,
+                                     handler_def={"conditions": {}})
+
+        event_handler = BaseEventHandler()
+        self.assertTrue(event_handler.check_condition(options))
+        self.assertIn("context", options)
+        context = options["context"]
+        self.assertListEqual(["SPASS01"], context.token_serials)
+        self.assertEqual(user, context.user)
+        self.assertEqual(container_serial, context.container.serial)
+
+        delete_container_by_serial(container_serial)
 
 
 class CounterEventTestCase(MyTestCase):
@@ -2746,12 +2767,13 @@ class TokenEventTestCase(MyTestCase):
         options = {"g": g,
                    "request": req,
                    "response": resp,
-                   "handler_def": {"options":
-                                       {"realm": "realm2"}
-                                   }
+                   "handler_def": {"options": {"realm": "realm2"}, "conditions": {}}
                    }
 
         t_handler = TokenEventHandler()
+        self.assertTrue(t_handler.check_condition(options))
+        context = options.get("context")
+        self.assertListEqual(["SPASS01"], context.token_serials)
         res = t_handler.do(ACTION_TYPE.SET_TOKENREALM, options=options)
         self.assertTrue(res)
 
@@ -2792,10 +2814,59 @@ class TokenEventTestCase(MyTestCase):
         options = {"g": g,
                    "request": req,
                    "response": resp,
-                   "handler_def": {}
+                   "handler_def": {"conditions": {}}
                    }
 
         t_handler = TokenEventHandler()
+        self.assertTrue(t_handler.check_condition(options))
+        context = options.get("context")
+        self.assertListEqual(["SPASS01"], context.token_serials)
+        res = t_handler.do(ACTION_TYPE.DELETE, options=options)
+        self.assertTrue(res)
+
+        # Check if the token does not exist anymore
+        s = get_tokens(serial="SPASS01")
+        self.assertFalse(s)
+
+    def test_02_delete_user_token(self):
+        # setup realms
+        self.setUp_user_realms()
+
+        user = User("hans", self.realm1)
+        init_token({"serial": "SPASS01", "type": "spass"}, user=user)
+
+        g = FakeFlaskG()
+        audit_object = FakeAudit()
+
+        g.logged_in_user = {"username": user.login,
+                            "role": "user",
+                            "realm": user.realm}
+        g.audit_object = audit_object
+
+        builder = EnvironBuilder(method='POST',
+                                 data={'user': user.login, "realm": user.realm},
+                                 headers={})
+
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.all_data = {'user': user.login, "realm": user.realm}
+        req.User = user
+        resp = Response()
+        resp.data = """{"result": {"value": true}}"""
+
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"conditions": {}}
+                   }
+
+        t_handler = TokenEventHandler()
+        self.assertTrue(t_handler.check_condition(options))
+        context = options.get("context")
+        self.assertListEqual(["SPASS01"], context.token_serials)
         res = t_handler.do(ACTION_TYPE.DELETE, options=options)
         self.assertTrue(res)
 
@@ -2831,22 +2902,31 @@ class TokenEventTestCase(MyTestCase):
         resp = Response()
         resp.data = """{"result": {"value": true}}"""
 
-        options = {"g": g,
-                   "request": req,
-                   "response": resp,
-                   "handler_def": {}
-                   }
+        def get_options():
+            return {"g": g,
+                    "request": req,
+                    "response": resp,
+                    "handler_def": {"conditions": {}}
+                    }
 
         t_handler = TokenEventHandler()
+        options = get_options()
+        self.assertTrue(t_handler.check_condition(options))
+        context = options.get("context")
+        self.assertListEqual(["SPASS01"], context.token_serials)
         res = t_handler.do(ACTION_TYPE.DISABLE, options=options)
         self.assertTrue(res)
-        # Check if the token does not exist anymore
+        # Check if the token is disabled
         t = get_tokens(serial="SPASS01")
         self.assertFalse(t[0].is_active())
 
+        options = get_options()
+        self.assertTrue(t_handler.check_condition(options))
+        context = options.get("context")
+        self.assertListEqual(["SPASS01"], context.token_serials)
         res = t_handler.do(ACTION_TYPE.ENABLE, options=options)
         self.assertTrue(res)
-        # Check if the token does not exist anymore
+        # Check if the token is enabled
         t = get_tokens(serial="SPASS01")
         self.assertTrue(t[0].is_active())
 
@@ -2887,10 +2967,13 @@ class TokenEventTestCase(MyTestCase):
         options = {"g": g,
                    "request": req,
                    "response": resp,
-                   "handler_def": {}
+                   "handler_def": {"conditions": {}}
                    }
 
         t_handler = TokenEventHandler()
+        self.assertTrue(t_handler.check_condition(options))
+        context = options.get("context")
+        self.assertListEqual(["SPASS01"], context.token_serials)
         res = t_handler.do(ACTION_TYPE.UNASSIGN, options=options)
         self.assertTrue(res)
         # Check if the token was unassigned
@@ -2932,12 +3015,15 @@ class TokenEventTestCase(MyTestCase):
         options = {"g": g,
                    "request": req,
                    "response": resp,
-                   "handler_def": {"options":
-                                       {"tokentype": "paper",
-                                        "user": "1"}}
+                   "handler_def": {"options": {"tokentype": "paper", "user": "1"},
+                                   "conditions": {}}
                    }
 
         t_handler = TokenEventHandler()
+        self.assertTrue(t_handler.check_condition(options))
+        context = options.get("context")
+        self.assertListEqual(["SPASS01"], context.token_serials)
+        self.assertEqual(user_obj, context.user)
         res = t_handler.do(ACTION_TYPE.INIT, options=options)
         self.assertTrue(res)
         # Check if the token was created and assigned
@@ -2950,12 +3036,13 @@ class TokenEventTestCase(MyTestCase):
         options = {"g": g,
                    "request": req,
                    "response": resp,
-                   "handler_def": {"options":
-                                       {"tokentype": "sms",
-                                        "user": "1"}}
+                   "handler_def": {"options": {"tokentype": "sms", "user": "1"}, "conditions": {}}
                    }
 
         t_handler = TokenEventHandler()
+        self.assertTrue(t_handler.check_condition(options))
+        context = options.get("context")
+        self.assertEqual(user_obj, context.user)
         res = t_handler.do(ACTION_TYPE.INIT, options=options)
         self.assertTrue(res)
         # Check if the token was created and assigned
@@ -2969,13 +3056,12 @@ class TokenEventTestCase(MyTestCase):
         options = {"g": g,
                    "request": req,
                    "response": resp,
-                   "handler_def": {"options":
-                                       {"tokentype": "sms",
-                                        "user": "1",
-                                        "sms_identifier": "mySMSGateway"}}
+                   "handler_def": {"options": {"tokentype": "sms", "user": "1", "sms_identifier": "mySMSGateway"},
+                                   "conditions": {}}
                    }
 
         t_handler = TokenEventHandler()
+        self.assertTrue(t_handler.check_condition(options))
         res = t_handler.do(ACTION_TYPE.INIT, options=options)
         self.assertTrue(res)
         # Check if the token was created and assigned
@@ -2990,12 +3076,11 @@ class TokenEventTestCase(MyTestCase):
         options = {"g": g,
                    "request": req,
                    "response": resp,
-                   "handler_def": {"options":
-                                       {"tokentype": "email",
-                                        "user": "1"}}
+                   "handler_def": {"options": {"tokentype": "email", "user": "1"}, "conditions": {}}
                    }
 
         t_handler = TokenEventHandler()
+        self.assertTrue(t_handler.check_condition(options))
         res = t_handler.do(ACTION_TYPE.INIT, options=options)
         self.assertTrue(res)
         # Check if the token was created and assigned
@@ -3009,13 +3094,12 @@ class TokenEventTestCase(MyTestCase):
         options = {"g": g,
                    "request": req,
                    "response": resp,
-                   "handler_def": {"options":
-                                       {"tokentype": "email",
-                                        "user": "1",
-                                        "smtp_identifier": "myServer"}}
+                   "handler_def": {"options": {"tokentype": "email", "user": "1", "smtp_identifier": "myServer"},
+                                   "conditions": {}}
                    }
 
         t_handler = TokenEventHandler()
+        self.assertTrue(t_handler.check_condition(options))
         res = t_handler.do(ACTION_TYPE.INIT, options=options)
         self.assertTrue(res)
         # Check if the token was created and assigned
@@ -3030,13 +3114,12 @@ class TokenEventTestCase(MyTestCase):
         options = {"g": g,
                    "request": req,
                    "response": resp,
-                   "handler_def": {"options":
-                                       {"tokentype": "motp",
-                                        "user": "1",
-                                        "motppin": "1234"}}
+                   "handler_def": {"options": {"tokentype": "motp", "user": "1", "motppin": "1234"},
+                                   "conditions": {}}
                    }
 
         t_handler = TokenEventHandler()
+        self.assertTrue(t_handler.check_condition(options))
         res = t_handler.do(ACTION_TYPE.INIT, options=options)
         self.assertTrue(res)
         # Check if the token was created and assigned
@@ -3049,13 +3132,12 @@ class TokenEventTestCase(MyTestCase):
         options = {"g": g,
                    "request": req,
                    "response": resp,
-                   "handler_def": {"options":
-                                       {"tokentype": "sms",
-                                        "user": "1",
-                                        "dynamic_phone": "1"}}
+                   "handler_def": {"options": {"tokentype": "sms", "user": "1", "dynamic_phone": "1"},
+                                   "conditions": {}}
                    }
 
         t_handler = TokenEventHandler()
+        self.assertTrue(t_handler.check_condition(options))
         res = t_handler.do(ACTION_TYPE.INIT, options=options)
         self.assertTrue(res)
         # Check if the token was created and assigned
@@ -3069,13 +3151,14 @@ class TokenEventTestCase(MyTestCase):
         options = {"g": g,
                    "request": req,
                    "response": resp,
-                   "handler_def": {"options":
-                                       {"tokentype": "email",
-                                        "user": "1",
-                                        "dynamic_email": "1"}}
+                   "handler_def": {"options": {"tokentype": "email",
+                                               "user": "1",
+                                               "dynamic_email": "1"},
+                                   "conditions": {}}
                    }
 
         t_handler = TokenEventHandler()
+        self.assertTrue(t_handler.check_condition(options))
         res = t_handler.do(ACTION_TYPE.INIT, options=options)
         self.assertTrue(res)
         # Check if the token was created and assigned
@@ -3091,12 +3174,11 @@ class TokenEventTestCase(MyTestCase):
         options = {"g": g,
                    "request": req,
                    "response": resp,
-                   "handler_def": {"options":
-                                       {"tokentype": "email",
-                                        "user": "1"}}
+                   "handler_def": {"options": {"tokentype": "email", "user": "1"}, "conditions": {}}
                    }
 
         t_handler = TokenEventHandler()
+        self.assertTrue(t_handler.check_condition(options))
         res = t_handler.do(ACTION_TYPE.INIT, options=options)
         self.assertTrue(res)
         # Check if the token was created and assigned
@@ -3111,13 +3193,14 @@ class TokenEventTestCase(MyTestCase):
         options = {"g": g,
                    "request": req,
                    "response": resp,
-                   "handler_def": {"options":
-                                       {"tokentype": "totp",
-                                        "user": "1",
-                                        "additional_params": "{'totp.hashlib': 'sha256'}"}}
+                   "handler_def": {"options": {"tokentype": "totp",
+                                               "user": "1",
+                                               "additional_params": "{'totp.hashlib': 'sha256'}"},
+                                   "conditions": {}}
                    }
 
         t_handler = TokenEventHandler()
+        self.assertTrue(t_handler.check_condition(options))
         res = t_handler.do(ACTION_TYPE.INIT, options=options)
         self.assertTrue(res)
         # Check if the token was created and assigned
@@ -3131,12 +3214,13 @@ class TokenEventTestCase(MyTestCase):
         options = {"g": g,
                    "request": req,
                    "response": resp,
-                   "handler_def": {"options":
-                                       {"tokentype": "totp",
-                                        "additional_params": "{'totp.hashlib': 'sha256'}"}}
+                   "handler_def": {"options": {"tokentype": "totp",
+                                               "additional_params": "{'totp.hashlib': 'sha256'}"},
+                                   "conditions": {}}
                    }
 
         t_handler = TokenEventHandler()
+        self.assertTrue(t_handler.check_condition(options))
         res = t_handler.do(ACTION_TYPE.INIT, options=options)
         self.assertTrue(res)
         # Check if the token was created with additional parameter
@@ -3164,12 +3248,18 @@ class TokenEventTestCase(MyTestCase):
 
         # Enroll token and assign to container
         container_serial = init_container({"type": "generic"})["container_serial"]
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options": {"tokentype": "spass",
+                                               "user": False,
+                                               "container": True},
+                                   "conditions": {}}
+                   }
         options['request'].all_data = {"container_serial": container_serial}
-        options['handler_def']["options"] = {"tokentype": "spass",
-                                             "user": False,
-                                             "container": True}
 
         # With container serial
+        self.assertTrue(t_handler.check_condition(options))
         res = t_handler.do(ACTION_TYPE.INIT, options=options)
         self.assertTrue(res)
 
@@ -3183,7 +3273,16 @@ class TokenEventTestCase(MyTestCase):
         delete_container_by_serial(container_serial)
 
         # Enroll token and assign to container without a container serial
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {"options": {"tokentype": "spass",
+                                               "user": False,
+                                               "container": True},
+                                   "conditions": {}}
+                   }
         options['request'].all_data = {}
+        self.assertTrue(t_handler.check_condition(options))
         res = t_handler.do(ACTION_TYPE.INIT, options=options)
         self.assertTrue(res)
 
@@ -3230,12 +3329,11 @@ class TokenEventTestCase(MyTestCase):
         options = {"g": g,
                    "request": req,
                    "response": resp,
-                   "handler_def": {"options": {
-                       "description": "New Description"
-                   }}
+                   "handler_def": {"options": {"description": "New Description"}, "conditions": {}}
                    }
 
         t_handler = TokenEventHandler()
+        self.assertTrue(t_handler.check_condition(options))
         res = t_handler.do(ACTION_TYPE.SET_DESCRIPTION, options=options)
         self.assertTrue(res)
         # Check if the token was unassigned
@@ -3246,12 +3344,11 @@ class TokenEventTestCase(MyTestCase):
         options = {"g": g,
                    "request": req,
                    "response": resp,
-                   "handler_def": {"options": {
-                       "description": "valid for {now}+5d you know"
-                   }}
+                   "handler_def": {"options": {"description": "valid for {now}+5d you know"}, "conditions": {}}
                    }
 
         t_handler = TokenEventHandler()
+        self.assertTrue(t_handler.check_condition(options))
         res = t_handler.do(ACTION_TYPE.SET_DESCRIPTION, options=options)
         self.assertTrue(res)
         # Check if the token was unassigned
@@ -3298,11 +3395,13 @@ class TokenEventTestCase(MyTestCase):
                    "request": req,
                    "response": resp,
                    "handler_def": {"options": {VALIDITY.START: "+10m",
-                                               VALIDITY.END: "+10d"}
+                                               VALIDITY.END: "+10d"},
+                                   "conditions": {}
                                    }
                    }
 
         t_handler = TokenEventHandler()
+        self.assertTrue(t_handler.check_condition(options))
         res = t_handler.do(ACTION_TYPE.SET_VALIDITY, options=options)
         self.assertTrue(res)
         # Check if the token has the correct validity period
@@ -3353,11 +3452,11 @@ class TokenEventTestCase(MyTestCase):
         options = {"g": g,
                    "request": req,
                    "response": resp,
-                   "handler_def": {"options": {"count window": "123"}
-                                   }
+                   "handler_def": {"options": {"count window": "123"}, "conditions": {}}
                    }
 
         t_handler = TokenEventHandler()
+        self.assertTrue(t_handler.check_condition(options))
         res = t_handler.do(ACTION_TYPE.SET_COUNTWINDOW, options=options)
         self.assertTrue(res)
         # Check if the token has the correct sync window
@@ -3404,11 +3503,13 @@ class TokenEventTestCase(MyTestCase):
                    "request": req,
                    "response": resp,
                    "handler_def": {"options": {"key": "timeWindow",
-                                               "value": "33000"}
+                                               "value": "33000"},
+                                   "conditions": {}
                                    }
                    }
 
         t_handler = TokenEventHandler()
+        self.assertTrue(t_handler.check_condition(options))
         res = t_handler.do(ACTION_TYPE.SET_TOKENINFO, options=options)
         self.assertTrue(res)
         # Check if the token has the correct sync window
@@ -3421,12 +3522,13 @@ class TokenEventTestCase(MyTestCase):
                    "request": req,
                    "response": resp,
                    "handler_def": {"options": {"key": "pastText",
-                                               "value": "it was {"
-                                                        "current_time}-12h..."}
+                                               "value": "it was {current_time}-12h..."},
+                                   "conditions": {}
                                    }
                    }
 
         t_handler = TokenEventHandler()
+        self.assertTrue(t_handler.check_condition(options))
         res = t_handler.do(ACTION_TYPE.SET_TOKENINFO, options=options)
         self.assertTrue(res)
         # Check if the token has the correct sync window
@@ -3440,10 +3542,10 @@ class TokenEventTestCase(MyTestCase):
         options = {"g": g,
                    "request": req,
                    "response": resp,
-                   "handler_def": {"options": {"key": "SomeNonExistingKey"}
-                                   }
+                   "handler_def": {"options": {"key": "SomeNonExistingKey"}, "conditions": {}}
                    }
         t_handler = TokenEventHandler()
+        self.assertTrue(t_handler.check_condition(options))
         res = t_handler.do(ACTION_TYPE.DELETE_TOKENINFO, options=options)
         self.assertTrue(res)
         # Check if the token info was deleted
@@ -3455,10 +3557,10 @@ class TokenEventTestCase(MyTestCase):
         options = {"g": g,
                    "request": req,
                    "response": resp,
-                   "handler_def": {"options": {"key": "pastText"}
-                                   }
+                   "handler_def": {"options": {"key": "pastText"}, "conditions": {}}
                    }
         t_handler = TokenEventHandler()
+        self.assertTrue(t_handler.check_condition(options))
         res = t_handler.do(ACTION_TYPE.DELETE_TOKENINFO, options=options)
         self.assertTrue(res)
         # Check if the token info was deleted
@@ -3476,9 +3578,11 @@ class TokenEventTestCase(MyTestCase):
                    "request": req,
                    "response": resp,
                    "handler_def": {"options": {"key": tokeninfo_key,
-                                               "increment": "3"}
+                                               "increment": "3"},
+                                   "conditions": {}
                                    }
                    }
+        self.assertTrue(t_handler.check_condition(options))
         res = t_handler.do(ACTION_TYPE.INCREASE_TOKENINFO, options=options)
         self.assertTrue(res)
         ti = t[0].get_tokeninfo(tokeninfo_key)
@@ -3489,9 +3593,11 @@ class TokenEventTestCase(MyTestCase):
                    "request": req,
                    "response": resp,
                    "handler_def": {"options": {"key": tokeninfo_key,
-                                               "increment": "-10"}
+                                               "increment": "-10"},
+                                   "conditions": {}
                                    }
                    }
+        self.assertTrue(t_handler.check_condition(options))
         res = t_handler.do(ACTION_TYPE.INCREASE_TOKENINFO, options=options)
         self.assertTrue(res)
         ti = t[0].get_tokeninfo(tokeninfo_key)
@@ -3535,10 +3641,11 @@ class TokenEventTestCase(MyTestCase):
         options = {"g": g,
                    "request": req,
                    "response": resp,
-                   "handler_def": {"options": {"fail counter": "7"}}
+                   "handler_def": {"options": {"fail counter": "7"}, "conditions": {}}
                    }
 
         t_handler = TokenEventHandler()
+        self.assertTrue(t_handler.check_condition(options))
         res = t_handler.do(ACTION_TYPE.SET_FAILCOUNTER, options=options)
         self.assertTrue(res)
         # Check if the token has the correct fail counter
@@ -3598,10 +3705,11 @@ class TokenEventTestCase(MyTestCase):
         options = {"g": g,
                    "request": req,
                    "response": resp,
-                   "handler_def": {"options": {"length": "8"}}
+                   "handler_def": {"options": {"length": "8"}, "conditions": {}}
                    }
 
         t_handler = TokenEventHandler()
+        self.assertTrue(t_handler.check_condition(options))
         res = t_handler.do(ACTION_TYPE.SET_RANDOM_PIN, options=options)
         self.assertTrue(res)
         # Check, if we have a pin
@@ -3651,11 +3759,11 @@ class TokenEventTestCase(MyTestCase):
         options = {"g": g,
                    "request": req,
                    "response": resp,
-                   "handler_def": {"options": {"max failcount": "123"}
-                                   }
+                   "handler_def": {"options": {"max failcount": "123"}, "conditions": {}}
                    }
 
         t_handler = TokenEventHandler()
+        self.assertTrue(t_handler.check_condition(options))
         res = t_handler.do(ACTION_TYPE.SET_MAXFAIL, options=options)
         self.assertTrue(res)
         # Check if the token has the correct sync window
@@ -3669,7 +3777,7 @@ class TokenEventTestCase(MyTestCase):
         # setup realms
         self.setUp_user_realms()
         # create a tokengroup
-        from privacyidea.lib.tokengroup import set_tokengroup, delete_tokengroup
+        from privacyidea.lib.tokengroup import set_tokengroup
         set_tokengroup("group1")
 
         init_token({"serial": "SPASS01", "type": "spass"},
@@ -3704,11 +3812,11 @@ class TokenEventTestCase(MyTestCase):
         options = {"g": g,
                    "request": req,
                    "response": resp,
-                   "handler_def": {"options": {"tokengroup": "group1"}
-                                   }
+                   "handler_def": {"options": {"tokengroup": "group1"}, "conditions": {}}
                    }
 
         t_handler = TokenEventHandler()
+        self.assertTrue(t_handler.check_condition(options))
         res = t_handler.do(ACTION_TYPE.ADD_TOKENGROUP, options=options)
         self.assertTrue(res)
         # Check if the token as the group assigned
@@ -3760,10 +3868,12 @@ class TokenEventTestCase(MyTestCase):
                    "handler_def": {
                        "options": {
                            "application": "offline",
-                           "count": "12"}}
+                           "count": "12"},
+                       "conditions": {}}
                    }
 
         t_handler = TokenEventHandler()
+        self.assertTrue(t_handler.check_condition(options))
         res = t_handler.do("attach application", options=options)
         self.assertTrue(res)
 
@@ -3800,10 +3910,11 @@ class TokenEventTestCase(MyTestCase):
         options = {"g": g,
                    "request": req,
                    "response": resp,
-                   "handler_def": {}
+                   "handler_def": {"conditions": {}}
                    }
 
         t_handler = TokenEventHandler()
+        self.assertTrue(t_handler.check_condition(options))
         res = t_handler.do(ACTION_TYPE.DELETE, options=options)
         self.assertFalse(res)
         capture.check_present(
@@ -3838,6 +3949,7 @@ class TokenEventTestCase(MyTestCase):
                    }
 
         t_handler = TokenEventHandler()
+        self.assertTrue(t_handler.check_condition(options))
         res = t_handler.do("unknown_tokenhandler_action", options=options)
         self.assertFalse(res)
         capture.check_present(

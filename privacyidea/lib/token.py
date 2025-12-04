@@ -113,7 +113,8 @@ from privacyidea.lib.realm import realm_is_defined, get_realms
 from privacyidea.lib.resolver import get_resolver_object
 from privacyidea.lib.tokenclass import DATE_FORMAT, TOKENKIND, TokenClass
 from privacyidea.lib.user import User
-from privacyidea.lib.utils import is_true, BASE58, hexlify_and_unicode, check_serial_valid, create_tag_dict
+from privacyidea.lib.utils import (is_true, BASE58, hexlify_and_unicode, check_serial_valid, create_tag_dict,
+                                   redacted_phone_number, redacted_email)
 from privacyidea.models import (db, Token, Realm, TokenRealm, Challenge,
                                 TokenInfo, TokenOwner, TokenTokengroup, Tokengroup, TokenContainer,
                                 TokenContainerToken)
@@ -2615,6 +2616,7 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
     pin_matching_token_list = []
     invalid_token_list = []
     valid_token_list = []
+    messages = []
 
     # Remove locked tokens from token_object_list
     if len(token_object_list) > 0:
@@ -2638,12 +2640,18 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
             # Avoid a SQL query triggered by ``token_object.user`` in case the log level is not DEBUG
             log.debug(f"Found user with loginId {token_object.user}: {token_object.get_serial()}")
 
-        if token_object.is_challenge_response(passw, user=user, options=options):
+        # Reset exceeded fail counter if reset timeout is reached
+        token_object.check_reset_failcount()
+
+        if not token_object.check_all(messages):
+            # token can not be used for authentication (e.g. maxfail exceeded, disabled, not within validity period)
+            pass
+        elif token_object.is_challenge_response(passw, user=user, options=options):
             # This is a challenge response, and it still has a challenge DB entry
             if token_object.has_db_challenge_response(passw, user=user, options=options):
                 challenge_response_token_list.append(token_object)
             else:
-                # This is a transaction_id, that either never existed or has expired.
+                # This is a transaction_id, that either never existed or has expired or is not for this token.
                 # We add this to the invalid_token_list
                 invalid_token_list.append(token_object)
         elif token_object.is_challenge_request(passw, user=user, options=options):
@@ -2862,6 +2870,10 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
                 token_object.inc_failcount()
                 if increase_auth_counters:
                     token_object.inc_count_auth()
+
+    elif messages:
+        reply_dict["message"] = ", ".join(set(messages))
+
     else:
         # There is no suitable token for authentication
         reply_dict["message"] = _("No suitable token found for authentication.")
@@ -3058,6 +3070,7 @@ def challenge_text_replace(message, user, token_obj, additional_tags: dict = Non
             phone = token_obj.get_tokeninfo("phone")
         if phone:
             tags["phone"] = phone
+            tags["phone_redacted"] = redacted_phone_number(phone)
 
     if token_type == "email":
         if is_true(TokenClass.get_tokeninfo(token_obj, "dynamic_email")):
@@ -3069,6 +3082,7 @@ def challenge_text_replace(message, user, token_obj, additional_tags: dict = Non
             email = TokenClass.get_tokeninfo(token_obj, token_obj.EMAIL_ADDRESS_KEY)
         if email:
             tags["email"] = email
+            tags["email_redacted"] = redacted_email(email)
 
     # If the message is for a pushtoken and the presence_answer is set, but there is no tag for placing that answer,
     # Append the answer to the message

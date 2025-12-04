@@ -63,49 +63,46 @@ Wrapping the functions in a decorator class enables easy modular testing.
 The functions of this module are tested in tests/test_api_lib_policy.py
 """
 
+import functools
+import importlib
 import logging
+import re
 from dataclasses import replace
 from typing import Union
 
-from privacyidea.lib import _
-from privacyidea.lib.container import find_container_by_serial, get_container_realms
-from privacyidea.lib.containers.container_info import CHALLENGE_TTL, REGISTRATION_TTL, SERVER_URL
-from privacyidea.lib.error import (PolicyError, RegistrationError,
-                                   TokenAdminError, ResourceNotFoundError, AuthError, ParameterError)
+import jwt
 from flask import g, current_app, Request
 
-from privacyidea.lib.policies.helper import check_max_auth_fail, check_max_auth_success, DEFAULT_JWT_VALIDITY
-from privacyidea.lib.policy import SCOPE, REMOTE_USER
-from privacyidea.lib.policies.actions import PolicyAction
-from privacyidea.lib.policy import Match, check_pin
-from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
-from privacyidea.lib.user import (get_user_from_param, get_default_realm,
-                                  split_user, User)
-from privacyidea.lib.token import (get_tokens, get_realms_of_token, get_token_type,
-                                   get_token_owner)
-from privacyidea.lib.utils import (parse_timedelta, is_true,
-                                   generate_charlists_from_pin_policy,
-                                   get_module_class,
-                                   determine_logged_in_userparams, parse_string_to_dict)
-from privacyidea.lib.crypto import generate_password
-from privacyidea.lib.auth import ROLE, get_db_admin
-from privacyidea.api.lib.utils import getParam, attestation_certificate_allowed, is_fqdn, get_optional
 from privacyidea.api.lib.policyhelper import (get_init_tokenlabel_parameters,
                                               get_pushtoken_add_config,
                                               check_token_action_allowed,
                                               check_container_action_allowed,
                                               UserAttributes,
                                               get_container_user_attributes)
+from privacyidea.api.lib.utils import getParam, attestation_certificate_allowed, is_fqdn, get_optional
+from privacyidea.lib import _
+from privacyidea.lib.auth import ROLE
 from privacyidea.lib.clientapplication import save_clientapplication
 from privacyidea.lib.config import get_token_class
+from privacyidea.lib.container import find_container_by_serial, get_container_realms
+from privacyidea.lib.containers.container_info import CHALLENGE_TTL, REGISTRATION_TTL, SERVER_URL
+from privacyidea.lib.crypto import generate_password
+from privacyidea.lib.error import (PolicyError, RegistrationError,
+                                   TokenAdminError, ResourceNotFoundError, AuthError, ParameterError)
+from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction, PasskeyAction
+from privacyidea.lib.policies.actions import PolicyAction
+from privacyidea.lib.policies.helper import check_max_auth_fail, check_max_auth_success, DEFAULT_JWT_VALIDITY
+from privacyidea.lib.policy import Match, check_pin
+from privacyidea.lib.policy import SCOPE, REMOTE_USER
+from privacyidea.lib.token import get_one_token
+from privacyidea.lib.token import (get_tokens, get_realms_of_token, get_token_type,
+                                   get_token_owner)
 from privacyidea.lib.tokenclass import ROLLOUTSTATE
 from privacyidea.lib.tokens.certificatetoken import ACTION as CERTIFICATE_ACTION
-from privacyidea.lib.token import get_one_token
-import functools
-import jwt
-import re
-import importlib
-
+from privacyidea.lib.tokens.indexedsecrettoken import PIIXACTION
+from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
+from privacyidea.lib.tokens.pushtoken import PUSH_ACTION
+from privacyidea.lib.tokens.u2ftoken import (U2FACTION, parse_registration_data)
 # Token specific imports!
 from privacyidea.lib.tokens.webauthn import (WebAuthnRegistrationResponse,
                                              AUTHENTICATOR_ATTACHMENT_TYPES,
@@ -120,10 +117,12 @@ from privacyidea.lib.tokens.webauthntoken import (DEFAULT_PUBLIC_KEY_CREDENTIAL_
                                                   DEFAULT_AUTHENTICATOR_ATTESTATION_FORM,
                                                   WebAuthnTokenClass,
                                                   is_webauthn_assertion_response)
-from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction, PasskeyAction
-from privacyidea.lib.tokens.u2ftoken import (U2FACTION, parse_registration_data)
-from privacyidea.lib.tokens.pushtoken import PUSH_ACTION
-from privacyidea.lib.tokens.indexedsecrettoken import PIIXACTION
+from privacyidea.lib.user import (get_user_from_param, get_default_realm,
+                                  split_user, User)
+from privacyidea.lib.utils import (parse_timedelta, is_true,
+                                   generate_charlists_from_pin_policy,
+                                   get_module_class,
+                                   determine_logged_in_userparams, parse_string_to_dict)
 
 log = logging.getLogger(__name__)
 
@@ -1952,32 +1951,6 @@ def u2ftoken_allowed(request, action):
     return True
 
 
-def allowed_audit_realm(request=None, action=None):
-    """
-    This decorator function takes the request and adds additional parameters
-    to the request according to the policy
-    for the SCOPE.ADMIN or ACTION.AUDIT
-    :param request:
-    :param action:
-    :return: True
-    """
-    # The endpoint is accessible to users, but we only set ``allowed_audit_realm``
-    # for admins, as users are only allowed to view their own realm anyway (this
-    # is ensured by the fixed "realm" parameter)
-    if g.logged_in_user["role"] == ROLE.ADMIN:
-        pols = Match.admin(g, action=PolicyAction.AUDIT).policies()
-        if pols:
-            # get all values in realm:
-            allowed_audit_realms = []
-            for pol in pols:
-                if pol.get("realm"):
-                    allowed_audit_realms += pol.get("realm")
-            request.all_data["allowed_audit_realm"] = list(set(
-                allowed_audit_realms))
-
-    return True
-
-
 def indexedsecret_force_attribute(request, action):
     """
     This is a token specific wrapper for indexedsecret token for the endpoint
@@ -2166,6 +2139,7 @@ def load_challenge_text(request, action):
     if text:
         request.all_data[PolicyAction.CHALLENGETEXT] = text
     return True
+
 
 def fido2_auth(request, action):
     """

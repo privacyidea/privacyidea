@@ -651,12 +651,16 @@ The push notification on the smartphone will show several buttons. One is labele
 The user then can confirm the login by pressing this button. All other buttons will decline the
 login request.
 
+If this policy is not set, the PUSH message will simply ask the user if they
+want to log in.
+
+.. important:: This policy is incompatible with the policy :ref:`policy_push_wait`
+   since the correct presence option can not be passed back to the calling client.
+   If the ``push_wait`` policy is also set, ``push_require_presence`` will be disabled.
+
 .. note:: This mechanism allows login scenarios where the user in front of the login window and the
    person owning the smartphone are two different persons. In this case they will have to communicate
    for a successful login.
-
-If this policy is not set, the PUSH message will simply ask the user if they
-want to log in.
 
 .. versionadded:: 3.10
 
@@ -811,7 +815,9 @@ tag.
     * {time} the current server time in the format HH:MM:SS.
     * {date} the current server date in the format YYYY-MM-DD.
     * {phone} the phone number from the challenge in case of sms token.
+    * {phone_redacted} the phone number from the challenge in case of sms token in redacted form.
     * {email} email address from the challenge in case of email token.
+    * {email_redacted} email address from the challenge in case of email token in redacted form.
     * {presence_answer} only for push token and only if require_presence is enabled.
 
 .. _policy_indexedsecret:
@@ -994,5 +1000,5 @@ hide_specific_error_message
 
 type: ``bool``
 
-If this policy is set, failed authentications will return a generic "Authentication failed" message. 
+If this policy is set, failed authentications will return a generic "Authentication failed" message.
 Other information is also removed from the `detail` object of the response.

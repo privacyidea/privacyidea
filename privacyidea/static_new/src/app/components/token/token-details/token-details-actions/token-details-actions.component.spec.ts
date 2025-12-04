@@ -28,7 +28,6 @@ import { NotificationService } from "../../../../services/notification/notificat
 import { OverflowService } from "../../../../services/overflow/overflow.service";
 import { AuthService } from "../../../../services/auth/auth.service";
 import {
-  MockAuthService,
   MockLocalService,
   MockMachineService,
   MockNotificationService,
@@ -39,6 +38,7 @@ import {
 import { MatDialog } from "@angular/material/dialog";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { MockAuthService } from "../../../../../testing/mock-services/mock-auth-service";
 
 describe("TokenDetailsActionsComponent", () => {
   let fixture: ComponentFixture<TokenDetailsActionsComponent>;
@@ -47,6 +47,7 @@ describe("TokenDetailsActionsComponent", () => {
   let tokenSvc: MockTokenService;
   let machineSvc: MockMachineService;
   let notifSvc: MockNotificationService;
+  let dialog: jest.Mocked<MatDialog>;
 
   const matDialogOpen = jest.fn();
   const matDialogMock = {
@@ -77,6 +78,7 @@ describe("TokenDetailsActionsComponent", () => {
     tokenSvc = TestBed.inject(TokenService) as unknown as MockTokenService;
     machineSvc = TestBed.inject(MachineService) as unknown as MockMachineService;
     notifSvc = TestBed.inject(NotificationService) as unknown as MockNotificationService;
+    dialog = TestBed.inject(MatDialog) as unknown as jest.Mocked<MatDialog>;
 
     fixture = TestBed.createComponent(TokenDetailsActionsComponent);
     component = fixture.componentInstance;
@@ -184,5 +186,17 @@ describe("TokenDetailsActionsComponent", () => {
       mtid: "77"
     });
     expect(reloadSpy).toHaveBeenCalledTimes(1);
+  });
+
+  describe("openLostTokenDialog()", () => {
+    it("passes the isLost & tokenSerial signals to the dialog", () => {
+      component.openLostTokenDialog();
+      expect(dialog.open).toHaveBeenCalledWith(expect.any(Function), {
+        data: {
+          isLost: component.isLost,
+          tokenSerial: component.tokenSerial
+        }
+      });
+    });
   });
 });

@@ -153,8 +153,7 @@ class YubikeyTokenTestCase(MyTestCase):
         # will fail
         r, opt = YubikeyTokenClass.check_yubikey_pass(self.further_otps[2])
         self.assertFalse(r)
-        self.assertTrue(opt.get("message") == "matching 1 tokens, "
-                                              "Failcounter exceeded", opt)
+        self.assertEqual("Failcounter exceeded", opt.get("message"))
         # check failcounter
         self.assertEqual(db_token.failcount, 5)
         token.set_failcount(old_failcounter)

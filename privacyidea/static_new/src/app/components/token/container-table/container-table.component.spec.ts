@@ -15,13 +15,13 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
- */
+ **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { of } from "rxjs";
-import { NavigationEnd, Router } from "@angular/router";
+import { ActivatedRoute, NavigationEnd, Router } from "@angular/router";
 import { signal, WritableSignal } from "@angular/core";
 import { MatPaginator, PageEvent } from "@angular/material/paginator";
 import { MatTableDataSource } from "@angular/material/table";
@@ -38,13 +38,13 @@ import { TableUtilsService } from "../../../services/table-utils/table-utils.ser
 import { ContainerDetailData, ContainerService } from "../../../services/container/container.service";
 
 import {
-  MockAuthService,
   MockContainerService,
   MockContentService,
   MockLocalService,
   MockNotificationService,
   MockTableUtilsService
 } from "../../../../testing/mock-services";
+import { MockAuthService } from "../../../../testing/mock-services/mock-auth-service";
 
 function makeResource<T>(initial: T) {
   return {
@@ -76,6 +76,12 @@ describe("ContainerTableComponent (Jest)", () => {
           useValue: {
             navigate: jest.fn(),
             events: of(new NavigationEnd(0, "/", "/"))
+          }
+        },
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            params: of({ id: "123" })
           }
         },
         MockLocalService,
@@ -237,6 +243,12 @@ describe("ContainerTableSelfServiceComponent", () => {
           useValue: {
             navigate: jest.fn(),
             events: of(new NavigationEnd(0, "/", "/"))
+          }
+        },
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            params: of({ id: "123" })
           }
         },
         MockLocalService,

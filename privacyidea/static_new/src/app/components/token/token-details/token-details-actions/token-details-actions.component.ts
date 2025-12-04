@@ -19,7 +19,7 @@
 import { NgClass } from "@angular/common";
 import { Component, computed, inject, Input, signal, WritableSignal } from "@angular/core";
 import { FormsModule } from "@angular/forms";
-import { MatFabButton } from "@angular/material/button";
+import { MatButton } from "@angular/material/button";
 import { MatDialog } from "@angular/material/dialog";
 import { MatDivider } from "@angular/material/divider";
 import { MatIcon } from "@angular/material/icon";
@@ -38,16 +38,16 @@ import { ResyncTokenActionComponent } from "./resync-token-action/resync-token-a
 import { SetPinActionComponent } from "./set-pin-action/set-pin-action.component";
 import { TestOtpPinActionComponent } from "./test-otp-pin-action/test-otp-pin-action.component";
 import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
-import {
-  MachineService,
-  MachineServiceInterface,
-  TokenApplications
-} from "../../../../services/machine/machine.service";
+import { MachineService, MachineServiceInterface } from "../../../../services/machine/machine.service";
 import {
   HotpMachineAssignDialogData,
   TokenHotpMachineAssignDialogComponent
 } from "../token-machine-attach-dialog/token-hotp-machine-attach-dialog/token-hotp-machine-attach-dialog";
-import { lastValueFrom } from "rxjs";
+import { lastValueFrom, switchMap } from "rxjs";
+import { LostTokenComponent } from "./lost-token/lost-token.component";
+import { ConfirmationDialogComponent } from "../../../shared/confirmation-dialog/confirmation-dialog.component";
+import { ROUTE_PATHS } from "../../../../route_paths";
+import { Router } from "@angular/router";
 
 @Component({
   selector: "app-token-details-actions",
@@ -55,12 +55,12 @@ import { lastValueFrom } from "rxjs";
   imports: [
     FormsModule,
     MatIcon,
-    MatFabButton,
     MatDivider,
     NgClass,
     SetPinActionComponent,
     ResyncTokenActionComponent,
-    TestOtpPinActionComponent
+    TestOtpPinActionComponent,
+    MatButton
   ],
   templateUrl: "./token-details-actions.component.html",
   styleUrl: "./token-details-actions.component.scss"
@@ -73,10 +73,15 @@ export class TokenDetailsActionsComponent {
   protected readonly overflowService: OverflowServiceInterface = inject(OverflowService);
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
+  private readonly dialog: MatDialog = inject(MatDialog);
+  private router = inject(Router);
   @Input() setPinValue!: WritableSignal<string>;
   @Input() repeatPinValue!: WritableSignal<string>;
   @Input() tokenType!: WritableSignal<string>;
   tokenSerial = this.tokenService.tokenSerial;
+  tokenIsActive = this.tokenService.tokenIsActive;
+  tokenIsRevoked = this.tokenService.tokenIsRevoked;
+  isLost = signal(false);
 
   isAttachedToMachine = computed<boolean>(() => {
     const tokenApplications = this.machineService.tokenApplications();
@@ -84,6 +89,69 @@ export class TokenDetailsActionsComponent {
     if (tokenApplications.length === 0) return false;
     return true;
   });
+
+  toggleActive(): void {
+    this.tokenService.toggleActive(this.tokenSerial(), this.tokenIsActive()).subscribe({
+      next: () => {
+        this.tokenService.tokenDetailResource.reload();
+      }
+    });
+  }
+
+  revokeToken(): void {
+    this.dialog
+      .open(ConfirmationDialogComponent, {
+        data: {
+          serialList: [this.tokenSerial()],
+          title: "Revoke Token",
+          type: "token",
+          action: "revoke",
+          numberOfTokens: 1
+        }
+      })
+      .afterClosed()
+      .subscribe({
+        next: (result) => {
+          if (result) {
+            this.tokenService
+              .revokeToken(this.tokenSerial())
+              .pipe(switchMap(() => this.tokenService.getTokenDetails(this.tokenSerial())))
+              .subscribe({
+                next: () => {
+                  this.tokenService.tokenDetailResource.reload();
+                }
+              });
+          }
+        }
+      });
+  }
+
+  deleteToken(): void {
+    this.dialog
+      .open(ConfirmationDialogComponent, {
+        data: {
+          serialList: [this.tokenSerial()],
+          title: "Delete Token",
+          type: "token",
+          action: "delete",
+          numberOfTokens: 1
+        }
+      })
+      .afterClosed()
+      .subscribe({
+        next: (result) => {
+          if (result) {
+            this.tokenService.deleteToken(this.tokenSerial()).subscribe({
+              next: () => {
+                this.router.navigateByUrl(ROUTE_PATHS.TOKENS).then();
+                this.tokenSerial.set("");
+              }
+            });
+          }
+        }
+      });
+  }
+
 
   testPasskey() {
     this.validateService.authenticatePasskey({ isTest: true }).subscribe({
@@ -119,6 +187,7 @@ export class TokenDetailsActionsComponent {
         });
       });
   }
+
   attachHotpToMachineDialog() {
     const data: HotpMachineAssignDialogData = {
       tokenSerial: this.tokenSerial()
@@ -174,5 +243,14 @@ export class TokenDetailsActionsComponent {
           console.error("Error during unassignment request:", error);
         }
       });
+  }
+
+  openLostTokenDialog() {
+    this.matDialog.open(LostTokenComponent, {
+      data: {
+        isLost: this.isLost,
+        tokenSerial: this.tokenSerial
+      }
+    });
   }
 }

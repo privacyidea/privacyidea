@@ -27,7 +27,6 @@ import { NavigationEnd, Router } from "@angular/router";
 
 import { ContainerDetailsTokenTableComponent } from "./container-details-token-table.component";
 import {
-  MockAuthService,
   MockContainerService,
   MockContentService,
   MockLocalService,
@@ -47,6 +46,7 @@ import { UserService } from "../../../../services/user/user.service";
 import { ConfirmationDialogComponent } from "../../../shared/confirmation-dialog/confirmation-dialog.component";
 import { ContentService } from "../../../../services/content/content.service";
 
+import { MockAuthService } from "../../../../../testing/mock-services/mock-auth-service";
 
 const routerEvents$ = new Subject<NavigationEnd>();
 routerEvents$.next(new NavigationEnd(1, "/", "/"));
@@ -68,8 +68,8 @@ describe("ContainerDetailsTokenTableComponent", () => {
   let fixture: ComponentFixture<ContainerDetailsTokenTableComponent>;
   let component: ContainerDetailsTokenTableComponent;
 
-  const containerServiceMock = new MockContainerService();
-  const tokenServiceMock = new MockTokenService();
+  let containerServiceMock: MockContainerService;
+  let tokenServiceMock: MockTokenService;
   const overflowServiceMock = new MockOverflowService();
   const tableUtilsMock = new MockTableUtilsService();
   const notificationServiceMock = new MockNotificationService();
@@ -82,8 +82,8 @@ describe("ContainerDetailsTokenTableComponent", () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: AuthService, useClass: MockAuthService },
-        { provide: ContainerService, useValue: containerServiceMock },
-        { provide: TokenService, useValue: tokenServiceMock },
+        { provide: ContainerService, useClass: MockContainerService },
+        { provide: TokenService, useClass: MockTokenService },
         { provide: TableUtilsService, useValue: tableUtilsMock },
         { provide: OverflowService, useValue: overflowServiceMock },
         { provide: NotificationService, useValue: notificationServiceMock },
@@ -96,13 +96,11 @@ describe("ContainerDetailsTokenTableComponent", () => {
       ]
     }).compileComponents();
 
-    (tokenServiceMock.unassignUserFromAll as any) = jest.fn().mockReturnValue(of([]));
-    (tokenServiceMock.assignUserToAll as any) = jest.fn().mockReturnValue(of([]));
-    (tokenServiceMock.deleteToken as any) = jest.fn().mockReturnValue(of({}));
-    tokenServiceMock.toggleActive.mockReturnValue(of({}));
-
     fixture = TestBed.createComponent(ContainerDetailsTokenTableComponent);
     component = fixture.componentInstance;
+
+    containerServiceMock = TestBed.inject(ContainerService) as unknown as MockContainerService;
+    tokenServiceMock = TestBed.inject(TokenService) as unknown as MockTokenService;
 
     component.containerTokenData = signal(
       new MatTableDataSource<any>([
@@ -137,9 +135,7 @@ describe("ContainerDetailsTokenTableComponent", () => {
     const fx = TestBed.createComponent(ContainerDetailsTokenTableComponent);
     const cmp = fx.componentInstance;
 
-    expect(cmp.displayedColumns).toEqual(
-      expect.arrayContaining(["remove", "delete"])
-    );
+    expect(cmp.displayedColumns).toEqual(expect.arrayContaining(["remove", "delete"]));
   });
 
   it("sets paginator and sort on both internal and external data sources", () => {
@@ -152,7 +148,7 @@ describe("ContainerDetailsTokenTableComponent", () => {
     const mockEvent = { target: { value: " testFilter " } } as unknown as Event;
     component.handleFilterInput(mockEvent);
 
-    expect(component.filterValue).toBe("testFilter");
+    expect(component.filterValue()).toBe("testFilter");
     expect(component.dataSource.filter).toBe("testfilter");
     expect(component.containerTokenData().filter).toBe("testfilter");
   });
@@ -221,12 +217,17 @@ describe("ContainerDetailsTokenTableComponent", () => {
 
   it("toggleActive calls service then reloads container details", () => {
     const t = { serial: "Mock serial", active: true } as any;
+    jest.spyOn(tokenServiceMock, "toggleActive");
+
     component.toggleActive(t);
     expect(tokenServiceMock.toggleActive).toHaveBeenCalledWith("Mock serial", true);
     expect(containerServiceMock.containerDetailResource.reload).toHaveBeenCalledTimes(1);
   });
 
   it("removeTokenFromContainer confirms and removes on confirm=true", () => {
+    jest
+      .spyOn(containerServiceMock, "removeTokenFromContainer")
+      .mockReturnValue(of({ result: { value: true } } as any));
     component.removeTokenFromContainer("CONT-1", "Mock serial");
     expect(matDialogMock.open).toHaveBeenCalledWith(
       ConfirmationDialogComponent,
@@ -258,153 +259,7 @@ describe("ContainerDetailsTokenTableComponent", () => {
         })
       })
     );
-    expect((tokenServiceMock.deleteToken as any)).toHaveBeenCalledWith("Another serial");
-    expect(containerServiceMock.containerDetailResource.reload).toHaveBeenCalled();
-  });
-
-  it("deleteAllTokens opens confirm and deletes when confirm=true", () => {
-    component.deleteAllTokens();
-    expect(matDialogMock.open).toHaveBeenCalledWith(
-      ConfirmationDialogComponent,
-      {
-        data: {
-          serialList: ["Mock serial", "Another serial"],
-          title: "Delete All Tokens",
-          type: "token",
-          action: "delete",
-          numberOfTokens: 2
-        }
-      }
-    );
-    expect(containerServiceMock.deleteAllTokens).toHaveBeenCalledWith({
-      containerSerial: "CONT-1",
-      serialList: "Mock serial,Another serial"
-    });
-    expect(containerServiceMock.containerDetailResource.reload).toHaveBeenCalled();
-  });
-
-  it("deleteAllTokens does NOT delete when confirm=false", () => {
-    matDialogMock.open.mockReturnValueOnce(makeDialogResult(false));
-    component.deleteAllTokens();
-    expect(containerServiceMock.deleteAllTokens).not.toHaveBeenCalled();
-  });
-
-  it("removeAll opens confirm and removes when confirm=true", () => {
-    component.removeAll();
-    expect(matDialogMock.open).toHaveBeenCalledWith(
-      ConfirmationDialogComponent,
-      expect.objectContaining({
-        data: expect.objectContaining({ action: "remove" })
-      })
-    );
-    expect(containerServiceMock.removeAll).toHaveBeenCalledWith("CONT-1");
-    expect(containerServiceMock.containerDetailResource.reload).toHaveBeenCalled();
-  });
-
-  it("removeAll does nothing when confirm=false", () => {
-    matDialogMock.open.mockReturnValueOnce(makeDialogResult(false));
-    component.removeAll();
-    expect(containerServiceMock.removeAll).not.toHaveBeenCalled();
-  });
-
-  it("unassignFromAllToken early-returns when nothing to unassign", () => {
-    const ds = component.containerTokenData();
-    ds.data = [
-      { serial: "S1", username: "", active: true },
-      { serial: "S2", username: "", active: true }
-    ] as any;
-
-    component.unassignFromAllToken();
-    expect(matDialogMock.open).not.toHaveBeenCalled();
-    expect((tokenServiceMock.unassignUserFromAll as any)).not.toHaveBeenCalled();
-  });
-
-  it("unassignFromAllToken opens confirm and unassigns then reloads", () => {
-    const ds = component.containerTokenData();
-    ds.data = [
-      { serial: "S1", username: "x", active: true },
-      { serial: "S2", username: "", active: true }
-    ] as any;
-
-    component.unassignFromAllToken();
-    expect(matDialogMock.open).toHaveBeenCalledWith(
-      ConfirmationDialogComponent,
-      expect.objectContaining({
-        data: expect.objectContaining({
-          action: "unassign",
-          serialList: ["S1"]
-        })
-      })
-    );
-    expect((tokenServiceMock.unassignUserFromAll as any)).toHaveBeenCalledWith(["S1"]);
-    expect(containerServiceMock.containerDetailResource.reload).toHaveBeenCalled();
-  });
-
-  it("assignToAllToken early-returns when nothing to assign", () => {
-    containerServiceMock.containerDetail.set({
-      containers: [
-        {
-          serial: "CONT-1",
-          users: [{ user_name: "alice", user_realm: "r1", user_resolver: "", user_id: "" }],
-          tokens: [],
-          realms: [],
-          states: [],
-          type: "",
-          select: "",
-          description: ""
-        }
-      ],
-      count: 1
-    });
-    const ds = component.containerTokenData();
-    ds.data = [
-      { serial: "S1", username: "alice", active: true },
-      { serial: "S2", username: "alice", active: true }
-    ] as any;
-
-    component.assignToAllToken();
-
-    expect((tokenServiceMock.unassignUserFromAll as any)).not.toHaveBeenCalled();
-    expect((tokenServiceMock.assignUserToAll as any)).not.toHaveBeenCalled();
-  });
-
-  it("assignToAllToken unassigns others, assigns all remaining, then reloads", () => {
-    containerServiceMock.containerDetail.set({
-      containers: [
-        {
-          serial: "CONT-1",
-          users: [{ user_name: "alice", user_realm: "r1", user_resolver: "", user_id: "" }],
-          tokens: [],
-          realms: [],
-          states: [],
-          type: "",
-          select: "",
-          description: ""
-        }
-      ],
-      count: 1
-    });
-    const ds = component.containerTokenData();
-    ds.data = [
-      { serial: "S1", username: "bob", active: true },
-      { serial: "S2", username: "", active: true },
-      { serial: "S3", username: "alice", active: true }
-    ] as any;
-
-    component.assignToAllToken();
-
-    expect((tokenServiceMock.unassignUserFromAll as any)).toHaveBeenCalledWith(["S1"]);
-    expect((tokenServiceMock.assignUserToAll as any)).toHaveBeenCalledWith({
-      tokenSerials: ["S1", "S2"],
-      username: "alice",
-      realm: "r1"
-    });
-    expect(containerServiceMock.containerDetailResource.reload).toHaveBeenCalled();
-  });
-
-  it("toggleAll delegates to containerService.toggleAll and reloads", () => {
-    component.toggleAll("activate");
-    expect(containerServiceMock.toggleAll).toHaveBeenCalledWith("activate");
+    expect(tokenServiceMock.deleteToken as any).toHaveBeenCalledWith("Another serial");
     expect(containerServiceMock.containerDetailResource.reload).toHaveBeenCalled();
   });
 });

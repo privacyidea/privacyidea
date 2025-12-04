@@ -38,25 +38,26 @@ It can be bound to each event and can perform the action:
 The module is tested in tests/test_lib_eventhandler_usernotification.py
 """
 
-from privacyidea.lib.eventhandler.base import BaseEventHandler
-from privacyidea.lib.smtpserver import send_email_identifier
-from privacyidea.lib.smsprovider.SMSProvider import send_sms_identifier
-from privacyidea.lib.auth import get_db_admins, get_db_admin
-from privacyidea.lib.framework import get_app_config_value
-from privacyidea.lib.token import get_tokens
-from privacyidea.lib.smtpserver import get_smtpservers
-from privacyidea.lib.smsprovider.SMSProvider import get_smsgateway
-from privacyidea.lib.user import User, get_user_list, is_attribute_at_all
-from privacyidea.lib.utils import create_tag_dict, to_unicode, is_true
-from privacyidea.lib.crypto import get_alphanum_str
-from privacyidea.lib import _
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-from email.mime.image import MIMEImage
-from urllib.request import urlopen
 import logging
 import os
 import traceback
+from email.mime.image import MIMEImage
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from urllib.request import urlopen
+
+from privacyidea.lib import _
+from privacyidea.lib.auth import get_db_admins, get_db_admin
+from privacyidea.lib.crypto import get_alphanum_str
+from privacyidea.lib.eventhandler.base import BaseEventHandler
+from privacyidea.lib.framework import get_app_config_value
+from privacyidea.lib.smsprovider.SMSProvider import get_smsgateway
+from privacyidea.lib.smsprovider.SMSProvider import send_sms_identifier
+from privacyidea.lib.smtpserver import get_smtpservers
+from privacyidea.lib.smtpserver import send_email_identifier
+from privacyidea.lib.token import get_tokens
+from privacyidea.lib.user import User, get_user_list, is_attribute_at_all
+from privacyidea.lib.utils import create_tag_dict, to_unicode, is_true
 
 log = logging.getLogger(__name__)
 
@@ -186,6 +187,20 @@ class UserNotificationEventHandler(BaseEventHandler):
                                      "should be sent."),
                     "visibleIf": "reply_to",
                     "visibleValue": NOTIFY_TYPE.EMAIL},
+                "reply_to " + NOTIFY_TYPE.TOKENOWNER: {
+                    "type": "str",
+                    "description": _(
+                        "You can enter a user attribute here to use an email address other than the default."),
+                    "required": False,
+                    "visibleIf": "reply_to",
+                    "visibleValue": NOTIFY_TYPE.TOKENOWNER},
+                "reply_to " + NOTIFY_TYPE.LOGGED_IN_USER: {
+                    "type": "str",
+                    "description": _(
+                        "You can enter a user attribute here to use an email address other than the default."),
+                    "required": False,
+                    "visibleIf": "reply_to",
+                    "visibleValue": NOTIFY_TYPE.LOGGED_IN_USER},
                 "body": {
                     "type": "text",
                     "required": False,
@@ -224,7 +239,21 @@ class UserNotificationEventHandler(BaseEventHandler):
                     "description": _("Any email address, to which the notification "
                                      "should be sent."),
                     "visibleIf": "To",
-                    "visibleValue": NOTIFY_TYPE.EMAIL}
+                    "visibleValue": NOTIFY_TYPE.EMAIL},
+                "To " + NOTIFY_TYPE.TOKENOWNER: {
+                    "type": "str",
+                    "description": _(
+                        "You can enter a user attribute here to use an email address other than the default."),
+                    "required": False,
+                    "visibleIf": "To",
+                    "visibleValue": NOTIFY_TYPE.TOKENOWNER},
+                "To " + NOTIFY_TYPE.LOGGED_IN_USER: {
+                    "type": "str",
+                    "description": _(
+                        "You can enter a user attribute here to use an email address other than the default."),
+                    "required": False,
+                    "visibleIf": "To",
+                    "visibleValue": NOTIFY_TYPE.LOGGED_IN_USER}
             },
             "sendsms": {
                 "smsconfig": {
@@ -302,12 +331,13 @@ class UserNotificationEventHandler(BaseEventHandler):
         reply_to = None
 
         if notify_type == NOTIFY_TYPE.TOKENOWNER and not tokenowner.is_empty():
+            email = handler_options.get("To " + NOTIFY_TYPE.TOKENOWNER, 'email')
             recipient = {
                 "givenname": tokenowner.info.get("givenname"),
                 "surname": tokenowner.info.get("surname"),
                 "username": tokenowner.login,
                 "userrealm": tokenowner.realm,
-                "email": tokenowner.info.get("email"),
+                "email": tokenowner.info.get(email),
                 "mobile": tokenowner.info.get("mobile")
             }
         elif notify_type == NOTIFY_TYPE.INTERNAL_ADMIN:
@@ -343,11 +373,12 @@ class UserNotificationEventHandler(BaseEventHandler):
                 # Try to find the user in the specified realm
                 user_obj = User(logged_in_user.get("username"),
                                 logged_in_user.get("realm"))
+                email = handler_options.get("To " + NOTIFY_TYPE.LOGGED_IN_USER, 'email')
                 if user_obj:
                     recipient = {
                         "givenname": user_obj.info.get("givenname"),
                         "surname": user_obj.info.get("surname"),
-                        "email": user_obj.info.get("email"),
+                        "email": user_obj.info.get(email),
                         "mobile": user_obj.info.get("mobile")
                     }
 
@@ -433,7 +464,8 @@ class UserNotificationEventHandler(BaseEventHandler):
                         reply_to = ""
 
                     elif reply_to_type == NOTIFY_TYPE.TOKENOWNER and not tokenowner.is_empty():
-                        reply_to = tokenowner.info.get("email")
+                        email = handler_options.get("reply_to " + NOTIFY_TYPE.TOKENOWNER, 'email')
+                        reply_to = tokenowner.info.get(email)
 
                     elif reply_to_type == NOTIFY_TYPE.INTERNAL_ADMIN:
                         username = handler_options.get("reply_to " + NOTIFY_TYPE.INTERNAL_ADMIN)
@@ -451,6 +483,7 @@ class UserNotificationEventHandler(BaseEventHandler):
 
                     elif reply_to_type == NOTIFY_TYPE.LOGGED_IN_USER:
                         # Add email address from the logged in user into the reply-to header
+                        email = handler_options.get("reply_to " + NOTIFY_TYPE.LOGGED_IN_USER, 'email')
                         if logged_in_user.get("username") and not logged_in_user.get(
                                 "realm"):
                             # internal admins have no realm
@@ -463,7 +496,7 @@ class UserNotificationEventHandler(BaseEventHandler):
                             user_obj = User(logged_in_user.get("username"),
                                             logged_in_user.get("realm"))
                             if user_obj:
-                                reply_to = user_obj.info.get("email") if user_obj else ""
+                                reply_to = user_obj.info.get(email) if user_obj else ""
 
                     elif reply_to_type == NOTIFY_TYPE.EMAIL:
                         email = handler_options.get("reply_to " + NOTIFY_TYPE.EMAIL, "").split(",")

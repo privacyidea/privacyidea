@@ -3702,10 +3702,8 @@ class APIContainerSynchronization(APIContainerTest):
         self.register_terminate_client_success()
         delete_policy("client_unregister")
 
-        # Policy with no actions defined
-        set_policy("client_unregister", scope=SCOPE.CONTAINER, action={}, realm=self.realm1)
+        # No disable_client_container_unregister policy set
         self.register_terminate_client_success()
-        delete_policy("client_unregister")
 
     def test_12_register_terminate_client_realm_and_user_success(self):
         self.setUp_user_realms()

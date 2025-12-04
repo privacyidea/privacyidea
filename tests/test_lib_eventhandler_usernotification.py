@@ -12,6 +12,7 @@ from dateutil.tz import tzlocal
 from flask import Request, Response
 from werkzeug.test import EnvironBuilder
 
+from privacyidea.lib.audit import getAudit
 from privacyidea.lib.eventhandler.base import CONDITION
 from privacyidea.lib.eventhandler.usernotification import (UserNotificationEventHandler,
                                                            NOTIFY_TYPE)
@@ -169,7 +170,6 @@ class UserNotificationTestCase(MyTestCase):
         msg = smtpmock.get_sent_message()
         self.assertIn('To: user@localhost.localdomain', msg)
 
-
     @smtpmock.activate
     def test_03_sendsms(self):
         # setup realms
@@ -237,8 +237,10 @@ class UserNotificationTestCase(MyTestCase):
         req = Request(env)
         req.all_data = {}
         req.User = User()
+        fake_g = FakeFlaskG()
+        fake_g.audit_object = getAudit(self.app.config)
         r = uhandler.check_condition(
-            {"g": {},
+            {"g": fake_g,
              "handler_def": {"conditions": {"logged_in_user": "admin"}},
              "response": resp,
              "request": req})
@@ -246,7 +248,7 @@ class UserNotificationTestCase(MyTestCase):
 
         # We expect the result_authentication to be "REJECT" and it is
         r = uhandler.check_condition(
-            {"g": {},
+            {"g": fake_g,
              "handler_def": {"conditions": {"result_authentication": AUTH_RESPONSE.REJECT}},
              "response": resp,
              "request": req})
@@ -254,7 +256,7 @@ class UserNotificationTestCase(MyTestCase):
 
         # We expect the result_authentication to be "ACCEPT" and it is not
         r = uhandler.check_condition(
-            {"g": {},
+            {"g": fake_g,
              "handler_def": {"conditions": {"result_authentication": AUTH_RESPONSE.ACCEPT}},
              "response": resp,
              "request": req})
@@ -262,7 +264,7 @@ class UserNotificationTestCase(MyTestCase):
 
         # We expect the result_value to be True, but it is not.
         r = uhandler.check_condition(
-            {"g": {},
+            {"g": fake_g,
              "handler_def": {"conditions": {"result_value": "True"}},
              "response": resp,
              "request": req})
@@ -270,7 +272,7 @@ class UserNotificationTestCase(MyTestCase):
 
         # We expect the result_value to be False, and it is.
         r = uhandler.check_condition(
-            {"g": {},
+            {"g": fake_g,
              "handler_def": {"conditions": {"result_value": "False"}},
              "response": resp,
              "request": req})
@@ -278,7 +280,7 @@ class UserNotificationTestCase(MyTestCase):
 
         # We expect the result_status to be True, but it is not!
         r = uhandler.check_condition(
-            {"g": {},
+            {"g": fake_g,
              "handler_def": {"conditions": {"result_status": "True"}},
              "response": resp,
              "request": req})
@@ -286,7 +288,7 @@ class UserNotificationTestCase(MyTestCase):
 
         # We expect the result_status to be False, and it is!
         r = uhandler.check_condition(
-            {"g": {},
+            {"g": fake_g,
              "handler_def": {"conditions": {"result_status": "False"}},
              "response": resp,
              "request": req})
@@ -304,7 +306,7 @@ class UserNotificationTestCase(MyTestCase):
         """
         tok = init_token({"serial": "lockedtoken", "type": "spass"})
         r = uhandler.check_condition(
-            {"g": {},
+            {"g": fake_g,
              "handler_def": {"conditions": {"token_locked": "True"}},
              "response": resp,
              "request": req
@@ -315,7 +317,7 @@ class UserNotificationTestCase(MyTestCase):
 
         # lock it
         tok.set_failcount(10)
-        options = {"g": {},
+        options = {"g": fake_g,
                    "handler_def": {"conditions": {"token_locked": "True"}},
                    "response": resp,
                    "request": req
@@ -358,8 +360,10 @@ class UserNotificationTestCase(MyTestCase):
         req.User = User("cornelius", "realm1")
         resp = Response()
         resp.data = """{"result": {"value": false}}"""
+        fake_g = FakeFlaskG()
+        fake_g.audit_object = getAudit(self.app.config)
         r = uhandler.check_condition(
-            {"g": {},
+            {"g": fake_g,
              "handler_def": {"conditions": {"realm": "realm2"}},
              "request": req,
              "response": resp
@@ -370,7 +374,7 @@ class UserNotificationTestCase(MyTestCase):
 
         # Check condition resolver
         r = uhandler.check_condition(
-            {"g": {},
+            {"g": fake_g,
              "handler_def": {"conditions": {"resolver": "resolver1"}},
              "request": req,
              "response": resp
@@ -378,7 +382,7 @@ class UserNotificationTestCase(MyTestCase):
         )
         self.assertTrue(r)
         r = uhandler.check_condition(
-            {"g": {},
+            {"g": fake_g,
              "handler_def": {"conditions": {"resolver": "resolver2"}},
              "request": req,
              "response": resp
@@ -844,15 +848,88 @@ class UserNotificationTestCase(MyTestCase):
                        "options": {"body": "your {registrationcode}",
                                    "emailconfig": "myserver",
                                    "To": NOTIFY_TYPE.TOKENOWNER,
-                                   "To " + NOTIFY_TYPE.TOKENOWNER:
-                                       "recp@example.com",
-                                   "reply_to": NOTIFY_TYPE.TOKENOWNER,
-                                   "reply_to" + NOTIFY_TYPE.TOKENOWNER:
-                                       "recp@example.com"}}}
+                                   "reply_to": NOTIFY_TYPE.TOKENOWNER}}}
 
         un_handler = UserNotificationEventHandler()
         res = un_handler.do("sendmail", options=options)
         self.assertTrue(res)
+        msg = smtpmock.get_sent_message()
+        assert 'Subject: An action was performed on your token.' in msg
+        assert 'To: user@localhost.localdomain' in msg
+
+    @smtpmock.activate
+    def test_12_send_with_diffent_attribute(self):
+        # setup realms
+        self.setUp_user_realms()
+
+        r = add_smtpserver(identifier="myserver", server="1.2.3.4", tls=False)
+        self.assertTrue(r > 0)
+
+        smtpmock.setdata(response={"recp@example.com": (200, "OK")},
+                         support_tls=False)
+
+        g = FakeFlaskG()
+        audit_object = FakeAudit()
+        audit_object.audit_data["serial"] = "123456"
+
+        g.logged_in_user = {"username": "admin",
+                            "role": "admin",
+                            "realm": ""}
+        g.audit_object = audit_object
+
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "OATH123456"},
+                                 headers={})
+
+        env = builder.get_environ()
+        # Set the remote address so that we can filter for it
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.all_data = {"serial": "SomeSerial",
+                        "user": "cornelius"}
+        user = User('cornelius', self.realm1)
+        user.set_attribute('sec_mail', 'user2@localhost.localdomain')
+        req.User = user
+        resp = Response()
+        resp.data = """{"result": {"value": true},
+           "detail": {"registrationcode": "12345678910"}
+           }
+           """
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {
+                       "conditions": {"serial": "123.*"},
+                       "options": {"body": "your {registrationcode}",
+                                   "emailconfig": "myserver",
+                                   "To": NOTIFY_TYPE.TOKENOWNER,
+                                   "To " + NOTIFY_TYPE.TOKENOWNER: 'sec_mail',
+                                   "reply_to": NOTIFY_TYPE.TOKENOWNER}}}
+
+        un_handler = UserNotificationEventHandler()
+        res = un_handler.do("sendmail", options=options)
+        self.assertTrue(res)
+        msg = smtpmock.get_sent_message()
+        assert 'Subject: An action was performed on your token.' in msg
+        assert 'To: user2@localhost.localdomain' in msg
+
+        options = {"g": g,
+                   "request": req,
+                   "response": resp,
+                   "handler_def": {
+                       "conditions": {"serial": "123.*"},
+                       "options": {"body": "your {registrationcode}",
+                                   "emailconfig": "myserver",
+                                   "To": NOTIFY_TYPE.TOKENOWNER,
+                                   "reply_to": NOTIFY_TYPE.TOKENOWNER}}}
+
+        un_handler = UserNotificationEventHandler()
+        res = un_handler.do("sendmail", options=options)
+        self.assertTrue(res)
+        msg = smtpmock.get_sent_message()
+        assert 'Subject: An action was performed on your token.' in msg
+        assert 'To: user@localhost.localdomain' in msg
 
     @smtpmock.activate
     def test_12_send_to_internal_admin(self):

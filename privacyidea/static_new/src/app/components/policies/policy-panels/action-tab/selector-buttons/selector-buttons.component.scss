@@ -1,0 +1,37 @@
+.button-row {
+  $border-thickness: 1px;
+  border: $border-thickness solid var(--mat-sys-outline);
+  border-radius: var(--border-radius);
+  display: flex;
+  overflow: auto;
+  padding: 0;
+  scrollbar-width: thin;
+  width: 100%;
+}
+
+.button-item {
+  background-color: var(--mat-sys-surface);
+  border: none;
+  border-radius: 0;
+  cursor: pointer;
+  flex: 1;
+  margin: 0;
+  padding: var(--half-global-padding) var(--global-padding);
+  text-align: center;
+}
+
+.button-item:not(.last-button) {
+  border-right: 1px solid var(--mat-sys-outline);
+}
+
+.button-item:hover {
+  background-color: var(--mat-sys-primary-light);
+  color: var(--mat-sys-on-primary);
+  font-size: 600;
+}
+
+.selected-button {
+  background-color: var(--mat-sys-primary-base);
+  color: var(--mat-sys-on-primary);
+  font-weight: 600;
+}

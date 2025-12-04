@@ -18,20 +18,16 @@
  **/
 import { AuditService } from "./audit.service";
 import { ContentService } from "../content/content.service";
-import { LocalService } from "../local/local.service";
 import { TestBed } from "@angular/core/testing";
 import { environment } from "../../../environments/environment";
 import { provideHttpClient } from "@angular/common/http";
 import { signal } from "@angular/core";
 import { AuthService } from "../auth/auth.service";
 import { FilterValue } from "../../core/models/filter_value";
-import { MockAuthService, MockLocalService, MockNotificationService } from "../../../testing/mock-services";
+import { MockContentService, MockLocalService, MockNotificationService } from "../../../testing/mock-services";
+import { MockAuthService } from "../../../testing/mock-services/mock-auth-service";
 
 environment.proxyUrl = "/api";
-
-class MockContentService implements Partial<ContentService> {
-  routeUrl = signal("/tokens");
-}
 
 describe("AuditService (signals & helpers)", () => {
   let auditService: AuditService;
@@ -84,5 +80,29 @@ describe("AuditService (signals & helpers)", () => {
     expect(auditService.filterParams()).toEqual({ serial: "*otp123*" });
     expect(auditService.pageSize()).toBe(25);
     expect(auditService.pageIndex()).toBe(0);
+  });
+
+  it("resets pageIndex to 0 when auditFilter change", () => {
+    auditService.pageIndex.set(3);
+    auditService.auditFilter.set(new FilterValue({ value: "user: bob success: true" }));
+
+    expect(auditService.pageIndex()).toBe(0);
+  });
+
+  it("should not include empty filter values in filterParams", () => {
+    auditService.auditFilter.set({
+      filterMap: new Map([
+        ["action", ""],
+        ["authentication", "ACCEPT"],
+        ["serial", "   "],
+        ["container_serial", "*"]
+      ])
+    } as any);
+
+    const params = auditService.filterParams();
+    expect(params).not.toHaveProperty("action");
+    expect(params).toHaveProperty("authentication", "*ACCEPT*");
+    expect(params).not.toHaveProperty("serial");
+    expect(params).not.toHaveProperty("container_serial");
   });
 });

@@ -65,7 +65,9 @@ $description-width: 18rem;
     display: flex;
     flex-direction: column;
 
-    > * { flex: 0 0 auto; }
+    > * {
+      flex: 0 0 auto;
+    }
 
     &::before,
     &::after {
@@ -79,10 +81,8 @@ $description-width: 18rem;
   }
   ::ng-deep {
     .mdc-checkbox
-    .mdc-checkbox__native-control:not(.mdc-checkbox--selected):not(
-        [aria-checked="mixed"]
-      )
-    ~ .mdc-checkbox__background {
+      .mdc-checkbox__native-control:not(.mdc-checkbox--selected):not([aria-checked="mixed"])
+      ~ .mdc-checkbox__background {
       border: 2px solid #999;
     }
 
@@ -176,7 +176,6 @@ th:nth-child(even) {
   display: flex;
   flex-direction: row;
   align-items: center;
-  padding: 10px 0;
   justify-content: space-between;
   flex-wrap: wrap;
   width: 100%;

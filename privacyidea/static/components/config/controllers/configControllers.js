@@ -109,7 +109,8 @@ myApp.controller("policyDetailsController", ["$scope", "$stateParams",
             "Nextcloud": "privacyidea-nextcloud",
             "FreeRADIUS": "FreeRADIUS",
             "LDAP Proxy": "privacyIDEA-LDAP-Proxy",
-            "privacyIDEA Authenticator": "privacyIDEA-App"
+            "privacyIDEA Authenticator": "privacyIDEA-App",
+            "privacyIDEA WebUI": "privacyIDEA-WebUI"
         };
         $scope.userAgents = [];
         angular.forEach($scope.userAgentsMapping, function (value, key) {
@@ -1483,6 +1484,16 @@ myApp.controller("HTTPResolverController", ["$scope", "ConfigFactory", "$state",
                     $scope.advancedParams["password"] = $scope.serviceAccount["password"];
                 }
                 serverParams = $scope.advancedParams;
+
+                // Set empty endpoint configs to empty dicts, to indicate that an old config can be removed
+                const endpointConfigNames = ["config_get_user_list", "config_get_user_by_id",
+                    "config_get_user_by_name", "config_user_auth", "config_create_user", "config_edit_user",
+                    "config_delete_user"];
+                angular.forEach(endpointConfigNames, function (configName) {
+                    if ($scope.endpointConfigIsEmpty(serverParams[configName])) {
+                        serverParams[configName] = {};
+                    }
+                })
             } else {
                 serverParams = $scope.params;
             }
@@ -1494,15 +1505,6 @@ myApp.controller("HTTPResolverController", ["$scope", "ConfigFactory", "$state",
                     cleaned_params[key] = value;
                 }
             });
-            // Set empty endpoint configs to empty dicts, to indicate that an old config can be removed
-            const endpointConfigNames = ["config_get_user_list", "config_get_user_by_id",
-                "config_get_user_by_name", "config_user_auth", "config_create_user", "config_edit_user",
-                "config_delete_user"];
-            angular.forEach(endpointConfigNames, function (configName) {
-                if ($scope.endpointConfigIsEmpty(cleaned_params[configName])) {
-                    cleaned_params[configName] = {};
-                }
-            })
 
             return cleaned_params;
         };

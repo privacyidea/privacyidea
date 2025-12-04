@@ -1,0 +1,108 @@
+<!--
+ (c) NetKnights GmbH 2025,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<div class="navigation-self-service-column">
+  @if (authService.actionAllowed("userlist")) {
+    <mat-accordion>
+      <mat-expansion-panel class="user-details-panel">
+        <mat-expansion-panel-header>
+          <mat-panel-title>
+            <mat-icon class="tile-icon">
+              supervised_user_circle
+            </mat-icon>
+            <span class="username">
+        {{ userData().username || "-" }}
+      </span>
+          </mat-panel-title>
+        </mat-expansion-panel-header>
+
+        <div class="user-details-column">
+          @for (item of detailsEntries(); track item.key) {
+            <div class="label">
+              {{ item.label }}:
+            </div>
+
+            @if (isArray(item.value) && item.value.length > 1) {
+              <div class="value">
+                <ul class="no-indention margin-0">
+                  @for (val of item.value; track val) {
+                    <li>{{ val }}</li>
+                  }
+                </ul>
+              </div>
+            } @else {
+              <div class="value">{{ item.value }}</div>
+            }
+          }
+        </div>
+      </mat-expansion-panel>
+    </mat-accordion>
+  }
+  @if (!authService.tokenWizard() && !authService.containerWizard().enabled) {
+    <app-navigation-self-service-button
+      i18n-title
+      key="{{ this.ROUTE_PATHS.TOKENS }}"
+      matIconClass="ms--shield-list"
+      matIconSize="tile-icon-x-large"
+      title="Token Overview" />
+    @if (authService.tokenEnrollmentAllowed()) {
+      <app-navigation-self-service-button
+        i18n-title
+        key="{{ this.ROUTE_PATHS.TOKENS_ENROLLMENT }}"
+        matIconName="add_moderator"
+        title="Token Enrollment" />
+    }
+    @if (authService.tokenWizard2nd()) {
+      <app-navigation-self-service-button
+        i18n-title
+        key="{{ this.ROUTE_PATHS.TOKENS_WIZARD }}"
+        matIconName="auto_awesome"
+        title="Token Enrollment Wizard" />
+    }
+    @if (authService.rights().includes("assign")) {
+      <app-navigation-self-service-button
+        i18n-title
+        key="{{this.ROUTE_PATHS.TOKENS_ASSIGN_TOKEN}}"
+        matIconName="admin_panel_settings"
+        matIconSize="tile-icon-large"
+        title="Assign Token" />
+    }
+    @if (authService.rights().includes("container_list")) {
+      <app-navigation-self-service-button
+        i18n-title
+        key="{{this.ROUTE_PATHS.TOKENS_CONTAINERS}}"
+        matIconClass="mdi--folder-list"
+        matIconSize="tile-icon-x-large"
+        title="Container Overview" />
+    }
+    @if (authService.rights().includes("container_create")) {
+      <app-navigation-self-service-button
+        i18n-title
+        key="{{this.ROUTE_PATHS.TOKENS_CONTAINERS_CREATE}}"
+        matIconName="create_new_folder"
+        title="Create Container" />
+    }
+    @if (authService.rights().includes("auditlog")) {
+      <app-navigation-self-service-button
+        i18n-title
+        key="{{this.ROUTE_PATHS.AUDIT}}"
+        matIconName="receipt_long"
+        title="Audit Log" />
+    }
+  }
+</div>

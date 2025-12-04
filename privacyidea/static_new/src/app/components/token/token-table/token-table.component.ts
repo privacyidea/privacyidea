@@ -36,6 +36,7 @@ import { MatInputModule } from "@angular/material/input";
 import { NgClass } from "@angular/common";
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
+import { TokenTableActionsComponent } from "./token-table-actions/token-table-actions.component";
 
 const columnKeysMap = [
   { key: "select", label: "" },
@@ -67,7 +68,8 @@ const columnKeysMap = [
     MatIconModule,
     ScrollToTopDirective,
     ClearableInputComponent,
-    CopyButtonComponent
+    CopyButtonComponent,
+    TokenTableActionsComponent
   ],
   templateUrl: "./token-table.component.html",
   styleUrl: "./token-table.component.scss"
@@ -84,7 +86,6 @@ export class TokenTableComponent {
   readonly apiFilter = this.tokenService.apiFilter;
   readonly advancedApiFilter = this.tokenService.advancedApiFilter;
   tokenSelection = this.tokenService.tokenSelection;
-  isProgrammaticTabChange = this.contentService.isProgrammaticTabChange;
 
   tokenResource = this.tokenService.tokenResource;
   tokenFilter = this.tokenService.tokenFilter;

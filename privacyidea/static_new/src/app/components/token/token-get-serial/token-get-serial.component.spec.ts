@@ -19,7 +19,7 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { of, Subject, Subscription } from "rxjs";
-import { HttpParams } from "@angular/common/http";
+import { HttpParams, provideHttpClient } from "@angular/common/http";
 import { Router } from "@angular/router";
 
 import { TokenGetSerialComponent } from "./token-get-serial.component";
@@ -31,11 +31,9 @@ import { MatDialog } from "@angular/material/dialog";
 import { ConfirmationDialogComponent } from "../../shared/confirmation-dialog/confirmation-dialog.component";
 import { GetSerialResultDialogComponent } from "./get-serial-result-dialog/get-serial-result-dialog.component";
 
-const makeCountResp = (count: number) =>
-  ({ result: { value: { count } } } as any);
+const makeCountResp = (count: number) => ({ result: { value: { count } } }) as any;
 
-const makeSerialResp = (serial?: string) =>
-  ({ result: { value: { serial } } } as any);
+const makeSerialResp = (serial?: string) => ({ result: { value: { serial } } }) as any;
 
 let confirmClosed$: Subject<boolean>;
 let lastResultDialogData: any;
@@ -71,6 +69,7 @@ describe("TokenGetSerialComponent", () => {
     await TestBed.configureTestingModule({
       imports: [TokenGetSerialComponent, BrowserAnimationsModule],
       providers: [
+        provideHttpClient(),
         { provide: TokenService, useClass: MockTokenService },
         { provide: NotificationService, useClass: MockNotificationService },
         { provide: ContentService, useClass: MockContentService },
@@ -117,7 +116,7 @@ describe("TokenGetSerialComponent", () => {
     component.currentStep.set("searching");
     component.countTokens();
     expect(notif.openSnackBar).toHaveBeenCalledWith("Invalid action.");
-    expect((tokenSvc.getSerial as jest.Mock)).not.toHaveBeenCalled();
+    expect(tokenSvc.getSerial as jest.Mock).not.toHaveBeenCalled();
   });
 
   it("small count: counts then immediately finds and opens result dialog", () => {
@@ -173,7 +172,7 @@ describe("TokenGetSerialComponent", () => {
     confirmClosed$.next(false);
     confirmClosed$.complete();
 
-    expect((tokenSvc.getSerial as jest.Mock)).toHaveBeenCalledTimes(1);
+    expect(tokenSvc.getSerial as jest.Mock).toHaveBeenCalledTimes(1);
     expect(component.currentStep()).toBe("init");
   });
 
@@ -181,7 +180,7 @@ describe("TokenGetSerialComponent", () => {
     component.currentStep.set("init");
     component.findSerial();
     expect(notif.openSnackBar).toHaveBeenCalledWith("Invalid action.");
-    expect((tokenSvc.getSerial as jest.Mock)).not.toHaveBeenCalled();
+    expect(tokenSvc.getSerial as jest.Mock).not.toHaveBeenCalled();
   });
 
   it("findSerial: opens dialog and onClick navigates + sets tokenSerial", () => {
