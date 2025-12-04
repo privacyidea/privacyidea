@@ -90,20 +90,6 @@
       }
     </mat-expansion-panel-header>
     <div class="flex-column">
-      <!-- <mat-card class="select-container-type-card">
-        <mat-card-content>
-          <mat-chip-listbox
-            class="container-type-chips"
-            [ngModel]="newTemplate().container_type"
-            (ngModelChange)="onTypeChange($event)"
-            aria-label="Container type selection">
-            @for (type of containerTemplateService.availableContainerTypes(); track type) {
-              <mat-chip-option [value]="type">{{ type }}</mat-chip-option>
-            }
-          </mat-chip-listbox>
-        </mat-card-content>
-      </mat-card> -->
-
       @if (newTemplate().container_type) {
         <app-container-template-add-token-chips
           [containerType]="newTemplate().container_type"

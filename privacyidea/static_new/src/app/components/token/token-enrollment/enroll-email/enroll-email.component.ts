@@ -68,7 +68,7 @@ export class EnrollEmailComponent implements OnInit {
     readEmailDynamically: this.readEmailDynamicallyControl
   });
 
-  defaultSMTPisSet = computed(() => {
+  defaultSmtpIsSet = computed(() => {
     const cfg = this.systemService.systemConfigResource.value()?.result?.value;
     return !!cfg?.["email.identifier"];
   });
