@@ -1630,6 +1630,7 @@ class PushTokenTestCase(MyTestCase):
 
         # Now mark the challenge as answered so we receive an empty list
         db_challenge.set_otp_status(True)
+        db_challenge.save()
         with mock.patch('privacyidea.models.challenge.datetime') as mock_dt1, mock.patch(
                 'privacyidea.lib.tokens.pushtoken.datetime') as mock_dt2:
             mock_dt1.utcnow.return_value = timestamp.replace(tzinfo=None) + timedelta(seconds=15)

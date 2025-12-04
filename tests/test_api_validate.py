@@ -1402,6 +1402,7 @@ class ValidateAPITestCase(MyApiTestCase):
             token.set_pin(pin)
             # Set the failcounter
             token.set_failcount(5)
+            token.save()
             tokens.append(token)
 
         # create a challenge for the first token by authenticating with the OTP PIN
@@ -1459,6 +1460,7 @@ class ValidateAPITestCase(MyApiTestCase):
 
         # Set the same failcount for both tokens
         tokens[0].set_failcount(5)
+        tokens[0].save()
 
         # trigger a challenge for both tokens
         with self.app.test_request_context('/validate/triggerchallenge',
@@ -3274,6 +3276,7 @@ class ValidateAPITestCase(MyApiTestCase):
 
         # Set the failcounter
         token.set_failcount(5)
+        token.save()
 
         # set a chalresp policy for HOTP
         set_policy("policy", scope=SCOPE.AUTH, action=f"{PolicyAction.CHALLENGERESPONSE}=hotp")
@@ -3555,6 +3558,7 @@ class ValidateAPITestCase(MyApiTestCase):
             self._assert_unspecific_message_with_200(res)
 
         token.set_failcount(10)
+        token.save()
         # Failcount exceeded: currently 200, should be 401
         with self.app.test_request_context('/validate/check', method="POST",
                                            data={
@@ -3565,6 +3569,7 @@ class ValidateAPITestCase(MyApiTestCase):
             self._assert_unspecific_message_with_200(res)
 
         token.set_failcount(0)
+        token.save()
 
         # lastauth: currently 200, should be 401
         now = datetime.datetime.now(datetime.timezone.utc)
