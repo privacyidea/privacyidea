@@ -20,12 +20,14 @@ import { Component, EventEmitter, inject, OnInit, Output } from "@angular/core";
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 
-import { Observable } from "rxjs";
 import {
-  EnrollmentResponse,
+  U2fApiPayloadMapper,
+  U2fEnrollmentData
+} from "../../../../mappers/token-api-payload/u2f-token-api-payload.mapper";
+import {
+  TokenApiPayloadMapper,
   TokenEnrollmentData
 } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
-import { U2fApiPayloadMapper } from "../../../../mappers/token-api-payload/u2f-token-api-payload.mapper";
 
 export interface U2fEnrollmentOptions extends TokenEnrollmentData {
   type: "u2f";
@@ -45,25 +47,33 @@ export class EnrollU2fComponent implements OnInit {
   @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
-  @Output() clickEnrollChange = new EventEmitter<
-    (basicOptions: TokenEnrollmentData) => Observable<EnrollmentResponse | null>
+  @Output() enrollmentArgsGetterChange = new EventEmitter<
+    (basicOptions: TokenEnrollmentData) => {
+      data: U2fEnrollmentData;
+      mapper: TokenApiPayloadMapper<U2fEnrollmentData>;
+    } | null
   >();
 
   u2fForm = new FormGroup({});
 
   ngOnInit(): void {
     this.additionalFormFieldsChange.emit({});
-    this.clickEnrollChange.emit(this.onClickEnroll);
+    this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
   }
 
-  onClickEnroll = (basicOptions: TokenEnrollmentData): Observable<EnrollmentResponse | null> => {
+  enrollmentArgsGetter = (
+    basicOptions: TokenEnrollmentData
+  ): {
+    data: U2fEnrollmentData;
+    mapper: TokenApiPayloadMapper<U2fEnrollmentData>;
+  } | null => {
     const enrollmentData: U2fEnrollmentOptions = {
       ...basicOptions,
       type: "u2f"
     };
-    return this.tokenService.enrollToken({
+    return {
       data: enrollmentData,
       mapper: this.enrollmentMapper
-    });
+    };
   };
 }

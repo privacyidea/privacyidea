@@ -28,8 +28,8 @@
         [value]="remoteServerControl.value"
         required>
         @for (option of remoteServerOptions(); track option) {
-          <mat-option [value]="option">{{ option.name }}
-          </mat-option><!-- Assuming option is the RemoteServer object -->
+          <mat-option [value]="option">{{ option.name }} </mat-option>
+          <!-- Assuming option is the RemoteServer object -->
         }
       </mat-select>
       <mat-error

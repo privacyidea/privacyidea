@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, EventEmitter, inject, OnInit, Output } from "@angular/core";
+import { Component, effect, EventEmitter, inject, input, OnInit, Output } from "@angular/core";
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { ErrorStateMatcher, MatOption } from "@angular/material/core";
@@ -30,15 +30,14 @@ import {
 } from "../../../../services/privavyidea-server/privacyidea-server.service";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 
-import { Observable, of } from "rxjs";
-import {
-  EnrollmentResponse,
-  TokenEnrollmentData
-} from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
 import {
   RemoteApiPayloadMapper,
   RemoteEnrollmentData
 } from "../../../../mappers/token-api-payload/remote-token-api-payload.mapper";
+import {
+  TokenApiPayloadMapper,
+  TokenEnrollmentData
+} from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
 
 export class RemoteErrorStateMatcher implements ErrorStateMatcher {
   isErrorState(control: FormControl | null): boolean {
@@ -72,9 +71,13 @@ export class EnrollRemoteComponent implements OnInit {
   @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
-  @Output() clickEnrollChange = new EventEmitter<
-    (basicOptions: TokenEnrollmentData) => Observable<EnrollmentResponse | null>
+  @Output() enrollmentArgsGetterChange = new EventEmitter<
+    (basicOptions: TokenEnrollmentData) => {
+      data: RemoteEnrollmentData;
+      mapper: TokenApiPayloadMapper<RemoteEnrollmentData>;
+    } | null
   >();
+  disabled = input<boolean>(false);
 
   checkPinLocallyControl = new FormControl<boolean>(false, [Validators.required]);
   remoteServerControl = new FormControl<RemoteServer | null>(null, [Validators.required]);
@@ -95,6 +98,12 @@ export class EnrollRemoteComponent implements OnInit {
   remoteServerOptions = this.privacyideaServerService.remoteServerOptions;
   remoteErrorStateMatcher = new RemoteErrorStateMatcher();
 
+  constructor() {
+    effect(() =>
+      this.disabled() ? this.remoteForm.disable({ emitEvent: false }) : this.remoteForm.enable({ emitEvent: false })
+    );
+  }
+
   ngOnInit(): void {
     this.additionalFormFieldsChange.emit({
       checkPinLocally: this.checkPinLocallyControl,
@@ -104,10 +113,15 @@ export class EnrollRemoteComponent implements OnInit {
       remoteRealm: this.remoteRealmControl,
       remoteResolver: this.remoteResolverControl
     });
-    this.clickEnrollChange.emit(this.onClickEnroll);
+    this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
   }
 
-  onClickEnroll = (basicOptions: TokenEnrollmentData): Observable<EnrollmentResponse | null> => {
+  enrollmentArgsGetter = (
+    basicOptions: TokenEnrollmentData
+  ): {
+    data: RemoteEnrollmentData;
+    mapper: TokenApiPayloadMapper<RemoteEnrollmentData>;
+  } | null => {
     if (
       this.remoteServerControl.invalid ||
       this.remoteSerialControl.invalid ||
@@ -117,7 +131,7 @@ export class EnrollRemoteComponent implements OnInit {
       this.checkPinLocallyControl.invalid
     ) {
       this.remoteForm.markAllAsTouched();
-      return of(null);
+      return null;
     }
 
     const enrollmentData: RemoteEnrollmentData = {
@@ -131,9 +145,9 @@ export class EnrollRemoteComponent implements OnInit {
       remoteResolver: this.remoteResolverControl.value ?? ""
     };
 
-    return this.tokenService.enrollToken({
+    return {
       data: enrollmentData,
       mapper: this.enrollmentMapper
-    });
+    };
   };
 }

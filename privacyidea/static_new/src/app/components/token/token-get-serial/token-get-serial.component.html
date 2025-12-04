@@ -86,7 +86,8 @@
       @for (assignment of assignmentStates; track assignment) {
         <mat-option
           [value]="assignment.key"
-          i18n>{{ assignment.info }}
+          i18n
+          >{{ assignment.info }}
         </mat-option>
       }
     </mat-select>
@@ -104,7 +105,7 @@
           placeholder="Enter optional serial substring" />
       </mat-form-field>
     </div>
-    <div class="flex-column width-32 margin-bottom-1">
+    <div class="flex-column width-32 hint-spacer">
       <mat-form-field>
         <mat-label i18n>Count Window</mat-label>
         <input

@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, EventEmitter, inject, OnInit, Output } from "@angular/core";
+import { Component, computed, effect, EventEmitter, inject, input, OnInit, Output } from "@angular/core";
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { ErrorStateMatcher } from "@angular/material/core";
 import { MatFormField, MatLabel } from "@angular/material/form-field";
@@ -25,12 +25,14 @@ import { MatError } from "@angular/material/select";
 import { SystemService, SystemServiceInterface } from "../../../../services/system/system.service";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 
-import { Observable, of } from "rxjs";
 import {
-  EnrollmentResponse,
+  YubicoApiPayloadMapper,
+  YubicoEnrollmentData
+} from "../../../../mappers/token-api-payload/yubico-token-api-payload.mapper";
+import {
+  TokenApiPayloadMapper,
   TokenEnrollmentData
 } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
-import { YubicoApiPayloadMapper } from "../../../../mappers/token-api-payload/yubico-token-api-payload.mapper";
 
 export interface YubicoEnrollmentOptions extends TokenEnrollmentData {
   type: "yubico";
@@ -55,14 +57,18 @@ export class EnrollYubicoComponent implements OnInit {
   protected readonly enrollmentMapper: YubicoApiPayloadMapper = inject(YubicoApiPayloadMapper);
   protected readonly systemService: SystemServiceInterface = inject(SystemService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+  disabled = input<boolean>(false);
 
   yubicoErrorStatematcher = new YubicoErrorStateMatcher();
 
   @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
-  @Output() clickEnrollChange = new EventEmitter<
-    (basicOptions: TokenEnrollmentData) => Observable<EnrollmentResponse | null>
+  @Output() enrollmentArgsGetterChange = new EventEmitter<
+    (basicOptions: TokenEnrollmentData) => {
+      data: YubicoEnrollmentData;
+      mapper: TokenApiPayloadMapper<YubicoEnrollmentData>;
+    } | null
   >();
 
   yubikeyIdentifierControl = new FormControl<string>("", [
@@ -80,18 +86,29 @@ export class EnrollYubicoComponent implements OnInit {
     return !!(cfg?.["yubico.id"] && cfg?.["yubico.url"] && cfg?.["yubico.secret"]);
   });
 
+  constructor() {
+    effect(() =>
+      this.disabled() ? this.yubicoForm.disable({ emitEvent: false }) : this.yubicoForm.enable({ emitEvent: false })
+    );
+  }
+
   ngOnInit(): void {
     this.additionalFormFieldsChange.emit({
       yubikeyIdentifier: this.yubikeyIdentifierControl
     });
-    this.clickEnrollChange.emit(this.onClickEnroll);
+    this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
   }
 
-  onClickEnroll = (basicOptions: TokenEnrollmentData): Observable<EnrollmentResponse | null> => {
+  enrollmentArgsGetter = (
+    basicOptions: TokenEnrollmentData
+  ): {
+    data: YubicoEnrollmentData;
+    mapper: TokenApiPayloadMapper<YubicoEnrollmentData>;
+  } | null => {
     this.yubicoForm.updateValueAndValidity();
     if (this.yubicoForm.invalid) {
       this.yubicoForm.markAllAsTouched();
-      return of(null);
+      return null;
     }
 
     const enrollmentData: YubicoEnrollmentOptions = {
@@ -99,9 +116,9 @@ export class EnrollYubicoComponent implements OnInit {
       type: "yubico",
       yubicoIdentifier: this.yubikeyIdentifierControl.value ?? ""
     };
-    return this.tokenService.enrollToken({
+    return {
       data: enrollmentData,
       mapper: this.enrollmentMapper
-    });
+    };
   };
 }

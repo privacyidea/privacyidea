@@ -16,17 +16,19 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, EventEmitter, inject, Input, OnInit, Output } from "@angular/core";
+import { Component, computed, EventEmitter, inject, input, Input, OnInit, Output } from "@angular/core";
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { SystemService, SystemServiceInterface } from "../../../../services/system/system.service";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 
-import { Observable } from "rxjs";
 import {
-  EnrollmentResponse,
+  TiqrApiPayloadMapper,
+  TiqrEnrollmentData
+} from "../../../../mappers/token-api-payload/tiqr-token-api-payload.mapper";
+import {
+  TokenApiPayloadMapper,
   TokenEnrollmentData
 } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
-import { TiqrApiPayloadMapper } from "../../../../mappers/token-api-payload/tiqr-token-api-payload.mapper";
 
 export interface TiqrEnrollmentOptions extends TokenEnrollmentData {
   type: "tiqr";
@@ -48,10 +50,14 @@ export class EnrollTiqrComponent implements OnInit {
   @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
-  @Output() clickEnrollChange = new EventEmitter<
-    (basicOptions: TokenEnrollmentData) => Observable<EnrollmentResponse | null>
+  @Output() enrollmentArgsGetterChange = new EventEmitter<
+    (basicOptions: TokenEnrollmentData) => {
+      data: TiqrEnrollmentData;
+      mapper: TokenApiPayloadMapper<TiqrEnrollmentData>;
+    } | null
   >();
 
+  disabled = input<boolean>(false);
   defaultTiQRIsSet = computed(() => {
     const cfg = this.systemService.systemConfigResource.value()?.result?.value;
     return !!(cfg?.["tiqr.infoUrl"] && cfg?.["tiqr.logoUrl"] && cfg?.["tiqr.regServer"]);
@@ -59,17 +65,22 @@ export class EnrollTiqrComponent implements OnInit {
 
   ngOnInit(): void {
     this.additionalFormFieldsChange.emit({});
-    this.clickEnrollChange.emit(this.onClickEnroll);
+    this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
   }
 
-  onClickEnroll = (basicOptions: TokenEnrollmentData): Observable<EnrollmentResponse | null> => {
+  enrollmentArgsGetter = (
+    basicOptions: TokenEnrollmentData
+  ): {
+    data: TiqrEnrollmentData;
+    mapper: TokenApiPayloadMapper<TiqrEnrollmentData>;
+  } | null => {
     const enrollmentData: TiqrEnrollmentOptions = {
       ...basicOptions,
       type: "tiqr"
     };
-    return this.tokenService.enrollToken({
+    return {
       data: enrollmentData,
       mapper: this.enrollmentMapper
-    });
+    };
   };
 }

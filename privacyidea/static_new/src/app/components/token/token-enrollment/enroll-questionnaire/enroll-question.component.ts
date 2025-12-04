@@ -17,15 +17,15 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  inject,
-  linkedSignal,
-  OnInit,
-  output,
-  Signal
-} from "@angular/core";
+  QuestionApiPayloadMapper,
+  QuestionEnrollmentData
+} from "../../../../mappers/token-api-payload/question-token-api-payload.mapper";
+import { SystemService, SystemServiceInterface } from "../../../../services/system/system.service";
+import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
+import {
+  TokenApiPayloadMapper,
+  TokenEnrollmentData
+} from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
 import {
   AbstractControl,
   FormControl,
@@ -35,17 +35,22 @@ import {
   ValidationErrors,
   ValidatorFn
 } from "@angular/forms";
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  EventEmitter,
+  inject,
+  input,
+  linkedSignal,
+  OnInit,
+  Output,
+  Signal
+} from "@angular/core";
 import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
-import { Observable, of, Subscription } from "rxjs";
-import {
-  EnrollmentResponse,
-  TokenEnrollmentData
-} from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
-import { QuestionApiPayloadMapper } from "../../../../mappers/token-api-payload/question-token-api-payload.mapper";
-import { SystemService, SystemServiceInterface } from "../../../../services/system/system.service";
-import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
-
+import { Subscription } from "rxjs";
 export interface QuestionEnrollmentOptions extends TokenEnrollmentData {
   type: "question";
   answers: Record<string, string>;
@@ -70,8 +75,14 @@ export class EnrollQuestionComponent implements OnInit {
   });
   private readonly guardControl = new FormControl<boolean>(false, { nonNullable: true });
   private valueSubscription?: Subscription;
-  additionalFormFieldsChange = output<{ [key: string]: FormControl<unknown> }>();
-  clickEnrollChange = output<(basicOptions: TokenEnrollmentData) => Observable<EnrollmentResponse | null>>();
+  @Output() additionalFormFieldsChange = new EventEmitter<{ [key: string]: FormControl<unknown> }>();
+  @Output() enrollmentArgsGetterChange = new EventEmitter<
+    (basicOptions: TokenEnrollmentData) => {
+      data: QuestionEnrollmentData;
+      mapper: TokenApiPayloadMapper<QuestionEnrollmentData>;
+    } | null
+  >();
+  disabled = input<boolean>(false);
   configQuestions = computed(() => {
     const cfg = this.systemService.systemConfigResource.value()?.result?.value || {};
     return Object.entries(cfg)
@@ -103,15 +114,28 @@ export class EnrollQuestionComponent implements OnInit {
     }
   });
 
-  ngOnInit(): void {
-    this.clickEnrollChange.emit(this.onClickEnroll);
+  constructor() {
+    effect(() =>
+      this.disabled()
+        ? this.questionForm().disable({ emitEvent: false })
+        : this.questionForm().enable({ emitEvent: false })
+    );
   }
 
-  onClickEnroll = (basicOptions: TokenEnrollmentData): Observable<EnrollmentResponse | null> => {
+  ngOnInit(): void {
+    this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
+  }
+
+  enrollmentArgsGetter = (
+    basicOptions: TokenEnrollmentData
+  ): {
+    data: QuestionEnrollmentData;
+    mapper: TokenApiPayloadMapper<QuestionEnrollmentData>;
+  } | null => {
     const form = this.questionForm();
     if (form.invalid) {
       form.markAllAsTouched();
-      return of(null);
+      return null;
     }
 
     const answers: Record<string, string> = {};
@@ -122,7 +146,10 @@ export class EnrollQuestionComponent implements OnInit {
       }
     });
     const enrollmentData: QuestionEnrollmentOptions = { ...basicOptions, type: "question", answers };
-    return this.tokenService.enrollToken({ data: enrollmentData, mapper: this.enrollmentMapper });
+    return {
+      data: enrollmentData,
+      mapper: this.enrollmentMapper
+    };
   };
 
   private answeredCount(form: FormRecord<FormControl<string>>): number {

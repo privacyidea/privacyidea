@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, EventEmitter, inject, Input, OnInit, Output } from "@angular/core";
+import { Component, effect, EventEmitter, inject, input, Input, OnInit, Output } from "@angular/core";
 import {
   AbstractControl,
   FormControl,
@@ -30,12 +30,14 @@ import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 
-import { Observable } from "rxjs";
 import {
-  EnrollmentResponse,
+  MotpApiPayloadMapper,
+  MotpEnrollmentData
+} from "../../../../mappers/token-api-payload/motp-token-api-payload.mapper";
+import {
+  TokenApiPayloadMapper,
   TokenEnrollmentData
 } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
-import { MotpApiPayloadMapper } from "../../../../mappers/token-api-payload/motp-token-api-payload.mapper";
 import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
 
 export interface MotpEnrollmentOptions extends TokenEnrollmentData {
@@ -61,8 +63,11 @@ export class EnrollMotpComponent implements OnInit {
   @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
-  @Output() clickEnrollChange = new EventEmitter<
-    (basicOptions: TokenEnrollmentData) => Observable<EnrollmentResponse | null>
+  @Output() enrollmentArgsGetterChange = new EventEmitter<
+    (basicOptions: TokenEnrollmentData) => {
+      data: MotpEnrollmentData;
+      mapper: TokenApiPayloadMapper<MotpEnrollmentData>;
+    } | null
   >();
 
   generateOnServerControl = new FormControl<boolean>(true, [Validators.required]);
@@ -80,6 +85,12 @@ export class EnrollMotpComponent implements OnInit {
     return null;
   }
 
+  disabled = input<boolean>(false);
+
+  constructor() {
+    effect(() => (this.disabled() ? this._disableFormControls() : this._enableFormControls()));
+  }
+
   ngOnInit(): void {
     this.additionalFormFieldsChange.emit({
       generateOnServer: this.generateOnServerControl,
@@ -87,8 +98,14 @@ export class EnrollMotpComponent implements OnInit {
       motpPin: this.motpPinControl,
       repeatMotpPin: this.repeatMotpPinControl
     });
-    this.clickEnrollChange.emit(this.onClickEnroll);
+    this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
+    this._applyPolicies();
+    this.motpPinControl.valueChanges.subscribe(() => {
+      this.repeatMotpPinControl.updateValueAndValidity();
+    });
+  }
 
+  private _applyPolicies() {
     if (this.authService.checkForceServerGenerateOTPKey("motp")) {
       this.generateOnServerControl.disable({ emitEvent: false });
     } else {
@@ -103,13 +120,14 @@ export class EnrollMotpComponent implements OnInit {
         this.otpKeyFormControl.updateValueAndValidity();
       });
     }
-
-    this.motpPinControl.valueChanges.subscribe(() => {
-      this.repeatMotpPinControl.updateValueAndValidity();
-    });
   }
 
-  onClickEnroll = (basicOptions: TokenEnrollmentData): Observable<EnrollmentResponse | null> => {
+  enrollmentArgsGetter = (
+    basicOptions: TokenEnrollmentData
+  ): {
+    data: MotpEnrollmentData;
+    mapper: TokenApiPayloadMapper<MotpEnrollmentData>;
+  } | null => {
     const enrollmentData: MotpEnrollmentOptions = {
       ...basicOptions,
       type: "motp",
@@ -119,9 +137,23 @@ export class EnrollMotpComponent implements OnInit {
     if (!enrollmentData.generateOnServer) {
       enrollmentData.otpKey = this.otpKeyFormControl.value ?? "";
     }
-    return this.tokenService.enrollToken({
+    return {
       data: enrollmentData,
       mapper: this.enrollmentMapper
-    });
+    };
   };
+
+  private _disableFormControls(): void {
+    this.generateOnServerControl.disable();
+    this.otpKeyFormControl.disable();
+    this.motpPinControl.disable();
+    this.repeatMotpPinControl.disable();
+  }
+
+  private _enableFormControls(): void {
+    this.generateOnServerControl.enable({ emitEvent: false });
+    this.motpPinControl.enable({ emitEvent: false });
+    this.repeatMotpPinControl.enable({ emitEvent: false });
+    this._applyPolicies();
+  }
 }

@@ -16,21 +16,20 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, EventEmitter, inject, Input, OnInit, Output } from "@angular/core";
+import { Component, effect, EventEmitter, inject, input, Input, OnInit, Output } from "@angular/core";
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatOption } from "@angular/material/core";
 import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { MatSelect } from "@angular/material/select";
-import { Observable, of } from "rxjs";
 import {
-  EnrollmentResponse,
-  TokenEnrollmentData
-} from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
-import { DaypasswordApiPayloadMapper } from "../../../../mappers/token-api-payload/daypassword-token-api-payload.mapper";
+  DaypasswordApiPayloadMapper,
+  DaypasswordEnrollmentData
+} from "../../../../mappers/token-api-payload/daypassword-token-api-payload.mapper";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
+import { TokenEnrollmentData } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
 
 export interface DaypasswordEnrollmentOptions extends TokenEnrollmentData {
   type: "daypassword";
@@ -73,9 +72,13 @@ export class EnrollDaypasswordComponent implements OnInit {
   @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
-  @Output() clickEnrollChange = new EventEmitter<
-    (basicOptions: TokenEnrollmentData) => Observable<EnrollmentResponse | null>
+  @Output() enrollmentArgsGetterChange = new EventEmitter<
+    (basicOptions: TokenEnrollmentData) => {
+      data: DaypasswordEnrollmentData;
+      mapper: DaypasswordApiPayloadMapper;
+    } | null
   >();
+  disabled = input<boolean>(false);
 
   otpKeyFormControl = new FormControl<string>({ value: "", disabled: true });
   hashAlgorithmControl = new FormControl<string>("sha256", [Validators.required]);
@@ -90,6 +93,10 @@ export class EnrollDaypasswordComponent implements OnInit {
     timeStep: this.timeStepControl
   });
 
+  constructor() {
+    effect(() => (this.disabled() ? this.daypasswordForm.disable({ emitEvent: false }) : this._enableFormControls()));
+  }
+
   ngOnInit(): void {
     this.additionalFormFieldsChange.emit({
       otpKey: this.otpKeyFormControl,
@@ -98,8 +105,11 @@ export class EnrollDaypasswordComponent implements OnInit {
       timeStep: this.timeStepControl,
       generateOnServer: this.generateOnServerControl
     });
-    this.clickEnrollChange.emit(this.onClickEnroll);
+    this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
+    this._applyPolicies();
+  }
 
+  private _applyPolicies() {
     this.updateOtpKeyControlState(this.generateOnServerControl.value ?? true);
 
     if (this.authService.checkForceServerGenerateOTPKey("daypassword")) {
@@ -111,10 +121,15 @@ export class EnrollDaypasswordComponent implements OnInit {
     }
   }
 
-  onClickEnroll = (basicOptions: TokenEnrollmentData): Observable<EnrollmentResponse | null> => {
+  enrollmentArgsGetter = (
+    basicOptions: TokenEnrollmentData
+  ): {
+    data: DaypasswordEnrollmentData;
+    mapper: DaypasswordApiPayloadMapper;
+  } | null => {
     if (this.daypasswordForm.invalid) {
       this.daypasswordForm.markAllAsTouched();
-      return of(null);
+      return null;
     }
     const enrollmentData: DaypasswordEnrollmentOptions = {
       ...basicOptions,
@@ -125,15 +140,15 @@ export class EnrollDaypasswordComponent implements OnInit {
         typeof this.timeStepControl.value === "string"
           ? parseInt(this.timeStepControl.value, 10)
           : (this.timeStepControl.value ?? 86400),
-      generateOnServer: (this.generateOnServerControl.value ?? true)
+      generateOnServer: this.generateOnServerControl.value ?? true
     };
     if (!enrollmentData.generateOnServer) {
       enrollmentData.otpKey = this.otpKeyFormControl.value ?? "";
     }
-    return this.tokenService.enrollToken({
+    return {
       data: enrollmentData,
       mapper: this.enrollmentMapper
-    });
+    };
   };
 
   private updateOtpKeyControlState(generateOnServer: boolean): void {
@@ -145,5 +160,10 @@ export class EnrollDaypasswordComponent implements OnInit {
       this.otpKeyFormControl.setValidators([Validators.required, Validators.minLength(16)]);
     }
     this.otpKeyFormControl.updateValueAndValidity();
+  }
+
+  private _enableFormControls(): void {
+    this.daypasswordForm.enable({ emitEvent: false });
+    this._applyPolicies();
   }
 }
