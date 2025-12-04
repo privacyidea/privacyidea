@@ -33,7 +33,7 @@ from privacyidea.lib.containers.container_info import (TokenContainerInfoData, P
                                                        INITIALLY_SYNCHRONIZED)
 from privacyidea.lib.containers.container_states import ContainerStates
 from privacyidea.lib.crypto import verify_ecc, decryptPassword, FAILED_TO_DECRYPT_PASSWORD
-from privacyidea.lib.error import ParameterError, ResourceNotFoundError, TokenAdminError
+from privacyidea.lib.error import ParameterError, ResourceNotFoundError, TokenAdminError, UserError
 from privacyidea.lib.log import log_with
 from privacyidea.lib.machine import is_offline_token
 from privacyidea.lib.token import (create_tokenclass_object, get_tokens, get_serial_by_otp_list,
@@ -362,6 +362,9 @@ class TokenContainerClass:
         user_id = user.uid if user.uid else None
         resolver = user.resolver if user.resolver else None
         realm_id = user.realm_id if user.realm_id else None
+        if not user_id:
+            # We have no identifiers to remove the user: raise user error
+            raise UserError("The user can not be found in any resolver in this realm!")
 
         stmt = delete(TokenContainerOwner).where(TokenContainerOwner.container_id == self._db_container.id)
         if user_id:
@@ -391,12 +394,13 @@ class TokenContainerClass:
         for owner in db_container_owners:
             stmt = select(Realm).filter_by(id=owner.realm_id)
             realm = db.session.execute(stmt).scalar_one_or_none()
+            realm_name = realm.name if realm else None
             try:
-                user = User(uid=owner.user_id, realm=realm.name, resolver=owner.resolver)
+                user = User(uid=owner.user_id, realm=realm_name, resolver=owner.resolver)
             except Exception as ex:
                 log.error(f"Unable to get user {owner.user_id} for container {self.serial}: {ex!r}")
                 # We return an empty User object here to notify that we ran into an error
-                user = User(login=None, realm=realm.name, resolver=owner.resolver)
+                user = User(login=None, realm=realm_name, resolver=owner.resolver)
             users.append(user)
 
         return users
