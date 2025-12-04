@@ -84,19 +84,14 @@
                         class="filter-button"
                         mat-icon-button>
                         <mat-icon
-                          [ngClass]="{
-                          change_circle: 'yellow-light',
-                          remove_circle: 'red-light',
-                          add_circle: 'grey-light-active',
-                          }[getFilterIconName(column.key)]"
                           class="keyword-button-icon margin-left-0">
-                          {{getFilterIconName(column.key) }}
+                          {{getFilterIconName(column.key)}}
                         </mat-icon>
                       </button>
                     </div>
                   }
                   <button
-                    (click)="onSortButtonClick(column.key)"
+                    (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
                     class="sort-button"
                     mat-icon-button
                     type="button">

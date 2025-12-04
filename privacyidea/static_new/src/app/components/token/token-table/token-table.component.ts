@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, inject, linkedSignal, ViewChild, WritableSignal } from "@angular/core";
+import { Component, ElementRef, inject, linkedSignal, ViewChild, WritableSignal } from "@angular/core";
 import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
 import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
 import { MatPaginatorModule, PageEvent } from "@angular/material/paginator";
@@ -87,7 +87,8 @@ export class TokenTableComponent {
   readonly apiFilterKeyMap = this.tokenService.apiFilterKeyMap;
   readonly advancedApiFilter = this.tokenService.advancedApiFilter;
 
-  @ViewChild("filterHTMLInputElement", { static: true }) filterInput!: HTMLInputElement;
+  @ViewChild('filterHTMLInputElement', { static: false })
+  filterInput!: ElementRef<HTMLInputElement>;
 
   tokenSelection = this.tokenService.tokenSelection;
 
@@ -183,29 +184,20 @@ export class TokenTableComponent {
     this.pageIndex.set(event.pageIndex);
   }
 
-
-  onSortButtonClick(columnKey: string): void {
-    const current = this.sort();
-    let direction: Sort["direction"] = "asc";
-
-    if (current.active === columnKey) {
-      if (current.direction === "asc") {
-        direction = "desc";
-      } else if (current.direction === "desc") {
-        direction = "";
-      }
-    }
-
-    if (direction === "") {
-      this.sort.set({ active: "serial", direction: "asc" });
+  toggleFilter(filterKeyword: string): void {
+    let newValue;
+    if (filterKeyword === "active" || filterKeyword === "assigned") {
+      newValue = this.tableUtilsService.toggleBooleanInFilter({
+        keyword: filterKeyword,
+        currentValue: this.tokenService.tokenFilter()
+      });
     } else {
-      this.sort.set({ active: columnKey, direction });
+      newValue = this.tableUtilsService.toggleKeywordInFilter({
+        keyword: filterKeyword,
+        currentValue: this.tokenService.tokenFilter()
+      });
     }
-  }
-
-  onKeywordClick(filterKeyword: string): void {
-    console.log(filterKeyword);
-    this.toggleFilter(filterKeyword);
+    this.tokenService.tokenFilter.set(newValue);
   }
 
   isFilterSelected(filter: string, inputValue: FilterValue): boolean {
@@ -219,7 +211,7 @@ export class TokenTableComponent {
   }
 
   getFilterIconName(keyword: string): string {
-    if (keyword === "active" || keyword === "assigned" || keyword === "success") {
+    if (keyword === "active" || keyword === "assigned") {
       const value = this.tokenService.tokenFilter()?.getValueOfKey(keyword)?.toLowerCase();
       if (!value) {
         return "filter_alt";
@@ -231,20 +223,8 @@ export class TokenTableComponent {
     }
   }
 
-  toggleFilter(filterKeyword: string): void {
-    let newValue;
-    if (filterKeyword === "active" || filterKeyword === "assigned" || filterKeyword === "success") {
-      newValue = this.tableUtilsService.toggleBooleanInFilter({
-        keyword: filterKeyword,
-        currentValue: this.tokenService.tokenFilter()
-      });
-    } else {
-      newValue = this.tableUtilsService.toggleKeywordInFilter({
-        keyword: filterKeyword,
-        currentValue: this.tokenService.tokenFilter()
-      });
-    }
-    this.tokenService.tokenFilter.set(newValue);
-    this.filterInput.focus();
+  onKeywordClick(filterKeyword: string): void {
+    this.toggleFilter(filterKeyword);
+    this.filterInput?.nativeElement.focus();
   }
 }

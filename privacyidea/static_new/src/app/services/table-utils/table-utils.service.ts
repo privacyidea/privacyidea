@@ -21,6 +21,7 @@ import { MatTableDataSource } from "@angular/material/table";
 import { FilterValue } from "../../core/models/filter_value";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { Sort } from "@angular/material/sort";
+import { TokenService, TokenServiceInterface } from "../token/token.service";
 
 export interface FilterPair {
   key: string;
@@ -119,6 +120,8 @@ export interface TableUtilsServiceInterface {
   getColumnKeys<const C extends readonly ColumnDef[]>(cols: C): KeysOfColumns<C>;
 
   getSortIcon(columnKey: string, sort: Sort): string;
+
+  onSortButtonClick(key: string, sort: WritableSignal<Sort>): void;
 }
 
 @Injectable({
@@ -126,6 +129,7 @@ export interface TableUtilsServiceInterface {
 })
 export class TableUtilsService implements TableUtilsServiceInterface {
   private readonly authService: AuthServiceInterface = inject(AuthService);
+  private readonly tokenService: TokenServiceInterface = inject(TokenService);
   pageSizeOptions = signal([5, 10, 25, 50]);
 
   emptyDataSource<T>(pageSize: number, columnsKeyMap: { key: string; label: string }[]): MatTableDataSource<T> {
@@ -382,5 +386,24 @@ export class TableUtilsService implements TableUtilsServiceInterface {
       return "unfold_more";
     }
     return sort.direction === "asc" ? "keyboard_arrow_upward" : "keyboard_arrow_downward";
+  }
+
+  onSortButtonClick(columnKey: string, sort: WritableSignal<Sort>): void {
+    const current = sort();
+    let direction: Sort["direction"] = "asc";
+
+    if (current.active === columnKey) {
+      if (current.direction === "asc") {
+        direction = "desc";
+      } else if (current.direction === "desc") {
+        direction = "";
+      }
+    }
+
+    if (direction === "") {
+      sort.set({ active: "serial", direction: "asc" });
+    } else {
+      sort.set({ active: columnKey, direction });
+    }
   }
 }

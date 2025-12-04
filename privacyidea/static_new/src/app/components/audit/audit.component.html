@@ -46,11 +46,6 @@
       [pageSize]="auditService.pageSize()"
       showFirstLastButtons></mat-paginator>
   </div>
-  <app-keyword-filter #keywordFilterHTMLElement
-                      [advancedApiFilter]="[]"
-                      [apiFilter]="[]"
-                      [filterHTMLInputElement]="filterHTMLInputElement"
-                      [filterValue]="auditService.auditFilter" />
   <table
     [dataSource]="auditDataSource()"
     aria-label="Audit Data Table"
@@ -65,31 +60,30 @@
           mat-header-cell>
           <div class="flex ali-center">
             {{ column.label }}
-            @if (column.key !== 'number') {
-              <button mat-fab
-                      extended
-                      (click)="keywordFilterHTMLElement.onKeywordClick(column.key)"
-                      class="keyword-button audit-keyword-button">
-                <mat-icon class="keyword-button-icon margin-left-0"
-                          [ngClass]="{
-                              change_circle: 'change-keyword',
-                              remove_circle: 'remove-keyword',
-                              add_circle: 'add-keyword',
-                            }[keywordFilterHTMLElement.getFilterIconName(column.key)]">
-                  {{ keywordFilterHTMLElement.getFilterIconName(column.key) }}
-                </mat-icon>
-              </button>
+            @if
+            (!['number', 'log_level', 'clearance_level', 'sig_check', 'missing_line', 'thread_id'].includes(column.key)) {
+              <div class="margin-left-1">
+                <button
+                  (click)="onKeywordClick(apiFilterKeyMap[column.key])"
+                  class="filter-button"
+                  mat-icon-button>
+                  <mat-icon
+                    class="keyword-button-icon margin-left-0">
+                    {{getFilterIconName(column.key)}}
+                  </mat-icon>
+                </button>
+              </div>
             }
           </div>
         </th>
         <td
           *matCellDef="let element; let row"
-          attr.aria-label="{{ column.label }} Cell"
-          mat-cell
           [ngClass]="{
             'width-18rem': column.key === 'description',
             'table-checkbox': column.key === 'select'
-          }">
+          }"
+          attr.aria-label="{{ column.label }} Cell"
+          mat-cell>
           <div>
             @switch (column.key) {
               @case ("success") {
@@ -108,8 +102,8 @@
               @case ("serial") {
                 <div class="flex-row ali-center">
                   <a
-                    attr.aria-label="{{ column.label }} Link"
                     (click)="contentService.tokenSelected(element.serial)"
+                    attr.aria-label="{{ column.label }} Link"
                     routerLink="/token">
                     {{ element[column.key] }}
                   </a>
@@ -126,8 +120,8 @@
               @case ("container_serial") {
                 <div class="flex-row ali-center">
                   <a
-                    attr.aria-label="{{ column.label }} Link"
                     (click)="contentService.containerSelected(element.container_serial)"
+                    attr.aria-label="{{ column.label }} Link"
                     routerLink="/token">
                     {{ element[column.key] }}
                   </a>

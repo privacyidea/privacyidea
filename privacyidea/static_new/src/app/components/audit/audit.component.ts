@@ -18,7 +18,7 @@
  **/
 import { AuditData, AuditService, AuditServiceInterface } from "../../services/audit/audit.service";
 import { AuthService, AuthServiceInterface } from "../../services/auth/auth.service";
-import { Component, ViewChild, WritableSignal, inject, linkedSignal } from "@angular/core";
+import { Component, ElementRef, inject, linkedSignal, ViewChild, WritableSignal } from "@angular/core";
 import { ContentService, ContentServiceInterface } from "../../services/content/content.service";
 import {
   MatCell,
@@ -41,15 +41,14 @@ import { TableUtilsService, TableUtilsServiceInterface } from "../../services/ta
 import { ClearableInputComponent } from "../shared/clearable-input/clearable-input.component";
 import { CopyButtonComponent } from "../shared/copy-button/copy-button.component";
 import { FormsModule } from "@angular/forms";
-import { KeywordFilterComponent } from "../shared/keyword-filter/keyword-filter.component";
 import { MatCardModule } from "@angular/material/card";
 import { MatInput } from "@angular/material/input";
 import { NgClass } from "@angular/common";
 import { RouterLink } from "@angular/router";
 import { ScrollToTopDirective } from "../shared/directives/app-scroll-to-top.directive";
-import { MatFabButton } from "@angular/material/button";
+import { MatIconButton } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
-import { MatSortHeader } from "@angular/material/sort";
+import { FilterValue } from "../../core/models/filter_value";
 
 const columnKeysMap = [
   { key: "number", label: "Number" },
@@ -84,7 +83,6 @@ const columnKeysMap = [
   selector: "app-audit",
   imports: [
     MatCardModule,
-    KeywordFilterComponent,
     MatCell,
     MatFormField,
     FormsModule,
@@ -107,9 +105,8 @@ const columnKeysMap = [
     ScrollToTopDirective,
     ClearableInputComponent,
     RouterLink,
-    MatFabButton,
     MatIcon,
-    MatSortHeader
+    MatIconButton
   ],
   templateUrl: "./audit.component.html",
   styleUrl: "./audit.component.scss"
@@ -121,8 +118,12 @@ export class AuditComponent {
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
-  @ViewChild("filterHTMLInputElement", { static: true })
-  filterInput!: HTMLInputElement;
+  readonly apiFilterKeyMap = this.auditService.apiFilterKeyMap;
+  sort = this.auditService.sort;
+
+  @ViewChild("filterHTMLInputElement", { static: false })
+  filterInput!: ElementRef<HTMLInputElement>;
+
   totalLength: WritableSignal<number> = linkedSignal({
     source: this.auditService.auditResource.value,
     computation: (auditResource, previous) => {
@@ -151,5 +152,43 @@ export class AuditComponent {
   onPageEvent(event: PageEvent) {
     this.auditService.pageSize.set(event.pageSize);
     this.auditService.pageIndex.set(event.pageIndex);
+  }
+
+  toggleFilter(filterKeyword: string): void {
+    let newValue;
+    if (filterKeyword === "success") {
+      newValue = this.tableUtilsService.toggleBooleanInFilter({
+        keyword: filterKeyword,
+        currentValue: this.auditService.auditFilter()
+      });
+    } else {
+      newValue = this.tableUtilsService.toggleKeywordInFilter({
+        keyword: filterKeyword,
+        currentValue: this.auditService.auditFilter()
+      });
+    }
+    this.auditService.auditFilter.set(newValue);
+  }
+
+  isFilterSelected(filter: string, inputValue: FilterValue): boolean {
+    return inputValue.hasKey(filter);
+  }
+
+  getFilterIconName(keyword: string): string {
+    if (keyword === "success") {
+      const value = this.auditService.auditFilter()?.getValueOfKey(keyword)?.toLowerCase();
+      if (!value) {
+        return "filter_alt";
+      }
+      return value === "true" ? "screen_rotation_alt" : value === "false" ? "filter_alt_off" : "filter_alt";
+    } else {
+      const isSelected = this.auditService.auditFilter().hasKey(keyword)
+      return isSelected ? "filter_alt_off" : "filter_alt";
+    }
+  }
+
+  onKeywordClick(filterKeyword: string): void {
+    this.toggleFilter(filterKeyword);
+    this.filterInput?.nativeElement.focus();
   }
 }
