@@ -41,7 +41,7 @@
         </mat-form-field>
       }
 
-      <mat-form-field class="input-height width-33">
+      <mat-form-field class="input-height width-33 hint-spacer">
         <mat-label i18n>OTP length</mat-label>
         <mat-select
           [formControl]="otpLengthFormControl"
@@ -53,7 +53,7 @@
         <mat-hint i18n> Some Authenticator Apps only support an OTP length of 6.</mat-hint>
       </mat-form-field>
 
-      <mat-form-field class="input-height width-33">
+      <mat-form-field class="input-height width-33 hint-spacer">
         <mat-label i18n>Hash algorithm</mat-label>
         <mat-select
           [formControl]="hashAlgorithmFormControl"

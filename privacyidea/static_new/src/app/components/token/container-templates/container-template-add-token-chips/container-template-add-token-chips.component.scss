@@ -7,11 +7,13 @@ mat-card-title {
 }
 
 mat-card {
-  background-color: var(--mat-sys-surface-container) !important;
+  --mdc-elevated-card-container-shape: var(--border-radius);
+  --mdc-elevated-card-container-color: var(--mat-sys-surface-container);
   margin-bottom: 1rem;
 }
 
 mat-chip {
+  --mdc-chip-container-shape-radius: var(--border-radius);
   white-space: nowrap;
   cursor: pointer !important;
 }
@@ -21,4 +23,9 @@ mat-icon {
   font-size: 20px;
   width: 20px;
   height: 20px;
+}
+::ng-deep {
+  .mdc-evolution-chip__action--presentational {
+    cursor: pointer !important;
+  }
 }

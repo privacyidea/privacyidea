@@ -1,4 +1,4 @@
-import { Component, EventEmitter, inject, Input, Output } from "@angular/core";
+import { Component, EventEmitter, inject, Input, Output, ViewEncapsulation } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { MatCardModule } from "@angular/material/card";
 import { MatChipListbox, MatChipsModule } from "@angular/material/chips";
@@ -14,6 +14,7 @@ import { MatIcon } from "@angular/material/icon";
   imports: [CommonModule, MatCardModule, MatChipsModule, MatChipListbox, MatIcon],
   templateUrl: "./container-template-add-token-chips.component.html",
   styleUrls: ["./container-template-add-token-chips.component.scss"]
+  // encapsulation: ViewEncapsulation.ShadowDom
 })
 export class ContainerTemplateAddTokenChipsComponent {
   @Input({ required: true }) containerType: string = "";

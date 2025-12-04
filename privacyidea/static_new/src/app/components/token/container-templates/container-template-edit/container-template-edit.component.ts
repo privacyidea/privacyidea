@@ -60,6 +60,11 @@ export class ContainerTemplateEditComponent {
     return JSON.stringify(this.templateOriginal()) !== JSON.stringify(this.templateEdited());
   });
 
+  enableEditMode(panel: MatExpansionPanel) {
+    this.isEditMode.set(true);
+    panel.open();
+  }
+
   handleCollapse(panel: MatExpansionPanel) {
     if (!this._confirmDiscardChanges()) {
       panel.open();

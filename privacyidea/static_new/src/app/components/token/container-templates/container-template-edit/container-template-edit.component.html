@@ -58,33 +58,31 @@
         </div>
       </div>
       <div class="template-actions">
-        @if (panel.expanded) {
-          @if (isEditMode()) {
-            <button
-              mat-icon-button
-              [disabled]="!canSaveTemplate()"
-              (click)="$event.stopPropagation(); saveTemplate()">
-              <mat-icon>save</mat-icon>
-            </button>
-            <button
-              mat-icon-button
-              class="action-button"
-              (click)="$event.stopPropagation(); cancelEditMode()">
-              <mat-icon>cancel</mat-icon>
-            </button>
-          } @else {
-            <button
-              mat-icon-button
-              (click)="$event.stopPropagation(); isEditMode.set(true)">
-              <mat-icon>edit</mat-icon>
-            </button>
-          }
+        @if (isEditMode()) {
           <button
             mat-icon-button
-            (click)="$event.stopPropagation(); deleteTemplate(currentTemplate().name)">
-            <mat-icon>delete</mat-icon>
+            [disabled]="!canSaveTemplate()"
+            (click)="$event.stopPropagation(); saveTemplate()">
+            <mat-icon>save</mat-icon>
+          </button>
+          <button
+            mat-icon-button
+            class="action-button"
+            (click)="$event.stopPropagation(); cancelEditMode()">
+            <mat-icon>cancel</mat-icon>
+          </button>
+        } @else {
+          <button
+            mat-icon-button
+            (click)="$event.stopPropagation(); enableEditMode(panel)">
+            <mat-icon>edit</mat-icon>
           </button>
         }
+        <button
+          mat-icon-button
+          (click)="$event.stopPropagation(); deleteTemplate(currentTemplate().name)">
+          <mat-icon>delete</mat-icon>
+        </button>
       </div>
       @if (isTemplateEdited()) {
         <div class="expand-icon-spacer"></div>

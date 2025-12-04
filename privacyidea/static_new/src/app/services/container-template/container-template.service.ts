@@ -135,8 +135,7 @@ export class ContainerTemplateService implements ContainerTemplateServiceInterfa
         })
       )
       .subscribe({
-        next: (response) => {
-          console.log("Template successfully deleted:", response);
+        next: () => {
           this.templatesResource.reload();
           this.notificationService.openSnackBar("Successfully deleted template.");
         }
@@ -163,8 +162,7 @@ export class ContainerTemplateService implements ContainerTemplateServiceInterfa
         })
       )
       .subscribe({
-        next: (response) => {
-          console.log("Default template edits successfully saved:", response);
+        next: () => {
           this.templatesResource.reload();
           this.notificationService.openSnackBar(`Successfully saved template edits.`);
         }
