@@ -37,14 +37,11 @@
   </div>
   <div class="self-service-table-container">
     <table
-      (matSortChange)="onSortEvent($event)"
       [dataSource]="tokenDataSource()"
-      [matSortDisableClear]="false"
       aria-label="Token Data Table"
       class="token-table"
       i18n-aria-label
-      mat-table
-      matSort>
+      mat-table>
       @for (column of columnKeysMapSelfService(); track column) {
         <ng-container [matColumnDef]="column.key">
           <th
