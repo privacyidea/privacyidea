@@ -49,14 +49,6 @@
         [pageSize]="pageSize()"
         showFirstLastButtons />
     </div>
-    <div class="table-keyword-filter-row">
-      <app-keyword-filter
-        #keywordFilterHTMLElement
-        [advancedApiFilter]="advancedApiFilter"
-        [apiFilter]="apiFilter"
-        [filterHTMLInputElement]="filterHTMLInputElement"
-        [filterValue]="tokenService.tokenFilter" />
-    </div>
     <app-token-table-actions />
     <div class="table-container">
       <table
@@ -85,10 +77,10 @@
                 mat-header-cell>
                 <div class="flex ali-center">
                   {{ column.label }}
-                  @if (column.key !== 'number') {
-                    <div class="margin-left-1 flex-row">
+                  @if (column.key !== 'user_realm') {
+                    <div class="margin-left-1">
                       <button
-                        (click)="keywordFilterHTMLElement.onKeywordClick(column.key)"
+                        (click)="onKeywordClick(apiFilterKeyMap[column.key])"
                         class="filter-button"
                         mat-icon-button>
                         <mat-icon
@@ -96,20 +88,20 @@
                           change_circle: 'yellow-light',
                           remove_circle: 'red-light',
                           add_circle: 'grey-light-active',
-                          }[keywordFilterHTMLElement.getFilterIconName(column.key)]"
+                          }[getFilterIconName(column.key)]"
                           class="keyword-button-icon margin-left-0">
-                          {{ keywordFilterHTMLElement.getFilterIconName(column.key) }}
+                          {{getFilterIconName(column.key) }}
                         </mat-icon>
-                      </button>
-                      <button
-                        (click)="onSortButtonClick(column.key)"
-                        class="sort-button"
-                        mat-icon-button
-                        type="button">
-                        <mat-icon>{{ tableUtilsService.getSortIcon(column.key, sort()) }}</mat-icon>
                       </button>
                     </div>
                   }
+                  <button
+                    (click)="onSortButtonClick(column.key)"
+                    class="sort-button"
+                    mat-icon-button
+                    type="button">
+                    <mat-icon>{{ tableUtilsService.getSortIcon(column.key, sort()) }}</mat-icon>
+                  </button>
                 </div>
               </th>
             }

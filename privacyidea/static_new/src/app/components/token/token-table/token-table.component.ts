@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, inject, linkedSignal, WritableSignal } from "@angular/core";
+import { Component, inject, linkedSignal, ViewChild, WritableSignal } from "@angular/core";
 import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
 import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
 import { MatPaginatorModule, PageEvent } from "@angular/material/paginator";
@@ -28,7 +28,6 @@ import { TokenDetails, TokenService, TokenServiceInterface } from "../../../serv
 import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
 import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
 import { FormsModule } from "@angular/forms";
-import { KeywordFilterComponent } from "../../shared/keyword-filter/keyword-filter.component";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
@@ -38,6 +37,7 @@ import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.
 import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
 import { TokenTableActionsComponent } from "./token-table-actions/token-table-actions.component";
 import { MatIconButton } from "@angular/material/button";
+import { FilterValue } from "../../../core/models/filter_value";
 
 const columnKeysMap = [
   { key: "select", label: "" },
@@ -63,7 +63,6 @@ const columnKeysMap = [
     MatPaginatorModule,
     MatSortModule,
     NgClass,
-    KeywordFilterComponent,
     MatCheckboxModule,
     FormsModule,
     MatIconModule,
@@ -85,8 +84,11 @@ export class TokenTableComponent {
 
   readonly columnKeysMap = columnKeysMap;
   readonly columnKeys: string[] = columnKeysMap.map((column) => column.key);
-  readonly apiFilter = this.tokenService.apiFilter;
+  readonly apiFilterKeyMap = this.tokenService.apiFilterKeyMap;
   readonly advancedApiFilter = this.tokenService.advancedApiFilter;
+
+  @ViewChild("filterHTMLInputElement", { static: true }) filterInput!: HTMLInputElement;
+
   tokenSelection = this.tokenService.tokenSelection;
 
   tokenResource = this.tokenService.tokenResource;
@@ -199,5 +201,50 @@ export class TokenTableComponent {
     } else {
       this.sort.set({ active: columnKey, direction });
     }
+  }
+
+  onKeywordClick(filterKeyword: string): void {
+    console.log(filterKeyword);
+    this.toggleFilter(filterKeyword);
+  }
+
+  isFilterSelected(filter: string, inputValue: FilterValue): boolean {
+    if (filter === "infokey & infovalue") {
+      return inputValue.hasKey("infokey") || inputValue.hasKey("infovalue");
+    }
+    if (filter === "machineid & resolver") {
+      return inputValue.hasKey("machineid") || inputValue.hasKey("resolver");
+    }
+    return inputValue.hasKey(filter);
+  }
+
+  getFilterIconName(keyword: string): string {
+    if (keyword === "active" || keyword === "assigned" || keyword === "success") {
+      const value = this.tokenService.tokenFilter()?.getValueOfKey(keyword)?.toLowerCase();
+      if (!value) {
+        return "filter_alt";
+      }
+      return value === "true" ? "screen_rotation_alt" : value === "false" ? "filter_alt_off" : "filter_alt";
+    } else {
+      const isSelected = this.isFilterSelected(keyword, this.tokenService.tokenFilter());
+      return isSelected ? "filter_alt_off" : "filter_alt";
+    }
+  }
+
+  toggleFilter(filterKeyword: string): void {
+    let newValue;
+    if (filterKeyword === "active" || filterKeyword === "assigned" || filterKeyword === "success") {
+      newValue = this.tableUtilsService.toggleBooleanInFilter({
+        keyword: filterKeyword,
+        currentValue: this.tokenService.tokenFilter()
+      });
+    } else {
+      newValue = this.tableUtilsService.toggleKeywordInFilter({
+        keyword: filterKeyword,
+        currentValue: this.tokenService.tokenFilter()
+      });
+    }
+    this.tokenService.tokenFilter.set(newValue);
+    this.filterInput.focus();
   }
 }

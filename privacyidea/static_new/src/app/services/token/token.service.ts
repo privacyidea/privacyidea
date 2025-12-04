@@ -85,7 +85,19 @@ const apiFilter = [
   "tokenrealm",
   "container_serial"
 ];
+
 const advancedApiFilter = ["infokey & infovalue", "userid", "resolver", "assigned"];
+
+const apiFilterKeyMap: Record<string, string> = {
+  serial: "serial",
+  tokentype: "type",
+  active: "active",
+  description: "description",
+  rollout_state: "rollout_state",
+  realms: "tokenrealm",
+  container_serial: "container_serial"
+};
+
 const hiddenApiFilter = ["type_list"];
 
 export interface Tokens {
@@ -184,6 +196,7 @@ export interface TokenImportResult {
 }
 
 export interface TokenServiceInterface {
+  apiFilterKeyMap: Record<string, string>;
   stopPolling$: Subject<void>;
   tokenBaseUrl: string;
   eventPageSize: number;
@@ -487,6 +500,7 @@ export class TokenService implements TokenServiceInterface {
   readonly defaultSizeOptions = [5, 10, 25, 50];
   readonly apiFilter = apiFilter;
   readonly advancedApiFilter = advancedApiFilter;
+  readonly apiFilterKeyMap = apiFilterKeyMap;
 
   sort = signal({ active: "serial", direction: "asc" } as Sort);
 
