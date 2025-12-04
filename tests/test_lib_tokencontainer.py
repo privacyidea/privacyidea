@@ -451,10 +451,10 @@ class TokenContainerManagementTestCase(MyTestCase):
         success = unassign_user(container_serial, invalid_user)
         self.assertTrue(success)
 
-        # Unassign an invalid user without providing the user id and without resolver works too
+        # Unassign an invalid user without providing the user id and without resolver raises an Exception
         assign_user(container_serial, invalid_user)
         invalid_user = User(login="invalid", realm=self.realm1)
-        self.assertTrue(unassign_user(container_serial, invalid_user))
+        self.assertRaises(UserError, unassign_user, container_serial, invalid_user)
 
         container.delete()
 
