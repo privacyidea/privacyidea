@@ -20,7 +20,7 @@ class AlternativeWebUI(MyTestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.app = create_app('altUI', pathlib.Path.cwd() / "tests/testdata/test_pi.cfg" "")
+        cls.app = create_app('altUI', pathlib.Path.cwd() / "tests/testdata/test_pi.cfg", "")
         cls.app_context = cls.app.app_context()
         cls.app_context.push()
         db.create_all()
