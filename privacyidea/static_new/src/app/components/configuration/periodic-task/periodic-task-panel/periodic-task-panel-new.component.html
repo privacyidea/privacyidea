@@ -22,7 +22,12 @@
     class="margin-4">
     <mat-expansion-panel-header class="mat-expansion-panel-header">
       <mat-panel-title>
-        <mat-icon>add</mat-icon>
+        @if (!panel.expanded) {
+          <mat-icon>add</mat-icon>
+        } @else {
+          <!-- Empty icon as placeholder to avoid too much layout shifts -->
+          <mat-icon></mat-icon>
+        }
         <div
           class="task-name"
           i18n>
@@ -60,10 +65,10 @@
       </mat-panel-description>
     </mat-expansion-panel-header>
     <div class="mat-expansion-panel-body">
-        <app-periodic-task-edit
-          [task]="task()"
-          [isNewTask]="true"
-          (allowSaveChanges)="canSave = $event"></app-periodic-task-edit>
+      <app-periodic-task-edit
+        [task]="task()"
+        [isNewTask]="true"
+        (allowSaveChanges)="canSave = $event"></app-periodic-task-edit>
     </div>
   </mat-expansion-panel>
 </div>

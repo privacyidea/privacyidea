@@ -52,6 +52,7 @@
           matInput
           [(ngModel)]="editTask().interval"
           (ngModelChange)="emitAllowSave()"
+          [placeholder]="'5 10 * * *'"
           required />
         <mat-hint i18n>Use crontab notation to specify the times at which the periodic task should be run.</mat-hint>
       </mat-form-field>
