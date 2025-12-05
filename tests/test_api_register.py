@@ -1,10 +1,10 @@
-from privacyidea.lib.resolver import save_resolver
-from privacyidea.lib.realm import set_realm
+from privacyidea.lib.resolver import delete_resolver, save_resolver
+from privacyidea.lib.realm import delete_realm, set_realm
 from .base import MyApiTestCase
-from privacyidea.lib.policy import SCOPE, set_policy
+from privacyidea.lib.policy import SCOPE, delete_policy, set_policy
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.resolvers.SQLIdResolver import IdResolver as SQLResolver
-from privacyidea.lib.smtpserver import add_smtpserver
+from privacyidea.lib.smtpserver import delete_smtpserver, add_smtpserver
 from . import smtpmock
 from privacyidea.lib.config import set_privacyidea_config
 from privacyidea.lib.passwordreset import create_recoverycode
@@ -33,6 +33,17 @@ class RegisterTestCase(MyApiTestCase):
     }
 
     usernames = ["corneliusReg", "corneliusRegFail"]
+
+    def _resend_and_check_unspecific_error(self, status_code: int):
+        set_policy(name="hide_specific_error_message", scope=SCOPE.REGISTER, action=f"{PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE}=true")
+        try:
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, status_code, res)
+            data = res.json
+            self.assertEqual(data["result"]["error"]["code"], ERROR.REGISTRATION)
+            self.assertEqual(data["result"]["error"]["message"], "Failed registering new user")
+        finally:
+            delete_policy("hide_specific_error_message")
 
     def test_00_delete_users(self):
         # If the test failed and some users are still in the database (from
@@ -120,6 +131,8 @@ class RegisterTestCase(MyApiTestCase):
             self.assertEqual(res.json["result"]["error"]["code"], 402, res.json)
             self.assertEqual(res.json["result"]["error"]["message"],
                              "ERR402: The username is already registered!", res.json)
+
+            self._resend_and_check_unspecific_error(400)
 
         # get the register status
         with self.app.test_request_context('/register',
