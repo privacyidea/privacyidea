@@ -1,0 +1,8 @@
+{
+  "name": "webui1",
+  "scope": "webui",
+  "action": {
+    "login_mode": "userstore",
+    "logout_time": "240"
+  }
+}

@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html ng-app="privacyideaApp">
+<html ng-app="privacyideaApp" ng-csp="no-unsafe-eval;no-unsafe-inline">
 <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="">
-    <meta name="author" content="Cornelius Kölbel" >
+    <meta name="author" content="Cornelius Kölbel">
     <link rel="icon" type="image/png" href="{{ instance }}/{{ "static/favicon.png" | versioned }}">
     <link href="{{ instance }}/{{ "static/contrib/css/bootstrap.css" | versioned }}" rel="stylesheet">
     <link href="{{ instance }}/{{ "static/contrib/css/isteven-multi-select.css" | versioned }}" rel="stylesheet"/>
@@ -19,14 +19,12 @@
     <link href="{{ instance }}/{{ "static/css/baseline.css" | versioned }}" rel="stylesheet">
     <link href="{{ instance }}/{{ "static/css/highlight.css" | versioned }}" rel="stylesheet">
     <link href="{{ instance }}/{{ "static/css/generic.css" | versioned }}" rel="stylesheet">
-    {% if theme %}<link href="{{ instance }}/{{ theme | versioned }}" rel="stylesheet"/>{%  endif %}
-    {% if custom_css %}<link href="{{ instance }}/{{ custom_css }}" rel="stylesheet"/>{% endif %}
+    {% if theme %}
+        <link href="{{ instance }}/{{ theme | versioned }}" rel="stylesheet"/>{% endif %}
+    {% if custom_css %}
+        <link href="{{ instance }}/{{ custom_css }}" rel="stylesheet"/>{% endif %}
 
-    <script type="application/javascript">
-        // Pass the browser Language to our Javascript code
-        var browserLanguage = "{{ browser_lang }}";
-    </script>
     <title idle-disabled="true">{{ page_title }}</title>
 
 </head>
-<body ng-controller="mainController">
+<body ng-controller="mainController" data-browser-lang="{{ browser_lang }}">

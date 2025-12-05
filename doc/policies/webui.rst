@@ -175,7 +175,7 @@ default URL is a Github repository [#defaulturl]_.
 .. note:: When setting a template_url policy the modified URL will only get
    active after the user has logged out and in again.
 
-.. [#defaulturl] https://github.com/privacyidea/policy-templates/.
+.. [#defaulturl] "/static/policy-templates/".
 
 
 .. index:: Default tokentype
