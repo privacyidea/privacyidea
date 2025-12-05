@@ -25,7 +25,7 @@
   <span
     i18n>The container was successfully created with serial number
     <a (click)="containerSelected(data().containerSerial())"> {{ data().containerSerial() }} </a>.</span>
-  <div class="flex-row gap-1">
+  <div class="flex-row gap-16">
     @if (data().response.result?.value?.container_url?.img) {
       <img
         i18n-alt
@@ -36,7 +36,7 @@
         width="300px" />
     }
     <div
-      class="flex-column gap-1"
+      class="flex-column gap-16"
       i18n>
       <p class="width-36">
         Please scan the QR code with the privacyIDEA Authenticator App or click this

@@ -34,7 +34,7 @@
     </span>
     }
   </div>
-  <div class="flex-row gap-1">
+  <div class="flex-row gap-16">
     @if (showQRCode() && qrCode) {
       <img
         alt="QR Code"
@@ -42,7 +42,7 @@
         src="{{ qrCode }}"
         width="300px" />
     }
-    <div class="flex-column gap-1">
+    <div class="flex-column gap-16">
       @if (url && showQRCode()) {
         <app-qr-code-text
           [tokenType]="data.tokentype.key"

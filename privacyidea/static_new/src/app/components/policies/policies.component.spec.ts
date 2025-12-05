@@ -58,7 +58,7 @@ describe("PoliciesComponent", () => {
     policyServiceMock.allPolicies.set(policies);
     fixture.detectChanges();
 
-    const policyElements = fixture.nativeElement.querySelectorAll(".policy-card");
+    const policyElements = fixture.nativeElement.querySelectorAll(".list-item-card");
     expect(policyElements.length).toBe(policies.length + 1); // +1 for the "new policy" panel
     expect(policyElements[1].textContent).toContain("policy1");
     expect(policyElements[2].textContent).toContain("policy2");
@@ -66,7 +66,7 @@ describe("PoliciesComponent", () => {
 
   it("should display a new policy panel", () => {
     fixture.detectChanges();
-    const newPolicyPanel = fixture.nativeElement.querySelector(".policy-card");
+    const newPolicyPanel = fixture.nativeElement.querySelector(".list-item-card");
     expect(newPolicyPanel).toBeTruthy();
     expect(newPolicyPanel.textContent).toContain("New Policy");
   });

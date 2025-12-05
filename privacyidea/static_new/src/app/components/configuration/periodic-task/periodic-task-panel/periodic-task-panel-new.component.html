@@ -1,0 +1,74 @@
+<!--
+ (c) NetKnights GmbH 2025,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<div class="list-item-card">
+  <mat-expansion-panel
+    #panel
+    class="margin-4">
+    <mat-expansion-panel-header class="mat-expansion-panel-header">
+      <mat-panel-title>
+        @if (!panel.expanded) {
+          <mat-icon>add</mat-icon>
+        } @else {
+          <!-- Empty icon as placeholder to avoid too much layout shifts -->
+          <mat-icon></mat-icon>
+        }
+        <div
+          class="task-name"
+          i18n>
+          Create New Periodic Task
+        </div>
+      </mat-panel-title>
+      <mat-panel-description class="header-description">
+        <!-- Keep empty div for correct spacing -->
+        <div class="description-label"></div>
+        <div class="actions">
+          @if (panel.expanded) {
+            <button
+              mat-icon-button
+              matTooltip="Save Periodic Task"
+              [disabled]="!canSave"
+              (click)="$event.stopPropagation(); savePeriodicTask();">
+              <mat-icon>save</mat-icon>
+            </button>
+            <button
+              mat-icon-button
+              matTooltip="Cancel Creation"
+              (click)="$event.stopPropagation(); cancelEdit()">
+              <mat-icon>cancel</mat-icon>
+            </button>
+            <div>
+              <mat-slide-toggle
+                matTooltip="Toggle Active Status"
+                [checked]="task().active"
+                (change)="toggleActive($event.checked)"
+                (click)="$event.stopPropagation()"
+                [disableRipple]="true"></mat-slide-toggle>
+            </div>
+          }
+        </div>
+      </mat-panel-description>
+    </mat-expansion-panel-header>
+    <div class="mat-expansion-panel-body">
+      <app-periodic-task-edit
+        [task]="task()"
+        [isNewTask]="true"
+        (allowSaveChanges)="canSave = $event"></app-periodic-task-edit>
+    </div>
+  </mat-expansion-panel>
+</div>

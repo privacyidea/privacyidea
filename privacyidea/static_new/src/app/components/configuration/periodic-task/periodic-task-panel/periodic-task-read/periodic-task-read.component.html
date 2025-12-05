@@ -1,0 +1,97 @@
+<!--
+ (c) NetKnights GmbH 2025,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<div class="task-details">
+  <div
+    class="label"
+    i18n>Interval
+  </div>
+  <div class="value">{{ task().interval }}</div>
+
+  <div
+    class="label"
+    i18n>Nodes
+  </div>
+  @if (Array.isArray(task().nodes)) {
+    <ul class="no-indention margin-0">
+      @for (node of task().nodes; track node) {
+        <li>{{ node }}</li>
+      }
+    </ul>
+  } @else {
+    <div class="value">{{ task().nodes }}</div>
+  }
+
+  <div
+    class="label"
+    i18n>Ordering
+  </div>
+  <div class="value">{{ task().ordering }}</div>
+
+  <div
+    class="label"
+    i18n>Retry If Failed
+  </div>
+  @if (task().retry_if_failed) {
+    <mat-icon>check_circle</mat-icon>
+  } @else {
+    <mat-icon>do_disturb_on</mat-icon>
+  }
+
+  <div
+    class="label"
+    i18n>Last Update
+  </div>
+  <div class="value">{{ task().last_update | date:'yyyy-MM-dd HH:mm:ss z' }}</div>
+
+  <div
+    class="label"
+    i18n>Last Run
+  </div>
+  @if (Object.keys(task().last_runs).length > 0) {
+    <ul class="no-indention margin-0">
+      @for (node of Object.keys(task().last_runs); track node) {
+        <li>
+          {{ node }}:
+          @if (this.isDateValue(task().last_runs[node])) {
+            {{ task().last_runs[node] | date:'yyyy-MM-dd HH:mm:ss z' }}
+          } @else {
+            {{ task().last_runs[node] }}
+          }
+        </li>
+      }
+    </ul>
+  } @else {
+    <div class="value">-</div>
+  }
+</div>
+
+<div class="selected-actions-container">
+  <h3>Options</h3>
+  @for (option of Object.keys(task().options); track option) {
+    <div
+      class="action-card">
+      <div class="action-row">
+        <span class="action-label">{{ option }}</span>
+        @if (!isBooleanAction(task().options[option])) {
+          <span class="action-value">{{ task().options[option] }}</span>
+        }
+      </div>
+    </div>
+  }
+</div>

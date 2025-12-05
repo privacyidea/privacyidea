@@ -33,6 +33,7 @@ import { PoliciesComponent } from "./components/policies/policies.component";
 import { TokenImportComponent } from "./components/token/token-import/token-import.component";
 import { RealmTableComponent } from "./components/user/realm-table/realm-table.component";
 import { ClientsComponent } from "./components/audit/clients/clients.component";
+import { PeriodicTaskComponent } from "./components/configuration/periodic-task/periodic-task.component";
 
 export const routes: Routes = [
   {
@@ -73,5 +74,9 @@ export const routes: Routes = [
       { path: "", component: AuditComponent },
       { path: "clients", component: ClientsComponent}
     ]
+  },
+  {
+    path: "configuration",
+    children: [{ path: "periodic-tasks", component: PeriodicTaskComponent }]
   }
 ];

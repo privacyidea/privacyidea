@@ -11,6 +11,8 @@
 @include meta.load-css("dialog.scss");
 @include meta.load-css("enroll.scss");
 @include meta.load-css("panel.scss");
+@include meta.load-css("list.scss");
+@include meta.load-css("actions.scss");
 
 html,
 body {
@@ -356,7 +358,7 @@ body {
   height: auto;
 }
 
-.gap-1 {
+.gap-16 {
   gap: 16px;
 }
 
@@ -517,6 +519,11 @@ body {
 .flex-column {
   display: flex;
   flex-direction: column;
+}
+.flex-row {
+  display: flex;
+  flex-direction: row;
+  gap: var(--global-gap);
 }
 
 .flex-grow-1 {

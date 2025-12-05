@@ -1,0 +1,19 @@
+@use "../../../../styles";
+@use "../../policies/policies.component.scss";
+
+.periodic-task-layout {
+  @include styles.table-container-styles;
+  @include styles.base-table-structure(".token-table", ".token-table-filter", ".table-scroll-container");
+  max-height: var(--max-height);
+  max-width: calc(100vw - var(--global-padding) * 5 - 48px);
+  overflow: auto;
+  display: grid;
+}
+
+.periodic-task-layout {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--global-gap) / 4);
+  overflow: auto;
+}

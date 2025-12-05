@@ -17,7 +17,7 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 
-<div class="policy-card">
+<div class="list-item-card">
   <mat-expansion-panel
     #panel
     class="margin-4"
@@ -57,7 +57,7 @@
         }
       </mat-panel-title>
       <mat-panel-description class="header-description">
-        <div class="policy-scope-label">
+        <div class="description-label">
           @if (isNew()) {
             @if (!this.policyService.selectedPolicyHasActions() && panel.expanded) {
               <mat-form-field
@@ -100,7 +100,7 @@
             }
           }
         </div>
-        <div class="policy-actions">
+        <div class="actions">
           @if (isNew()) {
             @if (panel.expanded) {
               <button

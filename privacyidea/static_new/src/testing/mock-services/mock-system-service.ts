@@ -19,8 +19,32 @@
 
 import { signal } from "@angular/core";
 import { PiNode, SystemServiceInterface } from "../../app/services/system/system.service";
+import { HttpResourceRef } from "@angular/common/http";
+
+function createMockHttpResource(result: any = []) {
+  // Use a writable signal to store the value
+  const valueSignal = signal({ result: { value: result } });
+  return {
+    value: () => valueSignal(),
+    reload: jest.fn(),
+    // Optionally allow tests to update the value
+    setValue: (newResult: any) => valueSignal.set({ result: { value: newResult } })
+  };
+}
 
 export class MockSystemService implements SystemServiceInterface {
-  nodes = signal<PiNode[]>([]);
+  nodes = signal<PiNode[]>([{name: "node1", uuid: "1234-5678"}]);
   systemConfig = signal({});
+  nodesResource: any = {
+    value: jest.fn().mockReturnValue({ result: { value: [] } }),
+    reload: jest.fn()
+  };
+  radiusServerResource: any = {
+    value: jest.fn().mockReturnValue({ result: { value: [] } }),
+    reload: jest.fn()
+  };
+  systemConfigResource: any = {
+    value: jest.fn().mockReturnValue({ result: { value: [] } }),
+    reload: jest.fn()
+  };
 }

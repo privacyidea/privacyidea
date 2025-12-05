@@ -1,0 +1,191 @@
+/*
+This file contains all styles for actions as used e.g. in policies, event handlers, periodic tasks, etc.
+*/
+
+.selected-actions-container {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--global-gap) / 2);
+  min-width: 0;
+}
+
+.action-card {
+  padding: var(--half-global-padding) var(--global-padding);
+  border-radius: var(--border-radius);
+  background-color: var(--mat-sys-surface-container);
+  color: var(--mat-sys-on-surface);
+  box-shadow: var(--mat-sys-level2);
+}
+
+.action-card:hover {
+  background-color: var(--mat-sys-primary-light);
+  color: var(--mat-sys-on-primary) !important;
+  --mdc-icon-button-icon-color: currentColor;
+  cursor: pointer;
+}
+
+.action-card-selected {
+  background-color: var(--mat-sys-primary-base);
+  color: var(--mat-sys-on-primary) !important;
+  --mdc-icon-button-icon-color: currentColor;
+}
+
+.action-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.action-row:not(:last-child) {
+  padding-bottom: var(--half-global-padding);
+}
+
+.action-row:not(:first-child) {
+  padding-top: var(--half-global-padding);
+}
+
+.action-label {
+  font-weight: 500;
+}
+
+.action-value {
+  text-align: right;
+  flex-grow: 1;
+}
+
+.action-detail-column {
+  background-color: var(--mat-sys-surface-container);
+  border-radius: var(--border-radius);
+  box-shadow: var(--mat-sys-level2);
+  color: var(--mat-sys-on-surface);
+  display: flex;
+  flex-direction: column;
+  gap: var(--global-gap);
+  min-width: 0;
+  padding: var(--three-quarters-global-padding);
+}
+
+.action-detail-title {
+  display: flex;
+  align-items: center;
+  gap: var(--global-gap);
+
+  h3 {
+    margin: 0;
+    padding: 0.25rem 0;
+  }
+}
+
+.action-detail-title-buttons {
+  flex-grow: 1;
+  display: flex;
+  justify-content: flex-end;
+  gap: calc(var(--global-gap) / 2);
+
+  button[mat-icon-button] {
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+  }
+}
+
+.action-docu,
+.action-notes {
+  padding: 1rem;
+  border-radius: 0.25rem;
+  border: 1px solid;
+}
+
+.action-docu,
+.action-notes,
+.action-detail-card {
+  code {
+    display: inline-block; // Use inline-block to allow padding and prevent line breaks
+    background-color: rgba(0, 0, 0, 0.08);
+    padding: 0.2em 0.4em;
+    margin: 0;
+    font-size: 85%;
+    border-radius: 3px;
+    font-family: "Courier New", Courier, monospace;
+  }
+
+  em {
+    display: inline; // Ensure em flows with the text
+    font-style: italic;
+  }
+
+  p {
+    margin-block-start: 1em;
+    margin-block-end: 1em;
+  }
+
+  a {
+    color: var(--mat-sys-primary);
+    text-decoration: underline;
+  }
+
+  strong,
+  b {
+    font-weight: bold;
+  }
+
+  ul,
+  ol {
+    padding-inline-start: 40px;
+  }
+
+  li {
+    margin-bottom: 0.5em;
+  }
+}
+
+.action-docu {
+  background-color: #e7f3fe;
+  border-color: #d0e5fc;
+  color: #31708f;
+}
+
+.action-notes {
+  background-color: #fef3e7;
+  border-color: #fce8d3;
+  color: #8a6d3b;
+}
+
+.action-detail-card {
+  background-color: var(--mat-sys-surface-container-high);
+  border-radius: var(--border-radius);
+  box-shadow: var(--mat-sys-level2);
+  padding: var(--global-padding);
+}
+
+.action-value-input {
+  background-color: transparent;
+  border: none;
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 0;
+  box-sizing: border-box;
+  font-size: 1rem;
+  padding: var(--half-global-padding) 0;
+  width: 100%;
+}
+
+.action-value-textarea {
+  background-color: transparent;
+  border: none;
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 0;
+  box-sizing: border-box;
+  font-size: 1rem;
+  min-height: 80px;
+  padding: var(--half-global-padding) 0;
+  resize: vertical;
+  width: 100%;
+}
+
+.action-value-input:focus {
+  border-bottom-color: var(--mat-sys-primary);
+  outline: none;
+}
