@@ -1,5 +1,5 @@
 {
-  "name": "webui1",
+  "name": "webui2",
   "scope": "webui",
   "action": {
     "login_mode": "userstore",

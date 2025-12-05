@@ -17,7 +17,7 @@
     "delete": true,
     "userlist": true,
     "machinelist": true,
-    "macheintokens": true,
+    "machinetokens": true,
     "authitems": true,
     "tokenrealms": true,
     "getserial": true,

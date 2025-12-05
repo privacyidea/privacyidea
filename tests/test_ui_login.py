@@ -3,21 +3,24 @@ This file tests the web UI Login
 
 implementation is contained webui/login.py
 """
-from flask_babel import refresh
-from .base import MyTestCase, MyApiTestCase
-from privacyidea.lib.policy import set_policy, SCOPE, PolicyClass, delete_all_policies
-from privacyidea.lib.policies.actions import PolicyAction
-from privacyidea.lib.utils import to_unicode, get_version_number
+import pathlib
 import re
+
+from flask_babel import refresh
+
 from privacyidea.app import create_app
+from privacyidea.lib.policies.actions import PolicyAction
+from privacyidea.lib.policy import set_policy, SCOPE, PolicyClass, delete_all_policies
+from privacyidea.lib.utils import to_unicode, get_version_number
 from privacyidea.models import db, save_config_timestamp
+from .base import MyTestCase, MyApiTestCase
 
 
 class AlternativeWebUI(MyTestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.app = create_app('altUI', "")
+        cls.app = create_app('altUI', pathlib.Path.cwd() / "tests/testdata/test_pi.cfg" "")
         cls.app_context = cls.app.app_context()
         cls.app_context.push()
         db.create_all()
@@ -143,6 +146,7 @@ class LanguageTestCase(MyApiTestCase):
                                                'Accept-Language': 'de'}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.json['result']['value']['totp'], 'TOTP: Zeitbasiertes Einmalpasswort.')
+
 
 class ConfigTestCase(MyApiTestCase):
     """
