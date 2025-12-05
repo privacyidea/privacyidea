@@ -25,7 +25,10 @@
       <div class="pi-dialog-footer">
         @for (action of actions(); track $index) {
           <button
-            [ngClass]="'pi-btn-' + action.type"
+            class="pi-btn"
+            [class.action-button-delete]="action.type === 'destruct'"
+            [class.action-button-1]="action.type === 'confirm' || action.type === 'auxiliary'"
+            [class.action-button-cancel]="action.type === 'cancel'"
             (click)="onActionClick(action)"
             [disabled]="action.disabled">
             {{ action.label }}

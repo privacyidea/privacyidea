@@ -1,3 +1,5 @@
+@use "../../../../../styles";
+
 // /* Globale Dialog-Steuerung */
 .pi-dialog-overlay {
   position: fixed;
@@ -64,38 +66,3 @@
 
   // gap: var(--global-gap);
 }
-
-/* Basis-Button-Klasse (Konsistent mit pi- Präfix) */
-.pi-btn {
-  border: none;
-  padding: var(--half-global-padding) var(--global-padding);
-  border-radius: var(--border-radius);
-  cursor: pointer;
-  font-size: 1rem;
-}
-
-/* Button-Varianten */
-.pi-btn-secondary {
-  background-color: transparent;
-  color: var(--mat-sys-on-surface);
-}
-
-// .pi-btn-info {
-//   background-color: #007bff;
-//   color: #fff;
-// }
-
-// .pi-btn-warning {
-//   background-color: #ffc107;
-//   color: #333;
-// }
-
-// .pi-btn-error {
-//   background-color: #dc3545;
-//   color: #fff;
-// }
-
-// .pi-btn-success {
-//   background-color: #28a745;
-//   color: #fff;
-// }

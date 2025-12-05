@@ -455,27 +455,35 @@ $button-low-contrast-variant: linear-gradient(
   }
 }
 
-.small-icon-button {
-   width: 36px !important;
-   height: 36px !important;
-   padding: 0px !important;
-   display: inline-flex !important;
-   align-items: center;
-   justify-content: center;
+.action-button-cancel {
+  @extend %action-button-base;
 
-   & > *[role=img] {
+  &:not([disabled]) {
+    @include action-button-variant(var(--grey-base), var(--grey-light));
+  }
+}
+
+.small-icon-button {
+  width: 36px !important;
+  height: 36px !important;
+  padding: 0px !important;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+
+  & > *[role="img"] {
+    width: 18px;
+    height: 18px;
+    font-size: 18px;
+
+    svg {
       width: 18px;
       height: 18px;
-      font-size: 18px;
+    }
+  }
 
-      svg {
-         width: 18px;
-         height: 18px;
-      }
-   }
-
-   .mat-mdc-button-touch-target {
-      width: 36px !important;
-      height: 36px !important;
-   }
+  .mat-mdc-button-touch-target {
+    width: 36px !important;
+    height: 36px !important;
+  }
 }
