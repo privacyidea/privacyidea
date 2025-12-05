@@ -3,6 +3,7 @@ import json
 from datetime import datetime, timezone, timedelta
 
 import mock
+from sqlalchemy import select
 
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.config import set_privacyidea_config
@@ -36,7 +37,7 @@ from privacyidea.lib.error import (ResourceNotFoundError, ParameterError, Enroll
                                    TokenAdminError, ContainerInvalidChallenge, ContainerNotRegistered, PolicyError)
 from privacyidea.lib.token import init_token, remove_token
 from privacyidea.lib.user import User
-from privacyidea.models import TokenContainer, Token, TokenContainerTemplate
+from privacyidea.models import TokenContainer, Token, TokenContainerTemplate, db
 from .base import MyTestCase
 
 
@@ -172,8 +173,8 @@ class TokenContainerManagementTestCase(MyTestCase):
         res = add_token_to_container(self.smartphone_serial, self.hotp_serial_gen)
         self.assertTrue(res)
         # Check containers: Token is only in smartphone container
-        db_result = TokenContainer.query.join(Token.container).filter(Token.serial == self.hotp_serial_gen)
-        container_serials = [row.serial for row in db_result]
+        stmt = select(TokenContainer).join(Token.container).where(Token.serial == self.hotp_serial_gen)
+        container_serials = [row.serial for row in db.session.scalars(stmt)]
         self.assertEqual(1, len(container_serials))
         self.assertEqual(self.smartphone_serial, container_serials[0])
 
@@ -680,7 +681,7 @@ class TokenContainerManagementTestCase(MyTestCase):
 
     def test_28_get_all_containers_paginate(self):
         # Removes all previously initialized containers
-        old_test_containers = TokenContainer.query.all()
+        old_test_containers = db.session.scalars(select(TokenContainer)).all()
         for container in old_test_containers:
             container.delete()
 
@@ -808,6 +809,23 @@ class TokenContainerManagementTestCase(MyTestCase):
         container_data = get_all_containers(realm="non_existing_realm", pagesize=15)
         self.assertEqual(0, len(container_data["containers"]))
 
+        # Filter for allowed realms
+        container_data = get_all_containers(allowed_realms=["realm1"], pagesize=15)
+        self.assertEqual(4, len(container_data["containers"]))
+        for container in container_data["containers"]:
+            self.assertIn("realm1", [realm.name for realm in container.realms])
+
+        # Filter for realm which is not in the allowed realms
+        container_data = get_all_containers(allowed_realms=["realm1"], realm="realm2", pagesize=15)
+        self.assertEqual(0, len(container_data["containers"]))
+
+        # But if a container is in both realms, it should be found
+        container = find_container_by_serial(container_serials[1])
+        container.set_realms([self.realm1, self.realm2])
+        container_data = get_all_containers(allowed_realms=["realm1"], realm="realm2", pagesize=15)
+        self.assertEqual(1, len(container_data["containers"]))
+        self.assertEqual(container_serials[1], container_data["containers"][0].serial)
+
         # ---- user ----
         # Filter by user (same username and resolver, but different realms)
         user_cornelius_1 = User(login="cornelius", realm=self.realm1)
@@ -870,7 +888,7 @@ class TokenContainerManagementTestCase(MyTestCase):
         self.assertSetEqual(set(container_serials[3:5]),
                             {container.serial for container in container_data["containers"]})
 
-        # wildcard
+        # wildcard should find the container with info "key2":"value2"
         container_data = get_all_containers(info={"key*": "*2*"}, pagesize=15)
         self.assertEqual(1, len(container_data["containers"]))
         self.assertEqual(container_serials[3], container_data["containers"][0].serial)

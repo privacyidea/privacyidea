@@ -317,6 +317,7 @@ class UserNotificationTestCase(MyTestCase):
 
         # lock it
         tok.set_failcount(10)
+        tok.token.save()
         options = {"g": fake_g,
                    "handler_def": {"conditions": {"token_locked": "True"}},
                    "response": resp,
@@ -396,6 +397,7 @@ class UserNotificationTestCase(MyTestCase):
                           "pin": "pin"}, user=User("cornelius", "realm1"))
         # lock it
         tok.set_failcount(10)
+        tok.save()
 
         uhandler = UserNotificationEventHandler()
         resp = Response()

@@ -45,6 +45,23 @@ from privacyidea.lib.eventhandler.webhookeventhandler import (ACTION_TYPE as WHE
                                                               WebHookHandler,
                                                               CONTENT_TYPE)
 from privacyidea.lib.machine import list_token_machines
+from .base import MyTestCase, FakeFlaskG, FakeAudit
+from privacyidea.lib.config import get_config_object
+from privacyidea.lib.eventhandler.tokenhandler import (TokenEventHandler,
+                                                       ACTION_TYPE, VALIDITY)
+from privacyidea.lib.eventhandler.scripthandler import ScriptEventHandler, SCRIPT_WAIT
+from privacyidea.lib.eventhandler.counterhandler import CounterEventHandler
+from privacyidea.lib.eventhandler.responsemangler import ResponseManglerEventHandler
+from privacyidea.models import EventCounter, TokenOwner, db
+from privacyidea.lib.eventhandler.federationhandler import FederationEventHandler
+from privacyidea.lib.eventhandler.requestmangler import RequestManglerEventHandler
+from privacyidea.lib.eventhandler.base import BaseEventHandler, CONDITION
+from privacyidea.lib.counter import increase as counter_increase
+from flask import Request, Response
+from werkzeug.test import EnvironBuilder
+from privacyidea.lib.event import (delete_event, set_event,
+                                   EventConfiguration, get_handler_object,
+                                   enable_event)
 from privacyidea.lib.token import (init_token, remove_token, get_realms_of_token, get_tokens,
                                    add_tokeninfo, unassign_token, get_tokens_paginate)
 from privacyidea.lib.tokenclass import DATE_FORMAT, CHALLENGE_SESSION
@@ -275,6 +292,7 @@ class BaseEventHandlerTestCase(MyTestCase):
 
         # check for failcounter
         tok.set_failcount(8)
+        db.session.commit()
         options["handler_def"] = {"conditions": {CONDITION.FAILCOUNTER: "<9"}}
         r = uhandler.check_condition(options)
         self.assertTrue(r)
@@ -3643,6 +3661,7 @@ class TokenEventTestCase(MyTestCase):
             options["handler_def"] = {"options": {"change fail counter": diff}}
             res = t_handler.do(ACTION_TYPE.CHANGE_FAILCOUNTER, options=options)
             self.assertTrue(res)
+            db.session.commit()
             # Check if the token has the correct fail counter
             t = get_tokens(serial="SPASS01")
             tw = t[0].get_failcount()

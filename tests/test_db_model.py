@@ -18,13 +18,19 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program. If not, see <http://www.gnu.org/licenses/>.
 """Test the models of the privacyIDEA database."""
-from mock import mock
 import os
+from datetime import datetime
+from datetime import timedelta
+
+from dateutil.tz import tzutc
+from mock import mock
 from sqlalchemy import func
 
 from privacyidea.lib.policies.conditions import (PolicyConditionClass, ConditionSection,
                                                  ConditionHandleMissingData)
 from privacyidea.lib.policy import set_policy_conditions
+from privacyidea.lib.token import init_token
+from privacyidea.lib.user import User
 from privacyidea.lib.utils.compare import PrimaryComparators
 from privacyidea.models import (Token,
                                 Resolver,
@@ -45,9 +51,6 @@ from privacyidea.models import (Token,
                                 PeriodicTaskOption, MonitoringStats, PolicyCondition, db,
                                 Tokengroup, TokenTokengroup, Serviceid)
 from .base import MyTestCase
-from dateutil.tz import tzutc
-from datetime import datetime
-from datetime import timedelta
 
 
 class TokenModelTestCase(MyTestCase):
@@ -151,11 +154,8 @@ class TokenModelTestCase(MyTestCase):
         otpkey = "123456"
 
         # create token and also assign the user and realm
-        Token(serial="serial2",
-              otpkey=otpkey,
-              userid=1009,
-              resolver="resolver1",
-              realm="realm1")
+        init_token({"type": "hotp", "serial": "serial2"},
+                   user=User(uid=1009, realm=self.realm1, resolver=self.resolvername1))
         t2 = Token.query.filter_by(serial="serial2").first()
         self.assertEqual(t2.first_owner.resolver, "resolver1")
         # check the realm list of the token
@@ -219,11 +219,10 @@ class TokenModelTestCase(MyTestCase):
         t2.save()
         t2.set_info({"info": "value"})
         t3 = Token.query.filter_by(serial="serial2").first()
-        self.assertTrue(t3.count_window == 100)
-        self.assertTrue(t3.otplen == 8)
-        self.assertTrue(t3.description == "De scription")
-        self.assertTrue(t3.info_list[0].Value == "value")
-        self.assertTrue(t3.get_info().get("info") == "value")
+        self.assertEqual(100, t3.count_window)
+        self.assertEqual(8, t3.otplen)
+        self.assertEqual("De scription", t3.description)
+        self.assertEqual("value", t3.get_info().get("info"))
 
         # test the string representation
         s = "{0!s}".format(t3)

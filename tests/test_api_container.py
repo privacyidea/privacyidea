@@ -1301,10 +1301,8 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
     def test_09_helpdesk_add_token_allowed(self):
         self.setUp_user_realm3()
         set_policy("policy_realm", scope=SCOPE.ADMIN,
-                   action={PolicyAction.CONTAINER_ADD_TOKEN: True, PolicyAction.CONTAINER_REMOVE_TOKEN: True},
-                   realm=self.realm1)
-        set_policy("policy_resolver", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_ADD_TOKEN,
-                   resolver=self.resolvername3)
+                   action=f"{PolicyAction.CONTAINER_ADD_TOKEN}=true, {PolicyAction.CONTAINER_REMOVE_TOKEN}=true", realm=self.realm1)
+        set_policy("policy_resolver", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_ADD_TOKEN, resolver=self.resolvername3)
         container_serial = self.create_container_for_user()
 
         # Add single token
@@ -1341,6 +1339,7 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
                                              method='POST')
         token_serial = result["detail"]["serial"]
         tokens = get_tokens_paginate(serial=token_serial)
+        t = tokens["tokens"][0]
         self.assertEqual(container_serial, tokens["tokens"][0]["container_serial"])
         delete_policy("policy")
 
@@ -3164,7 +3163,6 @@ class APIContainer(APIContainerTest):
         token_serial = token.get_serial()
         add_token_to_container(container_serials[1], token_serial)
         # Assign user to container 1
-        self.setUp_user_realms()
         user_hans = User(login="hans", realm=self.realm1)
         container.add_user(user_hans)
         # Add second realm
@@ -3186,13 +3184,16 @@ class APIContainer(APIContainerTest):
                                              self.at, 'GET')
         self.assertEqual(1, result["result"]["value"]["count"])
 
-        # filter for realm the admin is not allowed to manage
+        # filter for realm the admin is not allowed to manage (only get the container that is also in realm 1)
+        container_serial = init_container({"type": "generic", "realm": self.realm2})["container_serial"]
         set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_LIST, realm=self.realm1)
         result = self.request_assert_success('/container/',
                                              {"container_realm": self.realm2, "pagesize": 15},
                                              self.at, 'GET')
-        self.assertEqual(0, result["result"]["value"]["count"])
+        self.assertEqual(1, result["result"]["value"]["count"])
+        self.assertEqual(container_serials[1], result["result"]["value"]["containers"][0]["serial"])
         delete_policy("policy")
+        delete_container_by_serial(container_serial)
 
         # Filter for token serial
         result = self.request_assert_success('/container/',

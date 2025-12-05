@@ -20,7 +20,7 @@ import sys
 from sqlalchemy import create_engine
 from sqlalchemy import MetaData, Column
 from sqlalchemy import Integer, Unicode, Boolean
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import declarative_base
 
 Base = declarative_base()
 metadata = MetaData()
