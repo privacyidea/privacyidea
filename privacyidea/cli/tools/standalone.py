@@ -29,15 +29,16 @@ be used to setup tokens. This server must not be exposed to the network!
 The ``check`` command can then be used to authenticate users.
 """
 
-import click
 import functools
 import json
 import os
-from pathlib import Path
 import shutil
 import string
 import subprocess  # nosec B404 # only trusted input is used
+from pathlib import Path
 from tempfile import NamedTemporaryFile
+
+import click
 
 from privacyidea.app import create_app
 from privacyidea.lib.security.default import DefaultSecurityModule
@@ -122,7 +123,7 @@ def configure(ctx, instance):
     if instance.exists() and instance.joinpath('pi.cfg').exists():
         app = create_app(config_name="production", config_file=instance.joinpath('pi.cfg'),
                          silent=True)
-        app.run()
+        app.run(ssl_context='adhoc')
     else:
         click.secho(f"Instance configuration at '{instance}/pi.cfg' does "
                     f"not exist! Aborting.", fg='red')

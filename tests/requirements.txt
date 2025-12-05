@@ -529,6 +529,10 @@ flask-sqlalchemy==3.0.5 \
     # via
     #   flask-migrate
     #   privacyIDEA (pyproject.toml)
+flask-talisman==1.1.0 \
+    --hash=sha256:3c42b610ebe49b0e35ca150e179bf51aa1da01e4635b49a674868ea681046208 \
+    --hash=sha256:c5f486f5f54420729f84b3c3850cd63f96e8b033a9629bee66c524ea363797ff
+    # via privacyIDEA (pyproject.toml)
 flask-versioned==0.9.4.post20101221 \
     --hash=sha256:516694dc860a1bc4f22ab60b324a85083c0150522be109282a3bed681057fd34
     # via privacyIDEA (pyproject.toml)

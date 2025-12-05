@@ -1,0 +1,8 @@
+{
+  "name": "enroll_tokenlabel",
+  "description": "Set the tokenlabel of a Google Authenticator to a sensible value.",
+  "scope": "enrollment",
+  "action": {
+    "tokenlabel": "{user}@{realm}/{serial}"
+  }
+}
