@@ -51,7 +51,7 @@ import { OverflowService, OverflowServiceInterface } from "../../../../services/
 import { TableUtilsService, TableUtilsServiceInterface } from "../../../../services/table-utils/table-utils.service";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 
-import { ConfirmationDialogComponent } from "../../../shared/confirmation-dialog/confirmation-dialog.component";
+import { SimpleConfirmationDialogComponent } from "../../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { CopyButtonComponent } from "../../../shared/copy-button/copy-button.component";
 import { MatDialog } from "@angular/material/dialog";
 import { MatPaginator, MatPaginatorModule } from "@angular/material/paginator";
@@ -182,7 +182,7 @@ export class ContainerDetailsTokenTableComponent {
 
   removeTokenFromContainer(containerSerial: string, tokenSerial: string) {
     this.dialog
-      .open(ConfirmationDialogComponent, {
+      .open(SimpleConfirmationDialogComponent, {
         data: {
           serialList: [tokenSerial],
           title: "Remove Token",
@@ -230,7 +230,7 @@ export class ContainerDetailsTokenTableComponent {
 
   deleteTokenFromContainer(tokenSerial: string) {
     this.dialog
-      .open(ConfirmationDialogComponent, {
+      .open(SimpleConfirmationDialogComponent, {
         data: {
           serialList: [tokenSerial],
           title: "Delete Token",

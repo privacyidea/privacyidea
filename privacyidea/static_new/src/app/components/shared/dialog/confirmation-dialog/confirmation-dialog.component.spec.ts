@@ -18,16 +18,16 @@
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 
-import { ConfirmationDialogComponent } from "./confirmation-dialog.component";
+import { SimpleConfirmationDialogComponent } from "./confirmation-dialog.component";
 import { MAT_DIALOG_DATA } from "@angular/material/dialog";
 
 describe("ConfirmationDialogComponent", () => {
-  let component: ConfirmationDialogComponent;
-  let fixture: ComponentFixture<ConfirmationDialogComponent>;
+  let component: SimpleConfirmationDialogComponent;
+  let fixture: ComponentFixture<SimpleConfirmationDialogComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ConfirmationDialogComponent],
+      imports: [SimpleConfirmationDialogComponent],
       providers: [
         {
           provide: MAT_DIALOG_DATA,
@@ -41,7 +41,7 @@ describe("ConfirmationDialogComponent", () => {
       ]
     }).compileComponents();
 
-    fixture = TestBed.createComponent(ConfirmationDialogComponent);
+    fixture = TestBed.createComponent(SimpleConfirmationDialogComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

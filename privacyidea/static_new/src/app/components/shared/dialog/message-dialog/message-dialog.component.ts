@@ -16,34 +16,20 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, inject } from "@angular/core";
-import {
-  MAT_DIALOG_DATA,
-  MatDialogActions,
-  MatDialogClose,
-  MatDialogContent,
-  MatDialogTitle
-} from "@angular/material/dialog";
-import { MatButton } from "@angular/material/button";
+import { Component } from "@angular/core";
+import { MatDialogContent } from "@angular/material/dialog";
+import { AbstractDialogComponent } from "../abstract-dialog/abstract-dialog.component";
+import { DialogWrapperComponent } from "../dialog-wrapper/dialog-wrapper.component";
 
-export type SimpleDialogData = {
-  header: string | null;
-  text: string;
-  data: string;
+export type MessageDialogData = {
+  title: string | null;
+  texts: string[];
 };
 
 @Component({
   selector: "app-simple-dialog",
-  imports: [
-    MatDialogContent,
-    MatButton,
-    MatDialogActions,
-    MatDialogClose,
-    MatDialogTitle
-  ],
-  templateUrl: "./simple-dialog.component.html",
-  styleUrl: "./simple-dialog.component.scss"
+  imports: [MatDialogContent, DialogWrapperComponent],
+  templateUrl: "./message-dialog.component.html",
+  styleUrl: "./message-dialog.component.scss"
 })
-export class SimpleDialogComponent {
-  public readonly data = inject(MAT_DIALOG_DATA);
-}
+export class SimpleDialogComponent extends AbstractDialogComponent<MessageDialogData> {}

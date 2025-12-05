@@ -26,7 +26,7 @@ import {
 import { MatIcon } from "@angular/material/icon";
 import { MatButton } from "@angular/material/button";
 import { MatDivider } from "@angular/material/divider";
-import { ConfirmationDialogComponent } from "../../../shared/confirmation-dialog/confirmation-dialog.component";
+import { SimpleConfirmationDialogComponent } from "../../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { MatDialog } from "@angular/material/dialog";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 import { MatTableDataSource } from "@angular/material/table";
@@ -34,11 +34,7 @@ import { MatTableDataSource } from "@angular/material/table";
 @Component({
   selector: "app-container-details-token-actions",
   templateUrl: "./container-details-token-actions.component.html",
-  imports: [
-    MatIcon,
-    MatButton,
-    MatDivider
-  ],
+  imports: [MatIcon, MatButton, MatDivider],
   styleUrl: "./container-details-token-actions.component.scss"
 })
 export class ContainerDetailsTokenActionsComponent {
@@ -86,7 +82,7 @@ export class ContainerDetailsTokenActionsComponent {
     }
     const tokenSerials = tokenToUnassign.map((token) => token.serial);
     this.dialog
-      .open(ConfirmationDialogComponent, {
+      .open(SimpleConfirmationDialogComponent, {
         data: {
           type: "token",
           serialList: tokenSerials,
@@ -153,7 +149,7 @@ export class ContainerDetailsTokenActionsComponent {
       .data.map((token) => token.serial)
       .join(",");
     this.dialog
-      .open(ConfirmationDialogComponent, {
+      .open(SimpleConfirmationDialogComponent, {
         data: {
           serialList: serialList.split(","),
           title: "Remove Token",
@@ -178,7 +174,8 @@ export class ContainerDetailsTokenActionsComponent {
 
   deleteAllTokens() {
     const serialList = this.tokenData().data.map((token) => token.serial);
-    this.tokenService.bulkDeleteWithConfirmDialog(serialList, this.dialog, () => this.containerService.containerDetailResource.reload());
+    this.tokenService.bulkDeleteWithConfirmDialog(serialList, this.dialog, () =>
+      this.containerService.containerDetailResource.reload()
+    );
   }
-
 }

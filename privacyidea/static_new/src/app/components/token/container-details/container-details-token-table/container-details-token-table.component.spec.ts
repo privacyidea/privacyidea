@@ -43,7 +43,7 @@ import { OverflowService } from "../../../../services/overflow/overflow.service"
 import { NotificationService } from "../../../../services/notification/notification.service";
 import { MatDialog } from "@angular/material/dialog";
 import { UserService } from "../../../../services/user/user.service";
-import { ConfirmationDialogComponent } from "../../../shared/confirmation-dialog/confirmation-dialog.component";
+import { SimpleConfirmationDialogComponent } from "../../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { ContentService } from "../../../../services/content/content.service";
 
 import { MockAuthService } from "../../../../../testing/mock-services/mock-auth-service";
@@ -230,7 +230,7 @@ describe("ContainerDetailsTokenTableComponent", () => {
       .mockReturnValue(of({ result: { value: true } } as any));
     component.removeTokenFromContainer("CONT-1", "Mock serial");
     expect(matDialogMock.open).toHaveBeenCalledWith(
-      ConfirmationDialogComponent,
+      SimpleConfirmationDialogComponent,
       expect.objectContaining({
         data: expect.objectContaining({
           serialList: ["Mock serial"],
@@ -251,7 +251,7 @@ describe("ContainerDetailsTokenTableComponent", () => {
   it("deleteTokenFromContainer confirms and deletes on confirm=true", () => {
     component.deleteTokenFromContainer("Another serial");
     expect(matDialogMock.open).toHaveBeenCalledWith(
-      ConfirmationDialogComponent,
+      SimpleConfirmationDialogComponent,
       expect.objectContaining({
         data: expect.objectContaining({
           serialList: ["Another serial"],

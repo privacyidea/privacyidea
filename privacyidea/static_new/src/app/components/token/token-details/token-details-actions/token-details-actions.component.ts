@@ -45,7 +45,7 @@ import {
 } from "../token-machine-attach-dialog/token-hotp-machine-attach-dialog/token-hotp-machine-attach-dialog";
 import { lastValueFrom, switchMap } from "rxjs";
 import { LostTokenComponent } from "./lost-token/lost-token.component";
-import { ConfirmationDialogComponent } from "../../../shared/confirmation-dialog/confirmation-dialog.component";
+import { SimpleConfirmationDialogComponent } from "../../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { ROUTE_PATHS } from "../../../../route_paths";
 import { Router } from "@angular/router";
 
@@ -100,7 +100,7 @@ export class TokenDetailsActionsComponent {
 
   revokeToken(): void {
     this.dialog
-      .open(ConfirmationDialogComponent, {
+      .open(SimpleConfirmationDialogComponent, {
         data: {
           serialList: [this.tokenSerial()],
           title: "Revoke Token",
@@ -128,7 +128,7 @@ export class TokenDetailsActionsComponent {
 
   deleteToken(): void {
     this.dialog
-      .open(ConfirmationDialogComponent, {
+      .open(SimpleConfirmationDialogComponent, {
         data: {
           serialList: [this.tokenSerial()],
           title: "Delete Token",
@@ -151,7 +151,6 @@ export class TokenDetailsActionsComponent {
         }
       });
   }
-
 
   testPasskey() {
     this.validateService.authenticatePasskey({ isTest: true }).subscribe({

@@ -61,7 +61,7 @@ import {
 } from "../../../services/realm/realm.service";
 import { NodeInfo, SystemService, SystemServiceInterface } from "../../../services/system/system.service";
 import { NotificationService, NotificationServiceInterface } from "../../../services/notification/notification.service";
-import { ConfirmationDialogComponent } from "../../shared/confirmation-dialog/confirmation-dialog.component";
+import { SimpleConfirmationDialogComponent } from "../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { MatTooltip } from "@angular/material/tooltip";
 import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
 import { ResolverService, ResolverServiceInterface } from "../../../services/resolver/resolver.service";
@@ -230,11 +230,7 @@ export class RealmTableComponent {
       const resolverGroups = Array.from(groupsMap.values());
 
       const resolversText = resolverGroups
-        .flatMap((g) =>
-          g.resolvers.map(
-            (rr) => `${rr.name} ${rr.type} ${g.nodeLabel} ${rr.priority ?? ""}`
-          )
-        )
+        .flatMap((g) => g.resolvers.map((rr) => `${rr.name} ${rr.type} ${g.nodeLabel} ${rr.priority ?? ""}`))
         .join(" ");
 
       return [
@@ -248,9 +244,7 @@ export class RealmTableComponent {
     });
   });
 
-  totalLength: WritableSignal<number> = computed(
-    () => this.realmRows().length
-  ) as WritableSignal<number>;
+  totalLength: WritableSignal<number> = computed(() => this.realmRows().length) as WritableSignal<number>;
 
   realmsDataSource: WritableSignal<MatTableDataSource<RealmRow>> = linkedSignal({
     source: this.realmRows,
@@ -296,7 +290,7 @@ export class RealmTableComponent {
   }
 
   getCreateNodeResolverNames(groupId: string): string[] {
-    return this.getCreateNodeResolvers(groupId).map(res => res.name);
+    return this.getCreateNodeResolvers(groupId).map((res) => res.name);
   }
 
   onNewRealmNodeResolversChange(nodeId: string, values: string[]): void {
@@ -406,8 +400,7 @@ export class RealmTableComponent {
     const globalResolvers = (nodeResolvers[NO_NODE_ID] ?? []) as ResolverWithPriority[];
 
     const nodeEntries = Object.entries(nodeResolvers).filter(
-      ([nodeId, resolvers]) =>
-        nodeId !== NO_NODE_ID && resolvers && resolvers.length > 0
+      ([nodeId, resolvers]) => nodeId !== NO_NODE_ID && resolvers && resolvers.length > 0
     );
 
     const requests = [];
@@ -449,9 +442,7 @@ export class RealmTableComponent {
         },
         error: (err: HttpErrorResponse) => {
           const message = err.error?.result?.error?.message || err.message;
-          this.notificationService.openSnackBar(
-            $localize`Failed to create realm. ${message}`
-          );
+          this.notificationService.openSnackBar($localize`Failed to create realm. ${message}`);
         }
       })
       .add(() => this.isCreatingRealm.set(false));
@@ -473,12 +464,12 @@ export class RealmTableComponent {
 
     const original: NodeResolversMap = {};
     Object.entries(map).forEach(([nodeId, list]) => {
-      original[nodeId] = list.map(r => ({ ...r }));
+      original[nodeId] = list.map((r) => ({ ...r }));
     });
 
     const editable: NodeResolversMap = {};
     Object.entries(map).forEach(([nodeId, list]) => {
-      editable[nodeId] = list.map(r => ({ ...r }));
+      editable[nodeId] = list.map((r) => ({ ...r }));
     });
 
     this.editOriginalNodeResolvers.set(original);
@@ -498,7 +489,7 @@ export class RealmTableComponent {
   }
 
   getEditNodeResolverNames(nodeId: string): string[] {
-    return this.getEditNodeResolvers(nodeId).map(r => r.name);
+    return this.getEditNodeResolvers(nodeId).map((r) => r.name);
   }
 
   saveEditedRealm(row: RealmRow): void {
@@ -513,9 +504,7 @@ export class RealmTableComponent {
 
     const hasGlobalGroup = Object.prototype.hasOwnProperty.call(current, NO_NODE_ID);
     const globalResolvers = (current[NO_NODE_ID] ?? []) as ResolverWithPriority[];
-    const nodeEntries = Object.entries(current).filter(
-      ([nodeId]) => nodeId !== NO_NODE_ID
-    );
+    const nodeEntries = Object.entries(current).filter(([nodeId]) => nodeId !== NO_NODE_ID);
 
     if (!hasGlobalGroup && nodeEntries.length === 0) {
       this.notificationService.openSnackBar($localize`No resolvers configured.`);
@@ -553,18 +542,14 @@ export class RealmTableComponent {
       .pipe(last())
       .subscribe({
         next: () => {
-          this.notificationService.openSnackBar(
-            $localize`Realm "${realmName}" updated.`
-          );
+          this.notificationService.openSnackBar($localize`Realm "${realmName}" updated.`);
           this.cancelEditRealm();
           this.realmService.realmResource.reload?.();
         },
         error: (err: HttpErrorResponse) => {
           console.error("Failed to update realm.", err);
           const message = err.error?.result?.error?.message || err.message;
-          this.notificationService.openSnackBar(
-            $localize`Failed to update realm. ${message}`
-          );
+          this.notificationService.openSnackBar($localize`Failed to update realm. ${message}`);
         }
       })
       .add(() => this.isSavingEditedRealm.set(false));
@@ -576,7 +561,7 @@ export class RealmTableComponent {
     }
 
     this.dialog
-      .open(ConfirmationDialogComponent, {
+      .open(SimpleConfirmationDialogComponent, {
         data: {
           serialList: [row.name],
           title: $localize`Delete Realm`,
@@ -593,16 +578,12 @@ export class RealmTableComponent {
 
           this.realmService.deleteRealm(row.name).subscribe({
             next: () => {
-              this.notificationService.openSnackBar(
-                $localize`Realm "${row.name}" deleted.`
-              );
+              this.notificationService.openSnackBar($localize`Realm "${row.name}" deleted.`);
               this.realmService.realmResource.reload?.();
             },
             error: (err: HttpErrorResponse) => {
               const message = err.error?.result?.error?.message || err.message;
-              this.notificationService.openSnackBar(
-                $localize`Failed to delete realm. ${message}`
-              );
+              this.notificationService.openSnackBar($localize`Failed to delete realm. ${message}`);
             }
           });
         }
@@ -621,18 +602,14 @@ export class RealmTableComponent {
       .pipe(take(1))
       .subscribe({
         next: () => {
-          this.notificationService.openSnackBar(
-            $localize`Realm "${realmName}" set as default.`
-          );
+          this.notificationService.openSnackBar($localize`Realm "${realmName}" set as default.`);
           this.realmService.realmResource.reload?.();
           this.realmService.defaultRealmResource.reload?.();
         },
         error: (err: HttpErrorResponse) => {
           console.error("Failed to set default realm.", err);
           const message = err.error?.result?.error?.message || err.message;
-          this.notificationService.openSnackBar(
-            $localize`Failed to set default realm. ${message}`
-          );
+          this.notificationService.openSnackBar($localize`Failed to set default realm. ${message}`);
         }
       });
   }

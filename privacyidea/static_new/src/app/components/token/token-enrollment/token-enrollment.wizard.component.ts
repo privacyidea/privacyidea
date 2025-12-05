@@ -65,10 +65,10 @@ import { EnrollYubicoComponent } from "./enroll-yubico/enroll-yubico.component";
 import { EnrollYubikeyComponent } from "./enroll-yubikey/enroll-yubikey.component";
 import { TokenEnrollmentComponent } from "./token-enrollment.component";
 import { AuthService } from "../../../services/auth/auth.service";
-import { TokenEnrollmentLastStepDialogData } from "./token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
 import { tokenTypes } from "../../../utils/token.utils";
 import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
 import { environment } from "../../../../environments/environment";
+import { TokenEnrollmentLastStepDialogData } from "./token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.self-service.component";
 
 @Component({
   selector: "app-token-enrollment-wizard",
@@ -132,10 +132,11 @@ export class TokenEnrollmentWizardComponent extends TokenEnrollmentComponent {
   protected override wizard = true;
   protected readonly tokenType = computed(() => {
     const defaultType = this.authService.defaultTokentype() || "hotp";
-    return tokenTypes.find((type) => type.key === defaultType) ||
-      { key: defaultType, name: defaultType, info: "", text: "" } as TokenType;
+    return (
+      tokenTypes.find((type) => type.key === defaultType) ||
+      ({ key: defaultType, name: defaultType, info: "", text: "" } as TokenType)
+    );
   });
-
 
   protected override openLastStepDialog(args: { response: EnrollmentResponse | null; user: UserData | null }): void {
     const { response, user } = args;
@@ -154,9 +155,9 @@ export class TokenEnrollmentWizardComponent extends TokenEnrollmentComponent {
       onlyAddToRealm: false
     };
     this._lastTokenEnrollmentLastStepDialogData.set(dialogData);
-    this.dialogService.openTokenEnrollmentLastStepDialog({
-      data: dialogData
-    });
+    // this.dialogService.openTokenEnrollmentLastStepDialog({
+    //   data: dialogData
+    // });
   }
 
   // TODO: Get custom path from pi.cfg

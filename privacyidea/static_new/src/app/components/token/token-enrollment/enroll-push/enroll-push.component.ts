@@ -96,12 +96,12 @@ export class EnrollPushComponent implements OnInit {
     initResponse: EnrollmentResponse,
     initDelay: number
   ): Promise<PiResponse<Tokens>> => {
-    this._openStepOneDialog(initResponse)
-      .afterClosed()
-      .subscribe(() => {
-        this.tokenService.stopPolling();
-        this.pollResponse.set(undefined);
-      });
+    // this._openStepOneDialog(initResponse)
+    //   .afterClosed()
+    //   .subscribe(() => {
+    //     this.tokenService.stopPolling();
+    //     this.pollResponse.set(undefined);
+    //   });
     const observable = this.tokenService.pollTokenRolloutState({
       tokenSerial: initResponse.detail.serial,
       initDelay
@@ -110,26 +110,26 @@ export class EnrollPushComponent implements OnInit {
       next: (pollResponse) => {
         this.pollResponse.set(pollResponse);
         if (pollResponse.result?.value?.tokens[0].rollout_state !== "clientwait") {
-          this.dialogService.closeTokenEnrollmentFirstStepDialog();
+          // this.dialogService.closeTokenEnrollmentFirstStepDialog();
         }
       }
     });
     return lastValueFrom(observable);
   };
 
-  private _openStepOneDialog(
-    enrollmentResponse: EnrollmentResponse
-  ): MatDialogRef<TokenEnrollmentFirstStepDialogComponent, any> {
-    this.reopenDialogChange.emit(async () => {
-      if (!this.dialogService.isTokenEnrollmentFirstStepDialogOpen) {
-        await this.pollTokenRolloutState(enrollmentResponse, 0);
-        return enrollmentResponse;
-      }
-      return null;
-    });
+  // private _openStepOneDialog(
+  //   enrollmentResponse: EnrollmentResponse
+  // ): MatDialogRef<TokenEnrollmentFirstStepDialogComponent, any> {
+  //   this.reopenDialogChange.emit(async () => {
+  //     // if (!this.dialogService.isTokenEnrollmentFirstStepDialogOpen) {
+  //     //   await this.pollTokenRolloutState(enrollmentResponse, 0);
+  //     //   return enrollmentResponse;
+  //     // }
+  //     return null;
+  //   });
 
-    return this.dialogService.openTokenEnrollmentFirstStepDialog({
-      data: { enrollmentResponse }
-    });
-  }
+  //   // return this.dialogService.openTokenEnrollmentFirstStepDialog({
+  //   //   data: { enrollmentResponse }
+  //   // });
+  // }
 }

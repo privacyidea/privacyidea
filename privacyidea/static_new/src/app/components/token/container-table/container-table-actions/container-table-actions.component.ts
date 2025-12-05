@@ -19,7 +19,7 @@
 import { Component, inject } from "@angular/core";
 import { MatIcon } from "@angular/material/icon";
 import { MatButtonModule } from "@angular/material/button";
-import { ConfirmationDialogComponent } from "../../../shared/confirmation-dialog/confirmation-dialog.component";
+import { SimpleConfirmationDialogComponent } from "../../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { forkJoin } from "rxjs";
 import { MatDialog } from "@angular/material/dialog";
 import { ContainerService, ContainerServiceInterface } from "../../../../services/container/container.service";
@@ -53,7 +53,7 @@ export class ContainerTableActionsComponent {
   deleteSelectedContainer(): void {
     const selectedContainers = this.containerSelection();
     this.dialog
-      .open(ConfirmationDialogComponent, {
+      .open(SimpleConfirmationDialogComponent, {
         data: {
           serialList: selectedContainers.map((container) => container.serial),
           title: "Delete All Containers",

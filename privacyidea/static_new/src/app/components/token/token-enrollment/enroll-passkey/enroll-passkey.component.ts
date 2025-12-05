@@ -126,7 +126,7 @@ export class EnrollPasskeyComponent implements OnInit {
       this.notificationService.openSnackBar("Failed to initiate Passkey registration: Invalid server response.");
       throw new Error("Invalid server response for Passkey initiation.");
     }
-    this.openStepOneDialog({ enrollmentInitData, enrollmentResponse });
+    // this.openStepOneDialog({ enrollmentInitData, enrollmentResponse });
     const publicKeyCred = await this.readPublicKeyCred(enrollmentResponse);
     if (publicKeyCred === null) {
       return null;
@@ -139,36 +139,36 @@ export class EnrollPasskeyComponent implements OnInit {
     return resposeLastStep;
   };
 
-  openStepOneDialog(args: {
-    enrollmentInitData: PasskeyEnrollmentData;
-    enrollmentResponse: EnrollmentResponse;
-  }): MatDialogRef<TokenEnrollmentFirstStepDialogComponent, any> {
-    const { enrollmentInitData, enrollmentResponse } = args;
-    this.reopenDialogChange.emit(async () => {
-      if (!this.dialogService.isTokenEnrollmentFirstStepDialogOpen) {
-        this.dialogService.openTokenEnrollmentFirstStepDialog({
-          data: { enrollmentResponse },
-          disableClose: true
-        });
-        const publicKeyCred = await this.readPublicKeyCred(enrollmentResponse);
-        const resposeLastStep = await this.finalizeEnrollment({
-          enrollmentInitData,
-          enrollmentResponse,
-          publicKeyCred
-        });
-        return resposeLastStep;
-      }
-      return null;
-    });
+  // openStepOneDialog(args: {
+  //   enrollmentInitData: PasskeyEnrollmentData;
+  //   enrollmentResponse: EnrollmentResponse;
+  // }): MatDialogRef<TokenEnrollmentFirstStepDialogComponent, any> {
+  //   const { enrollmentInitData, enrollmentResponse } = args;
+  //   // this.reopenDialogChange.emit(async () => {
+  //   //   if (!this.dialogService.isTokenEnrollmentFirstStepDialogOpen) {
+  //   //     this.dialogService.openTokenEnrollmentFirstStepDialog({
+  //   //       data: { enrollmentResponse },
+  //   //       disableClose: true
+  //   //     });
+  //   //     const publicKeyCred = await this.readPublicKeyCred(enrollmentResponse);
+  //   //     const resposeLastStep = await this.finalizeEnrollment({
+  //   //       enrollmentInitData,
+  //   //       enrollmentResponse,
+  //   //       publicKeyCred
+  //   //     });
+  //   //     return resposeLastStep;
+  //   //   }
+  //   //   return null;
+  //   // });
 
-    return this.dialogService.openTokenEnrollmentFirstStepDialog({
-      data: { enrollmentResponse },
-      disableClose: true
-    });
-  }
+  //   // return this.dialogService.openTokenEnrollmentFirstStepDialog({
+  //   //   data: { enrollmentResponse },
+  //   //   disableClose: true
+  //   // });
+  // }
 
   closeStepOneDialog(): void {
-    this.dialogService.closeTokenEnrollmentFirstStepDialog();
+    // this.dialogService.closeTokenEnrollmentFirstStepDialog();
   }
 
   private async readPublicKeyCred(responseStepOne: EnrollmentResponse): Promise<any | null> {

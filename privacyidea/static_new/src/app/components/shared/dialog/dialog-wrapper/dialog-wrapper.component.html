@@ -1,0 +1,37 @@
+<div class="pi-dialog-overlay">
+  <div class="pi-dialog">
+    <div class="pi-dialog-header">
+      @if (title()) {
+        <h2>{{ title() }}</h2>
+      } @else {
+        <h2 i18n>Dialog</h2>
+      }
+      @if (showCloseButton()) {
+        <button
+          class="pi-close-button"
+          (click)="onCloseClick()">
+          &times;
+        </button>
+      }
+    </div>
+    <mat-dialog-content>
+      <div class="margin-bottom-1">
+        <div class="pi-dialog-body">
+          <ng-content></ng-content>
+        </div>
+      </div>
+    </mat-dialog-content>
+    @if (actions().length > 0) {
+      <div class="pi-dialog-footer">
+        @for (action of actions(); track $index) {
+          <button
+            [ngClass]="'pi-btn-' + action.type"
+            (click)="onActionClick(action)"
+            [disabled]="action.disabled">
+            {{ action.label }}
+          </button>
+        }
+      </div>
+    }
+  </div>
+</div>

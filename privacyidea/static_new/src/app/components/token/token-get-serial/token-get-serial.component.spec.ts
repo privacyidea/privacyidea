@@ -28,7 +28,7 @@ import { NotificationService } from "../../../services/notification/notification
 import { ContentService } from "../../../services/content/content.service";
 import { MockContentService, MockNotificationService, MockTokenService } from "../../../../testing/mock-services";
 import { MatDialog } from "@angular/material/dialog";
-import { ConfirmationDialogComponent } from "../../shared/confirmation-dialog/confirmation-dialog.component";
+import { SimpleConfirmationDialogComponent } from "../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { GetSerialResultDialogComponent } from "./get-serial-result-dialog/get-serial-result-dialog.component";
 
 const makeCountResp = (count: number) => ({ result: { value: { count } } }) as any;
@@ -39,7 +39,7 @@ let confirmClosed$: Subject<boolean>;
 let lastResultDialogData: any;
 const matDialogMock = {
   open: jest.fn((cmp: any, cfg: any) => {
-    if (cmp === ConfirmationDialogComponent) {
+    if (cmp === SimpleConfirmationDialogComponent) {
       return { afterClosed: () => confirmClosed$.asObservable() };
     }
     if (cmp === GetSerialResultDialogComponent) {
@@ -153,7 +153,7 @@ describe("TokenGetSerialComponent", () => {
 
     component.countTokens();
     expect(component.currentStep()).toBe("countDone");
-    expect(matDialogMock.open).toHaveBeenCalledWith(ConfirmationDialogComponent, expect.anything());
+    expect(matDialogMock.open).toHaveBeenCalledWith(SimpleConfirmationDialogComponent, expect.anything());
 
     confirmClosed$.next(true);
     confirmClosed$.complete();

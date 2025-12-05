@@ -154,10 +154,10 @@ export class EnrollWebauthnComponent implements OnInit {
       timeout: request.timeout,
       excludeCredentials: request.excludeCredentials
         ? request.excludeCredentials.map((cred: any) => ({
-          id: this.base64Service.base64URLToBytes(cred.id),
-          type: cred.type,
-          transports: cred.transports
-        }))
+            id: this.base64Service.base64URLToBytes(cred.id),
+            type: cred.type,
+            transports: cred.transports
+          }))
         : [],
       authenticatorSelection: request.authenticatorSelection,
       attestation: request.attestation,
@@ -187,24 +187,24 @@ export class EnrollWebauthnComponent implements OnInit {
     const { webauthnEnrollmentResponse } = args;
 
     this.reopenDialogChange.emit(async () => {
-      if (!this.dialogService.isTokenEnrollmentFirstStepDialogOpen) {
-        this.dialogService.openTokenEnrollmentFirstStepDialog({
-          data: { enrollmentResponse: webauthnEnrollmentResponse },
-          disableClose: true
-        });
-        return webauthnEnrollmentResponse;
-      }
+      // if (!this.dialogService.isTokenEnrollmentFirstStepDialogOpen) {
+      //   this.dialogService.openTokenEnrollmentFirstStepDialog({
+      //     data: { enrollmentResponse: webauthnEnrollmentResponse },
+      //     disableClose: true
+      //   });
+      //   return webauthnEnrollmentResponse;
+      // }
       return null;
     });
 
-    this.dialogService.openTokenEnrollmentFirstStepDialog({
-      data: { enrollmentResponse: webauthnEnrollmentResponse },
-      disableClose: true
-    });
+    // this.dialogService.openTokenEnrollmentFirstStepDialog({
+    //   data: { enrollmentResponse: webauthnEnrollmentResponse },
+    //   disableClose: true
+    // });
   }
 
   closeStepOneDialog(): void {
-    this.dialogService.closeTokenEnrollmentFirstStepDialog();
+    // this.dialogService.closeTokenEnrollmentFirstStepDialog();
   }
 
   private async finalizeEnrollment(args: {

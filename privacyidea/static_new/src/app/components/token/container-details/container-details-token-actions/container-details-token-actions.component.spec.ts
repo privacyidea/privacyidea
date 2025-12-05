@@ -28,7 +28,7 @@ import { AuthService } from "../../../../services/auth/auth.service";
 import { ContainerDetailToken, ContainerService } from "../../../../services/container/container.service";
 import { TokenService } from "../../../../services/token/token.service";
 import { MatDialog } from "@angular/material/dialog";
-import { ConfirmationDialogComponent } from "../../../shared/confirmation-dialog/confirmation-dialog.component";
+import { SimpleConfirmationDialogComponent } from "../../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { MatTableDataSource } from "@angular/material/table";
 import { signal, WritableSignal } from "@angular/core";
 import { of } from "rxjs";
@@ -190,7 +190,7 @@ describe("ContainerDetailsTokenActionsComponent", () => {
 
     component.unassignFromAllToken();
     expect(mockDialog.open).toHaveBeenCalledWith(
-      ConfirmationDialogComponent,
+      SimpleConfirmationDialogComponent,
       expect.objectContaining({
         data: expect.objectContaining({
           action: "unassign",
@@ -263,7 +263,7 @@ describe("ContainerDetailsTokenActionsComponent", () => {
   it("removeAll opens confirm and removes when confirm=true", () => {
     component.removeAll();
     expect(mockDialog.open).toHaveBeenCalledWith(
-      ConfirmationDialogComponent,
+      SimpleConfirmationDialogComponent,
       expect.objectContaining({
         data: expect.objectContaining({ action: "remove" })
       })

@@ -101,9 +101,11 @@ import { EnrollmentResponse, TokenEnrollmentData } from "../../../mappers/token-
 import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
 import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
-import { TokenEnrollmentLastStepDialogData } from "./token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
 import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
 import { UserAssignmentComponent } from "../user-assignment/user-assignment.component";
+import { TokenEnrollmentLastStepDialogComponent } from "./token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
+import { MatDialogConfig } from "@angular/material/dialog";
+import { TokenEnrollmentLastStepDialogData } from "./token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.self-service.component";
 
 export type ClickEnrollFn = (
   enrollmentOptions: TokenEnrollmentData
@@ -400,10 +402,10 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     }
     const lastStepData = this._lastTokenEnrollmentLastStepDialogData();
     if (lastStepData) {
-      this.dialogService.openTokenEnrollmentLastStepDialog({
+      this.dialogService.openDialog({
+        component: TokenEnrollmentLastStepDialogComponent,
         data: lastStepData
       });
-      return;
     }
   }
 
@@ -430,8 +432,11 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
       this.selectedUserRealmControl.setValidators(this.isUserRequired ? [Validators.required] : []);
 
       this.userFilterControl.setValidators(
-        this.authService.role() == "user" ? [] : this.isUserRequired ? [Validators.required, this.userExistsValidator] :
-          [this.userExistsValidator]
+        this.authService.role() == "user"
+          ? []
+          : this.isUserRequired
+            ? [Validators.required, this.userExistsValidator]
+            : [this.userExistsValidator]
       );
 
       return new FormGroup(
@@ -550,7 +555,9 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
       onlyAddToRealm: this.userAssignmentComponent?.onlyAddToRealm() ?? false
     };
     this._lastTokenEnrollmentLastStepDialogData.set(dialogData);
-    this.dialogService.openTokenEnrollmentLastStepDialog({
+
+    this.dialogService.openDialog({
+      component: TokenEnrollmentLastStepDialogComponent,
       data: dialogData
     });
   }

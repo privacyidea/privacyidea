@@ -16,24 +16,17 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-@if (data.header) {
-  <h2 mat-dialog-title>{{ data.header }}</h2>
-}
-<mat-dialog-content>
-  <div class="text-center">
-    <div>
-      {{ data.text }}
-    </div>
-    <div>
-      {{ data.data }}
-    </div>
-  </div>
-</mat-dialog-content>
 
-<mat-dialog-actions>
-  <button
-    mat-button
-    mat-dialog-close>
-    Close
-  </button>
-</mat-dialog-actions>
+<app-dialog-wrapper
+  [title]="data.title || 'Information'"
+  (close)="close()">
+  <mat-dialog-content>
+    <div class="text-center">
+      @for (text of data.texts; track text) {
+        <div>
+          {{ text }}
+        </div>
+      }
+    </div>
+  </mat-dialog-content>
+</app-dialog-wrapper>

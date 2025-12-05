@@ -29,7 +29,7 @@ import { MatPaginatorModule } from "@angular/material/paginator";
 import { MatSortModule } from "@angular/material/sort";
 import { MatTableModule } from "@angular/material/table";
 import { ContainerService, ContainerServiceInterface } from "../../../services/container/container.service";
-import { ConfirmationDialogComponent } from "../../shared/confirmation-dialog/confirmation-dialog.component";
+import { SimpleConfirmationDialogComponent } from "../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
 import { TokenTableComponent } from "./token-table.component";
 import { MatTooltip } from "@angular/material/tooltip";
@@ -79,7 +79,7 @@ export class TokenTableSelfServiceComponent extends TokenTableComponent {
 
   revokeToken(serial: string): void {
     this.dialog
-      .open(ConfirmationDialogComponent, {
+      .open(SimpleConfirmationDialogComponent, {
         data: {
           serialList: [serial],
           title: "Revoke Token",
@@ -104,7 +104,7 @@ export class TokenTableSelfServiceComponent extends TokenTableComponent {
 
   deleteToken(serial: string): void {
     this.dialog
-      .open(ConfirmationDialogComponent, {
+      .open(SimpleConfirmationDialogComponent, {
         data: {
           serialList: [serial],
           title: "Delete Token",

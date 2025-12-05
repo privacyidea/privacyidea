@@ -32,7 +32,7 @@ import { ContainerService, ContainerServiceInterface } from "../../../services/c
 import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "../../../services/table-utils/table-utils.service";
 import { TokenService, TokenServiceInterface } from "../../../services/token/token.service";
-import { ConfirmationDialogComponent } from "../../shared/confirmation-dialog/confirmation-dialog.component";
+import { SimpleConfirmationDialogComponent } from "../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { ContainerTableComponent } from "./container-table.component";
@@ -81,7 +81,7 @@ export class ContainerTableSelfServiceComponent extends ContainerTableComponent 
 
   deleteContainer(serial: string): void {
     this.dialog
-      .open(ConfirmationDialogComponent, {
+      .open(SimpleConfirmationDialogComponent, {
         data: {
           serialList: [serial],
           title: "Delete Container",

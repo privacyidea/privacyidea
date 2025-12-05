@@ -16,55 +16,47 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<h2
-  i18n
-  mat-dialog-title>
-  Take action on your authenticator
-</h2>
-<mat-dialog-content>
-  @if (data.enrollmentResponse.detail["webAuthnRegisterRequest"] || data.enrollmentResponse.detail.passkey_registration) {
-    <p
-      i18n
-      class="max-width-600">
-      You need to confirm the registration with your authenticator. For an external authenticator, this usually means
-      pushing the button on the authenticator, or replugging it (if there is no button on the authenticator). If you
-      want to use an authenticator that is integrated into your device, look for a dialog box from your operating
-      system. If you do not see anything, please make sure that your authenticator supports WebAuthn.
-    </p>
-  }
-  @if (data.enrollmentResponse.detail.u2fRegisterRequest) {
-    <p
-      i18n
-      class="max-width-600">
-      You need to confirm the registration with your token either by pushing the blinking button or by religging your
-      token. This depends on the actual token model.
-    </p>
-  }
-  @if (data.enrollmentResponse.detail.pushurl) {
-    <div class="flex-row gap-1">
-      <img
-        i18n-alt
-        alt="QR Code"
-        class="qr-code"
-        height="300px"
-        src="{{ data.enrollmentResponse.detail.pushurl.img }}"
-        width="300px" />
-      <p class="max-width-600">
-        Your token with serial number {{ data.enrollmentResponse.detail.serial }} is not completely enrolled, yet.
-        Please scan the QR code with the privacyIDEA Authenticator App or click
-        <a href="{{ data.enrollmentResponse.detail.pushurl.value }}">this link</a>
-        on your smartphone. It will send the missing registration data to the configured endpoint. Please note, that
-        your smartphone needs internet access during the authentication process.
+<app-dialog-wrapper
+  title="Take action on your authenticator"
+  (close)="close()">
+  <mat-dialog-content>
+    @if (
+      data.enrollmentResponse.detail["webAuthnRegisterRequest"] || data.enrollmentResponse.detail.passkey_registration
+    ) {
+      <p
+        i18n
+        class="max-width-600">
+        You need to confirm the registration with your authenticator. For an external authenticator, this usually means
+        pushing the button on the authenticator, or replugging it (if there is no button on the authenticator). If you
+        want to use an authenticator that is integrated into your device, look for a dialog box from your operating
+        system. If you do not see anything, please make sure that your authenticator supports WebAuthn.
       </p>
-    </div>
-  }
-</mat-dialog-content>
-
-<mat-dialog-actions>
-  <button
-    i18n
-    mat-button
-    mat-dialog-close>
-    Close
-  </button>
-</mat-dialog-actions>
+    }
+    @if (data.enrollmentResponse.detail.u2fRegisterRequest) {
+      <p
+        i18n
+        class="max-width-600">
+        You need to confirm the registration with your token either by pushing the blinking button or by religging your
+        token. This depends on the actual token model.
+      </p>
+    }
+    @if (data.enrollmentResponse.detail.pushurl) {
+      <div class="flex-row gap-1">
+        <img
+          i18n-alt
+          alt="QR Code"
+          class="qr-code"
+          height="300px"
+          src="{{ data.enrollmentResponse.detail.pushurl.img }}"
+          width="300px" />
+        <p class="max-width-600">
+          Your token with serial number {{ data.enrollmentResponse.detail.serial }} is not completely enrolled, yet.
+          Please scan the QR code with the privacyIDEA Authenticator App or click
+          <a href="{{ data.enrollmentResponse.detail.pushurl.value }}">this link</a>
+          on your smartphone. It will send the missing registration data to the configured endpoint. Please note, that
+          your smartphone needs internet access during the authentication process.
+        </p>
+      </div>
+    }
+  </mat-dialog-content>
+</app-dialog-wrapper>

@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, inject, ViewChild } from "@angular/core";
+import { Component, computed, inject, ViewChild } from "@angular/core";
 import {
   MAT_DIALOG_DATA,
   MatDialogActions,
@@ -26,32 +26,57 @@ import {
 } from "@angular/material/dialog";
 import { ContainerRegistrationConfigComponent } from "../container-registration-config/container-registration-config.component";
 import { MatButton } from "@angular/material/button";
+import { AbstractDialogComponent } from "../../../shared/dialog/abstract-dialog/abstract-dialog.component";
+import { DialogWrapperComponent } from "../../../shared/dialog/dialog-wrapper/dialog-wrapper.component";
+import { DialogAction } from "../../../../models/dialog";
 
 @Component({
   selector: "app-container-registration-init-dialog",
   templateUrl: "./container-registration-init-dialog.component.html",
   styleUrls: ["./container-registration-init-dialog.component.scss"],
-  imports: [
-    MatDialogTitle,
-    MatDialogActions,
-    MatDialogContent,
-    ContainerRegistrationConfigComponent,
-    MatButton,
-    MatDialogClose
-  ]
+  imports: [MatDialogTitle, MatDialogContent, ContainerRegistrationConfigComponent, DialogWrapperComponent]
 })
-export class ContainerRegistrationInitDialogComponent {
-  public readonly data = inject(MAT_DIALOG_DATA);
-
+export class ContainerRegistrationInitDialogComponent extends AbstractDialogComponent<any> {
   @ViewChild(ContainerRegistrationConfigComponent)
   registrationConfigComponent!: ContainerRegistrationConfigComponent;
+
+  getAction(): DialogAction<"register" | "rollover"> {
+    if (this.data.rollover) {
+      return {
+        label: $localize`Rollover`,
+        value: "rollover",
+        type: "confirm",
+        disabled: !this.validInput
+      };
+    } else {
+      return {
+        label: $localize`Register`,
+        value: "register",
+        type: "confirm",
+        disabled: !this.validInput
+      };
+    }
+  }
+  onActionClick(value: "register" | "rollover") {
+    switch (value) {
+      case "register":
+        this.onRegister();
+        break;
+      case "rollover":
+        this.onRegister();
+        break;
+      default:
+        break;
+    }
+  }
 
   onRegister() {
     this.data.registerContainer(
       this.registrationConfigComponent.userStorePassphrase(),
       this.registrationConfigComponent.passphrasePrompt(),
       this.registrationConfigComponent.passphraseResponse(),
-      this.data.rollover);
+      this.data.rollover
+    );
   }
 
   validInput = true;

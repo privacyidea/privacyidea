@@ -16,22 +16,29 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<h2 mat-dialog-title>Token successfully enrolled</h2>
-<mat-dialog-content>
+<app-dialog-wrapper
+  title="Token successfully enrolled"
+  (close)="close()">
   <div class="margin-bottom-1">
-  <span>The token was successfully enrolled with serial number
-    <a (click)="tokenSelected(serial)"> {{ serial }} </a>.</span>
+    <span>
+      The token was successfully enrolled with serial number
+      <a (click)="tokenSelected(serial)"> {{ serial }} </a>
+      .
+    </span>
     @if (containerSerial) {
       <br />
-      <span>It has been enrolled in the container
-      <a (click)="containerSelected(containerSerial)">
-        {{ containerSerial }} </a>.</span>
+      <span>
+        It has been enrolled in the container
+        <a (click)="containerSelected(containerSerial)"> {{ containerSerial }} </a>
+        .
+      </span>
     }
     @if (data.user?.username && data.userRealm != "" && !data.onlyAddToRealm) {
       <br />
-      <span>The user <span>{{ data.user!.username }}</span> in the realm <span>{{ data.userRealm }}</span> was assigned
-      to the token.
-    </span>
+      <span>
+        The user <span>{{ data.user!.username }}</span> in the realm <span>{{ data.userRealm }}</span> was assigned to
+        the token.
+      </span>
     }
   </div>
   <div class="flex-row gap-1">
@@ -57,39 +64,26 @@
           Regenerate {{ regenerateButtonText() }}
         </button>
       }
-
       @if (data.response.detail["password"]) {
         <p>
-          Your Password: <strong>{{ data.response.detail["password"] }}</strong>.
+          Your Password: <strong>{{ data.response.detail["password"] }}</strong
+          >.
         </p>
       }
-
       @if (data.response.detail.otpkey?.value && !data.response.detail["otps"] && showQRCode()) {
         <app-otp-key
           [otpKeyHex]="data.response.detail.otpkey?.value ?? ''"
           [otpKeyBase32]="data.response.detail.otpkey?.value_b32 ?? ''" />
       }
-
       @if (data.tokentype.key === "tiqr") {
         <app-tiqr-enroll-url [url]="data.response.detail['tiqrenroll']?.value ?? ''" />
       }
-
       @if (data.tokentype.key === "registration") {
         <app-registration-code [registrationCode]="data.response.detail['registrationcode']" />
       }
-
       @if (data.response.detail["otps"]) {
-        <app-otp-values
-          [otpValues]="data.response.detail['otps']" />
+        <app-otp-values [otpValues]="data.response.detail['otps']" />
       }
     </div>
   </div>
-</mat-dialog-content>
-
-<mat-dialog-actions>
-  <button
-    mat-button
-    mat-dialog-close>
-    Close
-  </button>
-</mat-dialog-actions>
+</app-dialog-wrapper>

@@ -35,7 +35,7 @@ import {
 import { BulkResult, TokenDetails, TokenService } from "../../../../services/token/token.service";
 
 import { VersioningService } from "../../../../services/version/version.service";
-import { ConfirmationDialogComponent } from "../../../shared/confirmation-dialog/confirmation-dialog.component";
+import { SimpleConfirmationDialogComponent } from "../../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { ContentService } from "../../../../services/content/content.service";
 import { AuthService } from "../../../../services/auth/auth.service";
 import { AuditService } from "../../../../services/audit/audit.service";
@@ -46,7 +46,7 @@ import {
   MockNotificationService,
   MockPiResponse,
   MockTokenService,
-  MockVersioningService,
+  MockVersioningService
 } from "../../../../../testing/mock-services";
 import { MockAuthService } from "../../../../../testing/mock-services/mock-auth-service";
 
@@ -63,7 +63,7 @@ describe("TokenTableActionsComponent", () => {
     const dialogMock = {
       open: jest.fn().mockReturnValue({
         afterClosed: () => of(true)
-      } as unknown as MatDialogRef<ConfirmationDialogComponent>)
+      } as unknown as MatDialogRef<SimpleConfirmationDialogComponent>)
     };
 
     const routerMock = {
@@ -185,7 +185,7 @@ describe("TokenTableActionsComponent", () => {
       component.tokenSelection.set(mockTokens);
       component.unassignSelectedTokens();
 
-      expect(dialogSpy).toHaveBeenCalledWith(ConfirmationDialogComponent, {
+      expect(dialogSpy).toHaveBeenCalledWith(SimpleConfirmationDialogComponent, {
         data: {
           serialList: ["TOKEN1"],
           title: "Unassign Selected Tokens",

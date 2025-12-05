@@ -21,7 +21,7 @@ import { MatButtonModule } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
 import { BulkResult, TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
-import { ConfirmationDialogComponent } from "../../../shared/confirmation-dialog/confirmation-dialog.component";
+import { SimpleConfirmationDialogComponent } from "../../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { PiResponse } from "../../../../app.component";
 import { catchError, concatMap, EMPTY, filter, from, reduce, switchMap } from "rxjs";
 import { SelectedUserAssignDialogComponent } from "./selected-user-attach-dialog/selected-user-attach-dialog.component";
@@ -74,7 +74,7 @@ export class TokenTableActionsComponent {
 
   revokeToken(): void {
     this.dialog
-      .open(ConfirmationDialogComponent, {
+      .open(SimpleConfirmationDialogComponent, {
         data: {
           serialList: [this.tokenSerial()],
           title: "Revoke Token",
@@ -102,7 +102,7 @@ export class TokenTableActionsComponent {
 
   deleteToken(): void {
     this.dialog
-      .open(ConfirmationDialogComponent, {
+      .open(SimpleConfirmationDialogComponent, {
         data: {
           serialList: [this.tokenSerial()],
           title: "Delete Token",
@@ -128,7 +128,9 @@ export class TokenTableActionsComponent {
 
   deleteSelectedTokens(): void {
     const serialList = this.tokenSelection().map((token) => token.serial);
-    this.tokenService.bulkDeleteWithConfirmDialog(serialList, this.dialog, () => this.tokenService.tokenResource.reload());
+    this.tokenService.bulkDeleteWithConfirmDialog(serialList, this.dialog, () =>
+      this.tokenService.tokenResource.reload()
+    );
   }
 
   assignSelectedTokens() {
@@ -169,7 +171,7 @@ export class TokenTableActionsComponent {
   unassignSelectedTokens() {
     const selectedTokens = this.tokenSelection();
     this.dialog
-      .open(ConfirmationDialogComponent, {
+      .open(SimpleConfirmationDialogComponent, {
         data: {
           serialList: selectedTokens.map((token) => token.serial),
           title: "Unassign Selected Tokens",

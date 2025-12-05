@@ -1,0 +1,101 @@
+// /* Globale Dialog-Steuerung */
+.pi-dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+// /* Der eigentliche Dialog-Container */
+.pi-dialog {
+  background-color: var(--mat-sys-surface);
+  border-radius: var(--border-radius);
+
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+
+  max-width: 80%;
+  max-height: 80%;
+  overflow: auto;
+}
+
+/* Kopfzeile */
+.pi-dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--half-global-padding) var(--global-padding);
+  border-bottom: 1px solid var(--mat-sys-on-surface-variant);
+}
+
+/* Header H2 */
+.pi-dialog-header h2 {
+  margin: 0;
+  // font-size: 20px;
+}
+
+/* Close-Button (wird im Template bereits mit pi-close-button verwendet) */
+.pi-close-button {
+  background: none;
+  border: none;
+  font-size: 1.7rem;
+  cursor: pointer;
+  color: var(--mat-sys-on-surface);
+}
+
+/* Body */
+.pi-dialog-body {
+  padding: var(--global-padding);
+  color: var(--mat-sys-on-surface);
+  font-size: 1rem;
+}
+
+// /* Fußzeile */
+.pi-dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 16px 24px;
+  border-top: 1px solid var(--mat-sys-on-surface-variant);
+
+  // gap: var(--global-gap);
+}
+
+/* Basis-Button-Klasse (Konsistent mit pi- Präfix) */
+.pi-btn {
+  border: none;
+  padding: var(--half-global-padding) var(--global-padding);
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+/* Button-Varianten */
+.pi-btn-secondary {
+  background-color: transparent;
+  color: var(--mat-sys-on-surface);
+}
+
+// .pi-btn-info {
+//   background-color: #007bff;
+//   color: #fff;
+// }
+
+// .pi-btn-warning {
+//   background-color: #ffc107;
+//   color: #333;
+// }
+
+// .pi-btn-error {
+//   background-color: #dc3545;
+//   color: #fff;
+// }
+
+// .pi-btn-success {
+//   background-color: #28a745;
+//   color: #fff;
+// }
