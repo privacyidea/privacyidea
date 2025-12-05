@@ -1860,7 +1860,7 @@ def get_static_policy_definitions(scope=None):
                                                   "of the OTP PIN."),
                                         'group': GROUP.PIN},
             PolicyAction.OTPPINCONTENTS: {'type': 'str',
-                                          "desc": _("Specifiy the required "
+                                          "desc": _("Specify the required "
                                                     "contents of the OTP PIN. "
                                                     "(c)haracters, (n)umeric, "
                                                     "(s)pecial. Use modifiers +/- or a list "
