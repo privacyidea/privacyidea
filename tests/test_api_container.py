@@ -3163,7 +3163,6 @@ class APIContainer(APIContainerTest):
         token_serial = token.get_serial()
         add_token_to_container(container_serials[1], token_serial)
         # Assign user to container 1
-        self.setUp_user_realms()
         user_hans = User(login="hans", realm=self.realm1)
         container.add_user(user_hans)
         # Add second realm
@@ -3185,13 +3184,16 @@ class APIContainer(APIContainerTest):
                                              self.at, 'GET')
         self.assertEqual(1, result["result"]["value"]["count"])
 
-        # filter for realm the admin is not allowed to manage
+        # filter for realm the admin is not allowed to manage (only get the container that is also in realm 1)
+        container_serial = init_container({"type": "generic", "realm": self.realm2})["container_serial"]
         set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_LIST, realm=self.realm1)
         result = self.request_assert_success('/container/',
                                              {"container_realm": self.realm2, "pagesize": 15},
                                              self.at, 'GET')
-        self.assertEqual(0, result["result"]["value"]["count"])
+        self.assertEqual(1, result["result"]["value"]["count"])
+        self.assertEqual(container_serials[1], result["result"]["value"]["containers"][0]["serial"])
         delete_policy("policy")
+        delete_container_by_serial(container_serial)
 
         # Filter for token serial
         result = self.request_assert_success('/container/',

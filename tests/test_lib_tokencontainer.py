@@ -809,6 +809,23 @@ class TokenContainerManagementTestCase(MyTestCase):
         container_data = get_all_containers(realm="non_existing_realm", pagesize=15)
         self.assertEqual(0, len(container_data["containers"]))
 
+        # Filter for allowed realms
+        container_data = get_all_containers(allowed_realms=["realm1"], pagesize=15)
+        self.assertEqual(4, len(container_data["containers"]))
+        for container in container_data["containers"]:
+            self.assertIn("realm1", [realm.name for realm in container.realms])
+
+        # Filter for realm which is not in the allowed realms
+        container_data = get_all_containers(allowed_realms=["realm1"], realm="realm2", pagesize=15)
+        self.assertEqual(0, len(container_data["containers"]))
+
+        # But if a container is in both realms, it should be found
+        container = find_container_by_serial(container_serials[1])
+        container.set_realms([self.realm1, self.realm2])
+        container_data = get_all_containers(allowed_realms=["realm1"], realm="realm2", pagesize=15)
+        self.assertEqual(1, len(container_data["containers"]))
+        self.assertEqual(container_serials[1], container_data["containers"][0].serial)
+
         # ---- user ----
         # Filter by user (same username and resolver, but different realms)
         user_cornelius_1 = User(login="cornelius", realm=self.realm1)

@@ -4595,8 +4595,8 @@ class AChallengeResponse(MyApiTestCase):
 
     def test_01_challenge_response_token_deactivate(self):
         # New token for the user "selfservice"
-        Token("hotp1", "hotp", otpkey=self.otpkey, userid=1004, resolver=self.resolvername1,
-              realm=self.realm1).save()
+        init_token({"type": "hotp", "serial": "hotp1", "otpkey": self.otpkey},
+                   user=User(uid=1004, realm=self.realm1, resolver=self.resolvername1))
         # Define HOTP token to be challenge response
         set_policy(name="pol_cr", scope=SCOPE.AUTH, action="{0!s}=hotp".format(PolicyAction.CHALLENGERESPONSE))
         set_pin(self.serial, "pin")

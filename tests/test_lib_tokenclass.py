@@ -3,22 +3,24 @@ This test file tests the lib.tokenclass
 
 The lib.tokenclass depends on the DB model and lib.user
 """
-from privacyidea.lib.token import init_token
-from .base import MyTestCase, FakeFlaskG
-from privacyidea.lib.resolver import (save_resolver, delete_resolver)
-from privacyidea.lib.realm import (set_realm, delete_realm)
-from privacyidea.lib.user import (User)
-from privacyidea.lib.policies.actions import PolicyAction
-from privacyidea.lib.tokenclass import (TokenClass, DATE_FORMAT, AUTH_DATE_FORMAT)
+from datetime import datetime, timezone, timedelta
+
+from dateutil.tz import tzlocal
+
 from privacyidea.lib.config import set_privacyidea_config
 from privacyidea.lib.crypto import geturandom
-from privacyidea.lib.utils import hexlify_and_unicode, to_unicode
 from privacyidea.lib.error import TokenAdminError
+from privacyidea.lib.policies.actions import PolicyAction
+from privacyidea.lib.realm import (set_realm)
+from privacyidea.lib.resolver import save_resolver
+from privacyidea.lib.token import init_token
+from privacyidea.lib.tokenclass import (TokenClass, DATE_FORMAT, AUTH_DATE_FORMAT)
+from privacyidea.lib.user import (User)
+from privacyidea.lib.utils import hexlify_and_unicode, to_unicode
 from privacyidea.models import (Token,
                                 Config,
-                                Challenge, Realm, Resolver)
-from datetime import datetime, timezone, timedelta
-from dateutil.tz import tzlocal
+                                Challenge, Realm, TokenOwner)
+from .base import MyTestCase, FakeFlaskG
 
 PWFILE = "tests/testdata/passwords"
 
@@ -493,10 +495,11 @@ class TokenBaseTestCase(MyTestCase):
         token = TokenClass(db_token)
         token.status_validation_fail()
         token.status_validation_success()
-#        d = token.get_vars()
-#        self.assertTrue("type" in d, d)
-#        self.assertTrue("mode" in d, d)
-#        self.assertTrue("token" in d, d)
+
+    #        d = token.get_vars()
+    #        self.assertTrue("type" in d, d)
+    #        self.assertTrue("mode" in d, d)
+    #        self.assertTrue("token" in d, d)
 
     def test_16_init_detail(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
@@ -746,54 +749,42 @@ class TokenBaseTestCase(MyTestCase):
         self.assertTrue(len(added) == 1)
 
         # Assign token to user "cornelius" "realm1", "resolver1" "uid=1000
-        db_token = Token("orphaned", tokentype="spass", userid=1000,
-                         resolver=resolver, realm=realm)
-        db_token.save()
-        token_obj = TokenClass(db_token)
-        orph = token_obj.is_orphaned()
+        token = init_token({"type": "spass", "serial": "orphaned"}, user=User(uid="1000", realm=realm, resolver=resolver))
+        orph = token.is_orphaned()
         self.assertFalse(orph)
         # clean up token
-        token_obj.delete_token()
+        token.delete_token()
 
         # Assign a token to a user in a resolver. user_id does not exist
-        db_token = Token("orphaned", tokentype="spass", userid=872812,
-                         resolver=resolver, realm=realm)
-        db_token.save()
-        token_obj = TokenClass(db_token)
+        token = init_token({"type": "spass", "serial": "orphaned"})
+        TokenOwner(token_id=token.token.id,
+                   user_id=872812, resolver=resolver,
+                   realmname=realm).save()
+        token.set_realms([realm])
+
         # testing for default exception
-        orph = token_obj.is_orphaned()
+        orph = token.is_orphaned()
         self.assertTrue(orph)
         # testing for exception_default=True
-        orph = token_obj.is_orphaned(orphaned_on_error=True)
+        orph = token.is_orphaned(orphaned_on_error=True)
         self.assertTrue(orph)
         # testing for exception_default=False
-        orph = token_obj.is_orphaned(orphaned_on_error=False)
+        orph = token.is_orphaned(orphaned_on_error=False)
         self.assertFalse(orph)
 
         # clean up token
-        token_obj.delete_token()
+        token.delete_token()
 
-        # A token, which a resolver name, that does not exist anymore
-        db_token = Token("orphaned", tokentype="spass", userid=1000,
-                         resolver=resolver, realm=realm)
-        db_token.save()
-
+        # A token, with a realm, that does not exist anymore
+        token = init_token({"type": "spass", "serial": "orphaned"})
+        token.add_user(User(uid="1000", realm=realm, resolver=resolver))
         # delete the realm
         Realm.query.filter_by(name=realm).first().delete()
-        # token is orphaned
-        token_obj = TokenClass(db_token)
-        orph = token_obj.is_orphaned()
-        self.assertTrue(orph)
-
-        # delete the resolver
-        delete_resolver(resolver)
-        # token is orphaned
-        token_obj = TokenClass(db_token)
-        orph = token_obj.is_orphaned()
+        orph = token.is_orphaned()
         self.assertTrue(orph)
 
         # clean up token
-        token_obj.delete_token()
+        token.delete_token()
 
     def test_38_last_auth(self):
         token = init_token({"type": "hotp", "genkey": True},
@@ -833,7 +824,7 @@ class TokenBaseTestCase(MyTestCase):
         token.delete_token()
 
     def test_39_generate_sym_key(self):
-        db_token = Token("symkey", tokentype="no_matter", userid=1000)
+        db_token = Token("symkey", tokentype="no_matter")
         db_token.save()
         token_obj = TokenClass(db_token)
         key = token_obj.generate_symmetric_key("1234567890", "abc")

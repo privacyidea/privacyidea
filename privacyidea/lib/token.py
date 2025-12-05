@@ -80,7 +80,6 @@ from sqlalchemy import (and_, func, String)
 from sqlalchemy import or_, select
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.sql import Select
-from sqlalchemy.orm import aliased
 from sqlalchemy.sql.expression import FunctionElement, delete
 
 from privacyidea.api.lib.utils import send_result
@@ -237,7 +236,7 @@ def _create_token_query(tokentype=None, token_type_list=None, realm=None, assign
                     select(TokenRealm.token_id)
                     .where(TokenRealm.realm_id.in_(allowed_realms_ids))
                 )
-            ).subquery()
+            )
 
             # Step 2: Apply the filters, excluding the intersection
             sql_query = sql_query.where(

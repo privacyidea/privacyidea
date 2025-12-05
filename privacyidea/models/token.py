@@ -18,7 +18,7 @@
 
 import binascii
 import logging
-from sqlalchemy import Sequence
+from sqlalchemy import Sequence, select, update
 
 from privacyidea.lib.error import ResourceNotFoundError
 from privacyidea.models import db
@@ -140,22 +140,23 @@ class Token(MethodsMixin, db.Model):
         self.pin_seed = ""
         self.set_otpkey(otpkey)
 
+        # TODO: Remove this (is probably only used in tests)
         # also create the user assignment
-        if userid and resolver and realm:
-            # We can not create the tokenrealm-connection and owner-connection, yet
-            # since we need to token_id.
-            token_id = self.save()
-            realm_id = Realm.query.filter_by(name=realm).first().id
-            tr = TokenRealm(realm_id=realm_id, token_id=token_id)
-            if tr:
-                db.session.add(tr)
-
-            to = TokenOwner(token_id=token_id, user_id=userid, resolver=resolver, realm_id=realm_id)
-            if to:
-                db.session.add(to)
-
-            if tr or to:
-                db.session.commit()
+        # if userid and resolver and realm:
+        #     # We can not create the tokenrealm-connection and owner-connection, yet
+        #     # since we need to token_id.
+        #     token_id = self.save()
+        #     realm_id = Realm.query.filter_by(name=realm).first().id
+        #     tr = TokenRealm(realm_id=realm_id, token_id=token_id)
+        #     if tr:
+        #         db.session.add(tr)
+        #
+        #     to = TokenOwner(token_id=token_id, user_id=userid, resolver=resolver, realm_id=realm_id)
+        #     if to:
+        #         db.session.add(to)
+        #
+        #     if tr or to:
+        #         db.session.commit()
 
     @property
     def first_owner(self):
@@ -653,24 +654,32 @@ class TokenInfo(MethodsMixin, db.Model):
         self.Description = Description
 
     def save(self, persistent=True):
-        ti_func = TokenInfo.query.filter_by(token_id=self.token_id, Key=self.Key).first
-        ti = ti_func()
-        if ti is None:
+        stmt = select(TokenInfo).where(TokenInfo.token_id == self.token_id, TokenInfo.Key == self.Key)
+        token_info = db.session.execute(stmt).scalar_one_or_none()
+        # ti_func = TokenInfo.query.filter_by(token_id=self.token_id, Key=self.Key).first
+        # ti = ti_func()
+        if token_info is None:
             # create a new one
             db.session.add(self)
             db.session.commit()
             if get_app_config_value(SAFE_STORE, False):
-                ti = ti_func()
-                ret = ti.id
+                token_info = db.session.execute(stmt).scalar_one_or_none()
+                ret = token_info.id
             else:
                 ret = self.id
         else:
             # update
-            TokenInfo.query.filter_by(token_id=self.token_id,
-                                      Key=self.Key).update({'Value': self.Value,
-                                                            'Description': self.Description,
-                                                            'Type': self.Type})
-            ret = ti.id
+            stmt = update(TokenInfo).where(TokenInfo.token_id == self.token_id, TokenInfo.Key == self.Key).values(
+                Value=self.Value,
+                Description=self.Description,
+                Type=self.Type
+            )
+            db.session.execute(stmt)
+            # TokenInfo.query.filter_by(token_id=self.token_id,
+            #                           Key=self.Key).update({'Value': self.Value,
+            #                                                 'Description': self.Description,
+            #                                                 'Type': self.Type})
+            ret = token_info.id
         if persistent:
             db.session.commit()
         return ret

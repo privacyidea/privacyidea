@@ -272,10 +272,12 @@ def _create_container_query(user: User = None, serial: str = None, ctype: str = 
             # Use the input parameter 'realm' for the exact match filter
             stmt = stmt.where(func.lower(realm1.name) == realm.lower())
 
+    # Use separate alias for each join to avoid conflicts
+    realm_alias_allowed = aliased(Realm)
     if allowed_realms:
         allowed_realms = [r.lower() for r in allowed_realms]
-        stmt = stmt.join(TokenContainer.realms, isouter=True).where(
-            func.lower(realm1.name).in_(allowed_realms)
+        stmt = stmt.join(TokenContainer.realms.of_type(realm_alias_allowed), isouter=True).where(
+            func.lower(realm_alias_allowed.name).in_(allowed_realms)
         )
 
     if resolver and resolver.strip("*"):
@@ -1663,10 +1665,10 @@ def get_template_obj(template_name: str) -> ContainerTemplateBase:
     # db_template = TokenContainerTemplate.query.filter(TokenContainerTemplate.name == template_name).first()
     session = db.session
     stmt = select(TokenContainerTemplate).where(TokenContainerTemplate.name == template_name)
-    print("----------------------------- CREATE TOKEN QUERY -----------------------------")
-    from sqlalchemy.dialects import postgresql
-    print(stmt.compile(dialect=postgresql.dialect(), compile_kwargs={"literal_binds": True}))
-    print("-------------------------------------------------------------------------------")
+    # print("----------------------------- CREATE TOKEN QUERY -----------------------------")
+    # from sqlalchemy.dialects import postgresql
+    # print(stmt.compile(dialect=postgresql.dialect(), compile_kwargs={"literal_binds": True}))
+    # print("-------------------------------------------------------------------------------")
     db_template = session.execute(stmt).scalar_one_or_none()
     if not db_template:
         raise ResourceNotFoundError(f"Template {template_name} does not exist.")
