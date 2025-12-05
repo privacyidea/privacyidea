@@ -132,8 +132,8 @@ class TokenTestCase(MyTestCase):
         # Check if these are valid tokentypes
         self.assertGreater(len(tokenobject_list), 0, tokenobject_list)
         for token_object in tokenobject_list:
-            self.assertTrue(token_object.type in get_token_types(),
-                            token_object.type)
+            self.assertIn(token_object.type, get_token_types(),
+                          token_object.type)
 
         # get assigned tokens
         tokenobject_list = get_tokens(assigned=True)
@@ -143,14 +143,14 @@ class TokenTestCase(MyTestCase):
         self.assertGreater(len(tokenobject_list), 0, tokenobject_list)
         # This will interpret the value as true as the functions expects a bool
         tokenobject_list = get_tokens(assigned="True")
-        self.assertEqual(len(tokenobject_list), 0, tokenobject_list)
+        self.assertEqual(0, len(tokenobject_list), tokenobject_list)
 
         # get tokens of type HOTP
         tokenobject_list = get_tokens(tokentype="hotp")
-        self.assertTrue(len(tokenobject_list) == 0, tokenobject_list)
+        self.assertEqual(0, len(tokenobject_list), tokenobject_list)
         # get tokens of type TOTP
         tokenobject_list = get_tokens(tokentype="totp")
-        self.assertTrue(len(tokenobject_list) > 0, tokenobject_list)
+        self.assertGreater(len(tokenobject_list), 0, tokenobject_list)
         # get tokens of type TOTP and HOTP
         spass_token = init_token(param={'serial': 'SPAS01', 'type': 'spass'})
         self.assertIn("creation_date", spass_token.get_tokeninfo(), spass_token)
@@ -159,50 +159,44 @@ class TokenTestCase(MyTestCase):
                         wraps=datetime.datetime) as mock_datetime:
             mock_datetime.now.return_value = create_now
             hotp_token = init_token(param={'serial': 'HOTP01', 'type': 'hotp', 'otpkey': '123'})
-        self.assertEqual(hotp_token.get_tokeninfo("creation_date"),
-                         create_now.isoformat(timespec="seconds"), hotp_token)
+        self.assertEqual(create_now.isoformat(timespec="seconds"), hotp_token.get_tokeninfo("creation_date"),
+                         hotp_token)
         tokenobject_list = get_tokens(token_type_list=["hotp", "totp"])
-        self.assertTrue(len(tokenobject_list) > 0, tokenobject_list)
+        self.assertGreater(len(tokenobject_list), 0, tokenobject_list)
         for token in tokenobject_list:
             self.assertIn(token.type, ["hotp", "totp"], token)
         spass_token.delete_token()
         hotp_token.delete_token()
 
         # Search for tokens in realm
-        db_token = Token("hotptoken",
-                         tokentype="hotp",
-                         userid=1000,
-                         resolver=self.resolvername1,
-                         realm=self.realm1)
-        db_token.update_otpkey(self.otpkey)
-        db_token.save()
+        init_token({"type": "hotp", "serial": "hotptoken", "otpkey": self.otpkey},
+                   user=User(uid=1000, realm=self.realm1, resolver=self.resolvername1))
         tokenobject_list = get_tokens(realm=self.realm1)
-        self.assertTrue(len(tokenobject_list) == 1, tokenobject_list)
-        self.assertTrue(tokenobject_list[0].type == "hotp",
-                        tokenobject_list[0].type)
+        self.assertEqual(1, len(tokenobject_list), tokenobject_list)
+        self.assertEqual("hotp", tokenobject_list[0].type,
+                         tokenobject_list[0].type)
 
         # get tokens for a given serial number
         tokenobject_list = get_tokens(serial="hotptoken")
-        self.assertTrue(len(tokenobject_list) == 1, tokenobject_list)
+        self.assertEqual(1, len(tokenobject_list), tokenobject_list)
 
         # ...but not in an unassigned state!
         tokenobject_list = get_tokens(serial="hotptoken", assigned=False)
-        self.assertTrue(len(tokenobject_list) == 0, tokenobject_list)
+        self.assertEqual(0, len(tokenobject_list), tokenobject_list)
         # get the tokens for the given user
         tokenobject_list = get_tokens(user=User(login="cornelius",
                                                 realm=self.realm1))
-        self.assertTrue(len(tokenobject_list) == 1, tokenobject_list)
+        self.assertEqual(1, len(tokenobject_list), tokenobject_list)
 
         # get tokens for a given tokeninfo of the token!!!
         token = init_token({"type": "yubikey",
                             "serial": "yk1",
                             "yubikey.prefix": "vv123456",
                             "otpkey": self.yubikey_token_key})
-        self.assertEqual(token.token.serial, "yk1")
+        self.assertEqual("yk1", token.token.serial)
         tokenobject_list = get_tokens(tokeninfo={"yubikey.prefix": "vv123456"})
-        self.assertEqual(len(tokenobject_list), 1)
-        self.assertEqual(tokenobject_list[0].get_tokeninfo("yubikey.prefix"),
-                         "vv123456")
+        self.assertEqual(1, len(tokenobject_list))
+        self.assertEqual("vv123456", tokenobject_list[0].get_tokeninfo("yubikey.prefix"))
         remove_token("yk1")
 
         # Tokeninfo with more than one entry is not supported
@@ -216,13 +210,13 @@ class TokenTestCase(MyTestCase):
 
         # wildcard matches do not work for the ``serial`` parameter
         tokenobject_list = get_tokens(serial="hotptoke*")
-        self.assertEqual(len(tokenobject_list), 0)
+        self.assertEqual(0, len(tokenobject_list))
         # get tokens with a wildcard serial
         tokenobject_list = get_tokens(serial_wildcard="SE*")
-        self.assertEqual(len(tokenobject_list), 3)
+        self.assertEqual(3, len(tokenobject_list))
         # get all tokens
         tokenobject_list = get_tokens(serial_wildcard="*")
-        self.assertEqual(len(tokenobject_list), 4)
+        self.assertEqual(4, len(tokenobject_list))
 
     def test_03_get_token_type(self):
         ttype = get_token_type("hotptoken")
@@ -243,19 +237,19 @@ class TokenTestCase(MyTestCase):
 
     def test_05_get_num_tokens_in_realm(self):
         # one active token
-        self.assertTrue(get_num_tokens_in_realm(self.realm1) == 1,
-                        "{0!r}".format(get_num_tokens_in_realm(self.realm1)))
+        self.assertEqual(1, get_num_tokens_in_realm(self.realm1),
+                         "{0!r}".format(get_num_tokens_in_realm(self.realm1)))
         # No active tokens
-        self.assertTrue(get_num_tokens_in_realm(self.realm1, active=False) == 0)
+        self.assertEqual(0, get_num_tokens_in_realm(self.realm1, active=False))
 
     def test_05_get_token_in_resolver(self):
         tokenobject_list = get_tokens_in_resolver(self.resolvername1)
-        self.assertTrue(len(tokenobject_list) > 0)
+        self.assertGreater(len(tokenobject_list), 0)
 
     def test_06_get_realms_of_token(self):
         # Return a list of realmnames for a token
-        self.assertTrue(get_realms_of_token("hotptoken") == [self.realm1],
-                        "{0!s}".format(get_realms_of_token("hotptoken")))
+        self.assertSetEqual({self.realm1}, set(get_realms_of_token("hotptoken")),
+                            "{0!s}".format(get_realms_of_token("hotptoken")))
 
     def test_07_token_exist(self):
         self.assertTrue(token_exist("hotptoken"))
