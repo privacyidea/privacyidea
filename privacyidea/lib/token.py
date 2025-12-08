@@ -1470,7 +1470,7 @@ def init_token(param: dict, user: User = None, tokenrealms: list[str] = None, to
 
         # Set the token realms (updates the TokenRealm table)
         if realms or user:
-            db_token.set_realms(realms)
+            token.set_realms(realms)
 
         token.update(param)
 

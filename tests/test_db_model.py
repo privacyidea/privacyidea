@@ -24,7 +24,7 @@ from datetime import timedelta
 
 from dateutil.tz import tzutc
 from mock import mock
-from sqlalchemy import func, delete
+from sqlalchemy import func, delete, select
 
 from privacyidea.lib.policies.conditions import (PolicyConditionClass, ConditionSection,
                                                  ConditionHandleMissingData)
@@ -327,8 +327,12 @@ class TokenModelTestCase(MyTestCase):
         t1.save()
         realms = t1.get_realms()
         self.assertTrue(len(realms) == 0)
-        t1.set_realms(["realm1"])
-        t1.save()
+
+        statement = select(Realm).filter_by(name="realm1")
+        realm_db = db.session.execute(statement).scalar_one_or_none()
+        token_realm = TokenRealm(token_id=t1.id, realm_id=realm_db.id)
+        db.session.add(token_realm)
+        db.session.commit()
         realms = t1.get_realms()
         self.assertTrue(len(realms) == 1)
 

@@ -103,7 +103,7 @@ from .policies.actions import PolicyAction
 from .policydecorators import libpolicy, auth_otppin, challenge_response_allowed
 from .user import (User)
 from ..api.lib.utils import getParam
-from ..models import (TokenOwner, TokenTokengroup, Challenge, cleanup_challenges, TokenInfo, db)
+from ..models import (TokenOwner, TokenTokengroup, Challenge, cleanup_challenges, TokenInfo, db, TokenRealm, Realm)
 
 DATE_FORMAT = '%Y-%m-%dT%H:%M%z'
 AUTH_DATE_FORMAT = "%Y-%m-%d %H:%M:%S.%f%z"
@@ -267,6 +267,17 @@ class TokenClass(object):
                             tokengroup_id=tokengroup_id,
                             tokengroupname=tokengroup).save()
         return r > 0
+
+    @property
+    def owner_realms(self) -> set[str]:
+        """
+        return all the realms of the token owners
+        """
+        realms = set()
+        for tokenowner in self.token.all_owners:
+            if tokenowner.realm:
+                realms.add(tokenowner.realm.name)
+        return realms
 
     @property
     def owners(self):
@@ -826,7 +837,43 @@ class TokenClass(object):
         :param add: if the realms should be added and not replaced
         :type add: boolean
         """
-        self.token.set_realms(realms, add=add)
+        # get existing realms
+        statement = select(TokenRealm).where(TokenRealm.token_id == self.token.id)
+        existing_realms = db.session.execute(statement).scalars().all()
+        existing_realm_names = {tr.realm.name for tr in existing_realms}
+        realms_to_add = set(realms) - existing_realm_names
+
+        if not add:
+            # delete realms that are not in the new list
+            realm_names_to_delete = existing_realm_names - set(realms)
+            # exclude the realm of the owner from deletion
+            if self.owner_realms:
+                owner_realms_delete = realm_names_to_delete & self.owner_realms
+                realm_names_to_delete = realm_names_to_delete - self.owner_realms
+                if owner_realms_delete:
+                    log.info(f"The realms ({', '.join(owner_realms_delete)}) of assigned users cannot be removed from "
+                             f"the token {self.get_serial()}.")
+            realms_to_delete = [realm for realm in existing_realms if realm.realm.name in realm_names_to_delete]
+            if realms_to_delete:
+                realm_ids = [realm.realm_id for realm in realms_to_delete]
+                delete_stmt = delete(TokenRealm).where(TokenRealm.token_id == self.token.id)
+                if len(realm_ids) > 0:
+                    delete_stmt = delete_stmt.where(TokenRealm.realm_id.in_(realm_ids))
+                db.session.execute(delete_stmt)
+                log.debug(f"Remove realm {', '.join(realm_names_to_delete)} from token {self.get_serial()} due to "
+                          f"setting new realms ({', '.join(realms)}).")
+
+        for realm_name in realms_to_add:
+            statement = select(Realm).filter_by(name=realm_name)
+            realm_db = db.session.execute(statement).scalar_one_or_none()
+            if realm_db:
+                token_realm = TokenRealm(token_id=self.token.id, realm_id=realm_db.id)
+                db.session.add(token_realm)
+            else: # pragma no cover
+                # should already be covered on lib layer
+                log.warning(f"Realm {realm_name} does not exist. Cannot add it to token {self.get_serial()}.")
+
+        db.session.commit()
 
     def get_realms(self):
         """

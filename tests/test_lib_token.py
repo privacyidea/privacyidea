@@ -456,8 +456,8 @@ class TokenTestCase(MyTestCase):
                                 realm=self.realm1))
             token.set_realms(realms=[''])
             self.assertEqual(token.get_realms(), ['realm1'], token.get_realms())
-            mock_log.assert_called_with('The realm of an assigned user cannot be removed from'
-                                        ' token {0!s} (realm: {1!s})'.format(serial, 'realm1'))
+            mock_log.assert_called_with(f'The realms ({self.realm1}) of assigned users cannot be removed from the '
+                                        f'token {serial}.')
             token.delete_token()
 
     def test_17_set_defaults(self):

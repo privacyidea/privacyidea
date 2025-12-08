@@ -240,41 +240,6 @@ class Token(MethodsMixin, db.Model):
                     db.session.add(token_group)
         db.session.commit()
 
-    def set_realms(self, realms, add=False):
-        """
-        Set the list of the realms.
-
-        This is done by filling the :py:class:`privacyidea.models.TokenRealm` table.
-
-        :param realms: realms
-        :type realms: list[str]
-        :param add: If set, the realms are added. I.e. old realms are not deleted
-        :type add: bool
-        """
-        # delete old TokenRealms
-        if not add:
-            db.session.query(TokenRealm).filter(TokenRealm.token_id == self.id).delete()
-        # add new TokenRealms
-        # We must not set the same realm more than once...
-        # uniquify: realms -> set(realms)
-        if self.first_owner and self.first_owner.realm:
-            if self.first_owner.realm.name not in realms:
-                realms.append(self.first_owner.realm.name)
-                log.info(f"The realm of an assigned user cannot be removed from "
-                         f"token {self.first_owner.token.serial} "
-                         f"(realm: {self.first_owner.realm.name})")
-        for realm in set(realms):
-            # Get the id of the realm to add
-            realm_db = Realm.query.filter_by(name=realm).first()
-            if realm_db:
-                # Check if tokenrealm already exists
-                token_realm_db = TokenRealm.query.filter_by(token_id=self.id, realm_id=realm_db.id).first()
-                if not token_realm_db:
-                    # If the realm is not yet attached to the token
-                    token_realm = TokenRealm(token_id=self.id, realm_id=realm_db.id)
-                    db.session.add(token_realm)
-        db.session.commit()
-
     def get_realms(self):
         """
         return a list of the assigned realms

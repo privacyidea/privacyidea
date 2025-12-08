@@ -6,6 +6,7 @@ The lib.tokenclass depends on the DB model and lib.user
 from datetime import datetime, timezone, timedelta
 
 from dateutil.tz import tzlocal
+from mock import mock
 
 from privacyidea.lib.config import set_privacyidea_config
 from privacyidea.lib.crypto import geturandom
@@ -220,14 +221,54 @@ class TokenBaseTestCase(MyTestCase):
         self.assertTrue(token.token.active)
 
     def test_05_get_set_realms(self):
-        set_realm(self.realm2)
-        db_token = Token.query.filter_by(serial=self.serial1).first()
-        token = TokenClass(db_token)
+        self.setUp_user_realm2()
+        token = init_token({"type": "hotp"})
         realms = token.get_realms()
-        self.assertTrue(len(realms) == 1, realms)
+        self.assertTrue(len(realms) == 0, realms)
+
+        # set multiple realms
         token.set_realms([self.realm1, self.realm2])
         realms = token.get_realms()
-        self.assertTrue(len(realms) == 2, realms)
+        self.assertSetEqual({self.realm1, self.realm2}, set(realms))
+
+        # Set one existing realm removes the remaining ones
+        with mock.patch("logging.Logger.debug") as mock_log:
+            token.set_realms([self.realm1])
+            realms = token.get_realms()
+            self.assertSetEqual({self.realm1}, set(realms))
+            mock_log.assert_any_call(f"Remove realm {self.realm2} from token {token.get_serial()} due to setting "
+                                        f"new realms ({self.realm1}).")
+
+        # Add realm keeps existing realms
+        token.set_realms([self.realm2], add=True)
+        realms = token.get_realms()
+        self.assertSetEqual({self.realm1, self.realm2}, set(realms))
+
+        # Set empty list removes all realms
+        token.set_realms([self.realm1])
+        with mock.patch("logging.Logger.debug") as mock_log:
+            token.set_realms([])
+            realms = token.get_realms()
+            self.assertTrue(len(realms) == 0, realms)
+            mock_log.assert_any_call(f"Remove realm {self.realm1} from token {token.get_serial()} due to setting new "
+                                     "realms ().")
+
+        # Set new realm keeps the users realm anyway
+        token.add_user(User("hans", self.realm1))
+        self.assertSetEqual({self.realm1}, set(token.get_realms()))
+        with mock.patch("logging.Logger.info") as mock_log:
+            token.set_realms([self.realm2])
+            self.assertEqual({self.realm2, self.realm1}, set(token.get_realms()))
+            mock_log.assert_any_call(f"The realms ({self.realm1}) of assigned users cannot be removed from the token "
+                                     f"{token.get_serial()}.")
+
+        # Set non-existing realm
+        with mock.patch("logging.Logger.warning") as mock_log:
+            token.set_realms(["random"])
+            self.assertEqual({self.realm1}, set(token.get_realms()))
+            mock_log.assert_any_call(f"Realm random does not exist. Cannot add it to token {token.get_serial()}.")
+
+        token.delete_token()
 
     def test_99_delete_token(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
