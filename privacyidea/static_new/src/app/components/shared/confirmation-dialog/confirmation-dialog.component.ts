@@ -16,7 +16,6 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { NgClass } from "@angular/common";
 import { Component, inject } from "@angular/core";
 import { MatButton } from "@angular/material/button";
 import {

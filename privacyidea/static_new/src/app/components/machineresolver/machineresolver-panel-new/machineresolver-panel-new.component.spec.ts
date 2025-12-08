@@ -61,7 +61,6 @@ describe("MachineresolverPanelNewComponent", () => {
     const panel = { close: () => {} } as any;
     jest.spyOn(panel, "close");
     machineresolverServiceMock.postMachineresolver.mockReturnValue(Promise.resolve(null));
-    machineresolverServiceMock.postMachineresolver.mockReturnValue(Promise.resolve(null));
     await component.saveMachineresolver(panel);
     expect(machineresolverServiceMock.postTestMachineresolver).toHaveBeenCalled();
     expect(machineresolverServiceMock.postMachineresolver).toHaveBeenCalled();

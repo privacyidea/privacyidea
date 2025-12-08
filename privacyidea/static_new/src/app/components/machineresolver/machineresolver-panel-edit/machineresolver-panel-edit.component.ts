@@ -151,13 +151,13 @@ export class MachineresolverPanelEditComponent {
     this.dialogService
       .confirm(dialogData)
       .then(async (result) => {
-        if (result) {
-          if (!result) return;
-          try {
-            await this.machineresolverService.deleteMachineresolver(this.currentMachineresolver().resolvername);
-          } catch (error) {
-            return;
-          }
+        if (!result) {
+          return;
+        }
+        try {
+          await this.machineresolverService.deleteMachineresolver(this.currentMachineresolver().resolvername);
+        } catch (error) {
+          return;
         }
       })
       .catch((err) => {
