@@ -1,11 +1,11 @@
-import { computed, inject, Injectable, linkedSignal, Signal, WritableSignal } from "@angular/core";
+import { computed, inject, Injectable, Signal } from "@angular/core";
 import { environment } from "../../../environments/environment";
-import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
+import { HttpClient, httpResource } from "@angular/common/http";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { PiResponse } from "../../app.component";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
 import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
-import { catchError, lastValueFrom, throwError } from "rxjs";
+import { lastValueFrom } from "rxjs";
 
 export type Machineresolvers = {
   [key: string]: Machineresolver;

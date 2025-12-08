@@ -36,9 +36,6 @@ import { NotificationService, NotificationServiceInterface } from "../../../serv
     MatSelectModule,
     FormsModule,
     MatButtonModule,
-    MatInputModule,
-    MatAutocompleteModule,
-    MatSelectModule,
     MatIcon,
     MachineresolverHostsTabComponent,
     MachineresolverLdapTabComponent

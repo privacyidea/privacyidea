@@ -35,9 +35,6 @@ import { MachineresolverLdapTabComponent } from "../machineresolver-ldap-tab/mac
     MatSelectModule,
     FormsModule,
     MatButtonModule,
-    MatInputModule,
-    MatAutocompleteModule,
-    MatSelectModule,
     MatIcon,
     MachineresolverHostsTabComponent,
     MachineresolverLdapTabComponent
