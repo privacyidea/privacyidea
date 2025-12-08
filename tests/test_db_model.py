@@ -24,7 +24,7 @@ from datetime import timedelta
 
 from dateutil.tz import tzutc
 from mock import mock
-from sqlalchemy import func
+from sqlalchemy import func, delete
 
 from privacyidea.lib.policies.conditions import (PolicyConditionClass, ConditionSection,
                                                  ConditionHandleMissingData)
@@ -49,7 +49,7 @@ from privacyidea.models import (Token,
                                 ClientApplication, Subscription, UserCache,
                                 EventCounter, PeriodicTask, PeriodicTaskLastRun,
                                 PeriodicTaskOption, MonitoringStats, PolicyCondition, db,
-                                Tokengroup, TokenTokengroup, Serviceid)
+                                Tokengroup, TokenTokengroup, Serviceid, TokenInfo)
 from .base import MyTestCase
 
 
@@ -217,7 +217,7 @@ class TokenModelTestCase(MyTestCase):
         t2.otplen = 8
         t2.set_description("De scription")
         t2.save()
-        t2.set_info({"info": "value"})
+        TokenInfo(t2.id, "info", "value").save()
         t3 = Token.query.filter_by(serial="serial2").first()
         self.assertEqual(100, t3.count_window)
         self.assertEqual(8, t3.otplen)
@@ -582,27 +582,23 @@ class TokenModelTestCase(MyTestCase):
         t1 = Token("serialTI")
         t1.save()
 
-        t1.set_info({"key1": "value1",
+        token_info = {"key1": "value1",
                      "key2": "value2",
-                     "key3": "value3"})
+                     "key3": "value3"}
+        for key, value in token_info.items():
+            info = TokenInfo(t1.id, key, value)
+            db.session.add(info)
+        db.session.commit()
+
         t2 = Token.query.filter_by(serial="serialTI").first()
         t2info = t2.get_info()
         self.assertTrue(t2info.get("key2") == "value2", t2info)
 
-        t2.del_info("key2")
+        statement = delete(TokenInfo).where(TokenInfo.token_id == t2.id, TokenInfo.Key == "key2")
+        db.session.execute(statement)
+        db.session.commit()
         t2info = t2.get_info()
         self.assertTrue(t2info.get("key2") is None, t2info)
-
-    def test_16_add_and_delete_tokeninfo_password(self):
-        t1 = Token("serialTI2")
-        t1.set_info({"key1": "value1",
-                     "key1.type": "password"})
-
-        t2 = Token.query.filter_by(serial="serialTI2").first()
-        t2info = t2.get_info()
-
-        self.assertTrue(t2info.get("key1.type") == "password",
-                        t2info)
 
     def test_17_add_and_delete_smtpserver(self):
         s1 = SMTPServer(identifier="myserver", server="1.2.3.4")

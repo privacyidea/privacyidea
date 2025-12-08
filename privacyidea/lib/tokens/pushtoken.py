@@ -565,7 +565,7 @@ class PushTokenClass(TokenClass):
             enrollment_credential = getParam(upd_param, "enrollment_credential", optional=False)
             if enrollment_credential != self.get_tokeninfo("enrollment_credential"):
                 raise ParameterError("Invalid enrollment credential. You are not authorized to finalize this token.")
-            self.del_tokeninfo("enrollment_credential")
+            self.delete_tokeninfo("enrollment_credential")
             self.token.rollout_state = "enrolled"
             self.token.active = True
             self.add_tokeninfo(PUBLIC_KEY_SMARTPHONE, upd_param.get("pubkey"))

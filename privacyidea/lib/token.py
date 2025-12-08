@@ -2028,7 +2028,7 @@ def delete_tokeninfo(serial, key, user=None):
     """
     tokenobject_list = get_tokens_from_serial_or_user(serial=serial, user=user)
     for tokenobject in tokenobject_list:
-        tokenobject.del_tokeninfo(key)
+        tokenobject.delete_tokeninfo(key)
         tokenobject.save()
 
     return len(tokenobject_list)

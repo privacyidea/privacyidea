@@ -112,7 +112,7 @@ class PushTokenTestCase(MyTestCase):
         token.add_tokeninfo("firebase_token", "firebaseT")
         token.add_tokeninfo(PUBLIC_KEY_SERVER, self.server_public_key_pem)
         token.add_tokeninfo(PRIVATE_KEY_SERVER, self.server_private_key_pem, "password")
-        token.del_tokeninfo("enrollment_credential")
+        token.delete_tokeninfo("enrollment_credential")
         token.token.rollout_state = "enrolled"
         token.token.active = True
         return token
@@ -1760,7 +1760,7 @@ class PushTokenTestCase(MyTestCase):
                                PushTokenClass.api_endpoint, request, g)
 
         # wrongly configured push token (no firebase config)
-        token.del_tokeninfo(PUSH_ACTION.FIREBASE_CONFIG)
+        token.delete_tokeninfo(PUSH_ACTION.FIREBASE_CONFIG)
         # We are missing a registration URL, thus polling of challenges fails
         delete_policy("push1")
         request.all_data = {'serial': serial,

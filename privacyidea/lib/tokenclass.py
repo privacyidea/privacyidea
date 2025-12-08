@@ -85,10 +85,11 @@ from datetime import datetime, timedelta, timezone
 from dateutil.parser import parse as parse_date_string, ParserError
 from dateutil.tz import tzlocal, tzutc
 from flask_babel import lazy_gettext
+from sqlalchemy import select, update, delete
 
 from privacyidea.lib import _
 from privacyidea.lib.crypto import (decryptPassword,
-                                    generate_otpkey)
+                                    generate_otpkey, encryptPassword)
 from privacyidea.lib.utils import (is_true, decode_base32check,
                                    to_unicode, create_img, parse_timedelta,
                                    parse_legacy_time, split_pin_pass)
@@ -102,7 +103,7 @@ from .policies.actions import PolicyAction
 from .policydecorators import libpolicy, auth_otppin, challenge_response_allowed
 from .user import (User)
 from ..api.lib.utils import getParam
-from ..models import (TokenOwner, TokenTokengroup, Challenge, cleanup_challenges)
+from ..models import (TokenOwner, TokenTokengroup, Challenge, cleanup_challenges, TokenInfo, db)
 
 DATE_FORMAT = '%Y-%m-%dT%H:%M%z'
 AUTH_DATE_FORMAT = "%Y-%m-%d %H:%M:%S.%f%z"
@@ -391,34 +392,53 @@ class TokenClass(object):
         return self.init_details
 
     @check_token_locked
-    def set_tokeninfo(self, info):
+    def set_tokeninfo(self, info: dict):
         """
         Set the tokeninfo field in the DB. Old values will be deleted.
 
         :param info: dictionary with key and value
-        :type info: dict
         :return:
         """
-        self.token.del_info()
-        self.token.set_info(info)
+        self.delete_tokeninfo()
+        self.add_tokeninfo_dict(info)
 
     @check_token_locked
-    def add_tokeninfo(self, key, value, value_type=None):
+    def add_tokeninfo(self, key: str, value: str, value_type: str = None, commit_db_session: bool = True):
         """
         Add a key and a value to the DB tokeninfo
 
         :param key:
         :param value:
-        :return:
+        :param value_type: If type is "password", the value will be encrypted
+        :param commit_db_session: Whether the database changes should be commited to be persistent. Only use false if
+            you are doing multiple database changes with a final single commit.
         """
-        add_info = {key: value}
-        if value_type:
-            add_info[key + ".type"] = value_type
-        self.token.set_info(add_info)
+
+        if value_type == "password":
+            value = encryptPassword(value)
+
+        statement = select(TokenInfo).where(TokenInfo.token_id == self.token.id, TokenInfo.Key == key)
+        token_info = db.session.execute(statement).scalar_one_or_none()
+
+        if token_info is None:
+            # Create new info entry
+            token_info = TokenInfo(token_id=self.token.id, Key=key, Value=value, Type=value_type)
+            db.session.add(token_info)
+        else:
+            # Update existing info
+            statement = update(TokenInfo).where(TokenInfo.id == token_info.id).values(Value=value, Type=value_type)
+            db.session.execute(statement)
+        if commit_db_session:
+            db.session.commit()
 
     @check_token_locked
     def add_tokeninfo_dict(self, info: dict):
-        self.token.set_info(info)
+        for key, value in info.items():
+            if key.endswith(".type"):
+                continue
+            value_type = info.get(f"{key}.type", None)
+            self.add_tokeninfo(key, value, value_type, commit_db_session=False)
+        db.session.commit()
 
     @check_token_locked
     def check_otp(self, otpval, counter=None, window=None, options=None):
@@ -776,7 +796,7 @@ class TokenClass(object):
         """
         self.token.failcount = failcount
         if failcount == 0:
-            self.del_tokeninfo(FAILCOUNTER_EXCEEDED)
+            self.delete_tokeninfo(FAILCOUNTER_EXCEEDED)
 
     def get_max_failcount(self):
         return self.token.maxfail
@@ -1006,8 +1026,17 @@ class TokenClass(object):
 
         return ret
 
-    def del_tokeninfo(self, key=None):
-        self.token.del_info(key)
+    def delete_tokeninfo(self, key: str = None):
+        """
+        Deletes the token info for the given key. If no key is given, all info entries from this token are deleted.
+
+        :param key: The key to delete
+        """
+        statement = delete(TokenInfo).where(TokenInfo.token_id == self.token.id)
+        if key:
+            statement = statement.where(TokenInfo.Key == key)
+        db.session.execute(statement)
+        db.session.commit()
 
     def del_tokengroup(self, tokengroup=None, tokengroup_id=None):
         """
@@ -1118,7 +1147,7 @@ class TokenClass(object):
         :type end_date: str
         """
         if not end_date:
-            self.del_tokeninfo("validity_period_end")
+            self.delete_tokeninfo("validity_period_end")
         else:
             #  upper layer will catch. we just try to verify the date format
             try:
@@ -1152,7 +1181,7 @@ class TokenClass(object):
         :type start_date: str
         """
         if not start_date:
-            self.del_tokeninfo("validity_period_start")
+            self.delete_tokeninfo("validity_period_start")
         else:
             try:
                 d = parse_date_string(start_date)
@@ -1205,8 +1234,8 @@ class TokenClass(object):
         succcess_counter += 1
         auth_counter = self.get_count_auth()
         auth_counter += 1
-        self.token.set_info({"count_auth_success": int(succcess_counter),
-                             "count_auth": int(auth_counter)})
+        self.add_tokeninfo_dict({"count_auth_success": int(succcess_counter),
+                                 "count_auth": int(auth_counter)})
         return succcess_counter
 
     @check_token_locked

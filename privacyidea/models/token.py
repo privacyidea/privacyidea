@@ -18,21 +18,22 @@
 
 import binascii
 import logging
-from sqlalchemy import Sequence, select, update
 
-from privacyidea.lib.error import ResourceNotFoundError
-from privacyidea.models import db
-from privacyidea.models.realm import Realm
-from privacyidea.models.utils import MethodsMixin
-from privacyidea.models.challenge import Challenge
-from privacyidea.models.config import SAFE_STORE
-from privacyidea.models.tokengroup import Tokengroup, TokenTokengroup
+from sqlalchemy import Sequence
+
 from privacyidea.lib.crypto import (geturandom, encrypt, hexlify_and_unicode,
                                     pass_hash, encryptPin, decryptPin, hash,
-                                    verify_pass_hash, SecretObj, encryptPassword)
+                                    verify_pass_hash, SecretObj)
+from privacyidea.lib.error import ResourceNotFoundError
 from privacyidea.lib.framework import get_app_config_value
-from privacyidea.lib.utils import convert_column_to_unicode
 from privacyidea.lib.log import log_with
+from privacyidea.lib.utils import convert_column_to_unicode
+from privacyidea.models import db
+from privacyidea.models.challenge import Challenge
+from privacyidea.models.config import SAFE_STORE
+from privacyidea.models.realm import Realm
+from privacyidea.models.tokengroup import Tokengroup, TokenTokengroup
+from privacyidea.models.utils import MethodsMixin
 
 log = logging.getLogger(__name__)
 
@@ -124,7 +125,6 @@ class Token(MethodsMixin, db.Model):
     def __init__(self, serial, tokentype="",
                  isactive=True, otplen=6,
                  otpkey="",
-                 userid=None, resolver=None, realm=None,
                  **kwargs):
         super(Token, self).__init__(**kwargs)
         self.serial = '' + serial
@@ -139,24 +139,6 @@ class Token(MethodsMixin, db.Model):
         self.otplen = otplen
         self.pin_seed = ""
         self.set_otpkey(otpkey)
-
-        # TODO: Remove this (is probably only used in tests)
-        # also create the user assignment
-        # if userid and resolver and realm:
-        #     # We can not create the tokenrealm-connection and owner-connection, yet
-        #     # since we need to token_id.
-        #     token_id = self.save()
-        #     realm_id = Realm.query.filter_by(name=realm).first().id
-        #     tr = TokenRealm(realm_id=realm_id, token_id=token_id)
-        #     if tr:
-        #         db.session.add(tr)
-        #
-        #     to = TokenOwner(token_id=token_id, user_id=userid, resolver=resolver, realm_id=realm_id)
-        #     if to:
-        #         db.session.add(to)
-        #
-        #     if tr or to:
-        #         db.session.commit()
 
     @property
     def first_owner(self):
@@ -509,49 +491,6 @@ class Token(MethodsMixin, db.Model):
         res = "<{0!r} {1!r}>".format(self.__class__, ldict)
         return res
 
-    def set_info(self, info):
-        """
-        Set the additional token info for this token
-
-        Entries that end with ".type" are used as type for the keys.
-        I.e. two entries sshkey="XYZ" and sshkey.type="password" will store
-        the key sshkey as type "password".
-
-        :param info: The key-values to set for this token
-        :type info: dict
-        """
-        if not self.id:
-            # If there is no ID to reference the token, we need to save the token
-            self.save()
-        types = {}
-        for k, v in info.items():
-            if k.endswith(".type"):
-                key = ".".join(k.split(".")[:-1])
-                types[key] = v
-                if v == "password":
-                    # If the type is password, we need to encrypt the value
-                    # as it is a secret.
-                    info[key] = encryptPassword(info[key])
-        for k, v in info.items():
-            if not k.endswith(".type"):
-                TokenInfo(self.id, k, v, Type=types.get(k)).save(persistent=False)
-        db.session.commit()
-
-    def del_info(self, key=None):
-        """
-        Deletes tokeninfo for a given token.
-        If the key is omitted, all Tokeninfo is deleted.
-
-        :param key: searches for the given key to delete the entry
-        :return:
-        """
-        if key:
-            tokeninfos = TokenInfo.query.filter_by(token_id=self.id, Key=key)
-        else:
-            tokeninfos = TokenInfo.query.filter_by(token_id=self.id)
-        for ti in tokeninfos:
-            ti.delete()
-
     def del_tokengroup(self, tokengroup=None, tokengroup_id=None):
         """
         Deletes the tokengroup from the given token.
@@ -653,37 +592,6 @@ class TokenInfo(MethodsMixin, db.Model):
         self.Type = Type
         self.Description = Description
 
-    def save(self, persistent=True):
-        stmt = select(TokenInfo).where(TokenInfo.token_id == self.token_id, TokenInfo.Key == self.Key)
-        token_info = db.session.execute(stmt).scalar_one_or_none()
-        # ti_func = TokenInfo.query.filter_by(token_id=self.token_id, Key=self.Key).first
-        # ti = ti_func()
-        if token_info is None:
-            # create a new one
-            db.session.add(self)
-            db.session.commit()
-            if get_app_config_value(SAFE_STORE, False):
-                token_info = db.session.execute(stmt).scalar_one_or_none()
-                ret = token_info.id
-            else:
-                ret = self.id
-        else:
-            # update
-            stmt = update(TokenInfo).where(TokenInfo.token_id == self.token_id, TokenInfo.Key == self.Key).values(
-                Value=self.Value,
-                Description=self.Description,
-                Type=self.Type
-            )
-            db.session.execute(stmt)
-            # TokenInfo.query.filter_by(token_id=self.token_id,
-            #                           Key=self.Key).update({'Value': self.Value,
-            #                                                 'Description': self.Description,
-            #                                                 'Type': self.Type})
-            ret = token_info.id
-        if persistent:
-            db.session.commit()
-        return ret
-
 
 class TokenOwner(MethodsMixin, db.Model):
     """
@@ -721,7 +629,7 @@ class TokenOwner(MethodsMixin, db.Model):
             self.token_id = token_id
         elif serial:
             token = Token.query.filter_by(serial=serial).first()
-            if not token: # pragma: no cover
+            if not token:  # pragma: no cover
                 # usually this is already covered by the lib / token class functions
                 raise ResourceNotFoundError(f"Token with serial '{serial}' does not exist.")
             self.token_id = token.id

@@ -4972,7 +4972,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
 
         # Set a policy, but the token has no tokeninfo!
         # Thus the authorization will fail
-        token_obj.del_tokeninfo("testkey")
+        token_obj.delete_tokeninfo("testkey")
         self.assertRaises(PolicyError,
                           check_tokeninfo,
                           req, resp)

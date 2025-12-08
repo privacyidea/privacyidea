@@ -544,7 +544,7 @@ def save_pin_change(request, response, serial=None):
             # The user sets a pin or enrolls a token. -> delete the pin_change
             if otppin or pin:
                 token = get_one_token(serial=serial)
-                token.del_tokeninfo("next_pin_change")
+                token.delete_tokeninfo("next_pin_change")
 
                 # If there is a change_pin_every policy, we need to set the PIN anew.
                 policy = Match.realm(g, scope=SCOPE.ENROLL, action=PolicyAction.CHANGE_PIN_EVERY,
