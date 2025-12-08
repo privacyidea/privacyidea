@@ -85,11 +85,10 @@ export class ContainerDetailsTokenActionsComponent {
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          type: "token",
-          serialList: tokenSerials,
           title: "Unassign User from All Tokens",
-          action: "unassign",
-          numberOfTokens: tokenSerials.length
+          items: tokenSerials,
+          itemType: "token",
+          confirmAction: { label: "Unassign", value: true, type: "destruct" }
         }
       })
       .afterClosed()
@@ -153,11 +152,10 @@ export class ContainerDetailsTokenActionsComponent {
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          serialList: serialList.split(","),
+          items: serialList.split(","),
           title: "Remove Token",
-          type: "token",
-          action: "remove",
-          numberOfTokens: serialList.split(",").length
+          itemType: "token",
+          confirmAction: { label: "Remove", value: true, type: "destruct" }
         }
       })
       .afterClosed()
@@ -176,7 +174,7 @@ export class ContainerDetailsTokenActionsComponent {
 
   deleteAllTokens() {
     const serialList = this.tokenData().data.map((token) => token.serial);
-    this.tokenService.bulkDeleteWithConfirmDialog(serialList, this.dialog, () =>
+    this.tokenService.bulkDeleteWithConfirmDialog(serialList, () =>
       this.containerService.containerDetailResource.reload()
     );
   }

@@ -36,6 +36,7 @@ import { SimpleConfirmationDialogComponent } from "../../shared/dialog/confirmat
 import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { ContainerTableComponent } from "./container-table.component";
+import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
 
 @Component({
   selector: "app-container-table-self-service",
@@ -58,11 +59,11 @@ import { ContainerTableComponent } from "./container-table.component";
   styleUrl: "./container-table.component.scss"
 })
 export class ContainerTableSelfServiceComponent extends ContainerTableComponent {
-  private readonly dialog = inject(MatDialog);
   protected override readonly containerService: ContainerServiceInterface = inject(ContainerService);
   protected override readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected override readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected override readonly contentService: ContentServiceInterface = inject(ContentService);
+  protected readonly dialogService: DialogServiceInterface = inject(DialogService);
 
   readonly columnKeysMapSelfService = [
     { key: "serial", label: "Serial" },
@@ -84,11 +85,10 @@ export class ContainerTableSelfServiceComponent extends ContainerTableComponent 
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          serialList: [serial],
           title: "Delete Container",
-          type: "container",
-          action: "delete",
-          numberOfTokens: 1
+          items: [serial],
+          itemType: "container",
+          confirmAction: { label: "Delete", value: true, type: "destruct" }
         }
       })
       .afterClosed()

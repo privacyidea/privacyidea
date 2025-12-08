@@ -30,6 +30,7 @@ import { TokenService, TokenServiceInterface } from "../../../../../services/tok
 import { UserData, UserService, UserServiceInterface } from "../../../../../services/user/user.service";
 import { ClearableInputComponent } from "../../../../shared/clearable-input/clearable-input.component";
 import { AuthService, AuthServiceInterface } from "../../../../../services/auth/auth.service";
+import { AbstractDialogComponent } from "../../../../shared/dialog/abstract-dialog/abstract-dialog.component";
 
 export interface SelectedUserAssignResult {
   username: string;
@@ -60,12 +61,10 @@ export interface SelectedUserAssignResult {
   templateUrl: "./selected-user-attach-dialog.component.html",
   styleUrl: "./selected-user-attach-dialog.component.scss"
 })
-export class SelectedUserAssignDialogComponent {
+export class SelectedUserAssignDialogComponent extends AbstractDialogComponent<null, SelectedUserAssignResult | null> {
   protected readonly userService: UserServiceInterface = inject(UserService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly realmService: RealmServiceInterface = inject(RealmService);
-  protected readonly dialogRef: MatDialogRef<SelectedUserAssignDialogComponent, SelectedUserAssignResult | null> =
-    inject(MatDialogRef);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   pin: WritableSignal<string> = signal("");
   pinRepeat: WritableSignal<string> = signal("");

@@ -63,6 +63,7 @@ import {
   NotificationService,
   NotificationServiceInterface
 } from "../../../../services/notification/notification.service";
+import { DialogService, DialogServiceInterface } from "../../../../services/dialog/dialog.service";
 
 @Component({
   selector: "app-container-details-token-table",
@@ -185,11 +186,10 @@ export class ContainerDetailsTokenTableComponent {
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          serialList: [tokenSerial],
           title: "Remove Token",
-          type: "token",
-          action: "remove",
-          numberOfTokens: [tokenSerial].length
+          items: [tokenSerial],
+          itemType: "token",
+          confirmAction: { label: "Remove", value: true, type: "destruct" }
         }
       })
       .afterClosed()
@@ -222,11 +222,7 @@ export class ContainerDetailsTokenTableComponent {
 
   deleteAllTokens() {
     const serialList = this.containerTokenData().data.map((token) => token.serial);
-    this.tokenService.bulkDeleteWithConfirmDialog(
-      serialList,
-      this.dialog,
-      this.containerService.containerDetailResource.reload
-    );
+    this.tokenService.bulkDeleteWithConfirmDialog(serialList, this.containerService.containerDetailResource.reload);
   }
 
   deleteTokenFromContainer(tokenSerial: string) {
@@ -234,11 +230,10 @@ export class ContainerDetailsTokenTableComponent {
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          serialList: [tokenSerial],
           title: "Delete Token",
-          type: "token",
-          action: "delete",
-          numberOfTokens: [tokenSerial].length
+          items: [tokenSerial],
+          itemType: "token",
+          confirmAction: { label: "Delete", value: true, type: "destruct" }
         }
       })
       .afterClosed()

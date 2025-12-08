@@ -41,6 +41,7 @@ import {
   DocumentationServiceInterface
 } from "../../../../services/documentation/documentation.service";
 import { Router, RouterLink } from "@angular/router";
+import { DialogService, DialogServiceInterface } from "../../../../services/dialog/dialog.service";
 
 @Component({
   selector: "app-token-table-actions",
@@ -77,11 +78,10 @@ export class TokenTableActionsComponent {
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          serialList: [this.tokenSerial()],
           title: "Revoke Token",
-          type: "token",
-          action: "revoke",
-          numberOfTokens: 1
+          items: [this.tokenSerial()],
+          itemType: "token",
+          confirmAction: { label: "Revoke", value: true, type: "destruct" }
         }
       })
       .afterClosed()
@@ -106,11 +106,10 @@ export class TokenTableActionsComponent {
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          serialList: [this.tokenSerial()],
           title: "Delete Token",
-          type: "token",
-          action: "delete",
-          numberOfTokens: 1
+          items: [this.tokenSerial()],
+          itemType: "token",
+          confirmAction: { label: "Delete", value: true, type: "destruct" }
         }
       })
       .afterClosed()
@@ -130,14 +129,12 @@ export class TokenTableActionsComponent {
 
   deleteSelectedTokens(): void {
     const serialList = this.tokenSelection().map((token) => token.serial);
-    this.tokenService.bulkDeleteWithConfirmDialog(serialList, this.dialog, () =>
-      this.tokenService.tokenResource.reload()
-    );
+    this.tokenService.bulkDeleteWithConfirmDialog(serialList, () => this.tokenService.tokenResource.reload());
   }
 
   assignSelectedTokens() {
     this.dialogService
-      .openDialog(SelectedUserAssignDialogComponent)
+      .openDialog({ component: SelectedUserAssignDialogComponent })
       .afterClosed()
       .pipe(
         filter(Boolean),
@@ -176,11 +173,10 @@ export class TokenTableActionsComponent {
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          serialList: selectedTokens.map((token) => token.serial),
           title: "Unassign Selected Tokens",
-          type: "token",
-          action: "unassign",
-          numberOfTokens: selectedTokens.length
+          items: selectedTokens.map((token) => token.serial),
+          itemType: "token",
+          confirmAction: { label: "Unassign", value: true, type: "destruct" }
         }
       })
       .afterClosed()
