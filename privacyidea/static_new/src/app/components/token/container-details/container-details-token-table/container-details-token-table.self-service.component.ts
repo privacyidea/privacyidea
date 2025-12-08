@@ -19,8 +19,7 @@
 import { NgClass } from "@angular/common";
 import { Component, computed, inject } from "@angular/core";
 import { FormsModule, ReactiveFormsModule } from "@angular/forms";
-import { MatButton, MatIconButton } from "@angular/material/button";
-import { MatDialog } from "@angular/material/dialog";
+import { MatIconButton } from "@angular/material/button";
 import { MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
@@ -36,6 +35,7 @@ import { TableUtilsService, TableUtilsServiceInterface } from "../../../../servi
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 import { CopyButtonComponent } from "../../../shared/copy-button/copy-button.component";
 import { ContainerDetailsTokenTableComponent } from "./container-details-token-table.component";
+import { DialogService, DialogServiceInterface } from "../../../../services/dialog/dialog.service";
 
 @Component({
   selector: "app-container-details-token-table-self-service",
@@ -56,7 +56,6 @@ import { ContainerDetailsTokenTableComponent } from "./container-details-token-t
     MatSortModule,
     MatIcon,
     MatIconButton,
-    MatButton,
     CopyButtonComponent,
     ReactiveFormsModule,
     FormsModule,

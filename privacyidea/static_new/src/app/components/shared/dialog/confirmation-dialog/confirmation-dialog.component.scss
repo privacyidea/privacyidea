@@ -1,6 +1,19 @@
 @use "../../../../../styles";
 
+/* Verwenden Sie die Klasse anstelle des unspezifischen ul-Selektors */
 ul {
+  /* Verwenden Sie column-count, aber nur für diesen spezifischen Fall */
   column-count: 4;
   column-gap: 22px;
+}
+
+/* Die Umbruchregel, die jetzt spezifischer sein kann, wenn gewollt */
+app-dialog-wrapper li {
+  /* Erlaubt dem Browser, bei Wörtern ohne Leerzeichen umzubrechen */
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  /* Erlaubt dem Browser, überall umzubrechen, falls 'word-wrap' nicht reicht */
+  word-break: break-all;
+  /* Stellt sicher, dass das Element nur so breit ist, wie der Dialog-Body */
+  max-width: 100%;
 }
