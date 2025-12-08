@@ -47,14 +47,14 @@ export class MachineresolverPanelNewComponent {
   readonly machineresolverService: MachineresolverServiceInterface = inject(MachineresolverService);
   readonly dialogService: DialogServiceInterface = inject(DialogService);
 
-  readonly machineresolverDetault: Machineresolver = {
+  readonly machineresolverDefault: Machineresolver = {
     resolvername: "",
     type: "hosts",
     data: { resolver: "", type: "hosts" }
   };
-  readonly newMachineresolver = signal<Machineresolver>(this.machineresolverDetault);
+  readonly newMachineresolver = signal<Machineresolver>(this.machineresolverDefault);
   resetMachineresolver() {
-    this.newMachineresolver.set(this.machineresolverDetault);
+    this.newMachineresolver.set(this.machineresolverDefault);
   }
   readonly machineresolverTypes = this.machineresolverService.allMachineresolverTypes;
   readonly machineresolvers = this.machineresolverService.machineresolvers();
@@ -141,7 +141,7 @@ export class MachineresolverPanelNewComponent {
 
   handleCollapse($panel: MatExpansionPanel) {
     if (!this.isEdited()) {
-      this.newMachineresolver.set(this.machineresolverDetault);
+      this.newMachineresolver.set(this.machineresolverDefault);
       return;
     }
     const dialogData: MatDialogConfigRequired<ConfirmationDialogData> = {

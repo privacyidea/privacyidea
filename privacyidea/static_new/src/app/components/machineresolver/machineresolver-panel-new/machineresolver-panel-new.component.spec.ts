@@ -115,6 +115,6 @@ describe("MachineresolverPanelNewComponent", () => {
       data: data
     });
     component.resetMachineresolver();
-    expect(component.newMachineresolver()).toEqual(component.machineresolverDetault);
+    expect(component.newMachineresolver()).toEqual(component.machineresolverDefault);
   });
 });
