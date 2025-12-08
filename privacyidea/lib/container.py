@@ -979,7 +979,7 @@ def add_container_info(serial: str, ikey: str, ivalue) -> bool:
     return True
 
 
-def set_container_info(serial, info: dict) -> dict[str, bool]:
+def set_container_info(serial: str, info: dict) -> dict[str, bool]:
     """
     Set the given info to the container with the given serial.
     Keys of type PI_INTERNAL can not be modified and will be ignored.
@@ -993,10 +993,11 @@ def set_container_info(serial, info: dict) -> dict[str, bool]:
 
     # Remove internal keys from the info dictionary, they can not be modified by the user
     internal_keys = container.get_internal_info_keys()
-    not_internal_info = {}
+    not_internal_info = []
     for key, value in info.items():
         if key not in internal_keys:
-            not_internal_info[key] = value
+            info_type = info.get(f"{key}.type")
+            not_internal_info.append(TokenContainerInfoData(key=key, value=value, info_type=info_type))
             result[key] = True
         else:
             result[key] = False

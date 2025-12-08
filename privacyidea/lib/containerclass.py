@@ -19,12 +19,12 @@
 #
 import logging
 from datetime import datetime, timezone
-
 from typing import List, Union
 
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePublicKey
 from flask import json
+from sqlalchemy import select, delete, and_, update
 
 from privacyidea.lib import _
 from privacyidea.lib.challenge import get_challenges
@@ -32,7 +32,7 @@ from privacyidea.lib.config import get_token_types
 from privacyidea.lib.containers.container_info import (TokenContainerInfoData, PI_INTERNAL, RegistrationState,
                                                        INITIALLY_SYNCHRONIZED)
 from privacyidea.lib.containers.container_states import ContainerStates
-from privacyidea.lib.crypto import verify_ecc, decryptPassword, FAILED_TO_DECRYPT_PASSWORD
+from privacyidea.lib.crypto import verify_ecc, decryptPassword, FAILED_TO_DECRYPT_PASSWORD, encryptPassword
 from privacyidea.lib.error import ParameterError, ResourceNotFoundError, TokenAdminError, UserError
 from privacyidea.lib.log import log_with
 from privacyidea.lib.machine import is_offline_token
@@ -43,7 +43,6 @@ from privacyidea.lib.user import User
 from privacyidea.lib.utils import is_true
 from privacyidea.models import (TokenContainerOwner, Realm, Token, db, TokenContainerStates,
                                 TokenContainerInfo, TokenContainerRealm, TokenContainerTemplate)
-from sqlalchemy import select, delete, func, and_
 
 log = logging.getLogger(__name__)
 
@@ -343,7 +342,7 @@ class TokenContainerClass:
                                 resolver=resolver_name,
                                 realm_id=user.realm_id).save()
             # Add user realm to container realms
-            realm_db = Realm.query.filter_by(name=user.realm).first() # todo update
+            realm_db = Realm.query.filter_by(name=user.realm).first()  # todo update
             if realm_db and realm_db not in self._db_container.realms:
                 self._db_container.realms.append(realm_db)
             self._db_container.save()
@@ -514,15 +513,15 @@ class TokenContainerClass:
         }
         return state_types_exclusions
 
-    def set_container_info(self, info):
+    def set_container_info(self, info: list[TokenContainerInfoData]):
         """
-        Set the containerinfo field in the DB. Old values will be deleted.
+        Set the container info entries in the DB. Old values will be deleted.
 
         :param info: dictionary in the format: {key: value}
         """
         self.delete_container_info(keep_internal=True)
         if info:
-            self._db_container.set_info(info)
+            self.update_container_info(info)
 
     def update_container_info(self, info: list[TokenContainerInfoData]):
         """
@@ -532,8 +531,22 @@ class TokenContainerClass:
         :param info: list of TokenContainerInfoData objects
         """
         for data in info:
-            TokenContainerInfo(self.db_id, data.key, data.value, type=data.type, description=data.description).save(
-                persistent=False)
+            if data.type == "password":
+                data.value = encryptPassword(data.value)
+
+            statement = select(TokenContainerInfo).where(TokenContainerInfo.container_id == self._db_container.id,
+                                                         TokenContainerInfo.key == data.key)
+            db_info = db.session.execute(statement).scalar_one_or_none()
+
+            if db_info is None:
+                # Create new entry
+                new_info = TokenContainerInfo(self._db_container.id, data.key, data.value, data.type)
+                db.session.add(new_info)
+            else:
+                # Update existing entry
+                statement = update(TokenContainerInfo).where(TokenContainerInfo.id == db_info.id).values(
+                    value=data.value, type=data.type)
+                db.session.execute(statement)
         db.session.commit()
 
     def get_container_info(self) -> list[TokenContainerInfo]:

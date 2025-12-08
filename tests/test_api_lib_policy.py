@@ -5,37 +5,27 @@ The api.lib.policy.py depends on lib.policy and on flask!
 """
 import json
 import logging
+from datetime import datetime, timedelta
+
+import jwt
+from dateutil.tz import tzlocal
+from flask import Request, g, current_app, jsonify
+from passlib.hash import pbkdf2_sha512
 from testfixtures import log_capture, LogCapture
 from werkzeug.datastructures.headers import Headers
+from werkzeug.test import EnvironBuilder
 
-from privacyidea.lib.container import (init_container, find_container_by_serial, create_container_template,
-                                       get_all_containers, delete_container_template)
-from privacyidea.lib.containers.container_info import RegistrationState
-from privacyidea.lib.policies.helper import get_jwt_validity
-from privacyidea.lib.tokens.webauthn import (webauthn_b64_decode, AuthenticatorAttachmentType,
-                                             AttestationLevel, AttestationForm,
-                                             UserVerificationLevel)
-from privacyidea.lib.tokens.webauthntoken import (DEFAULT_ALLOWED_TRANSPORTS,
-                                                  WebAuthnTokenClass, DEFAULT_CHALLENGE_TEXT_AUTH,
-                                                  PUBLIC_KEY_CREDENTIAL_ALGORITHMS,
-                                                  DEFAULT_PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE,
-                                                  DEFAULT_AUTHENTICATOR_ATTESTATION_LEVEL,
-                                                  DEFAULT_AUTHENTICATOR_ATTESTATION_FORM,
-                                                  DEFAULT_CHALLENGE_TEXT_ENROLL, DEFAULT_TIMEOUT,
-                                                  DEFAULT_USER_VERIFICATION_REQUIREMENT,
-                                                  PUBKEY_CRED_ALGORITHMS_ORDER)
-from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction
-from privacyidea.lib.users.custom_user_attributes import InternalCustomUserAttributes, INTERNAL_USAGE
-from privacyidea.lib.utils import hexlify_and_unicode, AUTH_RESPONSE
-from privacyidea.lib.config import set_privacyidea_config, SYSCONF
-from .base import (MyApiTestCase)
-
-from privacyidea.lib.subscriptions import EXPIRE_MESSAGE
-from privacyidea.lib.policy import (set_policy, delete_policy, enable_policy,
-                                    PolicyClass, SCOPE, REMOTE_USER,
-                                    AUTOASSIGNVALUE, AUTHORIZED,
-                                    DEFAULT_ANDROID_APP_URL, DEFAULT_IOS_APP_URL)
-from privacyidea.lib.policies.actions import PolicyAction
+from privacyidea.api.lib.postpolicy import (check_serial, check_tokentype,
+                                            check_tokeninfo,
+                                            no_detail_on_success,
+                                            no_detail_on_fail, autoassign,
+                                            offline_info, sign_response,
+                                            get_webui_settings,
+                                            save_pin_change,
+                                            add_user_detail_to_response,
+                                            mangle_challenge_response, is_authorized,
+                                            check_verify_enrollment, preferred_client_mode,
+                                            multichallenge_enroll_via_validate)
 from privacyidea.api.lib.prepolicy import (check_token_upload,
                                            check_base_action, check_token_init,
                                            check_max_token_user,
@@ -61,52 +51,61 @@ from privacyidea.api.lib.prepolicy import (check_token_upload,
                                            required_piv_attestation, check_custom_user_attributes,
                                            hide_tokeninfo, init_ca_template, init_ca_connector,
                                            init_subject_components, increase_failcounter_on_challenge,
-                                           require_description, jwt_validity, check_container_action,
+                                           require_description, check_container_action,
                                            check_token_action, check_user_params,
                                            check_client_container_action, container_registration_config,
                                            smartphone_config, check_client_container_disabled_action, rss_age,
-                                           hide_container_info, require_description_on_edit, force_server_generate_key)
-from privacyidea.lib.realm import set_realm as create_realm
+                                           hide_container_info, force_server_generate_key)
+from privacyidea.lib.auth import ROLE
+from privacyidea.lib.config import set_privacyidea_config, SYSCONF
+from privacyidea.lib.container import (init_container, find_container_by_serial, create_container_template,
+                                       get_all_containers, delete_container_template)
+from privacyidea.lib.containers.container_info import RegistrationState, TokenContainerInfoData
+from privacyidea.lib.error import PolicyError, RegistrationError, ValidateError
+from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction
+from privacyidea.lib.machine import attach_token
+from privacyidea.lib.machineresolver import save_resolver
+from privacyidea.lib.policies.actions import PolicyAction
+from privacyidea.lib.policies.helper import get_jwt_validity
+from privacyidea.lib.policy import (set_policy, delete_policy, enable_policy,
+                                    PolicyClass, SCOPE, REMOTE_USER,
+                                    AUTOASSIGNVALUE, AUTHORIZED,
+                                    DEFAULT_ANDROID_APP_URL, DEFAULT_IOS_APP_URL)
 from privacyidea.lib.realm import delete_realm
-from privacyidea.api.lib.postpolicy import (check_serial, check_tokentype,
-                                            check_tokeninfo,
-                                            no_detail_on_success,
-                                            no_detail_on_fail, autoassign,
-                                            offline_info, sign_response,
-                                            get_webui_settings,
-                                            save_pin_change,
-                                            add_user_detail_to_response,
-                                            mangle_challenge_response, is_authorized,
-                                            check_verify_enrollment, preferred_client_mode,
-                                            multichallenge_enroll_via_validate)
+from privacyidea.lib.realm import set_realm as create_realm
+from privacyidea.lib.subscriptions import EXPIRE_MESSAGE
 from privacyidea.lib.token import (init_token, get_tokens, remove_token,
                                    set_realms, check_user_pass, unassign_token,
                                    enable_token)
-from privacyidea.lib.user import User
-from privacyidea.lib.tokens.papertoken import PAPERACTION
-from privacyidea.lib.tokens.tantoken import TANACTION
-from privacyidea.lib.tokens.smstoken import SMSACTION
-from privacyidea.lib.tokens.pushtoken import PUSH_ACTION
-from privacyidea.lib.tokens.indexedsecrettoken import PIIXACTION
-from privacyidea.lib.tokens.registrationtoken import DEFAULT_LENGTH, DEFAULT_CONTENTS
-from privacyidea.lib.tokens.certificatetoken import ACTION as CERTIFICATE_ACTION
-
-from flask import Request, g, current_app, jsonify
-from werkzeug.test import EnvironBuilder
-from privacyidea.lib.error import PolicyError, RegistrationError, ValidateError
-from privacyidea.lib.machineresolver import save_resolver
-from privacyidea.lib.machine import attach_token
-from privacyidea.lib.auth import ROLE
-import jwt
-from passlib.hash import pbkdf2_sha512
-from datetime import datetime, timedelta
-from dateutil.tz import tzlocal
 from privacyidea.lib.tokenclass import DATE_FORMAT
+from privacyidea.lib.tokens.certificatetoken import ACTION as CERTIFICATE_ACTION
+from privacyidea.lib.tokens.indexedsecrettoken import PIIXACTION
+from privacyidea.lib.tokens.papertoken import PAPERACTION
+from privacyidea.lib.tokens.pushtoken import PUSH_ACTION
+from privacyidea.lib.tokens.registrationtoken import DEFAULT_LENGTH, DEFAULT_CONTENTS
+from privacyidea.lib.tokens.smstoken import SMSACTION
+from privacyidea.lib.tokens.tantoken import TANACTION
+from privacyidea.lib.tokens.webauthn import (webauthn_b64_decode, AuthenticatorAttachmentType,
+                                             AttestationLevel, AttestationForm,
+                                             UserVerificationLevel)
+from privacyidea.lib.tokens.webauthntoken import (DEFAULT_ALLOWED_TRANSPORTS,
+                                                  WebAuthnTokenClass, DEFAULT_CHALLENGE_TEXT_AUTH,
+                                                  PUBLIC_KEY_CREDENTIAL_ALGORITHMS,
+                                                  DEFAULT_PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE,
+                                                  DEFAULT_AUTHENTICATOR_ATTESTATION_LEVEL,
+                                                  DEFAULT_AUTHENTICATOR_ATTESTATION_FORM,
+                                                  DEFAULT_CHALLENGE_TEXT_ENROLL, DEFAULT_TIMEOUT,
+                                                  DEFAULT_USER_VERIFICATION_REQUIREMENT,
+                                                  PUBKEY_CRED_ALGORITHMS_ORDER)
+from privacyidea.lib.user import User
+from privacyidea.lib.users.custom_user_attributes import InternalCustomUserAttributes, INTERNAL_USAGE
+from privacyidea.lib.utils import (create_img, generate_charlists_from_pin_policy,
+                                   CHARLIST_CONTENTPOLICY, check_pin_contents)
+from privacyidea.lib.utils import hexlify_and_unicode, AUTH_RESPONSE
+from .base import (MyApiTestCase)
 from .test_lib_tokens_webauthn import (ALLOWED_TRANSPORTS, CRED_ID, ASSERTION_RESPONSE_TMPL,
                                        ASSERTION_CHALLENGE, RP_ID, RP_NAME, ORIGIN,
                                        REGISTRATION_RESPONSE_TMPL)
-from privacyidea.lib.utils import (create_img, generate_charlists_from_pin_policy,
-                                   CHARLIST_CONTENTPOLICY, check_pin_contents)
 
 HOSTSFILE = "tests/testdata/hosts"
 SSHKEY = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDO1rx366cmSSs/89j" \
@@ -3164,7 +3163,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
                         "key": "department", "value": "finance"}
         self.assertRaises(PolicyError, check_custom_user_attributes, req, "set")
         set_policy("set_custom_attr", scope=SCOPE.ADMIN,
-                   action="{0!s}=:department: finance devel :color: * :*: 1 2 ".format(PolicyAction.SET_USER_ATTRIBUTES))
+                   action="{0!s}=:department: finance devel :color: * :*: 1 2 ".format(
+                       PolicyAction.SET_USER_ATTRIBUTES))
         # Allow to set to finance
         check_custom_user_attributes(req, "set")
         req.all_data = {"user": "cornelius", "realm": self.realm1,
@@ -3516,7 +3516,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         delete_policy("policy")
 
         # Policy for resolver
-        set_policy(name="policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_ADD_TOKEN, resolver=[self.resolvername3])
+        set_policy(name="policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_ADD_TOKEN,
+                   resolver=[self.resolvername3])
         self.assertTrue(check_token_action(request=req, action=PolicyAction.CONTAINER_ADD_TOKEN))
         # Request user is different from token owner: use token owner (can only happen in add/remove token)
         req.User = User("selfservice", self.realm1, self.resolvername1)
@@ -3576,7 +3577,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         delete_policy("policy")
 
         # Policy for another resolver
-        set_policy(name="policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_ADD_TOKEN, resolver=[self.resolvername1])
+        set_policy(name="policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_ADD_TOKEN,
+                   resolver=[self.resolvername1])
         self.assertRaises(PolicyError, check_token_action, request=req, action=PolicyAction.CONTAINER_ADD_TOKEN)
         # Request user would be allowed, but token owner not (can only happen in add/remove token)
         req.User = User("selfservice", self.realm1, self.resolvername1)
@@ -3687,7 +3689,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         delete_policy("policy")
 
         # Policy for resolver
-        set_policy(name="policy", scope=SCOPE.USER, action=PolicyAction.CONTAINER_DESCRIPTION, resolver=[self.resolvername3])
+        set_policy(name="policy", scope=SCOPE.USER, action=PolicyAction.CONTAINER_DESCRIPTION,
+                   resolver=[self.resolvername3])
         self.assertTrue(check_container_action(request=req, action=PolicyAction.CONTAINER_DESCRIPTION))
         delete_policy("policy")
 
@@ -3707,7 +3710,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # Container has no owner: only allowed for assign and create
         req, container = self.mock_container_request_no_user("user")
         # Generic policy
-        set_policy(name="policy", scope=SCOPE.USER, action=[PolicyAction.CONTAINER_ASSIGN_USER, PolicyAction.CONTAINER_CREATE])
+        set_policy(name="policy", scope=SCOPE.USER,
+                   action=[PolicyAction.CONTAINER_ASSIGN_USER, PolicyAction.CONTAINER_CREATE])
         self.assertTrue(check_container_action(request=req, action=PolicyAction.CONTAINER_ASSIGN_USER))
         container.delete()
         self.assertTrue(check_container_action(request=req, action=PolicyAction.CONTAINER_CREATE))
@@ -3726,7 +3730,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         delete_policy("policy")
 
         # Policy for another resolver
-        set_policy(name="policy", scope=SCOPE.USER, action=PolicyAction.CONTAINER_DESCRIPTION, resolver=[self.resolvername1])
+        set_policy(name="policy", scope=SCOPE.USER, action=PolicyAction.CONTAINER_DESCRIPTION,
+                   resolver=[self.resolvername1])
         self.assertRaises(PolicyError, check_container_action, request=req, action=PolicyAction.CONTAINER_DESCRIPTION)
         delete_policy("policy")
 
@@ -3754,7 +3759,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # Container has no owner: only allowed for assign and create
         req, container = self.mock_container_request_no_user("user")
         # Generic policy
-        set_policy(name="policy", scope=SCOPE.USER, action=[PolicyAction.CONTAINER_ASSIGN_USER, PolicyAction.CONTAINER_DESCRIPTION])
+        set_policy(name="policy", scope=SCOPE.USER,
+                   action=[PolicyAction.CONTAINER_ASSIGN_USER, PolicyAction.CONTAINER_DESCRIPTION])
         self.assertRaises(PolicyError, check_container_action, request=req, action=PolicyAction.CONTAINER_DESCRIPTION)
         delete_policy("policy")
         container.delete()
@@ -3774,7 +3780,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         delete_policy("policy")
 
         # Policy for resolver
-        set_policy(name="policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_DESCRIPTION, resolver=[self.resolvername3])
+        set_policy(name="policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_DESCRIPTION,
+                   resolver=[self.resolvername3])
         self.assertTrue(check_container_action(request=req, action=PolicyAction.CONTAINER_DESCRIPTION))
         # request user differs from container owner: uses container owner (can only happen in token init)
         selfservice = User(login="selfservice", realm=self.realm1, resolver=self.resolvername1)
@@ -3840,7 +3847,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         delete_policy("policy")
 
         # Policy for another resolver
-        set_policy(name="policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_DESCRIPTION, resolver=[self.resolvername1])
+        set_policy(name="policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_DESCRIPTION,
+                   resolver=[self.resolvername1])
         self.assertRaises(PolicyError, check_container_action, request=req, action=PolicyAction.CONTAINER_DESCRIPTION)
         # request user would be allowed, but not the container owner (only possible in token init)
         req.User = User(login="selfservice", realm=self.realm1, resolver=self.resolvername1)
@@ -3869,7 +3877,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         req, container = self.mock_container_request_no_user("admin")
 
         # Policy for resolver
-        set_policy(name="policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_DESCRIPTION, resolver=[self.resolvername3])
+        set_policy(name="policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_DESCRIPTION,
+                   resolver=[self.resolvername3])
         self.assertRaises(PolicyError, check_container_action, request=req, action=PolicyAction.CONTAINER_DESCRIPTION)
         delete_policy("policy")
 
@@ -4027,7 +4036,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         delete_policy("policy")
 
         # Policy for the resolver
-        set_policy(name="policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_ASSIGN_USER, resolver=self.resolvername1)
+        set_policy(name="policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_ASSIGN_USER,
+                   resolver=self.resolvername1)
         self.assertTrue(check_user_params(request=req, action=PolicyAction.CONTAINER_ASSIGN_USER))
         delete_policy("policy")
 
@@ -4126,12 +4136,14 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         delete_policy("policy")
 
         # Policy for user realm
-        set_policy(name="policy", scope=SCOPE.CONTAINER, action=PolicyAction.CONTAINER_CLIENT_ROLLOVER, realm=[self.realm3])
+        set_policy(name="policy", scope=SCOPE.CONTAINER, action=PolicyAction.CONTAINER_CLIENT_ROLLOVER,
+                   realm=[self.realm3])
         self.assertTrue(check_client_container_action(request=req, action=PolicyAction.CONTAINER_CLIENT_ROLLOVER))
         delete_policy("policy")
 
         # Policy for additional realm
-        set_policy(name="policy", scope=SCOPE.CONTAINER, action=PolicyAction.CONTAINER_CLIENT_ROLLOVER, realm=[self.realm1])
+        set_policy(name="policy", scope=SCOPE.CONTAINER, action=PolicyAction.CONTAINER_CLIENT_ROLLOVER,
+                   realm=[self.realm1])
         self.assertTrue(check_client_container_action(request=req, action=PolicyAction.CONTAINER_CLIENT_ROLLOVER))
         delete_policy("policy")
 
@@ -4153,11 +4165,13 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # container with realms
         container.set_realms([self.realm1, self.realm3], add=False)
         # Policy for realm1
-        set_policy(name="policy", scope=SCOPE.CONTAINER, action=PolicyAction.CONTAINER_CLIENT_ROLLOVER, realm=[self.realm1])
+        set_policy(name="policy", scope=SCOPE.CONTAINER, action=PolicyAction.CONTAINER_CLIENT_ROLLOVER,
+                   realm=[self.realm1])
         self.assertTrue(check_client_container_action(request=req, action=PolicyAction.CONTAINER_CLIENT_ROLLOVER))
         delete_policy("policy")
         # Policy for realm3
-        set_policy(name="policy", scope=SCOPE.CONTAINER, action=PolicyAction.CONTAINER_CLIENT_ROLLOVER, realm=[self.realm3])
+        set_policy(name="policy", scope=SCOPE.CONTAINER, action=PolicyAction.CONTAINER_CLIENT_ROLLOVER,
+                   realm=[self.realm3])
         self.assertTrue(check_client_container_action(request=req, action=PolicyAction.CONTAINER_CLIENT_ROLLOVER))
         delete_policy("policy")
         container.delete()
@@ -4184,7 +4198,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         delete_policy("policy")
 
         # Policy for another realm
-        set_policy(name="policy", scope=SCOPE.CONTAINER, action=PolicyAction.CONTAINER_CLIENT_ROLLOVER, realm=[self.realm2])
+        set_policy(name="policy", scope=SCOPE.CONTAINER, action=PolicyAction.CONTAINER_CLIENT_ROLLOVER,
+                   realm=[self.realm2])
         self.assertRaises(PolicyError, check_client_container_action, request=req,
                           action=PolicyAction.CONTAINER_CLIENT_ROLLOVER)
         delete_policy("policy")
@@ -4202,7 +4217,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # container without user
         req, container = self.mock_client_container_request_no_user()
         # Policy for a realm
-        set_policy(name="policy", scope=SCOPE.CONTAINER, action=PolicyAction.CONTAINER_CLIENT_ROLLOVER, realm=self.realm1)
+        set_policy(name="policy", scope=SCOPE.CONTAINER, action=PolicyAction.CONTAINER_CLIENT_ROLLOVER,
+                   realm=self.realm1)
         self.assertRaises(PolicyError, check_client_container_action, request=req,
                           action=PolicyAction.CONTAINER_CLIENT_ROLLOVER)
         delete_policy("policy")
@@ -4215,7 +4231,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         delete_policy("policy")
 
         # Policy for a user
-        set_policy(name="policy", scope=SCOPE.CONTAINER, action=PolicyAction.CONTAINER_CLIENT_ROLLOVER, realm=self.realm1,
+        set_policy(name="policy", scope=SCOPE.CONTAINER, action=PolicyAction.CONTAINER_CLIENT_ROLLOVER,
+                   realm=self.realm1,
                    user="hans")
         self.assertRaises(PolicyError, check_client_container_action, request=req,
                           action=PolicyAction.CONTAINER_CLIENT_ROLLOVER)
@@ -4231,13 +4248,15 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # container with realms
         container.set_realms([self.realm1, self.realm3], add=False)
         # policy for another realm
-        set_policy(name="policy", scope=SCOPE.CONTAINER, action=PolicyAction.CONTAINER_CLIENT_ROLLOVER, realm=[self.realm2])
+        set_policy(name="policy", scope=SCOPE.CONTAINER, action=PolicyAction.CONTAINER_CLIENT_ROLLOVER,
+                   realm=[self.realm2])
         self.assertRaises(PolicyError, check_client_container_action, request=req,
                           action=PolicyAction.CONTAINER_CLIENT_ROLLOVER)
         delete_policy("policy")
 
         # policy for a user
-        set_policy(name="policy", scope=SCOPE.CONTAINER, action=PolicyAction.CONTAINER_CLIENT_ROLLOVER, realm=[self.realm1],
+        set_policy(name="policy", scope=SCOPE.CONTAINER, action=PolicyAction.CONTAINER_CLIENT_ROLLOVER,
+                   realm=[self.realm1],
                    user="hans")
         self.assertRaises(PolicyError, check_client_container_action, request=req,
                           action=PolicyAction.CONTAINER_CLIENT_ROLLOVER)
@@ -4347,7 +4366,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # conflicting policies for registration ttl shall raise error
         req, container = self.mock_container_request("user")
         set_policy("policy1", SCOPE.CONTAINER,
-                   action={PolicyAction.CONTAINER_SERVER_URL: "https://pi.com", PolicyAction.CONTAINER_REGISTRATION_TTL: 20})
+                   action={PolicyAction.CONTAINER_SERVER_URL: "https://pi.com",
+                           PolicyAction.CONTAINER_REGISTRATION_TTL: 20})
         set_policy("policy2", SCOPE.CONTAINER, action={PolicyAction.CONTAINER_REGISTRATION_TTL: 30})
         self.assertRaises(PolicyError, container_registration_config, req)
         delete_policy("policy1")
@@ -4357,7 +4377,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # conflicting policies for challenge ttl shall raise error
         req, container = self.mock_container_request("user")
         set_policy("policy1", SCOPE.CONTAINER,
-                   action={PolicyAction.CONTAINER_SERVER_URL: "https://pi.com", PolicyAction.CONTAINER_CHALLENGE_TTL: 20})
+                   action={PolicyAction.CONTAINER_SERVER_URL: "https://pi.com",
+                           PolicyAction.CONTAINER_CHALLENGE_TTL: 20})
         set_policy("policy2", SCOPE.CONTAINER, action={PolicyAction.CONTAINER_CHALLENGE_TTL: 30})
         self.assertRaises(PolicyError, container_registration_config, req)
         delete_policy("policy1")
@@ -4367,7 +4388,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # conflicting policies for challenge ttl shall raise error
         req, container = self.mock_container_request("user")
         set_policy("policy1", SCOPE.CONTAINER,
-                   action={PolicyAction.CONTAINER_SERVER_URL: "https://pi.com", PolicyAction.CONTAINER_SSL_VERIFY: "False"})
+                   action={PolicyAction.CONTAINER_SERVER_URL: "https://pi.com",
+                           PolicyAction.CONTAINER_SSL_VERIFY: "False"})
         set_policy("policy2", SCOPE.CONTAINER, action={PolicyAction.CONTAINER_SSL_VERIFY: "True"})
         self.assertRaises(PolicyError, container_registration_config, req)
         delete_policy("policy1")
@@ -4492,7 +4514,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         delete_policy("policy")
 
         # Policy for user
-        set_policy(name="policy", scope=SCOPE.CONTAINER, action=PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER, user="root",
+        set_policy(name="policy", scope=SCOPE.CONTAINER, action=PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER,
+                   user="root",
                    realm=[self.realm3], resolver=[self.resolvername3])
         self.assertRaises(PolicyError, check_client_container_disabled_action, request=req,
                           action=PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER)
@@ -4534,34 +4557,40 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         # No policy in the container scope at all
         self.assertTrue(
-            check_client_container_disabled_action(request=req, action=PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER))
+            check_client_container_disabled_action(request=req,
+                                                   action=PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER))
 
         # No unregister policy
         set_policy(name="policy", scope=SCOPE.CONTAINER, action=PolicyAction.CONTAINER_CLIENT_ROLLOVER)
         self.assertTrue(
-            check_client_container_disabled_action(request=req, action=PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER))
+            check_client_container_disabled_action(request=req,
+                                                   action=PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER))
         delete_policy("policy")
 
         # Policy for another resolver
         set_policy(name="policy", scope=SCOPE.CONTAINER, action=PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER,
                    resolver=[self.resolvername1])
         self.assertTrue(
-            check_client_container_disabled_action(request=req, action=PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER))
+            check_client_container_disabled_action(request=req,
+                                                   action=PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER))
         delete_policy("policy")
 
         # Policy for another realm
         set_policy(name="policy", scope=SCOPE.CONTAINER, action=PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER,
                    realm=[self.realm2])
         self.assertTrue(
-            check_client_container_disabled_action(request=req, action=PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER))
+            check_client_container_disabled_action(request=req,
+                                                   action=PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER))
         delete_policy("policy")
 
         # Policy for another user of the same realm
-        set_policy(name="policy", scope=SCOPE.CONTAINER, action=PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER, user="hans",
+        set_policy(name="policy", scope=SCOPE.CONTAINER, action=PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER,
+                   user="hans",
                    realm=[self.realm3],
                    resolver=[self.resolvername3])
         self.assertTrue(
-            check_client_container_disabled_action(request=req, action=PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER))
+            check_client_container_disabled_action(request=req,
+                                                   action=PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER))
         delete_policy("policy")
 
         container.delete()
@@ -4572,14 +4601,16 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         set_policy(name="policy", scope=SCOPE.CONTAINER, action=PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER,
                    realm=self.realm1)
         self.assertTrue(
-            check_client_container_disabled_action(request=req, action=PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER))
+            check_client_container_disabled_action(request=req,
+                                                   action=PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER))
         delete_policy("policy")
 
         # Policy for a resolver
         set_policy(name="policy", scope=SCOPE.CONTAINER, action=PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER,
                    resolver=self.resolvername1)
         self.assertTrue(
-            check_client_container_disabled_action(request=req, action=PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER))
+            check_client_container_disabled_action(request=req,
+                                                   action=PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER))
         delete_policy("policy")
 
         # Policy for a user
@@ -4587,14 +4618,16 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
                    realm=self.realm1,
                    user="hans")
         self.assertTrue(
-            check_client_container_disabled_action(request=req, action=PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER))
+            check_client_container_disabled_action(request=req,
+                                                   action=PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER))
         delete_policy("policy")
 
         # Policy with all actions in the scope disabled action
         set_policy(name="policy", scope=SCOPE.CONTAINER, realm=self.realm1,
                    user="hans")
         self.assertTrue(
-            check_client_container_disabled_action(request=req, action=PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER))
+            check_client_container_disabled_action(request=req,
+                                                   action=PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER))
         delete_policy("policy")
 
         # container with realms
@@ -4603,7 +4636,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         set_policy(name="policy", scope=SCOPE.CONTAINER, action=PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER,
                    realm=[self.realm2])
         self.assertTrue(
-            check_client_container_disabled_action(request=req, action=PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER))
+            check_client_container_disabled_action(request=req,
+                                                   action=PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER))
         delete_policy("policy")
 
         # policy for a user
@@ -4611,7 +4645,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
                    realm=[self.realm1],
                    user="hans")
         self.assertTrue(
-            check_client_container_disabled_action(request=req, action=PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER))
+            check_client_container_disabled_action(request=req,
+                                                   action=PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER))
         delete_policy("policy")
 
         container.delete()
@@ -5610,7 +5645,8 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         # policy not set: default is generic
         self.assertEqual("generic", new_response.json["result"]["value"]["default_container_type"])
         # Set smartphone as default
-        set_policy(name="default_container", scope=SCOPE.WEBUI, action={PolicyAction.DEFAULT_CONTAINER_TYPE: "smartphone"})
+        set_policy(name="default_container", scope=SCOPE.WEBUI,
+                   action={PolicyAction.DEFAULT_CONTAINER_TYPE: "smartphone"})
         g.policy_object = PolicyClass()
         new_response = get_webui_settings(req, resp)
         self.assertEqual("smartphone", new_response.json["result"]["value"]["default_container_type"])
@@ -5801,7 +5837,8 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
 
         # define correct policy
         set_policy(name="container_wizard", scope=SCOPE.WEBUI,
-                   action={PolicyAction.CONTAINER_WIZARD_TYPE: "generic", PolicyAction.CONTAINER_WIZARD_TEMPLATE: "test(generic)"})
+                   action={PolicyAction.CONTAINER_WIZARD_TYPE: "generic",
+                           PolicyAction.CONTAINER_WIZARD_TEMPLATE: "test(generic)"})
         # User without container
         resp = jsonify(user_response)
         new_response = get_webui_settings(req, resp)
@@ -6498,7 +6535,8 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         container_serial = init_container({"type": "smartphone", "user": "hans", "realm": self.realm1})[
             "container_serial"]
         container = find_container_by_serial(container_serial)
-        container.set_container_info({RegistrationState.get_key(): RegistrationState.REGISTERED.value})
+        container.set_container_info(
+            [TokenContainerInfoData(RegistrationState.get_key(), RegistrationState.REGISTERED.value)])
         response = multichallenge_enroll_via_validate(request, response)
         check_response(response)
         container_of_hans = get_all_containers(user=hans)["containers"]

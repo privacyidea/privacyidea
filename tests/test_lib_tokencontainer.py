@@ -879,9 +879,11 @@ class TokenContainerManagementTestCase(MyTestCase):
         # ---- info ----
         # Add info
         container_3 = find_container_by_serial(container_serials[3])
-        container_3.set_container_info({"key1": "value1", "key2": "value2"})
+        container_3.set_container_info(
+            [TokenContainerInfoData("key1", "value1"), TokenContainerInfoData("key2", "value2")])
         container_4 = find_container_by_serial(container_serials[4])
-        container_4.set_container_info({"key1": "value1", "test": "1234", "test.type": "number"})
+        container_4.set_container_info(
+            [TokenContainerInfoData("key1", "value1"), TokenContainerInfoData("test", "1234", "number")])
         # exact
         container_data = get_all_containers(info={"key1": "value1"}, pagesize=15)
         self.assertEqual(2, len(container_data["containers"]))
@@ -1199,7 +1201,7 @@ class TokenContainerManagementTestCase(MyTestCase):
         self.assertEqual("secp384r1", value)
 
         # change key
-        smartphone.set_container_info({SmartphoneOptions.KEY_ALGORITHM: "secp256r1"})
+        smartphone.set_container_info([TokenContainerInfoData(SmartphoneOptions.KEY_ALGORITHM, "secp256r1")])
         # set default value keeps the defined value
         value = smartphone.set_default_option(SmartphoneOptions.KEY_ALGORITHM)
         self.assertEqual("secp256r1", value)
@@ -2657,7 +2659,8 @@ class TokenContainerTemplateTestCase(MyTestCase):
         for token_details in [{"type": "hotp", "genkey": True}, {"type": "spass"}, {"type": "spass"}]:
             token = init_token(token_details)
             container.add_token(token)
-        container.set_container_info({"hash_algorithm": "SHA1", "encrypt_algorithm": "AES"})
+        container.set_container_info(
+            [TokenContainerInfoData("hash_algorithm", "SHA1"), TokenContainerInfoData("encrypt_algorithm", "AES")])
 
         # compare template and container: equal
         result = compare_template_with_container(template, container)

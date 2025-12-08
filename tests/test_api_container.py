@@ -1,7 +1,7 @@
 import base64
+import json
 from dataclasses import dataclass
 from datetime import datetime, timezone, timedelta
-import json
 
 import passlib
 from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PublicKey
@@ -10,16 +10,16 @@ from privacyidea.lib.applications.offline import MachineApplication, REFILLTOKEN
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.container import (create_container_template, get_template_obj, delete_container_by_serial,
                                        get_container_realms, set_container_states, unregister)
+from privacyidea.lib.container import (init_container, find_container_by_serial, add_token_to_container, assign_user,
+                                       add_container_realms, remove_token_from_container)
 from privacyidea.lib.containers.container_info import PI_INTERNAL, TokenContainerInfoData, RegistrationState
 from privacyidea.lib.containers.container_states import ContainerStates
 from privacyidea.lib.containers.smartphone import SmartphoneOptions
 from privacyidea.lib.crypto import generate_keypair_ecc, decrypt_aes
-from privacyidea.lib.container import (init_container, find_container_by_serial, add_token_to_container, assign_user,
-                                       add_container_realms, remove_token_from_container)
 from privacyidea.lib.machine import attach_token
+from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policies.conditions import ConditionSection, ConditionHandleMissingData
 from privacyidea.lib.policy import set_policy, SCOPE, delete_policy
-from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.privacyideaserver import add_privacyideaserver
 from privacyidea.lib.realm import set_realm, set_default_realm
 from privacyidea.lib.resolver import save_resolver
@@ -28,10 +28,10 @@ from privacyidea.lib.smsprovider.FirebaseProvider import FirebaseConfig
 from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway
 from privacyidea.lib.token import (get_one_token, get_tokens_from_serial_or_user,
                                    get_tokeninfo, get_tokens)
+from privacyidea.lib.token import init_token, get_tokens_paginate, unassign_token
 from privacyidea.lib.tokens.papertoken import PAPERACTION
 from privacyidea.lib.tokens.pushtoken import PUSH_ACTION
 from privacyidea.lib.tokens.tantoken import TANACTION
-from privacyidea.lib.token import init_token, get_tokens_paginate, unassign_token
 from privacyidea.lib.user import User
 from privacyidea.lib.utils.compare import PrimaryComparators
 from privacyidea.models import Realm
@@ -1301,8 +1301,10 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
     def test_09_helpdesk_add_token_allowed(self):
         self.setUp_user_realm3()
         set_policy("policy_realm", scope=SCOPE.ADMIN,
-                   action=f"{PolicyAction.CONTAINER_ADD_TOKEN}=true, {PolicyAction.CONTAINER_REMOVE_TOKEN}=true", realm=self.realm1)
-        set_policy("policy_resolver", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_ADD_TOKEN, resolver=self.resolvername3)
+                   action=f"{PolicyAction.CONTAINER_ADD_TOKEN}=true, {PolicyAction.CONTAINER_REMOVE_TOKEN}=true",
+                   realm=self.realm1)
+        set_policy("policy_resolver", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_ADD_TOKEN,
+                   resolver=self.resolvername3)
         container_serial = self.create_container_for_user()
 
         # Add single token
@@ -1509,8 +1511,7 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         token_serials = ','.join([token_no_user.get_serial(), token_user.get_serial()])
 
         response = self.request_denied_assert_403(f"/container/{c_serial_user}/removeall", {"serial": token_serials},
-                                                self.at,
-                                                method='POST')
+                                                  self.at, method='POST')
         result = response.get("result")
         self.assertIn("error", result)
         error = result.get("error")
@@ -2138,7 +2139,8 @@ class ContainerPolicyConditions(APIContainerAuthorization):
                                     {"user": "cornelius", "realm": self.realm1}, self.at, "POST")
 
         # Simulate registration
-        smartphone.set_container_info({"registration_state": RegistrationState.REGISTERED.value})
+        smartphone.set_container_info(
+            [TokenContainerInfoData("registration_state", RegistrationState.REGISTERED.value)])
 
         # Unassign user from (not registered) generic container is allowed
         self.request_assert_success(f"/container/{generic_serial}/unassign",
@@ -2337,14 +2339,14 @@ class ContainerPolicyConditions(APIContainerAuthorization):
                         True),
                        (ConditionSection.USERINFO, "phone", PrimaryComparators.MATCHES, ".+", True,
                         ConditionHandleMissingData.IS_FALSE.value)])
-        set_policy("registration", scope=SCOPE.CONTAINER, action={PolicyAction.CONTAINER_SERVER_URL: "https://pi.net/"})
+        set_policy("registration", scope=SCOPE.CONTAINER, action=f"{PolicyAction.CONTAINER_SERVER_URL}=https://pi.net/")
         container_serial = init_container({"type": "smartphone", "user": "selfservice", "realm": self.realm1})[
             "container_serial"]
         container = find_container_by_serial(container_serial)
 
         # Register smartphone
-        container.set_container_info(
-            {"registration_state": RegistrationState.REGISTERED.value, "server_url": "https://pi.net/"})
+        container.set_container_info([TokenContainerInfoData("registration_state", RegistrationState.REGISTERED.value),
+                                      TokenContainerInfoData("server_url", "https://pi.net/")])
 
         # Rollover fails
         self.request_assert_error(403, "container/register/initialize",
@@ -3206,8 +3208,11 @@ class APIContainer(APIContainerTest):
         set_policy("hide_info", scope=SCOPE.ADMIN,
                    action=f"{PolicyAction.HIDE_CONTAINER_INFO}=encrypt_algorithm device,{PolicyAction.CONTAINER_LIST}")
         container3 = find_container_by_serial(container_serials[3])
-        container3.set_container_info({"encrypt_algorithm": "AES", "encrypt_mode": "GCM", "device": "ABC1234",
-                                       RegistrationState.get_key(): RegistrationState.REGISTERED.value})
+        container3.set_container_info([TokenContainerInfoData(key="encrypt_algorithm", value="AES"),
+                                       TokenContainerInfoData(key="encrypt_mode", value="GCM"),
+                                       TokenContainerInfoData(key="device", value="ABC1234"),
+                                       TokenContainerInfoData(key=RegistrationState.get_key(),
+                                                              value=RegistrationState.REGISTERED.value)])
         # Filter for container serial
         result = self.request_assert_success('/container/',
                                              {"container_serial": container_serials[3], "pagesize": 15},

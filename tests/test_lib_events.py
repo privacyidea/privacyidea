@@ -946,12 +946,12 @@ class BaseEventHandlerTestCase(MyTestCase):
         self.assertFalse(r)
 
         # Condition not match: wrong info value
-        container.set_container_info({"registration_state": "client_wait"})
+        container.set_container_info([TokenContainerInfoData("registration_state", "client_wait")])
         r = event_handler.check_condition(options)
         self.assertFalse(r)
 
         # Condition match
-        container.set_container_info({"registration_state": "registered"})
+        container.set_container_info([TokenContainerInfoData("registration_state", "registered")])
         r = event_handler.check_condition(options)
         self.assertTrue(r)
 
@@ -963,12 +963,12 @@ class BaseEventHandlerTestCase(MyTestCase):
         self.assertFalse(r)
 
         # Condition not match: value is greater
-        container.set_container_info({"challenge_ttl": "10"})
+        container.set_container_info([TokenContainerInfoData("challenge_ttl", "10")])
         r = event_handler.check_condition(options)
         self.assertFalse(r)
 
         # Condition match
-        container.set_container_info({"challenge_ttl": 3})
+        container.set_container_info([TokenContainerInfoData("challenge_ttl", "3")])
         r = event_handler.check_condition(options)
         self.assertTrue(r)
 
@@ -981,12 +981,12 @@ class BaseEventHandlerTestCase(MyTestCase):
         self.assertFalse(r)
 
         # condition not match: value is smaller
-        container.set_container_info({"challenge_ttl": 3})
+        container.set_container_info([TokenContainerInfoData("challenge_ttl", "3")])
         r = event_handler.check_condition(options)
         self.assertFalse(r)
 
         # condition match
-        container.set_container_info({"challenge_ttl": 10})
+        container.set_container_info([TokenContainerInfoData("challenge_ttl", "10")])
         r = event_handler.check_condition(options)
         self.assertTrue(r)
 

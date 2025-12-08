@@ -410,7 +410,7 @@ class TokenClass(object):
         :param key:
         :param value:
         :param value_type: If type is "password", the value will be encrypted
-        :param commit_db_session: Whether the database changes should be commited to be persistent. Only use false if
+        :param commit_db_session: Whether the database changes should be committed to be persistent. Only use false if
             you are doing multiple database changes with a final single commit.
         """
 

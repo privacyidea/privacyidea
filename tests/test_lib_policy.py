@@ -9,7 +9,7 @@ from werkzeug.datastructures.headers import Headers, EnvironHeaders
 
 from privacyidea.lib.auditmodules.base import Audit
 from privacyidea.lib.container import init_container, find_container_by_serial
-from privacyidea.lib.containers.container_info import RegistrationState
+from privacyidea.lib.containers.container_info import RegistrationState, TokenContainerInfoData
 from privacyidea.lib.policies.conditions import (PolicyConditionClass, ConditionSection,
                                                  ConditionHandleMissingData)
 from privacyidea.lib.token import init_token
@@ -2983,7 +2983,7 @@ class PolicyConditionClassTestCase(MyTestCase):
         self.assertTrue(isinstance(data.available_keys, list))
 
         # Everything available
-        container.set_container_info({"registration_state": RegistrationState.CLIENT_WAIT.value})
+        container.set_container_info([TokenContainerInfoData("registration_state", RegistrationState.CLIENT_WAIT.value)])
         data = condition.get_container_data(container_serial)
         self.assertEqual("container", data.object_name)
         self.assertTrue(data.object_available)

@@ -18,12 +18,12 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from privacyidea.models import db
-from privacyidea.models.utils import MethodsMixin
-from privacyidea.models.realm import Realm
-from privacyidea.models.config import SAFE_STORE
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.utils import convert_column_to_unicode
+from privacyidea.models import db
+from privacyidea.models.config import SAFE_STORE
+from privacyidea.models.realm import Realm
+from privacyidea.models.utils import MethodsMixin
 
 
 class TokenContainer(MethodsMixin, db.Model):
@@ -57,31 +57,6 @@ class TokenContainer(MethodsMixin, db.Model):
             self.tokens = [t.token for t in tokens]
         if states:
             self.states = states
-
-    def set_info(self, info):
-        """
-        Set the additional container info for this container
-
-        Entries that end with ".type" are used as type for the keys.
-        I.e. two entries sshkey="XYZ" and sshkey.type="password" will store
-        the key sshkey as type "password".
-
-        :param info: The key-values to set for this container
-        :type info: dict
-        """
-        if not self.id:
-            # If there is no ID to reference the container, we need to save the
-            # container
-            self.save()
-        types = {}
-        for k, v in info.items():
-            if k and k.endswith(".type"):
-                types[".".join(k.split(".")[:-1])] = v
-        for k, v in info.items():
-            if k and not k.endswith(".type"):
-                TokenContainerInfo(self.id, k, v,
-                                   type=types.get(k)).save(persistent=False)
-        db.session.commit()
 
 
 class TokenContainerOwner(MethodsMixin, db.Model):
@@ -187,30 +162,6 @@ class TokenContainerInfo(MethodsMixin, db.Model):
         self.value = convert_column_to_unicode(value)
         self.type = type
         self.description = description
-
-    def save(self, persistent=True):
-        ti_func = TokenContainerInfo.query.filter_by(container_id=self.container_id,
-                                                     key=self.key).first
-        ti = ti_func()
-        if ti is None:
-            # create a new one
-            db.session.add(self)
-            db.session.commit()
-            if get_app_config_value(SAFE_STORE, False):
-                ti = ti_func()
-                ret = ti.id
-            else:
-                ret = self.id
-        else:
-            # update
-            TokenContainerInfo.query.filter_by(container_id=self.container_id,
-                                               key=self.key).update({'value': self.value,
-                                                                     'description': self.description,
-                                                                     'type': self.type})
-            ret = ti.id
-        if persistent:
-            db.session.commit()
-        return ret
 
 
 class TokenContainerRealm(MethodsMixin, db.Model):
