@@ -21,7 +21,11 @@
   mat-dialog-title>
   Token {{ data.tokenSerial() }} is lost?
 </h2>
-<mat-dialog-content class="lost-content">
+<app-dialog-wrapper
+  [title]="'Token ' + data.tokenSerial() + ' is lost?'"
+  (close)="close()"
+  (onAction)="onAction($event)"
+  [actions]="[confirmAction]">
   <p i18n>
     If the token is lost, you can enroll a temporary password based token and give the password to the user. The OTP PIN
     of the old token is still the same.
@@ -88,4 +92,4 @@
       </button>
     </div>
   }
-</mat-dialog-content>
+</app-dialog-wrapper>

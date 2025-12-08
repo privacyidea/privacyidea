@@ -78,14 +78,14 @@ export class TokenTableSelfServiceComponent extends TokenTableComponent {
   );
 
   revokeToken(serial: string): void {
-    this.dialog
-      .open(SimpleConfirmationDialogComponent, {
+    this.dialogService
+      .openDialog({
+        component: SimpleConfirmationDialogComponent,
         data: {
-          serialList: [serial],
           title: "Revoke Token",
-          type: "token",
-          action: "revoke",
-          numberOfTokens: 1
+          items: [serial],
+          itemType: "token",
+          confirmAction: { label: "Revoke", value: true, type: "destruct" }
         }
       })
       .afterClosed()
@@ -103,14 +103,14 @@ export class TokenTableSelfServiceComponent extends TokenTableComponent {
   }
 
   deleteToken(serial: string): void {
-    this.dialog
-      .open(SimpleConfirmationDialogComponent, {
+    this.dialogService
+      .openDialog({
+        component: SimpleConfirmationDialogComponent,
         data: {
-          serialList: [serial],
           title: "Delete Token",
-          type: "token",
-          action: "delete",
-          numberOfTokens: 1
+          items: [serial],
+          itemType: "token",
+          confirmAction: { label: "Delete", value: true, type: "destruct" }
         }
       })
       .afterClosed()

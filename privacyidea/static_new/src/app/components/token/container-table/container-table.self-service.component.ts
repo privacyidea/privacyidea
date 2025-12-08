@@ -80,8 +80,9 @@ export class ContainerTableSelfServiceComponent extends ContainerTableComponent 
   }
 
   deleteContainer(serial: string): void {
-    this.dialog
-      .open(SimpleConfirmationDialogComponent, {
+    this.dialogService
+      .openDialog({
+        component: SimpleConfirmationDialogComponent,
         data: {
           serialList: [serial],
           title: "Delete Container",

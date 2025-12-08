@@ -48,6 +48,7 @@ import { LostTokenComponent } from "./lost-token/lost-token.component";
 import { SimpleConfirmationDialogComponent } from "../../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { ROUTE_PATHS } from "../../../../route_paths";
 import { Router } from "@angular/router";
+import { DialogService, DialogServiceInterface } from "../../../../services/dialog/dialog.service";
 
 @Component({
   selector: "app-token-details-actions",
@@ -66,14 +67,13 @@ import { Router } from "@angular/router";
   styleUrl: "./token-details-actions.component.scss"
 })
 export class TokenDetailsActionsComponent {
-  private readonly matDialog: MatDialog = inject(MatDialog);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   private readonly machineService: MachineServiceInterface = inject(MachineService);
   protected readonly validateService: ValidateServiceInterface = inject(ValidateService);
   protected readonly overflowService: OverflowServiceInterface = inject(OverflowService);
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
-  private readonly dialog: MatDialog = inject(MatDialog);
+  private readonly dialogService: DialogServiceInterface = inject(DialogService);
   private router = inject(Router);
   @Input() setPinValue!: WritableSignal<string>;
   @Input() repeatPinValue!: WritableSignal<string>;
@@ -99,14 +99,14 @@ export class TokenDetailsActionsComponent {
   }
 
   revokeToken(): void {
-    this.dialog
-      .open(SimpleConfirmationDialogComponent, {
+    this.dialogService
+      .openDialog({
+        component: SimpleConfirmationDialogComponent,
         data: {
-          serialList: [this.tokenSerial()],
           title: "Revoke Token",
-          type: "token",
-          action: "revoke",
-          numberOfTokens: 1
+          items: [this.tokenSerial()],
+          itemType: "token",
+          confirmAction: { label: "Revoke", value: true, type: "destruct" }
         }
       })
       .afterClosed()
@@ -127,14 +127,14 @@ export class TokenDetailsActionsComponent {
   }
 
   deleteToken(): void {
-    this.dialog
-      .open(SimpleConfirmationDialogComponent, {
+    this.dialogService
+      .openDialog({
+        component: SimpleConfirmationDialogComponent,
         data: {
-          serialList: [this.tokenSerial()],
           title: "Delete Token",
-          type: "token",
-          action: "delete",
-          numberOfTokens: 1
+          items: [this.tokenSerial()],
+          itemType: "token",
+          confirmAction: { label: "Delete", value: true, type: "destruct" }
         }
       })
       .afterClosed()
@@ -172,15 +172,13 @@ export class TokenDetailsActionsComponent {
       tokenType: this.tokenType(),
       tokenDetails: this.tokenService.getTokenDetails(this.tokenSerial())
     };
-    this.matDialog
-      .open(TokenSshMachineAssignDialogComponent, {
-        width: "600px",
-        data: data,
-        autoFocus: false,
-        restoreFocus: false
-      })
+    this.dialogService
+      .openDialog({ component: TokenSshMachineAssignDialogComponent, data: data })
       .afterClosed()
       .subscribe((request) => {
+        if (!request) {
+          return;
+        }
         lastValueFrom(request).then(() => {
           this.machineService.tokenApplicationResource.reload();
         });
@@ -191,13 +189,8 @@ export class TokenDetailsActionsComponent {
     const data: HotpMachineAssignDialogData = {
       tokenSerial: this.tokenSerial()
     };
-    this.matDialog
-      .open(TokenHotpMachineAssignDialogComponent, {
-        width: "600px",
-        data: data,
-        autoFocus: false,
-        restoreFocus: false
-      })
+    this.dialogService
+      .openDialog({ component: TokenHotpMachineAssignDialogComponent, data: data })
       .afterClosed()
       .subscribe((request) => {
         if (request) {
@@ -245,7 +238,8 @@ export class TokenDetailsActionsComponent {
   }
 
   openLostTokenDialog() {
-    this.matDialog.open(LostTokenComponent, {
+    this.dialogService.openDialog({
+      component: LostTokenComponent,
       data: {
         isLost: this.isLost,
         tokenSerial: this.tokenSerial

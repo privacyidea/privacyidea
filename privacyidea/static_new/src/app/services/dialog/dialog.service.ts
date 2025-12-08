@@ -39,7 +39,7 @@ export interface DialogServiceInterface {
   closeDialog<R>(ref: MatDialogRef<any, R>, result?: R): boolean;
   openDialog<T, R>(args: {
     component: ComponentType<AbstractDialogComponent<T, R>>;
-    data: T;
+    data?: T;
     configOverride?: Partial<MatDialogConfig<T>>;
   }): MatDialogRef<T, R>;
 
@@ -70,7 +70,7 @@ export class DialogService implements DialogServiceInterface {
    */
   openDialog<T, R>(args: {
     component: ComponentType<AbstractDialogComponent<T, R>>;
-    data: T;
+    data?: T;
     configOverride?: Partial<MatDialogConfig<T>>;
   }): MatDialogRef<T, R> {
     const { component, data, configOverride } = args;

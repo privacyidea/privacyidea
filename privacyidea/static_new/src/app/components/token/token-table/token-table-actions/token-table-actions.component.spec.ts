@@ -185,7 +185,8 @@ describe("TokenTableActionsComponent", () => {
       component.tokenSelection.set(mockTokens);
       component.unassignSelectedTokens();
 
-      expect(dialogSpy).toHaveBeenCalledWith(SimpleConfirmationDialogComponent, {
+      expect(dialogSpy).toHaveBeenCalledWith({
+        component: SimpleConfirmationDialogComponent,
         data: {
           serialList: ["TOKEN1"],
           title: "Unassign Selected Tokens",

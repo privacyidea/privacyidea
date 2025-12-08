@@ -65,6 +65,7 @@ import { SimpleConfirmationDialogComponent } from "../../shared/dialog/confirmat
 import { MatTooltip } from "@angular/material/tooltip";
 import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
 import { ResolverService, ResolverServiceInterface } from "../../../services/resolver/resolver.service";
+import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
 
 type ResolverWithPriority = { name: string; priority: number | null };
 type NodeResolversMap = { [nodeId: string]: ResolverWithPriority[] };
@@ -124,7 +125,7 @@ export class RealmTableComponent {
   protected readonly realmService: RealmServiceInterface = inject(RealmService);
   protected readonly systemService: SystemServiceInterface = inject(SystemService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
-  protected readonly dialog: MatDialog = inject(MatDialog);
+  protected readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly resolverService: ResolverServiceInterface = inject(ResolverService);
 
@@ -560,13 +561,14 @@ export class RealmTableComponent {
       return;
     }
 
-    this.dialog
-      .open(SimpleConfirmationDialogComponent, {
+    this.dialogService
+      .openDialog({
+        component: SimpleConfirmationDialogComponent,
         data: {
-          serialList: [row.name],
           title: $localize`Delete Realm`,
-          type: "realm",
-          action: "delete"
+          items: [row.name],
+          itemType: "realm",
+          confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }
         }
       })
       .afterClosed()

@@ -41,6 +41,9 @@ import { MatSelectModule } from "@angular/material/select";
 import { MatButtonModule } from "@angular/material/button";
 import { MatInputModule } from "@angular/material/input";
 import { Observable } from "rxjs";
+import { AbstractDialogComponent } from "../../../../shared/dialog/abstract-dialog/abstract-dialog.component";
+import { DialogWrapperComponent } from "../../../../shared/dialog/dialog-wrapper/dialog-wrapper.component";
+import { DialogAction } from "../../../../../models/dialog";
 
 export type HotpMachineAssignDialogData = {
   tokenSerial: string;
@@ -60,15 +63,27 @@ export type HotpMachineAssignDialogData = {
     MatOptionModule,
     MatSelectModule,
     MatDividerModule,
-    MatAutocompleteModule
+    MatAutocompleteModule,
+    DialogWrapperComponent
   ]
 })
-export class TokenHotpMachineAssignDialogComponent {
-  public dialogRef: MatDialogRef<TokenHotpMachineAssignDialogComponent, Observable<any> | null> = inject(MatDialogRef);
+export class TokenHotpMachineAssignDialogComponent extends AbstractDialogComponent<
+  HotpMachineAssignDialogData,
+  Observable<any> | null
+> {
   private machineService: MachineServiceInterface = inject(MachineService);
-
-  public data: HotpMachineAssignDialogData = inject(MAT_DIALOG_DATA);
   public tokenSerial = this.data.tokenSerial;
+
+  assignAction: DialogAction<string> = {
+    label: "Assign",
+    value: "assign",
+    type: "confirm"
+  };
+  onAction(actionValue: string): void {
+    if (actionValue === "assign") {
+      this.onAssign();
+    }
+  }
 
   countControl = new FormControl<number | null>(100, {
     nonNullable: true,
@@ -105,10 +120,6 @@ export class TokenHotpMachineAssignDialogComponent {
       }
     });
     this.dialogRef.close(request);
-  }
-
-  onCancel(): void {
-    this.dialogRef.close(null);
   }
 
   machineValidator(control: AbstractControl<string | Machine>): ValidationErrors | null {

@@ -46,6 +46,8 @@ import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
 import { StringUtils } from "../../utils/string.utils";
 import { SimpleConfirmationDialogComponent } from "../../components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { DialogService, DialogServiceInterface } from "../dialog/dialog.service";
+import { DialogAction } from "../../models/dialog";
 
 export type TokenTypeKey =
   | "hotp"
@@ -226,7 +228,7 @@ export interface TokenServiceInterface {
 
   bulkDeleteTokens(selectedTokens: string[]): Observable<PiResponse<BulkResult, any>>;
 
-  bulkDeleteWithConfirmDialog(serialList: string[], dialog: any, afterDelete?: () => void): void;
+  bulkDeleteWithConfirmDialog(serialList: string[], afterDelete?: () => void): void;
 
   revokeToken(tokenSerial: string): Observable<any>;
 
@@ -288,6 +290,7 @@ export class TokenService implements TokenServiceInterface {
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
+  private readonly dialogService: DialogServiceInterface = inject(DialogService);
 
   readonly hiddenApiFilter = hiddenApiFilter;
   stopPolling$ = new Subject<void>();
@@ -562,15 +565,19 @@ export class TokenService implements TokenServiceInterface {
     );
   }
 
-  bulkDeleteWithConfirmDialog(serialList: string[], dialog: any, afterDelete?: () => void) {
-    dialog
-      .open(SimpleConfirmationDialogComponent, {
+  bulkDeleteWithConfirmDialog(serialList: string[], afterDelete?: () => void) {
+    this.dialogService
+      .openDialog({
+        component: SimpleConfirmationDialogComponent,
         data: {
-          serialList: serialList,
           title: "Delete Selected Tokens",
-          type: "token",
-          action: "delete",
-          numberOfTokens: serialList.length
+          items: serialList,
+          itemType: "token",
+          confirmAction: {
+            type: "destruct",
+            label: $localize`Delete`,
+            value: true
+          }
         }
       })
       .afterClosed()

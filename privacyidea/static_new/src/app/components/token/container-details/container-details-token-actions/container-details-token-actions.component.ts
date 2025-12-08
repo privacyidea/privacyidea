@@ -27,9 +27,9 @@ import { MatIcon } from "@angular/material/icon";
 import { MatButton } from "@angular/material/button";
 import { MatDivider } from "@angular/material/divider";
 import { SimpleConfirmationDialogComponent } from "../../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
-import { MatDialog } from "@angular/material/dialog";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 import { MatTableDataSource } from "@angular/material/table";
+import { DialogService, DialogServiceInterface } from "../../../../services/dialog/dialog.service";
 
 @Component({
   selector: "app-container-details-token-actions",
@@ -41,7 +41,7 @@ export class ContainerDetailsTokenActionsComponent {
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
-  protected readonly dialog: MatDialog = inject(MatDialog);
+  protected readonly dialogService: DialogServiceInterface = inject(DialogService);
 
   @Input() containerSerial!: string;
   @Input() user!: WritableSignal<{
@@ -81,8 +81,9 @@ export class ContainerDetailsTokenActionsComponent {
       return;
     }
     const tokenSerials = tokenToUnassign.map((token) => token.serial);
-    this.dialog
-      .open(SimpleConfirmationDialogComponent, {
+    this.dialogService
+      .openDialog({
+        component: SimpleConfirmationDialogComponent,
         data: {
           type: "token",
           serialList: tokenSerials,
@@ -148,8 +149,9 @@ export class ContainerDetailsTokenActionsComponent {
     const serialList = this.tokenData()
       .data.map((token) => token.serial)
       .join(",");
-    this.dialog
-      .open(SimpleConfirmationDialogComponent, {
+    this.dialogService
+      .openDialog({
+        component: SimpleConfirmationDialogComponent,
         data: {
           serialList: serialList.split(","),
           title: "Remove Token",

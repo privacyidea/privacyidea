@@ -16,12 +16,11 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<h1
-  i18n
-  mat-dialog-title>
-  Token Assignment
-</h1>
-<mat-dialog-content>
+<app-dialog-wrapper
+  [title]="'Token Assignment'"
+  (close)="close()"
+  (onAction)="onAction($event)"
+  [actions]="[confirmAction]">
   <mat-form-field
     appearance="fill"
     class="pin-field">
@@ -57,26 +56,10 @@
       mat-icon-button
       matSuffix
       type="button">
-      <mat-icon>{{ hidePin() ? 'visibility_off' : 'visibility' }}</mat-icon>
+      <mat-icon>{{ hidePin() ? "visibility_off" : "visibility" }}</mat-icon>
     </button>
     @if (pinRepeat() && !pinsMatch()) {
       <mat-error i18n>PINs do not match</mat-error>
     }
   </mat-form-field>
-</mat-dialog-content>
-<mat-dialog-actions>
-  <button
-    (click)="onCancel()"
-    i18n
-    mat-button>
-    Cancel
-  </button>
-  <button
-    (click)="onConfirm()"
-    [disabled]="!pinsMatch()"
-    color="primary"
-    i18n
-    mat-button>
-    Assign
-  </button>
-</mat-dialog-actions>
+</app-dialog-wrapper>

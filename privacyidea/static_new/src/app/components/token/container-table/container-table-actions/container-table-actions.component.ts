@@ -30,6 +30,7 @@ import { ROUTE_PATHS } from "../../../../route_paths";
 import { RouterLink } from "@angular/router";
 import { DocumentationService } from "../../../../services/documentation/documentation.service";
 import { NotificationService } from "../../../../services/notification/notification.service";
+import { DialogService, DialogServiceInterface } from "../../../../services/dialog/dialog.service";
 
 @Component({
   selector: "app-container-table-actions",
@@ -38,7 +39,7 @@ import { NotificationService } from "../../../../services/notification/notificat
   styleUrl: "./container-table-actions.component.scss"
 })
 export class ContainerTableActionsComponent {
-  private readonly dialog: MatDialog = inject(MatDialog);
+  private readonly dialogService: DialogServiceInterface = inject(DialogService);
   private readonly containerService: ContainerServiceInterface = inject(ContainerService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly versioningService: VersioningServiceInterface = inject(VersioningService);
@@ -52,14 +53,14 @@ export class ContainerTableActionsComponent {
 
   deleteSelectedContainer(): void {
     const selectedContainers = this.containerSelection();
-    this.dialog
-      .open(SimpleConfirmationDialogComponent, {
+    this.dialogService
+      .openDialog({
+        component: SimpleConfirmationDialogComponent,
         data: {
-          serialList: selectedContainers.map((container) => container.serial),
           title: "Delete All Containers",
-          type: "container",
-          action: "delete",
-          numberOfContainers: selectedContainers.length
+          items: selectedContainers.map((container) => container.serial),
+          itemType: "container",
+          confirmAction: { label: "Delete", value: true, type: "destruct" }
         }
       })
       .afterClosed()

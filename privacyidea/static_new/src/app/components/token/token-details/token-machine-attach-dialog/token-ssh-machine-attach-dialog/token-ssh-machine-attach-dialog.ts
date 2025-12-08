@@ -41,6 +41,9 @@ import { MatSelectModule } from "@angular/material/select";
 import { MatButtonModule } from "@angular/material/button";
 import { MatInputModule } from "@angular/material/input";
 import { Observable } from "rxjs";
+import { AbstractDialogComponent } from "../../../../shared/dialog/abstract-dialog/abstract-dialog.component";
+import { DialogWrapperComponent } from "../../../../shared/dialog/dialog-wrapper/dialog-wrapper.component";
+import { DialogAction } from "../../../../../models/dialog";
 
 export type SshMachineAssignDialogData = {
   tokenSerial: string;
@@ -62,16 +65,39 @@ export type SshMachineAssignDialogData = {
     MatOptionModule,
     MatSelectModule,
     MatDividerModule,
-    MatAutocompleteModule
+    MatAutocompleteModule,
+    DialogWrapperComponent
   ]
 })
-export class TokenSshMachineAssignDialogComponent {
+export class TokenSshMachineAssignDialogComponent extends AbstractDialogComponent<
+  SshMachineAssignDialogData,
+  Observable<any> | null
+> {
   /// Data for the dialog ///
   private applicationService: ApplicationServiceInterface = inject(ApplicationService);
   private machineService: MachineServiceInterface = inject(MachineService);
   private userService: UserServiceInterface = inject(UserService);
-  public data: SshMachineAssignDialogData = inject(MAT_DIALOG_DATA);
-  public dialogRef: MatDialogRef<TokenSshMachineAssignDialogComponent, Observable<any> | null> = inject(MatDialogRef);
+  // <button
+  //   (click)="onAssign()"
+  //   [disabled]="formGroup.invalid"
+  //   i18n
+  //   mat-button
+  //   type="button">
+  //   Assign
+  // </button>
+
+  assignAction: DialogAction<string> = {
+    label: "Assign",
+    value: "assign",
+    type: "confirm"
+  };
+  onAction(actionValue: string): void {
+    if (actionValue === "assign") {
+      this.onAssign();
+    } else {
+      this.onCancel();
+    }
+  }
 
   availableApplications = linkedSignal({
     source: this.applicationService.applications,

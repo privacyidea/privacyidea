@@ -92,7 +92,7 @@ import {
   styleUrl: "./container-details-token-table.component.scss"
 })
 export class ContainerDetailsTokenTableComponent {
-  protected readonly dialog: MatDialog = inject(MatDialog);
+  protected readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
@@ -181,8 +181,9 @@ export class ContainerDetailsTokenTableComponent {
   }
 
   removeTokenFromContainer(containerSerial: string, tokenSerial: string) {
-    this.dialog
-      .open(SimpleConfirmationDialogComponent, {
+    this.dialogService
+      .openDialog({
+        component: SimpleConfirmationDialogComponent,
         data: {
           serialList: [tokenSerial],
           title: "Remove Token",
@@ -229,8 +230,9 @@ export class ContainerDetailsTokenTableComponent {
   }
 
   deleteTokenFromContainer(tokenSerial: string) {
-    this.dialog
-      .open(SimpleConfirmationDialogComponent, {
+    this.dialogService
+      .openDialog({
+        component: SimpleConfirmationDialogComponent,
         data: {
           serialList: [tokenSerial],
           title: "Delete Token",

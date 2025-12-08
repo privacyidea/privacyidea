@@ -66,7 +66,7 @@ import { ContainerDetailsTokenTableComponent } from "./container-details-token-t
   styleUrl: "./container-details-token-table.component.scss"
 })
 export class ContainerDetailsTokenTableSelfServiceComponent extends ContainerDetailsTokenTableComponent {
-  protected override readonly dialog: MatDialog = inject(MatDialog);
+  protected override readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected override readonly containerService: ContainerServiceInterface = inject(ContainerService);
   protected override readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected override readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);

@@ -16,11 +16,11 @@ export class DialogWrapperComponent<R = any> {
   showCloseButton = input<boolean>(true);
   cancelButtonLabel = input<string>("Cancel");
   actions = input<DialogAction<R>[]>([]);
-  actionExecuted = output<R>();
+  onAction = output<R>();
   close = output<void>();
 
   onActionClick(action: DialogAction<R>): void {
-    this.actionExecuted.emit(action.value);
+    this.onAction.emit(action.value);
   }
 
   onCloseClick(): void {

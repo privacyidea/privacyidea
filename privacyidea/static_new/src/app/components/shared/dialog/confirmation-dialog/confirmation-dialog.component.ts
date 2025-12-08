@@ -77,11 +77,9 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, inject } from "@angular/core";
-import { MAT_DIALOG_DATA } from "@angular/material/dialog";
+import { Component } from "@angular/core";
 import { DialogWrapperComponent } from "../dialog-wrapper/dialog-wrapper.component";
 import { CommonModule } from "@angular/common";
-import { ActionType } from "../../../../services/policies/policies.service";
 import { DialogAction } from "../../../../models/dialog";
 import { AbstractDialogComponent } from "../abstract-dialog/abstract-dialog.component";
 
@@ -99,7 +97,7 @@ import { AbstractDialogComponent } from "../abstract-dialog/abstract-dialog.comp
  * and details about the items being affected.
  * * @see SimpleConfirmationDialogData for required input structure.
  */
-export class SimpleConfirmationDialogComponent extends AbstractDialogComponent<SimpleConfirmationDialogData> {
+export class SimpleConfirmationDialogComponent extends AbstractDialogComponent<SimpleConfirmationDialogData, boolean> {
   actions: DialogAction<boolean>[] = [
     ...(this.data.cancelAction ? [this.data.cancelAction] : []),
     this.data.confirmAction

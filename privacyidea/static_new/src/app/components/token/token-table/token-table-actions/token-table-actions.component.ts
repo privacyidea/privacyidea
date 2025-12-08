@@ -54,7 +54,7 @@ export class TokenTableActionsComponent {
   protected readonly versioningService: VersioningServiceInterface = inject(VersioningService);
   protected readonly documentationService: DocumentationServiceInterface = inject(DocumentationService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
-  private readonly dialog: MatDialog = inject(MatDialog);
+  private readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected readonly auditService: AuditServiceInterface = inject(AuditService);
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   readonly ROUTE_PATHS = ROUTE_PATHS;
@@ -73,8 +73,9 @@ export class TokenTableActionsComponent {
   }
 
   revokeToken(): void {
-    this.dialog
-      .open(SimpleConfirmationDialogComponent, {
+    this.dialogService
+      .openDialog({
+        component: SimpleConfirmationDialogComponent,
         data: {
           serialList: [this.tokenSerial()],
           title: "Revoke Token",
@@ -101,8 +102,9 @@ export class TokenTableActionsComponent {
   }
 
   deleteToken(): void {
-    this.dialog
-      .open(SimpleConfirmationDialogComponent, {
+    this.dialogService
+      .openDialog({
+        component: SimpleConfirmationDialogComponent,
         data: {
           serialList: [this.tokenSerial()],
           title: "Delete Token",
@@ -134,8 +136,8 @@ export class TokenTableActionsComponent {
   }
 
   assignSelectedTokens() {
-    this.dialog
-      .open(SelectedUserAssignDialogComponent)
+    this.dialogService
+      .openDialog(SelectedUserAssignDialogComponent)
       .afterClosed()
       .pipe(
         filter(Boolean),
@@ -170,8 +172,9 @@ export class TokenTableActionsComponent {
 
   unassignSelectedTokens() {
     const selectedTokens = this.tokenSelection();
-    this.dialog
-      .open(SimpleConfirmationDialogComponent, {
+    this.dialogService
+      .openDialog({
+        component: SimpleConfirmationDialogComponent,
         data: {
           serialList: selectedTokens.map((token) => token.serial),
           title: "Unassign Selected Tokens",
