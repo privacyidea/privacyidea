@@ -27,6 +27,7 @@ import {
   ContainerTemplateServiceInterface
 } from "../../../services/container-template/container-template.service";
 import { ContainerTemplateNewComponent } from "./container-template-new/container-template-new.component";
+import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
 
 @Component({
   selector: "app-container-templates",
@@ -43,4 +44,5 @@ import { ContainerTemplateNewComponent } from "./container-template-new/containe
 })
 export class ContainerTemplatesComponent {
   containerTemplateService: ContainerTemplateServiceInterface = inject(ContainerTemplateService);
+  authService: AuthServiceInterface = inject(AuthService);
 }

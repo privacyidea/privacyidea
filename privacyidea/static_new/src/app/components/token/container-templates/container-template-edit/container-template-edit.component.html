@@ -24,20 +24,31 @@
     [disabled]="isTemplateEdited()"
     (closed)="handleCollapse(panel)">
     <mat-expansion-panel-header>
-      <div class="template-default-indicator-container">
-        @if (currentTemplate()) {
+      @if (currentTemplate().default) {
+        <div
+          class="template-default-indicator-container"
+          matTooltip="Unset as default template"
+          i18n-matTooltip="@@containerTemplate.unsetAsDefaultTooltip">
           <button
             mat-icon-button
-            matTooltip="Set as default template"
-            i18n-matTooltip
-            (click)="$event.stopPropagation(); onDefaultChange()"
-            [disabled]="!isEditMode()">
-            <mat-icon>{{ currentTemplate().default ? "star" : "star_border" }}</mat-icon>
+            (click)="$event.stopPropagation(); onDefaultToggle()">
+            <mat-icon>star</mat-icon>
           </button>
-        }
-      </div>
+        </div>
+      } @else {
+        <div
+          class="template-default-indicator-container"
+          matTooltip="Set as default template"
+          i18n-matTooltip="@@containerTemplate.setAsDefaultTooltip">
+          <button
+            mat-icon-button
+            (click)="$event.stopPropagation(); onDefaultToggle()">
+            <mat-icon>star_border</mat-icon>
+          </button>
+        </div>
+      }
       <div class="template-name-container">
-        @if (isEditMode()) {
+        <!-- @if (isEditMode()) { Uncomment when editing template name is possible
           <input
             type="text"
             class="template-name-input"
@@ -46,11 +57,11 @@
             (ngModelChange)="onNameChange($event)"
             (click)="$event.stopPropagation(); panel.expanded = true"
             (keydown)="$event.stopPropagation()" />
-        } @else {
-          <div class="template-name-plain">
-            {{ currentTemplate().name }}
-          </div>
-        }
+        } @else { -->
+        <div class="template-name-plain">
+          {{ currentTemplate().name }}
+        </div>
+        <!-- } -->
       </div>
       <div class="template-type-select-container">
         <div class="template-type-plain">
@@ -85,7 +96,9 @@
         </button>
       </div>
       @if (isTemplateEdited()) {
-        <div class="expand-icon-spacer"></div>
+        <div>
+          <!-- Spacer to align the expansion arrow -->
+        </div>
       }
     </mat-expansion-panel-header>
     <div class="flex-column">

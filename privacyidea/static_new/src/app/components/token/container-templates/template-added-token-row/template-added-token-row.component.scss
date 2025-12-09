@@ -6,9 +6,9 @@
   border-radius: var(--border-radius);
   background-color: var(--mat-sys-surface-container) !important;
   box-shadow:
-    0 2px 4px -1px #00000033,
-    0 4px 5px 0 #00000024,
-    0 1px 10px 0 #0000001f;
+    0 2px 4px -1px var(--mat-sys-shadow),
+    0 4px 5px 0 var(--mat-sys-shadow),
+    0 1px 10px 0 var(--mat-sys-shadow);
 }
 
 .token-type {
@@ -40,4 +40,7 @@
   mat-form-field {
     grid-column: span 2;
   }
+}
+.padding-right-16 {
+  padding-right: 16px;
 }

@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, EventEmitter, inject, OnInit, Output } from "@angular/core";
+import { Component, effect, EventEmitter, inject, input, OnInit, Output } from "@angular/core";
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
@@ -46,6 +46,16 @@ export interface IndexedSecretEnrollmentOptions extends TokenEnrollmentData {
 export class EnrollIndexedsecretComponent implements OnInit {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly enrollmentMapper: IndexedSecretApiPayloadMapper = inject(IndexedSecretApiPayloadMapper);
+
+  disabled = input<boolean>(false);
+
+  constructor() {
+    effect(() =>
+      this.disabled()
+        ? this.indexedSecretForm.disable({ emitEvent: false })
+        : this.indexedSecretForm.enable({ emitEvent: false })
+    );
+  }
 
   @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;

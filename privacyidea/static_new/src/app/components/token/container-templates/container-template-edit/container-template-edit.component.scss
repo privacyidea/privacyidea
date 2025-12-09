@@ -9,6 +9,13 @@
 }
 
 .template-card {
+  --mat-expansion-header-disabled-state-text-color: var(--mat-sys-on-surface);
+  --mat-checkbox-disabled-label-color: var(--mat-sys-on-surface);
+  --mdc-filled-text-field-disabled-label-text-color: var(--mat-sys-on-surface);
+  --mat-select-disabled-trigger-text-color: var(--mat-sys-on-surface);
+  // --mat-form-field-disabled-input-text-placeholder-color: var(--mat-sys-on-surface);
+  --mdc-filled-text-field-disabled-input-text-color: var(--mat-sys-on-surface);
+
   border-radius: var(--border-radius);
   mat-expansion-panel {
     border-radius: var(--border-radius);
@@ -85,7 +92,4 @@
   display: flex;
   gap: 16px;
   align-items: center;
-}
-.expand-icon-spacer {
-  width: 16px;
 }

@@ -226,9 +226,9 @@ describe("ContainerTemplateEditComponent", () => {
       expect(component.templateEdited().container_type).toBe("generic");
     });
 
-    it("onDefaultChange should toggle the default flag", () => {
+    it("onDefaultToggle should toggle the default flag", () => {
       const initialDefault = component.currentTemplate().default;
-      component.onDefaultChange();
+      component.onDefaultToggle();
       expect(component.templateEdited().default).toBe(!initialDefault);
     });
 

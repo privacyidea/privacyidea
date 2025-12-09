@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, inject, input, linkedSignal, signal } from "@angular/core";
+import { Component, computed, inject, input, linkedSignal, signal, ViewEncapsulation } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { MatCardModule } from "@angular/material/card";
 import { MatIconModule } from "@angular/material/icon";
@@ -56,7 +56,8 @@ import { ContainerTypeOption } from "../../container-create/container-create.com
     ContainerTemplateAddTokenChipsComponent
   ],
   templateUrl: "./container-template-edit.component.html",
-  styleUrl: "./container-template-edit.component.scss"
+  styleUrl: "./container-template-edit.component.scss",
+  encapsulation: ViewEncapsulation.ShadowDom
 })
 export class ContainerTemplateEditComponent {
   // Angular Inputs and Services
@@ -132,7 +133,7 @@ export class ContainerTemplateEditComponent {
     this._editTemplate({ container_type: newType });
   }
 
-  onDefaultChange(): void {
+  onDefaultToggle(): void {
     this._editTemplate({ default: !this.currentTemplate().default });
   }
 

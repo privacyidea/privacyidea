@@ -63,9 +63,9 @@ import { ContainerTypeOption } from "../../container-create/container-create.com
 })
 export class ContainerTemplateNewComponent {
   // Angular Inputs and Services
-  protected readonly containerTemplateService: ContainerTemplateServiceInterface = inject(ContainerTemplateService);
-  protected readonly isEditMode = signal<boolean>(false);
-  protected readonly newTemplate = linkedSignal<any, ContainerTemplate>({
+  readonly containerTemplateService: ContainerTemplateServiceInterface = inject(ContainerTemplateService);
+  readonly isEditMode = signal<boolean>(false);
+  readonly newTemplate = linkedSignal<any, ContainerTemplate>({
     source: () => ({
       emptyContainerTemplate: this.containerTemplateService.emptyContainerTemplate,
       isEditMode: this.isEditMode(),
@@ -74,7 +74,7 @@ export class ContainerTemplateNewComponent {
     computation: (source) => deepCopy({ ...source.emptyContainerTemplate, container_type: source.containerType })
   });
 
-  protected readonly isTemplateEdited = computed(() => {
+  readonly isTemplateEdited = computed(() => {
     if (!this.isEditMode()) return false;
     // Dont compare container type, only everything else
     return (
@@ -138,10 +138,6 @@ export class ContainerTemplateNewComponent {
 
   onTypeChange(newType: ContainerTypeOption) {
     this._editTemplate({ container_type: newType });
-  }
-
-  onDefaultChange(newDefault: boolean) {
-    this._editTemplate({ default: newDefault });
   }
 
   onDefaultToggle(): void {

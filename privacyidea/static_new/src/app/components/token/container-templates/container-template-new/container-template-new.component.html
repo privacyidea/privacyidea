@@ -25,18 +25,31 @@
     (opened)="handleExpansion()"
     (closed)="handleCollapse(panel)">
     <mat-expansion-panel-header>
-      <div class="template-default-indicator-container">
-        @if (panel.expanded) {
-          <button
-            mat-icon-button
+      @if (panel.expanded) {
+        @if (newTemplate().default) {
+          <div
+            class="template-default-indicator-container"
+            matTooltip="Unset as default template"
+            i18n-matTooltip="@@containerTemplate.unsetAsDefaultTooltip">
+            <button
+              mat-icon-button
+              (click)="$event.stopPropagation(); onDefaultToggle()">
+              <mat-icon>star</mat-icon>
+            </button>
+          </div>
+        } @else {
+          <div
+            class="template-default-indicator-container"
             matTooltip="Set as default template"
-            i18n-matTooltip
-            (click)="$event.stopPropagation(); onDefaultToggle()">
-            <mat-icon>{{ newTemplate().default ? "star" : "star_border" }}</mat-icon>
-          </button>
+            i18n-matTooltip="@@containerTemplate.setAsDefaultTooltip">
+            <button
+              mat-icon-button
+              (click)="$event.stopPropagation(); onDefaultToggle()">
+              <mat-icon>star_border</mat-icon>
+            </button>
+          </div>
         }
-      </div>
-
+      }
       <div class="template-name-container">
         @if (panel.expanded) {
           <input
@@ -86,7 +99,9 @@
         }
       </div>
       @if (isTemplateEdited()) {
-        <div class="expand-icon-spacer"></div>
+        <div>
+          <!-- Spacer to align the expansion arrow -->
+        </div>
       }
     </mat-expansion-panel-header>
     <div class="flex-column">

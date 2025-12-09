@@ -24,7 +24,9 @@
     <mat-panel-title>
       {{ token().type }}
     </mat-panel-title>
-    <div class="token-actions">
+    <div
+      class="token-actions"
+      [class.padding-right-16]="childHadNoForm()">
       @if (isEditMode()) {
         <button
           mat-icon-button
@@ -54,7 +56,9 @@
         [disabled]="!isEditMode()" />
     }
     @case ("sms") {
-      <app-enroll-sms (additionalFormFieldsChange)="updateAdditionalFormFields($event)" />
+      <app-enroll-sms
+        (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
+        [disabled]="!isEditMode()" />
     }
     @case ("4eyes") {
       <app-enroll-foureyes
@@ -77,7 +81,9 @@
         [disabled]="!isEditMode()" />
     }
     @case ("indexedsecret") {
-      <app-enroll-indexedsecret (additionalFormFieldsChange)="updateAdditionalFormFields($event)" />
+      <app-enroll-indexedsecret
+        (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
+        [disabled]="!isEditMode()" />
     }
     @case ("paper") {
       <app-enroll-paper (additionalFormFieldsChange)="updateAdditionalFormFields($event)" />

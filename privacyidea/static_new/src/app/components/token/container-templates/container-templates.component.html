@@ -25,9 +25,13 @@
     Container Templates
   </h3>
   <mat-accordion class="container-templates-list-layout">
-    <app-container-template-new></app-container-template-new>
-    @for (template of this.containerTemplateService.templates(); track template.name) {
-      <app-container-template-edit [templateOriginal]="template"></app-container-template-edit>
+    @if (authService.actionAllowed("container_template_create")) {
+      <app-container-template-new></app-container-template-new>
+    }
+    @if (authService.actionAllowed("container_template_create")) {
+      @for (template of this.containerTemplateService.templates(); track template.name) {
+        <app-container-template-edit [templateOriginal]="template"></app-container-template-edit>
+      }
     }
   </mat-accordion>
 </div>
