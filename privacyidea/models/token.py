@@ -25,12 +25,10 @@ from privacyidea.lib.crypto import (geturandom, encrypt, hexlify_and_unicode,
                                     pass_hash, encryptPin, decryptPin, hash,
                                     verify_pass_hash, SecretObj)
 from privacyidea.lib.error import ResourceNotFoundError
-from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.log import log_with
 from privacyidea.lib.utils import convert_column_to_unicode
 from privacyidea.models import db
 from privacyidea.models.challenge import Challenge
-from privacyidea.models.config import SAFE_STORE
 from privacyidea.models.realm import Realm
 from privacyidea.models.tokengroup import Tokengroup, TokenTokengroup
 from privacyidea.models.utils import MethodsMixin
@@ -600,29 +598,6 @@ class TokenOwner(MethodsMixin, db.Model):
             self.token_id = token.id
         self.resolver = resolver
         self.user_id = user_id
-
-    def save(self, persistent=True):
-        to_func = TokenOwner.query.filter_by(token_id=self.token_id,
-                                             user_id=self.user_id,
-                                             realm_id=self.realm_id,
-                                             resolver=self.resolver).first
-        to = to_func()
-        if to is None:
-            # This very assignment does not exist, yet:
-            db.session.add(self)
-            db.session.commit()
-            if get_app_config_value(SAFE_STORE, False):
-                to = to_func()
-                ret = to.id
-            else:
-                ret = self.id
-        else:
-            ret = to.id
-            # There is nothing to update
-
-        if persistent:
-            db.session.commit()
-        return ret
 
 
 class TokenRealm(MethodsMixin, db.Model):

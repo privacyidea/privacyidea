@@ -448,6 +448,10 @@ class TokenContainerManagementTestCase(MyTestCase):
         # Unassigning an invalid user with the user id and resolver should work
         invalid_user = User(login="invalid", uid="123", realm=self.realm1, resolver=self.resolvername1)
         assign_user(container_serial, invalid_user)
+        # Try to assign another user raises Exception
+        with self.assertRaises(TokenAdminError) as exception:
+            assign_user(container_serial, user_hans)
+        self.assertEqual("This container is already assigned to another user.", exception.exception.message)
         success = unassign_user(container_serial, invalid_user)
         self.assertTrue(success)
 

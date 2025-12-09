@@ -233,7 +233,16 @@ class TokenClass(object):
         (uid, resolvertype, resolvername) = user.get_user_identifiers()
         # prevent to init update a token changing the token owner
         # FIXME: We need to remove this, if we one day want to assign several users to one token
-        if self.user and self.user != user:
+        token_owner = self.user
+        if not token_owner:
+            new_owner = TokenOwner(token_id=self.token.id, user_id=uid, resolver=resolvername, realmname=user.realm)
+            db.session.add(new_owner)
+            # Add users realm to token realms
+            self.set_realms([user.realm], add=True, commit_db_session=False)
+            self.add_tokeninfo("assignment_date", datetime.now(timezone.utc).isoformat(timespec="seconds"),
+                               commit_db_session=False)
+            db.session.commit()
+        elif token_owner != user:
             if override:
                 # We remove the old user
                 self.remove_user()
@@ -241,15 +250,6 @@ class TokenClass(object):
                 log.warning("The token with serial {0!s} is already assigned "
                             "to user {1!s}. Can not assign to {2!s}.".format(self.token.serial, self.user, user))
                 raise TokenAdminError("This token is already assigned to another user.")
-
-        if not self.user:
-            # If the tokenowner is not set yet, set it / avoid setting the same tokenowner multiple times
-            TokenOwner(token_id=self.token.id,
-                       user_id=uid, resolver=resolvername,
-                       realmname=user.realm).save()
-        # set the tokenrealm
-        self.set_realms([user.realm], add=True)
-        self.add_tokeninfo("assignment_date", datetime.now(timezone.utc).isoformat(timespec="seconds"))
 
     def add_tokengroup(self, tokengroup=None, tokengroup_id=None):
         """
@@ -828,14 +828,14 @@ class TokenClass(object):
         self.token.set_tokengroups(tokengroups, add=add)
 
     @check_token_locked
-    def set_realms(self, realms, add=False):
+    def set_realms(self, realms: list[str], add: bool = False, commit_db_session: bool = True):
         """
         Set the list of the realms of a token.
 
         :param realms: realms the token should be assigned to
-        :type realms: list
         :param add: if the realms should be added and not replaced
-        :type add: boolean
+        :param commit_db_session: Whether the database changes should be committed to be persistent. Only use false if
+            you are doing multiple database changes with a final single commit.
         """
         # get existing realms
         statement = select(TokenRealm).where(TokenRealm.token_id == self.token.id)
@@ -869,11 +869,12 @@ class TokenClass(object):
             if realm_db:
                 token_realm = TokenRealm(token_id=self.token.id, realm_id=realm_db.id)
                 db.session.add(token_realm)
-            else: # pragma no cover
+            else:  # pragma no cover
                 # should already be covered on lib layer
                 log.warning(f"Realm {realm_name} does not exist. Cannot add it to token {self.get_serial()}.")
 
-        db.session.commit()
+        if commit_db_session:
+            db.session.commit()
 
     def get_realms(self):
         """

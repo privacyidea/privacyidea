@@ -345,7 +345,8 @@ class TokenContainerClass:
         (user_id, resolver_type, resolver_name) = user.get_user_identifiers()
         # The relationship on the TokenContainer object returns a dynamic query, which is already a modern feature
         # So we can use .first() here
-        container_owner = self._db_container.owners.first()
+        container_users = self.get_users()
+        container_owner = container_users[0] if len(container_users) > 0 else None
         if not container_owner:
             new_owner = TokenContainerOwner(container_id=self._db_container.id,
                                             user_id=user_id,
@@ -359,7 +360,7 @@ class TokenContainerClass:
                 self._db_container.realms.append(realm_db)
             self._db_container.save()
             return True
-        elif container_owner.user_id == user_id and container_owner.resolver == resolver_name and container_owner.realm_id == user.realm_id:
+        elif container_owner == user:
             log.debug(f"User {user.login} in realm {user.realm} is already assigned to container {self.serial}.")
             return True
         log.info(f"Container {self.serial} already has an owner.")
