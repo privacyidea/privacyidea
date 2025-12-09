@@ -17,11 +17,10 @@
 #
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+from sqlalchemy import select
 
-from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.utils import convert_column_to_unicode
 from privacyidea.models import db
-from privacyidea.models.config import SAFE_STORE
 from privacyidea.models.realm import Realm
 from privacyidea.models.utils import MethodsMixin
 
@@ -84,38 +83,17 @@ class TokenContainerOwner(MethodsMixin, db.Model):
         if realm_id is not None:
             self.realm_id = realm_id
         elif realm_name:
-            realm = Realm.query.filter_by(name=realm_name).first()
+            statement = select(Realm).filter_by(name=realm_name)
+            realm = db.session.execute(statement).scalar_one()
             self.realm_id = realm.id
         if container_id is not None:
             self.container_id = container_id
         elif container_serial:
-            container = TokenContainer.query.filter_by(serial=container_serial).first()
+            statement = select(TokenContainer).filter_by(serial=container_serial)
+            container = db.session.execute(statement).scalar_one()
             self.container_id = container.id
         self.resolver = resolver
         self.user_id = user_id
-
-    def save(self, persistent=True):
-        to_func = TokenContainerOwner.query.filter_by(container_id=self.container_id,
-                                                      user_id=self.user_id,
-                                                      realm_id=self.realm_id,
-                                                      resolver=self.resolver).first
-        to = to_func()
-        if to is None:
-            # This very assignment does not exist, yet:
-            db.session.add(self)
-            db.session.commit()
-            if get_app_config_value(SAFE_STORE, False):
-                to = to_func()
-                ret = to.id
-            else:
-                ret = self.id
-        else:
-            ret = to.id
-            # There is nothing to update
-
-        if persistent:
-            db.session.commit()
-        return ret
 
 
 class TokenContainerStates(MethodsMixin, db.Model):

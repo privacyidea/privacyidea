@@ -204,57 +204,57 @@ class TokenContainerClass:
         :return: Dictionary in the format {realm: success}, the entry 'deleted' indicates whether existing realms were
                  deleted.
         """
-        result = {}
+        result = {"deleted": False}
 
         if not realms:
             realms = []
 
+        existing_realms = self.realms
+        existing_realm_names = {realm.name for realm in existing_realms}
+        realms_to_add = set(realms) - existing_realm_names
+        already_added_realms = set(realms) & existing_realm_names
+
         # delete all container realms
         if not add:
-            stmt = delete(TokenContainerRealm).where(TokenContainerRealm.container_id == self._db_container.id)
-            db.session.execute(stmt)
-            result["deleted"] = True
-            self._db_container.save()
+            realm_names_to_delete = existing_realm_names - set(realms)
+            # exclude user realms from deletion
+            if self.owner_realms:
+                # realms of owners that would be deleted
+                owner_realms_delete = realm_names_to_delete & self.owner_realms
+                if owner_realms_delete:
+                    log.info(f"The realms ({', '.join(owner_realms_delete)}) of assigned users cannot be removed from "
+                             f"the container {self.serial}.")
+                # remove owner realms from delete list
+                realm_names_to_delete -= self.owner_realms
 
-            # Check that user realms are kept
-            user_realms = self._get_user_realms()
-            missing_realms = list(set(user_realms).difference(realms))
-            realms.extend(missing_realms)
-            for realm in missing_realms:
-                log.warning(
-                    f"Realm {realm} can not be removed from container {self.serial} "
-                    f"because a user from this realm is assigned th the container.")
-        else:
-            result["deleted"] = False
+            realms_to_delete = [realm for realm in existing_realms if realm.name in realm_names_to_delete]
+            for realm in realms_to_delete:
+                self._db_container.realms.remove(realm)
+            if realms_to_delete:
+                result["deleted"] = True
 
-        for realm in realms:
+        # Add new realms
+        for realm in realms_to_add:
             if realm:
                 stmt = select(Realm).filter_by(name=realm)
                 realm_db = db.session.execute(stmt).scalar_one_or_none()
                 if not realm_db:
                     result[realm] = False
-                    log.warning(f"Realm {realm} does not exist.")
+                    log.warning(f"Realm {realm} does not exist. Cannot add it to container {self.serial}.")
                 else:
-                    realm_id = realm_db.id
-                    # Check if realm is already assigned to the container
-                    stmt = select(TokenContainerRealm).filter_by(container_id=self._db_container.id, realm_id=realm_id)
-                    if not db.session.execute(stmt).scalar_one_or_none():
-                        self._db_container.realms.append(realm_db)
-                        result[realm] = True
-                    else:
-                        log.info(f"Realm {realm} is already assigned to container {self.serial}.")
-                        result[realm] = False
+                    self._db_container.realms.append(realm_db)
+                    result[realm] = True
+
+        # Set success status for already added realms
+        for realm in already_added_realms:
+            # If the realms are set completely new, the status for already added realms is True, if they should only be
+            # added, the status is False
+            # TODO: Not sure whether this makes sense, but this is the actual behaviour ...
+            result[realm] = not add
+
         self._db_container.save()
 
         return result
-
-    def _get_user_realms(self) -> list[str]:
-        """
-        Returns a list of the realm names of the users that are assigned to the container.
-        """
-        owners = self.get_users()
-        realms = [owner.realm for owner in owners]
-        return realms
 
     @property
     def registration_state(self) -> RegistrationState:
@@ -266,6 +266,15 @@ class TokenContainerClass:
         container_info = self.get_container_info_dict()
         state = container_info.get(RegistrationState.get_key())
         return RegistrationState(state)
+
+    @property
+    def owner_realms(self) -> set[str]:
+        """
+        Returns a set of the realm names of the users that are assigned to the container.
+        """
+        owners = self._db_container.owners.all()
+        realms = {owner.realm.name for owner in owners if owner.realm}
+        return realms
 
     def remove_token(self, serial: str) -> bool:
         """
@@ -336,16 +345,22 @@ class TokenContainerClass:
         (user_id, resolver_type, resolver_name) = user.get_user_identifiers()
         # The relationship on the TokenContainer object returns a dynamic query, which is already a modern feature
         # So we can use .first() here
-        if not self._db_container.owners.first():
-            TokenContainerOwner(container_id=self._db_container.id,
-                                user_id=user_id,
-                                resolver=resolver_name,
-                                realm_id=user.realm_id).save()
+        container_owner = self._db_container.owners.first()
+        if not container_owner:
+            new_owner = TokenContainerOwner(container_id=self._db_container.id,
+                                            user_id=user_id,
+                                            resolver=resolver_name,
+                                            realm_id=user.realm_id)
+            db.session.add(new_owner)
             # Add user realm to container realms
-            realm_db = Realm.query.filter_by(name=user.realm).first()  # todo update
+            statement = select(Realm).filter_by(name=user.realm)
+            realm_db = db.session.execute(statement).scalar_one()
             if realm_db and realm_db not in self._db_container.realms:
                 self._db_container.realms.append(realm_db)
             self._db_container.save()
+            return True
+        elif container_owner.user_id == user_id and container_owner.resolver == resolver_name and container_owner.realm_id == user.realm_id:
+            log.debug(f"User {user.login} in realm {user.realm} is already assigned to container {self.serial}.")
             return True
         log.info(f"Container {self.serial} already has an owner.")
         raise TokenAdminError("This container is already assigned to another user.")
@@ -386,8 +401,7 @@ class TokenContainerClass:
         """
         Returns a list of users that are assigned to the container.
         """
-        stmt = select(TokenContainerOwner).filter_by(container_id=self._db_container.id)
-        db_container_owners: List[TokenContainerOwner] = db.session.execute(stmt).scalars().all()
+        db_container_owners = self._db_container.owners.all()
 
         users: list[User] = []
         for owner in db_container_owners:

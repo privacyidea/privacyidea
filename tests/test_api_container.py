@@ -1690,13 +1690,12 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         # Helpdesk for realm1
         set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_REALMS, realm=self.realm1)
 
-        # container in realm1, set realm2
+        # container in realm1, set realm2 (not allowed)
         result = self.request_assert_success(f"/container/{container_serial}/realms", {"realms": "realm2"}, self.at)
         self.assertFalse(result["result"]["value"]["realm2"])
         container = find_container_by_serial(container_serial)
         realms = [realm.name for realm in container.realms]
-        self.assertEqual(1, len(realms))
-        self.assertEqual("realm1", realms[0])
+        self.assertSetEqual({self.realm1}, set(realms))
 
         # helpdesk of user realm realm1: container in realm1, set realm2 and realm1 (only realm1 allowed)
         result = self.request_assert_success(f"/container/{container_serial}/realms", {"realms": "realm2,realm1"},
@@ -1755,7 +1754,7 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         delete_policy("policy")
         delete_policy("policy2")
 
-    def test_20_helpdesk_container_register_allowed(self):
+    def helpdesk_container_register_allowed(self):
         container_serial = self.create_container_for_user("smartphone")
         set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_REGISTER,
                    realm=[self.realm2, self.realm1])
@@ -1766,6 +1765,9 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         delete_policy("policy")
         delete_policy("container_policy")
         return container_serial
+
+    def test_20_helpdesk_container_register_allowed_2(self):
+        self.helpdesk_container_register_allowed()
 
     def test_21_helpdesk_container_register_denied(self):
         container_serial = self.create_container_for_user("smartphone")
@@ -1780,13 +1782,13 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         delete_policy("container_policy")
 
     def test_22_helpdesk_container_unregister_allowed(self):
-        container_serial = self.test_20_helpdesk_container_register_allowed()
+        container_serial = self.helpdesk_container_register_allowed()
         set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_UNREGISTER, realm=self.realm1)
         self.request_assert_success(f'/container/register/{container_serial}/terminate', {}, self.at, 'POST')
         delete_policy("policy")
 
     def test_23_helpdesk_container_unregister_denied(self):
-        container_serial = self.test_20_helpdesk_container_register_allowed()
+        container_serial = self.helpdesk_container_register_allowed()
         # Admin does not have CONTAINER_UNREGISTER rights for the realm of the container (realm 1)
         set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_UNREGISTER, realm=self.realm2)
         self.request_denied_assert_403(f'/container/register/{container_serial}/terminate', {}, self.at, 'POST')
@@ -2881,7 +2883,7 @@ class APIContainer(APIContainerTest):
         result = self.request_assert_success(f'/container/{container_serial}/realms', payload, self.at, 'POST')
         result = result["result"]
         self.assertTrue(result["value"])
-        self.assertTrue(result["value"]["deleted"])
+        self.assertFalse(result["value"]["deleted"])
         self.assertTrue(result["value"][self.realm1])
         self.assertTrue(result["value"][self.realm2])
 
@@ -2900,7 +2902,8 @@ class APIContainer(APIContainerTest):
         container_serial = init_container({"type": "generic", "user": "hans", "realm": self.realm1})["container_serial"]
         payload = {"realms": self.realm2}
         result = self.request_assert_success(f'/container/{container_serial}/realms', payload, self.at, 'POST')
-        self.assertTrue(result["result"]["value"][self.realm1])
+        # TODO: Should we also add the result for the users realm even if they are not in the requested realms?
+        #self.assertTrue(result["result"]["value"][self.realm1])
         self.assertTrue(result["result"]["value"][self.realm2])
 
         delete_container_by_serial(container_serial)

@@ -350,7 +350,7 @@ class TokenContainerManagementTestCase(MyTestCase):
         # Set existing realms
         result = set_container_realms(container_serial, [self.realm1, self.realm2], None)
         # Check return value
-        self.assertTrue(result['deleted'])
+        self.assertFalse(result['deleted'])
         self.assertTrue(result[self.realm1])
         self.assertTrue(result[self.realm2])
         # Check realms
