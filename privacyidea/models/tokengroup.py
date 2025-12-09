@@ -17,7 +17,7 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging
-from sqlalchemy import Sequence
+from sqlalchemy import Sequence, select
 
 from privacyidea.models import db
 from privacyidea.models.config import (TimestampMethodsMixin,
@@ -100,13 +100,14 @@ class TokenTokengroup(TimestampMethodsMixin, db.Model):
         :param tokengroupname: the name of the tokengroup
         :param token_id: The id of the token
         """
-        if tokengroupname:
-            r = Tokengroup.query.filter_by(name=tokengroupname).first()
-            if not r:
-                raise Exception("tokengroup does not exist")
-            self.tokengroup_id = r.id
         if tokengroup_id:
             self.tokengroup_id = tokengroup_id
+        elif tokengroupname:
+            stmt = select(Tokengroup).filter_by(name=tokengroupname)
+            group = db.session.execute(stmt).scalar_one_or_none()
+            if not group:
+                raise Exception("tokengroup does not exist")
+            self.tokengroup_id = group.id
         self.token_id = token_id
 
     def save(self):

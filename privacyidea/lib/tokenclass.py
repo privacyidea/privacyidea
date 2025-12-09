@@ -97,13 +97,14 @@ from .challenge import get_challenges
 from .config import (get_from_config, get_prepend_pin)
 from .decorators import check_token_locked
 from .error import (TokenAdminError,
-                    ParameterError)
+                    ParameterError, ResourceNotFoundError)
 from .log import log_with
 from .policies.actions import PolicyAction
 from .policydecorators import libpolicy, auth_otppin, challenge_response_allowed
 from .user import (User)
 from ..api.lib.utils import getParam
-from ..models import (TokenOwner, TokenTokengroup, Challenge, cleanup_challenges, TokenInfo, db, TokenRealm, Realm)
+from ..models import (TokenOwner, TokenTokengroup, Challenge, cleanup_challenges, TokenInfo, db, TokenRealm, Realm,
+                      Tokengroup)
 
 DATE_FORMAT = '%Y-%m-%dT%H:%M%z'
 AUTH_DATE_FORMAT = "%Y-%m-%d %H:%M:%S.%f%z"
@@ -251,22 +252,35 @@ class TokenClass(object):
                             "to user {1!s}. Can not assign to {2!s}.".format(self.token.serial, self.user, user))
                 raise TokenAdminError("This token is already assigned to another user.")
 
-    def add_tokengroup(self, tokengroup=None, tokengroup_id=None):
+    def add_tokengroup(self, tokengroup: str = None, tokengroup_id: int = None):
         """
         Adds a new tokengroup to this token.
 
         :param tokengroup: The name of the token group to add
-        :type tokengroup: basestring
         :param tokengroup_id: The id of the tokengroup to add
-        :type tokengroup_id: int
         :return: True
         """
         if not tokengroup and not tokengroup_id:
             raise ParameterError("You either need to specify a tokengroup name or id.")
-        r = TokenTokengroup(token_id=self.token.id,
-                            tokengroup_id=tokengroup_id,
-                            tokengroupname=tokengroup).save()
-        return r > 0
+
+        statement = select(Tokengroup)
+        if tokengroup:
+            statement = statement.filter_by(name=tokengroup)
+        if tokengroup_id:
+            statement = statement.filter_by(id=tokengroup_id)
+        tokengroup_db = db.session.execute(statement).scalar_one_or_none()
+        if not tokengroup_db:
+            log.error("Tokengroup %s does not exist. Cannot add it to token %s.", tokengroup, self.get_serial())
+            raise ResourceNotFoundError(_("The tokengroup does not exist."))
+
+        existing_groups: list[str] = [association.tokengroup for association in self.token.tokengroup_list]
+        if tokengroup_db not in existing_groups:
+            association = TokenTokengroup(token_id=self.token.id, tokengroup_id=tokengroup_db.id)
+            db.session.add(association)
+        else:
+            log.debug("Token %s is already assigned to tokengroup %s.", self.get_serial(), tokengroup_db.name)
+
+        return True
 
     @property
     def owner_realms(self) -> set[str]:
@@ -816,16 +830,34 @@ class TokenClass(object):
         tokenowner = self.token.first_owner
         return "" if not tokenowner else tokenowner.user_id
 
-    def set_tokengroups(self, tokengroups, add=False):
+    def set_tokengroups(self, tokengroups: list[str], add: bool = False):
         """
         Set the list of the tokengroups of a token.
 
-        :param tokengroups: realms the token should be assigned to
-        :type tokengroups: list
+        :param tokengroups: token groups the token should be assigned to
         :param add: if the tokengroups should be added and not replaced
-        :type add: boolean
         """
-        self.token.set_tokengroups(tokengroups, add=add)
+        existing_groups: list[Tokengroup] = [association.tokengroup for association in self.token.tokengroup_list]
+        new_groups: set[str] = set(tokengroups) - {group.name for group in existing_groups}
+        if not add:
+            # delete existing token groups which are not in the new list
+            group_ids_to_delete = [group.id for group in existing_groups if group.name not in tokengroups]
+            statement = delete(TokenTokengroup).where(TokenTokengroup.token_id == self.token.id,
+                                                      TokenTokengroup.tokengroup_id.in_(group_ids_to_delete))
+            db.session.execute(statement)
+
+        # Add new token groups
+        for group in new_groups:
+            statement = select(Tokengroup).filter_by(name=group)
+            tokengroup_db = db.session.execute(statement).scalar_one_or_none()
+            if not tokengroup_db:
+                log.warning("Tokengroup %s does not exist. Cannot add it to token %s.", group, self.get_serial())
+                continue
+
+            association = TokenTokengroup(token_id=self.token.id, tokengroup_id=tokengroup_db.id)
+            db.session.add(association)
+
+        db.session.commit()
 
     @check_token_locked
     def set_realms(self, realms: list[str], add: bool = False, commit_db_session: bool = True):
@@ -1086,18 +1118,29 @@ class TokenClass(object):
         db.session.execute(statement)
         db.session.commit()
 
-    def del_tokengroup(self, tokengroup=None, tokengroup_id=None):
+    def delete_tokengroup(self, tokengroup: str = None, tokengroup_id: int = None):
         """
         Removes a token group from a token.
-        You either need to specify the name or the ID of the tokengroup.
+        You either need to specify the name or the ID of the tokengroup. If none of them is given, all token groups
+        are removed from the token.
 
         :param tokengroup: The name of the tokengroup
-        :type tokengroup: basestring
         :param tokengroup_id: The ID of the tokengroup
-        :type tokengroup_id: int
         :return: True in case of success
         """
-        self.token.del_tokengroup(tokengroup=tokengroup, tokengroup_id=tokengroup_id)
+        statement = delete(TokenTokengroup).where(TokenTokengroup.token_id == self.token.id)
+        if tokengroup_id:
+            statement = statement.where(TokenTokengroup.tokengroup_id == tokengroup_id)
+        elif tokengroup:
+            group_stmt = select(Tokengroup).where(Tokengroup.name == tokengroup)
+            tokengroup_db = db.session.execute(group_stmt).scalar_one_or_none()
+            if not tokengroup_db:
+                log.warning("Tokengroup %s does not exist. Cannot remove it from token %s.", tokengroup,
+                            self.get_serial())
+                raise ResourceNotFoundError(f"Tokengroup {tokengroup} does not exist.")
+            statement = statement.where(TokenTokengroup.tokengroup_id == tokengroup_db.id)
+        db.session.execute(statement)
+        db.session.commit()
 
     @check_token_locked
     def set_count_auth_success_max(self, count):

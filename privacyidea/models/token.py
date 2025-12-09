@@ -206,38 +206,6 @@ class Token(MethodsMixin, db.Model):
         if reset_failcount is True:
             self.failcount = 0
 
-    def set_tokengroups(self, tokengroups, add=False):
-        """
-        Set the list of the tokengroups.
-
-        This is done by filling the :py:class:`privacyidea.models.TokenTokengroup` table.
-
-        :param tokengroups: the tokengroups
-        :type tokengroups: list[str]
-        :param add: If set, the tokengroups are added. I.e. old tokengroups are not deleted
-        :type add: bool
-        """
-        # delete old Tokengroups
-        if not add:
-            db.session.query(TokenTokengroup) \
-                .filter(TokenTokengroup.token_id == self.id) \
-                .delete()
-        # add new Tokengroups
-        # We must not set the same tokengroup more than once...
-        # uniquify: tokengroups -> set(tokengroups)
-        for tokengroup in set(tokengroups):
-            # Get the id of the realm to add
-            g = Tokengroup.query.filter_by(name=tokengroup).first()
-            if g:
-                # Check if TokenTokengroup already exists
-                tg = TokenTokengroup.query.filter_by(token_id=self.id,
-                                                     tokengroup_id=g.id).first()
-                if not tg:
-                    # If the Tokengroup is not yet attached to the token
-                    token_group = TokenTokengroup(token_id=self.id, tokengroup_id=g.id)
-                    db.session.add(token_group)
-        db.session.commit()
-
     def get_realms(self):
         """
         return a list of the assigned realms
@@ -453,30 +421,6 @@ class Token(MethodsMixin, db.Model):
             ldict[key] = val
         res = "<{0!r} {1!r}>".format(self.__class__, ldict)
         return res
-
-    def del_tokengroup(self, tokengroup=None, tokengroup_id=None):
-        """
-        Deletes the tokengroup from the given token.
-        If tokengroup name and id are omitted, all tokengroups are deleted.
-
-        :param tokengroup: The name of the tokengroup
-        :type tokengroup: str
-        :param tokengroup_id: The id of the tokengroup
-        :type tokengroup_id: int
-        :return:
-        """
-        if tokengroup:
-            # We need to resolve the id of the tokengroup
-            t = Tokengroup.query.filter_by(name=tokengroup).first()
-            if not t:
-                raise Exception("tokengroup does not exist")
-            tokengroup_id = t.id
-        if tokengroup_id:
-            tokengroups = TokenTokengroup.query.filter_by(tokengroup_id=tokengroup_id, token_id=self.id)
-        else:
-            tokengroups = TokenTokengroup.query.filter_by(token_id=self.id)
-        for tokengroup in tokengroups:
-            tokengroup.delete()
 
     def get_info(self):
         """

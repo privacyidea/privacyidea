@@ -2983,7 +2983,6 @@ def set_tokengroups(serial, tokengroups=None, add=False):
 
     tokenobject = get_one_token(serial=serial)
     tokenobject.set_tokengroups(tokengroups, add=add)
-    tokenobject.save()
 
 
 def assign_tokengroup(serial, tokengroup=None, tokengroup_id=None):
@@ -3013,7 +3012,7 @@ def unassign_tokengroup(serial, tokengroup=None, tokengroup_id=None):
     """
     try:
         tokenobject = get_one_token(serial=serial)
-        return tokenobject.del_tokengroup(tokengroup, tokengroup_id)
+        return tokenobject.delete_tokengroup(tokengroup, tokengroup_id)
     except Exception:
         raise ResourceNotFoundError(_("The tokengroup does not exist."))
 
