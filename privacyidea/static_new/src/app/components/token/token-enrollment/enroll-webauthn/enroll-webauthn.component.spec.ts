@@ -154,18 +154,6 @@ describe("EnrollWebauthnComponent", () => {
     expect(notification.openSnackBar).toHaveBeenCalledWith("WebAuthn is not supported by this browser.");
   });
 
-  // Is now handled by generic token enrollment component
-  //
-  // it("should notify when initial enrollment fails", async () => {
-  //   setNavigatorCreate(async () => makePublicKeyCredential());
-  //   tokenService.enrollToken.mockReturnValue(throwError(() => new Error("boom")) as any);
-  //   await detectChangesStable();
-  //   const res = await component.enrollmentArgsGetter(BASIC);
-
-  //   expect(res).toBeNull();
-  //   expect(notification.openSnackBar).toHaveBeenCalledWith("WebAuthn registration process failed: boom");
-  // });
-
   it("should notify when init response missing detail", async () => {
     setNavigatorCreate(async () => makePublicKeyCredential());
     tokenService.enrollToken.mockReturnValue(of({ detail: undefined, type: "webauthn" } as any) as any);

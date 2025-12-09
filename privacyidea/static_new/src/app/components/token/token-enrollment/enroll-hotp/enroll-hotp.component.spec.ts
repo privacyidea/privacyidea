@@ -77,7 +77,6 @@ describe("EnrollHotpComponent", () => {
 
   it("disables generateOnServer when policy forces server-side key generation", () => {
     (TestBed.inject(AuthService) as unknown as MockAuthService).checkForceServerGenerateOTPKey.mockReturnValue(true);
-    // fixture.detectChanges();
     createAndInit();
     fixture.detectChanges();
     TestBed.flushEffects();

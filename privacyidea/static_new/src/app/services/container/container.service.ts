@@ -764,9 +764,8 @@ export class ContainerService implements ContainerServiceInterface {
     this.stopPolling();
     const headers = this.authService.getHeaders();
     return this.http
-      .post<
-        PiResponse<ContainerUnregisterData>
-      >(`${this.containerBaseUrl}register/${containerSerial}/terminate`, {}, { headers })
+      .post<PiResponse<ContainerUnregisterData>>(
+        `${this.containerBaseUrl}register/${containerSerial}/terminate`, {}, { headers })
       .pipe(
         catchError((error) => {
           console.error("Failed to unregister container.", error);

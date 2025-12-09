@@ -1,4 +1,23 @@
-import { Component, computed, inject, input, linkedSignal, signal } from "@angular/core";
+/**
+ * (c) NetKnights GmbH 2025,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ **/
+
+import { Component, computed, inject, linkedSignal, signal } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { MatCardModule } from "@angular/material/card";
 import { MatIconModule } from "@angular/material/icon";
@@ -124,6 +143,7 @@ export class ContainerTemplateNewComponent {
   onDefaultChange(newDefault: boolean) {
     this._editTemplate({ default: newDefault });
   }
+
   onDefaultToggle(): void {
     this._editTemplate({ default: !this.newTemplate().default });
     return;
@@ -141,6 +161,7 @@ export class ContainerTemplateNewComponent {
       }
     });
   }
+
   onAddToken(tokenType: string) {
     if (!this.isEditMode()) return;
     const containerTemplateToken: any = {
@@ -154,6 +175,7 @@ export class ContainerTemplateNewComponent {
       }
     });
   }
+
   onDeleteToken(index: number) {
     if (!this.isEditMode()) return;
     const updatedTokens = this.newTemplate().template_options.tokens.filter((_, i) => i !== index);

@@ -117,17 +117,6 @@ describe("EnrollPushComponent", () => {
     expect(component.pollResponse()).toBeUndefined();
   });
 
-  // Is now handled by generic token enrollment component
-  //
-  // it("returns null when enrollToken errors", async () => {
-  //   tokenSvc.enrollToken.mockReturnValue(throwError(() => new Error("boom")) as any);
-
-  //   const res = await component.enrollmentArgsGetter({} as any);
-
-  //   expect(res).toBeNull();
-  //   expect(dialogSvc.openTokenEnrollmentFirstStepDialog).not.toHaveBeenCalled();
-  // });
-
   it("keeps dialog open when rollout_state is clientwait", async () => {
     tokenSvc.enrollToken.mockReturnValue(of(makeInitResp()) as any);
     tokenSvc.pollTokenRolloutState.mockReturnValue(of(makePollResp("clientwait")) as any);

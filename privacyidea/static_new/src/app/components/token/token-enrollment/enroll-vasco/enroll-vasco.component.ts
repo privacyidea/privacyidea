@@ -120,9 +120,7 @@ export class EnrollVascoComponent implements OnInit {
     this.useVascoSerialControl.updateValueAndValidity();
   }
 
-  enrollmentArgsGetter = (
-    basicOptions: TokenEnrollmentData
-  ): {
+  enrollmentArgsGetter = (basicOptions: TokenEnrollmentData): {
     data: VascoEnrollmentData;
     mapper: TokenApiPayloadMapper<VascoEnrollmentData>;
   } | null => {
