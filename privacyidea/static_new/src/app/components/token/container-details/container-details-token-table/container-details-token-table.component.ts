@@ -125,7 +125,6 @@ export class ContainerDetailsTokenTableComponent {
   });
   tokenSerial = this.tokenService.tokenSerial;
   @ViewChild(MatPaginator) paginator!: MatPaginator;
-  // local sort state and filter helpers
   sort = signal({ active: "serial", direction: "asc" } as Sort);
   apiFilter = this.tokenService.apiFilter;
   @ViewChild('filterInput', { static: false }) filterInput!: ElementRef<HTMLInputElement>;
@@ -160,7 +159,6 @@ export class ContainerDetailsTokenTableComponent {
     });
 
     effect(() => {
-      // re-sort on sort changes
       const s = this.sort();
       const base = this.dataSource.data ?? [];
       this.dataSource.data = this.sortData([...base], s);
@@ -175,7 +173,6 @@ export class ContainerDetailsTokenTableComponent {
       externalDS.paginator = this.paginator;
     }
 
-    // define filter predicate across all relevant columns
     this.dataSource.filterPredicate = (row: ContainerDetailToken, filter: string) => {
       const haystack = [
         row.serial,
@@ -200,7 +197,6 @@ export class ContainerDetailsTokenTableComponent {
   }
 
   toggleFilter(filterKeyword: string): void {
-    // emulate FilterValue behaviour using simple string in the input
     const input = this.filterInput?.nativeElement;
     const current = (input?.value ?? "").trim();
     const re = new RegExp(`(?:^|\n|\s)${filterKeyword}\s*:\\s*`, "i");

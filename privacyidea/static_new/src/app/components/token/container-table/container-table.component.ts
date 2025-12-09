@@ -131,8 +131,6 @@ export class ContainerTableComponent {
   filterInput!: ElementRef<HTMLInputElement>;
   expandedElement: ContainerDetailData | null = null;
 
-  // Map visible column keys to API filter keys
-  // Only columns present as keys here will show a filter button
   readonly apiFilterKeyMap: Record<string, string> = {
     serial: "container_serial",
     type: "type",
@@ -184,7 +182,6 @@ export class ContainerTableComponent {
     this.sort.set($event);
   }
 
-  // Header filter helpers (aligned with Token/Audit/Challenges tables)
   toggleFilter(filterKeyword: string): void {
     const newValue = this.tableUtilsService.toggleKeywordInFilter({
       keyword: filterKeyword,

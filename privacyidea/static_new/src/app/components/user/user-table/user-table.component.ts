@@ -128,12 +128,10 @@ export class UserTableComponent {
       const sorted = this.sortData([...data], this.sort());
       const ds = new MatTableDataSource(sorted);
       ds.paginator = this.paginator;
-      // client-side filter via MatTableDataSource.filter if needed elsewhere
       return ds;
     }
   });
 
-  // client-side sorter
   private sortData(data: UserData[], s: Sort): UserData[] {
     if (!s.direction) return data;
     const dir = s.direction === 'asc' ? 1 : -1;
@@ -147,7 +145,6 @@ export class UserTableComponent {
     });
   }
 
-  // header filter helpers
   toggleFilter(filterKeyword: string): void {
     const newValue = this.tableUtilsService.toggleKeywordInFilter({
       keyword: filterKeyword,

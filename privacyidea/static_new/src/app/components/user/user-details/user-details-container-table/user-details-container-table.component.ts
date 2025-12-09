@@ -173,7 +173,6 @@ export class UserDetailsContainerTableComponent {
     });
   }
 
-  // Header filter helpers and sorting
   toggleFilter(filterKeyword: string): void {
     const input = this.filterInput?.nativeElement;
     const current = (input?.value ?? "").trim();

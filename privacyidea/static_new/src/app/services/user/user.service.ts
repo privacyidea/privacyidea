@@ -231,7 +231,7 @@ export class UserService implements UserServiceInterface {
       return undefined;
     }
     // Only load user details on the user details page.
-    if (!this.contentService.onUserDetails()) {
+    if (!this.contentService.onUserDetails() && this.authService.role() !== "user") {
       return undefined;
     }
 

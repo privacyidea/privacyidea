@@ -134,7 +134,6 @@ export class RealmTableComponent {
 
   selectedNode = signal<string>(ALL_NODES_VALUE);
   filterString = signal<string>("");
-  // local sort state (replaces MatSort)
   sort = signal({ active: "name", direction: "asc" } as Sort);
 
   newRealmName = signal<string>("");
@@ -290,7 +289,6 @@ export class RealmTableComponent {
     ds.filter = "";
   }
 
-  // Header filter helpers (toggle key: behaviour like other tables)
   toggleFilter(filterKeyword: string): void {
     const inputEl = this.filterInput?.nativeElement as HTMLInputElement | undefined;
     const current = (inputEl?.value ?? this.filterString()).trim();
@@ -334,10 +332,7 @@ export class RealmTableComponent {
     return data.sort((a: any, b: any) => {
       let va: any;
       let vb: any;
-      if (key === "resolversText") {
-        va = (a.resolversText ?? "").toString().toLowerCase();
-        vb = (b.resolversText ?? "").toString().toLowerCase();
-      } else if (key === "isDefault") {
+      if (key === "isDefault") {
         va = a.isDefault ? 1 : 0;
         vb = b.isDefault ? 1 : 0;
       } else if (key === "name") {

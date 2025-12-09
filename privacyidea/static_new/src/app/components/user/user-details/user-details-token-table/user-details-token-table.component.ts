@@ -96,7 +96,6 @@ export class UserDetailsTokenTableComponent {
   dataSource = new MatTableDataSource<ContainerDetailToken>([]);
   filterValue = "";
   @ViewChild(MatPaginator) paginator!: MatPaginator;
-  // local sort + header helpers
   sort = signal({ active: "serial", direction: "asc" } as Sort);
   apiFilter = this.tokenService.apiFilter;
   @ViewChild('filterInput', { static: false }) filterInput!: ElementRef<HTMLInputElement>;
@@ -130,7 +129,6 @@ export class UserDetailsTokenTableComponent {
 
   ngAfterViewInit(): void {
     this.dataSource.paginator = this.paginator;
-    // define filter predicate across visible columns
     this.dataSource.filterPredicate = (row: ContainerDetailToken, filter: string) => {
       const haystack = [
         row.serial,
@@ -157,7 +155,6 @@ export class UserDetailsTokenTableComponent {
     }
   }
 
-  // Header filter helpers
   toggleFilter(filterKeyword: string): void {
     const input = this.filterInput?.nativeElement;
     const current = (input?.value ?? "").trim();
