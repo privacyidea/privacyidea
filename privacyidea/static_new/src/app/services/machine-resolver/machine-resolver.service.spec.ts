@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { TestBed } from "@angular/core/testing";
-import { Machineresolver, MachineresolverService, Machineresolvers } from "./machineresolver.service";
+import { MachineResolver, MachineResolverService, MachineResolvers } from "./machine-resolver.service";
 import { AuthService } from "../auth/auth.service";
 import { ContentService } from "../content/content.service";
 import { NotificationService } from "../notification/notification.service";
@@ -26,13 +26,13 @@ import { provideHttpClient } from "@angular/common/http";
 import { MockAuthService } from "../../../testing/mock-services/mock-auth-service";
 import { MockContentService, MockNotificationService, MockPiResponse } from "../../../testing/mock-services";
 
-describe("MachineresolverService", () => {
-  let service: MachineresolverService;
+describe("MachineResolverService", () => {
+  let service: MachineResolverService;
   let httpMock: HttpTestingController;
   let authServiceMock: MockAuthService;
   let contentServiceMock: MockContentService;
   let notificationServiceMock: MockNotificationService;
-  let testMachineresolver: Machineresolver = {
+  let testMachineResolver: MachineResolver = {
     resolvername: "test-resolver",
     type: "hosts",
     data: {
@@ -43,7 +43,7 @@ describe("MachineresolverService", () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       providers: [
-        MachineresolverService,
+        MachineResolverService,
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: AuthService, useClass: MockAuthService },
@@ -51,7 +51,7 @@ describe("MachineresolverService", () => {
         { provide: NotificationService, useClass: MockNotificationService }
       ]
     }).compileComponents();
-    service = TestBed.inject(MachineresolverService);
+    service = TestBed.inject(MachineResolverService);
     httpMock = TestBed.inject(HttpTestingController);
     authServiceMock = TestBed.inject(AuthService) as unknown as MockAuthService;
     contentServiceMock = TestBed.inject(ContentService) as unknown as MockContentService;
@@ -64,37 +64,37 @@ describe("MachineresolverService", () => {
   it("should be created", () => {
     expect(service).toBeTruthy();
   });
-  describe("machineresolversResource", () => {
+  describe("machineResolversResource", () => {
     it("should not make an HTTP request and notify if mresolverread is not allowed", () => {
       authServiceMock.actionAllowed.mockImplementation((arg) => (arg === "mresolverread" ? false : true));
       // Access the signal to trigger its computation
-      service.machineresolverResource.value();
-      httpMock.expectNone(`${service.machineresolverBaseUrl}`);
+      service.machineResolverResource.value();
+      httpMock.expectNone(`${service.machineResolverBaseUrl}`);
       expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith(
-        "You are not allowed to read machineresolvers."
+        "You are not allowed to read machineResolvers."
       );
     });
     it("should make an HTTP GET request and return transformed data on success", async () => {
       authServiceMock.actionAllowed.mockImplementation((arg) => (arg === "mresolverread" ? true : false));
       authServiceMock.getHeaders.mockReturnValue({ Authorization: "test-token" });
-      const mockResponse = MockPiResponse.fromValue<Machineresolvers>({
+      const mockResponse = MockPiResponse.fromValue<MachineResolvers>({
         resolver1: { resolvername: "resolver1", type: "hosts", data: { resolver: "resolver1", type: "hosts" } },
         resolver2: { resolvername: "resolver2", type: "ldap", data: { resolver: "resolver2", type: "ldap" } }
       });
 
       TestBed.flushEffects(); // Ensure computed properties are updated
 
-      service.machineresolverResource.value(); // Trigger the resource load
-      const req = httpMock.expectOne(`${service.machineresolverBaseUrl}`);
+      service.machineResolverResource.value(); // Trigger the resource load
+      const req = httpMock.expectOne(`${service.machineResolverBaseUrl}`);
       expect(req.request.method).toBe("GET");
       expect(req.request.headers.get("Authorization")).toBe("test-token");
       req.flush(mockResponse);
       await Promise.resolve(); // Wait for the microtask queue to flush
-      const resourceValue = service.machineresolverResource.value();
+      const resourceValue = service.machineResolverResource.value();
       expect(resourceValue).toEqual(mockResponse);
-      const machineresolvers = service.machineresolvers();
-      expect(machineresolvers.length).toBe(2);
-      expect(machineresolvers).toEqual([
+      const machineResolvers = service.machineResolvers();
+      expect(machineResolvers.length).toBe(2);
+      expect(machineResolvers).toEqual([
         { data: { resolver: "resolver1", type: "hosts" }, resolvername: "resolver1", type: "hosts" },
         { data: { resolver: "resolver2", type: "ldap" }, resolvername: "resolver2", type: "ldap" }
       ]);
@@ -103,21 +103,21 @@ describe("MachineresolverService", () => {
       authServiceMock.actionAllowed.mockImplementation((arg) => (arg === "mresolverread" ? true : false));
       TestBed.flushEffects(); // Ensure computed properties are updated
 
-      service.machineresolverResource.value(); // Trigger the resource load
-      const req = httpMock.expectOne(`${service.machineresolverBaseUrl}`);
+      service.machineResolverResource.value(); // Trigger the resource load
+      const req = httpMock.expectOne(`${service.machineResolverBaseUrl}`);
       expect(req.request.method).toBe("GET");
       req.flush({}, { status: 500, statusText: "Internal Server Error" });
       await Promise.resolve(); // Wait for the microtask queue to flush
-      const resourceValue = service.machineresolverResource.value();
+      const resourceValue = service.machineResolverResource.value();
       expect(resourceValue).toBeUndefined();
-      expect(service.machineresolvers()).toEqual([]);
+      expect(service.machineResolvers()).toEqual([]);
     });
   });
-  describe("postTestMachineresolver", () => {
+  describe("postTestMachineResolver", () => {
     it("happy path", async () => {
       authServiceMock.actionAllowed.mockImplementation((arg) => (arg === "mresolverwrite" ? true : false));
-      const promise = service.postTestMachineresolver(testMachineresolver);
-      const url = `${service.machineresolverBaseUrl}test`;
+      const promise = service.postTestMachineResolver(testMachineResolver);
+      const url = `${service.machineResolverBaseUrl}test`;
       const req = httpMock.expectOne(url);
       expect(req.request.method).toBe("POST");
       req.flush({ result: { value: {} } });
@@ -125,81 +125,81 @@ describe("MachineresolverService", () => {
     });
     it("should throw 'post-failed' on http post error", async () => {
       authServiceMock.actionAllowed.mockImplementation((arg) => (arg === "mresolverwrite" ? true : false));
-      const promise = service.postTestMachineresolver(testMachineresolver);
-      const url = `${service.machineresolverBaseUrl}test`;
+      const promise = service.postTestMachineResolver(testMachineResolver);
+      const url = `${service.machineResolverBaseUrl}test`;
       const req = httpMock.expectOne(url);
       req.flush({ result: { error: { message: "error" } } }, { status: 500, statusText: "error" });
       await expect(promise).rejects.toThrow(new Error("post-failed"));
-      expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith("Failed to update machineresolver. error");
+      expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith("Failed to update machineResolver. error");
     });
     it("should throw 'not-allowed' if action is not allowed", async () => {
       authServiceMock.actionAllowed.mockImplementation((arg) => (arg === "mresolverwrite" ? false : true));
-      const promise = service.postTestMachineresolver(testMachineresolver);
+      const promise = service.postTestMachineResolver(testMachineResolver);
       expect(promise).rejects.toThrow(new Error("not-allowed"));
       expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith(
-        "You are not allowed to update machineresolvers."
+        "You are not allowed to update machineResolvers."
       );
     });
   });
-  describe("postMachineresolver", () => {
+  describe("postMachineResolver", () => {
     it("happy path", async () => {
       authServiceMock.actionAllowed.mockImplementation((arg) => (arg === "mresolverwrite" ? true : false));
-      const promise = service.postMachineresolver(testMachineresolver);
-      const url = `${service.machineresolverBaseUrl}${testMachineresolver.resolvername}`;
+      const promise = service.postMachineResolver(testMachineResolver);
+      const url = `${service.machineResolverBaseUrl}${testMachineResolver.resolvername}`;
       const req = httpMock.expectOne(url);
       expect(req.request.method).toBe("POST");
       req.flush({ result: { value: {} } });
       await expect(promise).resolves.not.toThrow();
-      expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith("Successfully updated machineresolver.");
+      expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith("Successfully updated machineResolver.");
     });
     it("should throw 'post-failed' on http post error", async () => {
       authServiceMock.actionAllowed.mockImplementation((arg) => (arg === "mresolverwrite" ? true : false));
-      const promise = service.postMachineresolver(testMachineresolver);
-      const url = `${service.machineresolverBaseUrl}${testMachineresolver.resolvername}`;
+      const promise = service.postMachineResolver(testMachineResolver);
+      const url = `${service.machineResolverBaseUrl}${testMachineResolver.resolvername}`;
       const req = httpMock.expectOne(url);
       req.flush({ result: { error: { message: "error" } } }, { status: 500, statusText: "error" });
       await expect(promise).rejects.toThrow(new Error("post-failed"));
 
-      expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith("Failed to update machineresolver. error");
+      expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith("Failed to update machineResolver. error");
     });
     it("should throw 'not-allowed' if action is not allowed", async () => {
       authServiceMock.actionAllowed.mockImplementation((arg) => (arg === "mresolverwrite" ? false : true));
-      const promise = service.postMachineresolver(testMachineresolver);
+      const promise = service.postMachineResolver(testMachineResolver);
       await expect(promise).rejects.toThrow(new Error("not-allowed"));
 
       expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith(
-        "You are not allowed to update machineresolvers."
+        "You are not allowed to update machineResolvers."
       );
     });
   });
-  describe("deleteMachineresolver", () => {
+  describe("deleteMachineResolver", () => {
     it("happy path", async () => {
       authServiceMock.actionAllowed.mockImplementation((arg) => (arg === "mresolverdelete" ? true : false));
-      const promise = service.deleteMachineresolver("test-resolver");
-      const url = `${service.machineresolverBaseUrl}test-resolver`;
+      const promise = service.deleteMachineResolver("test-resolver");
+      const url = `${service.machineResolverBaseUrl}test-resolver`;
       const req = httpMock.expectOne(url);
       expect(req.request.method).toBe("DELETE");
       req.flush({ result: { value: {} } });
       await expect(promise).resolves.not.toThrow();
       expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith(
-        "Successfully deleted machineresolver: test-resolver."
+        "Successfully deleted machineResolver: test-resolver."
       );
     });
     it("should throw 'post-failed' on http post error", async () => {
       authServiceMock.actionAllowed.mockImplementation((arg) => (arg === "mresolverdelete" ? true : false));
-      const promise = service.deleteMachineresolver("test-resolver");
-      const url = `${service.machineresolverBaseUrl}test-resolver`;
+      const promise = service.deleteMachineResolver("test-resolver");
+      const url = `${service.machineResolverBaseUrl}test-resolver`;
       const req = httpMock.expectOne(url);
       req.flush({ result: { error: { message: "error" } } }, { status: 500, statusText: "error" });
       await expect(promise).rejects.toThrow(new Error("post-failed"));
-      expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith("Failed to delete machineresolver. error");
+      expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith("Failed to delete machineResolver. error");
     });
     it("should throw 'not-allowed' if action is not allowed", async () => {
       authServiceMock.actionAllowed.mockImplementation((arg) => (arg === "mresolverdelete" ? false : true));
-      const promise = service.deleteMachineresolver("test-resolver");
+      const promise = service.deleteMachineResolver("test-resolver");
       await expect(promise).rejects.toThrow(new Error("not-allowed"));
       expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith(
-        "You are not allowed to delete machineresolvers."
+        "You are not allowed to delete machineResolvers."
       );
     });
   });

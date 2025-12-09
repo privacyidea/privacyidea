@@ -21,11 +21,11 @@ import { Component, computed, inject, input, linkedSignal, signal, WritableSigna
 import { MatExpansionModule, MatExpansionPanel } from "@angular/material/expansion";
 import { MatIcon, MatIconModule } from "@angular/material/icon";
 import {
-  Machineresolver,
-  MachineresolverData,
-  MachineresolverService,
-  MachineresolverServiceInterface
-} from "../../../services/machineresolver/machineresolver.service";
+  MachineResolver,
+  MachineResolverData,
+  MachineResolverService,
+  MachineResolverServiceInterface
+} from "../../../services/machine-resolver/machine-resolver.service";
 import { CommonModule } from "@angular/common";
 import { FormsModule } from "@angular/forms";
 import { MatAutocompleteModule } from "@angular/material/autocomplete";
@@ -38,14 +38,15 @@ import {
   MatDialogConfigRequired
 } from "../../../services/dialog/dialog.service";
 import { ConfirmationDialogData } from "../../shared/confirmation-dialog/confirmation-dialog.component";
-import { MachineresolverHostsTabComponent } from "../machineresolver-hosts-tab/machineresolver-hosts-tab.component";
-import { MachineresolverLdapTabComponent } from "../machineresolver-ldap-tab/machineresolver-ldap-tab.component";
+import { MachineResolverLdapTabComponent } from "../machine-resolver-ldap-tab/machine-resolver-ldap-tab.component";
 import { NotificationService, NotificationServiceInterface } from "../../../services/notification/notification.service";
+import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
+import { MachineResolverHostsTabComponent } from "../machine-resolver-hosts-tab/machine-resolver-hosts-tab.component";
 
 @Component({
-  selector: "app-machineresolver-panel-edit",
-  templateUrl: "./machineresolver-panel-edit.component.html",
-  styleUrls: ["./machineresolver-panel-edit.component.scss"],
+  selector: "app-machine-resolver-panel-edit",
+  templateUrl: "./machine-resolver-panel-edit.component.html",
+  styleUrls: ["./machine-resolver-panel-edit.component.scss"],
   imports: [
     CommonModule,
     MatExpansionModule,
@@ -56,50 +57,51 @@ import { NotificationService, NotificationServiceInterface } from "../../../serv
     FormsModule,
     MatButtonModule,
     MatIcon,
-    MachineresolverHostsTabComponent,
-    MachineresolverLdapTabComponent
+    MachineResolverHostsTabComponent,
+    MachineResolverLdapTabComponent
   ]
 })
-export class MachineresolverPanelEditComponent {
-  readonly machineresolverService: MachineresolverServiceInterface = inject(MachineresolverService);
+export class MachineResolverPanelEditComponent {
+  readonly machineResolverService: MachineResolverServiceInterface = inject(MachineResolverService);
   readonly dialogService: DialogServiceInterface = inject(DialogService);
   readonly notificationService: NotificationServiceInterface = inject(NotificationService);
+  readonly authService: AuthServiceInterface = inject(AuthService);
 
-  readonly machineresolverTypes = this.machineresolverService.allMachineresolverTypes;
-  readonly machineresolvers = this.machineresolverService.machineresolvers();
+  readonly machineResolverTypes = this.machineResolverService.allMachineResolverTypes;
+  readonly machineResolvers = this.machineResolverService.machineResolvers();
   readonly isEdited = computed(
-    () => JSON.stringify(this.currentMachineresolver()) !== JSON.stringify(this.originalMachineresolver())
+    () => JSON.stringify(this.currentMachineResolver()) !== JSON.stringify(this.originalMachineResolver())
   );
-  readonly dataValidatorSignal = signal<(data: MachineresolverData) => boolean>(() => true);
+  readonly dataValidatorSignal = signal<(data: MachineResolverData) => boolean>(() => true);
   readonly isEditMode = signal<boolean>(false);
 
-  readonly originalMachineresolver = input.required<Machineresolver>();
-  readonly editedMachineresolver: WritableSignal<Machineresolver> = linkedSignal({
-    source: () => ({ originalMachineresolver: this.originalMachineresolver(), isEditMode: this.isEditMode() }),
+  readonly originalMachineResolver = input.required<MachineResolver>();
+  readonly editedMachineResolver: WritableSignal<MachineResolver> = linkedSignal({
+    source: () => ({ originalMachineResolver: this.originalMachineResolver(), isEditMode: this.isEditMode() }),
     computation: (source) => {
-      return deepCopy(source.originalMachineresolver);
+      return deepCopy(source.originalMachineResolver);
     }
   });
-  readonly currentMachineresolver = linkedSignal<Machineresolver>(() =>
-    this.isEditMode() ? this.editedMachineresolver() : this.originalMachineresolver()
+  readonly currentMachineResolver = linkedSignal<MachineResolver>(() =>
+    this.isEditMode() ? this.editedMachineResolver() : this.originalMachineResolver()
   );
 
-  onNewData(newData: MachineresolverData) {
-    this.editedMachineresolver.set({ ...this.currentMachineresolver(), data: newData });
+  onNewData(newData: MachineResolverData) {
+    this.editedMachineResolver.set({ ...this.currentMachineResolver(), data: newData });
   }
-  onNewValidator(newValidator: (data: MachineresolverData) => boolean) {
+  onNewValidator(newValidator: (data: MachineResolverData) => boolean) {
     this.dataValidatorSignal.set(newValidator);
   }
-  readonly canSaveMachineresolver = computed(() => {
-    const current = this.currentMachineresolver();
+  readonly canSaveMachineResolver = computed(() => {
+    const current = this.currentMachineResolver();
     if (!current.resolvername.trim()) return false;
     const dataValidator = this.dataValidatorSignal();
     return dataValidator(current.data);
   });
 
-  onMachineresolverTypeChange(newType: string) {
-    const current = this.currentMachineresolver();
-    this.editedMachineresolver.set({
+  onMachineResolverTypeChange(newType: string) {
+    const current = this.currentMachineResolver();
+    this.editedMachineResolver.set({
       ...current,
       type: newType,
       data: { resolver: current.resolvername, type: newType } // Reset data to only have resolver field
@@ -107,37 +109,37 @@ export class MachineresolverPanelEditComponent {
   }
 
   onResolvernameChange(newName: string) {
-    const current = this.currentMachineresolver();
-    this.editedMachineresolver.set({
+    const current = this.currentMachineResolver();
+    this.editedMachineResolver.set({
       ...current,
       resolvername: newName,
       data: { ...current.data, resolver: newName } // Keep data.resolver in sync with name
     });
   }
 
-  onUpdateResolverData(newData: MachineresolverData) {
-    const current = this.currentMachineresolver();
+  onUpdateResolverData(newData: MachineResolverData) {
+    const current = this.currentMachineResolver();
     if (newData.type !== current.type) {
-      console.error("Type mismatch between new data and current machineresolver type");
+      console.error("Type mismatch between new data and current machineResolver type");
       return;
     }
-    this.editedMachineresolver.set({
+    this.editedMachineResolver.set({
       ...current,
       data: newData
     });
   }
 
-  async saveMachineresolver() {
-    const current = this.currentMachineresolver();
+  async saveMachineResolver() {
+    const current = this.currentMachineResolver();
     try {
-      await this.machineresolverService.postTestMachineresolver(current);
+      await this.machineResolverService.postTestMachineResolver(current);
     } catch (error) {
       const errorMessage = (error as Error).message;
       if (errorMessage === "post-failed") {
         const dialogData: MatDialogConfigRequired<ConfirmationDialogData> = {
           data: {
-            type: "machineresolver",
-            title: "Save machineresolver despite test failure?",
+            type: "machineResolver",
+            title: "Save machineResolver despite test failure?",
             action: "proceed-despite-error"
           }
         };
@@ -148,20 +150,20 @@ export class MachineresolverPanelEditComponent {
       }
     }
     try {
-      await this.machineresolverService.postMachineresolver(current);
+      await this.machineResolverService.postMachineResolver(current);
     } catch (error) {
       return;
     }
     this.isEditMode.set(false);
   }
 
-  async deleteMachineresolver() {
+  async deleteMachineResolver() {
     const dialogData: MatDialogConfigRequired<ConfirmationDialogData> = {
       data: {
-        type: "machineresolver",
-        title: "Delete machineresolver",
+        type: "machineResolver",
+        title: "Delete machineResolver",
         action: "delete",
-        serialList: [this.currentMachineresolver().resolvername]
+        serialList: [this.currentMachineResolver().resolvername]
       }
     };
     this.dialogService
@@ -171,13 +173,13 @@ export class MachineresolverPanelEditComponent {
           return;
         }
         try {
-          await this.machineresolverService.deleteMachineresolver(this.currentMachineresolver().resolvername);
+          await this.machineResolverService.deleteMachineResolver(this.currentMachineResolver().resolvername);
         } catch (error) {
           return;
         }
       })
       .catch((err) => {
-        console.error("Error handling delete machineresolver dialog:", err);
+        console.error("Error handling delete machineResolver dialog:", err);
       });
     return;
   }
@@ -189,7 +191,7 @@ export class MachineresolverPanelEditComponent {
     }
     const dialogData: MatDialogConfigRequired<ConfirmationDialogData> = {
       data: {
-        type: "machineresolver",
+        type: "machineResolver",
         title: "Discard changes",
         action: "discard"
       }
@@ -214,7 +216,7 @@ export class MachineresolverPanelEditComponent {
     }
     const dialogData: MatDialogConfigRequired<ConfirmationDialogData> = {
       data: {
-        type: "machineresolver",
+        type: "machineResolver",
         title: "Discard changes",
         action: "discard"
       }

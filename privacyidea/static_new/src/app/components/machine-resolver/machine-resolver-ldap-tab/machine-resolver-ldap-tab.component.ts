@@ -19,9 +19,9 @@
 
 import { Component, input, linkedSignal, output, ViewEncapsulation } from "@angular/core";
 import {
-  LdapMachineresolverData,
-  MachineresolverData
-} from "../../../services/machineresolver/machineresolver.service";
+  LdapMachineResolverData,
+  MachineResolverData
+} from "../../../services/machine-resolver/machine-resolver.service";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { FormsModule } from "@angular/forms";
@@ -29,21 +29,23 @@ import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatSelectModule } from "@angular/material/select";
 
 @Component({
-  selector: "app-machineresolver-ldap-tab",
-  templateUrl: "./machineresolver-ldap-tab.component.html",
-  styleUrls: ["./machineresolver-ldap-tab.component.scss"],
+  selector: "app-machine-resolver-ldap-tab",
+  templateUrl: "./machine-resolver-ldap-tab.component.html",
+  styleUrls: ["./machine-resolver-ldap-tab.component.scss"],
   imports: [FormsModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatCheckboxModule],
   standalone: true,
   encapsulation: ViewEncapsulation.ShadowDom
 })
-export class MachineresolverLdapTabComponent {
+export class MachineResolverLdapTabComponent {
   readonly isEditMode = input.required<boolean>();
-  readonly machineresolverData = input.required<MachineresolverData>();
-  readonly hostsData = linkedSignal<LdapMachineresolverData>(
-    () => this.machineresolverData() as LdapMachineresolverData
-  );
-  readonly onNewData = output<MachineresolverData>();
-  readonly onNewValidator = output<(data: MachineresolverData) => boolean>();
+  readonly machineResolverData = input.required<MachineResolverData>();
+  readonly hostsData = linkedSignal<LdapMachineResolverData>(() => {
+    let data = this.machineResolverData() as LdapMachineResolverData;
+    data = { ...data, type: "ldap", TIMEOUT: data.TIMEOUT ?? 5 };
+    return data;
+  });
+  readonly onNewData = output<MachineResolverData>();
+  readonly onNewValidator = output<(data: MachineResolverData) => boolean>();
 
   ngOnInit(): void {
     this.onNewValidator.emit(this.isValid.bind(this));
@@ -51,23 +53,23 @@ export class MachineresolverLdapTabComponent {
 
   updateData(
     args:
-      | { patch: Partial<LdapMachineresolverData>; remove?: (keyof LdapMachineresolverData)[] }
-      | { patch?: Partial<LdapMachineresolverData>; remove: (keyof LdapMachineresolverData)[] }
-      | Partial<LdapMachineresolverData>
+      | { patch: Partial<LdapMachineResolverData>; remove?: (keyof LdapMachineResolverData)[] }
+      | { patch?: Partial<LdapMachineResolverData>; remove: (keyof LdapMachineResolverData)[] }
+      | Partial<LdapMachineResolverData>
   ) {
-    let patch: Partial<LdapMachineresolverData> = {};
-    let remove: (keyof LdapMachineresolverData)[] = [];
+    let patch: Partial<LdapMachineResolverData> = {};
+    let remove: (keyof LdapMachineResolverData)[] = [];
     if ("remove" in args || "patch" in args) {
       const complexArgs = args as {
-        patch?: Partial<LdapMachineresolverData>;
-        remove?: (keyof LdapMachineresolverData)[];
+        patch?: Partial<LdapMachineResolverData>;
+        remove?: (keyof LdapMachineResolverData)[];
       };
       patch = complexArgs.patch || {};
       remove = complexArgs.remove || [];
     } else {
-      patch = args as Partial<LdapMachineresolverData>;
+      patch = args as Partial<LdapMachineResolverData>;
     }
-    const newData = { ...this.machineresolverData(), ...patch, type: "ldap" };
+    const newData = { ...this.machineResolverData(), ...patch, type: "ldap" };
     if (remove.length > 0) {
       remove.forEach((key) => {
         delete newData[key];
@@ -79,9 +81,9 @@ export class MachineresolverLdapTabComponent {
     this.updateData({ patch: { TLS_VERIFY: $event, TLS_CA_FILE: undefined }, remove: ["TLS_CA_FILE"] });
   }
 
-  isValid(data: MachineresolverData): boolean {
+  isValid(data: MachineResolverData): boolean {
     if (data.type !== "ldap") return false;
-    const ldapData = data as LdapMachineresolverData;
+    const ldapData = data as LdapMachineResolverData;
 
     if (!ldapData.LDAPURI || ldapData.LDAPURI.trim() === "") {
       return false;

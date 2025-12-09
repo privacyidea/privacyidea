@@ -18,7 +18,7 @@
   padding: var(--half-global-padding) 0;
 }
 
-.machineresolver-name-input {
+.machine-resolver-name-input {
   background-color: transparent;
   border: none;
   border-bottom: 1px solid var(--mat-sys-outline-variant);
@@ -131,12 +131,12 @@
   flex-shrink: 0;
 }
 
-.machineresolver-card {
+.machine-resolver-card {
   border-radius: var(--border-radius);
 
-  // mat-expansion-panel {
-  //   border-radius: var(--border-radius);
-  // }
+  mat-expansion-panel {
+    border-radius: var(--border-radius);
+  }
 
   mat-expansion-panel-header {
     padding: 0 var(--global-padding);
@@ -149,7 +149,7 @@
     width: 100%;
   }
 
-  .machineresolver-type-label {
+  .machine-resolver-type-label {
     color: var(--sys-material-on-surface-variant);
     font-size: 0.85rem;
     font-weight: 400;
@@ -157,7 +157,7 @@
     width: 300px;
   }
 
-  .machineresolver-actions {
+  .machine-resolver-actions {
     display: flex;
     align-items: center;
     flex-shrink: 0;
@@ -174,11 +174,11 @@
   display: flex;
   align-items: stretch;
   gap: var(--global-gap);
-  app-machineresolver-priority {
+  app-machine-resolver-priority {
     flex: 1 1 0;
     height: 100%;
   }
-  app-machineresolver-description {
+  app-machine-resolver-description {
     flex: 5 1 0;
     height: 100%;
   }

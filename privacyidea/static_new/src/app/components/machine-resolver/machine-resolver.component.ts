@@ -18,20 +18,22 @@
  **/
 
 import { Component, inject } from "@angular/core";
-import { MachineresolverPanelNewComponent } from "./machineresolver-panel-new/machineresolver-panel-new.component";
-import { MachineresolverPanelEditComponent } from "./machineresolver-panel-edit/machineresolver-panel-edit.component";
 import { MatExpansionModule } from "@angular/material/expansion";
 import {
-  MachineresolverService,
-  MachineresolverServiceInterface
-} from "../../services/machineresolver/machineresolver.service";
+  MachineResolverService,
+  MachineResolverServiceInterface
+} from "../../services/machine-resolver/machine-resolver.service";
+import { AuthService, AuthServiceInterface } from "../../services/auth/auth.service";
+import { MachineResolverPanelNewComponent } from "./machine-resolver-panel-new/machine-resolver-panel-new.component";
+import { MachineResolverPanelEditComponent } from "./machine-resolver-panel-edit/machine-resolver-panel-edit.component";
 
 @Component({
-  selector: "app-machineresolver",
-  templateUrl: "./machineresolver.component.html",
-  styleUrls: ["./machineresolver.component.scss"],
-  imports: [MachineresolverPanelNewComponent, MachineresolverPanelEditComponent, MatExpansionModule]
+  selector: "app-machineResolver",
+  templateUrl: "./machine-resolver.component.html",
+  styleUrls: ["./machine-resolver.component.scss"],
+  imports: [MachineResolverPanelNewComponent, MachineResolverPanelEditComponent, MatExpansionModule]
 })
-export class MachineresolverComponent {
-  machineresolverService: MachineresolverServiceInterface = inject(MachineresolverService);
+export class MachineResolverComponent {
+  machineResolverService: MachineResolverServiceInterface = inject(MachineResolverService);
+  authService: AuthServiceInterface = inject(AuthService);
 }

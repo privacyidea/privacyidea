@@ -21,7 +21,7 @@
   <div class="ldap-config-section">
     <div class="row-container">
       <mat-form-field>
-        <mat-label i18n="@@ldapUri">LDAP URI</mat-label>
+        <mat-label i18n="@@ldapUri">Server URI</mat-label>
         <input
           matInput
           placeholder="ldap://privacyidea.server1, ldap://privacyidea.server2"
@@ -51,13 +51,16 @@
             [ngModel]="hostsData().TLS_CA_FILE"
             (ngModelChange)="updateData({ TLS_CA_FILE: $event })" />
         </mat-form-field>
+        <mat-hint i18n="@@tlsCaFileHint">
+          Path to a CA certificate file to verify the LDAP server's TLS certificate.
+        </mat-hint>
       } @else {
         <div></div>
       }
     </div>
     <div class="row-container">
       <mat-form-field>
-        <mat-label i18n="@@ldapBase">LDAP Base</mat-label>
+        <mat-label i18n="@@ldapBase">Base DN</mat-label>
         <input
           matInput
           placeholder="ou=users,dc=domain,dc=tld"
@@ -89,7 +92,7 @@
       </mat-form-field>
 
       <mat-form-field>
-        <mat-label i18n="@@authType">Authentication Type</mat-label>
+        <mat-label i18n="@@authType">Bind Type</mat-label>
         <mat-select
           matInput
           [disabled]="!isEditMode()"
@@ -146,11 +149,12 @@
         <mat-label i18n="@@idAttribute">ID Attribute</mat-label>
         <input
           matInput
-          placeholder="An attribute or DN to identify the machine"
+          placeholder="DN"
           [disabled]="!isEditMode()"
           [ngModel]="hostsData().IDATTRIBUTE"
           (ngModelChange)="updateData({ IDATTRIBUTE: $event })" />
       </mat-form-field>
+      <mat-hint i18n="@@idAttributeHint"> An attribute or DN to identify the machine </mat-hint>
 
       <mat-form-field>
         <mat-label i18n="@@searchFilter">Search Filter</mat-label>
@@ -177,11 +181,11 @@
         <mat-label i18n="@@ipAttribute">IP Attribute</mat-label>
         <input
           matInput
-          placeholder="An attribute that contains the IP address of the machine."
           [disabled]="!isEditMode()"
           [ngModel]="hostsData().IPATTRIBUTE"
           (ngModelChange)="updateData({ IPATTRIBUTE: $event })" />
       </mat-form-field>
+      <mat-hint i18n="@@ipAttributeHint">An attribute that contains the IP address of the machine. </mat-hint>
     </div>
   </div>
 </div>

@@ -17,7 +17,7 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 
-<div class="machineresolver-card">
+<div class="machine-resolver-card">
   <mat-expansion-panel
     #panel
     class="margin-4"
@@ -28,9 +28,9 @@
         @if (panel.expanded) {
           <input
             type="text"
-            class="machineresolver-name-input"
+            class="machine-resolver-name-input"
             placeholder="Name"
-            [ngModel]="newMachineresolver().resolvername"
+            [ngModel]="newMachineResolver().resolvername"
             (ngModelChange)="onResolvernameChange($event)"
             (click)="$event.stopPropagation(); panel.expanded = true"
             (keydown)="$event.stopPropagation()" />
@@ -39,29 +39,29 @@
         }
       </mat-panel-title>
       <mat-panel-description class="header-description">
-        <div class="machineresolver-type-label">
+        <div class="machine-resolver-type-label">
           @if (panel.expanded) {
             <mat-form-field
               appearance="fill"
-              class="machineresolver-type-dropdown"
+              class="machine-resolver-type-dropdown"
               (click)="$event.stopPropagation()">
               <mat-label i18n>Type</mat-label>
               <mat-select
-                [value]="newMachineresolver().type"
-                (selectionChange)="onMachineresolverTypeChange($event.value)">
-                @for (machineresolverType of machineresolverTypes; track machineresolverType) {
-                  <mat-option [value]="machineresolverType">{{ machineresolverType }}</mat-option>
+                [value]="newMachineResolver().type"
+                (selectionChange)="onMachineResolverTypeChange($event.value)">
+                @for (machineResolverType of machineResolverTypes; track machineResolverType) {
+                  <mat-option [value]="machineResolverType">{{ machineResolverType }}</mat-option>
                 }
               </mat-select>
             </mat-form-field>
           }
         </div>
-        <div class="machineresolver-actions">
+        <div class="machine-resolver-actions">
           @if (panel.expanded) {
             <button
               mat-icon-button
-              [disabled]="!canSaveMachineresolver() || !isEdited()"
-              (click)="$event.stopPropagation(); saveMachineresolver(panel)">
+              [disabled]="!canSaveMachineResolver() || !isEdited()"
+              (click)="$event.stopPropagation(); saveMachineResolver(panel)">
               <mat-icon>save</mat-icon>
             </button>
             <button
@@ -73,24 +73,24 @@
         </div>
       </mat-panel-description>
     </mat-expansion-panel-header>
-    @switch (newMachineresolver().type) {
+    @switch (newMachineResolver().type) {
       @case ("hosts") {
-        <app-machineresolver-hosts-tab
+        <app-machine-resolver-hosts-tab
           [isEditMode]="true"
-          [machineresolverData]="newMachineresolver().data"
+          [machineResolverData]="newMachineResolver().data"
           (onNewData)="onNewData($event)"
           (onNewValidator)="onNewValidator($event)" />
       }
       @case ("ldap") {
-        <app-machineresolver-ldap-tab
+        <app-machine-resolver-ldap-tab
           [isEditMode]="true"
-          [machineresolverData]="newMachineresolver().data"
+          [machineResolverData]="newMachineResolver().data"
           (onNewData)="onNewData($event)"
           (onNewValidator)="onNewValidator($event)" />
       }
       @default {
         <!-- Fallback for unknown types -->
-        <p i18n>Unknown machine resolver type: {{ newMachineresolver().type }}</p>
+        <p i18n>Unknown machine resolver type: {{ newMachineResolver().type }}</p>
       }
     }
   </mat-expansion-panel>

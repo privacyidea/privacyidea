@@ -24,11 +24,11 @@ import { MatInputModule } from "@angular/material/input";
 import { MatAutocompleteModule } from "@angular/material/autocomplete";
 import { MatSelectModule } from "@angular/material/select";
 import {
-  Machineresolver,
-  MachineresolverData,
-  MachineresolverService,
-  MachineresolverServiceInterface
-} from "../../../services/machineresolver/machineresolver.service";
+  MachineResolver,
+  MachineResolverData,
+  MachineResolverService,
+  MachineResolverServiceInterface
+} from "../../../services/machine-resolver/machine-resolver.service";
 import { CommonModule } from "@angular/common";
 import { FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
@@ -38,13 +38,13 @@ import {
   MatDialogConfigRequired
 } from "../../../services/dialog/dialog.service";
 import { ConfirmationDialogData } from "../../shared/confirmation-dialog/confirmation-dialog.component";
-import { MachineresolverHostsTabComponent } from "../machineresolver-hosts-tab/machineresolver-hosts-tab.component";
-import { MachineresolverLdapTabComponent } from "../machineresolver-ldap-tab/machineresolver-ldap-tab.component";
+import { MachineResolverHostsTabComponent } from "../machine-resolver-hosts-tab/machine-resolver-hosts-tab.component";
+import { MachineResolverLdapTabComponent } from "../machine-resolver-ldap-tab/machine-resolver-ldap-tab.component";
 
 @Component({
-  selector: "app-machineresolver-panel-new",
-  templateUrl: "./machineresolver-panel-new.component.html",
-  styleUrls: ["./machineresolver-panel-new.component.scss"],
+  selector: "app-machine-resolver-panel-new",
+  templateUrl: "./machine-resolver-panel-new.component.html",
+  styleUrls: ["./machine-resolver-panel-new.component.scss"],
   imports: [
     CommonModule,
     MatExpansionModule,
@@ -55,88 +55,88 @@ import { MachineresolverLdapTabComponent } from "../machineresolver-ldap-tab/mac
     FormsModule,
     MatButtonModule,
     MatIcon,
-    MachineresolverHostsTabComponent,
-    MachineresolverLdapTabComponent
+    MachineResolverHostsTabComponent,
+    MachineResolverLdapTabComponent
   ]
 })
-export class MachineresolverPanelNewComponent {
-  readonly machineresolverService: MachineresolverServiceInterface = inject(MachineresolverService);
+export class MachineResolverPanelNewComponent {
+  readonly machineResolverService: MachineResolverServiceInterface = inject(MachineResolverService);
   readonly dialogService: DialogServiceInterface = inject(DialogService);
 
-  readonly machineresolverDefault: Machineresolver = {
+  readonly machineResolverDefault: MachineResolver = {
     resolvername: "",
     type: "hosts",
     data: { resolver: "", type: "hosts" }
   };
-  readonly newMachineresolver = signal<Machineresolver>(this.machineresolverDefault);
-  resetMachineresolver() {
-    this.newMachineresolver.set(this.machineresolverDefault);
+  readonly newMachineResolver = signal<MachineResolver>(this.machineResolverDefault);
+  resetMachineResolver() {
+    this.newMachineResolver.set(this.machineResolverDefault);
   }
-  readonly machineresolverTypes = this.machineresolverService.allMachineresolverTypes;
-  readonly machineresolvers = this.machineresolverService.machineresolvers();
+  readonly machineResolverTypes = this.machineResolverService.allMachineResolverTypes;
+  readonly machineResolvers = this.machineResolverService.machineResolvers();
   readonly isEdited = computed(() => {
-    const current = this.newMachineresolver();
+    const current = this.newMachineResolver();
     if (current.resolvername.trim() != "") return true;
     if (Object.keys(current.data).length > 2) return true; // More than resolver and type fields
     return false;
   });
-  readonly dataValidatorSignal = signal<(data: MachineresolverData) => boolean>(() => true);
+  readonly dataValidatorSignal = signal<(data: MachineResolverData) => boolean>(() => true);
 
-  onNewData(newData: MachineresolverData) {
-    this.newMachineresolver.set({ ...this.newMachineresolver(), data: newData });
+  onNewData(newData: MachineResolverData) {
+    this.newMachineResolver.set({ ...this.newMachineResolver(), data: newData });
   }
-  onNewValidator(newValidator: (data: MachineresolverData) => boolean) {
+  onNewValidator(newValidator: (data: MachineResolverData) => boolean) {
     this.dataValidatorSignal.set(newValidator);
   }
 
-  readonly canSaveMachineresolver = computed(() => {
-    const current = this.newMachineresolver();
+  readonly canSaveMachineResolver = computed(() => {
+    const current = this.newMachineResolver();
     if (!current.resolvername.trim()) return false;
 
     const dataValidator = this.dataValidatorSignal();
     return dataValidator(current.data);
   });
 
-  onMachineresolverTypeChange(newType: string) {
-    const current = this.newMachineresolver();
-    this.newMachineresolver.set({
+  onMachineResolverTypeChange(newType: string) {
+    const current = this.newMachineResolver();
+    this.newMachineResolver.set({
       ...current,
       type: newType,
       data: { resolver: current.resolvername, type: newType } // Reset data to only have resolver field
     });
   }
   onResolvernameChange(newName: string) {
-    const current = this.newMachineresolver();
-    this.newMachineresolver.set({
+    const current = this.newMachineResolver();
+    this.newMachineResolver.set({
       ...current,
       resolvername: newName,
       data: { ...current.data, resolver: newName } // Keep data.resolver in sync with name
     });
   }
 
-  onUpdateResolverData(newData: MachineresolverData) {
-    if (newData.type !== this.newMachineresolver().type) {
-      console.error("Type mismatch between new data and current machineresolver type");
+  onUpdateResolverData(newData: MachineResolverData) {
+    if (newData.type !== this.newMachineResolver().type) {
+      console.error("Type mismatch between new data and current machineResolver type");
       return;
     }
-    const current = this.newMachineresolver();
-    this.newMachineresolver.set({
+    const current = this.newMachineResolver();
+    this.newMachineResolver.set({
       ...current,
       data: newData
     });
   }
 
-  async saveMachineresolver(panel: MatExpansionPanel) {
-    const current = this.newMachineresolver();
+  async saveMachineResolver(panel: MatExpansionPanel) {
+    const current = this.newMachineResolver();
     try {
-      await this.machineresolverService.postTestMachineresolver(current);
+      await this.machineResolverService.postTestMachineResolver(current);
     } catch (error) {
       const errorMessage = (error as Error).message;
       if (errorMessage === "post-failed") {
         const dialogData: MatDialogConfigRequired<ConfirmationDialogData> = {
           data: {
-            type: "machineresolver",
-            title: "Save machineresolver despite test failure?",
+            type: "machineResolver",
+            title: "Save machineResolver despite test failure?",
             action: "proceed-despite-error"
           }
         };
@@ -147,22 +147,22 @@ export class MachineresolverPanelNewComponent {
       }
     }
     try {
-      await this.machineresolverService.postMachineresolver(current);
+      await this.machineResolverService.postMachineResolver(current);
     } catch (error) {
       return;
     }
-    this.resetMachineresolver();
+    this.resetMachineResolver();
     panel.close();
   }
 
   handleCollapse($panel: MatExpansionPanel) {
     if (!this.isEdited()) {
-      this.newMachineresolver.set(this.machineresolverDefault);
+      this.newMachineResolver.set(this.machineResolverDefault);
       return;
     }
     const dialogData: MatDialogConfigRequired<ConfirmationDialogData> = {
       data: {
-        type: "machineresolver",
+        type: "machineResolver",
         title: "Discard changes",
         action: "discard"
       }
@@ -171,7 +171,7 @@ export class MachineresolverPanelNewComponent {
       .confirm(dialogData)
       .then((result) => {
         if (result) {
-          this.resetMachineresolver();
+          this.resetMachineResolver();
           $panel.close();
         } else {
           $panel.open();

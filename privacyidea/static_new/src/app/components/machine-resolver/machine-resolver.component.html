@@ -17,13 +17,17 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div
-  class="machineresolver-layout"
-  aria-label="Machineresolver Layout">
+  class="machine-resolver-layout"
+  aria-label="MachineResolver Layout">
   <h2 i18n>Machine Resolver</h2>
-  <mat-accordion class="machineresolver-list-layout">
-    <app-machineresolver-panel-new />
-    @for (machineresolver of machineresolverService.machineresolvers(); track machineresolver.resolvername) {
-      <app-machineresolver-panel-edit [originalMachineresolver]="machineresolver"> </app-machineresolver-panel-edit>
+  <mat-accordion class="machine-resolver-list-layout">
+    @if (authService.actionAllowed("mresolverwrite")) {
+      <app-machine-resolver-panel-new />
+    }
+    @if (authService.actionAllowed("mresolverread")) {
+      @for (machineResolver of machineResolverService.machineResolvers(); track machineResolver.resolvername) {
+        <app-machine-resolver-panel-edit [originalMachineResolver]="machineResolver"> </app-machine-resolver-panel-edit>
+      }
     }
   </mat-accordion>
 </div>

@@ -18,23 +18,23 @@
  **/
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { MachineresolverHostsTabComponent } from "./machineresolver-hosts-tab.component";
+import { MachineResolverHostsTabComponent } from "./machine-resolver-hosts-tab.component";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { HostsMachineresolverData } from "../../../services/machineresolver/machineresolver.service";
+import { HostsMachineResolverData } from "../../../services/machineResolver/machineResolver.service";
 
-describe("MachineresolverHostsTabComponent", () => {
-  let component: MachineresolverHostsTabComponent;
-  let fixture: ComponentFixture<MachineresolverHostsTabComponent>;
+describe("MachineResolverHostsTabComponent", () => {
+  let component: MachineResolverHostsTabComponent;
+  let fixture: ComponentFixture<MachineResolverHostsTabComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [MachineresolverHostsTabComponent, NoopAnimationsModule]
+      imports: [MachineResolverHostsTabComponent, NoopAnimationsModule]
     }).compileComponents();
 
-    fixture = TestBed.createComponent(MachineresolverHostsTabComponent);
+    fixture = TestBed.createComponent(MachineResolverHostsTabComponent);
     component = fixture.componentInstance;
     fixture.componentRef.setInput("isEditMode", false);
-    fixture.componentRef.setInput("machineresolverData", { type: "hosts", filename: "testFileName", resolver: "test" });
+    fixture.componentRef.setInput("machineResolverData", { type: "hosts", filename: "testFileName", resolver: "test" });
     fixture.detectChanges();
   });
 
@@ -49,13 +49,13 @@ describe("MachineresolverHostsTabComponent", () => {
   });
 
   it("should check validity", () => {
-    const validData: HostsMachineresolverData = {
+    const validData: HostsMachineResolverData = {
       type: "hosts",
       filename: "testFileName",
       resolver: "test"
     };
     const invalidData1 = { type: "ldap" };
-    const invalidData2: HostsMachineresolverData = {
+    const invalidData2: HostsMachineResolverData = {
       type: "hosts",
       filename: " ",
       resolver: ""
@@ -67,12 +67,12 @@ describe("MachineresolverHostsTabComponent", () => {
 
   it("should update data with patch only", () => {
     jest.spyOn(component.onNewData, "emit");
-    const initialData: HostsMachineresolverData = {
+    const initialData: HostsMachineResolverData = {
       type: "hosts",
       filename: "initial",
       resolver: ""
     };
-    fixture.componentRef.setInput("machineresolverData", initialData);
+    fixture.componentRef.setInput("machineResolverData", initialData);
     const patch = { filename: "updated" };
     component.updateData(patch);
     expect(component.onNewData.emit).toHaveBeenCalledWith({ ...initialData, ...patch, type: "hosts" });
@@ -80,24 +80,24 @@ describe("MachineresolverHostsTabComponent", () => {
 
   it("should update data with patch and remove", () => {
     jest.spyOn(component.onNewData, "emit");
-    const initialData: HostsMachineresolverData = {
+    const initialData: HostsMachineResolverData = {
       type: "hosts",
       filename: "initial",
       resolver: "resolver"
     };
-    fixture.componentRef.setInput("machineresolverData", initialData);
+    fixture.componentRef.setInput("machineResolverData", initialData);
     const patch = { filename: "updated" };
     component.updateData({ patch, remove: ["resolver"] });
-    const expectedData: Partial<HostsMachineresolverData> = { type: "hosts", filename: "updated" };
+    const expectedData: Partial<HostsMachineResolverData> = { type: "hosts", filename: "updated" };
     expect(component.onNewData.emit).toHaveBeenCalledWith(expectedData);
   });
 
   it("should update data with remove only", () => {
     jest.spyOn(component.onNewData, "emit");
-    const initialData: HostsMachineresolverData = { type: "hosts", filename: "initial", resolver: "name" };
-    fixture.componentRef.setInput("machineresolverData", initialData);
+    const initialData: HostsMachineResolverData = { type: "hosts", filename: "initial", resolver: "name" };
+    fixture.componentRef.setInput("machineResolverData", initialData);
     component.updateData({ remove: ["resolver"] });
-    const expectedData: Partial<HostsMachineresolverData> = { type: "hosts", filename: "initial" };
+    const expectedData: Partial<HostsMachineResolverData> = { type: "hosts", filename: "initial" };
     expect(component.onNewData.emit).toHaveBeenCalledWith(expectedData);
   });
 });

@@ -18,23 +18,23 @@
  **/
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { MachineresolverLdapTabComponent } from "./machineresolver-ldap-tab.component";
+import { MachineResolverLdapTabComponent } from "./machine-resolver-ldap-tab.component";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { LdapMachineresolverData } from "../../../services/machineresolver/machineresolver.service";
+import { LdapMachineResolverData } from "../../../services/machineResolver/machineResolver.service";
 
-describe("MachineresolverLdapTabComponent", () => {
-  let component: MachineresolverLdapTabComponent;
-  let fixture: ComponentFixture<MachineresolverLdapTabComponent>;
+describe("MachineResolverLdapTabComponent", () => {
+  let component: MachineResolverLdapTabComponent;
+  let fixture: ComponentFixture<MachineResolverLdapTabComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [MachineresolverLdapTabComponent, NoopAnimationsModule]
+      imports: [MachineResolverLdapTabComponent, NoopAnimationsModule]
     }).compileComponents();
 
-    fixture = TestBed.createComponent(MachineresolverLdapTabComponent);
+    fixture = TestBed.createComponent(MachineResolverLdapTabComponent);
     component = fixture.componentInstance;
     fixture.componentRef.setInput("isEditMode", false);
-    fixture.componentRef.setInput("machineresolverData", { type: "ldap", resolver: "test" } as LdapMachineresolverData);
+    fixture.componentRef.setInput("machineResolverData", { type: "ldap", resolver: "test" } as LdapMachineResolverData);
 
     fixture.detectChanges();
   });
@@ -44,7 +44,7 @@ describe("MachineresolverLdapTabComponent", () => {
   });
 
   it("should check validity", () => {
-    const validData: LdapMachineresolverData = {
+    const validData: LdapMachineResolverData = {
       type: "ldap",
       LDAPURI: "ldap://test",
       LDAPBASE: "dc=test",
@@ -64,10 +64,10 @@ describe("MachineresolverLdapTabComponent", () => {
       resolver: ""
     };
     const invalidData1 = { type: "hosts" };
-    const invalidData2: LdapMachineresolverData = { ...validData, LDAPURI: " " };
-    const invalidData3: LdapMachineresolverData = { ...validData, LDAPBASE: " " };
-    const invalidData4: LdapMachineresolverData = { ...validData, BINDDN: " " };
-    const invalidData5: LdapMachineresolverData = { ...validData, BINDPW: " " };
+    const invalidData2: LdapMachineResolverData = { ...validData, LDAPURI: " " };
+    const invalidData3: LdapMachineResolverData = { ...validData, LDAPBASE: " " };
+    const invalidData4: LdapMachineResolverData = { ...validData, BINDDN: " " };
+    const invalidData5: LdapMachineResolverData = { ...validData, BINDPW: " " };
 
     expect(component.isValid(validData)).toBeTruthy();
     expect(component.isValid(invalidData1 as any)).toBeFalsy();
@@ -79,7 +79,7 @@ describe("MachineresolverLdapTabComponent", () => {
 
   it("should update data with patch only", () => {
     jest.spyOn(component.onNewData, "emit");
-    const initialData: LdapMachineresolverData = {
+    const initialData: LdapMachineResolverData = {
       type: "ldap",
       LDAPURI: "ldap://test",
       LDAPBASE: "dc=test",
@@ -98,7 +98,7 @@ describe("MachineresolverLdapTabComponent", () => {
       NOREFERRALS: false,
       resolver: ""
     };
-    fixture.componentRef.setInput("machineresolverData", initialData);
+    fixture.componentRef.setInput("machineResolverData", initialData);
     const patch = { LDAPURI: "ldap://updated" };
     component.updateData(patch);
     expect(component.onNewData.emit).toHaveBeenCalledWith({ ...initialData, ...patch, type: "ldap" });
@@ -106,7 +106,7 @@ describe("MachineresolverLdapTabComponent", () => {
 
   it("should update data with patch and remove", () => {
     jest.spyOn(component.onNewData, "emit");
-    const initialData: LdapMachineresolverData = {
+    const initialData: LdapMachineResolverData = {
       type: "ldap",
       LDAPURI: "ldap://test",
       LDAPBASE: "dc=test",
@@ -125,10 +125,10 @@ describe("MachineresolverLdapTabComponent", () => {
       HOSTNAMEATTRIBUTE: "",
       NOREFERRALS: false
     };
-    fixture.componentRef.setInput("machineresolverData", initialData);
+    fixture.componentRef.setInput("machineResolverData", initialData);
     const patch = { LDAPURI: "ldap://updated", LDAPBASE: "dc=updated", BINDDN: "cn=updated", BINDPW: "updated" };
     component.updateData({ patch, remove: ["resolver", "AUTHTYPE"] });
-    const expectedData: Partial<LdapMachineresolverData> = {
+    const expectedData: Partial<LdapMachineResolverData> = {
       type: "ldap",
       LDAPURI: "ldap://updated",
       LDAPBASE: "dc=updated",
@@ -150,7 +150,7 @@ describe("MachineresolverLdapTabComponent", () => {
 
   it("should update data with remove only", () => {
     jest.spyOn(component.onNewData, "emit");
-    const initialData: LdapMachineresolverData = {
+    const initialData: LdapMachineResolverData = {
       type: "ldap",
       LDAPURI: "ldap://test",
       LDAPBASE: "dc=test",
@@ -169,7 +169,7 @@ describe("MachineresolverLdapTabComponent", () => {
       HOSTNAMEATTRIBUTE: "",
       NOREFERRALS: false
     };
-    fixture.componentRef.setInput("machineresolverData", initialData);
+    fixture.componentRef.setInput("machineResolverData", initialData);
     component.updateData({
       remove: [
         "resolver",
@@ -185,7 +185,7 @@ describe("MachineresolverLdapTabComponent", () => {
         "TLS_CA_FILE"
       ]
     });
-    const expectedData: Partial<LdapMachineresolverData> = {
+    const expectedData: Partial<LdapMachineResolverData> = {
       type: "ldap",
       LDAPURI: "ldap://test",
       LDAPBASE: "dc=test",

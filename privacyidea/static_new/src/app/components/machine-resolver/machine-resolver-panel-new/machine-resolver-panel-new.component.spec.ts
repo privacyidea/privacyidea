@@ -18,34 +18,34 @@
  **/
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { MachineresolverPanelNewComponent } from "./machineresolver-panel-new.component";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import {
-  HostsMachineresolverData,
-  LdapMachineresolverData,
-  MachineresolverService
-} from "../../../services/machineresolver/machineresolver.service";
+  HostsMachineResolverData,
+  LdapMachineResolverData,
+  MachineResolverService
+} from "../../../services/machine-resolver/machine-resolver.service";
 import { DialogService } from "../../../services/dialog/dialog.service";
 import { MockDialogService } from "../../../../testing/mock-services/mock-dialog-service";
-import { MockMachineresolverService } from "../../../../testing/mock-services/mock-machineresolver-service";
+import { MockMachineResolverService } from "../../../../testing/mock-services/mock-machine-resolver-service";
+import { MachineResolverPanelNewComponent } from "./machine-resolver-panel-new.component";
 
-describe("MachineresolverPanelNewComponent", () => {
-  let component: MachineresolverPanelNewComponent;
-  let fixture: ComponentFixture<MachineresolverPanelNewComponent>;
-  let machineresolverServiceMock: MockMachineresolverService;
+describe("MachineResolverPanelNewComponent", () => {
+  let component: MachineResolverPanelNewComponent;
+  let fixture: ComponentFixture<MachineResolverPanelNewComponent>;
+  let machineResolverServiceMock: MockMachineResolverService;
   let dialogServiceMock: MockDialogService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [MachineresolverPanelNewComponent, NoopAnimationsModule],
+      imports: [MachineResolverPanelNewComponent, NoopAnimationsModule],
       providers: [
-        { provide: MachineresolverService, useClass: MockMachineresolverService },
+        { provide: MachineResolverService, useClass: MockMachineResolverService },
         { provide: DialogService, useClass: MockDialogService }
       ]
     }).compileComponents();
-    fixture = TestBed.createComponent(MachineresolverPanelNewComponent);
+    fixture = TestBed.createComponent(MachineResolverPanelNewComponent);
     component = fixture.componentInstance;
-    machineresolverServiceMock = TestBed.inject(MachineresolverService) as unknown as MockMachineresolverService;
+    machineResolverServiceMock = TestBed.inject(MachineResolverService) as unknown as MockMachineResolverService;
     dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
     fixture.detectChanges();
   });
@@ -54,35 +54,35 @@ describe("MachineresolverPanelNewComponent", () => {
     expect(component).toBeTruthy();
   });
 
-  it("should change machineresolver type", () => {
-    component.onMachineresolverTypeChange("ldap");
-    expect(component.newMachineresolver().type).toBe("ldap");
-    expect(component.newMachineresolver().data.type).toBe("ldap");
+  it("should change machineResolver type", () => {
+    component.onMachineResolverTypeChange("ldap");
+    expect(component.newMachineResolver().type).toBe("ldap");
+    expect(component.newMachineResolver().data.type).toBe("ldap");
   });
 
   it("should change resolvername", () => {
     component.onResolvernameChange("newName");
-    expect(component.newMachineresolver().resolvername).toBe("newName");
-    expect(component.newMachineresolver().data.resolver).toBe("newName");
+    expect(component.newMachineResolver().resolvername).toBe("newName");
+    expect(component.newMachineResolver().data.resolver).toBe("newName");
   });
 
   it("should update resolver data", () => {
-    const newData: HostsMachineresolverData = {
+    const newData: HostsMachineResolverData = {
       type: "hosts",
       filename: "newfile",
       resolver: "name"
     };
     component.onUpdateResolverData(newData);
-    expect(component.newMachineresolver().data).toEqual(newData);
+    expect(component.newMachineResolver().data).toEqual(newData);
   });
 
-  it("should save machineresolver", async () => {
+  it("should save machineResolver", async () => {
     const panel = { close: () => {} } as any;
     jest.spyOn(panel, "close");
-    machineresolverServiceMock.postMachineresolver.mockReturnValue(Promise.resolve(null));
-    await component.saveMachineresolver(panel);
-    expect(machineresolverServiceMock.postTestMachineresolver).toHaveBeenCalled();
-    expect(machineresolverServiceMock.postMachineresolver).toHaveBeenCalled();
+    machineResolverServiceMock.postMachineResolver.mockReturnValue(Promise.resolve(null));
+    await component.saveMachineResolver(panel);
+    expect(machineResolverServiceMock.postTestMachineResolver).toHaveBeenCalled();
+    expect(machineResolverServiceMock.postMachineResolver).toHaveBeenCalled();
     expect(panel.close).toHaveBeenCalled();
   });
 
@@ -90,26 +90,26 @@ describe("MachineresolverPanelNewComponent", () => {
     const panel = { close: () => {}, open: () => {} } as any;
     jest.spyOn(panel, "close");
     jest.spyOn(panel, "open");
-    component.newMachineresolver.set({ ...component.newMachineresolver(), resolvername: "test" });
+    component.newMachineResolver.set({ ...component.newMachineResolver(), resolvername: "test" });
     dialogServiceMock.confirm.mockReturnValue(Promise.resolve(true));
     component.handleCollapse(panel);
     expect(dialogServiceMock.confirm).toHaveBeenCalled();
   });
 
-  it("should check if machineresolver can be saved", () => {
+  it("should check if machineResolver can be saved", () => {
     component.dataValidatorSignal.set(() => true);
-    component.newMachineresolver.set({ ...component.newMachineresolver(), resolvername: " " });
-    expect(component.canSaveMachineresolver()).toBeFalsy();
+    component.newMachineResolver.set({ ...component.newMachineResolver(), resolvername: " " });
+    expect(component.canSaveMachineResolver()).toBeFalsy();
 
-    component.newMachineresolver.set({ ...component.newMachineresolver(), resolvername: "test" });
-    expect(component.canSaveMachineresolver()).toBeTruthy();
+    component.newMachineResolver.set({ ...component.newMachineResolver(), resolvername: "test" });
+    expect(component.canSaveMachineResolver()).toBeTruthy();
 
     component.dataValidatorSignal.set(() => false);
-    expect(component.canSaveMachineresolver()).toBeFalsy();
+    expect(component.canSaveMachineResolver()).toBeFalsy();
   });
 
-  it("should reset machineresolver", () => {
-    const data: LdapMachineresolverData = {
+  it("should reset machineResolver", () => {
+    const data: LdapMachineResolverData = {
       type: "ldap",
       LDAPURI: "ldap://test",
       AUTHTYPE: "",
@@ -128,12 +128,12 @@ describe("MachineresolverPanelNewComponent", () => {
       NOREFERRALS: false,
       resolver: ""
     };
-    component.newMachineresolver.set({
+    component.newMachineResolver.set({
       resolvername: "test",
       type: "ldap",
       data: data
     });
-    component.resetMachineresolver();
-    expect(component.newMachineresolver()).toEqual(component.machineresolverDefault);
+    component.resetMachineResolver();
+    expect(component.newMachineResolver()).toEqual(component.machineResolverDefault);
   });
 });

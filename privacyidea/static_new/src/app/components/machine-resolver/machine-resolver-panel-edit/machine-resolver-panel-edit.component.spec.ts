@@ -18,42 +18,42 @@
  **/
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { MachineresolverPanelEditComponent } from "./machineresolver-panel-edit.component";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import {
-  HostsMachineresolver,
-  HostsMachineresolverData,
-  MachineresolverService
-} from "../../../services/machineresolver/machineresolver.service";
+  HostsMachineResolver,
+  HostsMachineResolverData,
+  MachineResolverService
+} from "../../../services/machine-resolver/machine-resolver.service";
 import { DialogService } from "../../../services/dialog/dialog.service";
 import { NotificationService } from "../../../services/notification/notification.service";
 import { MockNotificationService } from "../../../../testing/mock-services";
-import { MockMachineresolverService } from "../../../../testing/mock-services/mock-machineresolver-service";
+import { MockMachineResolverService } from "../../../../testing/mock-services/mock-machine-resolver-service";
 import { Component } from "@angular/core";
 import { MockDialogService } from "../../../../testing/mock-services/mock-dialog-service";
+import { MachineResolverPanelEditComponent } from "./machine-resolver-panel-edit.component";
 
 @Component({
   standalone: true,
-  selector: "app-machineresolver-hosts-tab",
+  selector: "app-machine-resolver-hosts-tab",
   template: ""
 })
-class MachineresolverHostsTabComponent {}
+class MachineResolverHostsTabComponent {}
 
 @Component({
   standalone: true,
-  selector: "app-machineresolver-ldap-tab",
+  selector: "app-machine-resolver-ldap-tab",
   template: ""
 })
-class MachineresolverLdapTabComponent {}
+class MachineResolverLdapTabComponent {}
 
-describe("MachineresolverPanelEditComponent", () => {
-  let component: MachineresolverPanelEditComponent;
-  let fixture: ComponentFixture<MachineresolverPanelEditComponent>;
-  let machineresolverServiceMock: MockMachineresolverService;
+describe("MachineResolverPanelEditComponent", () => {
+  let component: MachineResolverPanelEditComponent;
+  let fixture: ComponentFixture<MachineResolverPanelEditComponent>;
+  let machineResolverServiceMock: MockMachineResolverService;
   let dialogServiceMock: MockDialogService;
   let notificationServiceMock: MockNotificationService;
 
-  const machineresolver: HostsMachineresolver = {
+  const machineResolver: HostsMachineResolver = {
     resolvername: "test",
     type: "hosts",
     data: {
@@ -65,27 +65,27 @@ describe("MachineresolverPanelEditComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [MachineresolverPanelEditComponent, NoopAnimationsModule],
+      imports: [MachineResolverPanelEditComponent, NoopAnimationsModule],
       providers: [
-        { provide: MachineresolverService, useClass: MockMachineresolverService },
+        { provide: MachineResolverService, useClass: MockMachineResolverService },
         { provide: DialogService, useClass: MockDialogService },
         { provide: NotificationService, useClass: MockNotificationService }
       ]
     })
-      .overrideComponent(MachineresolverPanelEditComponent, {
+      .overrideComponent(MachineResolverPanelEditComponent, {
         set: {
-          imports: [MachineresolverHostsTabComponent, MachineresolverLdapTabComponent]
+          imports: [MachineResolverHostsTabComponent, MachineResolverLdapTabComponent]
         }
       })
       .compileComponents();
 
-    fixture = TestBed.createComponent(MachineresolverPanelEditComponent);
+    fixture = TestBed.createComponent(MachineResolverPanelEditComponent);
     component = fixture.componentInstance;
-    machineresolverServiceMock = TestBed.inject(MachineresolverService) as unknown as MockMachineresolverService;
+    machineResolverServiceMock = TestBed.inject(MachineResolverService) as unknown as MockMachineResolverService;
     dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
     notificationServiceMock = TestBed.inject(NotificationService) as unknown as MockNotificationService;
 
-    fixture.componentRef.setInput("originalMachineresolver", machineresolver);
+    fixture.componentRef.setInput("originalMachineResolver", machineResolver);
     fixture.detectChanges();
   });
 
@@ -99,89 +99,89 @@ describe("MachineresolverPanelEditComponent", () => {
     expect(component.isEditMode()).toBeTruthy();
   });
 
-  it("should change machineresolver type", () => {
+  it("should change machineResolver type", () => {
     component.isEditMode.set(true);
-    component.onMachineresolverTypeChange("ldap");
-    expect(component.editedMachineresolver().type).toBe("ldap");
-    expect(component.editedMachineresolver().data.type).toBe("ldap");
+    component.onMachineResolverTypeChange("ldap");
+    expect(component.editedMachineResolver().type).toBe("ldap");
+    expect(component.editedMachineResolver().data.type).toBe("ldap");
   });
 
   it("should change resolvername", () => {
     component.isEditMode.set(true);
     component.onResolvernameChange("newName");
-    expect(component.editedMachineresolver().resolvername).toBe("newName");
-    expect(component.editedMachineresolver().data.resolver).toBe("newName");
+    expect(component.editedMachineResolver().resolvername).toBe("newName");
+    expect(component.editedMachineResolver().data.resolver).toBe("newName");
   });
 
   it("should update resolver data", () => {
     component.isEditMode.set(true);
-    const newData: HostsMachineresolverData = {
+    const newData: HostsMachineResolverData = {
       type: "hosts",
       filename: "newfile",
       resolver: "test"
     };
     component.onUpdateResolverData(newData);
-    expect(component.editedMachineresolver().data).toEqual(newData);
+    expect(component.editedMachineResolver().data).toEqual(newData);
   });
 
-  it("should save machineresolver successfully", async () => {
-    machineresolverServiceMock.postTestMachineresolver.mockReturnValue(Promise.resolve(null));
-    machineresolverServiceMock.postMachineresolver.mockReturnValue(Promise.resolve(null));
+  it("should save machineResolver successfully", async () => {
+    machineResolverServiceMock.postTestMachineResolver.mockReturnValue(Promise.resolve(null));
+    machineResolverServiceMock.postMachineResolver.mockReturnValue(Promise.resolve(null));
     component.isEditMode.set(true);
-    await component.saveMachineresolver();
-    expect(machineresolverServiceMock.postTestMachineresolver).toHaveBeenCalled();
-    expect(machineresolverServiceMock.postMachineresolver).toHaveBeenCalled();
+    await component.saveMachineResolver();
+    expect(machineResolverServiceMock.postTestMachineResolver).toHaveBeenCalled();
+    expect(machineResolverServiceMock.postMachineResolver).toHaveBeenCalled();
     expect(component.isEditMode()).toBeFalsy();
   });
 
-  it("should save machineresolver despite test failure if confirmed", async () => {
-    machineresolverServiceMock.postTestMachineresolver.mockReturnValue(Promise.reject(Error("post-failed")));
-    machineresolverServiceMock.postMachineresolver.mockReturnValue(Promise.resolve(null));
+  it("should save machineResolver despite test failure if confirmed", async () => {
+    machineResolverServiceMock.postTestMachineResolver.mockReturnValue(Promise.reject(Error("post-failed")));
+    machineResolverServiceMock.postMachineResolver.mockReturnValue(Promise.resolve(null));
     dialogServiceMock.confirm.mockReturnValue(Promise.resolve(true));
     component.isEditMode.set(true);
-    await component.saveMachineresolver();
-    expect(machineresolverServiceMock.postTestMachineresolver).toHaveBeenCalled();
+    await component.saveMachineResolver();
+    expect(machineResolverServiceMock.postTestMachineResolver).toHaveBeenCalled();
     expect(dialogServiceMock.confirm).toHaveBeenCalled();
-    expect(machineresolverServiceMock.postMachineresolver).toHaveBeenCalled();
+    expect(machineResolverServiceMock.postMachineResolver).toHaveBeenCalled();
     expect(component.isEditMode()).toBeFalsy();
   });
 
-  it("should not save machineresolver if test fails and not confirmed", async () => {
-    machineresolverServiceMock.postTestMachineresolver.mockReturnValue(Promise.reject(Error("post-failed")));
-    machineresolverServiceMock.postMachineresolver.mockReturnValue(Promise.resolve(null));
+  it("should not save machineResolver if test fails and not confirmed", async () => {
+    machineResolverServiceMock.postTestMachineResolver.mockReturnValue(Promise.reject(Error("post-failed")));
+    machineResolverServiceMock.postMachineResolver.mockReturnValue(Promise.resolve(null));
     dialogServiceMock.confirm.mockReturnValue(Promise.resolve(false));
     component.isEditMode.set(true);
-    await component.saveMachineresolver();
-    expect(machineresolverServiceMock.postTestMachineresolver).toHaveBeenCalled();
+    await component.saveMachineResolver();
+    expect(machineResolverServiceMock.postTestMachineResolver).toHaveBeenCalled();
     expect(dialogServiceMock.confirm).toHaveBeenCalled();
-    expect(machineresolverServiceMock.postMachineresolver).not.toHaveBeenCalled();
+    expect(machineResolverServiceMock.postMachineResolver).not.toHaveBeenCalled();
     expect(component.isEditMode()).toBeTruthy(); // Should remain in edit mode
   });
 
-  it("should not save machineresolver if post fails", async () => {
-    machineresolverServiceMock.postTestMachineresolver.mockReturnValue(Promise.resolve(null));
-    machineresolverServiceMock.postMachineresolver.mockReturnValue(Promise.reject(Error("save-failed")));
+  it("should not save machineResolver if post fails", async () => {
+    machineResolverServiceMock.postTestMachineResolver.mockReturnValue(Promise.resolve(null));
+    machineResolverServiceMock.postMachineResolver.mockReturnValue(Promise.reject(Error("save-failed")));
     component.isEditMode.set(true);
-    await component.saveMachineresolver();
-    expect(machineresolverServiceMock.postTestMachineresolver).toHaveBeenCalled();
-    expect(machineresolverServiceMock.postMachineresolver).toHaveBeenCalled();
+    await component.saveMachineResolver();
+    expect(machineResolverServiceMock.postTestMachineResolver).toHaveBeenCalled();
+    expect(machineResolverServiceMock.postMachineResolver).toHaveBeenCalled();
     expect(component.isEditMode()).toBeTruthy(); // Should remain in edit mode
   });
 
-  it("should delete machineresolver if confirmed", async () => {
+  it("should delete machineResolver if confirmed", async () => {
     dialogServiceMock.confirm.mockReturnValue(Promise.resolve(true));
-    machineresolverServiceMock.deleteMachineresolver.mockReturnValue(Promise.resolve(null));
-    await component.deleteMachineresolver();
+    machineResolverServiceMock.deleteMachineResolver.mockReturnValue(Promise.resolve(null));
+    await component.deleteMachineResolver();
     expect(dialogServiceMock.confirm).toHaveBeenCalled();
-    expect(machineresolverServiceMock.deleteMachineresolver).toHaveBeenCalledWith("test");
+    expect(machineResolverServiceMock.deleteMachineResolver).toHaveBeenCalledWith("test");
   });
 
-  it("should not delete machineresolver if cancelled", async () => {
+  it("should not delete machineResolver if cancelled", async () => {
     dialogServiceMock.confirm.mockReturnValue(Promise.resolve(false));
-    machineresolverServiceMock.deleteMachineresolver.mockReturnValue(Promise.resolve(null));
-    await component.deleteMachineresolver();
+    machineResolverServiceMock.deleteMachineResolver.mockReturnValue(Promise.resolve(null));
+    await component.deleteMachineResolver();
     expect(dialogServiceMock.confirm).toHaveBeenCalled();
-    expect(machineresolverServiceMock.deleteMachineresolver).not.toHaveBeenCalled();
+    expect(machineResolverServiceMock.deleteMachineResolver).not.toHaveBeenCalled();
   });
 
   it("should cancel edit mode if not edited", () => {
@@ -194,7 +194,7 @@ describe("MachineresolverPanelEditComponent", () => {
 
   it("should cancel edit mode if edited and dialog confirmed", async () => {
     component.isEditMode.set(true);
-    component.editedMachineresolver.set({ ...machineresolver, type: "ldap" });
+    component.editedMachineResolver.set({ ...machineResolver, type: "ldap" });
     TestBed.flushEffects();
     expect(component.isEdited()).toBeTruthy();
     dialogServiceMock.confirm.mockReturnValue(Promise.resolve(true));
@@ -202,48 +202,48 @@ describe("MachineresolverPanelEditComponent", () => {
     await Promise.resolve();
     expect(dialogServiceMock.confirm).toHaveBeenCalled();
     expect(component.isEditMode()).toBeFalsy();
-    expect(component.editedMachineresolver().type).toBe("hosts");
+    expect(component.editedMachineResolver().type).toBe("hosts");
   });
 
   it("should not cancel edit mode if edited and dialog cancelled", () => {
     component.isEditMode.set(true);
-    component.editedMachineresolver.set({ ...machineresolver, type: "ldap" });
+    component.editedMachineResolver.set({ ...machineResolver, type: "ldap" });
     TestBed.flushEffects();
     expect(component.isEdited()).toBeTruthy();
     dialogServiceMock.confirm.mockReturnValue(Promise.resolve(false));
     component.cancelEditMode();
     expect(dialogServiceMock.confirm).toHaveBeenCalled();
     expect(component.isEditMode()).toBeTruthy();
-    expect(component.editedMachineresolver().type).toBe("ldap");
+    expect(component.editedMachineResolver().type).toBe("ldap");
   });
 
-  describe("check if machineresolver can be saved", () => {
+  describe("check if machineResolver can be saved", () => {
     it("when data and resolvername are valid", () => {
       component.isEditMode.set(true);
       component.dataValidatorSignal.set(() => true);
-      component.editedMachineresolver.set({ ...machineresolver, resolvername: "test" });
-      expect(component.canSaveMachineresolver()).toBeTruthy();
+      component.editedMachineResolver.set({ ...machineResolver, resolvername: "test" });
+      expect(component.canSaveMachineResolver()).toBeTruthy();
     });
 
     it("when data is valid but resolvername is empty", () => {
       component.isEditMode.set(true);
       component.dataValidatorSignal.set(() => true);
-      component.editedMachineresolver.set({ ...machineresolver, resolvername: " " }); // Should not be empty (trimmed)
-      expect(component.canSaveMachineresolver()).toBeFalsy();
+      component.editedMachineResolver.set({ ...machineResolver, resolvername: " " }); // Should not be empty (trimmed)
+      expect(component.canSaveMachineResolver()).toBeFalsy();
     });
 
     it("when data is invalid but resolvername is valid", () => {
       component.isEditMode.set(true);
       component.dataValidatorSignal.set(() => false);
-      component.editedMachineresolver.set({ ...machineresolver, resolvername: "test" });
-      expect(component.canSaveMachineresolver()).toBeFalsy();
+      component.editedMachineResolver.set({ ...machineResolver, resolvername: "test" });
+      expect(component.canSaveMachineResolver()).toBeFalsy();
     });
 
     it("when both data and resolvername are invalid", () => {
       component.isEditMode.set(true);
       component.dataValidatorSignal.set(() => false);
-      component.editedMachineresolver.set({ ...machineresolver, resolvername: " " }); // Should not be empty (trimmed)
-      expect(component.canSaveMachineresolver()).toBeFalsy();
+      component.editedMachineResolver.set({ ...machineResolver, resolvername: " " }); // Should not be empty (trimmed)
+      expect(component.canSaveMachineResolver()).toBeFalsy();
     });
   });
 });
