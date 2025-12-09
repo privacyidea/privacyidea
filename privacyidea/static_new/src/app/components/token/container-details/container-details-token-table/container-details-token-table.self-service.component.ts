@@ -25,7 +25,6 @@ import { MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
 import { MatPaginator } from "@angular/material/paginator";
-import { MatSort, MatSortHeader, MatSortModule } from "@angular/material/sort";
 import { MatCell, MatHeaderCell, MatHeaderRow, MatRow, MatTable, MatTableModule } from "@angular/material/table";
 import { MatTooltip } from "@angular/material/tooltip";
 import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
@@ -48,12 +47,9 @@ import { ContainerDetailsTokenTableComponent } from "./container-details-token-t
     MatLabel,
     MatPaginator,
     MatRow,
-    MatSort,
-    MatSortHeader,
     MatTable,
     NgClass,
     MatTableModule,
-    MatSortModule,
     MatIcon,
     MatIconButton,
     MatButton,

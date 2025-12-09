@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, ViewChild, WritableSignal, inject, linkedSignal } from "@angular/core";
+import { Component, ElementRef, ViewChild, WritableSignal, inject, linkedSignal, signal } from "@angular/core";
 import {
   MatCell,
   MatCellDef,
@@ -37,14 +37,15 @@ import { UserData, UserService, UserServiceInterface } from "../../../services/u
 
 import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
 import { FormsModule } from "@angular/forms";
-import { KeywordFilterComponent } from "../../shared/keyword-filter/keyword-filter.component";
 import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
 import { MatPaginator } from "@angular/material/paginator";
 import { NgClass } from "@angular/common";
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
-import { MatSort, MatSortModule } from "@angular/material/sort";
+import { Sort } from "@angular/material/sort";
 import { RouterLink } from "@angular/router";
 import { UserTableActionsComponent } from "./user-table-actions/user-table-actions.component";
+import { MatIcon } from "@angular/material/icon";
+import { MatIconButton } from "@angular/material/button";
 
 const columnKeysMap = [
   { key: "username", label: "Username" },
@@ -62,7 +63,6 @@ const columnKeysMap = [
   selector: "app-user-table",
   imports: [
     FormsModule,
-    KeywordFilterComponent,
     MatCell,
     MatCellDef,
     MatFormField,
@@ -70,7 +70,6 @@ const columnKeysMap = [
     MatInput,
     MatPaginator,
     MatTable,
-    MatSortModule,
     MatHeaderCell,
     MatColumnDef,
     NgClass,
@@ -84,7 +83,9 @@ const columnKeysMap = [
     ClearableInputComponent,
     UserTableActionsComponent,
     ClearableInputComponent,
-    RouterLink
+    RouterLink,
+    MatIcon,
+    MatIconButton
   ],
   templateUrl: "./user-table.component.html",
   styleUrl: "./user-table.component.scss"
@@ -92,11 +93,13 @@ const columnKeysMap = [
 export class UserTableComponent {
   protected readonly columnKeysMap = columnKeysMap;
   readonly columnKeys: string[] = this.columnKeysMap.map((column) => column.key);
-  private readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
+  protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly userService: UserServiceInterface = inject(UserService);
   @ViewChild(MatPaginator) paginator!: MatPaginator;
-  @ViewChild(MatSort) sort!: MatSort;
+  @ViewChild('filterHTMLInputElement', { static: false }) filterInput!: ElementRef<HTMLInputElement>;
+  sort = signal({ active: 'username', direction: 'asc' } as Sort);
+  readonly apiFilter = this.userService.apiFilterOptions;
   pageSizeOptions = this.tableUtilsService.pageSizeOptions;
 
   totalLength: WritableSignal<number> = linkedSignal({
@@ -116,17 +119,55 @@ export class UserTableComponent {
       )
   });
   usersDataSource: WritableSignal<MatTableDataSource<UserData>> = linkedSignal({
-    source: this.userService.usersResource.value,
-    computation: (userResource, previous) => {
-      if (userResource) {
-        const dataSource = new MatTableDataSource(userResource.result?.value);
-        dataSource.paginator = this.paginator;
-        dataSource.sort = this.sort;
-        return dataSource;
-      }
-      return previous?.value ?? new MatTableDataSource(this.emptyResource());
+    source: () => ({
+      userRes: this.userService.usersResource.value(),
+      sort: this.sort()
+    }),
+    computation: (src, prev) => {
+      const data = src.userRes?.result?.value ?? prev?.value?.data ?? this.emptyResource();
+      const sorted = this.sortData([...data], this.sort());
+      const ds = new MatTableDataSource(sorted);
+      ds.paginator = this.paginator;
+      // client-side filter via MatTableDataSource.filter if needed elsewhere
+      return ds;
     }
   });
+
+  // client-side sorter
+  private sortData(data: UserData[], s: Sort): UserData[] {
+    if (!s.direction) return data;
+    const dir = s.direction === 'asc' ? 1 : -1;
+    const key = s.active as keyof UserData;
+    return data.sort((a: any, b: any) => {
+      const va = (a?.[key] ?? '').toString().toLowerCase();
+      const vb = (b?.[key] ?? '').toString().toLowerCase();
+      if (va < vb) return -1 * dir;
+      if (va > vb) return 1 * dir;
+      return 0;
+    });
+  }
+
+  // header filter helpers
+  toggleFilter(filterKeyword: string): void {
+    const newValue = this.tableUtilsService.toggleKeywordInFilter({
+      keyword: filterKeyword,
+      currentValue: this.userService.apiUserFilter()
+    });
+    this.userService.apiUserFilter.set(newValue);
+  }
+
+  isFilterSelected(filter: string): boolean {
+    return this.userService.apiUserFilter().hasKey(filter);
+  }
+
+  getFilterIconName(keyword: string): string {
+    return this.isFilterSelected(keyword) ? 'filter_alt_off' : 'filter_alt';
+  }
+
+  onKeywordClick(filterKeyword: string): void {
+    this.toggleFilter(filterKeyword);
+    this.filterInput?.nativeElement.focus();
+  }
 
   onClickUsername(user: UserData): void {
     this.userService.detailsUsername.set(user.username);

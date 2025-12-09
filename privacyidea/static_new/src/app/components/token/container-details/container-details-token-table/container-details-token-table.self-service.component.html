@@ -54,16 +54,36 @@
       aria-label="Token of Container Data Table"
       class="container-details-token-table"
       i18n-aria-label
-      mat-table
-      matSort>
+      mat-table>
       @for (column of columnsKeyMap; track column) {
         <ng-container [matColumnDef]="column.key">
           <th
             *matHeaderCellDef
             attr.aria-label="{{ column.label }} Header"
-            mat-header-cell
-            mat-sort-header>
-            {{ column.label }}
+            mat-header-cell>
+            <div class="flex ali-center">
+              {{ column.label }}
+              <div class="margin-left-1 flex">
+                @if (apiFilter.includes(column.key)) {
+                  <button
+                    (click)="onKeywordClick(column.key)"
+                    class="filter-button"
+                    mat-icon-button
+                    type="button">
+                    <mat-icon class="keyword-button-icon margin-left-0">
+                      {{ getFilterIconName(column.key) }}
+                    </mat-icon>
+                  </button>
+                }
+                <button
+                  (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
+                  class="sort-button"
+                  mat-icon-button
+                  type="button">
+                  <mat-icon>{{ tableUtilsService.getSortIcon(column.key, sort()) }}</mat-icon>
+                </button>
+              </div>
+            </div>
           </th>
           <td
             *matCellDef="let element"

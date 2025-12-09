@@ -36,7 +36,7 @@ import {
   MatTableDataSource
 } from "@angular/material/table";
 import { MatPaginator } from "@angular/material/paginator";
-import { MatSort, MatSortModule } from "@angular/material/sort";
+import { Sort } from "@angular/material/sort";
 import { FormsModule } from "@angular/forms";
 import { NgClass } from "@angular/common";
 import { MatFormField, MatLabel } from "@angular/material/form-field";
@@ -91,7 +91,6 @@ const NO_NODE_ID = "";
     MatLabel,
     MatPaginator,
     MatTable,
-    MatSortModule,
     MatHeaderCell,
     MatHeaderCellDef,
     MatColumnDef,
@@ -119,7 +118,7 @@ export class RealmTableComponent {
   protected readonly columnKeysMap = columnKeysMap;
   readonly columnKeys: string[] = this.columnKeysMap.map((column) => column.key);
 
-  private readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
+  protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly realmService: RealmServiceInterface = inject(RealmService);
   protected readonly systemService: SystemServiceInterface = inject(SystemService);
@@ -129,12 +128,14 @@ export class RealmTableComponent {
   protected readonly resolverService: ResolverServiceInterface = inject(ResolverService);
 
   @ViewChild(MatPaginator) paginator!: MatPaginator;
-  @ViewChild(MatSort) sort!: MatSort;
+  @ViewChild('filterHTMLInputElement', { static: false }) filterInput!: any;
 
   pageSizeOptions = this.tableUtilsService.pageSizeOptions;
 
   selectedNode = signal<string>(ALL_NODES_VALUE);
   filterString = signal<string>("");
+  // local sort state (replaces MatSort)
+  sort = signal({ active: "name", direction: "asc" } as Sort);
 
   newRealmName = signal<string>("");
   newRealmNodeResolvers = signal<NodeResolversMap>({});
@@ -253,24 +254,26 @@ export class RealmTableComponent {
   ) as WritableSignal<number>;
 
   realmsDataSource: WritableSignal<MatTableDataSource<RealmRow>> = linkedSignal({
-    source: this.realmRows,
-    computation: (rows, previous) => {
-      const dataSource = new MatTableDataSource(rows ?? []);
+    source: () => ({ rows: this.realmRows(), sort: this.sort() }),
+    computation: (src, previous) => {
+      const sortedRows = this.sortData([...(src.rows ?? [])], this.sort());
+      const dataSource = new MatTableDataSource(sortedRows);
       dataSource.paginator = this.paginator;
-      dataSource.sort = this.sort;
 
       dataSource.filterPredicate = (data: RealmRow, filter: string) => {
         const normalizedFilter = filter.trim().toLowerCase();
         if (!normalizedFilter) {
           return true;
         }
+        // simple contains across name and resolvers text
         return (
-          data.name.toLowerCase().includes(normalizedFilter) ||
-          data.resolversText.toLowerCase().includes(normalizedFilter)
+          (data.name ?? "").toLowerCase().includes(normalizedFilter) ||
+          (data.resolversText ?? "").toLowerCase().includes(normalizedFilter)
         );
       };
 
-      dataSource.filter = this.filterString().trim().toLowerCase();
+      const normalized = this.normalizeFilter(this.filterString());
+      dataSource.filter = normalized;
       return dataSource;
     }
   });
@@ -278,13 +281,76 @@ export class RealmTableComponent {
   onFilterInput(value: string): void {
     this.filterString.set(value);
     const ds = this.realmsDataSource();
-    ds.filter = value.trim().toLowerCase();
+    ds.filter = this.normalizeFilter(value);
   }
 
   resetFilter(): void {
     this.filterString.set("");
     const ds = this.realmsDataSource();
     ds.filter = "";
+  }
+
+  // Header filter helpers (toggle key: behaviour like other tables)
+  toggleFilter(filterKeyword: string): void {
+    const inputEl = this.filterInput?.nativeElement as HTMLInputElement | undefined;
+    const current = (inputEl?.value ?? this.filterString()).trim();
+    const re = new RegExp(`(?:^|\\s)${filterKeyword}\\s*:\\s*`, "i");
+    let next = current;
+    if (re.test(current)) {
+      next = current.replace(new RegExp(`${filterKeyword}\\s*:\\s*`, "ig"), "").trim();
+    } else {
+      next = (current + ` ${filterKeyword}: `).trim();
+    }
+    this.filterString.set(next);
+    const ds = this.realmsDataSource();
+    ds.filter = this.normalizeFilter(next);
+    if (inputEl) {
+      inputEl.value = next + (next.endsWith(":") ? " " : "");
+      inputEl.focus();
+    }
+  }
+
+  isFilterSelected(filter: string): boolean {
+    const value = this.filterString();
+    return new RegExp(`(?:^|\\s)${filter}\\s*:`, "i").test(value);
+  }
+
+  getFilterIconName(keyword: string): string {
+    return this.isFilterSelected(keyword) ? "filter_alt_off" : "filter_alt";
+  }
+
+  onKeywordClick(filterKeyword: string): void {
+    this.toggleFilter(filterKeyword);
+  }
+
+  private normalizeFilter(value: string): string {
+    return (value ?? "").replace(/\b\w+\s*:\s*/g, " ").trim().toLowerCase();
+  }
+
+  private sortData(data: RealmRow[], s: Sort): RealmRow[] {
+    const dir = s.direction === "desc" ? -1 : 1;
+    if (!s.direction) return data;
+    const key = s.active as keyof RealmRow;
+    return data.sort((a: any, b: any) => {
+      let va: any;
+      let vb: any;
+      if (key === "resolversText") {
+        va = (a.resolversText ?? "").toString().toLowerCase();
+        vb = (b.resolversText ?? "").toString().toLowerCase();
+      } else if (key === "isDefault") {
+        va = a.isDefault ? 1 : 0;
+        vb = b.isDefault ? 1 : 0;
+      } else if (key === "name") {
+        va = (a.name ?? "").toString().toLowerCase();
+        vb = (b.name ?? "").toString().toLowerCase();
+      } else {
+        va = (a?.[key] ?? "").toString().toLowerCase();
+        vb = (b?.[key] ?? "").toString().toLowerCase();
+      }
+      if (va < vb) return -1 * dir;
+      if (va > vb) return 1 * dir;
+      return 0;
+    });
   }
 
   onNodeSelectionChange(value: string): void {

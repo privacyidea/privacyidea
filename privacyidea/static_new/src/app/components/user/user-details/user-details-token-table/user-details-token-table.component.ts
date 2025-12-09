@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, effect, inject, linkedSignal, ViewChild, WritableSignal } from "@angular/core";
+import { Component, effect, inject, linkedSignal, ViewChild, WritableSignal, ElementRef, signal } from "@angular/core";
 import { CopyButtonComponent } from "../../../shared/copy-button/copy-button.component";
 import {
   MatCell,
@@ -33,7 +33,6 @@ import {
   MatTableDataSource
 } from "@angular/material/table";
 import { MatInput, MatLabel } from "@angular/material/input";
-import { MatSort, MatSortHeader } from "@angular/material/sort";
 import { MatIconButton } from "@angular/material/button";
 import { MatFormField } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
@@ -46,6 +45,7 @@ import { OverflowService, OverflowServiceInterface } from "../../../../services/
 import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
 import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
 import { TokenDetails, TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
+import { Sort } from "@angular/material/sort";
 import { UserService, UserServiceInterface } from "../../../../services/user/user.service";
 
 @Component({
@@ -66,8 +66,6 @@ import { UserService, UserServiceInterface } from "../../../../services/user/use
     MatPaginator,
     MatRow,
     MatRowDef,
-    MatSort,
-    MatSortHeader,
     MatTable,
     MatTooltip,
     NgClass,
@@ -98,7 +96,10 @@ export class UserDetailsTokenTableComponent {
   dataSource = new MatTableDataSource<ContainerDetailToken>([]);
   filterValue = "";
   @ViewChild(MatPaginator) paginator!: MatPaginator;
-  @ViewChild(MatSort) sort!: MatSort;
+  // local sort + header helpers
+  sort = signal({ active: "serial", direction: "asc" } as Sort);
+  apiFilter = this.tokenService.apiFilter;
+  @ViewChild('filterInput', { static: false }) filterInput!: ElementRef<HTMLInputElement>;
   userTokenData: WritableSignal<MatTableDataSource<any, MatPaginator>> = linkedSignal({
     source: this.tokenService.userTokenResource.value,
     computation: (userTokenResource, previous) => {
@@ -117,22 +118,88 @@ export class UserDetailsTokenTableComponent {
       if (!this.userTokenData) {
         return;
       }
-      this.dataSource.data = this.userTokenData().data ?? [];
+      const base = this.userTokenData().data ?? [];
+      this.dataSource.data = this.sortData(base, this.sort());
+    });
+
+    effect(() => {
+      const s = this.sort();
+      this.dataSource.data = this.sortData([...this.dataSource.data], s);
     });
   }
 
   ngAfterViewInit(): void {
     this.dataSource.paginator = this.paginator;
-    this.dataSource.sort = this.sort;
+    // define filter predicate across visible columns
+    this.dataSource.filterPredicate = (row: ContainerDetailToken, filter: string) => {
+      const haystack = [
+        row.serial,
+        row.tokentype as any,
+        String(row.active),
+        row.description ?? "",
+        String(row.failcount ?? ""),
+        String(row.maxfail ?? ""),
+        row.container_serial ?? ""
+      ]
+        .join(" ")
+        .toLowerCase();
+      return haystack.includes(filter);
+    };
   }
 
   handleFilterInput($event: Event): void {
-    this.filterValue = ($event.target as HTMLInputElement).value.trim();
-    const normalised = this.filterValue.toLowerCase();
+    const raw = ($event.target as HTMLInputElement).value ?? "";
+    this.filterValue = raw;
+    const normalised = raw.replace(/\b\w+\s*:\s*/g, " ").trim().toLowerCase();
     this.dataSource.filter = normalised;
     if (this.userTokenData) {
       this.userTokenData().filter = normalised;
     }
+  }
+
+  // Header filter helpers
+  toggleFilter(filterKeyword: string): void {
+    const input = this.filterInput?.nativeElement;
+    const current = (input?.value ?? "").trim();
+    const re = new RegExp(`(?:^|\n|\s)${filterKeyword}\\s*:\\s*`, "i");
+    let next = current;
+    if (re.test(current)) {
+      next = current.replace(new RegExp(`${filterKeyword}\\s*:\\s*`, "ig"), "").trim();
+    } else {
+      next = (current + ` ${filterKeyword}: `).trim();
+    }
+    if (input) {
+      input.value = next + (next.endsWith(":") ? " " : "");
+      this.handleFilterInput({ target: input } as any as Event);
+      input.focus();
+    }
+  }
+
+  isFilterSelected(filter: string): boolean {
+    const input = this.filterInput?.nativeElement;
+    const current = (input?.value ?? "").trim();
+    return new RegExp(`(?:^|\n|\s)${filter}\\s*:`, "i").test(current);
+  }
+
+  getFilterIconName(keyword: string): string {
+    return this.isFilterSelected(keyword) ? "filter_alt_off" : "filter_alt";
+  }
+
+  onKeywordClick(filterKeyword: string): void {
+    this.toggleFilter(filterKeyword);
+  }
+
+  private sortData(data: ContainerDetailToken[], s: Sort) {
+    if (!s.direction) return data;
+    const dir = s.direction === "asc" ? 1 : -1;
+    const key = s.active as keyof ContainerDetailToken;
+    return data.sort((a: any, b: any) => {
+      const va = (a[key] ?? "").toString().toLowerCase();
+      const vb = (b[key] ?? "").toString().toLowerCase();
+      if (va < vb) return -1 * dir;
+      if (va > vb) return 1 * dir;
+      return 0;
+    });
   }
 
   toggleActive(token: TokenDetails): void {

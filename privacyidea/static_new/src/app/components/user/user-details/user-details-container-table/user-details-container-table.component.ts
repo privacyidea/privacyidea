@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, effect, inject, linkedSignal, ViewChild, WritableSignal } from "@angular/core";
+import { Component, effect, inject, linkedSignal, ViewChild, WritableSignal, ElementRef, signal } from "@angular/core";
 import {
   MatCell,
   MatCellDef,
@@ -32,7 +32,6 @@ import {
   MatTableDataSource
 } from "@angular/material/table";
 import { MatPaginator } from "@angular/material/paginator";
-import { MatSort } from "@angular/material/sort";
 import { CopyButtonComponent } from "../../../shared/copy-button/copy-button.component";
 import {
   ContainerDetailData,
@@ -47,6 +46,9 @@ import { ClearableInputComponent } from "../../../shared/clearable-input/clearab
 import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
 import { NgClass } from "@angular/common";
 import { MatTooltip } from "@angular/material/tooltip";
+import { MatIcon } from "@angular/material/icon";
+import { MatIconButton } from "@angular/material/button";
+import { Sort } from "@angular/material/sort";
 
 @Component({
   selector: "app-user-details-container-table",
@@ -61,7 +63,6 @@ import { MatTooltip } from "@angular/material/tooltip";
     MatInput,
     MatPaginator,
     MatTable,
-    MatSort,
     MatHeaderCellDef,
     MatColumnDef,
     MatHeaderCell,
@@ -72,7 +73,9 @@ import { MatTooltip } from "@angular/material/tooltip";
     MatHeaderRow,
     MatRow,
     MatFormField,
-    MatLabel
+    MatLabel,
+    MatIcon,
+    MatIconButton
   ],
   templateUrl: "./user-details-container-table.component.html",
   styleUrl: "./user-details-container-table.component.scss"
@@ -96,12 +99,13 @@ export class UserDetailsContainerTableComponent {
 
   dataSource = new MatTableDataSource<ContainerDetailData>([]);
   filterValue = "";
+  sort = signal({ active: "serial", direction: "asc" } as Sort);
 
   pageSize = 10;
   pageSizeOptions = this.tableUtilsService.pageSizeOptions;
 
   @ViewChild(MatPaginator) paginator!: MatPaginator;
-  @ViewChild(MatSort) sort!: MatSort;
+  @ViewChild('filterInput', { static: false }) filterInput!: ElementRef<HTMLInputElement>;
 
   userContainers: WritableSignal<ContainerDetailData[]> = linkedSignal({
     source: this.containerService.containerResource.value,
@@ -124,13 +128,18 @@ export class UserDetailsContainerTableComponent {
 
   constructor() {
     effect(() => {
-      this.dataSource.data = this.userContainers();
+      const base = this.userContainers();
+      this.dataSource.data = this.sortData(base, this.sort());
+    });
+
+    effect(() => {
+      const s = this.sort();
+      this.dataSource.data = this.sortData([...this.dataSource.data], s);
     });
   }
 
   ngAfterViewInit(): void {
     this.dataSource.paginator = this.paginator;
-    this.dataSource.sort = this.sort;
 
     this.dataSource.filterPredicate = (row: ContainerDetailData, filter: string) => {
       const currentState = (row.states?.[0] ?? "").toString();
@@ -148,8 +157,10 @@ export class UserDetailsContainerTableComponent {
   }
 
   handleFilterInput($event: Event): void {
-    this.filterValue = ($event.target as HTMLInputElement).value.trim().toLowerCase();
-    this.dataSource.filter = this.filterValue;
+    const raw = ($event.target as HTMLInputElement).value ?? "";
+    this.filterValue = raw;
+    const normalised = raw.replace(/\b\w+\s*:\s*/g, " ").trim().toLowerCase();
+    this.dataSource.filter = normalised;
   }
 
   onPageSizeChange(size: number) {
@@ -159,6 +170,51 @@ export class UserDetailsContainerTableComponent {
   handleStateClick(element: ContainerDetailData) {
     this.containerService.toggleActive(element.serial, element.states).subscribe({
       next: () => this.containerService.containerResource.reload()
+    });
+  }
+
+  // Header filter helpers and sorting
+  toggleFilter(filterKeyword: string): void {
+    const input = this.filterInput?.nativeElement;
+    const current = (input?.value ?? "").trim();
+    const re = new RegExp(`(?:^|\n|\s)${filterKeyword}\\s*:\\s*`, "i");
+    let next = current;
+    if (re.test(current)) {
+      next = current.replace(new RegExp(`${filterKeyword}\\s*:\\s*`, "ig"), "").trim();
+    } else {
+      next = (current + ` ${filterKeyword}: `).trim();
+    }
+    if (input) {
+      input.value = next + (next.endsWith(":") ? " " : "");
+      this.handleFilterInput({ target: input } as any as Event);
+      input.focus();
+    }
+  }
+
+  isFilterSelected(filter: string): boolean {
+    const input = this.filterInput?.nativeElement;
+    const current = (input?.value ?? "").trim();
+    return new RegExp(`(?:^|\n|\s)${filter}\\s*:`, "i").test(current);
+  }
+
+  getFilterIconName(keyword: string): string {
+    return this.isFilterSelected(keyword) ? "filter_alt_off" : "filter_alt";
+  }
+
+  onKeywordClick(filterKeyword: string): void {
+    this.toggleFilter(filterKeyword);
+  }
+
+  private sortData(data: ContainerDetailData[], s: Sort) {
+    if (!s.direction) return data;
+    const dir = s.direction === "asc" ? 1 : -1;
+    const key = s.active as keyof ContainerDetailData;
+    return data.sort((a: any, b: any) => {
+      const va = (a[key] ?? "").toString().toLowerCase();
+      const vb = (b[key] ?? "").toString().toLowerCase();
+      if (va < vb) return -1 * dir;
+      if (va > vb) return 1 * dir;
+      return 0;
     });
   }
 }

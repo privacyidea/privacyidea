@@ -66,11 +66,6 @@
             [pageSize]="auditService.pageSize()"
             showFirstLastButtons></mat-paginator>
         </div>
-        <app-keyword-filter
-          [advancedApiFilter]="auditService.advancedApiFilter"
-          [apiFilter]="auditService.apiFilter"
-          [filterHTMLInputElement]="filterHTMLInputElement"
-          [filterValue]="auditService.auditFilter"></app-keyword-filter>
         <div class="audit-table-overflow">
           <table
             [dataSource]="auditDataSource()"

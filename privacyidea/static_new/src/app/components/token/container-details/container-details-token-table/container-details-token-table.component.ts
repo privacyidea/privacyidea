@@ -26,7 +26,8 @@ import {
   linkedSignal,
   signal,
   ViewChild,
-  WritableSignal
+  WritableSignal,
+  ElementRef
 } from "@angular/core";
 import {
   ContainerDetailToken,
@@ -46,7 +47,6 @@ import {
   MatTableModule
 } from "@angular/material/table";
 import { MatFormField, MatLabel } from "@angular/material/form-field";
-import { MatSort, MatSortHeader, MatSortModule } from "@angular/material/sort";
 import { OverflowService, OverflowServiceInterface } from "../../../../services/overflow/overflow.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "../../../../services/table-utils/table-utils.service";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
@@ -63,6 +63,7 @@ import {
   NotificationService,
   NotificationServiceInterface
 } from "../../../../services/notification/notification.service";
+import { Sort } from "@angular/material/sort";
 
 @Component({
   selector: "app-container-details-token-table",
@@ -73,11 +74,8 @@ import {
     MatHeaderRow,
     MatLabel,
     MatRow,
-    MatSort,
-    MatSortHeader,
     MatTable,
     MatTableModule,
-    MatSortModule,
     MatIconButton,
     CopyButtonComponent,
     ReactiveFormsModule,
@@ -107,7 +105,6 @@ export class ContainerDetailsTokenTableComponent {
   pageSize = 10;
   pageSizeOptions = this.tableUtilsService.pageSizeOptions;
   pageIndex = this.tokenService.pageIndex;
-  filterValue = signal("");
   @Input() containerTokenData!: WritableSignal<MatTableDataSource<ContainerDetailToken, MatPaginator>>;
   dataSource = new MatTableDataSource<ContainerDetailToken>([]);
   containerSerial = this.containerService.containerSerial;
@@ -128,7 +125,10 @@ export class ContainerDetailsTokenTableComponent {
   });
   tokenSerial = this.tokenService.tokenSerial;
   @ViewChild(MatPaginator) paginator!: MatPaginator;
-  @ViewChild(MatSort) sort!: MatSort;
+  // local sort state and filter helpers
+  sort = signal({ active: "serial", direction: "asc" } as Sort);
+  apiFilter = this.tokenService.apiFilter;
+  @ViewChild('filterInput', { static: false }) filterInput!: ElementRef<HTMLInputElement>;
 
   isAssignableToAllToken = computed<boolean>(() => {
     const assignedUser = this.assignedUser();
@@ -155,29 +155,94 @@ export class ContainerDetailsTokenTableComponent {
       if (!this.containerTokenData) {
         return;
       }
-      this.dataSource.data = this.containerTokenData().data ?? [];
+      const base = this.containerTokenData().data ?? [];
+      this.dataSource.data = this.sortData(base, this.sort());
+    });
+
+    effect(() => {
+      // re-sort on sort changes
+      const s = this.sort();
+      const base = this.dataSource.data ?? [];
+      this.dataSource.data = this.sortData([...base], s);
     });
   }
 
   ngAfterViewInit(): void {
     this.dataSource.paginator = this.paginator;
-    this.dataSource.sort = this.sort;
 
     if (this.containerTokenData) {
       const externalDS = this.containerTokenData();
       externalDS.paginator = this.paginator;
-      externalDS.sort = this.sort;
     }
+
+    // define filter predicate across all relevant columns
+    this.dataSource.filterPredicate = (row: ContainerDetailToken, filter: string) => {
+      const haystack = [
+        row.serial,
+        row.tokentype,
+        row.username,
+        String(row.active)
+      ]
+        .join(" ")
+        .toLowerCase();
+      return haystack.includes(filter);
+    };
   }
 
   handleFilterInput($event: Event): void {
-    const value = ($event.target as HTMLInputElement).value.trim();
-    this.filterValue.set(value);
-    const normalised = value.toLowerCase();
+    const raw = ($event.target as HTMLInputElement).value ?? "";
+    // Strip key: prefixes for predicate comparison
+    const normalised = raw.replace(/\b\w+\s*:\s*/g, " ").trim().toLowerCase();
     this.dataSource.filter = normalised;
     if (this.containerTokenData) {
       this.containerTokenData().filter = normalised;
     }
+  }
+
+  toggleFilter(filterKeyword: string): void {
+    // emulate FilterValue behaviour using simple string in the input
+    const input = this.filterInput?.nativeElement;
+    const current = (input?.value ?? "").trim();
+    const re = new RegExp(`(?:^|\n|\s)${filterKeyword}\s*:\\s*`, "i");
+    let next = current;
+    if (re.test(current)) {
+      next = current.replace(new RegExp(`${filterKeyword}\\s*:\\s*`, "ig"), "").trim();
+    } else {
+      next = (current + ` ${filterKeyword}: `).trim();
+    }
+    if (input) {
+      input.value = next + (next.endsWith(":") ? " " : "");
+      // Do not filter immediately if only key added; leaves filter empty
+      this.handleFilterInput({ target: input } as any as Event);
+      input.focus();
+    }
+  }
+
+  isFilterSelected(filter: string): boolean {
+    const input = this.filterInput?.nativeElement;
+    const current = (input?.value ?? "").trim();
+    return new RegExp(`(?:^|\n|\s)${filter}\\s*:`, "i").test(current);
+  }
+
+  getFilterIconName(keyword: string): string {
+    return this.isFilterSelected(keyword) ? "filter_alt_off" : "filter_alt";
+  }
+
+  onKeywordClick(filterKeyword: string): void {
+    this.toggleFilter(filterKeyword);
+  }
+
+  private sortData(data: ContainerDetailToken[], s: { active: string; direction: "asc" | "desc" | "" }) {
+    if (!s.direction) return data;
+    const dir = s.direction === "asc" ? 1 : -1;
+    const key = s.active as keyof ContainerDetailToken;
+    return data.sort((a: any, b: any) => {
+      const va = (a[key] ?? "").toString().toLowerCase();
+      const vb = (b[key] ?? "").toString().toLowerCase();
+      if (va < vb) return -1 * dir;
+      if (va > vb) return 1 * dir;
+      return 0;
+    });
   }
 
   removeTokenFromContainer(containerSerial: string, tokenSerial: string) {

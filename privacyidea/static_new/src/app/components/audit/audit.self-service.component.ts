@@ -44,14 +44,12 @@ import { RouterLink } from "@angular/router";
 import { ClearableInputComponent } from "../shared/clearable-input/clearable-input.component";
 import { CopyButtonComponent } from "../shared/copy-button/copy-button.component";
 import { ScrollToTopDirective } from "../shared/directives/app-scroll-to-top.directive";
-import { KeywordFilterComponent } from "../shared/keyword-filter/keyword-filter.component";
 import { AuditComponent } from "./audit.component";
 
 @Component({
   selector: "app-audit-self-service",
   imports: [
     MatCardModule,
-    KeywordFilterComponent,
     MatCell,
     MatFormField,
     FormsModule,

@@ -77,26 +77,26 @@
                 mat-header-cell>
                 <div class="flex ali-center">
                   {{ column.label }}
-                  @if (column.key !== 'user_realm') {
-                    <div class="margin-left-1">
+                  <div class="margin-left-1 flex">
+                    @if (column.key !== 'user_realm') {
                       <button
                         (click)="onKeywordClick(apiFilterKeyMap[column.key])"
                         class="filter-button"
                         mat-icon-button>
                         <mat-icon
                           class="keyword-button-icon margin-left-0">
-                          {{getFilterIconName(column.key)}}
+                          {{ getFilterIconName(column.key) }}
                         </mat-icon>
                       </button>
-                    </div>
-                  }
-                  <button
-                    (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
-                    class="sort-button"
-                    mat-icon-button
-                    type="button">
-                    <mat-icon>{{ tableUtilsService.getSortIcon(column.key, sort()) }}</mat-icon>
-                  </button>
+                    }
+                    <button
+                      (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
+                      class="sort-button"
+                      mat-icon-button
+                      type="button">
+                      <mat-icon>{{ tableUtilsService.getSortIcon(column.key, sort()) }}</mat-icon>
+                    </button>
+                  </div>
                 </div>
               </th>
             }
