@@ -178,6 +178,14 @@ export class TokenTableComponent {
     }
   }
 
+  onSortEvent($event: Sort) {
+    if (!$event.direction) {
+      this.sort.set({ active: "serial", direction: "asc" });
+    } else {
+      this.sort.set({ active: $event.active, direction: $event.direction });
+    }
+  }
+
   onPageEvent(event: PageEvent) {
     this.pageSize.set(event.pageSize);
     this.tokenService.eventPageSize = event.pageSize;

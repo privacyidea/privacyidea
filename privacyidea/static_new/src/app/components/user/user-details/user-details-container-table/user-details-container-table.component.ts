@@ -140,6 +140,7 @@ export class UserDetailsContainerTableComponent {
 
   ngAfterViewInit(): void {
     this.dataSource.paginator = this.paginator;
+    (this.dataSource as any)._sort = this.sort;
 
     this.dataSource.filterPredicate = (row: ContainerDetailData, filter: string) => {
       const currentState = (row.states?.[0] ?? "").toString();
@@ -158,7 +159,7 @@ export class UserDetailsContainerTableComponent {
 
   handleFilterInput($event: Event): void {
     const raw = ($event.target as HTMLInputElement).value ?? "";
-    this.filterValue = raw;
+    this.filterValue = raw.trim().toLowerCase();
     const normalised = raw.replace(/\b\w+\s*:\s*/g, " ").trim().toLowerCase();
     this.dataSource.filter = normalised;
   }

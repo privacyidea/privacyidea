@@ -129,6 +129,7 @@ export class UserDetailsTokenTableComponent {
 
   ngAfterViewInit(): void {
     this.dataSource.paginator = this.paginator;
+    (this.dataSource as any)._sort = this.sort;
     this.dataSource.filterPredicate = (row: ContainerDetailToken, filter: string) => {
       const haystack = [
         row.serial,
@@ -147,7 +148,8 @@ export class UserDetailsTokenTableComponent {
 
   handleFilterInput($event: Event): void {
     const raw = ($event.target as HTMLInputElement).value ?? "";
-    this.filterValue = raw;
+    // Keep the original case but trim surrounding whitespace for display
+    this.filterValue = raw.trim();
     const normalised = raw.replace(/\b\w+\s*:\s*/g, " ").trim().toLowerCase();
     this.dataSource.filter = normalised;
     if (this.userTokenData) {

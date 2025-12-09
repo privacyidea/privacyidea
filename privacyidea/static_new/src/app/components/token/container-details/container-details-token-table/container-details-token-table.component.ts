@@ -107,6 +107,7 @@ export class ContainerDetailsTokenTableComponent {
   pageIndex = this.tokenService.pageIndex;
   @Input() containerTokenData!: WritableSignal<MatTableDataSource<ContainerDetailToken, MatPaginator>>;
   dataSource = new MatTableDataSource<ContainerDetailToken>([]);
+  filterValue: WritableSignal<string> = signal("");
   containerSerial = this.containerService.containerSerial;
   assignedUser: WritableSignal<{
     user_realm: string;
@@ -171,7 +172,9 @@ export class ContainerDetailsTokenTableComponent {
     if (this.containerTokenData) {
       const externalDS = this.containerTokenData();
       externalDS.paginator = this.paginator;
+      (externalDS as any)._sort = this.sort;
     }
+    (this.dataSource as any)._sort = this.sort;
 
     this.dataSource.filterPredicate = (row: ContainerDetailToken, filter: string) => {
       const haystack = [
@@ -188,6 +191,7 @@ export class ContainerDetailsTokenTableComponent {
 
   handleFilterInput($event: Event): void {
     const raw = ($event.target as HTMLInputElement).value ?? "";
+    this.filterValue.set(raw.trim());
     // Strip key: prefixes for predicate comparison
     const normalised = raw.replace(/\b\w+\s*:\s*/g, " ").trim().toLowerCase();
     this.dataSource.filter = normalised;
