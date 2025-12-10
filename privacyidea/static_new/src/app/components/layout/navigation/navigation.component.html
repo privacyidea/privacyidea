@@ -276,29 +276,17 @@
           </mat-list-item>
         }
         @if (authService.oneActionAllowed(["container_template_list", "container_template_create"])) {
-          @if (authService.actionAllowed("container_template_list")) {
-            <mat-list-item>
-              <button
-                class="card-button-1"
-                disabled
-                i18n
-                mat-stroked-button>
-                <mat-icon>plagiarism</mat-icon>
-                Templates
-              </button>
-            </mat-list-item>
-          }
-          @if (authService.actionAllowed("container_template_create")) {
-            <mat-list-item>
-              <button
-                class="card-button-1"
-                disabled
-                mat-stroked-button>
-                <mat-icon>note_add</mat-icon>
-                Create Template
-              </button>
-            </mat-list-item>
-          }
+          <mat-list-item>
+            <button
+              class="card-button-1"
+              [ngClass]="this.contentService.onTokensContainersTemplates() ? 'card-button-active' : 'card-button-1'"
+              [routerLink]="[ROUTE_PATHS.TOKENS_CONTAINERS_TEMPLATES]"
+              i18n
+              mat-stroked-button>
+              <mat-icon>plagiarism</mat-icon>
+              Templates
+            </button>
+          </mat-list-item>
         }
       </mat-list>
     </mat-expansion-panel>

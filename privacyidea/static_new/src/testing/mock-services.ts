@@ -327,8 +327,6 @@ export class MockUserService implements UserServiceInterface {
     this.selectedUsername.set(name);
     return name;
   });
-
-
 }
 
 export class MockNotificationService implements NotificationServiceInterface {
@@ -380,29 +378,27 @@ export class MockValidateService implements ValidateServiceInterface {
 export class MockRealmService implements RealmServiceInterface {
   selectedRealms = signal<string[]>([]);
 
-  realmResource: HttpResourceRef<PiResponse<Realms> | undefined> =
-    new MockHttpResourceRef<PiResponse<Realms> | undefined>(
-      MockPiResponse.fromValue<Realms>({} as any)
-    );
+  realmResource: HttpResourceRef<PiResponse<Realms> | undefined> = new MockHttpResourceRef<
+    PiResponse<Realms> | undefined
+  >(MockPiResponse.fromValue<Realms>({} as any));
 
   realmOptions: Signal<string[]> = computed(() => {
     const realms = this.realmResource.value()?.result?.value as any;
     return realms ? Object.keys(realms) : [];
   });
 
-  defaultRealmResource: HttpResourceRef<PiResponse<Realms> | undefined> =
-    new MockHttpResourceRef<PiResponse<Realms> | undefined>(
-      MockPiResponse.fromValue<Realms>(
-        {
-          realm1: {
-            default: true,
-            id: 1,
-            option: "",
-            resolver: []
-          } as Realm
-        } as any
-      )
-    );
+  defaultRealmResource: HttpResourceRef<PiResponse<Realms> | undefined> = new MockHttpResourceRef<
+    PiResponse<Realms> | undefined
+  >(
+    MockPiResponse.fromValue<Realms>({
+      realm1: {
+        default: true,
+        id: 1,
+        option: "",
+        resolver: []
+      } as Realm
+    } as any)
+  );
 
   defaultRealm: Signal<string> = computed(() => {
     const data = this.defaultRealmResource.value()?.result?.value as any;
@@ -411,45 +407,40 @@ export class MockRealmService implements RealmServiceInterface {
 
   createRealm = jest
     .fn()
-    .mockImplementation(
-      (realm: string, nodeId: string, resolvers: { name: string; priority?: number | null }[]) => {
-        const current = (this.realmResource.value()?.result?.value as any) ?? {};
-        const existing: Realm | undefined = current[realm];
+    .mockImplementation((realm: string, nodeId: string, resolvers: { name: string; priority?: number | null }[]) => {
+      const current = (this.realmResource.value()?.result?.value as any) ?? {};
+      const existing: Realm | undefined = current[realm];
 
-        const newResolverEntries = resolvers.map((r) => ({
-          name: r.name,
-          node: nodeId,
-          type: "mock",
-          priority: r.priority ?? null
-        }));
+      const newResolverEntries = resolvers.map((r) => ({
+        name: r.name,
+        node: nodeId,
+        type: "mock",
+        priority: r.priority ?? null
+      }));
 
-        const updatedRealm: Realm = existing
-          ? {
+      const updatedRealm: Realm = existing
+        ? {
             ...existing,
-            resolver: [
-              ...(existing.resolver ?? []),
-              ...newResolverEntries
-            ]
+            resolver: [...(existing.resolver ?? []), ...newResolverEntries]
           }
-          : {
+        : {
             default: false,
             id: Object.keys(current).length + 1,
             option: "",
             resolver: newResolverEntries
           };
 
-        const updatedRealms = {
-          ...current,
-          [realm]: updatedRealm
-        };
+      const updatedRealms = {
+        ...current,
+        [realm]: updatedRealm
+      };
 
-        (this.realmResource as MockHttpResourceRef<PiResponse<Realms> | undefined>).set(
-          MockPiResponse.fromValue<Realms>(updatedRealms as any)
-        );
+      (this.realmResource as MockHttpResourceRef<PiResponse<Realms> | undefined>).set(
+        MockPiResponse.fromValue<Realms>(updatedRealms as any)
+      );
 
-        return of(MockPiResponse.fromValue<any>({ realm, nodeId, resolvers }));
-      }
-    );
+      return of(MockPiResponse.fromValue<any>({ realm, nodeId, resolvers }));
+    });
 
   deleteRealm = jest.fn().mockImplementation((realm: string) => {
     const current = (this.realmResource.value()?.result?.value as any) ?? {};
@@ -477,17 +468,16 @@ export class MockRealmService implements RealmServiceInterface {
     );
 
     (this.defaultRealmResource as MockHttpResourceRef<PiResponse<Realms> | undefined>).set(
-      MockPiResponse.fromValue<Realms>(
-        {
-          [realm]: current[realm] ??
-            ({
-              default: true,
-              id: 1,
-              option: "",
-              resolver: []
-            } as Realm)
-        } as any
-      )
+      MockPiResponse.fromValue<Realms>({
+        [realm]:
+          current[realm] ??
+          ({
+            default: true,
+            id: 1,
+            option: "",
+            resolver: []
+          } as Realm)
+      } as any)
     );
 
     return of(MockPiResponse.fromValue<number>(1));
@@ -508,92 +498,55 @@ export class MockContentService implements ContentServiceInterface {
   tokenSerial: WritableSignal<string> = signal("");
   containerSerial: WritableSignal<string> = signal("");
 
-  onLogin: Signal<boolean> = computed(
-    () => this.routeUrl() === ROUTE_PATHS.LOGIN
+  onLogin: Signal<boolean> = computed(() => this.routeUrl() === ROUTE_PATHS.LOGIN);
+
+  onAudit: Signal<boolean> = computed(() => this.routeUrl() === ROUTE_PATHS.AUDIT);
+
+  onTokens: Signal<boolean> = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS);
+
+  onUsers: Signal<boolean> = computed(() => this.routeUrl() === ROUTE_PATHS.USERS);
+
+  onPolicies: Signal<boolean> = computed(() => this.routeUrl() === ROUTE_PATHS.POLICIES);
+
+  onTokenDetails: Signal<boolean> = computed(() => this.routeUrl().startsWith(ROUTE_PATHS.TOKENS_DETAILS));
+
+  onUserDetails: Signal<boolean> = computed(() => this.routeUrl().startsWith(ROUTE_PATHS.USERS_DETAILS + "/"));
+
+  onUserRealms: Signal<boolean> = computed(() => this.routeUrl() === ROUTE_PATHS.USERS);
+
+  onTokensEnrollment: Signal<boolean> = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS_ENROLLMENT);
+
+  onTokensChallenges: Signal<boolean> = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS_CHALLENGES);
+
+  onTokensApplications: Signal<boolean> = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS_APPLICATIONS);
+
+  onTokensGetSerial: Signal<boolean> = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS_GET_SERIAL);
+
+  onTokensImport: Signal<boolean> = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS_IMPORT);
+
+  onTokensContainers: Signal<boolean> = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS_CONTAINERS);
+
+  onTokensContainersCreate: Signal<boolean> = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS_CONTAINERS_CREATE);
+
+  onTokensContainersDetails: Signal<boolean> = computed(() =>
+    this.routeUrl().startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS)
   );
 
-  onAudit: Signal<boolean> = computed(
-    () => this.routeUrl() === ROUTE_PATHS.AUDIT
-  );
+  onTokensAssignToken: Signal<boolean> = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS_ASSIGN_TOKEN);
 
-  onTokens: Signal<boolean> = computed(
-    () => this.routeUrl() === ROUTE_PATHS.TOKENS
-  );
+  onTokensWizard: Signal<boolean> = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS_WIZARD);
 
-  onUsers: Signal<boolean> = computed(
-    () => this.routeUrl() === ROUTE_PATHS.USERS
-  );
-
-  onPolicies: Signal<boolean> = computed(
-    () => this.routeUrl() === ROUTE_PATHS.POLICIES
-  );
-
-  onTokenDetails: Signal<boolean> = computed(
-    () => this.routeUrl().startsWith(ROUTE_PATHS.TOKENS_DETAILS)
-  );
-
-  onUserDetails: Signal<boolean> = computed(
-    () => this.routeUrl().startsWith(ROUTE_PATHS.USERS_DETAILS + "/")
-  );
-
-  onUserRealms: Signal<boolean> = computed(
-    () => this.routeUrl() === ROUTE_PATHS.USERS);
-
-  onTokensEnrollment: Signal<boolean> = computed(
-    () => this.routeUrl() === ROUTE_PATHS.TOKENS_ENROLLMENT
-  );
-
-  onTokensChallenges: Signal<boolean> = computed(
-    () => this.routeUrl() === ROUTE_PATHS.TOKENS_CHALLENGES
-  );
-
-  onTokensApplications: Signal<boolean> = computed(
-    () => this.routeUrl() === ROUTE_PATHS.TOKENS_APPLICATIONS
-  );
-
-  onTokensGetSerial: Signal<boolean> = computed(
-    () => this.routeUrl() === ROUTE_PATHS.TOKENS_GET_SERIAL
-  );
-
-  onTokensImport: Signal<boolean> = computed(
-    () => this.routeUrl() === ROUTE_PATHS.TOKENS_IMPORT
-  );
-
-  onTokensContainers: Signal<boolean> = computed(
-    () => this.routeUrl() === ROUTE_PATHS.TOKENS_CONTAINERS
-  );
-
-  onTokensContainersCreate: Signal<boolean> = computed(
-    () => this.routeUrl() === ROUTE_PATHS.TOKENS_CONTAINERS_CREATE
-  );
-
-  onTokensContainersDetails: Signal<boolean> = computed(
-    () => this.routeUrl().startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS)
-  );
-
-  onTokensAssignToken: Signal<boolean> = computed(
-    () => this.routeUrl() === ROUTE_PATHS.TOKENS_ASSIGN_TOKEN
-  );
-
-  onTokensWizard: Signal<boolean> = computed(
-    () => this.routeUrl() === ROUTE_PATHS.TOKENS_WIZARD
-  );
-
-  onTokensContainersWizard: Signal<boolean> = computed(
-    () => this.routeUrl() === ROUTE_PATHS.TOKENS_CONTAINERS_WIZARD
-  );
+  onTokensContainersWizard: Signal<boolean> = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS_CONTAINERS_WIZARD);
 
   onAnyTokensRoute: Signal<boolean> = computed(
-    () =>
-      this.routeUrl() === ROUTE_PATHS.TOKENS ||
-      this.routeUrl().startsWith(ROUTE_PATHS.TOKENS + "/")
+    () => this.routeUrl() === ROUTE_PATHS.TOKENS || this.routeUrl().startsWith(ROUTE_PATHS.TOKENS + "/")
   );
 
   onAnyUsersRoute: Signal<boolean> = computed(
-    () =>
-      this.routeUrl() === ROUTE_PATHS.USERS ||
-      this.routeUrl().startsWith(ROUTE_PATHS.USERS + "/")
+    () => this.routeUrl() === ROUTE_PATHS.USERS || this.routeUrl().startsWith(ROUTE_PATHS.USERS + "/")
   );
+
+  onTokensContainersTemplates = signal(false); // Is mocked, not an actual implementation
 
   tokenSelected = jest.fn().mockImplementation((serial: string) => {
     this.tokenSerial.set(serial);
@@ -615,6 +568,8 @@ export class MockContainerService implements ContainerServiceInterface {
   readonly containerBaseUrl = "mockEnvironment.proxyUrl + '/container'";
   eventPageSize: number = 10;
   states = signal<string[]>([]);
+  selectedContainerType = signal<ContainerType | undefined>(undefined);
+  containerDetail = signal<ContainerDetails>({ containers: [], count: 0 });
   readonly containerSerial = signal("CONT-1");
   readonly selectedContainer = signal("");
   readonly sort = signal<Sort>({ active: "serial", direction: "asc" });
@@ -652,7 +607,7 @@ export class MockContainerService implements ContainerServiceInterface {
       { containerType: "yubikey", description: "", token_types: [] } as ContainerType
     ];
   });
-  selectedContainerType = signal<ContainerType>({ containerType: "generic", description: "", token_types: [] });
+
   containerDetailResource = new MockHttpResourceRef(
     MockPiResponse.fromValue({
       containers: [
@@ -678,7 +633,6 @@ export class MockContainerService implements ContainerServiceInterface {
       count: 1
     })
   );
-  containerDetail = signal<ContainerDetails>({ containers: [], count: 0 });
   templatesResource: HttpResourceRef<PiResponse<{ templates: ContainerTemplate[] }, unknown> | undefined> =
     new MockHttpResourceRef(
       MockPiResponse.fromValue<{ templates: ContainerTemplate[] }>({
@@ -1112,9 +1066,9 @@ export class MockTableUtilsService implements TableUtilsServiceInterface {
     cols: C
   ): {
     readonly [I in keyof C]: C[I] extends Readonly<{
-        key: infer KK extends ColumnKey;
-        label: string;
-      }>
+      key: infer KK extends ColumnKey;
+      label: string;
+    }>
       ? KK
       : never;
   } {
@@ -1271,8 +1225,5 @@ export class MockVersioningService {
 }
 
 export class MockSystemService {
-  nodes = jest.fn(() => [
-    { uuid: "node-1", name: "Node 1" } as any,
-    { uuid: "node-2", name: "Node 2" } as any
-  ]);
+  nodes = jest.fn(() => [{ uuid: "node-1", name: "Node 1" } as any, { uuid: "node-2", name: "Node 2" } as any]);
 }
