@@ -255,7 +255,7 @@ export class RealmTableComponent {
   realmsDataSource: WritableSignal<MatTableDataSource<RealmRow>> = linkedSignal({
     source: () => ({ rows: this.realmRows(), sort: this.sort() }),
     computation: (src, previous) => {
-      const sortedRows = this.sortData([...(src.rows ?? [])], this.sort());
+      const sortedRows = this.clientsideSortRealmData([...(src.rows ?? [])], this.sort());
       const dataSource = new MatTableDataSource(sortedRows);
       dataSource.paginator = this.paginator;
 
@@ -325,7 +325,7 @@ export class RealmTableComponent {
     return (value ?? "").replace(/\b\w+\s*:\s*/g, " ").trim().toLowerCase();
   }
 
-  private sortData(data: RealmRow[], s: Sort): RealmRow[] {
+  private clientsideSortRealmData(data: RealmRow[], s: Sort): RealmRow[] {
     const dir = s.direction === "desc" ? -1 : 1;
     if (!s.direction) return data;
     const key = s.active as keyof RealmRow;

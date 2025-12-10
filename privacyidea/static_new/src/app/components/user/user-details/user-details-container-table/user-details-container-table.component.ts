@@ -129,12 +129,12 @@ export class UserDetailsContainerTableComponent {
   constructor() {
     effect(() => {
       const base = this.userContainers();
-      this.dataSource.data = this.sortData(base, this.sort());
+      this.dataSource.data = this.clientsideSortContainerData(base, this.sort());
     });
 
     effect(() => {
       const s = this.sort();
-      this.dataSource.data = this.sortData([...this.dataSource.data], s);
+      this.dataSource.data = this.clientsideSortContainerData([...this.dataSource.data], s);
     });
   }
 
@@ -205,7 +205,7 @@ export class UserDetailsContainerTableComponent {
     this.toggleFilter(filterKeyword);
   }
 
-  private sortData(data: ContainerDetailData[], s: Sort) {
+  private clientsideSortContainerData(data: ContainerDetailData[], s: Sort) {
     if (!s.direction) return data;
     const dir = s.direction === "asc" ? 1 : -1;
     const key = s.active as keyof ContainerDetailData;

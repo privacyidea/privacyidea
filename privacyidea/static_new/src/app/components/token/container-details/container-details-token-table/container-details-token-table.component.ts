@@ -156,13 +156,13 @@ export class ContainerDetailsTokenTableComponent {
         return;
       }
       const base = this.containerTokenData().data ?? [];
-      this.dataSource.data = this.sortData(base, this.sort());
+      this.dataSource.data = this.tableUtilsService.clientsideSortTokenData(base, this.sort());
     });
 
     effect(() => {
       const s = this.sort();
       const base = this.dataSource.data ?? [];
-      this.dataSource.data = this.sortData([...base], s);
+      this.dataSource.data = this.tableUtilsService.clientsideSortTokenData([...base], s);
     });
   }
 
@@ -198,51 +198,6 @@ export class ContainerDetailsTokenTableComponent {
     if (this.containerTokenData) {
       this.containerTokenData().filter = normalised;
     }
-  }
-
-  toggleFilter(filterKeyword: string): void {
-    const input = this.filterInput?.nativeElement;
-    const current = (input?.value ?? "").trim();
-    const re = new RegExp(`(?:^|\n|\s)${filterKeyword}\s*:\\s*`, "i");
-    let next = current;
-    if (re.test(current)) {
-      next = current.replace(new RegExp(`${filterKeyword}\\s*:\\s*`, "ig"), "").trim();
-    } else {
-      next = (current + ` ${filterKeyword}: `).trim();
-    }
-    if (input) {
-      input.value = next + (next.endsWith(":") ? " " : "");
-      // Do not filter immediately if only key added; leaves filter empty
-      this.handleFilterInput({ target: input } as any as Event);
-      input.focus();
-    }
-  }
-
-  isFilterSelected(filter: string): boolean {
-    const input = this.filterInput?.nativeElement;
-    const current = (input?.value ?? "").trim();
-    return new RegExp(`(?:^|\n|\s)${filter}\\s*:`, "i").test(current);
-  }
-
-  getFilterIconName(keyword: string): string {
-    return this.isFilterSelected(keyword) ? "filter_alt_off" : "filter_alt";
-  }
-
-  onKeywordClick(filterKeyword: string): void {
-    this.toggleFilter(filterKeyword);
-  }
-
-  private sortData(data: ContainerDetailToken[], s: { active: string; direction: "asc" | "desc" | "" }) {
-    if (!s.direction) return data;
-    const dir = s.direction === "asc" ? 1 : -1;
-    const key = s.active as keyof ContainerDetailToken;
-    return data.sort((a: any, b: any) => {
-      const va = (a[key] ?? "").toString().toLowerCase();
-      const vb = (b[key] ?? "").toString().toLowerCase();
-      if (va < vb) return -1 * dir;
-      if (va > vb) return 1 * dir;
-      return 0;
-    });
   }
 
   removeTokenFromContainer(containerSerial: string, tokenSerial: string) {

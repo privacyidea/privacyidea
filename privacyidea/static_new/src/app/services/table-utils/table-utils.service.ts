@@ -21,7 +21,8 @@ import { MatTableDataSource } from "@angular/material/table";
 import { FilterValue } from "../../core/models/filter_value";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { Sort } from "@angular/material/sort";
-import { TokenService, TokenServiceInterface } from "../token/token.service";
+import { TokenDetails, TokenService, TokenServiceInterface } from "../token/token.service";
+import { ContainerDetailToken } from "../container/container.service";
 
 export interface FilterPair {
   key: string;
@@ -122,6 +123,8 @@ export interface TableUtilsServiceInterface {
   getSortIcon(columnKey: string, sort: Sort): string;
 
   onSortButtonClick(key: string, sort: WritableSignal<Sort>): void;
+
+  clientsideSortTokenData(data: ContainerDetailToken[], s: Sort): ContainerDetailToken[];
 }
 
 @Injectable({
@@ -405,5 +408,18 @@ export class TableUtilsService implements TableUtilsServiceInterface {
     } else {
       sort.set({ active: columnKey, direction });
     }
+  }
+
+  clientsideSortTokenData(data: ContainerDetailToken[], s: Sort) {
+    if (!s.direction) return data;
+    const dir = s.direction === "asc" ? 1 : -1;
+    const key = s.active as keyof ContainerDetailToken;
+    return data.sort((a: any, b: any) => {
+      const va = (a[key] ?? "").toString().toLowerCase();
+      const vb = (b[key] ?? "").toString().toLowerCase();
+      if (va < vb) return -1 * dir;
+      if (va > vb) return 1 * dir;
+      return 0;
+    });
   }
 }

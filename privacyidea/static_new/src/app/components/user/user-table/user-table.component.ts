@@ -125,14 +125,14 @@ export class UserTableComponent {
     }),
     computation: (src, prev) => {
       const data = src.userRes?.result?.value ?? prev?.value?.data ?? this.emptyResource();
-      const sorted = this.sortData([...data], this.sort());
+      const sorted = this.clientsideSortUserData([...data], this.sort());
       const ds = new MatTableDataSource(sorted);
       ds.paginator = this.paginator;
       return ds;
     }
   });
 
-  private sortData(data: UserData[], s: Sort): UserData[] {
+  private clientsideSortUserData(data: UserData[], s: Sort): UserData[] {
     if (!s.direction) return data;
     const dir = s.direction === 'asc' ? 1 : -1;
     const key = s.active as keyof UserData;
