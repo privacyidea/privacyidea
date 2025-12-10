@@ -281,6 +281,7 @@
           <mat-list-item>
             <button
               class="card-button-1"
+              [ngClass]="this.contentService.onTokensContainersTemplates() ? 'card-button-active' : 'card-button-1'"
               [routerLink]="[ROUTE_PATHS.TOKENS_CONTAINERS_TEMPLATES]"
               i18n
               mat-stroked-button>
