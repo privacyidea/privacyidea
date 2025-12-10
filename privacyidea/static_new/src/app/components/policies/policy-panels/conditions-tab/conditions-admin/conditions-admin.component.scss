@@ -1,0 +1,157 @@
+@use "../../../../../../styles" as styles;
+@use "../../../policies.component.scss";
+@use "@angular/material" as mat;
+
+.admin-container {
+  background-color: var(--mat-sys-surface-container);
+  border: 1px solid var(--mat-sys-outline-variant);
+  box-shadow: var(--mat-sys-level1);
+  border-radius: var(--border-radius);
+  padding: var(--half-global-padding) var(--three-quarters-global-padding);
+}
+
+.admin-title {
+  font-size: 1.2em;
+  font-weight: 500;
+  margin: 0;
+  margin-bottom: var(--half-global-padding);
+}
+
+.admin-input-container {
+  display: flex;
+  align-items: center;
+}
+
+.admin-list-wrapper {
+  display: flex;
+  align-items: center;
+}
+
+.admin-list {
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  flex-grow: 1;
+  padding-bottom: var(--three-quarters-global-padding);
+  scrollbar-width: thin;
+  gap: calc(var(--global-gap) / 2);
+}
+
+.admin-chip {
+  display: flex;
+  align-items: center;
+  background-color: var(--mat-sys-surface-container-high);
+  border-radius: var(--border-radius);
+  padding: var(--quarter-global-padding) var(--half-global-padding);
+  flex-shrink: 0;
+}
+
+.remove-admin-btn {
+  width: 20px;
+  height: 20px;
+  margin-left: var(--quarter-global-padding);
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.remove-admin-icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+  line-height: 16px;
+}
+
+.admin-buttons-container {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: nowrap;
+  padding-bottom: var(--three-quarters-global-padding);
+  flex-shrink: 0;
+  flex-grow: 0;
+}
+
+.clear-button {
+  margin-left: var(--global-padding);
+  flex-shrink: 0;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.add-admin-input {
+  width: 100%;
+  border-radius: var(--border-radius);
+
+  .mdc-text-field--filled {
+    border-top-right-radius: 0 !important;
+  }
+  .mdc-text-field {
+    border-top-right-radius: 0 !important;
+  }
+}
+
+.toggle-all-button {
+  width: 100%;
+  border-radius: 0;
+  justify-content: flex-start;
+}
+
+.add-admin-button {
+  height: 56px;
+  margin-bottom: var(--global-padding);
+  padding: 0;
+  border: none;
+  background-color: var(--mat-sys-surface-container-high);
+  border-radius: 0 var(--three-quarters-global-padding) var(--three-quarters-global-padding) 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: background-color 0.2s ease-in-out;
+}
+
+.readonly-admin-grid-container {
+  display: grid;
+  grid-template-columns: 1fr 5fr;
+  gap: calc(var(--half-global-padding) * 1.5);
+  margin: 0 var(--half-global-padding);
+}
+
+.readonly-label {
+  font-weight: 500;
+  margin-right: var(--half-global-padding);
+  white-space: nowrap;
+  padding-top: var(--quarter-global-padding);
+}
+
+.readonly-chips-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--quarter-global-padding);
+  flex: 1;
+}
+
+.readonly-chip {
+  @extend .admin-chip;
+}
+
+.admins-chip-container {
+  @extend .readonly-chips-container;
+  flex: 1;
+}
+
+.admins-container {
+  display: flex;
+  flex-direction: row;
+  gap: calc(var(--global-gap) / 2);
+  margin-bottom: var(--global-padding);
+}
+
+.sensitivity-chip {
+  @extend .admin-chip;
+  border: 1px solid var(--mat-sys-outline);
+  background-color: var(--mat-sys-surface);
+}

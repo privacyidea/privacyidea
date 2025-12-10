@@ -22,11 +22,12 @@ import { ConditionsUserComponent } from "./conditions-user/conditions-user.compo
 import { ConditionsNodesComponent } from "./conditions-nodes/conditions-nodes.component";
 import { ConditionsAdditionalComponent } from "./conditions-additional/conditions-additional.component";
 import { PolicyService } from "../../../../services/policies/policies.service";
+import { ConditionsAdminComponent } from "./conditions-admin/conditions-admin.component";
 
 @Component({
   selector: "app-conditions-tab",
   standalone: true,
-  imports: [ConditionsUserComponent, ConditionsNodesComponent, ConditionsAdditionalComponent],
+  imports: [ConditionsUserComponent, ConditionsNodesComponent, ConditionsAdditionalComponent, ConditionsAdminComponent],
   templateUrl: "./conditions-tab.component.html",
   styleUrl: "./conditions-tab.component.scss"
 })

@@ -27,20 +27,23 @@
     @if (isEditMode()) {
       <mat-form-field
         appearance="fill"
-        class="full-width">
+        class="full-width"
+        [matTooltip]="selectRealmTooltip()"
+        [matTooltipDisabled]="availableRealms().length > 0">
         <mat-label i18n>Select Realms</mat-label>
         <mat-select
           #realmSelect
           [value]="this.selectedRealms()"
           [multiple]="true"
-          (selectionChange)="selectRealm($event.value)">
+          (selectionChange)="selectRealm($event.value)"
+          [disabled]="availableRealms().length === 0">
           <button
             mat-button
             class="toggle-all-button"
             (click)="toggleAllRealms()">
             {{ isAllRealmsSelected() ? "Deselect all" : "Select all" }}
           </button>
-          @for (realmOption of this.realmService.realmOptions(); track $index) {
+          @for (realmOption of availableRealms(); track $index) {
             <mat-option [value]="realmOption">{{ realmOption }}</mat-option>
           }
         </mat-select>
@@ -49,20 +52,23 @@
       @if (this.realmService.selectedRealms()) {
         <mat-form-field
           appearance="fill"
-          class="full-width">
+          class="full-width"
+          matTooltip="selectResolverTooltip()"
+          [matTooltipDisabled]="availableResolvers().length > 0">
           <mat-label i18n>Select Resolvers</mat-label>
           <mat-select
             #resolverSelect
             [value]="this.selectedResolvers()"
             [multiple]="true"
-            (selectionChange)="selectResolver($event.value)">
+            (selectionChange)="selectResolver($event.value)"
+            [disabled]="availableResolvers().length === 0">
             <button
               mat-button
               class="toggle-all-button"
               (click)="toggleAllResolvers()">
               {{ isAllResolversSelected() ? "Deselect all" : "Select all" }}
             </button>
-            @for (resolverOption of this.resolverService.resolverOptions(); track $index) {
+            @for (resolverOption of availableResolvers(); track $index) {
               <mat-option [value]="resolverOption">{{ resolverOption }}</mat-option>
             }
           </mat-select>

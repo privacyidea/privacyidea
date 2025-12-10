@@ -25,6 +25,7 @@ import { ContentService, ContentServiceInterface } from "../content/content.serv
 import { Observable } from "rxjs";
 import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
 
+export type AdminRealms = string[];
 export type Realms = { [key: string]: Realm };
 
 export interface Realm {
@@ -65,7 +66,10 @@ export interface RealmResolver {
 export interface RealmServiceInterface {
   selectedRealms: WritableSignal<string[]>;
   realmResource: HttpResourceRef<PiResponse<Realms> | undefined>;
+  realms: Signal<Realms>;
   realmOptions: Signal<string[]>;
+  adminRealmResource: HttpResourceRef<PiResponse<AdminRealms> | undefined>;
+  adminRealmOptions: Signal<string[]>;
   defaultRealmResource: HttpResourceRef<PiResponse<Realms> | undefined>;
   defaultRealm: Signal<string>;
 
@@ -89,18 +93,19 @@ export class RealmService implements RealmServiceInterface {
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly http: HttpClient = inject(HttpClient);
   private onAllowedRoute = computed(() => {
-      return this.contentService.onTokenDetails() ||
-        this.contentService.onTokensContainersDetails() ||
-        this.contentService.onTokens() ||
-        this.contentService.onUsers() ||
-        this.contentService.onTokensContainersCreate() ||
-        this.contentService.onTokensEnrollment() ||
-        this.contentService.onTokensImport() ||
-        this.contentService.onPolicies() ||
-        this.contentService.onUserRealms() ||
-        this.contentService.onTokensContainersTemplates();
-    }
-  );
+    return (
+      this.contentService.onTokenDetails() ||
+      this.contentService.onTokensContainersDetails() ||
+      this.contentService.onTokens() ||
+      this.contentService.onUsers() ||
+      this.contentService.onTokensContainersCreate() ||
+      this.contentService.onTokensEnrollment() ||
+      this.contentService.onTokensImport() ||
+      this.contentService.onPolicies() ||
+      this.contentService.onUserRealms() ||
+      this.contentService.onTokensContainersTemplates()
+    );
+  });
 
   selectedRealms = signal<string[]>([]);
 
@@ -121,9 +126,37 @@ export class RealmService implements RealmServiceInterface {
     };
   });
 
+  realms = computed(() => {
+    const data = this.realmResource.value();
+    return data?.result?.value || {};
+  });
+
   realmOptions = computed(() => {
     const realms = this.realmResource.value()?.result?.value;
     return realms ? Object.keys(realms) : [];
+  });
+
+  // adminRealmResource: HttpResourceRef<PiResponse<Realms, unknown> | undefined>;
+  adminRealmResource = httpResource<PiResponse<AdminRealms>>(() => {
+    // Do not load the default realm for non-admin users.
+    if (this.authService.role() === "user") {
+      return undefined;
+    }
+    // Only load the default realm on relevant routes.
+    if (!this.onAllowedRoute()) {
+      return undefined;
+    }
+
+    return {
+      url: environment.proxyUrl + "/realm/superuser",
+      method: "GET",
+      headers: this.authService.getHeaders()
+    };
+  });
+  adminRealmOptions: Signal<string[]> = computed(() => {
+    const realms = this.adminRealmResource.value()?.result?.value;
+    console.log("Admin Realms:", realms);
+    return realms ? realms : [];
   });
 
   defaultRealmResource = httpResource<PiResponse<Realms>>(() => {
@@ -156,19 +189,18 @@ export class RealmService implements RealmServiceInterface {
     nodeId: string,
     resolvers: { name: string; priority?: number | null }[]
   ): Observable<PiResponse<any>> {
-
     let url: string;
     let body: any;
 
     if (!nodeId) {
       url = `${environment.proxyUrl}/realm/${encodeURIComponent(realm)}`;
 
-      const resolverNames = resolvers.map(r => r.name);
+      const resolverNames = resolvers.map((r) => r.name);
       body = {
         resolvers: resolverNames
       };
 
-      resolvers.forEach(r => {
+      resolvers.forEach((r) => {
         const num = Number(r.priority);
         if (r.priority !== null && r.priority !== undefined && !Number.isNaN(num)) {
           body[`priority.${r.name}`] = num;
@@ -177,7 +209,7 @@ export class RealmService implements RealmServiceInterface {
     } else {
       url = `${environment.proxyUrl}/realm/${encodeURIComponent(realm)}/node/${nodeId}`;
       body = {
-        resolver: resolvers.map(r => {
+        resolver: resolvers.map((r) => {
           const base: any = { name: r.name };
           const num = Number(r.priority);
           if (r.priority !== null && r.priority !== undefined && !Number.isNaN(num)) {
@@ -206,11 +238,7 @@ export class RealmService implements RealmServiceInterface {
     const encodedRealm = encodeURIComponent(realm);
     const url = `${environment.proxyUrl}/defaultrealm/${encodedRealm}`;
 
-    return this.http.post<PiResponse<number | any>>(
-      url,
-      {},
-      { headers: this.authService.getHeaders() }
-    );
+    return this.http.post<PiResponse<number | any>>(url, {}, { headers: this.authService.getHeaders() });
   }
 
   constructor() {

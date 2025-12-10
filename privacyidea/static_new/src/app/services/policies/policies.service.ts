@@ -255,6 +255,14 @@ export class PolicyService implements PolicyServiceInterface {
     return false;
   });
 
+  readonly selectedPolicyHasAdminConditions = computed(() => {
+    const policy = this.selectedPolicy();
+    if (!policy) return false;
+    if (policy.adminrealm && policy.adminrealm.length > 0) return true;
+    if (policy.adminuser && policy.adminuser.length > 0) return true;
+    return false;
+  });
+
   readonly selectedPolicyHasUserConditions = computed(() => {
     const policy = this.selectedPolicy();
     if (!policy) return false;
@@ -283,6 +291,7 @@ export class PolicyService implements PolicyServiceInterface {
   readonly selectedPolicyHasConditions = computed(() => {
     const policy = this.selectedPolicy();
     if (!policy) return false;
+    if (this.selectedPolicyHasAdminConditions()) return true;
     if (this.selectedPolicyHasUserConditions()) return true;
     if (this.selectedPolicyHasNodeConditions()) return true;
     if (this.selectedPolicyHasAdditionalConditions()) return true;

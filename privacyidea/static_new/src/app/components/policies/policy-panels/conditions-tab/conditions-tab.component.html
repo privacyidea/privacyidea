@@ -17,6 +17,9 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div class="conditions-grid-container">
+  @if (policyService.selectedPolicy()?.scope === "admin") {
+    <app-conditions-admin />
+  }
   <app-conditions-user />
   <app-conditions-nodes />
   <app-conditions-additional />

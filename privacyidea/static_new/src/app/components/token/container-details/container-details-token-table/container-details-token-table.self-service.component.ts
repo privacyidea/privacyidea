@@ -19,7 +19,7 @@
 import { NgClass } from "@angular/common";
 import { Component, computed, inject } from "@angular/core";
 import { FormsModule, ReactiveFormsModule } from "@angular/forms";
-import { MatButton, MatIconButton } from "@angular/material/button";
+import { MatIconButton } from "@angular/material/button";
 import { MatDialog } from "@angular/material/dialog";
 import { MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
@@ -56,7 +56,6 @@ import { ContainerDetailsTokenTableComponent } from "./container-details-token-t
     MatSortModule,
     MatIcon,
     MatIconButton,
-    MatButton,
     CopyButtonComponent,
     ReactiveFormsModule,
     FormsModule,

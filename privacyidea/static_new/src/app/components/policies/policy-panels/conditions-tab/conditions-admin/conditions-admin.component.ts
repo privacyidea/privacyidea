@@ -17,9 +17,16 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, inject, ViewChild } from "@angular/core";
+import { Component, computed, inject, input, ViewChild } from "@angular/core";
 import { CommonModule } from "@angular/common";
-import { AbstractControl, FormControl, FormsModule, ReactiveFormsModule, ValidationErrors } from "@angular/forms";
+import {
+  AbstractControl,
+  FormControl,
+  FormsModule,
+  ReactiveFormsModule,
+  ValidationErrors,
+  ValidatorFn
+} from "@angular/forms";
 import { MatIconModule } from "@angular/material/icon";
 import { RealmService, RealmServiceInterface } from "../../../../../services/realm/realm.service";
 import { ResolverService } from "../../../../../services/resolver/resolver.service";
@@ -29,10 +36,9 @@ import { MatSelect, MatSelectModule } from "@angular/material/select";
 import { MatButtonModule } from "@angular/material/button";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { PolicyService } from "../../../../../services/policies/policies.service";
-import { MatTooltip } from "@angular/material/tooltip";
 
 @Component({
-  selector: "app-conditions-user",
+  selector: "app-conditions-admin",
   standalone: true,
   imports: [
     CommonModule,
@@ -43,13 +49,12 @@ import { MatTooltip } from "@angular/material/tooltip";
     MatSelectModule,
     MatButtonModule,
     MatExpansionModule,
-    ReactiveFormsModule,
-    MatTooltip
+    ReactiveFormsModule
   ],
-  templateUrl: "./conditions-user.component.html",
-  styleUrl: "./conditions-user.component.scss"
+  templateUrl: "./conditions-admin.component.html",
+  styleUrl: "./conditions-admin.component.scss"
 })
-export class ConditionsUserComponent {
+export class ConditionsAdminComponent {
   // ViewChild
   @ViewChild("resolverSelect") resolverSelect!: MatSelect;
   @ViewChild("realmSelect") realmSelect!: MatSelect;
@@ -63,71 +68,18 @@ export class ConditionsUserComponent {
   isEditMode = this.policyService.isEditMode;
 
   // Form Controls
-  userFormControl = new FormControl<string>("", this.userValidator.bind(this));
+  adminFormControl = new FormControl<string>("", this.adminValidator.bind(this));
 
   // Computed Properties
   selectedRealms = computed(() => this.policyService.selectedPolicy()?.realm || []);
   selectedResolvers = computed(() => this.policyService.selectedPolicy()?.resolver || []);
-  selectedUsers = computed(() => this.policyService.selectedPolicy()?.user || []);
-  userCaseInsensitive = computed(() => this.policyService.selectedPolicy()?.user_case_insensitive || false);
+  selectedAdmins = computed(() => this.policyService.selectedPolicy()?.adminuser || []);
+  selectedAdminrealm = computed(() => this.policyService.selectedPolicy()?.adminrealm || []);
+
   isAllRealmsSelected = computed(() => this.selectedRealms().length === this.realmService.realmOptions().length);
   isAllResolversSelected = computed(
     () => this.selectedResolvers().length === this.resolverService.resolverOptions().length
   );
-  availableRealms = computed(() => {
-    const selectedResolvers = this.selectedResolvers();
-    if (selectedResolvers.length === 0) {
-      // No resolvers selected, return all realms
-      return this.realmService.realmOptions();
-    }
-    const realms = this.realmService.realms();
-    let availableRealms: string[] = [];
-    for (const [realmName, realm] of Object.entries(realms)) {
-      const realmResolvers = realm.resolver.map((r) => r.name);
-      if (selectedResolvers.some((sr) => realmResolvers.includes(sr))) {
-        availableRealms.push(realmName);
-      }
-    }
-
-    return availableRealms;
-  });
-  availableResolvers = computed(() => {
-    const selectedRealms = this.selectedRealms();
-    console.log("selectedRealms", selectedRealms);
-    if (selectedRealms.length === 0) {
-      // No realms selected, return all resolvers
-      return this.resolverService.resolverOptions();
-    }
-    const realms = this.realmService.realms();
-    let availableResolversSet: Set<string> = new Set();
-    for (const realmName of selectedRealms) {
-      console.log("Checking realm:", realmName);
-      const realm = realms[realmName];
-      if (realm) {
-        console.log("Realm found:", realm);
-        realm.resolver.forEach((r) => {
-          console.log("Adding resolver:", r.name, "because it's in realm", realmName);
-          return availableResolversSet.add(r.name);
-        });
-      }
-    }
-    console.log("Available Resolvers:", Array.from(availableResolversSet));
-    return Array.from(availableResolversSet);
-  });
-
-  selectResolverTooltip = computed(() => {
-    if (this.availableResolvers().length === 0) {
-      return $localize`No resolvers available for the selected realms.`;
-    }
-    return "";
-  });
-
-  selectRealmTooltip = computed(() => {
-    if (this.availableRealms().length === 0) {
-      return $localize`No realms available for the selected resolvers.`;
-    }
-    return "";
-  });
 
   // Realm Management
   selectRealm(realmNames: string[]): void {
@@ -163,30 +115,26 @@ export class ConditionsUserComponent {
     });
   }
 
-  // User Management
-  addUser(user: string) {
-    if (this.userFormControl.invalid) {
+  // Admin Management
+  addAdmin(adminuser: string) {
+    if (this.adminFormControl.invalid) {
       return;
     }
-    if (user && !this.selectedUsers().includes(user)) {
-      this.policyService.updateSelectedPolicy({ user: [...this.selectedUsers(), user] });
+    if (adminuser && !this.selectedAdmins().includes(adminuser)) {
+      this.policyService.updateSelectedPolicy({ adminuser: [...this.selectedAdmins(), adminuser] });
     }
   }
 
-  removeUser(user: string) {
-    this.policyService.updateSelectedPolicy({ user: this.selectedUsers().filter((u) => u !== user) });
+  removeAdmin(adminuser: string) {
+    this.policyService.updateSelectedPolicy({ adminuser: this.selectedAdmins().filter((u) => u !== adminuser) });
   }
 
-  clearUsers() {
-    this.policyService.updateSelectedPolicy({ user: [] });
-  }
-
-  toggleUserCaseInsensitive() {
-    this.policyService.updateSelectedPolicy({ user_case_insensitive: !this.userCaseInsensitive() });
+  clearAdmins() {
+    this.policyService.updateSelectedPolicy({ adminuser: [] });
   }
 
   // Validators
-  userValidator(control: AbstractControl): ValidationErrors | null {
+  adminValidator(control: AbstractControl): ValidationErrors | null {
     return /[,]/.test(control.value) ? { includesComma: { value: control.value } } : null;
   }
 }
