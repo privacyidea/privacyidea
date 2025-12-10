@@ -24,6 +24,10 @@ import { MachineResolverService } from "../../services/machine-resolver/machine-
 import { MockMachineResolverService } from "../../../testing/mock-services/mock-machine-resolver-service";
 import { Component } from "@angular/core";
 import { MatExpansionModule } from "@angular/material/expansion";
+import { provideHttpClient } from "@angular/common/http";
+import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { MockAuthService } from "../../../testing/mock-services/mock-auth-service";
+import { AuthService } from "../../services/auth/auth.service";
 
 @Component({
   standalone: true,
@@ -43,11 +47,17 @@ describe("MachineResolverComponent", () => {
   let component: MachineResolverComponent;
   let fixture: ComponentFixture<MachineResolverComponent>;
   let machineResolverServiceMock: MockMachineResolverService;
+  let authServiceMock: MockAuthService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [MachineResolverComponent, NoopAnimationsModule],
-      providers: [{ provide: MachineResolverService, useClass: MockMachineResolverService }]
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: MachineResolverService, useClass: MockMachineResolverService },
+        { provide: AuthService, useClass: MockAuthService }
+      ]
     })
       .overrideComponent(MachineResolverComponent, {
         set: {
@@ -59,7 +69,7 @@ describe("MachineResolverComponent", () => {
     fixture = TestBed.createComponent(MachineResolverComponent);
     component = fixture.componentInstance;
     machineResolverServiceMock = TestBed.inject(MachineResolverService) as unknown as MockMachineResolverService;
-    fixture.detectChanges();
+    authServiceMock = TestBed.inject(AuthService) as unknown as MockAuthService;
   });
 
   it("should create", () => {
@@ -71,6 +81,7 @@ describe("MachineResolverComponent", () => {
   });
 
   it("should show MockMachineResolverPanelNewComponent one time", () => {
+    authServiceMock.actionAllowed.mockReturnValue(true);
     const compiled = fixture.nativeElement as HTMLElement;
     machineResolverServiceMock.machineResolvers.set([{}, {}] as any);
     fixture.detectChanges();
@@ -83,6 +94,7 @@ describe("MachineResolverComponent", () => {
 
   describe("should show MockMachineResolverPanelEditComponent as many as there are machineResolvers", () => {
     it("when there are 0 machineResolvers", () => {
+      authServiceMock.actionAllowed.mockReturnValue(true);
       const compiled = fixture.nativeElement as HTMLElement;
       machineResolverServiceMock.machineResolvers.set([]);
       fixture.detectChanges();
@@ -92,6 +104,7 @@ describe("MachineResolverComponent", () => {
     });
 
     it("when there is 1 machineResolver", () => {
+      authServiceMock.actionAllowed.mockReturnValue(true);
       const compiled = fixture.nativeElement as HTMLElement;
       machineResolverServiceMock.machineResolvers.set([{}] as any);
       fixture.detectChanges();
@@ -101,6 +114,7 @@ describe("MachineResolverComponent", () => {
     });
 
     it("when there are 3 machineResolvers", () => {
+      authServiceMock.actionAllowed.mockReturnValue(true);
       const compiled = fixture.nativeElement as HTMLElement;
       machineResolverServiceMock.machineResolvers.set([{}, {}, {}] as any);
       fixture.detectChanges();

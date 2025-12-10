@@ -31,6 +31,8 @@ import { MockMachineResolverService } from "../../../../testing/mock-services/mo
 import { Component } from "@angular/core";
 import { MockDialogService } from "../../../../testing/mock-services/mock-dialog-service";
 import { MachineResolverPanelEditComponent } from "./machine-resolver-panel-edit.component";
+import { provideHttpClient } from "@angular/common/http";
+import { provideHttpClientTesting } from "@angular/common/http/testing";
 
 @Component({
   standalone: true,
@@ -67,6 +69,8 @@ describe("MachineResolverPanelEditComponent", () => {
     await TestBed.configureTestingModule({
       imports: [MachineResolverPanelEditComponent, NoopAnimationsModule],
       providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
         { provide: MachineResolverService, useClass: MockMachineResolverService },
         { provide: DialogService, useClass: MockDialogService },
         { provide: NotificationService, useClass: MockNotificationService }

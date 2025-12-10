@@ -71,7 +71,7 @@ describe("MachineResolverService", () => {
       service.machineResolverResource.value();
       httpMock.expectNone(`${service.machineResolverBaseUrl}`);
       expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith(
-        "You are not allowed to read machineResolvers."
+        "You are not allowed to read Machine Resolvers."
       );
     });
     it("should make an HTTP GET request and return transformed data on success", async () => {
@@ -137,7 +137,7 @@ describe("MachineResolverService", () => {
       const promise = service.postTestMachineResolver(testMachineResolver);
       expect(promise).rejects.toThrow(new Error("not-allowed"));
       expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith(
-        "You are not allowed to update machineResolvers."
+        "You are not allowed to update Machine Resolvers."
       );
     });
   });
@@ -168,7 +168,7 @@ describe("MachineResolverService", () => {
       await expect(promise).rejects.toThrow(new Error("not-allowed"));
 
       expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith(
-        "You are not allowed to update machineResolvers."
+        "You are not allowed to update Machine Resolvers."
       );
     });
   });
@@ -185,13 +185,13 @@ describe("MachineResolverService", () => {
         "Successfully deleted machineResolver: test-resolver."
       );
     });
-    it("should throw 'post-failed' on http post error", async () => {
+    it("should throw 'delete-failed' on http delete error", async () => {
       authServiceMock.actionAllowed.mockImplementation((arg) => (arg === "mresolverdelete" ? true : false));
       const promise = service.deleteMachineResolver("test-resolver");
       const url = `${service.machineResolverBaseUrl}test-resolver`;
       const req = httpMock.expectOne(url);
       req.flush({ result: { error: { message: "error" } } }, { status: 500, statusText: "error" });
-      await expect(promise).rejects.toThrow(new Error("post-failed"));
+      await expect(promise).rejects.toThrow(new Error("delete-failed"));
       expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith("Failed to delete machineResolver. error");
     });
     it("should throw 'not-allowed' if action is not allowed", async () => {
@@ -199,7 +199,7 @@ describe("MachineResolverService", () => {
       const promise = service.deleteMachineResolver("test-resolver");
       await expect(promise).rejects.toThrow(new Error("not-allowed"));
       expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith(
-        "You are not allowed to delete machineResolvers."
+        "You are not allowed to delete Machine Resolvers."
       );
     });
   });
