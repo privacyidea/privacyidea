@@ -598,5 +598,5 @@ class EmailTokenClass(HotpTokenClass):
             # Dynamically we remember that we need to do another challenge
             self.currently_in_challenge = True
         else:
-            self.token.delete()
+            self.delete_token()
             raise ValidateError(_("The email address is not valid!"))

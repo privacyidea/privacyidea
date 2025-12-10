@@ -1662,7 +1662,7 @@ class PolicyTestCase(MyTestCase):
         self.assertSetEqual(set(), _names(P.match_policies(user_object=user1)))
 
         delete_policy("setpin_pol")
-        db_token.delete()
+        token.delete_token()
 
     def test_32_filter_by_conditions_token(self):
         def _names(policies):

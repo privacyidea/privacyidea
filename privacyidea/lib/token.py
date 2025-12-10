@@ -1479,7 +1479,10 @@ def init_token(param: dict, user: User = None, tokenrealms: list[str] = None, to
         log.debug(f"{traceback.format_exc()}")
         # Delete the newly created token from the db
         if token_count == 0:
-            db_token.delete()
+            if token:
+                token.delete_token()
+            else:
+                db_token.delete()
         raise
 
     # We only set the tokenkind here, if it was explicitly set in the init_token call.

@@ -126,7 +126,7 @@ class TokenTestCase(MyTestCase):
         token_object = create_tokenclass_object(db_token)
         self.assertTrue(token_object is None, token_object)
         # delete the token, so that we do not get confused, later
-        db_token.delete()
+        remove_token(db_token.serial)
 
     def test_02_get_tokens(self):
         # get All tokens
@@ -460,7 +460,7 @@ class TokenTestCase(MyTestCase):
             self.assertEqual(token.get_realms(), ['realm1'], token.get_realms())
             mock_log.assert_called_with(f'The realms ({self.realm1}) of assigned users cannot be removed from the '
                                         f'token {serial}.')
-
+            
         # Deleting the token also deletes the token realm relationship
         token_id = token.token.id
         token.delete_token()

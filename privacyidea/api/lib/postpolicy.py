@@ -1066,7 +1066,7 @@ def multichallenge_enroll_via_validate(request, response):
                     params["policies"] = g.get("policies", {})
                     init_details = token.get_init_detail(params, user)
                     if not init_details:
-                        token.token.delete()
+                        token.delete_token()
                     content.get("result")["value"] = False
                     content.get("result")["authentication"] = AUTH_RESPONSE.CHALLENGE
                     detail = content.setdefault("detail", {})
@@ -1080,7 +1080,7 @@ def multichallenge_enroll_via_validate(request, response):
                     detail["client_mode"] = "webauthn"
                 except Exception as e:
                     log.error(f"Error during enroll_via_validate: {e}")
-                    token.token.delete()
+                    token.delete_token()
                     raise e
             # ------------------------------
             else:

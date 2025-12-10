@@ -137,7 +137,7 @@ class TokenModelTestCase(MyTestCase):
         self.assertFalse(t.check_pin('1234'))
 
         # Delete the token
-        t1.delete()
+        remove_token(t1.serial)
         t = Token.query.filter_by(id=tid).first()
         self.assertTrue(t is None)
 
