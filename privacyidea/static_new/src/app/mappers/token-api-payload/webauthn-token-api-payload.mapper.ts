@@ -26,9 +26,12 @@ import {
   TokenEnrollmentPayload
 } from "./_token-api-payload.mapper";
 
-export interface WebauthnEnrollmentResponse extends EnrollmentResponse<WebauthnEnrollmentResponseDetail> {}
+export interface WebauthnEnrollmentResponse extends EnrollmentResponse<WebauthnEnrollmentResponseDetail> {
+  type: "webauthn";
+}
 
 export interface WebauthnEnrollmentResponseDetail extends EnrollmentResponseDetail {
+  type: "webauthn";
   webAuthnRegisterRequest: WebAuthnRegisterRequest;
 }
 
