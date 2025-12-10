@@ -183,4 +183,16 @@ export class ContainerTemplateEditComponent {
     if (!this.isEditMode()) return;
     this.templateEdited.set({ ...this.templateEdited(), ...template });
   }
+
+  getDefaultTooltip(): string {
+    if (this.isEditMode()) {
+      return this.templateEdited().default
+        ? $localize`:@@containerTemplate.unsetAsDefaultTooltip:Unset as default template`
+        : $localize`:@@containerTemplate.setAsDefaultTooltip:Set as default template`;
+    } else {
+      return this.currentTemplate().default
+        ? $localize`:@@containerTemplate.DefaultTooltip:Default`
+        : $localize`:@@containerTemplate.NonDefaultTooltip:Non-Default`;
+    }
+  }
 }
