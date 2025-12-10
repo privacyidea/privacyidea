@@ -238,5 +238,4 @@ class YubicoTokenClass(TokenClass):
         """
         Import for this token is not supported.
         """
-        self.token.delete()
         raise NotImplementedError("Import for Yubico token is not supported.")

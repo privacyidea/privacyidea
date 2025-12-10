@@ -258,5 +258,4 @@ class MotpTokenClass(TokenClass):
         """
         Import for this token is not supported.
         """
-        self.token.delete()
         raise NotImplementedError("Import for mOTP token is not supported.")
