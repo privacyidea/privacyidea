@@ -41,7 +41,7 @@ export class MachineResolverLdapTabComponent {
   readonly machineResolverData = input.required<MachineResolverData>();
   readonly hostsData = linkedSignal<LdapMachineResolverData>(() => {
     let data = this.machineResolverData() as LdapMachineResolverData;
-    data = { ...data, type: "ldap", TIMEOUT: data.TIMEOUT ?? 5 };
+    data = { ...data, type: "ldap", TIMEOUT: data.TIMEOUT ?? "5" };
     return data;
   });
   readonly onNewData = output<MachineResolverData>();
