@@ -87,15 +87,37 @@
   display: none;
 }
 
-.policy-header {
+.childless-expension-panel-header {
   cursor: pointer !important;
   --mat-expansion-header-text-color: var(--mat-sys-on-surface);
   --mat-expansion-header-text-color-hover: var(--mat-sys-on-surface);
   --mat-expansion-header-text-color-focus: var(--mat-sys-on-surface);
 }
 
-.policy-header .mat-expansion-panel-header {
+.childless-expension-panel-header .mat-expansion-panel-header {
   color: var(--mat-expansion-header-text-color, var(--mat-sys-on-surface));
+}
+
+.childless-expension-panel-header-active {
+  margin: 14px 0;
+  border-radius: var(--border-radius);
+
+  .mat-expansion-panel-header {
+    border-radius: inherit;
+  }
+}
+
+.childless-expansion-panel-arrow {
+  color: var(--mat-sys-on-surface-variant);
+  transform: rotate(90deg);
+  transition: transform 200ms ease;
+  display: inline-flex;
+  left: 216px;
+  position: absolute;
+}
+
+.childless-expansion-panel-arrow.active {
+  transform: unset;
 }
 
 .sticky-actions {

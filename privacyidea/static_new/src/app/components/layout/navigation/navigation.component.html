@@ -68,15 +68,13 @@
       An open-source project
       <a
         href="https://netknights.it/"
-        target="_blank"
-        >maintained by NetKnights
+        target="_blank">maintained by NetKnights
       </a>
       <br />
       in collaboration with
       <a
         href="https://github.com/privacyidea/privacyidea"
-        target="_blank"
-        >community contributors
+        target="_blank">community contributors
       </a>
     </p>
   </div>
@@ -333,8 +331,9 @@
         </mat-list-item>
         <mat-list-item>
           <button
+            [ngClass]="contentService.routeUrl() === ROUTE_PATHS.USERS_REALMS ?
+                  'card-button-active' : 'card-button-1'"
             [routerLink]="[ROUTE_PATHS.USERS_REALMS]"
-            [ngClass]="contentService.routeUrl() === ROUTE_PATHS.USERS_REALMS ? 'card-button-active' : 'card-button-1'"
             mat-stroked-button>
             <mat-icon>public</mat-icon>
             Realms
@@ -344,15 +343,20 @@
     </mat-expansion-panel>
     @if (authService.actionAllowed("policyread")) {
       <mat-expansion-panel
-        class="nav-expension-panel policy-header"
-        [disabled]="true">
+        [disabled]="true"
+        [ngClass]="{'childless-expension-panel-header-active': this.contentService.onPolicies()}"
+        class="childless-expension-panel-header">
         <mat-expansion-panel-header
-          (click)="onPoliciesHeaderClick($event)"
-          class="nav-header-button">
+          (click)="onPoliciesHeaderClick($event)">
           <mat-panel-title>
             <mat-icon>gavel</mat-icon>
             Policies
           </mat-panel-title>
+          <mat-icon
+            [class.active]="router.url.startsWith(ROUTE_PATHS.POLICIES)"
+            class="childless-expansion-panel-arrow">
+            chevron_right
+          </mat-icon>
         </mat-expansion-panel-header>
       </mat-expansion-panel>
     }
