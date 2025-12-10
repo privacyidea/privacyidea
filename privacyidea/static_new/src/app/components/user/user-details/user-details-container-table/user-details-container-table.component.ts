@@ -159,8 +159,9 @@ export class UserDetailsContainerTableComponent {
 
   handleFilterInput($event: Event): void {
     const raw = ($event.target as HTMLInputElement).value ?? "";
-    this.filterValue = raw.trim().toLowerCase();
-    const normalised = raw.replace(/\b\w+\s*:\s*/g, " ").trim().toLowerCase();
+    const trimmed = raw.trim();
+    this.filterValue = trimmed;
+    const normalised = trimmed.toLowerCase();
     this.dataSource.filter = normalised;
   }
 
@@ -172,37 +173,6 @@ export class UserDetailsContainerTableComponent {
     this.containerService.toggleActive(element.serial, element.states).subscribe({
       next: () => this.containerService.containerResource.reload()
     });
-  }
-
-  toggleFilter(filterKeyword: string): void {
-    const input = this.filterInput?.nativeElement;
-    const current = (input?.value ?? "").trim();
-    const re = new RegExp(`(?:^|\n|\s)${filterKeyword}\\s*:\\s*`, "i");
-    let next = current;
-    if (re.test(current)) {
-      next = current.replace(new RegExp(`${filterKeyword}\\s*:\\s*`, "ig"), "").trim();
-    } else {
-      next = (current + ` ${filterKeyword}: `).trim();
-    }
-    if (input) {
-      input.value = next + (next.endsWith(":") ? " " : "");
-      this.handleFilterInput({ target: input } as any as Event);
-      input.focus();
-    }
-  }
-
-  isFilterSelected(filter: string): boolean {
-    const input = this.filterInput?.nativeElement;
-    const current = (input?.value ?? "").trim();
-    return new RegExp(`(?:^|\n|\s)${filter}\\s*:`, "i").test(current);
-  }
-
-  getFilterIconName(keyword: string): string {
-    return this.isFilterSelected(keyword) ? "filter_alt_off" : "filter_alt";
-  }
-
-  onKeywordClick(filterKeyword: string): void {
-    this.toggleFilter(filterKeyword);
   }
 
   private clientsideSortContainerData(data: ContainerDetailData[], s: Sort) {

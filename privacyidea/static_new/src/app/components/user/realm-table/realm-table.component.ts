@@ -16,6 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { HttpErrorResponse } from "@angular/common/http";
 import { Component, computed, inject, linkedSignal, signal, ViewChild, WritableSignal } from "@angular/core";
 import {
   MatCell,
@@ -45,7 +46,6 @@ import { MatSelectModule } from "@angular/material/select";
 import { MatIconModule } from "@angular/material/icon";
 import { MatButtonModule } from "@angular/material/button";
 import { MatDialog } from "@angular/material/dialog";
-import { HttpErrorResponse } from "@angular/common/http";
 import { concat, last, take } from "rxjs";
 
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
@@ -128,7 +128,7 @@ export class RealmTableComponent {
   protected readonly resolverService: ResolverServiceInterface = inject(ResolverService);
 
   @ViewChild(MatPaginator) paginator!: MatPaginator;
-  @ViewChild('filterHTMLInputElement', { static: false }) filterInput!: any;
+  @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: any;
 
   pageSizeOptions = this.tableUtilsService.pageSizeOptions;
 
@@ -253,7 +253,10 @@ export class RealmTableComponent {
   ) as WritableSignal<number>;
 
   realmsDataSource: WritableSignal<MatTableDataSource<RealmRow>> = linkedSignal({
-    source: () => ({ rows: this.realmRows(), sort: this.sort() }),
+    source: () => ({
+      rows: this.realmRows(),
+      sort: this.sort()
+    }),
     computation: (src, previous) => {
       const sortedRows = this.clientsideSortRealmData([...(src.rows ?? [])], this.sort());
       const dataSource = new MatTableDataSource(sortedRows);
@@ -271,46 +274,74 @@ export class RealmTableComponent {
         );
       };
 
-      const normalized = this.normalizeFilter(this.filterString());
-      dataSource.filter = normalized;
+      const filter = this.filterString().trim().toLowerCase();
+      dataSource.filter = filter;
+
       return dataSource;
     }
   });
 
   onFilterInput(value: string): void {
-    this.filterString.set(value);
+    const trimmed = (value ?? "").trim();
+    this.filterString.set(trimmed);
+
     const ds = this.realmsDataSource();
-    ds.filter = this.normalizeFilter(value);
+    ds.filter = trimmed.toLowerCase();
   }
 
   resetFilter(): void {
     this.filterString.set("");
     const ds = this.realmsDataSource();
     ds.filter = "";
+    const inputEl = this.filterInput?.nativeElement as HTMLInputElement | undefined;
+    if (inputEl) {
+      inputEl.value = "";
+    }
   }
 
   toggleFilter(filterKeyword: string): void {
-    const inputEl = this.filterInput?.nativeElement as HTMLInputElement | undefined;
-    const current = (inputEl?.value ?? this.filterString()).trim();
-    const re = new RegExp(`(?:^|\\s)${filterKeyword}\\s*:\\s*`, "i");
-    let next = current;
-    if (re.test(current)) {
-      next = current.replace(new RegExp(`${filterKeyword}\\s*:\\s*`, "ig"), "").trim();
-    } else {
-      next = (current + ` ${filterKeyword}: `).trim();
+    const keyword = (filterKeyword ?? "").trim();
+    if (!keyword) {
+      return;
     }
+
+    const current = this.filterString();
+    const words = current
+      .split(/\s+/)
+      .filter((w) => w.length > 0);
+
+    const lowerKeyword = keyword.toLowerCase();
+    const index = words.findIndex((w) => w.toLowerCase() === lowerKeyword);
+
+    if (index >= 0) {
+      words.splice(index, 1);
+    } else {
+      words.push(keyword);
+    }
+
+    const next = words.join(" ");
     this.filterString.set(next);
+
     const ds = this.realmsDataSource();
-    ds.filter = this.normalizeFilter(next);
+    ds.filter = next.trim().toLowerCase();
+
+    const inputEl = this.filterInput?.nativeElement as HTMLInputElement | undefined;
     if (inputEl) {
-      inputEl.value = next + (next.endsWith(":") ? " " : "");
+      inputEl.value = next;
       inputEl.focus();
     }
   }
 
   isFilterSelected(filter: string): boolean {
-    const value = this.filterString();
-    return new RegExp(`(?:^|\\s)${filter}\\s*:`, "i").test(value);
+    const keyword = (filter ?? "").trim().toLowerCase();
+    if (!keyword) {
+      return false;
+    }
+    const current = this.filterString();
+    return current
+      .split(/\s+/)
+      .filter((w) => w.length > 0)
+      .some((w) => w.toLowerCase() === keyword);
   }
 
   getFilterIconName(keyword: string): string {
@@ -319,33 +350,6 @@ export class RealmTableComponent {
 
   onKeywordClick(filterKeyword: string): void {
     this.toggleFilter(filterKeyword);
-  }
-
-  private normalizeFilter(value: string): string {
-    return (value ?? "").replace(/\b\w+\s*:\s*/g, " ").trim().toLowerCase();
-  }
-
-  private clientsideSortRealmData(data: RealmRow[], s: Sort): RealmRow[] {
-    const dir = s.direction === "desc" ? -1 : 1;
-    if (!s.direction) return data;
-    const key = s.active as keyof RealmRow;
-    return data.sort((a: any, b: any) => {
-      let va: any;
-      let vb: any;
-      if (key === "isDefault") {
-        va = a.isDefault ? 1 : 0;
-        vb = b.isDefault ? 1 : 0;
-      } else if (key === "name") {
-        va = (a.name ?? "").toString().toLowerCase();
-        vb = (b.name ?? "").toString().toLowerCase();
-      } else {
-        va = (a?.[key] ?? "").toString().toLowerCase();
-        vb = (b?.[key] ?? "").toString().toLowerCase();
-      }
-      if (va < vb) return -1 * dir;
-      if (va > vb) return 1 * dir;
-      return 0;
-    });
   }
 
   onNodeSelectionChange(value: string): void {
@@ -357,7 +361,7 @@ export class RealmTableComponent {
   }
 
   getCreateNodeResolverNames(groupId: string): string[] {
-    return this.getCreateNodeResolvers(groupId).map(res => res.name);
+    return this.getCreateNodeResolvers(groupId).map((res) => res.name);
   }
 
   onNewRealmNodeResolversChange(nodeId: string, values: string[]): void {
@@ -398,50 +402,6 @@ export class RealmTableComponent {
 
     current[nodeId] = [...list];
     this.newRealmNodeResolvers.set(current);
-  }
-
-  getEditNodeResolvers(nodeId: string): ResolverWithPriority[] {
-    return this.editNodeResolvers()[nodeId] ?? [];
-  }
-
-  onEditNodeResolversChange(nodeId: string, values: string[]): void {
-    const current = this.editNodeResolvers();
-    const prevList = current[nodeId] ?? [];
-
-    const updated: ResolverWithPriority[] = values.map((name) => {
-      const existing = prevList.find((r) => r.name === name);
-      return {
-        name,
-        priority: existing?.priority ?? null
-      };
-    });
-
-    this.editNodeResolvers.set({
-      ...current,
-      [nodeId]: updated
-    });
-  }
-
-  setEditResolverPriority(nodeId: string, resolverName: string, priority: any): void {
-    const current = this.editNodeResolvers();
-    const list = [...(current[nodeId] ?? [])];
-    const entry = list.find((r) => r.name === resolverName);
-
-    if (!entry) {
-      return;
-    }
-
-    const num = Number(priority);
-    if (priority === null || priority === undefined || priority === "" || Number.isNaN(num)) {
-      entry.priority = null;
-    } else {
-      entry.priority = Math.min(999, Math.max(1, num));
-    }
-
-    this.editNodeResolvers.set({
-      ...current,
-      [nodeId]: list
-    });
   }
 
   canSubmitNewRealm(): boolean {
@@ -534,12 +494,12 @@ export class RealmTableComponent {
 
     const original: NodeResolversMap = {};
     Object.entries(map).forEach(([nodeId, list]) => {
-      original[nodeId] = list.map(r => ({ ...r }));
+      original[nodeId] = list.map((r) => ({ ...r }));
     });
 
     const editable: NodeResolversMap = {};
     Object.entries(map).forEach(([nodeId, list]) => {
-      editable[nodeId] = list.map(r => ({ ...r }));
+      editable[nodeId] = list.map((r) => ({ ...r }));
     });
 
     this.editOriginalNodeResolvers.set(original);
@@ -558,8 +518,52 @@ export class RealmTableComponent {
     return this.editingRealmName() === row.name && !this.isSavingEditedRealm();
   }
 
+  getEditNodeResolvers(nodeId: string): ResolverWithPriority[] {
+    return this.editNodeResolvers()[nodeId] ?? [];
+  }
+
   getEditNodeResolverNames(nodeId: string): string[] {
-    return this.getEditNodeResolvers(nodeId).map(r => r.name);
+    return this.getEditNodeResolvers(nodeId).map((r) => r.name);
+  }
+
+  onEditNodeResolversChange(nodeId: string, values: string[]): void {
+    const current = this.editNodeResolvers();
+    const prevList = current[nodeId] ?? [];
+
+    const updated: ResolverWithPriority[] = values.map((name) => {
+      const existing = prevList.find((r) => r.name === name);
+      return {
+        name,
+        priority: existing?.priority ?? null
+      };
+    });
+
+    this.editNodeResolvers.set({
+      ...current,
+      [nodeId]: updated
+    });
+  }
+
+  setEditResolverPriority(nodeId: string, resolverName: string, priority: any): void {
+    const current = this.editNodeResolvers();
+    const list = [...(current[nodeId] ?? [])];
+    const entry = list.find((r) => r.name === resolverName);
+
+    if (!entry) {
+      return;
+    }
+
+    const num = Number(priority);
+    if (priority === null || priority === undefined || priority === "" || Number.isNaN(num)) {
+      entry.priority = null;
+    } else {
+      entry.priority = Math.min(999, Math.max(1, num));
+    }
+
+    this.editNodeResolvers.set({
+      ...current,
+      [nodeId]: list
+    });
   }
 
   saveEditedRealm(row: RealmRow): void {
@@ -696,5 +700,29 @@ export class RealmTableComponent {
           );
         }
       });
+  }
+
+  private clientsideSortRealmData(data: RealmRow[], s: Sort): RealmRow[] {
+    if (!s.direction) return data;
+    const dir = s.direction === "desc" ? -1 : 1;
+    const key = s.active as keyof RealmRow;
+
+    return data.sort((a: any, b: any) => {
+      let va: any;
+      let vb: any;
+      if (key === "isDefault") {
+        va = a.isDefault ? 1 : 0;
+        vb = b.isDefault ? 1 : 0;
+      } else if (key === "name") {
+        va = (a.name ?? "").toString().toLowerCase();
+        vb = (b.name ?? "").toString().toLowerCase();
+      } else {
+        va = (a?.[key] ?? "").toString().toLowerCase();
+        vb = (b?.[key] ?? "").toString().toLowerCase();
+      }
+      if (va < vb) return -1 * dir;
+      if (va > vb) return 1 * dir;
+      return 0;
+    });
   }
 }

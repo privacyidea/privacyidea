@@ -66,17 +66,6 @@
                 class="flex ali-center">
                 {{ column.label }}
                 <div class="margin-left-1 flex">
-                  @if (['name', 'resolvers'].includes(column.key)) {
-                    <button
-                      (click)="onKeywordClick(column.key)"
-                      class="filter-button"
-                      mat-icon-button
-                      type="button">
-                      <mat-icon class="keyword-button-icon margin-left-0">
-                        {{ getFilterIconName(column.key) }}
-                      </mat-icon>
-                    </button>
-                  }
                   @if (!['actions', 'resolvers'].includes(column.key)) {
                     <button
                       (click)="tableUtilsService.onSortButtonClick(column.key, sort)"

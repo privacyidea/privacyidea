@@ -191,10 +191,11 @@ export class ContainerDetailsTokenTableComponent {
 
   handleFilterInput($event: Event): void {
     const raw = ($event.target as HTMLInputElement).value ?? "";
-    this.filterValue.set(raw.trim());
-    // Strip key: prefixes for predicate comparison
-    const normalised = raw.replace(/\b\w+\s*:\s*/g, " ").trim().toLowerCase();
+    const trimmed = raw.trim();
+    this.filterValue.set(trimmed);
+    const normalised = trimmed.toLowerCase();
     this.dataSource.filter = normalised;
+
     if (this.containerTokenData) {
       this.containerTokenData().filter = normalised;
     }

@@ -148,10 +148,11 @@ export class UserDetailsTokenTableComponent {
 
   handleFilterInput($event: Event): void {
     const raw = ($event.target as HTMLInputElement).value ?? "";
-    // Keep the original case but trim surrounding whitespace for display
-    this.filterValue = raw.trim();
-    const normalised = raw.replace(/\b\w+\s*:\s*/g, " ").trim().toLowerCase();
+    const trimmed = raw.trim();
+    this.filterValue = trimmed;
+    const normalised = trimmed.toLowerCase();
     this.dataSource.filter = normalised;
+
     if (this.userTokenData) {
       this.userTokenData().filter = normalised;
     }
