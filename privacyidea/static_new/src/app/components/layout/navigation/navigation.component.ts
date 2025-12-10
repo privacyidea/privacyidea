@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, effect, inject } from "@angular/core";
+import { Component, inject } from "@angular/core";
 import { DatePipe, NgClass, NgOptimizedImage } from "@angular/common";
 import {
   MatAccordion,
@@ -111,18 +111,30 @@ export class NavigationComponent {
   }
 
   refreshPage() {
-    if (this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_DETAILS)) {
+    if (this.contentService.onTokenDetails()) {
       this.tokenService.tokenDetailResource.reload();
       if (this.authService.anyContainerActionAllowed()) {
         this.containerService.containerResource.reload();
       }
-    } else if (this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS)) {
-      this.containerService.containerDetailResource.reload();
+      return;
+
+    } else if (this.contentService.onTokensContainersDetails()) {
+      if (this.authService.anyContainerActionAllowed()) {
+        this.containerService.containerDetailResource.reload();
+      }
       this.tokenService.tokenResource.reload();
-    } else if (this.contentService.routeUrl().startsWith(ROUTE_PATHS.USERS_DETAILS)) {
+      return;
+
+    } else if (this.contentService.onUserDetails()) {
       this.userService.usersResource.reload();
+      this.tokenService.tokenResource.reload();
+      this.tokenService.userTokenResource.reload();
+      if (this.authService.anyContainerActionAllowed()) {
+        this.containerService.containerResource.reload();
+      }
       return;
     }
+
     switch (this.contentService.routeUrl()) {
       case ROUTE_PATHS.TOKENS:
         this.tokenService.tokenResource.reload();
