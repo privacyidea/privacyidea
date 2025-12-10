@@ -45,30 +45,6 @@ class Tokengroup(TimestampMethodsMixin, db.Model):
         self.name = groupname
         self.Description = description
 
-    def delete(self):
-        ret = self.id
-        # delete all TokenTokenGroup
-        db.session.query(TokenTokengroup) \
-            .filter(TokenTokengroup.tokengroup_id == ret) \
-            .delete()
-        # delete the tokengroup
-        db.session.delete(self)
-        save_config_timestamp()
-        db.session.commit()
-        return ret
-
-    def save(self):
-        ti_func = Tokengroup.query.filter_by(name=self.name).first
-        ti = ti_func()
-        if ti is None:
-            return TimestampMethodsMixin.save(self)
-        else:
-            # update
-            Tokengroup.query.filter_by(id=ti.id).update({'Description': self.Description})
-            ret = ti.id
-            db.session.commit()
-        return ret
-
 
 class TokenTokengroup(TimestampMethodsMixin, db.Model):
     """
@@ -109,23 +85,3 @@ class TokenTokengroup(TimestampMethodsMixin, db.Model):
                 raise Exception("tokengroup does not exist")
             self.tokengroup_id = group.id
         self.token_id = token_id
-
-    def save(self):
-        """
-        We only save this, if it does not exist, yet.
-        """
-        tr_func = TokenTokengroup.query.filter_by(tokengroup_id=self.tokengroup_id,
-                                                  token_id=self.token_id).first
-        tr = tr_func()
-        if tr is None:
-            # create a new one
-            db.session.add(self)
-            db.session.commit()
-            if get_app_config_value(SAFE_STORE, False):
-                tr = tr_func()
-                ret = tr.id
-            else:
-                ret = self.id
-        else:
-            ret = self.id
-        return ret

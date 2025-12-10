@@ -30,6 +30,7 @@ from privacyidea.lib.policies.conditions import (PolicyConditionClass, Condition
                                                  ConditionHandleMissingData)
 from privacyidea.lib.policy import set_policy_conditions
 from privacyidea.lib.token import init_token
+from privacyidea.lib.tokengroup import delete_tokengroup
 from privacyidea.lib.user import User
 from privacyidea.lib.utils.compare import PrimaryComparators
 from privacyidea.models import (Token,
@@ -1084,10 +1085,6 @@ class TokengroupTestCase(MyTestCase):
         TokenTokengroup(token_id=tok2.id, tokengroup_id=tg2.id).save()
         ttg = TokenTokengroup.query.all()
         self.assertEqual(len(ttg), 3)
-        # It does not change anything, if we try to save the same assignment!
-        TokenTokengroup(token_id=tok2.id, tokengroup_id=tg2.id).save()
-        ttg = TokenTokengroup.query.all()
-        self.assertEqual(len(ttg), 3)
 
         ttg = TokenTokengroup.query.filter_by(token_id=tok1.id).all()
         self.assertEqual(len(ttg), 2)
@@ -1100,18 +1097,12 @@ class TokengroupTestCase(MyTestCase):
 
         self.assertEqual(tok2.tokengroup_list[0].tokengroup.name, "gruppe2")
 
-        # remove tokengroups and check that tokentokengroups assignments are removed
-        tg1.delete()
-        ttg = TokenTokengroup.query.all()
-        self.assertEqual(len(ttg), 2)
-
-        tg2.delete()
-        ttg = TokenTokengroup.query.all()
-        self.assertEqual(len(ttg), 0)
-
         # cleanup
         tok1.delete()
         tok2.delete()
+        delete_tokengroup(tg1.name)
+        delete_tokengroup(tg2.name)
+
 
 
 class ServiceidTestCase(MyTestCase):
