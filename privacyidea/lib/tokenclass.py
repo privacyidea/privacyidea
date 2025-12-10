@@ -104,7 +104,7 @@ from .policydecorators import libpolicy, auth_otppin, challenge_response_allowed
 from .user import (User)
 from ..api.lib.utils import getParam
 from ..models import (TokenOwner, TokenTokengroup, Challenge, cleanup_challenges, TokenInfo, db, TokenRealm, Realm,
-                      Tokengroup)
+                      Tokengroup, MachineToken, TokenCredentialIdHash)
 
 DATE_FORMAT = '%Y-%m-%dT%H:%M%z'
 AUTH_DATE_FORMAT = "%Y-%m-%d %H:%M:%S.%f%z"
@@ -752,10 +752,35 @@ class TokenClass(object):
         self.token.tokentype = '' + self.type
         return
 
+    @log_with(log)
     def delete_token(self):
         """
         delete the database token
         """
+        # First delete all relationships (TODO: should be handled automatically by cascade delete)
+        stmt = delete(TokenRealm).where(TokenRealm.token_id == self.token.id)
+        db.session.execute(stmt)
+
+        stmt = delete(TokenOwner).where(TokenOwner.token_id == self.token.id)
+        db.session.execute(stmt)
+
+        stmt = delete(MachineToken).where(MachineToken.token_id == self.token.id)
+        db.session.execute(stmt)
+
+        stmt = delete(Challenge).where(Challenge.serial == self.token.serial)
+        db.session.execute(stmt)
+
+        stmt = delete(TokenInfo).where(TokenInfo.token_id == self.token.id)
+        db.session.execute(stmt)
+
+        stmt = delete(TokenTokengroup).where(TokenTokengroup.token_id == self.token.id)
+        db.session.execute(stmt)
+
+        if self.get_tokentype().lower() in ["webauthn", "passkey"]:
+            stmt = delete(TokenCredentialIdHash).where(TokenCredentialIdHash.token_id == self.token.id)
+            db.session.execute(stmt)
+        db.session.commit()
+
         self.token.delete()
 
     def save(self):

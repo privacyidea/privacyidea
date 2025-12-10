@@ -28,9 +28,7 @@ from privacyidea.lib.error import ResourceNotFoundError
 from privacyidea.lib.log import log_with
 from privacyidea.lib.utils import convert_column_to_unicode
 from privacyidea.models import db
-from privacyidea.models.challenge import Challenge
 from privacyidea.models.realm import Realm
-from privacyidea.models.tokengroup import Tokengroup, TokenTokengroup
 from privacyidea.models.utils import MethodsMixin
 
 log = logging.getLogger(__name__)
@@ -145,36 +143,6 @@ class Token(MethodsMixin, db.Model):
     @property
     def all_owners(self):
         return self.owners.all()
-
-    @log_with(log)
-    def delete(self):
-        from .machine import MachineToken
-        # some DBs (e.g. DB2) run in a deadlock, if the TokenRealm entry
-        # is deleted via key relation, so we delete it explicitly
-        ret = self.id
-        db.session.query(TokenRealm) \
-            .filter(TokenRealm.token_id == self.id) \
-            .delete()
-        db.session.query(TokenOwner) \
-            .filter(TokenOwner.token_id == self.id) \
-            .delete()
-        for mt in db.session.execute(db.select(MachineToken).filter(MachineToken.token_id == self.id)).scalars():
-            mt.delete()
-        db.session.query(Challenge) \
-            .filter(Challenge.serial == self.serial) \
-            .delete()
-        db.session.query(TokenInfo) \
-            .filter(TokenInfo.token_id == self.id) \
-            .delete()
-        db.session.query(TokenTokengroup) \
-            .filter(TokenTokengroup.token_id == self.id) \
-            .delete()
-        if self.tokentype.lower() in ["webauthn", "passkey"]:
-            db.session.query(TokenCredentialIdHash).filter(TokenCredentialIdHash.token_id == self.id).delete()
-
-        db.session.delete(self)
-        db.session.commit()
-        return ret
 
     @staticmethod
     def _fix_spaces(data):
