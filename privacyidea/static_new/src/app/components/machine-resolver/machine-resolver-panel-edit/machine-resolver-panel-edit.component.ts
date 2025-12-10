@@ -42,6 +42,7 @@ import { MachineResolverLdapTabComponent } from "../machine-resolver-ldap-tab/ma
 import { NotificationService, NotificationServiceInterface } from "../../../services/notification/notification.service";
 import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
 import { MachineResolverHostsTabComponent } from "../machine-resolver-hosts-tab/machine-resolver-hosts-tab.component";
+import { deepCopy } from "../../../utils/deep-copy.utils";
 
 @Component({
   selector: "app-machine-resolver-panel-edit",
@@ -78,9 +79,7 @@ export class MachineResolverPanelEditComponent {
   readonly originalMachineResolver = input.required<MachineResolver>();
   readonly editedMachineResolver: WritableSignal<MachineResolver> = linkedSignal({
     source: () => ({ originalMachineResolver: this.originalMachineResolver(), isEditMode: this.isEditMode() }),
-    computation: (source) => {
-      return deepCopy(source.originalMachineResolver);
-    }
+    computation: (source) => deepCopy(source.originalMachineResolver)
   });
   readonly currentMachineResolver = linkedSignal<MachineResolver>(() =>
     this.isEditMode() ? this.editedMachineResolver() : this.originalMachineResolver()
@@ -236,9 +235,4 @@ export class MachineResolverPanelEditComponent {
       });
     return;
   }
-}
-
-// Remove this when the global helper functions is merged
-function deepCopy<T>(obj: T): T {
-  return JSON.parse(JSON.stringify(obj));
 }
