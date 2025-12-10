@@ -17,7 +17,7 @@ from privacyidea.lib.token import (get_tokens, remove_token, enable_token,
                                    assign_token, init_token)
 from privacyidea.lib.tokenclass import AUTH_DATE_FORMAT
 from privacyidea.lib.user import User
-from privacyidea.models import Token
+from privacyidea.models import Token, db
 from . import ldap3mock
 from .base import MyApiTestCase
 from .test_api_validate import LDAPDirectory
@@ -353,6 +353,8 @@ class APISelfserviceTestCase(MyApiTestCase):
         For each test we need to initialize the self.at and the self.at_user
         members.
         """
+        # Clear session before each test to avoid side effects
+        db.session.expunge_all()
         self.setUp_user_realms()
         init_token({"type": "hotp", "serial": self.my_serial},
                    user=User(uid="1004", realm=self.realm1, resolver="resolver1"))

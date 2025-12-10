@@ -5487,6 +5487,9 @@ class AChallengeResponse(MyApiTestCase):
 
         # ennroll an empty indexedsecret token and check the raised exception
         remove_token("PIIX01")
+        # Clear session before adding new entries to avoid conflicts due to re-adding user cache entry which gets the
+        # same primary key ID as the deleted one.
+        db.session.expunge_all()
         init_token({"otpkey": "",
                     "pin": "test",
                     "serial": "PIIX01",
