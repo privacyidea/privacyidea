@@ -20,7 +20,7 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MachineResolverHostsTabComponent } from "./machine-resolver-hosts-tab.component";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { HostsMachineResolverData } from "../../../services/machineResolver/machineResolver.service";
+import { HostsMachineResolverData } from "../../../services/machine-resolver/machine-resolver.service";
 
 describe("MachineResolverHostsTabComponent", () => {
   let component: MachineResolverHostsTabComponent;

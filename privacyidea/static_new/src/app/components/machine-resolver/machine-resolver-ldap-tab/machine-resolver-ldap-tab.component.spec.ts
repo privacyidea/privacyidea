@@ -20,7 +20,7 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MachineResolverLdapTabComponent } from "./machine-resolver-ldap-tab.component";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { LdapMachineResolverData } from "../../../services/machineResolver/machineResolver.service";
+import { LdapMachineResolverData } from "../../../services/machine-resolver/machine-resolver.service";
 
 describe("MachineResolverLdapTabComponent", () => {
   let component: MachineResolverLdapTabComponent;

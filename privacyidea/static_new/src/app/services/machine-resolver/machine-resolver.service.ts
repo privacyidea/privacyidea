@@ -88,7 +88,7 @@ export interface MachineResolverServiceInterface {
 })
 export class MachineResolverService implements MachineResolverServiceInterface {
   readonly allMachineResolverTypes: string[] = ["hosts", "ldap"];
-  readonly machineResolverBaseUrl = environment.proxyUrl + "/machineResolver/";
+  readonly machineResolverBaseUrl = environment.proxyUrl + "/machineresolver/";
 
   readonly authService: AuthServiceInterface = inject(AuthService);
   readonly contentService: ContentServiceInterface = inject(ContentService);
@@ -97,7 +97,7 @@ export class MachineResolverService implements MachineResolverServiceInterface {
 
   readonly machineResolverResource = httpResource<PiResponse<MachineResolvers>>(() => {
     if (!this.authService.actionAllowed("mresolverread")) {
-      this.notificationService.openSnackBar("You are not allowed to read machineResolvers.");
+      this.notificationService.openSnackBar("You are not allowed to read Machine Resolvers.");
       return undefined;
     }
     return {
@@ -114,7 +114,7 @@ export class MachineResolverService implements MachineResolverServiceInterface {
 
   async postTestMachineResolver(resolver: MachineResolver): Promise<void> {
     if (!this.authService.actionAllowed("mresolverwrite")) {
-      this.notificationService.openSnackBar("You are not allowed to update machineResolvers.");
+      this.notificationService.openSnackBar("You are not allowed to update Machine Resolvers.");
       throw new Error("not-allowed");
     }
     const url = `${this.machineResolverBaseUrl}test`;
@@ -130,7 +130,7 @@ export class MachineResolverService implements MachineResolverServiceInterface {
 
   async postMachineResolver(resolver: MachineResolver): Promise<void> {
     if (!this.authService.actionAllowed("mresolverwrite")) {
-      this.notificationService.openSnackBar("You are not allowed to update machineResolvers.");
+      this.notificationService.openSnackBar("You are not allowed to update Machine Resolvers.");
       throw new Error("not-allowed");
     }
     const url = `${this.machineResolverBaseUrl}${resolver.resolvername}`;
@@ -151,7 +151,7 @@ export class MachineResolverService implements MachineResolverServiceInterface {
 
   async deleteMachineResolver(name: string): Promise<void> {
     if (!this.authService.actionAllowed("mresolverdelete")) {
-      this.notificationService.openSnackBar("You are not allowed to delete machineResolvers.");
+      this.notificationService.openSnackBar("You are not allowed to delete Machine Resolvers.");
       throw new Error("not-allowed");
     }
     const request = this.http.delete<PiResponse<any>>(`${this.machineResolverBaseUrl}${name}`, {

@@ -18,9 +18,9 @@
  **/
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { MachineResolverComponent } from "./machineResolver.component";
+import { MachineResolverComponent } from "./machine-resolver.component";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { MachineResolverService } from "../../services/machineResolver/machineResolver.service";
+import { MachineResolverService } from "../../services/machine-resolver/machine-resolver.service";
 import { MockMachineResolverService } from "../../../testing/mock-services/mock-machine-resolver-service";
 import { Component } from "@angular/core";
 import { MatExpansionModule } from "@angular/material/expansion";
