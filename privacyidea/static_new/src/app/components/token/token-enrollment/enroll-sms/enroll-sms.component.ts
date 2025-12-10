@@ -16,23 +16,23 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, effect, EventEmitter, inject, Input, OnInit, Output } from "@angular/core";
+import { Component, computed, effect, EventEmitter, inject, input, Input, OnInit, Output } from "@angular/core";
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatOption } from "@angular/material/core";
 import { MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { MatError, MatSelect } from "@angular/material/select";
-import { SmsGatewayService, SmsGatewayServiceInterface } from "../../../../services/sms-gateway/sms-gateway.service";
-import { SystemService, SystemServiceInterface } from "../../../../services/system/system.service";
-import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
-
-import { Observable, of } from "rxjs";
 import {
-  EnrollmentResponse,
+  TokenApiPayloadMapper,
   TokenEnrollmentData
 } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
-import { SmsApiPayloadMapper } from "../../../../mappers/token-api-payload/sms-token-api-payload.mapper";
+import {
+  SmsApiPayloadMapper,
+  SmsEnrollmentData
+} from "../../../../mappers/token-api-payload/sms-token-api-payload.mapper";
+import { SystemService, SystemServiceInterface } from "../../../../services/system/system.service";
+import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
 
 export interface SmsEnrollmentOptions extends TokenEnrollmentData {
@@ -70,8 +70,11 @@ export class EnrollSmsComponent implements OnInit {
   @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
-  @Output() clickEnrollChange = new EventEmitter<
-    (basicOptions: TokenEnrollmentData) => Observable<EnrollmentResponse | null>
+  @Output() enrollmentArgsGetterChange = new EventEmitter<
+    (basicOptions: TokenEnrollmentData) => {
+      data: SmsEnrollmentData;
+      mapper: TokenApiPayloadMapper<SmsEnrollmentData>;
+    } | null
   >();
 
   smsGatewayControl = new FormControl<string>("", [Validators.required]);
@@ -86,11 +89,14 @@ export class EnrollSmsComponent implements OnInit {
 
   smsGatewayOptions = computed(() => {
     // Find the first right that starts with "sms_gateways="
-    const right = this.authService.rights().find(r => r.startsWith("sms_gateways="));
+    const right = this.authService.rights().find((r) => r.startsWith("sms_gateways="));
     if (!right) return [];
     const gateways = right.split("=")[1];
     if (!gateways) return [];
-    return gateways.split(" ").map(gw => gw.trim()).filter(gw => gw.length > 0);
+    return gateways
+      .split(" ")
+      .map((gw) => gw.trim())
+      .filter((gw) => gw.length > 0);
   });
 
   defaultSMSGatewayIsSet = computed(() => {
@@ -98,7 +104,10 @@ export class EnrollSmsComponent implements OnInit {
     return !!cfg?.["sms.identifier"];
   });
 
+  disabled = input<boolean>(false);
+
   constructor() {
+    effect(() => (this.disabled() ? this.smsForm.disable({ emitEvent: false }) : this._enableFormControls()));
     effect(() => {
       const id = this.systemService.systemConfigResource.value()?.result?.value?.["sms.identifier"];
       if (id && this.smsGatewayControl.pristine) {
@@ -113,8 +122,12 @@ export class EnrollSmsComponent implements OnInit {
       phoneNumber: this.phoneNumberControl,
       readNumberDynamically: this.readNumberDynamicallyControl
     });
-    this.clickEnrollChange.emit(this.onClickEnroll);
+    this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
 
+    this._applyPolicies();
+  }
+
+  private _applyPolicies() {
     this.readNumberDynamicallyControl.valueChanges.subscribe((dynamic) => {
       if (!dynamic) {
         this.phoneNumberControl.enable({ emitEvent: false });
@@ -127,13 +140,18 @@ export class EnrollSmsComponent implements OnInit {
     });
   }
 
-  onClickEnroll = (basicOptions: TokenEnrollmentData): Observable<EnrollmentResponse | null> => {
+  enrollmentArgsGetter = (
+    basicOptions: TokenEnrollmentData
+  ): {
+    data: SmsEnrollmentData;
+    mapper: TokenApiPayloadMapper<SmsEnrollmentData>;
+  } | null => {
     if (
       this.smsGatewayControl.invalid ||
       (!this.readNumberDynamicallyControl.value && this.phoneNumberControl.invalid)
     ) {
       this.smsForm.markAllAsTouched();
-      return of(null);
+      return null;
     }
 
     const enrollmentData: SmsEnrollmentOptions = {
@@ -147,9 +165,14 @@ export class EnrollSmsComponent implements OnInit {
       enrollmentData.phoneNumber = this.phoneNumberControl.value ?? "";
     }
 
-    return this.tokenService.enrollToken({
+    return {
       data: enrollmentData,
       mapper: this.enrollmentMapper
-    });
+    };
   };
+
+  private _enableFormControls(): void {
+    this.smsForm.enable({ emitEvent: false });
+    this._applyPolicies();
+  }
 }

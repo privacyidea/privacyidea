@@ -31,6 +31,7 @@ import { UserTableComponent } from "./components/user/user-table/user-table.comp
 import { AuditComponent } from "./components/audit/audit.component";
 import { PoliciesComponent } from "./components/policies/policies.component";
 import { TokenImportComponent } from "./components/token/token-import/token-import.component";
+import { ContainerTemplatesComponent } from "./components/token/container-templates/container-templates.component";
 import { RealmTableComponent } from "./components/user/realm-table/realm-table.component";
 import { ClientsComponent } from "./components/audit/clients/clients.component";
 import { MachineResolverComponent } from "./components/machine-resolver/machine-resolver.component";
@@ -49,7 +50,8 @@ export const routes: Routes = [
         children: [
           { path: "", component: ContainerTableComponent },
           { path: "create", component: ContainerCreateComponent },
-          { path: "details/:serial", component: ContainerDetailsComponent }
+          { path: "details/:serial", component: ContainerDetailsComponent },
+          { path: "templates", component: ContainerTemplatesComponent }
         ]
       },
       { path: "details/:serial", component: TokenDetailsComponent },
