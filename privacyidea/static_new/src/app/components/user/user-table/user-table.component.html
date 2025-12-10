@@ -48,7 +48,7 @@
         [pageSize]="userService.pageSize()"
         showFirstLastButtons></mat-paginator>
     </div>
-    
+
     <app-user-table-actions />
     <div class="audit-table-overflow">
       <table
@@ -65,7 +65,7 @@
               <div class="flex ali-center">
                 {{ column.label }}
                 <div class="margin-left-1 flex">
-                  @if (apiFilter.includes(column.key)) {
+                  @if (apiFilter.includes(column.key) && !["userid"].includes(column.key)) {
                     <button
                       (click)="onKeywordClick(column.key)"
                       class="filter-button"
@@ -76,13 +76,13 @@
                       </mat-icon>
                     </button>
                   }
-                  <button
-                    (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
-                    class="sort-button"
-                    mat-icon-button
-                    type="button">
-                    <mat-icon>{{ tableUtilsService.getSortIcon(column.key, sort()) }}</mat-icon>
-                  </button>
+                    <button
+                      (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
+                      class="sort-button"
+                      mat-icon-button
+                      type="button">
+                      <mat-icon>{{ tableUtilsService.getSortIcon(column.key, sort()) }}</mat-icon>
+                    </button>
                 </div>
               </div>
             </th>
@@ -102,7 +102,7 @@
                       attr.aria-label="{{ column.label }} Link"
                       routerLink="/users/details/{{ element.username }}">
                       {{ element[column.key] }}
-                   </a>
+                    </a>
                   }
                   @default {
                     <span>

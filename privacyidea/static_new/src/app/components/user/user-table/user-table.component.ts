@@ -98,7 +98,7 @@ export class UserTableComponent {
   protected readonly userService: UserServiceInterface = inject(UserService);
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild('filterHTMLInputElement', { static: false }) filterInput!: ElementRef<HTMLInputElement>;
-  sort = signal({ active: 'username', direction: 'asc' } as Sort);
+  sort = signal({ active: '', direction: '' } as Sort);
   readonly apiFilter = this.userService.apiFilterOptions;
   pageSizeOptions = this.tableUtilsService.pageSizeOptions;
 
