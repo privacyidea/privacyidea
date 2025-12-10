@@ -29,7 +29,7 @@ from sqlalchemy import func, delete, select
 from privacyidea.lib.policies.conditions import (PolicyConditionClass, ConditionSection,
                                                  ConditionHandleMissingData)
 from privacyidea.lib.policy import set_policy_conditions
-from privacyidea.lib.token import init_token
+from privacyidea.lib.token import init_token, remove_token
 from privacyidea.lib.tokengroup import delete_tokengroup
 from privacyidea.lib.user import User
 from privacyidea.lib.utils.compare import PrimaryComparators
@@ -261,13 +261,6 @@ class TokenModelTestCase(MyTestCase):
 
         # set an empty token description
         self.assertEqual(t2.set_description(desc=None), '')
-
-        # delete the token
-        ret = t2.delete()
-        self.assertTrue(ret)
-        # check that the TokenRealm is deleted
-        q = TokenRealm.query.all()
-        self.assertTrue(len(q) == 0)
 
     def test_02_config_model(self):
         c = Config("splitRealm", True,
@@ -588,8 +581,8 @@ class TokenModelTestCase(MyTestCase):
         t1.save()
 
         token_info = {"key1": "value1",
-                     "key2": "value2",
-                     "key3": "value3"}
+                      "key2": "value2",
+                      "key3": "value3"}
         for key, value in token_info.items():
             info = TokenInfo(t1.id, key, value)
             db.session.add(info)
@@ -1098,11 +1091,10 @@ class TokengroupTestCase(MyTestCase):
         self.assertEqual(tok2.tokengroup_list[0].tokengroup.name, "gruppe2")
 
         # cleanup
-        tok1.delete()
-        tok2.delete()
+        remove_token(tok1.serial)
+        remove_token(tok2.serial)
         delete_tokengroup(tg1.name)
         delete_tokengroup(tg2.name)
-
 
 
 class ServiceidTestCase(MyTestCase):

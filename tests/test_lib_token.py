@@ -22,6 +22,7 @@ import warnings
 import mock
 from dateutil import parser
 from dateutil.tz import tzlocal
+from sqlalchemy import select
 from testfixtures import log_capture, LogCapture
 
 from privacyidea.lib.challenge import get_challenges
@@ -459,7 +460,13 @@ class TokenTestCase(MyTestCase):
             self.assertEqual(token.get_realms(), ['realm1'], token.get_realms())
             mock_log.assert_called_with(f'The realms ({self.realm1}) of assigned users cannot be removed from the '
                                         f'token {serial}.')
-            token.delete_token()
+
+        # Deleting the token also deletes the token realm relationship
+        token_id = token.token.id
+        token.delete_token()
+        stmt = select(TokenRealm).filter_by(token_id=token_id)
+        token_realm_db = db.session.execute(stmt).one_or_none()
+        self.assertIsNone(token_realm_db)
 
     def test_17_set_defaults(self):
         serial = "SETTOKEN"
