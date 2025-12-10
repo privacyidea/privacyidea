@@ -2647,9 +2647,9 @@ class TokenGroupTestCase(MyTestCase):
         token = init_token({"serial": "s1", "type": "spass"})
 
         # create token groups
-        groups = [("g1", "Test A"), ("g2", "test B"), ("g3", "test C")]
-        for g in groups:
-            set_tokengroup(g[0], g[1])
+        g1_id = set_tokengroup("g1", "Test A")
+        g2_id = set_tokengroup("g2", "Test B")
+        g3_id = set_tokengroup("g3", "Test C")
 
         # Set two groups
         set_tokengroups("s1", ["g1", "g2"])
@@ -2662,7 +2662,7 @@ class TokenGroupTestCase(MyTestCase):
         self.assertSetEqual({"g2"}, {tg.tokengroup.name for tg in token.token.tokengroup_list})
 
         # delete one token by id
-        unassign_tokengroup("s1", tokengroup_id=token.token.tokengroup_list[0].id)
+        unassign_tokengroup("s1", tokengroup_id=g2_id)
         token = get_one_token(serial="s1")
         self.assertSetEqual(set(), {tg.tokengroup.name for tg in token.token.tokengroup_list})
 
