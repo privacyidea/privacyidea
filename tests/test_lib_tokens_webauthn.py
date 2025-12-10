@@ -80,6 +80,7 @@ from privacyidea.lib.tokens.webauthntoken import (WebAuthnTokenClass, DEFAULT_AU
                                                   DEFAULT_USER_VERIFICATION_REQUIREMENT)
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import hexlify_and_unicode
+from privacyidea.models import db
 from .base import MyTestCase
 
 TRUST_ANCHOR_DIR = "{}/testdata/trusted_attestation_roots".format(os.path.abspath(os.path.dirname(__file__)))
@@ -561,9 +562,6 @@ class WebAuthnTokenTestCase(MyTestCase):
         self.assertEqual(exported_data["info_list"]["pubKey"], "a401020326215820319ea01f1125ce6232947365800ae5d"
                                                                "9ddc874247c55d1516bad3ca3ca32075c22582059f1f07f3b2f86c"
                                                                "0a51e0cfa13dc57e7c77a110e796f8a0b27741fe58663cb3a")
-
-        # Clean up
-        remove_token(token.token.serial)
 
     def test_13_webauthn_token_import(self):
         # Define the token data to be imported
