@@ -113,15 +113,11 @@ export class NavigationComponent {
   refreshPage() {
     if (this.contentService.onTokenDetails()) {
       this.tokenService.tokenDetailResource.reload();
-      if (this.authService.anyContainerActionAllowed()) {
-        this.containerService.containerResource.reload();
-      }
+      this.containerService.containerResource.reload();
       return;
 
     } else if (this.contentService.onTokensContainersDetails()) {
-      if (this.authService.anyContainerActionAllowed()) {
-        this.containerService.containerDetailResource.reload();
-      }
+      this.containerService.containerDetailResource.reload();
       this.tokenService.tokenResource.reload();
       return;
 
@@ -129,9 +125,7 @@ export class NavigationComponent {
       this.userService.usersResource.reload();
       this.tokenService.tokenResource.reload();
       this.tokenService.userTokenResource.reload();
-      if (this.authService.anyContainerActionAllowed()) {
-        this.containerService.containerResource.reload();
-      }
+      this.containerService.containerResource.reload();
       return;
     }
 
