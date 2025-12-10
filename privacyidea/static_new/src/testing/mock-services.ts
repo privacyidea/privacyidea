@@ -21,6 +21,7 @@ import { AuthData, AuthDetail, AuthResponse, AuthRole } from "../app/services/au
 import {
   ContainerDetailData,
   ContainerDetails,
+  ContainerDetailToken,
   ContainerRegisterData,
   ContainerServiceInterface,
   ContainerTemplate,
@@ -1077,6 +1078,9 @@ export class MockMachineService implements MachineServiceInterface {
 }
 
 export class MockTableUtilsService implements TableUtilsServiceInterface {
+  clientsideSortTokenData(data: ContainerDetailToken[], s: Sort): ContainerDetailToken[] {
+      return data;
+  }
   getSortIcon(columnKey: string, sort: Sort): string {
       return ""
   }

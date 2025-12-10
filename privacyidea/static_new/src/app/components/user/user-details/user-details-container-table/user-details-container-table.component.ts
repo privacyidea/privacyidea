@@ -159,9 +159,8 @@ export class UserDetailsContainerTableComponent {
 
   handleFilterInput($event: Event): void {
     const raw = ($event.target as HTMLInputElement).value ?? "";
-    const trimmed = raw.trim();
-    this.filterValue = trimmed;
-    const normalised = trimmed.toLowerCase();
+    const normalised = raw.trim().toLowerCase();
+    this.filterValue = normalised;
     this.dataSource.filter = normalised;
   }
 
