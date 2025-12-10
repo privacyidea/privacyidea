@@ -14,21 +14,21 @@ $profile-hover-bg: var(--background-yellow-inset);
 
 $grad-surface: linear-gradient(145deg, var(--mat-sys-surface-container), var(--mat-sys-surface-container-low));
 $grad-surface-hover: linear-gradient(
-  145deg,
-  var(--mat-sys-surface-container-lowest),
-  var(--mat-sys-surface-container-low)
+                145deg,
+                var(--mat-sys-surface-container-lowest),
+                var(--mat-sys-surface-container-low)
 );
 
 $background-low-contrast: linear-gradient(
-  145deg,
-  var(--mat-sys-surface-container-highest),
-  var(--mat-sys-surface-container-low)
+                145deg,
+                var(--mat-sys-surface-container-highest),
+                var(--mat-sys-surface-container-low)
 );
 
 $button-low-contrast-variant: linear-gradient(
-  145deg,
-  var(--mat-sys-surface-container-low),
-  var(--mat-sys-surface-container-highest)
+                145deg,
+                var(--mat-sys-surface-container-low),
+                var(--mat-sys-surface-container-highest)
 );
 
 @mixin button-base($height, $width, $background-color, $border-color, $color) {
@@ -61,11 +61,11 @@ $button-low-contrast-variant: linear-gradient(
 
 @mixin card-button-variant($background-color, $border-color, $color) {
   @include button-base(
-    $height: $button-height,
-    $width: $button-width,
-    $background-color: $background-color,
-    $border-color: $border-color,
-    $color: $color
+          $height: $button-height,
+          $width: $button-width,
+          $background-color: $background-color,
+          $border-color: $border-color,
+          $color: $color
   );
 }
 
@@ -140,9 +140,9 @@ $button-low-contrast-variant: linear-gradient(
 
 .card-button-1 {
   @include card-button-variant(
-    var(--mat-sys-surface-container),
-    var(--mat-sys-surface-container-highest),
-    var(--mat-sys-on-surface-variant)
+                  var(--mat-sys-surface-container),
+                  var(--mat-sys-surface-container-highest),
+                  var(--mat-sys-on-surface-variant)
   );
 }
 
@@ -152,9 +152,9 @@ $button-low-contrast-variant: linear-gradient(
 
 .card-button-support {
   @include card-button-variant(
-    var(--mat-sys-surface-container-lowest),
-    var(--green-brand-light),
-    var(--green-brand-light)
+                  var(--mat-sys-surface-container-lowest),
+                  var(--green-brand-light),
+                  var(--green-brand-light)
   );
 }
 
@@ -402,15 +402,15 @@ $button-low-contrast-variant: linear-gradient(
   padding: var(--half-global-padding) var(--global-padding);
   border: 1px solid var(--mat-sys-outline);
   background-color: var(--mat-sys-surface);
-  transition:
-    background-color 0.2s ease-in-out,
-    color 0.2s ease-in-out;
+  transition: background-color 0.2s ease-in-out,
+  color 0.2s ease-in-out;
 }
 
 .mat-mdc-outlined-button .mat-icon {
   height: 24px;
   width: 24px;
 }
+
 .mat-mdc-outlined-button[class*="action-button-delete"] {
   --mat-outlined-button-state-layer-color: var(--rose-bg);
   --mat-outlined-button-ripple-color: var(--rose-bg);
@@ -481,27 +481,54 @@ $button-low-contrast-variant: linear-gradient(
   }
 }
 
-.small-icon-button {
-   width: 36px !important;
-   height: 36px !important;
-   padding: 0px !important;
-   display: inline-flex !important;
-   align-items: center;
-   justify-content: center;
+.input-attached-button-active {
+  background-color: var(--mat-sys-primary-base-active);
+  color: var(--mat-sys-on-primary);
+}
 
-   & > *[role=img] {
+.input-attached-button-hover:hover:not(:disabled):not(.input-attached-button-active) {
+  background-color: var(--mat-sys-primary-base-hover);
+  color: var(--mat-sys-on-primary);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.input-attached-button {
+  height: 58px;
+  width: 35px;
+  margin-bottom: 18px;
+  padding: 0;
+  border: none;
+  background-color: var(--mat-sys-surface-container-high);
+  border-radius: 0 var(--three-quarters-global-padding) var(--three-quarters-global-padding) 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: background-color 0.2s ease-in-out;
+  flex-shrink: 0;
+
+  .small-icon-button {
+    width: 36px !important;
+    height: 36px !important;
+    padding: 0px !important;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+
+    & > *[role="img"] {
       width: 18px;
       height: 18px;
       font-size: 18px;
 
       svg {
-         width: 18px;
-         height: 18px;
+        width: 18px;
+        height: 18px;
       }
-   }
+    }
 
-   .mat-mdc-button-touch-target {
+    .mat-mdc-button-touch-target {
       width: 36px !important;
       height: 36px !important;
-   }
+    }
+  }
 }
