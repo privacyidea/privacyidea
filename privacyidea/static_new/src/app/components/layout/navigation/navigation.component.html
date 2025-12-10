@@ -521,6 +521,17 @@
             Machine Resolver
           </button>
         </mat-list-item>
+        @if (authService.actionAllowed("periodictask_read")) {
+          <mat-list-item>
+            <button
+              [ngClass]="contentService.routeUrl() === ROUTE_PATHS.CONFIGURATION_PERIODIC_TASKS ? 'card-button-active' : 'card-button-1'"
+              [routerLink]="[ROUTE_PATHS.CONFIGURATION_PERIODIC_TASKS]"
+              mat-stroked-button>
+              <mat-icon>event_repeat</mat-icon>
+              Periodic Tasks
+            </button>
+          </mat-list-item>
+        }
       </mat-list>
     </mat-expansion-panel>
   </mat-accordion>
