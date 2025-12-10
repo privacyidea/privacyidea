@@ -67,7 +67,7 @@
                 <div class="margin-left-1 flex">
                   @if (apiFilter.includes(column.key) && !["userid"].includes(column.key)) {
                     <button
-                      (click)="onKeywordClick(column.key)"
+                      (click)="onFilterClick(column.key)"
                       class="filter-button"
                       mat-icon-button
                       type="button">

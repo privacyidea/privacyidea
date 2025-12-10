@@ -127,7 +127,7 @@ export class ContainerTableComponent {
 
   pageSizeOptions = this.tableUtilsService.pageSizeOptions;
 
-  @ViewChild("filterHTMLInputElement", { static: true })
+  @ViewChild("filterHTMLInputElement", { static: false })
   filterInput!: ElementRef<HTMLInputElement>;
   expandedElement: ContainerDetailData | null = null;
 

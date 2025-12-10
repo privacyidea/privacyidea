@@ -253,13 +253,22 @@ export class ContainerService implements ContainerServiceInterface {
 
   filterParams = computed<Record<string, string>>(() => {
     const allowed = [...this.apiFilter, ...this.advancedApiFilter];
-    const plainKeys = new Set(["user", "type", "container_serial", "token_serial"]);
+    const plainKeys = new Set(["user", "type", "container_serial", "token_serial", "realm"]);
+
     const entries = Array.from(this.containerFilter().filterMap.entries())
       .filter(([key]) => allowed.includes(key))
       .map(([key, value]) => [key, (value ?? "").toString().trim()] as const)
       .filter(([, v]) => StringUtils.validFilterValue(v))
       .map(([key, v]) => [key, plainKeys.has(key) ? v : `*${v}*`] as const);
-    return Object.fromEntries(entries) as Record<string, string>;
+
+    const params = Object.fromEntries(entries) as Record<string, string>;
+
+    // If we are on the user details page, always restrict containers to that user + realm
+    if (this.contentService.onUserDetails()) {
+      params["user"] = this.userService.detailsUsername();
+    }
+
+    return params;
   });
 
   pageSize = linkedSignal({

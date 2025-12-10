@@ -299,59 +299,6 @@ export class RealmTableComponent {
     }
   }
 
-  toggleFilter(filterKeyword: string): void {
-    const keyword = (filterKeyword ?? "").trim();
-    if (!keyword) {
-      return;
-    }
-
-    const current = this.filterString();
-    const words = current
-      .split(/\s+/)
-      .filter((w) => w.length > 0);
-
-    const lowerKeyword = keyword.toLowerCase();
-    const index = words.findIndex((w) => w.toLowerCase() === lowerKeyword);
-
-    if (index >= 0) {
-      words.splice(index, 1);
-    } else {
-      words.push(keyword);
-    }
-
-    const next = words.join(" ");
-    this.filterString.set(next);
-
-    const ds = this.realmsDataSource();
-    ds.filter = next.trim().toLowerCase();
-
-    const inputEl = this.filterInput?.nativeElement as HTMLInputElement | undefined;
-    if (inputEl) {
-      inputEl.value = next;
-      inputEl.focus();
-    }
-  }
-
-  isFilterSelected(filter: string): boolean {
-    const keyword = (filter ?? "").trim().toLowerCase();
-    if (!keyword) {
-      return false;
-    }
-    const current = this.filterString();
-    return current
-      .split(/\s+/)
-      .filter((w) => w.length > 0)
-      .some((w) => w.toLowerCase() === keyword);
-  }
-
-  getFilterIconName(keyword: string): string {
-    return this.isFilterSelected(keyword) ? "filter_alt_off" : "filter_alt";
-  }
-
-  onKeywordClick(filterKeyword: string): void {
-    this.toggleFilter(filterKeyword);
-  }
-
   onNodeSelectionChange(value: string): void {
     this.selectedNode.set(value);
   }

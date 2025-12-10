@@ -161,7 +161,7 @@ export class UserTableComponent {
     return this.isFilterSelected(keyword) ? 'filter_alt_off' : 'filter_alt';
   }
 
-  onKeywordClick(filterKeyword: string): void {
+  onFilterClick(filterKeyword: string): void {
     this.toggleFilter(filterKeyword);
     this.filterInput?.nativeElement.focus();
   }
