@@ -80,7 +80,7 @@
                 <div class="flex ali-center">
                   {{ column.label }}
                   <div class="margin-left-1 flex">
-                    @if (apiFilter.includes(apiFilterKeyMap[column.key])) {
+                    @if (apiFilterKeyMap[column.key]) {
                       <button
                         (click)="onKeywordClick(apiFilterKeyMap[column.key])"
                         class="filter-button"

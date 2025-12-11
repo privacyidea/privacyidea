@@ -65,7 +65,7 @@
               <div class="flex ali-center">
                 {{ column.label }}
                 <div class="margin-left-1 flex">
-                  @if (apiFilter.includes(column.key) && !["userid"].includes(column.key)) {
+                  @if (apiFilter.includes(column.key)) {
                     <button
                       (click)="onFilterClick(column.key)"
                       class="filter-button"

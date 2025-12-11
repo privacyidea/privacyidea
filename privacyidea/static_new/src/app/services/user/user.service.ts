@@ -31,7 +31,7 @@ import { StringUtils } from "../../utils/string.utils";
 import { Observable } from "rxjs";
 import { Router } from "@angular/router";
 
-const apiFilter = ["description", "email", "givenname", "mobile", "phone", "resolver", "surname", "userid", "username"];
+const apiFilter = ["description", "email", "givenname", "mobile", "phone", "resolver", "surname", "username"];
 const advancedApiFilter: string[] = [];
 
 export interface UserData {

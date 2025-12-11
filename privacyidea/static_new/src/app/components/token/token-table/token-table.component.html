@@ -78,7 +78,7 @@
                 <div class="flex ali-center">
                   {{ column.label }}
                   <div class="margin-left-1 flex">
-                    @if (column.key !== 'user_realm') {
+                    @if (apiFilterKeyMap[column.key]) {
                       <button
                         (click)="onKeywordClick(apiFilterKeyMap[column.key])"
                         class="filter-button"

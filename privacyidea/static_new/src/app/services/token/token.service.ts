@@ -94,6 +94,7 @@ const apiFilterKeyMap: Record<string, string> = {
   active: "active",
   description: "description",
   rollout_state: "rollout_state",
+  username: "user",
   realms: "tokenrealm",
   container_serial: "container_serial"
 };
