@@ -50,9 +50,9 @@
             [disabled]="!isEditMode()"
             [ngModel]="hostsData().TLS_CA_FILE"
             (ngModelChange)="updateData({ TLS_CA_FILE: $event })" />
-        </mat-form-field>
-        <mat-form-field i18n="@@tlsCaFileHint">
-          Path to a CA certificate file to verify the LDAP server's TLS certificate.
+          <mat-hint i18n="@@tlsCaFileHint">
+            Path to a CA certificate file to verify the LDAP server's TLS certificate.
+          </mat-hint>
         </mat-form-field>
       } @else {
         <div></div>
