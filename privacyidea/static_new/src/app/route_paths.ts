@@ -37,6 +37,6 @@ export const ROUTE_PATHS = {
   USERS_DETAILS: "/users/details",
   TOKENS_WIZARD: "/tokens/wizard",
   TOKENS_CONTAINERS_WIZARD: "/tokens/containers/wizard",
-  MACHINE_RESOLVER: "/settings/machineResolver",
+  MACHINE_RESOLVER: "/configuration/machineResolver",
   USERS_REALMS: "/users/realms"
 };
