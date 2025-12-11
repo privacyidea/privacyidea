@@ -1,35 +1,64 @@
-<div [ngClass]="{
-    'pad-0': overflowService.isWidthOverflowing('body', 1310),
+<!--
+ (c) NetKnights GmbH 2025,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<div
+  [ngClass]="{
+    'pad-0': overflowService.isWidthOverflowing('body', 1310)
   }"
-     class="user-container">
-  <table [dataSource]="userData()"
-         aria-label="User Detail Data Table"
-         class="user-details-table"
-         mat-table>
+  appScrollToTop
+  class="user-container">
+  <table
+    [dataSource]="userData()"
+    aria-label="User Detail Data Table"
+    class="user-details-table"
+    i18n-aria-label
+    mat-table>
     <ng-container matColumnDef="key">
-      <td *matCellDef="let element"
-          class="details-key-row"
-          mat-cell>{{ element.keyMap.label }}
+      <td
+        *matCellDef="let element"
+        class="details-key-row"
+        mat-cell>
+        {{ element.keyMap.label }}
       </td>
     </ng-container>
     <ng-container matColumnDef="value">
-      <td *matCellDef="let element"
-          class="user-editable-row height-52 fix-width-20-padr-0"
-          mat-cell>
+      <td
+        *matCellDef="let element"
+        class="user-editable-row height-52 fix-width-20-padr-0"
+        mat-cell>
         @switch (element.keyMap.key) {
           @case ("username") {
             @if (isEditingUser() && userService.selectedUserRealm() !== "") {
               <mat-form-field>
-                <mat-label>Enter User</mat-label>
-                <input matInput
-                       [(ngModel)]="userService.userFilter"
-                       [matAutocomplete]="userAuto" />
-                <mat-autocomplete #userAuto="matAutocomplete">
-                  @for (option of userService.filteredUsernames();
-                    track option) {
-                    <mat-option [value]="option">{{ option }}</mat-option>
-                  }
-                </mat-autocomplete>
+                <mat-label i18n>Enter User</mat-label>
+                <app-clearable-input
+                  (onClick)="userService.selectionFilter.set('')"
+                  [showClearButton]="userService.selectionFilter() !== ''">
+                  <input
+                    matInput
+                    [(ngModel)]="userService.selectionFilter"
+                    [matAutocomplete]="userAuto" />
+                  <mat-autocomplete #userAuto="matAutocomplete">
+                    @for (option of userService.selectionFilteredUsernames(); track option) {
+                      <mat-option [value]="option">{{ option }}</mat-option>
+                    }
+                  </mat-autocomplete>
+                </app-clearable-input>
               </mat-form-field>
             } @else {
               <span>{{ element.value }}</span>
@@ -38,8 +67,10 @@
           @case ("user_realm") {
             @if (isEditingUser()) {
               <mat-form-field>
-                <mat-label>Select Realm of User</mat-label>
-                <mat-select [(ngModel)]="userService.selectedUserRealm">
+                <mat-label i18n>Select Realm of User</mat-label>
+                <mat-select
+                  [(ngModel)]="userService.selectedUserRealm"
+                  [value]="userService.selectedUserRealm()">
                   @for (option of realmService.realmOptions(); track option) {
                     <mat-option value="{{ option }}">{{ option }}</mat-option>
                   }
@@ -56,35 +87,31 @@
       </td>
     </ng-container>
     <ng-container matColumnDef="edit">
-      <td *matCellDef="let element"
-          class="edit-column-cell"
-          mat-cell>
+      <td
+        *matCellDef="let element"
+        class="edit-column-cell"
+        mat-cell>
         @switch (element.keyMap.key) {
           @case ("username") {
-            @if (!(isAnyEditingOrRevoked() && !isEditingUser())) {
-              @if (element.value) {
-                <div class="edit-button-container">
-                  <button mat-icon-button
-                          class="yellow"
-                          (click)="unassignUser()">
-                    <mat-icon>person_remove</mat-icon>
-                  </button>
-                </div>
-              } @else {
-                <app-edit-buttons [toggleEdit]="toggleUserEdit.bind(this)"
-                                  [saveEdit]="saveUser.bind(this)"
-                                  [cancelEdit]="cancelUserEdit.bind(this)"
-                                  [shouldHideEdit]="isAnyEditingOrRevoked"
-                                  [isEditingUser]="isEditingUser"
-                                  [isEditingInfo]="isEditingInfo"
-                                  [element]="element"></app-edit-buttons>
-              }
+            @if (
+              !(isAnyEditingOrRevoked() && !isEditingUser()) && element.value && authService.actionAllowed("unassign")
+            ) {
+              <div class="edit-button-container">
+                <button
+                  mat-icon-button
+                  class="yellow"
+                  (click)="unassignUser()"
+                  i18n-aria-label="Unassign User">
+                  <mat-icon>person_remove</mat-icon>
+                </button>
+              </div>
             }
           }
         }
       </td>
     </ng-container>
-    <tr *matRowDef="let row; columns: ['key', 'value', 'edit']"
-        mat-row></tr>
+    <tr
+      *matRowDef="let row; columns: ['key', 'value', 'edit']"
+      mat-row></tr>
   </table>
 </div>

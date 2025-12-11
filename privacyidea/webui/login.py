@@ -30,7 +30,7 @@ __author__ = "Cornelius Kölbel <cornelius@privacyidea.org>"
 
 from flask import (Blueprint, render_template, request,
                    current_app, g)
-from privacyidea.api.lib.utils import send_html
+from privacyidea.api.lib.utils import send_html, send_result
 from privacyidea.api.lib.prepolicy import is_remote_user_allowed
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.passwordreset import is_password_reset
@@ -39,7 +39,7 @@ from privacyidea.lib.realm import get_realms
 from privacyidea.lib.policy import PolicyClass, SCOPE, Match, REMOTE_USER
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.subscriptions import subscription_status
-from privacyidea.lib.utils import get_client_ip
+from privacyidea.lib.utils import get_client_ip, get_version_number
 from privacyidea.lib.config import get_from_config, SYSCONF, get_privacyidea_node
 from privacyidea.lib.queue import has_job_queue
 
@@ -69,13 +69,14 @@ def before_request():
     This is executed before the request
     """
     g.policy_object = PolicyClass()
-    g.audit_object = None
     # access_route contains the ip addresses of all clients, hops and proxies.
     g.client_ip = get_client_ip(request, get_from_config(SYSCONF.OVERRIDECLIENT))
 
 
-@login_blueprint.route('/', methods=['GET'])
-def single_page_application():
+def get_render_context():
+    """
+    Provides a dictionary with configurations for the web ui.
+    """
     instance = request.script_root
     if instance == "/":
         instance = ""
@@ -84,7 +85,7 @@ def single_page_application():
 
     if current_app.config.get("PI_UI_DEACTIVATED"):
         # Do not provide the UI
-        return send_html(render_template("deactivated.html"))
+        return {}
 
     # The default theme. We can change this later
     theme = current_app.config.get("PI_CSS", DEFAULT_THEME)
@@ -200,7 +201,20 @@ def single_page_application():
         'logo': logo,
         'page_title': page_title,
         'otp_pin_set_random_user': otp_pin_set_random_user,
+        'privacyideaVersionNumber': get_version_number()
     }
+    return render_context
 
+@login_blueprint.route('/', methods=['GET'])
+def single_page_application():
+    render_context = get_render_context()
+    if current_app.config.get("PI_UI_DEACTIVATED"):
+        # Do not provide the UI
+        return send_html(render_template("deactivated.html"))
     index_page = current_app.config.get("PI_INDEX_HTML") or "index.html"
     return send_html(render_template(index_page, **render_context))
+
+@login_blueprint.route('/config', methods=['GET'])
+def get_ui_config():
+    render_context = get_render_context()
+    return send_result(render_context)

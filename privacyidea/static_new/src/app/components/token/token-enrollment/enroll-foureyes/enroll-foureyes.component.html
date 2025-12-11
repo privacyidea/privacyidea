@@ -1,50 +1,66 @@
+<!--
+ (c) NetKnights GmbH 2025,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
 <div class="flex-column">
-  <div class="token-type-paragraph">
-    <p>{{ text }}</p>
-  </div>
   <h4 class="enroll-h4">Token Configuration</h4>
   <div class="flex-row gap-1">
     <mat-form-field class="separator-input-form input-height">
-      <mat-label>Separator</mat-label>
-      <input [formControl]="separatorControl"
-             class="separator-input"
-             matInput
-             placeholder="|" />
+      <mat-label i18n>Separator</mat-label>
+      <input
+        [formControl]="separatorControl"
+        class="separator-input"
+        i18n-placeholder
+        matInput
+        placeholder="|" />
     </mat-form-field>
-    <span class="margin-top-1">The separator that is used to separate the passwords of the different
-      tokens.</span>
+    <span class="margin-top-1">The separator that is used to separate the passwords of the different tokens.</span>
   </div>
   <h4 class="enroll-h4">Required Realms</h4>
-  <span class="required-realms-hint">Here you can select how many tokens of which realm are required to perform
-    a successful authentication.</span>
+  <span class="required-realms-hint">
+    Here you can select how many tokens of which realm are required to perform a successful authentication.
+  </span>
   <div class="flex-row gap-1">
     <mat-form-field class="width-288px input-height">
       <mat-label>Select Realms</mat-label>
-      <!-- requiredTokensOfRealmsControl is managed by the component's logic, not direct binding here -->
-      <mat-select [errorStateMatcher]="requiredRealmsErrorStateMatcher"
-                  multiple
-                  required>
+      <mat-select
+        [errorStateMatcher]="requiredRealmsErrorStateMatcher"
+        [formControl]="requiredTokensOfRealmsControl"
+        multiple
+        required>
         @for (realm of realmOptions(); track realm) {
           <div class="required-realms-div">
-            <mat-option class="required-realms-option"
-                        [value]="realm"
-                        (onSelectionChange)="onRealmSelectionChange($event, realm)">
+            <mat-option
+              class="required-realms-option"
+              [value]="realm">
               <span>{{ realm }}</span>
             </mat-option>
-            <input type="number"
-                   class="required-realms-input"
-                   [ngModel]="tokenCountMapping()[realm] || 0"
-                   (ngModelChange)="updateTokenCount(realm, $event)"
-                   placeholder="Tokens"
-                   min="1"
-                   max="9" />
+            <input
+              type="number"
+              class="required-realms-input"
+              [ngModel]="getTokenCount(realm)"
+              (ngModelChange)="setTokenCount(realm, $event)"
+              placeholder="Tokens"
+              min="1"
+              max="9" />
           </div>
         }
       </mat-select>
-      <mat-error>At least one realm is <strong>required</strong></mat-error>
+      <mat-error i18n>At least one realm is <strong>required</strong></mat-error>
     </mat-form-field>
   </div>
-  <mat-checkbox [formControl]="onlyAddToRealmControl">
-    Only add to the realm (no user assignment)
-  </mat-checkbox>
 </div>

@@ -85,11 +85,11 @@ from datetime import datetime, timedelta, timezone
 from dateutil.parser import parse as parse_date_string, ParserError
 from dateutil.tz import tzlocal, tzutc
 from flask_babel import lazy_gettext
+from sqlalchemy import select, update, delete
 
 from privacyidea.lib import _
 from privacyidea.lib.crypto import (decryptPassword,
-                                    generate_otpkey)
-from .policies.actions import PolicyAction
+                                    generate_otpkey, encryptPassword)
 from privacyidea.lib.utils import (is_true, decode_base32check,
                                    to_unicode, create_img, parse_timedelta,
                                    parse_legacy_time, split_pin_pass)
@@ -97,12 +97,14 @@ from .challenge import get_challenges
 from .config import (get_from_config, get_prepend_pin)
 from .decorators import check_token_locked
 from .error import (TokenAdminError,
-                    ParameterError)
+                    ParameterError, ResourceNotFoundError)
 from .log import log_with
+from .policies.actions import PolicyAction
 from .policydecorators import libpolicy, auth_otppin, challenge_response_allowed
 from .user import (User)
 from ..api.lib.utils import getParam
-from ..models import (TokenOwner, TokenTokengroup, Challenge, cleanup_challenges)
+from ..models import (TokenOwner, TokenTokengroup, Challenge, cleanup_challenges, TokenInfo, db, TokenRealm, Realm,
+                      Tokengroup, MachineToken, TokenCredentialIdHash)
 
 DATE_FORMAT = '%Y-%m-%dT%H:%M%z'
 AUTH_DATE_FORMAT = "%Y-%m-%d %H:%M:%S.%f%z"
@@ -221,7 +223,7 @@ class TokenClass(object):
         return self.token.tokentype
 
     @check_token_locked
-    def add_user(self, user, report=None):
+    def add_user(self, user, report=None, override=False):
         """
         Set the user attributes (uid, resolvername, resolvertype) of a token.
 
@@ -232,36 +234,64 @@ class TokenClass(object):
         (uid, resolvertype, resolvername) = user.get_user_identifiers()
         # prevent to init update a token changing the token owner
         # FIXME: We need to remove this, if we one day want to assign several users to one token
-        if self.user and self.user != user:
-            log.info("The token with serial {0!s} is already assigned "
-                     "to user {1!s}. Can not assign to {2!s}.".format(self.token.serial, self.user, user))
-            raise TokenAdminError("This token is already assigned to another user.")
+        token_owner = self.user
+        if not token_owner:
+            new_owner = TokenOwner(token_id=self.token.id, user_id=uid, resolver=resolvername, realmname=user.realm)
+            db.session.add(new_owner)
+            # Add users realm to token realms
+            self.set_realms([user.realm], add=True, commit_db_session=False)
+            self.add_tokeninfo("assignment_date", datetime.now(timezone.utc).isoformat(timespec="seconds"),
+                               commit_db_session=False)
+            db.session.commit()
+        elif token_owner != user:
+            if override:
+                # We remove the old user
+                self.remove_user()
+            else:
+                log.warning("The token with serial {0!s} is already assigned "
+                            "to user {1!s}. Can not assign to {2!s}.".format(self.token.serial, self.user, user))
+                raise TokenAdminError("This token is already assigned to another user.")
 
-        if not self.user:
-            # If the tokenowner is not set yet, set it / avoid setting the same tokenowner multiple times
-            TokenOwner(token_id=self.token.id,
-                       user_id=uid, resolver=resolvername,
-                       realmname=user.realm).save()
-        # set the tokenrealm
-        self.set_realms([user.realm], add=True)
-        self.add_tokeninfo("assignment_date", datetime.now(timezone.utc).isoformat(timespec="seconds"))
-
-    def add_tokengroup(self, tokengroup=None, tokengroup_id=None):
+    def add_tokengroup(self, tokengroup: str = None, tokengroup_id: int = None):
         """
         Adds a new tokengroup to this token.
 
         :param tokengroup: The name of the token group to add
-        :type tokengroup: basestring
         :param tokengroup_id: The id of the tokengroup to add
-        :type tokengroup_id: int
         :return: True
         """
         if not tokengroup and not tokengroup_id:
             raise ParameterError("You either need to specify a tokengroup name or id.")
-        r = TokenTokengroup(token_id=self.token.id,
-                            tokengroup_id=tokengroup_id,
-                            tokengroupname=tokengroup).save()
-        return r > 0
+
+        statement = select(Tokengroup)
+        if tokengroup:
+            statement = statement.filter_by(name=tokengroup)
+        if tokengroup_id:
+            statement = statement.filter_by(id=tokengroup_id)
+        tokengroup_db = db.session.execute(statement).scalar_one_or_none()
+        if not tokengroup_db:
+            log.error("Tokengroup %s does not exist. Cannot add it to token %s.", tokengroup, self.get_serial())
+            raise ResourceNotFoundError(_("The tokengroup does not exist."))
+
+        existing_groups: list[str] = [association.tokengroup for association in self.token.tokengroup_list]
+        if tokengroup_db not in existing_groups:
+            association = TokenTokengroup(token_id=self.token.id, tokengroup_id=tokengroup_db.id)
+            db.session.add(association)
+        else:
+            log.debug("Token %s is already assigned to tokengroup %s.", self.get_serial(), tokengroup_db.name)
+
+        return True
+
+    @property
+    def owner_realms(self) -> set[str]:
+        """
+        return all the realms of the token owners
+        """
+        realms = set()
+        for tokenowner in self.token.all_owners:
+            if tokenowner.realm:
+                realms.add(tokenowner.realm.name)
+        return realms
 
     @property
     def owners(self):
@@ -274,8 +304,9 @@ class TokenClass(object):
         """
         user_objects = []
         for tokenowner in self.token.all_owners:
+            realm_name = tokenowner.realm.name if tokenowner.realm else None
             user_object = User(resolver=tokenowner.resolver,
-                               realm=tokenowner.realm.name,
+                               realm=realm_name,
                                uid=tokenowner.user_id)
             user_objects.append(user_object)
         return user_objects
@@ -292,9 +323,24 @@ class TokenClass(object):
         user_object = None
         tokenowner = self.token.first_owner
         if tokenowner:
+            realm_name = tokenowner.realm.name if tokenowner.realm else None
             user_object = User(resolver=tokenowner.resolver,
-                               realm=tokenowner.realm.name,
+                               realm=realm_name,
                                uid=tokenowner.user_id)
+        return user_object
+
+    def remove_user(self):
+        """
+        Remove the user (owner) of a token.
+        If the token has no owner assigned, we return None
+
+        :return: The owner of the token
+        :rtype: User object or None
+        """
+        user_object = self.user
+        if user_object:
+            self.token.first_owner.delete()
+            self.token.save()
         return user_object
 
     def is_orphaned(self, orphaned_on_error=True):
@@ -310,7 +356,7 @@ class TokenClass(object):
         orphaned = False
         if self.token.first_owner:
             try:
-                if not self.user or not self.user.login:
+                if not self.user or not self.user.login or not self.user.realm:
                     # The token is assigned, but the username does not resolve
                     orphaned = True
             except Exception:
@@ -371,34 +417,53 @@ class TokenClass(object):
         return self.init_details
 
     @check_token_locked
-    def set_tokeninfo(self, info):
+    def set_tokeninfo(self, info: dict):
         """
         Set the tokeninfo field in the DB. Old values will be deleted.
 
         :param info: dictionary with key and value
-        :type info: dict
         :return:
         """
-        self.token.del_info()
-        self.token.set_info(info)
+        self.delete_tokeninfo()
+        self.add_tokeninfo_dict(info)
 
     @check_token_locked
-    def add_tokeninfo(self, key, value, value_type=None):
+    def add_tokeninfo(self, key: str, value: str, value_type: str = None, commit_db_session: bool = True):
         """
         Add a key and a value to the DB tokeninfo
 
         :param key:
         :param value:
-        :return:
+        :param value_type: If type is "password", the value will be encrypted
+        :param commit_db_session: Whether the database changes should be committed to be persistent. Only use false if
+            you are doing multiple database changes with a final single commit.
         """
-        add_info = {key: value}
-        if value_type:
-            add_info[key + ".type"] = value_type
-        self.token.set_info(add_info)
+
+        if value_type == "password":
+            value = encryptPassword(value)
+
+        statement = select(TokenInfo).where(TokenInfo.token_id == self.token.id, TokenInfo.Key == key)
+        token_info = db.session.execute(statement).scalar_one_or_none()
+
+        if token_info is None:
+            # Create new info entry
+            token_info = TokenInfo(token_id=self.token.id, Key=key, Value=value, Type=value_type)
+            db.session.add(token_info)
+        else:
+            # Update existing info
+            statement = update(TokenInfo).where(TokenInfo.id == token_info.id).values(Value=value, Type=value_type)
+            db.session.execute(statement)
+        if commit_db_session:
+            db.session.commit()
 
     @check_token_locked
     def add_tokeninfo_dict(self, info: dict):
-        self.token.set_info(info)
+        for key, value in info.items():
+            if key.endswith(".type"):
+                continue
+            value_type = info.get(f"{key}.type", None)
+            self.add_tokeninfo(key, value, value_type, commit_db_session=False)
+        db.session.commit()
 
     @check_token_locked
     def check_otp(self, otpval, counter=None, window=None, options=None):
@@ -687,10 +752,35 @@ class TokenClass(object):
         self.token.tokentype = '' + self.type
         return
 
+    @log_with(log)
     def delete_token(self):
         """
         delete the database token
         """
+        # First delete all relationships (TODO: should be handled automatically by cascade delete)
+        stmt = delete(TokenRealm).where(TokenRealm.token_id == self.token.id)
+        db.session.execute(stmt)
+
+        stmt = delete(TokenOwner).where(TokenOwner.token_id == self.token.id)
+        db.session.execute(stmt)
+
+        stmt = delete(MachineToken).where(MachineToken.token_id == self.token.id)
+        db.session.execute(stmt)
+
+        stmt = delete(Challenge).where(Challenge.serial == self.token.serial)
+        db.session.execute(stmt)
+
+        stmt = delete(TokenInfo).where(TokenInfo.token_id == self.token.id)
+        db.session.execute(stmt)
+
+        stmt = delete(TokenTokengroup).where(TokenTokengroup.token_id == self.token.id)
+        db.session.execute(stmt)
+
+        if self.get_tokentype().lower() in ["webauthn", "passkey"]:
+            stmt = delete(TokenCredentialIdHash).where(TokenCredentialIdHash.token_id == self.token.id)
+            db.session.execute(stmt)
+        db.session.commit()
+
         self.token.delete()
 
     def save(self):
@@ -756,7 +846,7 @@ class TokenClass(object):
         """
         self.token.failcount = failcount
         if failcount == 0:
-            self.del_tokeninfo(FAILCOUNTER_EXCEEDED)
+            self.delete_tokeninfo(FAILCOUNTER_EXCEEDED)
 
     def get_max_failcount(self):
         return self.token.maxfail
@@ -765,28 +855,83 @@ class TokenClass(object):
         tokenowner = self.token.first_owner
         return "" if not tokenowner else tokenowner.user_id
 
-    def set_tokengroups(self, tokengroups, add=False):
+    def set_tokengroups(self, tokengroups: list[str], add: bool = False):
         """
         Set the list of the tokengroups of a token.
 
-        :param tokengroups: realms the token should be assigned to
-        :type tokengroups: list
+        :param tokengroups: token groups the token should be assigned to
         :param add: if the tokengroups should be added and not replaced
-        :type add: boolean
         """
-        self.token.set_tokengroups(tokengroups, add=add)
+        existing_groups: list[Tokengroup] = [association.tokengroup for association in self.token.tokengroup_list]
+        new_groups: set[str] = set(tokengroups) - {group.name for group in existing_groups}
+        if not add:
+            # delete existing token groups which are not in the new list
+            group_ids_to_delete = [group.id for group in existing_groups if group.name not in tokengroups]
+            statement = delete(TokenTokengroup).where(TokenTokengroup.token_id == self.token.id,
+                                                      TokenTokengroup.tokengroup_id.in_(group_ids_to_delete))
+            db.session.execute(statement)
+
+        # Add new token groups
+        for group in new_groups:
+            statement = select(Tokengroup).filter_by(name=group)
+            tokengroup_db = db.session.execute(statement).scalar_one_or_none()
+            if not tokengroup_db:
+                log.warning("Tokengroup %s does not exist. Cannot add it to token %s.", group, self.get_serial())
+                continue
+
+            association = TokenTokengroup(token_id=self.token.id, tokengroup_id=tokengroup_db.id)
+            db.session.add(association)
+
+        db.session.commit()
 
     @check_token_locked
-    def set_realms(self, realms, add=False):
+    def set_realms(self, realms: list[str], add: bool = False, commit_db_session: bool = True):
         """
         Set the list of the realms of a token.
 
         :param realms: realms the token should be assigned to
-        :type realms: list
         :param add: if the realms should be added and not replaced
-        :type add: boolean
+        :param commit_db_session: Whether the database changes should be committed to be persistent. Only use false if
+            you are doing multiple database changes with a final single commit.
         """
-        self.token.set_realms(realms, add=add)
+        # get existing realms
+        statement = select(TokenRealm).where(TokenRealm.token_id == self.token.id)
+        existing_realms = db.session.execute(statement).scalars().all()
+        existing_realm_names = {tr.realm.name for tr in existing_realms}
+        realms_to_add = set(realms) - existing_realm_names
+
+        if not add:
+            # delete realms that are not in the new list
+            realm_names_to_delete = existing_realm_names - set(realms)
+            # exclude the realm of the owner from deletion
+            if self.owner_realms:
+                owner_realms_delete = realm_names_to_delete & self.owner_realms
+                realm_names_to_delete = realm_names_to_delete - self.owner_realms
+                if owner_realms_delete:
+                    log.info(f"The realms ({', '.join(owner_realms_delete)}) of assigned users cannot be removed from "
+                             f"the token {self.get_serial()}.")
+            realms_to_delete = [realm for realm in existing_realms if realm.realm.name in realm_names_to_delete]
+            if realms_to_delete:
+                realm_ids = [realm.realm_id for realm in realms_to_delete]
+                delete_stmt = delete(TokenRealm).where(TokenRealm.token_id == self.token.id)
+                if len(realm_ids) > 0:
+                    delete_stmt = delete_stmt.where(TokenRealm.realm_id.in_(realm_ids))
+                db.session.execute(delete_stmt)
+                log.debug(f"Remove realm {', '.join(realm_names_to_delete)} from token {self.get_serial()} due to "
+                          f"setting new realms ({', '.join(realms)}).")
+
+        for realm_name in realms_to_add:
+            statement = select(Realm).filter_by(name=realm_name)
+            realm_db = db.session.execute(statement).scalar_one_or_none()
+            if realm_db:
+                token_realm = TokenRealm(token_id=self.token.id, realm_id=realm_db.id)
+                db.session.add(token_realm)
+            else:  # pragma no cover
+                # should already be covered on lib layer
+                log.warning(f"Realm {realm_name} does not exist. Cannot add it to token {self.get_serial()}.")
+
+        if commit_db_session:
+            db.session.commit()
 
     def get_realms(self):
         """
@@ -986,21 +1131,41 @@ class TokenClass(object):
 
         return ret
 
-    def del_tokeninfo(self, key=None):
-        self.token.del_info(key)
+    def delete_tokeninfo(self, key: str = None):
+        """
+        Deletes the token info for the given key. If no key is given, all info entries from this token are deleted.
 
-    def del_tokengroup(self, tokengroup=None, tokengroup_id=None):
+        :param key: The key to delete
+        """
+        statement = delete(TokenInfo).where(TokenInfo.token_id == self.token.id)
+        if key:
+            statement = statement.where(TokenInfo.Key == key)
+        db.session.execute(statement)
+        db.session.commit()
+
+    def delete_tokengroup(self, tokengroup: str = None, tokengroup_id: int = None):
         """
         Removes a token group from a token.
-        You either need to specify the name or the ID of the tokengroup.
+        You either need to specify the name or the ID of the tokengroup. If none of them is given, all token groups
+        are removed from the token.
 
         :param tokengroup: The name of the tokengroup
-        :type tokengroup: basestring
         :param tokengroup_id: The ID of the tokengroup
-        :type tokengroup_id: int
         :return: True in case of success
         """
-        self.token.del_tokengroup(tokengroup=tokengroup, tokengroup_id=tokengroup_id)
+        statement = delete(TokenTokengroup).where(TokenTokengroup.token_id == self.token.id)
+        if tokengroup_id:
+            statement = statement.where(TokenTokengroup.tokengroup_id == tokengroup_id)
+        elif tokengroup:
+            group_stmt = select(Tokengroup).where(Tokengroup.name == tokengroup)
+            tokengroup_db = db.session.execute(group_stmt).scalar_one_or_none()
+            if not tokengroup_db:
+                log.warning("Tokengroup %s does not exist. Cannot remove it from token %s.", tokengroup,
+                            self.get_serial())
+                raise ResourceNotFoundError(f"Tokengroup {tokengroup} does not exist.")
+            statement = statement.where(TokenTokengroup.tokengroup_id == tokengroup_db.id)
+        db.session.execute(statement)
+        db.session.commit()
 
     @check_token_locked
     def set_count_auth_success_max(self, count):
@@ -1098,7 +1263,7 @@ class TokenClass(object):
         :type end_date: str
         """
         if not end_date:
-            self.del_tokeninfo("validity_period_end")
+            self.delete_tokeninfo("validity_period_end")
         else:
             #  upper layer will catch. we just try to verify the date format
             try:
@@ -1132,7 +1297,7 @@ class TokenClass(object):
         :type start_date: str
         """
         if not start_date:
-            self.del_tokeninfo("validity_period_start")
+            self.delete_tokeninfo("validity_period_start")
         else:
             try:
                 d = parse_date_string(start_date)
@@ -1185,8 +1350,8 @@ class TokenClass(object):
         succcess_counter += 1
         auth_counter = self.get_count_auth()
         auth_counter += 1
-        self.token.set_info({"count_auth_success": int(succcess_counter),
-                             "count_auth": int(auth_counter)})
+        self.add_tokeninfo_dict({"count_auth_success": int(succcess_counter),
+                                 "count_auth": int(auth_counter)})
         return succcess_counter
 
     @check_token_locked
@@ -1998,20 +2163,14 @@ class TokenClass(object):
         """
         return None
 
-    def export_token(self) -> dict:
+    def export_token(self, export_user: bool = False) -> dict:
         """
         Create a dictionary with the token information that can be exported.
         """
-        token_dict = {
-            "type": self.type.lower(),
-            "issuer": "privacyIDEA",
-            "description": self.token.description,
-            "serial": self.token.serial,
-            "otpkey": self.token.get_otpkey().getKey().decode("utf-8"),
-            "otplen": self.token.otplen,
-            "hashed_pin": self.token.pin_hash,
-            "tokeninfo": self.get_tokeninfo(decrypted=True)
-        }
+        token_dict = self._to_dict()
+        token_dict['issuer'] = 'privacyIDEA'
+        if export_user and self.token.first_owner:
+            token_dict["user"] = self.user.user_export_dict()
 
         return token_dict
 
@@ -2023,6 +2182,6 @@ class TokenClass(object):
         self.token.otplen = int(token_information.setdefault("otplen", 6))
         self.token.description = token_information.setdefault("description", '')
         self.token.pin_hash = token_information.setdefault("_hashed_pin", None)
-        self.add_tokeninfo_dict(token_information.setdefault("tokeninfo", {}))
+        self.add_tokeninfo_dict(token_information.setdefault("info_list", {}))
         self.add_tokeninfo("import_date", datetime.now(timezone.utc).isoformat(timespec="seconds"))
         self.save()

@@ -1,0 +1,61 @@
+<!--
+ (c) NetKnights GmbH 2025,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<div class="actions-otp-pin-input">
+  <input
+    style="display: none"
+    type="text" />
+  <input
+    style="display: none"
+    type="password" />
+  <mat-form-field class="width-100">
+    <mat-label i18n>OTP or Pin</mat-label>
+    <input
+      [(ngModel)]="otpOrPinToTest"
+      [type]="hide ? 'password' : 'text'"
+      autocomplete="one-time-code"
+      matInput />
+    <button
+      (click)="hide = !hide"
+      [attr.aria-label]="hide ? 'Show value' : 'Hide value'"
+      i18n-attr.aria-label
+      mat-icon-button
+      matSuffix
+      type="button">
+      <mat-icon>{{ hide ? "visibility_off" : "visibility" }}</mat-icon>
+    </button>
+  </mat-form-field>
+</div>
+<div class="actions-pin-button">
+  <button
+    (click)="testToken()"
+    class="action-button-1 width-238"
+    mat-stroked-button
+    i18n>
+    <mat-icon>help_outline</mat-icon>
+    Test Token
+  </button>
+  <button
+    (click)="verifyOTPValue()"
+    class="action-button-1 width-238"
+    mat-stroked-button
+    i18n>
+    <mat-icon>help_outline</mat-icon>
+    Verify OTP Value
+  </button>
+</div>

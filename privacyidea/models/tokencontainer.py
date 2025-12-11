@@ -17,10 +17,15 @@
 #
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+from sqlalchemy import select
 import logging
 from datetime import datetime
 from typing import List, Optional
 
+from privacyidea.lib.utils import convert_column_to_unicode
+from privacyidea.models import db
+from privacyidea.models.realm import Realm
+from privacyidea.models.utils import MethodsMixin
 from sqlalchemy import Unicode, Integer, Boolean, DateTime, UniqueConstraint, and_, select, update
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -65,26 +70,6 @@ class TokenContainer(MethodsMixin, db.Model):
         if states:
             self.states = states
 
-    def set_info(self, info: dict):
-        """
-        Set the additional container info for this container.
-
-        :param info: The key-values to set for this container
-        :type info: dict
-        """
-        if not self.id:
-            # If there is no ID to reference the container, we need to save the container
-            self.save()
-        types = {}
-        for k, v in info.items():
-            if k and k.endswith(".type"):
-                types[".".join(k.split(".")[:-1])] = v
-        for k, v in info.items():
-            if k and not k.endswith(".type"):
-                TokenContainerInfo(self.id, k, v,
-                                   type=types.get(k)).save(persistent=False)
-        db.session.commit()
-
 
 class TokenContainerOwner(MethodsMixin, db.Model):
     __tablename__ = 'tokencontainerowner'
@@ -115,25 +100,6 @@ class TokenContainerOwner(MethodsMixin, db.Model):
             self.container_id = container.id if container else None
         self.resolver = resolver
         self.user_id = user_id
-
-    def save(self, persistent: bool = True):
-        stmt = select(TokenContainerOwner).filter_by(container_id=self.container_id, user_id=self.user_id, realm_id=self.realm_id, resolver=self.resolver)
-        to = db.session.execute(stmt).scalar_one_or_none()
-        if to is None:
-            # This very assignment does not exist, yet:
-            db.session.add(self)
-            db.session.commit()
-            if get_app_config_value(SAFE_STORE, False):
-                to = db.session.execute(stmt).scalar_one_or_none()
-                ret = to.id if to else self.id
-            else:
-                ret = self.id
-        else:
-            ret = to.id
-            # There is nothing to update
-        if persistent:
-            db.session.commit()
-        return ret
 
 
 class TokenContainerStates(MethodsMixin, db.Model):
@@ -174,31 +140,6 @@ class TokenContainerInfo(MethodsMixin, db.Model):
         self.value = convert_column_to_unicode(value)
         self.type = type
         self.description = description
-
-    def save(self, persistent: bool = True):
-        stmt = select(TokenContainerInfo).filter_by(container_id=self.container_id, key=self.key)
-        ti = db.session.execute(stmt).scalar_one_or_none()
-        if ti is None:
-            # create a new one
-            db.session.add(self)
-            db.session.commit()
-            if get_app_config_value(SAFE_STORE, False):
-                ti = db.session.execute(stmt).scalar_one_or_none()
-                ret = ti.id if ti else self.id
-            else:
-                ret = self.id
-        else:
-            # update
-            update_stmt = (
-                update(TokenContainerInfo)
-                .where(and_(TokenContainerInfo.container_id == self.container_id, TokenContainerInfo.key == self.key))
-                .values(value=self.value, description=self.description, type=self.type)
-            )
-            db.session.execute(update_stmt)
-            ret = ti.id
-        if persistent:
-            db.session.commit()
-        return ret
 
 
 class TokenContainerRealm(MethodsMixin, db.Model):

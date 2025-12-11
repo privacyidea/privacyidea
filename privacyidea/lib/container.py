@@ -23,10 +23,10 @@ import json
 import logging
 import os
 from datetime import timezone, datetime
-from typing import Union, Any
+from typing import Union, Generator, Any
 
 from flask import g
-from sqlalchemy import func, select
+from sqlalchemy import func, select, and_
 from sqlalchemy.orm import aliased
 from sqlalchemy.sql import Select
 
@@ -93,26 +93,6 @@ def _gen_serial(container_type: str) -> str:
     :param container_type: The type of the container
     :return: The generated serial
     """
-    """
-    serial_len = int(get_from_config("SerialLength") or 8)
-    prefix = "CONT"
-    for ctype, cls in get_container_classes().items():
-        if ctype.lower() == container_type.lower():
-            prefix = cls.get_class_prefix()
-
-    container_num = TokenContainer.query.filter(TokenContainer.type == container_type).count()
-    while True:
-        rnd = ""
-        count = '{:04d}'.format(container_num)
-        rnd_len = serial_len - len(count)
-        if rnd_len > 0:
-            rnd = hexlify_and_unicode(os.urandom(rnd_len)).upper()[0:rnd_len]
-        serial = f"{prefix}{count}{rnd}"
-        if not TokenContainer.query.filter(TokenContainer.serial == serial).first():
-            break
-
-    return serial
-    """
     serial_len = int(get_from_config("SerialLength") or 8)
     prefix = "CONT"
     for ctype, cls in get_container_classes().items():
@@ -163,13 +143,6 @@ def find_container_by_id(container_id: int) -> TokenContainerClass:
     """
     Returns the TokenContainerClass object for the given container id or raises a ResourceNotFoundError.
     """
-    """
-    db_container = TokenContainer.query.filter(TokenContainer.id == container_id).first()
-    if not db_container:
-        raise ResourceNotFoundError(f"Unable to find container with id {container_id}.")
-
-    return create_container_from_db_object(db_container)
-    """
     db_container = db.session.execute(
         select(TokenContainer).where(TokenContainer.id == container_id)
     ).scalar_one_or_none()
@@ -182,16 +155,6 @@ def find_container_by_id(container_id: int) -> TokenContainerClass:
 def find_container_by_serial(serial: str) -> TokenContainerClass:
     """
     Returns the TokenContainerClass object for the given container serial or raises a ResourceNotFoundError.
-    """
-    """
-    if serial:
-        db_container = TokenContainer.query.filter(func.upper(TokenContainer.serial) == serial.upper()).first()
-    else:
-        db_container = None
-    if not db_container:
-        raise ResourceNotFoundError(f"Unable to find container with serial {serial}.")
-
-    return create_container_from_db_object(db_container)
     """
     if not serial:
         db_container = None
@@ -272,19 +235,22 @@ def _create_container_query(user: User = None, serial: str = None, ctype: str = 
             )
 
     if realm and realm.strip("*"):
-        if "*" in realm:
-            stmt = stmt.join(TokenContainer.realms, isouter=True).where(
-                realm1.name.ilike(realm1.replace("*", "%"))
-            )
-        else:
-            stmt = stmt.join(TokenContainer.realms, isouter=True).where(
-                func.lower(realm1.name) == realm.lower()
-            )
+        # Correctly join with the aliased Realm table
+        stmt = stmt.join(TokenContainer.realms.of_type(realm1), isouter=True)
 
+        if "*" in realm:
+            # Use the input parameter 'realm' for the wildcard filter
+            stmt = stmt.where(realm1.name.ilike(realm.replace("*", "%")))
+        else:
+            # Use the input parameter 'realm' for the exact match filter
+            stmt = stmt.where(func.lower(realm1.name) == realm.lower())
+
+    # Use separate alias for each join to avoid conflicts
+    realm_alias_allowed = aliased(Realm)
     if allowed_realms:
         allowed_realms = [r.lower() for r in allowed_realms]
-        stmt = stmt.join(TokenContainer.realms, isouter=True).where(
-            func.lower(realm1.name).in_(allowed_realms)
+        stmt = stmt.join(TokenContainer.realms.of_type(realm_alias_allowed), isouter=True).where(
+            func.lower(realm_alias_allowed.name).in_(allowed_realms)
         )
 
     if resolver and resolver.strip("*"):
@@ -321,14 +287,21 @@ def _create_container_query(user: User = None, serial: str = None, ctype: str = 
     if info:
         if len(info) == 1:
             key, value = list(info.items())[0]
+
+            # Start with a list to hold all the filter conditions
+            conditions = []
+
             if key and key.strip("*"):
-                stmt = stmt.where(TokenContainer.info.any(
-                    TokenContainerInfo.key.ilike(key.replace("*", "%"))
-                ))
+                conditions.append(TokenContainerInfo.key.ilike(key.replace("*", "%")))
+
             if value and value.strip("*"):
-                stmt = stmt.where(TokenContainer.info.any(
-                    func.lower(TokenContainerInfo.value).ilike(value.replace("*", "%").lower())
-                ))
+                conditions.append(func.lower(TokenContainerInfo.value).ilike(value.replace("*", "%").lower()))
+
+            # If there are conditions, apply them with `and_`
+            if conditions:
+                stmt = stmt.where(
+                    TokenContainer.info_list.any(and_(*conditions))
+                )
 
     if last_auth_delta:
         time_delta = parse_timedelta(last_auth_delta)
@@ -415,14 +388,13 @@ def get_all_containers(user: User = None, serial: str = None, ctype: str = None,
     sql_query: Select = _create_container_query(user=user, serial=serial, ctype=ctype, token_serial=token_serial, realm=realm,
                                         allowed_realms=allowed_realms, template=template, description=description,
                                         assigned=assigned, resolver=resolver, info=info,
-                                        last_auth_delta=last_auth_delta, last_sync_delta=last_sync_delta, state=state,
-                                        sortby=sortby, sortdir=sortdir)
+                                        last_auth_delta=last_auth_delta,
+                                        last_sync_delta=last_sync_delta, state=state, sortby=sortby, sortdir=sortdir)
     ret = {}
     # Paginate if requested
     if page > 0 or pagesize > 0:
         ret = create_pagination(page, pagesize, sql_query, "containers")
     else:  # No pagination
-        #ret["containers"] = sql_query.all()
         ret["containers"] = db.session.execute(sql_query).scalars().all()
 
     container_list = [create_container_from_db_object(db_container) for db_container in ret["containers"]]
@@ -431,8 +403,28 @@ def get_all_containers(user: User = None, serial: str = None, ctype: str = None,
     return ret
 
 
+def get_container_generator(pagesize: int = 10, **kwargs) -> Generator[list[TokenContainerClass], None, None]:
+    """
+    Generator that yields pages of containers.
+
+    :param page_size: Number of containers per page
+    :param kwargs: Filter arguments for get_all_containers
+    :yield: List of TokenContainerClass objects for each page
+    """
+    page = 1
+    while True:
+        result = get_all_containers(page=page, pagesize=pagesize, **kwargs)
+        containers = result.get("containers", [])
+        if not containers:
+            break
+        yield containers
+        if not result.get("next"):
+            break
+        page += 1
+
+
 def create_pagination(page: int, pagesize: int, sql_query: Select,
-                      object_list_key: str) -> dict[str, Union[int, None, list[Any]]]:
+                      object_list_key: str) -> dict[str, Union[int, None, list[any]]]:
     """
         Creates the pagination of a sql query.
 
@@ -441,30 +433,6 @@ def create_pagination(page: int, pagesize: int, sql_query: Select,
         :param sql_query: The sql query to paginate
         :param object_list_key: The key used in the return dictionary for the list of objects
         :return: A dictionary with pagination information and a list of database objects
-    """
-    """
-    ret = {}
-    if page < 1:
-        page = 1
-    if pagesize < 1:
-        pagesize = 10
-
-    pagination = sql_query.paginate(page=page, per_page=pagesize, error_out=False)
-    db_objects = pagination.items
-
-    prev = None
-    if pagination.has_prev:
-        prev = page - 1
-    nxt = None
-    if pagination.has_next:
-        nxt = page + 1
-
-    ret["prev"] = prev
-    ret["next"] = nxt
-    ret["current"] = page
-    ret["count"] = pagination.total
-    ret[object_list_key] = db_objects
-    return ret
     """
     if page < 1:
         page = 1
@@ -498,18 +466,6 @@ def find_container_for_token(serial: str) -> Union[TokenContainerClass, None]:
 
     :param serial: Serial of the token
     :return: container object or None if the token is not in a container
-    """
-    """
-    container = None
-    db_token = Token.query.filter(Token.serial == serial).first()
-    if not db_token:
-        raise ResourceNotFoundError(f"Unable to find token with serial {serial}.")
-    token_id = db_token.id
-    row = TokenContainerToken.query.filter(TokenContainerToken.token_id == token_id).first()
-    if row:
-        container_id = row.container_id
-        container = find_container_by_id(container_id)
-    return container
     """
     session = db.session
     db_token = session.execute(
@@ -959,7 +915,7 @@ def add_container_info(serial: str, ikey: str, ivalue) -> bool:
     return True
 
 
-def set_container_info(serial, info: dict) -> dict[str, bool]:
+def set_container_info(serial: str, info: dict) -> dict[str, bool]:
     """
     Set the given info to the container with the given serial.
     Keys of type PI_INTERNAL can not be modified and will be ignored.
@@ -973,10 +929,11 @@ def set_container_info(serial, info: dict) -> dict[str, bool]:
 
     # Remove internal keys from the info dictionary, they can not be modified by the user
     internal_keys = container.get_internal_info_keys()
-    not_internal_info = {}
+    not_internal_info = []
     for key, value in info.items():
         if key not in internal_keys:
-            not_internal_info[key] = value
+            info_type = info.get(f"{key}.type")
+            not_internal_info.append(TokenContainerInfoData(key=key, value=value, info_type=info_type))
             result[key] = True
         else:
             result[key] = False
@@ -1483,6 +1440,17 @@ def get_container_template_classes() -> dict[str, type[ContainerTemplateBase]]:
 
     return ret
 
+def delete_container_template(template_name: str) -> bool:
+    """
+    Delete a container template by its name.
+    """
+    try:
+        template = get_template_obj(template_name)
+        template.delete()
+        return True
+    except ResourceNotFoundError:
+        log.warning(f"Template with name '{template_name}' does not exist.")
+        return False
 
 def create_container_template(container_type: str, template_name: str, options: dict, default: bool = False) -> int:
     """
@@ -1505,6 +1473,13 @@ def create_container_template(container_type: str, template_name: str, options: 
     # Check container type
     if container_type.lower() not in get_container_classes().keys():
         raise EnrollmentError(f"Type '{container_type}' is not a valid type!")
+
+    # Check if the template name already exists
+    try:
+        if get_template_obj(template_name):
+            raise EnrollmentError(f"Template with name '{template_name}' already exists!")
+    except ResourceNotFoundError:
+        pass
 
     TokenContainerTemplate(name=template_name, container_type=container_type).save()
     template = get_template_obj(template_name)
@@ -1544,7 +1519,6 @@ def get_all_templates_with_type():
     """
     Returns a list of display strings containing the name and type of all templates.
     """
-    # templates = TokenContainerTemplate.query.all()
     session = db.session
     stmt = select(TokenContainerTemplate)
     templates = session.execute(stmt).scalars().all()
@@ -1569,35 +1543,6 @@ def get_templates_by_query(name: str = None, container_type: str = None, default
     :param sortby: The attribute to sort by
     :return: a dictionary with a list of templates at the key 'templates' and optionally pagination entries ('prev',
              'next', 'current', 'count')
-    """
-    """
-    sql_query = TokenContainerTemplate.query
-    if name:
-        sql_query = sql_query.filter(TokenContainerTemplate.name == name)
-    if container_type:
-        sql_query = sql_query.filter(TokenContainerTemplate.container_type == container_type)
-    if default is not None:
-        sql_query = sql_query.filter(TokenContainerTemplate.default == default)
-
-    if isinstance(sortby, str):
-        # Check that the sort column exists and convert it to a template column
-        cols = TokenContainerTemplate.__table__.columns
-        if sortby in cols:
-            sortby = cols.get(sortby)
-        else:
-            log.info(f'Unknown sort column "{sortby}". Using "name" instead.')
-            sortby = TokenContainerTemplate.name
-
-    if sortdir == "desc":
-        sql_query = sql_query.order_by(sortby.desc())
-    else:
-        sql_query = sql_query.order_by(sortby.asc())
-
-    # paginate if requested
-    if page > 0 or pagesize > 0:
-        ret = create_pagination(page, pagesize, sql_query, "templates")
-    else:
-        ret = {"templates": sql_query.all()}
     """
     session = db.session
     stmt = select(TokenContainerTemplate)
@@ -1653,9 +1598,12 @@ def get_template_obj(template_name: str) -> ContainerTemplateBase:
     Returns the template class object for the given template name.
     Raises a ResourceNotFoundError if no template with this name exists.
     """
-    # db_template = TokenContainerTemplate.query.filter(TokenContainerTemplate.name == template_name).first()
     session = db.session
     stmt = select(TokenContainerTemplate).where(TokenContainerTemplate.name == template_name)
+    # print("----------------------------- CREATE TOKEN QUERY -----------------------------")
+    # from sqlalchemy.dialects import postgresql
+    # print(stmt.compile(dialect=postgresql.dialect(), compile_kwargs={"literal_binds": True}))
+    # print("-------------------------------------------------------------------------------")
     db_template = session.execute(stmt).scalar_one_or_none()
     if not db_template:
         raise ResourceNotFoundError(f"Template {template_name} does not exist.")

@@ -5,26 +5,6 @@
   display: flex;
 }
 
-.token-drawer {
-  border: solid 2px var(--mat-sys-outline-variant);
-  height: fit-content;
-  @include mat.elevation(5);
-  border-radius: var(--border-radius);
-  position: fixed;
-  margin-top: 94px;
-}
-
-.token-drawer-overflow {
-  border: solid 2px var(--mat-sys-outline-variant);
-  height: auto;
-  @include mat.elevation(5);
-  border-radius: var(--border-radius);
-  position: fixed;
-  margin-top: 94px;
-  overflow: auto;
-  padding-bottom: 64px;
-}
-
 $margin-bottom-main: 136px;
 
 .main-margin-overflow {
@@ -67,12 +47,6 @@ $margin-bottom-main: 136px;
   }
 }
 
-.token-selfservice-layout {
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-}
-
 .tile-header {
   padding: 0;
 }
@@ -89,7 +63,6 @@ $margin-bottom-main: 136px;
   row-gap: 16px;
   column-gap: 16px;
 }
-
 
 .user-self-service-card {
   border-radius: var(--border-radius);

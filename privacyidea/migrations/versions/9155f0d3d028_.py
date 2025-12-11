@@ -39,6 +39,8 @@ class Resolver(Base):
 
 class ResolverConfig(Base):
     __tablename__ = 'resolverconfig'
+    # TODO: This fails if we are coming from an older version of the database
+    #  where id column is not a sequence but an auto_increment.
     id = sa.Column(sa.Integer, Sequence("resolverconf_seq"), primary_key=True)
     resolver_id = sa.Column(sa.Integer,
                             sa.ForeignKey('resolver.id'))

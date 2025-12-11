@@ -3,7 +3,6 @@ This test file tests the lib.tokens.vascotoken
 This depends on lib.tokenclass
 """
 import functools
-import json
 from binascii import hexlify
 
 import mock
@@ -248,13 +247,17 @@ class VascoTokenTest(MyTestCase):
 
         self.assertTrue(token.check_failcount())
         # fail 10 times
-        for _ in range(10 + 1):
+        for _ in range(10):
             r = _step1()
             self.assertEqual(r[0], False)
-            self.assertEqual(r[1].get('message'), 'wrong otp value')
+            self.assertEqual("wrong otp value", r[1].get('message'))
+            key = token.token.get_otpkey().getKey()
+        r = _step1()
+        self.assertFalse(r[0])
+        self.assertEqual("Failcounter exceeded", r[1].get('message'))
 
         key = token.token.get_otpkey().getKey()
-        self.assertEqual(key, b"A" * 24 + b"L" * 224)
+        self.assertEqual(key, b"A" * 24 + b"K" * 224)
         # fail counter has been exceeded
         self.assertFalse(token.check_failcount())
 
@@ -266,10 +269,10 @@ class VascoTokenTest(MyTestCase):
         # subsequent authentication attempt fails due to fail counter
         r = _step2()
         self.assertEqual(r[0], False)
-        self.assertEqual(r[1].get('message'), 'matching 1 tokens, Failcounter exceeded')
+        self.assertEqual("Failcounter exceeded", r[1].get('message'))
         # this actually does update the OTP key
         key = token.token.get_otpkey().getKey()
-        self.assertEqual(key, b"A" * 24 + b"M" * 224)
+        self.assertEqual(key, b"A" * 24 + b"K" * 224)
 
         # reset the failcounter
         token.reset()
@@ -279,7 +282,7 @@ class VascoTokenTest(MyTestCase):
         self.assertEqual(r[0], True)
         self.assertEqual(r[1].get('message'), 'matching 1 tokens')
         key = token.token.get_otpkey().getKey()
-        self.assertEqual(key, b"A" * 24 + b"N" * 224)
+        self.assertEqual(key, b"A" * 24 + b"L" * 224)
 
         token.delete_token()
 
@@ -290,7 +293,7 @@ class VascoTokenTest(MyTestCase):
         self.assertRaises(NotImplementedError, token.export_token)
 
         # Clean up
-        token.token.delete()
+        token.delete_token()
 
     def test_11_vasco_token_import(self):
         token_data = [{
@@ -301,6 +304,6 @@ class VascoTokenTest(MyTestCase):
             "issuer": "privacyIDEA",
         }]
         before_import = get_tokens()
-        import_tokens(json.dumps(token_data))
+        import_tokens(token_data)
         after_import = get_tokens()
         self.assertEqual(len(before_import), len(after_import))

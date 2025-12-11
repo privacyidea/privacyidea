@@ -1,0 +1,82 @@
+<!--
+ (c) NetKnights GmbH 2025,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<h1
+  i18n
+  mat-dialog-title>
+  Token Assignment
+</h1>
+<mat-dialog-content>
+  <mat-form-field
+    appearance="fill"
+    class="pin-field">
+    <mat-label i18n>PIN (optional)</mat-label>
+    <input
+      [(ngModel)]="pin"
+      [type]="hidePin() ? 'password' : 'text'"
+      autocomplete="new-password"
+      matInput />
+    <button
+      (click)="togglePinVisibility()"
+      [attr.aria-label]="hidePin() ? 'Show PIN' : 'Hide PIN'"
+      [attr.aria-pressed]="!hidePin()"
+      mat-icon-button
+      matSuffix
+      type="button">
+      <mat-icon>{{ hidePin() ? "visibility_off" : "visibility" }}</mat-icon>
+    </button>
+  </mat-form-field>
+  <mat-form-field
+    appearance="fill"
+    class="pin-field">
+    <mat-label i18n>PIN (repeat)</mat-label>
+    <input
+      [(ngModel)]="pinRepeat"
+      [type]="hidePin() ? 'password' : 'text'"
+      autocomplete="new-password"
+      matInput />
+    <button
+      (click)="togglePinVisibility()"
+      [attr.aria-label]="hidePin() ? 'Show PIN' : 'Hide PIN'"
+      [attr.aria-pressed]="!hidePin()"
+      mat-icon-button
+      matSuffix
+      type="button">
+      <mat-icon>{{ hidePin() ? 'visibility_off' : 'visibility' }}</mat-icon>
+    </button>
+    @if (pinRepeat() && !pinsMatch()) {
+      <mat-error i18n>PINs do not match</mat-error>
+    }
+  </mat-form-field>
+</mat-dialog-content>
+<mat-dialog-actions>
+  <button
+    (click)="onCancel()"
+    i18n
+    mat-button>
+    Cancel
+  </button>
+  <button
+    (click)="onConfirm()"
+    [disabled]="!pinsMatch()"
+    color="primary"
+    i18n
+    mat-button>
+    Assign
+  </button>
+</mat-dialog-actions>

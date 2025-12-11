@@ -1,37 +1,60 @@
+<!--
+ (c) NetKnights GmbH 2025,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
 <div class="flex-column">
-  <div class="token-type-paragraph">
-    <p>{{ text }}</p>
-  </div>
   <h4 class="enroll-h4">Token Configuration</h4>
   @if (!defaultSMSGatewayIsSet()) {
-    <span class="inline-hint">For SMS tokens to work properly you need to set the
-      <a href="#">SMS Token Config</a>!</span><!-- TODO: Link should be dynamic or removed if not applicable -->
+    <span
+      i18n
+      class="inline-hint">
+      For SMS tokens to work properly you need to set the <a href="#">SMS Token Config</a>!
+    </span>
   }
-  <mat-checkbox [formControl]="readNumberDynamicallyControl">
+  <mat-checkbox
+    [formControl]="readNumberDynamicallyControl"
+    i18n>
     Read number dynamically from user source on each request.
   </mat-checkbox>
   <div class="flex-row gap-1">
-    @if (!readNumberDynamicallyControl.value) {
-      <mat-form-field class="width-33 input-height">
-        <mat-label>Phone number</mat-label>
-        <input [formControl]="phoneNumberControl"
-               matInput
-               required />
-        <mat-error>Phone number is <strong>required</strong></mat-error>
-      </mat-form-field>
-    } @else {
-      <span class="width-33"></span>
-    }
-    <mat-form-field class="width-66 input-height">
-      <mat-label> A token specific SMS gateway</mat-label>
-      <mat-hint>If this token should not use the system wide SMS gateway but an individual SMS
-        gateway, you can select the gateway here.
-      </mat-hint>
-      <mat-select [formControl]="smsGatewayControl">
-        @for (option of smsGatewayOptions(); track option) {
-          <mat-option [value]="option">{{ option }}</mat-option>
-        }
-      </mat-select>
+    <mat-form-field class="width-33 input-height">
+      <mat-label i18n>Phone number</mat-label>
+      <input
+        [formControl]="phoneNumberControl"
+        matInput
+        required />
+      <mat-error i18n>Phone number is <strong>required</strong></mat-error>
     </mat-form-field>
+
+    @if (!wizard || !defaultSMSGatewayIsSet()) {
+      <mat-form-field class="width-66 input-height">
+        <mat-label i18n> A token specific SMS gateway</mat-label>
+        <mat-hint i18n>
+          If this token should not use the system wide SMS gateway but an individual SMS gateway, you can select the
+          gateway here.
+        </mat-hint>
+        <mat-select
+          [formControl]="smsGatewayControl"
+          [value]="smsGatewayControl.value">
+          @for (option of smsGatewayOptions(); track option) {
+            <mat-option [value]="option">{{ option }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+    }
   </div>
 </div>

@@ -112,7 +112,7 @@ class Config(TimestampMethodsMixin, db.Model):
     # Note: The save and delete methods are inherited from TimestampMethodsMixin
 
 
-class NodeName(db.Model, TimestampMethodsMixin):
+class NodeName(db.Model):
     __tablename__ = "nodename"
     # TODO: we can use the UUID type here when switching to SQLAlchemy 2.0
     #  <https://docs.sqlalchemy.org/en/20/core/custom_types.html#backend-agnostic-guid-type>

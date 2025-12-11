@@ -63,49 +63,46 @@ Wrapping the functions in a decorator class enables easy modular testing.
 The functions of this module are tested in tests/test_api_lib_policy.py
 """
 
+import functools
+import importlib
 import logging
+import re
 from dataclasses import replace
 from typing import Union
 
-from privacyidea.lib import _
-from privacyidea.lib.container import find_container_by_serial, get_container_realms
-from privacyidea.lib.containers.container_info import CHALLENGE_TTL, REGISTRATION_TTL, SERVER_URL
-from privacyidea.lib.error import (PolicyError, RegistrationError,
-                                   TokenAdminError, ResourceNotFoundError, AuthError)
+import jwt
 from flask import g, current_app, Request
 
-from privacyidea.lib.policies.helper import check_max_auth_fail, check_max_auth_success, DEFAULT_JWT_VALIDITY
-from privacyidea.lib.policy import SCOPE, REMOTE_USER
-from privacyidea.lib.policies.actions import PolicyAction
-from privacyidea.lib.policy import Match, check_pin
-from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
-from privacyidea.lib.user import (get_user_from_param, get_default_realm,
-                                  split_user, User)
-from privacyidea.lib.token import (get_tokens, get_realms_of_token, get_token_type,
-                                   get_token_owner)
-from privacyidea.lib.utils import (parse_timedelta, is_true,
-                                   generate_charlists_from_pin_policy,
-                                   get_module_class,
-                                   determine_logged_in_userparams, parse_string_to_dict)
-from privacyidea.lib.crypto import generate_password
-from privacyidea.lib.auth import ROLE, get_db_admin
-from privacyidea.api.lib.utils import getParam, attestation_certificate_allowed, is_fqdn, get_optional
 from privacyidea.api.lib.policyhelper import (get_init_tokenlabel_parameters,
                                               get_pushtoken_add_config,
                                               check_token_action_allowed,
                                               check_container_action_allowed,
                                               UserAttributes,
                                               get_container_user_attributes)
+from privacyidea.api.lib.utils import getParam, attestation_certificate_allowed, is_fqdn, get_optional
+from privacyidea.lib import _
+from privacyidea.lib.auth import ROLE
 from privacyidea.lib.clientapplication import save_clientapplication
 from privacyidea.lib.config import get_token_class
+from privacyidea.lib.container import find_container_by_serial, get_container_realms
+from privacyidea.lib.containers.container_info import CHALLENGE_TTL, REGISTRATION_TTL, SERVER_URL
+from privacyidea.lib.crypto import generate_password
+from privacyidea.lib.error import (PolicyError, RegistrationError,
+                                   TokenAdminError, ResourceNotFoundError, AuthError, ParameterError)
+from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction, PasskeyAction
+from privacyidea.lib.policies.actions import PolicyAction
+from privacyidea.lib.policies.helper import check_max_auth_fail, check_max_auth_success, DEFAULT_JWT_VALIDITY
+from privacyidea.lib.policy import Match, check_pin
+from privacyidea.lib.policy import SCOPE, REMOTE_USER
+from privacyidea.lib.token import get_one_token
+from privacyidea.lib.token import (get_tokens, get_realms_of_token, get_token_type,
+                                   get_token_owner)
 from privacyidea.lib.tokenclass import ROLLOUTSTATE
 from privacyidea.lib.tokens.certificatetoken import ACTION as CERTIFICATE_ACTION
-from privacyidea.lib.token import get_one_token
-import functools
-import jwt
-import re
-import importlib
-
+from privacyidea.lib.tokens.indexedsecrettoken import PIIXACTION
+from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
+from privacyidea.lib.tokens.pushtoken import PUSH_ACTION
+from privacyidea.lib.tokens.u2ftoken import (U2FACTION, parse_registration_data)
 # Token specific imports!
 from privacyidea.lib.tokens.webauthn import (WebAuthnRegistrationResponse,
                                              AUTHENTICATOR_ATTACHMENT_TYPES,
@@ -120,10 +117,12 @@ from privacyidea.lib.tokens.webauthntoken import (DEFAULT_PUBLIC_KEY_CREDENTIAL_
                                                   DEFAULT_AUTHENTICATOR_ATTESTATION_FORM,
                                                   WebAuthnTokenClass,
                                                   is_webauthn_assertion_response)
-from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction, PasskeyAction
-from privacyidea.lib.tokens.u2ftoken import (U2FACTION, parse_registration_data)
-from privacyidea.lib.tokens.pushtoken import PUSH_ACTION
-from privacyidea.lib.tokens.indexedsecrettoken import PIIXACTION
+from privacyidea.lib.user import (get_user_from_param, get_default_realm,
+                                  split_user, User)
+from privacyidea.lib.utils import (parse_timedelta, is_true,
+                                   generate_charlists_from_pin_policy,
+                                   get_module_class,
+                                   determine_logged_in_userparams, parse_string_to_dict)
 
 log = logging.getLogger(__name__)
 
@@ -167,8 +166,7 @@ class prepolicy(object):
 
         @functools.wraps(wrapped_function)
         def policy_wrapper(*args, **kwds):
-            self.function(request=self.request,
-                          action=self.action)
+            self.function(request=self.request, action=self.action)
             return wrapped_function(*args, **kwds)
 
         return policy_wrapper
@@ -778,6 +776,7 @@ def verify_enrollment(request=None, action=None):
                     # TODO: we need to add the tokentype here or the second init_token() call fails
                     request.all_data.update(type=tokenobj.get_tokentype())
                     tokenobj.token.rollout_state = ROLLOUTSTATE.ENROLLED
+                    tokenobj.token.save() # todo evaluate
                 else:
                     from privacyidea.lib.error import ParameterError
                     raise ParameterError("Verification of the new token failed.")
@@ -990,7 +989,8 @@ def required_email(request=None, action=None):
     """
     email = getParam(request.all_data, "email")
     email_found = False
-    email_pols = Match.action_only(g, scope=SCOPE.REGISTER, action=PolicyAction.REQUIREDEMAIL).action_values(unique=False)
+    email_pols = Match.action_only(g, scope=SCOPE.REGISTER, action=PolicyAction.REQUIREDEMAIL).action_values(
+        unique=False)
     if email and email_pols:
         for email_pol in email_pols:
             # The policy is only "/regularexpr/".
@@ -1078,7 +1078,10 @@ def auditlog_age(request=None, action=None):
     :type action: basestring
     :returns: Always true. Modified the parameter request
     """
-    audit_age = Match.admin_or_user(g, action=PolicyAction.AUDIT_AGE, user_obj=request.User).action_values(unique=True)
+    user = request.User
+    if g.logged_in_user.get("role") == ROLE.ADMIN:
+        user = None
+    audit_age = Match.admin_or_user(g, action=PolicyAction.AUDIT_AGE, user_obj=user).action_values(unique=True)
     timelimit = None
     timelimit_s = None
     for aa in audit_age:
@@ -1283,7 +1286,10 @@ def check_base_action(request=None, action=None, anonymous=False):
 def check_token_action(request: Request = None, action: str = None):
     """
     This decorator function takes the request and verifies the given action for the SCOPE ADMIN or USER. This decorator
-    is used for api calls that perform actions on a single token.
+    is used for api calls that perform actions on a single token or a list of tokens in the request. The action is
+    verified for each token in the list. In case of a list of tokens it does not throw an exception if the action is
+    not allowed for a token, but removes the token from the list and writes it to the log. Additionally, a list of the
+    not authorized serials is added to the request with the key 'not_authorized_serials'.
 
     If a serial is passed in the request and the logged-in user is an admin, the user attributes (username, realm,
     resolver) are determined from the token. Otherwise, they are determined from the request parameters.
@@ -1307,11 +1313,78 @@ def check_token_action(request: Request = None, action: str = None):
     (role, username, realm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user, params)
     user_attributes = UserAttributes(role, username, realm, resolver, adminuser, adminrealm)
     user_attributes.user = user if user else None
-    serial = params.get("serial")
 
-    action_allowed = check_token_action_allowed(g, action, serial, user_attributes)
-    if not action_allowed:
+    # Unify serial collection from 'serial' (single or CSV) and 'serials' (list/str) parameters.
+    all_serials = set()
+    serials = params.get("serials") or []
+    if isinstance(serials, str):
+        serials = serials.replace("[", "").replace("]", "").split(",")
+        for s in serials:
+            stripped = s.strip()
+            all_serials.add(stripped)
+    elif isinstance(serials, list):
+        for s in serials:
+            all_serials.add(s)
+
+    serial_param = params.get("serial")
+    if serial_param:
+        for s in serial_param.split(','):
+            stripped = s.strip()
+            if stripped:
+                all_serials.add(stripped)
+
+    # Check if a user is given in the params, which would mean that the operation should be done on all the users token
+    if not all_serials and user:
+        tokens = get_tokens(user=user)
+        for token in tokens:
+            all_serials.add(token.token.serial)
+
+    if not all_serials:
+        raise ParameterError("Missing parameter: 'serial' or 'serials'")
+
+    # Process the collected serials
+    authorized_serials = []
+    not_authorized_serials = []
+    not_found_serials = []
+    for serial in all_serials:
+        try:
+            allowed = check_token_action_allowed(g, action, serial, replace(user_attributes))
+        except ResourceNotFoundError:
+            not_found_serials.append(serial)
+            continue
+        except Exception as ex:  # pragma: no cover
+            allowed = False
+            log.error(f"Error while checking action '{action}' on token {serial}: {ex}")
+
+        if allowed:
+            authorized_serials.append(serial)
+        else:
+            not_authorized_serials.append(serial)
+
+    # If any serial was not authorized, and it was the only one provided, raise an error.
+    # This preserves the behavior of failing hard on single-token operations.
+    if not_authorized_serials and len(all_serials) == 1 and len(not_found_serials) == 0:
         raise PolicyError(f"{role.capitalize()} actions are defined, but the action {action} is not allowed!")
+
+    # All serials were unauthorized
+    if not authorized_serials and not not_found_serials and not_authorized_serials:
+        raise PolicyError(f"{role.capitalize()} actions are defined, but the action {action} is not allowed for any "
+                          f"of the serials provided!")
+
+    # None of the serials was found
+    if not authorized_serials and not not_authorized_serials and not_found_serials:
+        raise ResourceNotFoundError(f"No token found for serials: {','.join(not_found_serials)}")
+
+    # For multi-token operations, log the ones that were skipped.
+    for serial in not_authorized_serials:
+        log.info(f"User {g.logged_in_user} is not allowed to manage token {serial}. "
+                 f"It is removed from the token list and will not be further processed in the request.")
+
+    # Update the request with the list of serials the user is authorized to act on.
+    request.all_data["serials"] = authorized_serials
+    request.all_data["serial"] = ",".join(authorized_serials)
+    request.all_data["not_authorized_serials"] = not_authorized_serials
+    request.all_data["not_found_serials"] = not_found_serials
     return True
 
 
@@ -1878,32 +1951,6 @@ def u2ftoken_allowed(request, action):
     return True
 
 
-def allowed_audit_realm(request=None, action=None):
-    """
-    This decorator function takes the request and adds additional parameters
-    to the request according to the policy
-    for the SCOPE.ADMIN or ACTION.AUDIT
-    :param request:
-    :param action:
-    :return: True
-    """
-    # The endpoint is accessible to users, but we only set ``allowed_audit_realm``
-    # for admins, as users are only allowed to view their own realm anyway (this
-    # is ensured by the fixed "realm" parameter)
-    if g.logged_in_user["role"] == ROLE.ADMIN:
-        pols = Match.admin(g, action=PolicyAction.AUDIT).policies()
-        if pols:
-            # get all values in realm:
-            allowed_audit_realms = []
-            for pol in pols:
-                if pol.get("realm"):
-                    allowed_audit_realms += pol.get("realm")
-            request.all_data["allowed_audit_realm"] = list(set(
-                allowed_audit_realms))
-
-    return True
-
-
 def indexedsecret_force_attribute(request, action):
     """
     This is a token specific wrapper for indexedsecret token for the endpoint
@@ -2080,6 +2127,17 @@ def webauthntoken_authz(request, action):
         request.all_data[FIDO2PolicyAction.REQ] \
             = list(allowed_certs_pols)
 
+    return True
+
+
+def load_challenge_text(request, action):
+    """
+    Checks if the policy CHALLENGE_TEXT is active, and if so, add the value to the request data.
+    """
+    user = request.User if hasattr(request, "User") else None
+    text = get_first_policy_value(PolicyAction.CHALLENGETEXT, "", scope=SCOPE.AUTH, user=user)
+    if text:
+        request.all_data[PolicyAction.CHALLENGETEXT] = text
     return True
 
 
@@ -2528,11 +2586,12 @@ def require_description(request=None, action=None):
         serial = get_optional(params, "serial")
         if serial:
             token = (get_one_token(serial=serial, rollout_state=ROLLOUTSTATE.VERIFYPENDING, silent_fail=True)
-                   or get_one_token(serial=serial, rollout_state=ROLLOUTSTATE.CLIENTWAIT, silent_fail=True))
+                     or get_one_token(serial=serial, rollout_state=ROLLOUTSTATE.CLIENTWAIT, silent_fail=True))
         # only if no token exists, yet, we need to check the description
         if not token and not request.all_data.get("description"):
             log.error(f"Missing description for {type_value} token.")
             raise PolicyError(_(f"Description required for {type_value} token."))
+
 
 def require_description_on_edit(request=None, action=None):
     """

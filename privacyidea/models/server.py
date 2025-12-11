@@ -17,7 +17,7 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import logging
 
-from sqlalchemy import Sequence, Unicode, Integer, Boolean, select, update
+from sqlalchemy import Sequence, Unicode, Integer, Boolean, select, update, CheckConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from privacyidea.models import db
@@ -83,9 +83,14 @@ class RADIUSServer(MethodsMixin, db.Model):
     * timeout in seconds (default 5)
     * retries (default 3)
 
-    These RADIUS server definition can be used in RADIUS tokens or in a radius passthru policy.
+    These RADIUS server definitions can be used in RADIUS tokens or in a
+    radius passthru policy.
     """
     __tablename__ = 'radiusserver'
+    __table_args__ = (
+        CheckConstraint("options IS JSON", name="radiusserver_options_is_json",
+                        _create_rule=lambda compiler: compiler.dialect.name == "oracle"),
+    )
     id: Mapped[int] = mapped_column(Integer, Sequence("radiusserver_seq"), primary_key=True)
     # This is a name to refer to
     identifier: Mapped[str] = mapped_column(Unicode(255), nullable=False, unique=True)
@@ -98,6 +103,7 @@ class RADIUSServer(MethodsMixin, db.Model):
     description: Mapped[str] = mapped_column(Unicode(2000), default='')
     timeout: Mapped[int] = mapped_column(Integer, default=5)
     retries: Mapped[int] = mapped_column(Integer, default=3)
+    options = db.Column(db.JSON) # TODO
 
     def save(self):
         """
@@ -127,6 +133,8 @@ class RADIUSServer(MethodsMixin, db.Model):
                 values["timeout"] = int(self.timeout)
             if self.retries is not None:
                 values["retries"] = int(self.retries)
+            if self.options is not None:
+                values["options"] = self.options
             update_stmt = (
                 update(RADIUSServer)
                 .where(RADIUSServer.identifier == self.identifier)

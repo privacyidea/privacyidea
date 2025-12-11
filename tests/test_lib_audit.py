@@ -79,13 +79,13 @@ class AuditTestCase(MyTestCase):
 
     def test_02_filter_search(self):
         # Prepare some audit entries:
-        self.Audit.log({"serial": "serial1"})
+        self.Audit.log({"serial": "serial1", "realm": "realm1", "administrator": "local_admin"})
         self.Audit.finalize_log()
 
-        self.Audit.log({"serial": "serial1"})
+        self.Audit.log({"serial": "serial1", "realm": "realm1", "administrator": "external_admin"})
         self.Audit.finalize_log()
 
-        self.Audit.log({"serial": "serial2"})
+        self.Audit.log({"serial": "serial2", "realm": "realm2"})
         self.Audit.finalize_log()
 
         self.Audit.log({"serial": "oath"})
@@ -104,9 +104,51 @@ class AuditTestCase(MyTestCase):
         self.assertTrue(audit_log.total == 1, audit_log.total)
 
         # Search audit entries one minute in the future
-        audit_log = self.Audit.search({}, timelimit=datetime.timedelta(
-            minutes=-1))
+        audit_log = self.Audit.search({}, timelimit=datetime.timedelta(minutes=-1))
         self.assertEqual(len(audit_log.auditdata), 0)
+
+        # Admin params
+        self.Audit.log({"action": "GET /auth", "administrator": "local_admin"})
+        self.Audit.finalize_log()
+
+        self.Audit.log({"action": "GET /auth", "administrator": "external_admin", "realm": "admin_realm"})
+        self.Audit.finalize_log()
+
+        # get all audit entries without admin limitations
+        audit_log = self.Audit.search({}, admin_params={})
+        self.assertEqual(6, audit_log.total)
+
+        # only setting admin and admin realm still gives all entries (no limitations to the realms)
+        audit_log = self.Audit.search({}, admin_params={"admin": "local_admin", "admin_realm": "admin_realm"})
+        self.assertEqual(6, audit_log.total)
+        audit_log = self.Audit.search({}, admin_params={"admin": "local_admin", "admin_realm": "admin_realm",
+                                                        "allowed_audit_realms": []})
+        self.assertEqual(6, audit_log.total)
+
+        # Get audit entries for local_admin who is allowed to only see realm1
+        audit_log = self.Audit.search({}, admin_params={"admin": "local_admin", "admin_realm": "",
+                                                        "allowed_audit_realms": ["realm1"]})
+        self.assertEqual(3, audit_log.total, audit_log)
+        realm_1_audits = [audit for audit in audit_log.auditdata if audit.get("realm") == "realm1"]
+        self.assertEqual(2, len(realm_1_audits))
+        admin_audits = [audit for audit in audit_log.auditdata if audit.get("action") == "GET /auth"]
+        # also contains the own auth audit entry
+        self.assertEqual(1, len(admin_audits))
+        self.assertEqual("local_admin", admin_audits[0].get("administrator"))
+        self.assertIsNone(admin_audits[0].get("realm"))
+
+        # Get audit entries for external admin who is allowed to only see realm1
+        audit_log = self.Audit.search({}, admin_params={"admin": "external_admin", "admin_realm": "admin_realm",
+                                                        "allowed_audit_realms": ["realm1"]})
+        self.assertEqual(3, audit_log.total, audit_log)
+        realm_1_audits = [audit for audit in audit_log.auditdata if audit.get("realm") == "realm1"]
+        self.assertEqual(2, len(realm_1_audits))
+        admin_audits = [audit for audit in audit_log.auditdata if audit.get("action") == "GET /auth"]
+        # also contains the own auth audit entry
+        self.assertEqual(1, len(admin_audits))
+        self.assertEqual("external_admin", admin_audits[0].get("administrator"))
+        self.assertEqual("admin_realm", admin_audits[0].get("realm"))
+
 
     def test_02_get_count(self):
         # Prepare some audit entries:
@@ -288,18 +330,25 @@ class AuditTestCase(MyTestCase):
 
     def test_08_policies(self):
         self.Audit.log({"action": "validate/check"})
-        self.Audit.add_policy(["rule1", "rule2"])
+        self.Audit.add_policy(["rule1", "rule2", "rule1"])
         self.Audit.add_policy("rule3")
         self.Audit.finalize_log()
         audit_log = self.Audit.search({"policies": "*rule1*"})
         self.assertEqual(audit_log.total, 1)
-        self.assertEqual(audit_log.auditdata[0].get("policies"), "rule1,rule2,rule3")
+        self.assertEqual(len("rule1,rule2,rule3"), len(audit_log.auditdata[0].get("policies")))
+        self.assertIn("rule1", audit_log.auditdata[0].get("policies"))
+        self.assertIn("rule2", audit_log.auditdata[0].get("policies"))
+        self.assertIn("rule3", audit_log.auditdata[0].get("policies"))
 
-        self.Audit.add_policy(["rule4", "rule5"])
+        self.Audit.add_policy({"rule4", "rule5"})
+        self.Audit.add_policy({"rule4", "rule6"})
         self.Audit.finalize_log()
         audit_log = self.Audit.search({"policies": "*rule4*"})
         self.assertEqual(audit_log.total, 1)
-        self.assertEqual(audit_log.auditdata[0].get("policies"), "rule4,rule5")
+        self.assertEqual(len("rule4,rule5,rule6"), len(audit_log.auditdata[0].get("policies")))
+        self.assertIn("rule4", audit_log.auditdata[0].get("policies"))
+        self.assertIn("rule5", audit_log.auditdata[0].get("policies"))
+        self.assertIn("rule6", audit_log.auditdata[0].get("policies"))
 
     def test_09_check_external_audit_db(self):
         self.app.config["PI_AUDIT_SQL_URI"] = AUDIT_DB
@@ -498,7 +547,7 @@ class ContainerAuditTestCase(OverrideConfigTestCase):
                             "PI_AUDIT_SQL_URI": self.app.config['SQLALCHEMY_DATABASE_URI']})
         a.log({"action": "something_test_35"})
         a.add_to_log({'action_detail': 'some detail'})
-        a.add_policy('some policy')
+        a.add_policy({'some policy'})
         a.finalize_log()
         r = a.search({"action": "*something_test_35*"})
         # The search should go to the sql audit

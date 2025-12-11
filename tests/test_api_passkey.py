@@ -30,6 +30,8 @@ from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.token import remove_token, init_token, get_tokens, get_one_token
 from privacyidea.lib.tokens.webauthn import CoseAlgorithm
 from privacyidea.lib.user import User
+from privacyidea.lib.utils import AUTH_RESPONSE
+from privacyidea.models import db
 from tests.base import MyApiTestCase, OverrideConfigTestCase
 from tests.passkey_base import PasskeyTestBase
 
@@ -37,6 +39,8 @@ from tests.passkey_base import PasskeyTestBase
 class PasskeyAPITestBase(MyApiTestCase, PasskeyTestBase):
 
     def setUp(self):
+        # Clear session before each test to avoid side effects
+        db.session.expunge_all()
         PasskeyTestBase.setUp(self)
         self.setUp_user_realms()
         self.user = User(login="hans", realm=self.realm1,
@@ -298,6 +302,10 @@ class PasskeyAPITest(PasskeyAPITestBase):
         set_policy("user_verification", scope=SCOPE.AUTH,
                    action=f"{FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT}=discouraged")
         set_policy("challenge_text", scope=SCOPE.AUTH, action=f"passkey_challenge_text=test text")
+
+        # Test with authz policy add_user_in_response
+        set_policy("user_in_response", scope=SCOPE.AUTHZ,
+                   action=f"{PolicyAction.ADDUSERINRESPONSE}, {PolicyAction.ADDRESOLVERINRESPONSE}")
 
         with patch('privacyidea.lib.fido2.challenge.get_fido2_nonce') as get_nonce:
             get_nonce.return_value = self.authentication_challenge_no_uv
@@ -823,6 +831,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
         """
         set_policy("evm", scope=SCOPE.AUTH, action=f"{PolicyAction.ENROLL_VIA_MULTICHALLENGE}=hotp")
         set_policy("evm_optional", scope=SCOPE.AUTH, action=f"{PolicyAction.ENROLL_VIA_MULTICHALLENGE_OPTIONAL}=true")
+        set_policy("user_in_response", scope=SCOPE.AUTHZ, action=PolicyAction.ADDUSERINRESPONSE)
         serial = self._enroll_static_passkey()
         passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_no_uv)
         transaction_id = passkey_challenge["transaction_id"]
@@ -865,6 +874,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
         remove_token(serial)
         delete_policy("evm")
         delete_policy("evm_optional")
+        delete_policy("user_in_response")
 
     def test_16_cancel_enroll_via_multichallenge_smartphone(self):
         """
@@ -875,6 +885,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
         set_policy("container_enroll", scope=SCOPE.CONTAINER,
                    action=f"{PolicyAction.CONTAINER_SERVER_URL}=https://doesntmatter.com")
         set_policy("evm_optional", scope=SCOPE.AUTH, action=f"{PolicyAction.ENROLL_VIA_MULTICHALLENGE_OPTIONAL}=true")
+        set_policy("user_in_response", scope=SCOPE.AUTHZ, action=PolicyAction.ADDUSERINRESPONSE)
         serial = self._enroll_static_passkey()
         passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_no_uv)
         transaction_id = passkey_challenge["transaction_id"]
@@ -919,6 +930,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
         delete_policy("evm")
         delete_policy("evm_optional")
         delete_policy("container_enroll")
+        delete_policy("user_in_response")
 
     def test_17_cancel_enroll_via_multichallenge_not_allowed(self):
         """
@@ -968,7 +980,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self.assertEqual("REJECT", result["authentication"])
             self.assertIn("Failed to cancel enrollment", j["detail"]["message"])
         remove_token(serial)
-        remove_token(evm_serial) # the token still exists because the enrollment was not cancelled
+        remove_token(evm_serial)  # the token still exists because the enrollment was not cancelled
         delete_policy("evm")
 
     def test_18_last_auth_policy(self):
@@ -1072,6 +1084,87 @@ class PasskeyAPITest(PasskeyAPITestBase):
         delete_policy("last_auth")
         remove_token(serial)
 
+    def test_19_disabled_passkey(self):
+        """
+        Disabled passkeys should not be usable for authentication
+        """
+        serial = self._enroll_static_passkey()
+        with self.app.test_request_context('/token/disable', method='POST',
+                                           data={"serial": serial},
+                                           headers={"Authorization": self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            self.assertIn("result", res.json)
+            self.assertIn("status", res.json["result"])
+
+        passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_no_uv)
+        self.assertIn("user_verification", passkey_challenge)
+        # By default, user_verification is preferred
+        self.assertEqual("preferred", passkey_challenge["user_verification"])
+
+        transaction_id = passkey_challenge["transaction_id"]
+        # Answer the challenge
+        data = self.authentication_response_no_uv
+        data["transaction_id"] = transaction_id
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data=data,
+                                           headers={"Origin": self.expected_origin}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code)
+            j = res.json
+            detail = j["detail"]
+            self.assertIn("message", detail)
+            # Failed authentications should not return the username
+            self.assertNotIn("username", detail)
+            # I also do not need to tell you the serial if the token is disabled
+            self.assertNotIn("serial", detail)
+            self.assertNotIn("auth_items", res.json)
+            result = j["result"]
+            self.assertEqual(AUTH_RESPONSE.REJECT, result["authentication"])
+            self.assertFalse(result["value"])
+
+        remove_token(serial)
+
+    def test_20_disabled_passkey_auth(self):
+        """
+        Disabled passkeys should not be usable for authentication
+        """
+        serial = self._enroll_static_passkey()
+        with self.app.test_request_context('/token/disable', method='POST',
+                                           data={"serial": serial},
+                                           headers={"Authorization": self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            self.assertIn("result", res.json)
+            self.assertIn("status", res.json["result"])
+
+        passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_no_uv)
+        self.assertIn("user_verification", passkey_challenge)
+        # By default, user_verification is preferred
+        self.assertEqual("preferred", passkey_challenge["user_verification"])
+
+        transaction_id = passkey_challenge["transaction_id"]
+        # Answer the challenge
+        data = self.authentication_response_no_uv
+        data["transaction_id"] = transaction_id
+        with self.app.test_request_context('/auth', method='POST',
+                                           data=data,
+                                           headers={"Origin": self.expected_origin}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code)
+            j = res.json
+            detail = j["detail"]
+            self.assertIn("message", detail)
+            # Failed authentications should not return the username
+            self.assertNotIn("username", detail)
+            # I also do not need to tell you the serial if the token is disabled
+            self.assertNotIn("serial", detail)
+            self.assertNotIn("auth_items", res.json)
+            result = j["result"]
+            self.assertEqual(AUTH_RESPONSE.REJECT, result["authentication"])
+            self.assertFalse(result["value"])
+
+        remove_token(serial)
 
 class PasskeyAuthAPITest(PasskeyAPITestBase, OverrideConfigTestCase):
     """

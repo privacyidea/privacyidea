@@ -16,9 +16,10 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from datetime import datetime, timedelta, timezone
 import json
 import logging
-from datetime import datetime, timedelta
+from sqlalchemy import Sequence, delete
 
 from sqlalchemy import (
     Sequence,
@@ -177,7 +178,7 @@ def cleanup_challenges(serial):
 
     :return: None
     """
-    c_now = datetime.utcnow()
+    c_now = datetime.now(timezone.utc).replace(tzinfo=None) # DB contains naive datetime
     # Replaced the legacy .query.delete() with a modern delete statement
     delete_stmt = delete(Challenge).where(
         Challenge.expiration < c_now,

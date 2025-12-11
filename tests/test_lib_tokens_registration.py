@@ -2,20 +2,18 @@
 This test file tests the lib.tokens.passwordtoken
 This depends on lib.tokenclass
 """
-import json
-
-from .base import MyTestCase
-from privacyidea.lib.tokens.registrationtoken import RegistrationTokenClass
 from privacyidea.lib.token import init_token, import_tokens, get_tokens
-from privacyidea.models import Token
 from privacyidea.lib.tokens.registrationtoken import DEFAULT_LENGTH
+from privacyidea.lib.tokens.registrationtoken import RegistrationTokenClass
+from privacyidea.models import Token
+from .base import MyTestCase
 
 
 class RegistrationTokenTestCase(MyTestCase):
     serial1 = "ser1"
 
     # add_user, get_user, reset, set_user_identifiers
-    
+
     def test_01_create_token(self):
         db_token = Token(self.serial1, tokentype="registration")
         db_token.save()
@@ -87,13 +85,13 @@ class RegistrationTokenTestCase(MyTestCase):
         self.assertTrue(set(expected_keys).issubset(exported_data.keys()))
 
         expected_tokeninfo_keys = ["tokenkind"]
-        self.assertTrue(set(expected_tokeninfo_keys).issubset(exported_data["tokeninfo"].keys()))
+        self.assertTrue(set(expected_tokeninfo_keys).issubset(exported_data["info_list"].keys()))
 
         # Test that the exported values match the token's data
         self.assertEqual(exported_data["serial"], "ser1")
         self.assertEqual(exported_data["type"], "registration")
         self.assertEqual(exported_data["description"], "this is a registration token export test")
-        self.assertEqual(exported_data["tokeninfo"]["tokenkind"], "software")
+        self.assertEqual(exported_data["info_list"]["tokenkind"], "software")
         self.assertEqual(exported_data["issuer"], "privacyIDEA")
         self.assertEqual(exported_data["otplen"], 24)
         self.assertEqual(exported_data["otpkey"], token.token.get_otpkey().getKey().decode("utf-8"))
@@ -109,11 +107,11 @@ class RegistrationTokenTestCase(MyTestCase):
                        'otplen': 24,
                        'serial': 'ser1',
                        'type': 'registration',
-                       'tokeninfo': {'tokenkind': 'software'}
+                       'info_list': {'tokenkind': 'software'}
                        }]
 
         # Import the token
-        import_tokens(json.dumps(token_data))
+        import_tokens(token_data)
 
         # Retrieve the imported token
         token = get_tokens(serial=token_data[0]["serial"])[0]

@@ -18,12 +18,14 @@
 import binascii
 import logging
 
-from sqlalchemy import Sequence, Unicode, Integer, Boolean, select, update, and_, delete
+from sqlalchemy import Sequence, Unicode, Integer, Boolean, select
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from privacyidea.lib.crypto import (encryptPassword)
 from privacyidea.lib.crypto import (geturandom, encrypt, hexlify_and_unicode,
                                     pass_hash, encryptPin, decryptPin, hash,
-                                    verify_pass_hash, SecretObj, encryptPassword)
+                                    verify_pass_hash, SecretObj)
+from privacyidea.lib.error import ResourceNotFoundError
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.log import log_with
 from privacyidea.lib.utils import convert_column_to_unicode
@@ -126,7 +128,6 @@ class Token(MethodsMixin, db.Model):
     def __init__(self, serial, tokentype="",
                  isactive=True, otplen=6,
                  otpkey="",
-                 userid=None, resolver=None, realm=None,
                  **kwargs):
         super(Token, self).__init__(**kwargs)
         self.serial = '' + serial
@@ -142,24 +143,6 @@ class Token(MethodsMixin, db.Model):
         self.pin_seed = ""
         self.set_otpkey(otpkey)
 
-        # also create the user assignment
-        if userid and resolver and realm:
-            # We can not create the tokenrealm-connection and owner-connection, yet
-            # since we need to token_id.
-            token_id = self.save()
-            stmt = select(Realm).filter_by(name=realm)
-            realm_id = db.session.execute(stmt).scalar_one_or_none().id
-            tr = TokenRealm(realm_id=realm_id, token_id=token_id)
-            if tr:
-                db.session.add(tr)
-
-            to = TokenOwner(token_id=token_id, user_id=userid, resolver=resolver, realm_id=realm_id)
-            if to:
-                db.session.add(to)
-
-            if tr or to:
-                db.session.commit()
-
     @property
     def first_owner(self):
         return self.owners.first()
@@ -168,40 +151,41 @@ class Token(MethodsMixin, db.Model):
     def all_owners(self):
         return self.owners.all()
 
-    @log_with(log)
-    def delete(self):
-        from .machine import MachineToken
-        # some DBs (e.g. DB2) run in a deadlock, if the TokenRealm entry
-        # is deleted via key relation, so we delete it explicitly
-        ret = self.id
-
-        # Use modern delete statements
-        delete_stmt_token_realm = delete(TokenRealm).where(TokenRealm.token_id == self.id)
-        db.session.execute(delete_stmt_token_realm)
-
-        delete_stmt_token_owner = delete(TokenOwner).where(TokenOwner.token_id == self.id)
-        db.session.execute(delete_stmt_token_owner)
-
-        for mt in db.session.execute(db.select(MachineToken).filter(MachineToken.token_id == self.id)).scalars():
-            mt.delete()
-
-        delete_stmt_challenge = delete(Challenge).where(Challenge.serial == self.serial)
-        db.session.execute(delete_stmt_challenge)
-
-        delete_stmt_token_info = delete(TokenInfo).where(TokenInfo.token_id == self.id)
-        db.session.execute(delete_stmt_token_info)
-
-        delete_stmt_token_tokengroup = delete(TokenTokengroup).where(TokenTokengroup.token_id == self.id)
-        db.session.execute(delete_stmt_token_tokengroup)
-
-        if self.tokentype.lower() in ["webauthn", "passkey"]:
-            delete_stmt_token_credential = delete(TokenCredentialIdHash).where(
-                TokenCredentialIdHash.token_id == self.id)
-            db.session.execute(delete_stmt_token_credential)
-
-        db.session.delete(self)
-        db.session.commit()
-        return ret
+    # TODO: Compare with lib function
+    # @log_with(log)
+    # def delete(self):
+    #     from .machine import MachineToken
+    #     # some DBs (e.g. DB2) run in a deadlock, if the TokenRealm entry
+    #     # is deleted via key relation, so we delete it explicitly
+    #     ret = self.id
+    #
+    #     # Use modern delete statements
+    #     delete_stmt_token_realm = delete(TokenRealm).where(TokenRealm.token_id == self.id)
+    #     db.session.execute(delete_stmt_token_realm)
+    #
+    #     delete_stmt_token_owner = delete(TokenOwner).where(TokenOwner.token_id == self.id)
+    #     db.session.execute(delete_stmt_token_owner)
+    #
+    #     for mt in db.session.execute(db.select(MachineToken).filter(MachineToken.token_id == self.id)).scalars():
+    #         mt.delete()
+    #
+    #     delete_stmt_challenge = delete(Challenge).where(Challenge.serial == self.serial)
+    #     db.session.execute(delete_stmt_challenge)
+    #
+    #     delete_stmt_token_info = delete(TokenInfo).where(TokenInfo.token_id == self.id)
+    #     db.session.execute(delete_stmt_token_info)
+    #
+    #     delete_stmt_token_tokengroup = delete(TokenTokengroup).where(TokenTokengroup.token_id == self.id)
+    #     db.session.execute(delete_stmt_token_tokengroup)
+    #
+    #     if self.tokentype.lower() in ["webauthn", "passkey"]:
+    #         delete_stmt_token_credential = delete(TokenCredentialIdHash).where(
+    #             TokenCredentialIdHash.token_id == self.id)
+    #         db.session.execute(delete_stmt_token_credential)
+    #
+    #     db.session.delete(self)
+    #     db.session.commit()
+    #     return ret
 
     @staticmethod
     def _fix_spaces(data):
@@ -233,75 +217,76 @@ class Token(MethodsMixin, db.Model):
         if reset_failcount is True:
             self.failcount = 0
 
-    def set_tokengroups(self, tokengroups, add=False):
-        """
-        Set the list of the tokengroups.
-
-        This is done by filling the :py:class:`privacyidea.models.TokenTokengroup` table.
-
-        :param tokengroups: the tokengroups
-        :type tokengroups: list[str]
-        :param add: If set, the tokengroups are added. I.e. old tokengroups are not deleted
-        :type add: bool
-        """
-        # delete old Tokengroups
-        if not add:
-            delete_stmt = delete(TokenTokengroup).where(TokenTokengroup.token_id == self.id)
-            db.session.execute(delete_stmt)
-        # add new Tokengroups
-        # We must not set the same tokengroup more than once...
-        # uniquify: tokengroups -> set(tokengroups)
-        for tokengroup in set(tokengroups):
-            # Get the id of the realm to add
-            stmt = select(Tokengroup).filter_by(name=tokengroup)
-            g = db.session.execute(stmt).scalar_one_or_none()
-            if g:
-                # Check if TokenTokengroup already exists
-                stmt_tg = select(TokenTokengroup).filter_by(token_id=self.id, tokengroup_id=g.id)
-                tg = db.session.execute(stmt_tg).scalar_one_or_none()
-                if not tg:
-                    # If the Tokengroup is not yet attached to the token
-                    token_group = TokenTokengroup(token_id=self.id, tokengroup_id=g.id)
-                    db.session.add(token_group)
-        db.session.commit()
-
-    def set_realms(self, realms, add=False):
-        """
-        Set the list of the realms.
-
-        This is done by filling the :py:class:`privacyidea.models.TokenRealm` table.
-
-        :param realms: realms
-        :type realms: list[str]
-        :param add: If set, the realms are added. I.e. old realms are not deleted
-        :type add: bool
-        """
-        # delete old TokenRealms
-        if not add:
-            delete_stmt = delete(TokenRealm).where(TokenRealm.token_id == self.id)
-            db.session.execute(delete_stmt)
-        # add new TokenRealms
-        # We must not set the same realm more than once...
-        # uniquify: realms -> set(realms)
-        if self.first_owner:
-            if self.first_owner.realm.name not in realms:
-                realms.append(self.first_owner.realm.name)
-                log.info(f"The realm of an assigned user cannot be removed from "
-                         f"token {self.first_owner.token.serial} "
-                         f"(realm: {self.first_owner.realm.name})")
-        for realm in set(realms):
-            # Get the id of the realm to add
-            stmt_realm = select(Realm).filter_by(name=realm)
-            realm_db = db.session.execute(stmt_realm).scalar_one_or_none()
-            if realm_db:
-                # Check if tokenrealm already exists
-                stmt_token_realm = select(TokenRealm).filter_by(token_id=self.id, realm_id=realm_db.id)
-                token_realm_db = db.session.execute(stmt_token_realm).scalar_one_or_none()
-                if not token_realm_db:
-                    # If the realm is not yet attached to the token
-                    token_realm = TokenRealm(token_id=self.id, realm_id=realm_db.id)
-                    db.session.add(token_realm)
-        db.session.commit()
+    # TODO: Compare with lib function
+    # def set_tokengroups(self, tokengroups, add=False):
+    #     """
+    #     Set the list of the tokengroups.
+    #
+    #     This is done by filling the :py:class:`privacyidea.models.TokenTokengroup` table.
+    #
+    #     :param tokengroups: the tokengroups
+    #     :type tokengroups: list[str]
+    #     :param add: If set, the tokengroups are added. I.e. old tokengroups are not deleted
+    #     :type add: bool
+    #     """
+    #     # delete old Tokengroups
+    #     if not add:
+    #         delete_stmt = delete(TokenTokengroup).where(TokenTokengroup.token_id == self.id)
+    #         db.session.execute(delete_stmt)
+    #     # add new Tokengroups
+    #     # We must not set the same tokengroup more than once...
+    #     # uniquify: tokengroups -> set(tokengroups)
+    #     for tokengroup in set(tokengroups):
+    #         # Get the id of the realm to add
+    #         stmt = select(Tokengroup).filter_by(name=tokengroup)
+    #         g = db.session.execute(stmt).scalar_one_or_none()
+    #         if g:
+    #             # Check if TokenTokengroup already exists
+    #             stmt_tg = select(TokenTokengroup).filter_by(token_id=self.id, tokengroup_id=g.id)
+    #             tg = db.session.execute(stmt_tg).scalar_one_or_none()
+    #             if not tg:
+    #                 # If the Tokengroup is not yet attached to the token
+    #                 token_group = TokenTokengroup(token_id=self.id, tokengroup_id=g.id)
+    #                 db.session.add(token_group)
+    #     db.session.commit()
+    #
+    # def set_realms(self, realms, add=False):
+    #     """
+    #     Set the list of the realms.
+    #
+    #     This is done by filling the :py:class:`privacyidea.models.TokenRealm` table.
+    #
+    #     :param realms: realms
+    #     :type realms: list[str]
+    #     :param add: If set, the realms are added. I.e. old realms are not deleted
+    #     :type add: bool
+    #     """
+    #     # delete old TokenRealms
+    #     if not add:
+    #         delete_stmt = delete(TokenRealm).where(TokenRealm.token_id == self.id)
+    #         db.session.execute(delete_stmt)
+    #     # add new TokenRealms
+    #     # We must not set the same realm more than once...
+    #     # uniquify: realms -> set(realms)
+    #     if self.first_owner:
+    #         if self.first_owner.realm.name not in realms:
+    #             realms.append(self.first_owner.realm.name)
+    #             log.info(f"The realm of an assigned user cannot be removed from "
+    #                      f"token {self.first_owner.token.serial} "
+    #                      f"(realm: {self.first_owner.realm.name})")
+    #     for realm in set(realms):
+    #         # Get the id of the realm to add
+    #         stmt_realm = select(Realm).filter_by(name=realm)
+    #         realm_db = db.session.execute(stmt_realm).scalar_one_or_none()
+    #         if realm_db:
+    #             # Check if tokenrealm already exists
+    #             stmt_token_realm = select(TokenRealm).filter_by(token_id=self.id, realm_id=realm_db.id)
+    #             token_realm_db = db.session.execute(stmt_token_realm).scalar_one_or_none()
+    #             if not token_realm_db:
+    #                 # If the realm is not yet attached to the token
+    #                 token_realm = TokenRealm(token_id=self.id, realm_id=realm_db.id)
+    #                 db.session.add(token_realm)
+    #     db.session.commit()
 
     def get_realms(self):
         """
@@ -386,7 +371,7 @@ class Token(MethodsMixin, db.Model):
         Set the OTP pin in a hashed way
         """
         real_pin = pin or ""
-        if hashed is True:
+        if hashed:
             self.set_hashed_pin(real_pin)
             log.debug(f"set_pin hash: {self.pin_hash!r}")
         else:
@@ -519,77 +504,6 @@ class Token(MethodsMixin, db.Model):
         res = "<{0!r} {1!r}>".format(self.__class__, ldict)
         return res
 
-    def set_info(self, info):
-        """
-        Set the additional token info for this token
-
-        Entries that end with ".type" are used as type for the keys.
-        I.e. two entries sshkey="XYZ" and sshkey.type="password" will store
-        the key sshkey as type "password".
-
-        :param info: The key-values to set for this token
-        :type info: dict
-        """
-        if not self.id:
-            # If there is no ID to reference the token, we need to save the token
-            self.save()
-        types = {}
-        for k, v in info.items():
-            if k.endswith(".type"):
-                key = ".".join(k.split(".")[:-1])
-                types[key] = v
-                if v == "password":
-                    # If the type is password, we need to encrypt the value
-                    # as it is a secret.
-                    info[key] = encryptPassword(info[key])
-        for k, v in info.items():
-            if not k.endswith(".type"):
-                TokenInfo(self.id, k, v, Type=types.get(k)).save(persistent=False)
-        db.session.commit()
-
-    def del_info(self, key=None):
-        """
-        Deletes tokeninfo for a given token.
-        If the key is omitted, all Tokeninfo is deleted.
-
-        :param key: searches for the given key to delete the entry
-        :return:
-        """
-        if key:
-            delete_stmt = delete(TokenInfo).where(and_(TokenInfo.token_id == self.id, TokenInfo.Key == key))
-        else:
-            delete_stmt = delete(TokenInfo).where(TokenInfo.token_id == self.id)
-
-        db.session.execute(delete_stmt)
-        db.session.commit()
-
-    def del_tokengroup(self, tokengroup=None, tokengroup_id=None):
-        """
-        Deletes the tokengroup from the given token.
-        If tokengroup name and id are omitted, all tokengroups are deleted.
-
-        :param tokengroup: The name of the tokengroup
-        :type tokengroup: str
-        :param tokengroup_id: The id of the tokengroup
-        :type tokengroup_id: int
-        :return:
-        """
-        if tokengroup:
-            # We need to resolve the id of the tokengroup
-            stmt_tokengroup = select(Tokengroup).filter_by(name=tokengroup)
-            t = db.session.execute(stmt_tokengroup).scalar_one_or_none()
-            if not t:
-                raise Exception("tokengroup does not exist")
-            tokengroup_id = t.id
-        if tokengroup_id:
-            delete_stmt = delete(TokenTokengroup).where(
-                and_(TokenTokengroup.tokengroup_id == tokengroup_id, TokenTokengroup.token_id == self.id))
-        else:
-            delete_stmt = delete(TokenTokengroup).where(TokenTokengroup.token_id == self.id)
-
-        db.session.execute(delete_stmt)
-        db.session.commit()
-
     def get_info(self):
         """
 
@@ -670,31 +584,32 @@ class TokenInfo(MethodsMixin, db.Model):
         self.Type = Type
         self.Description = Description
 
-    def save(self, persistent=True):
-        stmt = select(TokenInfo).filter_by(token_id=self.token_id, Key=self.Key)
-        ti = db.session.execute(stmt).scalar_one_or_none()
-        if ti is None:
-            # create a new one
-            db.session.add(self)
-            db.session.commit()
-            if get_app_config_value(SAFE_STORE, False):
-                stmt = select(TokenInfo).filter_by(token_id=self.token_id, Key=self.Key)
-                ti = db.session.execute(stmt).scalar_one_or_none()
-                ret = ti.id
-            else:
-                ret = self.id
-        else:
-            # update
-            update_stmt = (
-                update(TokenInfo)
-                .where(and_(TokenInfo.token_id == self.token_id, TokenInfo.Key == self.Key))
-                .values(Value=self.Value, Description=self.Description, Type=self.Type)
-            )
-            db.session.execute(update_stmt)
-            ret = ti.id
-        if persistent:
-            db.session.commit()
-        return ret
+    # TODO: Compare with lib function
+    # def save(self, persistent=True):
+    #     stmt = select(TokenInfo).filter_by(token_id=self.token_id, Key=self.Key)
+    #     ti = db.session.execute(stmt).scalar_one_or_none()
+    #     if ti is None:
+    #         # create a new one
+    #         db.session.add(self)
+    #         db.session.commit()
+    #         if get_app_config_value(SAFE_STORE, False):
+    #             stmt = select(TokenInfo).filter_by(token_id=self.token_id, Key=self.Key)
+    #             ti = db.session.execute(stmt).scalar_one_or_none()
+    #             ret = ti.id
+    #         else:
+    #             ret = self.id
+    #     else:
+    #         # update
+    #         update_stmt = (
+    #             update(TokenInfo)
+    #             .where(and_(TokenInfo.token_id == self.token_id, TokenInfo.Key == self.Key))
+    #             .values(Value=self.Value, Description=self.Description, Type=self.Type)
+    #         )
+    #         db.session.execute(update_stmt)
+    #         ret = ti.id
+    #     if persistent:
+    #         db.session.commit()
+    #     return ret
 
 
 class TokenOwner(MethodsMixin, db.Model):
@@ -728,42 +643,48 @@ class TokenOwner(MethodsMixin, db.Model):
         elif realmname:
             stmt = select(Realm).filter_by(name=realmname)
             r = db.session.execute(stmt).scalar_one_or_none()
+            if not r:
+                raise ResourceNotFoundError(f"Realm '{realmname}' does not exist.")
             self.realm_id = r.id
         if token_id is not None:
             self.token_id = token_id
         elif serial:
             stmt = select(Token).filter_by(serial=serial)
             r = db.session.execute(stmt).scalar_one_or_none()
+            if not r:  # pragma: no cover
+                # usually this is already covered by the lib / token class functions
+                raise ResourceNotFoundError(f"Token with serial '{serial}' does not exist.")
             self.token_id = r.id
         self.resolver = resolver
         self.user_id = user_id
 
-    def save(self, persistent=True):
-        stmt = select(TokenOwner).filter_by(token_id=self.token_id,
-                                            user_id=self.user_id,
-                                            realm_id=self.realm_id,
-                                            resolver=self.resolver)
-        to = db.session.execute(stmt).scalar_one_or_none()
-        if to is None:
-            # This very assignment does not exist, yet:
-            db.session.add(self)
-            db.session.commit()
-            if get_app_config_value(SAFE_STORE, False):
-                stmt = select(TokenOwner).filter_by(token_id=self.token_id,
-                                                    user_id=self.user_id,
-                                                    realm_id=self.realm_id,
-                                                    resolver=self.resolver)
-                to = db.session.execute(stmt).scalar_one_or_none()
-                ret = to.id
-            else:
-                ret = self.id
-        else:
-            ret = to.id
-            # There is nothing to update
-
-        if persistent:
-            db.session.commit()
-        return ret
+    # TODO: Compare with lib function
+    # def save(self, persistent=True):
+    #     stmt = select(TokenOwner).filter_by(token_id=self.token_id,
+    #                                         user_id=self.user_id,
+    #                                         realm_id=self.realm_id,
+    #                                         resolver=self.resolver)
+    #     to = db.session.execute(stmt).scalar_one_or_none()
+    #     if to is None:
+    #         # This very assignment does not exist, yet:
+    #         db.session.add(self)
+    #         db.session.commit()
+    #         if get_app_config_value(SAFE_STORE, False):
+    #             stmt = select(TokenOwner).filter_by(token_id=self.token_id,
+    #                                                 user_id=self.user_id,
+    #                                                 realm_id=self.realm_id,
+    #                                                 resolver=self.resolver)
+    #             to = db.session.execute(stmt).scalar_one_or_none()
+    #             ret = to.id
+    #         else:
+    #             ret = self.id
+    #     else:
+    #         ret = to.id
+    #         # There is nothing to update
+    #
+    #     if persistent:
+    #         db.session.commit()
+    #     return ret
 
 
 class TokenRealm(MethodsMixin, db.Model):

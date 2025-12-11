@@ -706,8 +706,10 @@ class PolicyClass(object):
                 [p.get('name') for p in reduced_policies]))
 
         if audit_data is not None:
+            audit_policies = set(audit_data.get("policies", []))
             for p in reduced_policies:
-                audit_data.setdefault("policies", []).append(p.get("name"))
+                audit_policies.add(p.get("name"))
+            audit_data["policies"] = list(audit_policies)
 
         return reduced_policies
 
@@ -913,9 +915,11 @@ class PolicyClass(object):
                                                    allow_white_space_in_action=allow_white_space_in_action)
 
         if audit_data is not None:
+            audit_policies = set(audit_data.get("policies", []))
             for action_value, policy_names in policy_values.items():
                 for p_name in policy_names:
-                    audit_data.setdefault("policies", []).append(p_name)
+                    audit_policies.add(p_name)
+            audit_data["policies"] = list(audit_policies)
 
         return policy_values
 
@@ -2587,6 +2591,10 @@ def get_static_policy_definitions(scope=None):
                 'desc': _('Store the last used token type per user and application in the custom user attributes. '
                           'For the next authentication the last used token type is used to identify the preferred '
                           'client mode.'),
+            },
+            PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE: {
+                'type': 'bool',
+                'desc': _('Enable to return an unspecific error message for failed authentications.')
             }
         },
         SCOPE.AUTHZ: {
@@ -2689,6 +2697,12 @@ def get_static_policy_definitions(scope=None):
                           'authentication. This avoids rogue authenticate '
                           'requests against the /validate/check interface.'),
                 'group': GROUP.SETTING_ACTIONS,
+            },
+            PolicyAction.REQUIRE_AUTH_FOR_RESOLVER_DETAILS: {
+                'type': 'bool',
+                'desc': _('If set, the /healthz/resolversz endpoint requires a '
+                          'valid admin authentication token to include the status '
+                          'of each resolver individually.'),
             }
         },
         SCOPE.WEBUI: {
@@ -3157,9 +3171,11 @@ class Match(object):
                                                                     allow_white_space_in_action=
                                                                     allow_white_space_in_action)
         if write_to_audit_log:
+            audit_policies = set()
             for action_value, policy_names in action_values.items():
                 for p_name in policy_names:
-                    self._g.audit_object.audit_data.setdefault("policies", []).append(p_name)
+                    audit_policies.add(p_name)
+            self._g.audit_object.add_policy(audit_policies)
         return action_values
 
     def allowed(self, write_to_audit_log=True):

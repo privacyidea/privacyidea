@@ -34,8 +34,8 @@ msgid ""
 "\">\n"
 "                        Ask for the privacyIDEA Enterprise Edition, now!</a>"
 msgstr ""
-"<a target=\"netknights\" href="
-"\"https://netknights.it/en/unternehmen/kontakt/\">\n"
+"<a target=\"netknights\" href=\"https://netknights.it/en/unternehmen/kontakt/"
+"\">\n"
 " தனியுரிமை எண்டர்பிரைச் பதிப்பைக் கேளுங்கள், இப்போது! </a>"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:84
@@ -89,8 +89,8 @@ msgid ""
 "                    </li>"
 msgstr ""
 "<li> உதவி மற்றும் \n"
-"<a target=\"netknights\" href="
-"\"https://netknights.it/en/leistungen/service-level-agreements/\"> \n"
+"<a target=\"netknights\" href=\"https://netknights.it/en/leistungen/service-"
+"level-agreements/\"> \n"
 "நெட்நைட்சின் பணி நிலை ஒப்பந்தங்கள் </a>, செர்மனி. \n"
 "</li> \n"
 "<li> உபுண்டு மற்றும் RHEL க்கான நிலையான நிறுவன தொகுப்புகள் எளிதான புதுப்பிப்பு மற்றும் "
@@ -105,11 +105,10 @@ msgstr ""
 "<li> உதவி நிலையைப் பொறுத்து நீங்கள் புதுப்பிப்புகள் மற்றும் வருடாந்திர ஆலோசனைக்கு உதவி "
 "பெறுவீர்கள். </li> \n"
 "<li> வாங்குவதன் மூலம் \n"
-"<a target=\"netknights\" href="
-"\"https://netknights.it/en/produkte/privacyidea/\">தனியுரிமிடியா நிறுவன "
-"பதிப்பு </a> \n"
-"தொழில்முறை உருவாக்குபவர்கள் முழுநேர வேலை செய்ய முடியும் என்பதை நீங்கள் உறுதி செய்கிறீர்கள் "
-"\n"
+"<a target=\"netknights\" href=\"https://netknights.it/en/produkte/"
+"privacyidea/\">தனியுரிமிடியா நிறுவன பதிப்பு </a> \n"
+"தொழில்முறை உருவாக்குபவர்கள் முழுநேர வேலை செய்ய முடியும் என்பதை நீங்கள் உறுதி "
+"செய்கிறீர்கள் \n"
 "தனியுரிமையில், புதிய அம்சங்களைச் சேர்த்து, பிழைகளைச் சரியான நேரத்தில் சரிசெய்யவும். "
 "கூடுதலாக, நீங்கள் அனுமதிக்கிறீர்கள் \n"
 "வெளிப்புற சேவைகள் \n"
@@ -117,6 +116,38 @@ msgstr ""
 "</li>"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:45
+#, fuzzy
+#| msgid ""
+#| "<p>\n"
+#| "                    You are reading books, which do not belong to you "
+#| "anymore. Your ebook reader\n"
+#| "                    only provides them for the time of reading. You are "
+#| "using software as a service\n"
+#| "                    and you do not have any control, when the software "
+#| "will be updated,\n"
+#| "                    which features will be added or removed or if the "
+#| "service might even be stopped.\n"
+#| "                    You only get a legal right of time limited use.\n"
+#| "                </p>\n"
+#| "                <p>\n"
+#| "                    You could install proprietary software on your own "
+#| "server, but you also have only\n"
+#| "                    limited rights in regards to this installation. You "
+#| "are not allowed to modify or pass along\n"
+#| "                    this proprietary software.\n"
+#| "                </p>\n"
+#| "                <p>\n"
+#| "                    The open source software privacyIDEA now is <b>your "
+#| "property</b>! No one can take away this software\n"
+#| "                    or this installation. According to the license AGPLv3 "
+#| "you can modify or distribute this software.\n"
+#| "                    You do not have to worry about end-of-life.\n"
+#| "                </p>\n"
+#| "                <p>\n"
+#| "                    <b>Using open source is not about spending no money, "
+#| "but is is about full control you get over\n"
+#| "                        your own system! Forever!</b>\n"
+#| "                </p>"
 msgid ""
 "<p>\n"
 "                    You are reading books, which do not belong to you "
@@ -145,13 +176,13 @@ msgid ""
 "                </p>\n"
 "                <p>\n"
 "                    <b>Using open source is not about spending no money, but "
-"is is about full control you get over\n"
+"it is about full control you get over\n"
 "                        your own system! Forever!</b>\n"
 "                </p>"
 msgstr ""
 "<p>\n"
-" நீங்கள் புத்தகங்களைப் படிக்கிறீர்கள், அது இனி உங்களுக்குச் சொந்தமில்லை. உங்கள் மின்புத்தக வாசகர்"
-"\n"
+" நீங்கள் புத்தகங்களைப் படிக்கிறீர்கள், அது இனி உங்களுக்குச் சொந்தமில்லை. உங்கள் மின்புத்தக "
+"வாசகர்\n"
 " படிக்கும் நேரத்திற்கு மட்டுமே அவர்களுக்கு வழங்குகிறது. நீங்கள் மென்பொருளை ஒரு சேவையாகப் "
 "பயன்படுத்துகிறீர்கள்\n"
 " உங்களுக்கு எந்தக் கட்டுப்பாடும் இல்லை, மென்பொருள் எப்போது புதுப்பிக்கப்படும்,\n"
@@ -166,8 +197,8 @@ msgstr ""
 " இந்தத் தனியுரிம மென்பொருள்.\n"
 " </p>\n"
 " <p>\n"
-" திறந்த மூல மென்பொருள் தனியுரிமை இப்போது <b> உங்கள் சொத்து </b>! இந்த மென்பொருளை யாரும்"
-" பறிக்க முடியாது\n"
+" திறந்த மூல மென்பொருள் தனியுரிமை இப்போது <b> உங்கள் சொத்து </b>! இந்த மென்பொருளை "
+"யாரும் பறிக்க முடியாது\n"
 " அல்லது இந்த நிறுவல். AGPLV3 உரிமத்தின்படி, இந்த மென்பொருளை நீங்கள் மாற்றலாம் அல்லது "
 "விநியோகிக்கலாம்.\n"
 " வாழ்க்கையின் முடிவைப் பற்றி நீங்கள் கவலைப்பட வேண்டியதில்லை.\n"
@@ -194,18 +225,16 @@ msgid ""
 "                    paid programming of new features.\n"
 "                </p>"
 msgstr ""
-"<p> <b> நீங்கள் 50 க்கும் மேற்பட்ட பயனர்களுடன் தனியுரிமைப் பயன்படுத்துகிறீர்கள். </b> </p> "
-"\n"
+"<p> <b> நீங்கள் 50 க்கும் மேற்பட்ட பயனர்களுடன் தனியுரிமைப் பயன்படுத்துகிறீர்கள். </b> </"
+"p> \n"
 "<p> உங்கள் நம்பிக்கைக்கு நன்றி! </p> \n"
 "<p> விளைவாக்கம் நிறுவன பயன்பாட்டிற்கு நாங்கள் பரிந்துரைக்கிறோம் \n"
-"<a target=\"netknights\" href="
-"\"https://netknights.it/en/produkte/privacyidea/\"> தனியுரிமிடியா நிறுவன "
-"பதிப்பு </a>. \n"
+"<a target=\"netknights\" href=\"https://netknights.it/en/produkte/"
+"privacyidea/\"> தனியுரிமிடியா நிறுவன பதிப்பு </a>. \n"
 "</p> \n"
 "<p> நெட்நைட்ச் வழங்குகிறது \n"
-"<a target=\"netknights\" href="
-"\"https://netknights.it/en/produkte/privacyidea/\"> தனியுரிமிடியா நிறுவன "
-"பதிப்பு </a> \n"
+"<a target=\"netknights\" href=\"https://netknights.it/en/produkte/"
+"privacyidea/\"> தனியுரிமிடியா நிறுவன பதிப்பு </a> \n"
 "<b> உதவி மற்றும் பணி நிலை ஒப்பந்தங்கள் </b> உட்பட. \n"
 "மேலும், நெட்நைட்ச் சேவைகள், அறிவுரை மற்றும் \n"
 "புதிய அம்சங்களின் கட்டண நிரலாக்க. \n"
@@ -233,9 +262,8 @@ msgstr ""
 "மல்டி காரணி அங்கீகார அமைப்பு. இது திறந்த மூலமாகும். \n"
 "முக்கிய உருவாக்குபவர்கள் செர்மனியின் நெட்நைட்ச் சி.எம்.பி.எச். \n"
 "நெட்நைட்ச் வழங்குகிறது \n"
-"<a target=\"netknights\" href="
-"\"https://netknights.it/en/produkte/privacyidea/\"> தனியுரிமிடியா நிறுவன "
-"பதிப்பு </a> \n"
+"<a target=\"netknights\" href=\"https://netknights.it/en/produkte/"
+"privacyidea/\"> தனியுரிமிடியா நிறுவன பதிப்பு </a> \n"
 "<b> உதவி மற்றும் பணி நிலை ஒப்பந்தங்கள் </b> உட்பட. \n"
 "மேலும், நெட்நைட்ச் சேவைகள், அறிவுரை மற்றும் \n"
 "புதிய அம்சங்களின் கட்டண நிரலாக்க. \n"
@@ -261,7 +289,7 @@ msgstr ""
 " <p> தயவுசெய்து மீண்டும் ஏற்ற முயற்சிக்கவும், இல்லையெனில் உங்கள் கணினி நிர்வாகியை தொடர்பு "
 "கொள்ளவும்! </p>"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:122
+#: privacyidea/static/components/config/views/config.policies.details.html:104
 msgid "A description for this policy"
 msgstr "இந்த கொள்கைக்கான விளக்கம்"
 
@@ -289,11 +317,11 @@ msgstr "பநிஇ விசை"
 msgid "API client ID"
 msgstr "பநிஇ வாங்கி ஐடி"
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:808
+#: privacyidea/static/components/token/controllers/tokenControllers.js:818
 msgid "Abort operation on unverifiable token"
 msgstr "சரிபார்க்க முடியாத டோக்கனில் அறுவை சிகிச்சையை நிறுத்துங்கள்"
 
-#: privacyidea/static/components/dialogs/views/dialog.about.html:12
+#: privacyidea/static/components/dialogs/views/dialog.about.html:11
 msgid "About privacyIDEA Web Client"
 msgstr "தனியுரிமைடியா வலை கிளையன்ட் பற்றி"
 
@@ -311,8 +339,8 @@ msgstr ""
 #: privacyidea/static/components/config/views/config.events.details.html:249
 #: privacyidea/static/components/config/views/config.events.details.html:251
 #: privacyidea/static/components/config/views/config.events.list.html:27
-#: privacyidea/static/components/config/views/config.policies.details.html:144
-#: privacyidea/static/components/config/views/config.policies.details.html:307
+#: privacyidea/static/components/config/views/config.policies.details.html:153
+#: privacyidea/static/components/config/views/config.policies.details.html:353
 #: privacyidea/static/components/config/views/config.policies.list.html:20
 #: privacyidea/static/components/dashboard/views/dashboard.html:91
 msgid "Action"
@@ -322,7 +350,7 @@ msgstr "செயல்"
 #: privacyidea/static/components/config/views/config.periodictasks.list.html:6
 #: privacyidea/static/components/config/views/config.policies.list.html:9
 #: privacyidea/static/components/directives/views/directive.policyconditions.html:5
-#: privacyidea/static/components/token/views/token.containerdetails.html:427
+#: privacyidea/static/components/token/views/token.containerdetails.html:428
 #: privacyidea/static/components/token/views/token.details.html:33
 #: privacyidea/static/components/user/views/user.details.html:149
 #: privacyidea/static/components/user/views/user.details.html:236
@@ -337,7 +365,8 @@ msgstr "செயலில் நிகழ்வுகள்"
 msgid "Active Policies"
 msgstr "செயலில் உள்ள கொள்கைகள்"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:758
+#: privacyidea/static/components/config/views/config.policies.details.html:325
+#: privacyidea/static/components/token/views/token.containerdetails.html:759
 msgid "Add"
 msgstr "கூட்டு"
 
@@ -350,12 +379,12 @@ msgstr "டோக்கனைச் சேர்க்கவும்"
 msgid "Add Tokens"
 msgstr "டோக்கன்களைச் சேர்க்கவும்"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:580
+#: privacyidea/static/components/token/views/token.containerdetails.html:581
 #: privacyidea/static/components/user/views/user.details.html:281
 msgid "Add Tokens to Container"
 msgstr "கொள்கலனில் டோக்கன்களைச் சேர்க்கவும்"
 
-#: privacyidea/static/components/directives/views/directive.policyconditions.html:74
+#: privacyidea/static/components/directives/views/directive.policyconditions.html:89
 msgid "Add a condition"
 msgstr "ஒரு நிபந்தனையைச் சேர்க்கவும்"
 
@@ -383,15 +412,15 @@ msgstr "பயனரைச் சேர்க்கவும்"
 msgid "Additional"
 msgstr "கூடுதல்"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:296
+#: privacyidea/static/components/config/views/config.policies.details.html:336
 msgid "Additional conditions"
 msgstr "கூடுதல் நிபந்தனைகள்"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:171
+#: privacyidea/static/components/config/views/config.policies.details.html:180
 msgid "Admin"
 msgstr "நிர்வாகி"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:154
+#: privacyidea/static/components/config/views/config.policies.details.html:163
 msgid "Admin-Realm"
 msgstr "நிர்வாகம்-realm"
 
@@ -402,6 +431,12 @@ msgstr "நிர்வாகம்"
 #: privacyidea/static/components/dashboard/views/dashboard.html:90
 msgid "Administrator"
 msgstr "நிர்வாகி"
+
+#: privacyidea/static/components/config/views/config.resolvers.http.html:10
+#, fuzzy
+#| msgid "Hide Settings"
+msgid "Advanced Settings"
+msgstr "அமைப்புகளை மறைக்கவும்"
 
 #: privacyidea/static/components/config/views/config.system.html:202
 msgid "All CA Connectors"
@@ -497,14 +532,14 @@ msgstr "கொள்கலனை ஒதுக்குங்கள்"
 msgid "Assign Token"
 msgstr "கிள்ளாக்கை ஒதுக்கவும்"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:392
-#: privacyidea/static/components/token/views/token.containerdetails.html:410
+#: privacyidea/static/components/token/views/token.containerdetails.html:393
+#: privacyidea/static/components/token/views/token.containerdetails.html:411
 #: privacyidea/static/components/token/views/token.details.html:585
 #: privacyidea/static/components/token/views/token.details.html:598
 msgid "Assign User"
 msgstr "பயனரை நியமிக்கவும்"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:367
+#: privacyidea/static/components/token/views/token.containerdetails.html:368
 msgid "Assign User To All Tokens"
 msgstr "அனைத்து டோக்கன்களுக்கும் பயனரை நியமிக்கவும்"
 
@@ -518,6 +553,12 @@ msgstr "புதிய கிள்ளாக்கை ஒதுக்குங�
 
 #: privacyidea/static/components/token/views/token.containercreate.html:54
 msgid "Assign the Container to a User"
+msgstr "ஒரு பயனருக்கு கொள்கலனை நியமிக்கவும்"
+
+#: privacyidea/static/components/directives/views/directive.registerContainer.html:39
+#, fuzzy
+#| msgid "Assign the Container to a User"
+msgid "Assign the container to a user to enable this option."
 msgstr "ஒரு பயனருக்கு கொள்கலனை நியமிக்கவும்"
 
 #: privacyidea/static/components/directives/views/directive.selectorcreatecontainer.html:53
@@ -534,14 +575,13 @@ msgstr "கிள்ளாக்கை ஒரு கொள்கலனுக்�
 
 #: privacyidea/static/components/directives/views/directive.containertemplate.details.html:73
 msgid "Assign the token to the container owner and/or realm."
-msgstr ""
-"கொள்கலன் உரிமையாளர் மற்றும்/அல்லது சாம்ராச்யத்திற்கு கிள்ளாக்கை ஒதுக்கவும்."
+msgstr "கொள்கலன் உரிமையாளர் மற்றும்/அல்லது சாம்ராச்யத்திற்கு கிள்ளாக்கை ஒதுக்கவும்."
 
 #: privacyidea/static/components/token/views/token.enroll.html:48
 msgid "Assign token to user"
 msgstr "பயனருக்கு கிள்ளாக்கை ஒதுக்கவும்"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:335
+#: privacyidea/static/components/token/views/token.containerdetails.html:336
 #: privacyidea/static/components/token/views/token.details.html:534
 msgid "Assigned User"
 msgstr "ஒதுக்கப்பட்ட பயனர்"
@@ -561,6 +601,12 @@ msgstr "கிள்ளாக்கை இணைக்கவும்"
 #: privacyidea/static/components/token/views/token.details.html:742
 msgid "Attach to a new Machine"
 msgstr "புதிய இயந்திரத்துடன் இணைக்கவும்"
+
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:44
+#, fuzzy
+#| msgid "Attribute mapping"
+msgid "Attribute Mapping"
+msgstr "பண்புக்கூறு மேப்பிங்"
 
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:309
 msgid "Attribute mapping"
@@ -586,6 +632,10 @@ msgstr "ஏற்புகள்"
 msgid "Authentications in the last 24 hours"
 msgstr "கடந்த 24 மணி நேரத்தில் ஏற்பு"
 
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:166
+msgid "Authority"
+msgstr ""
+
 #: privacyidea/static/components/config/views/config.system.edit.html:80
 msgid "Auto resync timeout"
 msgstr "ஆட்டோ மறுசீரமைப்பு நேரம் முடிந்தது"
@@ -607,6 +657,18 @@ msgstr "அடிப்படை கட்டமைப்பு"
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:116
 msgid "Base DN"
 msgstr "அடிப்படை டி.என்"
+
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:20
+#, fuzzy
+#| msgid "Base DN"
+msgid "Base URL"
+msgstr "அடிப்படை டி.என்"
+
+#: privacyidea/static/components/config/views/config.resolvers.http.html:13
+#, fuzzy
+#| msgid "Edit Settings"
+msgid "Basic Settings"
+msgstr "அமைப்புகளைத் திருத்தவும்"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:92
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:151
@@ -675,9 +737,9 @@ msgstr "கேச் நேரம் முடிந்தது (விநா�
 #: privacyidea/static/components/directives/views/directive.tokendata.html:23
 #: privacyidea/static/components/machine/views/machine.details.html:110
 #: privacyidea/static/components/token/views/token.containerdetails.html:138
-#: privacyidea/static/components/token/views/token.containerdetails.html:472
+#: privacyidea/static/components/token/views/token.containerdetails.html:473
 #: privacyidea/static/components/token/views/token.containerdetails.html:55
-#: privacyidea/static/components/token/views/token.containerdetails.html:565
+#: privacyidea/static/components/token/views/token.containerdetails.html:566
 #: privacyidea/static/components/token/views/token.details.html:218
 #: privacyidea/static/components/token/views/token.details.html:319
 #: privacyidea/static/components/token/views/token.details.html:363
@@ -739,7 +801,7 @@ msgstr "முள் மாற்றவும்"
 msgid "Check OTP only."
 msgstr "OTP ஐ மட்டுமே சரிபார்க்கவும்."
 
-#: privacyidea/static/components/config/views/config.policies.details.html:219
+#: privacyidea/static/components/config/views/config.policies.details.html:228
 msgid ""
 "Check all possible resolvers of a user to match the resolver\n"
 "                        in this policy."
@@ -809,7 +871,7 @@ msgstr ""
 " உங்கள் TIQR பயன்பாட்டில் டோக்கனைச் சேர்க்க விரும்புகிறேன்."
 
 #: privacyidea/static/components/components/views/component.clienttype.html:8
-#: privacyidea/static/components/config/views/config.policies.details.html:268
+#: privacyidea/static/components/config/views/config.policies.details.html:290
 #: privacyidea/static/components/config/views/config.policies.list.html:26
 #: privacyidea/static/components/config/views/config.resolvers.scim.html:51
 msgid "Client"
@@ -823,6 +885,13 @@ msgstr "கிளையன்ட் பயன்பாட்டு வகை"
 msgid "Client Configuration is not supported."
 msgstr "கிளையன்ட் உள்ளமைவு ஆதரிக்கப்படவில்லை."
 
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:189
+#, fuzzy
+#| msgid "Login with credentials"
+msgid "Client Credential"
+msgstr "நற்சான்றிதழ்களுடன் உள்நுழைக"
+
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:181
 #: privacyidea/static/components/config/views/config.token.yubikey.html:20
 #: privacyidea/static/components/config/views/config.token.yubikey.html:39
 msgid "Client ID"
@@ -846,7 +915,7 @@ msgstr "கிளையன்ட் தனியார் விசை (கோ�
 msgid "Clients"
 msgstr "வாடிக்கையாளர்கள்"
 
-#: privacyidea/static/components/dialogs/views/dialog.about.html:48
+#: privacyidea/static/components/dialogs/views/dialog.about.html:47
 msgid "Close"
 msgstr "மூடு"
 
@@ -855,7 +924,7 @@ msgid "Close all containers"
 msgstr "அனைத்து கொள்கலன்களையும் மூடு"
 
 #: privacyidea/static/components/config/views/config.events.details.html:146
-#: privacyidea/static/components/config/views/config.policies.details.html:331
+#: privacyidea/static/components/config/views/config.policies.details.html:377
 msgid "Close all groups"
 msgstr "அனைத்து குழுக்களையும் மூடு"
 
@@ -878,8 +947,8 @@ msgstr "கூறுகள்"
 
 #: privacyidea/static/components/config/views/config.events.details.html:110
 #: privacyidea/static/components/config/views/config.events.details.html:122
-#: privacyidea/static/components/config/views/config.policies.details.html:140
-#: privacyidea/static/components/config/views/config.policies.details.html:152
+#: privacyidea/static/components/config/views/config.policies.details.html:149
+#: privacyidea/static/components/config/views/config.policies.details.html:161
 msgid "Condition"
 msgstr "நிபந்தனை"
 
@@ -891,6 +960,62 @@ msgstr "நிபந்தனைகள்"
 msgid "Config"
 msgstr "கட்டமைப்பு"
 
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:300
+msgid ""
+"Configure the endpoint to authenticate the user with its username/userid and "
+"password."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:320
+msgid ""
+"Configure the endpoint to create a new user in the user store. The above "
+"defined attributes can be\n"
+"                set in the UI and will be added to the request body. "
+"Additionally, you can define a password which must\n"
+"                be specified in the request mapping using the tag "
+"<code>\"{password}\"</code>."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:332
+#, fuzzy
+#| msgid "Do you really want to delete the user in the user store?"
+msgid "Configure the endpoint to delete an existing user from the user store."
+msgstr "பயனர் கடையில் பயனரை நீக்க விரும்புகிறீர்களா?"
+
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:326
+msgid ""
+"Configure the endpoint to edit an existing user in the user store. The above "
+"defined attributes can\n"
+"                be set in the UI and will be added to the request body. "
+"Additionally, you can define custom request\n"
+"                parameters in the request mapping."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:304
+msgid ""
+"Configure the endpoint to retrieve a list of users from the user store. The "
+"above defined attributes\n"
+"                are added to the request as search parameters if they are "
+"available in the request."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:309
+msgid ""
+"Configure the endpoint to retrieve a single user for the UID. For example, "
+"privacyIDEA only stores\n"
+"                the UID of the token owner. To resolve the complete user, "
+"this endpoint is used."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:314
+msgid ""
+"Configure the endpoint to retrieve a single user for the username. For "
+"example, when a user tries to\n"
+"                authenticate against privacyIDEA, only the username is "
+"provided. To resolve the complete user and\n"
+"                evaluate if the user exists, this endpoint is used."
+msgstr ""
+
 #: privacyidea/static/components/config/views/config.resolvers.sql.html:196
 msgid "Connection Parameters"
 msgstr "இணைப்பு அளவுருக்கள்"
@@ -900,7 +1025,7 @@ msgstr "இணைப்பு அளவுருக்கள்"
 msgid "Connector name"
 msgstr "இணைப்பு பெயர்"
 
-#: privacyidea/static/components/token/views/token.containerlist.html:122
+#: privacyidea/static/components/token/views/token.containerlist.html:148
 msgid "Contained Tokens:"
 msgstr "டோக்கன்களைக் கொண்டுள்ளது:"
 
@@ -912,10 +1037,16 @@ msgstr "கொள்கலன் உருவாக்கப்பட்டத�
 msgid "Container Details for {{ containerSerial }}"
 msgstr "{{ containerSerial }} க்கு க்கான கொள்கலன் விவரங்கள்"
 
-#: privacyidea/static/components/token/views/token.containerlist.html:77
 #: privacyidea/static/components/token/views/token.containertemplates.edit.html:96
 msgid "Container Realms"
 msgstr "கொள்கலன் பகுதிகள்"
+
+#: privacyidea/static/components/token/views/token.containerlist.html:92
+msgid ""
+"Container Realms\n"
+"                <pi-filter ng-model=\"filter.realm\" ng-change=\"get()\" ng-"
+"keypress=\"($event.which==13)?get():return\"></pi-filter>"
+msgstr ""
 
 #: privacyidea/static/components/audit/views/audit.log.html:82
 msgid "Container Serial"
@@ -944,6 +1075,16 @@ msgstr "இந்த வார்ப்புருவுடன் உருவ�
 msgid "Containers for user {{ username }}"
 msgstr "பயனருக்கான கொள்கலன்கள் {{ username }}"
 
+#: privacyidea/static/components/token/controllers/tokenChallengesController.js:56
+msgid "Could not delete expired challenges."
+msgstr ""
+
+#: privacyidea/static/components/config/controllers/configControllers.js:811
+#, fuzzy
+#| msgid "Failed to delete user."
+msgid "Could not delete user cache."
+msgstr "பயனரை நீக்குவதில் தோல்வி."
+
 #: privacyidea/static/components/token/views/token.applications.offline.html:35
 #: privacyidea/static/components/token/views/token.details.html:123
 msgid "Count"
@@ -954,7 +1095,7 @@ msgstr "எண்ணுங்கள்"
 msgid "Count Window"
 msgstr "சாளரத்தை எண்ணுங்கள்"
 
-#: privacyidea/static/components/config/views/config.system.edit.html:155
+#: privacyidea/static/components/config/views/config.system.edit.html:164
 msgid ""
 "Count Window of\n"
 "                newly enrolled tokens"
@@ -982,7 +1123,7 @@ msgstr "அவ்வப்போது பணி வரையறையை உர
 #: privacyidea/static/components/config/views/config.realms.create.html:92
 #: privacyidea/static/components/config/views/config.realms.html:17
 #: privacyidea/static/components/config/views/config.realms.list.html:129
-#: privacyidea/static/components/dialogs/views/dialog.autocreate_realm.html:22
+#: privacyidea/static/components/dialogs/views/dialog.autocreate_realm.html:21
 msgid "Create Realm"
 msgstr "சாம்ராச்யத்தை உருவாக்கவும்"
 
@@ -1006,10 +1147,6 @@ msgstr "புதிய கொள்கலன் வார்ப்புரு�
 msgid "Create a new Event Handler"
 msgstr "ஒரு புதிய நிகழ்வு கையாளுபவரை உருவாக்கவும்"
 
-#: privacyidea/static/components/config/views/config.resolvers.http.html:5
-msgid "Create a new HTTP Resolver"
-msgstr "புதிய HTTP தீர்வை உருவாக்கவும்"
-
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:6
 msgid "Create a new LDAP Resolver"
 msgstr "புதிய LDAP தீர்வை உருவாக்கவும்"
@@ -1030,7 +1167,7 @@ msgstr "புதிய PASSWD தீர்வை உருவாக்கவு
 msgid "Create a new Periodic Task"
 msgstr "ஒரு புதிய கால பணியை உருவாக்கவும்"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:24
+#: privacyidea/static/components/config/views/config.policies.details.html:6
 msgid "Create a new Policy"
 msgstr "புதிய கொள்கையை உருவாக்கவும்"
 
@@ -1078,7 +1215,13 @@ msgstr "புதிய ஓச்ட்கள் இயந்திர தீர
 msgid "Create a new privacyIDEA server {{ params.identifier }}"
 msgstr "புதிய தனியுரிமைடியா சேவையகத்தை உருவாக்கவும் {{ params.identifier }}"
 
-#: privacyidea/static/components/dialogs/views/dialog.autocreate_realm.html:12
+#: privacyidea/static/components/config/views/config.resolvers.http.html:7
+#, fuzzy
+#| msgid "Create a new Tokengroup {{ params.groupname }}"
+msgid "Create a new {{ typeMapping[params.type] }}"
+msgstr "புதிய கிள்ளாக்கு குழுவை உருவாக்கவும் {{ params.groupname }}}"
+
+#: privacyidea/static/components/dialogs/views/dialog.autocreate_realm.html:11
 msgid "Create default realm"
 msgstr "இயல்புநிலை சாம்ராச்யத்தை உருவாக்கவும்"
 
@@ -1172,23 +1315,23 @@ msgstr "இயல்புநிலை நேர சாளரம்"
 #: privacyidea/static/components/config/views/config.mresolvers.list.html:28
 #: privacyidea/static/components/config/views/config.periodictasks.details.html:20
 #: privacyidea/static/components/config/views/config.periodictasks.list.html:55
-#: privacyidea/static/components/config/views/config.policies.details.html:19
+#: privacyidea/static/components/config/views/config.policies.details.html:142
 #: privacyidea/static/components/config/views/config.policies.list.html:79
 #: privacyidea/static/components/config/views/config.privacyideaserver.list.html:32
 #: privacyidea/static/components/config/views/config.radius.list.html:32
 #: privacyidea/static/components/config/views/config.realms.list.html:79
 #: privacyidea/static/components/config/views/config.resolvers.list.html:27
-#: privacyidea/static/components/config/views/config.serviceid.list.html:31
+#: privacyidea/static/components/config/views/config.serviceid.list.html:32
 #: privacyidea/static/components/config/views/config.smsgateway.list.html:27
 #: privacyidea/static/components/config/views/config.smtp.list.html:37
 #: privacyidea/static/components/config/views/config.token.question.html:39
 #: privacyidea/static/components/config/views/config.token.yubikey.html:30
 #: privacyidea/static/components/config/views/config.tokengroup.list.html:28
-#: privacyidea/static/components/config/views/dialog.confirm_delete.html:29
-#: privacyidea/static/components/directives/views/directive.policyconditions.html:66
+#: privacyidea/static/components/config/views/dialog.confirm_delete.html:28
+#: privacyidea/static/components/directives/views/directive.policyconditions.html:81
 #: privacyidea/static/components/token/views/token.containerdetails.html:33
-#: privacyidea/static/components/token/views/token.containerdetails.html:468
-#: privacyidea/static/components/token/views/token.containerdetails.html:555
+#: privacyidea/static/components/token/views/token.containerdetails.html:469
+#: privacyidea/static/components/token/views/token.containerdetails.html:556
 #: privacyidea/static/components/token/views/token.containertemplates.list.html:69
 #: privacyidea/static/components/token/views/token.details.html:20
 #: privacyidea/static/components/token/views/token.details.html:217
@@ -1196,11 +1339,11 @@ msgstr "இயல்புநிலை நேர சாளரம்"
 msgid "Delete"
 msgstr "நீக்கு"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:462
+#: privacyidea/static/components/token/views/token.containerdetails.html:463
 msgid "Delete All"
 msgstr "அனைத்தையும் நீக்கு"
 
-#: privacyidea/static/components/config/views/dialog.confirm_delete.html:12
+#: privacyidea/static/components/config/views/dialog.confirm_delete.html:11
 msgid "Delete Configuration"
 msgstr "உள்ளமைவை நீக்கு"
 
@@ -1212,19 +1355,31 @@ msgstr "கொள்கலன் நீக்கு"
 msgid "Delete Container and Tokens"
 msgstr "கொள்கலன் மற்றும் டோக்கன்களை நீக்கு"
 
-#: privacyidea/static/components/token/views/dialog.ask_token_delete.html:12
-#: privacyidea/static/components/token/views/dialog.ask_token_delete.html:32
-#: privacyidea/static/components/token/views/token.containerdetails.html:561
+#: privacyidea/static/components/token/views/token.challenges.html:5
+#, fuzzy
+#| msgid "Delete all tokens?"
+msgid "Delete Expired Challenges"
+msgstr "அனைத்து டோக்கன்களையும் நீக்கவா?"
+
+#: privacyidea/static/components/token/views/dialog.ask_token_delete.html:11
+#: privacyidea/static/components/token/views/dialog.ask_token_delete.html:31
+#: privacyidea/static/components/token/views/token.containerdetails.html:562
 #: privacyidea/static/components/user/views/user.details.html:216
 msgid "Delete Token"
 msgstr "கிள்ளாக்கை நீக்கு"
 
-#: privacyidea/static/components/user/views/dialog.ask_user_delete.html:12
-#: privacyidea/static/components/user/views/dialog.ask_user_delete.html:26
+#: privacyidea/static/components/user/views/dialog.ask_user_delete.html:11
+#: privacyidea/static/components/user/views/dialog.ask_user_delete.html:25
 msgid "Delete User"
 msgstr "பயனரை நீக்கு"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:464
+#: privacyidea/static/components/config/views/config.system.edit.html:99
+#, fuzzy
+#| msgid "Delete User"
+msgid "Delete User Cache"
+msgstr "பயனரை நீக்கு"
+
+#: privacyidea/static/components/token/views/token.containerdetails.html:465
 msgid "Delete all tokens?"
 msgstr "அனைத்து டோக்கன்களையும் நீக்கவா?"
 
@@ -1236,10 +1391,10 @@ msgstr "பயனரை நீக்கு"
 #: privacyidea/static/components/config/views/config.events.list.html:13
 #: privacyidea/static/components/config/views/config.periodictasks.details.html:32
 #: privacyidea/static/components/config/views/config.periodictasks.list.html:8
-#: privacyidea/static/components/config/views/config.policies.details.html:114
+#: privacyidea/static/components/config/views/config.policies.details.html:96
 #: privacyidea/static/components/config/views/config.privacyideaserver.edit.html:55
 #: privacyidea/static/components/config/views/config.privacyideaserver.list.html:8
-#: privacyidea/static/components/config/views/config.radius.edit.html:88
+#: privacyidea/static/components/config/views/config.radius.edit.html:93
 #: privacyidea/static/components/config/views/config.radius.list.html:8
 #: privacyidea/static/components/config/views/config.serviceid.edit.html:28
 #: privacyidea/static/components/config/views/config.serviceid.list.html:10
@@ -1250,9 +1405,9 @@ msgstr "பயனரை நீக்கு"
 #: privacyidea/static/components/config/views/config.tokengroup.edit.html:28
 #: privacyidea/static/components/config/views/config.tokengroup.list.html:7
 #: privacyidea/static/components/token/views/token.containercreate.html:44
-#: privacyidea/static/components/token/views/token.containerdetails.html:442
+#: privacyidea/static/components/token/views/token.containerdetails.html:443
 #: privacyidea/static/components/token/views/token.containerdetails.html:90
-#: privacyidea/static/components/token/views/token.containerlist.html:68
+#: privacyidea/static/components/token/views/token.containerlist.html:77
 #: privacyidea/static/components/token/views/token.containertemplates.edit.html:87
 #: privacyidea/static/components/token/views/token.details.html:155
 #: privacyidea/static/components/token/views/token.details.html:167
@@ -1289,7 +1444,6 @@ msgstr ""
 msgid "Details for user {{ username }} in realm"
 msgstr "பயனருக்கான விவரங்கள் {{ username }} சாம்ராச்யத்தில்"
 
-#: privacyidea/static/components/config/views/config.radius.edit.html:79
 #: privacyidea/static/components/config/views/config.radius.list.html:7
 msgid "Dictionary"
 msgstr "அகராதி"
@@ -1300,20 +1454,20 @@ msgstr "வார்ப்புருவில் வேறுபாடுக�
 
 #: privacyidea/static/components/config/views/config.events.details.html:6
 #: privacyidea/static/components/config/views/config.periodictasks.details.html:6
-#: privacyidea/static/components/config/views/config.policies.details.html:5
+#: privacyidea/static/components/config/views/config.policies.details.html:128
 #: privacyidea/static/components/token/views/token.details.html:49
 msgid "Disable"
 msgstr "முடக்கு"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:434
+#: privacyidea/static/components/token/views/token.containerdetails.html:435
 msgid "Disable All"
 msgstr "அனைத்தையும் முடக்கு"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:315
+#: privacyidea/static/components/token/views/token.containerdetails.html:316
 msgid "Disable All Tokens"
 msgstr "அனைத்து டோக்கன்களையும் முடக்கு"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:702
+#: privacyidea/static/components/token/views/token.containerdetails.html:703
 #: privacyidea/static/components/token/views/token.list.html:99
 #: privacyidea/static/components/user/views/user.details.html:167
 msgid "Disable token"
@@ -1327,11 +1481,11 @@ msgstr "உள்ளே முழுக்கு!"
 msgid "Do not use an authentication counter per token."
 msgstr "ஒரு டோக்கனுக்கு அங்கீகார கவுண்டரைப் பயன்படுத்த வேண்டாம்."
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:806
+#: privacyidea/static/components/token/controllers/tokenControllers.js:816
 msgid "Do not verify the authenticity"
 msgstr "நம்பகத்தன்மையை சரிபார்க்க வேண்டாம்"
 
-#: privacyidea/static/components/token/views/dialog.ask_token_delete.html:16
+#: privacyidea/static/components/token/views/dialog.ask_token_delete.html:15
 msgid ""
 "Do you really want to delete the Token {{ tokenSerial }} from user {{ token."
 "username }}?"
@@ -1339,11 +1493,11 @@ msgstr ""
 "பயனரை {{ tokenSerial }} இருந்து இலிருந்து கிள்ளாக்கு {{ token.username }} ஐ நீக்க "
 "விரும்புகிறீர்களா?"
 
-#: privacyidea/static/components/token/views/dialog.ask_token_delete.html:19
+#: privacyidea/static/components/token/views/dialog.ask_token_delete.html:18
 msgid "Do you really want to delete the Token {{ tokenSerial }}?"
 msgstr "கிள்ளாக்கை {{ tokenSerial }} ஐ நீக்க விரும்புகிறீர்களா?"
 
-#: privacyidea/static/components/user/views/dialog.ask_user_delete.html:15
+#: privacyidea/static/components/user/views/dialog.ask_user_delete.html:14
 msgid "Do you really want to delete the user in the user store?"
 msgstr "பயனர் கடையில் பயனரை நீக்க விரும்புகிறீர்களா?"
 
@@ -1365,7 +1519,7 @@ msgstr "இந்த பொருளை நீக்க விரும்பு
 msgid "Do you really want to delete this periodic task?"
 msgstr "இந்த கால பணியை நீக்க விரும்புகிறீர்களா?"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:16
+#: privacyidea/static/components/config/views/config.policies.details.html:139
 #: privacyidea/static/components/config/views/config.policies.list.html:76
 msgid "Do you really want to delete this policy?"
 msgstr "இந்தக் கொள்கையை நீக்க விரும்புகிறீர்களா?"
@@ -1373,6 +1527,12 @@ msgstr "இந்தக் கொள்கையை நீக்க விரு
 #: privacyidea/static/components/config/views/config.resolvers.list.html:24
 msgid "Do you really want to delete this resolver?"
 msgstr "இந்த தீர்மானத்தை நீக்க விரும்புகிறீர்களா?"
+
+#: privacyidea/static/components/config/views/config.serviceid.list.html:29
+#, fuzzy
+#| msgid "Do you really want to delete this event?"
+msgid "Do you really want to delete this service ID?"
+msgstr "இந்த நிகழ்வை நீக்க விரும்புகிறீர்களா?"
 
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:148
 msgid "Domain CA"
@@ -1401,9 +1561,10 @@ msgstr "கிள்ளாக்கு அமைப்புகள் மின�
 #: privacyidea/static/components/config/views/config.caconnectors.list.html:19
 #: privacyidea/static/components/config/views/config.mresolvers.list.html:19
 #: privacyidea/static/components/config/views/config.realms.list.html:70
+#: privacyidea/static/components/config/views/config.resolvers.http.html:4
 #: privacyidea/static/components/config/views/config.resolvers.list.html:19
 #: privacyidea/static/components/directives/views/directive.containertemplate.details.html:41
-#: privacyidea/static/components/directives/views/directive.policyconditions.html:57
+#: privacyidea/static/components/directives/views/directive.policyconditions.html:72
 #: privacyidea/static/components/directives/views/directive.tokendata.html:28
 #: privacyidea/static/components/token/views/token.containercreate.html:82
 #: privacyidea/static/components/token/views/token.containerdetails.html:125
@@ -1420,10 +1581,6 @@ msgstr "CA இணைப்பைத் திருத்து {{ connectorname
 #: privacyidea/static/components/config/views/config.events.details.html:3
 msgid "Edit Event Handler {{ eventid }}"
 msgstr "நிகழ்வு ஏண்ட்லரைத் திருத்து {{ eventid }}}"
-
-#: privacyidea/static/components/config/views/config.resolvers.http.html:3
-msgid "Edit HTTP Resolver {{ resolvername }}"
-msgstr "Http தீர்வைத் திருத்து {{ resolvername }}"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:3
 msgid ""
@@ -1535,6 +1692,7 @@ msgstr "பகுதிகளைத் திருத்தவும்"
 msgid "Edit user"
 msgstr "பயனரைத் திருத்து"
 
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:100
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:247
 #: privacyidea/static/components/config/views/config.resolvers.sql.html:90
 msgid "Edit user store"
@@ -1554,16 +1712,16 @@ msgstr "மின்னஞ்சல் முகவரி"
 
 #: privacyidea/static/components/config/views/config.events.details.html:11
 #: privacyidea/static/components/config/views/config.periodictasks.details.html:11
-#: privacyidea/static/components/config/views/config.policies.details.html:10
+#: privacyidea/static/components/config/views/config.policies.details.html:133
 #: privacyidea/static/components/token/views/token.details.html:57
 msgid "Enable"
 msgstr "இயக்கு"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:428
+#: privacyidea/static/components/token/views/token.containerdetails.html:429
 msgid "Enable All"
 msgstr "அனைத்தையும் இயக்கு"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:707
+#: privacyidea/static/components/token/views/token.containerdetails.html:708
 #: privacyidea/static/components/token/views/token.list.html:104
 #: privacyidea/static/components/user/views/user.details.html:172
 msgid "Enable token"
@@ -1573,11 +1731,17 @@ msgstr "கிள்ளாக்கை இயக்கவும்"
 msgid "End Date before Start Date!"
 msgstr "தொடக்க தேதிக்கு முன் தேதி!"
 
-#: privacyidea/static/components/config/views/config.resolvers.http.html:19
+#: privacyidea/static/components/directives/views/directive.httpResolverEndpointConfig.html:29
+#, fuzzy
+#| msgid "Endpoint (URL)"
+msgid "Endpoint"
+msgstr "இறுதிப்புள்ளி (URL)"
+
+#: privacyidea/static/components/config/views/config.resolvers.http.basic.html:19
 msgid "Endpoint (URL)"
 msgstr "இறுதிப்புள்ளி (URL)"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:574
+#: privacyidea/static/components/token/views/token.containerdetails.html:575
 #: privacyidea/static/components/user/views/user.details.html:274
 msgid "Enroll New Token"
 msgstr "புதிய கிள்ளாக்கை பதிவு செய்யுங்கள்"
@@ -1591,7 +1755,7 @@ msgid "Enroll Token"
 msgstr "கிள்ளாக்கை பதிவு செய்யுங்கள்"
 
 #: privacyidea/static/components/login/controllers/loginControllers.js:118
-#: privacyidea/static/components/token/controllers/tokenControllers.js:146
+#: privacyidea/static/components/token/controllers/tokenControllers.js:151
 #: privacyidea/static/components/token/views/token.enroll.html:1
 #: privacyidea/static/components/token/views/token.enroll.html:224
 msgid "Enroll a new token"
@@ -1626,7 +1790,7 @@ msgstr "கிள்ளாக்கை சரிபார்க்க முள�
 msgid "Enter PIN for token"
 msgstr "டோக்கனுக்கு முள் உள்ளிடவும்"
 
-#: privacyidea/static/components/directives/views/directive.registerContainer.html:37
+#: privacyidea/static/components/directives/views/directive.registerContainer.html:55
 msgid ""
 "Enter a passphrase prompt that will be displayed to the user.\n"
 "                            This should indicate which passphrase the user "
@@ -1675,7 +1839,7 @@ msgstr "கொள்கை வார்ப்புருக்களைப் �
 msgid "Error in U2F response."
 msgstr "U2F பதிலில் பிழை."
 
-#: privacyidea/static/components/login/factories/webauthn.js:104
+#: privacyidea/static/components/login/factories/webauthn.js:105
 msgid "Error in WebAuthn response."
 msgstr "WebAuthn பதிலில் பிழை."
 
@@ -1690,7 +1854,7 @@ msgstr "நிகழ்வுகள்"
 msgid "Examples"
 msgstr "எடுத்துக்காட்டுகள்"
 
-#: privacyidea/static/components/token/views/token.challenges.html:41
+#: privacyidea/static/components/token/views/token.challenges.html:49
 msgid "Expiration"
 msgstr "காலாவதி"
 
@@ -1702,12 +1866,12 @@ msgstr "நீட்டிக்கப்பட்ட பண்புக்க�
 msgid "Fail counter"
 msgstr "எதிர் தோல்வி"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:443
+#: privacyidea/static/components/token/views/token.containerdetails.html:444
 #: privacyidea/static/components/user/views/user.details.html:151
 msgid "Failcounter"
 msgstr "தோல்வி"
 
-#: privacyidea/static/components/user/controllers/userControllers.js:277
+#: privacyidea/static/components/user/controllers/userControllers.js:280
 msgid "Failed to delete user."
 msgstr "பயனரை நீக்குவதில் தோல்வி."
 
@@ -1725,7 +1889,7 @@ msgstr "உங்கள் கடவுச்சொல்லை மீட்ட�
 msgid "Failed to set PIN."
 msgstr "முள் அமைக்கத் தவறிவிட்டது."
 
-#: privacyidea/static/components/user/controllers/userControllers.js:258
+#: privacyidea/static/components/user/controllers/userControllers.js:261
 msgid "Failed to update user."
 msgstr "பயனரைப் புதுப்பிக்கத் தவறிவிட்டது."
 
@@ -1733,6 +1897,14 @@ msgstr "பயனரைப் புதுப்பிக்கத் தவற�
 #: privacyidea/static/components/config/views/config.resolvers.passwd.html:27
 msgid "File name"
 msgstr "கோப்பு பெயர்"
+
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:358
+msgid ""
+"Filter to get the groups of a single user. Possible tags: <code>{base_dn}</"
+"code>,\n"
+"                                <code>{username}</code>, and all attribute "
+"mapping keys."
+msgstr ""
 
 #: privacyidea/static/components/token/views/token.import.html:121
 msgid "Fingerprint"
@@ -1743,8 +1915,8 @@ msgstr "கைரேகை"
 #: privacyidea/static/components/machine/views/machine.list.html:5
 #: privacyidea/static/components/token/views/token.applications.offline.html:14
 #: privacyidea/static/components/token/views/token.applications.ssh.html:20
-#: privacyidea/static/components/token/views/token.challenges.html:10
-#: privacyidea/static/components/token/views/token.containerdetails.html:610
+#: privacyidea/static/components/token/views/token.challenges.html:18
+#: privacyidea/static/components/token/views/token.containerdetails.html:611
 #: privacyidea/static/components/token/views/token.containerlist.html:24
 #: privacyidea/static/components/token/views/token.containertemplates.edit.html:71
 #: privacyidea/static/components/token/views/token.containertemplates.list.html:26
@@ -1816,7 +1988,7 @@ msgid "From"
 msgstr "இருந்து"
 
 #: privacyidea/static/components/token/views/token.enroll.hotp.html:20
-#: privacyidea/static/components/token/views/token.enroll.motp.html:11
+#: privacyidea/static/components/token/views/token.enroll.motp.html:12
 #: privacyidea/static/components/token/views/token.enroll.totp.html:20
 msgid "Generate OTP Key on the Server"
 msgstr "சேவையகத்தில் OTP விசையை உருவாக்குங்கள்"
@@ -1879,6 +2051,12 @@ msgstr "அங்கீகார பயன்பாட்டைப் பெற�
 msgid "Given name"
 msgstr "கொடுக்கப்பட்ட பெயர்"
 
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:365
+#, fuzzy
+#| msgid "Hostname Attribute"
+msgid "Group Name Attribute"
+msgstr "ஓச்ட்பெயர் பண்புக்கூறு"
+
 #: privacyidea/static/components/config/views/config.token.hotp.html:1
 msgid "HOTP Token settings"
 msgstr "HOTP கிள்ளாக்கு அமைப்புகள்"
@@ -1886,6 +2064,10 @@ msgstr "HOTP கிள்ளாக்கு அமைப்புகள்"
 #: privacyidea/static/components/token/views/token.applications.offline.html:6
 msgid "HOTP tokens can be attached with offline to e.g. notebooks."
 msgstr "HOTP டோக்கன்களை ஆஃப்லைனில் இணைக்க முடியும் எ.கா. குறிப்பேடுகள்."
+
+#: privacyidea/static/components/directives/views/directive.policyconditions.html:10
+msgid "Handle Missing Data"
+msgstr ""
 
 #: privacyidea/static/components/config/views/config.events.details.html:62
 #: privacyidea/static/components/config/views/config.events.list.html:18
@@ -1906,7 +2088,9 @@ msgstr "ஆச் வழிமுறை"
 msgid "Headers"
 msgstr "தலைப்பிகளுக்கு"
 
-#: privacyidea/static/components/config/views/config.resolvers.http.html:46
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:89
+#: privacyidea/static/components/config/views/config.resolvers.http.basic.html:47
+#: privacyidea/static/components/directives/views/directive.httpResolverEndpointConfig.html:40
 msgid "Headers (JSON format)"
 msgstr "தலைப்புகள் (JSON வடிவம்)"
 
@@ -2017,8 +2201,8 @@ msgid ""
 "    <code>daypassword_timestep</code> always have precedence over these "
 "default values."
 msgstr ""
-"இங்கே நீங்கள் அமைப்புகளை வரையறுக்கலாம், அது இயல்புநிலை மதிப்புகளாக அமைக்கப்படும், எப்போது "
-"\n"
+"இங்கே நீங்கள் அமைப்புகளை வரையறுக்கலாம், அது இயல்புநிலை மதிப்புகளாக அமைக்கப்படும், "
+"எப்போது \n"
 "ஒரு டேபாச் வேர்ட் டோக்கனைச் சேர்ப்பது. பயனர்/நிர்வாக கொள்கைகள் "
 "<code>daypassword_hashlib</code> மற்றும் \n"
 "<code>daypassword_timestep</code> இந்த இயல்புநிலை மதிப்புகளுக்கு எப்போதும் "
@@ -2031,8 +2215,8 @@ msgid ""
 "<code>hotp_hashlib</code> always have precedence over\n"
 "    this default value."
 msgstr ""
-"இங்கே நீங்கள் அமைப்புகளை வரையறுக்கலாம், அது இயல்புநிலை மதிப்புகளாக அமைக்கப்படும், எப்போது "
-"\n"
+"இங்கே நீங்கள் அமைப்புகளை வரையறுக்கலாம், அது இயல்புநிலை மதிப்புகளாக அமைக்கப்படும், "
+"எப்போது \n"
 "HOTP டோக்கனைச் சேர்ப்பது. பயனர்/நிர்வாகக் கொள்கை <code>hotp_hashlib</code> எப்போதும் "
 "முன்னுரிமை உள்ளது என்பதை நினைவில் கொள்க \n"
 "இந்த இயல்புநிலை மதிப்பு."
@@ -2045,8 +2229,8 @@ msgid ""
 "    <code>totp_timestep</code> always have precedence over these default "
 "values."
 msgstr ""
-"இங்கே நீங்கள் அமைப்புகளை வரையறுக்கலாம், அது இயல்புநிலை மதிப்புகளாக அமைக்கப்படும், எப்போது "
-"\n"
+"இங்கே நீங்கள் அமைப்புகளை வரையறுக்கலாம், அது இயல்புநிலை மதிப்புகளாக அமைக்கப்படும், "
+"எப்போது \n"
 "ஒரு TOTP கிள்ளாக்கை பதிவு செய்தல். பயனர்/நிர்வாக கொள்கைகள் <code>totp_hashlib</code> "
 "மற்றும் \n"
 "<code>totp_timestep</code> இந்த இயல்புநிலை மதிப்புகளுக்கு எப்போதும் முன்னுரிமை "
@@ -2094,7 +2278,7 @@ msgstr "இங்கே நீங்கள் ஒரு புதிய பய�
 msgid "Hide"
 msgstr "மறை"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:588
+#: privacyidea/static/components/token/views/token.containerdetails.html:589
 msgid "Hide Add Token List"
 msgstr "கிள்ளாக்கு பட்டியலை சேர்க்கவும்"
 
@@ -2102,7 +2286,7 @@ msgstr "கிள்ளாக்கு பட்டியலை சேர்க�
 msgid "Hide Details"
 msgstr "விவரங்களை மறைக்கவும்"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:57
+#: privacyidea/static/components/config/views/config.policies.details.html:39
 msgid "Hide Policy templates"
 msgstr "கொள்கை வார்ப்புருக்களை மறைக்கவும்"
 
@@ -2155,6 +2339,10 @@ msgstr "ஐடி"
 msgid "Identifier"
 msgstr "அடையாளங்காட்டி"
 
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:93
+msgid "If no custom headers are defined this header is used for all endpoints."
+msgstr ""
+
 #: privacyidea/static/components/config/views/config.smtp.edit.html:79
 msgid ""
 "If the SMTP server requires authentication you need to\n"
@@ -2192,7 +2380,7 @@ msgstr ""
 "நீங்கள் HOTP பயன்முறையில் யூபிகேயை பதிவு செய்கிறீர்கள் என்றால், நீங்கள் பயன்படுத்த வேண்டும்\n"
 " பி.எச்.கே.சி கோப்பு வடிவம் யூபிகே சி.யு.ஐ.யின் புதிய பதிப்பில்."
 
-#: privacyidea/static/components/config/views/config.policies.details.html:40
+#: privacyidea/static/components/config/views/config.policies.details.html:22
 msgid ""
 "If you change the name of the policy, it will create a new policy\n"
 "                with the new name!"
@@ -2223,7 +2411,7 @@ msgstr "டோக்கன்களை இறக்குமதி செய்�
 msgid "Import tokens from a file"
 msgstr "ஒரு கோப்பிலிருந்து டோக்கன்களை இறக்குமதி செய்யுங்கள்"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:108
+#: privacyidea/static/components/config/views/config.policies.details.html:90
 msgid ""
 "In case of conflicting policies, the policy with the lowest priority number "
 "will take precedence."
@@ -2286,8 +2474,8 @@ msgstr "கீஃபைல் பாதை"
 #: privacyidea/static/components/machine/views/machine.list.html:4
 #: privacyidea/static/components/token/views/token.applications.offline.html:13
 #: privacyidea/static/components/token/views/token.applications.ssh.html:19
-#: privacyidea/static/components/token/views/token.challenges.html:9
-#: privacyidea/static/components/token/views/token.containerdetails.html:609
+#: privacyidea/static/components/token/views/token.challenges.html:17
+#: privacyidea/static/components/token/views/token.containerdetails.html:610
 #: privacyidea/static/components/token/views/token.containerlist.html:23
 #: privacyidea/static/components/token/views/token.containertemplates.edit.html:70
 #: privacyidea/static/components/token/views/token.containertemplates.list.html:25
@@ -2315,7 +2503,7 @@ msgstr "கடைசியாக ஒத்திசைவு"
 msgid "Last seen:"
 msgstr "கடைசியாக பார்த்தது:"
 
-#: privacyidea/static/components/dialogs/views/dialog.about.html:25
+#: privacyidea/static/components/dialogs/views/dialog.about.html:24
 msgid "Licensed under"
 msgstr "கீழ் உரிமம்"
 
@@ -2384,7 +2572,7 @@ msgstr "பூட்டுத் திரை"
 msgid "Log"
 msgstr "பதிவு"
 
-#: privacyidea/static/components/dialogs/views/dialog.lock.html:28
+#: privacyidea/static/components/dialogs/views/dialog.lock.html:27
 #: privacyidea/static/components/login/views/enter-response.html:27
 #: privacyidea/static/components/login/views/login.html:20
 #: privacyidea/static/components/login/views/login.html:77
@@ -2456,7 +2644,7 @@ msgstr "கோர்ப்பு"
 msgid "Mark the token as lost"
 msgstr "கிள்ளாக்கை இழந்ததாகக் குறிக்கவும்"
 
-#: privacyidea/static/components/config/views/config.system.edit.html:168
+#: privacyidea/static/components/config/views/config.system.edit.html:177
 msgid ""
 "Max Failcount of\n"
 "                newly enrolled tokens"
@@ -2464,7 +2652,7 @@ msgstr ""
 "மேக்ச் தோல்வி\n"
 " புதிதாக பதிவுசெய்யப்பட்ட டோக்கன்கள்"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:444
+#: privacyidea/static/components/token/views/token.containerdetails.html:445
 #: privacyidea/static/components/token/views/token.details.html:87
 #: privacyidea/static/components/user/views/user.details.html:152
 msgid "Maxfail"
@@ -2478,7 +2666,8 @@ msgstr "அதிகபட்ச அங்கீகார எண்ணிக்�
 msgid "Maximum Success Auth Count"
 msgstr "அதிகபட்ச செய் அங்கீகார எண்ணிக்கை"
 
-#: privacyidea/static/components/config/views/config.resolvers.http.html:27
+#: privacyidea/static/components/config/views/config.resolvers.http.basic.html:28
+#: privacyidea/static/components/directives/views/directive.httpResolverEndpointConfig.html:20
 msgid "Method"
 msgstr "முறை"
 
@@ -2580,8 +2769,8 @@ msgstr "செய்தி"
 #: privacyidea/static/components/machine/views/machine.list.html:3
 #: privacyidea/static/components/token/views/token.applications.offline.html:12
 #: privacyidea/static/components/token/views/token.applications.ssh.html:18
-#: privacyidea/static/components/token/views/token.challenges.html:8
-#: privacyidea/static/components/token/views/token.containerdetails.html:608
+#: privacyidea/static/components/token/views/token.challenges.html:16
+#: privacyidea/static/components/token/views/token.containerdetails.html:609
 #: privacyidea/static/components/token/views/token.containerlist.html:22
 #: privacyidea/static/components/token/views/token.containertemplates.edit.html:69
 #: privacyidea/static/components/token/views/token.containertemplates.list.html:24
@@ -2593,9 +2782,9 @@ msgstr "செய்தி"
 msgid "Next"
 msgstr "அடுத்தது"
 
-#: privacyidea/static/components/config/views/dialog.confirm_delete.html:22
-#: privacyidea/static/components/token/views/dialog.ask_token_delete.html:25
-#: privacyidea/static/components/user/views/dialog.ask_user_delete.html:19
+#: privacyidea/static/components/config/views/dialog.confirm_delete.html:21
+#: privacyidea/static/components/token/views/dialog.ask_token_delete.html:24
+#: privacyidea/static/components/user/views/dialog.ask_user_delete.html:18
 msgid "No"
 msgstr "இல்லை"
 
@@ -2604,15 +2793,19 @@ msgid "No Serial number could be found for OTP value {{ otp }}."
 msgstr "OTP மதிப்புக்கு வரிசை எண்ணைக் காண முடியவில்லை {{ otp }}."
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:152
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:345
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:399
 msgid "No anonymous referral chasing"
 msgstr "அநாமதேய பரிந்துரை துரத்தல் இல்லை"
+
+#: privacyidea/static/components/token/controllers/tokenChallengesController.js:50
+msgid "No expired challenges were deleted."
+msgstr ""
 
 #: privacyidea/static/components/directives/views/directive.attachmachine.html:17
 msgid "No machine found"
 msgstr "எந்த இயந்திரமும் கிடைக்கவில்லை"
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:352
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:406
 msgid "No retrieval of schema information"
 msgstr "ச்கீமா தகவல்களை மீட்டெடுக்கவில்லை"
 
@@ -2620,6 +2813,10 @@ msgstr "ச்கீமா தகவல்களை மீட்டெடுக�
 #: privacyidea/static/components/directives/views/directive.attachtoken.html:18
 msgid "No serial found"
 msgstr "சீரியல் எதுவும் கிடைக்கவில்லை"
+
+#: privacyidea/static/components/config/controllers/configControllers.js:806
+msgid "No user cache entries were deleted."
+msgstr ""
 
 #: privacyidea/static/components/directives/views/directive.assignuser.html:33
 msgid "No user found"
@@ -2672,7 +2869,7 @@ msgstr "சரி"
 
 #: privacyidea/static/components/token/views/token.enroll.daypassword.html:27
 #: privacyidea/static/components/token/views/token.enroll.hotp.html:40
-#: privacyidea/static/components/token/views/token.enroll.motp.html:23
+#: privacyidea/static/components/token/views/token.enroll.motp.html:25
 #: privacyidea/static/components/token/views/token.enroll.totp.html:40
 #: privacyidea/static/components/token/views/token.enroll.yubikey.html:30
 msgid "OTP Key"
@@ -2697,7 +2894,7 @@ msgstr "OTP மதிப்பு"
 msgid "OTP length"
 msgstr "OTP நீளம்"
 
-#: privacyidea/static/components/config/views/config.system.edit.html:141
+#: privacyidea/static/components/config/views/config.system.edit.html:150
 msgid ""
 "OTP length of\n"
 "                newly enrolled tokens"
@@ -2718,7 +2915,7 @@ msgstr "புதிய உருவாக்கப்பட்ட பயனர�
 msgid "Obsolete settings"
 msgstr "வழக்கற்றுப் போன அமைப்புகள்"
 
-#: privacyidea/static/components/dialogs/views/dialog.autocreate_realm.html:15
+#: privacyidea/static/components/dialogs/views/dialog.autocreate_realm.html:14
 msgid ""
 "Obviously you have no realms defined. Do you want me to create a\n"
 "          default realm for you from the machines /etc/passwd?"
@@ -2731,19 +2928,18 @@ msgstr ""
 msgid "Offline tokens attached to notebooks"
 msgstr "நோட்புக்குகளுடன் இணைக்கப்பட்ட இணைப்பில்லாத டோக்கன்கள்"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:294
+#: privacyidea/static/components/token/views/token.containerdetails.html:295
 msgid ""
 "Offline tokens can not be rolled over and can not be transferred to a new "
 "device."
 msgstr ""
 "இணைப்பில்லாத டோக்கன்களை உருட்ட முடியாது, மேலும் புதிய சாதனத்திற்கு மாற்ற முடியாது."
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:297
+#: privacyidea/static/components/token/views/token.containerdetails.html:298
 msgid ""
 "Offline tokens can not be synchronized if they do not yet exist on the "
 "smartphone."
-msgstr ""
-"ச்மார்ட்போனில் இன்னும் இல்லாதிருந்தால் இணைப்பில்லாத டோக்கன்களை ஒத்திசைக்க முடியாது."
+msgstr "ச்மார்ட்போனில் இன்னும் இல்லாதிருந்தால் இணைப்பில்லாத டோக்கன்களை ஒத்திசைக்க முடியாது."
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:165
 msgid "Okay"
@@ -2758,7 +2954,7 @@ msgstr "நிகழ்நிலை ஆவணங்கள்"
 msgid "Only add to the realm (no user assignment)"
 msgstr "சாம்ராச்யத்தில் மட்டுமே சேர்க்கவும் (பயனர் ஒதுக்கீடு இல்லை)"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:599
+#: privacyidea/static/components/token/views/token.containerdetails.html:600
 msgid "Only show tokens that are not in a container."
 msgstr "ஒரு கொள்கலனில் இல்லாத டோக்கன்களை மட்டுமே காட்டுங்கள்."
 
@@ -2767,7 +2963,7 @@ msgid "Open all containers"
 msgstr "அனைத்து கொள்கலன்களையும் திறக்கவும்"
 
 #: privacyidea/static/components/config/views/config.events.details.html:141
-#: privacyidea/static/components/config/views/config.policies.details.html:326
+#: privacyidea/static/components/config/views/config.policies.details.html:372
 msgid "Open all groups"
 msgstr "அனைத்து குழுக்களையும் திறக்கவும்"
 
@@ -2796,7 +2992,7 @@ msgstr "ஒழுங்கு"
 msgid "Other Error"
 msgstr "பிற பிழை"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:445
+#: privacyidea/static/components/token/views/token.containerdetails.html:446
 msgid "Otplen"
 msgstr "Otple"
 
@@ -2804,7 +3000,7 @@ msgstr "Otple"
 msgid "Overlap Period"
 msgstr "ஒன்றுடன் ஒன்று காலம்"
 
-#: privacyidea/static/components/config/views/config.system.edit.html:106
+#: privacyidea/static/components/config/views/config.system.edit.html:115
 msgid "Override Authorization Clients"
 msgstr "அங்கீகார வாடிக்கையாளர்களை மேலெழுதவும்"
 
@@ -2831,7 +3027,7 @@ msgstr "பின்/கடவுச்சொல்"
 msgid "PKCS12"
 msgstr "PKCS12"
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:776
+#: privacyidea/static/components/token/controllers/tokenControllers.js:786
 msgid "PKCS12 Password copied to clipboard"
 msgstr "PKCS12 கடவுச்சொல் இடைநிலைப்பலகைக்கு நகலெடுக்கப்பட்டது"
 
@@ -2847,24 +3043,26 @@ msgstr "பாச்கி உள்நுழைக"
 msgid "Passphrase (optional)"
 msgstr "கடவுச்சொல் (விரும்பினால்)"
 
-#: privacyidea/static/components/directives/views/directive.registerContainer.html:24
+#: privacyidea/static/components/directives/views/directive.registerContainer.html:43
 msgid "Passphrase Prompt"
 msgstr "கடவுச்சொல் வரம்பு"
 
-#: privacyidea/static/components/directives/views/directive.registerContainer.html:43
+#: privacyidea/static/components/directives/views/directive.registerContainer.html:61
 msgid "Passphrase Response"
 msgstr "கடவுச்சொல் பதில்"
 
-#: privacyidea/static/components/directives/views/directive.registerContainer.html:51
+#: privacyidea/static/components/directives/views/directive.registerContainer.html:69
 msgid "Passphrase the user has to enter to successfully register the container"
 msgstr "பாச்ஃபிரேச் கொள்கலனை வெற்றிகரமாக பதிவு செய்ய பயனர் நுழைய வேண்டும்"
 
 #: privacyidea/static/components/config/views/config.privacyideaserver.edit.html:74
-#: privacyidea/static/components/config/views/config.radius.edit.html:105
+#: privacyidea/static/components/config/views/config.radius.edit.html:114
+#: privacyidea/static/components/config/views/config.radius.edit.html:118
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:273
 #: privacyidea/static/components/config/views/config.resolvers.sql.html:79
 #: privacyidea/static/components/config/views/config.smtp.edit.html:86
-#: privacyidea/static/components/dialogs/views/dialog.lock.html:20
-#: privacyidea/static/components/dialogs/views/dialog.lock.html:25
+#: privacyidea/static/components/dialogs/views/dialog.lock.html:19
+#: privacyidea/static/components/dialogs/views/dialog.lock.html:24
 #: privacyidea/static/components/login/views/login.html:70
 #: privacyidea/static/components/login/views/login.html:74
 #: privacyidea/static/components/recovery/views/recovery.reset.html:9
@@ -2880,6 +3078,12 @@ msgstr "கடவுச்சொல்"
 msgid "Password Hash for editable users"
 msgstr "திருத்தக்கூடிய பயனர்களுக்கான கடவுச்சொல் ஆச்"
 
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:242
+#, fuzzy
+#| msgid "Password of encrypted client private key"
+msgid "Password for the private key"
+msgstr "மறைகுறியாக்கப்பட்ட கிளையன்ட் தனிப்பட்ட விசையின் கடவுச்சொல்"
+
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:121
 msgid "Password of encrypted client private key"
 msgstr "மறைகுறியாக்கப்பட்ட கிளையன்ட் தனிப்பட்ட விசையின் கடவுச்சொல்"
@@ -2891,6 +3095,12 @@ msgstr "கடவுச்சொல் வெற்றிகரமாக அம�
 #: privacyidea/static/components/token/views/token.enroll.sshkey.html:14
 msgid "Paste the ssh PUBLIC key"
 msgstr "பாஓடு பொது விசையை ஒட்டவும்"
+
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:231
+#, fuzzy
+#| msgid "Client private key (filename)"
+msgid "Path to the private key file"
+msgstr "கிளையன்ட் தனியார் விசை (கோப்பு பெயர்)"
 
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:234
 msgid "Per-process server pool"
@@ -2938,7 +3148,7 @@ msgid "Please provide the base URL of the privacyIDEA server."
 msgstr "தனியுரிமைடியா சேவையகத்தின் அடிப்படை முகவரி ஐ வழங்கவும்."
 
 #: privacyidea/static/components/token/views/token.containercreate.html:177
-#: privacyidea/static/components/token/views/token.containerdetails.html:275
+#: privacyidea/static/components/token/views/token.containerdetails.html:276
 msgid ""
 "Please scan the QR code with the privacyIDEA Authenticator App\n"
 "                    or click <a href=\"{{ containerRegistrationURL }}\">this "
@@ -2991,12 +3201,12 @@ msgstr ""
 msgid "Policies"
 msgstr "கொள்கைகள்"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:31
+#: privacyidea/static/components/config/views/config.policies.details.html:13
 #: privacyidea/static/components/config/views/config.policies.list.html:12
 msgid "Policy Name"
 msgstr "கொள்கை பெயர்"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:63
+#: privacyidea/static/components/config/views/config.policies.details.html:45
 msgid "Policy Templates"
 msgstr "கொள்கை வார்ப்புருக்கள்"
 
@@ -3016,7 +3226,7 @@ msgstr "பூல் நேரம் முடிந்தது"
 msgid "Pooling strategy"
 msgstr "பூலிங் உத்தி"
 
-#: privacyidea/static/components/config/views/config.radius.edit.html:37
+#: privacyidea/static/components/config/views/config.radius.edit.html:36
 #: privacyidea/static/components/config/views/config.resolvers.sql.html:48
 #: privacyidea/static/components/config/views/config.smtp.edit.html:37
 msgid "Port"
@@ -3026,6 +3236,11 @@ msgstr "துறைமுகம்"
 #: privacyidea/static/components/config/views/config.events.list.html:22
 msgid "Position"
 msgstr "நிலை"
+
+#: privacyidea/static/components/directives/views/directive.httpResolverEndpointConfig.html:34
+#: privacyidea/static/components/directives/views/directive.httpResolverEndpointConfig.html:54
+msgid "Possible tags:"
+msgstr ""
 
 #: privacyidea/static/components/token/views/token.import.html:71
 msgid "Pre Shared Key"
@@ -3053,8 +3268,8 @@ msgstr "முன்னமைக்கப்பட்ட Openldap"
 #: privacyidea/static/components/machine/views/machine.list.html:2
 #: privacyidea/static/components/token/views/token.applications.offline.html:11
 #: privacyidea/static/components/token/views/token.applications.ssh.html:17
-#: privacyidea/static/components/token/views/token.challenges.html:7
-#: privacyidea/static/components/token/views/token.containerdetails.html:607
+#: privacyidea/static/components/token/views/token.challenges.html:15
+#: privacyidea/static/components/token/views/token.containerdetails.html:608
 #: privacyidea/static/components/token/views/token.containerlist.html:21
 #: privacyidea/static/components/token/views/token.containertemplates.edit.html:68
 #: privacyidea/static/components/token/views/token.containertemplates.list.html:23
@@ -3072,7 +3287,7 @@ msgstr "முந்தைய"
 msgid "Print the OTP list"
 msgstr "OTP பட்டியலை அச்சிடுக"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:100
+#: privacyidea/static/components/config/views/config.policies.details.html:82
 #: privacyidea/static/components/config/views/config.policies.list.html:6
 msgid "Priority"
 msgstr "முன்னுரிமை"
@@ -3080,6 +3295,12 @@ msgstr "முன்னுரிமை"
 #: privacyidea/static/templates/baseline.html:32
 msgid "Privacy Statement"
 msgstr "தனியுரிமை அறிக்கை"
+
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:50
+#, fuzzy
+#| msgid "Machine ID Attribute"
+msgid "PrivacyIDEA Attribute"
+msgstr "இயந்திர ஐடி பண்புக்கூறு"
 
 #: privacyidea/static/components/token/views/token.import.html:136
 msgid "Progress"
@@ -3113,7 +3334,7 @@ msgstr "வினாத்தாள்"
 msgid "Questionnaire Token settings"
 msgstr "கேள்வித்தாள் கிள்ளாக்கு அமைப்புகள்"
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:358
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:412
 msgid "Quick Resolver Test"
 msgstr "விரைவான தீர்க்கும் சோதனை"
 
@@ -3122,9 +3343,15 @@ msgstr "விரைவான தீர்க்கும் சோதனை"
 msgid "Quick links"
 msgstr "விரைவான இணைப்புகள்"
 
-#: privacyidea/static/components/config/controllers/radiusServerController.js:83
+#: privacyidea/static/components/config/controllers/radiusServerController.js:84
 msgid "RADIUS Config saved."
 msgstr "ஆரம் கட்டமைப்பு சேமிக்கப்பட்டது."
+
+#: privacyidea/static/components/config/views/config.radius.edit.html:84
+#, fuzzy
+#| msgid "Dictionary"
+msgid "RADIUS Dictionary"
+msgstr "அகராதி"
 
 #: privacyidea/static/components/config/views/config.token.radius.html:1
 msgid "RADIUS Token settings"
@@ -3134,11 +3361,11 @@ msgstr "ஆரம் கிள்ளாக்கு அமைப்புகள�
 msgid "RADIUS User"
 msgstr "ஆரம் பயனர்"
 
-#: privacyidea/static/components/config/controllers/radiusServerController.js:74
+#: privacyidea/static/components/config/controllers/radiusServerController.js:75
 msgid "RADIUS request failed!"
 msgstr "ஆரம் கோரிக்கை தோல்வியடைந்தது!"
 
-#: privacyidea/static/components/config/controllers/radiusServerController.js:70
+#: privacyidea/static/components/config/controllers/radiusServerController.js:71
 msgid "RADIUS request successful."
 msgstr "ஆரம் கோரிக்கை வெற்றிகரமாக."
 
@@ -3172,11 +3399,12 @@ msgid "Read number dynamically from user source on each request."
 msgstr "ஒவ்வொரு கோரிக்கையிலும் பயனர் மூலத்திலிருந்து எண்ணை மாறும் எண்ணைப் படியுங்கள்."
 
 #: privacyidea/static/components/config/views/config.policies.list.html:23
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:33
 #: privacyidea/static/components/directives/views/directive.assignuser.html:5
 #: privacyidea/static/components/login/views/login.html:59
-#: privacyidea/static/components/token/views/token.containerdetails.html:357
-#: privacyidea/static/components/token/views/token.containerdetails.html:447
-#: privacyidea/static/components/token/views/token.containerlist.html:74
+#: privacyidea/static/components/token/views/token.containerdetails.html:358
+#: privacyidea/static/components/token/views/token.containerdetails.html:448
+#: privacyidea/static/components/token/views/token.containerlist.html:89
 #: privacyidea/static/components/token/views/token.containertemplates.edit.html:93
 #: privacyidea/static/components/token/views/token.details.html:558
 msgid "Realm"
@@ -3196,7 +3424,7 @@ msgstr "ரியல்ம் டெஃப்ரீல்ம் உருவா�
 msgid "Realms"
 msgstr "பகுதிகள்"
 
-#: privacyidea/static/components/token/views/token.challenges.html:48
+#: privacyidea/static/components/token/views/token.challenges.html:56
 msgid "Received"
 msgstr "பெறப்பட்டது"
 
@@ -3208,6 +3436,10 @@ msgstr "சோதனைக்கு பெறுநர்"
 msgid "Recorded Last Runs"
 msgstr "கடைசி ரன்கள் பதிவு செய்யப்பட்டன"
 
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:346
+msgid "Recursive Search of User Groups"
+msgstr ""
+
 #: privacyidea/static/components/token/controllers/tokenDetailController.js:164
 msgid "Refilltoken copied to clipboard!"
 msgstr "இடைநிலைப்பலகைக்கு Refilltoken நகலெடுக்கப்பட்டது!"
@@ -3216,7 +3448,7 @@ msgstr "இடைநிலைப்பலகைக்கு Refilltoken நக�
 msgid "Refresh"
 msgstr "புதுப்பிப்பு"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:254
+#: privacyidea/static/components/token/views/token.containerdetails.html:255
 #: privacyidea/static/components/token/views/token.enrolled.daypassword.html:37
 #: privacyidea/static/components/token/views/token.enrolled.hotp.html:37
 #: privacyidea/static/components/token/views/token.enrolled.totp.html:37
@@ -3229,7 +3461,7 @@ msgstr "QR குறியீட்டை மீண்டும் உருவ�
 msgid "Register"
 msgstr "பதிவு செய்யுங்கள்"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:247
+#: privacyidea/static/components/token/views/token.containerdetails.html:248
 msgid "Register Container on Device"
 msgstr "சாதனத்தில் கொள்கலனை பதிவு செய்யுங்கள்"
 
@@ -3274,11 +3506,11 @@ msgstr "தொலைநிலை கிள்ளாக்கு அமைப்�
 msgid "Remote User"
 msgstr "தொலை பயனர்"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:549
+#: privacyidea/static/components/token/views/token.containerdetails.html:550
 msgid "Remove"
 msgstr "அகற்று"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:456
+#: privacyidea/static/components/token/views/token.containerdetails.html:457
 msgid "Remove All"
 msgstr "அனைத்தையும் அகற்று"
 
@@ -3289,6 +3521,12 @@ msgstr "கிள்ளாக்கை அகற்று"
 #: privacyidea/static/components/token/views/token.details.html:637
 msgid "Remove from Container"
 msgstr "கொள்கலனில் இருந்து அகற்று"
+
+#: privacyidea/static/components/config/views/config.policies.details.html:125
+#, fuzzy
+#| msgid "Save Policy"
+msgid "Rename Policy"
+msgstr "கொள்கையை சேமிக்கவும்"
 
 #: privacyidea/static/components/directives/views/directive.assigntoken.html:39
 #: privacyidea/static/components/directives/views/directive.assignuser.html:51
@@ -3301,24 +3539,42 @@ msgid "Repeat new PIN"
 msgstr "புதிய முள் மீண்டும் செய்யவும்"
 
 #: privacyidea/static/components/recovery/views/recovery.reset.html:19
-#: privacyidea/static/components/token/views/token.enroll.motp.html:43
+#: privacyidea/static/components/token/views/token.enroll.motp.html:45
 #: privacyidea/static/components/user/views/user.password.html:60
 msgid "Repeat password"
 msgstr "கடவுச்சொல்லை மீண்டும் செய்யவும்"
 
-#: privacyidea/static/components/config/views/config.resolvers.http.html:38
-msgid "Request Mapping (JSON format)"
+#: privacyidea/static/components/config/views/config.resolvers.http.basic.html:38
+#, fuzzy
+#| msgid "Request Mapping (JSON format)"
+msgid ""
+"Request Mapping (JSON\n"
+"                format)"
+msgstr "மேப்பிங் கோரிக்கை (JSON வடிவம்)"
+
+#: privacyidea/static/components/directives/views/directive.httpResolverEndpointConfig.html:48
+#, fuzzy
+#| msgid "Request Mapping (JSON format)"
+msgid ""
+"Request Mapping (JSON\n"
+"            format)"
 msgstr "மேப்பிங் கோரிக்கை (JSON வடிவம்)"
 
 #: privacyidea/static/components/config/controllers/privacyideaServerController.js:75
 msgid "Request to remote privacyIDEA server successful."
 msgstr "தொலைதூர தனியார்மயமாக்கல் சேவையகத்திற்கான கோரிக்கை வெற்றிகரமாக உள்ளது."
 
+#: privacyidea/static/components/config/views/config.radius.edit.html:75
+#, fuzzy
+#| msgid "Challenge Response Authentication."
+msgid "Require Message-Authenticator"
+msgstr "பதில் அங்கீகாரத்தை அறைகூவல் செய்யுங்கள்."
+
 #: privacyidea/static/components/token/views/token.enroll.4eyes.html:22
 msgid "Required Realms"
 msgstr "தேவையான பகுதிகள்"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:715
+#: privacyidea/static/components/token/views/token.containerdetails.html:716
 #: privacyidea/static/components/token/views/token.list.html:112
 #: privacyidea/static/components/user/views/user.details.html:179
 msgid "Reset Failcounter"
@@ -3339,8 +3595,8 @@ msgid "Reset your Password"
 msgstr "உங்கள் கடவுச்சொல்லை மீட்டமைக்கவும்"
 
 #: privacyidea/static/components/config/views/config.policies.list.html:25
-#: privacyidea/static/components/token/views/token.containerdetails.html:380
-#: privacyidea/static/components/token/views/token.containerdetails.html:687
+#: privacyidea/static/components/token/views/token.containerdetails.html:381
+#: privacyidea/static/components/token/views/token.containerdetails.html:688
 #: privacyidea/static/components/token/views/token.details.html:563
 #: privacyidea/static/components/token/views/token.details.html:668
 #: privacyidea/static/components/token/views/token.list.html:84
@@ -3351,7 +3607,7 @@ msgstr "தீர்வு"
 #: privacyidea/static/components/config/views/config.mresolvers.hosts.html:15
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:16
 #: privacyidea/static/components/config/views/config.mresolvers.list.html:5
-#: privacyidea/static/components/config/views/config.resolvers.http.html:10
+#: privacyidea/static/components/config/views/config.resolvers.http.html:27
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:14
 #: privacyidea/static/components/config/views/config.resolvers.list.html:5
 #: privacyidea/static/components/config/views/config.resolvers.passwd.html:14
@@ -3374,7 +3630,7 @@ msgstr "வள சேவையக யூரி"
 msgid "Response"
 msgstr "பதில்"
 
-#: privacyidea/static/components/config/views/config.resolvers.http.html:53
+#: privacyidea/static/components/config/views/config.resolvers.http.basic.html:55
 msgid ""
 "Response Mapping\n"
 "                (JSON format)"
@@ -3382,15 +3638,39 @@ msgstr ""
 "மறுமொழி மேப்பிங்\n"
 " (JSON வடிவம்)"
 
-#: privacyidea/static/components/config/views/config.resolvers.http.html:69
-msgid "Response contains (JSON format):"
+#: privacyidea/static/components/directives/views/directive.httpResolverEndpointConfig.html:60
+#, fuzzy
+#| msgid ""
+#| "Response Mapping\n"
+#| "                (JSON format)"
+msgid ""
+"Response Mapping\n"
+"            (JSON format)"
+msgstr ""
+"மறுமொழி மேப்பிங்\n"
+" (JSON வடிவம்)"
+
+#: privacyidea/static/components/config/views/config.resolvers.http.basic.html:72
+#, fuzzy
+#| msgid "Response contains (JSON format):"
+msgid ""
+"Response contains (JSON\n"
+"                format):"
+msgstr "பதிலில் உள்ளது (JSON வடிவம்):"
+
+#: privacyidea/static/components/directives/views/directive.httpResolverEndpointConfig.html:77
+#, fuzzy
+#| msgid "Response contains (JSON format):"
+msgid ""
+"Response contains (JSON\n"
+"            format):"
 msgstr "பதிலில் உள்ளது (JSON வடிவம்):"
 
 #: privacyidea/static/components/token/views/token.details.html:439
 msgid "Resync Token"
 msgstr "மறுதொடக்கம் கிள்ளாக்கு"
 
-#: privacyidea/static/components/config/views/config.radius.edit.html:56
+#: privacyidea/static/components/config/views/config.radius.edit.html:54
 msgid "Retries"
 msgstr "மறுமுயற்சிகள்"
 
@@ -3402,7 +3682,7 @@ msgstr "தோல்வியுற்றால் மீண்டும் ம�
 msgid "Revoke"
 msgstr "ரத்து செய்யுங்கள்"
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:155
+#: privacyidea/static/components/token/controllers/tokenControllers.js:160
 msgid "Roll the token"
 msgstr "கிள்ளாக்கை உருட்டவும்"
 
@@ -3410,7 +3690,7 @@ msgstr "கிள்ளாக்கை உருட்டவும்"
 msgid "Rollout State"
 msgstr "ரோல்அவுட் நிலை"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:261
+#: privacyidea/static/components/token/views/token.containerdetails.html:262
 #: privacyidea/static/components/token/views/token.details.html:28
 msgid "Rollover"
 msgstr "ரோல்ஓவர்"
@@ -3455,7 +3735,7 @@ msgstr "SMTP கட்டமைப்பு சேமிக்கப்பட்
 msgid "SMTP server configuration"
 msgstr "SMTP சேவையக உள்ளமைவு"
 
-#: privacyidea/static/components/config/views/config.system.edit.html:124
+#: privacyidea/static/components/config/views/config.system.edit.html:133
 msgid "SMTP server for password recovery"
 msgstr "கடவுச்சொல் மீட்டெடுப்பதற்கான SMTP சேவையகம்"
 
@@ -3502,7 +3782,7 @@ msgstr "Startls"
 
 #: privacyidea/static/components/config/views/config.realms.list.html:83
 #: privacyidea/static/components/config/views/config.tokens.html:83
-#: privacyidea/static/components/directives/views/directive.policyconditions.html:62
+#: privacyidea/static/components/directives/views/directive.policyconditions.html:77
 #: privacyidea/static/components/token/views/token.containertemplates.edit.html:144
 msgid "Save"
 msgstr "சேமி"
@@ -3522,12 +3802,11 @@ msgstr "நிகழ்வு கையாளுபவர் வரையறை�
 msgid "Save Options"
 msgstr "விருப்பங்களைச் சேமிக்கவும்"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:134
-#: privacyidea/static/components/config/views/config.policies.details.html:476
+#: privacyidea/static/components/config/views/config.policies.details.html:522
 msgid "Save Policy"
 msgstr "கொள்கையை சேமிக்கவும்"
 
-#: privacyidea/static/components/config/views/config.radius.edit.html:120
+#: privacyidea/static/components/config/views/config.radius.edit.html:130
 msgid "Save RADIUS server"
 msgstr "ஆரம் சேவையகத்தை சேமிக்கவும்"
 
@@ -3556,7 +3835,7 @@ msgstr "பணி ஐடியைச் சேமிக்கவும்"
 msgid "Save States"
 msgstr "மாநிலங்களை சேமிக்கவும்"
 
-#: privacyidea/static/components/config/views/config.system.edit.html:235
+#: privacyidea/static/components/config/views/config.system.edit.html:244
 msgid "Save System Config"
 msgstr "கணினி கட்டமைப்பைச் சேமிக்கவும்"
 
@@ -3583,8 +3862,8 @@ msgstr "பகுதிகளை சேமிக்கவும்"
 
 #: privacyidea/static/components/config/views/config.mresolvers.hosts.html:40
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:208
-#: privacyidea/static/components/config/views/config.resolvers.http.html:93
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:370
+#: privacyidea/static/components/config/views/config.resolvers.http.html:69
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:424
 #: privacyidea/static/components/config/views/config.resolvers.passwd.html:39
 #: privacyidea/static/components/config/views/config.resolvers.scim.html:88
 msgid "Save resolver"
@@ -3605,11 +3884,18 @@ msgstr "நோக்கம்"
 msgid "Search Filter"
 msgstr "தேடல் வடிகட்டி"
 
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:350
+#, fuzzy
+#| msgid "Search Filter"
+msgid "Search Filter for User Groups"
+msgstr "தேடல் வடிகட்டி"
+
 #: privacyidea/static/components/token/views/token.getserial.html:89
 msgid "Searching token..."
 msgstr "டோக்கனைத் தேடுகிறது ..."
 
-#: privacyidea/static/components/config/views/config.radius.edit.html:68
+#: privacyidea/static/components/config/views/config.radius.edit.html:64
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:205
 #: privacyidea/static/components/config/views/config.resolvers.scim.html:62
 #: privacyidea/static/components/token/views/token.enroll.indexedsecret.html:11
 msgid "Secret"
@@ -3619,11 +3905,17 @@ msgstr "மறைபொருள்"
 msgid "Section"
 msgstr "பிரிவு"
 
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:73
+#, fuzzy
+#| msgid "Save privacyIDEA server"
+msgid "Select PrivacyIDEA Attribute"
+msgstr "தனியுரிமை சேவையகத்தை சேமிக்கவும்"
+
 #: privacyidea/static/components/user/views/user.html:24
 msgid "Select Realm"
 msgstr "சாம்ராச்யத்தைத் தேர்ந்தெடுக்கவும்"
 
-#: privacyidea/static/components/config/views/config.system.edit.html:133
+#: privacyidea/static/components/config/views/config.system.edit.html:142
 msgid ""
 "Select a predefined\n"
 "                <a ui-sref=\"config.smtp\">SMTP server configuration</a>."
@@ -3677,6 +3969,12 @@ msgstr "கோப்பு என்பதைத் தேர்ந்தெட�
 msgid "Selection"
 msgstr "தேர்வு"
 
+#: privacyidea/static/components/config/views/config.radius.edit.html:121
+#, fuzzy
+#| msgid "Send test RADIUS request"
+msgid "Send RADIUS test request"
+msgstr "சோதனை ஆரம் கோரிக்கையை அனுப்பவும்"
+
 #: privacyidea/static/components/recovery/views/recovery.html:38
 msgid "Send Reset Code"
 msgstr "மீட்டமைப்பு குறியீட்டை அனுப்பவும்"
@@ -3688,10 +3986,6 @@ msgstr "சோதனை மின்னஞ்சலை அனுப்பவு�
 #: privacyidea/static/components/config/views/config.smtp.edit.html:124
 msgid "Send mail from job queue"
 msgstr "வேலை வரிசையில் இருந்து அஞ்சல் அனுப்பவும்"
-
-#: privacyidea/static/components/config/views/config.radius.edit.html:111
-msgid "Send test RADIUS request"
-msgstr "சோதனை ஆரம் கோரிக்கையை அனுப்பவும்"
 
 #: privacyidea/static/components/config/views/config.privacyideaserver.edit.html:81
 msgid "Send test request to privacyIDEA server"
@@ -3809,11 +4103,11 @@ msgstr "காட்டு"
 msgid "Show PKCS12 password"
 msgstr "PKCS12 கடவுச்சொல்லைக் காட்டு"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:51
+#: privacyidea/static/components/config/views/config.policies.details.html:33
 msgid "Show Policy templates"
 msgstr "கொள்கை வார்ப்புருக்களைக் காட்டு"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:319
+#: privacyidea/static/components/config/views/config.policies.details.html:365
 msgid "Show all actions"
 msgstr "எல்லா செயல்களையும் காட்டு"
 
@@ -3825,7 +4119,7 @@ msgstr "எல்லா நிபந்தனைகளையும் காட�
 msgid "Show password"
 msgstr "கடவுச்சொல்லைக் காட்டு"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:314
+#: privacyidea/static/components/config/views/config.policies.details.html:360
 msgid "Show selected actions only"
 msgstr "தேர்ந்தெடுக்கப்பட்ட செயல்களை மட்டும் காட்டு"
 
@@ -3838,7 +4132,7 @@ msgstr "தேர்ந்தெடுக்கப்பட்ட நிபந�
 msgid "Size Limit"
 msgstr "அளவு வரம்பு"
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:807
+#: privacyidea/static/components/token/controllers/tokenControllers.js:817
 msgid "Skip tokens that can not be verified"
 msgstr "சரிபார்க்க முடியாத டோக்கன்களைத் தவிர்க்கவும்"
 
@@ -3868,11 +4162,17 @@ msgstr "சில அங்கீகார பயன்பாடுகள் SHA
 msgid "Some nice words..."
 msgstr "சில நல்ல வார்த்தைகள் ..."
 
+#: privacyidea/static/components/token/controllers/containerControllers.js:919
+#, fuzzy
+#| msgid "Skip tokens that can not be verified"
+msgid "Some tokens could not be deleted:"
+msgstr "சரிபார்க்க முடியாத டோக்கன்களைத் தவிர்க்கவும்"
+
 #: privacyidea/static/components/login/controllers/loginControllers.js:364
 msgid "Something went wrong!"
 msgstr "ஏதோ தவறு நடந்தது!"
 
-#: privacyidea/static/components/config/views/config.resolvers.http.html:61
+#: privacyidea/static/components/config/views/config.resolvers.http.basic.html:64
 msgid ""
 "Special Error\n"
 "                Handling"
@@ -3880,10 +4180,31 @@ msgstr ""
 "சிறப்பு பிழை\n"
 " கையாளுதல்"
 
+#: privacyidea/static/components/directives/views/directive.httpResolverEndpointConfig.html:69
+#, fuzzy
+#| msgid ""
+#| "Special Error\n"
+#| "                Handling"
+msgid ""
+"Special Error\n"
+"            Handling"
+msgstr ""
+"சிறப்பு பிழை\n"
+" கையாளுதல்"
+
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:223
+msgid ""
+"Specify the path to the private key file of the servers certificate. If you "
+"use an\n"
+"                                        encrypted key, add the password "
+"here, otherwise leave the field empty. The server\n"
+"                                        certificate must be uploaded in "
+"Entra's app registration as client credential."
+msgstr ""
+
 #: privacyidea/static/components/directives/views/directive.assigntoken.html:8
 msgid "Start typing a serial number of a token that is not yet assigned"
-msgstr ""
-"இன்னும் ஒதுக்கப்படாத ஒரு டோக்கனின் வரிசை எண்ணைத் தட்டச்சு செய்யத் தொடங்குங்கள்"
+msgstr "இன்னும் ஒதுக்கப்படாத ஒரு டோக்கனின் வரிசை எண்ணைத் தட்டச்சு செய்யத் தொடங்குங்கள்"
 
 #: privacyidea/static/components/config/views/config.smtp.list.html:8
 msgid "StartTLS"
@@ -3940,7 +4261,7 @@ msgstr "குடும்பப்பெயர்"
 msgid "Sync Window"
 msgstr "சாளரத்தை ஒத்திசைக்கவும்"
 
-#: privacyidea/static/components/config/views/config.system.edit.html:180
+#: privacyidea/static/components/config/views/config.system.edit.html:189
 msgid ""
 "Sync Window of\n"
 "                newly enrolled tokens"
@@ -3960,12 +4281,12 @@ msgstr "மண்டலம்"
 msgid "System Config"
 msgstr "கணினி கட்டமைப்பு"
 
-#: privacyidea/static/components/config/controllers/configControllers.js:574
-#: privacyidea/static/components/config/controllers/configControllers.js:719
+#: privacyidea/static/components/config/controllers/configControllers.js:616
+#: privacyidea/static/components/config/controllers/configControllers.js:762
 msgid "System Config saved."
 msgstr "கணினி கட்டமைப்பு சேமிக்கப்பட்டது."
 
-#: privacyidea/static/components/config/controllers/configControllers.js:583
+#: privacyidea/static/components/config/controllers/configControllers.js:625
 msgid "System entry deleted."
 msgstr "கணினி நுழைவு நீக்கப்பட்டது."
 
@@ -4010,16 +4331,20 @@ msgstr "வார்ப்புரு {{ template.name }}"
 msgid "Templates"
 msgstr "வார்ப்புருக்கள்"
 
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:174
+msgid "Tenant"
+msgstr ""
+
 #: privacyidea/static/components/config/controllers/smtpServerController.js:79
 msgid "Test Email sent successfully."
 msgstr "சோதனை மின்னஞ்சல் வெற்றிகரமாக அனுப்பப்பட்டது."
 
-#: privacyidea/static/components/config/views/config.resolvers.http.html:86
+#: privacyidea/static/components/config/views/config.resolvers.http.html:54
 msgid "Test HTTP Resolver"
 msgstr "HTTP தீர்வை சோதிக்கவும்"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:204
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:365
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:419
 msgid "Test LDAP Resolver"
 msgstr "LDAP தீர்வை சோதிக்கவும்"
 
@@ -4030,6 +4355,12 @@ msgstr "OTP ஐ மட்டுமே சோதிக்கவும்"
 #: privacyidea/static/components/token/views/token.details.html:519
 msgid "Test Passkey."
 msgstr "சோதனை பாச்கி."
+
+#: privacyidea/static/components/config/views/config.radius.edit.html:103
+#, fuzzy
+#| msgid "New RADIUS server"
+msgid "Test RADIUS Server"
+msgstr "புதிய ஆரம் சேவையகம்"
 
 #: privacyidea/static/components/config/views/config.resolvers.scim.html:83
 msgid "Test SCIM Resolver"
@@ -4046,6 +4377,18 @@ msgstr "சோதனை சூபிலி"
 #: privacyidea/static/components/token/views/token.details.html:507
 msgid "Test token"
 msgstr "சோதனை கிள்ளாக்கு"
+
+#: privacyidea/static/components/config/views/config.resolvers.http.html:46
+#, fuzzy
+#| msgid "Delete user"
+msgid "Test user ID"
+msgstr "பயனரை நீக்கு"
+
+#: privacyidea/static/components/config/views/config.resolvers.http.html:45
+#, fuzzy
+#| msgid "username"
+msgid "Test username"
+msgstr "பயனர்பெயர்"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:128
 msgid "Thank you for improving your security!"
@@ -4142,8 +4485,8 @@ msgid ""
 "    4226</a>."
 msgstr ""
 "HOTP கிள்ளாக்கு என்பது ஒரு முறை கடவுச்சொல் கிள்ளாக்கை அடிப்படையாகக் கொண்ட நிகழ்வு. \n"
-"இது <a href=\"https://tools.ietf.org/html/rfc4226\">RFC இல் விவரிக்கப்பட்டுள்ளது "
-"\n"
+"இது <a href=\"https://tools.ietf.org/html/rfc4226\">RFC இல் "
+"விவரிக்கப்பட்டுள்ளது \n"
 "4226</a>."
 
 #: privacyidea/static/components/token/views/token.enroll.hotp.html:1
@@ -4323,8 +4666,8 @@ msgid ""
 "    6238</a>."
 msgstr ""
 "TOTP கிள்ளாக்கு என்பது ஒரு முறை கடவுச்சொல் கிள்ளாக்கு அடிப்படையிலான நேரம்.\n"
-" இது <a href=\"https://tools.ietf.org/html/rfc6238\">RFC இல் விவரிக்கப்பட்டுள்ளது"
-"\n"
+" இது <a href=\"https://tools.ietf.org/html/rfc6238\">RFC இல் "
+"விவரிக்கப்பட்டுள்ளது\n"
 " 6238</a>."
 
 #: privacyidea/static/components/token/views/token.enroll.totp.html:1
@@ -4501,9 +4844,8 @@ msgid ""
 "                    are:"
 msgstr ""
 "சேர்க்கப்பட்ட மதிப்புகள் \n"
-"<a target=\"netknights\" href="
-"\"https://netknights.it/en/produkte/privacyidea/\"> தனியுரிமிடியா நிறுவன "
-"பதிப்பு </a> \n"
+"<a target=\"netknights\" href=\"https://netknights.it/en/produkte/"
+"privacyidea/\"> தனியுரிமிடியா நிறுவன பதிப்பு </a> \n"
 "அவை:"
 
 #: privacyidea/static/components/config/views/config.token.yubikey.html:7
@@ -4518,14 +4860,12 @@ msgid ""
 "        Yubico Validation Protocol</a>."
 msgstr ""
 "அங்கீகார கோரிக்கையை இயல்புநிலை தனியுரிமை மூலம் கையாளலாம் \n"
-"    <a href="
-"\"https://privacyidea.readthedocs.io/en/latest/modules/api/validate.html\" "
-"target=\"_blank\">\n"
+"    <a href=\"https://privacyidea.readthedocs.io/en/latest/modules/api/"
+"validate.html\" target=\"_blank\">\n"
 "API ஐ சரிபார்க்கவும்</a>ஆனால் இதன்மூலம் கையாளலாம்\n"
 "        <a href=\"https://privacyidea.readthedocs.io/en/latest/modules/lib/"
-"tokentypes/"
-"yubikey.html#privacyidea.lib.tokens.yubikeytoken.YubikeyTokenClass."
-"api_endpoint\" target=\"_blank\">\n"
+"tokentypes/yubikey.html#privacyidea.lib.tokens.yubikeytoken."
+"YubikeyTokenClass.api_endpoint\" target=\"_blank\">\n"
 "        யூபிகோ சரிபார்ப்பு நெறிமுறை </a>."
 
 #: privacyidea/static/components/config/views/config.token.yubico.html:8
@@ -4540,6 +4880,13 @@ msgstr ""
 "நீங்கள் <a href=\"https://upgrade.yubico.com/getapikey/\" target=\"_extern\"> "
 "இங்கே </a> ஐ கோரலாம்."
 
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:25
+msgid ""
+"The base URL of the API of the user store which will be concatenated with "
+"the user endpoints defined\n"
+"                below."
+msgstr ""
+
 #: privacyidea/static/components/token/views/token.enrolled.certificate.html:1
 msgid "The certificate was enrolled successfully."
 msgstr "சான்றிதழ் வெற்றிகரமாக சேர்க்கப்பட்டது."
@@ -4552,7 +4899,7 @@ msgstr ""
 "செல்லுபடியாகும் ஓச்ட்பெயருக்கு சான்றிதழ் சரிபார்க்கப்படும்\n"
 " நம்பகமான சான்றிதழ். விளைவாக்கம் பயன்பாட்டில் இதைத் தேர்வு செய்யாதீர்கள்!"
 
-#: privacyidea/static/components/config/views/config.system.edit.html:193
+#: privacyidea/static/components/config/views/config.system.edit.html:202
 msgid "The challenge validity time"
 msgstr "அறைகூவல் செல்லுபடியாகும் நேரம்"
 
@@ -4564,15 +4911,38 @@ msgstr "கிளையன்ட் ஐடி"
 msgid "The client device can not be used for this type of request."
 msgstr "கிளையன்ட் சாதனத்தை இந்த வகை கோரிக்கைக்கு பயன்படுத்த முடியாது."
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:286
+#: privacyidea/static/components/token/views/token.containerdetails.html:287
 msgid "The container contains the following offline tokens:"
 msgstr "கொள்கலனில் பின்வரும் இணைப்பில்லாத டோக்கன்கள் உள்ளன:"
 
-#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:68
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:102
+#, fuzzy
+#| msgid ""
+#| "The file containing the CA certificate which signed the\n"
+#| "                    LDAP TLS certificate."
+msgid ""
+"The file containing the CA certificate which signed the\n"
+"                        LDAP TLS certificate."
+msgstr ""
+"கையெழுத்திட்ட CA சான்றிதழ் கொண்ட கோப்பு\n"
+" LDAP TLS சான்றிதழ்."
+
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:68
 msgid ""
 "The file containing the CA certificate which signed the\n"
 "                    LDAP TLS certificate."
+msgstr ""
+"கையெழுத்திட்ட CA சான்றிதழ் கொண்ட கோப்பு\n"
+" LDAP TLS சான்றிதழ்."
+
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:120
+#, fuzzy
+#| msgid ""
+#| "The file containing the CA certificate which signed the\n"
+#| "                    LDAP TLS certificate."
+msgid ""
+"The file containing the CA certificate which signed the TLS certificate of "
+"the server."
 msgstr ""
 "கையெழுத்திட்ட CA சான்றிதழ் கொண்ட கோப்பு\n"
 " LDAP TLS சான்றிதழ்."
@@ -4581,8 +4951,13 @@ msgstr ""
 msgid ""
 "The following tokens were successfully enrolled in the container using the "
 "template"
+msgstr "பின்வரும் டோக்கன்கள் வார்ப்புருவைப் பயன்படுத்தி கொள்கலனில் வெற்றிகரமாக சேர்க்கப்பட்டன"
+
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:373
+msgid ""
+"The group attribute defining the group's name, which should be stored in the "
+"user info."
 msgstr ""
-"பின்வரும் டோக்கன்கள் வார்ப்புருவைப் பயன்படுத்தி கொள்கலனில் வெற்றிகரமாக சேர்க்கப்பட்டன"
 
 #: privacyidea/static/components/config/views/config.resolvers.sql.html:114
 msgid ""
@@ -4606,7 +4981,18 @@ msgstr ""
 " அங்கீகாரத்தின் போது பயனரிடம் இந்த அறியப்பட்ட சீரற்ற நிலைகள் கேட்கப்படுகின்றன\n"
 " மறைபொருள்."
 
-#: privacyidea/static/components/token/views/token.enroll.motp.html:33
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:387
+msgid "The key to store the groups in the user info (attribute mapping key)."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:81
+msgid ""
+"The left column defines the user attributes used in privacyIDEA and the "
+"right column the equivalent\n"
+"                attribute in the user store."
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.enroll.motp.html:35
 msgid "The mOTP PIN is the PIN that needs to be entered on the mobile device."
 msgstr "MOTP முள் என்பது மொபைல் சாதனத்தில் உள்ளிட வேண்டிய முள் ஆகும்."
 
@@ -4619,6 +5005,12 @@ msgstr ""
 "MOTP கிள்ளாக்கு என்பது மொபைல் சாதனங்களுக்கான நேர அடிப்படையிலான OTP கிள்ளாக்கு ஆகும்.\n"
 " உங்களால் முடியும்\n"
 " சேவையகம் ரகசியத்தை உருவாக்கி QR குறியீட்டை ச்கேன் செய்யுங்கள்."
+
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:37
+msgid ""
+"The name of the user realm in keycloak. It can be used as tag in the urls of "
+"the endpoints."
+msgstr ""
 
 #: privacyidea/static/components/token/views/token.getserial.html:57
 msgid "The number of lookahead OTP values. Default 10."
@@ -4666,7 +5058,7 @@ msgstr ""
 msgid "The path to the directory containing the trust anchors."
 msgstr "அறக்கட்டளை நங்கூரங்களைக் கொண்ட கோப்பகத்திற்கான பாதை."
 
-#: privacyidea/static/components/dialogs/views/dialog.about.html:34
+#: privacyidea/static/components/dialogs/views/dialog.about.html:33
 msgid ""
 "The privacyIDEA authentication backend is licensed under the\n"
 "                    AGPLv3.\n"
@@ -4808,7 +5200,7 @@ msgstr ""
 "சேவையகம் மறைபொருள் மற்றும் QR குறியீட்டை உருவாக்கும்\n"
 " நீங்கள் ச்கேன் செய்ய காண்பிக்கப்படும்."
 
-#: privacyidea/static/components/token/views/token.enroll.motp.html:14
+#: privacyidea/static/components/token/views/token.enroll.motp.html:16
 msgid ""
 "The server will create the secret key\n"
 "            and a QR Code\n"
@@ -4877,8 +5269,8 @@ msgstr ""
 "hide=\"!checkRight('container_list')\"> \n"
 "{{ containerSerial }}} \n"
 "</a> \n"
-"<span ng-hide=\"checkRight('container_list')\"> {{ containerSerial }}</span> "
-"\n"
+"<span ng-hide=\"checkRight('container_list')\"> {{ containerSerial }}</"
+"span> \n"
 "."
 
 #: privacyidea/static/components/token/views/token.details.html:614
@@ -4944,6 +5336,7 @@ msgstr "Trust_anchor_dir ஒரு முழுமையான பாதைய�
 msgid "The trust_anchor_dir must not end with a \"/\"."
 msgstr "Trust_anchor_dir ஒரு \"/\" உடன் முடிவடையக்கூடாது."
 
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:255
 #: privacyidea/static/components/config/views/config.resolvers.sql.html:98
 msgid ""
 "The user data in this database can be modified from within\n"
@@ -4952,10 +5345,13 @@ msgstr ""
 "இந்த தரவுத்தளத்தில் உள்ள பயனர் தரவை உள்ளே இருந்து மாற்றலாம்\n"
 " தனியுரிமை."
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:255
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:104
+#, fuzzy
+#| msgid ""
+#| "The user data in this database can be modified from within\n"
+#| "                privacyIDEA."
 msgid ""
-"The user data in this database can be modified from within\n"
-"                privacyIDEA."
+"The user data in this user store can be modified from within privacyIDEA."
 msgstr ""
 "இந்த தரவுத்தளத்தில் உள்ள பயனர் தரவை உள்ளே இருந்து மாற்றலாம்\n"
 " தனியுரிமை."
@@ -5007,13 +5403,17 @@ msgstr ""
 " அது\n"
 " இந்த தீர்வைக் கொண்டிருக்கும்."
 
-#: privacyidea/static/components/config/views/config.system.edit.html:116
+#: privacyidea/static/components/config/views/config.system.edit.html:125
 msgid ""
 "These client IP addresses or subnets are\n"
 "                allowed to masquerade as another client."
 msgstr ""
 "இந்த கிளையன்ட் ஐபி முகவரிகள் அல்லது சப்நெட்டுகள்\n"
 " மற்றொரு வாடிக்கையாளராக முகமூடி அணிய அனுமதிக்கப்படுகிறது."
+
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:220
+msgid "This credential type does not support to check the user's password."
+msgstr ""
 
 #: privacyidea/static/components/config/views/config.system.doc.html:2
 msgid ""
@@ -5042,7 +5442,7 @@ msgstr ""
 " இதை அமைக்கக் கட்டாயமாகும், webauthn_authenticator_attestation_level என்றால்\n"
 " எந்தவொரு பயனருக்கும் ஒரு கொள்கையால் \"நம்பகமான\" என அமைக்கப்பட்டுள்ளது."
 
-#: privacyidea/static/components/dialogs/views/dialog.about.html:18
+#: privacyidea/static/components/dialogs/views/dialog.about.html:17
 msgid ""
 "This is a Single Page Application client that acts as a\n"
 "                        frontend for\n"
@@ -5101,7 +5501,7 @@ msgstr ""
 "<a href=\"http://tools.ietf.org/html/rfc6287#page-8\" target=\"OCRA\">RFC \n"
 "6287</a>."
 
-#: privacyidea/static/components/directives/views/directive.registerContainer.html:56
+#: privacyidea/static/components/directives/views/directive.registerContainer.html:74
 msgid ""
 "This is the correct answer to the passphrase prompt the user has to enter "
 "to\n"
@@ -5207,9 +5607,17 @@ msgstr ""
 "இருக்க வேண்டும் -\n"
 " இல்லையெனில் நீங்கள் U2F பிழை 2 (மோசமான கோரிக்கை) பெறலாம்."
 
-#: privacyidea/static/components/directives/views/directive.registerContainer.html:32
+#: privacyidea/static/components/directives/views/directive.registerContainer.html:51
 msgid "This prompt will be displayed to the user."
 msgstr "இந்த வரியில் பயனருக்கு காண்பிக்கப்படும்."
+
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:155
+msgid ""
+"This section allows to configure an endpoint to which the privacyIDEA server "
+"must authenticate in order\n"
+"                to receive an access token. This token can then be used to "
+"access the user store API."
+msgstr ""
 
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:241
 msgid ""
@@ -5231,6 +5639,12 @@ msgstr ""
 " தனியுரிமை அணுகலைப் படித்துள்ளது. இதில் சான்றிதழ் கோப்புகள் இருக்க வேண்டும்.\n"
 " இந்த கோப்பகத்தில் உள்ள எந்தவொரு சான்றிதழ்களும் சரியாக சான்றளிக்க நம்பப்படும்\n"
 " சேர்க்கையின் போது அங்கீகாரங்கள்."
+
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:251
+#, fuzzy
+#| msgid "Verify the certificate"
+msgid "Thumbprint of the certificate"
+msgstr "சான்றிதழை சரிபார்க்கவும்"
 
 #: privacyidea/static/components/config/views/config.token.tiqr.html:21
 msgid "TiQR Authentication Server"
@@ -5264,12 +5678,17 @@ msgstr "TIQR பணி காட்சி பெயர்"
 msgid "TiQR Token settings"
 msgstr "TIQR கிள்ளாக்கு அமைப்புகள்"
 
-#: privacyidea/static/components/config/views/config.radius.edit.html:48
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:135
+msgid "Time in seconds privacyIDEA tries to reach the user store server."
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.radius.edit.html:46
 #: privacyidea/static/components/config/views/config.smtp.edit.html:47
 msgid "Timeout"
 msgstr "நேரம் முடிந்தது"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:125
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:131
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:186
 msgid "Timeout (seconds)"
 msgstr "நேரம் முடிந்தது (விநாடிகள்)"
@@ -5311,7 +5730,7 @@ msgstr ""
 msgid "Token Applications"
 msgstr "கிள்ளாக்கு பயன்பாடுகள்"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:448
+#: privacyidea/static/components/token/views/token.containerdetails.html:449
 msgid "Token Realms"
 msgstr "கிள்ளாக்கு பகுதிகள்"
 
@@ -5359,7 +5778,7 @@ msgstr ""
 msgid "Token of {{username}} without a container"
 msgstr "ஒரு கொள்கலன் இல்லாமல் {{username}} இன் கிள்ளாக்கு"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:678
+#: privacyidea/static/components/token/views/token.containerdetails.html:679
 #: privacyidea/static/components/token/views/token.list.html:76
 msgid "Token realms"
 msgstr "கிள்ளாக்கு பகுதிகள்"
@@ -5372,8 +5791,8 @@ msgstr "கிள்ளாக்கு மறுசீரமைப்பு த�
 msgid "Token resync successful."
 msgstr "கிள்ளாக்கு மீண்டும் வெற்றிகரமாக."
 
-#: privacyidea/static/components/directives/controllers/directives.js:921
-#: privacyidea/static/components/token/controllers/tokenControllers.js:643
+#: privacyidea/static/components/directives/controllers/directives.js:936
+#: privacyidea/static/components/token/controllers/tokenControllers.js:647
 msgid "Token successfully verified"
 msgstr "கிள்ளாக்கு வெற்றிகரமாக சரிபார்க்கப்பட்டது"
 
@@ -5408,7 +5827,7 @@ msgstr "இயந்திரத்திற்கான டோக்கன்�
 msgid "Tokens for user {{ username }}"
 msgstr "பயனருக்கான டோக்கன்கள் {{ username }}"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:418
+#: privacyidea/static/components/token/views/token.containerdetails.html:419
 msgid "Tokens in the Container"
 msgstr "கொள்கலனில் டோக்கன்கள்"
 
@@ -5416,7 +5835,7 @@ msgstr "கொள்கலனில் டோக்கன்கள்"
 msgid "Total"
 msgstr "மொத்தம்"
 
-#: privacyidea/static/components/token/views/token.challenges.html:1
+#: privacyidea/static/components/token/views/token.challenges.html:2
 msgid "Total Challenges:"
 msgstr "மொத்த சவால்கள்:"
 
@@ -5432,12 +5851,23 @@ msgstr "மொத்த கொள்கலன்கள்: {{ containerdata.coun
 msgid "Total Templates: {{ templatedata.count }}"
 msgstr "மொத்த வார்ப்புருக்கள்: {{ templatedata.count }}"
 
-#: privacyidea/static/components/token/views/token.challenges.html:34
+#: privacyidea/static/components/token/controllers/tokenChallengesController.js:46
+#, fuzzy
+#| msgid "Total Challenges:"
+msgid "Total expired challenges deleted:"
+msgstr "மொத்த சவால்கள்:"
+
+#: privacyidea/static/components/config/controllers/configControllers.js:802
+msgid "Total user cache entries deleted:"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.challenges.html:42
 msgid "Transaction ID"
 msgstr "பரிவர்த்தனை ஐடி"
 
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:192
 #: privacyidea/static/components/token/views/token.containerdetails.html:25
-#: privacyidea/static/components/token/views/token.containerlist.html:63
+#: privacyidea/static/components/token/views/token.containerlist.html:67
 #: privacyidea/static/components/token/views/token.containertemplates.list.html:45
 #: privacyidea/static/components/token/views/token.details.html:12
 #: privacyidea/static/components/user/views/user.details.html:148
@@ -5453,7 +5883,7 @@ msgid "Type a PIN or password"
 msgstr "முள் அல்லது கடவுச்சொல்லை தட்டச்சு செய்க"
 
 #: privacyidea/static/components/recovery/views/recovery.reset.html:14
-#: privacyidea/static/components/token/views/token.enroll.motp.html:39
+#: privacyidea/static/components/token/views/token.enroll.motp.html:41
 #: privacyidea/static/components/user/views/user.password.html:55
 msgid "Type a password"
 msgstr "கடவுச்சொல் தட்டச்சு செய்க"
@@ -5482,12 +5912,12 @@ msgstr "ஒதுக்கவும்"
 msgid "Unassign Token"
 msgstr "UNACCIN கிள்ளாக்கு"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:352
+#: privacyidea/static/components/token/views/token.containerdetails.html:353
 #: privacyidea/static/components/token/views/token.details.html:553
 msgid "Unassign User"
 msgstr "Unsign பயனர்"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:375
+#: privacyidea/static/components/token/views/token.containerdetails.html:376
 msgid "Unassign User From All Tokens"
 msgstr "எல்லா டோக்கன்களிலிருந்தும் பயனரை இணைக்கவும்"
 
@@ -5499,7 +5929,7 @@ msgstr "ஒதுக்கப்படாத வன்பொருள்"
 msgid "Unassigned Software"
 msgstr "ஒதுக்கப்படாத மென்பொருள்"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:308
+#: privacyidea/static/components/token/views/token.containerdetails.html:309
 msgid "Unregister Container"
 msgstr "பதிவு செய்யாத கொள்கலன்"
 
@@ -5557,16 +5987,21 @@ msgstr "ஒரு வார்ப்புருவைப் பயன்பட�
 msgid "Use two-step enrollment with the privacyIDEA Authenticator App"
 msgstr "Use two-step enrollment with the privacyIDEA Authenticator பயன்பாடு"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:227
+#: privacyidea/static/components/config/views/config.policies.details.html:236
 #: privacyidea/static/components/config/views/config.policies.list.html:24
 #: privacyidea/static/components/config/views/config.privacyideaserver.edit.html:67
-#: privacyidea/static/components/config/views/config.radius.edit.html:99
-#: privacyidea/static/components/token/views/token.containerdetails.html:446
-#: privacyidea/static/components/token/views/token.containerlist.html:71
+#: privacyidea/static/components/token/views/token.containerdetails.html:447
+#: privacyidea/static/components/token/views/token.containerlist.html:86
 #: privacyidea/static/components/token/views/token.containertemplates.edit.html:90
 #: privacyidea/static/templates/menu.html:62
 msgid "User"
 msgstr "பயனர்"
+
+#: privacyidea/static/components/config/views/config.policies.details.html:303
+#, fuzzy
+#| msgid "user agent"
+msgid "User Agent"
+msgstr "பயனர் agent"
 
 #: privacyidea/static/components/config/views/config.system.edit.html:93
 msgid ""
@@ -5576,10 +6011,22 @@ msgstr ""
 "பயனர் Cache\n"
 "            expiration in நொடிகள்"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:385
+#: privacyidea/static/components/token/views/token.containerdetails.html:386
 #: privacyidea/static/components/token/views/token.details.html:568
 msgid "User Id"
 msgstr "பயனர் ஐடி"
+
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:379
+#, fuzzy
+#| msgid "User Id"
+msgid "User Info Key"
+msgstr "பயனர் ஐடி"
+
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:51
+#, fuzzy
+#| msgid "Hostname Attribute"
+msgid "User Store Attribute"
+msgstr "ஓச்ட்பெயர் பண்புக்கூறு"
 
 #: privacyidea/static/components/register/controllers/registerControllers.js:17
 msgid "User account created. An Email has been sent to you."
@@ -5589,27 +6036,30 @@ msgstr "பயனர் account created. An Email has been sent பெறுந�
 msgid "User created."
 msgstr "பயனர் created."
 
-#: privacyidea/static/components/user/controllers/userControllers.js:271
+#: privacyidea/static/components/user/controllers/userControllers.js:274
 msgid "User deleted successfully."
 msgstr "பயனர் deleted successfully."
 
-#: privacyidea/static/components/user/controllers/userControllers.js:243
+#: privacyidea/static/components/user/controllers/userControllers.js:245
 msgid "User updated successfully."
 msgstr "பயனர் updated successfully."
 
-#: privacyidea/static/components/config/views/config.policies.details.html:186
+#: privacyidea/static/components/config/views/config.policies.details.html:195
 msgid "User-Realm"
 msgstr "பயனர்-மறுபரிசீலனை"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:203
+#: privacyidea/static/components/config/views/config.policies.details.html:212
 msgid "User-Resolver"
 msgstr "பயனர்-தீர்ப்பாளர்"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:684
+#: privacyidea/static/components/token/views/token.containerdetails.html:685
 #: privacyidea/static/components/token/views/token.list.html:82
 msgid "UserId"
 msgstr "பயனர்அடையாளம்"
 
+#: privacyidea/static/components/config/views/config.radius.edit.html:108
+#: privacyidea/static/components/config/views/config.radius.edit.html:111
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:266
 #: privacyidea/static/components/config/views/config.smtp.edit.html:72
 #: privacyidea/static/components/directives/views/directive.assignuser.html:18
 #: privacyidea/static/components/login/views/login.html:53
@@ -5618,13 +6068,13 @@ msgstr "பயனர்அடையாளம்"
 #: privacyidea/static/components/recovery/views/recovery.html:22
 #: privacyidea/static/components/register/views/register.html:18
 #: privacyidea/static/components/register/views/register.html:22
-#: privacyidea/static/components/token/views/token.containerdetails.html:339
+#: privacyidea/static/components/token/views/token.containerdetails.html:340
 #: privacyidea/static/components/token/views/token.details.html:538
 #: privacyidea/static/components/user/views/user.password.html:6
 msgid "Username"
 msgstr "பயனர்பெயர்"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:241
+#: privacyidea/static/components/config/views/config.policies.details.html:250
 msgid "Username case-insensitive."
 msgstr "பயனர்பெயர் வழக்கு-உணர்திறன்."
 
@@ -5642,9 +6092,14 @@ msgstr "VASCO கிள்ளாக்கு blob"
 msgid "Valid subscription"
 msgstr "Valid சந்தா"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:281
+#: privacyidea/static/components/config/views/config.policies.details.html:277
 msgid "Valid time"
 msgstr "செல்லுபடியாகும் நேரம்"
+
+#: privacyidea/static/components/directives/views/directive.registerContainer.html:30
+#: privacyidea/static/components/directives/views/directive.registerContainer.html:34
+msgid "Validate the passphrase against the user store."
+msgstr ""
 
 #: privacyidea/static/components/token/views/token.details.html:280
 #: privacyidea/static/components/token/views/token.enroll.html:124
@@ -5670,6 +6125,7 @@ msgstr "SSL சான்றிதழை சரிபார்க்கவும�
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:56
 #: privacyidea/static/components/config/views/config.privacyideaserver.list.html:7
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:111
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:90
 msgid "Verify TLS"
 msgstr "TLS ஐ சரிபார்க்கவும்"
@@ -5680,8 +6136,14 @@ msgid "Verify Token"
 msgstr "Verify கிள்ளாக்கு"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:64
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:98
 msgid "Verify the TLS cerificate of the server."
+msgstr "Verify the TLS cerificate of the சேவையகம்."
+
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:115
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:98
+#, fuzzy
+#| msgid "Verify the TLS cerificate of the server."
+msgid "Verify the TLS certificate of the server."
 msgstr "Verify the TLS cerificate of the சேவையகம்."
 
 #: privacyidea/static/components/config/views/config.privacyideaserver.edit.html:40
@@ -5706,7 +6168,7 @@ msgid "WebAuthn Token settings"
 msgstr "WebAuthn கிள்ளாக்கு அமைப்புகள்"
 
 #: privacyidea/static/components/login/factories/webauthn.js:42
-#: privacyidea/static/components/login/factories/webauthn.js:70
+#: privacyidea/static/components/login/factories/webauthn.js:71
 msgid "WebAuthn is not supported by this browser, or in this context."
 msgstr "இந்த உலாவியால் அல்லது இந்த சூழலில் வெப்அத்ன் ஆதரிக்கப்படவில்லை."
 
@@ -5719,7 +6181,7 @@ msgstr "வரவேற்கிறோம்"
 msgid "Where statement"
 msgstr "எங்கே அறிக்கை"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:441
+#: privacyidea/static/components/token/views/token.containerdetails.html:442
 msgid "Window"
 msgstr "சாளரம்"
 
@@ -5762,7 +6224,7 @@ msgstr ""
 "இந்த பயனராக நீங்கள் மேலும் இல்லாமல் தனியுரிமை இடத்திற்கு உள்நுழையலாம் \n"
 "நற்சான்றிதழ்கள்."
 
-#: privacyidea/static/components/dialogs/views/dialog.lock.html:16
+#: privacyidea/static/components/dialogs/views/dialog.lock.html:15
 msgid ""
 "You are logged in as {{ loggedInUser.username }}\n"
 "                            @  {{ loggedInUser.realm }}."
@@ -5772,8 +6234,7 @@ msgstr ""
 
 #: privacyidea/static/components/directives/views/directive.containertemplate.details.html:64
 msgid "You are not allowed to enroll this token type! It will be skipped!"
-msgstr ""
-"இந்த கிள்ளாக்கு வகையைச் சேர்க்க உங்களுக்கு இசைவு இல்லை! அது தவிர்க்கப்படும்!"
+msgstr "இந்த கிள்ளாக்கு வகையைச் சேர்க்க உங்களுக்கு இசைவு இல்லை! அது தவிர்க்கப்படும்!"
 
 #: privacyidea/static/components/login/controllers/loginControllers.js:580
 msgid ""
@@ -5800,6 +6261,13 @@ msgid ""
 msgstr ""
 "You can choose how the authenticity of the tokens பெறுநர் be imported should "
 "be verified."
+
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:161
+msgid ""
+"You can find most of these settings in the app registration in the Entra "
+"Admin Center or you also\n"
+"                    have to add them there."
+msgstr ""
 
 #: privacyidea/static/components/user/views/user.add.html:54
 msgid ""
@@ -5977,9 +6445,9 @@ msgstr "செயல்"
 msgid "action detail"
 msgstr "செயல் detail"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:491
-#: privacyidea/static/components/token/views/token.containerdetails.html:640
-#: privacyidea/static/components/token/views/token.containerdetails.html:700
+#: privacyidea/static/components/token/views/token.containerdetails.html:492
+#: privacyidea/static/components/token/views/token.containerdetails.html:641
+#: privacyidea/static/components/token/views/token.containerdetails.html:701
 #: privacyidea/static/components/token/views/token.details.html:35
 #: privacyidea/static/components/token/views/token.list.html:39
 #: privacyidea/static/components/token/views/token.list.html:97
@@ -6019,14 +6487,14 @@ msgstr "இசைவு"
 msgid "client"
 msgstr "கிளீன்"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:647
+#: privacyidea/static/components/token/views/token.containerdetails.html:648
 #: privacyidea/static/components/token/views/token.list.html:46
 #: privacyidea/static/components/user/views/user.list.html:41
 msgid "description"
 msgstr "விவரம்"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:497
-#: privacyidea/static/components/token/views/token.containerdetails.html:705
+#: privacyidea/static/components/token/views/token.containerdetails.html:498
+#: privacyidea/static/components/token/views/token.containerdetails.html:706
 #: privacyidea/static/components/token/views/token.details.html:38
 #: privacyidea/static/components/token/views/token.list.html:102
 #: privacyidea/static/components/user/views/user.details.html:170
@@ -6053,7 +6521,7 @@ msgstr "எண்ட்டேட்"
 msgid "enter some OTP value"
 msgstr "enter some OTP மதிப்பு"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:658
+#: privacyidea/static/components/token/views/token.containerdetails.html:659
 #: privacyidea/static/components/token/views/token.list.html:57
 msgid "failcounter"
 msgstr "தோல்வி"
@@ -6066,7 +6534,7 @@ msgstr "தோல்வியுற்றது"
 msgid "failed users / tokens"
 msgstr "failed பயனர்கள் / tokens"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:340
+#: privacyidea/static/components/config/views/config.policies.details.html:386
 msgid "filter action..."
 msgstr "வடிப்பி action..."
 
@@ -6098,7 +6566,7 @@ msgstr "பூட்டப்பட்டுள்ளது"
 msgid "log level"
 msgstr "log நிலை"
 
-#: privacyidea/static/components/token/views/token.enroll.motp.html:32
+#: privacyidea/static/components/token/views/token.enroll.motp.html:34
 msgid "mOTP PIN"
 msgstr "mOTP முள்"
 
@@ -6141,7 +6609,7 @@ msgstr "கொள்கைகள்"
 
 #: privacyidea/static/components/config/views/config.periodictasks.details.html:75
 #: privacyidea/static/components/config/views/config.periodictasks.list.html:11
-#: privacyidea/static/components/config/views/config.policies.details.html:254
+#: privacyidea/static/components/config/views/config.policies.details.html:263
 #: privacyidea/static/components/config/views/config.realms.create.html:43
 msgid "privacyIDEA Nodes"
 msgstr "தனியுரிமை முனைகள்"
@@ -6150,15 +6618,15 @@ msgstr "தனியுரிமை முனைகள்"
 msgid "privacyIDEA Server Config saved."
 msgstr "privacyIDEA சேவையகம் கட்டமைப்பு saved."
 
-#: privacyidea/static/components/dialogs/views/dialog.about.html:16
+#: privacyidea/static/components/dialogs/views/dialog.about.html:15
 msgid "privacyIDEA Single Page Web Client"
 msgstr "privacyIDEA ஒற்றை Page விரலிடைத் தோல் Client"
 
-#: privacyidea/static/components/dialogs/views/dialog.lock.html:10
+#: privacyidea/static/components/dialogs/views/dialog.lock.html:9
 msgid "privacyIDEA UI is locked"
 msgstr "privacyIDEA இடைமுகம் is பூட்டப்பட்டுள்ளது"
 
-#: privacyidea/static/components/dialogs/views/dialog.about.html:33
+#: privacyidea/static/components/dialogs/views/dialog.about.html:32
 msgid "privacyIDEA authentication backend"
 msgstr "privacyidea அங்கீகார பின்தளத்தில்"
 
@@ -6204,7 +6672,7 @@ msgid "privacyidea server"
 msgstr "privacyidea சேவையகம்"
 
 #: privacyidea/static/components/audit/views/audit.log.html:107
-#: privacyidea/static/components/token/views/token.containerdetails.html:676
+#: privacyidea/static/components/token/views/token.containerdetails.html:677
 #: privacyidea/static/components/token/views/token.list.html:75
 msgid "realm"
 msgstr "சாம்ராச்யம்"
@@ -6217,7 +6685,7 @@ msgstr "தீர்வு"
 msgid "revoked"
 msgstr "ரத்து செய்யப்பட்டது"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:665
+#: privacyidea/static/components/token/views/token.containerdetails.html:666
 #: privacyidea/static/components/token/views/token.list.html:64
 msgid "rollout state"
 msgstr "ரோல்அவுட் நிலை"
@@ -6225,9 +6693,9 @@ msgstr "ரோல்அவுட் நிலை"
 #: privacyidea/static/components/audit/views/audit.log.html:69
 #: privacyidea/static/components/token/views/token.applications.offline.html:25
 #: privacyidea/static/components/token/views/token.applications.ssh.html:31
-#: privacyidea/static/components/token/views/token.challenges.html:26
-#: privacyidea/static/components/token/views/token.containerdetails.html:424
-#: privacyidea/static/components/token/views/token.containerdetails.html:620
+#: privacyidea/static/components/token/views/token.challenges.html:34
+#: privacyidea/static/components/token/views/token.containerdetails.html:425
+#: privacyidea/static/components/token/views/token.containerdetails.html:621
 #: privacyidea/static/components/token/views/token.list.html:19
 msgid "serial"
 msgstr "தொடர்"
@@ -6277,7 +6745,7 @@ msgstr "குடும்பப்பெயர்"
 msgid "thread_id"
 msgstr "thread_id"
 
-#: privacyidea/static/components/token/views/token.challenges.html:20
+#: privacyidea/static/components/token/views/token.challenges.html:28
 msgid "timestamp"
 msgstr "நேர முத்திரை"
 
@@ -6311,8 +6779,8 @@ msgstr "நம்பிக்கை_நங்கூரம்_கோப்பு�
 #: privacyidea/static/components/config/views/config.caconnectors.list.html:6
 #: privacyidea/static/components/config/views/config.mresolvers.list.html:6
 #: privacyidea/static/components/config/views/config.resolvers.list.html:6
-#: privacyidea/static/components/token/views/token.containerdetails.html:425
-#: privacyidea/static/components/token/views/token.containerdetails.html:630
+#: privacyidea/static/components/token/views/token.containerdetails.html:426
+#: privacyidea/static/components/token/views/token.containerdetails.html:631
 #: privacyidea/static/components/token/views/token.list.html:29
 msgid "type"
 msgstr "வகை"
@@ -6330,7 +6798,7 @@ msgid "use VASCO Serial"
 msgstr "வாச்கோ சீரியல் பயன்படுத்தவும்"
 
 #: privacyidea/static/components/audit/views/audit.log.html:101
-#: privacyidea/static/components/token/views/token.containerdetails.html:675
+#: privacyidea/static/components/token/views/token.containerdetails.html:676
 #: privacyidea/static/components/token/views/token.list.html:74
 msgid "user"
 msgstr "பயனர்"
@@ -6350,6 +6818,12 @@ msgstr "பயனர்பெயர்"
 #: privacyidea/static/components/audit/views/audit.log.html:18
 msgid "{{ auditdata.count }} entries found."
 msgstr "{{ auditdata.count }} உள்ளீடுகள் காணப்படுகின்றன."
+
+#~ msgid "Create a new HTTP Resolver"
+#~ msgstr "புதிய HTTP தீர்வை உருவாக்கவும்"
+
+#~ msgid "Edit HTTP Resolver {{ resolvername }}"
+#~ msgstr "Http தீர்வைத் திருத்து {{ resolvername }}"
 
 #~ msgid ""
 #~ "Here you can define settings, that will be set as default values, when\n"

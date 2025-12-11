@@ -172,12 +172,11 @@ class APIConfigTestCase(MyApiTestCase):
 
         # setting policy with a missing action
         with self.app.test_request_context('/policy/enroll',
-                                           data={'scope': SCOPE.USER,
+                                           data={'scope': SCOPE.AUTH,
                                                  'client': "127.12.12.12",
                                                  'active': True},
                                            method='POST',
                                            headers={'Authorization': self.at}):
-            # An invalid policy name raises an exception
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 400, res)
             error = res.json.get("result").get("error")
@@ -1318,9 +1317,9 @@ class APIConfigTestCase(MyApiTestCase):
                              res.json)
 
         # add the node name and uuid to the database
-        db.session.add(NodeName(id=nd1_uuid, name="Node1"))
-        db.session.add(NodeName(id=nd2_uuid, name="Node2"))
-        db.session.commit()
+        node1 = NodeName(id=nd1_uuid, name="Node1")
+        node2 = NodeName(id=nd2_uuid, name="Node2")
+        db.session.add_all([node1, node2])
 
         # try a weird priority value
         with self.app.test_request_context(f'/realm/realm_with_node/node/{nd1_uuid}',
@@ -1554,3 +1553,5 @@ class APIConfigTestCase(MyApiTestCase):
         delete_realm("realm_with_node")
         delete_resolver("local_resolver_1")
         delete_resolver("local_resolver_2")
+        db.session.delete(node1)
+        db.session.delete(node2)

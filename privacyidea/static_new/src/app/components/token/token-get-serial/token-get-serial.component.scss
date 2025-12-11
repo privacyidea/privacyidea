@@ -2,8 +2,11 @@
 
 .token-get-serial {
   @include styles.table-container-styles;
+
+  max-height: var(--max-height);
+  width: 56rem;
   overflow: auto;
-  width: 785px;
+  display: grid;
 }
 
 .token-get-serial-footer {

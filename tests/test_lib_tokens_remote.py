@@ -267,7 +267,7 @@ class RemoteTokenTestCase(MyTestCase):
         self.assertRaises(NotImplementedError, token.export_token)
 
         # Clean up
-        token.token.delete()
+        token.delete_token()
 
     def test_23_remote_token_import(self):
         token_data = [{
@@ -277,6 +277,7 @@ class RemoteTokenTestCase(MyTestCase):
             "otpkey": self.otpkey,
             "issuer": "privacyIDEA",
         }]
-        result = import_tokens(json.dumps(token_data))
+
+        result = import_tokens(token_data)
         # Import not yet implemented for Remote token
         self.assertIn("123456", result.failed_tokens, result)

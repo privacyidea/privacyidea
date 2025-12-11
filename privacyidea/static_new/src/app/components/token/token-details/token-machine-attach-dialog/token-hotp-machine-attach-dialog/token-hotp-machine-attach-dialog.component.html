@@ -1,0 +1,75 @@
+<!--
+ (c) NetKnights GmbH 2025,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<h2
+  i18n
+  mat-dialog-title>
+  Attach Offline Machine
+</h2>
+<mat-dialog-content class="full-width">
+  <!-- number input field for countControl and roundsControl -->
+  <form [formGroup]="formGroup">
+    <mat-form-field
+      appearance="fill"
+      class="full-width">
+      <mat-label i18n>Count</mat-label>
+      <input
+        matInput
+        type="number"
+        min="1"
+        [formControl]="countControl" />
+      @if (countControl.touched && countControl.invalid) {
+        <mat-error i18n> Count must be a positive integer.</mat-error>
+      }
+    </mat-form-field>
+    <br />
+    <mat-form-field
+      appearance="fill"
+      class="full-width">
+      <mat-label i18n>Rounds</mat-label>
+      <input
+        matInput
+        type="number"
+        min="1"
+        [formControl]="roundsControl" />
+      @if (roundsControl.touched && roundsControl.invalid) {
+        <mat-error i18n> Rounds must be a positive integer.</mat-error>
+      }
+    </mat-form-field>
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions>
+  <div class="form-actions">
+    <button
+      (click)="onAssign()"
+      [disabled]="formGroup.invalid"
+      i18n
+      mat-button
+      type="button">
+      Assign
+    </button>
+    <button
+      (click)="onCancel()"
+      i18n
+      mat-button
+      type="button">
+      Cancel
+    </button>
+  </div>
+</mat-dialog-actions>

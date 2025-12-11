@@ -2,7 +2,6 @@
 This test file tests the lib.tokens.yubikeytoken
 
 """
-import json
 import logging
 from testfixtures import log_capture
 
@@ -150,15 +149,16 @@ class YubikeyTokenTestCase(MyTestCase):
         token.set_maxfail(5)
         old_failcounter = token.get_failcount()
         token.set_failcount(5)
+        token.save()
         # Failcount equals maxfail, so an authentication with a valid OTP
         # will fail
         r, opt = YubikeyTokenClass.check_yubikey_pass(self.further_otps[2])
         self.assertFalse(r)
-        self.assertTrue(opt.get("message") == "matching 1 tokens, "
-                                              "Failcounter exceeded", opt)
+        self.assertEqual("Failcounter exceeded", opt.get("message"))
         # check failcounter
         self.assertEqual(db_token.failcount, 5)
         token.set_failcount(old_failcounter)
+        token.save()
 
     def test_06_check_init_update(self):
         self.assertRaises(EnrollmentError, init_token,
@@ -323,7 +323,7 @@ class YubikeyTokenTestCase(MyTestCase):
         }]
 
         # Import the token
-        result = import_tokens(json.dumps(token_data))
+        result = import_tokens(token_data)
         self.assertIn(self.serial2, result.successful_tokens, result)
 
         # Retrieve the imported token

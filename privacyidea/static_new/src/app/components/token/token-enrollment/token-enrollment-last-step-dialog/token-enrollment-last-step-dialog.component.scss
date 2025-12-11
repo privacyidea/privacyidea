@@ -9,20 +9,6 @@
   word-wrap: anywhere;
 }
 
-.otp-values {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-}
-
-.otp-value {
-  min-width: 96px;
-  border: 1px solid #e2e2e2;
-  padding: 6px;
-  border-radius: var(--border-radius);
-  background: #f3f3f3;
-}
-
 .max-width-600 {
   max-width: 600px;
 }

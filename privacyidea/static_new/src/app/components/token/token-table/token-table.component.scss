@@ -2,13 +2,11 @@
 
 .token-table-layout {
   @include styles.table-container-styles;
-  @include styles.base-table-structure(
-      ".token-table",
-      ".token-table-filter",
-      ".table-scroll-container"
-  );
-  max-height: calc(var(--main-height) - var(--global-padding) * 5);
+  @include styles.base-table-structure(".token-table", ".token-table-filter", ".table-scroll-container");
+  max-height: var(--max-height);
+  max-width: calc(100vw - var(--global-padding) * 5 - 48px);
   overflow: auto;
+  display: grid;
 }
 
 .selfservice-paginator-container {
@@ -16,7 +14,11 @@
   display: flex;
 }
 
-.selfservice-paginator-label {
-  flex: 1;
-  margin-right: 16px;
+.table-container {
+  width: 1450px;
+}
+
+.self-service-table-container {
+  overflow-y: auto;
+  max-width: 70.5rem;
 }

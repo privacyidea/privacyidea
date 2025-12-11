@@ -1,63 +1,105 @@
-<div aria-label="Token Applications Offline"
-     class="token-applications-offline">
+<!--
+ (c) NetKnights GmbH 2025,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<div
+  aria-label="Token Applications Offline"
+  class="token-applications-offline"
+  i18n-aria-label>
   <div class="details-flex-layout flex-column">
     <div class="application-p-div">
-      <p>HOTP tokens can be attached with offline to e.g. notebooks.</p>
+      <p i18n>HOTP tokens can be attached with offline to e.g. notebooks.</p>
     </div>
   </div>
 </div>
-<div class="application-table-container">
+<div
+  appScrollToTop
+  class="application-table-container">
   <div class="filter-paginator-container">
-    <mat-form-field class="application-table-filter"
-                    subscriptSizing="dynamic">
-      <mat-label>Enter Filter</mat-label>
-      <input #filterInput
-             [(ngModel)]="machineService.filterValueString"
-             aria-label="Filter Input"
-             matInput
-             placeholder="Example query: 'service_id: myService'" />
+    <mat-form-field
+      class="application-table-filter"
+      subscriptSizing="dynamic">
+      <mat-label i18n>Enter Filter</mat-label>
+      <app-clearable-input
+        (onClick)="machineService.clearFilter()"
+        [showClearButton]="machineService.machineFilter().isNotEmpty">
+        <input
+          #filterInput
+          (input)="machineService.handleFilterInput($event)"
+          [value]="machineService.machineFilter().filterString"
+          aria-label="Filter Input"
+          i18n-aria-label
+          i18n-placeholder
+          matInput
+          placeholder="Example query: 'service_id: myService'" />
+      </app-clearable-input>
     </mat-form-field>
-    <mat-paginator (page)="machineService.onPageEvent($event)"
-                   [length]="length()"
-                   [pageIndex]="machineService.pageIndex()"
-                   [pageSizeOptions]="pageSizeOptions()"
-                   [pageSize]="machineService.pageSize()"
-                   showFirstLastButtons></mat-paginator>
+    <mat-paginator
+      (page)="machineService.onPageEvent($event)"
+      [length]="length()"
+      [pageIndex]="machineService.pageIndex()"
+      [pageSizeOptions]="pageSizeOptions()"
+      [pageSize]="machineService.pageSize()"
+      showFirstLastButtons></mat-paginator>
   </div>
-  <app-keyword-filter [advancedApiFilter]="machineService.offlineAdvancedApiFilter"
-                      [apiFilter]="machineService.offlineApiFilter"
-                      [filterHTMLInputElement]="filterInput"
-                      [filterValue]="machineService.filterValue"></app-keyword-filter>
-  <table (matSortChange)="machineService.onSortEvent($event)"
-         [dataSource]="dataSource()"
-         [matSortDisableClear]="false"
-         aria-label="Token Applications Table"
-         class="token-table"
-         mat-table
-         matSort>
+  <app-keyword-filter
+    [advancedApiFilter]="machineService.offlineAdvancedApiFilter"
+    [apiFilter]="machineService.offlineApiFilter"
+    [filterHTMLInputElement]="filterInput"
+    [filterValue]="machineService.machineFilter"></app-keyword-filter>
+  <table
+    (matSortChange)="machineService.onSortEvent($event)"
+    [dataSource]="dataSource()"
+    [matSortDisableClear]="false"
+    aria-label="Token Applications Table"
+    class="token-table"
+    i18n-aria-label
+    mat-table
+    matSort>
     @for (column of columnsKeyMap; track column) {
       <ng-container [matColumnDef]="column.key">
-        <th *matHeaderCellDef
-            attr.aria-label="{{ column.label }} Header"
-            mat-header-cell
-            mat-sort-header>
+        <th
+          *matHeaderCellDef
+          attr.aria-label="{{ column.label }} Header"
+          mat-header-cell
+          mat-sort-header>
           {{ column.label }}
         </th>
-        <td *matCellDef="let element"
-            attr.aria-label="{{ column.label }} Cell"
-            mat-cell
-            [ngClass]="{ 'width-18rem': column.key === 'description' }">
+        <td
+          *matCellDef="let element"
+          attr.aria-label="{{ column.label }} Cell"
+          mat-cell>
           <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
             @switch (column.key) {
               @case ("serial") {
-                <a attr.aria-label="{{ column.label }} Link"
-                   (click)="contentService.tokenSelected(element.serial)"> {{ element[column.key] }} </a>
+                <a
+                  attr.aria-label="{{ column.label }} Link"
+                  (click)="contentService.tokenSelected(element.serial)">
+                  {{ element[column.key] }}
+                </a>
                 <app-copy-button [copyText]="element.serial"></app-copy-button>
               }
               @default {
                 @if (tableUtilsService.isLink(column.key)) {
-                  <a attr.aria-label="{{ column.label }} Link"
-                     href="#"> {{ element[column.key] }} </a>
+                  <a
+                    attr.aria-label="{{ column.label }} Link"
+                    href="#">
+                    {{ element[column.key] }}
+                  </a>
                 } @else {
                   <span [ngClass]="tableUtilsService.getClassForColumn(column.key, element)">
                     {{ tableUtilsService.getDisplayText(column.key, element) }}
@@ -69,16 +111,25 @@
         </td>
       </ng-container>
     }
-    <tr *matHeaderRowDef="displayedColumns"
-        aria-label="Header Row"
-        mat-header-row></tr>
-    <tr *matRowDef="let row; columns: displayedColumns"
-        aria-label="Data Row"
-        mat-row></tr>
-    <tr *matNoDataRow
-        aria-label="No Data Row">
-      <td [attr.colspan]="displayedColumns.length"
-          aria-label="No Data Cell">
+    <tr
+      *matHeaderRowDef="displayedColumns"
+      aria-label="Header Row"
+      i18n-aria-label
+      mat-header-row></tr>
+    <tr
+      *matRowDef="let row; columns: displayedColumns"
+      aria-label="Data Row"
+      i18n-aria-label
+      mat-row></tr>
+    <tr
+      *matNoDataRow
+      aria-label="No Data Row"
+      i18n-aria-label>
+      <td
+        [attr.colspan]="displayedColumns.length"
+        aria-label="No Data Cell"
+        i18n
+        i18n-aria-label>
         No data matching the filter.
       </td>
     </tr>

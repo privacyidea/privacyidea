@@ -268,7 +268,7 @@ Example::
 
     privacyidea-token-janitor find --serial OATH0004C934 --action mark --set-tokeninfo-key unused --set-tokeninfo-value True
 
-A new tokeninfo-key and the associated tokeninfo-value would be added for the token ``OAUTH0004C934``
+A new tokeninfo-key and the associated tokeninfo-value would be added for the token ``OATH0004C934``
 and are now marked for later processing. If the token already containd this tokeninf-key, the value
 would be changed.
 
@@ -283,7 +283,7 @@ Example::
 
     privacyidea-token-janitor find --serial OATH0004C934 --action disable
 
-The token with the serial ``OAUTH0004C934`` will be disabled.
+The token with the serial ``OATH0004C934`` will be disabled.
 
 delete
 ......
@@ -295,7 +295,7 @@ Example::
 
     privacyidea-token-janitor find --serial OATH0004C934 --action delete
 
-The token with the serial ``OAUTH0004C934`` will be deleted.
+The token with the serial ``OATH0004C934`` will be deleted.
 
 export
 ......
@@ -308,9 +308,9 @@ YAML in theory can export all token types and all tokeninfo.
 
 Example::
 
-    privacyidea-token-janitor find --serial OATH0004C934 --action export > OAUTH0004C934.xml
+    privacyidea-token-janitor find --serial OATH0004C934 --action export > OATH0004C934.xml
 
-The token with the serial ``OAUTH0004C934`` will be exported and saved in an xml file.
+The token with the serial ``OATH0004C934`` will be exported and saved in an xml file.
 
 .. note:: With PSCK you need your encryption key for re-import.
 
@@ -584,7 +584,7 @@ Example::
     pi-tokenjanitor find --tokenattribute 'serial=OATH0004C934' export
 
 ``--format``
-    The export format of the token list. The format can be 'csv', 'yaml' or 'pskc'.
+    The export format of the token list. The format can be 'pi', 'csv', 'yaml' or 'pskc'.
 
     Example::
 
@@ -596,6 +596,23 @@ Example::
     Example::
 
         pi-tokenjanitor find --tokenattribute 'serial=OATH0004C934' export --format CSV --b32
+
+``--file``
+    The file to export the tokens to. If not specified, the output will be printed to stdout.
+
+    Example::
+
+        pi-tokenjanitor find --tokenattribute 'serial=OATH0004C934' export --file /path/to/export
+
+``--user/--no-user``
+    If set, the user will be exported as well. If not set, only the tokens will be exported. Default: ``--user``.
+
+    Example::
+
+        pi-tokenjanitor find --tokenattribute 'serial=OATH0004C934' export --file /path/to/export --user
+
+
+
 
 set_tokenrealms
 ***************
@@ -653,6 +670,33 @@ Remove a tokeninfo from the found tokens.
 
         pi-tokenjanitor find --tokenattribute 'serial=OATH0004C934' remove_tokeninfo --tokeninfo_key 'import_time'
 
+list_containers
+***************
+List all token containers of the found tokens.
+
+Example::
+
+    pi-tokenjanitor find --tokenattribute 'serial=OATH0004C934' list_containers
+
+add_to_container
+****************
+Add the found tokens to a token container.
+
+``--container_serial``
+    The serial of the token container to add the tokens to.
+
+    Example::
+
+        pi-tokenjanitor find --tokenattribute 'serial=OATH0004C934' add_to_container 'SMPH00009272'
+
+remove_from_container
+*********************
+Remove the found tokens from their token container.
+
+    Example::
+
+        pi-tokenjanitor find --tokenattribute 'serial=OATH0004C934' remove_from_container
+
 Import
 ~~~~~~
 This command can be used to import token data from a file.
@@ -679,6 +723,31 @@ Example::
     - ``'check_fail_soft'``:  skip tokens with invalid HMAC
     - ``'check_fail_hard'``: only import tokens if all HMAC are valid.
 
+privacyidea
+***********
+Imports token data from a privacyIDEA created with pi-tokenjanitor export_for_privacyidea.
+
+``file``
+    The path to the privacyIDEA file to import.
+
+    Example::
+
+        pi-tokenjanitor import privacyidea /path/to/privacyidea.txt
+
+``--key``
+    Specify the encryption key for the privacyIDEA file.
+
+    Example::
+
+        pi-tokenjanitor import privacyidea /path/to/privacyidea.txt --key myencryptionkey
+
+``--user/--no-user``
+    If set, the user will be imported as well. If not set, only the tokens will be imported. Default: ``--no-user``.
+
+    Example::
+
+        pi-tokenjanitor import privacyidea /path/to/privacyidea.txt --key myencryptionkey --user
+
 Update
 ~~~~~~
 This command can be used to update already existing token data with a given YAML file.
@@ -686,3 +755,186 @@ This command can be used to update already existing token data with a given YAML
 Example::
 
     pi-tokenjanitor update /path/to/yamlfile.yaml
+
+
+Container
+~~~~~~~~~~~~~
+With the **container** command you can search for containers in the database.
+You can use several options to filter the containers.
+
+``--serial``
+    Find containers with a specific serial.
+
+    Example::
+
+        pi-tokenjanitor container --serial 'SMPH00009272'
+
+``--type``
+    Find containers with a specific type.
+
+    Example::
+
+        pi-tokenjanitor container --type 'smartphone'
+
+``--token-serial``
+    Find containers that contain a token with a specific serial.
+
+    Example::
+
+        pi-tokenjanitor container --token-serial 'HOTP123456'
+
+``--realm``
+    Find containers that belong to a specific realm.
+
+    Example::
+
+        pi-tokenjanitor container --realm 'defrealm'
+
+``--template``
+    Find containers that are based on a specific template.
+
+    Example::
+
+        pi-tokenjanitor container --template 'default_smartphone'
+
+``--description``
+    Find containers with a specific description.
+
+    Example::
+
+        pi-tokenjanitor container --description 'My smartphone container'
+
+``--assigned``
+    Find containers that are either assigned to a user or unassigned.
+
+    Example::
+
+        pi-tokenjanitor container --assigned true
+
+``--resolver``
+    Find containers that belong to a specific resolver.
+
+    Example::
+
+        pi-tokenjanitor container --resolver 'my_ldap_resolver'
+
+``--info``
+    Find containers with specific info key-value pairs. Give the key and value in the format key=value.
+    This option can be used multiple times.
+
+    Example::
+
+        pi-tokenjanitor container --info 'os=android'
+
+``--last-auth-delta``
+    Find containers where the last authentication of any token in the container happened longer ago than the given value.
+    You can use the tags *h* (hours), *d* (day) and *y* (year).
+
+    Example::
+
+        pi-tokenjanitor container --last-auth-delta '90d'
+
+``--last-sync-delta``
+    Find containers where the last sync of any token in the container happened longer ago than the given value.
+    You can use the tags *h* (hours), *d* (day) and *y* (year).
+
+    Example::
+
+        pi-tokenjanitor container --last-sync-delta '90d'
+
+``--chunksize``
+    The number of containers to fetch in one database request (default: 1000).
+    This is useful if you have a lot of containers in your database.
+
+    Example::
+
+        pi-tokenjanitor container --chunksize 500
+
+``--orphaned``
+    Find containers that are orphaned. Orphaned containers are assigned to a user, but the user does not
+    exist in the user store anymore. This can happen, for example, if a user is deleted from an LDAP directory.
+
+    Example::
+
+        pi-tokenjanitor container --orphaned True
+
+    This returns all orphaned containers for later processing.
+
+list
+****
+List all found containers.
+Example::
+
+    pi-tokenjanitor container --type 'smartphone' list
+
+``--key``
+    Can be used to select the displayed information about the container.
+    This option can be used multiple times.
+    The default: ``serial``, ``type``, ``description``, ``realm``, ``user``.
+    Possible keys: ``type``, ``serial``, ``description``, ``last_authentication``, ``last_synchronization``,
+    ``states``, ``info``, ``internal_info_keys``, ``realms``, ``users``, ``tokens``
+
+    Example::
+
+        pi-tokenjanitor container --type 'smartphone' list --key user --key last_synchronization
+
+delete
+******
+Delete the found containers.
+
+Example::
+
+    pi-tokenjanitor container --type 'smartphone' delete
+
+update_info
+***********
+Updates the info for all found containers. A non-existing key is added and the value for an existing key is
+overwritten. All other entries remain unchanged.
+
+``key``
+    The info key to set.
+
+``value``
+    The info value to set.
+
+Example::
+
+    pi-tokenjanitor container --type 'smartphone' update_info 'os' 'android'
+
+delete_info
+***********
+Delete the info key from all found containers.
+
+``key``
+    The info key to delete.
+
+Example::
+
+    pi-tokenjanitor container --type 'smartphone' delete_info 'os'
+
+set_description
+***************
+Sets a description for all found containers.
+
+``description``
+    The description to set.
+
+Example::
+
+    pi-tokenjanitor container --type 'smartphone' set_description 'example description'
+
+set_realm
+*********
+Sets a list of realms for all found containers.
+
+``realm``
+    A comma separated list of realms to set.
+
+``--add``
+    If this option is set, the realm will be added to the existing realms.
+    If not set, the existing realms will be overwritten.
+
+Example::
+
+    pi-tokenjanitor container --type 'smartphone' set_realm 'defrealm' --add
+

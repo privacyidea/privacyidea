@@ -1,0 +1,146 @@
+@use "../../../../styles";
+@use "@angular/material" as mat;
+
+.realm-layout {
+  display: flex;
+  justify-content: center;
+}
+
+.realm-table-container {
+  @include styles.table-container-styles;
+  @include styles.base-table-structure(".token-table", ".token-table-filter", ".table-scroll-container");
+  max-height: var(--max-height);
+  max-width: calc(100vw - var(--global-padding) * 5 - 48px);
+  width: 1370px;
+  display: grid;
+  overflow: auto;
+}
+
+.node-filter {
+  min-width: 220px;
+  margin-left: 1rem;
+}
+
+.icon-true {
+  color: var(--mat-sys-primary-light);
+}
+
+.resolver-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.resolver-node-group {
+  margin-bottom: 0.5rem;
+}
+
+.resolver-node-label {
+  display: flex;
+  align-items: center;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.resolver-node-icon {
+  font-size: 18px;
+  align-items: center;
+  display: flex;
+}
+
+.resolver-list {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 1rem;
+}
+
+.resolver-item {
+  font-size: 0.875rem;
+  display: flex;
+  gap: 0.25rem;
+  align-items: baseline;
+}
+
+.resolver-name {
+  font-weight: 500;
+}
+
+.resolver-type,
+.resolver-priority {
+  opacity: 0.8;
+}
+
+.new-realm-footer-row {
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+.new-realm-name-field {
+  width: 100%;
+}
+
+.node-resolvers-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.node-resolvers-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.node-resolvers-select {
+  width: 100%;
+}
+
+.resolver-priority-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-top: 0.25rem;
+}
+
+.resolver-priority-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.priority-label {
+  font-size: 0.75rem;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.resolver-priority-input {
+  width: 80px;
+  padding: 0.1rem 0.25rem;
+  font-size: 0.75rem;
+}
+
+.actions-cell {
+  max-width: unset !important;
+}
+
+.actions-buttons {
+  display: flex;
+  gap: 0.25rem;
+  justify-content: center;
+  align-items: center;
+}
+
+
+.token-table {
+  th.mat-mdc-header-cell.mat-column-resolvers {
+    width: 100%;
+  }
+
+  td.mat-mdc-cell.mat-column-resolvers,
+  td.mat-mdc-footer-cell.mat-column-resolvers {
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+
+  ::ng-deep th.mat-mdc-header-cell.mat-column-actions .mat-sort-header-container {
+    justify-content: center;
+  }
+}

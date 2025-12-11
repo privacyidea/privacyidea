@@ -1,59 +1,49 @@
-import {
-  animate,
-  state,
-  style,
-  transition,
-  trigger,
-} from '@angular/animations';
-import { NgClass } from '@angular/common';
-import {
-  Component,
-  effect,
-  inject,
-  linkedSignal,
-  ViewChild,
-  WritableSignal,
-} from '@angular/core';
-import { FormsModule } from '@angular/forms';
-import { MatCheckboxModule } from '@angular/material/checkbox';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
-import { MatSortModule, Sort } from '@angular/material/sort';
-import { MatTableDataSource, MatTableModule } from '@angular/material/table';
+/**
+ * (c) NetKnights GmbH 2025,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ **/
+import { Component, ViewChild, WritableSignal, inject, linkedSignal } from "@angular/core";
 import {
   ContainerDetailData,
   ContainerService,
-  ContainerServiceInterface,
-} from '../../../services/container/container.service';
-import {
-  ContentService,
-  ContentServiceInterface,
-} from '../../../services/content/content.service';
-import {
-  TableUtilsService,
-  TableUtilsServiceInterface,
-} from '../../../services/table-utils/table-utils.service';
-import {
-  TokenService,
-  TokenServiceInterface,
-} from '../../../services/token/token.service';
-import { CopyButtonComponent } from '../../shared/copy-button/copy-button.component';
-import { KeywordFilterComponent } from '../../shared/keyword-filter/keyword-filter.component';
+  ContainerServiceInterface
+} from "../../../services/container/container.service";
+import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
+import { MatPaginatorModule, PageEvent } from "@angular/material/paginator";
+import { MatSortModule, Sort } from "@angular/material/sort";
+import { MatTableDataSource, MatTableModule } from "@angular/material/table";
+import { TableUtilsService, TableUtilsServiceInterface } from "../../../services/table-utils/table-utils.service";
+import { TokenService, TokenServiceInterface } from "../../../services/token/token.service";
+import { animate, state, style, transition, trigger } from "@angular/animations";
 
-const columnsKeyMap = [
-  { key: 'select', label: '' },
-  { key: 'serial', label: 'Serial' },
-  { key: 'type', label: 'Type' },
-  { key: 'states', label: 'Status' },
-  { key: 'description', label: 'Description' },
-  { key: 'user_name', label: 'User' },
-  { key: 'user_realm', label: 'Realm' },
-  { key: 'realms', label: 'Container Realms' },
-];
+import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
+import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
+import { FormsModule } from "@angular/forms";
+import { KeywordFilterComponent } from "../../shared/keyword-filter/keyword-filter.component";
+import { MatCheckboxModule } from "@angular/material/checkbox";
+import { MatFormFieldModule } from "@angular/material/form-field";
+import { MatInputModule } from "@angular/material/input";
+import { NgClass } from "@angular/common";
+import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
+import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
+import { ContainerTableActionsComponent } from "./container-table-actions/container-table-actions.component";
 
 @Component({
-  selector: 'app-container-table',
+  selector: "app-container-table",
   standalone: true,
   imports: [
     MatTableModule,
@@ -66,88 +56,62 @@ const columnsKeyMap = [
     CopyButtonComponent,
     MatCheckboxModule,
     FormsModule,
+    ScrollToTopDirective,
+    ClearableInputComponent,
+    ContainerTableActionsComponent
   ],
-  templateUrl: './container-table.component.html',
-  styleUrl: './container-table.component.scss',
+  templateUrl: "./container-table.component.html",
+  styleUrl: "./container-table.component.scss",
   animations: [
-    trigger('detailExpand', [
-      state('collapsed', style({ height: '0px', minHeight: '0' })),
-      state('expanded', style({ height: '*' })),
-      transition(
-        'expanded <=> collapsed',
-        animate('225ms cubic-bezier(0.4, 0.0, 0.2, 1)'),
-      ),
-    ]),
-  ],
+    trigger("detailExpand", [
+      state("collapsed", style({ height: "0px", minHeight: "0" })),
+      state("expanded", style({ height: "*" })),
+      transition("expanded <=> collapsed", animate("225ms cubic-bezier(0.4, 0.0, 0.2, 1)"))
+    ])
+  ]
 })
 export class ContainerTableComponent {
-  protected readonly containerService: ContainerServiceInterface =
-    inject(ContainerService);
+  protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
-  protected readonly tableUtilsService: TableUtilsServiceInterface =
-    inject(TableUtilsService);
-  protected readonly contentService: ContentServiceInterface =
-    inject(ContentService);
+  protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
+  protected readonly contentService: ContentServiceInterface = inject(ContentService);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
 
-  readonly columnsKeyMap = columnsKeyMap;
-  readonly columnKeys: string[] = columnsKeyMap.map((column) => column.key);
+  readonly columnsKeyMap = this.tableUtilsService.pickColumns(
+    "select",
+    "serial",
+    "type",
+    "states",
+    "description",
+    "user_name",
+    "user_realm",
+    "realms"
+  );
+  readonly columnKeys = [...this.tableUtilsService.getColumnKeys(this.columnsKeyMap)];
   readonly apiFilter = this.containerService.apiFilter;
   readonly advancedApiFilter = this.containerService.advancedApiFilter;
   containerSelection = this.containerService.containerSelection;
-  filterValue = this.containerService.filterValue;
-  filterValueString: WritableSignal<string> = linkedSignal(() =>
-    Object.entries(this.filterValue())
-      .map(([key, value]) => `${key}: ${value}`)
-      .join(' '),
-  );
+
   pageSize = this.containerService.pageSize;
   pageIndex = this.containerService.pageIndex;
   sort = this.containerService.sort;
   containerResource = this.containerService.containerResource;
 
-  emptyResource: WritableSignal<ContainerDetailData[]> = linkedSignal({
-    source: this.pageSize,
-    computation: (pageSize: number) =>
-      Array.from({ length: pageSize }, () => {
-        return {
-          serial: '',
-          type: '',
-          states: [],
-          description: '',
-          users: [],
-          user_realm: '',
-          realms: [],
-          tokens: [],
-          info: {},
-          internal_info_keys: [],
-          last_authentication: null,
-          last_synchronization: null,
-        } as ContainerDetailData;
-      }),
+  containerDataSource: WritableSignal<MatTableDataSource<ContainerDetailData>> = linkedSignal({
+    source: this.containerResource.value,
+    computation: (containerResource, previous) => {
+      if (containerResource && containerResource.result?.value) {
+        const processedData =
+          containerResource.result?.value?.containers.map((item) => ({
+            ...item,
+            user_name: item.users && item.users.length > 0 ? item.users[0].user_name : "",
+            user_realm: item.users && item.users.length > 0 ? item.users[0].user_realm : ""
+          })) ?? [];
+        return new MatTableDataSource<ContainerDetailData>(processedData);
+      }
+      return previous?.value ?? new MatTableDataSource<ContainerDetailData>([]);
+    }
   });
-
-  containerDataSource: WritableSignal<MatTableDataSource<ContainerDetailData>> =
-    linkedSignal({
-      source: this.containerResource.value,
-      computation: (containerResource, previous) => {
-        if (containerResource) {
-          const processedData =
-            containerResource.result?.value?.containers.map((item) => ({
-              ...item,
-              user_name:
-                item.users && item.users.length > 0
-                  ? item.users[0].user_name
-                  : '',
-              user_realm:
-                item.users && item.users.length > 0
-                  ? item.users[0].user_realm
-                  : '',
-            })) ?? [];
-          return new MatTableDataSource<ContainerDetailData>(processedData);
-        }
-        return previous?.value ?? new MatTableDataSource(this.emptyResource());
-      },
-    });
 
   total: WritableSignal<number> = linkedSignal({
     source: this.containerResource.value,
@@ -156,36 +120,19 @@ export class ContainerTableComponent {
         return containerResource.result?.value?.count ?? 0;
       }
       return previous?.value ?? 0;
-    },
+    }
   });
 
   pageSizeOptions = this.tableUtilsService.pageSizeOptions;
 
-  @ViewChild('filterHTMLInputElement', { static: true })
+  @ViewChild("filterHTMLInputElement", { static: true })
   filterInput!: HTMLInputElement;
   expandedElement: ContainerDetailData | null = null;
 
-  constructor() {
-    effect(() => {
-      const filterValueString = this.filterValueString();
-      if (this.filterInput) {
-        this.filterInput.value = filterValueString;
-      }
-      const recordsFromText =
-        this.tableUtilsService.recordsFromText(filterValueString);
-      if (
-        JSON.stringify(this.filterValue()) !== JSON.stringify(recordsFromText)
-      ) {
-        this.filterValue.set(recordsFromText);
-      }
-      this.pageIndex.set(0);
-    });
-  }
-
   isAllSelected() {
     return (
-      this.containerSelection().length ===
-      this.containerDataSource().data.length
+      this.containerSelection().length === this.containerDataSource().data.length &&
+      this.containerDataSource().data.length > 0
     );
   }
 
@@ -207,16 +154,14 @@ export class ContainerTableComponent {
   }
 
   handleStateClick(element: ContainerDetailData) {
-    this.containerService
-      .toggleActive(element.serial, element.states)
-      .subscribe({
-        next: () => {
-          this.containerResource.reload();
-        },
-        error: (error) => {
-          console.error('Failed to toggle active.', error);
-        },
-      });
+    this.containerService.toggleActive(element.serial, element.states).subscribe({
+      next: () => {
+        this.containerResource.reload();
+      },
+      error: (error) => {
+        console.error("Failed to toggle active.", error);
+      }
+    });
   }
 
   onPageEvent(event: PageEvent) {

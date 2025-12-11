@@ -37,20 +37,20 @@ described in motp.sourceforge.net.
 
 The code is tested in tests/test_lib_tokens_motp
 """
-from flask_babel import lazy_gettext
 
-from .mOTP import mTimeOtp
-from privacyidea.lib.apps import create_motp_url
-from privacyidea.lib.tokenclass import TokenClass
-from privacyidea.lib.log import log_with
-from privacyidea.lib.utils import create_img, is_true
+import logging
+import traceback
+
 from privacyidea.api.lib.utils import getParam
+from privacyidea.lib import _
+from privacyidea.lib.apps import create_motp_url
 from privacyidea.lib.crypto import generate_otpkey
 from privacyidea.lib.decorators import check_token_locked
-import traceback
-import logging
-from privacyidea.lib import _
+from privacyidea.lib.log import log_with
 from privacyidea.lib.policy import SCOPE, GROUP
+from privacyidea.lib.tokenclass import TokenClass
+from privacyidea.lib.utils import create_img, is_true
+from .mOTP import mTimeOtp
 from ..policies.actions import PolicyAction
 
 optional = True
@@ -101,11 +101,11 @@ class MotpTokenClass(TokenClass):
                'policy': {
                    SCOPE.ADMIN: {
                        PolicyAction.FORCE_SERVER_GENERATE: {'type': 'bool',
-                                                      'desc': MotpTokenClass.desc_key_gen}
+                                                            'desc': MotpTokenClass.desc_key_gen}
                    },
                    SCOPE.USER: {
                        PolicyAction.FORCE_SERVER_GENERATE: {'type': 'bool',
-                                                      'desc': MotpTokenClass.desc_key_gen}
+                                                            'desc': MotpTokenClass.desc_key_gen}
                    },
                    SCOPE.ENROLL: {
                        PolicyAction.MAXTOKENUSER: {
@@ -179,7 +179,8 @@ class MotpTokenClass(TokenClass):
         :return: nothing
         """
         otp_key = param.get("otpkey")
-        force_genkey = param.get("policies", {}).get(f"{self.get_tokentype()}_{PolicyAction.FORCE_SERVER_GENERATE}", False)
+        force_genkey = param.get("policies", {}).get(f"{self.get_tokentype()}_{PolicyAction.FORCE_SERVER_GENERATE}",
+                                                     False)
         if force_genkey or not otp_key:
             param["genkey"] = True
         genkey = is_true(param.get("genkey"))

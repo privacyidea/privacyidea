@@ -54,32 +54,33 @@
 This file tests the lib.tokens.webauthntoken, along with lib.tokens.webauthn.
 This depends on lib.tokenclass
 """
-import json
 import os
 import struct
 import unittest
 from copy import copy
 
 from mock import patch
+
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.config import set_privacyidea_config
 from privacyidea.lib.error import PolicyError, ParameterError, EnrollmentError
 from privacyidea.lib.fido2.config import FIDO2ConfigOptions
 from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction
 from privacyidea.lib.fido2.token_info import FIDO2TokenInfo
-from privacyidea.lib.policy import set_policy, SCOPE, delete_policy
 from privacyidea.lib.policies.actions import PolicyAction
+from privacyidea.lib.policy import set_policy, SCOPE, delete_policy
 from privacyidea.lib.token import init_token, check_user_pass, remove_token, import_tokens, get_tokens
 from privacyidea.lib.tokens.webauthn import (CoseAlgorithm, RegistrationRejectedException,
                                              WebAuthnMakeCredentialOptions, AuthenticationRejectedException,
                                              webauthn_b64_decode, webauthn_b64_encode,
                                              WebAuthnRegistrationResponse, ATTESTATION_REQUIREMENT_LEVEL,
                                              AttestationLevel, AuthenticatorDataFlags, WebAuthnAssertionResponse,
-                                             WebAuthnUser, UserVerificationLevel)
+                                             WebAuthnUser)
 from privacyidea.lib.tokens.webauthntoken import (WebAuthnTokenClass, DEFAULT_AUTHENTICATOR_ATTESTATION_FORM,
                                                   DEFAULT_USER_VERIFICATION_REQUIREMENT)
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import hexlify_and_unicode
+from privacyidea.models import db
 from .base import MyTestCase
 
 TRUST_ANCHOR_DIR = "{}/testdata/trusted_attestation_roots".format(os.path.abspath(os.path.dirname(__file__)))
@@ -548,7 +549,7 @@ class WebAuthnTokenTestCase(MyTestCase):
 
         expected_tokeninfo_keys = ["tokenkind", "pubKey", "attestation_serial", "attestation_issuer",
                                    "attestation_subject"]
-        self.assertTrue(set(expected_tokeninfo_keys).issubset(exported_data["tokeninfo"].keys()))
+        self.assertTrue(set(expected_tokeninfo_keys).issubset(exported_data["info_list"].keys()))
 
         # Test that the exported values match the token's data
         exported_data = token.export_token()
@@ -558,12 +559,9 @@ class WebAuthnTokenTestCase(MyTestCase):
         self.assertEqual(exported_data["otpkey"], "8a535a698e5f609a11d6c839201ec52f66686bea8177fe50f7965ccb1364"
                                                   "9a39280e188b08b8042a829f0941252edebfe839a3fc452e38765423ac7f802df62d")
         self.assertEqual(exported_data["issuer"], "privacyIDEA")
-        self.assertEqual(exported_data["tokeninfo"]["pubKey"], "a401020326215820319ea01f1125ce6232947365800ae5d"
+        self.assertEqual(exported_data["info_list"]["pubKey"], "a401020326215820319ea01f1125ce6232947365800ae5d"
                                                                "9ddc874247c55d1516bad3ca3ca32075c22582059f1f07f3b2f86c"
                                                                "0a51e0cfa13dc57e7c77a110e796f8a0b27741fe58663cb3a")
-
-        # Clean up
-        remove_token(token.token.serial)
 
     def test_13_webauthn_token_import(self):
         # Define the token data to be imported
@@ -574,7 +572,7 @@ class WebAuthnTokenTestCase(MyTestCase):
             "otpkey": '8a535a698e5f609a11d6c839201ec52f66686bea8177fe50f7965ccb13649a39280e188b08b8042a829f0941252ede'
                       'bfe839a3fc452e38765423ac7f802df62d',
             "issuer": "privacyIDEA",
-            "tokeninfo": {'aaguid': '00000000000000000000000000000000',
+            "info_list": {'aaguid': '00000000000000000000000000000000',
                           'attestation_issuer': 'CN=Yubico U2F Root CA Serial 457200631',
                           'attestation_level': 'trusted', 'attestation_serial': '1013459277',
                           'attestation_subject': 'CN=Yubico U2F EE Serial 23925734811117901',
@@ -588,7 +586,7 @@ class WebAuthnTokenTestCase(MyTestCase):
         }]
 
         # Import the token
-        import_tokens(json.dumps(token_data))
+        import_tokens(token_data)
 
         # Retrieve the imported token
         token = get_tokens(serial=token_data[0]["serial"])[0]

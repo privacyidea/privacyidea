@@ -1,12 +1,45 @@
-<div aria-label="Token Applications"
-     class="token-applications">
-  <h3 class="margin-left-1">Token Applications</h3>
-  <mat-form-field appearance="fill"
-                  class="application-type-select">
-    <mat-label>Select Application Type</mat-label>
-    <mat-select [(value)]="selectedApplicationType">
-      <mat-option value="ssh">SSH: Attaching SSH keys to services</mat-option>
-      <mat-option value="offline">Offline: Use HOTP token for offline login to notebooks
+<!--
+ (c) NetKnights GmbH 2025,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<div
+  appScrollToTop
+  aria-label="Token Applications"
+  class="token-applications"
+  i18n-aria-label>
+  <h3
+    class="margin-left-1"
+    i18n>
+    Token Applications
+  </h3>
+  <mat-form-field
+    appearance="fill"
+    class="application-type-select">
+    <mat-label i18n>Select Application Type</mat-label>
+    <mat-select
+      [(value)]="selectedApplicationType"
+      [value]="selectedApplicationType()">
+      <mat-option
+        i18n
+        value="ssh">SSH: Attaching SSH keys to services
+      </mat-option>
+      <mat-option
+        i18n
+        value="offline">Offline: Use HOTP token for offline login to notebooks
       </mat-option>
     </mat-select>
   </mat-form-field>
@@ -20,7 +53,7 @@
     }
     @default {
       <div>
-        <h3>Application Type Not Found</h3>
+        <h3 i18n>Application Type Not Found</h3>
       </div>
     }
   }

@@ -1,23 +1,42 @@
+<!--
+ (c) NetKnights GmbH 2025,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
 <div class="flex-column">
-  <div class="token-type-paragraph">
-    <p>{{ text }}</p>
-  </div>
   <h4 class="enroll-h4">Token Configuration</h4>
   @if (!defaultSMTPisSet) {
-    <span class="inline-warning">For Email tokens to work properly you need to set the
-      <a href="#">Email Token Config</a>!</span><!-- TODO: Link -->
+    <span
+      i18n
+      class="inline-warning">For Email tokens to work properly you need to set the <a href="#">Email Token Config</a>!</span><!-- TODO: Link -->
   }
-  <mat-checkbox [formControl]="readEmailDynamicallyControl">
-    Read number dynamically from user source on each request
+  <mat-checkbox
+    [formControl]="readEmailDynamicallyControl"
+    i18n>
+    Read email dynamically from user source on each request
   </mat-checkbox>
   <div class="flex-row gap-1">
     @if (!readEmailDynamicallyControl.value) {
       <mat-form-field class="input-height width-33">
-        <mat-label>Email Address</mat-label>
-        <input [formControl]="emailAddressControl"
-               matInput
-               required />
-        <mat-error>Email Address is <strong>required</strong></mat-error>
+        <mat-label i18n>Email Address</mat-label>
+        <input
+          [formControl]="emailAddressControl"
+          matInput
+          required />
+        <mat-error i18n>Email Address is <strong>required</strong></mat-error>
       </mat-form-field>
     } @else {
       <span class="width-33"></span>

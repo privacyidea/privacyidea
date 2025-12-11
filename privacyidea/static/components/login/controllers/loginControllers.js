@@ -85,6 +85,9 @@ angular.module("privacyideaApp")
             $scope.piTranslationPrefix = obj.val();
             gettextCatalog.debug = $scope.piTranslationWarning;
             gettextCatalog.debugPrefix = $scope.piTranslationPrefix;
+            obj = angular.element(document.querySelector('#PRIVACYIDEA_VERSION_NUMBER'));
+            $scope.privacyideaVersionNumber = obj.val();
+            $rootScope.privacyideaVersionNumber = obj.val();
 
             // Check if registration is allowed
             $scope.registrationAllowed = false;

@@ -18,7 +18,7 @@
 import logging
 from typing import List, Optional
 
-from sqlalchemy import Unicode, Integer, UniqueConstraint, select, update, delete
+from sqlalchemy import Unicode, Integer, UniqueConstraint, select, update, delete, Sequence
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -49,31 +49,6 @@ class Tokengroup(TimestampMethodsMixin, db.Model):
         self.name = groupname
         self.Description = description
 
-    def delete(self):
-        ret = self.id
-        # SQLAlchemy's cascade="all, delete-orphan" handles the deletion of TokenTokengroup entries.
-        db.session.delete(self)
-        save_config_timestamp()
-        db.session.commit()
-        return ret
-
-    def save(self):
-        stmt = select(Tokengroup).filter_by(name=self.name)
-        ti = db.session.execute(stmt).scalar_one_or_none()
-        if ti is None:
-            return TimestampMethodsMixin.save(self)
-        else:
-            # update
-            update_stmt = (
-                update(Tokengroup)
-                .where(Tokengroup.id == ti.id)
-                .values(Description=self.Description)
-            )
-            db.session.execute(update_stmt)
-            ret = ti.id
-            db.session.commit()
-        return ret
-
 
 class TokenTokengroup(TimestampMethodsMixin, db.Model):
     """
@@ -98,31 +73,12 @@ class TokenTokengroup(TimestampMethodsMixin, db.Model):
         :param tokengroupname: the name of the tokengroup
         :param token_id: The id of the token
         """
-        if tokengroupname:
-            stmt = select(Tokengroup).filter_by(name=tokengroupname)
-            r = db.session.execute(stmt).scalar_one_or_none()
-            if not r:
-                raise Exception("tokengroup does not exist")
-            self.tokengroup_id = r.id
-        elif tokengroup_id:
+        if tokengroup_id:
             self.tokengroup_id = tokengroup_id
+        elif tokengroupname:
+            stmt = select(Tokengroup).filter_by(name=tokengroupname)
+            group = db.session.execute(stmt).scalar_one_or_none()
+            if not group:
+                raise Exception("tokengroup does not exist")
+            self.tokengroup_id = group.id
         self.token_id = token_id
-
-    def save(self):
-        """
-        We only save this, if it does not exist, yet.
-        """
-        stmt = select(TokenTokengroup).filter_by(tokengroup_id=self.tokengroup_id, token_id=self.token_id)
-        tr = db.session.execute(stmt).scalar_one_or_none()
-        if tr is None:
-            # create a new one
-            db.session.add(self)
-            db.session.commit()
-            if get_app_config_value(SAFE_STORE, False):
-                tr = db.session.execute(stmt).scalar_one_or_none()
-                ret = tr.id if tr else self.id
-            else:
-                ret = self.id
-        else:
-            ret = self.id
-        return ret

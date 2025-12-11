@@ -1,8 +1,9 @@
 @use "../../../../styles";
 
 .assign-token-self-service-container {
+  display: grid;
   @include styles.table-container-styles;
   width: 49rem;
-  max-height: calc(var(--main-height) - var(--global-padding) * 5);
+  max-height: var(--max-height);
   overflow: auto;
 }

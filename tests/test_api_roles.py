@@ -7,20 +7,20 @@ implementation is contained in api/auth.py, api/token.py api/audit.py
 import datetime
 import json
 
-from . import ldap3mock
-from .test_api_validate import LDAPDirectory
-from .base import MyApiTestCase
-from privacyidea.lib.token import (get_tokens, remove_token, enable_token,
-                                   assign_token, init_token)
-from privacyidea.lib.user import User
-from privacyidea.lib.tokenclass import AUTH_DATE_FORMAT
-from privacyidea.lib.resolver import save_resolver
-from privacyidea.models import Token
-from privacyidea.lib.realm import (set_realm, delete_realm, set_default_realm)
 from privacyidea.api.lib.postpolicy import DEFAULT_POLICY_TEMPLATE_URL
+from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import (SCOPE, set_policy, delete_policy,
                                     LOGINMODE, ACTIONVALUE)
-from privacyidea.lib.policies.actions import PolicyAction
+from privacyidea.lib.realm import (set_realm, delete_realm, set_default_realm)
+from privacyidea.lib.resolver import save_resolver
+from privacyidea.lib.token import (get_tokens, remove_token, enable_token,
+                                   assign_token, init_token)
+from privacyidea.lib.tokenclass import AUTH_DATE_FORMAT
+from privacyidea.lib.user import User
+from privacyidea.models import Token, db
+from . import ldap3mock
+from .base import MyApiTestCase
+from .test_api_validate import LDAPDirectory
 
 PWFILE = "tests/testdata/passwords"
 
@@ -185,7 +185,7 @@ class APIAuthTestCase(MyApiTestCase):
 
         # Test with external admin
         self.setUp_user_realms()
-        (added, failed) = set_realm("adminrealm",[{'name': self.resolvername1}])
+        (added, failed) = set_realm("adminrealm", [{'name': self.resolvername1}])
         self.assertTrue(len(failed) == 0)
         self.assertTrue(len(added) == 1)
 
@@ -283,8 +283,8 @@ class APIAuthChallengeResponse(MyApiTestCase):
     def setUp(self):
         self.setUp_user_realms()
         # New token for the user "selfservice"
-        Token("hotp1", "hotp", otpkey=self.otpkey, userid=1004, resolver=self.resolvername1,
-              realm=self.realm1).save()
+        init_token({"type": "hotp", "serial": "hotp1", "otpkey": self.otpkey},
+                   user=User(uid="1004", realm=self.realm1, resolver=self.resolvername1))
         # Define HOTP token to be challenge response
         set_policy(name="pol_cr", scope=SCOPE.AUTH, action="{0!s}=hotp".format(PolicyAction.CHALLENGERESPONSE))
         set_policy(name="webuilog", scope=SCOPE.WEBUI, action="{0!s}=privacyIDEA".format(PolicyAction.LOGINMODE))
@@ -322,8 +322,8 @@ class APIAuthChallengeResponse(MyApiTestCase):
 
     def test_02_auth_chal_resp_multi_token(self):
         # create another token
-        Token("hotp2", "hotp", otpkey=self.otpkey, userid=1004,
-              resolver=self.resolvername1, realm=self.realm1).save()
+        init_token({"type": "hotp", "serial": "hotp2", "otpkey": self.otpkey},
+                   user=User(uid="1004", realm=self.realm1, resolver=self.resolvername1))
         set_policy(name="pol_otppin", scope=SCOPE.AUTH,
                    action="{0!s}={1!s}".format(PolicyAction.OTPPIN, ACTIONVALUE.USERSTORE))
         with self.app.test_request_context('/auth',
@@ -353,10 +353,12 @@ class APISelfserviceTestCase(MyApiTestCase):
         For each test we need to initialize the self.at and the self.at_user
         members.
         """
+        # Clear session before each test to avoid side effects
+        db.session.expunge_all()
         self.setUp_user_realms()
-        Token(self.my_serial, tokentype="hotp", userid="1004",
-              resolver="resolver1", realm="realm1").save()
-        Token(self.foreign_serial, tokentype="hotp").save()
+        init_token({"type": "hotp", "serial": self.my_serial},
+                   user=User(uid="1004", realm=self.realm1, resolver="resolver1"))
+        init_token({"type": "hotp", "serial": self.foreign_serial})
 
     def tearDown(self):
         remove_token(self.my_serial)
@@ -1396,17 +1398,16 @@ class APISelfserviceTestCase(MyApiTestCase):
                              "Only 2 failed authentications per 0:00:20 allowed.",
                              details)
 
-        # and even /validate/check does not work
-        # (since it counts /auth *and* /validate/check )
+        # /validate/check does not work anyway, as the user does not exist
         with self.app.test_request_context('/validate/check',
                                            method='POST',
                                            data={"user": "eve",
                                                  "pass": pin}):
             res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, 200)
-            result = res.json.get("result")
-            self.assertTrue(result["status"], result)
-            self.assertFalse(result["value"], result)
+            self.assertEqual(res.status_code, 400)
+            error = res.json.get("result").get("error")
+            self.assertEqual(904, error.get("code"), error)
+            self.assertEqual("ERR904: User <eve@realm1> does not exist.", error.get("message"), error)
 
         delete_policy("pol_time1")
         delete_policy("pol_loginmode")
@@ -1437,7 +1438,6 @@ class APISelfserviceTestCase(MyApiTestCase):
             result = res.json.get("result")
             self.assertTrue(result["status"], result)
             self.assertFalse(result["value"], result)
-
 
         # We now cannot authenticate even with the correct PIN
         with self.app.test_request_context('/auth',
@@ -1522,14 +1522,15 @@ class PolicyConditionsTestCase(MyApiTestCase):
 
         # privacyidea policy: for helpdesk users, require the token PIN
         with self.app.test_request_context('/policy/privacyidea',
-                                           json={'action': "{}={}".format(PolicyAction.LOGINMODE, LOGINMODE.PRIVACYIDEA),
-                                                 'scope': SCOPE.WEBUI,
-                                                 'realm': '',
-                                                 'priority': 1,
-                                                 'conditions': [
-                                                     ["userinfo", "groups", "contains", "cn=helpdesk,o=test", True],
-                                                 ],
-                                                 'active': True},
+                                           json={
+                                               'action': "{}={}".format(PolicyAction.LOGINMODE, LOGINMODE.PRIVACYIDEA),
+                                               'scope': SCOPE.WEBUI,
+                                               'realm': '',
+                                               'priority': 1,
+                                               'conditions': [
+                                                   ["userinfo", "groups", "contains", "cn=helpdesk,o=test", True],
+                                               ],
+                                               'active': True},
                                            method='POST',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
@@ -1596,7 +1597,8 @@ class PolicyConditionsTestCase(MyApiTestCase):
         # if we now disable the condition on userstore and privacyidea, we get a conflicting policy error
         with self.app.test_request_context('/policy/privacyidea',
                                            json={'scope': SCOPE.WEBUI,
-                                                 'action': "{}={}".format(PolicyAction.LOGINMODE, LOGINMODE.PRIVACYIDEA),
+                                                 'action': "{}={}".format(PolicyAction.LOGINMODE,
+                                                                          LOGINMODE.PRIVACYIDEA),
                                                  'realm': '',
                                                  'active': True,
                                                  'conditions': [

@@ -1,22 +1,65 @@
-<div [ngClass]="!this.authService.isSelfServiceUser() ? 'layout' : 'layout-self-service'"
-     aria-label="Layout">
-  <header aria-label="Header">
-    @if (!this.authService.isSelfServiceUser()) {
-      <app-header></app-header>
+<!--
+ (c) NetKnights GmbH 2025,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<div
+  aria-label="Layout"
+  class="layout"
+  i18n-aria-label>
+  <main
+    aria-label="Main Router Outlet"
+    i18n-aria-label>
+    @if (authService.role() === 'admin') {
+      <mat-drawer-container class="drawer-container">
+        <mat-drawer
+          class="drawer"
+          mode="side"
+          opened>
+          <app-navigation />
+        </mat-drawer>
+        <mat-drawer-content class="drawer-content padding-32">
+            <router-outlet></router-outlet>
+        </mat-drawer-content>
+      </mat-drawer-container>
     } @else {
-      <app-header-self-service></app-header-self-service>
+      <div
+        class="selfservice-layout">
+        @if (authService.tokenWizard() || authService.containerWizard().enabled) {
+          <app-navigation-self-service-wizard class="flex-size-1" />
+        } @else {
+          <app-navigation-self-service class="flex-size-1" />
+        }
+        <div class="flex-size-8 flex-top-center">
+          <div class="selfservice-content-container">
+            <router-outlet></router-outlet>
+          </div>
+        </div>
+      </div>
     }
-  </header>
-  <main aria-label="Main Router Outlet">
-    <router-outlet></router-outlet>
     @if (showProgressBar()) {
       <div class="loading-urls-container">
-      @for (l of loadingUrls(); track l.key) {
-        <span class="loading-url"> {{ l.url.slice(1) }} </span><br />
-      }
-    </div>
-    <mat-progress-bar class="progress-bar"
-                      mode="indeterminate" />
+        @for (l of loadingUrls(); track l.key) {
+          <span class="loading-url"> {{ l.url.slice(1) }} </span>
+          <br />
+        }
+      </div>
+      <mat-progress-bar
+        class="progress-bar"
+        mode="indeterminate" />
     }
   </main>
 </div>

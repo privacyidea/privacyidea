@@ -1,15 +1,32 @@
+<!--
+ (c) NetKnights GmbH 2025,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
 <div class="flex-column">
-  <div class="token-type-paragraph">
-    <p>{{ text }}</p>
-  </div>
   <h4 class="enroll-h4">Token Configuration</h4>
   <mat-form-field class="sshkey-description-form">
-    <mat-label>SSH public key</mat-label>
-    <textarea [formControl]="sshPublicKeyFormControl"
-              matInput
-              placeholder="Paste the PUBLIC ssh key here"
-              required
-              rows="5"></textarea>
-    <mat-error>SSH public key is <strong>required</strong></mat-error>
+    <mat-label i18n>SSH public key</mat-label>
+    <textarea
+      [formControl]="sshPublicKeyFormControl"
+      i18n-placeholder
+      matInput
+      placeholder="Paste the PUBLIC ssh key here"
+      required
+      rows="5"></textarea>
+    <mat-error i18n>SSH public key is <strong>required</strong></mat-error>
   </mat-form-field>
 </div>

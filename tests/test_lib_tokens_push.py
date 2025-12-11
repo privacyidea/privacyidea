@@ -1,8 +1,13 @@
+# SPDX-FileCopyrightText: 2019 NetKnights GmbH <https://netknights.it>
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 import json
+import logging
 import time
 from base64 import b32decode, b32encode
 from datetime import datetime, timedelta, timezone
 from threading import Timer
+from testfixtures import LogCapture
 
 import mock
 import responses
@@ -23,8 +28,8 @@ from privacyidea.lib.crypto import geturandom
 from privacyidea.lib.error import ConfigAdminError
 from privacyidea.lib.error import ParameterError, privacyIDEAError, PolicyError
 from privacyidea.lib.framework import get_app_local_store
-from privacyidea.lib.policy import (SCOPE, set_policy, delete_policy, LOGINMODE, PolicyClass)
 from privacyidea.lib.policies.actions import PolicyAction
+from privacyidea.lib.policy import (SCOPE, set_policy, delete_policy, LOGINMODE, PolicyClass)
 from privacyidea.lib.smsprovider.FirebaseProvider import FirebaseConfig
 from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway, delete_smsgateway
 from privacyidea.lib.token import get_tokens, remove_token, init_token, import_tokens
@@ -34,7 +39,8 @@ from privacyidea.lib.tokens.pushtoken import (PushTokenClass, PUSH_ACTION,
                                               PUBLIC_KEY_SMARTPHONE, PRIVATE_KEY_SERVER,
                                               PUBLIC_KEY_SERVER, AVAILABLE_PRESENCE_OPTIONS_ALPHABETIC,
                                               AVAILABLE_PRESENCE_OPTIONS_NUMERIC,
-                                              PushAllowPolling, POLLING_ALLOWED, POLL_ONLY)
+                                              PushAllowPolling, POLLING_ALLOWED, POLL_ONLY,
+                                              PushPresenceOptions)
 from privacyidea.lib.user import (User)
 from privacyidea.lib.utils import to_bytes, b32encode_and_unicode, to_unicode, AUTH_RESPONSE
 from privacyidea.models import Token, Challenge
@@ -106,7 +112,7 @@ class PushTokenTestCase(MyTestCase):
         token.add_tokeninfo("firebase_token", "firebaseT")
         token.add_tokeninfo(PUBLIC_KEY_SERVER, self.server_public_key_pem)
         token.add_tokeninfo(PRIVATE_KEY_SERVER, self.server_private_key_pem, "password")
-        token.del_tokeninfo("enrollment_credential")
+        token.delete_tokeninfo("enrollment_credential")
         token.token.rollout_state = "enrolled"
         token.token.active = True
         return token
@@ -121,6 +127,9 @@ class PushTokenTestCase(MyTestCase):
         class_prefix = token.get_class_prefix()
         self.assertEqual(class_prefix, "PIPU")
         self.assertEqual(token.get_class_type(), "push")
+        self.assertEqual([x for x in PushPresenceOptions.__members__],
+                         token.get_class_info(key="policy")[SCOPE.AUTH][PUSH_ACTION.PRESENCE_OPTIONS]["value"],
+                         token.get_class_info())
 
         # Test to do the 2nd step, although the token is not yet in clientwait
         self.assertRaises(ParameterError, token.update, {"otpkey": "1234", "pubkey": "1234", "serial": self.serial1})
@@ -151,7 +160,7 @@ class PushTokenTestCase(MyTestCase):
         self.assertTrue(r > 0)
 
         detail = token.get_init_detail(params={"policies": {"firebase_config": self.firebase_config_name,
-                                               "push_registration_url": "https://privacyidea.com/enroll"}})
+                                                            "push_registration_url": "https://privacyidea.com/enroll"}})
         self.assertTrue(detail['pushurl']['value'].startswith("otpauth"))
 
         # set policy to use pia scheme
@@ -201,7 +210,7 @@ class PushTokenTestCase(MyTestCase):
         token_param.update(FB_CONFIG_VALS)
         token = init_token(param=token_param)
         detail = token.get_init_detail(params={"policies": {PUSH_ACTION.FIREBASE_CONFIG: POLL_ONLY,
-                                               PUSH_ACTION.REGISTRATION_URL: "https://privacyidea.com/enroll"},
+                                                            PUSH_ACTION.REGISTRATION_URL: "https://privacyidea.com/enroll"},
                                                PolicyAction.FORCE_APP_PIN: True})
         self.assertIn("pin=True", detail["pushurl"]["value"])
         remove_token(token.get_serial())
@@ -594,15 +603,6 @@ class PushTokenTestCase(MyTestCase):
             'firebase_token': {
                 FB_CONFIG_VALS[FirebaseConfig.JSON_CONFIG]: _create_credential_mock()}}
         self.app.config.setdefault('_app_local_store', {}).update(cached_fbtoken)
-        # We mock the ServiceAccountCredentials, since we can not directly contact the Google API
-        with mock.patch('privacyidea.lib.smsprovider.FirebaseProvider.service_account'
-                        '.Credentials.from_service_account_file') as mySA:
-            # add responses, to simulate the communication to firebase
-            responses.add(responses.POST, 'https://fcm.googleapis.com/v1/projects'
-                                          '/test-123456/messages:send',
-                          body="""{}""",
-                          content_type="application/json")
-
         # set PIN
         tokenobj.set_pin("pushpin")
         tokenobj.add_user(User("cornelius", self.realm1))
@@ -1109,7 +1109,7 @@ class PushTokenTestCase(MyTestCase):
         set_policy("push_config", scope=SCOPE.ENROLL,
                    action=f"{PUSH_ACTION.FIREBASE_CONFIG}={self.firebase_config_name}")
         set_policy("push_numeric", scope=SCOPE.AUTH,
-                   action=f"{PUSH_ACTION.PRESENCE_OPTIONS}=NUMERIC")
+                   action=f"{PUSH_ACTION.PRESENCE_OPTIONS}={PushPresenceOptions.NUMERIC.name}")
         # Create push token
         token_object = self._create_push_token()
 
@@ -1122,6 +1122,9 @@ class PushTokenTestCase(MyTestCase):
                    action=f"{PolicyAction.LOGINMODE}={LOGINMODE.PRIVACYIDEA}")
         # Set a policy to require presence
         set_policy("push_require_presence", scope=SCOPE.AUTH, action=f"{PUSH_ACTION.REQUIRE_PRESENCE}=1")
+        # Test that the default value of presence options is 3 if it was configured > 10
+        set_policy("push_presence_num_opts", scope=SCOPE.AUTH,
+                   action=f"{PUSH_ACTION.PRESENCE_NUM_OPTIONS}=15")
         with mock.patch('privacyidea.lib.smsprovider.FirebaseProvider.service_account.Credentials'
                         '.from_service_account_file') as fb_service_account:
             # Alternative: side_effect instead of return_value
@@ -1153,6 +1156,8 @@ class PushTokenTestCase(MyTestCase):
                 transaction_id = response_json.get("detail").get("transaction_id")
                 challenges = get_challenges(serial=token_object.token.serial, transaction_id=transaction_id)
                 challenge_object = challenges[0]
+                # Check that we have 4 entries in the challenge data, 3 options and the correct answer
+                self.assertEqual(4, len(challenge_object.get_data().split(",")))
                 # The correct answer is always appended to the available options
                 presence_answer = challenge_object.get_data().split(',').pop()
                 challenge_text = DEFAULT_CHALLENGE_TEXT + f" Please press: {presence_answer}"
@@ -1208,11 +1213,13 @@ class PushTokenTestCase(MyTestCase):
         delete_policy("webui")
         delete_policy("push_require_presence")
         delete_policy("push_numeric")
+        delete_policy("push_presence_num_opts")
 
     @responses.activate
     def test_06d_api_auth_presence_custom(self):
         self.setUp_user_realms()
-        custom_presence_options = "0A:1B:2C:3D:4E:5F:6G:7H:8I:9J"
+        # Only define 8 custom options to test the allowed number of options
+        custom_presence_options = "0A:1B:2C:3D:4E:5F:6G:7H"
         custom_options_list = custom_presence_options.split(":")
         # create FireBase Service and policies
         set_smsgateway(self.firebase_config_name,
@@ -1221,9 +1228,11 @@ class PushTokenTestCase(MyTestCase):
         set_policy("push_config", scope=SCOPE.ENROLL,
                    action=f"{PUSH_ACTION.FIREBASE_CONFIG}={self.firebase_config_name}")
         set_policy("push_custom", scope=SCOPE.AUTH,
-                   action=f"{PUSH_ACTION.PRESENCE_OPTIONS}=CUSTOM")
+                   action=f"{PUSH_ACTION.PRESENCE_OPTIONS}={PushPresenceOptions.CUSTOM.name}")
         set_policy("push_custom_options", scope=SCOPE.AUTH,
                    action=f"{PUSH_ACTION.PRESENCE_CUSTOM_OPTIONS}={custom_presence_options}")
+        set_policy("push_presence_num_opts", scope=SCOPE.AUTH,
+                   action=f"{PUSH_ACTION.PRESENCE_NUM_OPTIONS}=9")
         # create push token
         token = self._create_push_token()
 
@@ -1231,7 +1240,7 @@ class PushTokenTestCase(MyTestCase):
         token.set_pin("pushpin")
         token.add_user(User("cornelius", self.realm1))
 
-        # Set a loginmode policy
+        # Set a login mode policy
         set_policy("webui", scope=SCOPE.WEBUI,
                    action=f"{PolicyAction.LOGINMODE}={LOGINMODE.PRIVACYIDEA}")
         # Set a policy to require presence
@@ -1245,33 +1254,38 @@ class PushTokenTestCase(MyTestCase):
             responses.add(responses.POST, 'https://fcm.googleapis.com/v1/projects/test-123456/messages:send',
                           body="""{}""",
                           content_type="application/json")
+            with LogCapture(level=logging.WARNING) as lc:
+                with self.app.test_request_context('/auth',
+                                                   method='POST',
+                                                   data={"username": "cornelius",
+                                                         "realm": self.realm1,
+                                                         # this will be overwritten by pushtoken_disable_wait
+                                                         PUSH_ACTION.WAIT: "10",
+                                                         "password": "pushpin"}):
+                    res = self.app.full_dispatch_request()
+                    self.assertEqual(res.status_code, 200)
+                    # Get the challenge from the database
 
-            with self.app.test_request_context('/auth',
-                                               method='POST',
-                                               data={"username": "cornelius",
-                                                     "realm": self.realm1,
-                                                     # this will be overwritten by pushtoken_disable_wait
-                                                     PUSH_ACTION.WAIT: "10",
-                                                     "password": "pushpin"}):
-                res = self.app.full_dispatch_request()
-                self.assertEqual(res.status_code, 200)
-                # Get the challenge from the database
-
-                json_response = res.json
-                self.assertFalse(json_response.get("result").get("value"))
-                self.assertTrue(json_response.get("result").get("status"))
-                self.assertEqual(json_response["result"]["authentication"],
-                                 AUTH_RESPONSE.CHALLENGE, res.json)
-                self.assertEqual(json_response.get("detail").get("serial"), token.token.serial)
-                self.assertIn("transaction_id", json_response.get("detail"))
-                transaction_id = json_response.get("detail").get("transaction_id")
-                challenges = get_challenges(serial=token.token.serial, transaction_id=transaction_id)
-                challenge = challenges[0]
-                nonce = challenge.challenge
-                # The correct answer is always appended to the available options
-                presence_answer = challenge.get_data().split(',').pop()
-                challenge_text = DEFAULT_CHALLENGE_TEXT + f" Please press: {presence_answer}"
-                self.assertEqual(json_response.get("detail").get("message"), challenge_text)
+                    json_response = res.json
+                    self.assertFalse(json_response.get("result").get("value"))
+                    self.assertTrue(json_response.get("result").get("status"))
+                    self.assertEqual(json_response["result"]["authentication"],
+                                     AUTH_RESPONSE.CHALLENGE, res.json)
+                    self.assertEqual(json_response.get("detail").get("serial"), token.token.serial)
+                    self.assertIn("transaction_id", json_response.get("detail"))
+                    transaction_id = json_response.get("detail").get("transaction_id")
+                    challenges = get_challenges(serial=token.token.serial, transaction_id=transaction_id)
+                    challenge = challenges[0]
+                    nonce = challenge.challenge
+                    # Check the number of given options
+                    self.assertEqual(9, len(challenge.get_data().split(",")))
+                    # The correct answer is always appended to the available options
+                    presence_answer = challenge.get_data().split(',').pop()
+                    challenge_text = DEFAULT_CHALLENGE_TEXT + f" Please press: {presence_answer}"
+                    self.assertEqual(json_response.get("detail").get("message"), challenge_text)
+                    lc.check_present(("privacyidea.lib.tokens.pushtoken", "WARNING",
+                                      "The required number of presence options exceeds "
+                                      "the number of available presence options (9 != 8)"))
 
         self.assertIsNotNone(presence_answer)
         self.assertIn(presence_answer, custom_options_list)
@@ -1320,7 +1334,12 @@ class PushTokenTestCase(MyTestCase):
 
         remove_token(token.get_serial())
         delete_policy("webui")
+        delete_policy("push_config")
         delete_policy("push_require_presence")
+        delete_policy("push_custom")
+        delete_policy("push_custom_options")
+        delete_policy("push_presence_num_opts")
+        delete_smsgateway(self.firebase_config_name)
 
     def test_06e_require_presence_text_replace(self):
         # Set a loginmode policy
@@ -1611,6 +1630,7 @@ class PushTokenTestCase(MyTestCase):
 
         # Now mark the challenge as answered so we receive an empty list
         db_challenge.set_otp_status(True)
+        db_challenge.save()
         with mock.patch('privacyidea.models.challenge.datetime') as mock_dt1, mock.patch(
                 'privacyidea.lib.tokens.pushtoken.datetime') as mock_dt2:
             mock_dt1.utcnow.return_value = timestamp.replace(tzinfo=None) + timedelta(seconds=15)
@@ -1740,7 +1760,7 @@ class PushTokenTestCase(MyTestCase):
                                PushTokenClass.api_endpoint, request, g)
 
         # wrongly configured push token (no firebase config)
-        token.del_tokeninfo(PUSH_ACTION.FIREBASE_CONFIG)
+        token.delete_tokeninfo(PUSH_ACTION.FIREBASE_CONFIG)
         # We are missing a registration URL, thus polling of challenges fails
         delete_policy("push1")
         request.all_data = {'serial': serial,
@@ -1911,14 +1931,14 @@ class PushTokenTestCase(MyTestCase):
 
         expected_tokeninfo_keys = ["tokenkind", PUBLIC_KEY_SMARTPHONE, PUBLIC_KEY_SERVER,
                                    "firebase_token", PRIVATE_KEY_SERVER, "push_firebase_configuration"]
-        self.assertTrue(set(expected_tokeninfo_keys).issubset(exported_data["tokeninfo"].keys()))
+        self.assertTrue(set(expected_tokeninfo_keys).issubset(exported_data["info_list"].keys()))
 
         # Test that the exported values match the token's data
         self.assertEqual(exported_data["serial"], pushtoken.token.serial)
         self.assertEqual(exported_data["type"], "push")
         self.assertEqual(exported_data["description"], "this is a push token export test")
         self.assertEqual(exported_data["otpkey"], pushtoken.token.get_otpkey().getKey().decode("utf-8"))
-        self.assertEqual(exported_data["tokeninfo"]["tokenkind"], "software")
+        self.assertEqual(exported_data["info_list"]["tokenkind"], "software")
         self.assertEqual(exported_data["issuer"], "privacyIDEA")
 
         # Clean up
@@ -1932,7 +1952,7 @@ class PushTokenTestCase(MyTestCase):
             "description": "this is a push token import test",
             "otpkey": "12345",
             "issuer": "privacyIDEA",
-            "tokeninfo": {"hashlib": "sha256",
+            "info_list": {"hashlib": "sha256",
                           "tokenkind": "software",
                           PUBLIC_KEY_SMARTPHONE: self.smartphone_public_key_pem_urlsafe,
                           PUBLIC_KEY_SERVER: self.server_public_key_pem,
@@ -1943,7 +1963,7 @@ class PushTokenTestCase(MyTestCase):
         }]
 
         # Import the token
-        import_tokens(json.dumps(token_data))
+        import_tokens(token_data)
 
         # Retrieve the imported token
         pushtoken = get_tokens(serial=token_data[0]["serial"])[0]
@@ -1953,8 +1973,8 @@ class PushTokenTestCase(MyTestCase):
         self.assertEqual(pushtoken.type, token_data[0]["type"])
         self.assertEqual(pushtoken.token.description, token_data[0]["description"])
         self.assertEqual(pushtoken.token.get_otpkey().getKey().decode("utf-8"), token_data[0]["otpkey"])
-        self.assertEqual(pushtoken.get_tokeninfo("hashlib"), token_data[0]["tokeninfo"]["hashlib"])
-        self.assertEqual(pushtoken.get_tokeninfo("tokenkind"), token_data[0]["tokeninfo"]["tokenkind"])
+        self.assertEqual(pushtoken.get_tokeninfo("hashlib"), token_data[0]["info_list"]["hashlib"])
+        self.assertEqual(pushtoken.get_tokeninfo("tokenkind"), token_data[0]["info_list"]["tokenkind"])
 
         # Clean up
         remove_token(pushtoken.token.serial)

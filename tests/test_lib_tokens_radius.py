@@ -2,7 +2,6 @@
 This test file tests the lib.tokens.radiustoken
 This depends on lib.tokenclass
 """
-import json
 import logging
 from testfixtures import log_capture
 from .base import MyTestCase
@@ -392,7 +391,7 @@ class RadiusTokenTestCase(MyTestCase):
         self.assertRaises(NotImplementedError, token.export_token)
 
         # Clean up
-        token.token.delete()
+        token.delete_token()
 
     def test_18_radius_token_import(self):
         token_data = [{
@@ -402,6 +401,6 @@ class RadiusTokenTestCase(MyTestCase):
             "otpkey": self.otpkey,
             "issuer": "privacyIDEA",
         }]
-        result = import_tokens(json.dumps(token_data))
+        result = import_tokens(token_data)
         # Import for RADIUS token currently not implemented
         self.assertIn("123456", result.failed_tokens, result)

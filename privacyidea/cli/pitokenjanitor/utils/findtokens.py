@@ -32,28 +32,27 @@
 #
 # You should have received a copy of the GNU Affero General Public
 # License along with this program. If not, see <http://www.gnu.org/licenses/>.
-
-import sys
-
-from datetime import datetime
-from dateutil import parser
+import json
 import re
-from flask.cli import AppGroup
+import sys
+from collections import defaultdict
+from datetime import datetime
+from typing import Generator, Callable, Union
 
 import click
-from collections import defaultdict
+from cryptography.fernet import Fernet
+from dateutil import parser
 from dateutil.tz import tzlocal
-from typing import Generator, Callable, Union
+from flask.cli import AppGroup
 from yaml import safe_dump as yaml_safe_dump
 
-from privacyidea.lib.container import find_container_for_token
+from privacyidea.lib.container import find_container_for_token, add_multiple_tokens_to_container
 from privacyidea.lib.error import ResolverError
 from privacyidea.lib.importotp import export_pskc
-from privacyidea.lib.utils import parse_legacy_time, is_true
-
-from privacyidea.models import Token, TokenContainer
-from privacyidea.lib.token import unassign_token, remove_token, get_tokens_paginated_generator
+from privacyidea.lib.token import unassign_token, remove_token, get_tokens_paginated_generator, export_tokens
 from privacyidea.lib.tokenclass import TokenClass
+from privacyidea.lib.utils import parse_legacy_time, is_true
+from privacyidea.models import Token, TokenContainer
 
 allowed_tokenattributes = [col.key for col in Token.__table__.columns]
 
@@ -141,11 +140,13 @@ def _compare_after(given_value: datetime) -> Callable[[str], bool]:
     :return: a function which returns True if its parameter (converted to a datetime) occurs after
              given_value.
     """
+
     def comparator(value: str):
         try:
             return parse_legacy_time(value, return_date=True) > given_value
         except ValueError:
             return False
+
     return comparator
 
 
@@ -154,6 +155,7 @@ def _compare_before(given_value: datetime) -> Callable[[str], bool]:
     :return: a function which returns True if its parameter (converted to a datetime) occurs before
              given_value.
     """
+
     def comparator(value: str):
         try:
             return parse_legacy_time(value, return_date=True) < given_value
@@ -265,9 +267,8 @@ def export_token_data(token_list: list, token_attributes: list = None,
             for att in token_attributes:
                 if att in allowed_tokenattributes:
                     token_data[att] = f'{token_obj.token.get(att)}'
-                else:
-                    if att in token_info:
-                        export_ti[att] = f'{token_info[att]}'
+                elif att in token_info:
+                    export_ti[att] = f'{token_info[att]}'
             token_data["info"] = export_ti
         else:
             # Return all token attributes/tokeninfo
@@ -328,11 +329,11 @@ def export_user_data(token_list: list, user_attributes: list = None) -> dict:
     return users
 
 
-def _get_tokenlist(assigned: Union[bool, None], active: Union[bool, None], range_of_serial: str,
-                   tokeninfo_filter, tokenattribute_filter: list[tuple[str, Callable]],
-                   tokenowner_filter, tokencontaner_filter, tokentype, realm, resolver, rollout_state,
-                   orphaned: Union[bool, None], chunksize: int, has_not_tokeninfo_key, has_tokeninfo_key,
-                   orphaned_on_error: bool = False) -> Generator[TokenClass, None, None]:
+def _get_token_list(assigned: Union[bool, None], active: Union[bool, None], range_of_serial: str,
+                    tokeninfo_filter, tokenattribute_filter: list[tuple[str, Callable]],
+                    tokenowner_filter, tokencontainer_filter, tokentype, realm, resolver, rollout_state,
+                    orphaned: Union[bool, None], chunksize: int, has_not_tokeninfo_key, has_tokeninfo_key,
+                    orphaned_on_error: bool = False) -> Generator[TokenClass, None, None]:
     if assigned is not None:
         assigned = is_true(assigned)
     if active is not None:
@@ -394,21 +395,14 @@ def _get_tokenlist(assigned: Union[bool, None], active: Union[bool, None], range
                 except ResolverError:
                     # Unable to resolve user, no filter applicable
                     add = False
-            if tokencontaner_filter:
-                for tokenowner_key in tokencontaner_filter:
+            if tokencontainer_filter:
+                for tokencontainer_key, tokencontainer_comparator in tokencontainer_filter:
                     container = find_container_for_token(token_obj.token.serial)
                     if container is not None:
-                        container_info = vars(container)
-                        container_info["serial"] = container.serial
-                        container_info["type"] = container.type
-                        container_info["description"] = container.description
-                        container_info["realm"] = container.realms
-                        container_info["last_seen"] = container.last_seen
-                        container_info["last_update"] = container.last_updated
-                        value = container_info.get(tokenowner_key[0])
-                        if value is None:
-                            add = False
-                        elif not all(comparator(value) for comparator in tokenowner_key[1]):
+                        if value := getattr(container, tokencontainer_key, None):
+                            if not tokencontainer_comparator(value):
+                                add = False
+                        else:
                             add = False
                     else:
                         add = False
@@ -497,14 +491,14 @@ def findtokens(ctx, chunksize, has_not_tokeninfo_key, has_tokeninfo_key,
 
     ctx.obj = dict()
 
-    ctx.obj['tokens'] = _get_tokenlist(assigned=assigned, active=active, range_of_serial=range_of_serial,
-                                       tokeninfo_filter=ti_filter, tokenattribute_filter=ta_filter,
-                                       tokenowner_filter=to_filter, tokencontaner_filter=tc_filter,
-                                       tokentype=None, realm=None, resolver=None,
-                                       rollout_state=None, orphaned=orphaned,
-                                       chunksize=chunksize, has_not_tokeninfo_key=has_not_tokeninfo_key,
-                                       has_tokeninfo_key=has_tokeninfo_key,
-                                       orphaned_on_error=orphaned_on_error)
+    ctx.obj['tokens'] = _get_token_list(assigned=assigned, active=active, range_of_serial=range_of_serial,
+                                        tokeninfo_filter=ti_filter, tokenattribute_filter=ta_filter,
+                                        tokenowner_filter=to_filter, tokencontainer_filter=tc_filter,
+                                        tokentype=None, realm=None, resolver=None,
+                                        rollout_state=None, orphaned=orphaned,
+                                        chunksize=chunksize, has_not_tokeninfo_key=has_not_tokeninfo_key,
+                                        has_tokeninfo_key=has_tokeninfo_key,
+                                        orphaned_on_error=orphaned_on_error)
 
     if ctx.invoked_subcommand is None:
         ctx.invoke(list_cmd)
@@ -541,49 +535,96 @@ def list_cmd(ctx, user_attributes, token_attributes, sum_tokens):
 
 @findtokens.command('export')
 @click.option('--format', 'export_format',
-              type=click.Choice(['csv', 'yaml', 'pskc'], case_sensitive=False),
-              default='pskc', show_default=True,
-              help='The output format of the token export. CSV export only '
-                   'allows TOTP and HOTP token types')
+              type=click.Choice(['csv', 'yaml', 'pskc', 'pi'], case_sensitive=False),
+              default='pi', show_default=True,
+              help="The output format of the token export. CSV export only "
+                   "allows TOTP and HOTP token types")
 @click.option('--b32', is_flag=True,
-              help='In case of exporting tokens to CSV or YAML, the seed is '
-                   'written as base32 encoded instead of hex.')
-# TODO: check if there is a better way
+              help="In case of exporting tokens to CSV or YAML, the seed is "
+                   "written as base32 encoded instead of hex.")
+@click.option('--file', required=False, type=click.File('w'), default=sys.stdout,
+              show_default="<stdout>",
+              help='The file to export the tokens to.')
+@click.option('--user/--no-user', default=True,
+              help='Include user information.')
 @click.pass_context
-def export(ctx, export_format, b32):
+def export(ctx, export_format, b32, file, user):
     """
     Export found tokens.
     """
-    for tlist in ctx.obj['tokens']:
-        if export_format == "csv":
-            for tokenobj in tlist:
-                if tokenobj.type.lower() not in ["totp", "hotp"]:
+    if export_format == "pskc":
+        all_tokens = []
+        for token_list in ctx.obj['tokens']:
+            all_tokens.extend(token_list)
+        key, token_num, soup = export_pskc(all_tokens)
+        sys.stderr.write(f"\n{token_num} tokens exported.\n")
+        sys.stderr.write(f"\nThis is the AES encryption key of the token seeds.\n"
+                         f"You need this key to import the "
+                         f"tokens again:\n\n\t{key}\n\n")
+        file.write(str(soup))
+
+    elif export_format == "csv":
+        exported_tokens = []
+        for token_list in ctx.obj['tokens']:
+            for token in token_list:
+                if token.type.lower() not in ["totp", "hotp"]:
                     continue
-                token_dict = tokenobj._to_dict(b32=b32)
-                owner = f"{tokenobj.user.login}@{tokenobj.user.realm}" if tokenobj.user else "n/a"
+                token_dict = token._to_dict(b32=b32)
+                owner = f"{token.user.login}@{token.user.realm}" if (token.user and user) else "n/a"
                 export_string = (f"{owner}, {token_dict.get('serial')}, {token_dict.get('otpkey')}, "
                                  f"{token_dict.get('type')}, {token_dict.get('otplen')}")
-                if tokenobj.type.lower() == "totp":
-                    click.echo(export_string + f", {token_dict.get('info_list', {}).get('timeStep')}")
+                if token.type.lower() == "totp":
+                    exported_tokens.append(
+                        export_string + f", {token_dict.get('info_list', {}).get('timeStep')}")
                 else:
-                    click.echo(export_string)
-        elif export_format == "yaml":
-            token_list = []
-            for tokenobj in tlist:
+                    exported_tokens.append(export_string)
+        file.write('\n'.join(exported_tokens))
+
+    elif export_format == "yaml":
+        token_list = []
+        for token_list in ctx.obj['tokens']:
+            for token in token_list:
                 try:
-                    token_dict = tokenobj._to_dict(b32=b32)
-                    token_dict["owner"] = f"{tokenobj.user.login}@{tokenobj.user.realm}" if tokenobj.user else "n/a"
+                    token_dict = token._to_dict(b32=b32)
+                    token_dict["owner"] = f"{token.user.login}@{token.user.realm}" if (
+                            token.user and user) else "n/a"
                     token_list.append(token_dict)
                 except Exception as e:
-                    sys.stderr.write(f"\nFailed to export token {tokenobj.get_serial()} ({e}).\n")
-            click.echo(yaml_safe_dump(token_list))
-        else:
-            key, token_num, soup = export_pskc(tlist)
-            sys.stderr.write(f"\n{token_num} tokens exported.\n")
-            sys.stderr.write(f"\nThis is the AES encryption key of the token seeds.\n"
-                             f"You need this key to import the "
-                             f"tokens again:\n\n\t{key}\n\n")
-            click.echo(f"{soup}")
+                    sys.stderr.write(f"\nFailed to export token {token.get_serial()} ({e}).\n")
+        file.write(yaml_safe_dump(token_list))
+
+    elif export_format == "pi":
+        key = Fernet.generate_key().decode()
+        exported_tokens = []
+        failed_exports = []
+        for token_list in ctx.obj['tokens']:
+            result = export_tokens(token_list, export_user=user)
+            exported_tokens.extend(result.successful_tokens)
+            failed_exports.extend(result.failed_tokens)
+        list_of_exported_tokens = json.dumps(exported_tokens, default=repr, indent=2)
+        f = Fernet(key)
+        file.write(f.encrypt(list_of_exported_tokens.encode()).decode())
+        if file == sys.stdout:
+            click.echo("\n\n")
+        click.echo(f"Successfully exported {len(exported_tokens)} tokens.")
+        if failed_exports:
+            click.echo(f"Failed to export {len(failed_exports)} tokens:")
+            for serial in failed_exports:
+                click.echo(f"{serial}")
+            click.echo(f"Check the logfile for the cause of the failures.")
+
+        click.secho(f'\nThe key to import the tokens is:\n\n\t{key}\n\n', fg='red', err=True)
+        if file != sys.stdout:
+            click.echo(f'You can use this key to import the tokens with the command:\n'
+                       f'pi-tokenjanitor import privacyidea {file.name} --key {key}\n', err=True)
+        if click.confirm('Do you want to save the key to a file?', default=False, err=True):
+            key_file = click.prompt('Please enter the file name to save the key to',
+                                    type=click.File('w'), err=True)
+            key_file.write(key)
+            click.echo(f'The export encryption key has been saved to "{key_file.name}"', err=True)
+
+    if file != sys.stdout:
+        click.echo(f'The tokens have been exported to "{file.name}".\n')
 
 
 @findtokens.command('set_tokenrealms')
@@ -693,6 +734,63 @@ def remove_tokeninfo(ctx, tokeninfo_key):
     """
     for tlist in ctx.obj['tokens']:
         for token_obj in tlist:
-            token_obj.del_tokeninfo(tokeninfo_key)
+            token_obj.delete_tokeninfo(tokeninfo_key)
             token_obj.save()
             click.echo(f"Removed tokeninfo '{tokeninfo_key}' for token {token_obj.token.serial}")
+
+
+@findtokens.command('list_containers')
+@click.option('--key', '-k', type=str, multiple=True, help='The key of the information to display.')
+@click.pass_context
+def list_containers(ctx, key):
+    """
+    List containers of the found tokens.
+    """
+    for tlist in ctx.obj['tokens']:
+        for token_obj in tlist:
+            container = find_container_for_token(token_obj.token.serial)
+            output = []
+            if container:
+                output.append(f"Token_Serial: {token_obj.token.serial}")
+                output.append(f"Container_Serial: {container.serial}")
+                container_dict = container.get_as_dict()
+                if not key:
+                    key = ['type', 'tokens', 'users', 'realms', 'description']
+                for k in key:
+                    output.append(f"{k}: {container_dict.get(k, 'N/A')}")
+            else:
+                output.append(f"Token {token_obj.token.serial} is in no container.")
+            click.echo(", ".join(output))
+
+
+@findtokens.command('add_to_container')
+@click.argument('container_serial', type=str)
+@click.pass_context
+def add_to_container(ctx, container_serial):
+    """
+    Add the found tokens to the given container.
+    """
+    token_serials = []
+    for tlist in ctx.obj['tokens']:
+        for token_obj in tlist:
+            token_serials.append(token_obj.token.serial)
+    ret = add_multiple_tokens_to_container(container_serial, token_serials)
+    for serial, result in ret.items():
+        if not result:
+            click.echo(f"Failed to add token {serial} to container {container_serial}")
+
+
+@findtokens.command('remove_from_container')
+@click.pass_context
+def remove_from_container(ctx):
+    """
+    Remove the found tokens from their containers.
+    """
+    for tlist in ctx.obj['tokens']:
+        for token_obj in tlist:
+            container = find_container_for_token(token_obj.token.serial)
+            if container:
+                container.remove_token(token_obj.token.serial)
+                click.echo(f"Removed token {token_obj.token.serial} from container {container.serial}")
+            else:
+                click.echo(f"Token {token_obj.token.serial} is in no container.")

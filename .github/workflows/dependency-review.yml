@@ -6,7 +6,7 @@
 #
 # Source repository: https://github.com/actions/dependency-review-action
 
-name: 'Dependency Review'
+name: Dependency Review Action
 on: [pull_request]
 
 permissions:
@@ -14,13 +14,14 @@ permissions:
 
 jobs:
   dependency-review:
+    name: Review dependencies of PR
     runs-on: ubuntu-latest
     steps:
-      - name: 'Checkout Repository'
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Checkout Repository
+        uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
         with:
           persist-credentials: false
       - name: Dependency Review
-        uses: actions/dependency-review-action@da24556b548a50705dd671f47852072ea4c105d9 # v4.7.1
+        uses: actions/dependency-review-action@3c4e3dcb1aa7874d2c16be7d79418e9b7efd6261 # v4.8.2
         with:
           warn-only: true

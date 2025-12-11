@@ -3,22 +3,25 @@ This test file tests the lib.tokenclass
 
 The lib.tokenclass depends on the DB model and lib.user
 """
-from privacyidea.lib.token import init_token
-from .base import MyTestCase, FakeFlaskG
-from privacyidea.lib.resolver import (save_resolver, delete_resolver)
-from privacyidea.lib.realm import (set_realm, delete_realm)
-from privacyidea.lib.user import (User)
-from privacyidea.lib.policies.actions import PolicyAction
-from privacyidea.lib.tokenclass import (TokenClass, DATE_FORMAT, AUTH_DATE_FORMAT)
+from datetime import datetime, timezone, timedelta
+
+from dateutil.tz import tzlocal
+from mock import mock
+
 from privacyidea.lib.config import set_privacyidea_config
 from privacyidea.lib.crypto import geturandom
-from privacyidea.lib.utils import hexlify_and_unicode, to_unicode
 from privacyidea.lib.error import TokenAdminError
+from privacyidea.lib.policies.actions import PolicyAction
+from privacyidea.lib.realm import (set_realm)
+from privacyidea.lib.resolver import save_resolver
+from privacyidea.lib.token import init_token
+from privacyidea.lib.tokenclass import (TokenClass, DATE_FORMAT, AUTH_DATE_FORMAT)
+from privacyidea.lib.user import (User)
+from privacyidea.lib.utils import hexlify_and_unicode, to_unicode
 from privacyidea.models import (Token,
                                 Config,
-                                Challenge)
-from datetime import datetime, timezone, timedelta
-from dateutil.tz import tzlocal
+                                Challenge, Realm, TokenOwner)
+from .base import MyTestCase, FakeFlaskG
 
 PWFILE = "tests/testdata/passwords"
 
@@ -218,14 +221,54 @@ class TokenBaseTestCase(MyTestCase):
         self.assertTrue(token.token.active)
 
     def test_05_get_set_realms(self):
-        set_realm(self.realm2)
-        db_token = Token.query.filter_by(serial=self.serial1).first()
-        token = TokenClass(db_token)
+        self.setUp_user_realm2()
+        token = init_token({"type": "hotp"})
         realms = token.get_realms()
-        self.assertTrue(len(realms) == 1, realms)
+        self.assertTrue(len(realms) == 0, realms)
+
+        # set multiple realms
         token.set_realms([self.realm1, self.realm2])
         realms = token.get_realms()
-        self.assertTrue(len(realms) == 2, realms)
+        self.assertSetEqual({self.realm1, self.realm2}, set(realms))
+
+        # Set one existing realm removes the remaining ones
+        with mock.patch("logging.Logger.debug") as mock_log:
+            token.set_realms([self.realm1])
+            realms = token.get_realms()
+            self.assertSetEqual({self.realm1}, set(realms))
+            mock_log.assert_any_call(f"Remove realm {self.realm2} from token {token.get_serial()} due to setting "
+                                        f"new realms ({self.realm1}).")
+
+        # Add realm keeps existing realms
+        token.set_realms([self.realm2], add=True)
+        realms = token.get_realms()
+        self.assertSetEqual({self.realm1, self.realm2}, set(realms))
+
+        # Set empty list removes all realms
+        token.set_realms([self.realm1])
+        with mock.patch("logging.Logger.debug") as mock_log:
+            token.set_realms([])
+            realms = token.get_realms()
+            self.assertTrue(len(realms) == 0, realms)
+            mock_log.assert_any_call(f"Remove realm {self.realm1} from token {token.get_serial()} due to setting new "
+                                     "realms ().")
+
+        # Set new realm keeps the users realm anyway
+        token.add_user(User("hans", self.realm1))
+        self.assertSetEqual({self.realm1}, set(token.get_realms()))
+        with mock.patch("logging.Logger.info") as mock_log:
+            token.set_realms([self.realm2])
+            self.assertEqual({self.realm2, self.realm1}, set(token.get_realms()))
+            mock_log.assert_any_call(f"The realms ({self.realm1}) of assigned users cannot be removed from the token "
+                                     f"{token.get_serial()}.")
+
+        # Set non-existing realm
+        with mock.patch("logging.Logger.warning") as mock_log:
+            token.set_realms(["random"])
+            self.assertEqual({self.realm1}, set(token.get_realms()))
+            mock_log.assert_any_call(f"Realm random does not exist. Cannot add it to token {token.get_serial()}.")
+
+        token.delete_token()
 
     def test_99_delete_token(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
@@ -493,10 +536,6 @@ class TokenBaseTestCase(MyTestCase):
         token = TokenClass(db_token)
         token.status_validation_fail()
         token.status_validation_success()
-#        d = token.get_vars()
-#        self.assertTrue("type" in d, d)
-#        self.assertTrue("mode" in d, d)
-#        self.assertTrue("token" in d, d)
 
     def test_16_init_detail(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
@@ -746,53 +785,42 @@ class TokenBaseTestCase(MyTestCase):
         self.assertTrue(len(added) == 1)
 
         # Assign token to user "cornelius" "realm1", "resolver1" "uid=1000
-        db_token = Token("orphaned", tokentype="spass", userid=1000,
-                         resolver=resolver, realm=realm)
-        db_token.save()
-        token_obj = TokenClass(db_token)
-        orph = token_obj.is_orphaned()
+        token = init_token({"type": "spass", "serial": "orphaned"}, user=User(uid="1000", realm=realm, resolver=resolver))
+        orph = token.is_orphaned()
         self.assertFalse(orph)
         # clean up token
-        token_obj.delete_token()
+        token.delete_token()
 
         # Assign a token to a user in a resolver. user_id does not exist
-        db_token = Token("orphaned", tokentype="spass", userid=872812,
-                         resolver=resolver, realm=realm)
-        db_token.save()
-        token_obj = TokenClass(db_token)
+        token = init_token({"type": "spass", "serial": "orphaned"})
+        TokenOwner(token_id=token.token.id,
+                   user_id=872812, resolver=resolver,
+                   realmname=realm).save()
+        token.set_realms([realm])
+
         # testing for default exception
-        orph = token_obj.is_orphaned()
+        orph = token.is_orphaned()
         self.assertTrue(orph)
         # testing for exception_default=True
-        orph = token_obj.is_orphaned(orphaned_on_error=True)
+        orph = token.is_orphaned(orphaned_on_error=True)
         self.assertTrue(orph)
         # testing for exception_default=False
-        orph = token_obj.is_orphaned(orphaned_on_error=False)
+        orph = token.is_orphaned(orphaned_on_error=False)
         self.assertFalse(orph)
 
         # clean up token
-        token_obj.delete_token()
+        token.delete_token()
 
-        # A token, which a resolver name, that does not exist anymore
-        db_token = Token("orphaned", tokentype="spass", userid=1000,
-                         resolver=resolver, realm=realm)
-        db_token.save()
-
+        # A token, with a realm, that does not exist anymore
+        token = init_token({"type": "spass", "serial": "orphaned"})
+        token.add_user(User(uid="1000", realm=realm, resolver=resolver))
         # delete the realm
-        delete_realm(realm)
-        # token is orphaned
-        token_obj = TokenClass(db_token)
-        orph = token_obj.is_orphaned()
+        Realm.query.filter_by(name=realm).first().delete()
+        orph = token.is_orphaned()
         self.assertTrue(orph)
 
-        # delete the resolver
-        delete_resolver(resolver)
-        # token is orphaned
-        token_obj = TokenClass(db_token)
-        orph = token_obj.is_orphaned()
-        self.assertTrue(orph)
         # clean up token
-        token_obj.delete_token()
+        token.delete_token()
 
     def test_38_last_auth(self):
         token = init_token({"type": "hotp", "genkey": True},
@@ -832,7 +860,7 @@ class TokenBaseTestCase(MyTestCase):
         token.delete_token()
 
     def test_39_generate_sym_key(self):
-        db_token = Token("symkey", tokentype="no_matter", userid=1000)
+        db_token = Token("symkey", tokentype="no_matter")
         db_token.save()
         token_obj = TokenClass(db_token)
         key = token_obj.generate_symmetric_key("1234567890", "abc")
@@ -936,3 +964,19 @@ class TokenBaseTestCase(MyTestCase):
         token_obj = TokenClass(db_token)
         self.assertFalse(token_obj.has_further_challenge())
         token_obj.delete_token()
+
+    def test_43_remove_token_owner(self):
+        # Create a token and assign a user to it
+        db_token = Token.query.filter_by(serial=self.serial1).first()
+        token = TokenClass(db_token)
+        token.add_user(User(login="cornelius", realm=self.realm1))
+
+        # Check that the user is assigned
+        user_object = token.user
+        self.assertTrue(user_object.login == "cornelius", user_object)
+        self.assertTrue(user_object.resolver == self.resolvername1, user_object)
+
+        # Remove the user from the token
+        removed_user = token.remove_user()
+        self.assertEqual(removed_user.login, "cornelius", removed_user)
+        self.assertEqual(token.user, None, token.user)

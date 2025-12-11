@@ -27,16 +27,19 @@ It also contains the error handlers.
 
 import copy
 
+from flask_babel import gettext
+
 from .lib.utils import (send_error, get_all_params, verify_auth_token, get_optional)
 from .container import container_blueprint
 from ..lib.container import find_container_for_token, find_container_by_serial
 from ..lib.framework import get_app_config_value
+from ..lib.policies.actions import PolicyAction
 from ..lib.user import get_user_from_param
 import logging
 from flask import request, g
 from privacyidea.lib.audit import getAudit
 from flask import current_app
-from privacyidea.lib.policy import PolicyClass
+from privacyidea.lib.policy import PolicyClass, Match, SCOPE
 from privacyidea.lib.event import EventConfiguration
 from privacyidea.lib.lifecycle import call_finalizers
 from privacyidea.api.auth import (user_required, admin_required, jwtauth)
@@ -69,6 +72,7 @@ from .subscriptions import subscriptions_blueprint
 from .monitoring import monitoring_blueprint
 from .tokengroup import tokengroup_blueprint
 from .serviceid import serviceid_blueprint
+from .healthcheck import healthz_blueprint
 from .info import info_blueprint
 from privacyidea.api.lib.postpolicy import postrequest, sign_response
 from ..lib.error import (privacyIDEAError,
@@ -156,8 +160,6 @@ def before_create_user_request():
         #  If now realm is specified, we need to add "filterrealms".
         #  If the admin tries to view realms, he is not allowed to, we need to
         #  raise an exception.
-
-
 
 @user_blueprint.before_request
 @user_required
@@ -490,6 +492,7 @@ def after_request(response):
 @tokengroup_blueprint.app_errorhandler(AuthError)
 @serviceid_blueprint.app_errorhandler(AuthError)
 @container_blueprint.app_errorhandler(AuthError)
+@healthz_blueprint.app_errorhandler(AuthError)
 @info_blueprint.app_errorhandler(AuthError)
 @jwtauth.app_errorhandler(AuthError)
 def auth_error(error):
@@ -500,14 +503,21 @@ def auth_error(error):
             message = error.message
 
         if hasattr(error, 'details'):
-            if error.details:
-                if 'message' in error.details:
-                    message = '{}|{}'.format(message, error.details['message'])
+            if not error.details:
+                error.details = {}
+            if "message" in error.details:
+                message = "{}|{}".format(message, error.details['message'])
+
+            hide_message = Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE,
+                                      user_object=request.User if hasattr(request, 'User') else None).any()
+            if hide_message:
+                error.message = gettext("Authentication failed.")
+                error.details["message"] = error.message
+                error.details.pop("loginmode", None)
 
         g.audit_object.add_to_log({"info": message}, add_with_comma=True)
-    return send_error(error.message,
-                      error_code=error.id,
-                      details=error.details), 401
+
+    return send_error(error.message, error_code=error.id, details=error.details), 401
 
 
 @system_blueprint.errorhandler(PolicyError)

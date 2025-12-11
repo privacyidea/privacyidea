@@ -18,12 +18,17 @@
 # License along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import click
+
 from privacyidea.cli import create_silent_app, NoPluginsFlaskGroup, get_version
+from privacyidea.cli.pitokenjanitor.utils.findcontainer import findcontainer
 from privacyidea.cli.pitokenjanitor.utils.findtokens import findtokens
 from privacyidea.cli.pitokenjanitor.utils.importtokens import importtokens_cli
 from privacyidea.cli.pitokenjanitor.utils.updatetokens import updatetokens
 
-CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
+CONTEXT_SETTINGS = dict(
+    help_option_names=['-h', '--help'],
+    show_default=True,
+)
 
 
 @click.group(cls=NoPluginsFlaskGroup, create_app=create_silent_app, context_settings=CONTEXT_SETTINGS,
@@ -52,6 +57,7 @@ def cli():
 cli.add_command(findtokens)
 cli.add_command(importtokens_cli)
 cli.add_command(updatetokens)
+cli.add_command(findcontainer)
 
 if __name__ == '__main__':
     cli()

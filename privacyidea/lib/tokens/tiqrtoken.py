@@ -36,7 +36,7 @@ with your smartphone by scanning a QR code.
 
 The TiQR token is enrolled via /token/init, but it requires no otpkey, since
 the otpkey is generated on the smartphone and pushed to the privacyIDEA
-server in a seconds step.
+server in a second step.
 
 Enrollment
 ----------
@@ -324,7 +324,7 @@ class TiqrTokenClass(OcraTokenClass):
                 # save the secret
                 enroll_token.set_otpkey(secret)
                 # delete the session
-                enroll_token.del_tokeninfo("session")
+                enroll_token.delete_tokeninfo("session")
                 res = "OK"
             else:
                 raise ParameterError("Invalid Session")

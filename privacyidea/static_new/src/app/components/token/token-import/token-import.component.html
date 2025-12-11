@@ -1,0 +1,205 @@
+<!--
+ (c) NetKnights GmbH 2025,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+
+<div
+  #scrollContainer
+  appScrollToTop
+  aria-label="Import Tokens"
+  class="token-import-container"
+  i18n-aria-label>
+  <div class="margin-left-1">
+    <h3 i18n>
+      Import Tokens
+    </h3>
+  </div>
+  <div #stickySentinel></div>
+  <div
+    #stickyHeader
+    class="sticky-header">
+    <div class="sticky-controls">
+      <div class="select-type">
+        <mat-form-field subscriptSizing="dynamic">
+          <mat-label i18n>File Type</mat-label>
+          <mat-select
+            [(ngModel)]="fileType"
+            [value]="fileType()"
+            [ngModelOptions]="{ standalone: true }"
+            [panelClass]="'single-column-panel'">
+            @for (type of Object.keys(fileTypes); track type) {
+              <mat-option
+                class="select-option"
+                [value]="type">{{ fileTypes[type] }}
+              </mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      </div>
+      <div>
+        <button
+          mat-stroked-button
+          class="action-button-1 width-238"
+          [disabled]="!inputForm.valid"
+          (click)="importTokens()">
+          <mat-icon>input</mat-icon>
+          Import
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="margin-top-1 margin-bottom-32">
+    @switch (fileType()) {
+      @case ("aladdin-xml") {
+        Here you can upload an XML file from Aladdin or SafeNet as it was used with Aladdin TMS or SafeNet SAM.
+      }
+      @case ("OATH CSV") {
+        <div class="margin-bottom-1">
+          The file is supposed to contain one token per line. At least the serial number and the seed are required.
+          Other parameters are optional. If not defined, the following default values are used:
+          <ul>
+            <li>Type: hotp</li>
+            <li>OTP length: 6</li>
+            <li>Time Step: 30</li>
+          </ul>
+        </div>
+
+        <div>HOTP and TOTP tokens:</div>
+        <div class="italic margin-bottom-1">serial number, seed, type, otp length, time step</div>
+
+        <div>OCRA tokens:</div>
+        <div class="italic">serial number, seed, type, ocrasuite</div>
+      }
+      @case ("Yubikey CSV") {
+        <div>
+          The file is supposed to contain one token per line. If you are enrolling the Yubikey in HOTP mode, you should
+          use the PSKC file format in the newer version of the Yubikey GUI.
+        </div>
+      }
+      @case ("pskc") {
+        <div class="margin-bottom-32">
+          This is an RFC6030 OATH compliant PSKC file. Values in the PSKC files may be unencrypted or either encrypted
+          with a Pre Shared Key or password. If the values are encrypted, please specify the Pre Shared Key in hex
+          format or the password.
+        </div>
+        <div>
+          <mat-form-field class="width-100 margin-bottom-1">
+            <mat-label>Pre Shared Key</mat-label>
+            <input
+              matInput
+              [formControl]="preSharedKey"
+              placeholder="Pre Shared Key in hex format" />
+            <mat-hint>As the values are encrypted with AES128-CBC, you need to give a 32 characters long hex string.
+            </mat-hint>
+            @if (!preSharedKey.valid) {
+              <mat-error>As the values are encrypted with AES128-CBC, you need to give a 32 characters long hex
+                         string.
+              </mat-error>
+            }
+          </mat-form-field>
+        </div>
+        <div>
+          <mat-form-field class="width-100">
+            <mat-label>Password</mat-label>
+            <input
+              matInput
+              [(ngModel)]="pskPassword"
+              [value]="pskPassword()"
+              placeholder="Password" />
+          </mat-form-field>
+        </div>
+        <div>
+          <mat-form-field
+            class="width-100"
+            subscriptSizing="dynamic">
+            <mat-label>Verification Method for the Authenticity of Imported Tokens</mat-label>
+            <mat-select
+              [(ngModel)]="pskValidation"
+              [value]="pskValidation()">
+              @for (key of Object.keys(pskValidationOptions); track key) {
+                <mat-option [value]="key">{{ pskValidationOptions[key] }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        </div>
+      }
+    }
+  </div>
+
+  <div class="margin-bottom-1">
+    <h4 class="sub-headings">Realm</h4>
+    <mat-form-field class="width-50 input-height margin-bottom-1">
+      <mat-label>Select Realm for Tokens</mat-label>
+      <mat-select
+        multiple
+        [(ngModel)]="selectedRealms"
+        [value]="selectedRealms()">
+        <!--                <mat-option [value]="'-'"> -</mat-option>-->
+        @for (option of realmService.realmOptions(); track option) {
+          <mat-option [value]="option">{{ option }}</mat-option>
+        }
+      </mat-select>
+      <mat-hint>
+        All imported tokens will be added to these realms.
+      </mat-hint>
+    </mat-form-field>
+  </div>
+
+  <div>
+    <h4 class="sub-headings">Select File</h4>
+
+    <div class="input-container file-input-container">
+      @if (fileName()) {
+        <span class="file-name">{{ fileName() }}</span>
+        <button
+          (click)="clearFileSelection()"
+          type="button"
+          mat-icon-button>
+          <mat-icon>add_circle</mat-icon>
+        </button>
+      } @else {
+        <span class="file-name not-selected">No file selected yet</span>
+      }
+    </div>
+
+    <div class="drag-and-drop-zone margin-bottom-1">
+      <div class="margin-top-1 margin-bottom-1">
+        <div>
+          <mat-icon>upload_file</mat-icon>
+        </div>
+        Drag and Drop file here or
+      </div>
+
+      <input
+        type="file"
+        class="file-input"
+        (change)="onFileSelected($event)"
+        #fileUpload>
+
+      <div>
+        <button
+          mat-stroked-button
+          class="action-button-1 text-center just-center"
+          (click)="fileUpload.click()">
+          <mat-icon>folder_open</mat-icon>
+          Browse Files
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

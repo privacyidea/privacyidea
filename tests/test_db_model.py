@@ -18,13 +18,20 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program. If not, see <http://www.gnu.org/licenses/>.
 """Test the models of the privacyIDEA database."""
-from mock import mock
 import os
-from sqlalchemy import func
+from datetime import datetime
+from datetime import timedelta
+
+from dateutil.tz import tzutc
+from mock import mock
+from sqlalchemy import func, delete, select
 
 from privacyidea.lib.policies.conditions import (PolicyConditionClass, ConditionSection,
                                                  ConditionHandleMissingData)
 from privacyidea.lib.policy import set_policy_conditions
+from privacyidea.lib.token import init_token, remove_token
+from privacyidea.lib.tokengroup import delete_tokengroup
+from privacyidea.lib.user import User
 from privacyidea.lib.utils.compare import PrimaryComparators
 from privacyidea.models import (Token,
                                 Resolver,
@@ -43,11 +50,8 @@ from privacyidea.models import (Token,
                                 ClientApplication, Subscription, UserCache,
                                 EventCounter, PeriodicTask, PeriodicTaskLastRun,
                                 PeriodicTaskOption, MonitoringStats, PolicyCondition, db,
-                                Tokengroup, TokenTokengroup, Serviceid)
+                                Tokengroup, TokenTokengroup, Serviceid, TokenInfo)
 from .base import MyTestCase
-from dateutil.tz import tzutc
-from datetime import datetime
-from datetime import timedelta
 
 
 class TokenModelTestCase(MyTestCase):
@@ -133,7 +137,7 @@ class TokenModelTestCase(MyTestCase):
         self.assertFalse(t.check_pin('1234'))
 
         # Delete the token
-        t1.delete()
+        remove_token(t1.serial)
         t = Token.query.filter_by(id=tid).first()
         self.assertTrue(t is None)
 
@@ -151,11 +155,8 @@ class TokenModelTestCase(MyTestCase):
         otpkey = "123456"
 
         # create token and also assign the user and realm
-        Token(serial="serial2",
-              otpkey=otpkey,
-              userid=1009,
-              resolver="resolver1",
-              realm="realm1")
+        init_token({"type": "hotp", "serial": "serial2"},
+                   user=User(uid=1009, realm=self.realm1, resolver=self.resolvername1))
         t2 = Token.query.filter_by(serial="serial2").first()
         self.assertEqual(t2.first_owner.resolver, "resolver1")
         # check the realm list of the token
@@ -217,13 +218,12 @@ class TokenModelTestCase(MyTestCase):
         t2.otplen = 8
         t2.set_description("De scription")
         t2.save()
-        t2.set_info({"info": "value"})
+        TokenInfo(t2.id, "info", "value").save()
         t3 = Token.query.filter_by(serial="serial2").first()
-        self.assertTrue(t3.count_window == 100)
-        self.assertTrue(t3.otplen == 8)
-        self.assertTrue(t3.description == "De scription")
-        self.assertTrue(t3.info_list[0].Value == "value")
-        self.assertTrue(t3.get_info().get("info") == "value")
+        self.assertEqual(100, t3.count_window)
+        self.assertEqual(8, t3.otplen)
+        self.assertEqual("De scription", t3.description)
+        self.assertEqual("value", t3.get_info().get("info"))
 
         # test the string representation
         s = "{0!s}".format(t3)
@@ -261,13 +261,6 @@ class TokenModelTestCase(MyTestCase):
 
         # set an empty token description
         self.assertEqual(t2.set_description(desc=None), '')
-
-        # delete the token
-        ret = t2.delete()
-        self.assertTrue(ret)
-        # check that the TokenRealm is deleted
-        q = TokenRealm.query.all()
-        self.assertTrue(len(q) == 0)
 
     def test_02_config_model(self):
         c = Config("splitRealm", True,
@@ -328,8 +321,12 @@ class TokenModelTestCase(MyTestCase):
         t1.save()
         realms = t1.get_realms()
         self.assertTrue(len(realms) == 0)
-        t1.set_realms(["realm1"])
-        t1.save()
+
+        statement = select(Realm).filter_by(name="realm1")
+        realm_db = db.session.execute(statement).scalar_one_or_none()
+        token_realm = TokenRealm(token_id=t1.id, realm_id=realm_db.id)
+        db.session.add(token_realm)
+        db.session.commit()
         realms = t1.get_realms()
         self.assertTrue(len(realms) == 1)
 
@@ -583,27 +580,23 @@ class TokenModelTestCase(MyTestCase):
         t1 = Token("serialTI")
         t1.save()
 
-        t1.set_info({"key1": "value1",
-                     "key2": "value2",
-                     "key3": "value3"})
+        token_info = {"key1": "value1",
+                      "key2": "value2",
+                      "key3": "value3"}
+        for key, value in token_info.items():
+            info = TokenInfo(t1.id, key, value)
+            db.session.add(info)
+        db.session.commit()
+
         t2 = Token.query.filter_by(serial="serialTI").first()
         t2info = t2.get_info()
         self.assertTrue(t2info.get("key2") == "value2", t2info)
 
-        t2.del_info("key2")
+        statement = delete(TokenInfo).where(TokenInfo.token_id == t2.id, TokenInfo.Key == "key2")
+        db.session.execute(statement)
+        db.session.commit()
         t2info = t2.get_info()
         self.assertTrue(t2info.get("key2") is None, t2info)
-
-    def test_16_add_and_delete_tokeninfo_password(self):
-        t1 = Token("serialTI2")
-        t1.set_info({"key1": "value1",
-                     "key1.type": "password"})
-
-        t2 = Token.query.filter_by(serial="serialTI2").first()
-        t2info = t2.get_info()
-
-        self.assertTrue(t2info.get("key1.type") == "password",
-                        t2info)
 
     def test_17_add_and_delete_smtpserver(self):
         s1 = SMTPServer(identifier="myserver", server="1.2.3.4")
@@ -1085,10 +1078,6 @@ class TokengroupTestCase(MyTestCase):
         TokenTokengroup(token_id=tok2.id, tokengroup_id=tg2.id).save()
         ttg = TokenTokengroup.query.all()
         self.assertEqual(len(ttg), 3)
-        # It does not change anything, if we try to save the same assignment!
-        TokenTokengroup(token_id=tok2.id, tokengroup_id=tg2.id).save()
-        ttg = TokenTokengroup.query.all()
-        self.assertEqual(len(ttg), 3)
 
         ttg = TokenTokengroup.query.filter_by(token_id=tok1.id).all()
         self.assertEqual(len(ttg), 2)
@@ -1101,18 +1090,11 @@ class TokengroupTestCase(MyTestCase):
 
         self.assertEqual(tok2.tokengroup_list[0].tokengroup.name, "gruppe2")
 
-        # remove tokengroups and check that tokentokengroups assignments are removed
-        tg1.delete()
-        ttg = TokenTokengroup.query.all()
-        self.assertEqual(len(ttg), 2)
-
-        tg2.delete()
-        ttg = TokenTokengroup.query.all()
-        self.assertEqual(len(ttg), 0)
-
         # cleanup
-        tok1.delete()
-        tok2.delete()
+        remove_token(tok1.serial)
+        remove_token(tok2.serial)
+        delete_tokengroup(tg1.name)
+        delete_tokengroup(tg2.name)
 
 
 class ServiceidTestCase(MyTestCase):
@@ -1153,8 +1135,9 @@ class ResolverRealmTestCase(MyTestCase):
     def test_01_resolver_realm_with_nodes(self):
         nd1_uuid = "8e4272a9-9037-40df-8aa3-976e4a04b5a9"
         nd2_uuid = "d1d7fde6-330f-4c12-88f3-58a1752594bf"
-        NodeName(id=nd1_uuid, name="Node1").save()
-        NodeName(id=nd2_uuid, name="Node2").save()
+        node1 = NodeName(id=nd1_uuid, name="Node1")
+        node2 = NodeName(id=nd2_uuid, name="Node2")
+        db.session.add_all([node1, node2])
 
         res = Resolver("resolver1", "passwdresolver")
         res.save()
@@ -1179,6 +1162,9 @@ class ResolverRealmTestCase(MyTestCase):
         self.assertIn(res.id, [x.resolver.id for x in re2.resolver_list])
         self.assertEqual(re2.resolver_list[0].node_uuid, nd1_uuid, re1.resolver_list[0])
         re2.delete()
+
+        db.session.delete(node1)
+        db.session.delete(node2)
 
     # TODO: add resolver realm config with ids and different nodes
     # TODO: same nodes with different timestamps

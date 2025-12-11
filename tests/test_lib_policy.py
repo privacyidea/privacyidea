@@ -7,8 +7,9 @@ import dateutil
 import mock
 from werkzeug.datastructures.headers import Headers, EnvironHeaders
 
+from privacyidea.lib.auditmodules.base import Audit
 from privacyidea.lib.container import init_container, find_container_by_serial
-from privacyidea.lib.containers.container_info import RegistrationState
+from privacyidea.lib.containers.container_info import RegistrationState, TokenContainerInfoData
 from privacyidea.lib.policies.conditions import (PolicyConditionClass, ConditionSection,
                                                  ConditionHandleMissingData)
 from privacyidea.lib.token import init_token
@@ -1529,9 +1530,9 @@ class PolicyTestCase(MyTestCase):
         delete_policy("error")
 
     def test_31_match_pinode(self):
-        db.session.add(NodeName(id="8e4272a9-9037-40df-8aa3-976e4a04b5a8", name="pinode1"))
-        db.session.add(NodeName(id="d1d7fde6-330f-4c12-88f3-58a1752594bf", name="pinode2"))
-        db.session.commit()
+        node1 = NodeName(id="8e4272a9-9037-40df-8aa3-976e4a04b5a8", name="pinode1")
+        node2 = NodeName(id="d1d7fde6-330f-4c12-88f3-58a1752594bf", name="pinode2")
+        db.session.add_all([node1, node2])
 
         # import_admin is only allowed to import on node1
         set_policy("import_node1", scope=SCOPE.ADMIN, action=PolicyAction.IMPORT,
@@ -1577,6 +1578,7 @@ class PolicyTestCase(MyTestCase):
         g = FakeFlaskG()
         g.client_ip = "127.0.0.1"
         g.audit_object = mock.Mock()
+        g.audit_object.audit_data = {}
         g.policy_object = PolicyClass()
         g.logged_in_user = {"username": "delete_admin", "role": ROLE.ADMIN, "realm": ""}
         pols = Match.admin(g, "delete", None).policies()
@@ -1603,8 +1605,8 @@ class PolicyTestCase(MyTestCase):
         delete_policy("import_node1")
         delete_policy("delete_node2")
         delete_policy("enable")
-        NodeName.query.filter_by(name="pinode1").first().delete()
-        NodeName.query.filter_by(name="pinode2").first().delete()
+        db.session.delete(node1)
+        db.session.delete(node2)
 
     def test_31_filter_by_conditions_tokeninfo(self):
         def _names(policies):
@@ -1660,7 +1662,7 @@ class PolicyTestCase(MyTestCase):
         self.assertSetEqual(set(), _names(P.match_policies(user_object=user1)))
 
         delete_policy("setpin_pol")
-        db_token.delete()
+        token.delete_token()
 
     def test_32_filter_by_conditions_token(self):
         def _names(policies):
@@ -2275,41 +2277,41 @@ class PolicyTestCase(MyTestCase):
         delete_policy("test")
 
     def test_55_set_policy_validate_nodes(self):
-        node1 = "pinode1"
-        node2 = "pinode2"
-        db.session.add(NodeName(id="8e4272a9-9037-40df-8aa3-976e4a04b5a8", name=node1))
-        db.session.add(NodeName(id="d1d7fde6-330f-4c12-88f3-58a1752594bf", name=node2))
-        db.session.commit()
+        node_name1 = "pinode1"
+        node_name2 = "pinode2"
+        node1 = NodeName(id="8e4272a9-9037-40df-8aa3-976e4a04b5a8", name=node_name1)
+        node2 = NodeName(id="d1d7fde6-330f-4c12-88f3-58a1752594bf", name=node_name2)
+        db.session.add_all([node1, node2])
 
         # Valid single node
-        set_policy(name="test", scope=SCOPE.ADMIN, pinode=node1)
+        set_policy(name="test", scope=SCOPE.ADMIN, pinode=node_name1)
 
         # Valid list
-        set_policy(name="test", scope=SCOPE.ADMIN, pinode=[node1, "", "*", node2])
-        set_policy(name="test", scope=SCOPE.ADMIN, pinode=f"{node1}, {node2}")
+        set_policy(name="test", scope=SCOPE.ADMIN, pinode=[node_name1, "", "*", node_name2])
+        set_policy(name="test", scope=SCOPE.ADMIN, pinode=f"{node_name1}, {node_name2}")
 
         # node is None
         set_policy(name="test", scope=SCOPE.ADMIN, pinode=None)
 
         # Use wildcard and negations
-        set_policy(name="test", scope=SCOPE.ADMIN, pinode=f"*, -{node1}, !{node2}")
+        set_policy(name="test", scope=SCOPE.ADMIN, pinode=f"*, -{node_name1}, !{node_name2}")
 
         # Invalid data type
-        self.assertRaises(ParameterError, set_policy, name="test", scope=SCOPE.ADMIN, realm={node1, node2})
+        self.assertRaises(ParameterError, set_policy, name="test", scope=SCOPE.ADMIN, realm={node_name1, node_name2})
 
         # Undefined Node
         with self.assertRaises(ParameterError) as exception:
-            set_policy(name="test", scope=SCOPE.ADMIN, pinode=[node1, "undefined_node", node2, "invalid"])
+            set_policy(name="test", scope=SCOPE.ADMIN, pinode=[node_name1, "undefined_node", node_name2, "invalid"])
             self.assertEqual("Undefined Nodes: ['undefined_node', 'invalid']!", exception.exception.message)
         with self.assertRaises(ParameterError) as exception:
-            set_policy(name="test", scope=SCOPE.ADMIN, pinode=f"undefined_node,{node1}, invalid")
+            set_policy(name="test", scope=SCOPE.ADMIN, pinode=f"undefined_node,{node_name1}, invalid")
             self.assertEqual("Undefined Nodes: ['undefined_node', 'invalid']!", exception.exception.message)
         with self.assertRaises(ParameterError) as exception:
-            set_policy(name="test", scope=SCOPE.ADMIN, pinode=f"*, -undefined_node,{node1}, !invalid")
+            set_policy(name="test", scope=SCOPE.ADMIN, pinode=f"*, -undefined_node,{node_name1}, !invalid")
             self.assertEqual("Undefined Nodes: ['undefined_node', 'invalid']!", exception.exception.message)
 
-        NodeName.query.filter_by(name=node1).first().delete()
-        NodeName.query.filter_by(name=node2).first().delete()
+        db.session.delete(node1)
+        db.session.delete(node2)
         delete_policy("test")
 
     def test_56_list_policies_user_agent(self):
@@ -2353,8 +2355,9 @@ class PolicyTestCase(MyTestCase):
     def test_57_get_policies_query(self):
         self.setUp_user_realms()
         self.setUp_user_realm3()
-        NodeName(id="1234", name="localnode").save()
-        NodeName(id="56789", name="testnode").save()
+        node1 = NodeName(id="1234", name="localnode")
+        node2 = NodeName(id="56789", name="testnode")
+        db.session.add_all([node1, node2])
         set_policy(name="basic", scope=SCOPE.WEBUI, action=PolicyAction.HIDE_WELCOME)
         set_policy(name="user", scope=SCOPE.USER, action=PolicyAction.DELETE, active=False, realm=[self.realm1, self.realm3],
                    resolver=[self.resolvername1, self.resolvername3], pinode="localnode", user=["hans", "corny"],
@@ -2483,8 +2486,8 @@ class PolicyTestCase(MyTestCase):
         delete_policy("user_agent")
         delete_policy("admin")
 
-        NodeName.query.filter_by(name="localnode").delete()
-        NodeName.query.filter_by(name="testnode").delete()
+        db.session.delete(node1)
+        db.session.delete(node2)
 
 
 class PolicyConditionClassTestCase(MyTestCase):
@@ -2980,7 +2983,7 @@ class PolicyConditionClassTestCase(MyTestCase):
         self.assertTrue(isinstance(data.available_keys, list))
 
         # Everything available
-        container.set_container_info({"registration_state": RegistrationState.CLIENT_WAIT.value})
+        container.set_container_info([TokenContainerInfoData("registration_state", RegistrationState.CLIENT_WAIT.value)])
         data = condition.get_container_data(container_serial)
         self.assertEqual("container", data.object_name)
         self.assertTrue(data.object_available)
@@ -3102,7 +3105,7 @@ class PolicyMatchTestCase(MyTestCase):
     def test_01_action_only(self):
         g = FakeFlaskG()
         g.client_ip = "127.0.0.1"
-        g.audit_object = mock.Mock()
+        g.audit_object = Audit()
         g.policy_object = PolicyClass()
 
         g.audit_object.audit_data = {}
@@ -3122,7 +3125,7 @@ class PolicyMatchTestCase(MyTestCase):
         g.audit_object.audit_data = {}
         self.check_names(Match.action_only(g, SCOPE.AUTHZ, PolicyAction.NODETAILSUCCESS).policies(),
                          {})
-        self.assertEqual(g.audit_object.audit_data, {})
+        self.assertEqual([], g.audit_object.audit_data.get("policies", []))
 
         with self.assertRaises(MatchingError):
             Match.action_only(g, SCOPE.ADMIN, "tokenview")
@@ -3152,6 +3155,7 @@ class PolicyMatchTestCase(MyTestCase):
         g = FakeFlaskG()
         g.client_ip = "127.0.0.1"
         g.audit_object = mock.Mock()
+        g.audit_object.audit_data = {}
         g.policy_object = PolicyClass()
 
         class Foobar(User):
@@ -3182,6 +3186,7 @@ class PolicyMatchTestCase(MyTestCase):
         g = FakeFlaskG()
         g.client_ip = "127.0.0.1"
         g.audit_object = mock.Mock()
+        g.audit_object.audit_data = {}
         g.policy_object = PolicyClass()
         g.logged_in_user = {"username": "superroot", "realm": "", "role": ROLE.ADMIN}
 
@@ -3201,6 +3206,7 @@ class PolicyMatchTestCase(MyTestCase):
         g = FakeFlaskG()
         g.client_ip = "127.0.0.1"
         g.audit_object = mock.Mock()
+        g.audit_object.audit_data = {}
         g.policy_object = PolicyClass()
 
         g.logged_in_user = {"username": "superroot", "realm": "", "role": ROLE.ADMIN}

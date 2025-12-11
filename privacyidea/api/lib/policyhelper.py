@@ -150,13 +150,8 @@ def get_token_user_attributes(serial: str):
     """
     user_attributes = UserAttributes()
     # get user attributes from the token
-    try:
-        token = get_tokens_from_serial_or_user(serial, user=None)[0]
-        token_owner = get_token_owner(serial)
-    except ResourceNotFoundError:
-        token = None
-        token_owner = None
-        log.error(f"Could not find token with serial {serial}.")
+    token = get_tokens_from_serial_or_user(serial, user=None)[0]
+    token_owner = get_token_owner(serial)
     if token_owner:
         user_attributes.username = token_owner.login
         user_attributes.realm = token_owner.realm
@@ -273,7 +268,8 @@ def check_token_action_allowed(g, action: str, serial: str, user_attributes: Use
             old_container = None
 
         if old_container:
-            action_allowed = check_container_action_allowed(g, PolicyAction.CONTAINER_REMOVE_TOKEN, old_container.serial,
+            action_allowed = check_container_action_allowed(g, PolicyAction.CONTAINER_REMOVE_TOKEN,
+                                                            old_container.serial,
                                                             user_attributes)
             if not action_allowed:
                 log.info(f"Token {serial} is in container {old_container.serial}. The user is not allowed to remove the"
@@ -391,11 +387,11 @@ def check_last_auth_policy(g, token: TokenClass) -> bool:
     """
     Check if the last_auth policy is enabled and if the token's last_auth is within the allowed time frame.
     """
-    if not token: # pragma: no cover
+    if not token:  # pragma: no cover
         log.error("No token provided to check last_auth policy.")
         return False
     last_auth_policy = (Match.user(g, scope=SCOPE.AUTHZ, action=PolicyAction.LASTAUTH, user_object=None)
-                      .action_values(unique=True, write_to_audit_log=False))
+                        .action_values(unique=True, write_to_audit_log=False))
     if len(last_auth_policy) == 1:
         timeframe = list(last_auth_policy)[0]
         time_delta: timedelta = parse_timedelta(timeframe)

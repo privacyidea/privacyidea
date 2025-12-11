@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2015 NetKnights GmbH <https://netknights.it>
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.framework import get_app_local_store
 from privacyidea.lib.tokenclass import CHALLENGE_SESSION
@@ -18,7 +21,8 @@ from privacyidea.lib.tokens.pushtoken import (PUSH_ACTION,
                                               PUBLIC_KEY_SERVER,
                                               POLL_ONLY)
 from privacyidea.lib.utils import b32encode_and_unicode
-from datetime import datetime
+from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 from base64 import b32encode, b64encode, b64decode
 from hashlib import sha1
 import hmac
@@ -199,7 +203,7 @@ class TtypePushAPITestCase(MyApiTestCase):
         tok.add_tokeninfo('firebase_token', 'firebaseT')
         tok.add_tokeninfo(PUBLIC_KEY_SERVER, self.server_public_key_pem)
         tok.add_tokeninfo(PRIVATE_KEY_SERVER, self.server_private_key_pem, 'password')
-        tok.del_tokeninfo("enrollment_credential")
+        tok.delete_tokeninfo("enrollment_credential")
         tok.token.rollout_state = "enrolled"
         tok.token.active = True
         return tok
@@ -526,7 +530,8 @@ class TtypePushAPITestCase(MyApiTestCase):
         # Check if the challenge is sent to the smartphone
         # So when we check later, if the challenge is still sent, we can be sure, that the
         # challenge was not answered.
-        timestamp = datetime.utcnow().isoformat()
+        # First we check with a naive timestamp in UTC
+        timestamp = datetime.now(tz=timezone.utc).replace(tzinfo=None).isoformat()
         sign_string = f"{tokenobj.token.serial}|{timestamp}"
         sig = self.smartphone_private_key.sign(sign_string.encode('utf8'),
                                                padding.PKCS1v15(),
@@ -539,8 +544,48 @@ class TtypePushAPITestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200, res)
             result = res.json.get("result")
+            self.assertTrue(result.get("status"), result)
             value = result.get("value")
             self.assertEqual(len(value), 1, value)
+            self.assertEqual("Do you want to confirm the login?", value[0].get("question"))
+
+        # Check the challenge again, this time with a timezone-aware timestamp (still UTC)
+        timestamp = datetime.now(tz=timezone.utc).isoformat()
+        sign_string = f"{tokenobj.token.serial}|{timestamp}"
+        sig = self.smartphone_private_key.sign(sign_string.encode('utf8'),
+                                               padding.PKCS1v15(),
+                                               hashes.SHA256())
+        with self.app.test_request_context('/ttype/push',
+                                           method='GET',
+                                           query_string={"serial": tokenobj.token.serial,
+                                                         "timestamp": timestamp,
+                                                         "signature": b32encode(sig)}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"), result)
+            value = result.get("value")
+            self.assertEqual(len(value), 1, value)
+            self.assertEqual("Do you want to confirm the login?", value[0].get("question"))
+
+        # Check the challenge again, this time with a timestamp in a different timezone
+        timestamp = datetime.now(tz=ZoneInfo("America/Los_Angeles")).isoformat()
+        sign_string = f"{tokenobj.token.serial}|{timestamp}"
+        sig = self.smartphone_private_key.sign(sign_string.encode('utf8'),
+                                               padding.PKCS1v15(),
+                                               hashes.SHA256())
+        with self.app.test_request_context('/ttype/push',
+                                           method='GET',
+                                           query_string={"serial": tokenobj.token.serial,
+                                                         "timestamp": timestamp,
+                                                         "signature": b32encode(sig)}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"), result)
+            value = result.get("value")
+            self.assertEqual(len(value), 1, value)
+            self.assertEqual("Do you want to confirm the login?", value[0].get("question"))
 
         # Decline the challenge
         challengeobject_list = get_challenges(serial=tokenobj.token.serial,

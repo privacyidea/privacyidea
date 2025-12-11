@@ -24,7 +24,7 @@ from flask import Blueprint, request, g
 
 from privacyidea.api.auth import admin_required
 from privacyidea.api.lib.prepolicy import (check_base_action, prepolicy, check_user_params, check_token_action,
-                                           check_admin_tokenlist, check_container_action, check_token_list_action,
+                                           check_admin_tokenlist, check_container_action,
                                            check_container_register_rollover, container_registration_config,
                                            smartphone_config, check_client_container_action, hide_tokeninfo,
                                            check_client_container_disabled_action, hide_container_info)
@@ -231,7 +231,6 @@ def init():
     :jsonparam realm: Optional realm to assign the container to. Requires user param to be present as well.
     :jsonparam template: The template to create the container from (dictionary), optional
     :jsonparam template_name: The name of the template to create the container from, optional
-    :jsonparam options: Options for the container if no template is used (dictionary), optional
     """
     user_role = g.logged_in_user.get("role")
     allowed_realms = getattr(request, "pi_allowed_realms", None)
@@ -327,7 +326,7 @@ def add_token(container_serial):
 
 @container_blueprint.route('<string:container_serial>/addall', methods=['POST'])
 @prepolicy(check_container_action, request, action=PolicyAction.CONTAINER_ADD_TOKEN)
-@prepolicy(check_token_list_action, request, action=PolicyAction.CONTAINER_ADD_TOKEN)
+@prepolicy(check_token_action, request, action=PolicyAction.CONTAINER_ADD_TOKEN)
 @event('container_add_token', request, g)
 @log_with(log)
 def add_all_tokens(container_serial):
@@ -396,7 +395,7 @@ def remove_token(container_serial):
 
 @container_blueprint.route('<string:container_serial>/removeall', methods=['POST'])
 @prepolicy(check_container_action, request, action=PolicyAction.CONTAINER_REMOVE_TOKEN)
-@prepolicy(check_token_list_action, request, action=PolicyAction.CONTAINER_REMOVE_TOKEN)
+@prepolicy(check_token_action, request, action=PolicyAction.CONTAINER_REMOVE_TOKEN)
 @event('container_remove_token', request, g)
 @log_with(log)
 def remove_all_tokens(container_serial):
@@ -1129,8 +1128,7 @@ def delete_template(template_name):
     template.delete()
 
     # Audit log
-    g.audit_object.log({"container_type": template.get_class_type(),
-                        "success": True})
+    g.audit_object.log({"container_type": template.get_class_type(), "success": True})
 
     return send_result(True)
 

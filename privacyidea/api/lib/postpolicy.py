@@ -1,3 +1,5 @@
+# (c) NetKnights GmbH 2025,  https://netknights.it
+#
 #  2020-02-16 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Add QR codes for Authenticator Apps
 #  2016-02-07 Cornelius Kölbel <cornelius.koelbel@netknights.it>
@@ -29,6 +31,9 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+# SPDX-FileCopyrightText: 2025 Paul Lettich <paul.lettich@netknights.it>
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
 """
 These are the policy decorators as POST conditions for the API calls.
 I.e. these conditions are executed after the wrapped API call.
@@ -51,6 +56,7 @@ from urllib.parse import quote
 from flask import g, current_app, make_response, Request
 
 from privacyidea.api.lib.utils import get_all_params
+from privacyidea.config import ConfigKey
 from privacyidea.lib import _, lazy_gettext
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.config import get_multichallenge_enrollable_types, get_token_class, get_privacyidea_node
@@ -60,7 +66,6 @@ from privacyidea.lib.info.rss import FETCH_DAYS
 from privacyidea.lib.machine import get_auth_items
 from privacyidea.lib.policy import (DEFAULT_ANDROID_APP_URL, DEFAULT_IOS_APP_URL, DEFAULT_PREFERRED_CLIENT_MODE_LIST,
                                     SCOPE, AUTOASSIGNVALUE, AUTHORIZED, Match)
-from ...lib.policies.actions import PolicyAction
 from privacyidea.lib.realm import get_default_realm
 from privacyidea.lib.subscriptions import (subscription_status,
                                            get_subscription,
@@ -70,7 +75,6 @@ from privacyidea.lib.subscriptions import (subscription_status,
 from privacyidea.lib.token import get_tokens, assign_token, get_realms_of_token, get_one_token, init_token
 from privacyidea.lib.tokenclass import ROLLOUTSTATE, CHALLENGE_SESSION
 from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
-from privacyidea.lib.user import User
 from privacyidea.lib.utils import (create_img, get_version, AUTH_RESPONSE,
                                    get_plugin_info_from_useragent)
 from .prepolicy import check_max_token_user, check_max_token_realm, fido2_enroll, rss_age, container_registration_config
@@ -78,6 +82,7 @@ from ...lib.challenge import get_challenges
 from ...lib.container import (get_all_containers, init_container, init_registration, find_container_by_serial,
                               create_container_tokens_from_template)
 from ...lib.containers.container_info import SERVER_URL, CHALLENGE_TTL, REGISTRATION_TTL, SSL_VERIFY, RegistrationState
+from ...lib.policies.actions import PolicyAction
 from ...lib.users.custom_user_attributes import InternalCustomUserAttributes
 
 log = logging.getLogger(__name__)
@@ -95,7 +100,7 @@ DEFAULT_POLICY_TEMPLATE_URL = "https://raw.githubusercontent.com/privacyidea/" \
 BODY_TEMPLATE = lazy_gettext("""
 <--- Please describe your Problem in detail --->
 
-<--- Please provide as many additional information as possible --->
+<--- Please provide as much additional information as possible --->
 
 privacyIDEA Version: {version}
 Subscriber: {subscriber_name}
@@ -181,13 +186,13 @@ def sign_response(request, response):
     :param request: The Request object
     :param response: The Response object
     """
-    if current_app.config.get("PI_NO_RESPONSE_SIGN"):
+    if current_app.config.get(ConfigKey.NO_RESPONSE_SIGN):
         return response
 
-    private_key_file = current_app.config.get("PI_AUDIT_KEY_PRIVATE")
+    private_key_file = current_app.config.get(ConfigKey.AUDIT_KEY_PRIVATE)
 
     # Disable the costly checking of private RSA keys when loading them.
-    check_private_key = not current_app.config.get("PI_RESPONSE_NO_PRIVATE_KEY_CHECK", False)
+    check_private_key = not current_app.config.get(ConfigKey.RESPONSE_NO_PRIVATE_KEY_CHECK, False)
     try:
         with open(private_key_file, 'rb') as file:
             private_key = file.read()
@@ -217,7 +222,7 @@ def sign_response(request, response):
             content["nonce"] = nonce
 
         content["signature"] = sign_object.sign(json.dumps(content, sort_keys=True))
-        response_object.set_data(json.dumps(content))
+        response_object.set_data(json.dumps(content, sort_keys=True))
     else:
         # The response.data is no JSON (but CSV or policy export)
         # We do no signing in this case.
@@ -341,7 +346,8 @@ def no_detail_on_success(request, response):
     content = response.json
 
     # get the serials from a policy definition
-    policy = Match.action_only(g, scope=SCOPE.AUTHZ, action=PolicyAction.NODETAILSUCCESS).policies(write_to_audit_log=False)
+    policy = Match.action_only(g, scope=SCOPE.AUTHZ, action=PolicyAction.NODETAILSUCCESS).policies(
+        write_to_audit_log=False)
     if policy and content.get("result", {}).get("value"):
         # The policy was set, we need to strip the details, if the
         # authentication was successful. (value=true)
@@ -351,7 +357,7 @@ def no_detail_on_success(request, response):
         #  since they contain a dictionary in result->value
         content.pop("detail", None)
         response.set_data(json.dumps(content))
-        g.audit_object.add_policy([p.get("name") for p in policy])
+        g.audit_object.add_policy({p.get("name") for p in policy})
 
     return response
 
@@ -448,7 +454,7 @@ def add_user_detail_to_response(request, response):
             if isinstance(value, datetime.datetime):
                 ui[key] = str(value)
         content.setdefault("detail", {})["user"] = ui
-        g.audit_object.add_policy([p.get("name") for p in policy])
+        g.audit_object.add_policy({p.get("name") for p in policy})
 
     # Check for ADD RESOLVER IN RESPONSE
     policy = (Match.user(g, scope=SCOPE.AUTHZ, action=PolicyAction.ADDRESOLVERINRESPONSE, user_object=request.User)
@@ -457,7 +463,7 @@ def add_user_detail_to_response(request, response):
         # The policy was set, we need to add the resolver and the realm
         content.setdefault("detail", {})["user-resolver"] = request.User.resolver
         content["detail"]["user-realm"] = request.User.realm
-        g.audit_object.add_policy([p.get("name") for p in policy])
+        g.audit_object.add_policy({p.get("name") for p in policy})
 
     response.set_data(json.dumps(content))
     return response
@@ -487,7 +493,7 @@ def no_detail_on_fail(request, response):
         #  result->authentication entry and only strip away possible user information
         del content["detail"]
         response.set_data(json.dumps(content))
-        g.audit_object.add_policy([p.get("name") for p in detail_policy])
+        g.audit_object.add_policy({p.get("name") for p in detail_policy})
 
     return response
 
@@ -538,7 +544,7 @@ def save_pin_change(request, response, serial=None):
             # The user sets a pin or enrolls a token. -> delete the pin_change
             if otppin or pin:
                 token = get_one_token(serial=serial)
-                token.del_tokeninfo("next_pin_change")
+                token.delete_tokeninfo("next_pin_change")
 
                 # If there is a change_pin_every policy, we need to set the PIN anew.
                 policy = Match.realm(g, scope=SCOPE.ENROLL, action=PolicyAction.CHANGE_PIN_EVERY,
@@ -611,10 +617,12 @@ def get_webui_settings(request, response):
         user_page_size_pol = Match.generic(g, scope=SCOPE.WEBUI, action=PolicyAction.USERPAGESIZE, user_object=user,
                                            user=username, realm=realm).action_values(unique=True)
         token_wizard_2nd = bool(role == ROLE.USER
-                                and Match.generic(g, scope=SCOPE.WEBUI, action=PolicyAction.TOKENWIZARD2ND, user_object=user,
+                                and Match.generic(g, scope=SCOPE.WEBUI, action=PolicyAction.TOKENWIZARD2ND,
+                                                  user_object=user,
                                                   user=username, realm=realm).policies())
         admin_dashboard = (role == ROLE.ADMIN
-                           and Match.generic(g, scope=SCOPE.WEBUI, action=PolicyAction.ADMIN_DASHBOARD, user_object=user,
+                           and Match.generic(g, scope=SCOPE.WEBUI, action=PolicyAction.ADMIN_DASHBOARD,
+                                             user_object=user,
                                              user=username, realm=realm).any())
         token_rollover = Match.generic(g, scope=SCOPE.WEBUI, action=PolicyAction.TOKENROLLOVER, user_object=user,
                                        user=username, realm=realm).action_values(unique=False)
@@ -642,7 +650,8 @@ def get_webui_settings(request, response):
                                                           user_object=user).action_values(unique=True)
                 if container_wizard_type_policy:
                     container_wizard_type = list(container_wizard_type_policy.keys())[0]
-                    container_wizard_template_policy = Match.user(g, SCOPE.WEBUI, PolicyAction.CONTAINER_WIZARD_TEMPLATE,
+                    container_wizard_template_policy = Match.user(g, SCOPE.WEBUI,
+                                                                  PolicyAction.CONTAINER_WIZARD_TEMPLATE,
                                                                   user_object=user).action_values(unique=True)
                     if container_wizard_template_policy:
                         template = list(container_wizard_template_policy.keys())[0]
@@ -667,14 +676,16 @@ def get_webui_settings(request, response):
                                      user=username, realm=realm).any()
         deletion_confirmation = Match.generic(g, scope=SCOPE.WEBUI, action=PolicyAction.DELETION_CONFIRMATION,
                                               user_object=user, user=username, realm=realm).any()
-        default_tokentype_pol = Match.generic(g, scope=SCOPE.WEBUI, action=PolicyAction.DEFAULT_TOKENTYPE, user_object=user,
+        default_tokentype_pol = Match.generic(g, scope=SCOPE.WEBUI, action=PolicyAction.DEFAULT_TOKENTYPE,
+                                              user_object=user,
                                               user=username, realm=realm).action_values(unique=True)
         default_container_type_pol = Match.generic(g, scope=SCOPE.WEBUI, action=PolicyAction.DEFAULT_CONTAINER_TYPE,
                                                    user_object=user, user=username,
                                                    realm=realm).action_values(unique=True)
         show_seed = Match.generic(g, scope=SCOPE.WEBUI, action=PolicyAction.SHOW_SEED, user_object=user,
                                   user=username, realm=realm).any()
-        show_node = Match.generic(g, scope=SCOPE.WEBUI, action=PolicyAction.SHOW_NODE, realm=realm, user_object=user).any()
+        show_node = Match.generic(g, scope=SCOPE.WEBUI, action=PolicyAction.SHOW_NODE, realm=realm,
+                                  user_object=user).any()
         qr_ios_authenticator = Match.generic(g, scope=SCOPE.WEBUI, action=PolicyAction.SHOW_IOS_AUTHENTICATOR,
                                              user_object=user, user=username, realm=realm).any()
         qr_android_authenticator = Match.generic(g, scope=SCOPE.WEBUI, action=PolicyAction.SHOW_ANDROID_AUTHENTICATOR,
@@ -682,9 +693,11 @@ def get_webui_settings(request, response):
         qr_custom_authenticator_url = Match.generic(g, scope=SCOPE.WEBUI, action=PolicyAction.SHOW_CUSTOM_AUTHENTICATOR,
                                                     user_object=user, user=username,
                                                     realm=realm).action_values(unique=True)
-        logout_redirect_url_pol = Match.generic(g, scope=SCOPE.WEBUI, action=PolicyAction.LOGOUT_REDIRECT, user_object=user,
+        logout_redirect_url_pol = Match.generic(g, scope=SCOPE.WEBUI, action=PolicyAction.LOGOUT_REDIRECT,
+                                                user_object=user,
                                                 user=username, realm=realm).action_values(unique=True)
-        require_description = Match.generic(g, scope=SCOPE.ENROLL, action=PolicyAction.REQUIRE_DESCRIPTION, user_object=user,
+        require_description = Match.generic(g, scope=SCOPE.ENROLL, action=PolicyAction.REQUIRE_DESCRIPTION,
+                                            user_object=user,
                                             user=username, realm=realm).action_values(unique=False)
 
         qr_image_android = create_img(DEFAULT_ANDROID_APP_URL) if qr_android_authenticator else None
@@ -954,6 +967,32 @@ def container_create_via_multichallenge(request: Request, content: dict, contain
     return content
 
 
+def hide_specific_error_message(request, response):
+    """
+    If `hide_specific_error_message` policy is enabled and response contains a rejected authentication,
+    overwrite the `detail` object to contain a generic message and the threadid.
+    # TODO this does not solve the problem that we do not consistently return 401 for failed authentications.
+    """
+    if not response or not response.json:
+        return response
+
+    result = response.json.get("result")
+    if not result.get("value") and result.get("authentication") == AUTH_RESPONSE.REJECT:
+        hide_message = Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE,
+                                  user_object=request.User if hasattr(request, 'User') else None).any()
+        if hide_message:
+            content = response.json
+            detail = {
+                "message": _("Authentication failed."),
+                "threadid": content["detail"]["threadid"]
+            }
+            # Overwrite the whole detail object so that it always has the same content
+            content["detail"] = detail
+            response.set_data(json.dumps(content))
+
+    return response
+
+
 def multichallenge_enroll_via_validate(request, response):
     """
     This is a post decorator to allow enrolling tokens via /validate/check.
@@ -1027,7 +1066,7 @@ def multichallenge_enroll_via_validate(request, response):
                     params["policies"] = g.get("policies", {})
                     init_details = token.get_init_detail(params, user)
                     if not init_details:
-                        token.token.delete()
+                        token.delete_token()
                     content.get("result")["value"] = False
                     content.get("result")["authentication"] = AUTH_RESPONSE.CHALLENGE
                     detail = content.setdefault("detail", {})
@@ -1041,7 +1080,7 @@ def multichallenge_enroll_via_validate(request, response):
                     detail["client_mode"] = "webauthn"
                 except Exception as e:
                     log.error(f"Error during enroll_via_validate: {e}")
-                    token.token.delete()
+                    token.delete_token()
                     raise e
             # ------------------------------
             else:
@@ -1065,7 +1104,7 @@ def multichallenge_enroll_via_validate(request, response):
             data = challenge.get_data()
             data.update({"enroll_via_multichallenge": True})
             data.update({"enroll_via_multichallenge_optional": enrollment_optional})
-            if not "type" in data:
+            if "type" not in data:
                 data.update({"type": enroll_type})
             challenge.set_data(data)
             challenge.save()
@@ -1210,11 +1249,13 @@ def check_verify_enrollment(request, response):
             # ["hotp totp", "hotp email"]
             # The key is the token type(s)
             do_verify_enrollment = False
+            audit_policies = set()
             for policy_key in verify_pol_dict:
                 if token.get_tokentype().upper() in [x.upper() for x in policy_key.split(" ")]:
                     # This token is supposed to do verify enrollment
                     do_verify_enrollment = True
-                    g.audit_object.add_policy(verify_pol_dict.get(policy_key))
+                    audit_policies.add(policy_key)
+            g.audit_object.add_policy(audit_policies)
             if do_verify_enrollment:
                 content = response.json
                 options = {"g": g, "user": request.User, "exception": request.all_data.get("exception", 0)}

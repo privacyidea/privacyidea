@@ -3,12 +3,13 @@ This test file tests the lib.tokens.questionnairetoken
 This depends on lib.tokenclass
 """
 
-from .base import MyTestCase
-from privacyidea.lib.tokens.questionnairetoken import QuestionnaireTokenClass
-from privacyidea.lib.token import init_token, import_tokens, get_tokens
-from privacyidea.lib.config import set_privacyidea_config
-from privacyidea.models import Token
 import json
+
+from privacyidea.lib.config import set_privacyidea_config
+from privacyidea.lib.token import init_token, import_tokens, get_tokens
+from privacyidea.lib.tokens.questionnairetoken import QuestionnaireTokenClass
+from privacyidea.models import Token
+from .base import MyTestCase
 
 
 class QuestionnaireTokenTestCase(MyTestCase):
@@ -22,6 +23,7 @@ class QuestionnaireTokenTestCase(MyTestCase):
 
     dumb_questions = {"dumb questiontype": "answer"}
     j_dumb_questions = json.dumps(dumb_questions)
+
     # add_user, get_user, reset, set_user_identifiers
 
     def test_00_users(self):
@@ -72,8 +74,14 @@ class QuestionnaireTokenTestCase(MyTestCase):
         token.delete_token()
 
     def test_03_get_setting_type(self):
-        r = QuestionnaireTokenClass.get_setting_type("question.question.1")
-        self.assertEqual(r, "public")
+        setting_type = QuestionnaireTokenClass.get_setting_type("question.question.1")
+        self.assertEqual("public", setting_type)
+
+        setting_type = QuestionnaireTokenClass.get_setting_type("question.num_answers")
+        self.assertEqual("public", setting_type)
+
+        setting_type = QuestionnaireTokenClass.get_setting_type("question")
+        self.assertEqual("", setting_type)
 
     def test_04_dumb_question(self):
         set_privacyidea_config("question.num_answers", 1)
@@ -156,17 +164,17 @@ class QuestionnaireTokenTestCase(MyTestCase):
         self.assertTrue(set(expected_keys).issubset(exported_data.keys()))
 
         expected_tokeninfo_keys = ["tokenkind", "frage1", "frage2", "frage3"]
-        self.assertTrue(set(expected_tokeninfo_keys).issubset(exported_data["tokeninfo"].keys()))
+        self.assertTrue(set(expected_tokeninfo_keys).issubset(exported_data["info_list"].keys()))
 
         # Test that the exported values match the token's data
         self.assertEqual(exported_data["serial"], "QUST1234")
         self.assertEqual(exported_data["type"], "question")
         self.assertEqual(exported_data["description"], "this is a questionnaire token export test")
-        self.assertEqual(exported_data["tokeninfo"]["tokenkind"], "software")
+        self.assertEqual(exported_data["info_list"]["tokenkind"], "software")
         self.assertEqual(exported_data["issuer"], "privacyIDEA")
-        self.assertEqual(exported_data["tokeninfo"]["frage1"], "antwort1")
-        self.assertEqual(exported_data["tokeninfo"]["frage2"], "antwort2")
-        self.assertEqual(exported_data["tokeninfo"]["frage3"], "antwort3")
+        self.assertEqual(exported_data["info_list"]["frage1"], "antwort1")
+        self.assertEqual(exported_data["info_list"]["frage2"], "antwort2")
+        self.assertEqual(exported_data["info_list"]["frage3"], "antwort3")
 
         # Clean up
         token.delete_token()
@@ -177,7 +185,7 @@ class QuestionnaireTokenTestCase(MyTestCase):
                        'issuer': 'privacyIDEA',
                        'serial': 'QUST1234',
                        'type': 'question',
-                       'tokeninfo': {'frage1': 'antwort1',
+                       'info_list': {'frage1': 'antwort1',
                                      'frage1.type': 'password',
                                      'frage2': 'antwort2',
                                      'frage2.type': 'password',
@@ -187,7 +195,7 @@ class QuestionnaireTokenTestCase(MyTestCase):
                        }]
 
         # Import the token
-        import_tokens(json.dumps(token_data))
+        import_tokens(token_data)
 
         # Retrieve the imported token
         token = get_tokens(serial=token_data[0]["serial"])[0]
@@ -196,8 +204,8 @@ class QuestionnaireTokenTestCase(MyTestCase):
         self.assertEqual(token.token.serial, token_data[0]["serial"])
         self.assertEqual(token.type, token_data[0]["type"])
         self.assertEqual(token.token.description, token_data[0]["description"])
-        self.assertEqual(token.get_tokeninfo("frage1"), token_data[0]["tokeninfo"]["frage1"])
-        self.assertEqual(token.get_tokeninfo("frage2"), token_data[0]["tokeninfo"]["frage2"])
+        self.assertEqual(token.get_tokeninfo("frage1"), 'antwort1')
+        self.assertEqual(token.get_tokeninfo("frage2"), 'antwort2')
 
         # cheak that the token can be used
         r = token.create_challenge()
