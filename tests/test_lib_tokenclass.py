@@ -537,11 +537,6 @@ class TokenBaseTestCase(MyTestCase):
         token.status_validation_fail()
         token.status_validation_success()
 
-    #        d = token.get_vars()
-    #        self.assertTrue("type" in d, d)
-    #        self.assertTrue("mode" in d, d)
-    #        self.assertTrue("token" in d, d)
-
     def test_16_init_detail(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = TokenClass(db_token)

@@ -93,26 +93,6 @@ def _gen_serial(container_type: str) -> str:
     :param container_type: The type of the container
     :return: The generated serial
     """
-    """
-    serial_len = int(get_from_config("SerialLength") or 8)
-    prefix = "CONT"
-    for ctype, cls in get_container_classes().items():
-        if ctype.lower() == container_type.lower():
-            prefix = cls.get_class_prefix()
-
-    container_num = TokenContainer.query.filter(TokenContainer.type == container_type).count()
-    while True:
-        rnd = ""
-        count = '{:04d}'.format(container_num)
-        rnd_len = serial_len - len(count)
-        if rnd_len > 0:
-            rnd = hexlify_and_unicode(os.urandom(rnd_len)).upper()[0:rnd_len]
-        serial = f"{prefix}{count}{rnd}"
-        if not TokenContainer.query.filter(TokenContainer.serial == serial).first():
-            break
-
-    return serial
-    """
     serial_len = int(get_from_config("SerialLength") or 8)
     prefix = "CONT"
     for ctype, cls in get_container_classes().items():
@@ -162,13 +142,6 @@ def create_container_from_db_object(db_container: TokenContainer) -> Union[Token
 def find_container_by_id(container_id: int) -> TokenContainerClass:
     """
     Returns the TokenContainerClass object for the given container id or raises a ResourceNotFoundError.
-    """
-    """
-    db_container = TokenContainer.query.filter(TokenContainer.id == container_id).first()
-    if not db_container:
-        raise ResourceNotFoundError(f"Unable to find container with id {container_id}.")
-
-    return create_container_from_db_object(db_container)
     """
     db_container = db.session.execute(
         select(TokenContainer).where(TokenContainer.id == container_id)
@@ -422,7 +395,6 @@ def get_all_containers(user: User = None, serial: str = None, ctype: str = None,
     if page > 0 or pagesize > 0:
         ret = create_pagination(page, pagesize, sql_query, "containers")
     else:  # No pagination
-        #ret["containers"] = sql_query.all()
         ret["containers"] = db.session.execute(sql_query).scalars().all()
 
     container_list = [create_container_from_db_object(db_container) for db_container in ret["containers"]]
@@ -462,30 +434,6 @@ def create_pagination(page: int, pagesize: int, sql_query: Select,
         :param object_list_key: The key used in the return dictionary for the list of objects
         :return: A dictionary with pagination information and a list of database objects
     """
-    """
-    ret = {}
-    if page < 1:
-        page = 1
-    if pagesize < 1:
-        pagesize = 10
-
-    pagination = sql_query.paginate(page=page, per_page=pagesize, error_out=False)
-    db_objects = pagination.items
-
-    prev = None
-    if pagination.has_prev:
-        prev = page - 1
-    nxt = None
-    if pagination.has_next:
-        nxt = page + 1
-
-    ret["prev"] = prev
-    ret["next"] = nxt
-    ret["current"] = page
-    ret["count"] = pagination.total
-    ret[object_list_key] = db_objects
-    return ret
-    """
     if page < 1:
         page = 1
     if pagesize < 1:
@@ -518,18 +466,6 @@ def find_container_for_token(serial: str) -> TokenContainerClass:
 
     :param serial: Serial of the token
     :return: container object or None if the token is not in a container
-    """
-    """
-    container = None
-    db_token = Token.query.filter(Token.serial == serial).first()
-    if not db_token:
-        raise ResourceNotFoundError(f"Unable to find token with serial {serial}.")
-    token_id = db_token.id
-    row = TokenContainerToken.query.filter(TokenContainerToken.token_id == token_id).first()
-    if row:
-        container_id = row.container_id
-        container = find_container_by_id(container_id)
-    return container
     """
     session = db.session
     db_token = session.execute(
@@ -1583,7 +1519,6 @@ def get_all_templates_with_type():
     """
     Returns a list of display strings containing the name and type of all templates.
     """
-    # templates = TokenContainerTemplate.query.all()
     session = db.session
     stmt = select(TokenContainerTemplate)
     templates = session.execute(stmt).scalars().all()
@@ -1663,7 +1598,6 @@ def get_template_obj(template_name: str) -> ContainerTemplateBase:
     Returns the template class object for the given template name.
     Raises a ResourceNotFoundError if no template with this name exists.
     """
-    # db_template = TokenContainerTemplate.query.filter(TokenContainerTemplate.name == template_name).first()
     session = db.session
     stmt = select(TokenContainerTemplate).where(TokenContainerTemplate.name == template_name)
     # print("----------------------------- CREATE TOKEN QUERY -----------------------------")

@@ -445,33 +445,6 @@ def get_tokens_paginated_generator(tokentype=None, realm=None, assigned=None, us
     :type assigned: bool or None
     :return: This is a generator that generates non-empty lists of token objects.
     """
-    """
-    main_sql_query = _create_token_query(tokentype=tokentype, realm=realm,
-                                         assigned=assigned, user=user,
-                                         serial_wildcard=serial_wildcard,
-                                         active=active, resolver=resolver,
-                                         rollout_state=rollout_state,
-                                         revoked=revoked, locked=locked,
-                                         tokeninfo=tokeninfo, maxfail=maxfail).order_by(Token.id)
-    # Fetch the first ``psize`` tokens
-    sql_query = main_sql_query.limit(psize)
-    while True:
-        entries = sql_query.all()
-        if entries:
-            token_objects = []
-            for token in entries:
-                token_obj = create_tokenclass_object(token)
-                if isinstance(token_obj, TokenClass):
-                    token_objects.append(token_obj)
-            yield token_objects
-            if len(entries) < psize:
-                break
-            # Fetch the next ``psize`` tokens, starting with the ID *after* the ID of the last returned token.
-            # ``token`` is defined because we have ensured that ``entries`` has at least one entry.
-            sql_query = main_sql_query.filter(Token.id > token.id).limit(psize)
-        else:
-            break
-    """
     session = db.session
     main_sql_query = _create_token_query(
         tokentype=tokentype, realm=realm, assigned=assigned, user=user,
@@ -724,73 +697,6 @@ def get_tokens_paginate(tokentype=None, token_type_list=None, realm=None, assign
                                             rollout_state=rollout_state,
                                             description=description, userid=userid,
                                             allowed_realms=allowed_realms, container_serial=container_serial)
-    """
-    if isinstance(sortby, str):
-        # check that the sort column exists and convert it to a Token column
-        cols = Token.__table__.columns
-        if sortby in cols:
-            sortby = cols.get(sortby)
-        else:
-            log.warning('Unknown sort column "{0!s}". Using "serial" '
-                        'instead.'.format(sortby))
-            sortby = Token.serial
-
-    if sortdir == "desc":
-        sql_query = sql_query.order_by(sortby.desc())
-    else:
-        sql_query = sql_query.order_by(sortby.asc())
-
-    pagination = db.paginate(sql_query, page=page, per_page=psize, error_out=False)
-    tokens = pagination.items
-    previous_page = None
-    if pagination.has_prev:
-        previous_page = page - 1
-    next_page = None
-    if pagination.has_next:
-        next_page = page + 1
-    token_list = []
-    for token in tokens:
-        token = create_tokenclass_object(token)
-        if isinstance(token, TokenClass):
-            token_dict = token.get_as_dict()
-            # add user information
-            # In certain cases the LDAP or SQL server might not be reachable.
-            # Then an exception is raised
-            token_dict["username"] = ""
-            token_dict["user_realm"] = ""
-            try:
-                user = token.user
-                if user:
-                    token_dict["username"] = user.login
-                    token_dict["user_realm"] = user.realm
-                    token_dict["user_editable"] = get_resolver_object(
-                        user.resolver).editable
-            except Exception as ex:
-                log.error(f"User information can not be retrieved: {ex!r}")
-                log.debug(traceback.format_exc())
-                token_dict["username"] = "**resolver error**"
-
-            if hidden_tokeninfo:
-                for key in list(token_dict['info']):
-                    if key in hidden_tokeninfo:
-                        token_dict['info'].pop(key)
-
-            # check if token is in a container
-            token_dict["container_serial"] = ""
-            from privacyidea.lib.container import find_container_for_token
-            container = find_container_for_token(token.get_serial())
-            if container:
-                token_dict["container_serial"] = container.serial
-
-            token_list.append(token_dict)
-
-    ret = {"tokens": token_list,
-           "prev": previous_page,
-           "next": next_page,
-           "current": page,
-           "count": pagination.total}
-    return ret
-    """
 
     if isinstance(sortby, str):
         cols = Token.__table__.columns
@@ -1313,7 +1219,6 @@ def gen_serial(tokentype: str, prefix: str = None) -> str:
             return "{0!s}{1!s}{2!s}".format(prefix, num_str, h_serial)
 
     # now search the number of tokens of tokenytype in the token database
-    # tokennum = Token.query.filter(Token.tokentype == tokentype).count()
     session = db.session
     tokennum = session.execute(
         select(func.count()).select_from(Token).where(Token.tokentype == tokentype)
@@ -1324,7 +1229,6 @@ def gen_serial(tokentype: str, prefix: str = None) -> str:
 
     # now test if serial already exists
     while True:
-        # numtokens = Token.query.filter(Token.serial == serial).count()
         numtokens = session.execute(
             select(func.count()).select_from(Token).where(Token.serial == serial)
         ).scalar_one()
@@ -1658,8 +1562,6 @@ def unassign_token(serial, user=None):
 
         try:
             # Delete the tokenowner entry
-            # TokenOwner.query.filter(TokenOwner.token_id == token.token.id).delete()
-            # token.save()
             session = db.session
             stmt = delete(TokenOwner).where(TokenOwner.token_id == token.token.id)
             session.execute(stmt)
@@ -2803,7 +2705,6 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
 
                     # Clean up all challenges with this transaction_id
                     transaction_id = options.get("transaction_id") or options.get("state")
-                    # Challenge.query.filter(Challenge.transaction_id == '' + transaction_id).delete()
                     session = db.session
                     stmt = delete(Challenge).where(Challenge.transaction_id == str(transaction_id))
                     session.execute(stmt)
