@@ -17,12 +17,11 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { NgClass } from "@angular/common";
-import { Component, computed, inject } from "@angular/core";
+import { Component, computed, ElementRef, inject, ViewChild } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { MatFormField, MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { MatPaginatorModule } from "@angular/material/paginator";
-import { MatSortModule } from "@angular/material/sort";
 import { MatCell, MatCellDef, MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { MatTabsModule } from "@angular/material/tabs";
 import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
@@ -35,14 +34,15 @@ import { TableUtilsService, TableUtilsServiceInterface } from "../../../../servi
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 import { ClearableInputComponent } from "../../../shared/clearable-input/clearable-input.component";
 import { CopyButtonComponent } from "../../../shared/copy-button/copy-button.component";
-import { KeywordFilterComponent } from "../../../shared/keyword-filter/keyword-filter.component";
+import { MatIconModule } from "@angular/material/icon";
+import { MatButtonModule } from "@angular/material/button";
+import { FilterValue } from "../../../../core/models/filter_value";
 
 @Component({
   selector: "app-token-applications-ssh",
   standalone: true,
   imports: [
     MatTabsModule,
-    KeywordFilterComponent,
     MatCell,
     MatCellDef,
     MatFormField,
@@ -50,11 +50,12 @@ import { KeywordFilterComponent } from "../../../shared/keyword-filter/keyword-f
     MatFormFieldModule,
     MatInputModule,
     MatPaginatorModule,
-    MatSortModule,
     NgClass,
     CopyButtonComponent,
     FormsModule,
-    ClearableInputComponent
+    ClearableInputComponent,
+    MatIconModule,
+    MatButtonModule
   ],
   templateUrl: "./token-applications-ssh.component.html",
   styleUrls: ["./token-applications-ssh.component.scss"]
@@ -74,6 +75,7 @@ export class TokenApplicationsSshComponent {
   pageSizeOptions = this.tableUtilsService.pageSizeOptions;
   length = computed(() => this.machineService.tokenApplications()?.length ?? 0);
   displayedColumns: string[] = this.columnsKeyMap.map((column) => column.key);
+  sort = this.machineService.sort;
 
   dataSource = computed(() => {
     var data = this.machineService.tokenApplications();
@@ -85,5 +87,30 @@ export class TokenApplicationsSshComponent {
 
   getObjectStrings(options: object) {
     return Object.entries(options).map(([key, value]) => `${key}: ${value}`);
+  }
+
+  @ViewChild('filterInput', { static: false })
+  filterInput!: ElementRef<HTMLInputElement>;
+
+  toggleFilter(filterKeyword: string): void {
+    const newValue = this.tableUtilsService.toggleKeywordInFilter({
+      keyword: filterKeyword,
+      currentValue: this.machineService.machineFilter()
+    });
+    this.machineService.machineFilter.set(newValue);
+  }
+
+  isFilterSelected(filter: string, inputValue: FilterValue): boolean {
+    return inputValue.hasKey(filter);
+  }
+
+  getFilterIconName(keyword: string): string {
+    const isSelected = this.isFilterSelected(keyword, this.machineService.machineFilter());
+    return isSelected ? "filter_alt_off" : "filter_alt";
+  }
+
+  onKeywordClick(filterKeyword: string): void {
+    this.toggleFilter(filterKeyword);
+    this.filterInput?.nativeElement.focus();
   }
 }

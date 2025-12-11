@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, WritableSignal, inject, linkedSignal } from "@angular/core";
+import { Component, ElementRef, inject, linkedSignal, ViewChild, WritableSignal } from "@angular/core";
 import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
 import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
 import { MatPaginatorModule, PageEvent } from "@angular/material/paginator";
@@ -28,7 +28,6 @@ import { TokenDetails, TokenService, TokenServiceInterface } from "../../../serv
 import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
 import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
 import { FormsModule } from "@angular/forms";
-import { KeywordFilterComponent } from "../../shared/keyword-filter/keyword-filter.component";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
@@ -37,6 +36,8 @@ import { NgClass } from "@angular/common";
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
 import { TokenTableActionsComponent } from "./token-table-actions/token-table-actions.component";
+import { MatIconButton } from "@angular/material/button";
+import { FilterValue } from "../../../core/models/filter_value";
 
 const columnKeysMap = [
   { key: "select", label: "" },
@@ -62,14 +63,14 @@ const columnKeysMap = [
     MatPaginatorModule,
     MatSortModule,
     NgClass,
-    KeywordFilterComponent,
     MatCheckboxModule,
     FormsModule,
     MatIconModule,
     ScrollToTopDirective,
     ClearableInputComponent,
     CopyButtonComponent,
-    TokenTableActionsComponent
+    TokenTableActionsComponent,
+    MatIconButton
   ],
   templateUrl: "./token-table.component.html",
   styleUrl: "./token-table.component.scss"
@@ -83,8 +84,12 @@ export class TokenTableComponent {
 
   readonly columnKeysMap = columnKeysMap;
   readonly columnKeys: string[] = columnKeysMap.map((column) => column.key);
-  readonly apiFilter = this.tokenService.apiFilter;
+  readonly apiFilterKeyMap = this.tokenService.apiFilterKeyMap;
   readonly advancedApiFilter = this.tokenService.advancedApiFilter;
+
+  @ViewChild('filterHTMLInputElement', { static: false })
+  filterInput!: ElementRef<HTMLInputElement>;
+
   tokenSelection = this.tokenService.tokenSelection;
 
   tokenResource = this.tokenService.tokenResource;
@@ -173,17 +178,55 @@ export class TokenTableComponent {
     }
   }
 
+  onSortEvent($event: Sort) {
+    if (!$event.direction) {
+      this.sort.set({ active: "serial", direction: "asc" });
+    } else {
+      this.sort.set({ active: $event.active, direction: $event.direction });
+    }
+  }
+
   onPageEvent(event: PageEvent) {
     this.pageSize.set(event.pageSize);
     this.tokenService.eventPageSize = event.pageSize;
     this.pageIndex.set(event.pageIndex);
   }
 
-  onSortEvent($event: Sort) {
-    if ($event.direction === "") {
-      this.sort.set({ active: "serial", direction: "asc" });
-      return;
+  toggleFilter(filterKeyword: string): void {
+    let newValue;
+    if (filterKeyword === "active") {
+      newValue = this.tableUtilsService.toggleBooleanInFilter({
+        keyword: filterKeyword,
+        currentValue: this.tokenService.tokenFilter()
+      });
+    } else {
+      newValue = this.tableUtilsService.toggleKeywordInFilter({
+        keyword: filterKeyword,
+        currentValue: this.tokenService.tokenFilter()
+      });
     }
-    this.sort.set($event);
+    this.tokenService.tokenFilter.set(newValue);
+  }
+
+  isFilterSelected(filter: string, inputValue: FilterValue): boolean {
+    return inputValue.hasKey(filter);
+  }
+
+  getFilterIconName(keyword: string): string {
+    if (keyword === "active" || keyword === "assigned") {
+      const value = this.tokenService.tokenFilter()?.getValueOfKey(keyword)?.toLowerCase();
+      if (!value) {
+        return "filter_alt";
+      }
+      return value === "true" ? "screen_rotation_alt" : value === "false" ? "filter_alt_off" : "filter_alt";
+    } else {
+      const isSelected = this.isFilterSelected(keyword, this.tokenService.tokenFilter());
+      return isSelected ? "filter_alt_off" : "filter_alt";
+    }
+  }
+
+  onKeywordClick(filterKeyword: string): void {
+    this.toggleFilter(filterKeyword);
+    this.filterInput?.nativeElement.focus();
   }
 }

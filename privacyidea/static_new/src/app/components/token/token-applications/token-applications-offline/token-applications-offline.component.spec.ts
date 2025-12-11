@@ -29,7 +29,6 @@ import { MachineService, TokenApplication } from "../../../../services/machine/m
 import { TableUtilsService } from "../../../../services/table-utils/table-utils.service";
 import { TokenService } from "../../../../services/token/token.service";
 import { CopyButtonComponent } from "../../../shared/copy-button/copy-button.component";
-import { KeywordFilterComponent } from "../../../shared/keyword-filter/keyword-filter.component";
 import { TokenApplicationsOfflineComponent } from "./token-applications-offline.component";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
@@ -43,7 +42,7 @@ describe("TokenApplicationsOfflineComponent (Jest)", () => {
   beforeEach(async () => {
     TestBed.resetTestingModule();
     await TestBed.configureTestingModule({
-      imports: [TokenApplicationsOfflineComponent, MatTabsModule, KeywordFilterComponent, CopyButtonComponent],
+      imports: [TokenApplicationsOfflineComponent, MatTabsModule, CopyButtonComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),

@@ -16,6 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { HttpErrorResponse } from "@angular/common/http";
 import { Component, computed, inject, linkedSignal, signal, ViewChild, WritableSignal } from "@angular/core";
 import {
   MatCell,
@@ -36,7 +37,7 @@ import {
   MatTableDataSource
 } from "@angular/material/table";
 import { MatPaginator } from "@angular/material/paginator";
-import { MatSort, MatSortModule } from "@angular/material/sort";
+import { Sort } from "@angular/material/sort";
 import { FormsModule } from "@angular/forms";
 import { NgClass } from "@angular/common";
 import { MatFormField, MatLabel } from "@angular/material/form-field";
@@ -45,7 +46,6 @@ import { MatSelectModule } from "@angular/material/select";
 import { MatIconModule } from "@angular/material/icon";
 import { MatButtonModule } from "@angular/material/button";
 import { MatDialog } from "@angular/material/dialog";
-import { HttpErrorResponse } from "@angular/common/http";
 import { concat, last, take } from "rxjs";
 
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
@@ -91,7 +91,6 @@ const NO_NODE_ID = "";
     MatLabel,
     MatPaginator,
     MatTable,
-    MatSortModule,
     MatHeaderCell,
     MatHeaderCellDef,
     MatColumnDef,
@@ -119,7 +118,7 @@ export class RealmTableComponent {
   protected readonly columnKeysMap = columnKeysMap;
   readonly columnKeys: string[] = this.columnKeysMap.map((column) => column.key);
 
-  private readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
+  protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly realmService: RealmServiceInterface = inject(RealmService);
   protected readonly systemService: SystemServiceInterface = inject(SystemService);
@@ -129,12 +128,13 @@ export class RealmTableComponent {
   protected readonly resolverService: ResolverServiceInterface = inject(ResolverService);
 
   @ViewChild(MatPaginator) paginator!: MatPaginator;
-  @ViewChild(MatSort) sort!: MatSort;
+  @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: any;
 
   pageSizeOptions = this.tableUtilsService.pageSizeOptions;
 
   selectedNode = signal<string>(ALL_NODES_VALUE);
   filterString = signal<string>("");
+  sort = signal({ active: "name", direction: "asc" } as Sort);
 
   newRealmName = signal<string>("");
   newRealmNodeResolvers = signal<NodeResolversMap>({});
@@ -253,38 +253,50 @@ export class RealmTableComponent {
   ) as WritableSignal<number>;
 
   realmsDataSource: WritableSignal<MatTableDataSource<RealmRow>> = linkedSignal({
-    source: this.realmRows,
-    computation: (rows, previous) => {
-      const dataSource = new MatTableDataSource(rows ?? []);
+    source: () => ({
+      rows: this.realmRows(),
+      sort: this.sort()
+    }),
+    computation: (src, previous) => {
+      const sortedRows = this.clientsideSortRealmData([...(src.rows ?? [])], this.sort());
+      const dataSource = new MatTableDataSource(sortedRows);
       dataSource.paginator = this.paginator;
-      dataSource.sort = this.sort;
 
       dataSource.filterPredicate = (data: RealmRow, filter: string) => {
         const normalizedFilter = filter.trim().toLowerCase();
         if (!normalizedFilter) {
           return true;
         }
+        // simple contains across name and resolvers text
         return (
-          data.name.toLowerCase().includes(normalizedFilter) ||
-          data.resolversText.toLowerCase().includes(normalizedFilter)
+          (data.name ?? "").toLowerCase().includes(normalizedFilter) ||
+          (data.resolversText ?? "").toLowerCase().includes(normalizedFilter)
         );
       };
 
-      dataSource.filter = this.filterString().trim().toLowerCase();
+      const filter = this.filterString().trim().toLowerCase();
+      dataSource.filter = filter;
+
       return dataSource;
     }
   });
 
   onFilterInput(value: string): void {
-    this.filterString.set(value);
+    const trimmed = (value ?? "").trim();
+    this.filterString.set(trimmed);
+
     const ds = this.realmsDataSource();
-    ds.filter = value.trim().toLowerCase();
+    ds.filter = trimmed.toLowerCase();
   }
 
   resetFilter(): void {
     this.filterString.set("");
     const ds = this.realmsDataSource();
     ds.filter = "";
+    const inputEl = this.filterInput?.nativeElement as HTMLInputElement | undefined;
+    if (inputEl) {
+      inputEl.value = "";
+    }
   }
 
   onNodeSelectionChange(value: string): void {
@@ -296,7 +308,7 @@ export class RealmTableComponent {
   }
 
   getCreateNodeResolverNames(groupId: string): string[] {
-    return this.getCreateNodeResolvers(groupId).map(res => res.name);
+    return this.getCreateNodeResolvers(groupId).map((res) => res.name);
   }
 
   onNewRealmNodeResolversChange(nodeId: string, values: string[]): void {
@@ -337,50 +349,6 @@ export class RealmTableComponent {
 
     current[nodeId] = [...list];
     this.newRealmNodeResolvers.set(current);
-  }
-
-  getEditNodeResolvers(nodeId: string): ResolverWithPriority[] {
-    return this.editNodeResolvers()[nodeId] ?? [];
-  }
-
-  onEditNodeResolversChange(nodeId: string, values: string[]): void {
-    const current = this.editNodeResolvers();
-    const prevList = current[nodeId] ?? [];
-
-    const updated: ResolverWithPriority[] = values.map((name) => {
-      const existing = prevList.find((r) => r.name === name);
-      return {
-        name,
-        priority: existing?.priority ?? null
-      };
-    });
-
-    this.editNodeResolvers.set({
-      ...current,
-      [nodeId]: updated
-    });
-  }
-
-  setEditResolverPriority(nodeId: string, resolverName: string, priority: any): void {
-    const current = this.editNodeResolvers();
-    const list = [...(current[nodeId] ?? [])];
-    const entry = list.find((r) => r.name === resolverName);
-
-    if (!entry) {
-      return;
-    }
-
-    const num = Number(priority);
-    if (priority === null || priority === undefined || priority === "" || Number.isNaN(num)) {
-      entry.priority = null;
-    } else {
-      entry.priority = Math.min(999, Math.max(1, num));
-    }
-
-    this.editNodeResolvers.set({
-      ...current,
-      [nodeId]: list
-    });
   }
 
   canSubmitNewRealm(): boolean {
@@ -473,12 +441,12 @@ export class RealmTableComponent {
 
     const original: NodeResolversMap = {};
     Object.entries(map).forEach(([nodeId, list]) => {
-      original[nodeId] = list.map(r => ({ ...r }));
+      original[nodeId] = list.map((r) => ({ ...r }));
     });
 
     const editable: NodeResolversMap = {};
     Object.entries(map).forEach(([nodeId, list]) => {
-      editable[nodeId] = list.map(r => ({ ...r }));
+      editable[nodeId] = list.map((r) => ({ ...r }));
     });
 
     this.editOriginalNodeResolvers.set(original);
@@ -497,8 +465,52 @@ export class RealmTableComponent {
     return this.editingRealmName() === row.name && !this.isSavingEditedRealm();
   }
 
+  getEditNodeResolvers(nodeId: string): ResolverWithPriority[] {
+    return this.editNodeResolvers()[nodeId] ?? [];
+  }
+
   getEditNodeResolverNames(nodeId: string): string[] {
-    return this.getEditNodeResolvers(nodeId).map(r => r.name);
+    return this.getEditNodeResolvers(nodeId).map((r) => r.name);
+  }
+
+  onEditNodeResolversChange(nodeId: string, values: string[]): void {
+    const current = this.editNodeResolvers();
+    const prevList = current[nodeId] ?? [];
+
+    const updated: ResolverWithPriority[] = values.map((name) => {
+      const existing = prevList.find((r) => r.name === name);
+      return {
+        name,
+        priority: existing?.priority ?? null
+      };
+    });
+
+    this.editNodeResolvers.set({
+      ...current,
+      [nodeId]: updated
+    });
+  }
+
+  setEditResolverPriority(nodeId: string, resolverName: string, priority: any): void {
+    const current = this.editNodeResolvers();
+    const list = [...(current[nodeId] ?? [])];
+    const entry = list.find((r) => r.name === resolverName);
+
+    if (!entry) {
+      return;
+    }
+
+    const num = Number(priority);
+    if (priority === null || priority === undefined || priority === "" || Number.isNaN(num)) {
+      entry.priority = null;
+    } else {
+      entry.priority = Math.min(999, Math.max(1, num));
+    }
+
+    this.editNodeResolvers.set({
+      ...current,
+      [nodeId]: list
+    });
   }
 
   saveEditedRealm(row: RealmRow): void {
@@ -635,5 +647,29 @@ export class RealmTableComponent {
           );
         }
       });
+  }
+
+  private clientsideSortRealmData(data: RealmRow[], s: Sort): RealmRow[] {
+    if (!s.direction) return data;
+    const dir = s.direction === "desc" ? -1 : 1;
+    const key = s.active as keyof RealmRow;
+
+    return data.sort((a: any, b: any) => {
+      let va: any;
+      let vb: any;
+      if (key === "isDefault") {
+        va = a.isDefault ? 1 : 0;
+        vb = b.isDefault ? 1 : 0;
+      } else if (key === "name") {
+        va = (a.name ?? "").toString().toLowerCase();
+        vb = (b.name ?? "").toString().toLowerCase();
+      } else {
+        va = (a?.[key] ?? "").toString().toLowerCase();
+        vb = (b?.[key] ?? "").toString().toLowerCase();
+      }
+      if (va < vb) return -1 * dir;
+      if (va > vb) return 1 * dir;
+      return 0;
+    });
   }
 }

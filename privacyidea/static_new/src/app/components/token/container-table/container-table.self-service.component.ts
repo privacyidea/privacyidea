@@ -26,7 +26,6 @@ import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 import { MatPaginatorModule } from "@angular/material/paginator";
-import { MatSortModule } from "@angular/material/sort";
 import { MatTableModule } from "@angular/material/table";
 import { ContainerService, ContainerServiceInterface } from "../../../services/container/container.service";
 import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
@@ -45,7 +44,6 @@ import { ContainerTableComponent } from "./container-table.component";
     MatFormFieldModule,
     MatInputModule,
     MatPaginatorModule,
-    MatSortModule,
     NgClass,
     CopyButtonComponent,
     MatCheckboxModule,

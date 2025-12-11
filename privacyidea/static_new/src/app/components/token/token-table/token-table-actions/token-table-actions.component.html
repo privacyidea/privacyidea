@@ -16,7 +16,7 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<div class="flex-row margin-bottom-1 gap-8">
+<div class="flex-row margin-bottom-1 margin-top-1 gap-8">
   <button
     [routerLink]="[ROUTE_PATHS.TOKENS_ENROLLMENT]"
     class="action-button-1"
@@ -26,36 +26,53 @@
   </button>
   @if (authService.oneActionAllowed(["delete", "assign", "unassign"])) {
     @if (authService.actionAllowed("delete")) {
-        <button
-          mat-stroked-button
-          class="action-button-delete"
-          (click)="deleteSelectedTokens()"
-          [disabled]="tokenSelection().length === 0"
-          i18n>
-          <mat-icon> delete_sweep</mat-icon>
-          Delete Selected
-        </button>
+      <button
+        (click)="deleteSelectedTokens()"
+        [disabled]="tokenSelection().length === 0"
+        class="action-button-delete"
+        i18n
+        mat-stroked-button>
+        <mat-icon> delete_sweep</mat-icon>
+        Delete Selected
+      </button>
     }
     @if (authService.actionAllowed("assign")) {
-        <button
-          mat-stroked-button
-          class="action-button-1"
-          (click)="assignSelectedTokens()"
-          [disabled]="tokenSelection().length === 0"
-          i18n>
-          <mat-icon> person_add</mat-icon>
-          Assign Selected
-        </button>
+      <button
+        (click)="assignSelectedTokens()"
+        [disabled]="tokenSelection().length === 0"
+        class="action-button-1"
+        i18n
+        mat-stroked-button>
+        <mat-icon> person_add</mat-icon>
+        Assign Selected
+      </button>
     }
     @if (authService.actionAllowed("unassign")) {
-        <button
-          mat-stroked-button
-          class="action-button-1"
-          (click)="unassignSelectedTokens()"
-          [disabled]="tokenSelection().length === 0">
-          <mat-icon> person_remove</mat-icon>
-          Unassign Selected
-        </button>
+      <button
+        (click)="unassignSelectedTokens()"
+        [disabled]="tokenSelection().length === 0"
+        class="action-button-1"
+        mat-stroked-button>
+        <mat-icon> person_remove</mat-icon>
+        Unassign Selected
+      </button>
     }
+    <button
+      [matMenuTriggerFor]="advancedFilterMenu"
+      class="action-button-1"
+      mat-stroked-button>
+      <mat-icon> filter_list</mat-icon>
+      More Filter
+    </button>
+    <mat-menu #advancedFilterMenu="matMenu">
+      @for (keyword of advancedApiFilter; track keyword) {
+        <button
+          (click)="onAdvancedFilterClick(keyword)"
+          mat-menu-item>
+          <mat-icon class="margin-right-1">{{ getFilterIconName(keyword) }}</mat-icon>
+          {{ keyword }}
+        </button>
+      }
+    </mat-menu>
   }
 </div>

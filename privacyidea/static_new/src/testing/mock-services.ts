@@ -21,6 +21,7 @@ import { AuthData, AuthDetail, AuthResponse, AuthRole } from "../app/services/au
 import {
   ContainerDetailData,
   ContainerDetails,
+  ContainerDetailToken,
   ContainerRegisterData,
   ContainerServiceInterface,
   ContainerTemplate,
@@ -556,7 +557,7 @@ export class MockContentService implements ContentServiceInterface {
     this.containerSerial.set(serial);
   });
 
-  userSelected: (username: any) => void = jest.fn();
+  userSelected: (username: string, realm: string) => void = jest.fn();
 }
 
 export class MockContainerService implements ContainerServiceInterface {
@@ -777,6 +778,7 @@ function makeTokenDetailResponse(tokentype: TokenTypeKey): PiResponse<Tokens> {
 }
 
 export class MockTokenService implements TokenServiceInterface {
+  apiFilterKeyMap: Record<string, string> = {};
   hiddenApiFilter: string[] = [];
   stopPolling$: Subject<void> = new Subject<void>();
   tokenBaseUrl: string = "mockEnvironment.proxyUrl + '/token'";
@@ -1030,6 +1032,14 @@ export class MockMachineService implements MachineServiceInterface {
 }
 
 export class MockTableUtilsService implements TableUtilsServiceInterface {
+  clientsideSortTokenData(data: ContainerDetailToken[], s: Sort): ContainerDetailToken[] {
+      return data;
+  }
+  getSortIcon(columnKey: string, sort: Sort): string {
+      return ""
+  }
+  onSortButtonClick(key: string, sort: WritableSignal<Sort>): void {
+  }
   pageSizeOptions: WritableSignal<number[]> = signal([5, 10, 25, 50]);
   emptyDataSource = jest.fn().mockImplementation((_pageSize: number, _columns: { key: string; label: string }[]) => {
     const dataSource = new MatTableDataSource<TokenApplication>([]);
@@ -1079,6 +1089,7 @@ export class MockTableUtilsService implements TableUtilsServiceInterface {
 }
 
 export class MockAuditService implements AuditServiceInterface {
+  apiFilterKeyMap: Record<string, string> = {};
   sort: WritableSignal<Sort> = signal({ active: "time", direction: "desc" });
   apiFilter = ["user", "success"];
   advancedApiFilter = ["machineid", "resolver"];

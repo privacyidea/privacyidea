@@ -23,7 +23,6 @@ import { MockLocalService, MockMachineService, MockNotificationService } from ".
 import { MachineService, TokenApplication } from "../../../../services/machine/machine.service";
 import { TokenService } from "../../../../services/token/token.service";
 import { CopyButtonComponent } from "../../../shared/copy-button/copy-button.component";
-import { KeywordFilterComponent } from "../../../shared/keyword-filter/keyword-filter.component";
 import { TokenApplicationsSshComponent } from "./token-applications-ssh.component";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
@@ -33,22 +32,17 @@ describe("TokenApplicationsSshComponent (Jest)", () => {
   let component: TokenApplicationsSshComponent;
 
   let mockTokenService: Partial<TokenService> = {};
-  let mockKeywordFilterComponent: Partial<KeywordFilterComponent> = {};
   let machineServiceMock: MockMachineService;
 
   beforeEach(async () => {
     TestBed.resetTestingModule();
     await TestBed.configureTestingModule({
-      imports: [TokenApplicationsSshComponent, MatTabsModule, KeywordFilterComponent, CopyButtonComponent],
+      imports: [TokenApplicationsSshComponent, MatTabsModule, CopyButtonComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: MachineService, useClass: MockMachineService },
         { provide: TokenService, useValue: mockTokenService },
-        {
-          provide: KeywordFilterComponent,
-          useValue: mockKeywordFilterComponent
-        },
         MockLocalService,
         MockNotificationService
       ]

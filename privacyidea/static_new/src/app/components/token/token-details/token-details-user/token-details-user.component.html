@@ -61,7 +61,7 @@
               </mat-form-field>
             } @else {
                 <a
-                  (click)="contentService.userSelected(element.value)"
+                  (click)="contentService.userSelected(element.value, element['user_realm'])"
                   i18n-aria-label="{{ element.keyMap.label }} Link">
                   {{ element.value }}
                 </a>

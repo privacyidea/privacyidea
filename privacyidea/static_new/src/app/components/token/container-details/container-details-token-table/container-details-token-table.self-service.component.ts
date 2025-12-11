@@ -19,13 +19,12 @@
 import { NgClass } from "@angular/common";
 import { Component, computed, inject } from "@angular/core";
 import { FormsModule, ReactiveFormsModule } from "@angular/forms";
-import { MatButton, MatIconButton } from "@angular/material/button";
+import { MatIconButton } from "@angular/material/button";
 import { MatDialog } from "@angular/material/dialog";
 import { MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
 import { MatPaginator } from "@angular/material/paginator";
-import { MatSort, MatSortHeader, MatSortModule } from "@angular/material/sort";
 import { MatCell, MatHeaderCell, MatHeaderRow, MatRow, MatTable, MatTableModule } from "@angular/material/table";
 import { MatTooltip } from "@angular/material/tooltip";
 import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
@@ -48,15 +47,11 @@ import { ContainerDetailsTokenTableComponent } from "./container-details-token-t
     MatLabel,
     MatPaginator,
     MatRow,
-    MatSort,
-    MatSortHeader,
     MatTable,
     NgClass,
     MatTableModule,
-    MatSortModule,
     MatIcon,
     MatIconButton,
-    MatButton,
     CopyButtonComponent,
     ReactiveFormsModule,
     FormsModule,
@@ -73,13 +68,12 @@ export class ContainerDetailsTokenTableSelfServiceComponent extends ContainerDet
   protected override readonly overflowService: OverflowServiceInterface = inject(OverflowService);
   protected override readonly contentService: ContentServiceInterface = inject(ContentService);
   protected override readonly authService: AuthServiceInterface = inject(AuthService);
-
-  constructor() {
-    super();
-  }
-
   override isAssignableToAllToken = computed<boolean>(() => {
     const assignedUser = this.assignedUser();
     return assignedUser.user_name !== "";
   });
+
+  constructor() {
+    super();
+  }
 }
