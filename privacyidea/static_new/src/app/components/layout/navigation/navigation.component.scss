@@ -100,7 +100,7 @@
 
 .childless-expension-panel-header-active {
   margin: 14px 0;
-  border-radius: var(--border-radius);
+  border-radius: var(--border-radius) !important;
 
   .mat-expansion-panel-header {
     border-radius: inherit;
