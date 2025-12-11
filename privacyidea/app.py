@@ -86,6 +86,7 @@ from privacyidea.lib.log import DEFAULT_LOGGING_CONFIG, DOCKER_LOGGING_CONFIG
 from privacyidea.config import config, DockerConfig, ConfigKey, DefaultConfigValues
 from privacyidea.models import db, NodeName
 from privacyidea.lib.crypto import init_hsm
+from privacyidea.api.riskbase import riskbase_blueprint
 
 ENV_KEY = "PRIVACYIDEA_CONFIGFILE"
 
@@ -133,6 +134,7 @@ def _register_blueprints(app):
     app.register_blueprint(container_blueprint, url_prefix='/container')
     app.register_blueprint(healthz_blueprint, url_prefix='/healthz')
     app.register_blueprint(info_blueprint, url_prefix='/info')
+    app.register_blueprint(riskbase_blueprint,url_prefix="/riskbase")
 
 
 def _setup_logging(app, logging_config=DEFAULT_LOGGING_CONFIG):
