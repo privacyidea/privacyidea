@@ -198,5 +198,4 @@ class VascoTokenClass(TokenClass):
         """
         Import for this token is not supported.
         """
-        self.token.delete()
         raise NotImplementedError("Import for VASCO token is not supported.")

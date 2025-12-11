@@ -27,6 +27,9 @@ The method is tested in test_lib_challenges
 import datetime
 import logging
 
+from sqlalchemy import select
+from sqlalchemy.sql import Select
+
 from .log import log_with
 from .policies.actions import PolicyAction
 from .sqlutils import delete_matching_rows
@@ -36,7 +39,7 @@ log = logging.getLogger(__name__)
 
 
 @log_with(log)
-def get_challenges(serial=None, transaction_id=None, challenge=None):
+def get_challenges(serial: str = None, transaction_id: str = None, challenge=None) -> list[Challenge]:
     """
     This returns a list of database challenge objects.
 
@@ -45,18 +48,15 @@ def get_challenges(serial=None, transaction_id=None, challenge=None):
     :param challenge: The challenge to be found
     :return: list of objects
     """
-    sql_query = Challenge.query
-
+    stmt = select(Challenge)
     if serial is not None:
-        sql_query = sql_query.filter(Challenge.serial == serial)
-
+        stmt = stmt.where(Challenge.serial == serial)
     if transaction_id is not None:
-        sql_query = sql_query.filter(Challenge.transaction_id == transaction_id)
-
+        stmt = stmt.where(Challenge.transaction_id == transaction_id)
     if challenge is not None:
-        sql_query = sql_query.filter(Challenge.challenge == challenge)
+        stmt = stmt.where(Challenge.challenge == challenge)
 
-    challenges = sql_query.all()
+    challenges = db.session.execute(stmt).scalars().all()
     return challenges
 
 
@@ -84,68 +84,48 @@ def get_challenges_paginate(serial=None, transaction_id=None,
     :return: dict with challenges, prev, next and count
     :rtype: dict
     """
-    sql_query = _create_challenge_query(serial=serial, transaction_id=transaction_id)
+    stmt = _create_challenge_query(serial=serial, transaction_id=transaction_id)
 
     if isinstance(sortby, str):
-        # convert the string to a Challenge column
         cols = Challenge.__table__.columns
         sortby = cols.get(sortby)
 
     if sortdir == "desc":
-        sql_query = sql_query.order_by(sortby.desc())
+        stmt = stmt.order_by(sortby.desc())
     else:
-        sql_query = sql_query.order_by(sortby.asc())
+        stmt = stmt.order_by(sortby.asc())
 
-    pagination = db.paginate(sql_query, page=page, per_page=psize, error_out=False)
-    challenges = pagination.items
-    prev = None
-    if pagination.has_prev:
-        prev = page - 1
-    next_page = None
-    if pagination.has_next:
-        next_page = page + 1
-    challenge_list = []
-    for challenge in challenges:
-        challenge_dict = challenge.get()
-        challenge_list.append(challenge_dict)
+    pagination = db.paginate(stmt, page=page, per_page=psize, error_out=False)
+    challenge_list = [challenge.get() for challenge in pagination.items]
 
-    ret = {"challenges": challenge_list,
-           "prev": prev,
-           "next": next_page,
-           "current": page,
-           "count": pagination.total}
+    ret = {
+        "challenges": challenge_list,
+        "prev": page - 1 if pagination.has_prev else None,
+        "next": page + 1 if pagination.has_next else None,
+        "current": page,
+        "count": pagination.total
+    }
     return ret
 
 
-def _create_challenge_query(serial=None, transaction_id=None):
+def _create_challenge_query(serial: str = None, transaction_id: str = None) -> Select:
     """
     This function create the sql query for fetching transaction_ids. It is
     used by get_challenge_paginate.
     :return: An SQLAlchemy sql query
     """
-    sql_query = Challenge.query
+    stmt = select(Challenge)
     if serial is not None and serial.strip("*"):
-        # filter for serial
         if "*" in serial:
-            # match with "like"
-            sql_query = sql_query.filter(Challenge.serial.like(serial.replace(
-                "*", "%")))
+            stmt = stmt.where(Challenge.serial.like(serial.replace("*", "%")))
         else:
-            # exact match
-            sql_query = sql_query.filter(Challenge.serial == serial)
-
+            stmt = stmt.where(Challenge.serial == serial)
     if transaction_id is not None and transaction_id.strip("*"):
-        # filter for serial
         if "*" in transaction_id:
-            # match with "like"
-            sql_query = sql_query.filter(Challenge.transaction_id.like(
-                transaction_id.replace(
-                    "*", "%")))
+            stmt = stmt.where(Challenge.transaction_id.like(transaction_id.replace("*", "%")))
         else:
-            # exact match
-            sql_query = sql_query.filter(Challenge.transaction_id == transaction_id)
-
-    return sql_query
+            stmt = stmt.where(Challenge.transaction_id == transaction_id)
+    return stmt
 
 
 def extract_answered_challenges(challenges):
@@ -254,11 +234,11 @@ def cancel_enrollment_via_multichallenge(transaction_id: str) -> bool:
         return False
 
     # If we reach this point, we can cancel the enrollment, depending on the type
+    # The challenges will be cleaned up by either functions
     if "type" in data and data["type"] == "container":
         from .container import delete_container_by_serial
         delete_container_by_serial(challenge.serial)
     else:
         from .token import remove_token
         remove_token(challenge.serial)
-    challenge.delete()
     return True

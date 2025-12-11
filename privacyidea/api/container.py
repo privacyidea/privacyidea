@@ -1128,8 +1128,7 @@ def delete_template(template_name):
     template.delete()
 
     # Audit log
-    g.audit_object.log({"container_type": template.get_class_type(),
-                        "success": True})
+    g.audit_object.log({"container_type": template.get_class_type(), "success": True})
 
     return send_result(True)
 

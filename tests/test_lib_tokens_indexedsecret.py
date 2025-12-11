@@ -93,7 +93,7 @@ class IndexedSecretTokenTestCase(MyTestCase):
         r = token.check_challenge_response(passw=password, options={"state": transaction_id})
         self.assertEqual(1, r)
 
-        db_token.delete()
+        token.delete_token()
 
     def test_02_init_token(self):
         # Create the tokenclass via init_token

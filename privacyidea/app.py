@@ -226,7 +226,7 @@ def _setup_node_configuration(app: Flask):
         pi_node_name = app.config.get(ConfigKey.NODE) or app.config.get(ConfigKey.AUDIT_SERVERNAME,
                                                                         DefaultConfigValues.NODE_NAME)
 
-        inspect = sa.inspect(db.get_engine())
+        inspect = sa.inspect(db.engine)
         if inspect.has_table(NodeName.__tablename__):
             db.session.merge(NodeName(id=str(pi_uuid),
                                       name=pi_node_name,

@@ -613,5 +613,4 @@ class U2fTokenClass(TokenClass):
         """
         Import for this token is not supported.
         """
-        self.token.delete()
         raise NotImplementedError("Import for U2F token is not supported.")

@@ -93,6 +93,7 @@ def tokens(app, users):
         t1.add_tokeninfo(key='date', value=datetime.datetime(2020, 1, 1))
         t1.token.active = True
         t1.token.failcount = 5
+        t1.save()
 
         t2 = init_token(param={
             "serial": "TOTP0001",
@@ -104,6 +105,7 @@ def tokens(app, users):
         t2.add_tokeninfo(key='date', value=datetime.datetime(2022, 1, 1))
         t2.token.active = False
         t2.token.failcount = 10
+        t2.save()
 
         t3 = init_token(param={
             "serial": "HOTP0002",
@@ -111,7 +113,8 @@ def tokens(app, users):
         )
         t3.token.active = True
         t3.token.failcount = 0
-        db.session.commit()
+        t3.save()
+
         yield [t1, t2, t3]
 
 
