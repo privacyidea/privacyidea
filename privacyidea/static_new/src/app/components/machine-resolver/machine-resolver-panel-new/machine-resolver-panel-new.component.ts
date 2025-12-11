@@ -76,7 +76,7 @@ export class MachineResolverPanelNewComponent {
   readonly machineResolvers = this.machineResolverService.machineResolvers();
   readonly isEdited = computed(() => {
     const current = this.newMachineResolver();
-    if (current.resolvername.trim() != "") return true;
+    if (current.resolvername.trim() !== "") return true;
     if (Object.keys(current.data).length > 2) return true; // More than resolver and type fields
     return false;
   });
