@@ -1627,7 +1627,11 @@ def get_static_policy_definitions(scope=None):
             PolicyAction.REGISTERBODY: {'type': 'text',
                                   'desc': _("The body of the registration "
                                             "email. Use '{regkey}' as tag "
-                                            "for the registration key.")}
+                                            "for the registration key.")},
+            PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE: {'type': 'bool',
+                                  'desc': _('Enable to return an unspecific '
+                                            'error message for failed '
+                                            'registrations.')}
         },
         SCOPE.ADMIN: {
             PolicyAction.ENABLE: {'type': 'bool',
@@ -2959,6 +2963,10 @@ def get_static_policy_definitions(scope=None):
                 'desc': _('The client is not allowed to unregister the container. The user can not delete the '
                           'container locally on the smartphone.'),
                 'group': GROUP.SMARTPHONE
+            },
+            PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE: {
+                'type': 'bool',
+                'desc': _('Enable to return an unspecific error message for failures in the authentication-free container endpoints.')
             }
         },
         SCOPE.TOKEN: {
@@ -2969,6 +2977,14 @@ def get_static_policy_definitions(scope=None):
                 'group': GROUP.TOKEN,
                 'multiple': True,
                 'value': get_token_types()
+            },
+            PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE_FOR_TTYPE: {
+                'type': 'bool',
+                'desc': _('Enable to return an unspecific error message for failures in the special token endpoints /ttype/*.')
+            },
+            PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE_FOR_OFFLINE_REFILL: {
+                'type': 'bool',
+                'desc': _('Enable to return an unspecific error message for failed offline token refills.')
             }
         }
 
