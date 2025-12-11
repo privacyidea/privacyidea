@@ -235,14 +235,39 @@ export class TokenTableActionsComponent {
         currentValue: this.tokenService.tokenFilter()
       });
     } else if (filterKeyword === "infokey & infovalue") {
-      newValue = this.tableUtilsService.toggleKeywordInFilter({
-        keyword: "infokey",
-        currentValue: this.tokenService.tokenFilter()
-      });
-      newValue = this.tableUtilsService.toggleKeywordInFilter({
-        keyword: "infovalue",
-        currentValue: newValue
-      });
+      const current = this.tokenService.tokenFilter();
+      const hasKey = current.hasKey("infokey");
+      const hasVal = current.hasKey("infovalue");
+
+      if (hasKey && hasVal) {
+        newValue = this.tableUtilsService.toggleKeywordInFilter({
+          keyword: "infokey",
+          currentValue: current
+        });
+        newValue = this.tableUtilsService.toggleKeywordInFilter({
+          keyword: "infovalue",
+          currentValue: newValue
+        });
+      } else if (!hasKey && !hasVal) {
+        newValue = this.tableUtilsService.toggleKeywordInFilter({
+          keyword: "infokey",
+          currentValue: current
+        });
+        newValue = this.tableUtilsService.toggleKeywordInFilter({
+          keyword: "infovalue",
+          currentValue: newValue
+        });
+      } else if (hasKey && !hasVal) {
+        newValue = this.tableUtilsService.toggleKeywordInFilter({
+          keyword: "infovalue",
+          currentValue: current
+        });
+      } else {
+        newValue = this.tableUtilsService.toggleKeywordInFilter({
+          keyword: "infokey",
+          currentValue: current
+        });
+      }
     } else {
       newValue = this.tableUtilsService.toggleKeywordInFilter({
         keyword: filterKeyword,
@@ -255,7 +280,7 @@ export class TokenTableActionsComponent {
   isFilterSelected(filter: string): boolean {
     const inputValue = this.tokenService.tokenFilter();
     if (filter === "infokey & infovalue") {
-      return inputValue.hasKey("infokey") || inputValue.hasKey("infovalue");
+      return inputValue.hasKey("infokey") && inputValue.hasKey("infovalue");
     }
     return inputValue.hasKey(filter);
   }

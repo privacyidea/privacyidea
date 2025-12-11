@@ -33,7 +33,6 @@ import {
 } from "rxjs";
 import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
-import { ROUTE_PATHS } from "../../route_paths";
 import {
   EnrollmentResponse,
   TokenApiPayloadMapper,
@@ -304,6 +303,7 @@ export class TokenService implements TokenServiceInterface {
   private readonly contentService: ContentServiceInterface = inject(ContentService);
 
   readonly hiddenApiFilter = hiddenApiFilter;
+  readonly apiFilterKeyMap = apiFilterKeyMap;
   stopPolling$ = new Subject<void>();
   tokenBaseUrl = environment.proxyUrl + "/token/";
   eventPageSize = 10;
@@ -313,7 +313,13 @@ export class TokenService implements TokenServiceInterface {
   userRealm = signal("");
 
   filterParams = computed<Record<string, string>>(() => {
-    const allowed = [...this.apiFilter, ...this.advancedApiFilter, ...this.hiddenApiFilter];
+    const allowed = [
+      ...this.apiFilter,
+      ...this.advancedApiFilter,
+      ...this.hiddenApiFilter,
+      "infokey",
+      "infovalue"
+    ];
 
     const plainKeys = new Set([
       "user",
@@ -501,7 +507,6 @@ export class TokenService implements TokenServiceInterface {
   readonly defaultSizeOptions = [5, 10, 25, 50];
   readonly apiFilter = apiFilter;
   readonly advancedApiFilter = advancedApiFilter;
-  readonly apiFilterKeyMap = apiFilterKeyMap;
 
   sort = signal({ active: "serial", direction: "asc" } as Sort);
 

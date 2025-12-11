@@ -209,12 +209,6 @@ export class TokenTableComponent {
   }
 
   isFilterSelected(filter: string, inputValue: FilterValue): boolean {
-    if (filter === "infokey & infovalue") {
-      return inputValue.hasKey("infokey") || inputValue.hasKey("infovalue");
-    }
-    if (filter === "machineid & resolver") {
-      return inputValue.hasKey("machineid") || inputValue.hasKey("resolver");
-    }
     return inputValue.hasKey(filter);
   }
 
