@@ -194,7 +194,7 @@ export class TokenTableComponent {
 
   toggleFilter(filterKeyword: string): void {
     let newValue;
-    if (filterKeyword === "active" || filterKeyword === "assigned") {
+    if (filterKeyword === "active") {
       newValue = this.tableUtilsService.toggleBooleanInFilter({
         keyword: filterKeyword,
         currentValue: this.tokenService.tokenFilter()

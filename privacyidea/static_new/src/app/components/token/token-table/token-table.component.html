@@ -34,6 +34,7 @@
             #filterHTMLInputElement
             (input)="tokenService.handleFilterInput($event)"
             [value]="tokenService.tokenFilter().filterString"
+            id="token-filter-input"
             aria-label="Filter Input"
             i18n-aria-label
             i18n-placeholder

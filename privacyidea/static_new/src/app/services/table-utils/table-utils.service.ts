@@ -21,7 +21,7 @@ import { MatTableDataSource } from "@angular/material/table";
 import { FilterValue } from "../../core/models/filter_value";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { Sort } from "@angular/material/sort";
-import { TokenDetails, TokenService, TokenServiceInterface } from "../token/token.service";
+import { TokenService, TokenServiceInterface } from "../token/token.service";
 import { ContainerDetailToken } from "../container/container.service";
 
 export interface FilterPair {
