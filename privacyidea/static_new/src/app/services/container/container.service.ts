@@ -253,7 +253,7 @@ export class ContainerService implements ContainerServiceInterface {
 
   filterParams = computed<Record<string, string>>(() => {
     const allowed = [...this.apiFilter, ...this.advancedApiFilter];
-    const plainKeys = new Set(["user", "type", "container_serial", "token_serial", "realm"]);
+    const plainKeys = new Set(["user"]);
 
     const entries = Array.from(this.containerFilter().filterMap.entries())
       .filter(([key]) => allowed.includes(key))
