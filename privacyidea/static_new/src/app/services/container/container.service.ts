@@ -32,7 +32,7 @@ import { TokenService, TokenServiceInterface } from "../token/token.service";
 import { StringUtils } from "../../utils/string.utils";
 import { UserService, UserServiceInterface } from "../user/user.service";
 
-const apiFilter = ["container_serial", "type", "user"];
+const apiFilter = ["container_serial", "type", "description", "user", "container_realm"];
 const advancedApiFilter = ["token_serial"];
 
 export interface ContainerDetails {
@@ -290,7 +290,9 @@ export class ContainerService implements ContainerServiceInterface {
     computation: () => 0
   });
 
-  loadAllContainers = computed(() => this.contentService.onTokensEnrollment() || this.contentService.onTokenDetails());
+  loadAllContainers = computed(() => this.contentService.onTokensEnrollment() ||
+    this.contentService.onTokenDetails() ||
+    this.contentService.onUserDetails());
 
   private readonly uniqueCompatibleType = computed<string | null>(() => {
     const tt = this.compatibleWithSelectedTokenType();
@@ -349,7 +351,8 @@ export class ContainerService implements ContainerServiceInterface {
       }),
       ...(this.loadAllContainers() && {
         no_token: 1,
-        user: this.userService.selectedUser()?.username ?? ""
+        user: this.userService.selectedUser()?.username ?? "",
+        realm: this.userService.selectedUserRealm() ?? ""
       }),
       sortby: this.sort().active,
       sortdir: this.sort().direction,

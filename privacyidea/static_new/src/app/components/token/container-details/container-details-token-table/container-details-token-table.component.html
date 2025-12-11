@@ -102,7 +102,7 @@
                   }
                   @case ("username") {
                     <a
-                      (click)="contentService.userSelected(element[column.key])"
+                      (click)="contentService.userSelected(element[column.key], element['user_realm'])"
                       attr.aria-label="{{ column.label }} Link">
                       {{ element[column.key] }}
                     </a>

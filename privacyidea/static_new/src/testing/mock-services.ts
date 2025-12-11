@@ -557,7 +557,7 @@ export class MockContentService implements ContentServiceInterface {
     this.containerSerial.set(serial);
   });
 
-  userSelected: (username: any) => void = jest.fn();
+  userSelected: (username: string, realm: string) => void = jest.fn();
 }
 
 export class MockContainerService implements ContainerServiceInterface {

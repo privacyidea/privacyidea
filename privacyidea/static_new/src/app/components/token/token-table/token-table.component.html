@@ -168,7 +168,7 @@
                   }
                   @case ("username") {
                     <a
-                      (click)="contentService.userSelected(tokenDetails[column.key])"
+                      (click)="contentService.userSelected(tokenDetails[column.key], tokenDetails['user_realm'])"
                       attr.aria-label="{{ column.label }} Link">
                       {{ tokenDetails[column.key] }}
                     </a>

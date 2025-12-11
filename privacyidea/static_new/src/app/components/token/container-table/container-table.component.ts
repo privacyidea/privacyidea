@@ -134,7 +134,9 @@ export class ContainerTableComponent {
   readonly apiFilterKeyMap: Record<string, string> = {
     serial: "container_serial",
     type: "type",
-    user_name: "user"
+    description: "description",
+    user_name: "user",
+    realms: "container_realm"
   } as const;
 
   isAllSelected() {
