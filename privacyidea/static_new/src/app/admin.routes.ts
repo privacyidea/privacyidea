@@ -72,7 +72,7 @@ export const routes: Routes = [
   },
   {
     path: "configuration",
-    children: [{ path: "machineResolver", component: MachineResolverComponent }]
+    children: [{ path: "machine_resolver", component: MachineResolverComponent }]
   },
   {
     path: "audit",

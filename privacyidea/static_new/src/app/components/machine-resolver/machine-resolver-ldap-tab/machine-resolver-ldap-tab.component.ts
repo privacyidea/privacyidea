@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, input, linkedSignal, output, ViewEncapsulation } from "@angular/core";
+import { Component, computed, input, linkedSignal, output, ViewEncapsulation } from "@angular/core";
 import {
   LdapMachineResolverData,
   MachineResolverData
@@ -46,6 +46,16 @@ export class MachineResolverLdapTabComponent {
   });
   readonly onNewData = output<MachineResolverData>();
   readonly onNewValidator = output<(data: MachineResolverData) => boolean>();
+
+  readonly isActiveDirectoryAttributesPreassigned = computed<boolean>(() => {
+    const data = this.machineResolverData() as LdapMachineResolverData;
+    return (
+      data.SEARCHFILTER === "(objectClass=computer)" &&
+      data.IDATTRIBUTE === "DN" &&
+      data.HOSTNAMEATTRIBUTE === "dNSHostName" &&
+      data.NOREFERRALS === true
+    );
+  });
 
   ngOnInit(): void {
     this.onNewValidator.emit(this.isValid.bind(this));
@@ -99,5 +109,14 @@ export class MachineResolverLdapTabComponent {
     }
 
     return true;
+  }
+
+  preassignActiveDirectoryAttributes() {
+    this.updateData({
+      SEARCHFILTER: "(objectClass=computer)",
+      IDATTRIBUTE: "DN",
+      HOSTNAMEATTRIBUTE: "dNSHostName",
+      NOREFERRALS: true
+    });
   }
 }

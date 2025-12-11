@@ -512,13 +512,7 @@
             Machines
           </button>
         </mat-list-item>
-        @if (
-          authService.oneActionAllowed([
-            "mresolverread",
-            "mresolverwrite",
-            "mresolverdelete"
-          ])
-        ) {
+        @if (authService.actionAllowed("mresolverread")) {
           <mat-list-item>
             <button
               class="card-button-1"
