@@ -126,7 +126,7 @@ class TokenTestCase(MyTestCase):
         token_object = create_tokenclass_object(db_token)
         self.assertTrue(token_object is None, token_object)
         # delete the token, so that we do not get confused, later
-        remove_token(db_token.serial)
+        db_token.delete()
 
     def test_02_get_tokens(self):
         # get All tokens
