@@ -35,6 +35,7 @@ import { ContainerTemplatesComponent } from "./components/token/container-templa
 import { RealmTableComponent } from "./components/user/realm-table/realm-table.component";
 import { ClientsComponent } from "./components/audit/clients/clients.component";
 import { MachineResolverComponent } from "./components/machine-resolver/machine-resolver.component";
+import { PeriodicTaskComponent } from "./components/configuration/periodic-task/periodic-task.component";
 
 export const routes: Routes = [
   {
@@ -80,5 +81,9 @@ export const routes: Routes = [
       { path: "", component: AuditComponent },
       { path: "clients", component: ClientsComponent }
     ]
+  },
+  {
+    path: "configuration",
+    children: [{ path: "periodic-tasks", component: PeriodicTaskComponent }]
   }
 ];
