@@ -1,0 +1,93 @@
+<!--
+ (c) NetKnights GmbH 2025,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+
+<div class="machine-resolver-card">
+  <mat-expansion-panel
+    #panel
+    class="margin-4"
+    [disabled]="isEdited()"
+    (closed)="handleCollapse(panel)">
+    <mat-expansion-panel-header class="mat-expansion-panel-header">
+      <mat-panel-title>
+        <div class="machine-resolver-name">
+          <p>{{ currentMachineResolver().resolvername }}</p>
+        </div>
+      </mat-panel-title>
+      <mat-panel-description class="header-description">
+        <div class="machine-resolver-type-label">
+          <span>
+            {{ currentMachineResolver().type }}
+          </span>
+        </div>
+        <div class="machine-resolver-actions">
+          @if (panel.expanded) {
+            @if (isEditMode()) {
+              <button
+                mat-icon-button
+                [disabled]="!canSaveMachineResolver() || !isEdited()"
+                (click)="$event.stopPropagation(); saveMachineResolver()">
+                <mat-icon>save</mat-icon>
+              </button>
+              <button
+                mat-icon-button
+                class="action-button"
+                (click)="$event.stopPropagation(); cancelEditMode()">
+                <mat-icon>cancel</mat-icon>
+              </button>
+            } @else {
+              @if (authService.actionAllowed("mresolverwrite")) {
+                <button
+                  mat-icon-button
+                  (click)="$event.stopPropagation(); isEditMode.set(true)">
+                  <mat-icon>edit</mat-icon>
+                </button>
+              }
+            }
+            @if (authService.actionAllowed("mresolverdelete")) {
+              <button
+                mat-icon-button
+                (click)="$event.stopPropagation(); deleteMachineResolver()">
+                <mat-icon>delete</mat-icon>
+              </button>
+            }
+          }
+        </div>
+      </mat-panel-description>
+    </mat-expansion-panel-header>
+    @switch (currentMachineResolver().type) {
+      @case ("hosts") {
+        <app-machine-resolver-hosts-tab
+          [isEditMode]="isEditMode()"
+          [machineResolverData]="currentMachineResolver().data"
+          (onNewData)="onNewData($event)"
+          (onNewValidator)="onNewValidator($event)" />
+      }
+      @case ("ldap") {
+        <app-machine-resolver-ldap-tab
+          [isEditMode]="isEditMode()"
+          [machineResolverData]="currentMachineResolver().data"
+          (onNewData)="onNewData($event)"
+          (onNewValidator)="onNewValidator($event)" />
+      }
+      @default {
+        <p i18n>Unknown machine resolver type: {{ currentMachineResolver().type }}</p>
+      }
+    }
+  </mat-expansion-panel>
+</div>

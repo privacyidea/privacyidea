@@ -16,7 +16,6 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { NgClass } from "@angular/common";
 import { Component, inject } from "@angular/core";
 import { MatButton } from "@angular/material/button";
 import {
@@ -29,18 +28,10 @@ import {
 
 @Component({
   selector: "app-confirmation-dialog",
-  imports: [
-    MatDialogContent,
-    MatDialogTitle,
-    MatDialogActions,
-    MatButton,
-    MatDialogClose,
-    NgClass
-  ],
+  imports: [MatDialogContent, MatDialogTitle, MatDialogActions, MatButton, MatDialogClose],
   templateUrl: "./confirmation-dialog.component.html",
   styleUrl: "./confirmation-dialog.component.scss"
 })
-
 export class ConfirmationDialogComponent {
   public readonly data: ConfirmationDialogData = inject(MAT_DIALOG_DATA);
 }
@@ -50,5 +41,5 @@ export type ConfirmationDialogData = {
   type: "token" | string;
   serialList?: string[];
   title: string;
-  action: "remove" | "delete" | "revoke" | "search" | "unassign";
+  action: "remove" | "delete" | "revoke" | "search" | "unassign" | "discard" | "proceed-despite-error";
 };
