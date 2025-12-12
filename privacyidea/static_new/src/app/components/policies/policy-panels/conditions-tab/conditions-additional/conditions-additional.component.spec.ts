@@ -58,7 +58,7 @@ describe("ConditionsAdditionalComponent", () => {
     ];
 
     policyServiceMock.selectedPolicyHasAdditionalConditions.set(true);
-    policyServiceMock.selectedPolicy.set({ ...policyServiceMock.emptyPolicy, conditions });
+    policyServiceMock.selectedPolicy.set({ ...policyServiceMock.getEmptyPolicy, conditions });
 
     fixture.detectChanges();
 
@@ -95,7 +95,7 @@ describe("ConditionsAdditionalComponent", () => {
     const conditions: AdditionalCondition[] = [
       ["userinfo", "username", "equals", "testuser", false, "condition_is_false"]
     ];
-    policyServiceMock.selectedPolicy.set({ ...policyServiceMock.emptyPolicy, conditions });
+    policyServiceMock.selectedPolicy.set({ ...policyServiceMock.getEmptyPolicy, conditions });
     fixture.detectChanges();
 
     component.removeCondition(0);
@@ -107,7 +107,7 @@ describe("ConditionsAdditionalComponent", () => {
     const conditions: AdditionalCondition[] = [
       ["userinfo", "username", "equals", "testuser", false, "condition_is_false"]
     ];
-    policyServiceMock.selectedPolicy.set({ ...policyServiceMock.emptyPolicy, conditions });
+    policyServiceMock.selectedPolicy.set({ ...policyServiceMock.getEmptyPolicy, conditions });
     fixture.detectChanges();
 
     component.updateActiveState(0, true);

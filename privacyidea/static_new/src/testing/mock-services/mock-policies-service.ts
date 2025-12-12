@@ -33,7 +33,7 @@ export class MockPolicyService implements PolicyServiceInterface {
   selectedPolicyHasNodeConditions = signal(false);
   selectedPolicyHasAdditionalConditions = signal(false);
   selectedPolicyHasConditions = signal(false);
-  emptyPolicy: PolicyDetail = {
+  getEmptyPolicy: PolicyDetail = {
     action: null,
     active: true,
     adminrealm: [],
@@ -53,7 +53,7 @@ export class MockPolicyService implements PolicyServiceInterface {
     user_agents: [],
     user_case_insensitive: false
   };
-  isPolicyEdited = signal(false);
+  isSelectedPolicyEdited = signal(false);
   selectedPolicy = signal<PolicyDetail | null>(null);
   selectedPolicyOriginal = signal<PolicyDetail | null>(null);
   actionFilter = signal("");

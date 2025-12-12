@@ -61,7 +61,7 @@ describe("ConditionsNodesComponent", () => {
     component.toggleAllNodes();
     expect(policyServiceMock.updateSelectedPolicy).toHaveBeenCalledWith({ pinode: ["node1", "node2", "node2"] });
 
-    policyServiceMock.selectedPolicy.set({ ...policyServiceMock.emptyPolicy, pinode: ["node1", "node2", "node2"] });
+    policyServiceMock.selectedPolicy.set({ ...policyServiceMock.getEmptyPolicy, pinode: ["node1", "node2", "node2"] });
     fixture.detectChanges();
     component.toggleAllNodes();
     expect(policyServiceMock.updateSelectedPolicy).toHaveBeenCalledWith({ pinode: [] });
@@ -80,14 +80,14 @@ describe("ConditionsNodesComponent", () => {
   });
 
   it("should remove user agent", () => {
-    policyServiceMock.selectedPolicy.set({ ...policyServiceMock.emptyPolicy, user_agents: ["test-agent"] });
+    policyServiceMock.selectedPolicy.set({ ...policyServiceMock.getEmptyPolicy, user_agents: ["test-agent"] });
     fixture.detectChanges();
     component.removeUserAgent("test-agent");
     expect(policyServiceMock.updateSelectedPolicy).toHaveBeenCalledWith({ user_agents: [] });
   });
 
   it("should clear user agents", () => {
-    policyServiceMock.selectedPolicy.set({ ...policyServiceMock.emptyPolicy, user_agents: ["test-agent"] });
+    policyServiceMock.selectedPolicy.set({ ...policyServiceMock.getEmptyPolicy, user_agents: ["test-agent"] });
     fixture.detectChanges();
     component.clearUserAgents();
     expect(policyServiceMock.updateSelectedPolicy).toHaveBeenCalledWith({ user_agents: [] });

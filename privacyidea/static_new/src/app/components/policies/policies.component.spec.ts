@@ -52,8 +52,8 @@ describe("PoliciesComponent", () => {
 
   it("should display a list of policies", () => {
     const policies: PolicyDetail[] = [
-      { ...policyServiceMock.emptyPolicy, name: "policy1", scope: "test" },
-      { ...policyServiceMock.emptyPolicy, name: "policy2", scope: "test" }
+      { ...policyServiceMock.getEmptyPolicy, name: "policy1", scope: "test" },
+      { ...policyServiceMock.getEmptyPolicy, name: "policy2", scope: "test" }
     ];
     policyServiceMock.allPolicies.set(policies);
     fixture.detectChanges();

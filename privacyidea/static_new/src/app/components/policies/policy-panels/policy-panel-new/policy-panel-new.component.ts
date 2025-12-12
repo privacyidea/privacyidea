@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, inject, input, linkedSignal } from "@angular/core";
+import { Component, computed, inject, input, linkedSignal, signal } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { MatCardModule } from "@angular/material/card";
 import { MatIconModule } from "@angular/material/icon";
@@ -63,14 +63,14 @@ type PolicyTab = "actions" | "conditions";
 })
 export class PolicyPanelNewComponent {
   // Angular Inputs and Services
-  readonly policyService: PolicyService = inject(PolicyService);
+  // readonly policyService: PolicyService = inject(PolicyService);
 
   // Component State Signals
 
-  readonly selectedPolicy = computed<PolicyDetail | null>(() => this.policyService.selectedPolicy());
+  readonly newPolicy = signal<PolicyDetail>(inject(PolicyService).getEmptyPolicy());
   readonly activeTab = linkedSignal<any, PolicyTab>({
     source: () => ({
-      selectedPolicyHasConditions: this.policyService.selectedPolicyHasConditions()
+      selectedPolicyHasConditions: inject(PolicyService).policyHasConditions(this.newPolicy())
     }),
     computation: (source, previous) => {
       const { isEditMode, selectedPolicyHasConditions } = source;
@@ -81,20 +81,9 @@ export class PolicyPanelNewComponent {
     }
   });
 
-  // Computed properties for new policies
-  readonly newPolicyName = computed(() => {
-    if (this.policyService.selectedPolicyOriginal()?.name) return "";
-    return this.policyService.selectedPolicyOriginal()?.name || "";
-  });
-
-  readonly newPolicyScope = computed(() => {
-    if (this.policyService.selectedPolicyOriginal()?.name) return "";
-    return this.policyService.selectedPolicy()?.scope || "";
-  });
-
   // Event Handlers
   handleExpansion() {
-    this.policyService.initializeNewPolicy();
+    this.newPolicy.set(inject(PolicyService).getEmptyPolicy());
   }
 
   handleCollapse(panel: MatExpansionPanel) {
@@ -190,4 +179,6 @@ export class PolicyPanelNewComponent {
   selectPolicyScope(scope: string) {
     this.policyService.updateSelectedPolicy({ scope: scope });
   }
+
+  policyHas;
 }

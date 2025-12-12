@@ -46,7 +46,7 @@ describe("PolicyService", () => {
   });
 
   it("should have an empty policy defined", () => {
-    expect(service.emptyPolicy).toEqual({
+    expect(service.getEmptyPolicy).toEqual({
       action: null,
       active: true,
       adminrealm: [],
@@ -70,19 +70,19 @@ describe("PolicyService", () => {
 
   it("should initialize a new policy", () => {
     service.initializeNewPolicy();
-    expect(service.selectedPolicy()).toEqual(service.emptyPolicy);
-    expect(service.selectedPolicyOriginal()).toEqual(service.emptyPolicy);
+    expect(service.selectedPolicy()).toEqual(service.getEmptyPolicy);
+    expect(service.selectedPolicyOriginal()).toEqual(service.getEmptyPolicy);
   });
 
   it("should select a policy", () => {
-    const policy: PolicyDetail = { ...service.emptyPolicy, name: "test-policy" };
+    const policy: PolicyDetail = { ...service.getEmptyPolicy, name: "test-policy" };
     service.selectPolicy(policy);
     expect(service.selectedPolicy()).toEqual(policy);
     expect(service.selectedPolicyOriginal()).toEqual(policy);
   });
 
   it("should deselect a policy", () => {
-    const policy: PolicyDetail = { ...service.emptyPolicy, name: "test-policy" };
+    const policy: PolicyDetail = { ...service.getEmptyPolicy, name: "test-policy" };
     service.selectPolicy(policy);
     service.deselectPolicy("test-policy");
     expect(service.selectedPolicy()).toBeNull();
@@ -90,7 +90,7 @@ describe("PolicyService", () => {
   });
 
   it("should not deselect a policy if name does not match", () => {
-    const policy: PolicyDetail = { ...service.emptyPolicy, name: "test-policy" };
+    const policy: PolicyDetail = { ...service.getEmptyPolicy, name: "test-policy" };
     service.selectPolicy(policy);
     service.deselectPolicy("other-policy");
     expect(service.selectedPolicy()).toEqual(policy);
@@ -105,7 +105,7 @@ describe("PolicyService", () => {
   });
 
   it("should update selected policy", () => {
-    const policy: PolicyDetail = { ...service.emptyPolicy, name: "test-policy" };
+    const policy: PolicyDetail = { ...service.getEmptyPolicy, name: "test-policy" };
     service.selectPolicy(policy);
     service.updateSelectedPolicy({ description: "new description" });
     expect(service.selectedPolicy()?.description).toBe("new description");
@@ -114,32 +114,32 @@ describe("PolicyService", () => {
 
   describe("isPolicyEdited", () => {
     it("should return false if no policy is selected", () => {
-      expect(service.isPolicyEdited()).toBeFalsy();
+      expect(service.isSelectedPolicyEdited()).toBeFalsy();
     });
 
     it("should return false if policy is not edited", () => {
-      const policy: PolicyDetail = { ...service.emptyPolicy, name: "test-policy" };
+      const policy: PolicyDetail = { ...service.getEmptyPolicy, name: "test-policy" };
       service.selectPolicy(policy);
-      expect(service.isPolicyEdited()).toBeFalsy();
+      expect(service.isSelectedPolicyEdited()).toBeFalsy();
     });
 
     it("should return true if policy is edited", () => {
-      const policy: PolicyDetail = { ...service.emptyPolicy, name: "test-policy" };
+      const policy: PolicyDetail = { ...service.getEmptyPolicy, name: "test-policy" };
       service.selectPolicy(policy);
       service.updateSelectedPolicy({ description: "new description" });
-      expect(service.isPolicyEdited()).toBeTruthy();
+      expect(service.isSelectedPolicyEdited()).toBeTruthy();
     });
 
     it("should return true if new policy is edited", () => {
       service.initializeNewPolicy();
       service.updateSelectedPolicy({ name: "new-policy" });
-      expect(service.isPolicyEdited()).toBeTruthy();
+      expect(service.isSelectedPolicyEdited()).toBeTruthy();
     });
 
     it("should return false if new policy is not edited (only scope changed)", () => {
       service.initializeNewPolicy();
       service.updateSelectedPolicy({ scope: "user" });
-      expect(service.isPolicyEdited()).toBeFalsy();
+      expect(service.isSelectedPolicyEdited()).toBeFalsy();
     });
   });
 
@@ -149,22 +149,22 @@ describe("PolicyService", () => {
     });
 
     it("should return false if policy name is empty", () => {
-      service.selectPolicy({ ...service.emptyPolicy, name: "", scope: "user", action: { test: "test" } });
+      service.selectPolicy({ ...service.getEmptyPolicy, name: "", scope: "user", action: { test: "test" } });
       expect(service.canSaveSelectedPolicy()).toBeFalsy();
     });
 
     it("should return false if policy scope is empty", () => {
-      service.selectPolicy({ ...service.emptyPolicy, name: "test", scope: "", action: { test: "test" } });
+      service.selectPolicy({ ...service.getEmptyPolicy, name: "test", scope: "", action: { test: "test" } });
       expect(service.canSaveSelectedPolicy()).toBeFalsy();
     });
 
     it("should return false if policy has no actions", () => {
-      service.selectPolicy({ ...service.emptyPolicy, name: "test", scope: "user", action: null });
+      service.selectPolicy({ ...service.getEmptyPolicy, name: "test", scope: "user", action: null });
       expect(service.canSaveSelectedPolicy()).toBeFalsy();
     });
 
     it("should return true if policy is valid", () => {
-      service.selectPolicy({ ...service.emptyPolicy, name: "test", scope: "user", action: { test: "test" } });
+      service.selectPolicy({ ...service.getEmptyPolicy, name: "test", scope: "user", action: { test: "test" } });
       expect(service.canSaveSelectedPolicy()).toBeTruthy();
     });
   });
@@ -175,12 +175,12 @@ describe("PolicyService", () => {
     });
 
     it("should return false if policy has no actions", () => {
-      service.selectPolicy({ ...service.emptyPolicy, action: null });
+      service.selectPolicy({ ...service.getEmptyPolicy, action: null });
       expect(service.selectedPolicyHasActions()).toBeFalsy();
     });
 
     it("should return true if policy has actions", () => {
-      service.selectPolicy({ ...service.emptyPolicy, action: { test: "test" } });
+      service.selectPolicy({ ...service.getEmptyPolicy, action: { test: "test" } });
       expect(service.selectedPolicyHasActions()).toBeTruthy();
     });
   });
@@ -191,22 +191,22 @@ describe("PolicyService", () => {
     });
 
     it("should return true if policy has realms", () => {
-      service.selectPolicy({ ...service.emptyPolicy, realm: ["test"] });
+      service.selectPolicy({ ...service.getEmptyPolicy, realm: ["test"] });
       expect(service.selectedPolicyHasUserConditions()).toBeTruthy();
     });
 
     it("should return true if policy has resolvers", () => {
-      service.selectPolicy({ ...service.emptyPolicy, resolver: ["test"] });
+      service.selectPolicy({ ...service.getEmptyPolicy, resolver: ["test"] });
       expect(service.selectedPolicyHasUserConditions()).toBeTruthy();
     });
 
     it("should return true if policy has users", () => {
-      service.selectPolicy({ ...service.emptyPolicy, user: ["test"] });
+      service.selectPolicy({ ...service.getEmptyPolicy, user: ["test"] });
       expect(service.selectedPolicyHasUserConditions()).toBeTruthy();
     });
 
     it("should return false if policy has no user conditions", () => {
-      service.selectPolicy(service.emptyPolicy);
+      service.selectPolicy(service.getEmptyPolicy);
       expect(service.selectedPolicyHasUserConditions()).toBeFalsy();
     });
   });
@@ -217,27 +217,27 @@ describe("PolicyService", () => {
     });
 
     it("should return true if policy has pinodes", () => {
-      service.selectPolicy({ ...service.emptyPolicy, pinode: ["test"] });
+      service.selectPolicy({ ...service.getEmptyPolicy, pinode: ["test"] });
       expect(service.selectedPolicyHasNodeConditions()).toBeTruthy();
     });
 
     it("should return true if policy has time", () => {
-      service.selectPolicy({ ...service.emptyPolicy, time: "test" });
+      service.selectPolicy({ ...service.getEmptyPolicy, time: "test" });
       expect(service.selectedPolicyHasNodeConditions()).toBeTruthy();
     });
 
     it("should return true if policy has client", () => {
-      service.selectPolicy({ ...service.emptyPolicy, client: ["test"] });
+      service.selectPolicy({ ...service.getEmptyPolicy, client: ["test"] });
       expect(service.selectedPolicyHasNodeConditions()).toBeTruthy();
     });
 
     it("should return true if policy has user agents", () => {
-      service.selectPolicy({ ...service.emptyPolicy, user_agents: ["test"] });
+      service.selectPolicy({ ...service.getEmptyPolicy, user_agents: ["test"] });
       expect(service.selectedPolicyHasNodeConditions()).toBeTruthy();
     });
 
     it("should return false if policy has no node conditions", () => {
-      service.selectPolicy(service.emptyPolicy);
+      service.selectPolicy(service.getEmptyPolicy);
       expect(service.selectedPolicyHasNodeConditions()).toBeFalsy();
     });
   });
@@ -249,14 +249,14 @@ describe("PolicyService", () => {
 
     it("should return true if policy has additional conditions", () => {
       service.selectPolicy({
-        ...service.emptyPolicy,
+        ...service.getEmptyPolicy,
         conditions: [["userinfo", "key", "!contains", "value", false, "condition_is_false"]]
       });
       expect(service.selectedPolicyHasAdditionalConditions()).toBeTruthy();
     });
 
     it("should return false if policy has no additional conditions", () => {
-      service.selectPolicy(service.emptyPolicy);
+      service.selectPolicy(service.getEmptyPolicy);
       expect(service.selectedPolicyHasAdditionalConditions()).toBeFalsy();
     });
   });
@@ -267,25 +267,25 @@ describe("PolicyService", () => {
     });
 
     it("should return true if policy has user conditions", () => {
-      service.selectPolicy({ ...service.emptyPolicy, realm: ["test"] });
+      service.selectPolicy({ ...service.getEmptyPolicy, realm: ["test"] });
       expect(service.selectedPolicyHasConditions()).toBeTruthy();
     });
 
     it("should return true if policy has node conditions", () => {
-      service.selectPolicy({ ...service.emptyPolicy, pinode: ["test"] });
+      service.selectPolicy({ ...service.getEmptyPolicy, pinode: ["test"] });
       expect(service.selectedPolicyHasConditions()).toBeTruthy();
     });
 
     it("should return true if policy has additional conditions", () => {
       service.selectPolicy({
-        ...service.emptyPolicy,
+        ...service.getEmptyPolicy,
         conditions: [["userinfo", "key", "!contains", "value", false, "condition_is_false"]]
       });
       expect(service.selectedPolicyHasConditions()).toBeTruthy();
     });
 
     it("should return false if policy has no conditions", () => {
-      service.selectPolicy(service.emptyPolicy);
+      service.selectPolicy(service.getEmptyPolicy);
       expect(service.selectedPolicyHasConditions()).toBeFalsy();
     });
   });
@@ -303,7 +303,7 @@ describe("PolicyService", () => {
 
     it("should update an existing policy if asNew is false", () => {
       const policy: PolicyDetail = {
-        ...service.emptyPolicy,
+        ...service.getEmptyPolicy,
         name: "test-policy",
         scope: "user",
         action: { test: "test" }
@@ -320,7 +320,7 @@ describe("PolicyService", () => {
 
   describe("createPolicy", () => {
     it("should send a POST request to create a policy", () => {
-      const policyData: PolicyDetail = { ...service.emptyPolicy, name: "new-policy" };
+      const policyData: PolicyDetail = { ...service.getEmptyPolicy, name: "new-policy" };
       service.createPolicy(policyData).then();
 
       const req = httpTestingController.expectOne(`${service.policyBaseUrl}new-policy`);
@@ -331,7 +331,7 @@ describe("PolicyService", () => {
 
   describe("updatePolicy", () => {
     it("should send a POST request to update a policy", async () => {
-      const policyData: PolicyDetail = { ...service.emptyPolicy, name: "updated-policy" };
+      const policyData: PolicyDetail = { ...service.getEmptyPolicy, name: "updated-policy" };
       const promise = service.updatePolicy("updated-policy", policyData);
 
       const req = httpTestingController.expectOne(`${service.policyBaseUrl}updated-policy`);
@@ -343,7 +343,7 @@ describe("PolicyService", () => {
     });
 
     it("should send a PATCH and a POST request if policy name changes", () => {
-      const policyData: PolicyDetail = { ...service.emptyPolicy, name: "new-name" };
+      const policyData: PolicyDetail = { ...service.getEmptyPolicy, name: "new-name" };
 
       service.updatePolicy("old-name", policyData);
 
@@ -363,7 +363,7 @@ describe("PolicyService", () => {
 
   describe("deletePolicy", () => {
     it("should send a DELETE request to delete a policy", () => {
-      const policy: PolicyDetail = { ...service.emptyPolicy, name: "test-policy" };
+      const policy: PolicyDetail = { ...service.getEmptyPolicy, name: "test-policy" };
       service.allPolicies.set([policy]);
       service.deletePolicy("test-policy").then();
 
@@ -402,25 +402,25 @@ describe("PolicyService", () => {
   describe("getDetailsOfAction", () => {
     it("should return action details for a given action name", () => {
       service.policyActionResource.set(MockPiResponse.fromValue({ user: { test: { type: "str", desc: "test" } } }));
-      service.selectPolicy({ ...service.emptyPolicy, scope: "user" });
+      service.selectPolicy({ ...service.getEmptyPolicy, scope: "user" });
       expect(service.getDetailsOfAction("test")).toEqual({ type: "str", desc: "test" });
     });
 
     it("should return null if action not found", () => {
       service.policyActionResource.set(MockPiResponse.fromValue({ user: { test: { type: "str", desc: "test" } } }));
-      service.selectPolicy({ ...service.emptyPolicy, scope: "user" });
+      service.selectPolicy({ ...service.getEmptyPolicy, scope: "user" });
       expect(service.getDetailsOfAction("non-existent")).toBeNull();
     });
   });
 
   describe("isScopeChangeable", () => {
     it("should return true if policy has no actions", () => {
-      const policy: PolicyDetail = { ...service.emptyPolicy, action: null };
+      const policy: PolicyDetail = { ...service.getEmptyPolicy, action: null };
       expect(service.isScopeChangeable(policy)).toBeTruthy();
     });
 
     it("should return false if policy has actions", () => {
-      const policy: PolicyDetail = { ...service.emptyPolicy, action: { test: "test" } };
+      const policy: PolicyDetail = { ...service.getEmptyPolicy, action: { test: "test" } };
       expect(service.isScopeChangeable(policy)).toBeFalsy();
     });
   });
@@ -443,7 +443,7 @@ describe("PolicyService", () => {
         }
       });
       service.policyActionResource.set(mock);
-      service.selectPolicy({ ...service.emptyPolicy, scope: "scope1" });
+      service.selectPolicy({ ...service.getEmptyPolicy, scope: "scope1" });
       service.selectedActionGroup.set("group1");
       expect(service.actionNamesOfSelectedGroup()).toEqual(["action1"]);
     });
@@ -486,8 +486,8 @@ describe("PolicyService", () => {
 
   describe("cancelEditMode", () => {
     it("should revert selected policy to original", () => {
-      const originalPolicy: PolicyDetail = { ...service.emptyPolicy, name: "original" };
-      const editedPolicy: PolicyDetail = { ...service.emptyPolicy, name: "edited" };
+      const originalPolicy: PolicyDetail = { ...service.getEmptyPolicy, name: "original" };
+      const editedPolicy: PolicyDetail = { ...service.getEmptyPolicy, name: "edited" };
       service.selectPolicy(originalPolicy);
       service.updateSelectedPolicy({ name: "edited" });
       service.cancelEditMode();

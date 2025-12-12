@@ -140,7 +140,7 @@ export const allHandleMissingDataOptions: HandleMissingDataOption[] = [
 ];
 
 export interface PolicyServiceInterface {
-  readonly emptyPolicy: PolicyDetail;
+  getEmptyPolicy(): PolicyDetail;
 
   readonly isEditMode: Signal<boolean>;
   readonly selectedPolicyHasActions: Signal<boolean>;
@@ -148,7 +148,7 @@ export interface PolicyServiceInterface {
   readonly selectedPolicyHasNodeConditions: Signal<boolean>;
   readonly selectedPolicyHasAdditionalConditions: Signal<boolean>;
   readonly selectedPolicyHasConditions: Signal<boolean>;
-  readonly isPolicyEdited: Signal<boolean>;
+  readonly isSelectedPolicyEdited: Signal<boolean>;
   readonly selectedPolicy: Signal<PolicyDetail | null>;
   readonly selectedPolicyOriginal: Signal<PolicyDetail | null>;
   readonly actionFilter: WritableSignal<string>;
@@ -246,56 +246,81 @@ export class PolicyService implements PolicyServiceInterface {
     return true;
   }
 
-  readonly selectedPolicyHasActions = computed<boolean>(() => {
-    const policy = this.selectedPolicy();
-    if (!policy) return false;
+  policyHasActions(policy: PolicyDetail): boolean {
     if (policy?.action && Object.keys(policy.action).length > 0) {
       return true;
     }
     return false;
+  }
+
+  readonly selectedPolicyHasActions = computed<boolean>(() => {
+    const policy = this.selectedPolicy();
+    if (!policy) return false;
+    return this.policyHasActions(policy);
   });
+
+  policyHasAdminConditions(policy: PolicyDetail): boolean {
+    if (policy?.adminrealm && policy.adminrealm.length > 0) return true;
+    if (policy?.adminuser && policy.adminuser.length > 0) return true;
+    return false;
+  }
 
   readonly selectedPolicyHasAdminConditions = computed(() => {
     const policy = this.selectedPolicy();
     if (!policy) return false;
-    if (policy.adminrealm && policy.adminrealm.length > 0) return true;
-    if (policy.adminuser && policy.adminuser.length > 0) return true;
-    return false;
+    return this.policyHasAdminConditions(policy);
   });
+
+  policyHasUserConditions(policy: PolicyDetail): boolean {
+    if (policy?.realm && policy.realm.length > 0) return true;
+    if (policy?.resolver && policy.resolver.length > 0) return true;
+    if (policy?.user && policy.user.length > 0) return true;
+    return false;
+  }
 
   readonly selectedPolicyHasUserConditions = computed(() => {
     const policy = this.selectedPolicy();
     if (!policy) return false;
-    if (policy.realm && policy.realm.length > 0) return true;
-    if (policy.resolver && policy.resolver.length > 0) return true;
-    if (policy.user && policy.user.length > 0) return true;
-    return false;
+    return this.policyHasUserConditions(policy);
   });
+
+  policyHasNodeConditions(policy: PolicyDetail): boolean {
+    if (policy?.pinode && policy.pinode.length > 0) return true;
+    if (policy?.time && policy.time.length > 0) return true;
+    if (policy?.client && policy.client.length > 0) return true;
+    if (policy?.user_agents && policy.user_agents.length > 0) return true;
+    return false;
+  }
 
   readonly selectedPolicyHasNodeConditions = computed(() => {
     const policy = this.selectedPolicy();
     if (!policy) return false;
-    if (policy.pinode && policy.pinode.length > 0) return true;
-    if (policy.time && policy.time.length > 0) return true;
-    if (policy.client && policy.client.length > 0) return true;
-    if (policy.user_agents && policy.user_agents.length > 0) return true;
-    return false;
+    return this.policyHasNodeConditions(policy);
   });
+
+  policyHasAdditionalConditions(policy: PolicyDetail): boolean {
+    if (policy?.conditions && policy.conditions.length > 0) return true;
+    return false;
+  }
 
   readonly selectedPolicyHasAdditionalConditions = computed(() => {
     const policy = this.selectedPolicy();
     if (!policy) return false;
-    return policy.conditions && policy.conditions.length > 0;
+    return this.policyHasAdditionalConditions(policy);
   });
+
+  policyHasConditions(policy: PolicyDetail): boolean {
+    if (this.policyHasAdminConditions(policy)) return true;
+    if (this.policyHasUserConditions(policy)) return true;
+    if (this.policyHasNodeConditions(policy)) return true;
+    if (this.policyHasAdditionalConditions(policy)) return true;
+    return false;
+  }
 
   readonly selectedPolicyHasConditions = computed(() => {
     const policy = this.selectedPolicy();
     if (!policy) return false;
-    if (this.selectedPolicyHasAdminConditions()) return true;
-    if (this.selectedPolicyHasUserConditions()) return true;
-    if (this.selectedPolicyHasNodeConditions()) return true;
-    if (this.selectedPolicyHasAdditionalConditions()) return true;
-    return false;
+    return this.policyHasConditions(policy);
   });
 
   savePolicyEdits(): Promise<void> | undefined {
@@ -352,7 +377,7 @@ export class PolicyService implements PolicyServiceInterface {
   }
 
   deselectNewPolicy() {
-    this.deselectPolicy(this.emptyPolicy.name);
+    this.deselectPolicy(this.getEmptyPolicy().name);
   }
 
   deselectPolicy(name: string) {
@@ -361,44 +386,49 @@ export class PolicyService implements PolicyServiceInterface {
     this._selectedPolicyOriginal.set(null);
   }
 
-  readonly emptyPolicy: PolicyDetail = {
-    action: null,
-    active: true,
-    adminrealm: [],
-    adminuser: [],
-    check_all_resolvers: false,
-    client: [],
-    conditions: [],
-    description: null,
-    name: "",
-    pinode: [],
-    priority: 1,
-    realm: [],
-    resolver: [],
-    scope: "",
-    time: "",
-    user: [],
-    user_agents: [],
-    user_case_insensitive: false
-  };
-
-  initializeNewPolicy() {
-    this._selectedPolicy.set({ ...this.emptyPolicy });
-    this._selectedPolicyOriginal.set({ ...this.emptyPolicy });
+  getEmptyPolicy(): PolicyDetail {
+    return {
+      action: null,
+      active: true,
+      adminrealm: [],
+      adminuser: [],
+      check_all_resolvers: false,
+      client: [],
+      conditions: [],
+      description: null,
+      name: "",
+      pinode: [],
+      priority: 1,
+      realm: [],
+      resolver: [],
+      scope: "",
+      time: "",
+      user: [],
+      user_agents: [],
+      user_case_insensitive: false
+    };
   }
 
-  readonly isPolicyEdited = computed(() => {
-    const selectedPolicy = this.selectedPolicy();
-    const originalPolicy = this.selectedPolicyOriginal();
-    if (!selectedPolicy || !originalPolicy) return false;
-    if (JSON.stringify(originalPolicy) === JSON.stringify(this.emptyPolicy)) {
+  initializeNewPolicy() {
+    this._selectedPolicy.set({ ...this.getEmptyPolicy() });
+    this._selectedPolicyOriginal.set({ ...this.getEmptyPolicy() });
+  }
+
+  isPolicyEdited(editedPolicy: PolicyDetail, originalPolicy: PolicyDetail): boolean {
+    if (JSON.stringify(originalPolicy) === JSON.stringify(this.getEmptyPolicy())) {
       // remove scope temporarily and then compare to ignore scope changes
-      const { scope: _, ...selectedWithoutScope } = selectedPolicy;
+      const { scope: _, ...selectedWithoutScope } = editedPolicy;
       const { scope: __, ...originalWithoutScope } = originalPolicy;
       return JSON.stringify(selectedWithoutScope) !== JSON.stringify(originalWithoutScope);
     } else {
-      return JSON.stringify(selectedPolicy) !== JSON.stringify(originalPolicy);
+      return JSON.stringify(editedPolicy) !== JSON.stringify(originalPolicy);
     }
+  }
+  readonly isSelectedPolicyEdited = computed(() => {
+    const selectedPolicy = this.selectedPolicy();
+    const originalPolicy = this.selectedPolicyOriginal();
+    if (!selectedPolicy || !originalPolicy) return false;
+    return this.isPolicyEdited(selectedPolicy, originalPolicy);
   });
 
   selectPolicy(policy: PolicyDetail) {

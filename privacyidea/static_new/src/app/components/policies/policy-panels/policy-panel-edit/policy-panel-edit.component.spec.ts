@@ -55,7 +55,7 @@ describe("PolicyPanelEditComponent", () => {
     const policyName = "Test Policy";
 
     beforeEach(() => {
-      fixture.componentRef.setInput("policy", { ...policyServiceMock.emptyPolicy, name: policyName });
+      fixture.componentRef.setInput("policy", { ...policyServiceMock.getEmptyPolicy, name: policyName });
       fixture.detectChanges();
     });
 

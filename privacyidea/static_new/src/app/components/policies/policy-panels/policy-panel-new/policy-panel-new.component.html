@@ -31,7 +31,7 @@
             type="text"
             class="policy-name-input"
             placeholder="Policy Name"
-            [ngModel]="selectedPolicy()!.name"
+            [ngModel]="newPolicy().name"
             (ngModelChange)="onNameChange($event)"
             (click)="$event.stopPropagation(); panel.expanded = true"
             (keydown)="$event.stopPropagation()" />
@@ -48,7 +48,7 @@
               (click)="$event.stopPropagation()">
               <mat-label i18n>Scope</mat-label>
               <mat-select
-                [value]="selectedPolicy()!.scope"
+                [value]="newPolicy().scope"
                 (selectionChange)="selectPolicyScope($event.value)">
                 @for (scopeOption of policyService.allPolicyScopes(); track scopeOption) {
                   <mat-option [value]="scopeOption">{{ scopeOption }}</mat-option>
@@ -57,7 +57,7 @@
             </mat-form-field>
           } @else {
             <span>
-              {{ newPolicyScope().toLocaleUpperCase() }}
+              {{ newPolicy().scope.toLocaleUpperCase() }}
             </span>
           }
         </div>

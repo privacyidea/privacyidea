@@ -161,7 +161,7 @@ export class PolicyPanelEditComponent {
   }
 
   resetPolicy(panel: MatExpansionPanel) {
-    if (this.policyService.isPolicyEdited()) {
+    if (this.policyService.isSelectedPolicyEdited()) {
       if (confirm("Are you sure you want to discard the new policy? All changes will be lost.")) {
         this.policyService.deselectPolicy(this.newPolicyName());
         this.isEditMode.set(false);
@@ -179,7 +179,7 @@ export class PolicyPanelEditComponent {
     const policy = this.policyService.selectedPolicy();
     if (!policy) return false;
     if (!policy.name || policy.name.trim() === "") return false;
-    if (!this.policyService.isPolicyEdited()) return false;
+    if (!this.policyService.isSelectedPolicyEdited()) return false;
     const allPolicies = this.policyService.allPolicies();
     const originalName = this.policyService.selectedPolicyOriginal()?.name;
     if (allPolicies.some((p) => p.name === policy.name && (originalName === undefined || p.name !== originalName))) {
@@ -190,7 +190,7 @@ export class PolicyPanelEditComponent {
 
   confirmDiscardChanges(): boolean {
     if (
-      this.policyService.isPolicyEdited() &&
+      this.policyService.isSelectedPolicyEdited() &&
       !confirm("Are you sure you want to discard the changes? All changes will be lost.")
     ) {
       return false;

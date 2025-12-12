@@ -73,7 +73,7 @@ describe("ConditionsAdminComponent", () => {
     component.toggleAllRealms();
     expect(policyServiceMock.updateSelectedPolicy).toHaveBeenCalledWith({ realm: ["realm1", "realm2"] });
 
-    policyServiceMock.selectedPolicy.set({ ...policyServiceMock.emptyPolicy, realm: ["realm1", "realm2"] });
+    policyServiceMock.selectedPolicy.set({ ...policyServiceMock.getEmptyPolicy, realm: ["realm1", "realm2"] });
     fixture.detectChanges();
     component.toggleAllRealms();
     expect(policyServiceMock.updateSelectedPolicy).toHaveBeenCalledWith({ realm: [] });
@@ -89,7 +89,7 @@ describe("ConditionsAdminComponent", () => {
     component.toggleAllResolvers();
     expect(policyServiceMock.updateSelectedPolicy).toHaveBeenCalledWith({ resolver: ["resolver1", "resolver2"] });
 
-    policyServiceMock.selectedPolicy.set({ ...policyServiceMock.emptyPolicy, resolver: ["resolver1", "resolver2"] });
+    policyServiceMock.selectedPolicy.set({ ...policyServiceMock.getEmptyPolicy, resolver: ["resolver1", "resolver2"] });
     fixture.detectChanges();
     component.toggleAllResolvers();
     expect(policyServiceMock.updateSelectedPolicy).toHaveBeenCalledWith({ resolver: [] });
@@ -102,14 +102,14 @@ describe("ConditionsAdminComponent", () => {
   });
 
   it("should remove admin", () => {
-    policyServiceMock.selectedPolicy.set({ ...policyServiceMock.emptyPolicy, adminuser: ["testadmin"] });
+    policyServiceMock.selectedPolicy.set({ ...policyServiceMock.getEmptyPolicy, adminuser: ["testadmin"] });
     fixture.detectChanges();
     component.removeAdmin("testadmin");
     expect(policyServiceMock.updateSelectedPolicy).toHaveBeenCalledWith({ adminuser: [] });
   });
 
   it("should clear admins", () => {
-    policyServiceMock.selectedPolicy.set({ ...policyServiceMock.emptyPolicy, adminuser: ["testadmin"] });
+    policyServiceMock.selectedPolicy.set({ ...policyServiceMock.getEmptyPolicy, adminuser: ["testadmin"] });
     fixture.detectChanges();
     component.clearAdmins();
     expect(policyServiceMock.updateSelectedPolicy).toHaveBeenCalledWith({ adminuser: [] });

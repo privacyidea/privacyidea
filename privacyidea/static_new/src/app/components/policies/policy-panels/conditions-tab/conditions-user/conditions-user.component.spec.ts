@@ -73,7 +73,7 @@ describe("ConditionsUserComponent", () => {
     component.toggleAllRealms();
     expect(policyServiceMock.updateSelectedPolicy).toHaveBeenCalledWith({ realm: ["realm1", "realm2"] });
 
-    policyServiceMock.selectedPolicy.set({ ...policyServiceMock.emptyPolicy, realm: ["realm1", "realm2"] });
+    policyServiceMock.selectedPolicy.set({ ...policyServiceMock.getEmptyPolicy, realm: ["realm1", "realm2"] });
     fixture.detectChanges();
     component.toggleAllRealms();
     expect(policyServiceMock.updateSelectedPolicy).toHaveBeenCalledWith({ realm: [] });
@@ -89,7 +89,7 @@ describe("ConditionsUserComponent", () => {
     component.toggleAllResolvers();
     expect(policyServiceMock.updateSelectedPolicy).toHaveBeenCalledWith({ resolver: ["resolver1", "resolver2"] });
 
-    policyServiceMock.selectedPolicy.set({ ...policyServiceMock.emptyPolicy, resolver: ["resolver1", "resolver2"] });
+    policyServiceMock.selectedPolicy.set({ ...policyServiceMock.getEmptyPolicy, resolver: ["resolver1", "resolver2"] });
     fixture.detectChanges();
     component.toggleAllResolvers();
     expect(policyServiceMock.updateSelectedPolicy).toHaveBeenCalledWith({ resolver: [] });
@@ -102,14 +102,14 @@ describe("ConditionsUserComponent", () => {
   });
 
   it("should remove user", () => {
-    policyServiceMock.selectedPolicy.set({ ...policyServiceMock.emptyPolicy, user: ["testuser"] });
+    policyServiceMock.selectedPolicy.set({ ...policyServiceMock.getEmptyPolicy, user: ["testuser"] });
     fixture.detectChanges();
     component.removeUser("testuser");
     expect(policyServiceMock.updateSelectedPolicy).toHaveBeenCalledWith({ user: [] });
   });
 
   it("should clear users", () => {
-    policyServiceMock.selectedPolicy.set({ ...policyServiceMock.emptyPolicy, user: ["testuser"] });
+    policyServiceMock.selectedPolicy.set({ ...policyServiceMock.getEmptyPolicy, user: ["testuser"] });
     fixture.detectChanges();
     component.clearUsers();
     expect(policyServiceMock.updateSelectedPolicy).toHaveBeenCalledWith({ user: [] });

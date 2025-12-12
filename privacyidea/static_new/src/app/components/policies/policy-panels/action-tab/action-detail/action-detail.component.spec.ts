@@ -107,7 +107,7 @@ describe("ActionDetailComponent", () => {
   it("should return false from actionIsAlreadyAdded if action is not in policy", () => {
     policyServiceMock.selectedAction.set({ name: "newAction", value: "" });
     const policy: PolicyDetail = {
-      ...policyServiceMock.emptyPolicy,
+      ...policyServiceMock.getEmptyPolicy,
 
       action: { existingAction: "value" }
     };
@@ -119,7 +119,7 @@ describe("ActionDetailComponent", () => {
   it("should return true from actionIsAlreadyAdded if action is already in policy", () => {
     policyServiceMock.selectedAction.set({ name: "existingAction", value: "" });
     const policy: PolicyDetail = {
-      ...policyServiceMock.emptyPolicy,
+      ...policyServiceMock.getEmptyPolicy,
       action: { existingAction: "value" }
     };
     policyServiceMock.selectedPolicy.set(policy);
