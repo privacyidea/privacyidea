@@ -21,9 +21,9 @@
   <mat-expansion-panel
     #panel
     class="margin-4"
-    [disabled]="isEditMode() || policyService.isPolicyEdited()"
-    (opened)="handleExpansion(panel, policy()?.name)"
-    (closed)="handleCollapse(panel, policy()?.name)">
+    [disabled]="policyService.isPolicyEdited()"
+    (opened)="handleExpansion()"
+    (closed)="handleCollapse(panel)">
     <mat-expansion-panel-header class="mat-expansion-panel-header">
       <mat-panel-title>
         @if (panel.expanded) {
@@ -80,7 +80,7 @@
     </mat-expansion-panel-header>
     <div class="mat-expansion-panel-body">
       <div class="priority-description">
-        <app-policy-priority [editMode]="isEditMode()" />
+        <app-policy-priority [editMode]="true" />
         <app-policy-description />
       </div>
 

@@ -18,7 +18,7 @@
  **/
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { PolicyPanelComponent } from "./policy-panel.component";
+import { PolicyPanelEditComponent } from "./policy-panel-edit.component";
 import { PolicyService } from "../../../../services/policies/policies.service";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { MatExpansionModule } from "@angular/material/expansion";
@@ -27,14 +27,14 @@ import { MockPolicyService } from "../../../../../testing/mock-services/mock-pol
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 
-describe("PolicyPanelComponent", () => {
-  let component: PolicyPanelComponent;
-  let fixture: ComponentFixture<PolicyPanelComponent>;
+describe("PolicyPanelEditComponent", () => {
+  let component: PolicyPanelEditComponent;
+  let fixture: ComponentFixture<PolicyPanelEditComponent>;
   let policyServiceMock: MockPolicyService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [PolicyPanelComponent, NoopAnimationsModule, MatExpansionModule],
+      imports: [PolicyPanelEditComponent, NoopAnimationsModule, MatExpansionModule],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
@@ -42,7 +42,7 @@ describe("PolicyPanelComponent", () => {
       ]
     }).compileComponents();
 
-    fixture = TestBed.createComponent(PolicyPanelComponent);
+    fixture = TestBed.createComponent(PolicyPanelEditComponent);
     policyServiceMock = TestBed.inject(PolicyService) as unknown as MockPolicyService;
     component = fixture.componentInstance;
   });

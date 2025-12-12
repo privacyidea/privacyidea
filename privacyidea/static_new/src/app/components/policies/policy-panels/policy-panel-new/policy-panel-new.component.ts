@@ -64,15 +64,12 @@ type PolicyTab = "actions" | "conditions";
 export class PolicyPanelNewComponent {
   // Angular Inputs and Services
   readonly policyService: PolicyService = inject(PolicyService);
-  readonly policy = input<PolicyDetail | undefined>();
-  readonly filterValue = input<FilterValueGeneric | undefined>();
 
   // Component State Signals
-  readonly isEditMode = this.policyService.isEditMode;
+
   readonly selectedPolicy = computed<PolicyDetail | null>(() => this.policyService.selectedPolicy());
   readonly activeTab = linkedSignal<any, PolicyTab>({
     source: () => ({
-      isEditMode: this.isEditMode(),
       selectedPolicyHasConditions: this.policyService.selectedPolicyHasConditions()
     }),
     computation: (source, previous) => {
@@ -96,30 +93,19 @@ export class PolicyPanelNewComponent {
   });
 
   // Event Handlers
-  handleExpansion(panel: MatExpansionPanel, policyName: string | undefined) {
-    if (this.policyIsSelected(policyName)) {
-      return;
-    }
-
+  handleExpansion() {
     this.policyService.initializeNewPolicy();
-    this.isEditMode.set(true);
   }
 
-  handleCollapse(panel: MatExpansionPanel, policyName: string | undefined) {
-    if (!this.policyIsSelected(policyName)) {
-      return;
-    }
-
+  handleCollapse(panel: MatExpansionPanel) {
     if (this.policyService.isPolicyEdited()) {
       if (confirm("Are you sure you want to discard the new policy? All changes will be lost.")) {
         this.policyService.deselectNewPolicy();
-        this.isEditMode.set(false);
       } else {
         panel.open(); // Re-open if user cancels
       }
     } else {
       this.policyService.deselectNewPolicy();
-      this.isEditMode.set(false);
     }
   }
 
@@ -145,9 +131,7 @@ export class PolicyPanelNewComponent {
 
     this.policyService.savePolicyEditsAsNew();
     this.policyService.deselectPolicy(this.newPolicyName());
-    this.isEditMode.set(false);
 
-    this.isEditMode.set(false);
     if (panel) panel.close();
   }
 
@@ -162,19 +146,18 @@ export class PolicyPanelNewComponent {
   cancelEditMode() {
     if (!this.confirmDiscardChanges()) return;
     this.policyService.cancelEditMode();
-    this.isEditMode.set(false);
   }
 
   resetPolicy(panel: MatExpansionPanel) {
     if (this.policyService.isPolicyEdited()) {
       if (confirm("Are you sure you want to discard the new policy? All changes will be lost.")) {
         this.policyService.deselectPolicy(this.newPolicyName());
-        this.isEditMode.set(false);
+
         panel.close();
       }
     } else {
       this.policyService.deselectPolicy(this.newPolicyName());
-      this.isEditMode.set(false);
+
       panel.close();
     }
   }
@@ -200,7 +183,7 @@ export class PolicyPanelNewComponent {
   }
 
   isEditingPolicy(name: string): boolean {
-    return this.isEditMode() && this.policyService.selectedPolicyOriginal()?.name === name;
+    return this.policyService.selectedPolicyOriginal()?.name === name;
   }
 
   // Policy Manipulation Methods
