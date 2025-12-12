@@ -337,9 +337,10 @@ def create_app(config_name="development",
                 sys.stderr.write(f"  ({e})\n")
             sys.stderr.write("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n")
 
-    # adding Talisman and CSP
-    talisman = Talisman(app, content_security_policy=CSP, force_https=app.config.get(ConfigKey.FORCE_HTTPS, True),
-                        session_cookie_secure=app.config.get(ConfigKey.SESSION_COOKIE_SECURE, True))
+    if not app.config.get(ConfigKey.PI_DISABLE_TALISMAN, False):
+        # adding Talisman and CSP
+        talisman = Talisman(app, content_security_policy=CSP, force_https=app.config.get(ConfigKey.FORCE_HTTPS, True),
+                            session_cookie_secure=app.config.get(ConfigKey.SESSION_COOKIE_SECURE, True))
 
     # Setup logging
     if config_name == "docker":
@@ -417,7 +418,8 @@ def create_docker_app():
     app.config[ConfigKey.APP_READY] = False
     app.config[ConfigKey.VERBOSE] = bool(app.debug)
 
-    talisman = Talisman(app, content_security_policy=CSP)
+    if not app.config.get(ConfigKey.PI_DISABLE_TALISMAN, False):
+        talisman = Talisman(app, content_security_policy=CSP)
 
     # Begin the app configuration
     # First we load a default configuration

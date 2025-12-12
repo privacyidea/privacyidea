@@ -123,7 +123,7 @@ def configure(ctx, instance):
     if instance.exists() and instance.joinpath('pi.cfg').exists():
         app = create_app(config_name="production", config_file=instance.joinpath('pi.cfg'),
                          silent=True)
-        app.run(ssl_context='adhoc')
+        app.run()
     else:
         click.secho(f"Instance configuration at '{instance}/pi.cfg' does "
                     f"not exist! Aborting.", fg='red')
