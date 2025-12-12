@@ -257,6 +257,7 @@ class MotpTokenClass(TokenClass):
     def import_token(self, token_information: dict):
         """
         Import for this token is not supported.
+
+        Concern that the database token must be deleted manually.
         """
-        self.token.delete()
         raise NotImplementedError("Import for mOTP token is not supported.")
