@@ -409,6 +409,10 @@ to force the user to protect the token with a pin (unrelated to the token pin).
    This policy has no effect if the QR code is scanned with other smartphone
    apps.
 
+.. note::
+   Starting with privacyIDEA 3.13, the :ref:`policy_app_force_unlock` policy is recommended. This will also set
+   app_force_unlock=pin in the QR code.
+
 .. versionadded:: 3.1
 
 

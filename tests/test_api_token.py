@@ -2724,7 +2724,9 @@ class APITokenTestCase(MyApiTestCase):
             detail = res.json["detail"]
             self.assertTrue(result.get("status"))
             self.assertTrue(result.get("value"))
-            self.assertTrue("app_force_unlock=any" in detail.get("googleurl").get("value"),
+            self.assertTrue("app_force_unlock=pin" in detail.get("googleurl").get("value"),
+                            detail.get("googleurl"))
+            self.assertTrue("force_app_pin=True" in detail.get("googleurl").get("value"),
                             detail.get("googleurl"))
 
         remove_token("goog2")
@@ -2748,7 +2750,7 @@ class APITokenTestCase(MyApiTestCase):
             detail = res.json["detail"]
             self.assertTrue(result.get("status"))
             self.assertTrue(result.get("value"))
-            self.assertTrue("app_force_unlock=any" in detail.get("googleurl").get("value"),
+            self.assertTrue("app_force_unlock=biometric" in detail.get("googleurl").get("value"),
                             detail.get("googleurl"))
 
         remove_token("goog2")
