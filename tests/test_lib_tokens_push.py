@@ -7,7 +7,6 @@ import time
 from base64 import b32decode, b32encode
 from datetime import datetime, timedelta, timezone
 from threading import Timer
-from testfixtures import LogCapture
 
 import mock
 import responses
@@ -21,6 +20,7 @@ from cryptography.hazmat.primitives.serialization import load_pem_public_key
 from flask import Request
 from google.oauth2 import service_account
 from pytz import utc
+from testfixtures import LogCapture
 from werkzeug.test import EnvironBuilder
 
 from privacyidea.lib.challenge import get_challenges
@@ -211,8 +211,8 @@ class PushTokenTestCase(MyTestCase):
         token = init_token(param=token_param)
         detail = token.get_init_detail(params={"policies": {PUSH_ACTION.FIREBASE_CONFIG: POLL_ONLY,
                                                             PUSH_ACTION.REGISTRATION_URL: "https://privacyidea.com/enroll"},
-                                               PolicyAction.FORCE_APP_PIN: True})
-        self.assertIn("pin=True", detail["pushurl"]["value"])
+                                               PolicyAction.APP_FORCE_UNLOCK: "pin"})
+        self.assertIn('app_force_unlock=pin', detail["pushurl"]["value"])
         remove_token(token.get_serial())
 
     def test_02a_lib_enroll(self):
