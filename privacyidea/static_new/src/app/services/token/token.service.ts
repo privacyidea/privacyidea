@@ -41,7 +41,7 @@ import {
 } from "../../mappers/token-api-payload/_token-api-payload.mapper";
 import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
 import { tokenTypes } from "../../utils/token.utils";
-import { FilterValue } from "../../core/models/filter_value";
+import { FilterValue } from "../../core/models/filter_value/filter_value";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
 import { StringUtils } from "../../utils/string.utils";
@@ -301,14 +301,7 @@ export class TokenService implements TokenServiceInterface {
   filterParams = computed<Record<string, string>>(() => {
     const allowed = [...this.apiFilter, ...this.advancedApiFilter, ...this.hiddenApiFilter];
 
-    const plainKeys = new Set([
-      "user",
-      "infokey",
-      "infovalue",
-      "active",
-      "assigned",
-      "container_serial"
-    ]);
+    const plainKeys = new Set(["user", "infokey", "infovalue", "active", "assigned", "container_serial"]);
 
     const entries = [
       ...Array.from(this.tokenFilter().filterMap.entries()),
@@ -316,7 +309,7 @@ export class TokenService implements TokenServiceInterface {
     ]
       .filter(([key]) => allowed.includes(key))
       .map(([key, value]) => [key, (value ?? "").toString().trim()] as const)
-      .filter(([key, v]) => key === "container_serial" ? true : StringUtils.validFilterValue(v))
+      .filter(([key, v]) => (key === "container_serial" ? true : StringUtils.validFilterValue(v)))
       .map(([key, v]) => [key, plainKeys.has(key) ? v : `*${v}*`] as const);
     return Object.fromEntries(entries) as Record<string, string>;
   });
@@ -349,7 +342,6 @@ export class TokenService implements TokenServiceInterface {
       ({ key: "hotp", info: "", text: "" } as TokenType)
   });
 
-
   showOnlyTokenNotInContainer = linkedSignal({
     source: this.contentService.routeUrl,
     computation: () => {
@@ -371,8 +363,11 @@ export class TokenService implements TokenServiceInterface {
       // Initialize filter when the route changes.
       if (!previous || source.routeUrl !== previous.source.routeUrl) {
         let filterValue = new FilterValue({
-          hiddenValue: this.contentService.onTokensContainersDetails() ?
-            (source.showOnlyTokenNotInContainer ? "container_serial:" : " ") : ""
+          hiddenValue: this.contentService.onTokensContainersDetails()
+            ? source.showOnlyTokenNotInContainer
+              ? "container_serial:"
+              : " "
+            : ""
         });
 
         if (this.contentService.onUserDetails()) {

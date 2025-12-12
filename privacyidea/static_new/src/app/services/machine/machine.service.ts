@@ -21,7 +21,7 @@ import { ContentService, ContentServiceInterface } from "../content/content.serv
 import { HttpClient, HttpParams, httpResource, HttpResourceRef } from "@angular/common/http";
 import { computed, inject, Injectable, linkedSignal, Signal, WritableSignal } from "@angular/core";
 import { TableUtilsService, TableUtilsServiceInterface } from "../table-utils/table-utils.service";
-import { FilterValue } from "../../core/models/filter_value";
+import { FilterValue } from "../../core/models/filter_value/filter_value";
 import { Observable, shareReplay } from "rxjs";
 import { PageEvent } from "@angular/material/paginator";
 import { PiResponse } from "../../app.component";
@@ -214,9 +214,7 @@ export class MachineService implements MachineServiceInterface {
       return undefined;
     }
     // Only load machines on the token applications or token details routes.
-    const onAllowedRoute =
-      this.contentService.onTokensApplications() ||
-      this.contentService.onTokenDetails();
+    const onAllowedRoute = this.contentService.onTokensApplications() || this.contentService.onTokenDetails();
 
     if (!onAllowedRoute) {
       return undefined;
@@ -238,9 +236,7 @@ export class MachineService implements MachineServiceInterface {
       return undefined;
     }
     // Only load token applications on the token applications or token details routes.
-    const onAllowedRoute =
-      this.contentService.onTokensApplications() ||
-      this.contentService.onTokenDetails();
+    const onAllowedRoute = this.contentService.onTokensApplications() || this.contentService.onTokenDetails();
 
     if (!onAllowedRoute) {
       return undefined;

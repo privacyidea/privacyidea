@@ -26,7 +26,7 @@ import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
 import { ContainerTypeOption } from "../../components/token/container-create/container-create.component";
 import { EnrollmentUrl } from "../../mappers/token-api-payload/_token-api-payload.mapper";
-import { FilterValue } from "../../core/models/filter_value";
+import { FilterValue } from "../../core/models/filter_value/filter_value";
 import { Sort } from "@angular/material/sort";
 import { TokenService, TokenServiceInterface } from "../token/token.service";
 import { StringUtils } from "../../utils/string.utils";
@@ -764,8 +764,9 @@ export class ContainerService implements ContainerServiceInterface {
     this.stopPolling();
     const headers = this.authService.getHeaders();
     return this.http
-      .post<PiResponse<ContainerUnregisterData>>(
-        `${this.containerBaseUrl}register/${containerSerial}/terminate`, {}, { headers })
+      .post<
+        PiResponse<ContainerUnregisterData>
+      >(`${this.containerBaseUrl}register/${containerSerial}/terminate`, {}, { headers })
       .pipe(
         catchError((error) => {
           console.error("Failed to unregister container.", error);

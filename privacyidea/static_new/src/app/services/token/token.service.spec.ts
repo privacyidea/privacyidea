@@ -25,7 +25,7 @@ import { PiResponse } from "../../app.component";
 import { TestBed } from "@angular/core/testing";
 import { TokenService } from "./token.service";
 import { AuthService } from "../auth/auth.service";
-import { FilterValue } from "../../core/models/filter_value";
+import { FilterValue } from "../../core/models/filter_value/filter_value";
 import { MockContentService } from "../../../testing/mock-services";
 import { ROUTE_PATHS } from "../../route_paths";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";

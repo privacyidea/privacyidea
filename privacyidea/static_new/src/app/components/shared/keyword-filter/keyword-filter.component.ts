@@ -21,7 +21,7 @@ import { Component, inject, input, Input, output, signal, WritableSignal } from 
 import { MatFabButton } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import { TableUtilsService, TableUtilsServiceInterface } from "../../../services/table-utils/table-utils.service";
-import { FilterValue } from "../../../core/models/filter_value";
+import { FilterValue } from "../../../core/models/filter_value/filter_value";
 
 @Component({
   selector: "app-keyword-filter",
@@ -33,7 +33,7 @@ import { FilterValue } from "../../../core/models/filter_value";
 export class KeywordFilterComponent {
   private readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
 
-  readonly apiFilter = input<string[]>([]);
+  readonly apiFilter = input.required<string[]>();
   readonly advancedApiFilter = input<string[]>([]);
   readonly filterHTMLInputElement = input.required<HTMLInputElement>();
   readonly filterValue = input.required<FilterValue>();

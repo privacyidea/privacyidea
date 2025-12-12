@@ -34,7 +34,7 @@ import { PolicyPriorityComponent } from "../action-tab/policy-priority/policy-pr
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatSelectModule } from "@angular/material/select";
 import { MatOptionModule } from "@angular/material/core";
-import { FilterValue } from "../../../../core/models/filter_value";
+import { FilterValueGeneric } from "../../../../core/models/filter_value_generic/filter_value_generic";
 
 type PolicyTab = "actions" | "conditions";
 
@@ -66,7 +66,7 @@ export class PolicyPanelComponent {
   readonly policyService: PolicyService = inject(PolicyService);
   readonly isNew = input<boolean>(false);
   readonly policy = input<PolicyDetail | undefined>();
-  readonly filterValue = input<FilterValue | undefined>();
+  readonly filterValue = input<FilterValueGeneric | undefined>();
 
   // Component State Signals
   readonly isEditMode = this.policyService.isEditMode;

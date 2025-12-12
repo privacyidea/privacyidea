@@ -45,7 +45,7 @@ import { computed, linkedSignal, Resource, ResourceStatus, Signal, signal, Writa
 import { UserAttributePolicy, UserData, UserServiceInterface } from "../app/services/user/user.service";
 import { ValidateCheckResponse, ValidateServiceInterface } from "../app/services/validate/validate.service";
 import { ContentServiceInterface } from "../app/services/content/content.service";
-import { FilterValue } from "../app/core/models/filter_value";
+import { FilterValue } from "../app/core/models/filter_value/filter_value";
 import { LocalServiceInterface } from "../app/services/local/local.service";
 import { MatTableDataSource } from "@angular/material/table";
 import { NotificationServiceInterface } from "../app/services/notification/notification.service";

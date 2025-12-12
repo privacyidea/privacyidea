@@ -1,6 +1,6 @@
 <div>
   <mat-form-field
-    class="token-table-filter"
+    class="full-width"
     subscriptSizing="dynamic">
     <mat-label i18n>Enter Filter</mat-label>
     <app-clearable-input
@@ -17,8 +17,9 @@
         placeholder="Example query: 'scope: enrollment, active: true" />
     </app-clearable-input>
   </mat-form-field>
-  <app-keyword-filter
+  <app-keyword-filter-generic
+    [apiFilter]="[]"
     [filterHTMLInputElement]="filterHTMLInputElement"
     [filterValue]="filterValue()">
-  </app-keyword-filter>
+  </app-keyword-filter-generic>
 </div>

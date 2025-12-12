@@ -23,7 +23,7 @@ import { computed, inject, Injectable, linkedSignal, Signal, signal, WritableSig
 import { RealmService, RealmServiceInterface } from "../realm/realm.service";
 import { TokenService, TokenServiceInterface } from "../token/token.service";
 
-import { FilterValue } from "../../core/models/filter_value";
+import { FilterValue } from "../../core/models/filter_value/filter_value";
 import { PiResponse } from "../../app.component";
 import { environment } from "../../../environments/environment";
 import { ROUTE_PATHS } from "../../route_paths";

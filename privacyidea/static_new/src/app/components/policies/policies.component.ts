@@ -23,9 +23,9 @@ import { MatExpansionModule } from "@angular/material/expansion";
 import { PolicyService, PolicyServiceInterface } from "../../services/policies/policies.service";
 import { MatIconModule } from "@angular/material/icon";
 import { AuthService, AuthServiceInterface } from "../../services/auth/auth.service";
-import { FilterValue } from "../../core/models/filter_value";
 import { PolicyFilterComponent } from "./policy-panels/policy-filter/policy-filter.component";
 import { PolicyPanelComponent } from "./policy-panels/policy-panel/policy-panel.component";
+import { FilterValueGeneric } from "../../core/models/filter_value_generic/filter_value_generic";
 
 @Component({
   selector: "app-policies",
@@ -40,5 +40,5 @@ export class PoliciesComponent {
 
   allPoliciesList = this.policyService.allPolicies;
 
-  currentFilter = signal<FilterValue>(new FilterValue());
+  currentFilter = signal<FilterValueGeneric>(new FilterValueGeneric());
 }

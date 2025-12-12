@@ -20,7 +20,7 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { signal } from "@angular/core";
 import { KeywordFilterComponent } from "./keyword-filter.component";
 import { TableUtilsService } from "../../../services/table-utils/table-utils.service";
-import { FilterValue } from "../../../core/models/filter_value";
+import { FilterValue } from "../../../core/models/filter_value/filter_value";
 import { MockTableUtilsService } from "../../../../testing/mock-services";
 
 function setupComponent(): {

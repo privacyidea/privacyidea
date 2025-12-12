@@ -18,7 +18,7 @@
  **/
 import { inject, Injectable, signal, WritableSignal } from "@angular/core";
 import { MatTableDataSource } from "@angular/material/table";
-import { FilterValue } from "../../core/models/filter_value";
+import { FilterValue } from "../../core/models/filter_value/filter_value";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 
 export interface FilterPair {
@@ -357,18 +357,14 @@ export class TableUtilsService implements TableUtilsServiceInterface {
     }
   }
 
-  pickColumns<const K extends readonly ColumnKey[]>(
-    ...keys: K
-  ) {
-    return keys.map(k => COLUMN_REGISTRY[k]) as {
+  pickColumns<const K extends readonly ColumnKey[]>(...keys: K) {
+    return keys.map((k) => COLUMN_REGISTRY[k]) as {
       readonly [I in keyof K]: ColumnDef<Extract<K[I], ColumnKey>>;
     };
   }
 
-  getColumnKeys<const C extends readonly ColumnDef[]>(
-    cols: C
-  ) {
-    return cols.map(c => c.key) as {
+  getColumnKeys<const C extends readonly ColumnDef[]>(cols: C) {
+    return cols.map((c) => c.key) as {
       readonly [I in keyof C]: C[I] extends ColumnDef<infer KK> ? KK : never;
     };
   }

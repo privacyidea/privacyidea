@@ -21,7 +21,7 @@ import { TableUtilsService } from "./table-utils.service";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { MatTableDataSource } from "@angular/material/table";
-import { FilterValue } from "../../core/models/filter_value";
+import { FilterValue } from "../../core/models/filter_value/filter_value";
 import { AuthService, JwtData } from "../auth/auth.service";
 
 describe("TableUtilsService", () => {

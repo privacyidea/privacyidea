@@ -22,7 +22,8 @@ import {
   effect,
   ElementRef,
   inject,
-  linkedSignal, Signal,
+  linkedSignal,
+  Signal,
   signal,
   ViewChild,
   WritableSignal
@@ -46,7 +47,7 @@ import { MatDialog } from "@angular/material/dialog";
 import { filter } from "rxjs";
 import { FormsModule } from "@angular/forms";
 import { MatSelectModule } from "@angular/material/select";
-import { FilterValue } from "../../../core/models/filter_value";
+import { FilterValue } from "../../../core/models/filter_value/filter_value";
 import { AuditService, AuditServiceInterface } from "../../../services/audit/audit.service";
 import { MatTooltip } from "@angular/material/tooltip";
 import { RouterLink } from "@angular/router";
@@ -86,17 +87,17 @@ export class UserDetailsComponent {
   private readonly auditService: AuditServiceInterface = inject(AuditService);
   protected readonly dialog: MatDialog = inject(MatDialog);
   readonly labels: Record<string, string> = {
-    username: 'Username',
-    givenname: 'Given name',
-    surname: 'Surname',
-    email: 'Email',
-    phone: 'Phone',
-    mobile: 'Mobile',
-    description: 'Description',
-    userid: 'User ID',
-    resolver: 'Resolver'
+    username: "Username",
+    givenname: "Given name",
+    surname: "Surname",
+    email: "Email",
+    phone: "Phone",
+    mobile: "Mobile",
+    description: "Description",
+    userid: "User ID",
+    resolver: "Resolver"
   };
-  readonly excludedKeys = new Set(['editable']);
+  readonly excludedKeys = new Set(["editable"]);
   customAttributeKeys: Signal<Set<string>> = computed(() => {
     const attributeKeys = Object.entries(this.userService.userAttributesList()).map(([_, attribute]) => attribute.key);
     return new Set(attributeKeys);
@@ -156,11 +157,8 @@ export class UserDetailsComponent {
     return opts.length === 0;
   });
   canAddAttribute = computed<boolean>(() => {
-    const key =
-      this.keyMode() === "input" ? this.addKeyInput().trim() : (this.selectedKey() ?? "").trim();
-    const value = this.isValueInput()
-      ? this.addValueInput().trim()
-      : (this.selectedValue() ?? "").trim();
+    const key = this.keyMode() === "input" ? this.addKeyInput().trim() : (this.selectedKey() ?? "").trim();
+    const value = this.isValueInput() ? this.addValueInput().trim() : (this.selectedValue() ?? "").trim();
     return key.length > 0 && value.length > 0;
   });
 
@@ -182,7 +180,7 @@ export class UserDetailsComponent {
       .map(([key, value]) => ({
         key,
         label: this.labels[key] ?? key,
-        value: value ?? '-'
+        value: value ?? "-"
       }))
   );
 
@@ -190,9 +188,7 @@ export class UserDetailsComponent {
     const entries = this.detailsEntries();
     const colCount = 3;
     const perCol = Math.ceil(entries.length / colCount);
-    return Array.from({ length: colCount }, (_, i) =>
-      entries.slice(i * perCol, (i + 1) * perCol)
-    );
+    return Array.from({ length: colCount }, (_, i) => entries.slice(i * perCol, (i + 1) * perCol));
   });
 
   switchToCustomKey() {
@@ -206,11 +202,8 @@ export class UserDetailsComponent {
   }
 
   addCustomAttribute() {
-    const key =
-      this.keyMode() === "input" ? this.addKeyInput().trim() : (this.selectedKey() ?? "").trim();
-    const value = this.isValueInput()
-      ? this.addValueInput().trim()
-      : (this.selectedValue() ?? "").trim();
+    const key = this.keyMode() === "input" ? this.addKeyInput().trim() : (this.selectedKey() ?? "").trim();
+    const value = this.isValueInput() ? this.addValueInput().trim() : (this.selectedValue() ?? "").trim();
 
     if (!key || !value) return;
 
