@@ -148,8 +148,8 @@ export class FilterKeyword {
 export class KeywordFilterGenericComponent {
   private readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
 
-  readonly apiFilter = input.required<FilterKeyword[]>();
-  readonly advancedApiFilter = input<FilterKeyword[]>([]);
+  readonly keywordFilters = input.required<FilterKeyword[]>();
+  readonly advancedKeywordFilters = input<FilterKeyword[]>([]);
   readonly filterHTMLInputElement = input.required<HTMLInputElement>();
   readonly filterValue = input.required<FilterValueGeneric>();
   readonly filterValueChange = output<FilterValueGeneric>();
@@ -178,7 +178,7 @@ export class KeywordFilterGenericComponent {
   }
 
   toggleFilter(filterKeyword: FilterKeyword): void {
-    const newFilterValue = this.filterValue().toggleKey(filterKeyword);
+    const newFilterValue = this.filterValue().toggleFilterKeyword(filterKeyword);
     this.filterValueChange.emit(newFilterValue);
     // Focus the input element after changing the filter
     this.filterHTMLInputElement().focus();

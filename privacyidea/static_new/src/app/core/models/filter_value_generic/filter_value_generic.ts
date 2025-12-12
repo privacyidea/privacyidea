@@ -68,10 +68,10 @@ export class FilterValueGeneric {
     return newFilter;
   }
 
-  public addKey(filterKeyword: FilterKeyword): FilterValueGeneric {
+  public addKey(key: string): FilterValueGeneric {
     // Adds a new filterKeyword to the string if it does not already exist.
-    if (!keyPresenceRe(filterKeyword.key).test(this._value)) {
-      this._value = this._value ? `${this._value.trim()} ${filterKeyword}: ` : `${filterKeyword}: `;
+    if (!keyPresenceRe(key).test(this._value)) {
+      this._value = this._value ? `${this._value.trim()} ${key}: ` : `${key}: `;
     }
     return new FilterValueGeneric({ value: this._value, hiddenValue: this._hiddenValue });
   }
@@ -88,6 +88,20 @@ export class FilterValueGeneric {
     return this.filterMap.get(key);
   }
 
+  public getValueOfHiddenKey(key: string): string | undefined {
+    return this.hiddenFilterMap.get(key);
+  }
+
+  public setValueOfKey(key: string, value: string): FilterValueGeneric {
+    this._value = this._value.replace(keySegmentRe(key), `${key}: ${value}`).trim().replace(/\s+/g, " ");
+    return new FilterValueGeneric({ value: this._value, hiddenValue: this._hiddenValue });
+  }
+
+  public setValueOfHiddenKey(key: string, value: string): FilterValueGeneric {
+    this._hiddenValue = this._hiddenValue.replace(keySegmentRe(key), `${key}: ${value}`).trim().replace(/\s+/g, " ");
+    return new FilterValueGeneric({ value: this._value, hiddenValue: this._hiddenValue });
+  }
+
   public removeKey(key: string): FilterValueGeneric {
     this._value = this._value.replace(keySegmentRe(key), "").trim().replace(/\s+/g, " ");
     return new FilterValueGeneric({ value: this._value, hiddenValue: this._hiddenValue });
@@ -102,14 +116,22 @@ export class FilterValueGeneric {
     return keyPresenceRe(key).test(this._value);
   }
 
-  public toggleKey(filterKeyword: FilterKeyword): FilterValueGeneric {
+  public hasHiddenKey(key: string): boolean {
+    return keyPresenceRe(key).test(this._hiddenValue);
+  }
+
+  public toggleFilterKeyword(filterKeyword: FilterKeyword): FilterValueGeneric {
     if (filterKeyword.toggleKeyword) {
       return filterKeyword.toggleKeyword(this);
     }
-    if (this.hasKey(filterKeyword.key)) {
-      return this.removeKey(filterKeyword.key);
+    return this.toggleKey(filterKeyword.key);
+  }
+
+  public toggleKey(key: string): FilterValueGeneric {
+    if (this.hasKey(key)) {
+      return this.removeKey(key);
     } else {
-      return this.addKey(filterKeyword);
+      return this.addKey(key);
     }
   }
 

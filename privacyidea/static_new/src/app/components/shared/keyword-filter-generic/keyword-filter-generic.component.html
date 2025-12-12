@@ -21,7 +21,7 @@
     <mat-icon [ngClass]="{ 'filter-icon': true, 'yellow-light': !filterIsEmpty() }">filter_alt</mat-icon>
     <span i18n>Filter by:&nbsp;</span>
   </div>
-  @for (filterKeyword of apiFilter(); track filterKeyword) {
+  @for (filterKeyword of keywordFilters(); track filterKeyword) {
     <button
       mat-fab
       extended
@@ -41,7 +41,7 @@
       {{ filterKeyword }}
     </button>
   }
-  @if (advancedApiFilter.length > 0) {
+  @if (advancedKeywordFilters.length > 0) {
     <button
       (click)="onToggleAdvancedFilter()"
       class="more-keyword-button"
@@ -53,7 +53,7 @@
     </button>
   }
   @if (showAdvancedFilter()) {
-    @for (filterKeyword of advancedApiFilter(); track filterKeyword) {
+    @for (filterKeyword of advancedKeywordFilters(); track filterKeyword) {
       <button
         mat-fab
         extended
