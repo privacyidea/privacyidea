@@ -95,8 +95,7 @@ DEFAULT_PAGE_SIZE = 15
 DEFAULT_TOKENTYPE = "hotp"
 DEFAULT_CONTAINER_TYPE = "generic"
 DEFAULT_TIMEOUT_ACTION = "lockscreen"
-DEFAULT_POLICY_TEMPLATE_URL = "https://raw.githubusercontent.com/privacyidea/" \
-                              "policy-templates/master/templates/"
+DEFAULT_POLICY_TEMPLATE_URL = "/static/policy-templates/"
 BODY_TEMPLATE = lazy_gettext("""
 <--- Please describe your Problem in detail --->
 
