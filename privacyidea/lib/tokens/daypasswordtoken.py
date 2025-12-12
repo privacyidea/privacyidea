@@ -19,8 +19,8 @@ from privacyidea.lib import _, lazy_gettext
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.decorators import check_token_locked, check_token_otp_length
 from privacyidea.lib.log import log_with
-from privacyidea.lib.policy import SCOPE, GROUP, Match
 from privacyidea.lib.policies.actions import PolicyAction
+from privacyidea.lib.policy import SCOPE, GROUP, Match
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.tokens.HMAC import HmacOtp
 from privacyidea.lib.tokens.hotptoken import HotpTokenClass
@@ -99,7 +99,7 @@ class DayPasswordTokenClass(TotpTokenClass):
                                   'value': [6, 8],
                                   'desc': DayPasswordTokenClass.desc_otp_len},
                        PolicyAction.FORCE_SERVER_GENERATE: {'type': 'bool',
-                                                      'desc': DayPasswordTokenClass.desc_key_gen}
+                                                            'desc': DayPasswordTokenClass.desc_key_gen}
                    },
                    SCOPE.ADMIN: {
                        'timestep': {'type': 'str',
@@ -113,13 +113,21 @@ class DayPasswordTokenClass(TotpTokenClass):
                                   'value': [6, 8],
                                   'desc': DayPasswordTokenClass.desc_otp_len},
                        PolicyAction.FORCE_SERVER_GENERATE: {'type': 'bool',
-                                                      'desc': DayPasswordTokenClass.desc_key_gen}
+                                                            'desc': DayPasswordTokenClass.desc_key_gen}
                    },
                    SCOPE.ENROLL: {
                        PolicyAction.FORCE_APP_PIN: {
                            'type': 'bool',
                            'desc': _('Enforce setting an app pin for the privacyIDEA '
                                      'Authenticator App')
+                       },
+                       'daypassword_' + PolicyAction.APP_FORCE_UNLOCK: {
+                           'type': 'str',
+                           'value': ["any",
+                                     "biometric",
+                                     "pin"],
+                           'disc': _('Enforces the privacyIDEA Authenticator App that the token has to be unlocked '
+                                     'with pin or biometric')
                        },
                        PolicyAction.MAXTOKENUSER: {
                            'type': 'int',

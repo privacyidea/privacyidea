@@ -40,8 +40,8 @@ from privacyidea.lib import _, lazy_gettext
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.decorators import check_token_locked, check_token_otp_length
 from privacyidea.lib.log import log_with
-from privacyidea.lib.policy import SCOPE, GROUP, Match
 from privacyidea.lib.policies.actions import PolicyAction
+from privacyidea.lib.policy import SCOPE, GROUP, Match
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.tokens.HMAC import HmacOtp
 from privacyidea.lib.tokens.hotptoken import HotpTokenClass
@@ -122,7 +122,7 @@ class TotpTokenClass(HotpTokenClass):
                                        'value': [6, 8],
                                        'desc': TotpTokenClass.desc_otp_len},
                        PolicyAction.FORCE_SERVER_GENERATE: {'type': 'bool',
-                                                      'desc': TotpTokenClass.desc_key_gen},
+                                                            'desc': TotpTokenClass.desc_key_gen},
                        '2step': {'type': 'str',
                                  'value': ['allow', 'force'],
                                  'desc': TotpTokenClass.desc_two_step_user}
@@ -140,7 +140,7 @@ class TotpTokenClass(HotpTokenClass):
                                        'value': [6, 8],
                                        'desc': TotpTokenClass.desc_otp_len},
                        PolicyAction.FORCE_SERVER_GENERATE: {'type': 'bool',
-                                                      'desc': TotpTokenClass.desc_key_gen},
+                                                            'desc': TotpTokenClass.desc_key_gen},
                        '2step': {'type': 'str',
                                  'value': ['allow', 'force'],
                                  'desc': TotpTokenClass.desc_two_step_admin}
@@ -160,6 +160,15 @@ class TotpTokenClass(HotpTokenClass):
                            'type': 'bool',
                            'desc': _('Enforce setting an app pin for the privacyIDEA '
                                      'Authenticator App')
+                       },
+                       'totp_' + PolicyAction.APP_FORCE_UNLOCK: {
+                           'type': 'str',
+                           'value': ["any",
+                                     "biometric",
+                                     "pin"],
+                           'disc': _(
+                               'Enforces the privacyIDEA Authenticator App that the token has to be unlocked '
+                               'with pin or biometric')
                        },
                        PolicyAction.MAXTOKENUSER: {
                            'type': 'int',

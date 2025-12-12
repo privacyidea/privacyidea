@@ -888,3 +888,13 @@ This action can be used to validate the email address of the user during enrollm
 The administrator specifies the Python module that should be used to validate the email address.
 The modules can be defined in the `pi.cfg` file.
 See :ref:`picfg_email_validators` for more information.
+
+.. _policy_app_force_unlock:
+
+app_force_unlock
+~~~~~~~~~~~~~~~~
+
+type: ``string``
+
+This policy can be used to force the privayIDEA Authenticator App to secure the token with a pin or
+biometric. If you select any, the token can be unlocked with both.
