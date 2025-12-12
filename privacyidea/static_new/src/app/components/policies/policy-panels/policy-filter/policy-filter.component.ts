@@ -26,13 +26,15 @@ export class PolicyFilterComponent {
       label: $localize`Active`,
       toggle: (filterValue: FilterValueGeneric) => {
         const value = filterValue.getValueOfKey("active")?.toLowerCase();
-        if (value === "true") {
-          return filterValue.setValueOfKey("active", "false");
-        }
-        if (value === "false") {
-          return filterValue.removeKey("active");
-        }
-        return filterValue.toggleKey("active");
+        if (value === "true") return filterValue.setValueOfKey("active", "false");
+        if (value === "false") return filterValue.removeKey("active");
+        return filterValue.setValueOfKey("active", "true");
+      },
+      iconName: (filterValue: FilterValueGeneric) => {
+        const value = filterValue.getValueOfKey("active")?.toLowerCase();
+        if (value === "true") return "change_circle";
+        if (value === "false") return "remove_circle";
+        return "add_circle";
       }
     }),
     new FilterKeyword({ key: "policy_name", label: $localize`Policy Name` }),

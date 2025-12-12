@@ -39,7 +39,7 @@ import { FilterValueGeneric } from "../../../../core/models/filter_value_generic
 type PolicyTab = "actions" | "conditions";
 
 @Component({
-  selector: "app-policy-panel",
+  selector: "app-policy-panel-edit",
   standalone: true,
   imports: [
     CommonModule,
@@ -58,15 +58,14 @@ type PolicyTab = "actions" | "conditions";
     MatSelectModule,
     MatOptionModule
   ],
-  templateUrl: "./policy-panel.component.html",
-  styleUrl: "./policy-panel.component.scss"
+  templateUrl: "./policy-panel-edit.component.html",
+  styleUrl: "./policy-panel-edit.component.scss"
 })
-export class PolicyPanelComponent {
+export class PolicyPanelEditComponent {
   // Angular Inputs and Services
   readonly policyService: PolicyService = inject(PolicyService);
-  readonly isNew = input<boolean>(false);
-  readonly policy = input<PolicyDetail | undefined>();
-  readonly filterValue = input<FilterValueGeneric | undefined>();
+  readonly policy = input.required<PolicyDetail>();
+  readonly filterValue = input.required<FilterValueGeneric>();
 
   // Component State Signals
   readonly isEditMode = this.policyService.isEditMode;
@@ -87,13 +86,11 @@ export class PolicyPanelComponent {
 
   // Computed properties for new policies
   readonly newPolicyName = computed(() => {
-    if (!this.isNew()) return "";
     if (this.policyService.selectedPolicyOriginal()?.name) return "";
     return this.policyService.selectedPolicyOriginal()?.name || "";
   });
 
   readonly newPolicyScope = computed(() => {
-    if (!this.isNew()) return "";
     if (this.policyService.selectedPolicyOriginal()?.name) return "";
     return this.policyService.selectedPolicy()?.scope || "";
   });
@@ -103,10 +100,7 @@ export class PolicyPanelComponent {
     if (this.policyIsSelected(policyName)) {
       return;
     }
-    if (this.isNew()) {
-      this.policyService.initializeNewPolicy();
-      this.isEditMode.set(true);
-    } else if (policyName) {
+    if (policyName) {
       this.policyService.selectPolicyByName(policyName);
       this.isEditMode.set(false);
     }
@@ -116,19 +110,7 @@ export class PolicyPanelComponent {
     if (!this.policyIsSelected(policyName)) {
       return;
     }
-    if (this.isNew()) {
-      if (this.policyService.isPolicyEdited()) {
-        if (confirm("Are you sure you want to discard the new policy? All changes will be lost.")) {
-          this.policyService.deselectNewPolicy();
-          this.isEditMode.set(false);
-        } else {
-          panel.open(); // Re-open if user cancels
-        }
-      } else {
-        this.policyService.deselectNewPolicy();
-        this.isEditMode.set(false);
-      }
-    } else if (policyName) {
+    if (policyName) {
       if (!this.confirmDiscardChanges()) {
         panel.open();
         return;
@@ -157,13 +139,9 @@ export class PolicyPanelComponent {
   // Action Methods
   savePolicy(panel?: MatExpansionPanel) {
     if (!this.canSavePolicy()) return;
-    if (this.isNew()) {
-      this.policyService.savePolicyEditsAsNew();
-      this.policyService.deselectPolicy(this.newPolicyName());
-      this.isEditMode.set(false);
-    } else {
-      this.policyService.savePolicyEdits();
-    }
+
+    this.policyService.savePolicyEdits();
+
     this.isEditMode.set(false);
     if (panel) panel.close();
   }
@@ -198,9 +176,6 @@ export class PolicyPanelComponent {
 
   // State-checking Methods
   canSavePolicy(): boolean {
-    if (this.isNew()) {
-      return this.policyService.canSaveSelectedPolicy();
-    }
     const policy = this.policyService.selectedPolicy();
     if (!policy) return false;
     if (!policy.name || policy.name.trim() === "") return false;

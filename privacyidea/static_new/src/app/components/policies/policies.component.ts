@@ -24,13 +24,21 @@ import { PolicyService, PolicyServiceInterface } from "../../services/policies/p
 import { MatIconModule } from "@angular/material/icon";
 import { AuthService, AuthServiceInterface } from "../../services/auth/auth.service";
 import { PolicyFilterComponent } from "./policy-panels/policy-filter/policy-filter.component";
-import { PolicyPanelComponent } from "./policy-panels/policy-panel/policy-panel.component";
 import { FilterValueGeneric } from "../../core/models/filter_value_generic/filter_value_generic";
+import { PolicyPanelNewComponent } from "./policy-panels/policy-panel-new/policy-panel-new.component";
+import { PolicyPanelEditComponent } from "./policy-panels/policy-panel-edit/policy-panel-edit.component";
 
 @Component({
   selector: "app-policies",
   standalone: true,
-  imports: [CommonModule, MatExpansionModule, MatIconModule, PolicyFilterComponent, PolicyPanelComponent],
+  imports: [
+    CommonModule,
+    MatExpansionModule,
+    MatIconModule,
+    PolicyFilterComponent,
+    PolicyPanelNewComponent,
+    PolicyPanelEditComponent
+  ],
   templateUrl: "./policies.component.html",
   styleUrl: "./policies.component.scss"
 })

@@ -93,8 +93,13 @@ export class FilterValueGeneric {
   }
 
   public setValueOfKey(key: string, value: string): FilterValueGeneric {
-    this._value = this._value.replace(keySegmentRe(key), `${key}: ${value}`).trim().replace(/\s+/g, " ");
-    return new FilterValueGeneric({ value: this._value, hiddenValue: this._hiddenValue });
+    if (this.hasKey(key)) {
+      this._value = this._value.replace(keySegmentRe(key), `${key}: ${value}`).trim().replace(/\s+/g, " ");
+      return new FilterValueGeneric({ value: this._value, hiddenValue: this._hiddenValue });
+    } else {
+      this._value = this._value ? `${this._value.trim()} ${key}: ${value}` : `${key}: ${value}`;
+      return new FilterValueGeneric({ value: this._value, hiddenValue: this._hiddenValue });
+    }
   }
 
   public setValueOfHiddenKey(key: string, value: string): FilterValueGeneric {

@@ -25,14 +25,14 @@
       <app-policy-filter [(filterValue)]="currentFilter"> </app-policy-filter>
     }
     @if (authService.actionAllowed("policywrite")) {
-      <app-policy-panel [isNew]="true"></app-policy-panel>
+      <app-policy-panel-new></app-policy-panel-new>
     }
     @if (authService.actionAllowed("policyread")) {
       @for (policy of allPoliciesList(); track policy.name) {
-        <app-policy-panel
+        <app-policy-panel-edit
           [policy]="policy"
           [filterValue]="currentFilter()">
-        </app-policy-panel>
+        </app-policy-panel-edit>
       }
     }
   </mat-accordion>
