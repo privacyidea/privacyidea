@@ -53,8 +53,8 @@
       [advancedApiFilter]="advancedApiFilter"
       [apiFilter]="apiFilter"
       [filterHTMLInputElement]="filterHTMLInputElement"
-      [filterValue]="containerService.containerFilter"/>
-    <app-container-table-actions/>
+      [(filterValue)]="containerService.containerFilter" />
+    <app-container-table-actions />
     <div class="table-container">
       <table
         (matSortChange)="onSortEvent($event)"

@@ -50,7 +50,7 @@
     [advancedApiFilter]="auditService.advancedApiFilter"
     [apiFilter]="auditService.apiFilter"
     [filterHTMLInputElement]="filterHTMLInputElement"
-    [filterValue]="auditService.auditFilter"></app-keyword-filter>
+    [(filterValue)]="auditService.auditFilter"></app-keyword-filter>
   <table
     [dataSource]="auditDataSource()"
     aria-label="Audit Data Table"

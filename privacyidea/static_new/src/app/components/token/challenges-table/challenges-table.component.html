@@ -54,7 +54,7 @@
     [advancedApiFilter]="advancedApiFilter"
     [apiFilter]="apiFilter"
     [filterHTMLInputElement]="filterHTMLInputElement"
-    [filterValue]="challengesService.challengesFilter"></app-keyword-filter>
+    [(filterValue)]="challengesService.challengesFilter"></app-keyword-filter>
   <table
     (matSortChange)="onSortEvent($event)"
     [dataSource]="challengesDataSource()"

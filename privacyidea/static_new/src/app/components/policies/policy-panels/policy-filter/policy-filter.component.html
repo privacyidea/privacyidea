@@ -1,0 +1,24 @@
+<div>
+  <mat-form-field
+    class="token-table-filter"
+    subscriptSizing="dynamic">
+    <mat-label i18n>Enter Filter</mat-label>
+    <app-clearable-input
+      (onClick)="clearFilter()"
+      [showClearButton]="filterValue().isNotEmpty">
+      <input
+        #filterHTMLInputElement
+        (input)="onFilterChange($event)"
+        [value]="filterValue().value"
+        aria-label="Filter Input"
+        i18n-aria-label
+        i18n-placeholder
+        matInput
+        placeholder="Example query: 'scope: enrollment, active: true" />
+    </app-clearable-input>
+  </mat-form-field>
+  <app-keyword-filter
+    [filterHTMLInputElement]="filterHTMLInputElement"
+    [filterValue]="filterValue()">
+  </app-keyword-filter>
+</div>

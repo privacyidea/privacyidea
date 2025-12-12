@@ -60,7 +60,7 @@
     [advancedApiFilter]="machineService.offlineAdvancedApiFilter"
     [apiFilter]="machineService.offlineApiFilter"
     [filterHTMLInputElement]="filterInput"
-    [filterValue]="machineService.machineFilter"></app-keyword-filter>
+    [(filterValue)]="machineService.machineFilter"></app-keyword-filter>
   <table
     (matSortChange)="machineService.onSortEvent($event)"
     [dataSource]="dataSource()"

@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { NgClass } from "@angular/common";
-import { Component, inject, Input, signal, WritableSignal } from "@angular/core";
+import { Component, inject, input, Input, output, signal, WritableSignal } from "@angular/core";
 import { MatFabButton } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import { TableUtilsService, TableUtilsServiceInterface } from "../../../services/table-utils/table-utils.service";
@@ -32,10 +32,12 @@ import { FilterValue } from "../../../core/models/filter_value";
 })
 export class KeywordFilterComponent {
   private readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
-  @Input() apiFilter: string[] = [];
-  @Input() advancedApiFilter: string[] = [];
-  @Input({ required: true }) filterHTMLInputElement!: HTMLInputElement;
-  @Input({ required: true }) filterValue!: WritableSignal<FilterValue>;
+
+  readonly apiFilter = input<string[]>([]);
+  readonly advancedApiFilter = input<string[]>([]);
+  readonly filterHTMLInputElement = input.required<HTMLInputElement>();
+  readonly filterValue = input.required<FilterValue>();
+  readonly filterValueChange = output<FilterValue>();
   showAdvancedFilter = signal(false);
 
   onKeywordClick(filterKeyword: string): void {
@@ -82,8 +84,8 @@ export class KeywordFilterComponent {
         currentValue: this.filterValue()
       });
     }
-    this.filterValue.set(newValue);
-    this.filterHTMLInputElement.focus();
+    this.filterValueChange.emit(newValue);
+    this.filterHTMLInputElement().focus();
   }
 
   filterIsEmpty(): boolean {

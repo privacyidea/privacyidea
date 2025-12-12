@@ -17,22 +17,28 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, inject, input } from "@angular/core";
+import { Component, inject, signal } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { MatExpansionModule } from "@angular/material/expansion";
-import { PolicyService } from "../../services/policies/policies.service";
+import { PolicyService, PolicyServiceInterface } from "../../services/policies/policies.service";
 import { MatIconModule } from "@angular/material/icon";
+import { AuthService, AuthServiceInterface } from "../../services/auth/auth.service";
+import { FilterValue } from "../../core/models/filter_value";
+import { PolicyFilterComponent } from "./policy-panels/policy-filter/policy-filter.component";
 import { PolicyPanelComponent } from "./policy-panels/policy-panel/policy-panel.component";
 
 @Component({
   selector: "app-policies",
   standalone: true,
-  imports: [CommonModule, MatExpansionModule, MatIconModule, PolicyPanelComponent],
+  imports: [CommonModule, MatExpansionModule, MatIconModule, PolicyFilterComponent, PolicyPanelComponent],
   templateUrl: "./policies.component.html",
   styleUrl: "./policies.component.scss"
 })
 export class PoliciesComponent {
-  policyService: PolicyService = inject(PolicyService);
+  readonly policyService: PolicyServiceInterface = inject(PolicyService);
+  readonly authService: AuthServiceInterface = inject(AuthService);
 
   allPoliciesList = this.policyService.allPolicies;
+
+  currentFilter = signal<FilterValue>(new FilterValue());
 }

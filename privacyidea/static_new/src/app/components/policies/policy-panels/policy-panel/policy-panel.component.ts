@@ -34,6 +34,7 @@ import { PolicyPriorityComponent } from "../action-tab/policy-priority/policy-pr
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatSelectModule } from "@angular/material/select";
 import { MatOptionModule } from "@angular/material/core";
+import { FilterValue } from "../../../../core/models/filter_value";
 
 type PolicyTab = "actions" | "conditions";
 
@@ -62,14 +63,15 @@ type PolicyTab = "actions" | "conditions";
 })
 export class PolicyPanelComponent {
   // Angular Inputs and Services
-  policyService: PolicyService = inject(PolicyService);
-  isNew = input<boolean>(false);
-  policy = input<PolicyDetail | undefined>(undefined);
+  readonly policyService: PolicyService = inject(PolicyService);
+  readonly isNew = input<boolean>(false);
+  readonly policy = input<PolicyDetail | undefined>();
+  readonly filterValue = input<FilterValue | undefined>();
 
   // Component State Signals
-  isEditMode = this.policyService.isEditMode;
-  selectedPolicy = computed<PolicyDetail | null>(() => this.policyService.selectedPolicy());
-  activeTab = linkedSignal<any, PolicyTab>({
+  readonly isEditMode = this.policyService.isEditMode;
+  readonly selectedPolicy = computed<PolicyDetail | null>(() => this.policyService.selectedPolicy());
+  readonly activeTab = linkedSignal<any, PolicyTab>({
     source: () => ({
       isEditMode: this.isEditMode(),
       selectedPolicyHasConditions: this.policyService.selectedPolicyHasConditions()
@@ -84,13 +86,13 @@ export class PolicyPanelComponent {
   });
 
   // Computed properties for new policies
-  newPolicyName = computed(() => {
+  readonly newPolicyName = computed(() => {
     if (!this.isNew()) return "";
     if (this.policyService.selectedPolicyOriginal()?.name) return "";
     return this.policyService.selectedPolicyOriginal()?.name || "";
   });
 
-  newPolicyScope = computed(() => {
+  readonly newPolicyScope = computed(() => {
     if (!this.isNew()) return "";
     if (this.policyService.selectedPolicyOriginal()?.name) return "";
     return this.policyService.selectedPolicy()?.scope || "";

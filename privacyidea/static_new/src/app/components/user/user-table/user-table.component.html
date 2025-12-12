@@ -52,7 +52,7 @@
       [advancedApiFilter]="userService.advancedApiFilterOptions"
       [apiFilter]="userService.apiFilterOptions"
       [filterHTMLInputElement]="filterHTMLInputElement"
-      [filterValue]="userService.apiUserFilter"/>
+      [(filterValue)]="userService.apiUserFilter" />
     <app-user-table-actions />
     <div class="audit-table-overflow">
       <table
@@ -86,7 +86,7 @@
                       attr.aria-label="{{ column.label }} Link"
                       routerLink="/users/details/{{ element.username }}">
                       {{ element[column.key] }}
-                   </a>
+                    </a>
                   }
                   @default {
                     <span>

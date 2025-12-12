@@ -54,7 +54,7 @@
         [advancedApiFilter]="advancedApiFilter"
         [apiFilter]="apiFilter"
         [filterHTMLInputElement]="filterHTMLInputElement"
-        [filterValue]="tokenService.tokenFilter" />
+        [(filterValue)]="tokenService.tokenFilter" />
     </div>
     <app-token-table-actions />
     <div class="table-container">
@@ -121,8 +121,8 @@
                       <span
                         (click)="toggleActive(tokenDetails)"
                         [ngClass]="tableUtilsService.getClassForColumn(column.key, tokenDetails)">
-                      {{ tableUtilsService.getDisplayText(column.key, tokenDetails) }}
-                    </span>
+                        {{ tableUtilsService.getDisplayText(column.key, tokenDetails) }}
+                      </span>
                     }
                   }
                   @case ("failcount") {
@@ -130,8 +130,8 @@
                       <span
                         (click)="resetFailCount(tokenDetails)"
                         [ngClass]="tableUtilsService.getClassForColumn(column.key, tokenDetails)">
-                      {{ tableUtilsService.getDisplayText(column.key, tokenDetails) }}
-                    </span>
+                        {{ tableUtilsService.getDisplayText(column.key, tokenDetails) }}
+                      </span>
                     }
                   }
                   @case ("realms") {

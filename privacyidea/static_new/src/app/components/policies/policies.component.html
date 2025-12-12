@@ -21,9 +21,19 @@
   aria-label="Policies Layout">
   <h2 i18n>Policies</h2>
   <mat-accordion class="list-layout">
-    <app-policy-panel [isNew]="true"></app-policy-panel>
-    @for (policy of allPoliciesList(); track policy.name) {
-      <app-policy-panel [policy]="policy"></app-policy-panel>
+    @if (authService.actionAllowed("policyread")) {
+      <app-policy-filter [(filterValue)]="currentFilter"> </app-policy-filter>
+    }
+    @if (authService.actionAllowed("policywrite")) {
+      <app-policy-panel [isNew]="true"></app-policy-panel>
+    }
+    @if (authService.actionAllowed("policyread")) {
+      @for (policy of allPoliciesList(); track policy.name) {
+        <app-policy-panel
+          [policy]="policy"
+          [filterValue]="currentFilter()">
+        </app-policy-panel>
+      }
     }
   </mat-accordion>
 </div>
