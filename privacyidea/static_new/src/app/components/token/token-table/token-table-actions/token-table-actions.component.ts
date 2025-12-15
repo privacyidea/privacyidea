@@ -17,6 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, inject } from "@angular/core";
+import { DOCUMENT } from "@angular/common";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
@@ -41,16 +42,20 @@ import {
   DocumentationServiceInterface
 } from "../../../../services/documentation/documentation.service";
 import { Router, RouterLink } from "@angular/router";
+import { MatMenuModule } from "@angular/material/menu";
+import { TableUtilsService, TableUtilsServiceInterface } from "../../../../services/table-utils/table-utils.service";
 
 @Component({
   selector: "app-token-table-actions",
-  imports: [MatButtonModule, MatIcon, RouterLink],
+  imports: [MatButtonModule, MatIcon, RouterLink, MatMenuModule],
   templateUrl: "./token-table-actions.component.html",
   styleUrl: "./token-table-actions.component.scss"
 })
 export class TokenTableActionsComponent {
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+  protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
+  private readonly document: Document = inject(DOCUMENT);
   protected readonly versioningService: VersioningServiceInterface = inject(VersioningService);
   protected readonly documentationService: DocumentationServiceInterface = inject(DocumentationService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
@@ -58,6 +63,7 @@ export class TokenTableActionsComponent {
   protected readonly auditService: AuditServiceInterface = inject(AuditService);
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   readonly ROUTE_PATHS = ROUTE_PATHS;
+  readonly advancedApiFilter = this.tokenService.advancedApiFilter;
   private router = inject(Router);
   tokenIsActive = this.tokenService.tokenIsActive;
   tokenIsRevoked = this.tokenService.tokenIsRevoked;
@@ -219,5 +225,84 @@ export class TokenTableActionsComponent {
           }
         }
       });
+  }
+
+  isFilterSelected(filter: string): boolean {
+    const inputValue = this.tokenService.tokenFilter();
+    if (filter === "infokey & infovalue") {
+      return inputValue.hasKey("infokey") && inputValue.hasKey("infovalue");
+    }
+    return inputValue.hasKey(filter);
+  }
+
+  getFilterIconName(keyword: string): string {
+    if (keyword === "active" || keyword === "assigned") {
+      const value = this.tokenService.tokenFilter()?.getValueOfKey(keyword)?.toLowerCase();
+      if (!value) {
+        return "filter_alt";
+      }
+      return value === "true" ? "screen_rotation_alt" : value === "false" ? "filter_alt_off" : "filter_alt";
+    } else {
+      const isSelected = this.isFilterSelected(keyword);
+      return isSelected ? "filter_alt_off" : "filter_alt";
+    }
+  }
+
+  onAdvancedFilterClick(filterKeyword: string): void {
+    this.toggleFilter(filterKeyword);
+    setTimeout(() => {
+      const elementById = this.document.getElementById("token-filter-input") as HTMLInputElement | null;
+      elementById?.focus();
+    });
+  }
+
+  private toggleFilter(filterKeyword: string): void {
+    let newValue;
+    if (filterKeyword === "assigned") {
+      newValue = this.tableUtilsService.toggleBooleanInFilter({
+        keyword: filterKeyword,
+        currentValue: this.tokenService.tokenFilter()
+      });
+    } else if (filterKeyword === "infokey & infovalue") {
+      const current = this.tokenService.tokenFilter();
+      const hasKey = current.hasKey("infokey");
+      const hasVal = current.hasKey("infovalue");
+
+      if (hasKey && hasVal) {
+        newValue = this.tableUtilsService.toggleKeywordInFilter({
+          keyword: "infokey",
+          currentValue: current
+        });
+        newValue = this.tableUtilsService.toggleKeywordInFilter({
+          keyword: "infovalue",
+          currentValue: newValue
+        });
+      } else if (!hasKey && !hasVal) {
+        newValue = this.tableUtilsService.toggleKeywordInFilter({
+          keyword: "infokey",
+          currentValue: current
+        });
+        newValue = this.tableUtilsService.toggleKeywordInFilter({
+          keyword: "infovalue",
+          currentValue: newValue
+        });
+      } else if (hasKey && !hasVal) {
+        newValue = this.tableUtilsService.toggleKeywordInFilter({
+          keyword: "infovalue",
+          currentValue: current
+        });
+      } else {
+        newValue = this.tableUtilsService.toggleKeywordInFilter({
+          keyword: "infokey",
+          currentValue: current
+        });
+      }
+    } else {
+      newValue = this.tableUtilsService.toggleKeywordInFilter({
+        keyword: filterKeyword,
+        currentValue: this.tokenService.tokenFilter()
+      });
+    }
+    this.tokenService.tokenFilter.set(newValue);
   }
 }

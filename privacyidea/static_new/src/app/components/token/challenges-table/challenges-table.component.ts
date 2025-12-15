@@ -21,22 +21,23 @@ import {
   ChallengesService,
   ChallengesServiceInterface
 } from "../../../services/token/challenges/challenges.service";
-import { Component, ViewChild, WritableSignal, inject, linkedSignal } from "@angular/core";
+import { Component, ElementRef, ViewChild, WritableSignal, inject, linkedSignal } from "@angular/core";
 import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
 import { MatPaginator, MatPaginatorModule, PageEvent } from "@angular/material/paginator";
-import { MatSort, MatSortModule, Sort } from "@angular/material/sort";
+import { Sort } from "@angular/material/sort";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { TableUtilsService, TableUtilsServiceInterface } from "../../../services/table-utils/table-utils.service";
 import { TokenService, TokenServiceInterface } from "../../../services/token/token.service";
 
 import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
 import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
-import { KeywordFilterComponent } from "../../shared/keyword-filter/keyword-filter.component";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 import { NgClass } from "@angular/common";
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
+import { MatButtonModule } from "@angular/material/button";
+import { FilterValue } from "../../../core/models/filter_value";
 
 const columnKeysMap = [
   { key: "timestamp", label: "Timestamp" },
@@ -52,11 +53,10 @@ const columnKeysMap = [
   imports: [
     MatTableModule,
     MatPaginatorModule,
-    MatSortModule,
     MatFormFieldModule,
     MatInputModule,
     MatIconModule,
-    KeywordFilterComponent,
+    MatButtonModule,
     NgClass,
     CopyButtonComponent,
     ScrollToTopDirective,
@@ -79,7 +79,7 @@ export class ChallengesTableComponent {
   tokenSerial = this.tokenService.tokenSerial;
   pageSize = this.challengesService.pageSize;
   pageIndex = this.challengesService.pageIndex;
-  sortby_sortdir = this.challengesService.sort;
+  sort = this.challengesService.sort;
   length = linkedSignal({
     source: this.challengesService.challengesResource.value,
     computation: (res, prev) => {
@@ -99,16 +99,36 @@ export class ChallengesTableComponent {
     }
   });
 
+  @ViewChild('filterHTMLInputElement', { static: false })
+  filterInput!: ElementRef<HTMLInputElement>;
+
   @ViewChild(MatPaginator) paginator!: MatPaginator;
-  @ViewChild(MatSort) sort!: MatSort;
 
   onPageEvent(event: PageEvent) {
     this.pageSize.set(event.pageSize);
     this.pageIndex.set(event.pageIndex);
   }
 
-  onSortEvent($event: Sort) {
-    this.sortby_sortdir.set($event);
+  toggleFilter(filterKeyword: string): void {
+    const newValue = this.tableUtilsService.toggleKeywordInFilter({
+      keyword: filterKeyword,
+      currentValue: this.challengesService.challengesFilter()
+    });
+    this.challengesService.challengesFilter.set(newValue);
+  }
+
+  isFilterSelected(filter: string, inputValue: FilterValue): boolean {
+    return inputValue.hasKey(filter);
+  }
+
+  getFilterIconName(keyword: string): string {
+    const isSelected = this.isFilterSelected(keyword, this.challengesService.challengesFilter());
+    return isSelected ? "filter_alt_off" : "filter_alt";
+  }
+
+  onKeywordClick(filterKeyword: string): void {
+    this.toggleFilter(filterKeyword);
+    this.filterInput?.nativeElement.focus();
   }
 
   serialClicked(element: { data: { type: string }; serial: string }): void {

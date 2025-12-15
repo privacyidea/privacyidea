@@ -32,7 +32,7 @@ import { TokenService, TokenServiceInterface } from "../token/token.service";
 import { StringUtils } from "../../utils/string.utils";
 import { UserService, UserServiceInterface } from "../user/user.service";
 
-const apiFilter = ["container_serial", "type", "user"];
+const apiFilter = ["container_serial", "type", "description", "container_realm"];
 const advancedApiFilter = ["token_serial"];
 
 export interface ContainerDetails {
@@ -116,22 +116,13 @@ export interface ContainerCreateData {
 }
 
 export interface ContainerTemplate {
-  container_type: string;
+  container_type: ContainerTypeOption | "";
   default: boolean;
   name: string;
   template_options: {
     options: any;
-    tokens: Array<ContainerTemplateToken>;
+    tokens: Array<any>;
   };
-}
-
-export interface ContainerTemplateToken {
-  genkey: boolean;
-  hashlib: string;
-  otplen: number;
-  timeStep: number;
-  type: string;
-  user: boolean;
 }
 
 export interface ContainerRegisterData {
@@ -174,11 +165,9 @@ export interface ContainerServiceInterface {
   containerSelection: WritableSignal<ContainerDetailData[]>;
   containerTypesResource: HttpResourceRef<PiResponse<ContainerTypes> | undefined>;
   containerTypeOptions: Signal<ContainerType[]>;
-  selectedContainerType: Signal<ContainerType>;
+  selectedContainerType: Signal<ContainerType | undefined>;
   containerDetailResource: HttpResourceRef<PiResponse<ContainerDetails> | undefined>;
   containerDetail: WritableSignal<ContainerDetails>;
-  templatesResource: HttpResourceRef<PiResponse<{ templates: ContainerTemplate[] }> | undefined>;
-  templates: Signal<ContainerTemplate[]>;
   addToken: (tokenSerial: string, containerSerial: string) => Observable<any>;
   removeToken: (tokenSerial: string, containerSerial: string) => Observable<any>;
   setContainerRealm: (containerSerial: string, value: string[]) => Observable<any>;
@@ -252,8 +241,7 @@ export class ContainerService implements ContainerServiceInterface {
 
   selectedContainer: WritableSignal<string | null> = linkedSignal({
     source: () => this.contentService.routeUrl(),
-    computation: (routeUrl, previous) =>
-      this.contentService.onTokensEnrollment() ? (previous?.value ?? "") : ""
+    computation: (routeUrl, previous) => (this.contentService.onTokensEnrollment() ? (previous?.value ?? "") : "")
   });
 
   sort = signal<Sort>({ active: "serial", direction: "asc" });
@@ -265,7 +253,7 @@ export class ContainerService implements ContainerServiceInterface {
 
   filterParams = computed<Record<string, string>>(() => {
     const allowed = [...this.apiFilter, ...this.advancedApiFilter];
-    const plainKeys = new Set(["user", "type", "container_serial", "token_serial", "realm"]);
+    const plainKeys = new Set(["user"]);
 
     const entries = Array.from(this.containerFilter().filterMap.entries())
       .filter(([key]) => allowed.includes(key))
@@ -302,16 +290,16 @@ export class ContainerService implements ContainerServiceInterface {
     computation: () => 0
   });
 
-  loadAllContainers = computed(() =>
-    this.contentService.onTokensEnrollment() || this.contentService.onTokenDetails()
-  );
+  loadAllContainers = computed(() => this.contentService.onTokensEnrollment() ||
+    this.contentService.onTokenDetails() ||
+    this.contentService.onUserDetails());
 
   private readonly uniqueCompatibleType = computed<string | null>(() => {
     const tt = this.compatibleWithSelectedTokenType();
     if (!tt) return null;
 
     const types = this.containerTypeOptions();
-    const compatible = types.filter(t => (t.token_types ?? []).includes(tt));
+    const compatible = types.filter((t) => (t.token_types ?? []).includes(tt));
 
     return compatible.length === 1 ? String(compatible[0].containerType) : null;
   });
@@ -363,7 +351,8 @@ export class ContainerService implements ContainerServiceInterface {
       }),
       ...(this.loadAllContainers() && {
         no_token: 1,
-        user: this.userService.selectedUser()?.username ?? ""
+        user: this.userService.selectedUser()?.username ?? "",
+        realm: this.userService.selectedUserRealm() ?? ""
       }),
       sortby: this.sort().active,
       sortdir: this.sort().direction,
@@ -436,15 +425,17 @@ export class ContainerService implements ContainerServiceInterface {
     }));
   });
 
-  selectedContainerType = linkedSignal({
+  selectedContainerType = linkedSignal<any, ContainerType | undefined>({
     source: this.contentService.routeUrl,
-    computation: () => {
+    computation: (routeUrl) => {
       let containerType = this.authService.defaultContainerType();
 
       if (this.contentService.onTokensContainersWizard()) {
         containerType = this.authService.containerWizard().type || containerType;
       }
-
+      if (this.contentService.onTokensContainersTemplates()) {
+        return undefined;
+      }
       return (
         this.containerTypeOptions().find((type) => type.containerType === containerType) ||
         this.containerTypeOptions()[0] || {
@@ -487,36 +478,6 @@ export class ContainerService implements ContainerServiceInterface {
         }
       );
     }
-  });
-
-  templatesResource = httpResource<PiResponse<{ templates: ContainerTemplate[] }>>(() => {
-    // Do not load templates if the action is not allowed.
-    if (!this.authService.actionAllowed("container_template_list")) {
-      return undefined;
-    }
-    // Only load templates on the container create route.
-    if (!this.contentService.onTokensContainersCreate()) {
-      return undefined;
-    }
-
-    let params: any = {};
-    if (this.selectedContainerType()) {
-      params = {
-        container_type: this.selectedContainerType().containerType
-      };
-    }
-
-    return {
-      url: `${this.containerBaseUrl}templates`,
-      method: "GET",
-      params: params,
-      headers: this.authService.getHeaders()
-    };
-  });
-
-  templates: WritableSignal<ContainerTemplate[]> = linkedSignal({
-    source: this.templatesResource.value,
-    computation: (templatesResource, previous) => templatesResource?.result?.value?.templates ?? previous?.value ?? []
   });
 
   addToken(tokenSerial: string, containerSerial: string): Observable<any> {
@@ -800,11 +761,7 @@ export class ContainerService implements ContainerServiceInterface {
   }): Observable<PiResponse<ContainerRegisterData>> {
     const headers = this.authService.getHeaders();
     return this.http
-      .post<PiResponse<ContainerRegisterData>>(
-        `${this.containerBaseUrl}register/initialize`,
-        params,
-        { headers }
-      )
+      .post<PiResponse<ContainerRegisterData>>(`${this.containerBaseUrl}register/initialize`, params, { headers })
       .pipe(
         catchError((error) => {
           console.error("Failed to register container.", error);
@@ -820,10 +777,7 @@ export class ContainerService implements ContainerServiceInterface {
     const headers = this.authService.getHeaders();
     return this.http
       .post<PiResponse<ContainerUnregisterData>>(
-        `${this.containerBaseUrl}register/${containerSerial}/terminate`,
-        {},
-        { headers }
-      )
+        `${this.containerBaseUrl}register/${containerSerial}/terminate`, {}, { headers })
       .pipe(
         catchError((error) => {
           console.error("Failed to unregister container.", error);
@@ -887,7 +841,7 @@ export class ContainerService implements ContainerServiceInterface {
     this.containerSerial.set(containerSerial);
     this.isRolloverPolling.set(isRollover);
     this.isPollingActive.set(true);
-    this.pollingTrigger.update(count => count + 1);
+    this.pollingTrigger.update((count) => count + 1);
   }
 
   private pollingTimeoutId: any;
@@ -916,8 +870,7 @@ export class ContainerService implements ContainerServiceInterface {
       const active = this.isPollingActive();
 
       const onAllowedRoute =
-        this.contentService.onTokensContainersCreate() ||
-        this.contentService.onTokensContainersDetails();
+        this.contentService.onTokensContainersCreate() || this.contentService.onTokensContainersDetails();
 
       if (!active || !serial || !resourceValue?.result?.value || !onAllowedRoute) {
         return;

@@ -9,22 +9,3 @@
   max-height: var(--max-height);
   width: 1000px;
 }
-
-.policies-list-layout {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: calc(var(--global-gap) / 4);
-  overflow: auto;
-}
-
-.button-active {
-  background-color: var(--mat-sys-primary-base-active);
-  color: var(--mat-sys-on-primary);
-}
-.button-hover:hover:not(:disabled):not(.button-active) {
-  background-color: var(--mat-sys-primary-base-hover);
-  color: var(--mat-sys-on-primary);
-  font-size: 600;
-  cursor: pointer;
-}

@@ -31,7 +31,7 @@
         showFirstLastButtons></mat-paginator>
     </div>
 
-    <div class="flex-row margin-bottom-1 margin-top-1">
+    <div class="flex-row margin-bottom-1">
       <mat-form-field
         subscriptSizing="dynamic">
         <mat-label i18n>Node</mat-label>
@@ -49,22 +49,35 @@
       </mat-form-field>
     </div>
 
-    <table
-      [dataSource]="realmsDataSource()"
-      aria-label="Realm Data Table"
-      class="token-table"
-      mat-table
-      matSort>
-      @for (column of columnKeysMap; track column) {
-        <ng-container [matColumnDef]="column.key">
-          <th
-            *matHeaderCellDef
-            [disabled]="column.key === 'actions' || column.key === 'resolvers'"
-            attr.aria-label="{{ column.label }} Header"
-            mat-header-cell
-            mat-sort-header>
-            {{ column.label }}
-          </th>
+    <div class="audit-table-overflow">
+      <table
+        [dataSource]="realmsDataSource()"
+        aria-label="Realm Data Table"
+        class="token-table"
+        mat-table>
+        @for (column of columnKeysMap; track column) {
+          <ng-container [matColumnDef]="column.key">
+            <th
+              *matHeaderCellDef
+              attr.aria-label="{{ column.label }} Header"
+              mat-header-cell>
+              <div
+                [ngClass]="{'just-center': column.key === 'actions'}"
+                class="flex ali-center">
+                {{ column.label }}
+                <div class="margin-left-1 flex">
+                  @if (!['actions', 'resolvers'].includes(column.key)) {
+                    <button
+                      (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
+                      class="sort-button"
+                      mat-icon-button
+                      type="button">
+                      <mat-icon>{{ tableUtilsService.getSortIcon(column.key, sort()) }}</mat-icon>
+                    </button>
+                  }
+                </div>
+              </div>
+            </th>
 
           <td
             *matCellDef="let element"

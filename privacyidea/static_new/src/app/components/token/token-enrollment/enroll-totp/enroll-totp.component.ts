@@ -17,19 +17,21 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { NgClass } from "@angular/common";
-import { Component, EventEmitter, inject, Input, OnInit, Output } from "@angular/core";
+import { Component, effect, EventEmitter, inject, input, Input, OnInit, Output } from "@angular/core";
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatOption } from "@angular/material/core";
 import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { MatSelect } from "@angular/material/select";
-import { Observable, of } from "rxjs";
 import {
-  EnrollmentResponse,
+  TokenApiPayloadMapper,
   TokenEnrollmentData
 } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
-import { TotpApiPayloadMapper } from "../../../../mappers/token-api-payload/totp-token-api-payload.mapper";
+import {
+  TotpApiPayloadMapper,
+  TotpEnrollmentData
+} from "../../../../mappers/token-api-payload/totp-token-api-payload.mapper";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
 
@@ -75,8 +77,11 @@ export class EnrollTotpComponent implements OnInit {
   @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
-  @Output() clickEnrollChange = new EventEmitter<
-    (basicOptions: TokenEnrollmentData) => Observable<EnrollmentResponse | null>
+  @Output() enrollmentArgsGetterChange = new EventEmitter<
+    (basicOptions: TokenEnrollmentData) => {
+      data: TotpEnrollmentData;
+      mapper: TokenApiPayloadMapper<TotpEnrollmentData>;
+    } | null
   >();
   generateOnServerFormControl = new FormControl<boolean>(true, [Validators.required]);
   otpLengthFormControl = new FormControl<number>(6, [Validators.required]);
@@ -91,6 +96,12 @@ export class EnrollTotpComponent implements OnInit {
     timeStep: this.timeStepControl
   });
 
+  disabled = input<boolean>(false);
+
+  constructor() {
+    effect(() => (this.disabled() ? this.totpForm.disable({ emitEvent: false }) : this._enableFormControls()));
+  }
+
   ngOnInit(): void {
     this.additionalFormFieldsChange.emit({
       generateOnServer: this.generateOnServerFormControl,
@@ -99,8 +110,11 @@ export class EnrollTotpComponent implements OnInit {
       hashAlgorithm: this.hashAlgorithmControl,
       timeStep: this.timeStepControl
     });
-    this.clickEnrollChange.emit(this.onClickEnroll);
+    this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
+    this._applyPolicies();
+  }
 
+  private _applyPolicies() {
     if (this.authService.checkForceServerGenerateOTPKey("totp")) {
       this.generateOnServerFormControl.disable({ emitEvent: false });
     } else {
@@ -117,10 +131,15 @@ export class EnrollTotpComponent implements OnInit {
     }
   }
 
-  onClickEnroll = (basicOptions: TokenEnrollmentData): Observable<EnrollmentResponse | null> => {
+  enrollmentArgsGetter = (
+    basicOptions: TokenEnrollmentData
+  ): {
+    data: TotpEnrollmentData;
+    mapper: TokenApiPayloadMapper<TotpEnrollmentData>;
+  } | null => {
     if (this.totpForm.invalid) {
       this.totpForm.markAllAsTouched();
-      return of(null);
+      return null;
     }
     const timeStepValue =
       typeof this.timeStepControl.value === "string"
@@ -138,9 +157,13 @@ export class EnrollTotpComponent implements OnInit {
     if (!enrollmentData.generateOnServer) {
       enrollmentData.otpKey = this.otpKeyFormControl.value ?? "";
     }
-    return this.tokenService.enrollToken({
+    return {
       data: enrollmentData,
       mapper: this.enrollmentMapper
-    });
+    };
   };
+  private _enableFormControls(): void {
+    this.totpForm.enable({ emitEvent: false });
+    this._applyPolicies();
+  }
 }

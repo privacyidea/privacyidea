@@ -1,0 +1,107 @@
+<!--
+ (c) NetKnights GmbH 2025,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+
+<mat-expansion-panel
+  class="token-card"
+  [disabled]="childHadNoForm()">
+  <mat-expansion-panel-header>
+    <mat-panel-title>
+      {{ token().type }}
+    </mat-panel-title>
+    <div
+      class="token-actions"
+      [class.padding-right-16]="childHadNoForm()">
+      @if (isEditMode()) {
+        <button
+          mat-icon-button
+          (click)="removeToken(); $event.stopPropagation()">
+          <mat-icon>delete</mat-icon>
+        </button>
+      }
+    </div>
+  </mat-expansion-panel-header>
+  @switch (token().type) {
+    @case ("hotp") {
+      <app-enroll-hotp
+        (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
+        [disabled]="!isEditMode()" />
+    }
+    @case ("totp") {
+      <app-enroll-totp
+        (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
+        [disabled]="!isEditMode()" />
+    }
+    @case ("spass") {
+      <app-enroll-spass (additionalFormFieldsChange)="updateAdditionalFormFields($event)" />
+    }
+    @case ("remote") {
+      <app-enroll-remote
+        (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
+        [disabled]="!isEditMode()" />
+    }
+    @case ("sms") {
+      <app-enroll-sms
+        (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
+        [disabled]="!isEditMode()" />
+    }
+    @case ("4eyes") {
+      <app-enroll-foureyes
+        (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
+        [disabled]="!isEditMode()" />
+    }
+    @case ("applspec") {
+      <app-enroll-applspec
+        (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
+        [disabled]="!isEditMode()" />
+    }
+    @case ("daypassword") {
+      <app-enroll-daypassword
+        (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
+        [disabled]="!isEditMode()" />
+    }
+    @case ("email") {
+      <app-enroll-email
+        (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
+        [disabled]="!isEditMode()" />
+    }
+    @case ("indexedsecret") {
+      <app-enroll-indexedsecret
+        (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
+        [disabled]="!isEditMode()" />
+    }
+    @case ("paper") {
+      <app-enroll-paper (additionalFormFieldsChange)="updateAdditionalFormFields($event)" />
+    }
+    @case ("push") {
+      <app-enroll-push (additionalFormFieldsChange)="updateAdditionalFormFields($event)" />
+    }
+    @case ("registration") {
+      <app-enroll-registration (additionalFormFieldsChange)="updateAdditionalFormFields($event)" />
+    }
+    @case ("tan") {
+      <app-enroll-tan (additionalFormFieldsChange)="updateAdditionalFormFields($event)" />
+    }
+    @case ("tiqr") {
+      <app-enroll-tiqr
+        (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
+        [disabled]="!isEditMode()" />
+    }
+    @default {}
+  }
+</mat-expansion-panel>

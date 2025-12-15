@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, EventEmitter, inject, OnInit, Output } from "@angular/core";
+import { Component, effect, EventEmitter, inject, input, OnInit, Output } from "@angular/core";
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { ErrorStateMatcher } from "@angular/material/core";
@@ -24,12 +24,14 @@ import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 
-import { Observable, of } from "rxjs";
 import {
-  EnrollmentResponse,
+  VascoApiPayloadMapper,
+  VascoEnrollmentData
+} from "../../../../mappers/token-api-payload/vasco-token-api-payload.mapper";
+import {
+  TokenApiPayloadMapper,
   TokenEnrollmentData
 } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
-import { VascoApiPayloadMapper } from "../../../../mappers/token-api-payload/vasco-token-api-payload.mapper";
 
 export interface VascoEnrollmentOptions extends TokenEnrollmentData {
   type: "vasco";
@@ -55,12 +57,16 @@ export class VascoErrorStateMatcher implements ErrorStateMatcher {
 export class EnrollVascoComponent implements OnInit {
   protected readonly enrollmentMapper: VascoApiPayloadMapper = inject(VascoApiPayloadMapper);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+  disabled = input<boolean>(false);
 
   @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
-  @Output() clickEnrollChange = new EventEmitter<
-    (basicOptions: TokenEnrollmentData) => Observable<EnrollmentResponse | null>
+  @Output() enrollmentArgsGetterChange = new EventEmitter<
+    (basicOptions: TokenEnrollmentData) => {
+      data: VascoEnrollmentData;
+      mapper: TokenApiPayloadMapper<VascoEnrollmentData>;
+    } | null
   >();
 
   otpKeyControl = new FormControl<string>("");
@@ -86,13 +92,19 @@ export class EnrollVascoComponent implements OnInit {
     return vascoOtpStr.slice(0, 10);
   }
 
+  constructor() {
+    effect(() =>
+      this.disabled() ? this.vascoForm.disable({ emitEvent: false }) : this.vascoForm.enable({ emitEvent: false })
+    );
+  }
+
   ngOnInit(): void {
     this.additionalFormFieldsChange.emit({
       otpKey: this.otpKeyControl,
       useVascoSerial: this.useVascoSerialControl,
       vascoSerial: this.vascoSerialControl
     });
-    this.clickEnrollChange.emit(this.onClickEnroll);
+    this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
 
     this.useVascoSerialControl.valueChanges.subscribe((useSerial) => {
       if (useSerial) {
@@ -108,10 +120,13 @@ export class EnrollVascoComponent implements OnInit {
     this.useVascoSerialControl.updateValueAndValidity();
   }
 
-  onClickEnroll = (basicOptions: TokenEnrollmentData): Observable<EnrollmentResponse | null> => {
+  enrollmentArgsGetter = (basicOptions: TokenEnrollmentData): {
+    data: VascoEnrollmentData;
+    mapper: TokenApiPayloadMapper<VascoEnrollmentData>;
+  } | null => {
     if (this.vascoForm.invalid) {
       this.vascoForm.markAllAsTouched();
-      return of(null);
+      return null;
     }
 
     const enrollmentData: VascoEnrollmentOptions = {
@@ -125,9 +140,9 @@ export class EnrollVascoComponent implements OnInit {
     } else {
       enrollmentData.otpKey = this.otpKeyControl.value ?? "";
     }
-    return this.tokenService.enrollToken({
+    return {
       data: enrollmentData,
       mapper: this.enrollmentMapper
-    });
+    };
   };
 }

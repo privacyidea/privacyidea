@@ -10,6 +10,7 @@ permissions: {}
 
 jobs:
   trigger-gitlab:
+    name: Trigger internal GitLab pipeline
     runs-on: ubuntu-latest
 
     steps:

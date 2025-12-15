@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, effect, inject, linkedSignal, ViewChild, WritableSignal } from "@angular/core";
+import { Component, effect, inject, linkedSignal, ViewChild, WritableSignal, ElementRef, signal } from "@angular/core";
 import {
   MatCell,
   MatCellDef,
@@ -32,7 +32,6 @@ import {
   MatTableDataSource
 } from "@angular/material/table";
 import { MatPaginator } from "@angular/material/paginator";
-import { MatSort } from "@angular/material/sort";
 import { CopyButtonComponent } from "../../../shared/copy-button/copy-button.component";
 import {
   ContainerDetailData,
@@ -47,6 +46,9 @@ import { ClearableInputComponent } from "../../../shared/clearable-input/clearab
 import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
 import { NgClass } from "@angular/common";
 import { MatTooltip } from "@angular/material/tooltip";
+import { MatIcon } from "@angular/material/icon";
+import { MatIconButton } from "@angular/material/button";
+import { Sort } from "@angular/material/sort";
 
 @Component({
   selector: "app-user-details-container-table",
@@ -61,7 +63,6 @@ import { MatTooltip } from "@angular/material/tooltip";
     MatInput,
     MatPaginator,
     MatTable,
-    MatSort,
     MatHeaderCellDef,
     MatColumnDef,
     MatHeaderCell,
@@ -72,7 +73,9 @@ import { MatTooltip } from "@angular/material/tooltip";
     MatHeaderRow,
     MatRow,
     MatFormField,
-    MatLabel
+    MatLabel,
+    MatIcon,
+    MatIconButton
   ],
   templateUrl: "./user-details-container-table.component.html",
   styleUrl: "./user-details-container-table.component.scss"
@@ -96,12 +99,13 @@ export class UserDetailsContainerTableComponent {
 
   dataSource = new MatTableDataSource<ContainerDetailData>([]);
   filterValue = "";
+  sort = signal({ active: "serial", direction: "asc" } as Sort);
 
   pageSize = 10;
   pageSizeOptions = this.tableUtilsService.pageSizeOptions;
 
   @ViewChild(MatPaginator) paginator!: MatPaginator;
-  @ViewChild(MatSort) sort!: MatSort;
+  @ViewChild('filterInput', { static: false }) filterInput!: ElementRef<HTMLInputElement>;
 
   userContainers: WritableSignal<ContainerDetailData[]> = linkedSignal({
     source: this.containerService.containerResource.value,
@@ -116,13 +120,19 @@ export class UserDetailsContainerTableComponent {
 
   constructor() {
     effect(() => {
-      this.dataSource.data = this.userContainers();
+      const base = this.userContainers();
+      this.dataSource.data = this.clientsideSortContainerData(base, this.sort());
+    });
+
+    effect(() => {
+      const s = this.sort();
+      this.dataSource.data = this.clientsideSortContainerData([...this.dataSource.data], s);
     });
   }
 
   ngAfterViewInit(): void {
     this.dataSource.paginator = this.paginator;
-    this.dataSource.sort = this.sort;
+    (this.dataSource as any)._sort = this.sort;
 
     this.dataSource.filterPredicate = (row: ContainerDetailData, filter: string) => {
       const currentState = (row.states?.[0] ?? "").toString();
@@ -140,8 +150,10 @@ export class UserDetailsContainerTableComponent {
   }
 
   handleFilterInput($event: Event): void {
-    this.filterValue = ($event.target as HTMLInputElement).value.trim().toLowerCase();
-    this.dataSource.filter = this.filterValue;
+    const raw = ($event.target as HTMLInputElement).value ?? "";
+    const normalised = raw.trim().toLowerCase();
+    this.filterValue = normalised;
+    this.dataSource.filter = normalised;
   }
 
   onPageSizeChange(size: number) {
@@ -151,6 +163,19 @@ export class UserDetailsContainerTableComponent {
   handleStateClick(element: ContainerDetailData) {
     this.containerService.toggleActive(element.serial, element.states).subscribe({
       next: () => this.containerService.containerResource.reload()
+    });
+  }
+
+  private clientsideSortContainerData(data: ContainerDetailData[], s: Sort) {
+    if (!s.direction) return data;
+    const dir = s.direction === "asc" ? 1 : -1;
+    const key = s.active as keyof ContainerDetailData;
+    return data.sort((a: any, b: any) => {
+      const va = (a[key] ?? "").toString().toLowerCase();
+      const vb = (b[key] ?? "").toString().toLowerCase();
+      if (va < vb) return -1 * dir;
+      if (va > vb) return 1 * dir;
+      return 0;
     });
   }
 }
