@@ -512,15 +512,19 @@
             Machines
           </button>
         </mat-list-item>
-        <mat-list-item>
-          <button
-            class="card-button-1"
-            disabled
-            mat-stroked-button>
-            <mat-icon>lan</mat-icon>
-            Machine Resolver
-          </button>
-        </mat-list-item>
+        @if (authService.actionAllowed("mresolverread")) {
+          <mat-list-item>
+            <button
+              [ngClass]="
+                contentService.routeUrl() === ROUTE_PATHS.MACHINE_RESOLVER ? 'card-button-active' : 'card-button-1'
+              "
+              [routerLink]="[ROUTE_PATHS.MACHINE_RESOLVER]"
+              mat-stroked-button>
+              <mat-icon>lan</mat-icon>
+              Machine Resolver
+            </button>
+          </mat-list-item>
+        }
         @if (authService.actionAllowed("periodictask_read")) {
           <mat-list-item>
             <button
