@@ -17,11 +17,13 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, inject } from "@angular/core";
+import { DOCUMENT } from "@angular/common";
 import { MatSelectModule } from "@angular/material/select";
 import { MachineService, MachineServiceInterface } from "../../../services/machine/machine.service";
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { TokenApplicationsOfflineComponent } from "./token-applications-offline/token-applications-offline.component";
 import { TokenApplicationsSshComponent } from "./token-applications-ssh/token-applications-ssh.component";
+import { TableUtilsService, TableUtilsServiceInterface } from "../../../services/table-utils/table-utils.service";
 
 @Component({
   selector: "app-token-applications",
@@ -38,6 +40,64 @@ import { TokenApplicationsSshComponent } from "./token-applications-ssh/token-ap
 export class TokenApplicationsComponent {
   private readonly machineService: MachineServiceInterface =
     inject(MachineService);
+  private readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
+  private readonly document: Document = inject(DOCUMENT);
 
   selectedApplicationType = this.machineService.selectedApplicationType;
+
+  toggleFilter(filterKeyword: string): void {
+    let newValue;
+    if (filterKeyword === "machineid & resolver") {
+      const current = this.machineService.machineFilter();
+      const hasMachineId = current.hasKey("machineid");
+      const hasResolver = current.hasKey("resolver");
+
+      if (hasMachineId && hasResolver) {
+        newValue = this.tableUtilsService.toggleKeywordInFilter({ keyword: "machineid", currentValue: current });
+        newValue = this.tableUtilsService.toggleKeywordInFilter({ keyword: "resolver", currentValue: newValue });
+      } else if (!hasMachineId && !hasResolver) {
+        newValue = this.tableUtilsService.toggleKeywordInFilter({ keyword: "machineid", currentValue: current });
+        newValue = this.tableUtilsService.toggleKeywordInFilter({ keyword: "resolver", currentValue: newValue });
+      } else if (hasMachineId && !hasResolver) {
+        newValue = this.tableUtilsService.toggleKeywordInFilter({ keyword: "resolver", currentValue: current });
+      } else {
+        newValue = this.tableUtilsService.toggleKeywordInFilter({ keyword: "machineid", currentValue: current });
+      }
+    } else {
+      newValue = this.tableUtilsService.toggleKeywordInFilter({
+        keyword: filterKeyword,
+        currentValue: this.machineService.machineFilter()
+      });
+    }
+    this.machineService.machineFilter.set(newValue);
+  }
+
+  getFilterIconName(keyword: string): string {
+    if (keyword === "machineid & resolver") {
+      const current = this.machineService.machineFilter();
+      const selected = current.hasKey("machineid") && current.hasKey("resolver");
+      return selected ? "filter_alt_off" : "filter_alt";
+    }
+    const isSelected = this.machineService.machineFilter().hasKey(keyword);
+    return isSelected ? "filter_alt_off" : "filter_alt";
+  }
+
+  onKeywordClick(filterKeyword: string): void {
+    this.toggleFilter(filterKeyword);
+    this.focusActiveInput();
+  }
+
+  onAdvancedFilterClick(filterKeyword: string): void {
+    this.toggleFilter(filterKeyword);
+    this.focusActiveInput();
+  }
+
+  private focusActiveInput(): void {
+    const type = this.selectedApplicationType();
+    const id = type === "ssh" ? "ssh-filter-input" : "offline-filter-input";
+    setTimeout(() => {
+      const el = this.document.getElementById(id) as HTMLInputElement | null;
+      el?.focus();
+    });
+  }
 }
