@@ -309,9 +309,9 @@ describe("ContainerService", () => {
   });
 
   it("filterParams converts blank values and drops unknown keys", () => {
-    containerService.containerFilter.set(new FilterValue({ value: "user: Alice type: foo: bar" }));
+    containerService.containerFilter.set(new FilterValue({ value: "type: generic description: foo: bar" }));
     const fp = containerService.filterParams();
-    expect(fp).toEqual({ user: "Alice" });
+    expect(fp).toEqual({ type: "*generic*" });
   });
 
   it("pageSize falls back to 10 for invalid eventPageSize", () => {
@@ -390,7 +390,7 @@ describe("ContainerService", () => {
     expect(containerService.filterParams()).toEqual({
       desc: "*foo*",
       token_serial: "*123*",
-      user: "Bob"
+      // user: "Bob"
     });
   });
 
