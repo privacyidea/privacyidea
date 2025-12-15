@@ -80,7 +80,6 @@ const apiFilter = [
   "active",
   "description",
   "rollout_state",
-  "user",
   "tokenrealm",
   "container_serial"
 ];

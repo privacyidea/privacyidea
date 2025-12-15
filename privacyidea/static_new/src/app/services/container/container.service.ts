@@ -32,7 +32,7 @@ import { TokenService, TokenServiceInterface } from "../token/token.service";
 import { StringUtils } from "../../utils/string.utils";
 import { UserService, UserServiceInterface } from "../user/user.service";
 
-const apiFilter = ["container_serial", "type", "description", "user", "container_realm"];
+const apiFilter = ["container_serial", "type", "description", "container_realm"];
 const advancedApiFilter = ["token_serial"];
 
 export interface ContainerDetails {
