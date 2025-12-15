@@ -37,7 +37,7 @@ import { MatInputModule } from "@angular/material/input";
 import { NgClass } from "@angular/common";
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { MatButtonModule } from "@angular/material/button";
-import { FilterValue } from "../../../core/models/filter_value";
+import { FilterValue } from "../../../core/models/filter_value/filter_value";
 
 const columnKeysMap = [
   { key: "timestamp", label: "Timestamp" },
@@ -99,7 +99,7 @@ export class ChallengesTableComponent {
     }
   });
 
-  @ViewChild('filterHTMLInputElement', { static: false })
+  @ViewChild("filterHTMLInputElement", { static: false })
   filterInput!: ElementRef<HTMLInputElement>;
 
   @ViewChild(MatPaginator) paginator!: MatPaginator;

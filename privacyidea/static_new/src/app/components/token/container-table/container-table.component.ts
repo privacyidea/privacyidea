@@ -42,7 +42,7 @@ import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.s
 import { ContainerTableActionsComponent } from "./container-table-actions/container-table-actions.component";
 import { MatIconModule } from "@angular/material/icon";
 import { MatButtonModule } from "@angular/material/button";
-import { FilterValue } from "../../../core/models/filter_value";
+import { FilterValue } from "../../../core/models/filter_value/filter_value";
 
 @Component({
   selector: "app-container-table",
