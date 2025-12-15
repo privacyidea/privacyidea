@@ -55,7 +55,7 @@ export interface ContentServiceInterface {
 
   tokenSelected: (serial: string) => void;
   containerSelected: (containerSerial: string) => void;
-  userSelected: (username: any) => void;
+  userSelected: (username: string, realm: string) => void;
 }
 
 @Injectable({ providedIn: "root" })
@@ -112,8 +112,8 @@ export class ContentService implements ContentServiceInterface {
     this.containerSerial.set(containerSerial);
   }
 
-  userSelected(username: any): void {
-    this.router.navigateByUrl(ROUTE_PATHS.USERS_DETAILS + "/" + username);
+  userSelected(username: string, realm: string): void {
+    this.router.navigateByUrl(ROUTE_PATHS.USERS_DETAILS + "/" + username + `?realm=${encodeURIComponent(realm ?? "")}`);
     this.detailsUsername.set(username);
   }
 }

@@ -33,7 +33,6 @@ import {
 } from "rxjs";
 import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
-import { ROUTE_PATHS } from "../../route_paths";
 import {
   EnrollmentResponse,
   TokenApiPayloadMapper,
@@ -81,11 +80,23 @@ const apiFilter = [
   "active",
   "description",
   "rollout_state",
-  "user",
   "tokenrealm",
   "container_serial"
 ];
+
 const advancedApiFilter = ["infokey & infovalue", "userid", "resolver", "assigned"];
+
+const apiFilterKeyMap: Record<string, string> = {
+  serial: "serial",
+  tokentype: "type",
+  active: "active",
+  description: "description",
+  rollout_state: "rollout_state",
+  username: "user",
+  realms: "tokenrealm",
+  container_serial: "container_serial"
+};
+
 const hiddenApiFilter = ["type_list"];
 
 export interface Tokens {
@@ -184,6 +195,7 @@ export interface TokenImportResult {
 }
 
 export interface TokenServiceInterface {
+  apiFilterKeyMap: Record<string, string>;
   stopPolling$: Subject<void>;
   tokenBaseUrl: string;
   eventPageSize: number;
@@ -290,16 +302,21 @@ export class TokenService implements TokenServiceInterface {
   private readonly contentService: ContentServiceInterface = inject(ContentService);
 
   readonly hiddenApiFilter = hiddenApiFilter;
+  readonly apiFilterKeyMap = apiFilterKeyMap;
   stopPolling$ = new Subject<void>();
   tokenBaseUrl = environment.proxyUrl + "/token/";
   eventPageSize = 10;
-  detailsUsername = this.contentService.detailsUsername;
-  tokenSerial = this.contentService.tokenSerial;
-
   userRealm = signal("");
-
+  tokenSerial = this.contentService.tokenSerial;
+  detailsUsername = this.contentService.detailsUsername;
   filterParams = computed<Record<string, string>>(() => {
-    const allowed = [...this.apiFilter, ...this.advancedApiFilter, ...this.hiddenApiFilter];
+    const allowed = [
+      ...this.apiFilter,
+      ...this.advancedApiFilter,
+      ...this.hiddenApiFilter,
+      "infokey",
+      "infovalue"
+    ];
 
     const plainKeys = new Set(["user", "infokey", "infovalue", "active", "assigned", "container_serial"]);
 

@@ -25,6 +25,7 @@ import { ContentService, ContentServiceInterface } from "../content/content.serv
 
 import { FilterValue } from "../../core/models/filter_value/filter_value";
 import { StringUtils } from "../../utils/string.utils";
+import { Sort } from "@angular/material/sort";
 
 export interface Audit {
   auditcolumns: string[];
@@ -87,9 +88,34 @@ const apiFilter = [
   "resolver",
   "container_type"
 ];
+
+const apiFilterKeyMap: Record<string, string> = {
+  action: "action",
+  success: "success",
+  authentication: "authentication",
+  serial: "serial",
+  container_serial: "container_serial",
+  startdate: "startdate",
+  duration: "duration",
+  token_type: "token_type",
+  user: "user",
+  realm: "realm",
+  administrator: "administrator",
+  action_detail: "action_detail",
+  info: "info",
+  policies: "policies",
+  client: "client",
+  user_agent: "user_agent",
+  user_agent_version: "user_agent_version",
+  privacyidea_server: "privacyidea_server",
+  resolver: "resolver",
+  container_type: "container_type"
+};
+
 const advancedApiFilter: string[] = [];
 
 export interface AuditServiceInterface {
+  apiFilterKeyMap: Record<string, string>;
   apiFilter: string[];
   advancedApiFilter: string[];
   auditFilter: WritableSignal<FilterValue>;
@@ -97,6 +123,7 @@ export interface AuditServiceInterface {
   pageSize: WritableSignal<number>;
   pageIndex: WritableSignal<number>;
   auditResource: HttpResourceRef<PiResponse<Audit> | undefined>;
+  sort: WritableSignal<Sort>;
 
   clearFilter(): void;
 
@@ -109,8 +136,10 @@ export interface AuditServiceInterface {
 export class AuditService implements AuditServiceInterface {
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
+  sort = signal({ active: "serial", direction: "asc" } as Sort);
 
   readonly apiFilter = apiFilter;
+  readonly apiFilterKeyMap = apiFilterKeyMap;
   readonly advancedApiFilter = advancedApiFilter;
 
   auditFilter = signal(new FilterValue());
