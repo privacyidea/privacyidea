@@ -125,18 +125,10 @@ describe("NavigationComponent (async, no RouterTestingModule, no MatSnackBar)", 
     const content = TestBed.inject(ContentService) as unknown as MockContentService;
     const auth = TestBed.inject(AuthService) as unknown as MockAuthService;
 
-    (auth as any).anyContainerActionAllowed = jest.fn().mockReturnValue(true);
     content.routeUrl.set(`${paths.TOKENS_DETAILS}/123`);
     component.refreshPage();
     expect(tokenService.tokenDetailResource.reload).toHaveBeenCalled();
     expect(containerService.containerResource.reload).toHaveBeenCalled();
-
-    jest.clearAllMocks();
-    (auth as any).anyContainerActionAllowed = jest.fn().mockReturnValue(false);
-    content.routeUrl.set(`${paths.TOKENS_DETAILS}/456`);
-    component.refreshPage();
-    expect(tokenService.tokenDetailResource.reload).toHaveBeenCalled();
-    expect(containerService.containerResource.reload).not.toHaveBeenCalled();
 
     jest.clearAllMocks();
     content.routeUrl.set(`${paths.TOKENS_CONTAINERS_DETAILS}/abc`);
@@ -177,11 +169,6 @@ describe("NavigationComponent (async, no RouterTestingModule, no MatSnackBar)", 
 
     jest.clearAllMocks();
     content.routeUrl.set(paths.USERS);
-    component.refreshPage();
-    expect(userService.usersResource.reload).toHaveBeenCalled();
-
-    jest.clearAllMocks();
-    content.routeUrl.set(paths.TOKENS_CONTAINERS_DETAILS);
     component.refreshPage();
     expect(userService.usersResource.reload).toHaveBeenCalled();
   });

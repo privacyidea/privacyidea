@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, ViewChild, WritableSignal, inject, linkedSignal } from "@angular/core";
+import { Component, ElementRef, ViewChild, WritableSignal, inject, linkedSignal } from "@angular/core";
 import {
   ContainerDetailData,
   ContainerService,
@@ -24,7 +24,7 @@ import {
 } from "../../../services/container/container.service";
 import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
 import { MatPaginatorModule, PageEvent } from "@angular/material/paginator";
-import { MatSortModule, Sort } from "@angular/material/sort";
+import { Sort } from "@angular/material/sort";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { TableUtilsService, TableUtilsServiceInterface } from "../../../services/table-utils/table-utils.service";
 import { TokenService, TokenServiceInterface } from "../../../services/token/token.service";
@@ -33,7 +33,6 @@ import { animate, state, style, transition, trigger } from "@angular/animations"
 import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
 import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
 import { FormsModule } from "@angular/forms";
-import { KeywordFilterComponent } from "../../shared/keyword-filter/keyword-filter.component";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
@@ -41,6 +40,9 @@ import { NgClass } from "@angular/common";
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
 import { ContainerTableActionsComponent } from "./container-table-actions/container-table-actions.component";
+import { MatIconModule } from "@angular/material/icon";
+import { MatButtonModule } from "@angular/material/button";
+import { FilterValue } from "../../../core/models/filter_value";
 
 @Component({
   selector: "app-container-table",
@@ -50,15 +52,15 @@ import { ContainerTableActionsComponent } from "./container-table-actions/contai
     MatFormFieldModule,
     MatInputModule,
     MatPaginatorModule,
-    MatSortModule,
     NgClass,
-    KeywordFilterComponent,
     CopyButtonComponent,
     MatCheckboxModule,
     FormsModule,
     ScrollToTopDirective,
     ClearableInputComponent,
-    ContainerTableActionsComponent
+    ContainerTableActionsComponent,
+    MatIconModule,
+    MatButtonModule
   ],
   templateUrl: "./container-table.component.html",
   styleUrl: "./container-table.component.scss",
@@ -125,9 +127,17 @@ export class ContainerTableComponent {
 
   pageSizeOptions = this.tableUtilsService.pageSizeOptions;
 
-  @ViewChild("filterHTMLInputElement", { static: true })
-  filterInput!: HTMLInputElement;
+  @ViewChild("filterHTMLInputElement", { static: false })
+  filterInput!: ElementRef<HTMLInputElement>;
   expandedElement: ContainerDetailData | null = null;
+
+  readonly apiFilterKeyMap: Record<string, string> = {
+    serial: "container_serial",
+    type: "type",
+    description: "description",
+    user_name: "user",
+    realms: "container_realm"
+  } as const;
 
   isAllSelected() {
     return (
@@ -172,5 +182,27 @@ export class ContainerTableComponent {
 
   onSortEvent($event: Sort) {
     this.sort.set($event);
+  }
+
+  toggleFilter(filterKeyword: string): void {
+    const newValue = this.tableUtilsService.toggleKeywordInFilter({
+      keyword: filterKeyword,
+      currentValue: this.containerService.containerFilter()
+    });
+    this.containerService.containerFilter.set(newValue);
+  }
+
+  isFilterSelected(filter: string, inputValue: FilterValue): boolean {
+    return inputValue.hasKey(filter);
+  }
+
+  getFilterIconName(keyword: string): string {
+    const isSelected = this.isFilterSelected(keyword, this.containerService.containerFilter());
+    return isSelected ? "filter_alt_off" : "filter_alt";
+  }
+
+  onKeywordClick(filterKeyword: string): void {
+    this.toggleFilter(filterKeyword);
+    this.filterInput?.nativeElement.focus();
   }
 }

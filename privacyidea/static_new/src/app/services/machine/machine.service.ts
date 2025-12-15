@@ -57,9 +57,8 @@ export interface TokenApplication {
 
 export interface MachineServiceInterface {
   sshApiFilter: string[];
-  sshAdvancedApiFilter: string[];
   offlineApiFilter: string[];
-  offlineAdvancedApiFilter: string[];
+  advancedApiFilter: string[];
   machines: WritableSignal<Machines | undefined>;
   tokenApplications: Signal<TokenApplications | undefined>;
   selectedApplicationType: WritableSignal<"ssh" | "offline">;
@@ -135,9 +134,8 @@ export class MachineService implements MachineServiceInterface {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   private baseUrl = environment.proxyUrl + "/machine/";
   sshApiFilter = ["serial", "service_id"];
-  sshAdvancedApiFilter = ["hostname", "machineid & resolver"];
   offlineApiFilter = ["serial", "count", "rounds"];
-  offlineAdvancedApiFilter = ["hostname", "machineid & resolver"];
+  advancedApiFilter = ["hostname", "machineid & resolver"];
 
   selectedApplicationType = linkedSignal({
     source: this.tokenService.tokenDetailResource.value,
@@ -175,8 +173,8 @@ export class MachineService implements MachineServiceInterface {
   filterParams = computed<Record<string, string>>(() => {
     const isSSH = this.selectedApplicationType() === "ssh";
     const allowed = isSSH
-      ? [...this.sshApiFilter, ...this.sshAdvancedApiFilter]
-      : [...this.offlineApiFilter, ...this.offlineAdvancedApiFilter];
+      ? [...this.sshApiFilter, ...this.advancedApiFilter]
+      : [...this.offlineApiFilter, ...this.advancedApiFilter];
 
     const wrapKeys = new Set(isSSH ? ["serial", "service_id"] : ["serial"]);
     const plainKeys = new Set(
