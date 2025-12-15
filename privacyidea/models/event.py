@@ -76,54 +76,6 @@ class EventHandler(MethodsMixin, db.Model):
             id = None
         self.id = id
 
-        # Save the main event handler object first to get an ID
-        self.save()
-
-        # Add the options to the event handler
-        options = options or {}
-        for k, v in options.items():
-            db.session.add(EventHandlerOption(eventhandler_id=self.id, Key=k, Value=v))
-
-        conditions = conditions or {}
-        for k, v in conditions.items():
-            db.session.add(EventHandlerCondition(eventhandler_id=self.id, Key=k, Value=v))
-
-        # Delete event handler conditions, that are not used anymore.
-        # This replaces the legacy .query.delete() and ensures a bulk operation.
-        delete_stmt = delete(EventHandlerCondition).where(
-            EventHandlerCondition.eventhandler_id == self.id,
-            EventHandlerCondition.Key.not_in(conditions.keys())
-        )
-        db.session.execute(delete_stmt)
-
-        # We perform one commit at the end of the __init__ method for efficiency
-        db.session.commit()
-
-    def save(self):
-        if self.id is None:
-            # create a new one
-            db.session.add(self)
-        else:
-            # update with a modern update statement
-            update_stmt = (
-                update(EventHandler)
-                .where(EventHandler.id == self.id)
-                .values(
-                    ordering=self.ordering or 0,
-                    position=self.position or "post",
-                    event=self.event,
-                    active=self.active,
-                    name=self.name,
-                    handlermodule=self.handlermodule,
-                    condition=self.condition,
-                    action=self.action
-                )
-            )
-            db.session.execute(update_stmt)
-        save_config_timestamp()
-        db.session.commit()
-        return self.id
-
     def delete(self):
         ret = self.id
         # The cascade="all, delete-orphan" on the relationships handles the deletion
