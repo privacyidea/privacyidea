@@ -166,7 +166,7 @@ class TotpTokenClass(HotpTokenClass):
                            'value': ["any",
                                      "biometric",
                                      "pin"],
-                           'disc': _(
+                           'desc': _(
                                'Enforces the privacyIDEA Authenticator App that the token has to be unlocked '
                                'with pin or biometric')
                        },

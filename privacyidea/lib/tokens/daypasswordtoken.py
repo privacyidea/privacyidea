@@ -126,7 +126,7 @@ class DayPasswordTokenClass(TotpTokenClass):
                            'value': ["any",
                                      "biometric",
                                      "pin"],
-                           'disc': _('Enforces the privacyIDEA Authenticator App that the token has to be unlocked '
+                           'desc': _('Enforces the privacyIDEA Authenticator App that the token has to be unlocked '
                                      'with pin or biometric')
                        },
                        PolicyAction.MAXTOKENUSER: {

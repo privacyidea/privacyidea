@@ -900,5 +900,5 @@ app_force_unlock
 
 type: ``string``
 
-This policy can be used to force the privayIDEA Authenticator App to secure the token with a pin or
+This policy can be used to force the privacyIDEA Authenticator App to secure the token with a pin or
 biometric. If you select any, the token can be unlocked with both.
