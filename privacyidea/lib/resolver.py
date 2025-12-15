@@ -50,11 +50,11 @@ from .config import (get_resolver_types, get_resolver_classes, get_config_object
 from privacyidea.lib.usercache import delete_user_cache
 from privacyidea.lib.framework import get_request_local_store
 from ..models import (Resolver,
-                      ResolverConfig)
+                      ResolverConfig, save_config_timestamp, db)
 from ..api.lib.utils import required
 from ..api.lib.utils import getParam
 from .error import ConfigAdminError
-from sqlalchemy import func
+from sqlalchemy import func, delete
 from .crypto import encryptPassword
 from privacyidea.lib.utils import (sanity_name_check, get_data_from_params,
                                    is_true)
@@ -128,9 +128,8 @@ def save_resolver(params):
     for key, value in data.items():
         if not value and not isinstance(value, bool):
             # If the value is empty, we do not store it. But we check if an old entry already exists and delete it.
-            old_entry = ResolverConfig.query.filter_by(resolver_id=resolver_id, Key=key).first()
-            if old_entry:
-                old_entry.delete()
+            old_config = delete(ResolverConfig).filter_by(resolver_id=resolver_id, Key=key)
+            db.session.execute(old_config)
             continue
         if types.get(key) == "password":
             if value == CENSORED:
@@ -163,6 +162,7 @@ def save_resolver(params):
 
     # Remove corresponding entries from the user cache
     delete_user_cache(resolver=resolvername)
+    save_config_timestamp()
 
     return resolver_id
 
