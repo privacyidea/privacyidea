@@ -104,7 +104,7 @@ from .policydecorators import libpolicy, auth_otppin, challenge_response_allowed
 from .user import (User)
 from ..api.lib.utils import getParam
 from ..models import (TokenOwner, TokenTokengroup, Challenge, cleanup_challenges, TokenInfo, db, TokenRealm, Realm,
-                      Tokengroup, MachineToken, TokenCredentialIdHash)
+                      Tokengroup, MachineToken, TokenCredentialIdHash, Token)
 
 DATE_FORMAT = '%Y-%m-%dT%H:%M%z'
 AUTH_DATE_FORMAT = "%Y-%m-%d %H:%M:%S.%f%z"
@@ -758,30 +758,31 @@ class TokenClass(object):
         delete the database token
         """
         # First delete all relationships (TODO: should be handled automatically by cascade delete)
-        stmt = delete(TokenRealm).where(TokenRealm.token_id == self.token.id)
-        db.session.execute(stmt)
+        delete_stmt_token_realm = delete(TokenRealm).where(TokenRealm.token_id == self.token.id)
+        db.session.execute(delete_stmt_token_realm)
 
-        stmt = delete(TokenOwner).where(TokenOwner.token_id == self.token.id)
-        db.session.execute(stmt)
+        delete_stmt_token_owner = delete(TokenOwner).where(TokenOwner.token_id == self.token.id)
+        db.session.execute(delete_stmt_token_owner)
 
-        stmt = delete(MachineToken).where(MachineToken.token_id == self.token.id)
-        db.session.execute(stmt)
+        delete_stmt_machine_token = delete(MachineToken).where(MachineToken.token_id == self.token.id)
+        db.session.execute(delete_stmt_machine_token)
 
-        stmt = delete(Challenge).where(Challenge.serial == self.token.serial)
-        db.session.execute(stmt)
+        delete_stmt_challenge = delete(Challenge).where(Challenge.serial == self.token.serial)
+        db.session.execute(delete_stmt_challenge)
 
-        stmt = delete(TokenInfo).where(TokenInfo.token_id == self.token.id)
-        db.session.execute(stmt)
+        delete_stmt_token_info = delete(TokenInfo).where(TokenInfo.token_id == self.token.id)
+        db.session.execute(delete_stmt_token_info)
 
-        stmt = delete(TokenTokengroup).where(TokenTokengroup.token_id == self.token.id)
-        db.session.execute(stmt)
+        delete_stmt_token_tokengroup = delete(TokenTokengroup).where(TokenTokengroup.token_id == self.token.id)
+        db.session.execute(delete_stmt_token_tokengroup)
 
         if self.get_tokentype().lower() in ["webauthn", "passkey"]:
-            stmt = delete(TokenCredentialIdHash).where(TokenCredentialIdHash.token_id == self.token.id)
-            db.session.execute(stmt)
-        db.session.commit()
+            delete_stmt_token_credential = delete(TokenCredentialIdHash).where(
+                TokenCredentialIdHash.token_id == self.token.id)
+            db.session.execute(delete_stmt_token_credential)
 
-        self.token.delete()
+        db.session.delete(self.token)
+        db.session.commit()
 
     def save(self):
         """
@@ -896,7 +897,7 @@ class TokenClass(object):
         """
         # get existing realms
         statement = select(TokenRealm).where(TokenRealm.token_id == self.token.id)
-        existing_realms = db.session.execute(statement).scalars().all()
+        existing_realms = db.session.scalars(statement).unique().all()
         existing_realm_names = {tr.realm.name for tr in existing_realms}
         realms_to_add = set(realms) - existing_realm_names
 

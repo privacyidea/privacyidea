@@ -284,7 +284,7 @@ class TokenContainerClass:
         :return: True if the token was successfully removed, False if the token was not found in the container
         """
         stmt = select(Token).filter(Token.serial == serial)
-        token = db.session.execute(stmt).scalar_one_or_none()
+        token = db.session.scalars(stmt).unique().one_or_none()
         if not token:
             raise ResourceNotFoundError(f"Token with serial {serial} does not exist.")
         if token not in self._db_container.tokens:
