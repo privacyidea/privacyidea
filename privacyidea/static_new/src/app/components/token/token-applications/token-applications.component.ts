@@ -45,7 +45,6 @@ export class TokenApplicationsComponent {
 
   selectedApplicationType = this.machineService.selectedApplicationType;
 
-  // Centralized toggleFilter for SSH and Offline application tables
   toggleFilter(filterKeyword: string): void {
     let newValue;
     if (filterKeyword === "machineid & resolver") {
@@ -73,7 +72,6 @@ export class TokenApplicationsComponent {
     this.machineService.machineFilter.set(newValue);
   }
 
-  // Centralized icon state for SSH and Offline application tables
   getFilterIconName(keyword: string): string {
     if (keyword === "machineid & resolver") {
       const current = this.machineService.machineFilter();
@@ -84,7 +82,6 @@ export class TokenApplicationsComponent {
     return isSelected ? "filter_alt_off" : "filter_alt";
   }
 
-  // Centralized click handlers that also refocus the correct input field
   onKeywordClick(filterKeyword: string): void {
     this.toggleFilter(filterKeyword);
     this.focusActiveInput();
@@ -96,7 +93,6 @@ export class TokenApplicationsComponent {
   }
 
   private focusActiveInput(): void {
-    // Determine which input to focus based on the selected application type
     const type = this.selectedApplicationType();
     const id = type === "ssh" ? "ssh-filter-input" : "offline-filter-input";
     setTimeout(() => {

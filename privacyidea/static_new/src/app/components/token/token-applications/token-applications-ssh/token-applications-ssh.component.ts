@@ -94,10 +94,6 @@ export class TokenApplicationsSshComponent {
     return Object.entries(options).map(([key, value]) => `${key}: ${value}`);
   }
 
-  toggleFilter(filterKeyword: string): void {
-    this.tokenApplicationsComponent.toggleFilter(filterKeyword);
-  }
-
   getFilterIconName(keyword: string): string {
     return this.tokenApplicationsComponent.getFilterIconName(keyword);
   }
