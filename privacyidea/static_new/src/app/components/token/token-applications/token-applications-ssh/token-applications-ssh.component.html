@@ -48,6 +48,7 @@
             #filterInput
             (input)="machineService.handleFilterInput($event)"
             [value]="machineService.machineFilter().filterString"
+            id="ssh-filter-input"
             aria-label="Filter Input"
             i18n-aria-label
             i18n-placeholder
@@ -55,13 +56,28 @@
             placeholder="Example query: 'service_id: myService'" />
         </app-clearable-input>
       </mat-form-field>
+      <button
+        [matMenuTriggerFor]="advancedFilterMenu"
+        class="action-button-1"
+        mat-stroked-button>
+        <mat-icon> filter_list</mat-icon>
+        More Filter
+      </button>
+      <mat-menu #advancedFilterMenu="matMenu">
+        @for (keyword of machineService.sshAdvancedApiFilter; track keyword) {
+          <button (click)="onAdvancedFilterClick(keyword)" mat-menu-item>
+            <mat-icon class="margin-right-1">{{ getFilterIconName(keyword) }}</mat-icon>
+            {{ keyword }}
+          </button>
+        }
+      </mat-menu>
       <mat-paginator
         (page)="machineService.onPageEvent($event)"
         [length]="length()"
         [pageIndex]="machineService.pageIndex()"
         [pageSizeOptions]="pageSizeOptions()"
         [pageSize]="machineService.pageSize()"
-        showFirstLastButtons></mat-paginator>
+        showFirstLastButtons/>
     </div>
     
     <table

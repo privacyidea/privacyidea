@@ -35,4 +35,19 @@
     <mat-icon> create_new_folder</mat-icon>
     Create Container
   </button>
+  <button
+    [matMenuTriggerFor]="advancedFilterMenu"
+    class="action-button-1"
+    mat-stroked-button>
+    <mat-icon> filter_list</mat-icon>
+    More Filter
+  </button>
+  <mat-menu #advancedFilterMenu="matMenu">
+    @for (keyword of containerService.advancedApiFilter; track keyword) {
+      <button (click)="onAdvancedFilterClick(keyword)" mat-menu-item>
+        <mat-icon class="margin-right-1">{{ getFilterIconName(keyword) }}</mat-icon>
+        {{ keyword }}
+      </button>
+    }
+  </mat-menu>
 </div>

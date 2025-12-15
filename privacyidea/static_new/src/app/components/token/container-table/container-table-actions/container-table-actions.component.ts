@@ -17,6 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, inject } from "@angular/core";
+import { DOCUMENT } from "@angular/common";
 import { MatIcon } from "@angular/material/icon";
 import { MatButtonModule } from "@angular/material/button";
 import { ConfirmationDialogComponent } from "../../../shared/confirmation-dialog/confirmation-dialog.component";
@@ -30,16 +31,20 @@ import { ROUTE_PATHS } from "../../../../route_paths";
 import { RouterLink } from "@angular/router";
 import { DocumentationService } from "../../../../services/documentation/documentation.service";
 import { NotificationService } from "../../../../services/notification/notification.service";
+import { MatMenuModule } from "@angular/material/menu";
+import { TableUtilsService, TableUtilsServiceInterface } from "../../../../services/table-utils/table-utils.service";
 
 @Component({
   selector: "app-container-table-actions",
-  imports: [MatButtonModule, MatIcon, RouterLink],
+  imports: [MatButtonModule, MatIcon, RouterLink, MatMenuModule],
   templateUrl: "./container-table-actions.component.html",
   styleUrl: "./container-table-actions.component.scss"
 })
 export class ContainerTableActionsComponent {
   private readonly dialog: MatDialog = inject(MatDialog);
-  private readonly containerService: ContainerServiceInterface = inject(ContainerService);
+  protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
+  protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
+  private readonly document: Document = inject(DOCUMENT);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly versioningService: VersioningServiceInterface = inject(VersioningService);
   protected readonly documentationService = inject(DocumentationService);
@@ -49,6 +54,7 @@ export class ContainerTableActionsComponent {
   containerSelection = this.containerService.containerSelection;
   containerSerial = this.containerService.containerSerial;
   selectedContainer = this.containerService.selectedContainer;
+  readonly advancedApiFilter = this.containerService.advancedApiFilter;
 
   deleteSelectedContainer(): void {
     const selectedContainers = this.containerSelection();
@@ -80,5 +86,27 @@ export class ContainerTableActionsComponent {
           }
         }
       });
+  }
+
+  private toggleFilter(filterKeyword: string): void {
+    const newValue = this.tableUtilsService.toggleKeywordInFilter({
+      keyword: filterKeyword,
+      currentValue: this.containerService.containerFilter()
+    });
+    this.containerService.containerFilter.set(newValue);
+  }
+
+  getFilterIconName(keyword: string): string {
+    const isSelected = this.containerService.containerFilter().hasKey(keyword);
+    return isSelected ? "filter_alt_off" : "filter_alt";
+  }
+
+  onAdvancedFilterClick(filterKeyword: string): void {
+    this.toggleFilter(filterKeyword);
+    // Focus the container filter input to allow immediate typing after toggling a keyword
+    setTimeout(() => {
+      const elementById = this.document.getElementById("container-filter-input") as HTMLInputElement | null;
+      elementById?.focus();
+    });
   }
 }

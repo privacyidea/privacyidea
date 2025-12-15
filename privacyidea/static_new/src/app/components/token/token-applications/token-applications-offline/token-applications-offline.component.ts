@@ -36,6 +36,7 @@ import { ClearableInputComponent } from "../../../shared/clearable-input/clearab
 import { CopyButtonComponent } from "../../../shared/copy-button/copy-button.component";
 import { MatIconModule } from "@angular/material/icon";
 import { MatButtonModule } from "@angular/material/button";
+import { MatMenuModule } from "@angular/material/menu";
 import { FilterValue } from "../../../../core/models/filter_value";
 
 @Component({
@@ -53,7 +54,8 @@ import { FilterValue } from "../../../../core/models/filter_value";
     FormsModule,
     ClearableInputComponent,
     MatIconModule,
-    MatButtonModule
+    MatButtonModule,
+    MatMenuModule
   ],
   templateUrl: "./token-applications-offline.component.html",
   styleUrls: ["./token-applications-offline.component.scss"]
@@ -90,10 +92,29 @@ export class TokenApplicationsOfflineComponent {
   filterInput!: ElementRef<HTMLInputElement>;
 
   toggleFilter(filterKeyword: string): void {
-    const newValue = this.tableUtilsService.toggleKeywordInFilter({
-      keyword: filterKeyword,
-      currentValue: this.machineService.machineFilter()
-    });
+    let newValue;
+    if (filterKeyword === "machineid & resolver") {
+      const current = this.machineService.machineFilter();
+      const hasMachineId = current.hasKey("machineid");
+      const hasResolver = current.hasKey("resolver");
+
+      if (hasMachineId && hasResolver) {
+        newValue = this.tableUtilsService.toggleKeywordInFilter({ keyword: "machineid", currentValue: current });
+        newValue = this.tableUtilsService.toggleKeywordInFilter({ keyword: "resolver", currentValue: newValue });
+      } else if (!hasMachineId && !hasResolver) {
+        newValue = this.tableUtilsService.toggleKeywordInFilter({ keyword: "machineid", currentValue: current });
+        newValue = this.tableUtilsService.toggleKeywordInFilter({ keyword: "resolver", currentValue: newValue });
+      } else if (hasMachineId && !hasResolver) {
+        newValue = this.tableUtilsService.toggleKeywordInFilter({ keyword: "resolver", currentValue: current });
+      } else {
+        newValue = this.tableUtilsService.toggleKeywordInFilter({ keyword: "machineid", currentValue: current });
+      }
+    } else {
+      newValue = this.tableUtilsService.toggleKeywordInFilter({
+        keyword: filterKeyword,
+        currentValue: this.machineService.machineFilter()
+      });
+    }
     this.machineService.machineFilter.set(newValue);
   }
 
@@ -102,11 +123,21 @@ export class TokenApplicationsOfflineComponent {
   }
 
   getFilterIconName(keyword: string): string {
+    if (keyword === "machineid & resolver") {
+      const current = this.machineService.machineFilter();
+      const selected = current.hasKey("machineid") && current.hasKey("resolver");
+      return selected ? "filter_alt_off" : "filter_alt";
+    }
     const isSelected = this.isFilterSelected(keyword, this.machineService.machineFilter());
     return isSelected ? "filter_alt_off" : "filter_alt";
   }
 
   onKeywordClick(filterKeyword: string): void {
+    this.toggleFilter(filterKeyword);
+    this.filterInput?.nativeElement.focus();
+  }
+
+  onAdvancedFilterClick(filterKeyword: string): void {
     this.toggleFilter(filterKeyword);
     this.filterInput?.nativeElement.focus();
   }
