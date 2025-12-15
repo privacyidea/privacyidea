@@ -32,6 +32,7 @@ import { CopyButtonComponent } from "../../../shared/copy-button/copy-button.com
 import { TokenApplicationsOfflineComponent } from "./token-applications-offline.component";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { TokenApplicationsComponent } from "../token-applications.component";
 
 describe("TokenApplicationsOfflineComponent (Jest)", () => {
   let fixture: ComponentFixture<TokenApplicationsOfflineComponent>;
@@ -49,6 +50,7 @@ describe("TokenApplicationsOfflineComponent (Jest)", () => {
         { provide: MachineService, useClass: MockMachineService },
         { provide: TableUtilsService, useClass: MockTableUtilsService },
         { provide: TokenService, useValue: mockTokenService },
+        { provide: TokenApplicationsComponent, useValue: TokenApplicationsComponent },
         MockLocalService,
         MockNotificationService
       ]

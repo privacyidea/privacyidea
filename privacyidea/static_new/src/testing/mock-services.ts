@@ -421,15 +421,15 @@ export class MockRealmService implements RealmServiceInterface {
 
       const updatedRealm: Realm = existing
         ? {
-            ...existing,
-            resolver: [...(existing.resolver ?? []), ...newResolverEntries]
-          }
+          ...existing,
+          resolver: [...(existing.resolver ?? []), ...newResolverEntries]
+        }
         : {
-            default: false,
-            id: Object.keys(current).length + 1,
-            option: "",
-            resolver: newResolverEntries
-          };
+          default: false,
+          id: Object.keys(current).length + 1,
+          option: "",
+          resolver: newResolverEntries
+        };
 
       const updatedRealms = {
         ...current,
@@ -569,8 +569,6 @@ export class MockContainerService implements ContainerServiceInterface {
   readonly containerBaseUrl = "mockEnvironment.proxyUrl + '/container'";
   eventPageSize: number = 10;
   states = signal<string[]>([]);
-  selectedContainerType = signal<ContainerType | undefined>(undefined);
-  containerDetail = signal<ContainerDetails>({ containers: [], count: 0 });
   readonly containerSerial = signal("CONT-1");
   readonly selectedContainer = signal("");
   readonly sort = signal<Sort>({ active: "serial", direction: "asc" });
@@ -608,7 +606,7 @@ export class MockContainerService implements ContainerServiceInterface {
       { containerType: "yubikey", description: "", token_types: [] } as ContainerType
     ];
   });
-
+  selectedContainerType = signal<ContainerType | undefined>(undefined);
   containerDetailResource = new MockHttpResourceRef(
     MockPiResponse.fromValue({
       containers: [
@@ -634,13 +632,7 @@ export class MockContainerService implements ContainerServiceInterface {
       count: 1
     })
   );
-  templatesResource: HttpResourceRef<PiResponse<{ templates: ContainerTemplate[] }, unknown> | undefined> =
-    new MockHttpResourceRef(
-      MockPiResponse.fromValue<{ templates: ContainerTemplate[] }>({
-        templates: []
-      })
-    );
-  templates: WritableSignal<ContainerTemplate[]> = signal([]);
+  containerDetail = signal<ContainerDetails>({ containers: [], count: 0 });
   addToken = jest.fn().mockReturnValue(of(null));
   removeToken = jest.fn().mockReturnValue(of(null));
   setContainerRealm = jest.fn().mockReturnValue(of(null));
@@ -672,6 +664,13 @@ export class MockContainerService implements ContainerServiceInterface {
   stopPolling = jest.fn();
   createContainer = jest.fn();
   startPolling = jest.fn();
+  templatesResource: HttpResourceRef<PiResponse<{ templates: ContainerTemplate[] }, unknown> | undefined> =
+    new MockHttpResourceRef(
+      MockPiResponse.fromValue<{ templates: ContainerTemplate[] }>({
+        templates: []
+      })
+    );
+  templates: WritableSignal<ContainerTemplate[]> = signal([]);
   assignContainer = jest.fn().mockReturnValue(of(null));
   unassignContainer = jest.fn().mockReturnValue(of(null));
   pollContainerRolloutState = jest.fn();
@@ -779,12 +778,9 @@ function makeTokenDetailResponse(tokentype: TokenTypeKey): PiResponse<Tokens> {
 
 export class MockTokenService implements TokenServiceInterface {
   apiFilterKeyMap: Record<string, string> = {};
-  hiddenApiFilter: string[] = [];
   stopPolling$: Subject<void> = new Subject<void>();
   tokenBaseUrl: string = "mockEnvironment.proxyUrl + '/token'";
   readonly eventPageSize = 10;
-  userRealm = signal("");
-
   tokenSerial = signal("");
   selectedTokenType: WritableSignal<TokenType> = signal({
     key: "hotp",
@@ -808,6 +804,7 @@ export class MockTokenService implements TokenServiceInterface {
     })
   );
   detailsUsername: WritableSignal<string> = signal("");
+  userRealm = signal("");
   tokenTypeOptions: WritableSignal<TokenType[]> = signal<TokenType[]>([
     {
       key: "hotp",
@@ -922,24 +919,15 @@ export class MockTokenService implements TokenServiceInterface {
   getTokengroups = jest.fn();
   setTokengroup = jest.fn();
   importTokens = jest.fn();
+  hiddenApiFilter: string[] = [];
 }
 
 export class MockMachineService implements MachineServiceInterface {
   baseUrl: string = "environment.mockProxyUrl + '/machine/'";
   filterValue: WritableSignal<Record<string, string>> = signal({});
-
-  handleFilterInput($event: Event): void {
-    throw new Error("Method not implemented.");
-  }
-
-  clearFilter(): void {
-    throw new Error("Method not implemented.");
-  }
-
   sshApiFilter: string[] = [];
-  sshAdvancedApiFilter: string[] = [];
   offlineApiFilter: string[] = [];
-  offlineAdvancedApiFilter: string[] = [];
+  advancedApiFilter: string[] = [];
   machines: WritableSignal<Machines> = signal<Machines>([]);
   tokenApplications: WritableSignal<TokenApplication[]> = signal([]);
   selectedApplicationType = signal<"ssh" | "offline">("ssh");
@@ -948,8 +936,8 @@ export class MockMachineService implements MachineServiceInterface {
   filterParams = computed(() => {
     let allowedKeywords =
       this.selectedApplicationType() === "ssh"
-        ? [...this.sshApiFilter, ...this.sshAdvancedApiFilter]
-        : [...this.offlineApiFilter, ...this.offlineAdvancedApiFilter];
+        ? [...this.sshApiFilter, ...this.advancedApiFilter]
+        : [...this.offlineApiFilter, ...this.advancedApiFilter];
 
     const filterPairs = Object.entries(this.filterValue())
       .map(([key, value]) => ({ key, value }))
@@ -979,6 +967,14 @@ export class MockMachineService implements MachineServiceInterface {
   machinesResource = new MockHttpResourceRef(MockPiResponse.fromValue<Machines>([]));
   tokenApplicationResource: HttpResourceRef<PiResponse<TokenApplication[], undefined> | undefined> =
     new MockHttpResourceRef(MockPiResponse.fromValue([]));
+
+  handleFilterInput($event: Event): void {
+    throw new Error("Method not implemented.");
+  }
+
+  clearFilter(): void {
+    throw new Error("Method not implemented.");
+  }
 
   deleteAssignMachineToToken() {
     return of({} as any);
@@ -1032,14 +1028,6 @@ export class MockMachineService implements MachineServiceInterface {
 }
 
 export class MockTableUtilsService implements TableUtilsServiceInterface {
-  clientsideSortTokenData(data: ContainerDetailToken[], s: Sort): ContainerDetailToken[] {
-      return data;
-  }
-  getSortIcon(columnKey: string, sort: Sort): string {
-      return ""
-  }
-  onSortButtonClick(key: string, sort: WritableSignal<Sort>): void {
-  }
   pageSizeOptions: WritableSignal<number[]> = signal([5, 10, 25, 50]);
   emptyDataSource = jest.fn().mockImplementation((_pageSize: number, _columns: { key: string; label: string }[]) => {
     const dataSource = new MatTableDataSource<TokenApplication>([]);
@@ -1076,13 +1064,24 @@ export class MockTableUtilsService implements TableUtilsServiceInterface {
     cols: C
   ): {
     readonly [I in keyof C]: C[I] extends Readonly<{
-      key: infer KK extends ColumnKey;
-      label: string;
-    }>
+        key: infer KK extends ColumnKey;
+        label: string;
+      }>
       ? KK
       : never;
   } {
     return cols.map((c) => c.key) as any;
+  }
+
+  getSortIcon(columnKey: string, sort: Sort): string {
+    return "";
+  }
+
+  onSortButtonClick(key: string, sort: WritableSignal<Sort>): void {
+  }
+
+  clientsideSortTokenData(data: ContainerDetailToken[], s: Sort): ContainerDetailToken[] {
+    return data;
   }
 
   handleColumnClick = jest.fn();
@@ -1090,7 +1089,6 @@ export class MockTableUtilsService implements TableUtilsServiceInterface {
 
 export class MockAuditService implements AuditServiceInterface {
   apiFilterKeyMap: Record<string, string> = {};
-  sort: WritableSignal<Sort> = signal({ active: "time", direction: "desc" });
   apiFilter = ["user", "success"];
   advancedApiFilter = ["machineid", "resolver"];
   auditFilter: WritableSignal<FilterValue> = signal(new FilterValue());
@@ -1114,6 +1112,7 @@ export class MockAuditService implements AuditServiceInterface {
       current: 0
     })
   );
+  sort: WritableSignal<Sort> = signal({ active: "time", direction: "desc" });
   clearFilter = jest.fn().mockImplementation(() => {
     this.auditFilter.set(new FilterValue());
   });

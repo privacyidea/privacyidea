@@ -57,7 +57,7 @@
       More Filter
     </button>
     <mat-menu #advancedFilterMenu="matMenu">
-      @for (keyword of machineService.offlineAdvancedApiFilter; track keyword) {
+      @for (keyword of machineService.advancedApiFilter; track keyword) {
         <button
           (click)="onAdvancedFilterClick(keyword)"
           mat-menu-item>

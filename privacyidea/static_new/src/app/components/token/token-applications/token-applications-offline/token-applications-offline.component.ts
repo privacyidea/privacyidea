@@ -37,7 +37,7 @@ import { CopyButtonComponent } from "../../../shared/copy-button/copy-button.com
 import { MatIconModule } from "@angular/material/icon";
 import { MatButtonModule } from "@angular/material/button";
 import { MatMenuModule } from "@angular/material/menu";
-import { FilterValue } from "../../../../core/models/filter_value";
+import { TokenApplicationsComponent } from "../token-applications.component";
 
 @Component({
   selector: "app-token-applications-offline",
@@ -65,6 +65,7 @@ export class TokenApplicationsOfflineComponent {
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
+  private readonly tokenApplicationsComponent: TokenApplicationsComponent = inject(TokenApplicationsComponent);
   readonly columnsKeyMap = this.tableUtilsService.pickColumns(
     "serial",
     "count",
@@ -91,53 +92,18 @@ export class TokenApplicationsOfflineComponent {
   }
 
   toggleFilter(filterKeyword: string): void {
-    let newValue;
-    if (filterKeyword === "machineid & resolver") {
-      const current = this.machineService.machineFilter();
-      const hasMachineId = current.hasKey("machineid");
-      const hasResolver = current.hasKey("resolver");
-
-      if (hasMachineId && hasResolver) {
-        newValue = this.tableUtilsService.toggleKeywordInFilter({ keyword: "machineid", currentValue: current });
-        newValue = this.tableUtilsService.toggleKeywordInFilter({ keyword: "resolver", currentValue: newValue });
-      } else if (!hasMachineId && !hasResolver) {
-        newValue = this.tableUtilsService.toggleKeywordInFilter({ keyword: "machineid", currentValue: current });
-        newValue = this.tableUtilsService.toggleKeywordInFilter({ keyword: "resolver", currentValue: newValue });
-      } else if (hasMachineId && !hasResolver) {
-        newValue = this.tableUtilsService.toggleKeywordInFilter({ keyword: "resolver", currentValue: current });
-      } else {
-        newValue = this.tableUtilsService.toggleKeywordInFilter({ keyword: "machineid", currentValue: current });
-      }
-    } else {
-      newValue = this.tableUtilsService.toggleKeywordInFilter({
-        keyword: filterKeyword,
-        currentValue: this.machineService.machineFilter()
-      });
-    }
-    this.machineService.machineFilter.set(newValue);
-  }
-
-  isFilterSelected(filter: string, inputValue: FilterValue): boolean {
-    return inputValue.hasKey(filter);
+    this.tokenApplicationsComponent.toggleFilter(filterKeyword);
   }
 
   getFilterIconName(keyword: string): string {
-    if (keyword === "machineid & resolver") {
-      const current = this.machineService.machineFilter();
-      const selected = current.hasKey("machineid") && current.hasKey("resolver");
-      return selected ? "filter_alt_off" : "filter_alt";
-    }
-    const isSelected = this.isFilterSelected(keyword, this.machineService.machineFilter());
-    return isSelected ? "filter_alt_off" : "filter_alt";
+    return this.tokenApplicationsComponent.getFilterIconName(keyword);
   }
 
   onKeywordClick(filterKeyword: string): void {
-    this.toggleFilter(filterKeyword);
-    this.filterInput?.nativeElement.focus();
+    this.tokenApplicationsComponent.onKeywordClick(filterKeyword);
   }
 
   onAdvancedFilterClick(filterKeyword: string): void {
-    this.toggleFilter(filterKeyword);
-    this.filterInput?.nativeElement.focus();
+    this.tokenApplicationsComponent.onAdvancedFilterClick(filterKeyword);
   }
 }

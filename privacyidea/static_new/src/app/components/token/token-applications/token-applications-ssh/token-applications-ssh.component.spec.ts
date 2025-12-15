@@ -26,6 +26,7 @@ import { CopyButtonComponent } from "../../../shared/copy-button/copy-button.com
 import { TokenApplicationsSshComponent } from "./token-applications-ssh.component";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { TokenApplicationsComponent } from "../token-applications.component";
 
 describe("TokenApplicationsSshComponent (Jest)", () => {
   let fixture: ComponentFixture<TokenApplicationsSshComponent>;
@@ -43,6 +44,7 @@ describe("TokenApplicationsSshComponent (Jest)", () => {
         provideHttpClientTesting(),
         { provide: MachineService, useClass: MockMachineService },
         { provide: TokenService, useValue: mockTokenService },
+        { provide: TokenApplicationsComponent, useValue: TokenApplicationsComponent },
         MockLocalService,
         MockNotificationService
       ]
