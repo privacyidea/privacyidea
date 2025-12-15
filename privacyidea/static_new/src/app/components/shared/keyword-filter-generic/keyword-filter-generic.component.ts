@@ -21,7 +21,8 @@ import { Component, inject, input, output, signal } from "@angular/core";
 import { MatFabButton } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import { TableUtilsService, TableUtilsServiceInterface } from "../../../services/table-utils/table-utils.service";
-import { FilterValueGeneric } from "../../../core/models/filter_value_generic/filter_value_generic";
+import { FilterValueGeneric as GenericFilter } from "../../../core/models/filter_value_generic/filter_value_generic";
+import { MatTooltip } from "@angular/material/tooltip";
 
 /*
 export class FilterKeyword {
@@ -89,7 +90,7 @@ export class FilterKeyword {
     return filterValue.toggleKey(keyword);
   }
 
-  static getValue(named: { keyword: string; filterValue: FilterValueGeneric }): string | undefined {
+  static getValue(named: { keyword: string; filterValue: FilterValueGeneric }): string | null {
     const { keyword, filterValue } = named;
     return filterValue.getValueOfKey(keyword);
   }
@@ -116,49 +117,82 @@ export class FilterKeyword {
 }
 */
 
-export class FilterKeyword<T = any> {
+export class FilterOption<T = any> {
   key: string;
+  value: string | null;
   label: string;
-  matches: (item: T, filterValue: FilterValueGeneric) => boolean;
-  isSelected?: (filterValue: FilterValueGeneric) => boolean;
-  getIconName?: (filterValue: FilterValueGeneric) => "remove_circle" | "add_circle" | "change_circle";
-  toggleKeyword?: (filterValue: FilterValueGeneric) => FilterValueGeneric;
+  hint?: string;
+  matches: (item: T, filterValue: GenericFilter<T>) => boolean;
+  isSelected?: (filterValue: GenericFilter<T>) => boolean;
+  getIconName?: (filterValue: GenericFilter<T>) => "remove_circle" | "add_circle" | "change_circle";
+  toggleKeyword?: (filterValue: GenericFilter<T>) => GenericFilter<T>;
 
   constructor(args: {
     key: string;
+    value?: string | null;
     label: string;
-    matches: (item: T, filterValue: FilterValueGeneric) => boolean;
-    isSelected?: (filterValue: FilterValueGeneric) => boolean;
-    iconName?: (filterValue: FilterValueGeneric) => "remove_circle" | "add_circle" | "change_circle";
-    toggle?: (filterValue: FilterValueGeneric) => FilterValueGeneric;
+    hint?: string;
+    matches: (item: T, filterValue: GenericFilter<T>) => boolean;
+    isSelected?: (filterValue: GenericFilter<T>) => boolean;
+    iconName?: (filterValue: GenericFilter<T>) => "remove_circle" | "add_circle" | "change_circle";
+    toggle?: (filterValue: GenericFilter<T>) => GenericFilter<T>;
   }) {
     this.key = args.key;
+    this.value = args.value ?? null;
     this.label = args.label;
+    this.hint = args.hint;
     this.matches = args.matches;
     this.isSelected = args.isSelected;
     this.getIconName = args.iconName;
     this.toggleKeyword = args.toggle;
+  }
+
+  withValue(value: string | null): FilterOption<T> {
+    return new FilterOption<T>({
+      key: this.key,
+      value: value,
+      label: this.label,
+      hint: this.hint,
+      matches: this.matches,
+      isSelected: this.isSelected,
+      iconName: this.getIconName,
+      toggle: this.toggleKeyword
+    });
+  }
+}
+
+export class DummyFilterOption extends FilterOption {
+  isDummy = true;
+  constructor(args: { key: string; value?: string | null }) {
+    super({
+      key: args.key,
+      label: args.key,
+      value: args.value ?? null,
+      matches: () => true
+    });
+  }
+
+  override withValue(value: string): FilterOption<any> {
+    return new DummyFilterOption({ key: this.key, value: value });
   }
 }
 
 @Component({
   selector: "app-keyword-filter-generic",
   standalone: true,
-  imports: [NgClass, MatIcon, MatFabButton],
+  imports: [NgClass, MatIcon, MatFabButton, MatTooltip],
   templateUrl: "./keyword-filter-generic.component.html",
   styleUrl: "./keyword-filter-generic.component.scss"
 })
-export class KeywordFilterGenericComponent {
-  private readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
-
-  readonly keywordFilters = input.required<FilterKeyword[]>();
-  readonly advancedKeywordFilters = input<FilterKeyword[]>([]);
+export class KeywordFilterGenericComponent<T> {
+  readonly filterOptions = input.required<FilterOption[]>();
+  readonly advancedKeywordFilters = input<FilterOption[]>([]);
   readonly filterHTMLInputElement = input.required<HTMLInputElement>();
-  readonly filterValue = input.required<FilterValueGeneric>();
-  readonly filterValueChange = output<FilterValueGeneric>();
+  readonly filter = input.required<GenericFilter<T>>();
+  readonly filterChange = output<GenericFilter<T>>();
   showAdvancedFilter = signal(false);
 
-  onKeywordClick(filterKeyword: FilterKeyword): void {
+  onKeywordClick(filterKeyword: FilterOption): void {
     this.toggleFilter(filterKeyword);
   }
 
@@ -170,18 +204,18 @@ export class KeywordFilterGenericComponent {
   //   // return this.filterValue().isSelected(filterKeyword);
   // }
 
-  getFilterIconName(filterKeyword: FilterKeyword): "remove_circle" | "add_circle" | "change_circle" {
-    return this.filterValue().getFilterIconName(filterKeyword);
+  getFilterIconName(filterKeyword: FilterOption): "remove_circle" | "add_circle" | "change_circle" {
+    return this.filter().getFilterIconNameOf(filterKeyword);
   }
 
-  toggleFilter(filterKeyword: FilterKeyword): void {
-    const newFilterValue = this.filterValue().toggleFilterKeyword(filterKeyword);
-    this.filterValueChange.emit(newFilterValue);
+  toggleFilter(filterKeyword: FilterOption): void {
+    const newFilterValue = this.filter().toggleFilterKeyword(filterKeyword);
+    this.filterChange.emit(newFilterValue);
     // Focus the input element after changing the filter
     this.filterHTMLInputElement().focus();
   }
 
   filterIsEmpty(): boolean {
-    return this.filterValue().isEmpty;
+    return this.filter().isEmpty;
   }
 }

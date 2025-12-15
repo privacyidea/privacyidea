@@ -21,11 +21,12 @@
     <mat-icon [ngClass]="{ 'filter-icon': true, 'yellow-light': !filterIsEmpty() }">filter_alt</mat-icon>
     <span i18n>Filter by:&nbsp;</span>
   </div>
-  @for (filterKeyword of keywordFilters(); track filterKeyword) {
+  @for (filterOption of filterOptions(); track filterOption) {
     <button
       mat-fab
       extended
-      (click)="onKeywordClick(filterKeyword)"
+      [matTooltip]="filterOption.hint"
+      (click)="onKeywordClick(filterOption)"
       class="keyword-button">
       <mat-icon
         class="keyword-button-icon"
@@ -34,11 +35,11 @@
             change_circle: 'change-keyword',
             remove_circle: 'remove-keyword',
             add_circle: 'add-keyword'
-          }[getFilterIconName(filterKeyword)]
+          }[getFilterIconName(filterOption)]
         ">
-        {{ getFilterIconName(filterKeyword) }}
+        {{ getFilterIconName(filterOption) }}
       </mat-icon>
-      {{ filterKeyword.label }}
+      {{ filterOption.label }}
     </button>
   }
   @if (advancedKeywordFilters.length > 0) {
@@ -53,11 +54,11 @@
     </button>
   }
   @if (showAdvancedFilter()) {
-    @for (filterKeyword of advancedKeywordFilters(); track filterKeyword) {
+    @for (filterOption of advancedKeywordFilters(); track filterOption) {
       <button
         mat-fab
         extended
-        (click)="onKeywordClick(filterKeyword)"
+        (click)="onKeywordClick(filterOption)"
         class="keyword-button">
         <mat-icon
           class="keyword-button-icon"
@@ -66,11 +67,11 @@
               change_circle: 'change-keyword',
               remove_circle: 'remove-keyword',
               add_circle: 'add-keyword'
-            }[getFilterIconName(filterKeyword)]
+            }[getFilterIconName(filterOption)]
           ">
-          {{ getFilterIconName(filterKeyword) }}
+          {{ getFilterIconName(filterOption) }}
         </mat-icon>
-        {{ filterKeyword }}
+        {{ filterOption }}
       </button>
     }
   }

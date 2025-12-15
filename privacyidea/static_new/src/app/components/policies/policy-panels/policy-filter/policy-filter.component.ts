@@ -1,11 +1,11 @@
-import { Component, effect, input, output, signal } from "@angular/core";
+import { Component, computed, effect, input, output, signal } from "@angular/core";
 import { MatInputModule } from "@angular/material/input";
 import { ClearableInputComponent } from "../../../shared/clearable-input/clearable-input.component";
 import {
-  FilterKeyword,
+  FilterOption as FilterOption,
   KeywordFilterGenericComponent
 } from "../../../shared/keyword-filter-generic/keyword-filter-generic.component";
-import { FilterValueGeneric } from "../../../../core/models/filter_value_generic/filter_value_generic";
+import { FilterValueGeneric as GenericFilter } from "../../../../core/models/filter_value_generic/filter_value_generic";
 import { PolicyDetail } from "../../../../services/policies/policies.service";
 
 @Component({
@@ -16,46 +16,13 @@ import { PolicyDetail } from "../../../../services/policies/policies.service";
   styleUrl: "./policy-filter.component.scss"
 })
 export class PolicyFilterComponent {
-  filterValue = signal<FilterValueGeneric>(new FilterValueGeneric());
-  filteredPoliciesChange = output<PolicyDetail[]>();
-  unfilteredPolicies = input.required<PolicyDetail[]>();
-
-  constructor() {
-    effect(() => {
-      const currentFilter = this.filterValue();
-      // Logic to fetch/filter policies...
-      const results = this.filterData(currentFilter);
-      this.filteredPoliciesChange.emit(results);
-    });
-  }
-  filterData(currentFilter: FilterValueGeneric): PolicyDetail[] {
-    const unfilteredPolicies = this.unfilteredPolicies();
-    if (!currentFilter || currentFilter.isEmpty) {
-      return unfilteredPolicies;
-    }
-    const filteredPolicies: PolicyDetail[] = [];
-    for (const policy of unfilteredPolicies) {
-      const activeString = currentFilter.getValueOfKey("active");
-      if (activeString) {
-        const isActive = activeString.toLowerCase() === "true";
-        if (policy.active !== isActive) {
-          continue;
-        }
-      }
-      const priorityString = currentFilter.getValueOfKey("priority");
-      if (priorityString) {
-      }
-    }
-    return filteredPolicies;
-  }
-
-  policyFilters = [
-    new FilterKeyword<PolicyDetail>({
+  policyFilterOptions = [
+    new FilterOption<PolicyDetail>({
       key: "priority",
       label: $localize`Priority`,
-      matches: (item: PolicyDetail, filterValue: FilterValueGeneric) => {
-        const value = filterValue.getValueOfKey("priority");
-        // Example of priority filter ">5" or "<5" or "=5" or "!=5" or "3-5" or ">=5" or "<=5"
+      hint: $localize`Filter by priority. Use operators like >, <, =, !=, >=, <= or range (e.g., 3-5). When no operator is specified, exact match is used.`,
+      matches: (item: PolicyDetail, filter: GenericFilter<PolicyDetail>) => {
+        const value = filter.getValueOfKey("priority");
         if (!value) return true;
         const priority = item.priority;
         try {
@@ -91,68 +58,88 @@ export class PolicyFilterComponent {
         }
       }
     }),
-    new FilterKeyword({
+    new FilterOption({
       key: "active",
       label: $localize`Active`,
-      toggle: (filterValue: FilterValueGeneric) => {
-        const value = filterValue.getValueOfKey("active")?.toLowerCase();
-        if (value === "true") return filterValue.setValueOfKey("active", "false");
-        if (value === "false") return filterValue.removeKey("active");
-        return filterValue.setValueOfKey("active", "true");
+      hint: $localize`Filter by active status.`,
+      toggle: (filter: GenericFilter<PolicyDetail>) => {
+        const value = filter.getValueOfKey("active")?.toLowerCase();
+        if (value === "true") return filter.setValueOfKey("active", "false");
+        if (value === "false") return filter.removeKey("active");
+        return filter.setValueOfKey("active", "true");
       },
-      iconName: (filterValue: FilterValueGeneric) => {
-        const value = filterValue.getValueOfKey("active")?.toLowerCase();
+      iconName: (filter: GenericFilter<PolicyDetail>) => {
+        const value = filter.getValueOfKey("active")?.toLowerCase();
         if (value === "true") return "change_circle";
         if (value === "false") return "remove_circle";
         return "add_circle";
       },
-      matches: (item: PolicyDetail, filterValue: FilterValueGeneric) => {
-        const value = filterValue.getValueOfKey("active")?.toLowerCase();
+      matches: (item: PolicyDetail, filter: GenericFilter<PolicyDetail>) => {
+        const value = filter.getValueOfKey("active")?.toLowerCase();
         if (value === "true") return item.active === true;
         if (value === "false") return item.active === false;
         return true;
       }
     }),
-    new FilterKeyword({
+    new FilterOption({
       key: "policy_name",
       label: $localize`Policy Name`,
-      matches: (item: PolicyDetail, filterValue: FilterValueGeneric) => {
-        const value = filterValue.getValueOfKey("policy_name");
+      hint: $localize`Filter by policy name.`,
+      matches: (item: PolicyDetail, filter: GenericFilter<PolicyDetail>) => {
+        const value = filter.getValueOfKey("policy_name");
         if (!value) return true;
         return item.name.includes(value);
       }
     }),
-    new FilterKeyword({
+    new FilterOption({
       key: "scope",
       label: $localize`Scope`,
-      matches: (item: PolicyDetail, filterValue: FilterValueGeneric) => {
-        const value = filterValue.getValueOfKey("scope");
+      hint: $localize`Filter by scope.`,
+      matches: (item: PolicyDetail, filter: GenericFilter<PolicyDetail>) => {
+        const value = filter.getValueOfKey("scope");
         if (!value) return true;
         return item.scope.includes(value);
       }
     }),
-    new FilterKeyword({
+    new FilterOption({
       key: "actions",
       label: $localize`Actions`,
-      matches: (item: PolicyDetail, filterValue: FilterValueGeneric) => {
-        const value = filterValue.getValueOfKey("actions");
+      hint: $localize`Filter by action names.`,
+      matches: (item: PolicyDetail, filter: GenericFilter<PolicyDetail>) => {
+        const value = filter.getValueOfKey("actions");
         if (!value) return true;
         return Object.keys(item.action || {}).some((actionName) => actionName.includes(value));
       }
     }),
-    new FilterKeyword({
+    new FilterOption({
       key: "realm",
       label: $localize`Realm`,
-      matches: (item: PolicyDetail, filterValue: FilterValueGeneric) => {
-        const value = filterValue.getValueOfKey("realm");
+      hint: $localize`Filter by realm.`,
+      matches: (item: PolicyDetail, filter: GenericFilter<PolicyDetail>) => {
+        const value = filter.getValueOfKey("realm");
         if (!value) return true;
         return item.realm.includes(value);
       }
     })
   ];
 
+  filter = signal<GenericFilter<PolicyDetail>>(new GenericFilter({ availableFilters: this.policyFilterOptions }));
+  unfilteredPolicies = input.required<PolicyDetail[]>();
+
+  filteredPolicies = computed(() => this.filterData(this.unfilteredPolicies(), this.filter()));
+
+  filteredPoliciesChange = output<PolicyDetail[]>();
+
+  constructor() {
+    effect(() => this.filteredPoliciesChange.emit(this.filteredPolicies()));
+  }
+
+  filterData(unfilteredPolicies: PolicyDetail[], filter: GenericFilter<PolicyDetail>): PolicyDetail[] {
+    return filter.filterItems(unfilteredPolicies);
+  }
+
   clearFilter(): void {
-    this.filterValue.set(new FilterValueGeneric());
+    this.filter.set(new GenericFilter({ availableFilters: this.policyFilterOptions }));
   }
 
   onFilterChange(filterChangeEvent: Event): void {
@@ -161,6 +148,8 @@ export class PolicyFilterComponent {
       console.warn("Filter change event did not contain a valid input value.");
       return;
     }
-    this.filterValue.set(new FilterValueGeneric({ value: filterString }));
+    const oldFilter = this.filter();
+    const updatedFilter = oldFilter.setByString(filterString);
+    this.filter.set(updatedFilter);
   }
 }

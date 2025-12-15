@@ -5,11 +5,11 @@
     <mat-label i18n>Enter Filter</mat-label>
     <app-clearable-input
       (onClick)="clearFilter()"
-      [showClearButton]="filterValue().isNotEmpty">
+      [showClearButton]="filter().isNotEmpty">
       <input
         #filterHTMLInputElement
         (input)="onFilterChange($event)"
-        [value]="filterValue().value"
+        [value]="filter().filterString"
         aria-label="Filter Input"
         i18n-aria-label
         i18n-placeholder
@@ -18,8 +18,8 @@
     </app-clearable-input>
   </mat-form-field>
   <app-keyword-filter-generic
-    [keywordFilters]="policyFilters"
+    [filterOptions]="policyFilterOptions"
     [filterHTMLInputElement]="filterHTMLInputElement"
-    [filterValue]="filterValue()">
+    [(filter)]="filter">
   </app-keyword-filter-generic>
 </div>
