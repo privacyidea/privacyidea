@@ -53,7 +53,7 @@ class AuditTestCase(MyTestCase):
 
         # read audit entry
         audit_log = self.Audit.search({})
-        self.assertTrue(audit_log.total == 3, audit_log.total)
+        self.assertEqual(3, audit_log.total)
 
     def test_01_get_total(self):
         self.Audit.log({"action": "action1"})
@@ -135,7 +135,7 @@ class AuditTestCase(MyTestCase):
         # also contains the own auth audit entry
         self.assertEqual(1, len(admin_audits))
         self.assertEqual("local_admin", admin_audits[0].get("administrator"))
-        self.assertIsNone(admin_audits[0].get("realm"))
+        self.assertEqual("", admin_audits[0].get("realm"))
 
         # Get audit entries for external admin who is allowed to only see realm1
         audit_log = self.Audit.search({}, admin_params={"admin": "external_admin", "admin_realm": "admin_realm",
@@ -149,25 +149,28 @@ class AuditTestCase(MyTestCase):
         self.assertEqual("external_admin", admin_audits[0].get("administrator"))
         self.assertEqual("admin_realm", admin_audits[0].get("realm"))
 
-
     def test_02_get_count(self):
         # Prepare some audit entries:
         self.Audit.log({"action": "/validate/check",
                         "success": True})
         self.Audit.finalize_log()
 
+        self.Audit = getAudit(self.app.config)  # fresh audit object for each request
         self.Audit.log({"action": "/validate/check",
                         "success": True})
         self.Audit.finalize_log()
 
+        self.Audit = getAudit(self.app.config)  # fresh audit object for each request
         self.Audit.log({"action": "/validate/check", "authentication": AUTH_RESPONSE.REJECT,
                         "success": False})
         self.Audit.finalize_log()
 
+        self.Audit = getAudit(self.app.config)  # fresh audit object for each request
         self.Audit.log({"action": "/validate/check", "authentication": AUTH_RESPONSE.DECLINED,
                         "success": False})
         self.Audit.finalize_log()
 
+        self.Audit = getAudit(self.app.config)  # fresh audit object for each request
         self.Audit.log({"action": "/validate/check", "authentication": AUTH_RESPONSE.CHALLENGE,
                         "success": False})
         self.Audit.finalize_log()

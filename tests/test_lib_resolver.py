@@ -42,7 +42,7 @@ from privacyidea.lib.resolver import (save_resolver,
                                       get_resolver_object, pretestresolver,
                                       CENSORED)
 from privacyidea.lib.realm import (set_realm, delete_realm)
-from privacyidea.models import ResolverConfig, Resolver
+from privacyidea.models import ResolverConfig, Resolver, db
 from privacyidea.lib.utils import to_bytes, to_unicode
 from privacyidea.lib.error import ParameterError, ResolverError
 
@@ -2415,6 +2415,8 @@ class ResolverTestCase(MyTestCase):
                              "type.fileName": "string",
                              "desc.fileName": "The name of the file"})
         self.assertTrue(rid > 0, rid)
+
+        db.session.expunge_all()
 
         # Do not save empty values, but bool False values
         rid = save_resolver({"resolver": self.resolvername1,

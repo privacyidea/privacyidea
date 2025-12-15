@@ -186,9 +186,13 @@ class APIMachinesTestCase(MyApiTestCase):
 
         # check if the options were set.
         token_obj = get_tokens(serial=serial)[0]
-        self.assertEqual(token_obj.token.machine_list[0].application, "luks")
-        self.assertEqual(token_obj.token.machine_list[0].option_list[
-                             1].mt_value, "/dev/sdb1")
+        self.assertEqual("luks", token_obj.token.machine_list[0].application)
+        self.assertEqual(2, len(token_obj.token.machine_list[0].option_list))
+        for option in token_obj.token.machine_list[0].option_list:
+            if option.mt_key == "slot":
+                self.assertEqual("1", option.mt_value)
+            elif option.mt_key == "partition":
+                self.assertEqual("/dev/sdb1", option.mt_value)
 
         # delete slot!
         with self.app.test_request_context('/machine/tokenoption',
