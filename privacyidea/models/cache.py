@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from datetime import datetime
+from typing import Optional
+
 from sqlalchemy import Sequence, Unicode, Integer, DateTime
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -26,15 +28,15 @@ from privacyidea.models.utils import MethodsMixin
 class AuthCache(MethodsMixin, db.Model):
     __tablename__ = 'authcache'
     id: Mapped[int] = mapped_column(Integer, Sequence("authcache_seq"), primary_key=True)
-    first_auth: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
-    last_auth: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
-    username: Mapped[str] = mapped_column(Unicode(64), default="", index=True)
-    resolver: Mapped[str] = mapped_column(Unicode(120), default='', index=True)
-    realm: Mapped[str] = mapped_column(Unicode(120), default='', index=True)
-    client_ip: Mapped[str] = mapped_column(Unicode(40), default="")
-    user_agent: Mapped[str] = mapped_column(Unicode(120), default="")
-    auth_count: Mapped[int] = mapped_column(Integer, default=0)
-    authentication: Mapped[str] = mapped_column(Unicode(255), default="")
+    first_auth: Mapped[Optional[datetime]] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+    last_auth: Mapped[Optional[datetime]] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+    username: Mapped[Optional[str]] = mapped_column(Unicode(64), default="", index=True)
+    resolver: Mapped[Optional[str]] = mapped_column(Unicode(120), default='', index=True)
+    realm: Mapped[Optional[str]] = mapped_column(Unicode(120), default='', index=True)
+    client_ip: Mapped[Optional[str]] = mapped_column(Unicode(40), default="")
+    user_agent: Mapped[Optional[str]] = mapped_column(Unicode(120), default="")
+    auth_count: Mapped[Optional[int]] = mapped_column(Integer, default=0)
+    authentication: Mapped[Optional[str]] = mapped_column(Unicode(255), default="")
 
     def __init__(self, username: str, realm: str, resolver: str, authentication: str,
                  first_auth: datetime = None, last_auth: datetime = None):
@@ -48,17 +50,17 @@ class AuthCache(MethodsMixin, db.Model):
         self.authentication = authentication
 
 
-class UserCache(db.Model):
+class UserCache(MethodsMixin, db.Model):
     """
     This class stores the cached information for a user to improve lookup performance.
     """
     __tablename__ = 'usercache'
     id: Mapped[int] = mapped_column(Integer, Sequence("usercache_seq"), primary_key=True)
-    username: Mapped[str] = mapped_column(Unicode(64), default="", index=True)
-    used_login: Mapped[str] = mapped_column(Unicode(64), default="", index=True)
-    resolver: Mapped[str] = mapped_column(Unicode(120), default='')
-    user_id: Mapped[str] = mapped_column(Unicode(320), default='', index=True)
-    timestamp: Mapped[datetime] = mapped_column(DateTime, index=True)
+    username: Mapped[Optional[str]] = mapped_column(Unicode(64), default="", index=True)
+    used_login: Mapped[Optional[str]] = mapped_column(Unicode(64), default="", index=True)
+    resolver: Mapped[Optional[str]] = mapped_column(Unicode(120), default='')
+    user_id: Mapped[Optional[str]] = mapped_column(Unicode(320), default='', index=True)
+    timestamp: Mapped[Optional[datetime]] = mapped_column(DateTime, index=True)
 
     def __init__(self, username, used_login, resolver, user_id, timestamp):
         self.username = username

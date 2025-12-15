@@ -18,7 +18,9 @@
 import logging
 import traceback
 from datetime import datetime
-from sqlalchemy import Sequence, Unicode, Integer, Boolean, DateTime, UniqueConstraint, select, update, and_
+from typing import Optional
+
+from sqlalchemy import Sequence, Unicode, Integer, DateTime, UniqueConstraint, select, update, and_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -36,14 +38,14 @@ class ClientApplication(MethodsMixin, db.Model):
     __tablename__ = 'clientapplication'
     id: Mapped[int] = mapped_column(Integer, Sequence("clientapp_seq"), primary_key=True)
     ip: Mapped[str] = mapped_column(Unicode(255), nullable=False, index=True)
-    hostname: Mapped[str] = mapped_column(Unicode(255))
+    hostname: Mapped[Optional[str]] = mapped_column(Unicode(255))
     clienttype: Mapped[str] = mapped_column(Unicode(255), nullable=False, index=True)
-    lastseen: Mapped[datetime] = mapped_column(DateTime, index=True, default=datetime.utcnow)
+    lastseen: Mapped[Optional[datetime]] = mapped_column(DateTime, index=True, default=datetime.utcnow)
     node: Mapped[str] = mapped_column(Unicode(255), nullable=False)
     __table_args__ = (UniqueConstraint('ip',
-                                          'clienttype',
-                                          'node',
-                                          name='caix'),)
+                                       'clienttype',
+                                       'node',
+                                       name='caix'),)
 
     def save(self):
         stmt = select(ClientApplication).filter(
@@ -87,23 +89,23 @@ class Subscription(MethodsMixin, db.Model):
     id: Mapped[int] = mapped_column(Integer, Sequence("subscription_seq"), primary_key=True)
     application: Mapped[str] = mapped_column(Unicode(80), index=True)
     for_name: Mapped[str] = mapped_column(Unicode(80), nullable=False)
-    for_address: Mapped[str] = mapped_column(Unicode(128))
+    for_address: Mapped[Optional[str]] = mapped_column(Unicode(128))
     for_email: Mapped[str] = mapped_column(Unicode(128), nullable=False)
     for_phone: Mapped[str] = mapped_column(Unicode(50), nullable=False)
-    for_url: Mapped[str] = mapped_column(Unicode(80))
-    for_comment: Mapped[str] = mapped_column(Unicode(255))
+    for_url: Mapped[Optional[str]] = mapped_column(Unicode(80))
+    for_comment: Mapped[Optional[str]] = mapped_column(Unicode(255))
     by_name: Mapped[str] = mapped_column(Unicode(50), nullable=False)
     by_email: Mapped[str] = mapped_column(Unicode(128), nullable=False)
-    by_address: Mapped[str] = mapped_column(Unicode(128))
-    by_phone: Mapped[str] = mapped_column(Unicode(50))
-    by_url: Mapped[str] = mapped_column(Unicode(80))
-    date_from: Mapped[datetime] = mapped_column(DateTime)
-    date_till: Mapped[datetime] = mapped_column(DateTime)
-    num_users: Mapped[int] = mapped_column(Integer)
-    num_tokens: Mapped[int] = mapped_column(Integer)
-    num_clients: Mapped[int] = mapped_column(Integer)
-    level: Mapped[str] = mapped_column(Unicode(80))
-    signature: Mapped[str] = mapped_column(Unicode(640))
+    by_address: Mapped[Optional[str]] = mapped_column(Unicode(128))
+    by_phone: Mapped[Optional[str]] = mapped_column(Unicode(50))
+    by_url: Mapped[Optional[str]] = mapped_column(Unicode(80))
+    date_from: Mapped[Optional[datetime]] = mapped_column(DateTime)
+    date_till: Mapped[Optional[datetime]] = mapped_column(DateTime)
+    num_users: Mapped[Optional[int]] = mapped_column(Integer)
+    num_tokens: Mapped[Optional[int]] = mapped_column(Integer)
+    num_clients: Mapped[Optional[int]] = mapped_column(Integer)
+    level: Mapped[Optional[str]] = mapped_column(Unicode(80))
+    signature: Mapped[Optional[str]] = mapped_column(Unicode(640))
 
     def save(self):
         stmt = select(Subscription).filter(

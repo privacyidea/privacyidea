@@ -18,6 +18,7 @@
 import logging
 import re
 from datetime import datetime
+from typing import Optional
 
 from sqlalchemy import Sequence, Unicode, Integer, Boolean, Text, ForeignKey, DateTime
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -44,21 +45,21 @@ class Policy(TimestampMethodsMixin, db.Model):
     """
     __tablename__ = "policy"
     id: Mapped[int] = mapped_column(Integer, Sequence("policy_seq"), primary_key=True)
-    active: Mapped[bool] = mapped_column(Boolean, default=True)
-    check_all_resolvers: Mapped[bool] = mapped_column(Boolean, default=False)
+    active: Mapped[Optional[bool]] = mapped_column(Boolean, default=True)
+    check_all_resolvers: Mapped[Optional[bool]] = mapped_column(Boolean, default=False)
     name: Mapped[str] = mapped_column(Unicode(64), unique=True, nullable=False)
-    user_case_insensitive: Mapped[bool] = mapped_column(Boolean, default=False)
+    user_case_insensitive: Mapped[Optional[bool]] = mapped_column(Boolean, default=False)
     scope: Mapped[str] = mapped_column(Unicode(32), nullable=False)
-    action: Mapped[str] = mapped_column(Text, default="")
-    realm: Mapped[str] = mapped_column(Unicode(256), default="")
-    adminrealm: Mapped[str] = mapped_column(Unicode(256), default="")
-    adminuser: Mapped[str] = mapped_column(Unicode(256), default="")
-    resolver: Mapped[str] = mapped_column(Unicode(256), default="")
-    pinode: Mapped[str] = mapped_column(Unicode(256), default="")
-    user: Mapped[str] = mapped_column(Unicode(256), default="")
-    client: Mapped[str] = mapped_column(Unicode(256), default="")
-    time: Mapped[str] = mapped_column(Unicode(64), default="")
-    user_agents: Mapped[str] = mapped_column(Unicode(256), default="")
+    action: Mapped[Optional[str]] = mapped_column(Text, default="")
+    realm: Mapped[Optional[str]] = mapped_column(Unicode(256), default="")
+    adminrealm: Mapped[Optional[str]] = mapped_column(Unicode(256), default="")
+    adminuser: Mapped[Optional[str]] = mapped_column(Unicode(256), default="")
+    resolver: Mapped[Optional[str]] = mapped_column(Unicode(256), default="")
+    pinode: Mapped[Optional[str]] = mapped_column(Unicode(256), default="")
+    user: Mapped[Optional[str]] = mapped_column(Unicode(256), default="")
+    client: Mapped[Optional[str]] = mapped_column(Unicode(256), default="")
+    time: Mapped[Optional[str]] = mapped_column(Unicode(64), default="")
+    user_agents: Mapped[Optional[str]] = mapped_column(Unicode(256), default="")
     # If there are multiple matching policies, choose the one
     # with the lowest priority number. We choose 1 to be the default priority.
     priority: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
@@ -185,7 +186,7 @@ class PolicyCondition(MethodsMixin, db.Model):
     comparator: Mapped[str] = mapped_column(Unicode(255), nullable=False, default='equals')
     Value: Mapped[str] = mapped_column(Unicode(2000), nullable=False, default='')
     active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
-    handle_missing_data: Mapped[str] = mapped_column(Unicode(255), nullable=True)
+    handle_missing_data: Mapped[Optional[str]] = mapped_column(Unicode(255), nullable=True)
 
     def __init__(self, section, Key, comparator, Value, active=True, handle_missing_data=None):
         self.section = section
@@ -210,8 +211,8 @@ class PolicyDescription(TimestampMethodsMixin, db.Model):
     id: Mapped[int] = mapped_column(Integer, Sequence("description_seq"), primary_key=True)
     object_id: Mapped[int] = mapped_column(Integer, ForeignKey('policy.id'), nullable=False)
     object_type: Mapped[str] = mapped_column(Unicode(64), unique=False, nullable=False)
-    last_update: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-    description: Mapped[str] = mapped_column(Unicode(255))
+    last_update: Mapped[Optional[datetime]] = mapped_column(DateTime, default=datetime.utcnow)
+    description: Mapped[Optional[str]] = mapped_column(Unicode(255))
 
     def __init__(self, object_id, name="", object_type="", description=""):
         self.name = name

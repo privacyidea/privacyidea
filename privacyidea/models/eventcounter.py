@@ -15,6 +15,8 @@
 #
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+from typing import Optional
+
 from sqlalchemy import (
     Sequence,
     Unicode,
@@ -41,7 +43,7 @@ class EventCounter(db.Model):
     __tablename__ = 'eventcounter'
     id: Mapped[int] = mapped_column(Integer, Sequence("eventcounter_seq"), primary_key=True)
     counter_name: Mapped[str] = mapped_column(Unicode(80), nullable=False)
-    counter_value: Mapped[int] = mapped_column(Integer, default=0)
+    counter_value: Mapped[Optional[int]] = mapped_column(Integer, default=0)
     node: Mapped[str] = mapped_column(Unicode(255), nullable=False)
     __table_args__ = (UniqueConstraint('counter_name', 'node', name='evctr_1'),)
 

@@ -17,8 +17,12 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from datetime import datetime
+from typing import Optional
+
 from dateutil.tz import tzutc
-from sqlalchemy import Sequence
+from sqlalchemy import Sequence, Integer, Unicode, Boolean, DateTime
+from sqlalchemy.orm import Mapped
+from sqlalchemy.testing.schema import mapped_column
 
 from privacyidea.models import db
 from privacyidea.models.utils import MethodsMixin
@@ -30,21 +34,18 @@ class PeriodicTask(MethodsMixin, db.Model):
     This class stores tasks that should be run periodically.
     """
     __tablename__ = 'periodictask'
-    id = db.Column(db.Integer, Sequence("periodictask_seq"), primary_key=True)
-    name = db.Column(db.Unicode(64), unique=True, nullable=False)
-    active = db.Column(db.Boolean, default=True, nullable=False)
-    retry_if_failed = db.Column(db.Boolean, default=True, nullable=False)
-    interval = db.Column(db.Unicode(256), nullable=False)
-    nodes = db.Column(db.Unicode(256), nullable=False)
-    taskmodule = db.Column(db.Unicode(256), nullable=False)
-    ordering = db.Column(db.Integer, nullable=False, default=0)
-    last_update = db.Column(db.DateTime(False), nullable=False)
-    options = db.relationship('PeriodicTaskOption',
-                              lazy='dynamic',
-                              backref='periodictask')
-    last_runs = db.relationship('PeriodicTaskLastRun',
-                                lazy='dynamic',
-                                backref='periodictask')
+    id: Mapped[int] = mapped_column(Integer, Sequence("periodictask_seq"), primary_key=True)
+    name: Mapped[str] = mapped_column(Unicode(64), unique=True, nullable=False)
+    active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    retry_if_failed: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    interval: Mapped[str] = mapped_column(Unicode(256), nullable=False)
+    nodes: Mapped[str] = mapped_column(Unicode(256), nullable=False)
+    taskmodule: Mapped[str] = mapped_column(Unicode(256), nullable=False)
+    ordering: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    last_update: Mapped[datetime] = mapped_column(DateTime(timezone=False), nullable=False)
+
+    options = db.relationship('PeriodicTaskOption', lazy='dynamic', backref='periodictask')
+    last_runs = db.relationship('PeriodicTaskLastRun', lazy='dynamic', backref='periodictask')
 
     def __init__(self, name, active, interval, node_list, taskmodule, ordering, options=None, id=None,
                  retry_if_failed=True):
@@ -166,11 +167,10 @@ class PeriodicTaskOption(db.Model):
     task module.
     """
     __tablename__ = 'periodictaskoption'
-    id = db.Column(db.Integer, Sequence("periodictaskopt_seq"),
-                   primary_key=True)
-    periodictask_id = db.Column(db.Integer, db.ForeignKey('periodictask.id'))
-    key = db.Column(db.Unicode(255), nullable=False)
-    value = db.Column(db.Unicode(2000), default='')
+    id: Mapped[int] = mapped_column(Integer, Sequence("periodictaskopt_seq"), primary_key=True)
+    periodictask_id: Mapped[Optional[int]] = mapped_column(Integer, db.ForeignKey('periodictask.id'))
+    key: Mapped[str] = mapped_column(Unicode(255), nullable=False)
+    value: Mapped[Optional[str]] = mapped_column(Unicode(2000), default='')
 
     __table_args__ = (db.UniqueConstraint('periodictask_id',
                                           'key',
@@ -210,11 +210,10 @@ class PeriodicTaskLastRun(db.Model):
     Each PeriodicTask entry stores, for each node, the timestamp of the last successful run.
     """
     __tablename__ = 'periodictasklastrun'
-    id = db.Column(db.Integer, Sequence("periodictasklastrun_seq"),
-                   primary_key=True)
-    periodictask_id = db.Column(db.Integer, db.ForeignKey('periodictask.id'))
-    node = db.Column(db.Unicode(255), nullable=False)
-    timestamp = db.Column(db.DateTime(False), nullable=False)
+    id: Mapped[int] = mapped_column(Integer, Sequence("periodictasklastrun_seq"), primary_key=True)
+    periodictask_id: Mapped[Optional[int]] = mapped_column(Integer, db.ForeignKey('periodictask.id'))
+    node: Mapped[str] = mapped_column(Unicode(255), nullable=False)
+    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=False), nullable=False)
 
     __table_args__ = (db.UniqueConstraint('periodictask_id',
                                           'node',

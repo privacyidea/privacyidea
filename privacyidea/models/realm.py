@@ -16,18 +16,17 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import logging
-from typing import List
+from typing import List, Optional
 
-from sqlalchemy import Sequence, Unicode, Integer, Boolean, ForeignKey, UniqueConstraint, delete, select, and_
+from sqlalchemy import Sequence, Unicode, Integer, Boolean, ForeignKey, UniqueConstraint, delete, select
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from privacyidea.models import db
-from privacyidea.models.resolver import Resolver
-from privacyidea.models.config import (TimestampMethodsMixin,
-                                       save_config_timestamp, NodeName)
 from privacyidea.lib.error import DatabaseError
 from privacyidea.lib.log import log_with
-
+from privacyidea.models import db
+from privacyidea.models.config import (TimestampMethodsMixin,
+                                       save_config_timestamp, NodeName)
+from privacyidea.models.resolver import Resolver
 
 log = logging.getLogger(__name__)
 
@@ -39,14 +38,10 @@ class Realm(TimestampMethodsMixin, db.Model):
     the realms. The linking to resolvers is stored in the table "resolverrealm".
     """
     __tablename__ = 'realm'
-    id: Mapped[int] = mapped_column(Integer, Sequence("realm_seq"), primary_key=True,
-                                    nullable=False)
-    name: Mapped[str] = mapped_column(Unicode(255), default='',
-                                      unique=True, nullable=False)
-    default: Mapped[bool] = mapped_column(Boolean(), default=False)
-    resolver_list = relationship('ResolverRealm',
-                                    lazy='select',
-                                    back_populates='realm')
+    id: Mapped[int] = mapped_column(Integer, Sequence("realm_seq"), primary_key=True, nullable=False)
+    name: Mapped[str] = mapped_column(Unicode(255), default='', unique=True, nullable=False)
+    default: Mapped[Optional[bool]] = mapped_column(Boolean(), default=False)
+    resolver_list = relationship('ResolverRealm', lazy='select', back_populates='realm')
     container = relationship('TokenContainer', secondary='tokencontainerrealm', back_populates='realms')
 
     tokenowners: Mapped[List['TokenOwner']] = relationship(
@@ -86,23 +81,23 @@ class ResolverRealm(TimestampMethodsMixin, db.Model):
     """
     __tablename__ = 'resolverrealm'
     id: Mapped[int] = mapped_column(Integer, Sequence("resolverrealm_seq"), primary_key=True)
-    resolver_id: Mapped[int] = mapped_column(Integer, ForeignKey("resolver.id"))
-    realm_id: Mapped[int] = mapped_column(Integer, ForeignKey("realm.id"))
+    resolver_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("resolver.id"))
+    realm_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("realm.id"))
     # If there are several resolvers in a realm, the priority is used the
     # find a user first in a resolver with a higher priority (i.e. lower number)
-    priority: Mapped[int] = mapped_column(Integer)
+    priority: Mapped[Optional[int]] = mapped_column(Integer)
     # TODO: with SQLAlchemy 2.0 db.UUID will be generally available
-    node_uuid: Mapped[str] = mapped_column(Unicode(36), default='')
+    node_uuid: Mapped[Optional[str]] = mapped_column(Unicode(36), default='')
     resolver = relationship(Resolver,
-                               lazy="joined",
-                               back_populates="realm_list")
-    realm = relationship(Realm,
                             lazy="joined",
-                            back_populates="resolver_list")
+                            back_populates="realm_list")
+    realm = relationship(Realm,
+                         lazy="joined",
+                         back_populates="resolver_list")
     __table_args__ = (UniqueConstraint('resolver_id',
-                                          'realm_id',
-                                          'node_uuid',
-                                          name='rrix_2'),)
+                                       'realm_id',
+                                       'node_uuid',
+                                       name='rrix_2'),)
 
     def __init__(self, resolver_id=None, realm_id=None,
                  resolver_name=None,

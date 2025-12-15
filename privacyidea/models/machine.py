@@ -16,27 +16,27 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import logging
+from typing import Optional
+
 from sqlalchemy import (
     Sequence,
     and_,
     select,
     update,
-    delete,
     Unicode,
     Integer,
     ForeignKey,
-    String,
     UniqueConstraint
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from privacyidea.lib.log import log_with
+from privacyidea.lib.utils import convert_column_to_unicode
 # Assuming these imports and classes exist in your project
 from privacyidea.models import db
-from privacyidea.models.token import Token, get_token_id
 from privacyidea.models.config import save_config_timestamp
+from privacyidea.models.token import Token, get_token_id
 from privacyidea.models.utils import MethodsMixin
-from privacyidea.lib.utils import convert_column_to_unicode
-from privacyidea.lib.log import log_with
 
 log = logging.getLogger(__name__)
 
@@ -82,14 +82,12 @@ class MachineResolverConfig(db.Model):
     The config entries are referenced by the id of the machine resolver
     """
     __tablename__ = 'machineresolverconfig'
-    id: Mapped[int] = mapped_column(Integer, Sequence("machineresolverconf_seq"),
-                                    primary_key=True)
-    resolver_id: Mapped[int] = mapped_column(Integer,
-                                             ForeignKey('machineresolver.id'))
+    id: Mapped[int] = mapped_column(Integer, Sequence("machineresolverconf_seq"), primary_key=True)
+    resolver_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey('machineresolver.id'))
     Key: Mapped[str] = mapped_column(Unicode(255), nullable=False)
-    Value: Mapped[str] = mapped_column(Unicode(2000), default='')
-    Type: Mapped[str] = mapped_column(Unicode(2000), default='')
-    Description: Mapped[str] = mapped_column(Unicode(2000), default='')
+    Value: Mapped[Optional[str]] = mapped_column(Unicode(2000), default='')
+    Type: Mapped[Optional[str]] = mapped_column(Unicode(2000), default='')
+    Description: Mapped[Optional[str]] = mapped_column(Unicode(2000), default='')
     __table_args__ = (UniqueConstraint('resolver_id',
                                        'Key',
                                        name='mrcix_2'),)
@@ -151,10 +149,10 @@ class MachineToken(MethodsMixin, db.Model):
     __tablename__ = 'machinetoken'
     id: Mapped[int] = mapped_column(Integer, Sequence("machinetoken_seq"),
                                     primary_key=True, nullable=False)
-    token_id: Mapped[int] = mapped_column(Integer, ForeignKey('token.id'))
-    machineresolver_id: Mapped[int] = mapped_column(Integer)
-    machine_id: Mapped[str] = mapped_column(Unicode(255))
-    application: Mapped[str] = mapped_column(Unicode(64))
+    token_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey('token.id'))
+    machineresolver_id: Mapped[Optional[int]] = mapped_column(Integer)
+    machine_id: Mapped[Optional[str]] = mapped_column(Unicode(255))
+    application: Mapped[Optional[str]] = mapped_column(Unicode(64))
 
     # This connects the machine with the token and makes the machines visible
     # in the token as "machine_list". The cascade option handles automatic
@@ -207,8 +205,7 @@ class MachineTokenOptions(db.Model):
     __tablename__ = 'machinetokenoptions'
     id: Mapped[int] = mapped_column(Integer, Sequence("machtokenopt_seq"),
                                     primary_key=True, nullable=False)
-    machinetoken_id: Mapped[int] = mapped_column(Integer,
-                                                 ForeignKey('machinetoken.id'))
+    machinetoken_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey('machinetoken.id'))
     mt_key: Mapped[str] = mapped_column(Unicode(64), nullable=False)
     mt_value: Mapped[str] = mapped_column(Unicode(64), nullable=False)
 
@@ -291,7 +288,7 @@ def get_machinetoken_ids(machine_id, resolver_name, serial, application):
             MachineToken.application == application
         )
     )
-    mtokens = db.session.execute(stmt).scalars().all()
+    mtokens = db.session.scalars(stmt).unique().all()
 
     if mtokens:
         for mt in mtokens:

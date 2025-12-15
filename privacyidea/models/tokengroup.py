@@ -39,7 +39,7 @@ class Tokengroup(TimestampMethodsMixin, db.Model):
     __tablename__ = 'tokengroup'
     id: Mapped[int] = mapped_column(Integer, primary_key=True, nullable=False)
     name: Mapped[str] = mapped_column(Unicode(255), default='', unique=True, nullable=False)
-    Description: Mapped[str] = mapped_column(Unicode(2000), default='')
+    Description: Mapped[Optional[str]] = mapped_column(Unicode(2000), default='')
 
     # Define relationship back to TokenTokengroup for deletion cascade
     tokens: Mapped[List['TokenTokengroup']] = relationship(back_populates='tokengroup', cascade="all, delete-orphan")
@@ -58,8 +58,8 @@ class TokenTokengroup(TimestampMethodsMixin, db.Model):
     __tablename__ = 'tokentokengroup'
     __table_args__ = (UniqueConstraint('token_id', 'tokengroup_id', name='ttgix_2'),)
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    token_id: Mapped[int] = mapped_column(Integer, db.ForeignKey('token.id'))
-    tokengroup_id: Mapped[int] = mapped_column(Integer, db.ForeignKey('tokengroup.id'))
+    token_id: Mapped[Optional[int]] = mapped_column(Integer, db.ForeignKey('token.id'))
+    tokengroup_id: Mapped[Optional[int]] = mapped_column(Integer, db.ForeignKey('tokengroup.id'))
 
     # Define relationships with modern syntax
     token: Mapped['Token'] = relationship(lazy='joined', backref='tokengroup_list')

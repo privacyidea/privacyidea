@@ -16,10 +16,10 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from datetime import datetime, timedelta, timezone
 import json
 import logging
-from sqlalchemy import Sequence, delete
+from datetime import datetime, timedelta, timezone
+from typing import Optional
 
 from sqlalchemy import (
     Sequence,
@@ -48,15 +48,15 @@ class Challenge(MethodsMixin, db.Model):
     __tablename__ = "challenge"
     id: Mapped[int] = mapped_column(Integer, Sequence("challenge_seq"), primary_key=True, nullable=False)
     transaction_id: Mapped[str] = mapped_column(Unicode(64), nullable=False, index=True)
-    data: Mapped[str] = mapped_column(Unicode(512), default='')
-    challenge: Mapped[str] = mapped_column(Text, default='')
-    session: Mapped[str] = mapped_column(Unicode(512), default='', quote=True, name="session")
+    data: Mapped[Optional[str]] = mapped_column(Unicode(512), default='')
+    challenge: Mapped[Optional[str]] = mapped_column(Text, default='')
+    session: Mapped[Optional[str]] = mapped_column(Unicode(512), default='', quote=True, name="session")
     # The token serial number
-    serial: Mapped[str] = mapped_column(Unicode(40), default='', index=True)
-    timestamp: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
-    expiration: Mapped[datetime] = mapped_column(DateTime, index=True)
-    received_count: Mapped[int] = mapped_column(Integer, default=0)
-    otp_valid: Mapped[bool] = mapped_column(Boolean, default=False)
+    serial: Mapped[Optional[str]] = mapped_column(Unicode(40), default='', index=True)
+    timestamp: Mapped[Optional[datetime]] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+    expiration: Mapped[Optional[datetime]] = mapped_column(DateTime, index=True)
+    received_count: Mapped[Optional[int]] = mapped_column(Integer, default=0)
+    otp_valid: Mapped[Optional[bool]] = mapped_column(Boolean, default=False)
 
     @log_with(log)
     def __init__(self, serial, transaction_id=None,
@@ -172,13 +172,14 @@ class Challenge(MethodsMixin, db.Model):
         descr = self.get()
         return "{0!s}".format(descr)
 
+
 def cleanup_challenges(serial):
     """
     Delete all challenges, that have expired.
 
     :return: None
     """
-    c_now = datetime.now(timezone.utc).replace(tzinfo=None) # DB contains naive datetime
+    c_now = datetime.now(timezone.utc).replace(tzinfo=None)  # DB contains naive datetime
     # Replaced the legacy .query.delete() with a modern delete statement
     delete_stmt = delete(Challenge).where(
         Challenge.expiration < c_now,
@@ -186,4 +187,3 @@ def cleanup_challenges(serial):
     )
     db.session.execute(delete_stmt)
     db.session.commit()
-

@@ -15,6 +15,8 @@
 #
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+from typing import Optional
+
 from sqlalchemy import (
     Sequence,
     Unicode,
@@ -43,16 +45,16 @@ class EventHandler(MethodsMixin, db.Model):
     id: Mapped[int] = mapped_column(Integer, Sequence("eventhandler_seq"), primary_key=True,
                                     nullable=False)
     # in fact the name is a description
-    name: Mapped[str] = mapped_column(Unicode(64), unique=False, nullable=True)
-    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    name: Mapped[Optional[str]] = mapped_column(Unicode(64), unique=False, nullable=True)
+    active: Mapped[Optional[bool]] = mapped_column(Boolean, default=True)
     ordering: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    position: Mapped[str] = mapped_column(Unicode(10), default="post")
+    position: Mapped[Optional[str]] = mapped_column(Unicode(10), default="post")
     # This is the name of the event in the code
     event: Mapped[str] = mapped_column(Unicode(255), nullable=False)
     # This is the identifier of an event handler module
     handlermodule: Mapped[str] = mapped_column(Unicode(255), nullable=False)
-    condition: Mapped[str] = mapped_column(Unicode(1024), default="")
-    action: Mapped[str] = mapped_column(Unicode(1024), default="")
+    condition: Mapped[Optional[str]] = mapped_column(Unicode(1024), default="")
+    action: Mapped[Optional[str]] = mapped_column(Unicode(1024), default="")
 
     # Relationships with cascade to automatically delete child records
     options = relationship('EventHandlerOption', lazy='dynamic', backref='eventhandler', cascade="all, delete-orphan")
@@ -168,10 +170,10 @@ class EventHandlerCondition(db.Model):
     """
     __tablename__ = "eventhandlercondition"
     id: Mapped[int] = mapped_column(Integer, Sequence("eventhandlercond_seq"), primary_key=True)
-    eventhandler_id: Mapped[int] = mapped_column(Integer, ForeignKey('eventhandler.id'))
+    eventhandler_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey('eventhandler.id'))
     Key: Mapped[str] = mapped_column(Unicode(255), nullable=False)
-    Value: Mapped[str] = mapped_column(Unicode(2000), default='')
-    comparator: Mapped[str] = mapped_column(Unicode(255), default='equal')
+    Value: Mapped[Optional[str]] = mapped_column(Unicode(2000), default='')
+    comparator: Mapped[Optional[str]] = mapped_column(Unicode(255), default='equal')
     __table_args__ = (UniqueConstraint('eventhandler_id', 'Key', name='ehcix_1'),)
 
     def __init__(self, eventhandler_id, Key, Value, comparator="equal"):
@@ -213,11 +215,11 @@ class EventHandlerOption(db.Model):
     """
     __tablename__ = 'eventhandleroption'
     id: Mapped[int] = mapped_column(Integer, Sequence("eventhandleropt_seq"), primary_key=True)
-    eventhandler_id: Mapped[int] = mapped_column(Integer, ForeignKey('eventhandler.id'))
+    eventhandler_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey('eventhandler.id'))
     Key: Mapped[str] = mapped_column(Unicode(255), nullable=False)
-    Value: Mapped[str] = mapped_column(Unicode(2000), default='')
-    Type: Mapped[str] = mapped_column(Unicode(2000), default='')
-    Description: Mapped[str] = mapped_column(Unicode(2000), default='')
+    Value: Mapped[Optional[str]] = mapped_column(Unicode(2000), default='')
+    Type: Mapped[Optional[str]] = mapped_column(Unicode(2000), default='')
+    Description: Mapped[Optional[str]] = mapped_column(Unicode(2000), default='')
     __table_args__ = (UniqueConstraint('eventhandler_id', 'Key', name='ehoix_1'),)
 
     def __init__(self, eventhandler_id, Key, Value, Type="", Description=""):

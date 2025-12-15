@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import logging
+from typing import Optional
+
 from sqlalchemy import Sequence, Unicode, Integer, ForeignKey, UniqueConstraint, delete, select, update, and_
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -73,15 +75,12 @@ class ResolverConfig(TimestampMethodsMixin, db.Model):
     """
     __tablename__ = 'resolverconfig'
     id: Mapped[int] = mapped_column(Integer, Sequence("resolverconf_seq"), primary_key=True)
-    resolver_id: Mapped[int] = mapped_column(Integer,
-                                             ForeignKey('resolver.id'))
+    resolver_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey('resolver.id'))
     Key: Mapped[str] = mapped_column(Unicode(255), nullable=False)
-    Value: Mapped[str] = mapped_column(Unicode(2000), default='')
-    Type: Mapped[str] = mapped_column(Unicode(2000), default='')
-    Description: Mapped[str] = mapped_column(Unicode(2000), default='')
-    __table_args__ = (UniqueConstraint('resolver_id',
-                                       'Key',
-                                       name='rcix_2'),)
+    Value: Mapped[Optional[str]] = mapped_column(Unicode(2000), default='')
+    Type: Mapped[Optional[str]] = mapped_column(Unicode(2000), default='')
+    Description: Mapped[Optional[str]] = mapped_column(Unicode(2000), default='')
+    __table_args__ = (UniqueConstraint('resolver_id', 'Key', name='rcix_2'),)
 
     def __init__(self, resolver_id=None,
                  Key=None, Value=None,

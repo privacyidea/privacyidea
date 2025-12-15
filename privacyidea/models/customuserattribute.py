@@ -17,6 +17,7 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import logging
 from datetime import datetime
+from typing import Optional
 
 from sqlalchemy import (
     Sequence,
@@ -86,12 +87,12 @@ class CustomUserAttribute(MethodsMixin, db.Model):
     """
     __tablename__ = 'customuserattribute'
     id: Mapped[int] = mapped_column(Integer, Sequence("customuserattribute_seq"), primary_key=True)
-    user_id: Mapped[str] = mapped_column(Unicode(320), default='', index=True)
-    resolver: Mapped[str] = mapped_column(Unicode(120), default='', index=True)
-    realm_id: Mapped[int] = mapped_column(Integer, ForeignKey('realm.id'))
+    user_id: Mapped[Optional[str]] = mapped_column(Unicode(320), default='', index=True)
+    resolver: Mapped[Optional[str]] = mapped_column(Unicode(120), default='', index=True)
+    realm_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey('realm.id'))
     Key: Mapped[str] = mapped_column(Unicode(255), nullable=False)
-    Value: Mapped[str] = mapped_column(UnicodeText, default='')
-    Type: Mapped[str] = mapped_column(Unicode(100), default='')
+    Value: Mapped[Optional[str]] = mapped_column(UnicodeText, default='')
+    Type: Mapped[Optional[str]] = mapped_column(Unicode(100), default='')
 
     def __init__(self, user_id, resolver, realm_id, Key, Value, Type=None):
         """
