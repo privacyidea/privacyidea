@@ -21,7 +21,7 @@
   <mat-expansion-panel
     #panel
     class="margin-4"
-    [disabled]="isEditMode() || policyService.isPolicyEdited()"
+    [disabled]="isEditMode() || policyService.isSelectedPolicyEdited()"
     (opened)="handleExpansion(panel, policy().name)"
     (closed)="handleCollapse(panel, policy().name)">
     <mat-expansion-panel-header class="mat-expansion-panel-header">

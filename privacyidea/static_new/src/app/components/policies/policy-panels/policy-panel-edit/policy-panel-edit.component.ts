@@ -65,7 +65,6 @@ export class PolicyPanelEditComponent {
   // Angular Inputs and Services
   readonly policyService: PolicyService = inject(PolicyService);
   readonly policy = input.required<PolicyDetail>();
-  readonly filterValue = input.required<FilterValueGeneric>();
 
   // Component State Signals
   readonly isEditMode = this.policyService.isEditMode;

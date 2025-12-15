@@ -21,7 +21,7 @@
   <mat-expansion-panel
     #panel
     class="margin-4"
-    [disabled]="policyService.isPolicyEdited()"
+    [disabled]="isPolicyEdited()"
     (opened)="handleExpansion()"
     (closed)="handleCollapse(panel)">
     <mat-expansion-panel-header class="mat-expansion-panel-header">
@@ -41,7 +41,7 @@
       </mat-panel-title>
       <mat-panel-description class="header-description">
         <div class="description-label">
-          @if (!this.policyService.selectedPolicyHasActions() && panel.expanded) {
+          @if (!policyHasActions() && panel.expanded) {
             <mat-form-field
               appearance="fill"
               class="policy-scope-dropdown"

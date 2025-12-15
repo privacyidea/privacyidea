@@ -348,9 +348,11 @@ export class PolicyService implements PolicyServiceInterface {
     return promise;
   }
 
-  savePolicyEditsAsNew(): Promise<void> | undefined {
+  savePolicyEditsAsNew(): Promise<void> {
     const selectedPolicy = this.selectedPolicy();
-    if (!selectedPolicy) return;
+    if (!selectedPolicy) {
+      return Promise.reject("no_selected_policy");
+    }
 
     const allPoliciesCopy = this.allPolicies();
     allPoliciesCopy.push({ ...selectedPolicy });
@@ -362,6 +364,7 @@ export class PolicyService implements PolicyServiceInterface {
       })
       .catch((error) => {
         console.error("Error creating policy: ", error);
+        return Promise.reject();
       });
 
     this.selectPolicy(selectedPolicy);

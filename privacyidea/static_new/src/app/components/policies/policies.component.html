@@ -20,19 +20,20 @@
   class="policies-layout"
   aria-label="Policies Layout">
   <h2 i18n>Policies</h2>
+
   <mat-accordion class="list-layout">
     @if (authService.actionAllowed("policyread")) {
-      <app-policy-filter [(filterValue)]="currentFilter"> </app-policy-filter>
+      <app-policy-filter
+        (filteredPoliciesChange)="onPolicyListFilteredChange($event)"
+        [unfilteredPolicies]="policyService.allPolicies()">
+      </app-policy-filter>
     }
     @if (authService.actionAllowed("policywrite")) {
       <app-policy-panel-new></app-policy-panel-new>
     }
     @if (authService.actionAllowed("policyread")) {
-      @for (policy of allPoliciesList(); track policy.name) {
-        <app-policy-panel-edit
-          [policy]="policy"
-          [filterValue]="currentFilter()">
-        </app-policy-panel-edit>
+      @for (policy of policiesListFiltered(); track policy.name) {
+        <app-policy-panel-edit [policy]="policy"> </app-policy-panel-edit>
       }
     }
   </mat-accordion>

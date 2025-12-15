@@ -116,9 +116,10 @@ export class FilterKeyword {
 }
 */
 
-export class FilterKeyword {
+export class FilterKeyword<T = any> {
   key: string;
   label: string;
+  matches: (item: T, filterValue: FilterValueGeneric) => boolean;
   isSelected?: (filterValue: FilterValueGeneric) => boolean;
   getIconName?: (filterValue: FilterValueGeneric) => "remove_circle" | "add_circle" | "change_circle";
   toggleKeyword?: (filterValue: FilterValueGeneric) => FilterValueGeneric;
@@ -126,12 +127,14 @@ export class FilterKeyword {
   constructor(args: {
     key: string;
     label: string;
+    matches: (item: T, filterValue: FilterValueGeneric) => boolean;
     isSelected?: (filterValue: FilterValueGeneric) => boolean;
     iconName?: (filterValue: FilterValueGeneric) => "remove_circle" | "add_circle" | "change_circle";
     toggle?: (filterValue: FilterValueGeneric) => FilterValueGeneric;
   }) {
     this.key = args.key;
     this.label = args.label;
+    this.matches = args.matches;
     this.isSelected = args.isSelected;
     this.getIconName = args.iconName;
     this.toggleKeyword = args.toggle;
@@ -163,15 +166,9 @@ export class KeywordFilterGenericComponent {
     this.showAdvancedFilter.update((b) => !b);
   }
 
-  isFilterSelected(filter: string, inputValue: FilterValueGeneric): boolean {
-    if (filter === "infokey & infovalue") {
-      return inputValue.hasKey("infokey") || inputValue.hasKey("infovalue");
-    }
-    if (filter === "machineid & resolver") {
-      return inputValue.hasKey("machineid") || inputValue.hasKey("resolver");
-    }
-    return inputValue.hasKey(filter);
-  }
+  // isFilterSelected(filter: string, inputValue: FilterValueGeneric): boolean {
+  //   // return this.filterValue().isSelected(filterKeyword);
+  // }
 
   getFilterIconName(filterKeyword: FilterKeyword): "remove_circle" | "add_circle" | "change_circle" {
     return this.filterValue().getFilterIconName(filterKeyword);

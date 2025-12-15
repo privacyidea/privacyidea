@@ -26,7 +26,7 @@ import { MatButtonToggleModule } from "@angular/material/button-toggle";
 import { FormsModule } from "@angular/forms";
 import { MatExpansionModule, MatExpansionPanel } from "@angular/material/expansion";
 import { MatSlideToggleModule } from "@angular/material/slide-toggle";
-import { PolicyDetail, PolicyService } from "../../../../services/policies/policies.service";
+import { PolicyDetail, PolicyService, PolicyServiceInterface } from "../../../../services/policies/policies.service";
 import { ActionTabComponent } from "../action-tab/action-tab.component";
 import { ConditionsTabComponent } from "../conditions-tab/conditions-tab.component";
 import { PolicyDescriptionComponent } from "../action-tab/policy-description/policy-description.component";
@@ -63,14 +63,14 @@ type PolicyTab = "actions" | "conditions";
 })
 export class PolicyPanelNewComponent {
   // Angular Inputs and Services
-  // readonly policyService: PolicyService = inject(PolicyService);
+  readonly policyService: PolicyService = inject(PolicyService);
 
   // Component State Signals
 
-  readonly newPolicy = signal<PolicyDetail>(inject(PolicyService).getEmptyPolicy());
+  readonly newPolicy = signal<PolicyDetail>(this.policyService.getEmptyPolicy());
   readonly activeTab = linkedSignal<any, PolicyTab>({
     source: () => ({
-      selectedPolicyHasConditions: inject(PolicyService).policyHasConditions(this.newPolicy())
+      selectedPolicyHasConditions: this.policyService.policyHasConditions(this.newPolicy())
     }),
     computation: (source, previous) => {
       const { isEditMode, selectedPolicyHasConditions } = source;
@@ -81,13 +81,17 @@ export class PolicyPanelNewComponent {
     }
   });
 
+  isPolicyEdited = computed(() => {
+    return this.policyService.isPolicyEdited(this.newPolicy(), this.policyService.getEmptyPolicy());
+  });
+
   // Event Handlers
   handleExpansion() {
     this.newPolicy.set(inject(PolicyService).getEmptyPolicy());
   }
 
   handleCollapse(panel: MatExpansionPanel) {
-    if (this.policyService.isPolicyEdited()) {
+    if (this.isPolicyEdited()) {
       if (confirm("Are you sure you want to discard the new policy? All changes will be lost.")) {
         this.policyService.deselectNewPolicy();
       } else {
@@ -115,11 +119,14 @@ export class PolicyPanelNewComponent {
   }
 
   // Action Methods
-  savePolicy(panel?: MatExpansionPanel) {
+  async savePolicy(panel?: MatExpansionPanel) {
     if (!this.canSavePolicy()) return;
-
-    this.policyService.savePolicyEditsAsNew();
-    this.policyService.deselectPolicy(this.newPolicyName());
+    try {
+      await this.policyService.savePolicyEditsAsNew();
+    } catch (error) {
+      return;
+    }
+    this.policyService.deselectPolicy(this.newPolicy().name);
 
     if (panel) panel.close();
   }
@@ -138,15 +145,13 @@ export class PolicyPanelNewComponent {
   }
 
   resetPolicy(panel: MatExpansionPanel) {
-    if (this.policyService.isPolicyEdited()) {
+    if (this.isPolicyEdited()) {
       if (confirm("Are you sure you want to discard the new policy? All changes will be lost.")) {
-        this.policyService.deselectPolicy(this.newPolicyName());
-
+        this.policyService.deselectPolicy(this.newPolicy().name);
         panel.close();
       }
     } else {
-      this.policyService.deselectPolicy(this.newPolicyName());
-
+      this.policyService.deselectPolicy(this.newPolicy().name);
       panel.close();
     }
   }
@@ -157,10 +162,7 @@ export class PolicyPanelNewComponent {
   }
 
   confirmDiscardChanges(): boolean {
-    if (
-      this.policyService.isPolicyEdited() &&
-      !confirm("Are you sure you want to discard the changes? All changes will be lost.")
-    ) {
+    if (this.isPolicyEdited() && !confirm("Are you sure you want to discard the changes? All changes will be lost.")) {
       return false;
     }
     return true;
@@ -180,5 +182,11 @@ export class PolicyPanelNewComponent {
     this.policyService.updateSelectedPolicy({ scope: scope });
   }
 
-  policyHas;
+  policyHasActions(): boolean {
+    return this.policyService.policyHasActions(this.newPolicy());
+  }
+
+  policyHasConditions(): boolean {
+    return this.policyService.policyHasConditions(this.newPolicy());
+  }
 }
