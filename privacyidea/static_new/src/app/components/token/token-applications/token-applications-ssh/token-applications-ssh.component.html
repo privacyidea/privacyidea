@@ -48,10 +48,10 @@
             #filterInput
             (input)="machineService.handleFilterInput($event)"
             [value]="machineService.machineFilter().filterString"
-            id="ssh-filter-input"
             aria-label="Filter Input"
             i18n-aria-label
             i18n-placeholder
+            id="ssh-filter-input"
             matInput
             placeholder="Example query: 'service_id: myService'" />
         </app-clearable-input>
@@ -65,7 +65,9 @@
       </button>
       <mat-menu #advancedFilterMenu="matMenu">
         @for (keyword of machineService.sshAdvancedApiFilter; track keyword) {
-          <button (click)="onAdvancedFilterClick(keyword)" mat-menu-item>
+          <button
+            (click)="onAdvancedFilterClick(keyword)"
+            mat-menu-item>
             <mat-icon class="margin-right-1">{{ getFilterIconName(keyword) }}</mat-icon>
             {{ keyword }}
           </button>
@@ -77,9 +79,9 @@
         [pageIndex]="machineService.pageIndex()"
         [pageSizeOptions]="pageSizeOptions()"
         [pageSize]="machineService.pageSize()"
-        showFirstLastButtons/>
+        showFirstLastButtons />
     </div>
-    
+
     <table
       [dataSource]="dataSource()"
       aria-label="Token Applications Table"
@@ -124,8 +126,8 @@
               @switch (column.key) {
                 @case ("serial") {
                   <a
-                    attr.aria-label="{{ column.label }} Link"
-                    (click)="contentService.tokenSelected(element.serial)">
+                    (click)="contentService.tokenSelected(element.serial)"
+                    attr.aria-label="{{ column.label }} Link">
                     {{ element[column.key] }}
                   </a>
                   <app-copy-button [copyText]="element.serial"></app-copy-button>

@@ -71,7 +71,7 @@ export class TokenApplicationsSshComponent {
   readonly columnsKeyMap = this.tableUtilsService.pickColumns(
     "serial",
     "service_id",
-    "user",
+    "user"
   );
   readonly columnKeys = [...this.tableUtilsService.getColumnKeys(this.columnsKeyMap)];
   pageSizeOptions = this.tableUtilsService.pageSizeOptions;
@@ -86,13 +86,12 @@ export class TokenApplicationsSshComponent {
     }
     return this.tableUtilsService.emptyDataSource(this.machineService.pageSize(), [...this.columnsKeyMap]);
   });
+  @ViewChild("filterInput", { static: false })
+  filterInput!: ElementRef<HTMLInputElement>;
 
   getObjectStrings(options: object) {
     return Object.entries(options).map(([key, value]) => `${key}: ${value}`);
   }
-
-  @ViewChild('filterInput', { static: false })
-  filterInput!: ElementRef<HTMLInputElement>;
 
   toggleFilter(filterKeyword: string): void {
     let newValue;

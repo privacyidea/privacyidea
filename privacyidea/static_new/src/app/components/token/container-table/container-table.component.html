@@ -34,10 +34,10 @@
             #filterHTMLInputElement
             (input)="containerService.handleFilterInput($event)"
             [value]="containerService.containerFilter().filterString"
-            id="container-filter-input"
             aria-label="Filter Input"
             i18n-aria-label
             i18n-placeholder
+            id="container-filter-input"
             matInput
             placeholder="Example query: 'type: generic user: admin'" />
         </app-clearable-input>
@@ -48,10 +48,10 @@
         [pageIndex]="pageIndex()"
         [pageSizeOptions]="pageSizeOptions()"
         [pageSize]="pageSize()"
-        showFirstLastButtons></mat-paginator>
+        showFirstLastButtons />
     </div>
-    
-    <app-container-table-actions/>
+
+    <app-container-table-actions />
     <div class="table-container">
       <table
         [dataSource]="containerDataSource()"
@@ -65,13 +65,13 @@
             @if (column.key === "select") {
               <th
                 *matHeaderCellDef
-                mat-header-cell
-                class="table-checkbox">
+                class="table-checkbox"
+                mat-header-cell>
                 <mat-checkbox
                   (change)="$event ? toggleAllRows() : null"
                   [checked]="isAllSelected()"
-                  [indeterminate]="containerSelection().length > 0 && !isAllSelected()"
-                  [disabled]="total() === 0"></mat-checkbox>
+                  [disabled]="total() === 0"
+                  [indeterminate]="containerSelection().length > 0 && !isAllSelected()"></mat-checkbox>
               </th>
             } @else {
               <th
@@ -105,12 +105,12 @@
             }
             <td
               *matCellDef="let element; let row"
-              attr.aria-label="{{ column.label }} Cell"
-              mat-cell
               [ngClass]="{
                 'width-18rem': column.key === 'description',
                 'table-checkbox': column.key === 'select'
-              }">
+              }"
+              attr.aria-label="{{ column.label }} Cell"
+              mat-cell>
               <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
                 @switch (column.key) {
                   @case ("select") {
@@ -122,8 +122,8 @@
                   }
                   @case ("serial") {
                     <a
-                      attr.aria-label="{{ column.label }} Link"
-                      (click)="contentService.containerSelected(element.serial)">
+                      (click)="contentService.containerSelected(element.serial)"
+                      attr.aria-label="{{ column.label }} Link">
                       {{ element[column.key] }}
                     </a>
                     @if (element.serial !== "") {
@@ -189,8 +189,8 @@
                 }
                 @if (element.tokens?.length === 0) {
                   <div
-                    i18n
-                    class="flex ali-center">
+                    class="flex ali-center"
+                    i18n>
                     Container has no tokens.
                   </div>
                 }

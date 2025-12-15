@@ -19,11 +19,11 @@
 <div class="flex-row margin-bottom-1 margin-top-1 gap-8">
   @if (authService.actionAllowed("container_delete")) {
     <button
-      class="action-button-delete"
       (click)="deleteSelectedContainer()"
       [disabled]="containerSelection().length === 0"
-      mat-stroked-button
-      i18n>
+      class="action-button-delete"
+      i18n
+      mat-stroked-button>
       <mat-icon> delete_sweep</mat-icon>
       Delete Selected
     </button>
@@ -44,7 +44,9 @@
   </button>
   <mat-menu #advancedFilterMenu="matMenu">
     @for (keyword of containerService.advancedApiFilter; track keyword) {
-      <button (click)="onAdvancedFilterClick(keyword)" mat-menu-item>
+      <button
+        (click)="onAdvancedFilterClick(keyword)"
+        mat-menu-item>
         <mat-icon class="margin-right-1">{{ getFilterIconName(keyword) }}</mat-icon>
         {{ keyword }}
       </button>

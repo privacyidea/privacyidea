@@ -307,11 +307,9 @@ export class TokenService implements TokenServiceInterface {
   stopPolling$ = new Subject<void>();
   tokenBaseUrl = environment.proxyUrl + "/token/";
   eventPageSize = 10;
-  detailsUsername = this.contentService.detailsUsername;
-  tokenSerial = this.contentService.tokenSerial;
-
   userRealm = signal("");
-
+  tokenSerial = this.contentService.tokenSerial;
+  detailsUsername = this.contentService.detailsUsername;
   filterParams = computed<Record<string, string>>(() => {
     const allowed = [
       ...this.apiFilter,

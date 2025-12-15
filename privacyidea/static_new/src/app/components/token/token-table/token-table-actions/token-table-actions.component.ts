@@ -63,12 +63,12 @@ export class TokenTableActionsComponent {
   protected readonly auditService: AuditServiceInterface = inject(AuditService);
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   readonly ROUTE_PATHS = ROUTE_PATHS;
+  readonly advancedApiFilter = this.tokenService.advancedApiFilter;
   private router = inject(Router);
   tokenIsActive = this.tokenService.tokenIsActive;
   tokenIsRevoked = this.tokenService.tokenIsRevoked;
   tokenSerial = this.tokenService.tokenSerial;
   tokenSelection = this.tokenService.tokenSelection;
-  readonly advancedApiFilter = this.tokenService.advancedApiFilter;
 
   toggleActive(): void {
     this.tokenService.toggleActive(this.tokenSerial(), this.tokenIsActive()).subscribe({
@@ -227,6 +227,35 @@ export class TokenTableActionsComponent {
       });
   }
 
+  isFilterSelected(filter: string): boolean {
+    const inputValue = this.tokenService.tokenFilter();
+    if (filter === "infokey & infovalue") {
+      return inputValue.hasKey("infokey") && inputValue.hasKey("infovalue");
+    }
+    return inputValue.hasKey(filter);
+  }
+
+  getFilterIconName(keyword: string): string {
+    if (keyword === "active" || keyword === "assigned") {
+      const value = this.tokenService.tokenFilter()?.getValueOfKey(keyword)?.toLowerCase();
+      if (!value) {
+        return "filter_alt";
+      }
+      return value === "true" ? "screen_rotation_alt" : value === "false" ? "filter_alt_off" : "filter_alt";
+    } else {
+      const isSelected = this.isFilterSelected(keyword);
+      return isSelected ? "filter_alt_off" : "filter_alt";
+    }
+  }
+
+  onAdvancedFilterClick(filterKeyword: string): void {
+    this.toggleFilter(filterKeyword);
+    setTimeout(() => {
+      const elementById = this.document.getElementById("token-filter-input") as HTMLInputElement | null;
+      elementById?.focus();
+    });
+  }
+
   private toggleFilter(filterKeyword: string): void {
     let newValue;
     if (filterKeyword === "assigned") {
@@ -275,34 +304,5 @@ export class TokenTableActionsComponent {
       });
     }
     this.tokenService.tokenFilter.set(newValue);
-  }
-
-  isFilterSelected(filter: string): boolean {
-    const inputValue = this.tokenService.tokenFilter();
-    if (filter === "infokey & infovalue") {
-      return inputValue.hasKey("infokey") && inputValue.hasKey("infovalue");
-    }
-    return inputValue.hasKey(filter);
-  }
-
-  getFilterIconName(keyword: string): string {
-    if (keyword === "active" || keyword === "assigned") {
-      const value = this.tokenService.tokenFilter()?.getValueOfKey(keyword)?.toLowerCase();
-      if (!value) {
-        return "filter_alt";
-      }
-      return value === "true" ? "screen_rotation_alt" : value === "false" ? "filter_alt_off" : "filter_alt";
-    } else {
-      const isSelected = this.isFilterSelected(keyword);
-      return isSelected ? "filter_alt_off" : "filter_alt";
-    }
-  }
-
-  onAdvancedFilterClick(filterKeyword: string): void {
-    this.toggleFilter(filterKeyword);
-    setTimeout(() => {
-      const elementById = this.document.getElementById("token-filter-input") as HTMLInputElement | null;
-      elementById?.focus();
-    });
   }
 }

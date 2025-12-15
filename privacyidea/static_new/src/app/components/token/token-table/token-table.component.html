@@ -34,10 +34,10 @@
             #filterHTMLInputElement
             (input)="tokenService.handleFilterInput($event)"
             [value]="tokenService.tokenFilter().filterString"
-            id="token-filter-input"
             aria-label="Filter Input"
             i18n-aria-label
             i18n-placeholder
+            id="token-filter-input"
             matInput
             placeholder="Example query: 'type: hotp userid: 1000'" />
         </app-clearable-input>

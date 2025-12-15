@@ -103,7 +103,6 @@ export class ContainerTableActionsComponent {
 
   onAdvancedFilterClick(filterKeyword: string): void {
     this.toggleFilter(filterKeyword);
-    // Focus the container filter input to allow immediate typing after toggling a keyword
     setTimeout(() => {
       const elementById = this.document.getElementById("container-filter-input") as HTMLInputElement | null;
       elementById?.focus();

@@ -68,7 +68,7 @@ export class TokenApplicationsOfflineComponent {
   readonly columnsKeyMap = this.tableUtilsService.pickColumns(
     "serial",
     "count",
-    "rounds",
+    "rounds"
   );
   readonly columnKeys = [...this.tableUtilsService.getColumnKeys(this.columnsKeyMap)];
   pageSizeOptions = this.tableUtilsService.pageSizeOptions;
@@ -83,13 +83,12 @@ export class TokenApplicationsOfflineComponent {
     }
     return this.tableUtilsService.emptyDataSource(this.machineService.pageSize(), [...this.columnsKeyMap]);
   });
+  @ViewChild("filterInput", { static: false })
+  filterInput!: ElementRef<HTMLInputElement>;
 
   getObjectStrings(options: object) {
     return Object.entries(options).map(([key, value]) => `${key}: ${value}`);
   }
-
-  @ViewChild('filterInput', { static: false })
-  filterInput!: ElementRef<HTMLInputElement>;
 
   toggleFilter(filterKeyword: string): void {
     let newValue;
