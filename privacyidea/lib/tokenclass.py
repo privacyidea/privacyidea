@@ -236,7 +236,8 @@ class TokenClass(object):
         # FIXME: We need to remove this, if we one day want to assign several users to one token
         token_owner = self.user
         if not token_owner:
-            new_owner = TokenOwner(token_id=self.token.id, user_id=uid, resolver=resolvername, realmname=user.realm)
+            new_owner = TokenOwner(token_id=self.token.id, user_id=uid, resolver=resolvername, realm_id=user.realm_id,
+                                   realmname=user.realm)
             db.session.add(new_owner)
             # Add users realm to token realms
             self.set_realms([user.realm], add=True, commit_db_session=False)
@@ -451,7 +452,8 @@ class TokenClass(object):
             db.session.add(token_info)
         else:
             # Update existing info
-            statement = update(TokenInfo).where(TokenInfo.id == token_info.id).values(Value=value, Type=value_type)
+            statement = update(TokenInfo).where(TokenInfo.id == token_info.id,
+                                                TokenInfo.Key == key).values(Value=value, Type=value_type)
             db.session.execute(statement)
         if commit_db_session:
             db.session.commit()
