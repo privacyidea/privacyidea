@@ -40,6 +40,12 @@ from privacyidea.models.utils import MethodsMixin
 
 log = logging.getLogger(__name__)
 
+def _utc_now() -> datetime:
+    """
+    Return the current UTC time as a naive datetime object.
+    """
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+
 
 class Challenge(MethodsMixin, db.Model):
     """
@@ -53,7 +59,7 @@ class Challenge(MethodsMixin, db.Model):
     session: Mapped[Optional[str]] = mapped_column(Unicode(512), default='', quote=True, name="session")
     # The token serial number
     serial: Mapped[Optional[str]] = mapped_column(Unicode(40), default='', index=True)
-    timestamp: Mapped[Optional[datetime]] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+    timestamp: Mapped[Optional[datetime]] = mapped_column(DateTime, default=_utc_now(), index=True)
     expiration: Mapped[Optional[datetime]] = mapped_column(DateTime, index=True)
     received_count: Mapped[Optional[int]] = mapped_column(Integer, default=0)
     otp_valid: Mapped[Optional[bool]] = mapped_column(Boolean, default=False)
@@ -66,11 +72,11 @@ class Challenge(MethodsMixin, db.Model):
         self.challenge = challenge
         self.serial = serial
         self.set_data(data)
-        # Note: self.timestamp will be automatically set by its default value
+        self.timestamp = _utc_now()
         self.session = session
         self.received_count = 0
         self.otp_valid = False
-        self.expiration = datetime.utcnow() + timedelta(seconds=validitytime)
+        self.expiration = self.timestamp + timedelta(seconds=validitytime)
 
     @staticmethod
     def create_transaction_id(length=20):
@@ -83,7 +89,7 @@ class Challenge(MethodsMixin, db.Model):
         :return: True if valid
         :rtype: bool
         """
-        c_now = datetime.utcnow()
+        c_now = _utc_now()
         if self.timestamp <= c_now < self.expiration:
             return True
         return False
