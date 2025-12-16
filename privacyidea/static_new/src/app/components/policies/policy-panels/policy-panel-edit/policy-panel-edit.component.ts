@@ -210,4 +210,8 @@ export class PolicyPanelEditComponent {
   selectPolicyScope(scope: string) {
     this.policyService.updateSelectedPolicy({ scope: scope });
   }
+
+  updatePolicyPriority(priority: number) {
+    this.policyService.updateSelectedPolicy({ priority });
+  }
 }

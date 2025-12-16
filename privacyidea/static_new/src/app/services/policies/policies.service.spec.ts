@@ -145,27 +145,27 @@ describe("PolicyService", () => {
 
   describe("canSaveSelectedPolicy", () => {
     it("should return false if no policy is selected", () => {
-      expect(service.canSaveSelectedPolicy()).toBeFalsy();
+      expect(service.canSavePolicy()).toBeFalsy();
     });
 
     it("should return false if policy name is empty", () => {
       service.selectPolicy({ ...service.getEmptyPolicy, name: "", scope: "user", action: { test: "test" } });
-      expect(service.canSaveSelectedPolicy()).toBeFalsy();
+      expect(service.canSavePolicy()).toBeFalsy();
     });
 
     it("should return false if policy scope is empty", () => {
       service.selectPolicy({ ...service.getEmptyPolicy, name: "test", scope: "", action: { test: "test" } });
-      expect(service.canSaveSelectedPolicy()).toBeFalsy();
+      expect(service.canSavePolicy()).toBeFalsy();
     });
 
     it("should return false if policy has no actions", () => {
       service.selectPolicy({ ...service.getEmptyPolicy, name: "test", scope: "user", action: null });
-      expect(service.canSaveSelectedPolicy()).toBeFalsy();
+      expect(service.canSavePolicy()).toBeFalsy();
     });
 
     it("should return true if policy is valid", () => {
       service.selectPolicy({ ...service.getEmptyPolicy, name: "test", scope: "user", action: { test: "test" } });
-      expect(service.canSaveSelectedPolicy()).toBeTruthy();
+      expect(service.canSavePolicy()).toBeTruthy();
     });
   });
 
@@ -294,7 +294,7 @@ describe("PolicyService", () => {
     it("should create a new policy if asNew is true", () => {
       service.initializeNewPolicy();
       service.updateSelectedPolicy({ name: "new-policy", scope: "user", action: { test: "test" } });
-      const savePromise = service.savePolicyEditsAsNew();
+      const savePromise = service.saveNewPolicy();
 
       const req = httpTestingController.expectOne(`${service.policyBaseUrl}new-policy`);
       expect(req.request.method).toEqual("POST");

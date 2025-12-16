@@ -74,7 +74,7 @@ export class MockPolicyService implements PolicyServiceInterface {
   updateActionInSelectedPolicy = jest.fn();
   updateActionValue = jest.fn();
   selectPolicyByName = jest.fn();
-  canSaveSelectedPolicy = jest.fn().mockReturnValue(true);
+  canSavePolicy = jest.fn().mockReturnValue(true);
   savePolicyEdits = jest.fn().mockResolvedValue(undefined);
   getDetailsOfAction = jest.fn().mockReturnValue(null);
   deselectNewPolicy = jest.fn();

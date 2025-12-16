@@ -168,7 +168,7 @@ export interface PolicyServiceInterface {
   updateActionInSelectedPolicy(): void;
   updateActionValue(actionName: string, newValue: boolean): void;
   selectPolicyByName(policyName: string): void;
-  canSaveSelectedPolicy(): boolean;
+  canSavePolicy(policy: PolicyDetail): boolean;
   savePolicyEdits(args?: { asNew?: boolean }): Promise<void> | undefined;
   getDetailsOfAction(actionName: string): PolicyActionDetail | null;
   deselectNewPolicy(): void;
@@ -237,8 +237,7 @@ export class PolicyService implements PolicyServiceInterface {
     }
   }
 
-  canSaveSelectedPolicy(): boolean {
-    const policy = this.selectedPolicy();
+  canSavePolicy(policy: PolicyDetail): boolean {
     if (!policy) return false;
     if (!policy.name || policy.name.trim() === "") return false;
     if (!policy.scope || policy.scope.trim() === "") return false;
@@ -348,17 +347,12 @@ export class PolicyService implements PolicyServiceInterface {
     return promise;
   }
 
-  savePolicyEditsAsNew(): Promise<void> {
-    const selectedPolicy = this.selectedPolicy();
-    if (!selectedPolicy) {
-      return Promise.reject("no_selected_policy");
-    }
-
+  saveNewPolicy(newPolicy: PolicyDetail): Promise<void> {
     const allPoliciesCopy = this.allPolicies();
-    allPoliciesCopy.push({ ...selectedPolicy });
+    allPoliciesCopy.push({ ...newPolicy });
     this.allPolicies.set(allPoliciesCopy);
 
-    const promise = this.createPolicy(selectedPolicy)
+    const promise = this.createPolicy(newPolicy)
       .then((_) => {
         this.allPoliciesRecource.reload();
       })
@@ -367,7 +361,7 @@ export class PolicyService implements PolicyServiceInterface {
         return Promise.reject();
       });
 
-    this.selectPolicy(selectedPolicy);
+    this.selectPolicy(newPolicy);
     return promise;
   }
 
@@ -642,15 +636,18 @@ export class PolicyService implements PolicyServiceInterface {
     }
   });
 
-  selectedPolicyScope = computed(() => {
+  selectedPolicyScope = linkedSignal(() => {
     return this._selectedPolicy()?.scope || "";
   });
 
   policyActionGroupNames: Signal<string[]> = computed(() => {
     const selectedScope = this.selectedPolicyScope();
+    console.log("selectedScope:", selectedScope);
     if (!selectedScope) return [];
     const policyActionGroupFiltered = this.policyActionsByGroupFiltered()[selectedScope];
+    console.log("policyActionGroupFiltered:", policyActionGroupFiltered);
     if (!policyActionGroupFiltered) return [];
+    console.log("Object.keys(policyActionGroupFiltered):", Object.keys(policyActionGroupFiltered));
     return Object.keys(policyActionGroupFiltered);
   });
 
@@ -674,7 +671,9 @@ export class PolicyService implements PolicyServiceInterface {
     const group: string = this.selectedActionGroup();
     const actionsByGroup = this.policyActionsByGroupFiltered();
     const scope = this.selectedPolicyScope();
+    console.log("actionNamesOfSelectedGroup - scope:", scope, "group:", group);
     if (!scope || !actionsByGroup[scope]) return [];
+    console.log("returning: ", Object.keys(actionsByGroup[scope][group] || {}));
     return Object.keys(actionsByGroup[scope][group] || {});
   });
 

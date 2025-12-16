@@ -87,47 +87,38 @@ export class PolicyPanelNewComponent {
 
   // Event Handlers
   handleExpansion() {
-    this.newPolicy.set(inject(PolicyService).getEmptyPolicy());
+    this.newPolicy.set(this.policyService.getEmptyPolicy());
   }
 
   handleCollapse(panel: MatExpansionPanel) {
-    if (this.isPolicyEdited()) {
-      if (confirm("Are you sure you want to discard the new policy? All changes will be lost.")) {
-        this.policyService.deselectNewPolicy();
-      } else {
-        panel.open(); // Re-open if user cancels
-      }
+    if (this.resetPolicy()) {
+      panel.close();
     } else {
-      this.policyService.deselectNewPolicy();
+      panel.open();
     }
   }
 
+  onPriorityChange(priority: number): void {
+    this.newPolicy.set({ ...this.newPolicy(), priority: priority });
+  }
+
   onNameChange(name: string): void {
-    this.policyService.updateSelectedPolicy({ name: name });
+    this.newPolicy.set({ ...this.newPolicy(), name: name });
   }
 
   setActiveTab(tab: PolicyTab): void {
     this.activeTab.set(tab);
   }
 
-  togglePolicyActive(policy: PolicyDetail, activate: boolean) {
-    if (activate) {
-      this.policyService.enablePolicy(policy.name);
-    } else {
-      this.policyService.disablePolicy(policy.name);
-    }
-  }
-
   // Action Methods
   async savePolicy(panel?: MatExpansionPanel) {
     if (!this.canSavePolicy()) return;
     try {
-      await this.policyService.savePolicyEditsAsNew();
+      await this.policyService.saveNewPolicy(this.newPolicy());
     } catch (error) {
       return;
     }
-    this.policyService.deselectPolicy(this.newPolicy().name);
-
+    this.newPolicy.set(this.policyService.getEmptyPolicy());
     if (panel) panel.close();
   }
 
@@ -141,24 +132,25 @@ export class PolicyPanelNewComponent {
 
   cancelEditMode() {
     if (!this.confirmDiscardChanges()) return;
-    this.policyService.cancelEditMode();
+    this.newPolicy.set(this.policyService.getEmptyPolicy());
   }
 
-  resetPolicy(panel: MatExpansionPanel) {
+  resetPolicy(): boolean {
     if (this.isPolicyEdited()) {
       if (confirm("Are you sure you want to discard the new policy? All changes will be lost.")) {
-        this.policyService.deselectPolicy(this.newPolicy().name);
-        panel.close();
+        this.newPolicy.set(this.policyService.getEmptyPolicy());
+        return true;
       }
     } else {
-      this.policyService.deselectPolicy(this.newPolicy().name);
-      panel.close();
+      this.newPolicy.set(this.policyService.getEmptyPolicy());
+      return true;
     }
+    return false;
   }
 
   // State-checking Methods
   canSavePolicy(): boolean {
-    return this.policyService.canSaveSelectedPolicy();
+    return this.policyService.canSavePolicy(this.newPolicy());
   }
 
   confirmDiscardChanges(): boolean {
@@ -168,18 +160,10 @@ export class PolicyPanelNewComponent {
     return true;
   }
 
-  policyIsSelected(policyName: string = ""): boolean {
-    const selectedPolicy = this.policyService.selectedPolicyOriginal();
-    return selectedPolicy !== null && selectedPolicy.name === policyName;
-  }
-
-  isEditingPolicy(name: string): boolean {
-    return this.policyService.selectedPolicyOriginal()?.name === name;
-  }
-
   // Policy Manipulation Methods
   selectPolicyScope(scope: string) {
-    this.policyService.updateSelectedPolicy({ scope: scope });
+    this.newPolicy.set({ ...this.newPolicy(), scope: scope });
+    this.policyService.selectedPolicyScope.set(scope);
   }
 
   policyHasActions(): boolean {

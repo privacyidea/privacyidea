@@ -71,7 +71,7 @@
             </button>
             <button
               mat-icon-button
-              (click)="$event.stopPropagation(); resetPolicy(panel)">
+              (click)="$event.stopPropagation(); resetPolicy()">
               <mat-icon>close</mat-icon>
             </button>
           }
@@ -80,8 +80,11 @@
     </mat-expansion-panel-header>
     <div class="mat-expansion-panel-body">
       <div class="priority-description">
-        <app-policy-priority [editMode]="true" />
-        <app-policy-description />
+        <app-policy-priority
+          [editMode]="true"
+          [priority]="newPolicy().priority"
+          (priorityChange)="onPriorityChange($event)" />
+        <app-policy-description [isEditMode]="true" />
       </div>
 
       <div class="tab-buttons">
@@ -102,10 +105,10 @@
       </div>
 
       @if (activeTab() === "actions") {
-        <app-action-tab />
+        <app-action-tab [isEditMode]="true" />
       }
       @if (activeTab() === "conditions") {
-        <app-conditions-tab />
+        <app-conditions-tab [isEditMode]="true" />
       }
     </div>
   </mat-expansion-panel>

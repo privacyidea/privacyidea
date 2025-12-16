@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, inject } from "@angular/core";
+import { Component, inject, input } from "@angular/core";
 import { ConditionsUserComponent } from "./conditions-user/conditions-user.component";
 import { ConditionsNodesComponent } from "./conditions-nodes/conditions-nodes.component";
 import { ConditionsAdditionalComponent } from "./conditions-additional/conditions-additional.component";
@@ -33,5 +33,5 @@ import { ConditionsAdminComponent } from "./conditions-admin/conditions-admin.co
 })
 export class ConditionsTabComponent {
   policyService = inject(PolicyService);
-  isEditMode = this.policyService.isEditMode;
+  isEditMode = input.required<boolean>();
 }

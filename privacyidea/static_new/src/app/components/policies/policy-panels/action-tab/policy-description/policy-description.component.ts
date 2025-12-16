@@ -38,7 +38,7 @@ export class PolicyDescriptionComponent {
   documentationService = inject(DocumentationService);
 
   // Component State
-  isEditMode = this.policyService.isEditMode;
+  isEditMode = input.required<boolean>();
 
   // Public Methods
   updatePolicyDescription($event: string) {

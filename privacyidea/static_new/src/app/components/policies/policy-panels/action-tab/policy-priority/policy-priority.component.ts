@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, inject, input } from "@angular/core";
+import { Component, inject, input, output } from "@angular/core";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { FormsModule } from "@angular/forms";
@@ -37,9 +37,6 @@ export class PolicyPriorityComponent {
 
   // Inputs
   editMode = input.required<boolean>();
-
-  // Public Methods
-  updatePolicyPriority($event: any) {
-    this.policyService.updateSelectedPolicy({ priority: $event });
-  }
+  priority = input.required<number>();
+  priorityChange = output<number>();
 }

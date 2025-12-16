@@ -103,8 +103,11 @@
     </mat-expansion-panel-header>
     <div class="mat-expansion-panel-body">
       <div class="priority-description">
-        <app-policy-priority [editMode]="isEditMode()" />
-        <app-policy-description />
+        <app-policy-priority
+          [editMode]="isEditMode()"
+          [priority]="selectedPolicy()?.priority ?? policy().priority"
+          (priorityChange)="updatePolicyPriority($event)" />
+        <app-policy-description [isEditMode]="isEditMode()" />
       </div>
       @if (isEditingPolicy(policy().name) || policyService.selectedPolicyHasConditions()) {
         <div class="tab-buttons">
@@ -125,10 +128,10 @@
         </div>
       }
       @if (activeTab() === "actions") {
-        <app-action-tab />
+        <app-action-tab [isEditMode]="isEditMode()" />
       }
       @if (activeTab() === "conditions") {
-        <app-conditions-tab />
+        <app-conditions-tab [isEditMode]="isEditMode()" />
       }
     </div>
   </mat-expansion-panel>
