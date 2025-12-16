@@ -16,7 +16,7 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-@if (policyService.selectedPolicy()?.description || isEditMode()) {
+@if (policy().description || isEditMode()) {
   <div class="action-description-container">
     <div
       i18n
@@ -26,14 +26,14 @@
     @if (isEditMode()) {
       <textarea
         class="description-textarea"
-        [ngModel]="policyService.selectedPolicy()?.description"
+        [ngModel]="policy().description"
         (ngModelChange)="updatePolicyDescription($event)"
         placeholder="(optional) Enter a description for this policy..."
         cdkTextareaAutosize
         cdkAutosizeMinRows="3"
         cdkAutosizeMaxRows="6"></textarea>
     } @else {
-      {{ policyService.selectedPolicy()?.description }}
+      {{ policy().description }}
     }
   </div>
 }

@@ -84,7 +84,10 @@
           [editMode]="true"
           [priority]="newPolicy().priority"
           (priorityChange)="onPriorityChange($event)" />
-        <app-policy-description [isEditMode]="true" />
+        <app-policy-description
+          [isEditMode]="true"
+          [policy]="newPolicy()"
+          (policyChange)="onPolicyChange($event)" />
       </div>
 
       <div class="tab-buttons">
@@ -108,7 +111,9 @@
         <app-action-tab [isEditMode]="true" />
       }
       @if (activeTab() === "conditions") {
-        <app-conditions-tab [isEditMode]="true" />
+        <app-conditions-tab
+          [isEditMode]="true"
+          [(policy)]="newPolicy" />
       }
     </div>
   </mat-expansion-panel>

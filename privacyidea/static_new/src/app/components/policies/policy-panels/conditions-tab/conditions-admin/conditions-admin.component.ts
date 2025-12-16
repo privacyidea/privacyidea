@@ -17,16 +17,9 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, inject, input, ViewChild } from "@angular/core";
+import { Component, computed, inject, input, output, ViewChild } from "@angular/core";
 import { CommonModule } from "@angular/common";
-import {
-  AbstractControl,
-  FormControl,
-  FormsModule,
-  ReactiveFormsModule,
-  ValidationErrors,
-  ValidatorFn
-} from "@angular/forms";
+import { AbstractControl, FormControl, FormsModule, ReactiveFormsModule, ValidationErrors } from "@angular/forms";
 import { MatIconModule } from "@angular/material/icon";
 import { RealmService, RealmServiceInterface } from "../../../../../services/realm/realm.service";
 import { ResolverService } from "../../../../../services/resolver/resolver.service";
@@ -35,7 +28,7 @@ import { MatAutocompleteModule } from "@angular/material/autocomplete";
 import { MatSelect, MatSelectModule } from "@angular/material/select";
 import { MatButtonModule } from "@angular/material/button";
 import { MatExpansionModule } from "@angular/material/expansion";
-import { PolicyService } from "../../../../../services/policies/policies.service";
+import { PolicyDetail, PolicyService } from "../../../../../services/policies/policies.service";
 
 @Component({
   selector: "app-conditions-admin",
@@ -65,16 +58,18 @@ export class ConditionsAdminComponent {
   policyService = inject(PolicyService);
 
   // Component State
-  isEditMode = this.policyService.isEditMode;
+  isEditMode = input.required<boolean>();
+  policy = input.required<PolicyDetail>();
+  policyChange = output<PolicyDetail>();
 
   // Form Controls
   adminFormControl = new FormControl<string>("", this.adminValidator.bind(this));
 
   // Computed Properties
-  selectedRealms = computed(() => this.policyService.selectedPolicy()?.realm || []);
-  selectedResolvers = computed(() => this.policyService.selectedPolicy()?.resolver || []);
-  selectedAdmins = computed(() => this.policyService.selectedPolicy()?.adminuser || []);
-  selectedAdminrealm = computed(() => this.policyService.selectedPolicy()?.adminrealm || []);
+  selectedRealms = computed(() => this.policy().realm || []);
+  selectedResolvers = computed(() => this.policy().resolver || []);
+  selectedAdmins = computed(() => this.policy().adminuser || []);
+  selectedAdminrealm = computed(() => this.policy().adminrealm || []);
 
   isAllRealmsSelected = computed(() => this.selectedRealms().length === this.realmService.realmOptions().length);
   isAllResolversSelected = computed(
@@ -83,15 +78,15 @@ export class ConditionsAdminComponent {
 
   // Realm Management
   selectRealm(realmNames: string[]): void {
-    this.policyService.updateSelectedPolicy({ realm: realmNames });
+    this.updatePolicy({ realm: realmNames });
   }
 
   toggleAllRealms() {
     if (this.isAllRealmsSelected()) {
-      this.policyService.updateSelectedPolicy({ realm: [] });
+      this.updatePolicy({ realm: [] });
     } else {
       const allRealms = this.realmService.realmOptions();
-      this.policyService.updateSelectedPolicy({ realm: allRealms });
+      this.updatePolicy({ realm: allRealms });
     }
     setTimeout(() => {
       this.realmSelect.close();
@@ -100,15 +95,15 @@ export class ConditionsAdminComponent {
 
   // Resolver Management
   selectResolver(resolverNames: string[]): void {
-    this.policyService.updateSelectedPolicy({ resolver: resolverNames });
+    this.updatePolicy({ resolver: resolverNames });
   }
 
   toggleAllResolvers() {
     if (this.isAllResolversSelected()) {
-      this.policyService.updateSelectedPolicy({ resolver: [] });
+      this.updatePolicy({ resolver: [] });
     } else {
       const allResolvers = this.resolverService.resolverOptions();
-      this.policyService.updateSelectedPolicy({ resolver: allResolvers });
+      this.updatePolicy({ resolver: allResolvers });
     }
     setTimeout(() => {
       this.resolverSelect.close();
@@ -121,20 +116,24 @@ export class ConditionsAdminComponent {
       return;
     }
     if (adminuser && !this.selectedAdmins().includes(adminuser)) {
-      this.policyService.updateSelectedPolicy({ adminuser: [...this.selectedAdmins(), adminuser] });
+      this.updatePolicy({ adminuser: [...this.selectedAdmins(), adminuser] });
     }
   }
 
   removeAdmin(adminuser: string) {
-    this.policyService.updateSelectedPolicy({ adminuser: this.selectedAdmins().filter((u) => u !== adminuser) });
+    this.updatePolicy({ adminuser: this.selectedAdmins().filter((u) => u !== adminuser) });
   }
 
   clearAdmins() {
-    this.policyService.updateSelectedPolicy({ adminuser: [] });
+    this.updatePolicy({ adminuser: [] });
   }
 
   // Validators
   adminValidator(control: AbstractControl): ValidationErrors | null {
     return /[,]/.test(control.value) ? { includesComma: { value: control.value } } : null;
+  }
+
+  updatePolicy(patch: Partial<PolicyDetail>) {
+    this.policyChange.emit({ ...this.policy(), ...patch });
   }
 }

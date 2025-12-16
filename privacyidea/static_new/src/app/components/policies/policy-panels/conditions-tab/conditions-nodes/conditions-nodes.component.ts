@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, inject, signal, ViewChild } from "@angular/core";
+import { Component, computed, inject, input, output, signal, ViewChild } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { AbstractControl, FormControl, FormsModule, ValidationErrors, ReactiveFormsModule } from "@angular/forms";
 import { MatIconModule } from "@angular/material/icon";
@@ -26,7 +26,7 @@ import { MatSelect, MatSelectChange, MatSelectModule } from "@angular/material/s
 import { MatButtonModule } from "@angular/material/button";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatExpansionModule } from "@angular/material/expansion";
-import { PolicyService } from "../../../../../services/policies/policies.service";
+import { PolicyDetail, PolicyService } from "../../../../../services/policies/policies.service";
 import { SystemServiceInterface, SystemService } from "../../../../../services/system/system.service";
 
 @Component({
@@ -55,8 +55,9 @@ export class ConditionsNodesComponent {
   systemService: SystemServiceInterface = inject(SystemService);
 
   // Component State
-  isEditMode = this.policyService.isEditMode;
-  selectedPolicy = this.policyService.selectedPolicy;
+  isEditMode = input.required<boolean>();
+  policy = input.required<PolicyDetail>();
+  policyChange = output<PolicyDetail>();
 
   // Form Controls
   addUserAgentFormControl = new FormControl<string>("", this.userAgentValidator.bind(this));
@@ -64,12 +65,12 @@ export class ConditionsNodesComponent {
   clientFormControl = new FormControl<string>("", this.clientValidator.bind(this));
 
   // Computed Properties
-  selectedPolicyName = computed(() => this.selectedPolicy?.name || "");
+  selectedPolicyName = computed(() => this.policy().name);
   availablePinodesList = computed(() => this.systemService.nodes().map((node) => node.name));
-  selectedPinodes = computed<string[]>(() => this.selectedPolicy()?.pinode || []);
-  selectedUserAgents = computed(() => this.policyService.selectedPolicy()?.user_agents || []);
-  selectedValidTime = computed(() => this.policyService.selectedPolicy()?.time || "");
-  selectedClient = computed(() => this.policyService.selectedPolicy()?.client || "");
+  selectedPinodes = computed<string[]>(() => this.policy().pinode || []);
+  selectedUserAgents = computed(() => this.policy().user_agents || []);
+  selectedValidTime = computed(() => this.policy().time || "");
+  selectedClient = computed(() => this.policy().client || []);
   isAllNodesSelected = computed(() => this.selectedPinodes().length === this.availablePinodesList().length);
 
   availableUserAgents = signal<string[]>([

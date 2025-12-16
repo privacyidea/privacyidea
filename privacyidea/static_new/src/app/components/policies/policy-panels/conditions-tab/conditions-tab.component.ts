@@ -17,11 +17,11 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, inject, input } from "@angular/core";
+import { Component, inject, input, output } from "@angular/core";
 import { ConditionsUserComponent } from "./conditions-user/conditions-user.component";
 import { ConditionsNodesComponent } from "./conditions-nodes/conditions-nodes.component";
 import { ConditionsAdditionalComponent } from "./conditions-additional/conditions-additional.component";
-import { PolicyService } from "../../../../services/policies/policies.service";
+import { PolicyDetail, PolicyService } from "../../../../services/policies/policies.service";
 import { ConditionsAdminComponent } from "./conditions-admin/conditions-admin.component";
 
 @Component({
@@ -32,6 +32,11 @@ import { ConditionsAdminComponent } from "./conditions-admin/conditions-admin.co
   styleUrl: "./conditions-tab.component.scss"
 })
 export class ConditionsTabComponent {
-  policyService = inject(PolicyService);
   isEditMode = input.required<boolean>();
+  policy = input.required<PolicyDetail>();
+  policyChange = output<PolicyDetail>();
+
+  onPolicyChange($event: PolicyDetail) {
+    this.policyChange.emit($event);
+  }
 }

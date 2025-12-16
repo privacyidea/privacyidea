@@ -16,7 +16,7 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-@if (isEditMode() || policyService.selectedPolicyHasAdminConditions()) {
+@if (isEditMode() || policyService.policyHasAdminConditions(policy())) {
   <div class="admin-container">
     <h2
       class="admin-title"

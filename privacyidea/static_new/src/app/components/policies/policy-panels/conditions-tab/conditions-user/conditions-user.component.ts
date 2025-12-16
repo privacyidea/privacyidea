@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, inject, ViewChild } from "@angular/core";
+import { Component, computed, inject, input, output, ViewChild } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { AbstractControl, FormControl, FormsModule, ReactiveFormsModule, ValidationErrors } from "@angular/forms";
 import { MatIconModule } from "@angular/material/icon";
@@ -28,7 +28,7 @@ import { MatAutocompleteModule } from "@angular/material/autocomplete";
 import { MatSelect, MatSelectModule } from "@angular/material/select";
 import { MatButtonModule } from "@angular/material/button";
 import { MatExpansionModule } from "@angular/material/expansion";
-import { PolicyService } from "../../../../../services/policies/policies.service";
+import { PolicyDetail, PolicyService } from "../../../../../services/policies/policies.service";
 import { MatTooltip } from "@angular/material/tooltip";
 
 @Component({
@@ -60,16 +60,18 @@ export class ConditionsUserComponent {
   policyService = inject(PolicyService);
 
   // Component State
-  isEditMode = this.policyService.isEditMode;
+  isEditMode = input.required<boolean>();
+  policy = input.required<PolicyDetail>();
+  policyChange = output<PolicyDetail>();
 
   // Form Controls
   userFormControl = new FormControl<string>("", this.userValidator.bind(this));
 
   // Computed Properties
-  selectedRealms = computed(() => this.policyService.selectedPolicy()?.realm || []);
-  selectedResolvers = computed(() => this.policyService.selectedPolicy()?.resolver || []);
-  selectedUsers = computed(() => this.policyService.selectedPolicy()?.user || []);
-  userCaseInsensitive = computed(() => this.policyService.selectedPolicy()?.user_case_insensitive || false);
+  selectedRealms = computed(() => this.policy().realm || []);
+  selectedResolvers = computed(() => this.policy().resolver || []);
+  selectedUsers = computed(() => this.policy().user || []);
+  userCaseInsensitive = computed(() => this.policy().user_case_insensitive || false);
   isAllRealmsSelected = computed(() => this.selectedRealms().length === this.realmService.realmOptions().length);
   isAllResolversSelected = computed(
     () => this.selectedResolvers().length === this.resolverService.resolverOptions().length

@@ -214,4 +214,7 @@ export class PolicyPanelEditComponent {
   updatePolicyPriority(priority: number) {
     this.policyService.updateSelectedPolicy({ priority });
   }
+  onPolicyChange(policy: PolicyDetail) {
+    this.policyService.updateSelectedPolicy(policy);
+  }
 }

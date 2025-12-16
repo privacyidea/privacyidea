@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, inject, input, Input, linkedSignal, signal, WritableSignal } from "@angular/core";
+import { Component, computed, inject, input, Input, linkedSignal, output, signal, WritableSignal } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatFormFieldModule } from "@angular/material/form-field";
@@ -32,6 +32,7 @@ import {
   allSectionOptions,
   ComporatorOption,
   HandleMissingDataOption,
+  PolicyDetail,
   PolicyService,
   SectionOption
 } from "../../../../../services/policies/policies.service";
@@ -63,10 +64,13 @@ import { MatDividerModule } from "@angular/material/divider";
 })
 export class ConditionsAdditionalComponent {
   // Services
-  policyService = inject(PolicyService);
+  policyService: PolicyService = inject(PolicyService);
 
   // Component State
-  isEditMode = this.policyService.isEditMode;
+  isEditMode = input.required<boolean>();
+  policy = input.required<PolicyDetail>();
+  policyChange = output<PolicyDetail>();
+
   showAddConditionForm = signal(false);
   editIndex = signal<number | null>(null);
 
@@ -89,7 +93,7 @@ export class ConditionsAdditionalComponent {
 
   // Computed Properties
   additionalConditions = computed<AdditionalCondition[]>(() => {
-    return this.policyService.selectedPolicy()?.conditions || [];
+    return this.policy().conditions || [];
   });
 
   // Constants
@@ -174,20 +178,24 @@ export class ConditionsAdditionalComponent {
   updateCondition(index: number, updated: AdditionalCondition) {
     const conditions = [...this.additionalConditions()];
     conditions[index] = updated;
-    this.policyService.updateSelectedPolicy({ conditions });
+    this.updateSelectedPolicy({ conditions });
   }
 
   addCondition(condition: AdditionalCondition) {
-    this.policyService.updateSelectedPolicy({ conditions: [...this.additionalConditions(), condition] });
+    this.updateSelectedPolicy({ conditions: [...this.additionalConditions(), condition] });
   }
 
   removeCondition(index: number) {
-    this.policyService.updateSelectedPolicy({
+    this.updateSelectedPolicy({
       conditions: this.additionalConditions().filter((_, i) => i !== index)
     });
     // If we remove the row we are editing, we should cancel the edit mode
     if (this.editIndex() === index) {
       this.editIndex.set(null);
     }
+  }
+
+  updateSelectedPolicy(patch: Partial<PolicyDetail>) {
+    this.policyChange.emit({ ...this.policy(), ...patch });
   }
 }

@@ -134,7 +134,7 @@
             <div class="readonly-chip">{{ selectedValidTime() }}</div>
           </div>
         }
-        @if (selectedClient() != "") {
+        @if (selectedClient() && selectedClient().length > 0) {
           <div class="readonly-label">Client:</div>
           <div class="readonly-chips-container">
             <div class="readonly-chip">{{ selectedClient() }}</div>

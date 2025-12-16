@@ -173,4 +173,8 @@ export class PolicyPanelNewComponent {
   policyHasConditions(): boolean {
     return this.policyService.policyHasConditions(this.newPolicy());
   }
+
+  onPolicyChange(policy: PolicyDetail) {
+    this.newPolicy.set(policy);
+  }
 }

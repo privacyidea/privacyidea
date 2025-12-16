@@ -17,12 +17,12 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, inject, input } from "@angular/core";
+import { Component, inject, input, output } from "@angular/core";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { FormsModule } from "@angular/forms";
 import { TextFieldModule } from "@angular/cdk/text-field";
-import { PolicyService } from "../../../../../services/policies/policies.service";
+import { PolicyDetail, PolicyService } from "../../../../../services/policies/policies.service";
 import { DocumentationService } from "../../../../../services/documentation/documentation.service";
 
 @Component({
@@ -34,18 +34,21 @@ import { DocumentationService } from "../../../../../services/documentation/docu
 })
 export class PolicyDescriptionComponent {
   // Services
-  policyService = inject(PolicyService);
   documentationService = inject(DocumentationService);
 
   // Component State
   isEditMode = input.required<boolean>();
-
-  // Public Methods
-  updatePolicyDescription($event: string) {
-    this.policyService.updateSelectedPolicy({ description: $event });
-  }
+  policy = input.required<PolicyDetail>();
+  policyChange = output<PolicyDetail>();
 
   openDocumentation(page: string) {
     this.documentationService.openDocumentation(page);
+  }
+
+  updatePolicyDescription($event: string) {
+    this.updateSelectedPolicy({ description: $event });
+  }
+  updateSelectedPolicy(patch: Partial<PolicyDetail>) {
+    this.policyChange.emit({ ...this.policy(), ...patch });
   }
 }

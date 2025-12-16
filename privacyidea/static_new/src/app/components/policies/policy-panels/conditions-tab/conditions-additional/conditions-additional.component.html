@@ -17,7 +17,7 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 
-@if (isEditMode() || policyService.selectedPolicyHasAdditionalConditions()) {
+@if (isEditMode() || policyService.policyHasAdditionalConditions(policy())) {
   <div class="additional-conditions-container">
     <h2
       class="additional-conditions-title"
