@@ -62,7 +62,7 @@ export interface LDAPResolverData extends ResolverData {
   tls_version: string;
 }
 
-export interface SQLResolverDara extends ResolverData {
+export interface SQLResolverData extends ResolverData {
   database: string;
   driver: string;
   server: string;
@@ -71,6 +71,8 @@ export interface SQLResolverDara extends ResolverData {
   password: string;
   table: string;
   map: string;
+  edit_user_store: boolean;
+  password_hash: string;
 }
 
 export interface PasswdResolverData extends ResolverData {

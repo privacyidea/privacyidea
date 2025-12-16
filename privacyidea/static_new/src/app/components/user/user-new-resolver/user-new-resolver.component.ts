@@ -75,14 +75,19 @@ export class UserNewResolverComponent {
       const resource = (this.resolverService as any).selectedResolverResource?.value?.();
 
       if (!selectedName || !resource?.result?.value) {
+        console.log("No resolver selected.");
+        console.log("name"+selectedName)
+        console.log("resource"+resource)
         return;
       }
 
       if (this.editInitialized) {
+        console.log("Edit already initialized.");
         return;
       }
 
       const resolver = resource.result.value as Resolver;
+      console.log("Edit initialized with resolver:", resolver);
       this.resolverName = resolver.resolvername;
       this.resolverType = resolver.type;
       this.formData = { ...(resolver.data || {}) };

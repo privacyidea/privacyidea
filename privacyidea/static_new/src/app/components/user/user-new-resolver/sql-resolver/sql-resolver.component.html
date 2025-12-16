@@ -5,10 +5,134 @@
     <mat-form-field>
       <mat-label>Driver</mat-label>
       <input
-        [(ngModel)]="data['Driver']"
-        matInput />
+        [(ngModel)]="data['driver']"
+        matInput
+        placeholder="mysql+pymysql" />
     </mat-form-field>
 
+    <mat-form-field>
+      <mat-label>Server</mat-label>
+      <input
+        [(ngModel)]="data['server']"
+        matInput
+        placeholder="127.0.0.1" />
+    </mat-form-field>
 
+    <mat-form-field>
+      <mat-label>Port</mat-label>
+      <input
+        [(ngModel)]="data['port']"
+        matInput
+        placeholder="3306" />
+    </mat-form-field>
+
+    <mat-form-field>
+      <mat-label>Database</mat-label>
+      <input
+        [(ngModel)]="data['database']"
+        matInput
+        placeholder="YourDatabase" />
+    </mat-form-field>
+
+    <mat-form-field>
+      <mat-label>User</mat-label>
+      <input
+        [(ngModel)]="data['user']"
+        matInput
+        placeholder="user" />
+    </mat-form-field>
+
+    <mat-form-field>
+      <mat-label>Password</mat-label>
+      <input
+        [(ngModel)]="data['password']"
+        matInput
+        placeholder="topsecret" />
+    </mat-form-field>
+
+    <mat-label>Edit User Store</mat-label>
+    <mat-checkbox [(ngModel)]="data['edit_user_store']"></mat-checkbox>
+    The user data in this database can be modified from within privacyIDEA.
+
+    @if (data['edit_user_store']) {
+      <mat-form-field>
+        <mat-label>Password Hash for editable users</mat-label>
+        <input
+          [(ngModel)]="data['password_hash']"
+          matInput
+          placeholder="">
+        <mat-hint>
+          The hashing algorithm for the passwords of newly created users. Can be PHPASS, SHA, SSHA, SSHA256, SHA512,
+          OTRS.
+        </mat-hint>
+      </mat-form-field>
+    }
   </div>
+  <mat-divider />
+
+  <mat-form-field>
+    <mat-label>Table</mat-label>
+    <input
+      [(ngModel)]="data['table']"
+      matInput
+      placeholder="Users" />
+  </mat-form-field>
+
+  <mat-form-field>
+    <mat-label>Limit</mat-label>
+    <input
+      [(ngModel)]="data['limit']"
+      matInput
+      placeholder="500" />
+  </mat-form-field>
+
+  <mat-form-field>
+    <mat-label>Mapping</mat-label>
+    <input
+      [(ngModel)]="data['mapping']"
+      matInput
+      placeholder='{"userid":"id","username":"user","phone":"telephoneNumber","mobile":"mobile","email":"mail","surname":"sn","givenname":"givenName","password":"password"}' />
+  </mat-form-field>
+
+  <mat-form-field>
+    <mat-label>Where statement</mat-label>
+    <input
+      [(ngModel)]="data['where-statement']"
+      matInput />
+  </mat-form-field>
+
+  <mat-form-field>
+    <mat-label>Database Encoding</mat-label>
+    <input
+      [(ngModel)]="data['database-encoding']"
+      matInput />
+  </mat-form-field>
+
+  <mat-form-field>
+    <mat-label>Connection Parameters</mat-label>
+    <input
+      [(ngModel)]="data['connection-parameters']"
+      matInput />
+  </mat-form-field>
+
+  <mat-form-field>
+    <mat-label>Pool size</mat-label>
+    <input
+      [(ngModel)]="data['pool-size']"
+      matInput />
+  </mat-form-field>
+
+  <mat-form-field>
+    <mat-label>Pool timeout</mat-label>
+    <input
+      [(ngModel)]="data['pool-timeout']"
+      matInput />
+  </mat-form-field>
+
+  <mat-form-field>
+    <mat-label>Pool recycle timeout</mat-label>
+    <input
+      [(ngModel)]="data['pool-recycle-timeout']"
+      matInput />
+  </mat-form-field>
 </div>
