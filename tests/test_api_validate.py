@@ -5323,8 +5323,8 @@ class AChallengeResponse(MyApiTestCase):
             # The two challenges should be the same
             multichallenge = data.get("detail").get("multi_challenge")
             transaction_id = data.get("detail").get("transaction_id")
-            self.assertEqual(multichallenge[0].get("transaction_id"), transaction_id)
-            self.assertEqual(multichallenge[1].get("transaction_id"), transaction_id)
+            self.assertEqual(transaction_id, multichallenge[0].get("transaction_id"))
+            self.assertEqual(transaction_id, multichallenge[1].get("transaction_id"))
 
         # Check that serials are written to the audit log
         entry = self.find_most_recent_audit_entry(action="*/validate/triggerchallenge*")
@@ -5343,12 +5343,12 @@ class AChallengeResponse(MyApiTestCase):
         # POST is not allowed
         with self.app.test_request_context("/validate/polltransaction", method="POST"):
             res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, 405)
+            self.assertEqual(405, res.status_code)
 
         # transaction_id is required
         with self.app.test_request_context("/validate/polltransaction", method="GET"):
             res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, 400)
+            self.assertEqual(400, res.status_code)
             self.assertFalse(res.json["result"]["status"])
             self.assertIn("Missing parameter: 'transaction_id'", res.json["result"]["error"]["message"])
 
@@ -5356,7 +5356,7 @@ class AChallengeResponse(MyApiTestCase):
         with self.app.test_request_context("/validate/polltransaction", method="GET",
                                            query_string={"transaction_id": "*"}):
             res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, 200)
+            self.assertEqual(200, res.status_code)
             self.assertTrue(res.json["result"]["status"])
             self.assertFalse(res.json["result"]["value"])
 
@@ -5364,50 +5364,50 @@ class AChallengeResponse(MyApiTestCase):
         with self.app.test_request_context("/validate/polltransaction", method="GET",
                                            query_string={"transaction_id": "123456"}):
             res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, 200)
+            self.assertEqual(200, res.status_code)
             self.assertTrue(res.json["result"]["status"])
             self.assertFalse(res.json["result"]["value"])
 
         # check audit log
         entry = self.find_most_recent_audit_entry(action="*/validate/polltransaction*")
-        self.assertEqual(entry["action_detail"], "transaction_id: 123456")
-        self.assertEqual(entry["info"], "status: pending")
-        self.assertEqual(entry["serial"], None)
+        self.assertEqual("transaction_id: 123456", entry["action_detail"])
+        self.assertEqual("status: pending", entry["info"])
+        self.assertEqual("", entry["serial"])
         # Instead of None the "user" entry is now (v3.11.3) an empty string
-        self.assertEqual(entry["user"], "")
+        self.assertEqual("", entry["user"])
 
         # polling the transaction returns false, because no challenge has been answered
         with self.app.test_request_context("/validate/polltransaction", method="GET",
                                            query_string={"transaction_id": transaction_id}):
             res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, 200)
+            self.assertEqual(200, res.status_code)
             self.assertTrue(res.json["result"]["status"])
             self.assertFalse(res.json["result"]["value"])
 
         # but audit log contains both serials and the user
         entry = self.find_most_recent_audit_entry(action="*/validate/polltransaction*")
-        self.assertEqual(entry["action_detail"], "transaction_id: {}".format(transaction_id))
-        self.assertEqual(entry["info"], "status: pending")
+        self.assertEqual(f"transaction_id: {transaction_id}", entry["action_detail"])
+        self.assertEqual("status: pending", entry["info"])
         self.assertIn("tok1", entry["serial"])
         self.assertIn("tok2", entry["serial"])
         self.assertFalse(entry["success"])
-        self.assertEqual(entry["user"], "cornelius")
-        self.assertEqual(entry["resolver"], "resolver1")
-        self.assertEqual(entry["realm"], self.realm1)
+        self.assertEqual("cornelius", entry["user"])
+        self.assertEqual("resolver1", entry["resolver"])
+        self.assertEqual(self.realm1, entry["realm"])
 
         # polling the expired transaction returns false
         with self.app.test_request_context("/validate/polltransaction", method="GET",
                                            query_string={"transaction_id": old_transaction_id}):
             res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, 200)
+            self.assertEqual(200, res.status_code)
             self.assertTrue(res.json["result"]["status"])
             self.assertFalse(res.json["result"]["value"])
 
         # and the audit log contains no serials and the user
         entry = self.find_most_recent_audit_entry(action="*/validate/polltransaction*")
-        self.assertEqual(entry["action_detail"], "transaction_id: {}".format(old_transaction_id))
-        self.assertEqual(entry["info"], "status: pending")
-        self.assertEqual(entry["serial"], None)
+        self.assertEqual(f"transaction_id: {old_transaction_id}", entry["action_detail"])
+        self.assertEqual("status: pending", entry["info"])
+        self.assertEqual("", entry["serial"])
         self.assertFalse(entry["success"])
 
         # Mark one challenge as answered
@@ -5418,25 +5418,25 @@ class AChallengeResponse(MyApiTestCase):
         with self.app.test_request_context("/validate/polltransaction", method="GET",
                                            query_string={"transaction_id": transaction_id}):
             res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, 200)
+            self.assertEqual(200, res.status_code)
             self.assertTrue(res.json["result"]["status"])
             self.assertTrue(res.json["result"]["value"])
 
         entry = self.find_most_recent_audit_entry(action="*/validate/polltransaction*")
-        self.assertEqual(entry["action_detail"], "transaction_id: {}".format(transaction_id))
-        self.assertEqual(entry["info"], "status: accept")
+        self.assertEqual(f"transaction_id: {transaction_id}", entry["action_detail"])
+        self.assertEqual("status: accept", entry["info"])
         # tok2 is not written to the audit log
-        self.assertEqual(entry["serial"], "tok1")
+        self.assertEqual("tok1", entry["serial"])
         self.assertTrue(entry["success"])
-        self.assertEqual(entry["user"], "cornelius")
-        self.assertEqual(entry["resolver"], "resolver1")
-        self.assertEqual(entry["realm"], self.realm1)
+        self.assertEqual("cornelius", entry["user"])
+        self.assertEqual("resolver1", entry["resolver"])
+        self.assertEqual(self.realm1, entry["realm"])
 
         # polling the transaction again gives the same result, even with the more REST-y endpoint
         with self.app.test_request_context(f"/validate/polltransaction/{transaction_id}",
                                            method="GET"):
             res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, 200)
+            self.assertEqual(200, res.status_code)
             self.assertTrue(res.json["result"]["status"])
             self.assertTrue(res.json["result"]["value"])
 
@@ -5448,7 +5448,7 @@ class AChallengeResponse(MyApiTestCase):
                                            method="GET",
                                            query_string={"transaction_id": transaction_id}):
             res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, 200)
+            self.assertEqual(200, res.status_code)
             self.assertTrue(res.json["result"]["status"])
             self.assertFalse(res.json["result"]["value"])
 

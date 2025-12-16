@@ -179,10 +179,13 @@ class AuditTestCase(MyTestCase):
         current_timestamp = datetime.datetime.now()
 
         # create a new audit log entry 2 seconds after the previous ones
-        with mock.patch('privacyidea.models.audit.datetime') as mock_dt:
+        with mock.patch('privacyidea.lib.auditmodules.base.datetime.datetime') as mock_dt:
             mock_dt.now.return_value = current_timestamp + datetime.timedelta(seconds=2)
+            self.Audit = getAudit(self.app.config)
             self.Audit.log({"action": "/validate/check",
                             "success": True})
+        # with mock.patch('privacyidea.models.audit._now', return_value=current_timestamp + datetime.timedelta(seconds=2)) as mock_dt:
+        with mock.patch("privacyidea.lib.auditmodules.sqlaudit._now", return_value=current_timestamp + datetime.timedelta(seconds=2)):
             self.Audit.finalize_log()
 
         # freeze time at ``current_timestamp`` + 2.5s.
@@ -192,33 +195,33 @@ class AuditTestCase(MyTestCase):
         with mock.patch('datetime.datetime') as mock_dt:
             mock_dt.now.return_value = current_timestamp + datetime.timedelta(seconds=2.5)
 
-            # get 4 authentications
+            # get 6 authentications
             r = self.Audit.get_count({"action": "/validate/check"})
-            self.assertEqual(r, 6)
+            self.assertEqual(6, r)
 
             # get one failed authentication
             r = self.Audit.get_count({"action": "/validate/check"}, success=False)
-            self.assertEqual(r, 3)
+            self.assertEqual(3, r)
 
             # get one challenge authentication
             r = self.Audit.get_count({"action": "/validate/check", "authentication": AUTH_RESPONSE.CHALLENGE},
                                      success=False)
-            self.assertEqual(r, 1)
+            self.assertEqual(1, r)
 
             # get failed authentication
             r = self.Audit.get_count({"action": "/validate/check", "authentication": f"!{AUTH_RESPONSE.CHALLENGE}"},
                                      success=False)
-            self.assertEqual(r, 2)
+            self.assertEqual(2, r)
 
             # get failed authentication
             r = self.Audit.get_count({"action": "/validate/check", "authentication": "!CHAL%"},
                                      success=False)
-            self.assertEqual(r, 2)
+            self.assertEqual(2, r)
 
             # get one authentication during the last second
             r = self.Audit.get_count({"action": "/validate/check"}, success=True,
                                      timedelta=datetime.timedelta(seconds=1))
-            self.assertEqual(r, 1)
+            self.assertEqual(1, r)
 
     def test_03_lib_search(self):
         res = search(self.app.config, {"page": 1, "page_size": 10,

@@ -44,9 +44,8 @@ from privacyidea.models import (Token,
                                 Challenge, MachineResolver,
                                 MachineResolverConfig, MachineToken, Admin,
                                 CAConnector, CAConnectorConfig, SMTPServer,
-                                PasswordReset, EventHandlerOption,
-                                EventHandler, SMSGateway,
-                                EventHandlerCondition, PrivacyIDEAServer,
+                                PasswordReset, SMSGateway,
+                                PrivacyIDEAServer,
                                 ClientApplication, Subscription, UserCache,
                                 EventCounter, PeriodicTask, PeriodicTaskLastRun,
                                 PeriodicTaskOption, MonitoringStats, PolicyCondition, db,
@@ -481,27 +480,26 @@ class TokenModelTestCase(MyTestCase):
 
     def test_12_challenge(self):
         c = Challenge("S123456")
-        self.assertTrue(len(c.transaction_id) == 20, c.transaction_id)
-        self.assertTrue(len(c.get_transaction_id()) == 20, c.transaction_id)
+        self.assertEqual(20, len(c.transaction_id), c.transaction_id)
+        self.assertEqual(20, len(c.get_transaction_id()), c.transaction_id)
 
         c.set_data("some data")
-        self.assertTrue(c.data == "some data", c.data)
-        self.assertTrue(c.get_data() == "some data", c.data)
+        self.assertEqual("some data", c.data)
+        self.assertEqual("some data", c.get_data(), c.data)
         c.set_data({"some": "data"})
-        self.assertTrue("some" in c.data, c.data)
+        self.assertIn("some", c.data, c.data)
         c.set_session("session")
-        self.assertTrue(c.get_session() == "session", c.session)
+        self.assertEqual("session", c.get_session(), c.session)
         c.set_challenge("challenge")
-        self.assertTrue(c.get_challenge() == "challenge", c.challenge)
+        self.assertEqual("challenge", c.get_challenge(), c.challenge)
 
-        self.assertTrue("otp_received" in "{0!s}".format(c), "{0!s}".format(c))
-        self.assertTrue("transaction_id" in "{0!s}".format(c), "{0!s}".format(c))
-        self.assertTrue("timestamp" in "{0!s}".format(c), "{0!s}".format(c))
+        self.assertIn("otp_received", f"{c}")
+        self.assertIn("transaction_id", f"{c}")
+        self.assertIn("timestamp", f"{c}")
 
         # test with timestamp=True, which results in something like this:
         timestamp = '2014-11-29 21:56:43.057293'
-        self.assertTrue(len(c.get(True).get("timestamp")) == len(timestamp),
-                        c.get(True))
+        self.assertEqual(len(timestamp), len(c.get(True).get("timestamp")), c.get(True))
         # otp_status
         c.set_otp_status(valid=False)
         self.assertTrue(c.get_otp_status()[0], c.get_otp_status())
@@ -629,63 +627,6 @@ class TokenModelTestCase(MyTestCase):
         p2 = PasswordReset.query.filter_by(username="cornelius",
                                            realm="realm").first()
         self.assertTrue(p2.recoverycode, "recoverycode")
-
-    def test_19_add_update_delete_eventhandler(self):
-        # Bind the module "usernotice" to the enroll event
-        event = "enroll"
-        event_update = "init"
-        handlermodule = "usernotice"
-        action = "email"
-        condition = "always"
-        options = {"mailserver": "blafoo",
-                   "option2": "value2"}
-        conditions = {"user_type": "admin"}
-        eh1 = EventHandler("ev1", event, handlermodule=handlermodule,
-                           action=action, condition=condition,
-                           options=options, conditions=conditions)
-        self.assertTrue(eh1)
-
-        self.assertEqual(eh1.event, event)
-        self.assertEqual(eh1.handlermodule, handlermodule)
-        self.assertEqual(eh1.action, action)
-        self.assertEqual(eh1.condition, condition)
-        self.assertEqual(eh1.options[0].Key, "mailserver")
-        self.assertEqual(eh1.options[0].Value, "blafoo")
-        self.assertEqual(eh1.options[1].Key, "option2")
-        self.assertEqual(eh1.options[1].Value, "value2")
-        self.assertEqual(eh1.conditions[0].Key, "user_type")
-        self.assertEqual(eh1.conditions[0].Value, "admin")
-
-        eh1_id = eh1.id
-
-        # update eventhandler
-        EventHandler("ev1", event_update, handlermodule=handlermodule,
-                     action=action, condition=condition,
-                     options=options, ordering=0, id=eh1_id)
-        self.assertEqual(eh1.event, event_update)
-
-        # Update option value
-        EventHandlerOption(eh1_id, Key="mailserver", Value="mailserver")
-        self.assertEqual(eh1.options[0].Value, "mailserver")
-
-        # Add Option
-        EventHandlerOption(eh1_id, Key="option3", Value="value3")
-        self.assertEqual(eh1.options[2].Key, "option3")
-        self.assertEqual(eh1.options[2].Value, "value3")
-
-        # Update condition value
-        EventHandlerCondition(eh1_id, Key="user_type", Value="user")
-        self.assertEqual(eh1.conditions[0].Value, "user")
-
-        # Add condition
-        EventHandlerCondition(eh1_id, Key="result_value", Value="True")
-        self.assertEqual(eh1.conditions[0].Key, "result_value")
-        self.assertEqual(eh1.conditions[0].Value, "True")
-        self.assertEqual(eh1.conditions[1].Key, "user_type")
-        self.assertEqual(eh1.conditions[1].Value, "user")
-
-        # Delete event handler
-        eh1.delete()
 
     def test_20_add_update_delete_smsgateway(self):
         name = "myGateway"
