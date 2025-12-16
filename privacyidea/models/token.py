@@ -73,8 +73,8 @@ class Token(MethodsMixin, db.Model):
                                         nullable=False,
                                         index=True)
     tokentype: Mapped[Optional[str]] = mapped_column(Unicode(30),
-                                           default='HOTP',
-                                           index=True)
+                                                     default='HOTP',
+                                                     index=True)
     user_pin: Mapped[Optional[str]] = mapped_column(Unicode(512),
                                                     default='')  # encrypt
     user_pin_iv: Mapped[Optional[str]] = mapped_column(Unicode(32),
@@ -86,7 +86,7 @@ class Token(MethodsMixin, db.Model):
     pin_seed: Mapped[Optional[str]] = mapped_column(Unicode(32),
                                                     default='')
     otplen: Mapped[Optional[int]] = mapped_column(Integer,
-                                        default=6)
+                                                  default=6)
     pin_hash: Mapped[Optional[str]] = mapped_column(Unicode(512),
                                                     default='')  # hashed
     key_enc: Mapped[Optional[str]] = mapped_column(Unicode(2800),
@@ -94,22 +94,22 @@ class Token(MethodsMixin, db.Model):
     key_iv: Mapped[Optional[str]] = mapped_column(Unicode(32),
                                                   default='')
     maxfail: Mapped[Optional[int]] = mapped_column(Integer,
-                                         default=10)
+                                                   default=10)
     active: Mapped[bool] = mapped_column(Boolean,
                                          nullable=False,
                                          default=True)
     revoked: Mapped[Optional[bool]] = mapped_column(Boolean,
-                                          default=False)
+                                                    default=False)
     locked: Mapped[Optional[bool]] = mapped_column(Boolean,
-                                         default=False)
+                                                   default=False)
     failcount: Mapped[Optional[int]] = mapped_column(Integer,
-                                           default=0)
+                                                     default=0)
     count: Mapped[Optional[int]] = mapped_column(Integer,
-                                       default=0)
+                                                 default=0)
     count_window: Mapped[Optional[int]] = mapped_column(Integer,
-                                              default=10)
+                                                        default=10)
     sync_window: Mapped[Optional[int]] = mapped_column(Integer,
-                                             default=1000)
+                                                       default=1000)
     rollout_state: Mapped[Optional[str]] = mapped_column(Unicode(10),
                                                          default='')
     info_list = relationship('TokenInfo', lazy='select', back_populates='token')
@@ -542,33 +542,6 @@ class TokenInfo(MethodsMixin, db.Model):
         self.Type = Type
         self.Description = Description
 
-    # TODO: Compare with lib function
-    # def save(self, persistent=True):
-    #     stmt = select(TokenInfo).filter_by(token_id=self.token_id, Key=self.Key)
-    #     ti = db.session.execute(stmt).scalar_one_or_none()
-    #     if ti is None:
-    #         # create a new one
-    #         db.session.add(self)
-    #         db.session.commit()
-    #         if get_app_config_value(SAFE_STORE, False):
-    #             stmt = select(TokenInfo).filter_by(token_id=self.token_id, Key=self.Key)
-    #             ti = db.session.execute(stmt).scalar_one_or_none()
-    #             ret = ti.id
-    #         else:
-    #             ret = self.id
-    #     else:
-    #         # update
-    #         update_stmt = (
-    #             update(TokenInfo)
-    #             .where(and_(TokenInfo.token_id == self.token_id, TokenInfo.Key == self.Key))
-    #             .values(Value=self.Value, Description=self.Description, Type=self.Type)
-    #         )
-    #         db.session.execute(update_stmt)
-    #         ret = ti.id
-    #     if persistent:
-    #         db.session.commit()
-    #     return ret
-
 
 class TokenOwner(MethodsMixin, db.Model):
     """
@@ -654,9 +627,9 @@ class TokenRealm(MethodsMixin, db.Model):
     __tablename__ = 'tokenrealm'
     id: Mapped[int] = mapped_column(Integer, Sequence("tokenrealm_seq"), primary_key=True)
     token_id: Mapped[Optional[int]] = mapped_column(Integer,
-                                          db.ForeignKey('token.id'))
+                                                    db.ForeignKey('token.id'))
     realm_id: Mapped[Optional[int]] = mapped_column(Integer,
-                                          db.ForeignKey('realm.id'))
+                                                    db.ForeignKey('realm.id'))
     # This creates an attribute "realm_list" in the Token object
     token = relationship('Token',
                          lazy='joined',

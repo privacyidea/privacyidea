@@ -43,7 +43,7 @@ from privacyidea.lib.tokens.pushtoken import (PushTokenClass, PUSH_ACTION,
                                               PushPresenceOptions)
 from privacyidea.lib.user import (User)
 from privacyidea.lib.utils import to_bytes, b32encode_and_unicode, to_unicode, AUTH_RESPONSE
-from privacyidea.models import Token, Challenge
+from privacyidea.models import Token, Challenge, db
 from .base import MyTestCase, FakeFlaskG
 
 PWFILE = "tests/testdata/passwords"
@@ -521,6 +521,9 @@ class PushTokenTestCase(MyTestCase):
 
                 # In two seconds we need to run an update on the challenge table.
                 Timer(2, self._mark_challenge_as_accepted).start()
+
+                # Clear session before recreating a new challenge to avoid conflicts
+                db.session.expunge_all()
 
                 set_policy("push1", scope=SCOPE.AUTH, action=f"{PUSH_ACTION.WAIT}=20")
                 # Send the first authentication request to trigger the challenge

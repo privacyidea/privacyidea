@@ -54,6 +54,7 @@ from privacyidea.lib.tokenclass import ROLLOUTSTATE
 from privacyidea.lib.tokens.hotptoken import VERIFY_ENROLLMENT_MESSAGE
 from privacyidea.lib.tokens.smstoken import SMSACTION
 from privacyidea.lib.user import User
+from privacyidea.models import db
 from .base import MyApiTestCase, PWFILE2
 from .mscamock import CAServiceMock
 from .test_lib_tokens_certificate import REQUEST, CERTIFICATE
@@ -952,6 +953,7 @@ class APITokenTestCase(MyApiTestCase):
         remove_token("hw001")
 
         # get tokens with specific serials
+        db.session.expunge_all()    # Clear db session before creating new tokens
         hotp_token = init_token({"otpkey": self.otpkey}, tokenkind="hotp")
         totp_token = init_token({"otpkey": self.otpkey}, tokenkind="totp")
         token_serials = ",".join([hotp_token.get_serial(), totp_token.get_serial()])
@@ -4117,6 +4119,7 @@ class APITokengroupTestCase(MyApiTestCase):
             self.assertEqual(tok.get("tokengroup"), [])
 
         # Now assign the tokengroup grupp1 again.
+        db.session.expunge_all()    # Clear session before re-adding the token group db entry
         with self.app.test_request_context('/token/group/{0!s}/gruppe1'.format(serial),
                                            method='POST',
                                            headers={'Authorization': self.at}):
