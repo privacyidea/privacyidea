@@ -1,3 +1,5 @@
+@use "../../../../styles";
+
 .row-container {
   display: flex;
   width: 100%;
@@ -47,16 +49,4 @@
 
 .button-margin {
   margin: var(--half-global-padding);
-}
-
-.button-hover:hover {
-  background-color: var(--mat-sys-primary-base-hover);
-  color: var(--mat-sys-on-primary);
-  border-radius: var(--border-radius);
-  cursor: pointer;
-}
-.button-active {
-  background-color: var(--mat-sys-primary-base-active);
-  color: var(--mat-sys-on-primary);
-  border-radius: var(--border-radius);
 }

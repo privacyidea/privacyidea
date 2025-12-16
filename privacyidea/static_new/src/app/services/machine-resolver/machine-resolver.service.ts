@@ -66,7 +66,7 @@ export interface LdapMachineResolverData extends MachineResolverData {
   IDATTRIBUTE: string;
   IPATTRIBUTE: string;
   HOSTNAMEATTRIBUTE: string;
-  NOREFERRALS: boolean;
+  NOREFERRALS: "True" | "False";
 }
 
 export interface LdapMachineResolver extends MachineResolver {

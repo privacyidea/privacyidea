@@ -27,12 +27,13 @@ import { MatInputModule } from "@angular/material/input";
 import { FormsModule } from "@angular/forms";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatSelectModule } from "@angular/material/select";
+import { CommonModule } from "@angular/common";
 
 @Component({
   selector: "app-machine-resolver-ldap-tab",
   templateUrl: "./machine-resolver-ldap-tab.component.html",
   styleUrls: ["./machine-resolver-ldap-tab.component.scss"],
-  imports: [FormsModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatCheckboxModule],
+  imports: [FormsModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatCheckboxModule, CommonModule],
   standalone: true,
   encapsulation: ViewEncapsulation.ShadowDom
 })
@@ -49,11 +50,16 @@ export class MachineResolverLdapTabComponent {
 
   readonly isActiveDirectoryAttributesPreassigned = computed<boolean>(() => {
     const data = this.machineResolverData() as LdapMachineResolverData;
+    console.log("data.SEARCHFILTER:", data.SEARCHFILTER, "===", data.SEARCHFILTER === "(objectClass=computer)");
+    console.log("data.IDATTRIBUTE:", data.IDATTRIBUTE, "===", data.IDATTRIBUTE === "DN");
+    console.log("data.HOSTNAMEATTRIBUTE:", data.HOSTNAMEATTRIBUTE, "===", data.HOSTNAMEATTRIBUTE === "dNSHostName");
+    console.log("data.NOREFERRALS:", data.NOREFERRALS, "===", data.NOREFERRALS === "True");
+
     return (
       data.SEARCHFILTER === "(objectClass=computer)" &&
       data.IDATTRIBUTE === "DN" &&
       data.HOSTNAMEATTRIBUTE === "dNSHostName" &&
-      data.NOREFERRALS === true
+      data.NOREFERRALS === "True"
     );
   });
 
@@ -111,12 +117,16 @@ export class MachineResolverLdapTabComponent {
     return true;
   }
 
+  onClickNoReferrals($event: boolean) {
+    this.updateData({ NOREFERRALS: $event ? "True" : "False" });
+  }
+
   preassignActiveDirectoryAttributes() {
     this.updateData({
       SEARCHFILTER: "(objectClass=computer)",
       IDATTRIBUTE: "DN",
       HOSTNAMEATTRIBUTE: "dNSHostName",
-      NOREFERRALS: true
+      NOREFERRALS: "True"
     });
   }
 }

@@ -131,15 +131,20 @@
 
   <div class="ldap-config-section">
     <div class="row-container">
-      <button
-        mat-stroked-button
-        class="action-button-1 button-margin"
-        [class.button-active]="isActiveDirectoryAttributesPreassigned()"
-        [disabled]="!isEditMode()"
-        (click)="preassignActiveDirectoryAttributes()"
-        i18n="@@preassignADAttributesButton">
-        Pre-assign Active Directory Attributes
-      </button>
+      @if (isEditMode()) {
+        <button
+          mat-stroked-button
+          class="button-margin"
+          [ngClass]="isActiveDirectoryAttributesPreassigned() ? 'action-button-active' : 'action-button-1'"
+          (click)="preassignActiveDirectoryAttributes()"
+          i18n="@@preassignADAttributesButton">
+          Pre-assign Active Directory Attributes
+        </button>
+      } @else {
+        <div>
+          <!-- Spacer -->
+        </div>
+      }
       <div>
         <!-- Spacer -->
       </div>
@@ -148,7 +153,7 @@
           matInput
           [disabled]="!isEditMode()"
           [ngModel]="hostsData().NOREFERRALS"
-          (ngModelChange)="updateData({ NOREFERRALS: $event })"
+          (ngModelChange)="onClickNoReferrals($event)"
           i18n="@@noReferrals">
           <p>Referrals are not tracked (anonymously)</p>
         </mat-checkbox>
