@@ -152,7 +152,7 @@
         <mat-checkbox
           matInput
           [disabled]="!isEditMode()"
-          [ngModel]="hostsData().NOREFERRALS"
+          [ngModel]="hostsData().NOREFERRALS === 'True'"
           (ngModelChange)="onClickNoReferrals($event)"
           i18n="@@noReferrals">
           <p>Referrals are not tracked (anonymously)</p>
