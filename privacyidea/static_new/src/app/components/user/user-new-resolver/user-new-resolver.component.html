@@ -24,9 +24,15 @@
     appScrollToTop
     class="user-new-resolver-container">
     @if (isEditMode) {
-      <h3 class="margin-left-1" i18n>Edit user source</h3>
+      <h3
+        class="margin-left-1"
+        i18n>Edit user source
+      </h3>
     } @else {
-      <h3 class="margin-left-1" i18n>Create user source</h3>
+      <h3
+        class="margin-left-1"
+        i18n>Create user source
+      </h3>
     }
 
     <div class="form-row">
@@ -42,8 +48,8 @@
         <input
           [(ngModel)]="resolverName"
           [disabled]="isEditMode"
-          placeholder="resolver1"
-          matInput />
+          matInput
+          placeholder="resolver1" />
       </mat-form-field>
 
       <mat-form-field>
@@ -55,7 +61,7 @@
           <mat-option [value]="'sqlresolver'">SQL</mat-option>
           <mat-option [value]="'passwdresolver'">Passwd</mat-option>
           <mat-option [value]="'scimresolver'">SCIM</mat-option>
-          <mat-option [value]="'httpesolver'">HTTP</mat-option>
+          <mat-option [value]="'httpresolver'">HTTP</mat-option>
           <mat-option [value]="'entraidresolver'">EntraID</mat-option>
           <mat-option [value]="'keycloakresolver'">Keycloak</mat-option>
         </mat-select>
@@ -86,24 +92,30 @@
         [data]="isEditMode ? formData : {}" />
     }
 
+    @if (resolverType === 'httpresolver') {
+      <app-http-resolver
+        (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
+        [data]="isEditMode ? formData : {}" />
+    }
+
     <div class="flex-row gap-1 margin-top-1">
       <button
-      (click)="onTest()"
-      [disabled]="isSaving || isTesting || !resolverType"
-      class="action-button-1 width-238"
-      mat-stroked-button>
-      <mat-icon>wifi</mat-icon>
-      <span i18n>Test connection</span>
-    </button>
+        (click)="onTest()"
+        [disabled]="isSaving || isTesting || !resolverType"
+        class="action-button-1 width-238"
+        mat-stroked-button>
+        <mat-icon>wifi</mat-icon>
+        <span i18n>Test connection</span>
+      </button>
 
-    <button
-      (click)="onSave()"
-      [disabled]="!resolverName || !resolverType"
-      class="action-button-1 width-238"
-      mat-stroked-button>
-      <mat-icon>add</mat-icon>
-      Save
-    </button>
+      <button
+        (click)="onSave()"
+        [disabled]="!resolverName || !resolverType"
+        class="action-button-1 width-238"
+        mat-stroked-button>
+        <mat-icon>add</mat-icon>
+        Save
+      </button>
     </div>
   </div>
 </div>

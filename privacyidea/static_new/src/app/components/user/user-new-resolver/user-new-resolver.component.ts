@@ -34,6 +34,7 @@ import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.
 import { LdapResolverComponent } from "./ldap-resolver/ldap-resolver.component";
 import { SqlResolverComponent } from "./sql-resolver/sql-resolver.component";
 import { ScimResolverComponent } from "./scim-resolver/scim-resolver.component";
+import { HttpResolverComponent } from "./http-resolver/http-resolver.component";
 
 @Component({
   selector: "app-user-new-resolver",
@@ -53,7 +54,8 @@ import { ScimResolverComponent } from "./scim-resolver/scim-resolver.component";
     ScrollToTopDirective,
     LdapResolverComponent,
     SqlResolverComponent,
-    ScimResolverComponent
+    ScimResolverComponent,
+    HttpResolverComponent
   ],
   templateUrl: "./user-new-resolver.component.html",
   styleUrl: "./user-new-resolver.component.scss"
@@ -75,19 +77,14 @@ export class UserNewResolverComponent {
       const resource = (this.resolverService as any).selectedResolverResource?.value?.();
 
       if (!selectedName || !resource?.result?.value) {
-        console.log("No resolver selected.");
-        console.log("name"+selectedName)
-        console.log("resource"+resource)
         return;
       }
 
       if (this.editInitialized) {
-        console.log("Edit already initialized.");
         return;
       }
 
       const resolver = resource.result.value as Resolver;
-      console.log("Edit initialized with resolver:", resolver);
       this.resolverName = resolver.resolvername;
       this.resolverType = resolver.type;
       this.formData = { ...(resolver.data || {}) };

@@ -7,6 +7,7 @@
         Authentication Server URI</mat-label>
       <input
         [(ngModel)]="data['SCIMURL']"
+        placeholder="http://localhost:8080/osiam-auth-server"
         matInput />
     </mat-form-field>
 
@@ -15,6 +16,7 @@
         Resource Server Uri</mat-label>
       <input
         [(ngModel)]="data['RESOURCEURL']"
+        placeholder="http://localhost:8080/osiam-resource-server"
         matInput />
     </mat-form-field>
 
@@ -23,6 +25,7 @@
         Client</mat-label>
       <input
         [(ngModel)]="data['user']"
+        placeholder="hostname"
         matInput />
     </mat-form-field>
 
@@ -31,6 +34,7 @@
         Secret</mat-label>
       <input
         [(ngModel)]="data['secret']"
+        placeholder="d81c31e4-9f65-4805-b5ba-6edf0761f954"
         matInput />
     </mat-form-field>
 

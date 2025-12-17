@@ -1,1 +1,82 @@
-<p>http-resolver works!</p>
+<div class="type-section">
+  <h3 i18n>HTTP settings</h3>
+  <div class="form-grid"></div>
+
+  <mat-slide-toggle
+    [(ngModel)]="basicSettings"
+    class="example-margin">
+    {{ basicSettings() ? "Advanced Settings" : "Basic Settings" }}
+  </mat-slide-toggle>
+
+  @if (basicSettings()) {
+    <mat-form-field>
+      <mat-label i18n>Endpoint (URL)</mat-label>
+      <input
+        [(ngModel)]="data['url']"
+        matInput
+        placeholder="https://example.com/path/to/users/:userid" />
+    </mat-form-field>
+
+    <mat-form-field>
+      <mat-label i18n>Method</mat-label>
+      <mat-select [(ngModel)]="data['method']">
+        <mat-option value="GET">GET</mat-option>
+        <mat-option value="POST">POST</mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field>
+      <mat-label i18n>Request Mapping (JSON Format)</mat-label>
+      <textarea
+        [(ngModel)]="data['mapping']"
+        matInput
+        placeholder='{"customerid":"{userid}","accessKey":"secr3t!"}'></textarea>
+    </mat-form-field>
+
+    <mat-form-field>
+      <mat-label i18n>Headers (JSON Format)</mat-label>
+      <textarea
+        [(ngModel)]="data['header']"
+        matInput
+        placeholder='{"Content-Type":"application/json; charset=UTF-8"}'></textarea>
+    </mat-form-field>
+
+    <mat-form-field>
+      <mat-label i18n>Response Mapping (JSON Format)</mat-label>
+      <textarea
+        [(ngModel)]="data['response_mapping']"
+        matInput
+        placeholder='{"username":"{Username}","email":"{Email}"}'></textarea>
+    </mat-form-field>
+
+    <mat-checkbox
+      [(ngModel)]="data['special_error_handling']"
+      class="checkbox-inline"
+      i18n>
+      Special Error Handeling
+    </mat-checkbox>
+
+    @if (data['special_error_handling']) {
+      <mat-form-field>
+        <mat-label i18n>Response contains (JSON Format)</mat-label>
+        <textarea
+          [(ngModel)]="data['error_codes']"
+          matInput
+          placeholder='{"success": false, "message": "An error occurred!"}'></textarea>
+      </mat-form-field>
+    }
+  } @else {
+
+    <mat-form-field>
+      <mat-label i18n>Base URL</mat-label>
+      <input
+        [(ngModel)]="data['url']"
+        matInput
+        placeholder="https://example.com/path/to/users" />
+      <mat-hint i18n>The base URL of the API of the user store which will be concatenated with the user endpoints
+                     defined below.
+      </mat-hint>
+    </mat-form-field>
+
+  }
+</div>
