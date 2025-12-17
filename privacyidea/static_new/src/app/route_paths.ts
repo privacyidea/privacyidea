@@ -38,5 +38,7 @@ export const ROUTE_PATHS = {
   TOKENS_WIZARD: "/tokens/wizard",
   TOKENS_CONTAINERS_WIZARD: "/tokens/containers/wizard",
   USERS_REALMS: "/users/realms",
-  CONFIGURATION_PERIODIC_TASKS: "/configuration/periodic-tasks"
+  CONFIGURATION_PERIODIC_TASKS: "/configuration/periodic-tasks",
+  USERS_SOURCES: "/users/sources",
+  USERS_NEW_RESOLVER: "/users/new-resolver"
 };

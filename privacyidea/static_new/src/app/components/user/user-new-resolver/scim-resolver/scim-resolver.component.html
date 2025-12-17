@@ -1,0 +1,42 @@
+<div class="type-section">
+  <h3 i18n>SCIM settings</h3>
+  <div class="form-grid">
+
+    <mat-form-field>
+      <mat-label>
+        Authentication Server URI</mat-label>
+      <input
+        [(ngModel)]="data['SCIMURL']"
+        placeholder="http://localhost:8080/osiam-auth-server"
+        matInput />
+    </mat-form-field>
+
+    <mat-form-field>
+      <mat-label>
+        Resource Server Uri</mat-label>
+      <input
+        [(ngModel)]="data['RESOURCEURL']"
+        placeholder="http://localhost:8080/osiam-resource-server"
+        matInput />
+    </mat-form-field>
+
+    <mat-form-field>
+      <mat-label>
+        Client</mat-label>
+      <input
+        [(ngModel)]="data['user']"
+        placeholder="hostname"
+        matInput />
+    </mat-form-field>
+
+    <mat-form-field>
+      <mat-label>
+        Secret</mat-label>
+      <input
+        [(ngModel)]="data['secret']"
+        placeholder="d81c31e4-9f65-4805-b5ba-6edf0761f954"
+        matInput />
+    </mat-form-field>
+
+  </div>
+</div>

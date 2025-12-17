@@ -21,12 +21,21 @@ import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http"
 import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
 import { AuthService } from "../auth/auth.service";
-import { computed, effect, inject, Injectable, Signal, signal, WritableSignal } from "@angular/core";
+import { computed, inject, Injectable, Signal, signal, WritableSignal } from "@angular/core";
 import { catchError, Observable, throwError } from "rxjs";
 
-type ResolverType = "ldapresolver" | "sqlresolver" | "passwdresolver" | "scimresolver";
+export type ResolverType =
+  "ldapresolver"
+  | "sqlresolver"
+  | "passwdresolver"
+  | "scimresolver"
+  | "httpresolver"
+  | "entraidresolver"
+  | "keycloakresolver";
 
-export interface ResolverData {}
+export interface ResolverData {
+  [key: string]: unknown;
+}
 
 export type Resolvers = { [key: string]: Resolver };
 
@@ -60,7 +69,7 @@ export interface LDAPResolverData extends ResolverData {
   tls_version: string;
 }
 
-export interface SQLResolverDara extends ResolverData {
+export interface SQLResolverData extends ResolverData {
   database: string;
   driver: string;
   server: string;
@@ -69,6 +78,8 @@ export interface SQLResolverDara extends ResolverData {
   password: string;
   table: string;
   map: string;
+  edit_user_store: boolean;
+  password_hash: string;
 }
 
 export interface PasswdResolverData extends ResolverData {
@@ -94,7 +105,9 @@ export interface ResolverServiceInterface {
   resolverOptions: Signal<string[]>;
 
   postResolverTest(): Observable<any>;
+
   postResolver(resolverName: string, data: any): Observable<any>;
+
   deleteResolver(resolverName: string): Observable<any>;
 }
 
@@ -105,8 +118,20 @@ export class ResolverService implements ResolverServiceInterface {
   readonly resolverBaseUrl = environment.proxyUrl + "/resolver/";
   private readonly authService = inject(AuthService);
   private readonly http: HttpClient = inject(HttpClient);
-
+  resolversResource = httpResource<PiResponse<Resolvers>>({
+    url: this.resolverBaseUrl,
+    method: "GET",
+    headers: this.authService.getHeaders()
+  });
   selectedResolverName = signal<string>("");
+  resolvers = computed<Resolver[]>(() => {
+    const resolvers = this.resolversResource.value()?.result?.value;
+    return resolvers ? Object.values(resolvers) : [];
+  });
+  resolverOptions = computed(() => {
+    const resolvers = this.resolversResource.value()?.result?.value;
+    return resolvers ? Object.keys(resolvers) : [];
+  });
 
   postResolverTest() {
     return this.http.post(this.resolverBaseUrl + "test", {}, { headers: this.authService.getHeaders() }).pipe(
@@ -116,34 +141,6 @@ export class ResolverService implements ResolverServiceInterface {
       })
     );
   }
-
-  resolversResource = httpResource<PiResponse<Resolvers>>({
-    url: this.resolverBaseUrl,
-    method: "GET",
-    headers: this.authService.getHeaders()
-  });
-
-  resolvers = computed<Resolver[]>(() => {
-    const resolvers = this.resolversResource.value()?.result?.value;
-    return resolvers ? Object.values(resolvers) : [];
-  });
-
-  resolverOptions = computed(() => {
-    const resolvers = this.resolversResource.value()?.result?.value;
-    return resolvers ? Object.keys(resolvers) : [];
-  });
-
-  selectedResolverResource = httpResource<PiResponse<any>>(() => {
-    const resolverName = this.selectedResolverName();
-    if (resolverName === "") {
-      return undefined;
-    }
-    return {
-      url: this.resolverBaseUrl + resolverName,
-      method: "GET",
-      headers: this.authService.getHeaders()
-    };
-  });
 
   postResolver(resolverName: string, data: any) {
     return this.http.post(this.resolverBaseUrl + resolverName, data, { headers: this.authService.getHeaders() }).pipe(
@@ -162,4 +159,16 @@ export class ResolverService implements ResolverServiceInterface {
       })
     );
   }
+
+  selectedResolverResource = httpResource<PiResponse<any>>(() => {
+    const resolverName = this.selectedResolverName();
+    if (resolverName === "") {
+      return undefined;
+    }
+    return {
+      url: this.resolverBaseUrl + resolverName,
+      method: "GET",
+      headers: this.authService.getHeaders()
+    };
+  });
 }

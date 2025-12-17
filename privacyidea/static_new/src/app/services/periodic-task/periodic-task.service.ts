@@ -147,7 +147,6 @@ export class PeriodicTaskService implements PeriodicTaskServiceInterface {
       { headers: headers }
     ).pipe(
       catchError((error) => {
-        console.log("Failed to enable periodic task:", error);
         this.periodicTasksResource.reload();
         this.notificationService.openSnackBar("Failed to enable periodic task!");
         return of(undefined);
@@ -163,7 +162,6 @@ export class PeriodicTaskService implements PeriodicTaskServiceInterface {
       { headers: headers }
     ).pipe(
       catchError((error) => {
-        console.log("Failed to disable periodic task:", error);
         this.periodicTasksResource.reload();
         this.notificationService.openSnackBar("Failed to disable periodic task!");
         return of(undefined);
