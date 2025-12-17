@@ -24,8 +24,17 @@
         [actions]="actions()" />
     }
     @if (isEditMode()) {
-      <app-action-selector class="grid-area-body-bottom" />
+      <app-action-selector
+        class="grid-area-body-bottom"
+        [selectedPolicyAction]="selectedAction()"
+        (selectedPolicyActionChange)="onSelectedActionChange($event)"
+        [policy]="policy()"
+        (policyChange)="onPolicyChange($event)" />
     }
   </div>
-  <app-action-detail class="flex-detail" />
+  <app-action-detail
+    class="flex-detail"
+    [isEditMode]="isEditMode()"
+    [(selectedAction)]="selectedAction"
+    [policy]="policy()" />
 </div>

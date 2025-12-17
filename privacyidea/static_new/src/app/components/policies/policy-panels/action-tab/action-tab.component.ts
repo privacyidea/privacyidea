@@ -17,11 +17,11 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, inject, input, Signal } from "@angular/core";
+import { Component, computed, effect, input, output, signal, Signal } from "@angular/core";
 import { ActionDetailComponent } from "../action-tab/action-detail/action-detail.component";
 import { SelectedActionsListComponent } from "../action-tab/selected-actions-list/selected-actions-list.component";
 import { ActionSelectorComponent } from "../action-tab/action-selector/action-selector.component";
-import { PolicyService } from "../../../../services/policies/policies.service";
+import { PolicyActionDetail, PolicyDetail } from "../../../../services/policies/policies.service";
 
 @Component({
   selector: "app-action-tab",
@@ -31,12 +31,29 @@ import { PolicyService } from "../../../../services/policies/policies.service";
   styleUrl: "./action-tab.component.scss"
 })
 export class ActionTabComponent {
-  policyService = inject(PolicyService);
-
+  // policyService = inject(PolicyService);
   isEditMode = input.required<boolean>();
 
+  policy = input.required<PolicyDetail>();
+  policyChange = output<PolicyDetail>();
+  onPolicyChange(updatedPolicy: PolicyDetail) {
+    this.policyChange.emit(updatedPolicy);
+  }
+
+  selectedAction = signal<{ name: string; value: any } | null>(null);
+  selectedActionDetail = signal<PolicyActionDetail | null>(null);
+  onSelectedActionChange(action: { name: string; value: any }) {
+    console.log("Updating selectedAction to:", action);
+    this.selectedAction.set(action);
+  }
+  constructor() {
+    effect(() => {
+      console.log("ActionTabComponent Selected action changed to:", this.selectedAction());
+    });
+  }
+
   actions: Signal<{ name: string; value: string }[]> = computed(() => {
-    const policy = this.policyService.selectedPolicy();
+    const policy = this.policy();
     if (!policy || !policy.action) return [];
     return Object.entries(policy.action).map(([name, value]) => ({ name: name, value }));
   });

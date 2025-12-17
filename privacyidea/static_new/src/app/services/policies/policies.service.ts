@@ -152,7 +152,7 @@ export interface PolicyServiceInterface {
   readonly selectedPolicy: Signal<PolicyDetail | null>;
   readonly selectedPolicyOriginal: Signal<PolicyDetail | null>;
   readonly actionFilter: WritableSignal<string>;
-  readonly policyActionGroupNames: Signal<string[]>;
+  readonly groupNamesOfSelectedScope: Signal<string[]>;
   readonly selectedActionGroup: WritableSignal<string>;
   readonly selectedAction: WritableSignal<{ name: string; value: any } | null>;
   readonly policyActions: Signal<ScopedPolicyActions>;
@@ -160,7 +160,9 @@ export interface PolicyServiceInterface {
   readonly allPolicyScopes: Signal<string[]>;
   readonly policyActionsByGroup: Signal<PolicyActionGroups>;
   readonly alreadyAddedActionNames: Signal<string[]>;
-  readonly policyActionsByGroupFiltered: Signal<PolicyActionGroups>;
+  filterPolicyActionGroups(alreadyAddedActionNames: string[], filterValue: string): PolicyActionGroups;
+  getActionDetail(actionName: string, scope: string): PolicyActionDetail | null;
+  readonly currentActionGroupsFiltered: Signal<PolicyActionGroups>;
   readonly allPolicies: Signal<PolicyDetail[]>;
   readonly selectedPolicyScope: Signal<string>;
   readonly selectedActionDetail: Signal<PolicyActionDetail | null>;
@@ -176,7 +178,7 @@ export interface PolicyServiceInterface {
   initializeNewPolicy(): void;
   selectPolicy(policy: PolicyDetail): void;
   updateSelectedPolicy(args: Partial<PolicyDetail>): void;
-  selectActionByName(actionName: string): void;
+  // selectActionByName(actionName: string): void;
   updateSelectedActionValue(value: any): void;
   createPolicy(policyData: PolicyDetail): Promise<PiResponse<any>>;
   updatePolicy(oldPolicyName: String, policyData: PolicyDetail): Promise<PiResponse<any>>;
@@ -186,6 +188,7 @@ export interface PolicyServiceInterface {
   addActionToSelectedPolicy(): void;
   removeActionFromSelectedPolicy(actionName: string): void;
   isScopeChangeable(policy: PolicyDetail): boolean;
+  actionNamesOfGroup(group: string): string[];
   actionNamesOfSelectedGroup(): string[];
   actionValueIsValid(action: PolicyActionDetail, value: string | number): boolean;
   cancelEditMode(): void;
@@ -484,7 +487,7 @@ export class PolicyService implements PolicyServiceInterface {
   });
 
   selectedActionGroup: WritableSignal<string> = linkedSignal({
-    source: () => this.policyActionGroupNames(),
+    source: () => this.groupNamesOfSelectedScope(),
     computation: (source, previous) => {
       if (source.length < 1) return "";
       if (previous && source.includes(previous.value)) return previous.value;
@@ -508,7 +511,8 @@ export class PolicyService implements PolicyServiceInterface {
         if (actionNamesOfSelectedGroup.length < 1) return null;
         if (previousValue && actionNamesOfSelectedGroup.includes(previousValue.name)) return previous.value;
         const firstActionName = actionNamesOfSelectedGroup[0];
-        const defaultValue = this._getActionDetail(firstActionName)?.type === "bool" ? "true" : "";
+        const defaultValue =
+          this.getActionDetail(firstActionName, _selectedPolicy?.scope ?? "")?.type === "bool" ? "true" : "";
         return { name: firstActionName, value: defaultValue };
       } else {
         if (_selectedPolicy && _selectedPolicy.action) {
@@ -523,14 +527,6 @@ export class PolicyService implements PolicyServiceInterface {
       }
     }
   });
-
-  selectActionByName(actionName: string) {
-    const actionNames = this.actionNamesOfSelectedGroup();
-    if (actionNames.includes(actionName)) {
-      const defaultValue = this._getActionDetail(actionName)?.type === "bool" ? "true" : "";
-      this.selectedAction.set({ name: actionName, value: defaultValue });
-    }
-  }
 
   updateSelectedActionValue(value: any) {
     const selectedAction = this.selectedAction();
@@ -590,20 +586,15 @@ export class PolicyService implements PolicyServiceInterface {
     return Object.keys(currentActions);
   });
 
-  /**
-   * Filter policy actions by the actionFilter signal and already added actions.
-   * @returns {PolicyActionGroups} The filtered policy actions grouped by scope and group.
-   */
-  policyActionsByGroupFiltered = computed<PolicyActionGroups>(() => {
+  filterPolicyActionGroups(alreadyAddedActionNames: string[], filterValue: string): PolicyActionGroups {
     // Also filter out already added actions
-    const alreadyAddedActionNames = this.alreadyAddedActionNames();
     if (!this.actionFilter() && alreadyAddedActionNames.length === 0) {
       return this.policyActionsByGroup();
     }
     const policyActions = this.policyActionResource.value()?.result?.value;
     if (!policyActions) return {};
     const grouped: PolicyActionGroups = {};
-    const filterValue = this.actionFilter().toLowerCase();
+    filterValue = filterValue.toLowerCase();
     for (const scope in policyActions) {
       const actions = policyActions[scope];
       grouped[scope] = {};
@@ -623,6 +614,14 @@ export class PolicyService implements PolicyServiceInterface {
       }
     }
     return grouped;
+  }
+
+  /**
+   * Filter policy actions by the actionFilter signal and already added actions.
+   * @returns {PolicyActionGroups} The filtered policy actions grouped by scope and group.
+   */
+  currentActionGroupsFiltered = computed<PolicyActionGroups>(() => {
+    return this.filterPolicyActionGroups(this.alreadyAddedActionNames(), this.actionFilter());
   });
 
   _allPolicies = computed(() => {
@@ -640,22 +639,22 @@ export class PolicyService implements PolicyServiceInterface {
     return this._selectedPolicy()?.scope || "";
   });
 
-  policyActionGroupNames: Signal<string[]> = computed(() => {
-    const selectedScope = this.selectedPolicyScope();
-    console.log("selectedScope:", selectedScope);
-    if (!selectedScope) return [];
-    const policyActionGroupFiltered = this.policyActionsByGroupFiltered()[selectedScope];
-    console.log("policyActionGroupFiltered:", policyActionGroupFiltered);
+  filteredGroupNamesOf(selectedScope: string, alreadyAddedActionNames: string[], filter: string): string[] {
+    const policyActionGroupFiltered = this.filterPolicyActionGroups(alreadyAddedActionNames, filter)[selectedScope];
     if (!policyActionGroupFiltered) return [];
-    console.log("Object.keys(policyActionGroupFiltered):", Object.keys(policyActionGroupFiltered));
     return Object.keys(policyActionGroupFiltered);
+  }
+
+  groupNamesOfSelectedScope: Signal<string[]> = computed(() => {
+    const selectedScope = this.selectedPolicyScope();
+    if (!selectedScope) return [];
+    return this.filteredGroupNamesOf(selectedScope, this.alreadyAddedActionNames(), this.actionFilter());
   });
 
-  _getActionDetail = (actionName: string): PolicyActionDetail | null => {
+  getActionDetail = (actionName: string, scope: string): PolicyActionDetail | null => {
     const actions = this.policyActions();
-    const scope = this.selectedPolicyScope();
-    if (!scope) return null;
-    if (actionName && actions && actions[scope]) {
+
+    if (actions && actions[scope]) {
       return actions[scope][actionName] ?? null;
     }
     return null;
@@ -664,17 +663,19 @@ export class PolicyService implements PolicyServiceInterface {
   selectedActionDetail: Signal<PolicyActionDetail | null> = computed(() => {
     const actionName = this.selectedAction()?.name;
     if (!actionName) return null;
-    return this._getActionDetail(actionName);
+    return this.getActionDetail(actionName, this.selectedPolicyScope());
   });
+
+  actionNamesOfGroup(group: string): string[] {
+    const actionsByGroup = this.currentActionGroupsFiltered();
+    const scope = this.selectedPolicyScope();
+    if (!scope || !actionsByGroup[scope]) return [];
+    return Object.keys(actionsByGroup[scope][group] || {});
+  }
 
   actionNamesOfSelectedGroup = computed<string[]>(() => {
     const group: string = this.selectedActionGroup();
-    const actionsByGroup = this.policyActionsByGroupFiltered();
-    const scope = this.selectedPolicyScope();
-    console.log("actionNamesOfSelectedGroup - scope:", scope, "group:", group);
-    if (!scope || !actionsByGroup[scope]) return [];
-    console.log("returning: ", Object.keys(actionsByGroup[scope][group] || {}));
-    return Object.keys(actionsByGroup[scope][group] || {});
+    return this.actionNamesOfGroup(group);
   });
 
   createPolicy(policyData: PolicyDetail): Promise<PiResponse<any>> {

@@ -23,6 +23,7 @@ import { FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
 import {
   PolicyActionDetail,
+  PolicyDetail,
   PolicyService,
   PolicyServiceInterface
 } from "../../../../../services/policies/policies.service";
@@ -54,19 +55,34 @@ import { MatIcon } from "@angular/material/icon";
 })
 export class ActionDetailComponent {
   // Services
-  // readonly policyService: PolicyServiceInterface = inject(PolicyService);
+  readonly policyService: PolicyServiceInterface = inject(PolicyService);
   readonly documentationService: DocumentationServiceInterface = inject(DocumentationService);
 
   // Component State
   readonly isEditMode = input.required<boolean>();
-  readonly selectedAction = input.required<{ name: string; value: any }>();
+  readonly selectedAction = input.required<{ name: string; value: any } | null>();
   readonly selectedActionChange = output<{ name: string; value: any }>();
   //  PolicyActionDetail
-  readonly selectedActionDetail = input.required<PolicyActionDetail>();
+  readonly selectedActionDetail = computed<PolicyActionDetail | null>(() => {
+    const action = this.selectedAction();
+    console.log("Computing selectedActionDetail for action:", action);
+    if (!action) return null;
+    console.log("Fetching action detail for action:", action.name, "with policy scope:", this.policy().scope);
+    const details = this.policyService.getActionDetail(action.name, this.policy().scope);
+    console.log("Fetched action detail:", details);
+    return details;
+  });
+  readonly policy = input.required<PolicyDetail>();
+
+  constructor() {
+    effect(() => {
+      console.log("ActionDetailComponent Selected action changed to:", this.selectedAction());
+    });
+  }
 
   // Computed Properties
   readonly inputIsValid: Signal<boolean> = computed(() => {
-    const actionDetail = this.policyService.selectedActionDetail();
+    const actionDetail = this.selectedActionDetail();
     const actionValue = this.selectedAction()?.value;
     if (actionDetail === null) return false;
     return this.policyService.actionValueIsValid(actionDetail, actionValue);
@@ -92,7 +108,7 @@ export class ActionDetailComponent {
   readonly selectedActionIsAlreadyAdded = computed((): boolean => {
     const selectedAction = this.selectedAction();
     if (!selectedAction) return false;
-    const policy = this.policyService.selectedPolicy();
+    const policy = this.policy();
     if (!policy || !policy.action) return false;
     return Object.prototype.hasOwnProperty.call(policy.action, selectedAction.name);
   });
@@ -101,10 +117,7 @@ export class ActionDetailComponent {
 
   applyChanges() {
     if (!this.inputIsValid()) return;
-    // this.policyService.updateActionInSelectedPolicy();
-    this.selectedActionChange.emit({ ...this.selectedAction() });
-
-    this.policyService.selectedAction.set(null);
+    this.selectedActionChange.emit({ ...(this.selectedAction() ?? { name: "", value: null }) });
   }
 
   toggleContent(contentType: "docu" | "notes") {

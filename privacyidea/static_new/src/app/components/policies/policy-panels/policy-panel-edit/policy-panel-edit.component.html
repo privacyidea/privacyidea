@@ -131,7 +131,9 @@
         </div>
       }
       @if (activeTab() === "actions") {
-        <app-action-tab [isEditMode]="isEditMode()" />
+        <app-action-tab
+          [isEditMode]="isEditMode()"
+          [policy]="policy()" />
       }
       @if (activeTab() === "conditions" && selectedPolicy()) {
         <app-conditions-tab

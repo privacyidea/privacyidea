@@ -92,21 +92,21 @@ describe("ActionSelectorComponent", () => {
   });
 
   it("should show group selector if more than one group exists", () => {
-    policyServiceMock.policyActionGroupNames.set(["group1", "group2"]);
+    policyServiceMock.groupNamesOfSelectedScope.set(["group1", "group2"]);
     fixture.detectChanges();
     const groupSelector = fixture.nativeElement.querySelector("app-selector-buttons");
     expect(groupSelector).toBeTruthy();
   });
 
   it("should not show group selector if only one group exists", () => {
-    policyServiceMock.policyActionGroupNames.set(["group1"]);
+    policyServiceMock.groupNamesOfSelectedScope.set(["group1"]);
     fixture.detectChanges();
     const groupSelector = fixture.nativeElement.querySelector("app-selector-buttons");
     expect(groupSelector).toBeFalsy();
   });
 
   it("should call service when group is selected", () => {
-    policyServiceMock.policyActionGroupNames.set(["group1", "group2"]);
+    policyServiceMock.groupNamesOfSelectedScope.set(["group1", "group2"]);
     fixture.detectChanges();
     const groupSelector = fixture.debugElement.query(By.directive(SelectorButtons));
     groupSelector.triggerEventHandler("onSelect", "group2");

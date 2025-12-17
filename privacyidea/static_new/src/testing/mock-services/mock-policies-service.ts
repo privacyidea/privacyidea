@@ -57,7 +57,7 @@ export class MockPolicyService implements PolicyServiceInterface {
   selectedPolicy = signal<PolicyDetail | null>(null);
   selectedPolicyOriginal = signal<PolicyDetail | null>(null);
   actionFilter = signal("");
-  policyActionGroupNames = signal<string[]>([]);
+  groupNamesOfSelectedScope = signal<string[]>([]);
   selectedActionGroup = signal("");
   selectedAction = signal<{ name: string; value: any } | null>(null);
   policyActions = signal<ScopedPolicyActions>({});
@@ -65,7 +65,7 @@ export class MockPolicyService implements PolicyServiceInterface {
   allPolicyScopes = signal<string[]>([]);
   policyActionsByGroup = signal<PolicyActionGroups>({});
   alreadyAddedActionNames = signal<string[]>([]);
-  policyActionsByGroupFiltered = signal<PolicyActionGroups>({});
+  currentActionGroupsFiltered = signal<PolicyActionGroups>({});
   allPolicies = signal<PolicyDetail[]>([]);
   selectedPolicyScope = signal("");
   selectedActionDetail = signal<PolicyActionDetail | null>(null);

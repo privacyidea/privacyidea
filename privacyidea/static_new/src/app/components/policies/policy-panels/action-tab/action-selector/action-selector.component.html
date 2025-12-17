@@ -20,22 +20,22 @@
   <input
     type="text"
     placeholder="Search action ..."
-    [ngModel]="policyService.actionFilter()"
-    (ngModelChange)="policyService.actionFilter.set($event)"
+    [ngModel]="actionFilter()"
+    (ngModelChange)="actionFilter.set($event)"
     class="search-input" />
-  @if (policyService.policyActionGroupNames().length > 1) {
+  @if (this.actionGroupNamesFiltered().length > 1) {
     <app-selector-buttons
-      [values]="policyService.policyActionGroupNames()"
-      [initialValue]="policyService.selectedActionGroup()"
-      (onSelect)="policyService.selectedActionGroup.set($event)" />
+      [values]="actionGroupNamesFiltered()"
+      [initialValue]="selectedActionGroup()"
+      (onSelect)="selectedActionGroup.set($event)" />
   }
   <div class="add-action-details">
     <div class="policy-action-items">
-      @for (actionName of policyService.actionNamesOfSelectedGroup(); track actionName) {
+      @for (actionName of actionNamesFiltered(); track actionName) {
         <div
           class="policy-action-item"
-          [class.policy-action-item-selected]="policyService.selectedAction()?.name === actionName"
-          (click)="policyService.selectActionByName(actionName)">
+          [class.policy-action-item-selected]="selectedPolicyAction()?.name === actionName"
+          (click)="selectActionByName(actionName)">
           <span class="detail-label">{{ actionName }}</span>
         </div>
       }
