@@ -39,4 +39,12 @@ export class PolicyPriorityComponent {
   editMode = input.required<boolean>();
   priority = input.required<number>();
   priorityChange = output<number>();
+
+  updatePolicyPriority(event: Event) {
+    const inputElement = event.target as HTMLInputElement;
+    const newPriority = parseInt(inputElement.value, 10);
+    if (!isNaN(newPriority)) {
+      this.priorityChange.emit(newPriority);
+    }
+  }
 }

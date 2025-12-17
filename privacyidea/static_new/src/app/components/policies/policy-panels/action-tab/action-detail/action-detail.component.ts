@@ -17,11 +17,15 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, effect, inject, input, linkedSignal, signal, Signal } from "@angular/core";
+import { Component, computed, effect, inject, input, linkedSignal, output, signal, Signal } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
-import { PolicyService, PolicyServiceInterface } from "../../../../../services/policies/policies.service";
+import {
+  PolicyActionDetail,
+  PolicyService,
+  PolicyServiceInterface
+} from "../../../../../services/policies/policies.service";
 import { MatInputModule } from "@angular/material/input";
 import { MatAutocompleteModule } from "@angular/material/autocomplete";
 import { MatSelectModule } from "@angular/material/select";
@@ -50,16 +54,20 @@ import { MatIcon } from "@angular/material/icon";
 })
 export class ActionDetailComponent {
   // Services
-  readonly policyService: PolicyServiceInterface = inject(PolicyService);
+  // readonly policyService: PolicyServiceInterface = inject(PolicyService);
   readonly documentationService: DocumentationServiceInterface = inject(DocumentationService);
 
   // Component State
-  readonly isEditMode = this.policyService.isEditMode;
+  readonly isEditMode = input.required<boolean>();
+  readonly selectedAction = input.required<{ name: string; value: any }>();
+  readonly selectedActionChange = output<{ name: string; value: any }>();
+  //  PolicyActionDetail
+  readonly selectedActionDetail = input.required<PolicyActionDetail>();
 
   // Computed Properties
   readonly inputIsValid: Signal<boolean> = computed(() => {
     const actionDetail = this.policyService.selectedActionDetail();
-    const actionValue = this.policyService.selectedAction()?.value;
+    const actionValue = this.selectedAction()?.value;
     if (actionDetail === null) return false;
     return this.policyService.actionValueIsValid(actionDetail, actionValue);
   });
@@ -82,7 +90,7 @@ export class ActionDetailComponent {
     computation: (_) => "none"
   });
   readonly selectedActionIsAlreadyAdded = computed((): boolean => {
-    const selectedAction = this.policyService.selectedAction();
+    const selectedAction = this.selectedAction();
     if (!selectedAction) return false;
     const policy = this.policyService.selectedPolicy();
     if (!policy || !policy.action) return false;
@@ -93,7 +101,9 @@ export class ActionDetailComponent {
 
   applyChanges() {
     if (!this.inputIsValid()) return;
-    this.policyService.updateActionInSelectedPolicy();
+    // this.policyService.updateActionInSelectedPolicy();
+    this.selectedActionChange.emit({ ...this.selectedAction() });
+
     this.policyService.selectedAction.set(null);
   }
 

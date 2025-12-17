@@ -34,7 +34,6 @@ import { PolicyPriorityComponent } from "../action-tab/policy-priority/policy-pr
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatSelectModule } from "@angular/material/select";
 import { MatOptionModule } from "@angular/material/core";
-import { FilterValueGeneric } from "../../../../core/models/filter_value_generic/filter_value_generic";
 
 type PolicyTab = "actions" | "conditions";
 
