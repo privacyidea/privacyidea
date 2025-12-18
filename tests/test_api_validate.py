@@ -6068,8 +6068,9 @@ class MultiChallengeEnrollTest(MyApiTestCase):
         self.assertNotIn('ldappw', log_msg, log_msg)
         self.assertIn('HIDDEN', log_msg, log_msg)
         # Verify that the force_pin enrollment policy worked for validate-check-enrollment
-        self.assertIn('Exiting get_init_tokenlabel_parameters with result {\'force_app_pin\': True}',
-                      log_msg, log_msg)
+        self.assertIn(
+            'Exiting get_init_tokenlabel_parameters with result {\'force_app_pin\': True, \'app_force_unlock\': \'pin\'}',
+            log_msg, log_msg)
         logging.getLogger('privacyidea').setLevel(logging.INFO)
         """
         Verify that the QR code was generated with SHA256, this is in the log file.
