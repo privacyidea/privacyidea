@@ -62,6 +62,7 @@ export class HttpResolverComponent implements OnInit {
   protected readonly CUSTOM_ATTR_VALUE = "__custom__";
   @Input() data: Partial<SQLResolverData> = {};
   @Output() additionalFormFieldsChange = new EventEmitter<{ [key: string]: FormControl<any> }>();
+  isAdvanced: boolean = false;
   protected basicSettings: WritableSignal<boolean> = signal(true);
   protected mappingRows: AttributeMappingRow[] = [
     { privacyideaAttr: "userid", userStoreAttr: "userid" },
@@ -69,6 +70,10 @@ export class HttpResolverComponent implements OnInit {
   ];
 
   ngOnInit(): void {
+    if (this.isAdvanced) {
+      this.basicSettings.set(false);
+    }
+
     const existing = (this.data as any)?.attribute_mapping as Record<string, string> | undefined;
 
     if (existing && Object.keys(existing).length > 0) {

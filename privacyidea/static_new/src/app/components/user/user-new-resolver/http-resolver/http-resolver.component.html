@@ -2,13 +2,15 @@
   <h3 i18n>HTTP settings</h3>
   <div class="form-grid"></div>
 
-  <mat-slide-toggle
-    [(ngModel)]="basicSettings"
-    class="example-margin">
-    {{ basicSettings() ? "Basic Settings" : "Advanced Settings" }}
-  </mat-slide-toggle>
+  @if (!isAdvanced) {
+    <mat-slide-toggle
+      [(ngModel)]="basicSettings"
+      class="example-margin">
+      {{ basicSettings() ? "Basic Settings" : "Advanced Settings" }}
+    </mat-slide-toggle>
+  }
 
-  @if (basicSettings()) {
+  @if (!isAdvanced && basicSettings()) {
     <mat-form-field>
       <mat-label i18n>Endpoint (URL)</mat-label>
       <input

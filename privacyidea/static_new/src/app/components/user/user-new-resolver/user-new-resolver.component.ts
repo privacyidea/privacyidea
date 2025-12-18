@@ -35,6 +35,7 @@ import { LdapResolverComponent } from "./ldap-resolver/ldap-resolver.component";
 import { SqlResolverComponent } from "./sql-resolver/sql-resolver.component";
 import { ScimResolverComponent } from "./scim-resolver/scim-resolver.component";
 import { HttpResolverComponent } from "./http-resolver/http-resolver.component";
+import { EntraidResolverComponent } from "./entraid-resolver/entraid-resolver.component";
 
 @Component({
   selector: "app-user-new-resolver",
@@ -55,7 +56,8 @@ import { HttpResolverComponent } from "./http-resolver/http-resolver.component";
     LdapResolverComponent,
     SqlResolverComponent,
     ScimResolverComponent,
-    HttpResolverComponent
+    HttpResolverComponent,
+    EntraidResolverComponent
   ],
   templateUrl: "./user-new-resolver.component.html",
   styleUrl: "./user-new-resolver.component.scss"
