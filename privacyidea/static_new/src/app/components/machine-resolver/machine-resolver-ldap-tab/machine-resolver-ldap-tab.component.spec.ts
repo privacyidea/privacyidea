@@ -123,7 +123,7 @@ describe("MachineResolverLdapTabComponent", () => {
       IDATTRIBUTE: "",
       IPATTRIBUTE: "",
       HOSTNAMEATTRIBUTE: "",
-      NOREFERRALS: false
+      NOREFERRALS: "False"
     };
     fixture.componentRef.setInput("machineResolverData", initialData);
     const patch = { LDAPURI: "ldap://updated", LDAPBASE: "dc=updated", BINDDN: "cn=updated", BINDPW: "updated" };
@@ -143,7 +143,7 @@ describe("MachineResolverLdapTabComponent", () => {
       IDATTRIBUTE: "",
       IPATTRIBUTE: "",
       HOSTNAMEATTRIBUTE: "",
-      NOREFERRALS: false
+      NOREFERRALS: "False"
     };
     expect(component.onNewData.emit).toHaveBeenCalledWith(expectedData);
   });
@@ -167,7 +167,7 @@ describe("MachineResolverLdapTabComponent", () => {
       IDATTRIBUTE: "",
       IPATTRIBUTE: "",
       HOSTNAMEATTRIBUTE: "",
-      NOREFERRALS: false
+      NOREFERRALS: "False"
     };
     fixture.componentRef.setInput("machineResolverData", initialData);
     component.updateData({
