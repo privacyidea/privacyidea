@@ -17,7 +17,17 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, effect, input, output, signal, Signal } from "@angular/core";
+import {
+  Component,
+  computed,
+  effect,
+  input,
+  linkedSignal,
+  output,
+  signal,
+  Signal,
+  WritableSignal
+} from "@angular/core";
 import { ActionDetailComponent } from "../action-tab/action-detail/action-detail.component";
 import { AddedActionsListComponent } from "../action-tab/added-actions-list/added-actions-list.component";
 import { ActionSelectorComponent } from "../action-tab/action-selector/action-selector.component";
@@ -40,7 +50,12 @@ export class ActionTabComponent {
     this.policyChange.emit(updatedPolicy);
   }
 
-  selectedAction = signal<{ name: string; value: any } | null>(null);
+  selectedAction: WritableSignal<{ name: string; value: any } | null> = linkedSignal({
+    source: () => ({
+      scope: this.policy().scope
+    }),
+    computation: () => null
+  });
   selectedActionDetail = signal<PolicyActionDetail | null>(null);
   onSelectedActionChange(action: { name: string; value: any }) {
     console.log("Updating selectedAction to:", action);
@@ -74,17 +89,23 @@ export class ActionTabComponent {
     console.log("ActionTabComponent Adding action:", action);
     const newActions = [...this.actions(), action];
     this.onActionsChange(newActions);
-    this.selectedAction.set(null);
+    if (this.selectedAction()?.name === action.name) {
+      this.selectedAction.set(null);
+    }
   }
   onActionUpdate(action: { name: string; value: any }) {
     const newActions = this.actions().map((a) => (a.name === action.name ? action : a));
     this.onActionsChange(newActions);
-    this.selectedAction.set(null);
+    if (this.selectedAction()?.name === action.name) {
+      this.selectedAction.set(null);
+    }
   }
 
   onActionRemove(actionName: string) {
     const newActions = this.actions().filter((action) => action.name !== actionName);
     this.onActionsChange(newActions);
-    this.selectedAction.set(null);
+    if (this.selectedAction()?.name === actionName) {
+      this.selectedAction.set(null);
+    }
   }
 }

@@ -26,9 +26,9 @@
     <input
       type="number"
       class="priority-input"
-      [ngModel]="policyService.selectedPolicy()?.priority"
+      [ngModel]="priority()"
       (ngModelChange)="updatePolicyPriority($event)" />
   } @else {
-    {{ policyService.selectedPolicy()?.priority }}
+    {{ priority() }}
   }
 </div>

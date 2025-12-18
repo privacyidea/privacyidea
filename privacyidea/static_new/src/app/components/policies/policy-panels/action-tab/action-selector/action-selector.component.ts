@@ -83,7 +83,8 @@ export class ActionSelectorComponent {
   });
 
   readonly actionGroupsFiltered = computed(() => {
-    return this.policyService.filterPolicyActionGroups(this.addedActionNames(), this.actionFilter().toLowerCase());
+    console.log("Computing actionGroupsFiltered for policy:", this.policy());
+    return this.policyService.filteredPolicyActionGroups(this.addedActionNames(), this.actionFilter().toLowerCase());
   });
 
   readonly actionGroupNamesFiltered = computed(() => {
@@ -94,8 +95,9 @@ export class ActionSelectorComponent {
 
   readonly actionNamesFiltered = computed(() => {
     const group = this.selectedActionGroup();
-    if (!group) return [];
-    let actionNames = this.policyService.actionNamesOfGroup(group);
+    const scope = this.policyScope();
+    if (!group && !scope) return [];
+    let actionNames = this.policyService.actionNamesOfGroup(scope, group);
     const filter = this.actionFilter().toLowerCase();
     const addedActionNames = this.addedActionNames();
     return actionNames
@@ -104,7 +106,10 @@ export class ActionSelectorComponent {
   });
 
   selectActionByName(actionName: string) {
-    const actionNames = this.policyService.actionNamesOfGroup(this.selectedActionGroup());
+    const group = this.selectedActionGroup();
+    const scope = this.policyScope();
+    if (!group || !scope) return;
+    const actionNames = this.policyService.actionNamesOfGroup(scope, group);
     if (actionNames.includes(actionName)) {
       const actionDetail = this._getActionDetail(actionName);
       const defaultValue =

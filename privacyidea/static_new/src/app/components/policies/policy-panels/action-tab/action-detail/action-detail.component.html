@@ -118,13 +118,15 @@
         }
       }
       @if (selectedActionIsAlreadyAdded()) {
-        <button
-          mat-raised-button
-          color="primary"
-          (click)="applyChanges()"
-          [disabled]="!inputIsValid()">
-          Apply Changes
-        </button>
+        @if (selectedActionDetail()?.type !== "bool") {
+          <button
+            mat-raised-button
+            color="primary"
+            (click)="applyChanges()"
+            [disabled]="!inputIsValid()">
+            Apply Changes
+          </button>
+        }
       } @else {
         <button
           mat-raised-button

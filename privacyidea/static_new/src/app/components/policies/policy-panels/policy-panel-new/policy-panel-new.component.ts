@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, inject, input, linkedSignal, signal } from "@angular/core";
+import { Component, computed, inject, input, linkedSignal, signal, WritableSignal } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { MatCardModule } from "@angular/material/card";
 import { MatIconModule } from "@angular/material/icon";
@@ -35,6 +35,7 @@ import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatSelectModule } from "@angular/material/select";
 import { MatOptionModule } from "@angular/material/core";
 import { FilterValueGeneric } from "../../../../core/models/filter_value_generic/filter_value_generic";
+import { empty } from "rxjs";
 
 type PolicyTab = "actions" | "conditions";
 
@@ -66,8 +67,23 @@ export class PolicyPanelNewComponent {
   readonly policyService: PolicyService = inject(PolicyService);
 
   // Component State Signals
+  readonly newPolicy: WritableSignal<PolicyDetail> = linkedSignal({
+    source: () => ({
+      emptyPolicy: this.policyService.getEmptyPolicy(),
+      availableScopes: this.policyService.allPolicyScopes()
+    }),
+    computation: (source, previous) => {
+      const { emptyPolicy, availableScopes } = source;
+      if (previous?.value && previous.value !== emptyPolicy) {
+        return previous.value;
+      }
+      if (availableScopes.length > 0) {
+        return { ...emptyPolicy, scope: availableScopes[0] };
+      }
+      return emptyPolicy;
+    }
+  });
 
-  readonly newPolicy = signal<PolicyDetail>(this.policyService.getEmptyPolicy());
   readonly activeTab = linkedSignal<any, PolicyTab>({
     source: () => ({
       selectedPolicyHasConditions: this.policyService.policyHasConditions(this.newPolicy())
@@ -85,9 +101,19 @@ export class PolicyPanelNewComponent {
     return this.policyService.isPolicyEdited(this.newPolicy(), this.policyService.getEmptyPolicy());
   });
 
+  private _resetNewPolicy(): void {
+    const emptyPolicy = this.policyService.getEmptyPolicy();
+    const availableScopes = this.policyService.allPolicyScopes();
+    if (availableScopes.length > 0) {
+      this.newPolicy.set({ ...emptyPolicy, scope: availableScopes[0] });
+    } else {
+      this.newPolicy.set(emptyPolicy);
+    }
+  }
+
   // Event Handlers
   handleExpansion() {
-    this.newPolicy.set(this.policyService.getEmptyPolicy());
+    this._resetNewPolicy();
   }
 
   handleCollapse(panel: MatExpansionPanel) {
@@ -118,31 +144,23 @@ export class PolicyPanelNewComponent {
     } catch (error) {
       return;
     }
-    this.newPolicy.set(this.policyService.getEmptyPolicy());
+    this._resetNewPolicy();
     if (panel) panel.close();
-  }
-
-  deletePolicy(policyName: string): void {
-    if (confirm(`Are you sure you want to delete the policy "${policyName}"? This action cannot be undone.`)) {
-      this.policyService.deletePolicy(policyName).then((response) => {
-        this.policyService.allPoliciesRecource.reload();
-      });
-    }
   }
 
   cancelEditMode() {
     if (!this.confirmDiscardChanges()) return;
-    this.newPolicy.set(this.policyService.getEmptyPolicy());
+    this._resetNewPolicy();
   }
 
   resetPolicy(): boolean {
     if (this.isPolicyEdited()) {
       if (confirm("Are you sure you want to discard the new policy? All changes will be lost.")) {
-        this.newPolicy.set(this.policyService.getEmptyPolicy());
+        this._resetNewPolicy();
         return true;
       }
     } else {
-      this.newPolicy.set(this.policyService.getEmptyPolicy());
+      this._resetNewPolicy();
       return true;
     }
     return false;
@@ -163,7 +181,7 @@ export class PolicyPanelNewComponent {
   // Policy Manipulation Methods
   selectPolicyScope(scope: string) {
     this.newPolicy.set({ ...this.newPolicy(), scope: scope });
-    this.policyService.selectedPolicyScope.set(scope);
+    // this.policyService.selectedPolicyScope.set(scope);
   }
 
   policyHasActions(): boolean {

@@ -67,11 +67,11 @@ export class PolicyPanelEditComponent {
 
   // Component State Signals
   readonly isEditMode = this.policyService.isEditMode;
-  readonly selectedPolicy = computed<PolicyDetail | null>(() => this.policyService.selectedPolicy());
+  // readonly selectedPolicy = computed<PolicyDetail | null>(() => this.policyService.selectedPolicy());
   readonly activeTab = linkedSignal<any, PolicyTab>({
     source: () => ({
-      isEditMode: this.isEditMode(),
-      selectedPolicyHasConditions: this.policyService.selectedPolicyHasConditions()
+      isEditMode: this.isEditMode()
+      // selectedPolicyHasConditions: this.policyService.selectedPolicyHasConditions()
     }),
     computation: (source, previous) => {
       const { isEditMode, selectedPolicyHasConditions } = source;
@@ -84,13 +84,13 @@ export class PolicyPanelEditComponent {
 
   // Computed properties for new policies
   readonly newPolicyName = computed(() => {
-    if (this.policyService.selectedPolicyOriginal()?.name) return "";
-    return this.policyService.selectedPolicyOriginal()?.name || "";
+    // if (this.policyService.selectedPolicyOriginal()?.name) return "";
+    // return this.policyService.selectedPolicyOriginal()?.name || "";
   });
 
   readonly newPolicyScope = computed(() => {
-    if (this.policyService.selectedPolicyOriginal()?.name) return "";
-    return this.policyService.selectedPolicy()?.scope || "";
+    // if (this.policyService.selectedPolicyOriginal()?.name) return "";
+    // return this.policyService.selectedPolicy()?.scope || "";
   });
 
   // Event Handlers
@@ -99,7 +99,7 @@ export class PolicyPanelEditComponent {
       return;
     }
     if (policyName) {
-      this.policyService.selectPolicyByName(policyName);
+      // this.policyService.selectPolicyByName(policyName);
       this.isEditMode.set(false);
     }
   }
@@ -113,13 +113,13 @@ export class PolicyPanelEditComponent {
         panel.open();
         return;
       }
-      this.policyService.deselectPolicy(policyName);
+      // this.policyService.deselectPolicy(policyName);
       this.isEditMode.set(false);
     }
   }
 
   onNameChange(name: string): void {
-    this.policyService.updateSelectedPolicy({ name: name });
+    // this.policyService.updateSelectedPolicy({ name: name });
   }
 
   setActiveTab(tab: PolicyTab): void {
@@ -138,7 +138,7 @@ export class PolicyPanelEditComponent {
   savePolicy(panel?: MatExpansionPanel) {
     if (!this.canSavePolicy()) return;
 
-    this.policyService.savePolicyEdits();
+    // this.policyService.savePolicyEdits();
 
     this.isEditMode.set(false);
     if (panel) panel.close();
@@ -154,41 +154,41 @@ export class PolicyPanelEditComponent {
 
   cancelEditMode() {
     if (!this.confirmDiscardChanges()) return;
-    this.policyService.cancelEditMode();
+    // this.policyService.cancelEditMode();
     this.isEditMode.set(false);
   }
 
   resetPolicy(panel: MatExpansionPanel) {
-    if (this.policyService.isSelectedPolicyEdited()) {
-      if (confirm("Are you sure you want to discard the new policy? All changes will be lost.")) {
-        this.policyService.deselectPolicy(this.newPolicyName());
-        this.isEditMode.set(false);
-        panel.close();
-      }
-    } else {
-      this.policyService.deselectPolicy(this.newPolicyName());
-      this.isEditMode.set(false);
-      panel.close();
-    }
+    // if (this.policyService.isSelectedPolicyEdited()) {
+    //   if (confirm("Are you sure you want to discard the new policy? All changes will be lost.")) {
+    //     // this.policyService.deselectPolicy(this.newPolicyName());
+    //     this.isEditMode.set(false);
+    //     panel.close();
+    //   }
+    // } else {
+    //   // this.policyService.deselectPolicy(this.newPolicyName());
+    //   this.isEditMode.set(false);
+    //   panel.close();
+    // }
   }
 
   // State-checking Methods
   canSavePolicy(): boolean {
-    const policy = this.policyService.selectedPolicy();
-    if (!policy) return false;
-    if (!policy.name || policy.name.trim() === "") return false;
-    if (!this.policyService.isSelectedPolicyEdited()) return false;
-    const allPolicies = this.policyService.allPolicies();
-    const originalName = this.policyService.selectedPolicyOriginal()?.name;
-    if (allPolicies.some((p) => p.name === policy.name && (originalName === undefined || p.name !== originalName))) {
-      return false;
-    }
-    return true;
+    // const policy = this.policyService.selectedPolicy();
+    // if (!policy) return false;
+    // if (!policy.name || policy.name.trim() === "") return false;
+    // // if (!this.policyService.isSelectedPolicyEdited()) return false;
+    // // const allPolicies = this.policyService.allPolicies();
+    // // const originalName = this.policyService.selectedPolicyOriginal()?.name;
+    // if (allPolicies.some((p) => p.name === policy.name && (originalName === undefined || p.name !== originalName))) {
+    //   return false;
+    // }
+    return true; // Dummy return to avoid errors
   }
 
   confirmDiscardChanges(): boolean {
     if (
-      this.policyService.isSelectedPolicyEdited() &&
+      // this.policyService.isSelectedPolicyEdited() &&
       !confirm("Are you sure you want to discard the changes? All changes will be lost.")
     ) {
       return false;
@@ -197,24 +197,26 @@ export class PolicyPanelEditComponent {
   }
 
   policyIsSelected(policyName: string = ""): boolean {
-    const selectedPolicy = this.policyService.selectedPolicyOriginal();
-    return selectedPolicy !== null && selectedPolicy.name === policyName;
+    // const selectedPolicy = this.policyService.selectedPolicyOriginal();
+    // return selectedPolicy !== null && selectedPolicy.name === policyName;
+    return false; // Dummy return to avoid errors
   }
 
   isEditingPolicy(name: string): boolean {
-    return this.isEditMode() && this.policyService.selectedPolicyOriginal()?.name === name;
+    // return this.isEditMode() && this.policyService.selectedPolicyOriginal()?.name === name;
+    return false; // Dummy return to avoid errors
   }
 
   // Policy Manipulation Methods
   selectPolicyScope(scope: string) {
-    this.policyService.updateSelectedPolicy({ scope: scope });
+    // this.policyService.updateSelectedPolicy({ scope: scope });
   }
 
   updatePolicyPriority(priority: number) {
-    this.policyService.updateSelectedPolicy({ priority });
+    // this.policyService.updateSelectedPolicy({ priority });
   }
   onPolicyChange(policy: PolicyDetail) {
     console.log("PolicyPanelEditComponent Policy changed:", policy);
-    this.policyService.updateSelectedPolicy(policy);
+    // this.policyService.updateSelectedPolicy(policy);
   }
 }
