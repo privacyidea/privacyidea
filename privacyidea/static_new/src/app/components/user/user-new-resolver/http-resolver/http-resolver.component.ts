@@ -10,6 +10,13 @@ import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
 
 import { SQLResolverData } from "../../../../services/resolver/resolver.service";
+import {
+  MatAccordion,
+  MatExpansionPanel,
+  MatExpansionPanelHeader,
+  MatExpansionPanelTitle
+} from "@angular/material/expansion";
+import { MatDivider } from "@angular/material/list";
 
 type AttributeMappingRow = {
   privacyideaAttr: string | null;
@@ -31,7 +38,12 @@ type AttributeMappingRow = {
     MatHint,
     MatTableModule,
     MatButtonModule,
-    MatIconModule
+    MatIconModule,
+    MatAccordion,
+    MatExpansionPanel,
+    MatExpansionPanelHeader,
+    MatExpansionPanelTitle,
+    MatDivider
   ],
   templateUrl: "./http-resolver.component.html",
   styleUrl: "./http-resolver.component.scss"
@@ -47,6 +59,7 @@ export class HttpResolverComponent implements OnInit {
     "mobile"
   ];
   protected readonly displayedColumns: string[] = ["privacyideaAttr", "userStoreAttr", "actions"];
+  protected readonly CUSTOM_ATTR_VALUE = "__custom__";
   @Input() data: Partial<SQLResolverData> = {};
   @Output() additionalFormFieldsChange = new EventEmitter<{ [key: string]: FormControl<any> }>();
   protected basicSettings: WritableSignal<boolean> = signal(true);
@@ -66,6 +79,21 @@ export class HttpResolverComponent implements OnInit {
     } else {
       this.syncMappingToData();
     }
+  }
+
+  protected isCustomAttr(value: string | null): boolean {
+    return value === this.CUSTOM_ATTR_VALUE;
+  }
+
+  protected setCustomAttr(rowIndex: number, customValue: string): void {
+    const v = (customValue ?? "").trim();
+    this.mappingRows[rowIndex].privacyideaAttr = v ? v : null;
+    this.onMappingChanged();
+  }
+
+  protected onPrivacyIdeaAttrChanged(rowIndex: number): void {
+    if (this.mappingRows[rowIndex].privacyideaAttr === this.CUSTOM_ATTR_VALUE) return;
+    this.onMappingChanged();
   }
 
   protected addMappingRow(): void {

@@ -19,3 +19,32 @@
   width: 56px;
   text-align: right;
 }
+
+.auth-accordion {
+  margin-top: 12px;
+}
+
+.auth-panel-body {
+  padding-top: 8px;
+}
+
+.auth-description {
+  margin: 0 0 12px 0;
+  opacity: 0.8;
+}
+
+.auth-grid {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  column-gap: 16px;
+  row-gap: 12px;
+  align-items: start;
+}
+
+.auth-wide {
+  grid-column: 1 / -1;
+}
+
+.auth-endpoint {
+  grid-column: 2 / -1;
+}

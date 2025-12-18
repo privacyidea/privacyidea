@@ -5,7 +5,7 @@
   <mat-slide-toggle
     [(ngModel)]="basicSettings"
     class="example-margin">
-    {{ basicSettings() ? "Advanced Settings" : "Basic Settings" }}
+    {{ basicSettings() ? "Basic Settings" : "Advanced Settings" }}
   </mat-slide-toggle>
 
   @if (basicSettings()) {
@@ -105,15 +105,31 @@
           mat-cell>
           <mat-form-field class="cell-field">
             <mat-select
-              (selectionChange)="onMappingChanged()"
               [(ngModel)]="mappingRows[i].privacyideaAttr"
+              (selectionChange)="onPrivacyIdeaAttrChanged(i)"
               i18n-placeholder
               placeholder="Select PrivacyIDEA Attribute">
+
               @for (attr of privacyideaAttributes; track attr) {
                 <mat-option [value]="attr">{{ attr }}</mat-option>
               }
+
+              <mat-divider></mat-divider>
+
+              <mat-option [value]="CUSTOM_ATTR_VALUE" i18n>Custom…</mat-option>
             </mat-select>
           </mat-form-field>
+
+          @if (isCustomAttr(mappingRows[i].privacyideaAttr)) {
+            <mat-form-field class="cell-field">
+              <input
+                matInput
+                i18n-placeholder
+                placeholder="Enter custom attribute"
+                (ngModelChange)="setCustomAttr(i, $event)"
+                [ngModel]="''" />
+            </mat-form-field>
+          }
         </td>
       </ng-container>
 
@@ -213,5 +229,421 @@
         placeholder="60" />
       <mat-hint i18n>Time in seconds privacyIDEA tries to reach the user store server.</mat-hint>
     </mat-form-field>
+
+    <mat-accordion class="auth-accordion">
+      <mat-expansion-panel>
+        <mat-expansion-panel-header>
+          <mat-panel-title i18n>Authorization</mat-panel-title>
+        </mat-expansion-panel-header>
+
+        <div class="auth-panel-body">
+          <p
+            class="auth-description"
+            i18n>
+            This section allows to configure an endpoint to which the privacyIDEA server must authenticate in order to
+            receive an access token. This token can then be used to access the user store API.
+          </p>
+
+          <div class="auth-grid">
+            <mat-form-field>
+              <mat-label i18n>Username</mat-label>
+              <input
+                [(ngModel)]="data['auth_username']"
+                matInput
+                placeholder="privacyIDEA" />
+            </mat-form-field>
+
+            <mat-form-field>
+              <mat-label i18n>Password</mat-label>
+              <input
+                [(ngModel)]="data['auth_password']"
+                matInput
+                placeholder="t0p_SeCr3t!"
+                type="password" />
+            </mat-form-field>
+
+            <mat-form-field>
+              <mat-label i18n>Method</mat-label>
+              <mat-select [(ngModel)]="data['auth_method']">
+                <mat-option value="POST">POST</mat-option>
+                <mat-option value="GET">GET</mat-option>
+                <mat-option value="PUT">PUT</mat-option>
+                <mat-option value="PATCH">PATCH</mat-option>
+                <mat-option value="DELETE">DELETE</mat-option>
+              </mat-select>
+            </mat-form-field>
+
+            <mat-form-field class="auth-endpoint">
+              <mat-label i18n>Endpoint</mat-label>
+              <input
+                [(ngModel)]="data['auth_endpoint']"
+                matInput
+                placeholder="https://example.com/auth" />
+            </mat-form-field>
+
+            <mat-form-field class="auth-wide">
+              <mat-label i18n>Headers (JSON format)</mat-label>
+              <textarea
+                [(ngModel)]="data['auth_headers']"
+                matInput
+                placeholder='{"Content-Type":"application/json"}'></textarea>
+            </mat-form-field>
+
+            <mat-form-field class="auth-wide">
+              <mat-label i18n>Request Mapping (JSON format)</mat-label>
+              <textarea
+                [(ngModel)]="data['auth_request_mapping']"
+                matInput
+                placeholder='{"username":"{username}","password":"{password}"}'></textarea>
+            </mat-form-field>
+
+            <mat-form-field class="auth-wide">
+              <mat-label i18n>Response Mapping (JSON format)</mat-label>
+              <textarea
+                [(ngModel)]="data['auth_response_mapping']"
+                matInput
+                placeholder='{"Authorization":"Bearer {access_token}"}'></textarea>
+            </mat-form-field>
+
+            <mat-checkbox
+              [(ngModel)]="data['auth_special_error_handling']"
+              class="auth-wide checkbox-inline"
+              i18n>
+              Special Error Handling
+            </mat-checkbox>
+
+            @if (data['auth_special_error_handling']) {
+              <mat-form-field class="auth-wide">
+                <mat-label i18n>Response contains (JSON format)</mat-label>
+                <textarea
+                  [(ngModel)]="data['auth_error_codes']"
+                  matInput
+                  placeholder='{"success": false, "message": "An error occurred!"}'></textarea>
+              </mat-form-field>
+            }
+          </div>
+        </div>
+      </mat-expansion-panel>
+
+      <mat-expansion-panel>
+        <mat-expansion-panel-header>
+          <mat-panel-title i18n>Check User Password</mat-panel-title>
+        </mat-expansion-panel-header>
+
+        <div class="auth-panel-body">
+          <p
+            class="auth-description"
+            i18n>
+            Configure the endpoint to authenticate the user with its username/userid and password.
+          </p>
+
+          <mat-form-field>
+            <mat-label i18n>Method</mat-label>
+            <mat-select [(ngModel)]="data['auth_method']">
+              <mat-option value="POST">POST</mat-option>
+              <mat-option value="GET">GET</mat-option>
+              <mat-option value="PUT">PUT</mat-option>
+              <mat-option value="PATCH">PATCH</mat-option>
+              <mat-option value="DELETE">DELETE</mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field class="auth-endpoint">
+            <mat-label i18n>Endpoint</mat-label>
+            <input
+              [(ngModel)]="data['auth_endpoint']"
+              matInput
+              placeholder="/openid-connect/token" />
+            <mat-hint i18n> Possible tags: {{ "{" }}userid{{ "}" }} {{ "{" }}username{{ "}" }} {{ "{" }}
+                            password{{ "}" }}
+            </mat-hint>
+          </mat-form-field>
+
+          <mat-form-field class="auth-wide">
+            <mat-label i18n>Headers (JSON format)</mat-label>
+            <textarea
+              [(ngModel)]="data['auth_headers']"
+              matInput
+              placeholder='{"Content-Type":"application/json; charset=UTF-8"}'></textarea>
+          </mat-form-field>
+
+          <mat-form-field class="auth-wide">
+            <mat-label i18n>Request Mapping (JSON format)</mat-label>
+            <textarea
+              [(ngModel)]="data['auth_request_mapping']"
+              matInput
+              placeholder='{"username":"{username}","password":"{password}"}'></textarea>
+          </mat-form-field>
+
+          <mat-form-field class="auth-wide">
+            <mat-label i18n>Response Mapping (JSON format)</mat-label>
+            <textarea
+              [(ngModel)]="data['auth_response_mapping']"
+              matInput
+              placeholder='{"Authorization":"Bearer {access_token}"}'></textarea>
+            <mat-hint i18n> Possible tags: {{ "{" }}userid{{ "}" }} {{ "{" }}username{{ "}" }} {{ "{" }}
+                            password{{ "}" }}
+            </mat-hint>
+          </mat-form-field>
+
+          <mat-checkbox
+            [(ngModel)]="data['auth_special_error_handling']"
+            class="auth-wide checkbox-inline"
+            i18n>
+            Special Error Handling
+          </mat-checkbox>
+
+          @if (data['auth_special_error_handling']) {
+            <mat-form-field class="auth-wide">
+              <mat-label i18n>Response contains (JSON format)</mat-label>
+              <textarea
+                [(ngModel)]="data['auth_error_codes']"
+                matInput
+                placeholder='{"success": false, "message": "An error occurred!"}'></textarea>
+            </mat-form-field>
+          }
+        </div>
+      </mat-expansion-panel>
+
+      <mat-expansion-panel>
+        <mat-expansion-panel-header>
+          <mat-panel-title i18n>User List</mat-panel-title>
+        </mat-expansion-panel-header>
+
+        <div class="auth-panel-body">
+          <p
+            class="auth-description"
+            i18n>
+            Configure the endpoint to retrieve a list of users from the user store. The above defined attributes are
+            added to the request as search parameters if they are available in the request.
+          </p>
+
+          <mat-form-field>
+            <mat-label i18n>Method</mat-label>
+            <mat-select [(ngModel)]="data['auth_method']">
+              <mat-option value="POST">POST</mat-option>
+              <mat-option value="GET">GET</mat-option>
+              <mat-option value="PUT">PUT</mat-option>
+              <mat-option value="PATCH">PATCH</mat-option>
+              <mat-option value="DELETE">DELETE</mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field class="auth-endpoint">
+            <mat-label i18n>Endpoint</mat-label>
+            <input
+              [(ngModel)]="data['auth_endpoint']"
+              matInput
+              placeholder="/users" />
+            <mat-hint i18n> Possible tags: {{ "{" }}userid{{ "}" }} {{ "{" }}username{{ "}" }} {{ "{" }}
+                            password{{ "}" }}  {{ "{" }}givenname{{ "}" }}
+            </mat-hint>
+          </mat-form-field>
+
+          <mat-form-field class="auth-wide">
+            <mat-label i18n>Headers (JSON format)</mat-label>
+            <textarea
+              [(ngModel)]="data['auth_headers']"
+              matInput
+              placeholder='{"Content-Type":"application/json; charset=UTF-8"}'></textarea>
+          </mat-form-field>
+
+          <mat-form-field class="auth-wide">
+            <mat-label i18n>Request Mapping (JSON format)</mat-label>
+            <textarea
+              [(ngModel)]="data['auth_request_mapping']"
+              matInput
+              placeholder='{"customerid":"{userid}","accessKey":"{secre3t!}"}'></textarea>
+          </mat-form-field>
+
+          <mat-form-field class="auth-wide">
+            <mat-label i18n>Response Mapping (JSON format)</mat-label>
+            <textarea
+              [(ngModel)]="data['auth_response_mapping']"
+              matInput
+              placeholder='{"Authorization":"Bearer {access_token}"}'></textarea>
+            <mat-hint i18n> Possible tags: {{ "{" }}userid{{ "}" }} {{ "{" }}username{{ "}" }} {{ "{" }}
+                            password{{ "}" }}
+            </mat-hint>
+          </mat-form-field>
+
+          <mat-checkbox
+            [(ngModel)]="data['auth_special_error_handling']"
+            class="auth-wide checkbox-inline"
+            i18n>
+            Special Error Handling
+          </mat-checkbox>
+
+          @if (data['auth_special_error_handling']) {
+            <mat-form-field class="auth-wide">
+              <mat-label i18n>Response contains (JSON format)</mat-label>
+              <textarea
+                [(ngModel)]="data['auth_error_codes']"
+                matInput
+                placeholder='{"success": false, "message": "An error occurred!"}'></textarea>
+            </mat-form-field>
+          }
+        </div>
+      </mat-expansion-panel>
+
+      <mat-expansion-panel>
+        <mat-expansion-panel-header>
+          <mat-panel-title i18n>Get User by ID</mat-panel-title>
+        </mat-expansion-panel-header>
+
+        <div class="auth-panel-body">
+          <p
+            class="auth-description"
+            i18n>
+            Configure the endpoint to retrieve a single user for the UID. For example, privacyIDEA only stores the UID
+            of the token owner. To resolve the complete user, this endpoint is used.
+          </p>
+
+          <mat-form-field>
+            <mat-label i18n>Method</mat-label>
+            <mat-select [(ngModel)]="data['auth_method']">
+              <mat-option value="POST">POST</mat-option>
+              <mat-option value="GET">GET</mat-option>
+              <mat-option value="PUT">PUT</mat-option>
+              <mat-option value="PATCH">PATCH</mat-option>
+              <mat-option value="DELETE">DELETE</mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field class="auth-endpoint">
+            <mat-label i18n>Endpoint</mat-label>
+            <input
+              [(ngModel)]="data['auth_endpoint']"
+              matInput
+              placeholder="/users/{userid}" />
+            <mat-hint i18n> Possible tags: {{ "{" }}userid{{ "}" }}
+            </mat-hint>
+          </mat-form-field>
+
+          <mat-form-field class="auth-wide">
+            <mat-label i18n>Headers (JSON format)</mat-label>
+            <textarea
+              [(ngModel)]="data['auth_headers']"
+              matInput
+              placeholder='{"Content-Type":"application/json; charset=UTF-8"}'></textarea>
+          </mat-form-field>
+
+          <mat-form-field class="auth-wide">
+            <mat-label i18n>Request Mapping (JSON format)</mat-label>
+            <textarea
+              [(ngModel)]="data['auth_request_mapping']"
+              matInput
+              placeholder='{"customerid":"{userid}","accessKey":"{secre3t!}"}'></textarea>
+          </mat-form-field>
+
+          <mat-form-field class="auth-wide">
+            <mat-label i18n>Response Mapping (JSON format)</mat-label>
+            <textarea
+              [(ngModel)]="data['auth_response_mapping']"
+              matInput
+              placeholder='{"Authorization":"Bearer {access_token}"}'></textarea>
+            <mat-hint i18n> Possible tags: {{ "{" }}userid{{ "}" }}
+            </mat-hint>
+          </mat-form-field>
+
+          <mat-checkbox
+            [(ngModel)]="data['auth_special_error_handling']"
+            class="auth-wide checkbox-inline"
+            i18n>
+            Special Error Handling
+          </mat-checkbox>
+
+          @if (data['auth_special_error_handling']) {
+            <mat-form-field class="auth-wide">
+              <mat-label i18n>Response contains (JSON format)</mat-label>
+              <textarea
+                [(ngModel)]="data['auth_error_codes']"
+                matInput
+                placeholder='{"success": false, "message": "An error occurred!"}'></textarea>
+            </mat-form-field>
+          }
+        </div>
+      </mat-expansion-panel>
+
+      <mat-expansion-panel>
+        <mat-expansion-panel-header>
+          <mat-panel-title i18n>Get User by Name</mat-panel-title>
+        </mat-expansion-panel-header>
+
+        <div class="auth-panel-body">
+          <p
+            class="auth-description"
+            i18n>
+            Configure the endpoint to retrieve a single user for the username. For example, when a user tries to
+            authenticate against privacyIDEA, only the username is provided. To resolve the complete user and evaluate
+            if the user exists, this endpoint is used.
+          </p>
+
+          <mat-form-field>
+            <mat-label i18n>Method</mat-label>
+            <mat-select [(ngModel)]="data['auth_method']">
+              <mat-option value="POST">POST</mat-option>
+              <mat-option value="GET">GET</mat-option>
+              <mat-option value="PUT">PUT</mat-option>
+              <mat-option value="PATCH">PATCH</mat-option>
+              <mat-option value="DELETE">DELETE</mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field class="auth-endpoint">
+            <mat-label i18n>Endpoint</mat-label>
+            <input
+              [(ngModel)]="data['auth_endpoint']"
+              matInput
+              placeholder="/users/{username}" />
+            <mat-hint i18n> Possible tags: {{ "{" }}username{{ "}" }}
+            </mat-hint>
+          </mat-form-field>
+
+          <mat-form-field class="auth-wide">
+            <mat-label i18n>Headers (JSON format)</mat-label>
+            <textarea
+              [(ngModel)]="data['auth_headers']"
+              matInput
+              placeholder='{"Content-Type":"application/json; charset=UTF-8"}'></textarea>
+          </mat-form-field>
+
+          <mat-form-field class="auth-wide">
+            <mat-label i18n>Request Mapping (JSON format)</mat-label>
+            <textarea
+              [(ngModel)]="data['auth_request_mapping']"
+              matInput
+              placeholder='{"customerid":"{userid}","accessKey":"{secre3t!}"}'></textarea>
+          </mat-form-field>
+
+          <mat-form-field class="auth-wide">
+            <mat-label i18n>Response Mapping (JSON format)</mat-label>
+            <textarea
+              [(ngModel)]="data['auth_response_mapping']"
+              matInput
+              placeholder='{"Authorization":"Bearer {access_token}"}'></textarea>
+            <mat-hint i18n> Possible tags: {{ "{" }}username{{ "}" }}
+            </mat-hint>
+          </mat-form-field>
+
+          <mat-checkbox
+            [(ngModel)]="data['auth_special_error_handling']"
+            class="auth-wide checkbox-inline"
+            i18n>
+            Special Error Handling
+          </mat-checkbox>
+
+          @if (data['auth_special_error_handling']) {
+            <mat-form-field class="auth-wide">
+              <mat-label i18n>Response contains (JSON format)</mat-label>
+              <textarea
+                [(ngModel)]="data['auth_error_codes']"
+                matInput
+                placeholder='{"success": false, "message": "An error occurred!"}'></textarea>
+            </mat-form-field>
+          }
+        </div>
+      </mat-expansion-panel>
+    </mat-accordion>
   }
 </div>
