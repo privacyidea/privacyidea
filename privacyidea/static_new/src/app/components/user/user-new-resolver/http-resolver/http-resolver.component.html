@@ -78,5 +78,140 @@
       </mat-hint>
     </mat-form-field>
 
+    <div class="mapping-header">
+      <h4 i18n>Attribute Mapping</h4>
+      <button
+        (click)="addMappingRow()"
+        mat-stroked-button
+        type="button">
+        <mat-icon>add</mat-icon>
+        <span i18n>Add mapping</span>
+      </button>
+    </div>
+
+    <table
+      [dataSource]="mappingRows"
+      class="mapping-table"
+      mat-table>
+
+      <ng-container matColumnDef="privacyideaAttr">
+        <th
+          *matHeaderCellDef
+          i18n
+          mat-header-cell>PrivacyIDEA Attribute
+        </th>
+        <td
+          *matCellDef="let row; let i = index"
+          mat-cell>
+          <mat-form-field class="cell-field">
+            <mat-select
+              (selectionChange)="onMappingChanged()"
+              [(ngModel)]="mappingRows[i].privacyideaAttr"
+              i18n-placeholder
+              placeholder="Select PrivacyIDEA Attribute">
+              @for (attr of privacyideaAttributes; track attr) {
+                <mat-option [value]="attr">{{ attr }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="userStoreAttr">
+        <th
+          *matHeaderCellDef
+          i18n
+          mat-header-cell>User Store Attribute
+        </th>
+        <td
+          *matCellDef="let row; let i = index"
+          mat-cell>
+          <mat-form-field class="cell-field">
+            <input
+              (ngModelChange)="onMappingChanged()"
+              [(ngModel)]="mappingRows[i].userStoreAttr"
+              i18n-placeholder
+              matInput
+              placeholder="e.g. givenname" />
+          </mat-form-field>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="actions">
+        <th
+          *matHeaderCellDef
+          mat-header-cell></th>
+        <td
+          *matCellDef="let row; let i = index"
+          class="actions-cell"
+          mat-cell>
+          <button
+            (click)="removeMappingRow(i)"
+            aria-label="Remove mapping"
+            mat-icon-button
+            type="button">
+            <mat-icon>delete</mat-icon>
+          </button>
+        </td>
+      </ng-container>
+
+      <tr
+        *matHeaderRowDef="displayedColumns"
+        mat-header-row></tr>
+      <tr
+        *matRowDef="let row; columns: displayedColumns"
+        mat-row></tr>
+    </table>
+
+    <mat-hint i18n>
+      The left column defines the user attributes used in privacyIDEA and the right column the equivalent attribute in
+      the user store.
+    </mat-hint>
+
+    <mat-form-field>
+      <mat-label i18n>Headers (JSON Format)</mat-label>
+      <textarea
+        [(ngModel)]="data['header']"
+        matInput
+        placeholder='{"Content-Type":"application/json; charset=UTF-8"}'></textarea>
+      <mat-hint i18n>If no custom headers are defined this header is used for all endpoints.</mat-hint>
+    </mat-form-field>
+
+    <mat-checkbox
+      [(ngModel)]="data['edit_user_store']"
+      class="checkbox-inline"
+      i18n>
+      Edit User Store
+      <mat-hint>The user data in this user store can be modified from within privacyIDEA.</mat-hint>
+    </mat-checkbox>
+
+    <mat-checkbox
+      [(ngModel)]="data['tls_verify']"
+      class="checkbox-inline"
+      i18n>
+      Verify TLS certificate of the server.
+    </mat-checkbox>
+
+    @if (data['tls_verify']) {
+      <mat-form-field class="margin-bottom-1">
+        <mat-label i18n>CA certificate</mat-label>
+        <mat-hint i18n>
+          The file containing the CA certificate which signed the TLS certificate of the server.
+        </mat-hint>
+        <input
+          [(ngModel)]="data['tls_cacert']"
+          matInput
+          placeholder="/etc/privacyidea/ldap-ca.crt" />
+      </mat-form-field>
+    }
+
+    <mat-form-field>
+      <mat-label i18n>Timeout (seconds)</mat-label>
+      <input
+        [(ngModel)]="data['timeout']"
+        matInput
+        placeholder="60" />
+      <mat-hint i18n>Time in seconds privacyIDEA tries to reach the user store server.</mat-hint>
+    </mat-form-field>
   }
 </div>

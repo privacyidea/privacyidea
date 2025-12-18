@@ -1,0 +1,21 @@
+@use "../../../../../styles";
+
+.mapping-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 12px 0 8px;
+}
+
+.mapping-table {
+  width: 100%;
+}
+
+.cell-field {
+  width: 100%;
+}
+
+.actions-cell {
+  width: 56px;
+  text-align: right;
+}
