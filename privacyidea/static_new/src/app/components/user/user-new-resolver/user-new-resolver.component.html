@@ -104,6 +104,12 @@
         [data]="isEditMode ? formData : {}" />
     }
 
+    @if (resolverType === 'keycloakresolver') {
+      <app-keycloak-resolver
+        (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
+        [data]="isEditMode ? formData : {}" />
+    }
+
     <div class="flex-row gap-1 margin-top-1">
       <button
         (click)="onTest()"

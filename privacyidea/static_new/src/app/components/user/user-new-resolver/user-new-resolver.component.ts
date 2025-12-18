@@ -36,6 +36,7 @@ import { SqlResolverComponent } from "./sql-resolver/sql-resolver.component";
 import { ScimResolverComponent } from "./scim-resolver/scim-resolver.component";
 import { HttpResolverComponent } from "./http-resolver/http-resolver.component";
 import { EntraidResolverComponent } from "./entraid-resolver/entraid-resolver.component";
+import { KeycloakResolverComponent } from "./keycloak-resolver/keycloak-resolver.component";
 
 @Component({
   selector: "app-user-new-resolver",
@@ -57,7 +58,8 @@ import { EntraidResolverComponent } from "./entraid-resolver/entraid-resolver.co
     SqlResolverComponent,
     ScimResolverComponent,
     HttpResolverComponent,
-    EntraidResolverComponent
+    EntraidResolverComponent,
+    KeycloakResolverComponent
   ],
   templateUrl: "./user-new-resolver.component.html",
   styleUrl: "./user-new-resolver.component.scss"

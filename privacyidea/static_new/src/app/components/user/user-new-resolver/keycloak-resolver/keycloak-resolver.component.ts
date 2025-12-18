@@ -1,11 +1,64 @@
-import { Component } from '@angular/core';
+import { Component } from "@angular/core";
+import { FormsModule } from "@angular/forms";
+import { MatFormField, MatHint, MatInput, MatLabel } from "@angular/material/input";
+import { MatOption, MatSelect } from "@angular/material/select";
+import { MatCheckbox } from "@angular/material/checkbox";
+import { MatSlideToggle } from "@angular/material/slide-toggle";
+import { MatTableModule } from "@angular/material/table";
+import { MatButtonModule } from "@angular/material/button";
+import { MatIconModule } from "@angular/material/icon";
+import {
+  MatAccordion,
+  MatExpansionPanel,
+  MatExpansionPanelHeader,
+  MatExpansionPanelTitle
+} from "@angular/material/expansion";
+import { MatDivider } from "@angular/material/list";
+import { HttpResolverComponent } from "../http-resolver/http-resolver.component";
 
 @Component({
-  selector: 'app-keycloak-resolver',
-  imports: [],
-  templateUrl: './keycloak-resolver.component.html',
-  styleUrl: './keycloak-resolver.component.scss'
+  selector: "app-keycloak-resolver",
+  standalone: true,
+  imports: [
+    FormsModule,
+    MatFormField,
+    MatLabel,
+    MatInput,
+    MatSelect,
+    MatOption,
+    MatCheckbox,
+    MatSlideToggle,
+    MatHint,
+    MatTableModule,
+    MatButtonModule,
+    MatIconModule,
+    MatAccordion,
+    MatExpansionPanel,
+    MatExpansionPanelHeader,
+    MatExpansionPanelTitle,
+    MatDivider
+  ],
+  templateUrl: "../http-resolver/http-resolver.component.html",
+  styleUrl: "../http-resolver/http-resolver.component.scss"
 })
-export class KeycloakResolverComponent {
+export class KeycloakResolverComponent extends HttpResolverComponent {
+  override isAdvanced: boolean = true;
 
+  override ngOnInit(): void {
+    const data: any = this.data ?? {};
+
+    data.url = "http://localhost:8080";
+    data.timeout = 60;
+    data.attribute_mapping = {
+      userid: "id",
+      username: "userPrincipalName",
+      email: "mail",
+      givenname: "firstName",
+      surname: "lastName"
+    } as Record<string, string>;
+    data.tls_verify = true;
+
+    this.data = data;
+    super.ngOnInit();
+  }
 }

@@ -43,4 +43,24 @@ import { MatDivider } from "@angular/material/list";
 })
 export class EntraidResolverComponent extends HttpResolverComponent {
   override isAdvanced: boolean = true;
+
+  override ngOnInit(): void {
+    const data: any = this.data ?? {};
+
+      data.url = "https://graph.microsoft.com/v1.0";
+      data.timeout = 60;
+      data.attribute_mapping = {
+        userid: "id",
+        username: "userPrincipalName",
+        email: "mail",
+        givenname: "givenName",
+        mobile: "mobilePhone",
+        phone: "businessPhones",
+        surname: "surname"
+      } as Record<string, string>;
+      data.tls_verify = true;
+
+    this.data = data;
+    super.ngOnInit();
+  }
 }
