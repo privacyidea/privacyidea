@@ -110,7 +110,7 @@
       @if (activeTab() === "actions") {
         <app-action-tab
           [isEditMode]="true"
-          [policy]="newPolicy()" />
+          [(policy)]="newPolicy" />
       }
       @if (activeTab() === "conditions") {
         <app-conditions-tab

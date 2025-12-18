@@ -162,12 +162,13 @@ export interface PolicyServiceInterface {
   readonly alreadyAddedActionNames: Signal<string[]>;
   filterPolicyActionGroups(alreadyAddedActionNames: string[], filterValue: string): PolicyActionGroups;
   getActionDetail(actionName: string, scope: string): PolicyActionDetail | null;
+  getGroupOfAction(actionName: string, scope: string): string | null;
   readonly currentActionGroupsFiltered: Signal<PolicyActionGroups>;
   readonly allPolicies: Signal<PolicyDetail[]>;
   readonly selectedPolicyScope: Signal<string>;
   readonly selectedActionDetail: Signal<PolicyActionDetail | null>;
 
-  updateActionInSelectedPolicy(): void;
+  // updateActionInSelectedPolicy(): void;
   updateActionValue(actionName: string, newValue: boolean): void;
   selectPolicyByName(policyName: string): void;
   canSavePolicy(policy: PolicyDetail): boolean;
@@ -177,16 +178,16 @@ export interface PolicyServiceInterface {
   deselectPolicy(name: string): void;
   initializeNewPolicy(): void;
   selectPolicy(policy: PolicyDetail): void;
-  updateSelectedPolicy(args: Partial<PolicyDetail>): void;
+  // updateSelectedPolicy(args: Partial<PolicyDetail>): void;
   // selectActionByName(actionName: string): void;
-  updateSelectedActionValue(value: any): void;
+  // updateSelectedActionValue(value: any): void;
   createPolicy(policyData: PolicyDetail): Promise<PiResponse<any>>;
   updatePolicy(oldPolicyName: String, policyData: PolicyDetail): Promise<PiResponse<any>>;
   deletePolicy(name: string): Promise<PiResponse<number>>;
   enablePolicy(name: string): Promise<PiResponse<any>>;
   disablePolicy(name: string): Promise<PiResponse<any>>;
-  addActionToSelectedPolicy(): void;
-  removeActionFromSelectedPolicy(actionName: string): void;
+  // addActionToSelectedPolicy(): void;
+  // removeActionFromSelectedPolicy(actionName: string): void;
   isScopeChangeable(policy: PolicyDetail): boolean;
   actionNamesOfGroup(group: string): string[];
   actionNamesOfSelectedGroup(): string[];
@@ -198,6 +199,16 @@ export interface PolicyServiceInterface {
   providedIn: "root"
 })
 export class PolicyService implements PolicyServiceInterface {
+  getGroupOfAction(actionName: string, scope: string): string | null {
+    const policyActions = this.policyActions();
+    if (policyActions && policyActions[scope]) {
+      const actions = policyActions[scope];
+      if (actions && actions[actionName]) {
+        return actions[actionName].group || null;
+      }
+    }
+    return null;
+  }
   readonly isEditMode = linkedSignal({
     source: () => this.contentService.routeUrl(),
     computation: (_) => false
@@ -528,11 +539,11 @@ export class PolicyService implements PolicyServiceInterface {
     }
   });
 
-  updateSelectedActionValue(value: any) {
-    const selectedAction = this.selectedAction();
-    if (!selectedAction) return;
-    this.selectedAction.set({ name: selectedAction.name, value: value });
-  }
+  // updateSelectedActionValue(value: any) {
+  //   const selectedAction = this.selectedAction();
+  //   if (!selectedAction) return;
+  //   this.selectedAction.set({ name: selectedAction.name, value: value });
+  // }
 
   // -----------------------------------
   // 2.3 Computed Signals (Derived State)

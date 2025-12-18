@@ -19,9 +19,13 @@
 <div class="policy-flex-row">
   <div class="flex-body">
     @if (actions().length > 0) {
-      <app-selected-actions-list
+      <app-added-actions-list
         class="grid-area-body-top"
-        [actions]="actions()" />
+        [isEditMode]="isEditMode()"
+        [actions]="actions()"
+        (actionsChange)="onActionsChange($event)"
+        (actionRemove)="onActionRemove($event)"
+        [(selectedAction)]="selectedAction" />
     }
     @if (isEditMode()) {
       <app-action-selector
@@ -29,12 +33,14 @@
         [selectedPolicyAction]="selectedAction()"
         (selectedPolicyActionChange)="onSelectedActionChange($event)"
         [policy]="policy()"
-        (policyChange)="onPolicyChange($event)" />
+        (actionAdd)="onActionAdd($event)" />
     }
   </div>
   <app-action-detail
     class="flex-detail"
     [isEditMode]="isEditMode()"
     [(selectedAction)]="selectedAction"
+    (actionAdd)="onActionAdd($event)"
+    (actionsUpdate)="onActionUpdate($event)"
     [policy]="policy()" />
 </div>

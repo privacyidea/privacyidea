@@ -67,7 +67,7 @@
           <app-selector-buttons
             [values]="selectedActionDetail()?.value!"
             [initialValue]="selectedAction()?.value"
-            (onSelect)="policyService.updateSelectedActionValue($event)" />
+            (onSelect)="updateSelectedActionValue($event)" />
         } @else {
           <mat-form-field
             appearance="fill"
@@ -75,7 +75,7 @@
             <mat-label i18n>Value</mat-label>
             <mat-select
               [value]="selectedAction()?.value"
-              (selectionChange)="policyService.updateSelectedActionValue($event.value)">
+              (selectionChange)="updateSelectedActionValue($event.value)">
               @for (option of selectedActionDetail()?.value; track option) {
                 <mat-option [value]="option">{{ option }}</mat-option>
               }
@@ -92,24 +92,24 @@
               type="text"
               placeholder="Text"
               [ngModel]="selectedAction()?.value"
-              (ngModelChange)="policyService.updateSelectedActionValue($event)"
+              (ngModelChange)="updateSelectedActionValue($event)"
               class="action-value-input"
-              (keydown.enter)="policyService.addActionToSelectedPolicy()" />
+              (keydown.enter)="addAction()" />
           }
           @case ("int") {
             <input
               type="number"
               placeholder="Number"
               [ngModel]="selectedAction()?.value"
-              (ngModelChange)="policyService.updateSelectedActionValue($event)"
+              (ngModelChange)="updateSelectedActionValue($event)"
               class="action-value-input"
-              (keydown.enter)="policyService.addActionToSelectedPolicy()" />
+              (keydown.enter)="addAction()" />
           }
           @case ("text") {
             <textarea
               placeholder="Text"
               [ngModel]="selectedAction()?.value"
-              (ngModelChange)="policyService.updateSelectedActionValue($event)"
+              (ngModelChange)="updateSelectedActionValue($event)"
               class="action-value-textarea"></textarea>
           }
           @default {
@@ -129,7 +129,7 @@
         <button
           mat-raised-button
           color="primary"
-          (click)="policyService.addActionToSelectedPolicy()"
+          (click)="addAction()"
           [disabled]="!inputIsValid()">
           Add Action
         </button>

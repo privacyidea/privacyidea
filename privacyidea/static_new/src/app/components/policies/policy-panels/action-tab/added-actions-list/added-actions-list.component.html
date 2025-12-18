@@ -16,11 +16,11 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<div class="selected-actions-container">
+<div class="added-actions-container">
   @for (action of actions(); track action.name) {
     <div
       class="action-card"
-      [class.action-card-selected]="policyService.selectedAction()?.name === action.name"
+      [class.action-card-selected]="selectedAction()?.name === action.name"
       (click)="onActionClick(action)">
       <div class="action-row">
         <span class="action-label">{{ action.name }}</span>
@@ -32,7 +32,7 @@
           <button
             mat-icon-button
             class="action-button"
-            (click)="policyService.removeActionFromSelectedPolicy(action.name); $event.stopPropagation()">
+            (click)="removeActionFromSelectedPolicy(action.name); $event.stopPropagation()">
             <mat-icon>delete</mat-icon>
           </button>
         }

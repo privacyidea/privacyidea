@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, inject, input, output, signal } from "@angular/core";
+import { Component, computed, inject, input, linkedSignal, output, signal, WritableSignal } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { FormsModule } from "@angular/forms";
 import { MatIconModule } from "@angular/material/icon";
@@ -39,73 +39,85 @@ import { MatTooltipModule } from "@angular/material/tooltip";
   styleUrls: ["./action-selector.component.scss"]
 })
 export class ActionSelectorComponent {
-  actionFilter = signal<string>("");
+  // Services
+  policyService: PolicyServiceInterface = inject(PolicyService);
 
-  policy = input.required<PolicyDetail>();
-  policyChange = output<PolicyDetail>();
+  // Bindings Inputs/Outputs
+  readonly policy = input.required<PolicyDetail>();
+  readonly selectedPolicyAction = input.required<{ name: string; value: any } | null>();
+  readonly selectedPolicyActionChange = output<{ name: string; value: any }>();
+  readonly actionAdd = output<{ name: string; value: any }>();
 
-  policyScope = computed(() => {
+  // Local State
+  readonly selectedActionGroup: WritableSignal<string> = linkedSignal({
+    source: () => ({
+      action: this.selectedPolicyAction(),
+      scope: this.policy().scope,
+      policyService: this.policyService,
+      groupNames: this.actionGroupNamesFiltered()
+    }),
+    computation: (source, previous) => {
+      const { action, scope, policyService, groupNames } = source;
+      if (action) {
+        const group = policyService.getGroupOfAction(action.name, scope);
+        if (group) return group;
+      }
+      const previousGroup = previous?.value;
+      if (previousGroup && groupNames.includes(previousGroup)) return previousGroup;
+      return groupNames.length > 0 ? groupNames[0] : "";
+    }
+  });
+  readonly actionFilter = signal<string>("");
+
+  // Computed Signals
+  readonly addedActionNames = computed(() => {
+    const policy = this.policy();
+    console.log("Computing addedActionNames for policy:", policy);
+    if (!policy || !policy.action) return [];
+    return Object.keys(policy.action);
+  });
+  readonly policyScope = computed(() => {
     const policy = this.policy();
     if (!policy) return "";
     return policy.scope;
   });
-  // selectedPolicyAction = input.required<{ name: string; value: any } | null>();
-  selectedPolicyAction = input.required<{ name: string; value: any } | null>();
-  selectedPolicyActionChange = output<{ name: string; value: any }>();
-  onSelectedActionChange(policyAction: { name: string; value: any }) {
-    this.selectedPolicyActionChange.emit(policyAction);
-  }
-  // selectedPolicyActionChange = output<{ name: string; value: any }>();
-  // selectedActionDetail = input.required<PolicyActionDetail | null>();
-  // selectedActionDetailChange = output<PolicyActionDetail>();
 
-  selectedActionGroup = signal<string>("");
-
-  addedActionNames = computed(() => {
-    const policy = this.policy();
-    if (!policy || !policy.action) return [];
-    return Object.keys(policy.action);
-  });
-  // Services
-  policyService: PolicyServiceInterface = inject(PolicyService);
-
-  actionGroupsFiltered = computed(() => {
+  readonly actionGroupsFiltered = computed(() => {
     return this.policyService.filterPolicyActionGroups(this.addedActionNames(), this.actionFilter().toLowerCase());
   });
 
-  actionGroupNamesFiltered = computed(() => {
+  readonly actionGroupNamesFiltered = computed(() => {
     const actionGroups = this.actionGroupsFiltered()[this.policyScope()];
     if (!actionGroups) return [];
     return Object.keys(actionGroups);
   });
 
-  actionNamesFiltered = computed(() => {
+  readonly actionNamesFiltered = computed(() => {
     const group = this.selectedActionGroup();
     if (!group) return [];
     let actionNames = this.policyService.actionNamesOfGroup(group);
     const filter = this.actionFilter().toLowerCase();
-    return actionNames.filter((actionName) => actionName.toLowerCase().includes(filter));
+    const addedActionNames = this.addedActionNames();
+    return actionNames
+      .filter((actionName) => !addedActionNames.includes(actionName))
+      .filter((actionName) => actionName.toLowerCase().includes(filter));
   });
 
   selectActionByName(actionName: string) {
     const actionNames = this.policyService.actionNamesOfGroup(this.selectedActionGroup());
-    console.log("Selecting action by name:", actionName);
     if (actionNames.includes(actionName)) {
-      console.log("Action found, emitting selection: ", actionName);
-      this.onSelectedActionChange({ name: actionName, value: "" });
+      const actionDetail = this._getActionDetail(actionName);
+      const defaultValue =
+        this._getActionDetail(actionName)?.type === "bool" ? "true" : (actionDetail?.value?.[0] ?? "");
+      this.selectedPolicyActionChange.emit({ name: actionName, value: defaultValue });
     }
   }
 
-  addPolicyAction({ name, value }: { name: string; value: any }) {
-    const editedPolicy = { ...this.policy() };
-    if (!editedPolicy.action) {
-      editedPolicy.action = {};
-    }
-    editedPolicy.action[name] = value;
-    this.policyChange.emit(editedPolicy);
+  addPolicyAction(name: string, value: any) {
+    this.actionAdd.emit({ name, value });
   }
 
-  _getActionDetail = (actionName: string): PolicyActionDetail | null => {
+  private _getActionDetail(actionName: string): PolicyActionDetail | null {
     const actions = this.policyService.policyActions();
     const scope = this.policyScope();
     if (!scope) return null;
@@ -113,5 +125,5 @@ export class ActionSelectorComponent {
       return actions[scope][actionName] ?? null;
     }
     return null;
-  };
+  }
 }

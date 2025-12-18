@@ -18,23 +18,23 @@
  **/
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { SelectedActionsListComponent } from "./selected-actions-list.component";
+import { AddedActionsListComponent } from "./added-actions-list.component";
 import { PolicyService } from "../../../../../services/policies/policies.service";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { MockPolicyService } from "../../../../../../testing/mock-services/mock-policies-service";
 
-describe("SelectedActionsListComponent", () => {
-  let component: SelectedActionsListComponent;
-  let fixture: ComponentFixture<SelectedActionsListComponent>;
+describe("AddedActionsListComponent", () => {
+  let component: AddedActionsListComponent;
+  let fixture: ComponentFixture<AddedActionsListComponent>;
   let policyServiceMock: MockPolicyService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [SelectedActionsListComponent, NoopAnimationsModule],
+      imports: [AddedActionsListComponent, NoopAnimationsModule],
       providers: [{ provide: PolicyService, useClass: MockPolicyService }]
     }).compileComponents();
 
-    fixture = TestBed.createComponent(SelectedActionsListComponent);
+    fixture = TestBed.createComponent(AddedActionsListComponent);
     policyServiceMock = TestBed.inject(PolicyService) as unknown as MockPolicyService;
     component = fixture.componentInstance;
     fixture.componentRef.setInput("actions", []);

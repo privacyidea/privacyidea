@@ -133,7 +133,8 @@
       @if (activeTab() === "actions") {
         <app-action-tab
           [isEditMode]="isEditMode()"
-          [policy]="policy()" />
+          [policy]="policy()"
+          (policyChange)="onPolicyChange($event)" />
       }
       @if (activeTab() === "conditions" && selectedPolicy()) {
         <app-conditions-tab

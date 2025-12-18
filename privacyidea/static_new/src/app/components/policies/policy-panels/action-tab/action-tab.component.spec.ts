@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { By } from "@angular/platform-browser";
-import { SelectedActionsListComponent } from "../action-tab/selected-actions-list/selected-actions-list.component";
+import { AddedActionsListComponent } from "../action-tab/added-actions-list/added-actions-list.component";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { ActionTabComponent } from "./action-tab.component";
 import { PolicyDetail, PolicyService } from "../../../../services/policies/policies.service";
@@ -77,7 +77,7 @@ describe("ActionTabComponent", () => {
     policyServiceMock.selectedPolicy.set(policy);
     fixture.detectChanges();
 
-    const actionElements = fixture.nativeElement.querySelectorAll("app-selected-actions-list");
+    const actionElements = fixture.nativeElement.querySelectorAll("app-added-actions-list");
     expect(actionElements.length).toBe(1);
   });
 
@@ -85,7 +85,7 @@ describe("ActionTabComponent", () => {
     policyServiceMock.selectedPolicy.set(null);
     fixture.detectChanges();
 
-    const actionElements = fixture.nativeElement.querySelectorAll("app-selected-actions-list");
+    const actionElements = fixture.nativeElement.querySelectorAll("app-added-actions-list");
     expect(actionElements.length).toBe(0);
   });
 
@@ -148,7 +148,7 @@ describe("ActionTabComponent", () => {
     expect(component.actions()).toEqual([]);
   });
 
-  it("should pass the correct actions to app-selected-actions-list", () => {
+  it("should pass the correct actions to app-added-actions-list", () => {
     const policy: PolicyDetail = {
       name: "test-policy",
       scope: "test",
@@ -172,7 +172,7 @@ describe("ActionTabComponent", () => {
     policyServiceMock.selectedPolicy.set(policy);
     fixture.detectChanges();
 
-    const selectedActionsListDebugElement = fixture.debugElement.query(By.directive(SelectedActionsListComponent));
+    const selectedActionsListDebugElement = fixture.debugElement.query(By.directive(AddedActionsListComponent));
     expect(selectedActionsListDebugElement).toBeTruthy();
 
     const selectedActionsListComponent = selectedActionsListDebugElement.componentInstance;

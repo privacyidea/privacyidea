@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, inject, input, Signal } from "@angular/core";
+import { Component, inject, input, output } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { MatIconModule } from "@angular/material/icon";
 import { MatButtonModule } from "@angular/material/button";
@@ -26,21 +26,23 @@ import { PolicyService } from "../../../../../services/policies/policies.service
 import { parseBooleanValue } from "../../../../../utils/parse-boolean-value";
 
 @Component({
-  selector: "app-selected-actions-list",
+  selector: "app-added-actions-list",
   standalone: true,
   imports: [CommonModule, MatIconModule, MatButtonModule, MatSlideToggleModule],
-  templateUrl: "./selected-actions-list.component.html",
-  styleUrl: "./selected-actions-list.component.scss"
+  templateUrl: "./added-actions-list.component.html",
+  styleUrl: "./added-actions-list.component.scss"
 })
-export class SelectedActionsListComponent {
+export class AddedActionsListComponent {
   // Inputs
-  actions = input.required<{ name: string; value: string }[]>();
+  actions = input.required<{ name: string; value: any }[]>();
+  actionsChange = output<{ name: string; value: any }[]>();
+  actionRemove = output<string>();
+  isEditMode = input.required<boolean>();
+  selectedAction = input.required<{ name: string; value: any } | null>();
+  selectedActionChange = output<{ name: string; value: any } | null>();
 
   // Services
-  policyService = inject(PolicyService);
-
-  // Component State
-  isEditMode = this.policyService.isEditMode;
+  private policyService = inject(PolicyService);
 
   // Helper functions
   parseBooleanValue = parseBooleanValue;
@@ -51,11 +53,18 @@ export class SelectedActionsListComponent {
   }
 
   // Event Handlers
-  onActionClick(action: { name: string; value: string }) {
-    this.policyService.selectedAction.set(action);
+  onActionClick(action: { name: string; value: any }) {
+    this.selectedActionChange.emit(action);
   }
 
   onToggleChange(actionName: string, newValue: boolean): void {
-    this.policyService.updateActionValue(actionName, newValue);
+    this.actionsChange.emit(
+      this.actions().map((action) => (action.name === actionName ? { name: action.name, value: newValue } : action))
+    );
+  }
+
+  removeActionFromSelectedPolicy(actionName: string) {
+    const updatedActions = this.actions().filter((action) => action.name !== actionName);
+    this.actionsChange.emit(updatedActions);
   }
 }

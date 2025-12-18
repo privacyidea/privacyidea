@@ -19,14 +19,14 @@
 
 import { Component, computed, effect, input, output, signal, Signal } from "@angular/core";
 import { ActionDetailComponent } from "../action-tab/action-detail/action-detail.component";
-import { SelectedActionsListComponent } from "../action-tab/selected-actions-list/selected-actions-list.component";
+import { AddedActionsListComponent } from "../action-tab/added-actions-list/added-actions-list.component";
 import { ActionSelectorComponent } from "../action-tab/action-selector/action-selector.component";
 import { PolicyActionDetail, PolicyDetail } from "../../../../services/policies/policies.service";
 
 @Component({
   selector: "app-action-tab",
   standalone: true,
-  imports: [SelectedActionsListComponent, ActionSelectorComponent, ActionDetailComponent],
+  imports: [AddedActionsListComponent, ActionSelectorComponent, ActionDetailComponent],
   templateUrl: "./action-tab.component.html",
   styleUrl: "./action-tab.component.scss"
 })
@@ -52,9 +52,39 @@ export class ActionTabComponent {
     });
   }
 
-  actions: Signal<{ name: string; value: string }[]> = computed(() => {
+  actions: Signal<{ name: string; value: any }[]> = computed(() => {
     const policy = this.policy();
     if (!policy || !policy.action) return [];
     return Object.entries(policy.action).map(([name, value]) => ({ name: name, value }));
   });
+
+  onActionsChange(updatedActions: { name: string; value: any }[]) {
+    console.log("ActionTabComponent Actions changed to:", updatedActions);
+    const newActions: { [key: string]: any } = {};
+    updatedActions.forEach((action) => {
+      newActions[action.name] = action.value;
+    });
+    const updatedPolicy: PolicyDetail = {
+      ...this.policy(),
+      action: newActions
+    };
+    this.policyChange.emit(updatedPolicy);
+  }
+  onActionAdd(action: { name: string; value: any }) {
+    console.log("ActionTabComponent Adding action:", action);
+    const newActions = [...this.actions(), action];
+    this.onActionsChange(newActions);
+    this.selectedAction.set(null);
+  }
+  onActionUpdate(action: { name: string; value: any }) {
+    const newActions = this.actions().map((a) => (a.name === action.name ? action : a));
+    this.onActionsChange(newActions);
+    this.selectedAction.set(null);
+  }
+
+  onActionRemove(actionName: string) {
+    const newActions = this.actions().filter((action) => action.name !== actionName);
+    this.onActionsChange(newActions);
+    this.selectedAction.set(null);
+  }
 }

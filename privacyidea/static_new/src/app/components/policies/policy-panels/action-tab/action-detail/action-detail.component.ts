@@ -55,49 +55,44 @@ import { MatIcon } from "@angular/material/icon";
 })
 export class ActionDetailComponent {
   // Services
+
   readonly policyService: PolicyServiceInterface = inject(PolicyService);
   readonly documentationService: DocumentationServiceInterface = inject(DocumentationService);
 
   // Component State
+
   readonly isEditMode = input.required<boolean>();
   readonly selectedAction = input.required<{ name: string; value: any } | null>();
   readonly selectedActionChange = output<{ name: string; value: any }>();
+  readonly actionAdd = output<{ name: string; value: any }>();
+  readonly actionsUpdate = output<{ name: string; value: any }>();
+
   //  PolicyActionDetail
+
   readonly selectedActionDetail = computed<PolicyActionDetail | null>(() => {
     const action = this.selectedAction();
-    console.log("Computing selectedActionDetail for action:", action);
     if (!action) return null;
-    console.log("Fetching action detail for action:", action.name, "with policy scope:", this.policy().scope);
     const details = this.policyService.getActionDetail(action.name, this.policy().scope);
-    console.log("Fetched action detail:", details);
     return details;
   });
   readonly policy = input.required<PolicyDetail>();
 
-  constructor() {
-    effect(() => {
-      console.log("ActionDetailComponent Selected action changed to:", this.selectedAction());
-    });
-  }
-
   // Computed Properties
+
   readonly inputIsValid: Signal<boolean> = computed(() => {
     const actionDetail = this.selectedActionDetail();
     const actionValue = this.selectedAction()?.value;
     if (actionDetail === null) return false;
     return this.policyService.actionValueIsValid(actionDetail, actionValue);
   });
-
   readonly actionDocuString = computed<string | undefined>(() => {
     const docuList = this.documentationService.policyActionDocumentation()?.actionDocu ?? null;
     return docuList?.join("\n");
   });
-
   readonly actionNotesString = computed<string | undefined>(() => {
     const notesList = this.documentationService.policyActionDocumentation()?.actionNotes ?? null;
     return notesList?.join("\n");
   });
-
   readonly visibleContent = linkedSignal<any, "docu" | "notes" | "none">({
     source: () => ({
       docu: this.actionDocuString(),
@@ -112,12 +107,25 @@ export class ActionDetailComponent {
     if (!policy || !policy.action) return false;
     return Object.prototype.hasOwnProperty.call(policy.action, selectedAction.name);
   });
+  readonly alreadyAddedActionNames = computed(() => {
+    const currentActions = this.policy()?.action;
+    if (!currentActions) return [];
+    return Object.keys(currentActions);
+  });
 
   // Public Methods
 
+  updateSelectedActionValue(newValue: any) {
+    const selectedAction = this.selectedAction();
+    if (!selectedAction) return;
+    this.selectedActionChange.emit({ name: selectedAction.name, value: newValue });
+  }
+
   applyChanges() {
     if (!this.inputIsValid()) return;
-    this.selectedActionChange.emit({ ...(this.selectedAction() ?? { name: "", value: null }) });
+    const selectedAction = this.selectedAction();
+    if (!selectedAction) return;
+    this.actionsUpdate.emit(selectedAction);
   }
 
   toggleContent(contentType: "docu" | "notes") {
@@ -126,5 +134,11 @@ export class ActionDetailComponent {
     } else {
       this.visibleContent.set(contentType);
     }
+  }
+
+  addAction() {
+    const selectedAction = this.selectedAction();
+    if (!selectedAction) return;
+    this.actionAdd.emit(selectedAction);
   }
 }

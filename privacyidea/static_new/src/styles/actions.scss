@@ -2,7 +2,7 @@
 This file contains all styles for actions as used e.g. in policies, event handlers, periodic tasks, etc.
 */
 
-.selected-actions-container {
+.added-actions-container {
   display: flex;
   flex-direction: column;
   gap: calc(var(--global-gap) / 2);
