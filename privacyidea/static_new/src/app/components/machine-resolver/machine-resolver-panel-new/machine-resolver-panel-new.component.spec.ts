@@ -125,7 +125,7 @@ describe("MachineResolverPanelNewComponent", () => {
       IDATTRIBUTE: "",
       IPATTRIBUTE: "",
       HOSTNAMEATTRIBUTE: "",
-      NOREFERRALS: false,
+      NOREFERRALS: "False",
       resolver: ""
     };
     component.newMachineResolver.set({
