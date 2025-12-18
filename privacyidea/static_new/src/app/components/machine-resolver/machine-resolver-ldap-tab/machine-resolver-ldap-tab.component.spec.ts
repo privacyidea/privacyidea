@@ -60,7 +60,7 @@ describe("MachineResolverLdapTabComponent", () => {
       IDATTRIBUTE: "",
       IPATTRIBUTE: "",
       HOSTNAMEATTRIBUTE: "",
-      NOREFERRALS: false,
+      NOREFERRALS: "False",
       resolver: ""
     };
     const invalidData1 = { type: "hosts" };
@@ -95,7 +95,7 @@ describe("MachineResolverLdapTabComponent", () => {
       IDATTRIBUTE: "",
       IPATTRIBUTE: "",
       HOSTNAMEATTRIBUTE: "",
-      NOREFERRALS: false,
+      NOREFERRALS: "False",
       resolver: ""
     };
     fixture.componentRef.setInput("machineResolverData", initialData);
