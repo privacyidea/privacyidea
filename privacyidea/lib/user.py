@@ -50,20 +50,21 @@ import hashlib
 import logging
 import traceback
 
-from privacyidea.lib.error import ParameterError, ResolverError, UserError
-from ..api.lib.utils import (getParam,
-                             optional)
-from .log import log_with
-from .resolver import (get_resolver_object,
-                       get_resolver_type)
+from sqlalchemy import select, update, delete
 
+from privacyidea.lib.error import ParameterError, ResolverError, UserError
+from privacyidea.models import CustomUserAttribute, db
+from .config import get_from_config, SYSCONF
+from .framework import get_app_config_value
+from .log import log_with
 from .realm import (get_realms, realm_is_defined,
                     get_default_realm,
                     get_realm, get_realm_id)
-from .config import get_from_config, SYSCONF
-from .framework import get_app_config_value
+from .resolver import (get_resolver_object,
+                       get_resolver_type)
 from .usercache import (user_cache, cache_username, user_init, delete_user_cache)
-from privacyidea.models import CustomUserAttribute, db
+from ..api.lib.utils import (getParam,
+                             optional)
 
 log = logging.getLogger(__name__)
 
@@ -338,9 +339,35 @@ class User(object):
         :param attrvalue: The value of the attribute
         :return: The id of the attribute setting
         """
-        ua = CustomUserAttribute(user_id=self.uid, resolver=self.resolver, realm_id=self.realm_id,
-                                 Key=attrkey, Value=attrvalue, Type=attrtype).save()
-        return ua
+        stmt = select(CustomUserAttribute).filter_by(
+            user_id=self.uid,
+            resolver=self.resolver,
+            realm_id=self.realm_id,
+            Key=attrkey
+        )
+        existing_attribute = db.session.execute(stmt).scalar_one_or_none()
+
+        if existing_attribute:
+            attribute_id = existing_attribute.id
+            update_stmt = (
+                update(CustomUserAttribute)
+                .where(
+                    CustomUserAttribute.user_id == self.uid,
+                    CustomUserAttribute.resolver == self.resolver,
+                    CustomUserAttribute.realm_id == self.realm_id,
+                    CustomUserAttribute.Key == attrkey,
+                )
+                .values(Value=attrvalue, Type=attrtype)
+            )
+            db.session.execute(update_stmt)
+        else:
+            new_attribute = CustomUserAttribute(user_id=self.uid, resolver=self.resolver, realm_id=self.realm_id,
+                                     Key=attrkey, Value=attrvalue, Type=attrtype)
+            db.session.add(new_attribute)
+            db.session.flush()
+            attribute_id = new_attribute.id
+        db.session.commit()
+        return attribute_id
 
     @property
     def attributes(self):
@@ -359,14 +386,13 @@ class User(object):
         :param attrkey: The key to delete
         :return: The number of deleted rows
         """
+        stmt = delete(CustomUserAttribute).filter_by(user_id=self.uid, resolver=self.resolver,
+                                                     realm_id=self.realm_id)
         if attrkey:
-            ua = CustomUserAttribute.query.filter_by(user_id=self.uid, resolver=self.resolver,
-                                                     realm_id=self.realm_id, Key=attrkey).delete()
-        else:
-            ua = CustomUserAttribute.query.filter_by(user_id=self.uid, resolver=self.resolver,
-                                                     realm_id=self.realm_id).delete()
+            stmt = stmt.filter_by(Key=attrkey)
+        result = db.session.execute(stmt)
         db.session.commit()
-        return ua
+        return result.rowcount
 
     @log_with(log)
     def get_user_phone(self, phone_type='phone', index=None):
@@ -804,7 +830,7 @@ def get_user_list(param=None, user=None, custom_attributes=False):
             log.debug("Found this userlist: {0!r}".format(ulist))
             users.extend(ulist)
 
-        except (ResolverError,  ParameterError) as ex:
+        except (ResolverError, ParameterError) as ex:
             # In case of wrong search parameters or broken resolver we continue
             # All other errors will be passed down.
             # TODO: Reflect the broken resolver/query in the result data

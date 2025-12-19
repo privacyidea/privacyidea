@@ -1,15 +1,19 @@
 """
 This test file tests the lib/privacyideaserver.py
 """
-from .base import MyTestCase
+import responses
+from responses import matchers
+from sqlalchemy import select
+
 from privacyidea.lib.error import ConfigAdminError
 from privacyidea.lib.privacyideaserver import (add_privacyideaserver,
                                                delete_privacyideaserver,
                                                get_privacyideaserver,
                                                get_privacyideaservers,
                                                PrivacyIDEAServer)
-import responses
-from responses import matchers
+from privacyidea.models.server import PrivacyIDEAServer as PrivacyIDEAServerDB
+from privacyidea.models import db
+from .base import MyTestCase
 
 
 class PrivacyIDEAServerTestCase(MyTestCase):
@@ -59,11 +63,22 @@ class PrivacyIDEAServerTestCase(MyTestCase):
         self.assertEqual(server.config.tls, True)
         self.assertEqual(server.config.description, "Hallo")
 
-    def test_03_missing_configuration(self):
+    def test_03_privacyidea_server_delete(self):
+        server_id = db.session.scalars(
+            select(PrivacyIDEAServerDB).where(PrivacyIDEAServerDB.identifier == "myserver")).first().id
+        res = delete_privacyideaserver("myserver")
+        self.assertEqual(server_id, res)
+
+        # Try to find server
+        server_id = db.session.scalars(
+            select(PrivacyIDEAServerDB).where(PrivacyIDEAServerDB.identifier == "myserver")).one_or_none()
+        self.assertIsNone(server_id)
+
+    def test_04_missing_configuration(self):
         self.assertRaises(ConfigAdminError, get_privacyideaserver, "notExisting")
 
     @responses.activate
-    def test_04_privacyidea_request(self):
+    def test_05_privacyidea_request(self):
         responses.add(responses.POST, "https://privacyidea/pi/validate/check",
                       body="""{
             "jsonrpc": "2.0",
@@ -154,7 +169,7 @@ class PrivacyIDEAServerTestCase(MyTestCase):
         self.assertTrue(r)
 
     @responses.activate
-    def test_05_privacyidea_validate_check(self):
+    def test_06_privacyidea_validate_check(self):
         responses.add(responses.POST, "https://privacyidea/pi/validate/check",
                       body="""{
             "jsonrpc": "2.0",

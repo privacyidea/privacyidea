@@ -26,19 +26,20 @@ It depends on the database model models.py and on the machineresolver
 lib/machineresolver.py, so this can be tested standalone without realms,
 tokens and webservice!
 """
-from .error import ResourceNotFoundError, ParameterError
-from .machineresolver import get_resolver_list, get_resolver_object
-from privacyidea.models import Token
+import logging
+import re
+
+from netaddr import IPAddress
+from sqlalchemy import and_, delete, select, update
+
+from privacyidea.lib.utils import fetch_one_resource, convert_column_to_unicode
 from privacyidea.models import (MachineToken, db, MachineTokenOptions,
                                 MachineResolver, get_token_id,
                                 get_machineresolver_id,
                                 get_machinetoken_ids)
-from privacyidea.lib.utils import fetch_one_resource
-from netaddr import IPAddress
-from sqlalchemy import and_
-import logging
-import re
-
+from privacyidea.models import Token, save_config_timestamp
+from .error import ResourceNotFoundError, ParameterError
+from .machineresolver import get_resolver_list, get_resolver_object
 from .token import token_exist
 
 log = logging.getLogger(__name__)
@@ -174,8 +175,14 @@ def attach_token(serial, application, hostname=None, machine_id=None, resolver_n
 
     if hostname or machine_id or resolver_name:
         machine_id, resolver_name = _get_host_identifier(hostname, machine_id, resolver_name)
+
+    # Get the machine resolver id and token id here to avoid queries in the MachineToken constructor
+    resolver_stmt = select(MachineResolver.id).where(MachineResolver.name == resolver_name)
+    machine_resolver_id = db.session.execute(resolver_stmt).scalar_one_or_none()
+    token_stmt = select(Token.id).where(Token.serial == serial)
+    token_id = db.session.execute(token_stmt).scalar_one_or_none()
     # Now we have all data to create the MachineToken
-    machine_token = MachineToken(machineresolver=resolver_name, machine_id=machine_id, serial=serial,
+    machine_token = MachineToken(machineresolver_id=machine_resolver_id, machine_id=machine_id, token_id=token_id,
                                  application=application)
     machine_token.save()
     # Add options to the machine token
@@ -187,7 +194,7 @@ def attach_token(serial, application, hostname=None, machine_id=None, resolver_n
 
 @log_with(log)
 def detach_token(serial, application, hostname=None, machine_id=None, resolver_name=None, machine_token_id=None,
-                 filter_params=None):
+                 filter_params=None) -> int:
     """
     Delete a machine token.
     Also deletes the corresponding MachineTokenOptions
@@ -211,12 +218,11 @@ def detach_token(serial, application, hostname=None, machine_id=None, resolver_n
     :type filter_params: dict
     :return: the number of deleted MachineToken objects
     """
-    r = None
+    r = 0
     if machine_token_id:
-        # We have specific machine_token_id, which we are supposed to delete.
-        MachineTokenOptions.query.filter(MachineTokenOptions.machinetoken_id == int(machine_token_id)).delete()
-        # Delete MachineToken
-        r = MachineToken.query.filter(MachineToken.id == int(machine_token_id)).delete()
+        machine_token = db.session.get(MachineToken, machine_token_id)
+        db.session.delete(machine_token)
+        r = 1
     else:
         filter_params = filter_params or {}
         if machine_id == ANY_MACHINE and resolver_name == NO_RESOLVER:
@@ -237,10 +243,10 @@ def detach_token(serial, application, hostname=None, machine_id=None, resolver_n
                     if machine_token.get("options").get(key) != value:
                         delete_mt = False
                 if delete_mt:
-                    MachineTokenOptions.query.filter(
-                        MachineTokenOptions.machinetoken_id == machine_token.get("id")).delete()
-                    # Delete MachineToken
-                    r = MachineToken.query.filter(MachineToken.id == machine_token.get("id")).delete()
+                    machine_token = db.session.get(MachineToken, machine_token.get("id"))
+                    db.session.delete(machine_token)
+                    r += 1
+    save_config_timestamp()
     db.session.commit()
     return r
 
@@ -271,7 +277,33 @@ def add_option(machine_token_id=None, machine_id=None, resolver_name=None,
 
     for option_name, option_value in options.items():
         for machine_token_id in machine_token_ids:
-            MachineTokenOptions(machine_token_id, option_name, option_value)
+            option_value = convert_column_to_unicode(option_value)
+            option_name = convert_column_to_unicode(option_name)
+
+            stmt = select(MachineTokenOptions).filter_by(
+                machinetoken_id=machine_token_id,
+                mt_key=option_name
+            )
+            existing_option = db.session.execute(stmt).scalar_one_or_none()
+
+            if existing_option:
+                # update existing option
+                update_stmt = (
+                    update(MachineTokenOptions)
+                    .where(
+                        and_(
+                            MachineTokenOptions.machinetoken_id == machine_token_id,
+                            MachineTokenOptions.mt_key == option_name
+                        )
+                    )
+                    .values(mt_value=option_value)
+                )
+                db.session.execute(update_stmt)
+            else:
+                # create new option
+                option = MachineTokenOptions(machine_token_id, option_name, option_value)
+                db.session.add(option)
+    db.session.commit()
     return len(options)
 
 
@@ -299,9 +331,10 @@ def delete_option(machine_token_id=None, machine_id=None, resolver_name=None,
 
     res = 0
     for machine_token_id in machine_token_ids:
-        res = MachineTokenOptions.query.filter(and_(
-            MachineTokenOptions.machinetoken_id == machine_token_id,
-            MachineTokenOptions.mt_key == key)).delete()
+        delete_stmt = delete(MachineTokenOptions).where(MachineTokenOptions.machinetoken_id == machine_token_id,
+                                                        MachineTokenOptions.mt_key == key)
+        result = db.session.execute(delete_stmt)
+        res += result.rowcount
     db.session.commit()
     return res
 

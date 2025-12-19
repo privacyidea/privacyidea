@@ -15,12 +15,29 @@
 #
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+import logging
+from datetime import datetime
+from typing import Optional
 
-from sqlalchemy import Sequence
+from sqlalchemy import (
+    Sequence,
+    Unicode,
+    Integer,
+    select,
+    update,
+    ForeignKey,
+    UnicodeText
+)
+from sqlalchemy.orm import Mapped, mapped_column
 
-from privacyidea.models import db
-from privacyidea.models.utils import MethodsMixin
 from privacyidea.lib.utils import convert_column_to_unicode
+from privacyidea.models import db, Config
+from privacyidea.models.utils import MethodsMixin
+
+log = logging.getLogger(__name__)
+
+PRIVACYIDEA_TIMESTAMP = "__timestamp__"
+SAFE_STORE = "PI_DB_SAFE_STORE"
 
 
 class CustomUserAttribute(MethodsMixin, db.Model):
@@ -40,13 +57,13 @@ class CustomUserAttribute(MethodsMixin, db.Model):
           with remnants of attributes.
     """
     __tablename__ = 'customuserattribute'
-    id = db.Column(db.Integer(), Sequence("customuserattribute_seq"), primary_key=True)
-    user_id = db.Column(db.Unicode(320), default='', index=True)
-    resolver = db.Column(db.Unicode(120), default='', index=True)
-    realm_id = db.Column(db.Integer(), db.ForeignKey('realm.id'))
-    Key = db.Column(db.Unicode(255), nullable=False)
-    Value = db.Column(db.UnicodeText(), default='')
-    Type = db.Column(db.Unicode(100), default='')
+    id: Mapped[int] = mapped_column(Integer, Sequence("customuserattribute_seq"), primary_key=True)
+    user_id: Mapped[Optional[str]] = mapped_column(Unicode(320), default='', index=True)
+    resolver: Mapped[Optional[str]] = mapped_column(Unicode(120), default='', index=True)
+    realm_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey('realm.id'))
+    Key: Mapped[str] = mapped_column(Unicode(255), nullable=False)
+    Value: Mapped[Optional[str]] = mapped_column(UnicodeText, default='')
+    Type: Mapped[Optional[str]] = mapped_column(Unicode(100), default='')
 
     def __init__(self, user_id, resolver, realm_id, Key, Value, Type=None):
         """
@@ -58,25 +75,3 @@ class CustomUserAttribute(MethodsMixin, db.Model):
         self.Key = Key
         self.Value = convert_column_to_unicode(Value)
         self.Type = Type
-
-    def save(self, persistent=True):
-        ua = CustomUserAttribute.query.filter_by(user_id=self.user_id,
-                                                 resolver=self.resolver,
-                                                 realm_id=self.realm_id,
-                                                 Key=self.Key).first()
-        if ua is None:
-            # create a new one
-            db.session.add(self)
-            db.session.commit()
-            ret = self.id
-        else:
-            # update
-            CustomUserAttribute.query.filter_by(user_id=self.user_id,
-                                                resolver=self.resolver,
-                                                realm_id=self.realm_id,
-                                                Key=self.Key
-                                                ).update({'Value': self.Value, 'Type': self.Type})
-            ret = ua.id
-        if persistent:
-            db.session.commit()
-        return ret

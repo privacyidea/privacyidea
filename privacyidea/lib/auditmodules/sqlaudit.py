@@ -94,6 +94,14 @@ def fn_to_isodate(element, compiler, **kw):
         element.clauses, **kw)
 
 
+def _now():
+    """
+    Returns the current local date and time.
+    This function is required to be able to mock datetime.now() in tests.
+    """
+    return datetime.datetime.now()
+
+
 class Audit(AuditBase):
     """
     This is the SQLAudit module, which writes the audit entries
@@ -213,7 +221,8 @@ class Audit(AuditBase):
                 self.audit_data[column] = data
 
     @staticmethod
-    def _create_filter(param: dict, admin_params: Optional[dict] = None, timelimit: Optional[datetime.timedelta] = None):
+    def _create_filter(param: dict, admin_params: Optional[dict] = None,
+                       timelimit: Optional[datetime.timedelta] = None):
         """
         create a filter condition for the logentry
 
@@ -333,8 +342,9 @@ class Audit(AuditBase):
                             "Error occurs in action: {0!r}.".format(self.audit_data.get("action")))
                 if "token_type" not in self.audit_data:
                     self.audit_data["token_type"] = self.audit_data.get("tokentype")
+            end_date = _now()
             if self.audit_data.get("startdate"):
-                duration = datetime.datetime.now() - self.audit_data.get("startdate")
+                duration = end_date - self.audit_data.get("startdate")
             else:
                 duration = None
             le = LogEntry(action=self.audit_data.get("action"),
@@ -359,6 +369,7 @@ class Audit(AuditBase):
                           policies=self.audit_data.get("policies"),
                           startdate=self.audit_data.get("startdate"),
                           duration=duration,
+                          date=end_date,
                           thread_id=self.audit_data.get("thread_id")
                           )
             self.session.add(le)

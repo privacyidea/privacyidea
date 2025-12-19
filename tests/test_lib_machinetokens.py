@@ -79,34 +79,34 @@ class MachineTokenTestCase(MyTestCase):
 
     def test_03_add_delete_option(self):
         mt = attach_token(self.serial, "luks", hostname="gandalf")
-        self.assertEqual(mt.token.serial, self.serial)
-        self.assertEqual(mt.token.machine_list[0].machine_id, "192.168.0.1")
+        self.assertEqual(self.serial, mt.token.serial)
+        self.assertEqual("192.168.0.1", mt.token.machine_list[0].machine_id)
 
         r = add_option(serial=self.serial, application="luks",
                        hostname="gandalf", options={"option1": "value1",
                                                     "option2": "valü2"})
-        self.assertEqual(r, 2)
+        self.assertEqual(2, r)
 
         # The options are accessible via the Token!!!
         tok = get_tokens(serial=self.serial)[0]
         option_list = tok.token.machine_list[0].option_list
-        self.assertEqual(len(option_list), 2)
+        self.assertEqual(2, len(option_list))
         for option in option_list:
             if option.mt_key == "option1":
-                self.assertEqual(option.mt_value, "value1")
+                self.assertEqual("value1", option.mt_value)
             elif option.mt_key == "option2":
-                self.assertEqual(option.mt_value, "valü2")
+                self.assertEqual("valü2", option.mt_value)
             else:
                 self.fail("Unspecified Option! {0!s}".format(option.mt_key))
 
         r = delete_option(serial=self.serial, application="luks",
                           hostname="gandalf", key="option1")
-        self.assertEqual(r, 1)
+        self.assertEqual(1, r)
 
         # The options are accessible via the Token!!!
         tok = get_tokens(serial=self.serial)[0]
         option_list = tok.token.machine_list[0].option_list
-        self.assertEqual(len(option_list), 1)
+        self.assertEqual(1, len(option_list))
 
     def test_04_list_tokens_for_machine(self):
         serial = "serial2"

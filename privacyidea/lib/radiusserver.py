@@ -33,23 +33,25 @@ This module is tested in tests/test_lib_radiusserver.py
 from __future__ import annotations
 
 import logging
+import secrets
+
 import pyrad.packet
 from pyrad.client import Client
 from pyrad.client import Timeout
 from pyrad.dictionary import Dictionary
-import secrets
+from sqlalchemy import select
 
-from privacyidea.models import db, RADIUSServer as RADIUSServerDB
+from privacyidea.lib import _
+from privacyidea.lib.config import get_from_config
 from privacyidea.lib.crypto import (decryptPassword, encryptPassword,
                                     FAILED_TO_DECRYPT_PASSWORD)
-from privacyidea.lib.config import get_from_config
-from privacyidea.lib.log import log_with
 from privacyidea.lib.error import (ConfigAdminError, privacyIDEAError,
                                    ResourceNotFoundError)
-from privacyidea.lib import _
+from privacyidea.lib.log import log_with
+from privacyidea.lib.resolver import CENSORED
 from privacyidea.lib.utils import fetch_one_resource, to_bytes
 from privacyidea.lib.utils.export import (register_import, register_export)
-from privacyidea.lib.resolver import CENSORED
+from privacyidea.models import db, RADIUSServer as RADIUSServerDB
 
 log = logging.getLogger(__name__)
 
@@ -251,24 +253,42 @@ def add_radius(identifier: str, server: str = None, secret: str = None,
     :param options: Additional options for the RADIUS server
     :return: The Id of the database object
     """
+    existing_server = db.session.scalars(select(RADIUSServerDB).filter_by(identifier=identifier)).one_or_none()
+
     encrypted_secret = encryptPassword(secret)
-    if secret == CENSORED:
-        # It looks like we are updating a RADIUS server
-        try:
-            rad_serv = fetch_one_resource(RADIUSServerDB, identifier=identifier)
-            encrypted_secret = rad_serv.secret
-        except ResourceNotFoundError:
-            # Maybe __CENSORED__ is the secret?
-            pass
+    if secret == CENSORED and existing_server:
+        encrypted_secret = existing_server.secret
 
     if len(encrypted_secret) > 255:
-        raise privacyIDEAError(description=_("The RADIUS secret is too long"),
-                               id=2234)
-    r = RADIUSServerDB(identifier=identifier, server=server, port=port,
-                       secret=encrypted_secret, description=description,
-                       dictionary=dictionary,
-                       retries=retries, timeout=timeout, options=options).save()
-    return r
+        raise privacyIDEAError(description=_("The RADIUS secret is too long"), id=2234)
+
+    if existing_server:
+        if server is not None:
+            existing_server.server = server
+        if encrypted_secret is not None:
+            existing_server.secret = encrypted_secret
+        if port is not None:
+            existing_server.port = port
+        if description is not None:
+            existing_server.description = description
+        if dictionary is not None:
+            existing_server.dictionary = dictionary
+        if retries is not None:
+            existing_server.retries = int(retries)
+        if timeout is not None:
+            existing_server.timeout = int(timeout)
+        if options is not None:
+            existing_server.options = options
+        db.session.commit()
+        server_id = existing_server.id
+    else:
+        new_server = RADIUSServerDB(identifier=identifier, server=server, port=port, secret=encrypted_secret,
+                                    description=description, dictionary=dictionary, retries=retries, timeout=timeout,
+                                    options=options)
+        db.session.add(new_server)
+        db.session.commit()
+        server_id = new_server.id
+    return server_id
 
 
 @log_with(log, hide_kwargs=["secret", "password"])

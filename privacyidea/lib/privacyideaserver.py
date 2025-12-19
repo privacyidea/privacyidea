@@ -16,7 +16,10 @@
 #
 #
 from urllib.parse import quote
-from privacyidea.models import PrivacyIDEAServer as PrivacyIDEAServerDB
+
+from sqlalchemy import select
+
+from privacyidea.models import PrivacyIDEAServer as PrivacyIDEAServerDB, db
 import logging
 from privacyidea.lib.log import log_with
 from privacyidea.lib.utils import fetch_one_resource, to_unicode
@@ -180,7 +183,7 @@ def get_privacyideaservers(identifier=None, url=None, id=None):
 
 
 @log_with(log)
-def add_privacyideaserver(identifier, url=None, tls=True, description=""):
+def add_privacyideaserver(identifier: str, url: str = None, tls: bool = True, description: str = "") -> int:
     """
     This adds a privacyIDEA server to the privacyideaserver database table.
 
@@ -190,18 +193,30 @@ def add_privacyideaserver(identifier, url=None, tls=True, description=""):
         definition.
         As the identifier is unique, providing an identifier will return a
         list with either one or no radius server
-    :type identifier: basestring
     :param url: The url of the privacyIDEA server
-    :type url: basestring
     :param tls: whether the certificate of the server should be checked
-    :type tls: bool
     :param description: Human readable description of the RADIUS server
         definition
     :return: The Id of the database object
     """
-    r = PrivacyIDEAServerDB(identifier=identifier, url=url, tls=tls,
-                            description=description).save()
-    return r
+    stmt = select(PrivacyIDEAServerDB).where(PrivacyIDEAServerDB.identifier == identifier)
+    existing_server = db.session.execute(stmt).scalar_one_or_none()
+
+    if existing_server:
+        if url:
+            existing_server.url = url
+        if tls:
+            existing_server.tls = tls
+        if description:
+            existing_server.description = description
+        pi_id = existing_server.id
+    else:
+        new_server = PrivacyIDEAServerDB(identifier=identifier, url=url, tls=tls, description=description)
+        db.session.add(new_server)
+        db.session.flush()
+        pi_id = new_server.id
+    db.session.commit()
+    return pi_id
 
 
 @log_with(log)

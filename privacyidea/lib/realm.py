@@ -35,9 +35,11 @@ database. It depends on the lib.resolver.
 It is independent of any user or token libraries and can be tested standalone
 in tests/test_lib_realm.py
 """
+from sqlalchemy import delete
+
 from ..models import (Realm,
                       ResolverRealm,
-                      Resolver, db, save_config_timestamp)
+                      Resolver, db, save_config_timestamp, TokenRealm)
 from .log import log_with
 from privacyidea.lib.config import get_config_object
 import logging
@@ -196,7 +198,19 @@ def delete_realm(realm_name: str):
     def_realm = get_default_realm()
     had_def_realm_before = (def_realm != "")
 
-    ret = fetch_one_resource(Realm, name=realm_name).delete()
+    realm = fetch_one_resource(Realm, name=realm_name)
+    realm_id = realm.id
+
+    # Delete relationships
+    stmt = delete(TokenRealm).where(TokenRealm.realm_id == realm.id)
+    db.session.execute(stmt)
+    stmt = delete(ResolverRealm).where(ResolverRealm.realm_id == realm.id)
+    db.session.execute(stmt)
+
+    # Delete realm
+    db.session.delete(realm)
+    save_config_timestamp()
+    db.session.commit()
 
     # If there was a default realm before
     # and if there is only one realm left, we set the
@@ -209,7 +223,7 @@ def delete_realm(realm_name: str):
                 for key in realms:
                     set_default_realm(key)
 
-    return ret
+    return realm_id
 
 
 @log_with(log)

@@ -15,19 +15,22 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 #
-from urllib.parse import urlparse
-from privacyidea.lib.queue import job, wrap_job, has_job_queue
-from privacyidea.models import SMTPServer as SMTPServerDB
-from privacyidea.lib.crypto import (decryptPassword, encryptPassword,
-                                    FAILED_TO_DECRYPT_PASSWORD)
-from privacyidea.lib.utils import fetch_one_resource, to_unicode
-from privacyidea.lib.utils.export import (register_import, register_export)
 import logging
-from privacyidea.lib.log import log_with
-from time import gmtime, strftime
 import smtplib
 from email.mime.base import MIMEBase
 from email.mime.text import MIMEText
+from time import gmtime, strftime
+from urllib.parse import urlparse
+
+from sqlalchemy import select
+
+from privacyidea.lib.crypto import (decryptPassword, encryptPassword,
+                                    FAILED_TO_DECRYPT_PASSWORD)
+from privacyidea.lib.log import log_with
+from privacyidea.lib.queue import job, wrap_job, has_job_queue
+from privacyidea.lib.utils import fetch_one_resource, to_unicode
+from privacyidea.lib.utils.export import (register_import, register_export)
+from privacyidea.models import SMTPServer as SMTPServerDB, db
 
 __doc__ = """
 This is the library for creating, listing and deleting SMTPServer objects in
@@ -298,12 +301,39 @@ def add_smtpserver(identifier, server=None, port=25, username="", password="",
     :type server: basestring
     :return: The Id of the database object
     """
-    cryptedPassword = encryptPassword(password)
-    r = SMTPServerDB(identifier=identifier, server=server, port=port,
-                     username=username, password=cryptedPassword, sender=sender,
-                     description=description, tls=tls, timeout=timeout,
-                     enqueue_job=enqueue_job).save()
-    return r
+    encrypted_password = encryptPassword(password)
+
+    stmt = select(SMTPServerDB).filter(SMTPServerDB.identifier == identifier)
+    smtp_server = db.session.execute(stmt).scalar_one_or_none()
+
+    if smtp_server:
+        # Update existing entry
+        if server is not None:
+            smtp_server.server = server
+        if port is not None:
+            smtp_server.port = port
+        if username is not None:
+            smtp_server.username = username
+        if encrypted_password is not None:
+            smtp_server.password = encrypted_password
+        if sender is not None:
+            smtp_server.sender = sender
+        if tls is not None:
+            smtp_server.tls = tls
+        if description is not None:
+            smtp_server.description = description
+        if timeout is not None:
+            smtp_server.timeout = timeout
+        if enqueue_job is not None:
+            smtp_server.enqueue_job = enqueue_job
+    else:
+        # Create new entry
+        smtp_server = SMTPServerDB(identifier=identifier, server=server, port=port, username=username,
+                                   password=encrypted_password, sender=sender, description=description, tls=tls,
+                                   timeout=timeout, enqueue_job=enqueue_job)
+        db.session.add(smtp_server)
+    db.session.commit()
+    return smtp_server.id
 
 
 @log_with(log)

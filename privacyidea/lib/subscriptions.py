@@ -23,22 +23,23 @@ Provide decorator to test the subscriptions.
 The code is tested in tests/test_lib_subscriptions.py.
 """
 
-import logging
 import datetime
+import functools
+import logging
+import os
 import random
+import traceback
+
+from sqlalchemy import func, select, update
+
+from privacyidea.lib import lazy_gettext
+from privacyidea.lib.crypto import Sign
+from privacyidea.lib.error import SubscriptionError
+from privacyidea.lib.framework import get_app_config_value
+from privacyidea.lib.token import get_tokens
 from .log import log_with
 from .utils import get_plugin_info_from_useragent
-from ..models import Subscription
-from privacyidea.lib.error import SubscriptionError
-from privacyidea.lib.token import get_tokens
-from privacyidea.lib.crypto import Sign
-from privacyidea.lib import _, lazy_gettext
-import functools
-from privacyidea.lib.framework import get_app_config_value
-import os
-import traceback
-from sqlalchemy import func
-
+from ..models import Subscription, db
 
 EXPIRE_MESSAGE = lazy_gettext("My subscription has expired.")
 SUBSCRIPTION_DATE_FORMAT = "%Y-%m-%d"
@@ -61,7 +62,6 @@ SIGN_FORMAT = """{application}
 {num_clients}
 {level}
 """
-
 
 APPLICATIONS = {"demo_application": 0,
                 "owncloud": 50,
@@ -142,27 +142,44 @@ def save_subscription(subscription):
     # verify the signature of the subscriptions
     check_signature(subscription)
 
-    s = Subscription(application=subscription.get("application"),
-                     for_name=subscription.get("for_name"),
-                     for_address=subscription.get("for_address"),
-                     for_email=subscription.get("for_email"),
-                     for_phone=subscription.get("for_phone"),
-                     for_url=subscription.get("for_url"),
-                     for_comment=subscription.get("for_comment"),
-                     by_name=subscription.get("by_name"),
-                     by_email=subscription.get("by_email"),
-                     by_address=subscription.get("by_address"),
-                     by_phone=subscription.get("by_phone"),
-                     by_url=subscription.get("by_url"),
-                     date_from=subscription.get("date_from"),
-                     date_till=subscription.get("date_till"),
-                     num_users=subscription.get("num_users"),
-                     num_tokens=subscription.get("num_tokens"),
-                     num_clients=subscription.get("num_clients"),
-                     level=subscription.get("level"),
-                     signature=subscription.get("signature")
-                     ).save()
-    return s
+    stmt = select(Subscription).filter(
+        Subscription.application == subscription.get("application")
+    )
+    subscription_db = db.session.execute(stmt).scalar_one_or_none()
+
+    if subscription_db:
+        # update existing subscription
+        update_stmt = (
+            update(Subscription)
+            .where(Subscription.id == subscription_db.id)
+            .values(**subscription)
+        )
+        db.session.execute(update_stmt)
+    else:
+        # create new subscription
+        subscription_db = Subscription(application=subscription.get("application"),
+                                    for_name=subscription.get("for_name"),
+                                    for_address=subscription.get("for_address"),
+                                    for_email=subscription.get("for_email"),
+                                    for_phone=subscription.get("for_phone"),
+                                    for_url=subscription.get("for_url"),
+                                    for_comment=subscription.get("for_comment"),
+                                    by_name=subscription.get("by_name"),
+                                    by_email=subscription.get("by_email"),
+                                    by_address=subscription.get("by_address"),
+                                    by_phone=subscription.get("by_phone"),
+                                    by_url=subscription.get("by_url"),
+                                    date_from=subscription.get("date_from"),
+                                    date_till=subscription.get("date_till"),
+                                    num_users=subscription.get("num_users"),
+                                    num_tokens=subscription.get("num_tokens"),
+                                    num_clients=subscription.get("num_clients"),
+                                    level=subscription.get("level"),
+                                    signature=subscription.get("signature")
+                                    )
+        db.session.add(subscription_db)
+    db.session.commit()
+    return subscription_db.save()
 
 
 def get_subscription(application=None):
@@ -194,8 +211,7 @@ def delete_subscription(application):
     :return: True in case of success
     """
     ret = -1
-    sub = Subscription.query.filter(Subscription.application ==
-                                  application).first()
+    sub = Subscription.query.filter(Subscription.application == application).first()
 
     if sub:
         sub.delete()
@@ -224,7 +240,7 @@ def raise_exception_probability(subscription=None):
         # After 44 days we get 50%
         # After 74 days we get 80%
         # After 94 days we get 100%
-        p = 0.2 + ((delta.days-14.0)/30.0) * 0.3
+        p = 0.2 + ((delta.days - 14.0) / 30.0) * 0.3
         # This is only for probability, so we use the less secure but faster random module
         return random.random() < p  # nosec B311
 

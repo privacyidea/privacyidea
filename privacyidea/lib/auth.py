@@ -19,8 +19,10 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+from sqlalchemy import select, update
+
 from privacyidea.lib.container import find_container_for_token
-from privacyidea.models import Admin
+from privacyidea.models import Admin, db
 from privacyidea.lib.token import check_user_pass
 from privacyidea.lib.policydecorators import libpolicy, login_mode
 from privacyidea.lib.crypto import hash_with_pepper, verify_with_pepper
@@ -69,8 +71,27 @@ def create_db_admin(username, email=None, password=None):
     pw_dig = None
     if password:
         pw_dig = hash_with_pepper(password)
-    user = Admin(email=email, username=username, password=pw_dig)
-    user.save()
+
+    stmt = select(Admin).filter_by(username=username)
+    admin = db.session.execute(stmt).scalar_one_or_none()
+
+    if admin:
+        update_dict = {}
+        if email:
+            update_dict["email"] = email
+        if pw_dig:
+            update_dict["password"] = pw_dig
+
+        update_stmt = (
+            update(Admin)
+            .where(Admin.username == username)
+            .values(**update_dict)
+        )
+        db.session.execute(update_stmt)
+    else:
+        user = Admin(email=email, username=username, password=pw_dig)
+        db.session.add(user)
+    db.session.commit()
 
 
 def list_db_admin():
@@ -88,7 +109,9 @@ def get_db_admin(username):
 
 def delete_db_admin(username):
     print("Deleting admin {0!s}".format(username))
-    fetch_one_resource(Admin, username=username).delete()
+    admin = fetch_one_resource(Admin, username=username)
+    db.session.delete(admin)
+    db.session.commit()
 
 
 @libpolicy(login_mode)
