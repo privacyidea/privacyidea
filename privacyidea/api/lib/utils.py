@@ -38,8 +38,8 @@ from flask import (jsonify,
 from privacyidea.lib import _
 from privacyidea.lib.utils import (prepare_result, get_version, to_unicode,
                                    get_plugin_info_from_useragent)
-from ...lib.error import (ParameterError,
-                          AuthError, ERROR)
+from ...lib.error import (ParameterError, PolicyError, ResourceNotFoundError,
+                          privacyIDEAError, AuthError, ERROR)
 from ...lib.log import log_with
 
 log = logging.getLogger(__name__)
@@ -522,3 +522,18 @@ def is_fqdn(x):
     :rtype: bool
     """
     return set(string.punctuation).intersection(x).issubset({'-', '.'})
+
+
+def map_error_to_code(error: Exception, default: int = 500) -> int:
+    error_mapping: dict[type[Exception], int] = {
+        privacyIDEAError: 400,
+        AuthError: 401,
+        PolicyError: 403,
+        ResourceNotFoundError: 404,
+        NotImplementedError: 501,
+    }
+    # return the code for the closest ancestor that is in the map
+    for cls in type(error).mro():
+        if cls in error_mapping:
+            return error_mapping[cls]
+    return default

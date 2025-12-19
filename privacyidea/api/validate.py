@@ -103,7 +103,7 @@ from privacyidea.lib.config import (return_saml_attributes, get_from_config,
                                     return_saml_attributes_on_fail,
                                     SYSCONF, ensure_no_config_object, get_privacyidea_node)
 from privacyidea.lib.container import find_container_for_token, find_container_by_serial, check_container_challenge
-from privacyidea.lib.error import ParameterError, PolicyError, ResourceNotFoundError
+from privacyidea.lib.error import ParameterError, PolicyError, ResourceNotFoundError, ERROR
 from privacyidea.lib.event import EventConfiguration
 from privacyidea.lib.event import event
 from privacyidea.lib.machine import list_machine_tokens
@@ -122,7 +122,7 @@ from privacyidea.lib.user import get_user_from_param, log_used_user, User
 from privacyidea.lib.utils import get_client_ip, get_plugin_info_from_useragent, AUTH_RESPONSE
 from privacyidea.lib.utils import is_true, get_computer_name_from_user_agent
 from .lib.utils import required
-from .lib.utils import send_result, getParam, get_required
+from .lib.utils import getParam, get_required, map_error_to_code, send_error, send_result
 from ..lib.decorators import (check_user_serial_or_cred_id_in_request)
 from ..lib.fido2.policy_action import FIDO2PolicyAction
 from ..lib.framework import get_app_config_value
@@ -200,10 +200,11 @@ def offlinerefill():
     serial = getParam(request.all_data, "serial", required)
     refilltoken_request = getParam(request.all_data, "refilltoken", required)
     password = getParam(request.all_data, "pass", required)
-    tokens = get_tokens(serial=serial)
-    if len(tokens) != 1:
-        raise ParameterError("The token does not exist")
-    else:
+    try:
+        tokens = get_tokens(serial=serial)
+        if len(tokens) != 1:
+            raise ParameterError("The token does not exist")
+
         token = tokens[0]
         # check if token is disabled or otherwise not fit for auth
         message_list = []
@@ -239,6 +240,16 @@ def offlinerefill():
                 response.set_data(json.dumps(content))
                 return response
         raise ParameterError("Token is not an offline token or refill token is incorrect")
+
+    except Exception as e:
+        if Match.user(
+            g,
+            scope=SCOPE.TOKEN,
+            action=PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE_FOR_OFFLINE_REFILL,
+            user_object=request.User if hasattr(request, "User") else None,
+        ).any():
+            return send_error("Failed offline token refill", error_code=ERROR.VALIDATE), map_error_to_code(e)
+        raise
 
 
 @validate_blueprint.route('/check', methods=['POST', 'GET'])
