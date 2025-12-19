@@ -335,7 +335,7 @@ class BasePeriodicTaskTestCase(MyTestCase):
         self.assertEqual(1, len(last_runs_task1))
         self.assertEqual("otherhost", last_runs_task1[0].node)
         self.assertEqual(datetime(2018, 8, 9, 10, 11, 12, tzinfo=timezone.utc), last_runs_task1[0].timestamp.replace(
-                         tzinfo=timezone.utc))
+            tzinfo=timezone.utc))
 
         # Delete task removes its last runs and options
         task1_id = task1.id
@@ -496,13 +496,13 @@ class BasePeriodicTaskTestCase(MyTestCase):
         })
         # at 08:00 on wednesdays
         current_utc_time = parse_timestamp("2018-05-31 05:08:00")
-        with mock.patch('privacyidea.models.utils.utc_now', return_value=current_utc_time):
+        with mock.patch('privacyidea.models.periodictask.utc_now', return_value=current_utc_time):
             task2 = set_periodic_task("task two", "0 8 * * WED", ["pinode2", "pinode3"], "some.task.module", 1, {
                 "key1": "value",
                 "key2": "foo"
             }, active=False)
-        self.assertEqual(get_periodic_task_by_id(task2)["last_update"],
-                         parse_timestamp("2018-05-31 08:08:00+03:00"))
+        current_utc_time_with_tz = current_utc_time.replace(tzinfo=timezone.utc)
+        self.assertEqual(current_utc_time_with_tz, get_periodic_task_by_id(task2)["last_update"])
         self.assertEqual(get_periodic_task_by_id(task2)["last_runs"], {})
 
         # every 30 minutes, on Tuesdays
