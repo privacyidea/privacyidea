@@ -40,42 +40,9 @@ class ClientApplication(MethodsMixin, db.Model):
     ip: Mapped[str] = mapped_column(Unicode(255), nullable=False, index=True)
     hostname: Mapped[Optional[str]] = mapped_column(Unicode(255))
     clienttype: Mapped[str] = mapped_column(Unicode(255), nullable=False, index=True)
-    lastseen: Mapped[Optional[datetime]] = mapped_column(DateTime, index=True, default=datetime.utcnow)
+    lastseen: Mapped[Optional[datetime]] = mapped_column(DateTime, index=True, default=datetime.now)
     node: Mapped[str] = mapped_column(Unicode(255), nullable=False)
-    __table_args__ = (UniqueConstraint('ip',
-                                       'clienttype',
-                                       'node',
-                                       name='caix'),)
-
-    def save(self):
-        stmt = select(ClientApplication).filter(
-            and_(
-                ClientApplication.ip == self.ip,
-                ClientApplication.clienttype == self.clienttype,
-                ClientApplication.node == self.node
-            )
-        )
-        clientapp = db.session.execute(stmt).scalar_one_or_none()
-        self.lastseen = datetime.now()
-        if clientapp is None:
-            # create a new one
-            db.session.add(self)
-        else:
-            # update
-            values = {"lastseen": self.lastseen}
-            if self.hostname is not None:
-                values["hostname"] = self.hostname
-            update_stmt = (
-                update(ClientApplication)
-                .where(ClientApplication.id == clientapp.id)
-                .values(**values)
-            )
-            db.session.execute(update_stmt)
-        try:
-            db.session.commit()
-        except IntegrityError as e:  # pragma: no cover
-            log.info(f'Unable to write ClientApplication entry to db: {e}')
-            log.debug(traceback.format_exc())
+    __table_args__ = (UniqueConstraint('ip', 'clienttype', 'node', name='caix'),)
 
     def __repr__(self):
         return f"<ClientApplication [{self.id}][{self.ip}:{self.clienttype}] on {self.node}>"
@@ -106,29 +73,6 @@ class Subscription(MethodsMixin, db.Model):
     num_clients: Mapped[Optional[int]] = mapped_column(Integer)
     level: Mapped[Optional[str]] = mapped_column(Unicode(80))
     signature: Mapped[Optional[str]] = mapped_column(Unicode(640))
-
-    def save(self):
-        stmt = select(Subscription).filter(
-            Subscription.application == self.application
-        )
-        subscription = db.session.execute(stmt).scalar_one_or_none()
-        if subscription is None:
-            # create a new one
-            db.session.add(self)
-            db.session.commit()
-            ret = self.id
-        else:
-            # update
-            values = self.get()
-            update_stmt = (
-                update(Subscription)
-                .where(Subscription.id == subscription.id)
-                .values(**values)
-            )
-            db.session.execute(update_stmt)
-            ret = subscription.id
-        db.session.commit()
-        return ret
 
     def __repr__(self):
         return f"<Subscription [{self.id}][{self.application}:{self.for_name}:{self.by_name}]>"

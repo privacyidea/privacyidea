@@ -2,7 +2,9 @@
 This tests the files
   lib/auth.py and
 """
+from sqlalchemy import select
 
+from privacyidea.models import Admin, db
 from .base import MyTestCase
 from privacyidea.lib.auth import (create_db_admin, verify_db_admin,
                                   list_db_admin, delete_db_admin,
@@ -21,9 +23,26 @@ class AuthTestCase(MyTestCase):
                         password="PSTwort")
         r = verify_db_admin("mytestadmin", "PSTwort")
         self.assertTrue(r)
+        admin = db.session.scalars(select(Admin).filter_by(username="mytestadmin")).first()
+        self.assertEqual("admin@localhost", admin.email)
+        self.assertNotEqual("PSTwort", admin.password)  # password is stored encrypted
 
         self.assertTrue(db_admin_exists("mytestadmin"))
         self.assertFalse(db_admin_exists("noKnownUser"))
+
+        # Change password
+        create_db_admin("mytestadmin", password="supersecret")
+        r = verify_db_admin("mytestadmin", "supersecret")
+        self.assertTrue(r)
+        admin = db.session.scalars(select(Admin).filter_by(username="mytestadmin")).first()
+        self.assertEqual("admin@localhost", admin.email)    # Email unchanged
+
+        # Change email only
+        create_db_admin("mytestadmin", email="newadmin@localhost")
+        r = verify_db_admin("mytestadmin", "supersecret")
+        self.assertTrue(r)
+        admin = db.session.scalars(select(Admin).filter_by(username="mytestadmin")).first()
+        self.assertEqual("newadmin@localhost", admin.email)  # Email changed
 
         # This only prints to stdout!
         list_db_admin()

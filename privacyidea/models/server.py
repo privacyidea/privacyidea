@@ -18,7 +18,7 @@
 import logging
 from typing import Optional
 
-from sqlalchemy import Sequence, Unicode, Integer, Boolean, select, update, CheckConstraint, JSON
+from sqlalchemy import Sequence, Unicode, Integer, Boolean, CheckConstraint, JSON
 from sqlalchemy.orm import Mapped, mapped_column
 
 from privacyidea.models import db
@@ -40,34 +40,6 @@ class PrivacyIDEAServer(MethodsMixin, db.Model):
     url: Mapped[str] = mapped_column(Unicode(255), nullable=False)
     tls: Mapped[Optional[bool]] = mapped_column(Boolean, default=False)
     description: Mapped[Optional[str]] = mapped_column(Unicode(2000), default='')
-
-    def save(self):
-        stmt = select(PrivacyIDEAServer).filter(
-            PrivacyIDEAServer.identifier == self.identifier
-        )
-        pi = db.session.execute(stmt).scalar_one_or_none()
-        if pi is None:
-            # create a new one
-            db.session.add(self)
-            db.session.commit()
-            ret = self.id
-        else:
-            # update
-            values = {"url": self.url}
-            if self.tls is not None:
-                values["tls"] = self.tls
-            if self.description is not None:
-                values["description"] = self.description
-            # Use modern update statement
-            update_stmt = (
-                update(PrivacyIDEAServer)
-                .where(PrivacyIDEAServer.identifier == self.identifier)
-                .values(**values)
-            )
-            db.session.execute(update_stmt)
-            ret = pi.id
-        db.session.commit()
-        return ret
 
 
 class RADIUSServer(MethodsMixin, db.Model):
@@ -104,46 +76,6 @@ class RADIUSServer(MethodsMixin, db.Model):
     timeout: Mapped[Optional[int]] = mapped_column(Integer, default=5)
     retries: Mapped[Optional[int]] = mapped_column(Integer, default=3)
     options: Mapped[Optional[dict]] = mapped_column(JSON)
-
-    def save(self):
-        """
-        If a RADIUS server with a given name is saved, then the existing RADIUS server is updated.
-        """
-        stmt = select(RADIUSServer).filter(
-            RADIUSServer.identifier == self.identifier
-        )
-        radius = db.session.execute(stmt).scalar_one_or_none()
-        if radius is None:
-            # create a new one
-            db.session.add(self)
-            db.session.commit()
-            ret = self.id
-        else:
-            # update
-            values = {"server": self.server}
-            if self.port is not None:
-                values["port"] = self.port
-            if self.secret is not None:
-                values["secret"] = self.secret
-            if self.dictionary is not None:
-                values["dictionary"] = self.dictionary
-            if self.description is not None:
-                values["description"] = self.description
-            if self.timeout is not None:
-                values["timeout"] = int(self.timeout)
-            if self.retries is not None:
-                values["retries"] = int(self.retries)
-            if self.options is not None:
-                values["options"] = self.options
-            update_stmt = (
-                update(RADIUSServer)
-                .where(RADIUSServer.identifier == self.identifier)
-                .values(**values)
-            )
-            db.session.execute(update_stmt)
-            ret = radius.id
-        db.session.commit()
-        return ret
 
 
 class SMTPServer(MethodsMixin, db.Model):
@@ -187,42 +119,3 @@ class SMTPServer(MethodsMixin, db.Model):
             "timeout": self.timeout,
             "enqueue_job": self.enqueue_job,
         }
-
-    def save(self):
-        stmt = select(SMTPServer).filter(
-            SMTPServer.identifier == self.identifier
-        )
-        smtp = db.session.execute(stmt).scalar_one_or_none()
-        if smtp is None:
-            # create a new one
-            db.session.add(self)
-            db.session.commit()
-            ret = self.id
-        else:
-            # update
-            values = {"server": self.server}
-            if self.port is not None:
-                values["port"] = self.port
-            if self.username is not None:
-                values["username"] = self.username
-            if self.password is not None:
-                values["password"] = self.password
-            if self.sender is not None:
-                values["sender"] = self.sender
-            if self.tls is not None:
-                values["tls"] = self.tls
-            if self.description is not None:
-                values["description"] = self.description
-            if self.timeout is not None:
-                values["timeout"] = self.timeout
-            if self.enqueue_job is not None:
-                values["enqueue_job"] = self.enqueue_job
-            update_stmt = (
-                update(SMTPServer)
-                .where(SMTPServer.identifier == self.identifier)
-                .values(**values)
-            )
-            db.session.execute(update_stmt)
-            ret = smtp.id
-        db.session.commit()
-        return ret

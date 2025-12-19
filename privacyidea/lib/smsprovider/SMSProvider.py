@@ -31,16 +31,18 @@ and returns an instance.
 
 The code is tested in tests/test_lib_smsprovider
 """
+import logging
+import re
 
+from sqlalchemy import select, update
+
+from privacyidea.lib import lazy_gettext
 from privacyidea.lib.error import ConfigAdminError
-from privacyidea.models import SMSGateway, SMSGatewayOption
 from privacyidea.lib.utils import fetch_one_resource, get_module_class
 from privacyidea.lib.utils.export import (register_import, register_export)
-from privacyidea.lib import lazy_gettext
-import re
-import logging
-log = logging.getLogger(__name__)
+from privacyidea.models import SMSGateway, SMSGatewayOption, db
 
+log = logging.getLogger(__name__)
 
 SMS_PROVIDERS = [
     "privacyidea.lib.smsprovider.HttpSMSProvider.HttpSMSProvider",
@@ -183,7 +185,6 @@ def get_sms_provider_class(packageName, className):
 
 def set_smsgateway(identifier, providermodule=None, description=None,
                    options=None, headers=None):
-
     """
     Set an SMS Gateway configuration
 
@@ -200,11 +201,58 @@ def set_smsgateway(identifier, providermodule=None, description=None,
     :type headers: dict
     :return: The id of the event.
     """
-    smsgateway = SMSGateway(identifier, providermodule,
-                            description=description,
-                            options=options, headers=headers)
+    stmt = select(SMSGateway).filter_by(identifier=identifier)
+    sms_gateway = db.session.execute(stmt).scalar_one_or_none()
+
+    if sms_gateway:
+        # update existing sms gateway
+        if providermodule is not None:
+            sms_gateway.providermodule = providermodule
+        sms_gateway.description = description
+    else:
+        # create new provider
+        sms_gateway = SMSGateway(identifier, providermodule, description=description)
+        db.session.add(sms_gateway)
+    db.session.flush()
+
+    options = options or {}
+    new_option_keys = set(options.keys())
+    headers = headers or {}
+    new_header_keys = set(headers.keys())
+    # Delete options/headers that are not in the new options/headers
+    for option in sms_gateway.options:
+        if option.Type == "option" and option.Key not in new_option_keys:
+            db.session.delete(option)
+        if option.Type == "header" and option.Key not in new_header_keys:
+            db.session.delete(option)
+
+    # Update / Create options and header
+    existing_option_keys = {opt.Key for opt in sms_gateway.options if opt.Type == "option"}
+    existing_header_keys = {opt.Key for opt in sms_gateway.options if opt.Type == "header"}
+    header_and_options = {"option": options, "header": headers}
+    for option_type, options in header_and_options.items():
+        for option in options:
+            if (option_type == "option" and option in existing_option_keys) or (
+                    option_type == "header" and option in existing_header_keys):
+                # Update existing option
+                update_stmt = update(SMSGatewayOption).where(
+                    SMSGatewayOption.gateway_id == sms_gateway.id,
+                    SMSGatewayOption.Key == option,
+                    SMSGatewayOption.Type == option_type
+                ).values(Value=options[option])
+                db.session.execute(update_stmt)
+            else:
+                # Create new option
+                sms_option = SMSGatewayOption(gateway_id=sms_gateway.id,
+                                              Key=option,
+                                              Value=options[option],
+                                              Type=option_type)
+                db.session.add(sms_option)
+    db.session.commit()
+
+    # Validate configuration
     create_sms_instance(identifier).check_configuration()
-    return smsgateway.id
+    return sms_gateway.id
 
 
 def delete_smsgateway(identifier):

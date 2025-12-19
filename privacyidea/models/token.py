@@ -177,77 +177,6 @@ class Token(MethodsMixin, db.Model):
         if reset_failcount is True:
             self.failcount = 0
 
-    # TODO: Compare with lib function
-    # def set_tokengroups(self, tokengroups, add=False):
-    #     """
-    #     Set the list of the tokengroups.
-    #
-    #     This is done by filling the :py:class:`privacyidea.models.TokenTokengroup` table.
-    #
-    #     :param tokengroups: the tokengroups
-    #     :type tokengroups: list[str]
-    #     :param add: If set, the tokengroups are added. I.e. old tokengroups are not deleted
-    #     :type add: bool
-    #     """
-    #     # delete old Tokengroups
-    #     if not add:
-    #         delete_stmt = delete(TokenTokengroup).where(TokenTokengroup.token_id == self.id)
-    #         db.session.execute(delete_stmt)
-    #     # add new Tokengroups
-    #     # We must not set the same tokengroup more than once...
-    #     # uniquify: tokengroups -> set(tokengroups)
-    #     for tokengroup in set(tokengroups):
-    #         # Get the id of the realm to add
-    #         stmt = select(Tokengroup).filter_by(name=tokengroup)
-    #         g = db.session.execute(stmt).scalar_one_or_none()
-    #         if g:
-    #             # Check if TokenTokengroup already exists
-    #             stmt_tg = select(TokenTokengroup).filter_by(token_id=self.id, tokengroup_id=g.id)
-    #             tg = db.session.execute(stmt_tg).scalar_one_or_none()
-    #             if not tg:
-    #                 # If the Tokengroup is not yet attached to the token
-    #                 token_group = TokenTokengroup(token_id=self.id, tokengroup_id=g.id)
-    #                 db.session.add(token_group)
-    #     db.session.commit()
-    #
-    # def set_realms(self, realms, add=False):
-    #     """
-    #     Set the list of the realms.
-    #
-    #     This is done by filling the :py:class:`privacyidea.models.TokenRealm` table.
-    #
-    #     :param realms: realms
-    #     :type realms: list[str]
-    #     :param add: If set, the realms are added. I.e. old realms are not deleted
-    #     :type add: bool
-    #     """
-    #     # delete old TokenRealms
-    #     if not add:
-    #         delete_stmt = delete(TokenRealm).where(TokenRealm.token_id == self.id)
-    #         db.session.execute(delete_stmt)
-    #     # add new TokenRealms
-    #     # We must not set the same realm more than once...
-    #     # uniquify: realms -> set(realms)
-    #     if self.first_owner:
-    #         if self.first_owner.realm.name not in realms:
-    #             realms.append(self.first_owner.realm.name)
-    #             log.info(f"The realm of an assigned user cannot be removed from "
-    #                      f"token {self.first_owner.token.serial} "
-    #                      f"(realm: {self.first_owner.realm.name})")
-    #     for realm in set(realms):
-    #         # Get the id of the realm to add
-    #         stmt_realm = select(Realm).filter_by(name=realm)
-    #         realm_db = db.session.execute(stmt_realm).scalar_one_or_none()
-    #         if realm_db:
-    #             # Check if tokenrealm already exists
-    #             stmt_token_realm = select(TokenRealm).filter_by(token_id=self.id, realm_id=realm_db.id)
-    #             token_realm_db = db.session.execute(stmt_token_realm).scalar_one_or_none()
-    #             if not token_realm_db:
-    #                 # If the realm is not yet attached to the token
-    #                 token_realm = TokenRealm(token_id=self.id, realm_id=realm_db.id)
-    #                 db.session.add(token_realm)
-    #     db.session.commit()
-
     def get_realms(self):
         """
         return a list of the assigned realms
@@ -589,34 +518,6 @@ class TokenOwner(MethodsMixin, db.Model):
         self.resolver = resolver
         self.user_id = user_id
 
-    # TODO: Compare with lib function
-    # def save(self, persistent=True):
-    #     stmt = select(TokenOwner).filter_by(token_id=self.token_id,
-    #                                         user_id=self.user_id,
-    #                                         realm_id=self.realm_id,
-    #                                         resolver=self.resolver)
-    #     to = db.session.execute(stmt).scalar_one_or_none()
-    #     if to is None:
-    #         # This very assignment does not exist, yet:
-    #         db.session.add(self)
-    #         db.session.commit()
-    #         if get_app_config_value(SAFE_STORE, False):
-    #             stmt = select(TokenOwner).filter_by(token_id=self.token_id,
-    #                                                 user_id=self.user_id,
-    #                                                 realm_id=self.realm_id,
-    #                                                 resolver=self.resolver)
-    #             to = db.session.execute(stmt).scalar_one_or_none()
-    #             ret = to.id
-    #         else:
-    #             ret = self.id
-    #     else:
-    #         ret = to.id
-    #         # There is nothing to update
-    #
-    #     if persistent:
-    #         db.session.commit()
-    #     return ret
-
 
 class TokenRealm(MethodsMixin, db.Model):
     """
@@ -644,12 +545,12 @@ class TokenRealm(MethodsMixin, db.Model):
 
     def __init__(self, realm_id=0, token_id=0, realmname=None):
         log.debug(f"setting realm_id to {realm_id}")
-        if realmname:
+        if realm_id:
+            self.realm_id = realm_id
+        elif realmname:
             stmt = select(Realm).filter_by(name=realmname)
             r = db.session.execute(stmt).scalar_one_or_none()
             self.realm_id = r.id
-        if realm_id:
-            self.realm_id = realm_id
         self.token_id = token_id
 
 

@@ -921,6 +921,7 @@ class APITokenTestCase(MyApiTestCase):
             self.assertTrue(len(tokenlist) == 2, len(tokenlist))
 
         remove_token(serial="totp1")
+        db.session.expunge_all()
 
         # get tokens with a specific tokeninfo
         with self.app.test_request_context('/token/',
@@ -951,9 +952,9 @@ class APITokenTestCase(MyApiTestCase):
             tokenlist = result.get("value").get("tokens")
             self.assertEqual(len(tokenlist), 1)
         remove_token("hw001")
+        db.session.expunge_all()
 
         # get tokens with specific serials
-        db.session.expunge_all()    # Clear db session before creating new tokens
         hotp_token = init_token({"otpkey": self.otpkey}, tokenkind="hotp")
         totp_token = init_token({"otpkey": self.otpkey}, tokenkind="totp")
         token_serials = ",".join([hotp_token.get_serial(), totp_token.get_serial()])
@@ -982,6 +983,7 @@ class APITokenTestCase(MyApiTestCase):
         remove_token(hotp_token.get_serial())
         remove_token(totp_token.get_serial())
         remove_token(spass_token.get_serial())
+        db.session.expunge_all()
 
         # create token in container
         container_serial = init_container({"type": "generic", "user": "hans", "realm": self.realm1})["container_serial"]

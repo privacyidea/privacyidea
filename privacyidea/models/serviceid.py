@@ -43,23 +43,3 @@ class Serviceid(TimestampMethodsMixin, db.Model):
     def __init__(self, servicename, description=None):
         self.name = servicename
         self.Description = description
-
-    def save(self):
-        stmt = select(Serviceid).filter_by(name=self.name)
-        si = db.session.execute(stmt).scalar_one_or_none()
-        if si is None:
-            # create a new one
-            db.session.add(self)
-            db.session.commit()
-            return self.id
-        else:
-            # update
-            update_stmt = (
-                update(Serviceid)
-                .where(Serviceid.id == si.id)
-                .values(Description=self.Description)
-            )
-            db.session.execute(update_stmt)
-            db.session.commit()
-            ret = si.id
-        return ret

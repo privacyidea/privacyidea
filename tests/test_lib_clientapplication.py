@@ -24,6 +24,14 @@ class ClientApplicationTestCase(MyTestCase):
 
         r = get_clientapplication()
         self.assertEqual(len(r), 4)
+        now = datetime.now()
+        for client_type, apps in r.items():
+            if client_type == "SAML":
+                self.assertEqual(2, len(apps))
+            else:
+                self.assertEqual(1, len(apps))
+            for app in apps:
+                self.assertAlmostEqual(now, app.get("lastseen"), delta=timedelta(seconds=5))
 
         r = get_clientapplication(group_by="ip")
         self.assertEqual(len(r), 2)
@@ -54,7 +62,7 @@ class ClientApplicationTestCase(MyTestCase):
         @contextmanager
         def _fake_time(t):
             """ context manager that fakes the current time that is written to the ``lastseen`` column """
-            with mock.patch("privacyidea.models.subscription.datetime") as mock_dt:
+            with mock.patch("privacyidea.lib.clientapplication.datetime") as mock_dt:
                 mock_dt.now.return_value = t
                 yield
 

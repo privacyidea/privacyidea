@@ -22,7 +22,6 @@ from sqlalchemy import (
     Sequence,
     and_,
     select,
-    update,
     Unicode,
     Integer,
     ForeignKey,
@@ -34,7 +33,6 @@ from privacyidea.lib.log import log_with
 from privacyidea.lib.utils import convert_column_to_unicode
 # Assuming these imports and classes exist in your project
 from privacyidea.models import db
-from privacyidea.models.config import save_config_timestamp
 from privacyidea.models.token import Token, get_token_id
 from privacyidea.models.utils import MethodsMixin
 
@@ -68,13 +66,6 @@ class MachineResolver(MethodsMixin, db.Model):
         self.name = name
         self.rtype = rtype
 
-    def delete(self):
-        ret = self.id
-        # The cascade option handles the deletion of child records automatically.
-        db.session.delete(self)
-        db.session.commit()
-        return ret
-
 
 class MachineResolverConfig(db.Model):
     """
@@ -104,36 +95,6 @@ class MachineResolverConfig(db.Model):
         self.Value = convert_column_to_unicode(Value)
         self.Type = Type
         self.Description = Description
-
-    def save(self):
-        # Replaced .query.filter_by().first() with a modern select statement
-        stmt = select(MachineResolverConfig).filter_by(
-            resolver_id=self.resolver_id, Key=self.Key
-        )
-        c = db.session.execute(stmt).scalar_one_or_none()
-        if c is None:
-            # create a new one
-            db.session.add(self)
-            db.session.commit()
-            ret = self.id
-        else:
-            # Replaced .query.update() with a modern update statement
-            update_stmt = (
-                update(MachineResolverConfig)
-                .where(
-                    MachineResolverConfig.resolver_id == self.resolver_id,
-                    MachineResolverConfig.Key == self.Key
-                )
-                .values(
-                    Value=self.Value,
-                    Type=self.Type,
-                    Description=self.Description
-                )
-            )
-            db.session.execute(update_stmt)
-            ret = c.id
-        db.session.commit()
-        return ret
 
 
 class MachineToken(MethodsMixin, db.Model):
@@ -185,15 +146,6 @@ class MachineToken(MethodsMixin, db.Model):
         self.machine_id = machine_id
         self.application = application
 
-    def delete(self):
-        ret = self.id
-        # The cascade="all, delete-orphan" on the relationship handles the
-        # deletion of child records automatically.
-        db.session.delete(self)
-        save_config_timestamp()
-        db.session.commit()
-        return ret
-
 
 class MachineTokenOptions(db.Model):
     """
@@ -216,32 +168,6 @@ class MachineTokenOptions(db.Model):
         self.machinetoken_id = machinetoken_id
         self.mt_key = convert_column_to_unicode(key)
         self.mt_value = convert_column_to_unicode(value)
-
-        # Replaced .query.first() and .query.update() with modern
-        # select and update statements
-        stmt = select(MachineTokenOptions).filter_by(
-            machinetoken_id=self.machinetoken_id,
-            mt_key=self.mt_key
-        )
-        c = db.session.execute(stmt).scalar_one_or_none()
-
-        if c is None:
-            # create a new one
-            db.session.add(self)
-        else:
-            # update
-            update_stmt = (
-                update(MachineTokenOptions)
-                .where(
-                    and_(
-                        MachineTokenOptions.machinetoken_id == self.machinetoken_id,
-                        MachineTokenOptions.mt_key == self.mt_key
-                    )
-                )
-                .values(mt_value=self.mt_value)
-            )
-            db.session.execute(update_stmt)
-        db.session.commit()
 
 
 def get_machineresolver_id(resolvername):

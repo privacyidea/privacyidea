@@ -18,12 +18,12 @@
 import logging
 from typing import Optional
 
-from sqlalchemy import Sequence, Unicode, Integer, ForeignKey, UniqueConstraint, delete, select, update, and_
+from sqlalchemy import Sequence, Unicode, Integer, ForeignKey, UniqueConstraint, select
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from privacyidea.models import db
 from privacyidea.lib.utils import convert_column_to_unicode
-from privacyidea.models.config import TimestampMethodsMixin, save_config_timestamp
+from privacyidea.models import db
+from privacyidea.models.config import TimestampMethodsMixin
 
 log = logging.getLogger(__name__)
 
@@ -43,7 +43,7 @@ class Resolver(TimestampMethodsMixin, db.Model):
                                        nullable=False)
     # This creates an attribute "resolver" in the ResolverConfig object
     config_list = relationship('ResolverConfig',
-                               lazy='select')
+                               lazy='select', cascade='all, delete-orphan')
     realm_list = relationship('ResolverRealm',
                               lazy='select',
                               back_populates='resolver')
@@ -51,16 +51,6 @@ class Resolver(TimestampMethodsMixin, db.Model):
     def __init__(self, name, rtype):
         self.name = name
         self.rtype = rtype
-
-    def delete(self):
-        ret = self.id
-        stmt = delete(ResolverConfig).where(ResolverConfig.resolver_id == ret)
-        db.session.execute(stmt)
-        # delete the Resolver itself
-        db.session.delete(self)
-        save_config_timestamp()
-        db.session.commit()
-        return ret
 
 
 class ResolverConfig(TimestampMethodsMixin, db.Model):
@@ -95,37 +85,3 @@ class ResolverConfig(TimestampMethodsMixin, db.Model):
         self.Value = convert_column_to_unicode(Value)
         self.Type = convert_column_to_unicode(Type)
         self.Description = convert_column_to_unicode(Description)
-
-    def save(self):
-        stmt = select(ResolverConfig).filter(
-            and_(
-                ResolverConfig.resolver_id == self.resolver_id,
-                ResolverConfig.Key == self.Key
-            )
-        )
-        c = db.session.execute(stmt).scalar_one_or_none()
-        if c is None:
-            # create a new one
-            db.session.add(self)
-            db.session.commit()
-            ret = self.id
-        else:
-            update_stmt = (
-                update(ResolverConfig)
-                .where(
-                    and_(
-                        ResolverConfig.resolver_id == self.resolver_id,
-                        ResolverConfig.Key == self.Key
-                    )
-                )
-                .values(
-                    Value=self.Value,
-                    Type=self.Type,
-                    Description=self.Description
-                )
-            )
-            db.session.execute(update_stmt)
-            ret = c.id
-        save_config_timestamp()
-        db.session.commit()
-        return ret

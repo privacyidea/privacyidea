@@ -273,15 +273,17 @@ def set_event(name=None, event=None, handlermodule=None, action=None, conditions
     return id
 
 
-def delete_event(event_id):
+def delete_event(event_id: int) -> int:
     """
     Delete the event configuration with this given ID.
     :param event_id: The database ID of the event.
-    :type event_id: int
-    :return:
+    :return: event ID
     """
     event_id = int(event_id)
-    return fetch_one_resource(EventHandler, id=event_id).delete()
+    db.session.delete(fetch_one_resource(EventHandler, id=event_id))
+    save_config_timestamp()
+    db.session.commit()
+    return event_id
 
 
 class EventConfiguration(object):

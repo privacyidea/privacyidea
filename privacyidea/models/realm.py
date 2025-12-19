@@ -18,14 +18,14 @@
 import logging
 from typing import List, Optional
 
-from sqlalchemy import Sequence, Unicode, Integer, Boolean, ForeignKey, UniqueConstraint, delete, select
+from sqlalchemy import Sequence, Unicode, Integer, Boolean, ForeignKey, UniqueConstraint, select
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from privacyidea.lib.error import DatabaseError
 from privacyidea.lib.log import log_with
 from privacyidea.models import db
 from privacyidea.models.config import (TimestampMethodsMixin,
-                                       save_config_timestamp, NodeName)
+                                       NodeName)
 from privacyidea.models.resolver import Resolver
 
 log = logging.getLogger(__name__)
@@ -57,21 +57,6 @@ class Realm(TimestampMethodsMixin, db.Model):
     @log_with(log)
     def __init__(self, realm):
         self.name = realm
-
-    def delete(self):
-        from .token import TokenRealm
-        ret = self.id
-        # Use modern delete statement for TokenRealm
-        stmt = delete(TokenRealm).where(TokenRealm.realm_id == ret)
-        db.session.execute(stmt)
-        # Use modern delete statement for ResolverRealm
-        stmt = delete(ResolverRealm).where(ResolverRealm.realm_id == ret)
-        db.session.execute(stmt)
-        # delete the realm
-        db.session.delete(self)
-        save_config_timestamp()
-        db.session.commit()
-        return ret
 
 
 class ResolverRealm(TimestampMethodsMixin, db.Model):
@@ -130,7 +115,6 @@ class ResolverRealm(TimestampMethodsMixin, db.Model):
                     self.node_uuid = NodeName(node_uuid, node_name).save().id
                 else:
                     raise DatabaseError(f"No NodeName entry found for UUID {node_uuid}")
-
         elif node_name:
             stmt = select(NodeName.id).filter_by(name=node_name)
             self.node_uuid = db.session.execute(stmt).scalar_one_or_none()

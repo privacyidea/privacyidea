@@ -4,18 +4,19 @@ This file contains the tests for periodic tasks.
 In particular, this tests
 lib/periodictask.py
 """
-from datetime import timedelta
+from datetime import timedelta, datetime, timezone
 
 from dateutil.parser import parse as parse_timestamp
 from dateutil.tz import gettz, tzutc
 from mock import mock
+from sqlalchemy import select
 
 from privacyidea.lib.error import ParameterError, ResourceNotFoundError
 from privacyidea.lib.periodictask import calculate_next_timestamp, set_periodic_task, get_periodic_tasks, \
     enable_periodic_task, delete_periodic_task, set_periodic_task_last_run, get_scheduled_periodic_tasks, \
     get_periodic_task_by_name, TASK_MODULES, execute_task, get_periodic_task_by_id
 from privacyidea.lib.task.base import BaseTask
-from privacyidea.models import PeriodicTask
+from privacyidea.models import PeriodicTask, db, PeriodicTaskLastRun, PeriodicTaskOption
 from .base import MyTestCase
 
 
@@ -205,6 +206,152 @@ class BasePeriodicTaskTestCase(MyTestCase):
         self.assertEqual(calculate_next_timestamp(task, "foo", tzinfo),
                          parse_timestamp("2018-05-14 22:00 UTC"))
 
+    def test_03_create_update_delete(self):
+        """
+        This test checks that the data is written and deleted correctly to the database also for related tables.
+        """
+        options = {
+            "key1": "value2",
+            "KEY2": True,
+            "key3": "öfføff",
+        }
+        time_before = datetime.now(timezone.utc).replace(tzinfo=None)
+        task1_id = set_periodic_task("task1", "0 5 * * *", ["localhost"], "some.module", 2, options, False)
+        task2_id = set_periodic_task("some other task", "0 6 * * *", ["localhost", "pinode"], "some.other.module", 1,
+                                     {"foo": "bar"},
+                                     True)
+        time_after = datetime.now(timezone.utc).replace(tzinfo=None)
+
+        # Check that the tasks have been created correctly in the db
+        task1 = db.session.scalars(select(PeriodicTask).where(PeriodicTask.id == task1_id)).first()
+        self.assertEqual("task1", task1.name)
+        self.assertEqual("0 5 * * *", task1.interval)
+        self.assertEqual("localhost", task1.nodes)
+        self.assertEqual("some.module", task1.taskmodule)
+        self.assertEqual(2, task1.ordering)
+        self.assertFalse(task1.active)
+        self.assertAlmostEqual(time_before, task1.last_update, delta=time_after - time_before)
+        # check options
+        task1_options = task1.options.all()
+        self.assertSetEqual({"key1", "KEY2", "key3"}, {opt.key for opt in task1_options})
+        for opt in task1_options:
+            self.assertEqual(task1.id, opt.periodictask_id)
+            if opt.key == "key1":
+                self.assertEqual("value2", opt.value)
+            elif opt.key == "KEY2":
+                self.assertEqual("True", opt.value)
+            elif opt.key == "key3":
+                self.assertEqual("öfføff", opt.value)
+            else:
+                self.fail(f"Unexpected option key {opt.key}")
+
+        # Check second task
+        task2 = db.session.scalars(select(PeriodicTask).where(PeriodicTask.id == task2_id)).first()
+        self.assertEqual("some other task", task2.name)
+        self.assertEqual("0 6 * * *", task2.interval)
+        self.assertEqual("localhost, pinode", task2.nodes)
+        self.assertEqual("some.other.module", task2.taskmodule)
+        self.assertEqual(1, task2.ordering)
+        self.assertTrue(task2.active)
+        self.assertAlmostEqual(time_after, task2.last_update, delta=time_after - time_before)
+        # check options
+        task2_options = task2.options.all()
+        self.assertSetEqual({"foo"}, {opt.key for opt in task2_options})
+        for opt in task2_options:
+            self.assertEqual(task2.id, opt.periodictask_id)
+            self.assertEqual("bar", opt.value)
+
+        # Check get function
+        self.assertEqual({
+            "id": task1.id,
+            "name": "task1",
+            "active": False,
+            "interval": "0 5 * * *",
+            # we get a timezone-aware datetime here
+            "last_update": task1.last_update.replace(tzinfo=timezone.utc),
+            "nodes": ["localhost"],
+            "taskmodule": "some.module",
+            "ordering": 2,
+            "options": {
+                "key1": "value2",
+                "KEY2": "True",
+                "key3": "öfføff",
+            },
+            "retry_if_failed": True,
+            "last_runs": {}}, task1.get())
+
+        # register a run
+        set_periodic_task_last_run(task1.id, "localhost", datetime(2018, 3, 4, 5, 6, 7, tzinfo=timezone.utc))
+        last_runs_task1 = db.session.scalars(
+            select(PeriodicTaskLastRun).where(PeriodicTaskLastRun.periodictask_id == task1.id)).all()
+        self.assertEqual(1, len(last_runs_task1))
+        self.assertEqual("localhost", last_runs_task1[0].node)
+        self.assertEqual(datetime(2018, 3, 4, 5, 6, 7, tzinfo=timezone.utc),
+                         last_runs_task1[0].timestamp.replace(tzinfo=timezone.utc))
+
+        # Update task1
+        time_before = datetime.now(timezone.utc).replace(tzinfo=None)
+        set_periodic_task("task one", "0 8 * * *", ["localhost", "otherhost"], "some.module", 3, {
+            "KEY2": "value number 2",
+            "key 4": 1234
+        }, True, id=task1.id)
+        time_after = datetime.now(timezone.utc).replace(tzinfo=None)
+        # Check that the tasks have been updated correctly in the db
+        task1 = db.session.scalars(select(PeriodicTask).where(PeriodicTask.id == task1_id)).first()
+        self.assertEqual("task one", task1.name)
+        self.assertEqual("0 8 * * *", task1.interval)
+        self.assertEqual("localhost, otherhost", task1.nodes)
+        self.assertEqual("some.module", task1.taskmodule)
+        self.assertEqual(3, task1.ordering)
+        self.assertTrue(task1.active)
+        self.assertGreaterEqual(task1.last_update, time_before)
+        self.assertLessEqual(task1.last_update, time_after)
+        # check options
+        task1_options = task1.options.all()
+        self.assertSetEqual({"KEY2", "key 4"}, {opt.key for opt in task1_options})
+        for opt in task1_options:
+            self.assertEqual(task1.id, opt.periodictask_id)
+            if opt.key == "KEY2":
+                self.assertEqual("value number 2", opt.value)
+            elif opt.key == "key 4":
+                self.assertEqual("1234", opt.value)
+            else:
+                self.fail(f"Unexpected option key {opt.key}")
+
+        # the first run for otherhost
+        set_periodic_task_last_run(task1.id, "otherhost", datetime(2018, 8, 9, 10, 11, 12, tzinfo=timezone.utc))
+        last_runs_task1 = db.session.scalars(
+            select(PeriodicTaskLastRun).where(PeriodicTaskLastRun.periodictask_id == task1.id)).all()
+        self.assertEqual(2, len(last_runs_task1))
+        self.assertSetEqual({"localhost", "otherhost"}, {run.node for run in last_runs_task1})
+
+        # Remove localhost from task1 removes its last run
+        set_periodic_task("task one", "0 8 * * *", ["otherhost"], "some.module", 3, {
+            "KEY2": "value number 2",
+            "key 4": 1234
+        }, True, id=task1.id)
+        last_runs_task1 = db.session.scalars(
+            select(PeriodicTaskLastRun).where(PeriodicTaskLastRun.periodictask_id == task1.id)).all()
+        self.assertEqual(1, len(last_runs_task1))
+        self.assertEqual("otherhost", last_runs_task1[0].node)
+        self.assertEqual(datetime(2018, 8, 9, 10, 11, 12, tzinfo=timezone.utc), last_runs_task1[0].timestamp.replace(
+                         tzinfo=timezone.utc))
+
+        # Delete task removes its last runs and options
+        task1_id = task1.id
+        delete_periodic_task(task1.id)
+        self.assertIsNone(db.session.scalars(select(PeriodicTask).where(PeriodicTask.id == task1_id)).one_or_none())
+        remaining_options = db.session.scalars(select(PeriodicTaskOption)).all()
+        for option in remaining_options:
+            self.assertNotEqual(task1_id, option.periodictask_id)
+            self.assertIsNotNone(option.periodictask_id)
+        remaining_last_runs = db.session.scalars(select(PeriodicTaskLastRun)).all()
+        for last_run in remaining_last_runs:
+            self.assertNotEqual(task1_id, last_run.periodictask_id)
+            self.assertIsNotNone(last_run.periodictask_id)
+
+        delete_periodic_task(task2.id)
+
     def test_03_crud(self):
         task1 = set_periodic_task("task one", "0 0 1 * *", ["pinode1"], "some.task.module", 3, {
             "key1": 1,
@@ -349,8 +496,7 @@ class BasePeriodicTaskTestCase(MyTestCase):
         })
         # at 08:00 on wednesdays
         current_utc_time = parse_timestamp("2018-05-31 05:08:00")
-        with mock.patch('privacyidea.models.periodictask.datetime') as mock_dt:
-            mock_dt.utcnow.return_value = current_utc_time
+        with mock.patch('privacyidea.models.utils.utc_now', return_value=current_utc_time):
             task2 = set_periodic_task("task two", "0 8 * * WED", ["pinode2", "pinode3"], "some.task.module", 1, {
                 "key1": "value",
                 "key2": "foo"
@@ -430,8 +576,8 @@ class BasePeriodicTaskTestCase(MyTestCase):
         self.assertEqual([task["name"] for task in scheduled], ["task four"])
 
         # Enable task2, now we also have to run it on pinode2 and pinode3
-        with mock.patch('privacyidea.models.periodictask.datetime') as mock_dt:
-            mock_dt.utcnow.return_value = current_utc_time
+        current_utc_time = parse_timestamp("2018-05-31 05:08:00")
+        with mock.patch('privacyidea.lib.periodictask.utc_now', return_value=current_utc_time):
             enable_periodic_task(task2)
 
         scheduled = get_scheduled_periodic_tasks("pinode1", current_timestamp, tzinfo)

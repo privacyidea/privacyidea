@@ -156,38 +156,6 @@ class Admin(db.Model):
     password: Mapped[Optional[str]] = mapped_column(Unicode(255))
     email: Mapped[Optional[Optional[str]]] = mapped_column(Unicode(255))
 
-    def save(self):
-        # Replaced .query with a modern select statement
-        stmt = select(Admin).filter_by(username=self.username)
-        c = db.session.execute(stmt).scalar_one_or_none()
-
-        if c is None:
-            # create a new one
-            db.session.add(self)
-            db.session.commit()
-            ret = self.username
-        else:
-            # Replaced .query.update() with a modern update statement
-            update_dict = {}
-            if self.email:
-                update_dict["email"] = self.email
-            if self.password:
-                update_dict["password"] = self.password
-
-            update_stmt = (
-                update(Admin)
-                .where(Admin.username == self.username)
-                .values(**update_dict)
-            )
-            db.session.execute(update_stmt)
-            ret = c.username
-        db.session.commit()
-        return ret
-
-    def delete(self):
-        db.session.delete(self)
-        db.session.commit()
-
 
 class PasswordReset(MethodsMixin, db.Model):
     """

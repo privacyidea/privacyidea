@@ -30,16 +30,18 @@ webservice!
 """
 
 import logging
-from .log import log_with
-from ..models import (MachineResolver,
-                      MachineResolverConfig)
-from ..api.lib.utils import required
-from ..api.lib.utils import getParam
-from sqlalchemy import func
-from .crypto import encryptPassword, decryptPassword
+
+from sqlalchemy import func, select, update
+
 from privacyidea.lib.config import get_machine_resolver_class_dict
 from privacyidea.lib.utils import (sanity_name_check, get_data_from_params, fetch_one_resource)
 from privacyidea.lib.utils.export import (register_import, register_export)
+from .crypto import encryptPassword, decryptPassword
+from .log import log_with
+from ..api.lib.utils import getParam
+from ..api.lib.utils import required
+from ..models import (MachineResolver,
+                      MachineResolverConfig, db)
 
 log = logging.getLogger(__name__)
 
@@ -104,16 +106,39 @@ def save_resolver(params):
             MachineResolver.name) == resolvername.lower()).first().id
     else:
         resolver = MachineResolver(params.get("name"), params.get("type"))
-        resolver_id = resolver.save()
+        db.session.add(resolver)
+        db.session.flush()  # to get the ID
+        resolver_id = resolver.id
     # create the config
     for key, value in data.items():
         if types.get(key) == "password":
             value = encryptPassword(value)
-        MachineResolverConfig(resolver_id=resolver_id,
-                              Key=key,
-                              Value=value,
-                              Type=types.get(key, ""),
-                              Description=desc.get(key, "")).save()
+
+        stmt = select(MachineResolverConfig).filter_by(resolver_id=resolver_id, Key=key)
+        existing_config = db.session.execute(stmt).scalar_one_or_none()
+
+        if existing_config:
+            update_stmt = (
+                update(MachineResolverConfig)
+                .where(
+                    MachineResolverConfig.resolver_id == resolver_id,
+                    MachineResolverConfig.Key == key
+                )
+                .values(
+                    Value=value,
+                    Type=types.get(key, ""),
+                    Description=desc.get(key, "")
+                )
+            )
+            db.session.execute(update_stmt)
+        else:
+            config = MachineResolverConfig(resolver_id=resolver_id,
+                                           Key=key,
+                                           Value=value,
+                                           Type=types.get(key, ""),
+                                           Description=desc.get(key, ""))
+            db.session.add(config)
+    db.session.commit()
     return resolver_id
 
 

@@ -22,7 +22,6 @@ import os
 from datetime import datetime
 from datetime import timedelta
 
-from dateutil.tz import tzutc
 from mock import mock
 from sqlalchemy import func, delete, select
 
@@ -41,14 +40,8 @@ from privacyidea.models import (Token,
                                 Realm,
                                 Config,
                                 Policy,
-                                Challenge, MachineResolver,
-                                MachineResolverConfig, MachineToken, Admin,
-                                CAConnector, CAConnectorConfig, SMTPServer,
-                                PasswordReset, SMSGateway,
-                                PrivacyIDEAServer,
-                                ClientApplication, Subscription, UserCache,
-                                EventCounter, PeriodicTask, PeriodicTaskLastRun,
-                                PeriodicTaskOption, MonitoringStats, PolicyCondition, db,
+                                Challenge, PasswordReset, ClientApplication, UserCache,
+                                EventCounter, MonitoringStats, PolicyCondition, db,
                                 Tokengroup, TokenTokengroup, Serviceid, TokenInfo)
 from .base import MyTestCase
 
@@ -290,31 +283,6 @@ class TokenModelTestCase(MyTestCase):
         q = Realm.query.filter_by(name=realmname).all()
         self.assertTrue(len(q) == 0)
 
-    def test_04_update_resolver_config(self):
-        resolvername = "resolver2"
-        r = Resolver(resolvername, "passwdresolver")
-        rid = r.save()
-        self.assertTrue(r.name is not None, r.name)
-        self.assertTrue(r.rtype == "passwdresolver", r.rtype)
-        # save first resolver config
-        rc = ResolverConfig(resolver=resolvername,
-                            Key="fileName",
-                            Value="/etc/passwd")
-        res_conf_id = rc.save()
-        self.assertTrue(res_conf_id > 0, res_conf_id)
-        # update resolver config
-        rc = ResolverConfig(resolver=resolvername,
-                            Key="fileName",
-                            Value="/etc/secureusers")
-        res_conf_id2 = rc.save()
-        self.assertTrue(res_conf_id2 == res_conf_id,
-                        res_conf_id2)
-        # delete resolver and its config
-        r.delete()
-        # check that config is empty
-        q = ResolverConfig.query.filter_by(resolver_id=rid).all()
-        self.assertTrue(len(q) == 0, q)
-
     def test_05_get_set_realm(self):
         t1 = Token(serial="serial1123")
         t1.save()
@@ -328,47 +296,6 @@ class TokenModelTestCase(MyTestCase):
         db.session.commit()
         realms = t1.get_realms()
         self.assertTrue(len(realms) == 1)
-
-    def test_06_caconnector(self):
-        connector_name = "testCA"
-        # create a CA connector
-        cacon = CAConnector(name=connector_name, catype="localCA")
-        cacon.save()
-
-        # try to create a CA connector, that already exist
-        # cacon = CAConnector(name="testCA", catype="localCA")
-        # self.assertRaises(Exception, cacon.save)
-
-        # add config entries to the CA connector
-        CAConnectorConfig(caconnector_id=1, Key="Key1",
-                          Value="Value1").save()
-        CAConnectorConfig(caconnector=connector_name, Key="Key2",
-                          Value="Value2", Type="password").save()
-        q = CAConnectorConfig.query.filter_by(caconnector_id=1).all()
-        self.assertEqual(len(q), 2)
-        self.assertEqual(q[0].Value, "Value1")
-        self.assertEqual(q[1].Value, "Value2")
-
-        # update config entries
-        CAConnectorConfig(caconnector=connector_name, Key="Key2",
-                          Value="Value3").save()
-        q = CAConnectorConfig.query.filter_by(Key="Key2").all()
-        self.assertEqual(len(q), 1)
-        self.assertEqual(q[0].Value, "Value3")
-
-        # delete config entries
-        CAConnectorConfig.query.filter_by(Key="Key2").delete()
-        q = CAConnectorConfig.query.filter_by(Key="Key2").all()
-        self.assertEqual(q, [])
-
-        # Delete the CA connector. Remaining Config entries will be deleted
-        # automatically
-        cacon = CAConnector.query.filter_by(name=connector_name).first()
-        r = cacon.delete()
-        self.assertEqual(r, 1)
-        q = CAConnectorConfig.query.filter_by(Key="Key1").all()
-        # FIXME: The last entry does not get deleted!
-        # self.assertEqual(q, [])
 
     def test_10_delete_resolver_realm(self):
         resolvername = "res1"
@@ -505,75 +432,6 @@ class TokenModelTestCase(MyTestCase):
         self.assertTrue(c.get_otp_status()[0], c.get_otp_status())
         self.assertFalse(c.get_otp_status()[1], c.get_otp_status())
 
-    def test_13_machine_resolver(self):
-        # create the machineresolver and a config entry
-        mr = MachineResolver("mr1", "mrtype1")
-        mr_id = mr.save()
-        self.assertTrue(mr_id > 0, mr)
-        mrc = MachineResolverConfig(resolver="mr1", Key="key1", Value="value1")
-        mrc_id = mrc.save()
-        self.assertTrue(mrc_id > 0, mrc)
-        # check that the config entry exist
-        db_mrconf = MachineResolverConfig.query.filter(
-            MachineResolverConfig.resolver_id == mr_id).first()
-        self.assertTrue(db_mrconf is not None)
-
-        # add a config value by ID
-        mrc = MachineResolverConfig(resolver_id=mr_id, Key="key2", Value="v2")
-        mrc_id = mrc.save()
-        self.assertTrue(mrc_id > 0)
-        # update config
-        MachineResolverConfig(resolver_id=mr_id, Key="key2",
-                              Value="new value").save()
-        # check if the value is updated.
-        new_config = MachineResolverConfig.query.filter(
-            MachineResolverConfig.Key == "key2").first()
-        self.assertTrue(new_config.Value == "new value", new_config.Value)
-
-        # Connect a machine to a token
-        mt_id = MachineToken(machineresolver_id=mr_id, machine_id="client1",
-                             serial="serial1123",
-                             application="SSH").save()
-        self.assertTrue(mt_id > 0, mt_id)
-        # Connect another machine to a token
-        token_id = Token.query.filter_by(serial="serial1123").first().id
-        mt_id2 = MachineToken(machineresolver="mr1", machine_id="client2",
-                              token_id=token_id,
-                              application="LUKS").save()
-        self.assertTrue(mt_id2 > mt_id, (mt_id2, mt_id))
-        # get the token that contains the machines
-        db_token = Token.query.filter_by(serial="serial1123").first()
-        # check the length of the machine list of the token
-        self.assertTrue(len(db_token.machine_list) == 2, db_token.machine_list)
-        machine2 = db_token.machine_list[1].machine_id
-        self.assertTrue(machine2 == "client2", (machine2,
-                                                db_token.machine_list))
-
-        # delete the machine resolver
-        db_mr = MachineResolver.query.filter(MachineResolver.name ==
-                                             "mr1").first()
-        db_mr.delete()
-        # check that there is no machine resolver and no config entry
-
-        db_mr = MachineResolver.query.filter(MachineResolver.name ==
-                                             "mr1").first()
-        self.assertTrue(db_mr is None)
-        db_mrconf = MachineResolverConfig.query.filter(
-            MachineResolverConfig.resolver_id == mr_id).first()
-        self.assertTrue(db_mrconf is None)
-
-    def test_14_save_update_admin(self):
-        # create an admin user
-        adminname = Admin(username="admin", password="secret",
-                          email="admin@privacyidea.org").save()
-        self.assertEqual(adminname, "admin")
-        password1 = Admin.query.filter_by(username="admin").first().password
-
-        # update admin - change the password
-        Admin(username="admin", password="supersecret").save()
-        password2 = Admin.query.filter_by(username="admin").first().password
-        self.assertTrue(password1 != password2, (password1, password2))
-
     def test_15_add_and_delete_tokeninfo(self):
         t1 = Token("serialTI")
         t1.save()
@@ -596,29 +454,6 @@ class TokenModelTestCase(MyTestCase):
         t2info = t2.get_info()
         self.assertTrue(t2info.get("key2") is None, t2info)
 
-    def test_17_add_and_delete_smtpserver(self):
-        s1 = SMTPServer(identifier="myserver", server="1.2.3.4")
-        s1.save()
-        s2 = SMTPServer.query.filter_by(identifier="myserver").first()
-        self.assertTrue(s2.server, "1.2.3.4")
-
-        # Update the server
-        SMTPServer(identifier="myserver", server="100.2.3.4",
-                   username="user", password="password", tls=True,
-                   description="test", port=123).save()
-        modified_server = SMTPServer.query.filter_by(
-            identifier="myserver").first()
-
-        self.assertEqual(modified_server.server, "100.2.3.4")
-        self.assertEqual(modified_server.username, "user")
-
-        # Delete the server
-        s2.delete()
-        # Try to find the server
-        s2 = SMTPServer.query.filter_by(identifier="myserver").first()
-        # The server does not exist anymore
-        self.assertEqual(s2, None)
-
     def test_18_add_and_delete_password_reset(self):
         p1 = PasswordReset("recoverycode", "cornelius",
                            "realm",
@@ -628,87 +463,23 @@ class TokenModelTestCase(MyTestCase):
                                            realm="realm").first()
         self.assertTrue(p2.recoverycode, "recoverycode")
 
-    def test_20_add_update_delete_smsgateway(self):
-        name = "myGateway"
-        provider_module = "privacyidea.lib.smsprovider.httpbla"
-        provider_module2 = "module2"
-        gw = SMSGateway(name, provider_module, options={"k": "v"})
-
-        self.assertTrue(gw)
-
-        self.assertEqual(gw.identifier, name)
-        self.assertEqual(gw.providermodule, provider_module)
-
-        # update SMS gateway, key "k" should not exist anymore!
-        SMSGateway(name, provider_module2,
-                   options={"k1": "v1"})
-        self.assertEqual(gw.providermodule, provider_module2)
-        self.assertEqual(gw.options[0].Key, "k1")
-        self.assertEqual(gw.options[0].Value, "v1")
-
-        # Delete gateway
-        gw.delete()
-
     def test_21_add_update_delete_clientapp(self):
         # MySQLs DATETIME type supports only seconds so we have to mock now()
         current_time = datetime(2018, 3, 4, 5, 6, 8)
         with mock.patch('privacyidea.models.subscription.datetime') as mock_dt:
             mock_dt.now.return_value = current_time
 
-            ClientApplication(ip="1.2.3.4", hostname="host1",
-                              clienttype="PAM", node="localnode").save()
+            app = ClientApplication(ip="1.2.3.4", hostname="host1",
+                                    clienttype="PAM", node="localnode")
+            db.session.add(app)
+            db.session.flush()
 
-        c = ClientApplication.query.filter(ClientApplication.ip == "1.2.3.4").first()
+        c = db.session.scalars(select(ClientApplication).where(ClientApplication.ip == "1.2.3.4")).first()
         self.assertEqual(c.hostname, "host1")
         self.assertEqual(c.ip, "1.2.3.4")
         self.assertEqual(c.clienttype, "PAM")
-        t1 = c.lastseen
 
         self.assertIn("localnode", repr(c))
-
-        ClientApplication(ip="1.2.3.4", hostname="host1",
-                          clienttype="PAM", node="localnode").save()
-        c = ClientApplication.query.filter(ClientApplication.ip == "1.2.3.4").first()
-        self.assertGreater(c.lastseen, t1, c)
-
-        ClientApplication.query.filter(ClientApplication.id == c.id).delete()
-        c = ClientApplication.query.filter(ClientApplication.ip == "1.2.3.4").first()
-        self.assertEqual(c, None)
-
-    def test_22_subscription(self):
-        Subscription(application="otrs", for_name="customer",
-                     for_email="customer@example.com", for_phone="12345",
-                     by_name="provider", by_email="p@example.com",
-                     level="Gold").save()
-        s = Subscription.query.filter(Subscription.application == "otrs").first()
-        self.assertEqual(s.application, "otrs")
-        self.assertEqual(s.for_name, "customer")
-        self.assertEqual(s.for_email, "customer@example.com")
-        self.assertEqual(s.for_phone, "12345")
-        self.assertEqual(s.by_name, "provider")
-        self.assertEqual(s.by_email, "p@example.com")
-        self.assertEqual(s.level, "Gold")
-
-        # Update the entry
-        Subscription(application="otrs", for_phone="11111",
-                     by_url="https://support.com",
-                     signature="1234567890", level="Silver").save()
-        s = Subscription.query.filter(
-            Subscription.application == "otrs").first()
-        self.assertEqual(s.application, "otrs")
-        self.assertEqual(s.for_name, "customer")
-        self.assertEqual(s.for_email, "customer@example.com")
-        self.assertEqual(s.for_phone, "11111")
-        self.assertEqual(s.by_name, "provider")
-        self.assertEqual(s.by_email, "p@example.com")
-        self.assertEqual(s.by_url, "https://support.com")
-        self.assertEqual(s.level, "Silver")
-
-        # delete entry
-        Subscription.query.filter(Subscription.application == "otrs").delete()
-        s = Subscription.query.filter(
-            Subscription.application == "otrs").first()
-        self.assertEqual(s, None)
 
     def test_23_usercache(self):
         username = "cornelius"
@@ -745,32 +516,6 @@ class TokenModelTestCase(MyTestCase):
         find_user = UserCache.query.filter(UserCache.username ==
                                            username).first()
         self.assertFalse(find_user)
-
-    def test_24_add_and_delete_privacyideaserver(self):
-        pi1 = PrivacyIDEAServer(identifier="myserver",
-                                url="https://pi.example.com")
-        pi1.save()
-        pi2 = PrivacyIDEAServer.query.filter_by(identifier="myserver").first()
-        self.assertEqual(pi2.url, "https://pi.example.com")
-        self.assertFalse(pi2.tls)
-
-        # Update the server
-        PrivacyIDEAServer(identifier="myserver",
-                          url="https://pi2.example.com", tls=True,
-                          description="test").save()
-        modified_server = PrivacyIDEAServer.query.filter_by(
-            identifier="myserver").first()
-
-        self.assertTrue(modified_server.tls, "100.2.3.4")
-        self.assertEqual(modified_server.description, "test")
-        self.assertEqual(modified_server.url, "https://pi2.example.com")
-
-        # Delete the server
-        pi2.delete()
-        # Try to find the server
-        pi2 = PrivacyIDEAServer.query.filter_by(identifier="myserver").first()
-        # The server does not exist anymore
-        self.assertEqual(pi2, None)
 
     def test_25_eventcounter(self):
         counter = EventCounter("test_counter", 10)
@@ -815,117 +560,6 @@ class TokenModelTestCase(MyTestCase):
 
         counter10 = EventCounter.query.filter_by(counter_name="test_counter").first()
         self.assertEqual(counter10, None)
-
-    def test_26_periodictask(self):
-        current_utc_time = datetime(2018, 3, 4, 5, 6, 8)
-        with mock.patch('privacyidea.models.periodictask.datetime') as mock_dt:
-            mock_dt.utcnow.return_value = current_utc_time
-
-            task1 = PeriodicTask("task1", False, "0 5 * * *", ["localhost"], "some.module", 2, {
-                "key1": "value2",
-                "KEY2": True,
-                "key3": "öfføff",
-            })
-            task2 = PeriodicTask("some other task", True, "0 6 * * *", ["localhost"], "some.other.module", 1, {
-                "foo": "bar"
-            })
-
-        self.assertEqual(PeriodicTask.query.filter_by(name="task1").one(), task1)
-        self.assertEqual(PeriodicTask.query.filter_by(name="some other task").one(), task2)
-        self.assertEqual(PeriodicTaskOption.query.filter_by(periodictask_id=task1.id, key="KEY2").one().value,
-                         "True")
-        # Values are converted to strings
-        self.assertEqual(task1.get(), {
-            "id": task1.id,
-            "name": "task1",
-            "active": False,
-            "interval": "0 5 * * *",
-            # we get a timezone-aware datetime here
-            "last_update": current_utc_time.replace(tzinfo=tzutc()),
-            "nodes": ["localhost"],
-            "taskmodule": "some.module",
-            "ordering": 2,
-            "options": {
-                "key1": "value2",
-                "KEY2": "True",
-                "key3": "öfføff",
-            },
-            "retry_if_failed": True,
-            "last_runs": {}})
-
-        # register a run
-        task1.set_last_run("localhost", datetime(2018, 3, 4, 5, 6, 7))
-
-        # assert we can update the task
-        later_utc_time = current_utc_time + timedelta(seconds=1)
-        with mock.patch('privacyidea.models.periodictask.datetime') as mock_dt:
-            mock_dt.utcnow.return_value = later_utc_time
-            PeriodicTask("task one", True, "0 8 * * *", ["localhost", "otherhost"], "some.module", 3, {
-                "KEY2": "value number 2",
-                "key 4": 1234
-            }, id=task1.id)
-        # the first run for otherhost
-        task1.set_last_run("otherhost", datetime(2018, 8, 9, 10, 11, 12))
-        result = PeriodicTask.query.filter_by(name="task one").one().get()
-        self.assertEqual(result,
-                         {
-                             "id": task1.id,
-                             "active": True,
-                             "name": "task one",
-                             "interval": "0 8 * * *",
-                             "last_update": later_utc_time.replace(tzinfo=tzutc()),
-                             "nodes": ["localhost", "otherhost"],
-                             "taskmodule": "some.module",
-                             "ordering": 3,
-                             "options": {"KEY2": "value number 2",
-                                         "key 4": "1234"},
-                             'retry_if_failed': True,
-                             "last_runs": {
-                                 "localhost": datetime(2018, 3, 4, 5, 6, 7, tzinfo=tzutc()),
-                                 "otherhost": datetime(2018, 8, 9, 10, 11, 12, tzinfo=tzutc()),
-                             }
-                         })
-        # assert all old options are removed
-        self.assertEqual(PeriodicTaskOption.query.filter_by(periodictask_id=task1.id, key="key3").count(), 0)
-        # the second run for localhost
-        task1.set_last_run("localhost", datetime(2018, 3, 4, 5, 6, 8))
-        result = PeriodicTask.query.filter_by(name="task one").one().get()
-        self.assertEqual(result,
-                         {
-                             "id": task1.id,
-                             "active": True,
-                             "name": "task one",
-                             "interval": "0 8 * * *",
-                             "last_update": later_utc_time.replace(tzinfo=tzutc()),
-                             "nodes": ["localhost", "otherhost"],
-                             "taskmodule": "some.module",
-                             "ordering": 3,
-                             "options": {"KEY2": "value number 2",
-                                         "key 4": "1234"},
-                             'retry_if_failed': True,
-                             "last_runs": {
-                                 "localhost": datetime(2018, 3, 4, 5, 6, 8, tzinfo=tzutc()),
-                                 "otherhost": datetime(2018, 8, 9, 10, 11, 12, tzinfo=tzutc()),
-                             }
-                         })
-
-        # remove "localhost", assert the last run is removed
-        PeriodicTask("task one", True, "0 8 * * *", ["otherhost"],
-                     "some.module", 4, {"foo": "bar"}, id=task1.id)
-        self.assertEqual(PeriodicTaskOption.query.filter_by(periodictask_id=task1.id).count(), 1)
-        self.assertEqual(PeriodicTaskLastRun.query.filter_by(periodictask_id=task1.id).one().node, "otherhost")
-        # naive timestamp in the database
-        self.assertEqual(PeriodicTaskLastRun.query.filter_by(periodictask_id=task1.id).one().timestamp,
-                         datetime(2018, 8, 9, 10, 11, 12, tzinfo=None))
-        self.assertEqual(PeriodicTaskLastRun.query.filter_by(periodictask_id=task1.id).one().aware_timestamp,
-                         datetime(2018, 8, 9, 10, 11, 12, tzinfo=tzutc()))
-
-        # remove the tasks, everything is removed
-        task1.delete()
-        self.assertEqual(PeriodicTaskOption.query.count(), 1)  # from task2
-        self.assertEqual(PeriodicTaskLastRun.query.count(), 0)
-        task2.delete()
-        self.assertEqual(PeriodicTaskOption.query.count(), 0)
 
     def test_27_monitoring_stats(self):
         # Simple test to write data to the monitoring stats table

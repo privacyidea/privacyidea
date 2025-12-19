@@ -15,9 +15,15 @@
 #
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+from datetime import datetime, timezone
 
 from privacyidea.models import db
 
+def utc_now() -> datetime:
+    """
+    Return the current UTC time as a naive datetime object.
+    """
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 
 class MethodsMixin:
     """

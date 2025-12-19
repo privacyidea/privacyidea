@@ -52,63 +52,10 @@ class SMSGateway(MethodsMixin, db.Model):
         back_populates='smsgw'
     )
 
-    def __init__(self, identifier, providermodule, description=None,
-                 options=None, headers=None):
-
-        options = options or {}
-        headers = headers or {}
-
-        stmt = select(SMSGateway).filter_by(identifier=identifier)
-        sql = db.session.execute(stmt).scalar_one_or_none()
-
-        if sql:
-            self.id = sql.id
+    def __init__(self, identifier, providermodule, description=None):
         self.identifier = identifier
         self.providermodule = providermodule
         self.description = description
-        self.save()
-
-        # delete non-existing options in case of update
-        opts = {"option": options, "header": headers}
-        if sql:
-            sql_opts = {"option": sql.option_dict, "header": sql.header_dict}
-            for typ, vals in opts.items():
-                for key in sql_opts[typ].keys():
-                    # iterate through all existing options/headers
-                    if key not in vals:
-                        # if the option is not contained anymore
-                        delete_stmt = delete(SMSGatewayOption).where(
-                            and_(
-                                SMSGatewayOption.gateway_id == self.id,
-                                SMSGatewayOption.Key == key,
-                                SMSGatewayOption.Type == typ
-                            )
-                        )
-                        db.session.execute(delete_stmt)
-        # add the options and headers to the SMS Gateway
-        for typ, vals in opts.items():
-            for k, v in vals.items():
-                SMSGatewayOption(gateway_id=self.id, Key=k, Value=v, Type=typ).save()
-
-    def save(self):
-        if self.id is None:
-            # create a new one
-            db.session.add(self)
-            db.session.commit()
-        else:
-            # update
-            update_stmt = (
-                update(SMSGateway)
-                .where(SMSGateway.id == self.id)
-                .values(
-                    identifier=self.identifier,
-                    providermodule=self.providermodule,
-                    description=self.description
-                )
-            )
-            db.session.execute(update_stmt)
-            db.session.commit()
-        return self.id
 
     def delete(self):
         """
@@ -175,38 +122,3 @@ class SMSGatewayOption(MethodsMixin, db.Model):
         self.Value = convert_column_to_unicode(Value)
         self.Type = Type
         self.save()
-
-    def save(self):
-        # See, if there is this option or header for this gateway
-        # The first match takes precedence
-        stmt = select(SMSGatewayOption).filter(
-            and_(
-                SMSGatewayOption.gateway_id == self.gateway_id,
-                SMSGatewayOption.Key == self.Key,
-                SMSGatewayOption.Type == self.Type
-            )
-        )
-        go = db.session.execute(stmt).scalar_one_or_none()
-
-        if go is None:
-            # create a new one
-            db.session.add(self)
-            db.session.commit()
-            ret = self.id
-        else:
-            # update
-            update_stmt = (
-                update(SMSGatewayOption)
-                .where(
-                    and_(
-                        SMSGatewayOption.gateway_id == self.gateway_id,
-                        SMSGatewayOption.Key == self.Key,
-                        SMSGatewayOption.Type == self.Type
-                    )
-                )
-                .values(Value=self.Value, Type=self.Type)
-            )
-            db.session.execute(update_stmt)
-            ret = go.id
-        db.session.commit()
-        return ret

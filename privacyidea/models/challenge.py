@@ -185,7 +185,7 @@ def cleanup_challenges(serial):
 
     :return: None
     """
-    c_now = datetime.now(timezone.utc).replace(tzinfo=None)  # DB contains naive datetime
+    c_now = _utc_now()  # DB contains naive datetime
     # Replaced the legacy .query.delete() with a modern delete statement
     delete_stmt = delete(Challenge).where(
         Challenge.expiration < c_now,

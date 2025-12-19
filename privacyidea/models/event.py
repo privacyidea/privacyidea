@@ -24,15 +24,11 @@ from sqlalchemy import (
     Boolean,
     ForeignKey,
     UniqueConstraint,
-    select,
-    update,
-    delete,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from privacyidea.lib.utils import convert_column_to_unicode
 from privacyidea.models import db
-from privacyidea.models.config import save_config_timestamp
 from privacyidea.models.utils import MethodsMixin
 
 
@@ -75,15 +71,6 @@ class EventHandler(MethodsMixin, db.Model):
         if id == "":
             id = None
         self.id = id
-
-    def delete(self):
-        ret = self.id
-        # The cascade="all, delete-orphan" on the relationships handles the deletion
-        # of child records automatically. We only need to delete the parent.
-        db.session.delete(self)
-        save_config_timestamp()
-        db.session.commit()
-        return ret
 
     def get(self):
         """
@@ -133,31 +120,6 @@ class EventHandlerCondition(db.Model):
         self.Key = Key
         self.Value = convert_column_to_unicode(Value)
         self.comparator = comparator
-        # This is commented out to allow for a single commit in EventHandler.__init__
-        # self.save()
-
-    def save(self):
-        # Find existing object using a modern select statement
-        stmt = select(EventHandlerCondition).filter_by(eventhandler_id=self.eventhandler_id, Key=self.Key)
-        ehc = db.session.execute(stmt).scalar_one_or_none()
-
-        if ehc is None:
-            # create a new one
-            db.session.add(self)
-            db.session.commit()
-            ret = self.id
-        else:
-            # update using a modern update statement
-            update_stmt = (
-                update(EventHandlerCondition)
-                .where(EventHandlerCondition.eventhandler_id == self.eventhandler_id,
-                       EventHandlerCondition.Key == self.Key)
-                .values(Value=self.Value, comparator=self.comparator)
-            )
-            db.session.execute(update_stmt)
-            ret = ehc.id
-        db.session.commit()
-        return ret
 
 
 class EventHandlerOption(db.Model):
@@ -180,27 +142,3 @@ class EventHandlerOption(db.Model):
         self.Value = convert_column_to_unicode(Value)
         self.Type = Type
         self.Description = Description
-        # This is commented out to allow for a single commit in EventHandler.__init__
-        # self.save()
-
-    def save(self):
-        # Find existing object using a modern select statement
-        stmt = select(EventHandlerOption).filter_by(eventhandler_id=self.eventhandler_id, Key=self.Key)
-        eho = db.session.execute(stmt).scalar_one_or_none()
-
-        if eho is None:
-            # create a new one
-            db.session.add(self)
-            db.session.commit()
-            ret = self.id
-        else:
-            # update using a modern update statement
-            update_stmt = (
-                update(EventHandlerOption)
-                .where(EventHandlerOption.eventhandler_id == self.eventhandler_id, EventHandlerOption.Key == self.Key)
-                .values(Value=self.Value, Type=self.Type, Description=self.Description)
-            )
-            db.session.execute(update_stmt)
-            ret = eho.id
-        db.session.commit()
-        return ret

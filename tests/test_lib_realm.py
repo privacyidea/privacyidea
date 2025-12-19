@@ -5,22 +5,20 @@ The lib.resolvers.py only depends on the database model.
 """
 import uuid
 
-from privacyidea.lib.container import init_container, unassign_user, delete_container_by_serial
+from privacyidea.lib.container import init_container, unassign_user, delete_container_by_serial, get_container_realms
 from privacyidea.lib.error import UserError
-from privacyidea.lib.token import init_token, unassign_token
-from privacyidea.lib.user import User
-from privacyidea.models import NodeName, db
-from .base import MyTestCase
-
-from privacyidea.lib.resolver import (save_resolver,
-                                      delete_resolver)
-
 from privacyidea.lib.realm import (set_realm,
                                    get_realms,
                                    get_default_realm,
                                    realm_is_defined,
                                    set_default_realm,
                                    delete_realm, export_realms, import_realms)
+from privacyidea.lib.resolver import (save_resolver,
+                                      delete_resolver)
+from privacyidea.lib.token import init_token, unassign_token
+from privacyidea.lib.user import User
+from privacyidea.models import NodeName, db
+from .base import MyTestCase
 
 
 class ResolverTestCase(MyTestCase):
@@ -113,7 +111,12 @@ class ResolverTestCase(MyTestCase):
         unassign_user(container_serial, User("root", self.realm1))
         # Now no user is assigned anymore, deletion is allowed
         delete_realm(self.realm1)
+
+        # check that the token and container realm are also deleted
+        self.assertEqual(0, len(token.get_realms()), token.get_realms())
         token.delete_token()
+        container_realms = get_container_realms(container_serial)
+        self.assertEqual(0, len(container_realms), container_realms)
         delete_container_by_serial(container_serial)
 
         delete_realm("realm2")

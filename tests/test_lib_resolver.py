@@ -7,44 +7,45 @@ lib.resolvers.ldapresolver
 
 The lib.resolver.py only depends on the database model.
 """
-
-from privacyidea.lib.crypto import encryptPassword
-from privacyidea.lib.resolvers.EntraIDResolver import (CLIENT_ID, TENANT, CLIENT_CREDENTIAL_TYPE, ClientCredentialType,
-                                                       CLIENT_CERTIFICATE, PRIVATE_KEY_FILE, PRIVATE_KEY_PASSWORD,
-                                                       CERTIFICATE_FINGERPRINT)
-from .base import MyTestCase
-from . import ldap3mock
-from ldap3.core.exceptions import LDAPOperationResult, LDAPAttributeError
-from ldap3.core.results import RESULT_SIZE_LIMIT_EXCEEDED
-from testfixtures import LogCapture
-import mock
-import ldap3
-import logging
-import responses
 import datetime
+import json
+import logging
 import shutil
+import ssl
 import tempfile
 import uuid
-import json
-import ssl
-from privacyidea.lib.resolvers.LDAPIdResolver import IdResolver as LDAPResolver, LockingServerPool
-from privacyidea.lib.resolvers.SQLIdResolver import IdResolver as SQLResolver
-from privacyidea.lib.resolvers.SCIMIdResolver import IdResolver as SCIMResolver
-from privacyidea.lib.resolvers.UserIdResolver import UserIdResolver
-from privacyidea.lib.resolvers.LDAPIdResolver import (SERVERPOOL_ROUNDS, SERVERPOOL_SKIP)
-from privacyidea.lib.resolvers.HTTPResolver import (HEADERS, METHOD, ENDPOINT, EDITABLE, CONFIG_GET_USER_BY_NAME,
-                                                    HTTPMethod, CONFIG_GET_USER_BY_ID, ADVANCED)
 
+import ldap3
+import mock
+import responses
+from ldap3.core.exceptions import LDAPOperationResult, LDAPAttributeError
+from ldap3.core.results import RESULT_SIZE_LIMIT_EXCEEDED
+from sqlalchemy import select
+from testfixtures import LogCapture
+
+from privacyidea.lib.crypto import encryptPassword
+from privacyidea.lib.error import ParameterError, ResolverError
+from privacyidea.lib.realm import (set_realm, delete_realm)
 from privacyidea.lib.resolver import (save_resolver,
                                       delete_resolver,
                                       get_resolver_config,
                                       get_resolver_list,
                                       get_resolver_object, pretestresolver,
                                       CENSORED)
-from privacyidea.lib.realm import (set_realm, delete_realm)
-from privacyidea.models import ResolverConfig, Resolver, db
+from privacyidea.lib.resolvers.EntraIDResolver import (CLIENT_ID, TENANT, CLIENT_CREDENTIAL_TYPE, ClientCredentialType,
+                                                       CLIENT_CERTIFICATE, PRIVATE_KEY_FILE, PRIVATE_KEY_PASSWORD,
+                                                       CERTIFICATE_FINGERPRINT)
+from privacyidea.lib.resolvers.HTTPResolver import (HEADERS, METHOD, ENDPOINT, EDITABLE, CONFIG_GET_USER_BY_NAME,
+                                                    HTTPMethod, CONFIG_GET_USER_BY_ID, ADVANCED)
+from privacyidea.lib.resolvers.LDAPIdResolver import IdResolver as LDAPResolver, LockingServerPool
+from privacyidea.lib.resolvers.LDAPIdResolver import (SERVERPOOL_ROUNDS, SERVERPOOL_SKIP)
+from privacyidea.lib.resolvers.SCIMIdResolver import IdResolver as SCIMResolver
+from privacyidea.lib.resolvers.SQLIdResolver import IdResolver as SQLResolver
+from privacyidea.lib.resolvers.UserIdResolver import UserIdResolver
 from privacyidea.lib.utils import to_bytes, to_unicode
-from privacyidea.lib.error import ParameterError, ResolverError
+from privacyidea.models import ResolverConfig, Resolver, db
+from . import ldap3mock
+from .base import MyTestCase
 
 PWFILE = "tests/testdata/passwords"
 
@@ -885,7 +886,7 @@ class LDAPResolverTestCase(MyTestCase):
         self.assertTrue(uinfo.get("username") == "bob", uinfo)
 
         ret = y.getUserList({"username": "bob"})
-        self.assertEqual(1, len(ret),ret)
+        self.assertEqual(1, len(ret), ret)
 
         # Get user list with a wrong search parameter
         with LogCapture(level=logging.ERROR) as lc:
@@ -2338,7 +2339,8 @@ class LDAPResolverTestCase(MyTestCase):
             self.assertEqual("alice", user_info["username"])
             self.assertEqual("Alice", user_info["givenname"])
             self.assertEqual("Cooper", user_info["surname"])
-            self.assertSetEqual({"cn=testgroup,ou=example,o=test", "cn=subgroup,ou=example,o=test"}, set(user_info["groups"]))
+            self.assertSetEqual({"cn=testgroup,ou=example,o=test", "cn=subgroup,ou=example,o=test"},
+                                set(user_info["groups"]))
 
         # tag not in user info
         params['group_search_filter'] = ('(&(sAMAccountName=*)(objectCategory=group)'
@@ -2415,6 +2417,16 @@ class ResolverTestCase(MyTestCase):
                              "type.fileName": "string",
                              "desc.fileName": "The name of the file"})
         self.assertTrue(rid > 0, rid)
+        resolver_config = get_resolver_config(self.resolvername1)
+        self.assertSetEqual({"fileName"}, set(resolver_config.keys()), resolver_config)
+        self.assertEqual("/etc/passwd", resolver_config.get("fileName"), resolver_config)
+        # Check db config entry
+        config_db = db.session.scalars(select(ResolverConfig).where(ResolverConfig.resolver_id == rid)).all()
+        self.assertEqual(1, len(config_db), config_db)
+        self.assertEqual("fileName", config_db[0].Key, config_db)
+        self.assertEqual("/etc/passwd", config_db[0].Value, config_db)
+        self.assertEqual("string", config_db[0].Type, config_db)
+        self.assertEqual("The name of the file", config_db[0].Description, config_db)
 
         db.session.expunge_all()
 
@@ -2423,26 +2435,34 @@ class ResolverTestCase(MyTestCase):
                              "type": "passwdresolver",
                              "test": "",
                              "test_bool": False,
-                             "description": "Test description"})
+                             "description": "Test description",
+                             "fileName": "/another/file"})
         self.assertTrue(rid > 0, rid)
-        self.assertIsNone(ResolverConfig.query.filter_by(resolver_id=rid, Key="test").first())
-        self.assertEqual("False", ResolverConfig.query.filter_by(resolver_id=rid, Key="test_bool").first().Value)
+        config_db = db.session.scalars(select(ResolverConfig).where(ResolverConfig.resolver_id == rid)).all()
+        self.assertSetEqual({"fileName", "test_bool", "description"}, set([c.Key for c in config_db]), config_db)
+        for config in config_db:
+            if config.Key == "test_bool":
+                self.assertEqual("False", config.Value, config_db)
+            if config.Key == "description":
+                self.assertEqual("Test description", config.Value, config_db)
+            if config.Key == "fileName":
+                self.assertEqual("/another/file", config.Value, config_db)
         # But if the key already exists, delete it
-        self.assertEqual("Test description",
-                         ResolverConfig.query.filter_by(resolver_id=rid, Key="description").first().Value)
         rid = save_resolver({"resolver": self.resolvername1,
                              "type": "passwdresolver",
-                             "description": ""})
+                             "description": "",
+                             "fileName": "/etc/passwd"})
         self.assertTrue(rid > 0, rid)
-        self.assertIsNone(ResolverConfig.query.filter_by(resolver_id=rid, Key="description").first())
+        config_db = db.session.scalars(select(ResolverConfig).where(ResolverConfig.resolver_id == rid)).all()
+        self.assertSetEqual({"fileName", "test_bool"}, set([c.Key for c in config_db]), config_db)
 
-        # description with missing main key
+        # type with missing main key
         params = {"resolver": "reso2",
                   "type": "passwdresolver",
                   "type.fileName": "string"}
         self.assertRaises(Exception, save_resolver, params)
 
-        # type with missing main key
+        # description with missing main key
         params = {"resolver": "reso2",
                   "type": "passwdresolver",
                   "desc.fileName": "The file name"}
@@ -2592,16 +2612,22 @@ class ResolverTestCase(MyTestCase):
         self.assertEqual("Test1234", reso_data[CLIENT_CERTIFICATE][PRIVATE_KEY_PASSWORD])
 
         # Invalid JSON format are not loaded
-        entra_resolver = Resolver.query.filter_by(name="EntraID").first()
-        ResolverConfig(entra_resolver.id, Key=CONFIG_GET_USER_BY_ID,
-                       Value="{'method': 'GET', 'endpoint': '/users/{userid}'}", Type="dict").save()
-        ResolverConfig(entra_resolver.id, Key=CLIENT_CERTIFICATE,
-                       Value="{'PRIVATE_KEY_FILE': 'tests/tesdata/cert.pem', 'PRIVATE_KEY_PASSWORD': 'Test123', 'CERTIFICATE_FINGERPRINT': '123456'}",
-                       Type="dict").save()
+        # Update config with invalid dict_with_password type, does not store this entry
+        with mock.patch("logging.Logger.warning") as mock_log:
+            save_resolver({"resolver": "EntraID", "type": "entraidresolver",
+                           CONFIG_GET_USER_BY_ID: "{'method': 'GET', 'endpoint': '/new/users/{userid}'}",
+                           CLIENT_CERTIFICATE: "{'PRIVATE_KEY_FILE': 'tests/new_cert.pem', 'PRIVATE_KEY_PASSWORD': 'Test123', 'CERTIFICATE_FINGERPRINT': '123456'}",
+                           CLIENT_ID: "56789"})
+            mock_log.assert_any_call("Config entry %s is not a dict. Cannot be stored.", CLIENT_CERTIFICATE)
         reso_list = get_resolver_list(filter_resolver_name="EntraID")
         reso_data = reso_list["EntraID"]["data"]
+        # Invalid dict format is stored but can not be loaded
         self.assertTrue(isinstance(reso_data[CONFIG_GET_USER_BY_ID], str))
-        self.assertTrue(isinstance(reso_data[CLIENT_CERTIFICATE], str))
+        self.assertEqual("{'method': 'GET', 'endpoint': '/new/users/{userid}'}", reso_data[CONFIG_GET_USER_BY_ID])
+        # Previous data
+        self.assertTrue(isinstance(reso_data[CLIENT_CERTIFICATE], dict))
+        self.assertEqual("tests/testdata/cert.pem", reso_data[CLIENT_CERTIFICATE][PRIVATE_KEY_FILE])
+        self.assertEqual("56789", reso_data[CLIENT_ID])
         delete_resolver("EntraID")
 
     def test_04_get_resolver_config(self):
@@ -2629,9 +2655,18 @@ class ResolverTestCase(MyTestCase):
         self.assertTrue(self.resolvername1 in reso_list, reso_list)
         self.assertTrue(self.resolvername2 in reso_list, reso_list)
 
+        resolver_ids = db.session.scalars(
+            select(Resolver.id).where(Resolver.name.in_([self.resolvername1, self.resolvername2]))).all()
+
         # delete the resolvers
         delete_resolver(self.resolvername1)
         delete_resolver(self.resolvername2)
+
+        # Check that the resolver configs are also deleted
+        configs = db.session.scalars(select(ResolverConfig)).all()
+        for config in configs:
+            self.assertNotIn(config.resolver_id, resolver_ids, config)
+            self.assertIsNotNone(config.resolver_id, config)
 
         # check list empty
         reso_list = get_resolver_list()

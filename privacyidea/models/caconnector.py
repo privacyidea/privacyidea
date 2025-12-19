@@ -24,13 +24,12 @@ from sqlalchemy import (
     ForeignKey,
     UniqueConstraint,
     select,
-    update,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from privacyidea.lib.utils import convert_column_to_unicode
 from privacyidea.models import db
-from privacyidea.models.config import TimestampMethodsMixin, save_config_timestamp
+from privacyidea.models.config import TimestampMethodsMixin
 
 
 class CAConnector(TimestampMethodsMixin, db.Model):
@@ -49,16 +48,6 @@ class CAConnector(TimestampMethodsMixin, db.Model):
     def __init__(self, name, catype):
         self.name = name
         self.catype = catype
-
-    def delete(self):
-        ret = self.id
-        # The relationship is configured with cascade="all, delete-orphan", so
-        # deleting the parent object will automatically delete the related
-        # children. This replaces the explicit bulk delete query.
-        db.session.delete(self)
-        save_config_timestamp()
-        db.session.commit()
-        return ret
 
 
 class CAConnectorConfig(db.Model):
@@ -94,28 +83,3 @@ class CAConnectorConfig(db.Model):
         self.Value = convert_column_to_unicode(Value)
         self.Type = Type
         self.Description = Description
-
-    def save(self):
-        stmt = select(CAConnectorConfig).filter_by(caconnector_id=self.caconnector_id, Key=self.Key)
-        c = db.session.execute(stmt).scalar_one_or_none()
-
-        save_config_timestamp()
-        if c is None:
-            # create a new one
-            db.session.add(self)
-            db.session.commit()
-            ret = self.id
-        else:
-            # Replaced .query.update() with a modern update statement
-            update_stmt = (
-                update(CAConnectorConfig)
-                .where(
-                    CAConnectorConfig.caconnector_id == self.caconnector_id,
-                    CAConnectorConfig.Key == self.Key,
-                )
-                .values(Value=self.Value, Type=self.Type, Description=self.Description)
-            )
-            db.session.execute(update_stmt)
-            ret = c.id
-        db.session.commit()
-        return ret
