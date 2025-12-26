@@ -16,10 +16,10 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import json
 import logging
-from sqlalchemy import Sequence
+from sqlalchemy import Sequence, delete
 
 from privacyidea.models import db
 from privacyidea.models.utils import MethodsMixin
@@ -170,6 +170,7 @@ def cleanup_challenges(serial):
 
     :return: None
     """
-    c_now = datetime.utcnow()
-    Challenge.query.filter(Challenge.expiration < c_now, Challenge.serial == serial).delete()
+    c_now = datetime.now(timezone.utc).replace(tzinfo=None) # DB contains naive datetime
+    stmt = delete(Challenge).where(Challenge.expiration < c_now, Challenge.serial == serial)
+    db.session.execute(stmt)
     db.session.commit()

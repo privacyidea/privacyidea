@@ -166,8 +166,7 @@ class prepolicy(object):
 
         @functools.wraps(wrapped_function)
         def policy_wrapper(*args, **kwds):
-            self.function(request=self.request,
-                          action=self.action)
+            self.function(request=self.request, action=self.action)
             return wrapped_function(*args, **kwds)
 
         return policy_wrapper
@@ -777,6 +776,7 @@ def verify_enrollment(request=None, action=None):
                     # TODO: we need to add the tokentype here or the second init_token() call fails
                     request.all_data.update(type=tokenobj.get_tokentype())
                     tokenobj.token.rollout_state = ROLLOUTSTATE.ENROLLED
+                    tokenobj.token.save() # todo evaluate
                 else:
                     from privacyidea.lib.error import ParameterError
                     raise ParameterError("Verification of the new token failed.")

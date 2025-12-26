@@ -3,6 +3,7 @@ import json
 from datetime import datetime, timezone, timedelta
 
 import mock
+from sqlalchemy import select
 
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.config import set_privacyidea_config
@@ -36,7 +37,7 @@ from privacyidea.lib.error import (ResourceNotFoundError, ParameterError, Enroll
                                    TokenAdminError, ContainerInvalidChallenge, ContainerNotRegistered, PolicyError)
 from privacyidea.lib.token import init_token, remove_token
 from privacyidea.lib.user import User
-from privacyidea.models import TokenContainer, Token, TokenContainerTemplate
+from privacyidea.models import TokenContainer, Token, TokenContainerTemplate, db
 from .base import MyTestCase
 
 
@@ -172,8 +173,8 @@ class TokenContainerManagementTestCase(MyTestCase):
         res = add_token_to_container(self.smartphone_serial, self.hotp_serial_gen)
         self.assertTrue(res)
         # Check containers: Token is only in smartphone container
-        db_result = TokenContainer.query.join(Token.container).filter(Token.serial == self.hotp_serial_gen)
-        container_serials = [row.serial for row in db_result]
+        stmt = select(TokenContainer).join(Token.container).where(Token.serial == self.hotp_serial_gen)
+        container_serials = [row.serial for row in db.session.scalars(stmt)]
         self.assertEqual(1, len(container_serials))
         self.assertEqual(self.smartphone_serial, container_serials[0])
 
@@ -349,7 +350,7 @@ class TokenContainerManagementTestCase(MyTestCase):
         # Set existing realms
         result = set_container_realms(container_serial, [self.realm1, self.realm2], None)
         # Check return value
-        self.assertTrue(result['deleted'])
+        self.assertFalse(result['deleted'])
         self.assertTrue(result[self.realm1])
         self.assertTrue(result[self.realm2])
         # Check realms
@@ -447,6 +448,10 @@ class TokenContainerManagementTestCase(MyTestCase):
         # Unassigning an invalid user with the user id and resolver should work
         invalid_user = User(login="invalid", uid="123", realm=self.realm1, resolver=self.resolvername1)
         assign_user(container_serial, invalid_user)
+        # Try to assign another user raises Exception
+        with self.assertRaises(TokenAdminError) as exception:
+            assign_user(container_serial, user_hans)
+        self.assertEqual("This container is already assigned to another user.", exception.exception.message)
         success = unassign_user(container_serial, invalid_user)
         self.assertTrue(success)
 
@@ -680,7 +685,7 @@ class TokenContainerManagementTestCase(MyTestCase):
 
     def test_28_get_all_containers_paginate(self):
         # Removes all previously initialized containers
-        old_test_containers = TokenContainer.query.all()
+        old_test_containers = db.session.scalars(select(TokenContainer)).all()
         for container in old_test_containers:
             container.delete()
 
@@ -808,6 +813,23 @@ class TokenContainerManagementTestCase(MyTestCase):
         container_data = get_all_containers(realm="non_existing_realm", pagesize=15)
         self.assertEqual(0, len(container_data["containers"]))
 
+        # Filter for allowed realms
+        container_data = get_all_containers(allowed_realms=["realm1"], pagesize=15)
+        self.assertEqual(4, len(container_data["containers"]))
+        for container in container_data["containers"]:
+            self.assertIn("realm1", [realm.name for realm in container.realms])
+
+        # Filter for realm which is not in the allowed realms
+        container_data = get_all_containers(allowed_realms=["realm1"], realm="realm2", pagesize=15)
+        self.assertEqual(0, len(container_data["containers"]))
+
+        # But if a container is in both realms, it should be found
+        container = find_container_by_serial(container_serials[1])
+        container.set_realms([self.realm1, self.realm2])
+        container_data = get_all_containers(allowed_realms=["realm1"], realm="realm2", pagesize=15)
+        self.assertEqual(1, len(container_data["containers"]))
+        self.assertEqual(container_serials[1], container_data["containers"][0].serial)
+
         # ---- user ----
         # Filter by user (same username and resolver, but different realms)
         user_cornelius_1 = User(login="cornelius", realm=self.realm1)
@@ -861,16 +883,18 @@ class TokenContainerManagementTestCase(MyTestCase):
         # ---- info ----
         # Add info
         container_3 = find_container_by_serial(container_serials[3])
-        container_3.set_container_info({"key1": "value1", "key2": "value2"})
+        container_3.set_container_info(
+            [TokenContainerInfoData("key1", "value1"), TokenContainerInfoData("key2", "value2")])
         container_4 = find_container_by_serial(container_serials[4])
-        container_4.set_container_info({"key1": "value1", "test": "1234", "test.type": "number"})
+        container_4.set_container_info(
+            [TokenContainerInfoData("key1", "value1"), TokenContainerInfoData("test", "1234", "number")])
         # exact
         container_data = get_all_containers(info={"key1": "value1"}, pagesize=15)
         self.assertEqual(2, len(container_data["containers"]))
         self.assertSetEqual(set(container_serials[3:5]),
                             {container.serial for container in container_data["containers"]})
 
-        # wildcard
+        # wildcard should find the container with info "key2":"value2"
         container_data = get_all_containers(info={"key*": "*2*"}, pagesize=15)
         self.assertEqual(1, len(container_data["containers"]))
         self.assertEqual(container_serials[3], container_data["containers"][0].serial)
@@ -1181,7 +1205,7 @@ class TokenContainerManagementTestCase(MyTestCase):
         self.assertEqual("secp384r1", value)
 
         # change key
-        smartphone.set_container_info({SmartphoneOptions.KEY_ALGORITHM: "secp256r1"})
+        smartphone.set_container_info([TokenContainerInfoData(SmartphoneOptions.KEY_ALGORITHM, "secp256r1")])
         # set default value keeps the defined value
         value = smartphone.set_default_option(SmartphoneOptions.KEY_ALGORITHM)
         self.assertEqual("secp256r1", value)
@@ -2639,7 +2663,8 @@ class TokenContainerTemplateTestCase(MyTestCase):
         for token_details in [{"type": "hotp", "genkey": True}, {"type": "spass"}, {"type": "spass"}]:
             token = init_token(token_details)
             container.add_token(token)
-        container.set_container_info({"hash_algorithm": "SHA1", "encrypt_algorithm": "AES"})
+        container.set_container_info(
+            [TokenContainerInfoData("hash_algorithm", "SHA1"), TokenContainerInfoData("encrypt_algorithm", "AES")])
 
         # compare template and container: equal
         result = compare_template_with_container(template, container)

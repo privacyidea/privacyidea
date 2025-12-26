@@ -579,6 +579,7 @@ class TokenEventHandler(BaseEventHandler):
                             token_obj = get_one_token(serial=serial)
                             token_obj.set_failcount(
                                 token_obj.token.failcount + int(handler_options.get("change fail counter")))
+                            token_obj.save()
                         except Exception as exx:
                             log.warning("Misconfiguration: Failed to increase or decrease fail "
                                         "counter!")

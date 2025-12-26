@@ -60,7 +60,7 @@ def visit_delete_limit(element, compiler, **kw):
 
     However, this syntax is not supported by MySQL.
     """
-    select_stmt = select([element.table.c.id]).where(element.filter).limit(element.limit)
+    select_stmt = select(element.table.c.id).where(element.filter).limit(element.limit)
     delete_stmt = element.table.delete().where(element.table.c.id.in_(select_stmt))
     return compiler.process(delete_stmt)
 

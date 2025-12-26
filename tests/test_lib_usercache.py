@@ -20,7 +20,7 @@ from privacyidea.lib.usercache import (get_cache_time,
 from privacyidea.lib.config import set_privacyidea_config
 from datetime import timedelta
 from datetime import datetime
-from privacyidea.models import UserCache
+from privacyidea.models import UserCache, db
 
 
 class UserCacheTestCase(MyTestCase):
@@ -130,6 +130,10 @@ class UserCacheTestCase(MyTestCase):
         # delete the resolver, which also purges the cache
         self._delete_realm()
 
+        # Clear session before adding new entries to avoid conflicts due to re-adding user cache entry which gets the
+        # same primary key ID as the deleted one.
+        db.session.expunge_all()
+
         # manually re-add the entry from above
         UserCache(self.username, self.username, self.resolvername1,
                   self.uid, ts).save()
@@ -170,6 +174,10 @@ class UserCacheTestCase(MyTestCase):
 
         # delete the resolver, which also purges the cache
         self._delete_realm()
+
+        # Clear session before adding new entries to avoid conflicts due to re-adding user cache entry which gets the
+        # same primary key ID as the deleted one.
+        db.session.expunge_all()
 
         # manually re-add the entry from above
         UserCache(self.username, self.username, self.resolvername1,
