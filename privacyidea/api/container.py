@@ -28,7 +28,7 @@ from privacyidea.api.lib.prepolicy import (check_base_action, prepolicy, check_u
                                            check_container_register_rollover, container_registration_config,
                                            smartphone_config, check_client_container_action, hide_tokeninfo,
                                            check_client_container_disabled_action, hide_container_info)
-from privacyidea.api.lib.utils import send_result, getParam, required, get_required_one_of
+from privacyidea.api.lib.utils import getParam, get_required_one_of, map_error_to_code, required, send_error, send_result
 from privacyidea.lib.container import (find_container_by_serial, init_container, get_container_classes_descriptions,
                                        get_container_token_types, get_all_containers, add_container_info,
                                        set_container_description, set_container_states, set_container_realms,
@@ -48,10 +48,11 @@ from privacyidea.lib.container import (find_container_by_serial, init_container,
 from privacyidea.lib.containers.container_info import (TokenContainerInfoData, PI_INTERNAL, RegistrationState,
                                                        CHALLENGE_TTL, REGISTRATION_TTL, SERVER_URL, SSL_VERIFY)
 from privacyidea.lib.containers.container_states import ContainerStates
-from privacyidea.lib.error import ParameterError, ContainerNotRegistered
+from privacyidea.lib.error import ParameterError, ContainerNotRegistered, ERROR
 from privacyidea.lib.event import event
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policies.actions import PolicyAction
+from privacyidea.lib.policy import Match, SCOPE
 from privacyidea.lib.token import regenerate_enroll_url
 from privacyidea.lib.user import get_user_from_param
 from privacyidea.lib.utils import is_true
@@ -694,17 +695,29 @@ def registration_finalize():
     params = request.all_data
     container_serial = getParam(params, "container_serial", required)
 
-    res = finalize_registration(container_serial, params)
+    try:
+        res = finalize_registration(container_serial, params)
 
-    # Add policy information to the response
-    res["policies"] = request.all_data.get("client_policies", {})
+        # Add policy information to the response
+        res["policies"] = request.all_data.get("client_policies", {})
 
-    # Audit log
-    container = find_container_by_serial(container_serial)
-    g.audit_object.log({"container_serial": container_serial,
-                        "container_type": container.type,
-                        "success": res})
-    return send_result(res)
+        # Audit log
+        container = find_container_by_serial(container_serial)
+
+        g.audit_object.log({"container_serial": container_serial,
+                            "container_type": container.type,
+                            "success": res})
+        return send_result(res)
+
+    except Exception as e:
+        if Match.user(
+            g,
+            scope=SCOPE.CONTAINER,
+            action=PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE,
+            user_object=request.User if hasattr(request, "User") else None,
+        ).any():
+            return send_error("Failed finalizing container registration", error_code=ERROR.CONTAINER), map_error_to_code(e)
+        raise
 
 
 @container_blueprint.route('register/<string:container_serial>/terminate', methods=['POST'])
@@ -751,24 +764,35 @@ def registration_terminate_client():
     """
     params = request.all_data
     container_serial = getParam(params, "container_serial", required)
-    container = find_container_by_serial(container_serial)
 
-    server_url = container.get_container_info_dict().get("server_url")
-    if server_url is None:
-        log.debug("Server url is not set in the container info. Container might not be registered correctly.")
-        server_url = " "
-    scope = create_endpoint_url(server_url, "container/register/terminate/client")
-    params.update({'scope': scope})
-    container.check_challenge_response(params)
+    try:
+        container = find_container_by_serial(container_serial)
+        server_url = container.get_container_info_dict().get("server_url")
+        if server_url is None:
+            log.debug("Server url is not set in the container info. Container might not be registered correctly.")
+            server_url = " "
+        scope = create_endpoint_url(server_url, "container/register/terminate/client")
+        params.update({'scope': scope})
+        container.check_challenge_response(params)
 
-    res = unregister(container)
+        res = unregister(container)
 
-    # Audit log
-    g.audit_object.log({"container_serial": container_serial,
-                        "container_type": container.type,
-                        "success": res})
+        # Audit log
+        g.audit_object.log({"container_serial": container_serial,
+                            "container_type": container.type,
+                            "success": res})
 
-    return send_result({"success": res})
+        return send_result({"success": res})
+
+    except Exception as e:
+        if Match.user(
+            g,
+            scope=SCOPE.CONTAINER,
+            action=PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE,
+            user_object=request.User if hasattr(request, "User") else None,
+        ).any():
+            return send_error("Failed terminating container registration", error_code=ERROR.CONTAINER), map_error_to_code(e)
+        raise
 
 
 @container_blueprint.route('/challenge', methods=['POST'])
@@ -797,29 +821,41 @@ def create_challenge():
     params = request.all_data
     scope = getParam(params, "scope", optional=False)
     container_serial = getParam(params, "container_serial", optional=False)
-    container = find_container_by_serial(container_serial)
 
-    # Audit log
-    g.audit_object.log({"container_serial": container_serial,
-                        "container_type": container.type,
-                        "action_detail": f"scope={scope}"})
+    try:
+        container = find_container_by_serial(container_serial)
 
-    container_info = container.get_container_info_dict()
-    registration_state = RegistrationState(container_info.get(RegistrationState.get_key()))
-    if registration_state not in [RegistrationState.REGISTERED, RegistrationState.ROLLOVER,
-                                  RegistrationState.ROLLOVER_COMPLETED]:
-        raise ContainerNotRegistered(f"Container is not registered.")
+        # Audit log
+        g.audit_object.log({"container_serial": container_serial,
+                            "container_type": container.type,
+                            "action_detail": f"scope={scope}"})
 
-    # validity time for the challenge in minutes
-    challenge_ttl = int(container_info.get(CHALLENGE_TTL, "2"))
+        container_info = container.get_container_info_dict()
+        registration_state = RegistrationState(container_info.get(RegistrationState.get_key()))
+        if registration_state not in [RegistrationState.REGISTERED, RegistrationState.ROLLOVER,
+                                      RegistrationState.ROLLOVER_COMPLETED]:
+            raise ContainerNotRegistered(f"Container is not registered.")
 
-    # Create challenge
-    res = container.create_challenge(scope, challenge_ttl)
+        # validity time for the challenge in minutes
+        challenge_ttl = int(container_info.get(CHALLENGE_TTL, "2"))
 
-    # Audit log
-    g.audit_object.log({"success": True})
+        # Create challenge
+        res = container.create_challenge(scope, challenge_ttl)
 
-    return send_result(res)
+        # Audit log
+        g.audit_object.log({"success": True})
+
+        return send_result(res)
+
+    except Exception as e:
+        if Match.user(
+            g,
+            scope=SCOPE.CONTAINER,
+            action=PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE,
+            user_object=request.User if hasattr(request, "User") else None,
+        ).any():
+            return send_error("Failed creating container challenge", error_code=ERROR.CONTAINER), map_error_to_code(e)
+        raise
 
 
 @container_blueprint.route('/synchronize', methods=['POST'])
@@ -879,72 +915,83 @@ def synchronize():
     client_serials = ", ".join(
         [token.get("serial") or str(token.get("otp")) for token in container_client.get("tokens", [])])
 
-    container = find_container_by_serial(container_serial)
+    try:
+        container = find_container_by_serial(container_serial)
 
-    # Audit log
-    g.audit_object.log({"container_serial": container_serial,
-                        "container_type": container.type,
-                        "action_detail": f"client_serials={client_serials}"})
+        # Audit log
+        g.audit_object.log({"container_serial": container_serial,
+                            "container_type": container.type,
+                            "action_detail": f"client_serials={client_serials}"})
 
-    # Get server url
-    server_url = container.get_container_info_dict().get("server_url")
-    if server_url is None:
-        log.debug("Server url is not set in the container info. Ensure the container is registered correctly.")
-        server_url = " "
-    scope = create_endpoint_url(server_url, "container/synchronize")
-    params.update({'scope': scope})
+        # Get server url
+        server_url = container.get_container_info_dict().get("server_url")
+        if server_url is None:
+            log.debug("Server url is not set in the container info. Ensure the container is registered correctly.")
+            server_url = " "
+        scope = create_endpoint_url(server_url, "container/synchronize")
+        params.update({'scope': scope})
 
-    # 2nd synchronization step: Validate challenge and get container diff between client and server
-    container.check_challenge_response(params)
-    initially_add_tokens = request.all_data.get("client_policies").get(PolicyAction.INITIALLY_ADD_TOKENS_TO_CONTAINER)
-    container_dict = container.synchronize_container_details(container_client, initially_add_tokens)
+        # 2nd synchronization step: Validate challenge and get container diff between client and server
+        container.check_challenge_response(params)
+        initially_add_tokens = request.all_data.get("client_policies").get(PolicyAction.INITIALLY_ADD_TOKENS_TO_CONTAINER)
+        container_dict = container.synchronize_container_details(container_client, initially_add_tokens)
 
-    # Write token serials to audit log
-    add_serials = ", ".join([serial for serial in container_dict["tokens"]["add"]])
-    equal_serials = ", ".join([token.get("serial") for token in container_dict["tokens"]["update"]])
-    audit_info = f"Client: add={add_serials}, update={equal_serials}"
+        # Write token serials to audit log
+        add_serials = ", ".join([serial for serial in container_dict["tokens"]["add"]])
+        equal_serials = ", ".join([token.get("serial") for token in container_dict["tokens"]["update"]])
+        audit_info = f"Client: add={add_serials}, update={equal_serials}"
 
-    # Get enroll information for missing tokens
-    enroll_info = []
-    org_all_data = request.all_data
-    for serial in container_dict["tokens"]["add"]:
-        try:
-            # token rollover + get enroll url
-            request.all_data = org_all_data
-            enroll_url = regenerate_enroll_url(serial, request, g)
-            if enroll_url:
-                enroll_info.append(enroll_url)
-            else:
-                log.debug(f"Could not regenerate the enroll url for the token {serial} during synchronization of "
-                          f"container {container_serial}.")
-        except Exception as e:
-            log.error(f"Could not regenerate the enroll url for the token {serial} during synchronization of"
-                      f"container {container_serial}: {e}")
-    container_dict["tokens"]["add"] = enroll_info
+        # Get enroll information for missing tokens
+        enroll_info = []
+        org_all_data = request.all_data
+        for serial in container_dict["tokens"]["add"]:
+            try:
+                # token rollover + get enroll url
+                request.all_data = org_all_data
+                enroll_url = regenerate_enroll_url(serial, request, g)
+                if enroll_url:
+                    enroll_info.append(enroll_url)
+                else:
+                    log.debug(f"Could not regenerate the enroll url for the token {serial} during synchronization of "
+                              f"container {container_serial}.")
+            except Exception as e:
+                log.error(f"Could not regenerate the enroll url for the token {serial} during synchronization of"
+                          f"container {container_serial}: {e}")
+        container_dict["tokens"]["add"] = enroll_info
 
-    # Optionally encrypt dict
-    res = container.encrypt_dict(container_dict, params)
-    res.update({'server_url': server_url})
+        # Optionally encrypt dict
+        res = container.encrypt_dict(container_dict, params)
+        res.update({'server_url': server_url})
 
-    # Add policy info
-    res["policies"] = request.all_data.get("client_policies")
+        # Add policy info
+        res["policies"] = request.all_data.get("client_policies")
 
-    # Update last sync time
-    container.update_last_synchronization()
+        # Update last sync time
+        container.update_last_synchronization()
 
-    # Rollover completed: Change registration state to registered
-    registration_state = RegistrationState(container.get_container_info_dict().get(RegistrationState.get_key()))
-    if registration_state == RegistrationState.ROLLOVER_COMPLETED:
-        container.update_container_info([TokenContainerInfoData(key=RegistrationState.get_key(),
-                                                                value=RegistrationState.REGISTERED.value,
-                                                                info_type=PI_INTERNAL)])
-    audit_info += f", rollover: {registration_state == RegistrationState.ROLLOVER}"
+        # Rollover completed: Change registration state to registered
+        registration_state = RegistrationState(container.get_container_info_dict().get(RegistrationState.get_key()))
+        if registration_state == RegistrationState.ROLLOVER_COMPLETED:
+            container.update_container_info([TokenContainerInfoData(key=RegistrationState.get_key(),
+                                                                    value=RegistrationState.REGISTERED.value,
+                                                                    info_type=PI_INTERNAL)])
+        audit_info += f", rollover: {registration_state == RegistrationState.ROLLOVER}"
 
-    # Audit log
-    g.audit_object.log({"info": audit_info,
-                        "success": True})
+        # Audit log
+        g.audit_object.log({"info": audit_info,
+                            "success": True})
 
-    return send_result(res)
+        return send_result(res)
+
+    except Exception as e:
+        if Match.user(
+            g,
+            scope=SCOPE.CONTAINER,
+            action=PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE,
+            user_object=request.User if hasattr(request, "User") else None,
+        ).any():
+            return send_error("Failed container synchronization", error_code=ERROR.CONTAINER), map_error_to_code(e)
+        raise
 
 
 @container_blueprint.route('/rollover', methods=['POST'])
@@ -981,31 +1028,43 @@ def rollover():
     """
     params = request.all_data
     container_serial = getParam(params, "container_serial", optional=False)
-    container = find_container_by_serial(container_serial)
     # Params set by pre-policies
     server_url = getParam(params, SERVER_URL)
     challenge_ttl = getParam(params, CHALLENGE_TTL)
     registration_ttl = getParam(params, REGISTRATION_TTL)
     ssl_verify = getParam(params, SSL_VERIFY)
 
-    # Check registration state: rollover is only allowed for registered containers
-    registration_state = RegistrationState(container.get_container_info_dict().get(RegistrationState.get_key()))
-    if registration_state not in [RegistrationState.REGISTERED, RegistrationState.ROLLOVER,
-                                  RegistrationState.ROLLOVER_COMPLETED]:
-        raise ContainerNotRegistered(f"Container is not registered.")
+    try:
+        container = find_container_by_serial(container_serial)
 
-    # Rollover
-    res_rollover = init_container_rollover(container, server_url, challenge_ttl, registration_ttl, ssl_verify, params)
+        # Check registration state: rollover is only allowed for registered containers
+        registration_state = RegistrationState(container.get_container_info_dict().get(RegistrationState.get_key()))
+        if registration_state not in [RegistrationState.REGISTERED, RegistrationState.ROLLOVER,
+                                      RegistrationState.ROLLOVER_COMPLETED]:
+            raise ContainerNotRegistered("Container is not registered.")
 
-    # Audit log
-    info_str = (f"server_url={server_url}, challenge_ttl={challenge_ttl}min, registration_ttl={registration_ttl}min, "
-                f"ssl_verify={ssl_verify}, registration_state={registration_state.value}")
-    g.audit_object.log({"container_serial": container_serial,
-                        "container_type": container.type,
-                        "info": info_str,
-                        "success": True})
+        # Rollover
+        res_rollover = init_container_rollover(container, server_url, challenge_ttl, registration_ttl, ssl_verify, params)
 
-    return send_result(res_rollover)
+        # Audit log
+        info_str = (f"server_url={server_url}, challenge_ttl={challenge_ttl}min, registration_ttl={registration_ttl}min, "
+                    f"ssl_verify={ssl_verify}, registration_state={registration_state.value}")
+        g.audit_object.log({"container_serial": container_serial,
+                            "container_type": container.type,
+                            "info": info_str,
+                            "success": True})
+
+        return send_result(res_rollover)
+
+    except Exception as e:
+        if Match.user(
+            g,
+            scope=SCOPE.CONTAINER,
+            action=PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE,
+            user_object=request.User if hasattr(request, "User") else None,
+        ).any():
+            return send_error("Failed container rollover", error_code=ERROR.CONTAINER), map_error_to_code(e)
+        raise
 
 
 # TEMPLATES
