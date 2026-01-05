@@ -1,5 +1,52 @@
 @use "../../../../../styles";
 
+:host {
+  display: block;
+  width: 100%;
+}
+
+.type-section {
+  padding: 1rem;
+  border: 1px solid var(--pi-border-color, #dcdcdc);
+  border-radius: var(--border-radius);
+  background: var(--pi-bg-section, #fafafa);
+  margin-bottom: 16px;
+
+  h3 {
+    margin-top: 0;
+    margin-bottom: 1rem;
+    font-size: 1.2rem;
+    font-weight: 500;
+  }
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+
+  @media (max-width: 1100px) {
+    grid-template-columns: 1fr;
+  }
+
+  mat-form-field {
+    width: 100%;
+  }
+
+  .field-lg {
+    grid-column: span 2;
+
+    @media (max-width: 1100px) {
+      grid-column: span 1;
+    }
+  }
+}
+
+textarea[matInput] {
+  min-height: 6rem;
+  resize: vertical;
+}
+
 .mapping-header {
   display: flex;
   align-items: center;
@@ -18,10 +65,6 @@
 .actions-cell {
   width: 56px;
   text-align: right;
-}
-
-.auth-accordion {
-  margin-top: 12px;
 }
 
 .auth-panel-body {
@@ -47,4 +90,20 @@
 
 .auth-endpoint {
   grid-column: 2 / -1;
+}
+
+.hint {
+  font-size: var(--mat-sys-body-small-size);
+  color: var(--mat-sys-primary)
+}
+
+.checkbox-inline {
+  display: flex;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.flex-column {
+  display: flex;
+  flex-direction: column;
 }

@@ -16,20 +16,19 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<div class="passwd-resolver">
-  <h3 class="section-title" i18n>Passwd settings</h3>
+<div class="type-section">
+  <h3 i18n>Passwd settings</h3>
+  <div class="form-grid">
+    <mat-form-field class="field-lg">
+      <mat-label i18n>Filename</mat-label>
+      <input
+        matInput
+        [formControl]="filenameControl"
+        placeholder="/etc/passwd" />
 
-  <mat-form-field
-    class="width-50"
-    subscriptSizing="dynamic">
-    <mat-label i18n>Filename</mat-label>
-    <input
-      matInput
-      [formControl]="filenameControl"
-      placeholder="/etc/passwd" />
-
-    @if (filenameControl.hasError('required') && filenameControl.touched) {
-      <mat-error i18n>Filename is <strong>required</strong>.</mat-error>
-    }
-  </mat-form-field>
+      @if (filenameControl.hasError('required') && filenameControl.touched) {
+        <mat-error i18n>Filename is <strong>required</strong>.</mat-error>
+      }
+    </mat-form-field>
+  </div>
 </div>

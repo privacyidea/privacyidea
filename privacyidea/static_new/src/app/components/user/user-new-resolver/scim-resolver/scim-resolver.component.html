@@ -2,18 +2,16 @@
   <h3 i18n>SCIM settings</h3>
   <div class="form-grid">
 
-    <mat-form-field>
-      <mat-label>
-        Authentication Server URI</mat-label>
+    <mat-form-field class="field-lg">
+      <mat-label i18n>Authentication Server URI</mat-label>
       <input
         [(ngModel)]="data['Authserver']"
         placeholder="http://localhost:8080/osiam-auth-server"
         matInput />
     </mat-form-field>
 
-    <mat-form-field>
-      <mat-label>
-        Resource Server Uri</mat-label>
+    <mat-form-field class="field-lg">
+      <mat-label i18n>Resource Server Uri</mat-label>
       <input
         [(ngModel)]="data['Resourceserver']"
         placeholder="http://localhost:8080/osiam-resource-server"
@@ -21,8 +19,7 @@
     </mat-form-field>
 
     <mat-form-field>
-      <mat-label>
-        Client</mat-label>
+      <mat-label i18n>Client</mat-label>
       <input
         [(ngModel)]="data['Client']"
         placeholder="hostname"
@@ -30,8 +27,7 @@
     </mat-form-field>
 
     <mat-form-field>
-      <mat-label>
-        Secret</mat-label>
+      <mat-label i18n>Secret</mat-label>
       <input
         [(ngModel)]="data['Secret']"
         placeholder="d81c31e4-9f65-4805-b5ba-6edf0761f954"
@@ -39,13 +35,12 @@
         type="password" />
     </mat-form-field>
 
-    <mat-form-field>
-      <mat-label>
-        Mapping</mat-label>
-      <input
+    <mat-form-field class="field-lg">
+      <mat-label i18n>Mapping</mat-label>
+      <textarea
         [(ngModel)]="data['Mapping']"
         placeholder='{"userName": "username", "id": "userid", "emails.0.value": "email"}'
-        matInput />
+        matInput></textarea>
     </mat-form-field>
 
   </div>

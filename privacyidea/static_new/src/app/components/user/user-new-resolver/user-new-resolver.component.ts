@@ -37,6 +37,8 @@ import { ScimResolverComponent } from "./scim-resolver/scim-resolver.component";
 import { HttpResolverComponent } from "./http-resolver/http-resolver.component";
 import { EntraidResolverComponent } from "./entraid-resolver/entraid-resolver.component";
 import { KeycloakResolverComponent } from "./keycloak-resolver/keycloak-resolver.component";
+import { Router } from "@angular/router";
+import { ROUTE_PATHS } from "../../../route_paths";
 
 @Component({
   selector: "app-user-new-resolver",
@@ -67,10 +69,11 @@ import { KeycloakResolverComponent } from "./keycloak-resolver/keycloak-resolver
 export class UserNewResolverComponent {
   private readonly resolverService = inject(ResolverService);
   private readonly notificationService = inject(NotificationService);
+  private readonly router = inject(Router);
   private editInitialized = false;
   additionalFormFields: { [key: string]: FormControl<any> } = {};
   resolverName = "";
-  resolverType: ResolverType | "" = "";
+  resolverType: ResolverType = "passwdresolver";
   formData: Record<string, any> = {};
   isSaving = false;
   isTesting = false;
@@ -143,9 +146,9 @@ export class UserNewResolverComponent {
 
           if (!this.isEditMode) {
             this.resolverName = "";
-            this.resolverType = "";
             this.formData = {};
             this.additionalFormFields = {};
+            this.router.navigateByUrl(ROUTE_PATHS.USERS_SOURCES);
           }
         },
         error: (err: HttpErrorResponse) => {

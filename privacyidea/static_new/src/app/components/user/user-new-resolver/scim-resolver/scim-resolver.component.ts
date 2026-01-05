@@ -5,7 +5,8 @@ import { MatFormField, MatLabel } from "@angular/material/form-field";
 import { SCIMResolverData } from "../../../../services/resolver/resolver.service";
 
 @Component({
-  selector: 'app-scim-resolver',
+  selector: "app-scim-resolver",
+  standalone: true,
   imports: [
     MatFormField,
     MatLabel,
