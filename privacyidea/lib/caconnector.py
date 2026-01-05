@@ -97,7 +97,7 @@ def save_caconnector(params: dict) -> int:
 
     # Everything passed. So lets actually create the CA Connector in the DB
     if update_connector:
-        stmt = select(CAConnectorConfig).where(CAConnector.name == existing_connector_name)
+        stmt = select(CAConnector).where(CAConnector.name == existing_connector_name)
         connector_id = db.session.scalars(stmt).first().id
     else:
         db_connector = CAConnector(params.get("caconnector"),
@@ -293,8 +293,9 @@ def get_caconnector_object(connector_name):
     """
     c_obj = None
 
-    connectors = CAConnector.query.filter(func.lower(CAConnector.name) ==
-                                          connector_name.lower()).all()
+    stmt = select(CAConnector).where(func.lower(CAConnector.name) == connector_name.lower())
+    connectors = db.session.scalars(stmt).all()
+
     for conn in connectors:
         c_obj_class = get_caconnector_class(conn.catype)
 

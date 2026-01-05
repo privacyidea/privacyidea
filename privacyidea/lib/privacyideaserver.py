@@ -168,15 +168,15 @@ def get_privacyideaservers(identifier=None, url=None, id=None):
     :return: list of privacyIDEA Server Objects.
     """
     res = []
-    sql_query = PrivacyIDEAServerDB.query
+    stmt = select(PrivacyIDEAServerDB)
     if id is not None:
-        sql_query = sql_query.filter(PrivacyIDEAServerDB.id == id)
+        stmt = stmt.filter(PrivacyIDEAServerDB.id == id)
     elif identifier:
-        sql_query = sql_query.filter(PrivacyIDEAServerDB.identifier == identifier)
+        stmt = stmt.filter(PrivacyIDEAServerDB.identifier == identifier)
     elif url:
-        sql_query = sql_query.filter(PrivacyIDEAServerDB.server == url)
+        stmt = stmt.filter(PrivacyIDEAServerDB.server == url)
 
-    for row in sql_query.all():
+    for row in db.session.scalars(stmt).all():
         res.append(PrivacyIDEAServer(row))
 
     return res

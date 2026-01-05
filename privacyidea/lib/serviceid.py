@@ -85,9 +85,9 @@ def delete_serviceid(name=None, sid=None):
 
 
 def get_serviceids(name=None, id=None):
-    query = Serviceid.query
+    stmt = select(Serviceid)
     if name:
-        query = query.filter(Serviceid.name == name)
+        stmt = stmt.filter(Serviceid.name == name)
     if id:
-        query = query.filter(Serviceid.id == id)
-    return query.all()
+        stmt = stmt.filter(Serviceid.id == id)
+    return db.session.scalars(stmt).all()

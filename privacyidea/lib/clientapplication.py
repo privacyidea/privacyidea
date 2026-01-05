@@ -74,6 +74,7 @@ def save_clientapplication(ip: Union[IPAddress, str], clienttype: str):
         log.info(f'Unable to write ClientApplication entry to db: {e}')
         log.debug(traceback.format_exc())
 
+
 @log_with(log)
 def get_clientapplication(ip=None, clienttype=None, group_by="clienttype"):
     """
@@ -96,23 +97,24 @@ def get_clientapplication(ip=None, clienttype=None, group_by="clienttype"):
     # then fetch MAX(lastseen) of each group to retrieve the most recent timestamp at
     # which the client was seen on *any* node. It is written to the ``max_lastseen``
     # attribute.
-    sql_query = db.session.query(ClientApplication.ip,
-                                 ClientApplication.hostname,
-                                 ClientApplication.clienttype,
-                                 func.max(ClientApplication.lastseen).label("max_lastseen"))
+    stmt = select(ClientApplication.ip,
+                  ClientApplication.hostname,
+                  ClientApplication.clienttype,
+                  func.max(ClientApplication.lastseen).label("max_lastseen"))
     if ip:
         # Check for a valid IP address
         ip = IPAddress(ip)
-        sql_query = sql_query.filter(ClientApplication.ip == "{0!s}".format(ip))
+        stmt = stmt.where(ClientApplication.ip == f"{ip}")
 
     if clienttype:
-        sql_query = sql_query.filter(ClientApplication.clienttype == clienttype)
+        stmt = stmt.where(ClientApplication.clienttype == clienttype)
 
-    sql_query = sql_query.group_by(ClientApplication.ip,
-                                   ClientApplication.hostname,
-                                   ClientApplication.clienttype)
+    stmt = stmt.group_by(ClientApplication.ip,
+                         ClientApplication.hostname,
+                         ClientApplication.clienttype)
 
-    for row in sql_query.all():
+    applications = db.session.execute(stmt).all()
+    for row in applications:
         if group_by.lower() == "clienttype":
             clients.setdefault(row.clienttype, []).append({"ip": row.ip,
                                                            "hostname": row.hostname,

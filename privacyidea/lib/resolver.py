@@ -119,12 +119,14 @@ def save_resolver(params):
 
     # Everything passed. So lets actually create the resolver in the DB
     if update_resolver:
-        resolver_id = Resolver.query.filter(func.lower(Resolver.name) ==
-                                            resolvername.lower()).first().id
+        resolver_stmt = select(Resolver).where(func.lower(Resolver.name) == resolvername.lower())
+        resolver_id = db.session.scalar(resolver_stmt).id
     else:
         resolver = Resolver(params.get("resolver"),
                             params.get("type"))
-        resolver_id = resolver.save()
+        db.session.add(resolver)
+        db.session.flush()
+        resolver_id = resolver.id
     # create the config
     for key, value in data.items():
         if not value and not isinstance(value, bool):
@@ -146,7 +148,8 @@ def save_resolver(params):
                 if resolver_data_types.get(f"{key}.{dict_key}") == "password":
                     if dict_value == CENSORED:
                         # Fetch the old value from the database to not delete the password from the config
-                        old_dict_serialized = ResolverConfig.query.filter_by(resolver_id=resolver_id, Key=key).first()
+                        dict_stmt = select(ResolverConfig).filter_by(resolver_id=resolver_id, Key=key)
+                        old_dict_serialized = db.session.scalar(dict_stmt)
                         if old_dict_serialized:
                             old_dict = json.loads(old_dict_serialized.Value)
                             old_entry = old_dict.get(dict_key)

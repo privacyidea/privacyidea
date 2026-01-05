@@ -51,7 +51,6 @@ class EventCounter(db.Model):
         self.counter_value = value
         self.counter_name = name
         self.node = node
-        self.save()
 
     def save(self):
         db.session.add(self)
@@ -65,8 +64,6 @@ class EventCounter(db.Model):
 
     def increase(self):
         self.counter_value = self.counter_value + 1
-        self.save()
 
     def decrease(self):
         self.counter_value = self.counter_value - 1
-        self.save()

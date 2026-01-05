@@ -195,13 +195,13 @@ def get_radiusservers(identifier: str = None, server: str = None) -> list[RADIUS
     :return: list of RADIUSServer Objects.
     """
     result = []
-    sql_query = db.select(RADIUSServerDB)
+    stmt = select(RADIUSServerDB)
     if identifier:
-        sql_query = sql_query.filter_by(identifier=identifier)
+        stmt = stmt.filter_by(identifier=identifier)
     if server:
-        sql_query = sql_query.filter_by(server=server)
+        stmt = stmt.filter_by(server=server)
 
-    for row in db.session.execute(sql_query).scalars():
+    for row in db.session.execute(stmt).scalars():
         result.append(RADIUSServer(row))
 
     return result

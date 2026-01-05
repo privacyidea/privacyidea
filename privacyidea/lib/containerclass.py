@@ -345,8 +345,7 @@ class TokenContainerClass:
         (user_id, resolver_type, resolver_name) = user.get_user_identifiers()
         # The relationship on the TokenContainer object returns a dynamic query, which is already a modern feature
         # So we can use .first() here
-        container_users = self.get_users()
-        container_owner = container_users[0] if len(container_users) > 0 else None
+        container_owner = self._db_container.owners.first()
         if not container_owner:
             new_owner = TokenContainerOwner(container_id=self._db_container.id,
                                             user_id=user_id,
@@ -461,8 +460,10 @@ class TokenContainerClass:
 
         # Set new states
         for state in enum_states:
-            TokenContainerStates(container_id=self._db_container.id, state=state.value).save()
+            state_db = TokenContainerStates(container_id=self._db_container.id, state=state.value)
+            db.session.add(state_db)
             res[state.value] = True
+        db.session.commit()
 
         return res
 
@@ -507,8 +508,10 @@ class TokenContainerClass:
                 db.session.execute(stmt)
                 log.debug(f"Removed state {excluded_state.value} from container {self.serial} because it is excluded "
                           f"by the new state {state.value}.")
-            TokenContainerStates(container_id=self._db_container.id, state=state.value).save()
+            state_db = TokenContainerStates(container_id=self._db_container.id, state=state.value)
+            db.session.add(state_db)
             res[state.value] = True
+        db.session.commit()
 
         return res
 

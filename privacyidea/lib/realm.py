@@ -35,23 +35,24 @@ database. It depends on the lib.resolver.
 It is independent of any user or token libraries and can be tested standalone
 in tests/test_lib_realm.py
 """
-from sqlalchemy import delete
+import logging
 
+from sqlalchemy import delete, select
+
+from privacyidea.lib.config import get_config_object
+from privacyidea.lib.error import DatabaseError, UserError
+from privacyidea.lib.utils import sanity_name_check, fetch_one_resource, is_true
+from privacyidea.lib.utils.export import (register_import, register_export)
+from .log import log_with
 from ..models import (Realm,
                       ResolverRealm,
                       Resolver, db, save_config_timestamp, TokenRealm)
-from .log import log_with
-from privacyidea.lib.config import get_config_object
-import logging
-from privacyidea.lib.utils import sanity_name_check, fetch_one_resource, is_true
-from privacyidea.lib.utils.export import (register_import, register_export)
-from privacyidea.lib.error import DatabaseError, UserError
 
 log = logging.getLogger(__name__)
 
 
 @log_with(log)
-#@cache.memoize(10)
+# @cache.memoize(10)
 def get_realms(realmname=None):
     """
     Either return all defined realms or a specific realm.
@@ -91,7 +92,7 @@ def get_realms(realmname=None):
     return realms
 
 
-#@cache.memoize(10)
+# @cache.memoize(10)
 def get_realm(realmname):
     """
     :param realmname:
@@ -142,18 +143,19 @@ def set_default_realm(default_realm=None):
     :rtype: int
     """
     res = 0
-    r = Realm.query.filter_by(default=True).first()
-    if r:
+    stmt = select(Realm).filter_by(default=True)
+    existing_default_realm = db.session.scalar(stmt)
+    if existing_default_realm:
         # delete the old entry
-        r.default = False
-        r.save()
-        res = r.id
+        existing_default_realm.default = False
+        res = existing_default_realm.id
     if default_realm:
         # set the new realm as default realm
         r = fetch_one_resource(Realm, name=default_realm)
         r.default = True
-        r.save()
         res = r.id
+    save_config_timestamp()
+    db.session.commit()
     return res
 
 
@@ -262,26 +264,30 @@ def set_realm(realm, resolvers=None):
     sanity_name_check(realm, r"^[A-Za-z0-9_\-\.]+$")
 
     # create new realm if it does not exist
-    db_realm = Realm.query.filter_by(name=realm).first()
+    stmt = select(Realm).filter_by(name=realm)
+    db_realm = db.session.scalar(stmt)
     if not db_realm:
         # create a new database entry for realm
         db_realm = Realm(realm)
-        db_realm.save()
+        db.session.add(db_realm)
         realm_created = True
 
     if not realm_created:
         # delete old resolvers if we update the realm
-        ResolverRealm.query.filter_by(realm_id=db_realm.id).delete()
+        delete_stmt = delete(ResolverRealm).where(ResolverRealm.realm_id == db_realm.id)
+        db.session.execute(delete_stmt)
 
     # assign the resolvers
     for reso in resolvers:
         reso_name = reso['name'].strip()
-        db_reso = Resolver.query.filter_by(name=reso_name).first()
-        if db_reso:
+        resolver_stmt = select(Resolver).filter_by(name=reso_name)
+        db_resolver = db.session.scalar(resolver_stmt)
+        if db_resolver:
             try:
-                ResolverRealm(db_reso.id, db_realm.id,
-                              node_uuid=str(reso.get('node', '')),
-                              priority=reso.get('priority')).save()
+                new_resolver_realm = ResolverRealm(db_resolver.id, db_realm.id,
+                                                   node_uuid=str(reso.get('node', '')),
+                                                   priority=reso.get('priority'))
+                db.session.add(new_resolver_realm)
                 added.append(reso_name)
             except DatabaseError as exx:
                 log.warning(f"Could not add resolver {reso_name} to realm {realm}: {exx}")
@@ -291,10 +297,13 @@ def set_realm(realm, resolvers=None):
             failed.append(reso_name)
 
     # if this is the first realm, make it the default
-    if Realm.query.count() == 1:
+    num_realms_stmt = select(Realm.id)
+    realms = db.session.scalars(num_realms_stmt).all()
+    if len(realms) == 1:
         db_realm.default = True
-        save_config_timestamp()
-        db.session.commit()
+
+    save_config_timestamp()
+    db.session.commit()
 
     return added, failed
 

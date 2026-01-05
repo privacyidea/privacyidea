@@ -240,13 +240,13 @@ def get_smtpservers(identifier=None, server=None):
     :return: list of SMTPServer Objects.
     """
     res = []
-    sql_query = SMTPServerDB.query
+    stmt = select(SMTPServerDB)
     if identifier:
-        sql_query = sql_query.filter(SMTPServerDB.identifier == identifier)
+        stmt = stmt.filter(SMTPServerDB.identifier == identifier)
     if server:
-        sql_query = sql_query.filter(SMTPServerDB.server == server)
+        stmt = stmt.filter(SMTPServerDB.server == server)
 
-    for row in sql_query.all():
+    for row in db.session.scalars(stmt).all():
         res.append(SMTPServer(row))
 
     return res

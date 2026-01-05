@@ -102,8 +102,8 @@ def save_resolver(params):
 
     # Everything passed. So lets actually create the resolver in the DB
     if update_resolver:
-        resolver_id = MachineResolver.query.filter(func.lower(
-            MachineResolver.name) == resolvername.lower()).first().id
+        stmt = select(MachineResolver.id).filter(func.lower(MachineResolver.name) == resolvername.lower())
+        resolver_id = db.session.scalar(stmt)
     else:
         resolver = MachineResolver(params.get("name"), params.get("type"))
         db.session.add(resolver)
@@ -156,12 +156,12 @@ def get_resolver_list(filter_resolver_type=None,
     :rtype: Dictionary of the resolvers and their configuration
     """
     ret = {}
+    stmt = select(MachineResolver)
     if filter_resolver_name:
-        resolvers = MachineResolver.query.filter(func.lower(MachineResolver.name) == filter_resolver_name.lower())
+        stmt = stmt.filter(func.lower(MachineResolver.name) == filter_resolver_name.lower())
     elif filter_resolver_type:
-        resolvers = MachineResolver.query.filter(MachineResolver.rtype == filter_resolver_type)
-    else:
-        resolvers = MachineResolver.query.all()
+        stmt = stmt.filter(MachineResolver.rtype == filter_resolver_type)
+    resolvers = db.session.scalars(stmt).all()
 
     for reso in resolvers:
         r = {"resolvername": reso.name,

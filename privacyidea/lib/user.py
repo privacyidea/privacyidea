@@ -884,7 +884,8 @@ def get_attributes(uid, resolver, realm_id):
     :return: A dictionary of key/values
     """
     r = {}
-    attributes = CustomUserAttribute.query.filter_by(user_id=uid, resolver=resolver, realm_id=realm_id).all()
+    stmt = select(CustomUserAttribute).filter_by(user_id=uid, resolver=resolver, realm_id=realm_id)
+    attributes = db.session.scalars(stmt).all()
     for attr in attributes:
         r[attr.Key] = attr.Value
     return r

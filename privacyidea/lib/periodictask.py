@@ -237,12 +237,12 @@ def get_periodic_tasks(name=None, node=None, active=None):
     :param active: This can be used to filter for active or inactive tasks only
     :return: A (possibly empty) list of periodic task dictionaries
     """
-    query = PeriodicTask.query
+    stmt = select(PeriodicTask)
     if name is not None:
-        query = query.filter_by(name=name)
+        stmt = stmt.filter_by(name=name)
     if active is not None:
-        query = query.filter_by(active=active)
-    entries = query.order_by(PeriodicTask.ordering).all()
+        stmt = stmt.filter_by(active=active)
+    entries = db.session.scalars(stmt.order_by(PeriodicTask.ordering)).all()
     result = []
     for entry in entries:
         ptask = entry.get()

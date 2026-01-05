@@ -311,19 +311,20 @@ def get_smsgateway(identifier=None, id=None, gwtype=None):
     :return: list of gateway definitions
     """
     res = []
-    sqlquery = SMSGateway.query
+    stmt = select(SMSGateway)
     if id:
         try:
             id = int(id)
-            sqlquery = sqlquery.filter_by(id=id)
+            stmt = stmt.filter_by(id=id)
         except Exception:
             log.info("We can not filter for smsgateway {0!s}".format(id))
     if gwtype:
-        sqlquery = sqlquery.filter_by(providermodule=gwtype)
+        stmt = stmt.filter_by(providermodule=gwtype)
     if identifier:
-        sqlquery = sqlquery.filter_by(identifier=identifier)
+        stmt = stmt.filter_by(identifier=identifier)
 
-    for gw in sqlquery.all():
+    gateways = db.session.scalars(stmt).all()
+    for gw in gateways:
         res.append(gw)
     return res
 

@@ -48,7 +48,7 @@ import traceback
 from collections import OrderedDict
 from typing import Optional
 
-from sqlalchemy import asc, desc, and_, or_
+from sqlalchemy import asc, desc, and_, or_, select, delete
 from sqlalchemy import create_engine
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.orm import sessionmaker, scoped_session
@@ -514,7 +514,8 @@ class Audit(AuditBase):
         :return: None. It yields results as a generator
         """
         filter_condition = self._create_filter(param, admin_params=admin_params, timelimit=timelimit)
-        logentries = self.session.query(LogEntry).filter(filter_condition).order_by(LogEntry.date).all()
+        stmt = select(LogEntry).where(filter_condition).order_by(LogEntry.date)
+        logentries = self.session.scalars(stmt).all()
 
         for le in logentries:
             audit_dict = self.audit_entry_to_dict(le)
@@ -617,17 +618,16 @@ class Audit(AuditBase):
 
             # create filter condition
             filter_condition = self._create_filter(search_dict, admin_params, timelimit=timelimit)
+            stmt = select(LogEntry).where(filter_condition)
 
             if sortorder == "desc":
-                logentries = self.session.query(LogEntry).filter(
-                    filter_condition).order_by(
-                    desc(self._get_logentry_attribute("number"))).limit(
-                    limit).offset(offset)
+                stmt = stmt.order_by(
+                    desc(self._get_logentry_attribute("number")))
             else:
-                logentries = self.session.query(LogEntry).filter(
-                    filter_condition).order_by(
-                    asc(self._get_logentry_attribute("number"))).limit(
-                    limit).offset(offset)
+                stmt = stmt.order_by(
+                    asc(self._get_logentry_attribute("number")))
+            stmt = stmt.limit(limit).offset(offset)
+            logentries = self.session.scalars(stmt).all()
 
         except Exception as exx:  # pragma: no cover
             log.error("exception {0!r}".format(exx))
@@ -647,7 +647,8 @@ class Audit(AuditBase):
         This is only used for test cases!
         :return:
         """
-        self.session.query(LogEntry).delete()
+        stmt = delete(LogEntry)
+        self.session.execute(stmt)
         self.session.commit()
 
     def audit_entry_to_dict(self, audit_entry):

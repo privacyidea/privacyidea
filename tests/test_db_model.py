@@ -541,6 +541,7 @@ class TokenModelTestCase(MyTestCase):
         self.assertEqual(counter5.counter_value, 10)
 
         counter6 = EventCounter("test_counter", 4, "othernode")
+        counter6.save()
         self.assertEqual(counter6.counter_value, 4)
         self.assertEqual(counter6.node, "othernode")
 

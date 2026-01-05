@@ -355,20 +355,21 @@ def list_machine_tokens(hostname=None, machine_id=None, resolver_name=None, seri
     if not service_id and (hostname or machine_id or resolver_name):
         machine_id, resolver_name = _get_host_identifier(hostname, machine_id, resolver_name)
         machine_resolver_id = get_machineresolver_id(resolver_name)
-        sql_query = MachineToken.query.filter(and_(MachineToken.machine_id == machine_id,
-                                                   MachineToken.machineresolver_id == machine_resolver_id))
+        stmt = select(MachineToken).where(MachineToken.machine_id == machine_id,
+                                          MachineToken.machineresolver_id == machine_resolver_id)
     else:
         # If we have no specific machine defined, we find all applications/serials
-        sql_query = MachineToken.query.filter()
+        stmt = select(MachineToken)
 
     if application:
-        sql_query = sql_query.filter(MachineToken.application == application)
+        stmt = stmt.filter(MachineToken.application == application)
     if serial:
         # discrete serial
         token_id = get_token_id(serial)
-        sql_query = sql_query.filter(MachineToken.token_id == token_id)
+        stmt = stmt.filter(MachineToken.token_id == token_id)
 
-    for row in sql_query.all():
+    machine_tokens = db.session.scalars(stmt).unique().all()
+    for row in machine_tokens:
         # row.token contains the database token
         option_list = row.option_list
         options = {}

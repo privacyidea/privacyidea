@@ -19,16 +19,17 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+import logging
+
 from sqlalchemy import select, update
 
 from privacyidea.lib.container import find_container_for_token
-from privacyidea.models import Admin, db
-from privacyidea.lib.token import check_user_pass
-from privacyidea.lib.policydecorators import libpolicy, login_mode
 from privacyidea.lib.crypto import hash_with_pepper, verify_with_pepper
-from privacyidea.lib.utils import fetch_one_resource
 from privacyidea.lib.log import log_with
-import logging
+from privacyidea.lib.policydecorators import libpolicy, login_mode
+from privacyidea.lib.token import check_user_pass
+from privacyidea.lib.utils import fetch_one_resource
+from privacyidea.models import Admin, db
 
 log = logging.getLogger(__name__)
 
@@ -40,19 +41,19 @@ class ROLE(object):
 
 
 @log_with(log, hide_args=[1])
-def verify_db_admin(username, password):
+def verify_db_admin(username: str, password: str) -> bool:
     """
     This function is used to verify the username and the password against the
     database table "Admin".
     :param username: The administrator username
     :param password: The password
     :return: True if password is correct for the admin
-    :rtype: bool
     """
     success = False
-    qa = Admin.query.filter(Admin.username == username).first()
-    if qa:
-        success = verify_with_pepper(qa.password, password)
+    stmt = select(Admin).filter_by(username=username)
+    admin = db.session.scalars(stmt).first()
+    if admin:
+        success = verify_with_pepper(admin.password, password)
 
     return success
 
@@ -94,17 +95,13 @@ def create_db_admin(username, email=None, password=None):
     db.session.commit()
 
 
-def list_db_admin():
-    return Admin.query.all()
+def list_db_admin() -> list[Admin]:
+    return db.session.scalars(select(Admin)).all()
 
 
-def get_db_admins():
-    admins = Admin.query.all()
-    return admins
-
-
-def get_db_admin(username):
-    return Admin.query.filter(Admin.username == username).first()
+def get_db_admin(username: str) -> Admin:
+    stmt = select(Admin).filter_by(username=username)
+    return db.session.scalars(stmt).first()
 
 
 def delete_db_admin(username):
