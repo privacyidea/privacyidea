@@ -12,71 +12,71 @@
 
   @if (!isAdvanced && basicSettings()) {
     <div class="form-grid flex-column">
-        <mat-form-field class="field-lg">
-          <mat-label i18n>Endpoint (URL)</mat-label>
-          <input
-            [(ngModel)]="data['endpoint']"
-            matInput
-            placeholder="https://example.com/path/to/users/:userid" />
-        </mat-form-field>
+      <mat-form-field class="field-lg">
+        <mat-label i18n>Endpoint (URL)</mat-label>
+        <input
+          [(ngModel)]="data()['endpoint']"
+          matInput
+          placeholder="https://example.com/path/to/users/:userid" />
+      </mat-form-field>
 
-        <mat-form-field>
-          <mat-label i18n>Method</mat-label>
-          <mat-select [(ngModel)]="data['method']">
-            <mat-option value="GET">GET</mat-option>
-            <mat-option value="POST">POST</mat-option>
-          </mat-select>
-        </mat-form-field>
+      <mat-form-field>
+        <mat-label i18n>Method</mat-label>
+        <mat-select [(ngModel)]="data()['method']">
+          <mat-option value="GET">GET</mat-option>
+          <mat-option value="POST">POST</mat-option>
+        </mat-select>
+      </mat-form-field>
 
-        <mat-form-field class="field-lg">
-          <mat-label i18n>Request Mapping (JSON Format)</mat-label>
-          <textarea
-            [(ngModel)]="data['requestMapping']"
-            matInput
-            placeholder='{"customerid":"{userid}","accessKey":"secr3t!"}'></textarea>
-        </mat-form-field>
+      <mat-form-field class="field-lg">
+        <mat-label i18n>Request Mapping (JSON Format)</mat-label>
+        <textarea
+          [(ngModel)]="data()['requestMapping']"
+          matInput
+          placeholder='{"customerid":"{userid}","accessKey":"secr3t!"}'></textarea>
+      </mat-form-field>
 
-        <mat-form-field class="field-lg">
-          <mat-label i18n>Headers (JSON Format)</mat-label>
-          <textarea
-            [(ngModel)]="data['headers']"
-            matInput
-            placeholder='{"Content-Type":"application/json; charset=UTF-8"}'></textarea>
-        </mat-form-field>
+      <mat-form-field class="field-lg">
+        <mat-label i18n>Headers (JSON Format)</mat-label>
+        <textarea
+          [(ngModel)]="data()['headers']"
+          matInput
+          placeholder='{"Content-Type":"application/json; charset=UTF-8"}'></textarea>
+      </mat-form-field>
 
-        <mat-form-field class="field-lg">
-          <mat-label i18n>Response Mapping (JSON Format)</mat-label>
-          <textarea
-            [(ngModel)]="data['responseMapping']"
-            matInput
-            placeholder='{"username":"{Username}","email":"{Email}"}'></textarea>
-        </mat-form-field>
-      </div>
+      <mat-form-field class="field-lg">
+        <mat-label i18n>Response Mapping (JSON Format)</mat-label>
+        <textarea
+          [(ngModel)]="data()['responseMapping']"
+          matInput
+          placeholder='{"username":"{Username}","email":"{Email}"}'></textarea>
+      </mat-form-field>
+    </div>
 
-      <mat-checkbox
-        [(ngModel)]="data['hasSpecialErrorHandler']"
-        class="checkbox-inline"
-        i18n>
-        Special Error Handeling
-      </mat-checkbox>
+    <mat-checkbox
+      [(ngModel)]="data()['hasSpecialErrorHandler']"
+      class="checkbox-inline"
+      i18n>
+      Special Error Handeling
+    </mat-checkbox>
 
-      @if (data['hasSpecialErrorHandler']) {
-        <mat-form-field class="field-lg width-100">
-          <mat-label i18n>Response contains (JSON Format)</mat-label>
-          <textarea
-            [(ngModel)]="data['errorResponse']"
-            matInput
-            placeholder='{"success": false, "message": "An error occurred!"}'></textarea>
-        </mat-form-field>
-      }
+    @if (data()['hasSpecialErrorHandler']) {
+      <mat-form-field class="field-lg width-100">
+        <mat-label i18n>Response contains (JSON Format)</mat-label>
+        <textarea
+          [(ngModel)]="data()['errorResponse']"
+          matInput
+          placeholder='{"success": false, "message": "An error occurred!"}'></textarea>
+      </mat-form-field>
+    }
   } @else {
 
-    @if (type === 'entraidresolver') {
+    @if (type() === 'entraidresolver') {
       <div class="form-grid">
         <mat-form-field>
           <mat-label i18n>Tenant ID</mat-label>
           <input
-            [(ngModel)]="data['tenant']"
+            [(ngModel)]="data()['tenant']"
             matInput
             placeholder="e.g. 12345678-1234-1234-1234-123456789012" />
         </mat-form-field>
@@ -84,7 +84,7 @@
         <mat-form-field>
           <mat-label i18n>Client ID</mat-label>
           <input
-            [(ngModel)]="data['client_id']"
+            [(ngModel)]="data()['client_id']"
             matInput
             placeholder="e.g. 87654321-4321-4321-4321-210987654321" />
         </mat-form-field>
@@ -92,19 +92,19 @@
         <mat-form-field>
           <mat-label i18n>Client Secret</mat-label>
           <input
-            [(ngModel)]="data['client_secret']"
+            [(ngModel)]="data()['client_secret']"
             matInput
             type="password" />
         </mat-form-field>
       </div>
     }
 
-    @if (type === 'keycloakresolver') {
+    @if (type() === 'keycloakresolver') {
       <div class="form-grid">
         <mat-form-field>
           <mat-label i18n>Realm</mat-label>
           <input
-            [(ngModel)]="data['realm']"
+            [(ngModel)]="data()['realm']"
             matInput
             placeholder="master" />
         </mat-form-field>
@@ -115,7 +115,7 @@
       <mat-form-field class="field-lg">
         <mat-label i18n>Base URL</mat-label>
         <input
-          [(ngModel)]="data['base_url']"
+          [(ngModel)]="data()['base_url']"
           matInput
           placeholder="https://example.com/path/to/users" />
         <mat-hint i18n>The base URL of the API of the user store which will be concatenated with the user endpoints
@@ -136,7 +136,7 @@
     </div>
 
     <table
-      [dataSource]="mappingRows"
+      [dataSource]="mappingRows()"
       class="mapping-table"
       mat-table>
 
@@ -149,14 +149,16 @@
         <td
           *matCellDef="let row; let i = index"
           mat-cell>
-          <mat-form-field class="cell-field">
+          <mat-form-field
+            class="cell-field"
+            subscriptSizing="dynamic">
             <mat-select
               (selectionChange)="onPrivacyIdeaAttrChanged(i)"
-              [(ngModel)]="mappingRows[i].privacyideaAttr"
+              [(ngModel)]="row.privacyideaAttr"
               i18n-placeholder
               placeholder="Select PrivacyIDEA Attribute">
 
-              @for (attr of privacyideaAttributes; track attr) {
+              @for (attr of availableAttributes()[i]; track attr) {
                 <mat-option [value]="attr">{{ attr }}</mat-option>
               }
 
@@ -169,8 +171,10 @@
             </mat-select>
           </mat-form-field>
 
-          @if (isCustomAttr(mappingRows[i].privacyideaAttr)) {
-            <mat-form-field class="cell-field">
+          @if (isCustomAttr(row.privacyideaAttr)) {
+            <mat-form-field
+              class="cell-field"
+              subscriptSizing="dynamic">
               <input
                 (ngModelChange)="setCustomAttr(i, $event)"
                 [ngModel]="''"
@@ -191,10 +195,12 @@
         <td
           *matCellDef="let row; let i = index"
           mat-cell>
-          <mat-form-field class="cell-field">
+          <mat-form-field
+            class="cell-field"
+            subscriptSizing="dynamic">
             <input
               (ngModelChange)="onMappingChanged()"
-              [(ngModel)]="mappingRows[i].userStoreAttr"
+              [(ngModel)]="row.userStoreAttr"
               i18n-placeholder
               matInput
               placeholder="e.g. givenname" />
@@ -205,18 +211,23 @@
       <ng-container matColumnDef="actions">
         <th
           *matHeaderCellDef
-          mat-header-cell></th>
+          i18n
+          mat-header-cell>Actions
+        </th>
         <td
           *matCellDef="let row; let i = index"
           class="actions-cell"
           mat-cell>
-          <button
-            (click)="removeMappingRow(i)"
-            aria-label="Remove mapping"
-            mat-icon-button
-            type="button">
-            <mat-icon>delete</mat-icon>
-          </button>
+          <div class="actions-buttons">
+            <button
+              (click)="removeMappingRow(i)"
+              aria-label="Remove mapping"
+              color="warn"
+              mat-icon-button
+              type="button">
+              <mat-icon>delete</mat-icon>
+            </button>
+          </div>
         </td>
       </ng-container>
 
@@ -237,7 +248,7 @@
       <mat-form-field class="field-lg">
         <mat-label i18n>Headers (JSON Format)</mat-label>
         <textarea
-          [(ngModel)]="data['headers']"
+          [(ngModel)]="data()['headers']"
           matInput
           placeholder='{"Content-Type":"application/json; charset=UTF-8"}'></textarea>
         <mat-hint i18n>If no custom headers are defined this header is used for all endpoints.</mat-hint>
@@ -245,7 +256,7 @@
 
       <div class="flex-column">
         <mat-checkbox
-          [(ngModel)]="data['Editable']"
+          [(ngModel)]="data()['Editable']"
           i18n>
           Edit User Store
         </mat-checkbox>
@@ -256,20 +267,20 @@
 
       <div class="flex-column">
         <mat-checkbox
-          [(ngModel)]="data['verify_tls']"
+          [(ngModel)]="data()['verify_tls']"
           i18n>
           Verify TLS certificate of the server.
         </mat-checkbox>
       </div>
 
-      @if (data['verify_tls']) {
+      @if (data()['verify_tls']) {
         <mat-form-field class="field-lg">
           <mat-label i18n>CA certificate</mat-label>
           <mat-hint i18n>
             The file containing the CA certificate which signed the TLS certificate of the server.
           </mat-hint>
           <input
-            [(ngModel)]="data['tls_ca_path']"
+            [(ngModel)]="data()['tls_ca_path']"
             matInput
             placeholder="/etc/privacyidea/ldap-ca.crt" />
         </mat-form-field>
@@ -278,7 +289,7 @@
       <mat-form-field>
         <mat-label i18n>Timeout (seconds)</mat-label>
         <input
-          [(ngModel)]="data['timeout']"
+          [(ngModel)]="data()['timeout']"
           matInput
           placeholder="60" />
         <mat-hint i18n>Time in seconds privacyIDEA tries to reach the user store server.</mat-hint>
@@ -303,7 +314,7 @@
               <mat-form-field>
                 <mat-label i18n>Username</mat-label>
                 <input
-                  [(ngModel)]="data['username']"
+                  [(ngModel)]="data()['username']"
                   matInput
                   placeholder="privacyIDEA" />
               </mat-form-field>
@@ -311,7 +322,7 @@
               <mat-form-field>
                 <mat-label i18n>Password</mat-label>
                 <input
-                  [(ngModel)]="data['password']"
+                  [(ngModel)]="data()['password']"
                   matInput
                   placeholder="t0p_SeCr3t!"
                   type="password" />
@@ -319,7 +330,7 @@
 
               <mat-form-field>
                 <mat-label i18n>Method</mat-label>
-                <mat-select [(ngModel)]="data['config_authorization']['method']">
+                <mat-select [(ngModel)]="data()['config_authorization']['method']">
                   <mat-option value="POST">POST</mat-option>
                   <mat-option value="GET">GET</mat-option>
                   <mat-option value="PUT">PUT</mat-option>
@@ -331,7 +342,7 @@
               <mat-form-field class="auth-endpoint">
                 <mat-label i18n>Endpoint</mat-label>
                 <input
-                  [(ngModel)]="data['config_authorization']['endpoint']"
+                  [(ngModel)]="data()['config_authorization']['endpoint']"
                   matInput
                   placeholder="https://example.com/auth" />
               </mat-form-field>
@@ -339,7 +350,7 @@
               <mat-form-field class="auth-wide">
                 <mat-label i18n>Headers (JSON format)</mat-label>
                 <textarea
-                  [(ngModel)]="data['config_authorization']['headers']"
+                  [(ngModel)]="data()['config_authorization']['headers']"
                   matInput
                   placeholder='{"Content-Type":"application/json"}'></textarea>
               </mat-form-field>
@@ -347,7 +358,7 @@
               <mat-form-field class="auth-wide">
                 <mat-label i18n>Request Mapping (JSON format)</mat-label>
                 <textarea
-                  [(ngModel)]="data['config_authorization']['requestMapping']"
+                  [(ngModel)]="data()['config_authorization']['requestMapping']"
                   matInput
                   placeholder='{"username":"{username}","password":"{password}"}'></textarea>
               </mat-form-field>
@@ -355,23 +366,23 @@
               <mat-form-field class="auth-wide">
                 <mat-label i18n>Response Mapping (JSON format)</mat-label>
                 <textarea
-                  [(ngModel)]="data['config_authorization']['responseMapping']"
+                  [(ngModel)]="data()['config_authorization']['responseMapping']"
                   matInput
                   placeholder='{"Authorization":"Bearer {access_token}"}'></textarea>
               </mat-form-field>
 
               <mat-checkbox
-                [(ngModel)]="data['config_authorization']['hasSpecialErrorHandler']"
+                [(ngModel)]="data()['config_authorization']['hasSpecialErrorHandler']"
                 class="auth-wide checkbox-inline"
                 i18n>
                 Special Error Handling
               </mat-checkbox>
 
-              @if (data['config_authorization']['hasSpecialErrorHandler']) {
+              @if (data()['config_authorization']['hasSpecialErrorHandler']) {
                 <mat-form-field class="auth-wide">
                   <mat-label i18n>Response contains (JSON format)</mat-label>
                   <textarea
-                    [(ngModel)]="data['config_authorization']['errorResponse']"
+                    [(ngModel)]="data()['config_authorization']['errorResponse']"
                     matInput
                     placeholder='{"success": false, "message": "An error occurred!"}'></textarea>
                 </mat-form-field>
@@ -394,7 +405,7 @@
 
             <mat-form-field>
               <mat-label i18n>Method</mat-label>
-              <mat-select [(ngModel)]="data['config_user_auth']['method']">
+              <mat-select [(ngModel)]="data()['config_user_auth']['method']">
                 <mat-option value="POST">POST</mat-option>
                 <mat-option value="GET">GET</mat-option>
                 <mat-option value="PUT">PUT</mat-option>
@@ -406,7 +417,7 @@
             <mat-form-field class="auth-endpoint">
               <mat-label i18n>Endpoint</mat-label>
               <input
-                [(ngModel)]="data['config_user_auth']['endpoint']"
+                [(ngModel)]="data()['config_user_auth']['endpoint']"
                 matInput
                 placeholder="/openid-connect/token" />
               <mat-hint i18n> Possible tags: {{ "{" }}userid{{ "}" }} {{ "{" }}username{{ "}" }} {{ "{" }}
@@ -417,7 +428,7 @@
             <mat-form-field class="auth-wide">
               <mat-label i18n>Headers (JSON format)</mat-label>
               <textarea
-                [(ngModel)]="data['config_user_auth']['headers']"
+                [(ngModel)]="data()['config_user_auth']['headers']"
                 matInput
                 placeholder='{"Content-Type":"application/json; charset=UTF-8"}'></textarea>
             </mat-form-field>
@@ -425,7 +436,7 @@
             <mat-form-field class="auth-wide">
               <mat-label i18n>Request Mapping (JSON format)</mat-label>
               <textarea
-                [(ngModel)]="data['config_user_auth']['requestMapping']"
+                [(ngModel)]="data()['config_user_auth']['requestMapping']"
                 matInput
                 placeholder='{"username":"{username}","password":"{password}"}'></textarea>
             </mat-form-field>
@@ -433,7 +444,7 @@
             <mat-form-field class="auth-wide">
               <mat-label i18n>Response Mapping (JSON format)</mat-label>
               <textarea
-                [(ngModel)]="data['config_user_auth']['responseMapping']"
+                [(ngModel)]="data()['config_user_auth']['responseMapping']"
                 matInput
                 placeholder='{"Authorization":"Bearer {access_token}"}'></textarea>
               <mat-hint i18n> Possible tags: {{ "{" }}userid{{ "}" }} {{ "{" }}username{{ "}" }} {{ "{" }}
@@ -442,17 +453,17 @@
             </mat-form-field>
 
             <mat-checkbox
-              [(ngModel)]="data['config_user_auth']['hasSpecialErrorHandler']"
+              [(ngModel)]="data()['config_user_auth']['hasSpecialErrorHandler']"
               class="auth-wide checkbox-inline"
               i18n>
               Special Error Handling
             </mat-checkbox>
 
-            @if (data['config_user_auth']['hasSpecialErrorHandler']) {
+            @if (data()['config_user_auth']['hasSpecialErrorHandler']) {
               <mat-form-field class="auth-wide">
                 <mat-label i18n>Response contains (JSON format)</mat-label>
                 <textarea
-                  [(ngModel)]="data['config_user_auth']['errorResponse']"
+                  [(ngModel)]="data()['config_user_auth']['errorResponse']"
                   matInput
                   placeholder='{"success": false, "message": "An error occurred!"}'></textarea>
               </mat-form-field>
@@ -475,7 +486,7 @@
 
             <mat-form-field>
               <mat-label i18n>Method</mat-label>
-              <mat-select [(ngModel)]="data['config_get_user_list']['method']">
+              <mat-select [(ngModel)]="data()['config_get_user_list']['method']">
                 <mat-option value="POST">POST</mat-option>
                 <mat-option value="GET">GET</mat-option>
                 <mat-option value="PUT">PUT</mat-option>
@@ -487,7 +498,7 @@
             <mat-form-field class="auth-endpoint">
               <mat-label i18n>Endpoint</mat-label>
               <input
-                [(ngModel)]="data['config_get_user_list']['endpoint']"
+                [(ngModel)]="data()['config_get_user_list']['endpoint']"
                 matInput
                 placeholder="/users" />
               <mat-hint i18n> Possible tags: {{ "{" }}userid{{ "}" }} {{ "{" }}username{{ "}" }} {{ "{" }}
@@ -498,7 +509,7 @@
             <mat-form-field class="auth-wide">
               <mat-label i18n>Headers (JSON format)</mat-label>
               <textarea
-                [(ngModel)]="data['config_get_user_list']['headers']"
+                [(ngModel)]="data()['config_get_user_list']['headers']"
                 matInput
                 placeholder='{"Content-Type":"application/json; charset=UTF-8"}'></textarea>
             </mat-form-field>
@@ -506,7 +517,7 @@
             <mat-form-field class="auth-wide">
               <mat-label i18n>Request Mapping (JSON format)</mat-label>
               <textarea
-                [(ngModel)]="data['config_get_user_list']['requestMapping']"
+                [(ngModel)]="data()['config_get_user_list']['requestMapping']"
                 matInput
                 placeholder='{"customerid":"{userid}","accessKey":"{secre3t!}"}'></textarea>
             </mat-form-field>
@@ -514,7 +525,7 @@
             <mat-form-field class="auth-wide">
               <mat-label i18n>Response Mapping (JSON format)</mat-label>
               <textarea
-                [(ngModel)]="data['config_get_user_list']['responseMapping']"
+                [(ngModel)]="data()['config_get_user_list']['responseMapping']"
                 matInput
                 placeholder='{"Authorization":"Bearer {access_token}"}'></textarea>
               <mat-hint i18n> Possible tags: {{ "{" }}userid{{ "}" }} {{ "{" }}username{{ "}" }} {{ "{" }}
@@ -523,17 +534,17 @@
             </mat-form-field>
 
             <mat-checkbox
-              [(ngModel)]="data['config_get_user_list']['hasSpecialErrorHandler']"
+              [(ngModel)]="data()['config_get_user_list']['hasSpecialErrorHandler']"
               class="auth-wide checkbox-inline"
               i18n>
               Special Error Handling
             </mat-checkbox>
 
-            @if (data['config_get_user_list']['hasSpecialErrorHandler']) {
+            @if (data()['config_get_user_list']['hasSpecialErrorHandler']) {
               <mat-form-field class="auth-wide">
                 <mat-label i18n>Response contains (JSON format)</mat-label>
                 <textarea
-                  [(ngModel)]="data['config_get_user_list']['errorResponse']"
+                  [(ngModel)]="data()['config_get_user_list']['errorResponse']"
                   matInput
                   placeholder='{"success": false, "message": "An error occurred!"}'></textarea>
               </mat-form-field>
@@ -556,7 +567,7 @@
 
             <mat-form-field>
               <mat-label i18n>Method</mat-label>
-              <mat-select [(ngModel)]="data['config_get_user_by_id']['method']">
+              <mat-select [(ngModel)]="data()['config_get_user_by_id']['method']">
                 <mat-option value="POST">POST</mat-option>
                 <mat-option value="GET">GET</mat-option>
                 <mat-option value="PUT">PUT</mat-option>
@@ -568,7 +579,7 @@
             <mat-form-field class="auth-endpoint">
               <mat-label i18n>Endpoint</mat-label>
               <input
-                [(ngModel)]="data['config_get_user_by_id']['endpoint']"
+                [(ngModel)]="data()['config_get_user_by_id']['endpoint']"
                 matInput
                 placeholder="/users/{userid}" />
               <mat-hint i18n> Possible tags: {{ "{" }}userid{{ "}" }}
@@ -578,7 +589,7 @@
             <mat-form-field class="auth-wide">
               <mat-label i18n>Headers (JSON format)</mat-label>
               <textarea
-                [(ngModel)]="data['config_get_user_by_id']['headers']"
+                [(ngModel)]="data()['config_get_user_by_id']['headers']"
                 matInput
                 placeholder='{"Content-Type":"application/json; charset=UTF-8"}'></textarea>
             </mat-form-field>
@@ -586,7 +597,7 @@
             <mat-form-field class="auth-wide">
               <mat-label i18n>Request Mapping (JSON format)</mat-label>
               <textarea
-                [(ngModel)]="data['config_get_user_by_id']['requestMapping']"
+                [(ngModel)]="data()['config_get_user_by_id']['requestMapping']"
                 matInput
                 placeholder='{"customerid":"{userid}","accessKey":"{secre3t!}"}'></textarea>
             </mat-form-field>
@@ -594,7 +605,7 @@
             <mat-form-field class="auth-wide">
               <mat-label i18n>Response Mapping (JSON format)</mat-label>
               <textarea
-                [(ngModel)]="data['config_get_user_by_id']['responseMapping']"
+                [(ngModel)]="data()['config_get_user_by_id']['responseMapping']"
                 matInput
                 placeholder='{"Authorization":"Bearer {access_token}"}'></textarea>
               <mat-hint i18n> Possible tags: {{ "{" }}userid{{ "}" }}
@@ -602,17 +613,17 @@
             </mat-form-field>
 
             <mat-checkbox
-              [(ngModel)]="data['config_get_user_by_id']['hasSpecialErrorHandler']"
+              [(ngModel)]="data()['config_get_user_by_id']['hasSpecialErrorHandler']"
               class="auth-wide checkbox-inline"
               i18n>
               Special Error Handling
             </mat-checkbox>
 
-            @if (data['config_get_user_by_id']['hasSpecialErrorHandler']) {
+            @if (data()['config_get_user_by_id']['hasSpecialErrorHandler']) {
               <mat-form-field class="auth-wide">
                 <mat-label i18n>Response contains (JSON format)</mat-label>
                 <textarea
-                  [(ngModel)]="data['config_get_user_by_id']['errorResponse']"
+                  [(ngModel)]="data()['config_get_user_by_id']['errorResponse']"
                   matInput
                   placeholder='{"success": false, "message": "An error occurred!"}'></textarea>
               </mat-form-field>
@@ -636,7 +647,7 @@
 
             <mat-form-field>
               <mat-label i18n>Method</mat-label>
-              <mat-select [(ngModel)]="data['config_get_user_by_name']['method']">
+              <mat-select [(ngModel)]="data()['config_get_user_by_name']['method']">
                 <mat-option value="POST">POST</mat-option>
                 <mat-option value="GET">GET</mat-option>
                 <mat-option value="PUT">PUT</mat-option>
@@ -648,7 +659,7 @@
             <mat-form-field class="auth-endpoint">
               <mat-label i18n>Endpoint</mat-label>
               <input
-                [(ngModel)]="data['config_get_user_by_name']['endpoint']"
+                [(ngModel)]="data()['config_get_user_by_name']['endpoint']"
                 matInput
                 placeholder="/users/{username}" />
               <mat-hint i18n> Possible tags: {{ "{" }}username{{ "}" }}
@@ -658,7 +669,7 @@
             <mat-form-field class="auth-wide">
               <mat-label i18n>Headers (JSON format)</mat-label>
               <textarea
-                [(ngModel)]="data['config_get_user_by_name']['headers']"
+                [(ngModel)]="data()['config_get_user_by_name']['headers']"
                 matInput
                 placeholder='{"Content-Type":"application/json; charset=UTF-8"}'></textarea>
             </mat-form-field>
@@ -666,7 +677,7 @@
             <mat-form-field class="auth-wide">
               <mat-label i18n>Request Mapping (JSON format)</mat-label>
               <textarea
-                [(ngModel)]="data['config_get_user_by_name']['requestMapping']"
+                [(ngModel)]="data()['config_get_user_by_name']['requestMapping']"
                 matInput
                 placeholder='{"customerid":"{userid}","accessKey":"{secre3t!}"}'></textarea>
             </mat-form-field>
@@ -674,7 +685,7 @@
             <mat-form-field class="auth-wide">
               <mat-label i18n>Response Mapping (JSON format)</mat-label>
               <textarea
-                [(ngModel)]="data['config_get_user_by_name']['responseMapping']"
+                [(ngModel)]="data()['config_get_user_by_name']['responseMapping']"
                 matInput
                 placeholder='{"Authorization":"Bearer {access_token}"}'></textarea>
               <mat-hint i18n> Possible tags: {{ "{" }}username{{ "}" }}
@@ -682,17 +693,17 @@
             </mat-form-field>
 
             <mat-checkbox
-              [(ngModel)]="data['config_get_user_by_name']['hasSpecialErrorHandler']"
+              [(ngModel)]="data()['config_get_user_by_name']['hasSpecialErrorHandler']"
               class="auth-wide checkbox-inline"
               i18n>
               Special Error Handling
             </mat-checkbox>
 
-            @if (data['config_get_user_by_name']['hasSpecialErrorHandler']) {
+            @if (data()['config_get_user_by_name']['hasSpecialErrorHandler']) {
               <mat-form-field class="auth-wide">
                 <mat-label i18n>Response contains (JSON format)</mat-label>
                 <textarea
-                  [(ngModel)]="data['config_get_user_by_name']['errorResponse']"
+                  [(ngModel)]="data()['config_get_user_by_name']['errorResponse']"
                   matInput
                   placeholder='{"success": false, "message": "An error occurred!"}'></textarea>
               </mat-form-field>

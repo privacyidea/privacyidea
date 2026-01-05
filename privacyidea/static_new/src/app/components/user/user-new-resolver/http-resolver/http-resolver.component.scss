@@ -54,17 +54,31 @@ textarea[matInput] {
   margin: 12px 0 8px;
 }
 
+@include styles.base-table-structure(".mapping-table");
+
 .mapping-table {
   width: 100%;
-}
+  margin-bottom: 1rem;
 
-.cell-field {
-  width: 100%;
+  th.mat-column-actions {
+    text-align: center;
+  }
+
+  .cell-field {
+    width: 100%;
+  }
 }
 
 .actions-cell {
-  width: 56px;
-  text-align: right;
+  width: 80px;
+  text-align: center !important;
+}
+
+.actions-buttons {
+  display: flex;
+  gap: 0.25rem;
+  justify-content: center;
+  align-items: center;
 }
 
 .auth-panel-body {

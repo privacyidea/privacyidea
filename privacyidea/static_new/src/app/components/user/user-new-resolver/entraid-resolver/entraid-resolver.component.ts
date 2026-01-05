@@ -1,5 +1,5 @@
-import { Component } from '@angular/core';
-import { HttpResolverComponent } from "../http-resolver/http-resolver.component";
+import { Component, signal } from "@angular/core";
+import { AttributeMappingRow, HttpResolverComponent } from "../http-resolver/http-resolver.component";
 import { FormsModule } from "@angular/forms";
 import { MatFormField, MatHint, MatInput, MatLabel } from "@angular/material/input";
 import { MatOption, MatSelect } from "@angular/material/select";
@@ -17,7 +17,7 @@ import {
 import { MatDivider } from "@angular/material/list";
 
 @Component({
-  selector: 'app-entraid-resolver',
+  selector: "app-entraid-resolver",
   standalone: true,
   imports: [
     FormsModule,
@@ -38,14 +38,14 @@ import { MatDivider } from "@angular/material/list";
     MatExpansionPanelTitle,
     MatDivider
   ],
-  templateUrl: '../http-resolver/http-resolver.component.html',
-  styleUrl: '../http-resolver/http-resolver.component.scss'
+  templateUrl: "../http-resolver/http-resolver.component.html",
+  styleUrl: "../http-resolver/http-resolver.component.scss"
 })
 export class EntraidResolverComponent extends HttpResolverComponent {
   override isAdvanced: boolean = true;
 
   override ngOnInit(): void {
-    const data: any = this.data ?? {};
+    const data: any = this.data();
 
     if (!data.base_url) {
       data.base_url = "https://graph.microsoft.com/v1.0";
@@ -53,22 +53,20 @@ export class EntraidResolverComponent extends HttpResolverComponent {
     if (!data.timeout) {
       data.timeout = 60;
     }
-    if (!data.attribute_mapping) {
-      data.attribute_mapping = {
-        userid: "id",
-        username: "userPrincipalName",
-        email: "mail",
-        givenname: "givenName",
-        mobile: "mobilePhone",
-        phone: "businessPhones",
-        surname: "surname"
-      } as Record<string, string>;
-    }
     if (data.verify_tls === undefined) {
       data.verify_tls = true;
     }
 
-    this.data = data;
     super.ngOnInit();
   }
+
+  override defaultMapping = signal<AttributeMappingRow[]>([
+    { privacyideaAttr: "userid", userStoreAttr: "id" },
+    { privacyideaAttr: "username", userStoreAttr: "userPrincipalName" },
+    { privacyideaAttr: "email", userStoreAttr: "mail" },
+    { privacyideaAttr: "givenname", userStoreAttr: "givenName" },
+    { privacyideaAttr: "mobile", userStoreAttr: "mobilePhone" },
+    { privacyideaAttr: "phone", userStoreAttr: "businessPhones" },
+    { privacyideaAttr: "surname", userStoreAttr: "surname" }
+  ]);
 }
