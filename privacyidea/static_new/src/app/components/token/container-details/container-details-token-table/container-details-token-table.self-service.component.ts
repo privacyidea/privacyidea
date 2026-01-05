@@ -24,7 +24,6 @@ import { MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
 import { MatPaginator } from "@angular/material/paginator";
-import { MatSort, MatSortHeader, MatSortModule } from "@angular/material/sort";
 import { MatCell, MatHeaderCell, MatHeaderRow, MatRow, MatTable, MatTableModule } from "@angular/material/table";
 import { MatTooltip } from "@angular/material/tooltip";
 import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
@@ -48,12 +47,9 @@ import { DialogService, DialogServiceInterface } from "../../../../services/dial
     MatLabel,
     MatPaginator,
     MatRow,
-    MatSort,
-    MatSortHeader,
     MatTable,
     NgClass,
     MatTableModule,
-    MatSortModule,
     MatIcon,
     MatIconButton,
     CopyButtonComponent,
@@ -72,13 +68,12 @@ export class ContainerDetailsTokenTableSelfServiceComponent extends ContainerDet
   protected override readonly overflowService: OverflowServiceInterface = inject(OverflowService);
   protected override readonly contentService: ContentServiceInterface = inject(ContentService);
   protected override readonly authService: AuthServiceInterface = inject(AuthService);
-
-  constructor() {
-    super();
-  }
-
   override isAssignableToAllToken = computed<boolean>(() => {
     const assignedUser = this.assignedUser();
     return assignedUser.user_name !== "";
   });
+
+  constructor() {
+    super();
+  }
 }

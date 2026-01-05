@@ -32,9 +32,12 @@ export const ROUTE_PATHS = {
   TOKENS_CONTAINERS: "/tokens/containers",
   TOKENS_CONTAINERS_CREATE: "/tokens/containers/create",
   TOKENS_CONTAINERS_DETAILS: "/tokens/containers/details/",
+  TOKENS_CONTAINERS_TEMPLATES: "/tokens/containers/templates",
   TOKENS_ASSIGN_TOKEN: "/tokens/assign-token",
   USERS_DETAILS: "/users/details",
   TOKENS_WIZARD: "/tokens/wizard",
   TOKENS_CONTAINERS_WIZARD: "/tokens/containers/wizard",
-  USERS_REALMS: "/users/realms"
+  MACHINE_RESOLVER: "/configuration/machine_resolver",
+  USERS_REALMS: "/users/realms",
+  CONFIGURATION_PERIODIC_TASKS: "/configuration/periodic-tasks"
 };

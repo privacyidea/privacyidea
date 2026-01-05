@@ -23,7 +23,7 @@
     <mat-form-field
       class="token-table-filter"
       subscriptSizing="dynamic">
-      <mat-label i18n>Enter Filter</mat-label>
+      <mat-label i18n>Filter Audit Log...</mat-label>
       <app-clearable-input
         (onClick)="auditService.clearFilter()"
         [showClearButton]="auditService.auditFilter().isNotEmpty">
@@ -35,7 +35,7 @@
           i18n-aria-label
           i18n-placeholder
           matInput
-          placeholder="Example query: 'type: hotp userid: 1000'" />
+          placeholder="Example query: 'action: GET success: false'" />
       </app-clearable-input>
     </mat-form-field>
     <mat-paginator
@@ -44,13 +44,8 @@
       [pageIndex]="auditService.pageIndex()"
       [pageSizeOptions]="pageSizeOptions()"
       [pageSize]="auditService.pageSize()"
-      showFirstLastButtons></mat-paginator>
+      showFirstLastButtons />
   </div>
-  <app-keyword-filter
-    [advancedApiFilter]="auditService.advancedApiFilter"
-    [apiFilter]="auditService.apiFilter"
-    [filterHTMLInputElement]="filterHTMLInputElement"
-    [filterValue]="auditService.auditFilter"></app-keyword-filter>
   <table
     [dataSource]="auditDataSource()"
     aria-label="Audit Data Table"
@@ -63,16 +58,31 @@
           *matHeaderCellDef
           attr.aria-label="{{ column.label }} Header"
           mat-header-cell>
-          {{ column.label }}
+          <div class="flex ali-center">
+            {{ column.label }}
+            @if (!['number', 'log_level', 'clearance_level', 'sig_check', 'missing_line', 'thread_id'].includes(column.key)) {
+              <div class="margin-left-1">
+                <button
+                  (click)="onKeywordClick(apiFilterKeyMap[column.key])"
+                  class="filter-button"
+                  mat-icon-button>
+                  <mat-icon
+                    class="keyword-button-icon margin-left-0">
+                    {{ getFilterIconName(column.key) }}
+                  </mat-icon>
+                </button>
+              </div>
+            }
+          </div>
         </th>
         <td
           *matCellDef="let element; let row"
-          attr.aria-label="{{ column.label }} Cell"
-          mat-cell
           [ngClass]="{
             'width-18rem': column.key === 'description',
             'table-checkbox': column.key === 'select'
-          }">
+          }"
+          attr.aria-label="{{ column.label }} Cell"
+          mat-cell>
           <div>
             @switch (column.key) {
               @case ("success") {
@@ -91,8 +101,8 @@
               @case ("serial") {
                 <div class="flex-row ali-center">
                   <a
-                    attr.aria-label="{{ column.label }} Link"
                     (click)="contentService.tokenSelected(element.serial)"
+                    attr.aria-label="{{ column.label }} Link"
                     routerLink="/token">
                     {{ element[column.key] }}
                   </a>
@@ -109,8 +119,8 @@
               @case ("container_serial") {
                 <div class="flex-row ali-center">
                   <a
-                    attr.aria-label="{{ column.label }} Link"
                     (click)="contentService.containerSelected(element.container_serial)"
+                    attr.aria-label="{{ column.label }} Link"
                     routerLink="/token">
                     {{ element[column.key] }}
                   </a>
@@ -138,7 +148,7 @@
               }
               @case ("user") {
                 <a
-                  (click)="contentService.userSelected(element[column.key])"
+                  (click)="contentService.userSelected(element[column.key], element['user_realm'])"
                   attr.aria-label="{{ column.label }} Link">
                   {{ element[column.key] }}
                 </a>

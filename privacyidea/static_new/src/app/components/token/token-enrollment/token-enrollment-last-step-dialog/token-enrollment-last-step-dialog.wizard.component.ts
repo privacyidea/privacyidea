@@ -76,7 +76,6 @@ export class TokenEnrollmentLastStepDialogWizardComponent extends TokenEnrollmen
   protected override readonly Object = Object;
   private readonly http: HttpClient = inject(HttpClient);
   private readonly sanitizer: DomSanitizer = inject(DomSanitizer);
-  protected override readonly dialogRef: MatDialogRef<TokenEnrollmentLastStepDialogComponent> = inject(MatDialogRef);
   public override readonly data: TokenEnrollmentLastStepDialogData = inject(MAT_DIALOG_DATA);
   protected override readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected override readonly contentService: ContentServiceInterface = inject(ContentService);

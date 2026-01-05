@@ -77,134 +77,137 @@
       @case ("hotp") {
         <app-enroll-hotp
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (clickEnrollChange)="updateClickEnroll($event)" />
+          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
       }
       @case ("totp") {
         <app-enroll-totp
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (clickEnrollChange)="updateClickEnroll($event)" />
+          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
       }
       @case ("spass") {
         <app-enroll-spass
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (clickEnrollChange)="updateClickEnroll($event)" />
+          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
       }
       @case ("motp") {
         <app-enroll-motp
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (clickEnrollChange)="updateClickEnroll($event)" />
+          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
       }
       @case ("sshkey") {
         <app-enroll-sshkey
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (clickEnrollChange)="updateClickEnroll($event)" />
+          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
       }
       @case ("yubikey") {
         <app-enroll-yubikey
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (clickEnrollChange)="updateClickEnroll($event)" />
+          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
       }
       @case ("remote") {
         <app-enroll-remote
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (clickEnrollChange)="updateClickEnroll($event)" />
+          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
       }
       @case ("yubico") {
         <app-enroll-yubico
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (clickEnrollChange)="updateClickEnroll($event)" />
+          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
       }
       @case ("radius") {
         <app-enroll-radius
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (clickEnrollChange)="updateClickEnroll($event)" />
+          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
       }
       @case ("sms") {
         <app-enroll-sms
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (clickEnrollChange)="updateClickEnroll($event)" />
+          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
       }
       @case ("4eyes") {
         <app-enroll-foureyes
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (clickEnrollChange)="updateClickEnroll($event)" />
+          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
       }
       @case ("applspec") {
         <app-enroll-applspec
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (clickEnrollChange)="updateClickEnroll($event)" />
+          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
       }
       @case ("daypassword") {
         <app-enroll-daypassword
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (clickEnrollChange)="updateClickEnroll($event)" />
+          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
       }
       @case ("certificate") {
         <app-enroll-certificate
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (clickEnrollChange)="updateClickEnroll($event)" />
+          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
       }
       @case ("email") {
         <app-enroll-email
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (clickEnrollChange)="updateClickEnroll($event)" />
+          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
       }
       @case ("indexedsecret") {
         <app-enroll-indexedsecret
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (clickEnrollChange)="updateClickEnroll($event)" />
+          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
       }
       @case ("paper") {
         <app-enroll-paper
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (clickEnrollChange)="updateClickEnroll($event)" />
+          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
       }
       @case ("push") {
         <app-enroll-push
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (clickEnrollChange)="updateClickEnroll($event)"
-          (reopenDialogChange)="updateReopenDialog($event)" />
+          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)"
+          (reopenDialogChange)="updateReopenDialog($event)"
+          (onEnrollmentResponseChange)="updateOnEnrollmentResponse($event)" />
       }
       @case ("question") {
         <app-enroll-question
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (clickEnrollChange)="updateClickEnroll($event)" />
+          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
       }
       @case ("registration") {
         <app-enroll-registration
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (clickEnrollChange)="updateClickEnroll($event)" />
+          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
       }
       @case ("tan") {
         <app-enroll-tan
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (clickEnrollChange)="updateClickEnroll($event)" />
+          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
       }
       @case ("tiqr") {
         <app-enroll-tiqr
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (clickEnrollChange)="updateClickEnroll($event)" />
+          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
       }
       @case ("u2f") {
         <app-enroll-u2f
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (clickEnrollChange)="updateClickEnroll($event)" />
+          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
       }
       @case ("vasco") {
         <app-enroll-vasco
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (clickEnrollChange)="updateClickEnroll($event)" />
+          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
       }
       @case ("webauthn") {
         <app-enroll-webauthn
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (clickEnrollChange)="updateClickEnroll($event)" />
+          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)"
+          (onEnrollmentResponseChange)="updateOnEnrollmentResponse($event)" />
       }
       @case ("passkey") {
         <app-enroll-passkey
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (clickEnrollChange)="updateClickEnroll($event)"
-          (reopenDialogChange)="updateReopenDialog($event)" />
+          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)"
+          (reopenDialogChange)="updateReopenDialog($event)"
+          (onEnrollmentResponseChange)="updateOnEnrollmentResponse($event)" />
       }
     }
     <mat-form-field class="description-form">
@@ -216,14 +219,16 @@
         placeholder="Enter description"
         rows="3"></textarea>
     </mat-form-field>
-    <div class="gap-1">
+    <div class="gap-16">
       @if (authService.actionAllowed("userlist")) {
         <div class="width-100">
           <h4 class="enroll-h4">Assign Token to User</h4>
           <app-user-assignment
             [selectedUserRealmControl]="selectedUserRealmControl"
             [userFilterControl]="userFilterControl"
-            [showOnlyAddToRealm]="!['passkey', 'webauthn', 'tiqr', 'push'].includes(tokenService.selectedTokenType().key)"></app-user-assignment>
+            [showOnlyAddToRealm]="
+              !['passkey', 'webauthn', 'tiqr', 'push'].includes(tokenService.selectedTokenType().key)
+            "></app-user-assignment>
         </div>
       }
     </div>
@@ -231,28 +236,30 @@
     @if (tokenService.selectedTokenType().key !== "passkey") {
       <div class="user-pin-container">
         <h4 class="enroll-h4">Set PIN</h4>
+        <input
+          style="display: none"
+          type="text" />
+        <input
+          style="display: none"
+          type="password" />
+        <div class="user-pin-input margin-bottom-1">
           <input
-            style="display: none"
-            type="text" />
+            [formControl]="setPinControl"
+            [type]="'password'"
+            class="input"
+            placeholder="PIN" />
           <input
-            style="display: none"
-            type="password" />
-          <div class="user-pin-input margin-bottom-1">
-            <input
-              [formControl]="setPinControl"
-              [type]="'password'"
-              class="input"
-              placeholder="PIN" />
-            <input
-              [formControl]="repeatPinControl"
-              [type]="'password'"
-              class="input"
-              placeholder="Repeat PIN" />
-          </div>
-          @if (formGroupSignal().hasError("pinMismatch") &&
-          (formGroupSignal().get("setPin")?.touched || formGroupSignal().get("repeatPin")?.touched)) {
-            <mat-error class="pin-error">PINs do not match.</mat-error>
-          }
+            [formControl]="repeatPinControl"
+            [type]="'password'"
+            class="input"
+            placeholder="Repeat PIN" />
+        </div>
+        @if (
+          formGroupSignal().hasError("pinMismatch") &&
+          (formGroupSignal().get("setPin")?.touched || formGroupSignal().get("repeatPin")?.touched)
+        ) {
+          <mat-error class="pin-error">PINs do not match.</mat-error>
+        }
       </div>
     }
 

@@ -69,6 +69,7 @@ import { tokenTypes } from "../../../utils/token.utils";
 import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
 import { environment } from "../../../../environments/environment";
 import { TokenEnrollmentLastStepDialogData } from "./token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.self-service.component";
+import { TokenEnrollmentLastStepDialogWizardComponent } from "./token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.wizard.component";
 
 @Component({
   selector: "app-token-enrollment-wizard",
@@ -138,28 +139,6 @@ export class TokenEnrollmentWizardComponent extends TokenEnrollmentComponent {
     );
   });
 
-  protected override openLastStepDialog(args: { response: EnrollmentResponse | null; user: UserData | null }): void {
-    const { response, user } = args;
-    if (!response) {
-      this.notificationService.openSnackBar("No enrollment response available.");
-      return;
-    }
-
-    const dialogData: TokenEnrollmentLastStepDialogData = {
-      tokentype: this.tokenType(),
-      response: response,
-      serial: this.serial,
-      enrollToken: this.enrollToken.bind(this),
-      user: user,
-      userRealm: this.userService.selectedUserRealm(),
-      onlyAddToRealm: false
-    };
-    this._lastTokenEnrollmentLastStepDialogData.set(dialogData);
-    // this.dialogService.openTokenEnrollmentLastStepDialog({
-    //   data: dialogData
-    // });
-  }
-
   // TODO: Get custom path from pi.cfg
   customizationPath = "/static/public/customize/";
 
@@ -181,5 +160,29 @@ export class TokenEnrollmentWizardComponent extends TokenEnrollmentComponent {
 
   constructor() {
     super();
+  }
+
+  override openLastStepDialog(args: { response: EnrollmentResponse | null; user: UserData | null }): void {
+    const { response, user } = args;
+    if (!response) {
+      this.notificationService.openSnackBar("No enrollment response available.");
+      return;
+    }
+
+    const dialogData: TokenEnrollmentLastStepDialogData = {
+      tokentype: this.tokenService.selectedTokenType(),
+      response: response,
+      serial: this.serial,
+      enrollToken: this.enrollToken.bind(this),
+      user: user,
+      userRealm: this.userService.selectedUserRealm(),
+      onlyAddToRealm: this.userAssignmentComponent?.onlyAddToRealm() ?? false
+    };
+    this._lastTokenEnrollmentLastStepDialogData.set(dialogData);
+
+    this.dialogService.openDialog({
+      component: TokenEnrollmentLastStepDialogWizardComponent,
+      data: dialogData
+    });
   }
 }

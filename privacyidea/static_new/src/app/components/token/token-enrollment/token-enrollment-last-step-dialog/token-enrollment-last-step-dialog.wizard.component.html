@@ -16,7 +16,6 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-
 <app-dialog-wrapper
   title="Token successfully enrolled"
   [actions]="actions"
@@ -41,7 +40,7 @@
         }
       </div>
     }
-    <div class="flex-row gap-1">
+    <div class="flex-row gap-16">
       @if (showQRCode() && qrCode) {
         <img
           alt="QR Code"
@@ -50,31 +49,57 @@
           src="{{ qrCode }}"
           width="300px" />
       }
-      <div class="flex-column gap-1">
+      <div class="flex-column gap-16">
         @if (data.response.detail["password"]) {
           <p>
             Your Password: <strong>{{ data.response.detail["password"] }}</strong
             >.
           </p>
         }
+
         @if (data.response.detail.otpkey?.value && !data.response.detail["otps"] && showQRCode()) {
           <app-otp-key
             [otpKeyHex]="data.response.detail.otpkey?.value ?? ''"
             [otpKeyBase32]="data.response.detail.otpkey?.value_b32 ?? ''" />
         }
+
         @if (data.tokentype.key === "tiqr") {
           <app-tiqr-enroll-url [url]="data.response.detail['tiqrenroll']?.value ?? ''" />
         }
+
         @if (data.tokentype.key === "registration") {
           <app-registration-code [registrationCode]="data.response.detail['registrationcode']" />
         }
+
         @if (data.response.detail["otps"]) {
           <app-otp-values [otpValues]="data.response.detail['otps']" />
         }
+        <div class="flex-column gap-1">
+          @if (data.response.detail["password"]) {
+            <p>
+              Your Password: <strong>{{ data.response.detail["password"] }}</strong
+              >.
+            </p>
+          }
+          @if (data.response.detail.otpkey?.value && !data.response.detail["otps"] && showQRCode()) {
+            <app-otp-key
+              [otpKeyHex]="data.response.detail.otpkey?.value ?? ''"
+              [otpKeyBase32]="data.response.detail.otpkey?.value_b32 ?? ''" />
+          }
+          @if (data.tokentype.key === "tiqr") {
+            <app-tiqr-enroll-url [url]="data.response.detail['tiqrenroll']?.value ?? ''" />
+          }
+          @if (data.tokentype.key === "registration") {
+            <app-registration-code [registrationCode]="data.response.detail['registrationcode']" />
+          }
+          @if (data.response.detail["otps"]) {
+            <app-otp-values [otpValues]="data.response.detail['otps']" />
+          }
+        </div>
       </div>
+      <div
+        [innerHTML]="postBottomHtml$ | async"
+        class="margin-bottom-1"></div>
     </div>
-    <div
-      [innerHTML]="postBottomHtml$ | async"
-      class="margin-bottom-1"></div>
   </mat-dialog-content>
 </app-dialog-wrapper>

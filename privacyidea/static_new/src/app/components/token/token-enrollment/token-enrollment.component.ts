@@ -66,7 +66,7 @@ import { ContainerService, ContainerServiceInterface } from "../../../services/c
 import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
 import { NotificationService, NotificationServiceInterface } from "../../../services/notification/notification.service";
 import { RealmService, RealmServiceInterface } from "../../../services/realm/realm.service";
-import { TokenService, TokenServiceInterface } from "../../../services/token/token.service";
+import { TokenService, TokenServiceInterface, TokenType } from "../../../services/token/token.service";
 import { UserData, UserService, UserServiceInterface } from "../../../services/user/user.service";
 import { VersioningService, VersioningServiceInterface } from "../../../services/version/version.service";
 import { EnrollApplspecComponent } from "./enroll-asp/enroll-applspec.component";
@@ -97,7 +97,11 @@ import { EnrollYubicoComponent } from "./enroll-yubico/enroll-yubico.component";
 import { EnrollYubikeyComponent } from "./enroll-yubikey/enroll-yubikey.component";
 import { MAT_TOOLTIP_DEFAULT_OPTIONS, MatTooltipDefaultOptions, MatTooltipModule } from "@angular/material/tooltip";
 import { lastValueFrom, Observable } from "rxjs";
-import { EnrollmentResponse, TokenEnrollmentData } from "../../../mappers/token-api-payload/_token-api-payload.mapper";
+import {
+  EnrollmentResponse,
+  TokenApiPayloadMapper,
+  TokenEnrollmentData
+} from "../../../mappers/token-api-payload/_token-api-payload.mapper";
 import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
 import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
@@ -107,13 +111,19 @@ import { TokenEnrollmentLastStepDialogComponent } from "./token-enrollment-last-
 import { MatDialogConfig } from "@angular/material/dialog";
 import { TokenEnrollmentLastStepDialogData } from "./token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.self-service.component";
 
-export type ClickEnrollFn = (
+export type enrollmentArgsGetterFn<T extends TokenEnrollmentData = TokenEnrollmentData> = (
   enrollmentOptions: TokenEnrollmentData
-) => Promise<EnrollmentResponse | null> | Observable<EnrollmentResponse | null>;
+) => {
+  data: T;
+  mapper: TokenApiPayloadMapper<T>;
+} | null;
 
-export type ReopenDialogFn =
-  | (() => Promise<EnrollmentResponse | null> | Observable<EnrollmentResponse | null>)
-  | undefined;
+export type ReopenDialogFn = () => Promise<EnrollmentResponse | null> | Observable<EnrollmentResponse | null>;
+
+export type OnEnrollmentResponseFn = (
+  enrollmentResponse: EnrollmentResponse,
+  enrollmentData: TokenEnrollmentData
+) => Promise<EnrollmentResponse | null>;
 
 export const CUSTOM_TOOLTIP_OPTIONS: MatTooltipDefaultOptions = {
   showDelay: 500,
@@ -264,14 +274,19 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
   @ViewChild("stickySentinel") stickySentinel!: ElementRef<HTMLElement>;
   @ViewChild(UserAssignmentComponent)
   userAssignmentComponent!: UserAssignmentComponent;
-  clickEnroll?: ClickEnrollFn;
-  reopenDialogSignal: WritableSignal<ReopenDialogFn> = linkedSignal({
+  enrollmentArgsGetter?: enrollmentArgsGetterFn;
+  reopenDialog = linkedSignal<TokenType, ReopenDialogFn | undefined>({
     source: this.tokenService.selectedTokenType,
     computation: () => undefined
   });
   additionalFormFields: WritableSignal<{
     [key: string]: FormControl<any>;
   }> = signal({});
+  onEnrollmentResponse = linkedSignal<TokenType, OnEnrollmentResponseFn | undefined>({
+    source: this.tokenService.selectedTokenType,
+    computation: () => undefined
+  });
+
   descriptionControl = new FormControl<string>("", {
     nonNullable: true,
     validators: [Validators.maxLength(80)]
@@ -298,9 +313,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     source: this.tokenService.selectedTokenType,
     computation: () => null
   });
-  canReopenEnrollmentDialog = computed(
-    () => !!this.reopenDialogSignal() || !!this._lastTokenEnrollmentLastStepDialogData()
-  );
+  canReopenEnrollmentDialog = computed(() => !!this.reopenDialog() || !!this._lastTokenEnrollmentLastStepDialogData());
 
   selectedUserRealmControl = new FormControl<string>("", { nonNullable: true });
   userFilterControl = new FormControl<string | UserData | null>("", { nonNullable: true });
@@ -315,12 +328,12 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     return setPin && repeatPin && setPin.value !== repeatPin.value ? { pinMismatch: true } : null;
   }
 
-  updateClickEnroll(event: ClickEnrollFn): void {
-    this.clickEnroll = event;
+  updateEnrollmentArgsGetter(event: enrollmentArgsGetterFn): void {
+    this.enrollmentArgsGetter = event;
   }
 
   updateReopenDialog(event: ReopenDialogFn): void {
-    this.reopenDialogSignal.set(event);
+    this.reopenDialog.set(event);
   }
 
   updateAdditionalFormFields(event: { [key: string]: FormControl<any> | undefined | null }): void {
@@ -333,6 +346,9 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
       }
     }
     this.additionalFormFields.set(validControls);
+  }
+  updateOnEnrollmentResponse(event: OnEnrollmentResponseFn) {
+    this.onEnrollmentResponse.set(event);
   }
 
   ngOnInit(): void {
@@ -395,7 +411,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
   }
 
   reopenEnrollmentDialog() {
-    const reopenFunction = this.reopenDialogSignal();
+    const reopenFunction = this.reopenDialog();
     if (reopenFunction) {
       reopenFunction();
       return;
@@ -459,7 +475,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     }
   });
 
-  protected async enrollToken(): Promise<void> {
+  async enrollToken(): Promise<void> {
     const currentTokenType = this.tokenService.selectedTokenType();
     let everythingIsValid = true;
     if (!currentTokenType) {
@@ -482,7 +498,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
       return;
     }
 
-    if (!this.clickEnroll) {
+    if (!this.enrollmentArgsGetter) {
       this.notificationService.openSnackBar("Enrollment action is not available for the selected token type.");
       return;
     }
@@ -517,18 +533,26 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
       serial: this.serial()
     };
 
-    const enrollResponse = this.clickEnroll(basicOptions);
+    const enrollmentArgs = this.enrollmentArgsGetter(basicOptions);
+    if (!enrollmentArgs) return;
+    const enrollResponse = this.tokenService.enrollToken(enrollmentArgs);
+
     let enrollPromise: Promise<EnrollmentResponse | null>;
     if (enrollResponse instanceof Promise) {
       enrollPromise = enrollResponse;
     } else {
       enrollPromise = lastValueFrom(enrollResponse);
     }
+
     enrollPromise.catch((error) => {
       const message = error.error?.result?.error?.message || "";
       this.notificationService.openSnackBar(`Failed to enroll token: ${message || error.message || error}`);
     });
-    const enrollmentResponse = await enrollPromise;
+    let enrollmentResponse = await enrollPromise;
+    const onEnrollmentResponseFn = this.onEnrollmentResponse();
+    if (onEnrollmentResponseFn && enrollmentResponse) {
+      enrollmentResponse = await onEnrollmentResponseFn(enrollmentResponse, enrollmentArgs.data);
+    }
     this.enrollResponse.set(enrollmentResponse);
     if (enrollmentResponse) {
       this._handleEnrollmentResponse({

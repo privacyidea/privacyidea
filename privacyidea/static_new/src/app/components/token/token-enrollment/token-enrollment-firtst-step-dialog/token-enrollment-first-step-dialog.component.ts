@@ -30,9 +30,12 @@ import { AbstractDialogComponent } from "../../../shared/dialog/abstract-dialog/
   templateUrl: "./token-enrollment-first-step-dialog.component.html",
   styleUrl: "./token-enrollment-first-step-dialog.component.scss"
 })
-export class TokenEnrollmentFirstStepDialogComponent extends AbstractDialogComponent<{
-  enrollmentResponse: EnrollmentResponse;
-}> {
+export class TokenEnrollmentFirstStepDialogComponent extends AbstractDialogComponent<
+  {
+    enrollmentResponse: EnrollmentResponse;
+  },
+  void
+> {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly Object = Object;

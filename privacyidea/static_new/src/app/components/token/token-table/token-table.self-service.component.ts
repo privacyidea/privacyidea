@@ -26,7 +26,6 @@ import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 import { MatPaginatorModule } from "@angular/material/paginator";
-import { MatSortModule } from "@angular/material/sort";
 import { MatTableModule } from "@angular/material/table";
 import { ContainerService, ContainerServiceInterface } from "../../../services/container/container.service";
 import { SimpleConfirmationDialogComponent } from "../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
@@ -43,7 +42,6 @@ import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.
     MatFormFieldModule,
     MatInputModule,
     MatPaginatorModule,
-    MatSortModule,
     NgClass,
     CopyButtonComponent,
     MatCheckboxModule,

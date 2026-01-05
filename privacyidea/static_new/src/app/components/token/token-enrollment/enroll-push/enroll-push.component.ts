@@ -20,21 +20,21 @@ import { Component, EventEmitter, inject, Input, OnInit, Output, signal } from "
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { Tokens, TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 
-import { MatDialogRef } from "@angular/material/dialog";
-import { lastValueFrom } from "rxjs";
-import { PiResponse } from "../../../../app.component";
 import {
-  EnrollmentResponse,
-  TokenEnrollmentData
-} from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
-import { PushApiPayloadMapper } from "../../../../mappers/token-api-payload/push-token-api-payload.mapper";
+  PushApiPayloadMapper,
+  PushEnrollmentData
+} from "../../../../mappers/token-api-payload/push-token-api-payload.mapper";
 import { DialogService, DialogServiceInterface } from "../../../../services/dialog/dialog.service";
 import { TokenEnrollmentFirstStepDialogComponent } from "../token-enrollment-firtst-step-dialog/token-enrollment-first-step-dialog.component";
 import { ReopenDialogFn } from "../token-enrollment.component";
-
-export interface PushEnrollmentOptions extends TokenEnrollmentData {
-  type: "push";
-}
+import {
+  EnrollmentResponse,
+  TokenApiPayloadMapper,
+  TokenEnrollmentData
+} from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
+import { PiResponse } from "../../../../app.component";
+import { lastValueFrom } from "rxjs";
+import { MatDialogRef } from "@angular/material/dialog";
 
 @Component({
   selector: "app-enroll-push",
@@ -56,29 +56,42 @@ export class EnrollPushComponent implements OnInit {
   @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
-  @Output() clickEnrollChange = new EventEmitter<
-    (basicOptions: TokenEnrollmentData) => Promise<EnrollmentResponse | null>
+  @Output() enrollmentArgsGetterChange = new EventEmitter<
+    (basicOptions: TokenEnrollmentData) => {
+      data: PushEnrollmentData;
+      mapper: TokenApiPayloadMapper<PushEnrollmentData>;
+    } | null
   >();
   @Output() reopenDialogChange = new EventEmitter<ReopenDialogFn>();
+  @Output() onEnrollmentResponseChange = new EventEmitter<
+    (enrollmentResponse: EnrollmentResponse) => Promise<EnrollmentResponse | null>
+  >();
+
+  pushForm = new FormGroup({});
 
   ngOnInit(): void {
     this.additionalFormFieldsChange.emit({});
-    this.clickEnrollChange.emit(this.onClickEnroll);
+    this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
+    this.onEnrollmentResponseChange.emit(this.onEnrollmentResponse.bind(this));
   }
 
-  onClickEnroll = async (basicOptions: TokenEnrollmentData): Promise<EnrollmentResponse | null> => {
-    const enrollmentData: PushEnrollmentOptions = {
+  enrollmentArgsGetter = (
+    basicOptions: TokenEnrollmentData
+  ): {
+    data: PushEnrollmentData;
+    mapper: TokenApiPayloadMapper<PushEnrollmentData>;
+  } | null => {
+    const enrollmentData: PushEnrollmentData = {
       ...basicOptions,
       type: "push"
     };
-    const initResponse = await lastValueFrom(
-      this.tokenService.enrollToken({
-        data: enrollmentData,
-        mapper: this.enrollmentMapper
-      })
-    ).catch(() => {
-      return null;
-    });
+    return {
+      data: enrollmentData,
+      mapper: this.enrollmentMapper
+    };
+  };
+
+  async onEnrollmentResponse(initResponse: EnrollmentResponse): Promise<EnrollmentResponse | null> {
     if (!initResponse) {
       return null;
     }
@@ -90,7 +103,7 @@ export class EnrollPushComponent implements OnInit {
     } else {
       return initResponse;
     }
-  };
+  }
 
   private pollTokenRolloutState = (
     initResponse: EnrollmentResponse,
