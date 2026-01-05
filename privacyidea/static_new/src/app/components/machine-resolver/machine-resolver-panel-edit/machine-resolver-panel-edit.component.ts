@@ -32,17 +32,14 @@ import { MatAutocompleteModule } from "@angular/material/autocomplete";
 import { MatButtonModule } from "@angular/material/button";
 import { MatInputModule } from "@angular/material/input";
 import { MatSelectModule } from "@angular/material/select";
-import {
-  DialogServiceInterface,
-  DialogService,
-  MatDialogConfigRequired
-} from "../../../services/dialog/dialog.service";
-import { ConfirmationDialogData } from "../../shared/confirmation-dialog/confirmation-dialog.component";
+import { DialogServiceInterface, DialogService } from "../../../services/dialog/dialog.service";
 import { MachineResolverLdapTabComponent } from "../machine-resolver-ldap-tab/machine-resolver-ldap-tab.component";
 import { NotificationService, NotificationServiceInterface } from "../../../services/notification/notification.service";
 import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
 import { MachineResolverHostsTabComponent } from "../machine-resolver-hosts-tab/machine-resolver-hosts-tab.component";
 import { deepCopy } from "../../../utils/deep-copy.utils";
+import { SimpleConfirmationDialogComponent } from "../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { lastValueFrom } from "rxjs";
 
 @Component({
   selector: "app-machine-resolver-panel-edit",
@@ -135,14 +132,20 @@ export class MachineResolverPanelEditComponent {
     } catch (error) {
       const errorMessage = (error as Error).message;
       if (errorMessage === "post-failed") {
-        const dialogData: MatDialogConfigRequired<ConfirmationDialogData> = {
-          data: {
-            type: "machineResolver",
-            title: "Save machineResolver despite test failure?",
-            action: "proceed-despite-error"
-          }
-        };
-        const result = await this.dialogService.confirm(dialogData);
+        const result = await lastValueFrom(
+          this.dialogService
+            .openDialog({
+              component: SimpleConfirmationDialogComponent,
+              data: {
+                title: "Save machineResolver despite test failure?",
+                items: [],
+                itemType: "machineResolver",
+                confirmAction: { label: "Save", value: true, type: "confirm" },
+                cancelAction: { label: "Cancel", value: false, type: "cancel" }
+              }
+            })
+            .afterClosed()
+        );
         if (!result) return;
       } else {
         return;
@@ -157,28 +160,30 @@ export class MachineResolverPanelEditComponent {
   }
 
   async deleteMachineResolver() {
-    const dialogData: MatDialogConfigRequired<ConfirmationDialogData> = {
-      data: {
-        type: "machineResolver",
-        title: "Delete machineResolver",
-        action: "delete",
-        serialList: [this.currentMachineResolver().resolvername]
-      }
-    };
     this.dialogService
-      .confirm(dialogData)
-      .then(async (result) => {
-        if (!result) {
-          return;
-        }
-        try {
-          await this.machineResolverService.deleteMachineResolver(this.currentMachineResolver().resolvername);
-        } catch (error) {
-          return;
+      .openDialog({
+        component: SimpleConfirmationDialogComponent,
+        data: {
+          title: "Delete machine resolver",
+          items: [this.currentMachineResolver().resolvername || "Unnamed Machine Resolver"],
+          itemType: "machine resolver",
+          confirmAction: { label: "Delete", value: true, type: "destruct" }
         }
       })
-      .catch((err) => {
-        console.error("Error handling delete machineResolver dialog:", err);
+      .afterClosed()
+      .subscribe({
+        next: async (result) => {
+          if (result) {
+            try {
+              await this.machineResolverService.deleteMachineResolver(this.currentMachineResolver().resolvername);
+            } catch (error) {
+              return;
+            }
+          }
+        },
+        error: (err) => {
+          console.error("Error handling delete machine resolver dialog:", err);
+        }
       });
     return;
   }
@@ -188,22 +193,28 @@ export class MachineResolverPanelEditComponent {
       this.isEditMode.set(false);
       return;
     }
-    const dialogData: MatDialogConfigRequired<ConfirmationDialogData> = {
-      data: {
-        type: "machineResolver",
-        title: "Discard changes",
-        action: "discard"
-      }
-    };
+
     this.dialogService
-      .confirm(dialogData)
-      .then((result) => {
-        if (result) {
-          this.isEditMode.set(false);
+      .openDialog({
+        component: SimpleConfirmationDialogComponent,
+        data: {
+          title: "Discard changes",
+          items: [this.currentMachineResolver().resolvername || "Unnamed Machine Resolver"],
+          itemType: "machine resolver",
+          confirmAction: { label: "Discard", value: true, type: "destruct" },
+          cancelAction: { label: "Cancel", value: false, type: "cancel" }
         }
       })
-      .catch((err) => {
-        console.error("Error handling unsaved changes dialog:", err);
+      .afterClosed()
+      .subscribe({
+        next: (result) => {
+          if (result) {
+            this.isEditMode.set(false);
+          }
+        },
+        error: (err) => {
+          console.error("Error handling unsaved changes dialog:", err);
+        }
       });
     return;
   }
@@ -213,25 +224,30 @@ export class MachineResolverPanelEditComponent {
       this.isEditMode.set(false);
       return;
     }
-    const dialogData: MatDialogConfigRequired<ConfirmationDialogData> = {
-      data: {
-        type: "machineResolver",
-        title: "Discard changes",
-        action: "discard"
-      }
-    };
     this.dialogService
-      .confirm(dialogData)
-      .then((result) => {
-        if (result) {
-          this.isEditMode.set(false);
-          $panel.close();
-        } else {
-          $panel.open();
+      .openDialog({
+        component: SimpleConfirmationDialogComponent,
+        data: {
+          title: "Discard changes",
+          items: [this.currentMachineResolver().resolvername || "Unnamed Machine Resolver"],
+          itemType: "machine resolver",
+          confirmAction: { label: "Discard", value: true, type: "destruct" },
+          cancelAction: { label: "Cancel", value: false, type: "cancel" }
         }
       })
-      .catch((err) => {
-        console.error("Error handling unsaved changes dialog:", err);
+      .afterClosed()
+      .subscribe({
+        next: (result) => {
+          if (result) {
+            this.isEditMode.set(false);
+            $panel.close();
+          } else {
+            $panel.open();
+          }
+        },
+        error: (err) => {
+          console.error("Error handling unsaved changes dialog:", err);
+        }
       });
     return;
   }

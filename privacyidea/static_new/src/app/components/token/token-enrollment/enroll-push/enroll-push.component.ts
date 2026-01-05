@@ -25,16 +25,17 @@ import {
   PushEnrollmentData
 } from "../../../../mappers/token-api-payload/push-token-api-payload.mapper";
 import { DialogService, DialogServiceInterface } from "../../../../services/dialog/dialog.service";
-import { TokenEnrollmentFirstStepDialogComponent } from "../token-enrollment-firtst-step-dialog/token-enrollment-first-step-dialog.component";
 import { ReopenDialogFn } from "../token-enrollment.component";
 import {
   EnrollmentResponse,
+  EnrollmentResponseDetail,
   TokenApiPayloadMapper,
   TokenEnrollmentData
 } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
 import { PiResponse } from "../../../../app.component";
 import { lastValueFrom } from "rxjs";
 import { MatDialogRef } from "@angular/material/dialog";
+import { TokenEnrollmentFirstStepDialogComponent } from "../token-enrollment-firtst-step-dialog/token-enrollment-first-step-dialog.component";
 
 @Component({
   selector: "app-enroll-push",
@@ -104,17 +105,22 @@ export class EnrollPushComponent implements OnInit {
       return initResponse;
     }
   }
+  firstStepDialogRef: MatDialogRef<
+    {
+      enrollmentResponse: EnrollmentResponse<EnrollmentResponseDetail>;
+    },
+    void
+  > | null = null;
 
   private pollTokenRolloutState = (
     initResponse: EnrollmentResponse,
     initDelay: number
   ): Promise<PiResponse<Tokens>> => {
-    // this._openStepOneDialog(initResponse)
-    //   .afterClosed()
-    //   .subscribe(() => {
-    //     this.tokenService.stopPolling();
-    //     this.pollResponse.set(undefined);
-    //   });
+    this.firstStepDialogRef = this._openStepOneDialog(initResponse);
+    this.firstStepDialogRef.afterClosed().subscribe(() => {
+      this.tokenService.stopPolling();
+      this.pollResponse.set(undefined);
+    });
     const observable = this.tokenService.pollTokenRolloutState({
       tokenSerial: initResponse.detail.serial,
       initDelay
@@ -123,26 +129,31 @@ export class EnrollPushComponent implements OnInit {
       next: (pollResponse) => {
         this.pollResponse.set(pollResponse);
         if (pollResponse.result?.value?.tokens[0].rollout_state !== "clientwait") {
-          // this.dialogService.closeTokenEnrollmentFirstStepDialog();
+          this.firstStepDialogRef?.close();
         }
       }
     });
     return lastValueFrom(observable);
   };
 
-  // private _openStepOneDialog(
-  //   enrollmentResponse: EnrollmentResponse
-  // ): MatDialogRef<TokenEnrollmentFirstStepDialogComponent, any> {
-  //   this.reopenDialogChange.emit(async () => {
-  //     // if (!this.dialogService.isTokenEnrollmentFirstStepDialogOpen) {
-  //     //   await this.pollTokenRolloutState(enrollmentResponse, 0);
-  //     //   return enrollmentResponse;
-  //     // }
-  //     return null;
-  //   });
+  private _openStepOneDialog(enrollmentResponse: EnrollmentResponse): MatDialogRef<
+    {
+      enrollmentResponse: EnrollmentResponse<EnrollmentResponseDetail>;
+    },
+    void
+  > {
+    this.reopenDialogChange.emit(async () => {
+      if (this.firstStepDialogRef && this.dialogService.isDialogOpen(this.firstStepDialogRef)) {
+        return null;
+      }
 
-  //   // return this.dialogService.openTokenEnrollmentFirstStepDialog({
-  //   //   data: { enrollmentResponse }
-  //   // });
-  // }
+      await this.pollTokenRolloutState(enrollmentResponse, 0);
+      return enrollmentResponse;
+    });
+
+    return this.dialogService.openDialog({
+      component: TokenEnrollmentFirstStepDialogComponent,
+      data: { enrollmentResponse }
+    });
+  }
 }

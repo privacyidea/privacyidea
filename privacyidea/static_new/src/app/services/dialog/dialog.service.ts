@@ -34,6 +34,7 @@ export interface DialogServiceInterface {
   closeLatestDialog(): void;
   closeAllDialogs(): void;
   isAnyDialogOpen(): boolean;
+  isDialogOpen(ref: MatDialogRef<any>): boolean;
 }
 
 @Injectable({ providedIn: "root" })
@@ -91,6 +92,10 @@ export class DialogService implements DialogServiceInterface {
       return true;
     }
     return false;
+  }
+
+  isDialogOpen(ref: MatDialogRef<any>): boolean {
+    return this.openDialogs.has(ref);
   }
 
   isAnyDialogOpen(): boolean {

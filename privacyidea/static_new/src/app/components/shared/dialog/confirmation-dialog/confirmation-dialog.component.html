@@ -21,7 +21,7 @@
   (close)="close()"
   [actions]="actions">
   <p i18n>
-    Are you sure you want to {{ data.confirmAction.label }}
+    Are you sure you want to {{ data.confirmAction.label.toLocaleLowerCase() }}
     @if (data.items.length > 1) {
       all selected ({{ data.items.length }}) {{ data.itemType }}s?
     } @else {

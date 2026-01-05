@@ -43,7 +43,7 @@ import { TableUtilsService, TableUtilsServiceInterface } from "../../../../servi
 })
 export class ContainerTableActionsComponent {
   private readonly dialogService: DialogServiceInterface = inject(DialogService);
-  private readonly containerService: ContainerServiceInterface = inject(ContainerService);
+  protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   private readonly document: Document = inject(DOCUMENT);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
