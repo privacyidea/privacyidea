@@ -310,8 +310,4 @@ export class ContainerCreateComponent {
   clearTemplateSelection() {
     this.selectedTemplate.set("");
   }
-
-  clearTemplateSelection() {
-    this.selectedTemplate.set("");
-  }
 }

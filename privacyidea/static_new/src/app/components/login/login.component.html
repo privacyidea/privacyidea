@@ -78,20 +78,6 @@
               <mat-option [value]="realmOption">{{ realmOption }}</mat-option>
             }
           </mat-select>
-        </mat-form-field>
-      }
-
-      @if (realms().length > 0) {
-        <mat-form-field>
-          <mat-label>Realm</mat-label>
-          <mat-select
-            [(ngModel)]="realm"
-            [ngModelOptions]="{ standalone: true }"
-            [value]="realm()">
-            @for (realmOption of realms(); track realmOption) {
-              <mat-option [value]="realmOption">{{ realmOption }}</mat-option>
-            }
-          </mat-select>
           @if (realm() !== "") {
             <app-clear-button
               matSuffix

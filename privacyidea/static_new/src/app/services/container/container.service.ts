@@ -788,25 +788,6 @@ export class ContainerService implements ContainerServiceInterface {
       );
   }
 
-  unregister(containerSerial: string) {
-    this.stopPolling();
-    const headers = this.authService.getHeaders();
-    return this.http
-      .post<PiResponse<ContainerUnregisterData>>(
-        `${this.containerBaseUrl}register/${containerSerial}/terminate`,
-        {},
-        { headers }
-      )
-      .pipe(
-        catchError((error) => {
-          console.error("Failed to unregister container.", error);
-          const message = error.error?.result?.error?.message || "";
-          this.notificationService.openSnackBar("Failed to unregister container. " + message);
-          return throwError(() => error);
-        })
-      );
-  }
-
   containerBelongsToUser(containerSerial: any): false | true | undefined {
     return this.containerResource
       .value()
