@@ -3757,6 +3757,7 @@ class RegistrationAndPasswordToken(MyApiTestCase):
             self.assertEqual(200, res.status_code)
             serial = res.json.get("detail").get("serial")
             remove_token(serial)
+            db.session.expunge_all()
 
         # Try setting an explicit password
         with self.app.test_request_context('/token/init',
@@ -3783,6 +3784,7 @@ class RegistrationAndPasswordToken(MyApiTestCase):
             self.assertEqual("ACCEPT", data.get("result").get("authentication"), data)
         # delete token
         remove_token(serial)
+        db.session.expunge_all()
 
         # Try getting a generated password
         with self.app.test_request_context('/token/init',
