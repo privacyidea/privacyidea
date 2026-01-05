@@ -57,7 +57,7 @@
       [(ngModel)]="data()['hasSpecialErrorHandler']"
       class="checkbox-inline"
       i18n>
-      Special Error Handeling
+      Special Error Handling
     </mat-checkbox>
 
     @if (data()['hasSpecialErrorHandler']) {
@@ -403,71 +403,73 @@
               Configure the endpoint to authenticate the user with its username/userid and password.
             </p>
 
-            <mat-form-field>
-              <mat-label i18n>Method</mat-label>
-              <mat-select [(ngModel)]="data()['config_user_auth']['method']">
-                <mat-option value="POST">POST</mat-option>
-                <mat-option value="GET">GET</mat-option>
-                <mat-option value="PUT">PUT</mat-option>
-                <mat-option value="PATCH">PATCH</mat-option>
-                <mat-option value="DELETE">DELETE</mat-option>
-              </mat-select>
-            </mat-form-field>
-
-            <mat-form-field class="auth-endpoint">
-              <mat-label i18n>Endpoint</mat-label>
-              <input
-                [(ngModel)]="data()['config_user_auth']['endpoint']"
-                matInput
-                placeholder="/openid-connect/token" />
-              <mat-hint i18n> Possible tags: {{ "{" }}userid{{ "}" }} {{ "{" }}username{{ "}" }} {{ "{" }}
-                              password{{ "}" }}
-              </mat-hint>
-            </mat-form-field>
-
-            <mat-form-field class="auth-wide">
-              <mat-label i18n>Headers (JSON format)</mat-label>
-              <textarea
-                [(ngModel)]="data()['config_user_auth']['headers']"
-                matInput
-                placeholder='{"Content-Type":"application/json; charset=UTF-8"}'></textarea>
-            </mat-form-field>
-
-            <mat-form-field class="auth-wide">
-              <mat-label i18n>Request Mapping (JSON format)</mat-label>
-              <textarea
-                [(ngModel)]="data()['config_user_auth']['requestMapping']"
-                matInput
-                placeholder='{"username":"{username}","password":"{password}"}'></textarea>
-            </mat-form-field>
-
-            <mat-form-field class="auth-wide">
-              <mat-label i18n>Response Mapping (JSON format)</mat-label>
-              <textarea
-                [(ngModel)]="data()['config_user_auth']['responseMapping']"
-                matInput
-                placeholder='{"Authorization":"Bearer {access_token}"}'></textarea>
-              <mat-hint i18n> Possible tags: {{ "{" }}userid{{ "}" }} {{ "{" }}username{{ "}" }} {{ "{" }}
-                              password{{ "}" }}
-              </mat-hint>
-            </mat-form-field>
-
-            <mat-checkbox
-              [(ngModel)]="data()['config_user_auth']['hasSpecialErrorHandler']"
-              class="auth-wide checkbox-inline"
-              i18n>
-              Special Error Handling
-            </mat-checkbox>
-
-            @if (data()['config_user_auth']['hasSpecialErrorHandler']) {
-              <mat-form-field class="auth-wide">
-                <mat-label i18n>Response contains (JSON format)</mat-label>
-                <textarea
-                  [(ngModel)]="data()['config_user_auth']['errorResponse']"
-                  matInput
-                  placeholder='{"success": false, "message": "An error occurred!"}'></textarea>
+            <div class="auth-grid">
+              <mat-form-field>
+                <mat-label i18n>Method</mat-label>
+                <mat-select [(ngModel)]="data()['config_user_auth']['method']">
+                  <mat-option value="POST">POST</mat-option>
+                  <mat-option value="GET">GET</mat-option>
+                  <mat-option value="PUT">PUT</mat-option>
+                  <mat-option value="PATCH">PATCH</mat-option>
+                  <mat-option value="DELETE">DELETE</mat-option>
+                </mat-select>
               </mat-form-field>
-            }
+
+              <mat-form-field class="auth-endpoint">
+                <mat-label i18n>Endpoint</mat-label>
+                <input
+                  [(ngModel)]="data()['config_user_auth']['endpoint']"
+                  matInput
+                  placeholder="/openid-connect/token" />
+                <mat-hint i18n> Possible tags: {{ "{" }}userid{{ "}" }} {{ "{" }}username{{ "}" }} {{ "{" }}
+                                password{{ "}" }}
+                </mat-hint>
+              </mat-form-field>
+
+              <mat-form-field class="auth-wide">
+                <mat-label i18n>Headers (JSON format)</mat-label>
+                <textarea
+                  [(ngModel)]="data()['config_user_auth']['headers']"
+                  matInput
+                  placeholder='{"Content-Type":"application/json; charset=UTF-8"}'></textarea>
+              </mat-form-field>
+
+              <mat-form-field class="auth-wide">
+                <mat-label i18n>Request Mapping (JSON format)</mat-label>
+                <textarea
+                  [(ngModel)]="data()['config_user_auth']['requestMapping']"
+                  matInput
+                  placeholder='{"username":"{username}","password":"{password}"}'></textarea>
+              </mat-form-field>
+
+              <mat-form-field class="auth-wide">
+                <mat-label i18n>Response Mapping (JSON format)</mat-label>
+                <textarea
+                  [(ngModel)]="data()['config_user_auth']['responseMapping']"
+                  matInput
+                  placeholder='{"Authorization":"Bearer {access_token}"}'></textarea>
+                <mat-hint i18n> Possible tags: {{ "{" }}userid{{ "}" }} {{ "{" }}username{{ "}" }} {{ "{" }}
+                                password{{ "}" }}
+                </mat-hint>
+              </mat-form-field>
+
+              <mat-checkbox
+                [(ngModel)]="data()['config_user_auth']['hasSpecialErrorHandler']"
+                class="auth-wide checkbox-inline"
+                i18n>
+                Special Error Handling
+              </mat-checkbox>
+
+              @if (data()['config_user_auth']['hasSpecialErrorHandler']) {
+                <mat-form-field class="auth-wide">
+                  <mat-label i18n>Response contains (JSON format)</mat-label>
+                  <textarea
+                    [(ngModel)]="data()['config_user_auth']['errorResponse']"
+                    matInput
+                    placeholder='{"success": false, "message": "An error occurred!"}'></textarea>
+                </mat-form-field>
+              }
+            </div>
           </div>
         </mat-expansion-panel>
 
@@ -484,71 +486,73 @@
               added to the request as search parameters if they are available in the request.
             </p>
 
-            <mat-form-field>
-              <mat-label i18n>Method</mat-label>
-              <mat-select [(ngModel)]="data()['config_get_user_list']['method']">
-                <mat-option value="POST">POST</mat-option>
-                <mat-option value="GET">GET</mat-option>
-                <mat-option value="PUT">PUT</mat-option>
-                <mat-option value="PATCH">PATCH</mat-option>
-                <mat-option value="DELETE">DELETE</mat-option>
-              </mat-select>
-            </mat-form-field>
-
-            <mat-form-field class="auth-endpoint">
-              <mat-label i18n>Endpoint</mat-label>
-              <input
-                [(ngModel)]="data()['config_get_user_list']['endpoint']"
-                matInput
-                placeholder="/users" />
-              <mat-hint i18n> Possible tags: {{ "{" }}userid{{ "}" }} {{ "{" }}username{{ "}" }} {{ "{" }}
-                              password{{ "}" }}  {{ "{" }}givenname{{ "}" }}
-              </mat-hint>
-            </mat-form-field>
-
-            <mat-form-field class="auth-wide">
-              <mat-label i18n>Headers (JSON format)</mat-label>
-              <textarea
-                [(ngModel)]="data()['config_get_user_list']['headers']"
-                matInput
-                placeholder='{"Content-Type":"application/json; charset=UTF-8"}'></textarea>
-            </mat-form-field>
-
-            <mat-form-field class="auth-wide">
-              <mat-label i18n>Request Mapping (JSON format)</mat-label>
-              <textarea
-                [(ngModel)]="data()['config_get_user_list']['requestMapping']"
-                matInput
-                placeholder='{"customerid":"{userid}","accessKey":"{secre3t!}"}'></textarea>
-            </mat-form-field>
-
-            <mat-form-field class="auth-wide">
-              <mat-label i18n>Response Mapping (JSON format)</mat-label>
-              <textarea
-                [(ngModel)]="data()['config_get_user_list']['responseMapping']"
-                matInput
-                placeholder='{"Authorization":"Bearer {access_token}"}'></textarea>
-              <mat-hint i18n> Possible tags: {{ "{" }}userid{{ "}" }} {{ "{" }}username{{ "}" }} {{ "{" }}
-                              password{{ "}" }}
-              </mat-hint>
-            </mat-form-field>
-
-            <mat-checkbox
-              [(ngModel)]="data()['config_get_user_list']['hasSpecialErrorHandler']"
-              class="auth-wide checkbox-inline"
-              i18n>
-              Special Error Handling
-            </mat-checkbox>
-
-            @if (data()['config_get_user_list']['hasSpecialErrorHandler']) {
-              <mat-form-field class="auth-wide">
-                <mat-label i18n>Response contains (JSON format)</mat-label>
-                <textarea
-                  [(ngModel)]="data()['config_get_user_list']['errorResponse']"
-                  matInput
-                  placeholder='{"success": false, "message": "An error occurred!"}'></textarea>
+            <div class="auth-grid">
+              <mat-form-field>
+                <mat-label i18n>Method</mat-label>
+                <mat-select [(ngModel)]="data()['config_get_user_list']['method']">
+                  <mat-option value="POST">POST</mat-option>
+                  <mat-option value="GET">GET</mat-option>
+                  <mat-option value="PUT">PUT</mat-option>
+                  <mat-option value="PATCH">PATCH</mat-option>
+                  <mat-option value="DELETE">DELETE</mat-option>
+                </mat-select>
               </mat-form-field>
-            }
+
+              <mat-form-field class="auth-endpoint">
+                <mat-label i18n>Endpoint</mat-label>
+                <input
+                  [(ngModel)]="data()['config_get_user_list']['endpoint']"
+                  matInput
+                  placeholder="/users" />
+                <mat-hint i18n> Possible tags: {{ "{" }}userid{{ "}" }} {{ "{" }}username{{ "}" }} {{ "{" }}
+                                password{{ "}" }}  {{ "{" }}givenname{{ "}" }}
+                </mat-hint>
+              </mat-form-field>
+
+              <mat-form-field class="auth-wide">
+                <mat-label i18n>Headers (JSON format)</mat-label>
+                <textarea
+                  [(ngModel)]="data()['config_get_user_list']['headers']"
+                  matInput
+                  placeholder='{"Content-Type":"application/json; charset=UTF-8"}'></textarea>
+              </mat-form-field>
+
+              <mat-form-field class="auth-wide">
+                <mat-label i18n>Request Mapping (JSON format)</mat-label>
+                <textarea
+                  [(ngModel)]="data()['config_get_user_list']['requestMapping']"
+                  matInput
+                  placeholder='{"customerid":"{userid}","accessKey":"{secre3t!}"}'></textarea>
+              </mat-form-field>
+
+              <mat-form-field class="auth-wide">
+                <mat-label i18n>Response Mapping (JSON format)</mat-label>
+                <textarea
+                  [(ngModel)]="data()['config_get_user_list']['responseMapping']"
+                  matInput
+                  placeholder='{"Authorization":"Bearer {access_token}"}'></textarea>
+                <mat-hint i18n> Possible tags: {{ "{" }}userid{{ "}" }} {{ "{" }}username{{ "}" }} {{ "{" }}
+                                password{{ "}" }}
+                </mat-hint>
+              </mat-form-field>
+
+              <mat-checkbox
+                [(ngModel)]="data()['config_get_user_list']['hasSpecialErrorHandler']"
+                class="auth-wide checkbox-inline"
+                i18n>
+                Special Error Handling
+              </mat-checkbox>
+
+              @if (data()['config_get_user_list']['hasSpecialErrorHandler']) {
+                <mat-form-field class="auth-wide">
+                  <mat-label i18n>Response contains (JSON format)</mat-label>
+                  <textarea
+                    [(ngModel)]="data()['config_get_user_list']['errorResponse']"
+                    matInput
+                    placeholder='{"success": false, "message": "An error occurred!"}'></textarea>
+                </mat-form-field>
+              }
+            </div>
           </div>
         </mat-expansion-panel>
 
@@ -565,69 +569,71 @@
               of the token owner. To resolve the complete user, this endpoint is used.
             </p>
 
-            <mat-form-field>
-              <mat-label i18n>Method</mat-label>
-              <mat-select [(ngModel)]="data()['config_get_user_by_id']['method']">
-                <mat-option value="POST">POST</mat-option>
-                <mat-option value="GET">GET</mat-option>
-                <mat-option value="PUT">PUT</mat-option>
-                <mat-option value="PATCH">PATCH</mat-option>
-                <mat-option value="DELETE">DELETE</mat-option>
-              </mat-select>
-            </mat-form-field>
-
-            <mat-form-field class="auth-endpoint">
-              <mat-label i18n>Endpoint</mat-label>
-              <input
-                [(ngModel)]="data()['config_get_user_by_id']['endpoint']"
-                matInput
-                placeholder="/users/{userid}" />
-              <mat-hint i18n> Possible tags: {{ "{" }}userid{{ "}" }}
-              </mat-hint>
-            </mat-form-field>
-
-            <mat-form-field class="auth-wide">
-              <mat-label i18n>Headers (JSON format)</mat-label>
-              <textarea
-                [(ngModel)]="data()['config_get_user_by_id']['headers']"
-                matInput
-                placeholder='{"Content-Type":"application/json; charset=UTF-8"}'></textarea>
-            </mat-form-field>
-
-            <mat-form-field class="auth-wide">
-              <mat-label i18n>Request Mapping (JSON format)</mat-label>
-              <textarea
-                [(ngModel)]="data()['config_get_user_by_id']['requestMapping']"
-                matInput
-                placeholder='{"customerid":"{userid}","accessKey":"{secre3t!}"}'></textarea>
-            </mat-form-field>
-
-            <mat-form-field class="auth-wide">
-              <mat-label i18n>Response Mapping (JSON format)</mat-label>
-              <textarea
-                [(ngModel)]="data()['config_get_user_by_id']['responseMapping']"
-                matInput
-                placeholder='{"Authorization":"Bearer {access_token}"}'></textarea>
-              <mat-hint i18n> Possible tags: {{ "{" }}userid{{ "}" }}
-              </mat-hint>
-            </mat-form-field>
-
-            <mat-checkbox
-              [(ngModel)]="data()['config_get_user_by_id']['hasSpecialErrorHandler']"
-              class="auth-wide checkbox-inline"
-              i18n>
-              Special Error Handling
-            </mat-checkbox>
-
-            @if (data()['config_get_user_by_id']['hasSpecialErrorHandler']) {
-              <mat-form-field class="auth-wide">
-                <mat-label i18n>Response contains (JSON format)</mat-label>
-                <textarea
-                  [(ngModel)]="data()['config_get_user_by_id']['errorResponse']"
-                  matInput
-                  placeholder='{"success": false, "message": "An error occurred!"}'></textarea>
+            <div class="auth-grid">
+              <mat-form-field>
+                <mat-label i18n>Method</mat-label>
+                <mat-select [(ngModel)]="data()['config_get_user_by_id']['method']">
+                  <mat-option value="POST">POST</mat-option>
+                  <mat-option value="GET">GET</mat-option>
+                  <mat-option value="PUT">PUT</mat-option>
+                  <mat-option value="PATCH">PATCH</mat-option>
+                  <mat-option value="DELETE">DELETE</mat-option>
+                </mat-select>
               </mat-form-field>
-            }
+
+              <mat-form-field class="auth-endpoint">
+                <mat-label i18n>Endpoint</mat-label>
+                <input
+                  [(ngModel)]="data()['config_get_user_by_id']['endpoint']"
+                  matInput
+                  placeholder="/users/{userid}" />
+                <mat-hint i18n> Possible tags: {{ "{" }}userid{{ "}" }}
+                </mat-hint>
+              </mat-form-field>
+
+              <mat-form-field class="auth-wide">
+                <mat-label i18n>Headers (JSON format)</mat-label>
+                <textarea
+                  [(ngModel)]="data()['config_get_user_by_id']['headers']"
+                  matInput
+                  placeholder='{"Content-Type":"application/json; charset=UTF-8"}'></textarea>
+              </mat-form-field>
+
+              <mat-form-field class="auth-wide">
+                <mat-label i18n>Request Mapping (JSON format)</mat-label>
+                <textarea
+                  [(ngModel)]="data()['config_get_user_by_id']['requestMapping']"
+                  matInput
+                  placeholder='{"customerid":"{userid}","accessKey":"{secre3t!}"}'></textarea>
+              </mat-form-field>
+
+              <mat-form-field class="auth-wide">
+                <mat-label i18n>Response Mapping (JSON format)</mat-label>
+                <textarea
+                  [(ngModel)]="data()['config_get_user_by_id']['responseMapping']"
+                  matInput
+                  placeholder='{"Authorization":"Bearer {access_token}"}'></textarea>
+                <mat-hint i18n> Possible tags: {{ "{" }}userid{{ "}" }}
+                </mat-hint>
+              </mat-form-field>
+
+              <mat-checkbox
+                [(ngModel)]="data()['config_get_user_by_id']['hasSpecialErrorHandler']"
+                class="auth-wide checkbox-inline"
+                i18n>
+                Special Error Handling
+              </mat-checkbox>
+
+              @if (data()['config_get_user_by_id']['hasSpecialErrorHandler']) {
+                <mat-form-field class="auth-wide">
+                  <mat-label i18n>Response contains (JSON format)</mat-label>
+                  <textarea
+                    [(ngModel)]="data()['config_get_user_by_id']['errorResponse']"
+                    matInput
+                    placeholder='{"success": false, "message": "An error occurred!"}'></textarea>
+                </mat-form-field>
+              }
+            </div>
           </div>
         </mat-expansion-panel>
 
@@ -645,69 +651,71 @@
               if the user exists, this endpoint is used.
             </p>
 
-            <mat-form-field>
-              <mat-label i18n>Method</mat-label>
-              <mat-select [(ngModel)]="data()['config_get_user_by_name']['method']">
-                <mat-option value="POST">POST</mat-option>
-                <mat-option value="GET">GET</mat-option>
-                <mat-option value="PUT">PUT</mat-option>
-                <mat-option value="PATCH">PATCH</mat-option>
-                <mat-option value="DELETE">DELETE</mat-option>
-              </mat-select>
-            </mat-form-field>
-
-            <mat-form-field class="auth-endpoint">
-              <mat-label i18n>Endpoint</mat-label>
-              <input
-                [(ngModel)]="data()['config_get_user_by_name']['endpoint']"
-                matInput
-                placeholder="/users/{username}" />
-              <mat-hint i18n> Possible tags: {{ "{" }}username{{ "}" }}
-              </mat-hint>
-            </mat-form-field>
-
-            <mat-form-field class="auth-wide">
-              <mat-label i18n>Headers (JSON format)</mat-label>
-              <textarea
-                [(ngModel)]="data()['config_get_user_by_name']['headers']"
-                matInput
-                placeholder='{"Content-Type":"application/json; charset=UTF-8"}'></textarea>
-            </mat-form-field>
-
-            <mat-form-field class="auth-wide">
-              <mat-label i18n>Request Mapping (JSON format)</mat-label>
-              <textarea
-                [(ngModel)]="data()['config_get_user_by_name']['requestMapping']"
-                matInput
-                placeholder='{"customerid":"{userid}","accessKey":"{secre3t!}"}'></textarea>
-            </mat-form-field>
-
-            <mat-form-field class="auth-wide">
-              <mat-label i18n>Response Mapping (JSON format)</mat-label>
-              <textarea
-                [(ngModel)]="data()['config_get_user_by_name']['responseMapping']"
-                matInput
-                placeholder='{"Authorization":"Bearer {access_token}"}'></textarea>
-              <mat-hint i18n> Possible tags: {{ "{" }}username{{ "}" }}
-              </mat-hint>
-            </mat-form-field>
-
-            <mat-checkbox
-              [(ngModel)]="data()['config_get_user_by_name']['hasSpecialErrorHandler']"
-              class="auth-wide checkbox-inline"
-              i18n>
-              Special Error Handling
-            </mat-checkbox>
-
-            @if (data()['config_get_user_by_name']['hasSpecialErrorHandler']) {
-              <mat-form-field class="auth-wide">
-                <mat-label i18n>Response contains (JSON format)</mat-label>
-                <textarea
-                  [(ngModel)]="data()['config_get_user_by_name']['errorResponse']"
-                  matInput
-                  placeholder='{"success": false, "message": "An error occurred!"}'></textarea>
+            <div class="auth-grid">
+              <mat-form-field>
+                <mat-label i18n>Method</mat-label>
+                <mat-select [(ngModel)]="data()['config_get_user_by_name']['method']">
+                  <mat-option value="POST">POST</mat-option>
+                  <mat-option value="GET">GET</mat-option>
+                  <mat-option value="PUT">PUT</mat-option>
+                  <mat-option value="PATCH">PATCH</mat-option>
+                  <mat-option value="DELETE">DELETE</mat-option>
+                </mat-select>
               </mat-form-field>
-            }
+
+              <mat-form-field class="auth-endpoint">
+                <mat-label i18n>Endpoint</mat-label>
+                <input
+                  [(ngModel)]="data()['config_get_user_by_name']['endpoint']"
+                  matInput
+                  placeholder="/users/{username}" />
+                <mat-hint i18n> Possible tags: {{ "{" }}username{{ "}" }}
+                </mat-hint>
+              </mat-form-field>
+
+              <mat-form-field class="auth-wide">
+                <mat-label i18n>Headers (JSON format)</mat-label>
+                <textarea
+                  [(ngModel)]="data()['config_get_user_by_name']['headers']"
+                  matInput
+                  placeholder='{"Content-Type":"application/json; charset=UTF-8"}'></textarea>
+              </mat-form-field>
+
+              <mat-form-field class="auth-wide">
+                <mat-label i18n>Request Mapping (JSON format)</mat-label>
+                <textarea
+                  [(ngModel)]="data()['config_get_user_by_name']['requestMapping']"
+                  matInput
+                  placeholder='{"customerid":"{userid}","accessKey":"{secre3t!}"}'></textarea>
+              </mat-form-field>
+
+              <mat-form-field class="auth-wide">
+                <mat-label i18n>Response Mapping (JSON format)</mat-label>
+                <textarea
+                  [(ngModel)]="data()['config_get_user_by_name']['responseMapping']"
+                  matInput
+                  placeholder='{"Authorization":"Bearer {access_token}"}'></textarea>
+                <mat-hint i18n> Possible tags: {{ "{" }}username{{ "}" }}
+                </mat-hint>
+              </mat-form-field>
+
+              <mat-checkbox
+                [(ngModel)]="data()['config_get_user_by_name']['hasSpecialErrorHandler']"
+                class="auth-wide checkbox-inline"
+                i18n>
+                Special Error Handling
+              </mat-checkbox>
+
+              @if (data()['config_get_user_by_name']['hasSpecialErrorHandler']) {
+                <mat-form-field class="auth-wide">
+                  <mat-label i18n>Response contains (JSON format)</mat-label>
+                  <textarea
+                    [(ngModel)]="data()['config_get_user_by_name']['errorResponse']"
+                    matInput
+                    placeholder='{"success": false, "message": "An error occurred!"}'></textarea>
+                </mat-form-field>
+              }
+            </div>
           </div>
         </mat-expansion-panel>
       </mat-accordion>

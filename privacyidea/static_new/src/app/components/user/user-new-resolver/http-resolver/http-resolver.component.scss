@@ -2,7 +2,7 @@
 
 :host {
   display: block;
-  width: 100%;
+  width: 1000px;
 }
 
 .type-section {
@@ -92,10 +92,14 @@ textarea[matInput] {
 
 .auth-grid {
   display: grid;
-  grid-template-columns: 180px 1fr;
+  grid-template-columns: 1fr 1fr;
   column-gap: 16px;
   row-gap: 12px;
   align-items: start;
+
+  @media (max-width: 1100px) {
+    grid-template-columns: 1fr;
+  }
 }
 
 .auth-wide {
@@ -104,6 +108,10 @@ textarea[matInput] {
 
 .auth-endpoint {
   grid-column: 2 / -1;
+
+  @media (max-width: 1100px) {
+    grid-column: 1 / -1;
+  }
 }
 
 .hint {
