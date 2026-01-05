@@ -29,7 +29,7 @@ def get_fido2_token_by_credential_id(credential_id: str) -> Union[TokenClass, No
             log.debug(f"TokenCredentialIdHash entry not found for credential_id {credential_id}. Trying token info...")
             token_id_stmt = select(TokenInfo.token_id).where(TokenInfo.Key == "credential_id_hash", TokenInfo.Value == credential_id_hash)
             token_id = db.session.scalar(token_id_stmt)
-            db_token = db.session.get(Token, token_id)
+            db_token = db.session.get(Token, token_id) if token_id else None
             if db_token:
                 # Create a new TokenCredentialIdHash entry for the next time
                 tcih = TokenCredentialIdHash(token_id=db_token.id, credential_id_hash=credential_id_hash)
