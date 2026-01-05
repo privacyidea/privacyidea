@@ -1,7 +1,7 @@
 import base64
+import json
 from dataclasses import dataclass
 from datetime import datetime, timezone, timedelta
-import json
 
 import passlib
 from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PublicKey
@@ -10,16 +10,16 @@ from privacyidea.lib.applications.offline import MachineApplication, REFILLTOKEN
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.container import (create_container_template, get_template_obj, delete_container_by_serial,
                                        get_container_realms, set_container_states, unregister)
+from privacyidea.lib.container import (init_container, find_container_by_serial, add_token_to_container, assign_user,
+                                       add_container_realms, remove_token_from_container)
 from privacyidea.lib.containers.container_info import PI_INTERNAL, TokenContainerInfoData, RegistrationState
 from privacyidea.lib.containers.container_states import ContainerStates
 from privacyidea.lib.containers.smartphone import SmartphoneOptions
 from privacyidea.lib.crypto import generate_keypair_ecc, decrypt_aes
-from privacyidea.lib.container import (init_container, find_container_by_serial, add_token_to_container, assign_user,
-                                       add_container_realms, remove_token_from_container)
 from privacyidea.lib.machine import attach_token
+from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policies.conditions import ConditionSection, ConditionHandleMissingData
 from privacyidea.lib.policy import set_policy, SCOPE, delete_policy
-from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.privacyideaserver import add_privacyideaserver
 from privacyidea.lib.realm import set_realm, set_default_realm
 from privacyidea.lib.resolver import save_resolver
@@ -28,10 +28,10 @@ from privacyidea.lib.smsprovider.FirebaseProvider import FirebaseConfig
 from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway
 from privacyidea.lib.token import (get_one_token, get_tokens_from_serial_or_user,
                                    get_tokeninfo, get_tokens)
+from privacyidea.lib.token import init_token, get_tokens_paginate, unassign_token
 from privacyidea.lib.tokens.papertoken import PAPERACTION
 from privacyidea.lib.tokens.pushtoken import PUSH_ACTION
 from privacyidea.lib.tokens.tantoken import TANACTION
-from privacyidea.lib.token import init_token, get_tokens_paginate, unassign_token
 from privacyidea.lib.user import User
 from privacyidea.lib.utils.compare import PrimaryComparators
 from privacyidea.models import Realm
@@ -1510,8 +1510,8 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         token_serials = ','.join([token_no_user.get_serial(), token_user.get_serial()])
 
         response = self.request_denied_assert_403(f"/container/{c_serial_user}/removeall", {"serial": token_serials},
-                                                self.at,
-                                                method='POST')
+                                                  self.at,
+                                                  method='POST')
         result = response.get("result")
         self.assertIn("error", result)
         error = result.get("error")
@@ -4311,7 +4311,8 @@ class APIContainerSynchronization(APIContainerTest):
                        "user": "hans"}
         result = self.request_assert_success("/token/init", hotp_params, self.at, "POST")
         initial_enroll_url = result["detail"]["googleurl"]["value"]
-        self.assertIn("pin=True", initial_enroll_url)
+        self.assertIn("force_app_pin=True", initial_enroll_url)
+        self.assertIn("app_force_unlock=pin", initial_enroll_url)
         self.assertIn(f"issuer={self.realm1}", initial_enroll_url)
         self.assertIn("hans", initial_enroll_url)
         hotp = get_one_token(serial=result["detail"]["serial"])
@@ -4354,7 +4355,8 @@ class APIContainerSynchronization(APIContainerTest):
                 hotp_enroll_url = token
                 break
         self.assertNotEqual(initial_enroll_url, hotp_enroll_url)
-        self.assertIn("pin=True", hotp_enroll_url)
+        self.assertIn("force_app_pin=True", hotp_enroll_url)
+        self.assertIn("app_force_unlock=pin", hotp_enroll_url)
         self.assertIn(f"issuer={self.realm1}", hotp_enroll_url)
         self.assertIn("hans", hotp_enroll_url)
 
