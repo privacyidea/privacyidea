@@ -47,8 +47,13 @@ export class EntraidResolverComponent extends HttpResolverComponent {
   override ngOnInit(): void {
     const data: any = this.data ?? {};
 
-      data.url = "https://graph.microsoft.com/v1.0";
+    if (!data.base_url) {
+      data.base_url = "https://graph.microsoft.com/v1.0";
+    }
+    if (!data.timeout) {
       data.timeout = 60;
+    }
+    if (!data.attribute_mapping) {
       data.attribute_mapping = {
         userid: "id",
         username: "userPrincipalName",
@@ -58,7 +63,10 @@ export class EntraidResolverComponent extends HttpResolverComponent {
         phone: "businessPhones",
         surname: "surname"
       } as Record<string, string>;
-      data.tls_verify = true;
+    }
+    if (data.verify_tls === undefined) {
+      data.verify_tls = true;
+    }
 
     this.data = data;
     super.ngOnInit();

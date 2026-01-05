@@ -9,7 +9,6 @@ import { MatTableModule } from "@angular/material/table";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
 
-import { SQLResolverData } from "../../../../services/resolver/resolver.service";
 import {
   MatAccordion,
   MatExpansionPanel,
@@ -17,6 +16,7 @@ import {
   MatExpansionPanelTitle
 } from "@angular/material/expansion";
 import { MatDivider } from "@angular/material/list";
+import { SQLResolverData } from "../../../../services/resolver/resolver.service";
 
 type AttributeMappingRow = {
   privacyideaAttr: string | null;
@@ -60,7 +60,8 @@ export class HttpResolverComponent implements OnInit {
   ];
   protected readonly displayedColumns: string[] = ["privacyideaAttr", "userStoreAttr", "actions"];
   protected readonly CUSTOM_ATTR_VALUE = "__custom__";
-  @Input() data: Partial<SQLResolverData> = {};
+  @Input() data: any = {};
+  @Input() type: string = "httpresolver";
   @Output() additionalFormFieldsChange = new EventEmitter<{ [key: string]: FormControl<any> }>();
   isAdvanced: boolean = false;
   protected basicSettings: WritableSignal<boolean> = signal(true);
@@ -73,6 +74,22 @@ export class HttpResolverComponent implements OnInit {
     if (this.isAdvanced) {
       this.basicSettings.set(false);
     }
+
+    const configs = [
+      "config_authorization",
+      "config_user_auth",
+      "config_get_user_list",
+      "config_get_user_by_id",
+      "config_get_user_by_name",
+      "config_create_user",
+      "config_edit_user",
+      "config_delete_user"
+    ];
+    configs.forEach(c => {
+      if (!(this.data as any)[c]) {
+        (this.data as any)[c] = {};
+      }
+    });
 
     const existing = (this.data as any)?.attribute_mapping as Record<string, string> | undefined;
 

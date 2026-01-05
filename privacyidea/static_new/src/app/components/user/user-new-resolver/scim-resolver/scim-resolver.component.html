@@ -6,7 +6,7 @@
       <mat-label>
         Authentication Server URI</mat-label>
       <input
-        [(ngModel)]="data['SCIMURL']"
+        [(ngModel)]="data['Authserver']"
         placeholder="http://localhost:8080/osiam-auth-server"
         matInput />
     </mat-form-field>
@@ -15,7 +15,7 @@
       <mat-label>
         Resource Server Uri</mat-label>
       <input
-        [(ngModel)]="data['RESOURCEURL']"
+        [(ngModel)]="data['Resourceserver']"
         placeholder="http://localhost:8080/osiam-resource-server"
         matInput />
     </mat-form-field>
@@ -24,7 +24,7 @@
       <mat-label>
         Client</mat-label>
       <input
-        [(ngModel)]="data['user']"
+        [(ngModel)]="data['Client']"
         placeholder="hostname"
         matInput />
     </mat-form-field>
@@ -33,8 +33,18 @@
       <mat-label>
         Secret</mat-label>
       <input
-        [(ngModel)]="data['secret']"
+        [(ngModel)]="data['Secret']"
         placeholder="d81c31e4-9f65-4805-b5ba-6edf0761f954"
+        matInput
+        type="password" />
+    </mat-form-field>
+
+    <mat-form-field>
+      <mat-label>
+        Mapping</mat-label>
+      <input
+        [(ngModel)]="data['Mapping']"
+        placeholder='{"userName": "username", "id": "userid", "emails.0.value": "email"}'
         matInput />
     </mat-form-field>
 

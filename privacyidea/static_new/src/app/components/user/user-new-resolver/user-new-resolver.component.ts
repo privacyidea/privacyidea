@@ -100,6 +100,13 @@ export class UserNewResolverComponent {
     return !!this.resolverService.selectedResolverName();
   }
 
+  onTypeChange(): void {
+    if (!this.isEditMode) {
+      this.formData = {};
+      this.additionalFormFields = {};
+    }
+  }
+
   onSave(): void {
     const name = this.resolverName.trim();
     if (!name) {

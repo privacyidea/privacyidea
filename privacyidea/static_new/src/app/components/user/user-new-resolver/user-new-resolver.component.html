@@ -56,6 +56,7 @@
         <mat-label i18n>Type</mat-label>
         <mat-select
           [(ngModel)]="resolverType"
+          (ngModelChange)="onTypeChange()"
           [disabled]="isEditMode">
           <mat-option [value]="'ldapresolver'">LDAP</mat-option>
           <mat-option [value]="'sqlresolver'">SQL</mat-option>
@@ -71,43 +72,46 @@
     @if (resolverType === 'ldapresolver') {
       <app-ldap-resolver
         (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-        [data]="isEditMode ? formData : {}" />
+        [data]="formData" />
     }
 
     @if (resolverType === 'sqlresolver') {
       <app-sql-resolver
         (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-        [data]="isEditMode ? formData : {}" />
+        [data]="formData" />
     }
 
     @if (resolverType === 'passwdresolver') {
       <app-passwd-resolver
         (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-        [data]="isEditMode ? formData : {}" />
+        [data]="formData" />
     }
 
     @if (resolverType === 'scimresolver') {
       <app-scim-resolver
         (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-        [data]="isEditMode ? formData : {}" />
+        [data]="formData" />
     }
 
     @if (resolverType === 'httpresolver') {
       <app-http-resolver
         (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-        [data]="isEditMode ? formData : {}" />
+        [type]="resolverType"
+        [data]="formData" />
     }
 
     @if (resolverType === 'entraidresolver') {
       <app-entraid-resolver
         (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-        [data]="isEditMode ? formData : {}" />
+        [type]="resolverType"
+        [data]="formData" />
     }
 
     @if (resolverType === 'keycloakresolver') {
       <app-keycloak-resolver
         (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-        [data]="isEditMode ? formData : {}" />
+        [type]="resolverType"
+        [data]="formData" />
     }
 
     <div class="flex-row gap-1 margin-top-1">

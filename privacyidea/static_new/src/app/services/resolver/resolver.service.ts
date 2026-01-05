@@ -34,7 +34,7 @@ export type ResolverType =
   | "keycloakresolver";
 
 export interface ResolverData {
-  [key: string]: unknown;
+  [key: string]: any;
 }
 
 export type Resolvers = { [key: string]: Resolver };
@@ -47,55 +47,49 @@ export interface Resolver {
 }
 
 export interface LDAPResolverData extends ResolverData {
-  ldapuri: string;
-  ldapbase: string;
-  authtype: string;
-  binddn: string;
-  bindpw: string;
-  timeout: number;
-  cache_timeout: number;
-  sizelimit: number;
-  loginnameattribute: string;
-  ldapsearchfilter: string;
-  ldapfilter: string;
-  multivalueattributes: string;
-  userinfo: string;
-  uidtype: string;
-  noreferrals: boolean;
-  noschemas: boolean;
-  editable: boolean;
-  start_tls: boolean;
-  tls_verify: boolean;
-  tls_version: string;
+  LDAPURI: string;
+  LDAPBASE: string;
+  AUTHTYPE: string;
+  BINDDN: string;
+  BINDPW: string;
+  TIMEOUT: number;
+  CACHE_TIMEOUT: number;
+  SIZELIMIT: number;
+  LOGINNAMEATTRIBUTE: string;
+  LDAPSEARCHFILTER: string;
+  USERINFO: string;
+  UIDTYPE: string;
+  NOREFERRALS: boolean;
+  NOSCHEMAS: boolean;
+  EDITABLE: boolean;
+  START_TLS: boolean;
+  TLS_VERIFY: boolean;
+  TLS_VERSION: string;
 }
 
 export interface SQLResolverData extends ResolverData {
-  database: string;
-  driver: string;
-  server: string;
-  port: number;
-  user: string;
-  password: string;
-  table: string;
-  map: string;
-  edit_user_store: boolean;
-  password_hash: string;
+  Database: string;
+  Driver: string;
+  Server: string;
+  Port: number;
+  User: string;
+  Password: string;
+  Table: string;
+  Map: string;
+  Editable: boolean;
+  Password_Hash_Type: string;
 }
 
 export interface PasswdResolverData extends ResolverData {
-  filename: string;
+  fileName: string;
 }
 
 export interface SCIMResolverData extends ResolverData {
-  scimurl: string;
-  user: string;
-  password: string;
-  verifyssl: boolean;
-  timeout: number;
-  cache_timeout: number;
-  loginnameattribute: string;
-  userinfo: string;
-  editable: boolean;
+  Authserver: string;
+  Resourceserver: string;
+  Client: string;
+  Secret: string;
+  Mapping: string;
 }
 
 export interface ResolverServiceInterface {

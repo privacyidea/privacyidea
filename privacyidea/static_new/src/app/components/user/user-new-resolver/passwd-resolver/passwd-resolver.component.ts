@@ -30,7 +30,7 @@ import { PasswdResolverData } from "../../../../services/resolver/resolver.servi
   styleUrl: "./passwd-resolver.component.scss"
 })
 export class PasswdResolverComponent implements OnInit {
-  @Input() data: Partial<PasswdResolverData & { Filename?: string }> = {};
+  @Input() data: Partial<PasswdResolverData> = {};
   @Output() additionalFormFieldsChange = new EventEmitter<{ [key: string]: FormControl<any> }>();
 
   filenameControl = new FormControl<string>("", {
@@ -40,8 +40,7 @@ export class PasswdResolverComponent implements OnInit {
 
   ngOnInit(): void {
     const initial =
-      this.data?.Filename ??
-      this.data?.filename ??
+      this.data?.fileName ??
       "";
 
     if (initial) {
@@ -49,7 +48,7 @@ export class PasswdResolverComponent implements OnInit {
     }
 
     this.additionalFormFieldsChange.emit({
-      Filename: this.filenameControl
+      fileName: this.filenameControl
     });
   }
 }

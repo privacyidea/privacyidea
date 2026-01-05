@@ -5,7 +5,7 @@
     <mat-form-field>
       <mat-label>Driver</mat-label>
       <input
-        [(ngModel)]="data['driver']"
+        [(ngModel)]="data['Driver']"
         matInput
         placeholder="mysql+pymysql" />
     </mat-form-field>
@@ -13,7 +13,7 @@
     <mat-form-field>
       <mat-label>Server</mat-label>
       <input
-        [(ngModel)]="data['server']"
+        [(ngModel)]="data['Server']"
         matInput
         placeholder="127.0.0.1" />
     </mat-form-field>
@@ -21,7 +21,7 @@
     <mat-form-field>
       <mat-label>Port</mat-label>
       <input
-        [(ngModel)]="data['port']"
+        [(ngModel)]="data['Port']"
         matInput
         placeholder="3306" />
     </mat-form-field>
@@ -29,7 +29,7 @@
     <mat-form-field>
       <mat-label>Database</mat-label>
       <input
-        [(ngModel)]="data['database']"
+        [(ngModel)]="data['Database']"
         matInput
         placeholder="YourDatabase" />
     </mat-form-field>
@@ -37,7 +37,7 @@
     <mat-form-field>
       <mat-label>User</mat-label>
       <input
-        [(ngModel)]="data['user']"
+        [(ngModel)]="data['User']"
         matInput
         placeholder="user" />
     </mat-form-field>
@@ -45,20 +45,20 @@
     <mat-form-field>
       <mat-label>Password</mat-label>
       <input
-        [(ngModel)]="data['password']"
+        [(ngModel)]="data['Password']"
         matInput
         placeholder="topsecret" />
     </mat-form-field>
 
     <mat-label>Edit User Store</mat-label>
-    <mat-checkbox [(ngModel)]="data['edit_user_store']"></mat-checkbox>
+    <mat-checkbox [(ngModel)]="data['Editable']"></mat-checkbox>
     The user data in this database can be modified from within privacyIDEA.
 
-    @if (data['edit_user_store']) {
+    @if (data['Editable']) {
       <mat-form-field>
         <mat-label>Password Hash for editable users</mat-label>
         <input
-          [(ngModel)]="data['password_hash']"
+          [(ngModel)]="data['Password_Hash_Type']"
           matInput
           placeholder="">
         <mat-hint>
@@ -73,7 +73,7 @@
   <mat-form-field>
     <mat-label>Table</mat-label>
     <input
-      [(ngModel)]="data['table']"
+      [(ngModel)]="data['Table']"
       matInput
       placeholder="Users" />
   </mat-form-field>
@@ -81,7 +81,7 @@
   <mat-form-field>
     <mat-label>Limit</mat-label>
     <input
-      [(ngModel)]="data['limit']"
+      [(ngModel)]="data['Limit']"
       matInput
       placeholder="500" />
   </mat-form-field>
@@ -89,7 +89,7 @@
   <mat-form-field>
     <mat-label>Mapping</mat-label>
     <input
-      [(ngModel)]="data['mapping']"
+      [(ngModel)]="data['Map']"
       matInput
       placeholder='{"userid":"id","username":"user","phone":"telephoneNumber","mobile":"mobile","email":"mail","surname":"sn","givenname":"givenName","password":"password"}' />
   </mat-form-field>
@@ -97,42 +97,42 @@
   <mat-form-field>
     <mat-label>Where statement</mat-label>
     <input
-      [(ngModel)]="data['where-statement']"
+      [(ngModel)]="data['Where']"
       matInput />
   </mat-form-field>
 
   <mat-form-field>
     <mat-label>Database Encoding</mat-label>
     <input
-      [(ngModel)]="data['database-encoding']"
+      [(ngModel)]="data['Encoding']"
       matInput />
   </mat-form-field>
 
   <mat-form-field>
     <mat-label>Connection Parameters</mat-label>
     <input
-      [(ngModel)]="data['connection-parameters']"
+      [(ngModel)]="data['conParams']"
       matInput />
   </mat-form-field>
 
   <mat-form-field>
     <mat-label>Pool size</mat-label>
     <input
-      [(ngModel)]="data['pool-size']"
+      [(ngModel)]="data['poolSize']"
       matInput />
   </mat-form-field>
 
   <mat-form-field>
     <mat-label>Pool timeout</mat-label>
     <input
-      [(ngModel)]="data['pool-timeout']"
+      [(ngModel)]="data['poolTimeout']"
       matInput />
   </mat-form-field>
 
   <mat-form-field>
     <mat-label>Pool recycle timeout</mat-label>
     <input
-      [(ngModel)]="data['pool-recycle-timeout']"
+      [(ngModel)]="data['poolRecycle']"
       matInput />
   </mat-form-field>
 </div>
