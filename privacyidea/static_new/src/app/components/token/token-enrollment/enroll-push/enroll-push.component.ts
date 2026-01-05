@@ -102,14 +102,17 @@ export class EnrollPushComponent implements OnInit {
     if (!pollResponse) {
       return null;
     } else {
-      return initResponse;
+      return {
+        ...initResponse,
+        detail: { ...initResponse.detail, rollout_state: pollResponse.result?.value?.tokens[0].rollout_state }
+      };
     }
   }
   firstStepDialogRef: MatDialogRef<
     {
       enrollmentResponse: EnrollmentResponse<EnrollmentResponseDetail>;
     },
-    void
+    boolean
   > | null = null;
 
   private pollTokenRolloutState = (
@@ -129,7 +132,7 @@ export class EnrollPushComponent implements OnInit {
       next: (pollResponse) => {
         this.pollResponse.set(pollResponse);
         if (pollResponse.result?.value?.tokens[0].rollout_state !== "clientwait") {
-          this.firstStepDialogRef?.close();
+          this.firstStepDialogRef?.close(true);
         }
       }
     });
@@ -140,15 +143,18 @@ export class EnrollPushComponent implements OnInit {
     {
       enrollmentResponse: EnrollmentResponse<EnrollmentResponseDetail>;
     },
-    void
+    boolean
   > {
     this.reopenDialogChange.emit(async () => {
       if (this.firstStepDialogRef && this.dialogService.isDialogOpen(this.firstStepDialogRef)) {
         return null;
       }
 
-      await this.pollTokenRolloutState(enrollmentResponse, 0);
-      return enrollmentResponse;
+      const pollResponse = await this.pollTokenRolloutState(enrollmentResponse, 0);
+      return {
+        ...enrollmentResponse,
+        detail: { ...enrollmentResponse.detail, rollout_state: pollResponse.result?.value?.tokens[0].rollout_state }
+      };
     });
 
     return this.dialogService.openDialog({

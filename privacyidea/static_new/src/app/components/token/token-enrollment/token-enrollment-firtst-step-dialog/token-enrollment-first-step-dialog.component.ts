@@ -34,7 +34,7 @@ export class TokenEnrollmentFirstStepDialogComponent extends AbstractDialogCompo
   {
     enrollmentResponse: EnrollmentResponse;
   },
-  void
+  boolean
 > {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);

@@ -140,7 +140,7 @@ export class EnrollPasskeyComponent implements OnInit {
     {
       enrollmentResponse: EnrollmentResponse<EnrollmentResponseDetail>;
     },
-    void
+    boolean
   >;
 
   openStepOneDialog(args: {
@@ -150,7 +150,7 @@ export class EnrollPasskeyComponent implements OnInit {
     {
       enrollmentResponse: EnrollmentResponse<EnrollmentResponseDetail>;
     },
-    void
+    boolean
   > {
     const { enrollmentInitData, enrollmentResponse } = args;
 

@@ -39,6 +39,8 @@ import {
   TokenEnrollmentData
 } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
 import { firstValueFrom } from "rxjs";
+import { TokenEnrollmentFirstStepDialogComponent } from "../token-enrollment-firtst-step-dialog/token-enrollment-first-step-dialog.component";
+import { MatDialogRef } from "@angular/material/dialog";
 
 @Component({
   selector: "app-enroll-webauthn",
@@ -204,6 +206,13 @@ export class EnrollWebauthnComponent implements OnInit {
     return publicKeyCred;
   };
 
+  stepOneDialogRef: MatDialogRef<
+    {
+      enrollmentResponse: EnrollmentResponse;
+    },
+    boolean
+  > | null = null;
+
   openStepOneDialog(args: {
     webauthnEnrollmentData: WebAuthnEnrollmentData;
     webauthnEnrollmentResponse: WebauthnEnrollmentResponse;
@@ -211,24 +220,27 @@ export class EnrollWebauthnComponent implements OnInit {
     const { webauthnEnrollmentResponse } = args;
 
     this.reopenDialogChange.emit(async () => {
-      // if (!this.dialogService.isTokenEnrollmentFirstStepDialogOpen) {
-      //   this.dialogService.openTokenEnrollmentFirstStepDialog({
-      //     data: { enrollmentResponse: webauthnEnrollmentResponse },
-      //     disableClose: true
-      //   });
-      //   return webauthnEnrollmentResponse;
-      // }
+      if (this.stepOneDialogRef && this.dialogService.isDialogOpen(this.stepOneDialogRef)) {
+        return null;
+      }
+      this.stepOneDialogRef = this.dialogService.openDialog({
+        component: TokenEnrollmentFirstStepDialogComponent,
+        data: { enrollmentResponse: webauthnEnrollmentResponse }
+      });
+
       return null;
     });
-
-    // this.dialogService.openTokenEnrollmentFirstStepDialog({
-    //   data: { enrollmentResponse: webauthnEnrollmentResponse },
-    //   disableClose: true
-    // });
+    this.stepOneDialogRef = this.dialogService.openDialog({
+      component: TokenEnrollmentFirstStepDialogComponent,
+      data: { enrollmentResponse: webauthnEnrollmentResponse }
+    });
   }
 
   closeStepOneDialog(): void {
-    // this.dialogService.closeTokenEnrollmentFirstStepDialog();
+    if (this.stepOneDialogRef) {
+      this.stepOneDialogRef.close(true);
+      this.stepOneDialogRef = null;
+    }
   }
 
   private async finalizeEnrollment(args: {

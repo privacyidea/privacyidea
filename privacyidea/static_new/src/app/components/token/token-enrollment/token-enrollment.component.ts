@@ -410,10 +410,19 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     return `${year}-${month}-${day}T${formattedHours}:${formattedMinutes}${offsetNoColon}`;
   }
 
-  reopenEnrollmentDialog() {
+  async reopenEnrollmentDialog() {
     const reopenFunction = this.reopenDialog();
     if (reopenFunction) {
-      reopenFunction();
+      let enrollPromise = this._toPromice(reopenFunction());
+      if (!enrollPromise) return;
+      let enrollmentResponse: EnrollmentResponse | null = await enrollPromise;
+      this.enrollResponse.set(enrollmentResponse);
+      if (enrollmentResponse) {
+        this._handleEnrollmentResponse({
+          response: enrollmentResponse,
+          user: this.userService.selectedUser()
+        });
+      }
       return;
     }
     const lastStepData = this._lastTokenEnrollmentLastStepDialogData();
@@ -532,33 +541,43 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
       pin: this.setPinControl.value ?? "",
       serial: this.serial()
     };
+    console.log("basicOptions", basicOptions);
 
     const enrollmentArgs = this.enrollmentArgsGetter(basicOptions);
     if (!enrollmentArgs) return;
     const enrollResponse = this.tokenService.enrollToken(enrollmentArgs);
+    console.log("enrollResponse", enrollResponse);
 
-    let enrollPromise: Promise<EnrollmentResponse | null>;
-    if (enrollResponse instanceof Promise) {
-      enrollPromise = enrollResponse;
-    } else {
-      enrollPromise = lastValueFrom(enrollResponse);
-    }
+    let enrollPromise = this._toPromice(enrollResponse);
 
     enrollPromise.catch((error) => {
       const message = error.error?.result?.error?.message || "";
       this.notificationService.openSnackBar(`Failed to enroll token: ${message || error.message || error}`);
     });
-    let enrollmentResponse = await enrollPromise;
+    console.log("enrollPromise", enrollPromise);
+    let enrollmentResponse: EnrollmentResponse | null = await enrollPromise;
+    console.log("enrollmentResponse", enrollmentResponse);
     const onEnrollmentResponseFn = this.onEnrollmentResponse();
     if (onEnrollmentResponseFn && enrollmentResponse) {
+      console.log("Calling onEnrollmentResponseFn");
       enrollmentResponse = await onEnrollmentResponseFn(enrollmentResponse, enrollmentArgs.data);
+      console.log("enrollmentResponse after onEnrollmentResponseFn", enrollmentResponse);
     }
+    console.log("enrollmentResponse", enrollmentResponse);
     this.enrollResponse.set(enrollmentResponse);
     if (enrollmentResponse) {
       this._handleEnrollmentResponse({
         response: enrollmentResponse,
         user: user
       });
+    }
+  }
+
+  private _toPromice<T>(observable: Observable<T> | Promise<T>): Promise<T> {
+    if (observable instanceof Promise) {
+      return observable;
+    } else {
+      return lastValueFrom(observable);
     }
   }
 
@@ -587,10 +606,12 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
   }
 
   private _handleEnrollmentResponse(args: { response: EnrollmentResponse; user: UserData | null }): void {
+    console.log("Handling enrollment response", args);
     const { response, user } = args;
     const detail = response.detail || {};
     const rolloutState = detail.rollout_state;
 
+    console.log("Enrollment response rollout state:", rolloutState);
     if (rolloutState === "clientwait") {
       return;
     }
@@ -600,6 +621,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
       return;
     }
 
+    console.log("Opening last step dialog with response:", response, "and user:", user);
     this.openLastStepDialog({ response, user });
   }
 }
