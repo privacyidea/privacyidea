@@ -81,6 +81,25 @@
         </mat-form-field>
       }
 
+      @if (realms().length > 0) {
+        <mat-form-field>
+          <mat-label>Realm</mat-label>
+          <mat-select
+            [(ngModel)]="realm"
+            [ngModelOptions]="{ standalone: true }"
+            [value]="realm()">
+            @for (realmOption of realms(); track realmOption) {
+              <mat-option [value]="realmOption">{{ realmOption }}</mat-option>
+            }
+          </mat-select>
+          @if (realm() !== "") {
+            <app-clear-button
+              matSuffix
+              (onClick)="clearRealmSelection()"></app-clear-button>
+          }
+        </mat-form-field>
+      }
+
       @if (!showOtpField()) {
         <mat-form-field appearance="outline">
           <mat-label i18n="Login username label">Username</mat-label>

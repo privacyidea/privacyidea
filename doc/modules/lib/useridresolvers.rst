@@ -26,6 +26,18 @@ LDAPResolver
 .. autoclass:: privacyidea.lib.resolvers.LDAPIdResolver.IdResolver
    :members:
 
+SQLResolver
+...........
+
+.. autoclass:: privacyidea.lib.resolvers.SQLIdResolver.IdResolver
+   :members:
+
+SCIMResolver
+............
+
+.. autoclass:: privacyidea.lib.resolvers.SCIMIdResolver.IdResolver
+   :members:
+
 HTTPResolver
 ............
 
@@ -43,5 +55,3 @@ KeycloakResolver
 
 .. autoclass:: privacyidea.lib.resolvers.KeycloakResolver.KeycloakResolver
    :members:
-
-

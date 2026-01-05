@@ -8,6 +8,7 @@ import logging
 from testfixtures import log_capture, LogCapture
 from werkzeug.datastructures.headers import Headers
 
+from privacyidea.api.lib.policyhelper import get_realm_for_authentication
 from privacyidea.lib.container import (init_container, find_container_by_serial, create_container_template,
                                        get_all_containers)
 from privacyidea.lib.containers.container_info import RegistrationState
@@ -626,6 +627,16 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         set_realm(req)
         # Check, if the realm was modified to the realm specified in the policy
         self.assertEqual(req.all_data.get("realm"), self.realm1)
+
+        # do not set realm if set_realm policy is set
+        req.all_data = {"realm": self.realm3, "user": "cornelius"}
+        req.User = User(login="cornelius", realm=self.realm3)
+        g.policies = {PolicyAction.SET_REALM: self.realm3}
+        set_realm(req)
+        # Check that realm was not modified
+        self.assertEqual(self.realm3, req.all_data.get("realm"))
+        self.assertEqual(User("cornelius", self.realm3), req.User)
+        g.policies = {}
 
         # A request, that does not match the policy:
         req.all_data = {"realm": "otherrealm"}
@@ -1319,6 +1330,16 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # Check if the realm was modified
         self.assertEqual(req.all_data.get("realm"), "lowerRealm")
         self.assertEqual(req.User, User("", "lowerrealm"))
+
+        # do not mangle realm if set_realm policy is set
+        req.all_data = {"realm": "lower Realm", "user": "Thiswillbesplit_user"}
+        req.User = User("Thiswillbesplit_user", "lower Realm")
+        g.policies = {PolicyAction.SET_REALM: "lower Realm"}
+        mangle(req)
+        # Check that realm was not modified, but username is modified
+        self.assertEqual("lower Realm", req.all_data.get("realm"))
+        self.assertEqual("user", req.all_data.get("user"))
+        self.assertEqual(User("user", "lower realm"), req.User)
 
         # finally delete policy
         delete_policy("mangle1")
@@ -6524,3 +6545,39 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
 
         delete_policy("enroll_via_multichallenge")
         delete_policy("enroll_via_multichallenge_template")
+
+class PolicyHelperTestCase(MyApiTestCase):
+
+    def test_01_set_realm_for_authentication(self):
+        self.setUp_user_realms()
+        self.setUp_user_realm2()
+
+        # policy not set
+        realm = get_realm_for_authentication(g, "hans", "realm1")
+        self.assertEqual("realm1", realm)
+        self.assertNotIn("policies", g)
+
+        realm = get_realm_for_authentication(g, "hans", "")
+        self.assertEqual("", realm)
+        self.assertNotIn("policies", g)
+
+        # policy with non-existing realm
+        set_policy("auth_realm", scope=SCOPE.AUTH, action=f"{PolicyAction.SET_REALM}=random")
+        realm = get_realm_for_authentication(g, "hans", "realm1")
+        self.assertEqual("realm1", realm)
+        self.assertNotIn("policies", g)
+
+        realm = get_realm_for_authentication(g, "hans", "")
+        self.assertEqual("", realm)
+        self.assertNotIn("policies", g)
+
+        # set policy
+        set_policy("auth_realm", scope=SCOPE.AUTH, action=f"{PolicyAction.SET_REALM}=realm2")
+        realm = get_realm_for_authentication(g, "hans", "realm1")
+        self.assertEqual("realm2", realm)
+        self.assertEqual("realm2", g.policies.get(PolicyAction.SET_REALM))
+
+        realm = get_realm_for_authentication(g, "hans", "")
+        self.assertEqual("realm2", realm)
+
+        delete_policy("auth_realm")

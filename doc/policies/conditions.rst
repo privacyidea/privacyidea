@@ -187,6 +187,8 @@ endpoint like ``/validate/check`` or ``/auth``.
 
 Container
 ^^^^^^^^^
+.. versionadded:: 3.12
+
 For container requests, the section ``Container`` can be used to define conditions that are checked against the
 container attributes. To get the container attributes, the function
 :py:meth:`privacyidea.lib.containerclass.TokenContainerClass.get_as_dict()` is used. Hence, all defined
@@ -196,9 +198,9 @@ The condition can only be evaluated when a valid container serial is available w
 endpoints. It does not work for the actions ``container_list`` (:http:get:`/container/`),
 ``container_create`` (:http:post:`/container/init`) and the template actions.
 
-
 Container Info
 ^^^^^^^^^^^^^^
+.. versionadded:: 3.12
 
 The ``Container Info`` condition works the same way as userinfo but matches the container info instead.
 
@@ -206,9 +208,9 @@ The condition can only be evaluated when a valid container serial is available w
 endpoints. It does not work for the actions ``container_list`` (:http:get:`/container/`),
 ``container_create`` (:http:post:`/container/init`) and the template actions.
 
-
 Request Data
 ^^^^^^^^^^^^
+.. versionadded:: 3.12
 
 This section can be used to define conditions based on the request data.
 The key defines the name of a request parameter. Check out the :ref:`rest_api` documentation for more information on
@@ -216,7 +218,6 @@ the available request parameters for a specific request. Note that these are onl
 A requester could send any parameter in the request.
 
 Passwords are excluded from the request data, so they cannot be used in conditions.
-
 
 Comparators
 ~~~~~~~~~~~
@@ -242,11 +243,13 @@ The following comparators can be used in definitions of policy conditions:
   interval specified by the right-hand value. ``!date_within_last`` evaluates to true if this is not the case.
   The right-hand value must be a duration expressed as an integer
   immediately followed by a time unit:
-    * ``y`` for years
-    * ``d`` for days
-    * ``h`` for hours
-    * ``m`` for minutes
-    * ``s`` for seconds
+
+  * ``y`` for years
+  * ``d`` for days
+  * ``h`` for hours
+  * ``m`` for minutes
+  * ``s`` for seconds
+
   For example, "7d" means "within the last 7 days", "2h" means "within the last 2 hours".
 * ``string_contains`` evaluates to true if the left value (a string) contains the right value as a substring.
   ``!string_contains`` evaluates to true if this is not the case.
@@ -268,6 +271,7 @@ you would have to define an extended condition like:
 
 Handle Missing Data
 ~~~~~~~~~~~~~~~~~~~~
+.. versionadded:: 3.12
 
 There might be the case, that a condition shall be evaluated, but the required data to check the condition is missing.
 For example, an admin is doing a request and hence the user object is not available or even if the user object is
