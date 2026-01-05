@@ -452,9 +452,8 @@ class TokenClass(object):
             db.session.add(token_info)
         else:
             # Update existing info
-            statement = update(TokenInfo).where(TokenInfo.id == token_info.id,
-                                                TokenInfo.Key == key).values(Value=value, Type=value_type)
-            db.session.execute(statement)
+            token_info.Value = value
+            token_info.Type = value_type
         if commit_db_session:
             db.session.commit()
 
