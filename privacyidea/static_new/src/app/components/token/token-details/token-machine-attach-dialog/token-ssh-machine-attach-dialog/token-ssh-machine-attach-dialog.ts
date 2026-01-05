@@ -77,14 +77,6 @@ export class TokenSshMachineAssignDialogComponent extends AbstractDialogComponen
   private applicationService: ApplicationServiceInterface = inject(ApplicationService);
   private machineService: MachineServiceInterface = inject(MachineService);
   private userService: UserServiceInterface = inject(UserService);
-  // <button
-  //   (click)="onAssign()"
-  //   [disabled]="formGroup.invalid"
-  //   i18n
-  //   mat-button
-  //   type="button">
-  //   Assign
-  // </button>
 
   assignAction: DialogAction<string> = {
     label: "Assign",
