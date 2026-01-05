@@ -85,8 +85,16 @@ def get_init_tokenlabel_parameters(g, params=None, token_type="hotp", user_objec
     app_pin_pols = Match.user(g, scope=SCOPE.ENROLL,
                               action='{0!s}_{1!s}'.format(token_type, PolicyAction.FORCE_APP_PIN),
                               user_object=user_object).any()
+
     if app_pin_pols:
         params[PolicyAction.FORCE_APP_PIN] = True
+        params[PolicyAction.APP_FORCE_UNLOCK] = "pin"
+
+    app_force_unlock = Match.user(g, scope=SCOPE.ENROLL,
+                                  action='{0!s}_{1!s}'.format(token_type, PolicyAction.APP_FORCE_UNLOCK),
+                                  user_object=user_object).action_values(unique=True)
+    if app_force_unlock:
+        params[PolicyAction.APP_FORCE_UNLOCK] = list(app_force_unlock)[0]
 
     return params
 

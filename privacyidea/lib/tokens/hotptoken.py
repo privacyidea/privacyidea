@@ -43,34 +43,33 @@ It is inherited from lib.tokenclass and is thus dependent on models.py
 This code is tested in tests/test_lib_tokens_hotp
 """
 
-import time
 import binascii
+import logging
+import time
+import traceback
 
-from .HMAC import HmacOtp
-from privacyidea.api.lib.utils import getParam
+from passlib.crypto.digest import pbkdf2_hmac
+
 from privacyidea.api.lib.policyhelper import get_init_tokenlabel_parameters
+from privacyidea.api.lib.utils import getParam
+from privacyidea.lib import _, lazy_gettext
+from privacyidea.lib.apps import create_google_authenticator_url as cr_google
+from privacyidea.lib.apps import create_oathtoken_url as cr_oath
 from privacyidea.lib.config import get_from_config
+from privacyidea.lib.decorators import check_token_locked, check_token_otp_length
+from privacyidea.lib.error import ParameterError
+from privacyidea.lib.log import log_with
+from privacyidea.lib.policy import SCOPE, GROUP, Match
+from privacyidea.lib.token import init_token
+from privacyidea.lib.tokenclass import CLIENTMODE
 from privacyidea.lib.tokenclass import (TokenClass,
                                         TWOSTEP_DEFAULT_DIFFICULTY,
                                         TWOSTEP_DEFAULT_CLIENTSIZE,
                                         TOKENKIND)
-from privacyidea.lib.log import log_with
-from privacyidea.lib.apps import create_google_authenticator_url as cr_google
-from privacyidea.lib.error import ParameterError
-from privacyidea.lib.apps import create_oathtoken_url as cr_oath
 from privacyidea.lib.utils import (create_img, is_true, b32encode_and_unicode,
                                    hexlify_and_unicode, determine_logged_in_userparams)
-from privacyidea.lib.decorators import check_token_locked, check_token_otp_length
-from privacyidea.lib.policy import SCOPE, GROUP, Match
+from .HMAC import HmacOtp
 from ..policies.actions import PolicyAction
-from privacyidea.lib.token import init_token
-from privacyidea.lib.tokenclass import CLIENTMODE
-from privacyidea.lib import _, lazy_gettext
-import traceback
-import logging
-
-from passlib.crypto.digest import pbkdf2_hmac
-
 from ..user import User
 
 optional = True
@@ -172,6 +171,15 @@ class HotpTokenClass(TokenClass):
                            'type': 'bool',
                            'desc': _('Enforce setting an app pin for the privacyIDEA '
                                      'Authenticator App')
+                       },
+                       'hotp_' + PolicyAction.APP_FORCE_UNLOCK: {
+                           'type': 'str',
+                           'value': ["any",
+                                     "biometric",
+                                     "pin"],
+                           'desc': _(
+                               'Enforces the privacyIDEA Authenticator App that the token has to be unlocked '
+                               'with pin or biometric. This needs the privacyIDEA Authenticator app 4.6.1 or higher.')
                        }
                    },
                    SCOPE.USER: {
@@ -254,9 +262,10 @@ class HotpTokenClass(TokenClass):
         imageurl = params.get("appimageurl")
         if imageurl:
             extra_data.update({"image": imageurl})
-        force_app_pin = params.get(PolicyAction.FORCE_APP_PIN)
-        if force_app_pin:
-            extra_data.update({'pin': True})
+        if params.get(PolicyAction.FORCE_APP_PIN):
+            extra_data.update({'force_app_pin': True})
+        if params.get(PolicyAction.APP_FORCE_UNLOCK):
+            extra_data.update({'app_force_unlock': params.get(PolicyAction.APP_FORCE_UNLOCK)})
         if otpkey:
             tok_type = self.type.lower()
             time_step = self.get_tokeninfo("timeStep", default="30")
