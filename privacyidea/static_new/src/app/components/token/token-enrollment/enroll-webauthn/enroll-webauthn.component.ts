@@ -108,8 +108,7 @@ export class EnrollWebauthnComponent implements OnInit {
     enrollmentData: TokenEnrollmentData
   ): Promise<EnrollmentResponse | null> {
     let webauthnEnrollmentResponse: WebauthnEnrollmentResponse;
-    if (enrollmentResponse.type !== "webauthn") {
-      console.warn("Received enrollment response is not of type 'webauthn'. Cannot proceed with WebAuthn enrollment.");
+    if ((enrollmentResponse as any).detail.webAuthnRegisterRequest === undefined) {
       return null;
     } else {
       webauthnEnrollmentResponse = enrollmentResponse as WebauthnEnrollmentResponse;
@@ -293,7 +292,7 @@ export class EnrollWebauthnComponent implements OnInit {
         })
       );
       response.detail.serial = detail.serial;
-      return response;
+      return { ...response };
     } catch (error: any) {
       const errMsg = `WebAuthn finalization failed: ${error.message || error}`;
       this.notificationService.openSnackBar(errMsg);
