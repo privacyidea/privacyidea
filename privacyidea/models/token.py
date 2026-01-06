@@ -17,7 +17,7 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import binascii
 import logging
-from typing import Optional
+from typing import Optional, List
 
 from sqlalchemy import Sequence, Unicode, Integer, Boolean, select
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -112,14 +112,21 @@ class Token(MethodsMixin, db.Model):
                                                        default=1000)
     rollout_state: Mapped[Optional[str]] = mapped_column(Unicode(10),
                                                          default='')
-    info_list = relationship('TokenInfo', lazy='select', back_populates='token')
-    owners = relationship('TokenOwner', lazy='dynamic', back_populates='token')
+    info_list = relationship('TokenInfo', lazy='select', back_populates='token', cascade="all, delete-orphan")
+    owners = relationship('TokenOwner', lazy='dynamic', back_populates='token', cascade="all, delete-orphan")
 
     # Container
     container = relationship('TokenContainer', secondary='tokencontainertoken', back_populates='tokens')
 
     # This creates an attribute "realm_list" in the Token object
+    # TODO: could be updated to a modern relationship that stores a list of realms here and not of the association
+    #  table TokenRealm (requires changes in the token query, etc.)
     realm_list = relationship('TokenRealm', lazy='joined', back_populates='token')
+
+    tokengroup_list: Mapped[List['TokenTokengroup']] = relationship('Tokengroup', secondary='tokentokengroup',
+                                                                    back_populates='tokens', single_parent=True)
+    machine_list: Mapped[List['MachineToken']] = relationship('MachineToken', back_populates='token',
+                                                              cascade="all, delete-orphan")
 
     def __init__(self, serial, tokentype="",
                  isactive=True, otplen=6,
@@ -370,8 +377,8 @@ class Token(MethodsMixin, db.Model):
         ret['realms'] = realm_list
         # list of tokengroups
         tokengroup_list = []
-        for tg_entry in self.tokengroup_list:
-            tokengroup_list.append(tg_entry.tokengroup.name)
+        for token_group in self.tokengroup_list:
+            tokengroup_list.append(token_group.name)
         ret['tokengroup'] = tokengroup_list
         return ret
 

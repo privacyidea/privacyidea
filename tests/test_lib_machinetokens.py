@@ -8,7 +8,7 @@ from .base import MyTestCase
 from privacyidea.lib.machine import (attach_token, detach_token, add_option,
                                      delete_option, list_machine_tokens,
                                      list_token_machines, get_auth_items)
-from privacyidea.lib.token import init_token, get_tokens
+from privacyidea.lib.token import init_token, get_tokens, remove_token
 from privacyidea.lib.machineresolver import save_resolver
 
 
@@ -69,7 +69,20 @@ class MachineTokenTestCase(MyTestCase):
         machine_list = tok.token.machine_list
         self.assertEqual(len(machine_list), 0)
 
+        # delete token deletes all machinetokens
+        machine_tokens = list_machine_tokens(hostname="gandalf")
+        self.assertSetEqual({self.serial}, set([machine.get("serial") for machine in machine_tokens]))
+        remove_token(self.serial)
+        machine_tokens = list_machine_tokens(hostname="gandalf")
+        self.assertSetEqual(set(), set([machine.get("serial") for machine in machine_tokens]))
+
     def test_02_detach_token(self):
+        # Attach token
+        init_token({"type": "spass", "serial": self.serial})
+        mt = attach_token(self.serial, "luks", hostname="gandalf")
+        self.assertEqual(mt.token.serial, self.serial)
+        self.assertEqual(mt.token.machine_list[0].machine_id, "192.168.0.1")
+
         detach_token(self.serial, "luks", hostname="gandalf")
 
         # look at token, if we do not see the machine

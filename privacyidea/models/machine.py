@@ -118,7 +118,7 @@ class MachineToken(MethodsMixin, db.Model):
     # This connects the machine with the token and makes the machines visible
     # in the token as "machine_list". The cascade option handles automatic
     # deletion of related MachineTokenOptions when a MachineToken is deleted.
-    token = relationship('Token', lazy='joined', backref='machine_list')
+    token = relationship('Token', lazy='joined', back_populates='machine_list')
     option_list = relationship('MachineTokenOptions', lazy='joined',
                                backref='machinetoken', cascade="all, delete-orphan")
 

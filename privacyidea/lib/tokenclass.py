@@ -274,8 +274,7 @@ class TokenClass(object):
             log.error("Tokengroup %s does not exist. Cannot add it to token %s.", tokengroup, self.get_serial())
             raise ResourceNotFoundError(_("The tokengroup does not exist."))
 
-        existing_groups: list[str] = [association.tokengroup for association in self.token.tokengroup_list]
-        if tokengroup_db not in existing_groups:
+        if tokengroup_db not in self.token.tokengroup_list:
             association = TokenTokengroup(token_id=self.token.id, tokengroup_id=tokengroup_db.id)
             db.session.add(association)
         else:
@@ -758,24 +757,12 @@ class TokenClass(object):
         """
         delete the database token
         """
-        # First delete all relationships (TODO: should be handled automatically by cascade delete)
+        # First delete all relationships that are not automatically removed by cascade delete
         delete_stmt_token_realm = delete(TokenRealm).where(TokenRealm.token_id == self.token.id)
         db.session.execute(delete_stmt_token_realm)
 
-        delete_stmt_token_owner = delete(TokenOwner).where(TokenOwner.token_id == self.token.id)
-        db.session.execute(delete_stmt_token_owner)
-
-        delete_stmt_machine_token = delete(MachineToken).where(MachineToken.token_id == self.token.id)
-        db.session.execute(delete_stmt_machine_token)
-
         delete_stmt_challenge = delete(Challenge).where(Challenge.serial == self.token.serial)
         db.session.execute(delete_stmt_challenge)
-
-        delete_stmt_token_info = delete(TokenInfo).where(TokenInfo.token_id == self.token.id)
-        db.session.execute(delete_stmt_token_info)
-
-        delete_stmt_token_tokengroup = delete(TokenTokengroup).where(TokenTokengroup.token_id == self.token.id)
-        db.session.execute(delete_stmt_token_tokengroup)
 
         if self.get_tokentype().lower() in ["webauthn", "passkey"]:
             delete_stmt_token_credential = delete(TokenCredentialIdHash).where(
@@ -864,7 +851,7 @@ class TokenClass(object):
         :param tokengroups: token groups the token should be assigned to
         :param add: if the tokengroups should be added and not replaced
         """
-        existing_groups: list[Tokengroup] = [association.tokengroup for association in self.token.tokengroup_list]
+        existing_groups: list[Tokengroup] = self.token.tokengroup_list
         new_groups: set[str] = set(tokengroups) - {group.name for group in existing_groups}
         if not add:
             # delete existing token groups which are not in the new list

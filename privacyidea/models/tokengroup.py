@@ -18,15 +18,12 @@
 import logging
 from typing import List, Optional
 
-from sqlalchemy import Unicode, Integer, UniqueConstraint, select, update, delete, Sequence
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy import Unicode, Integer, UniqueConstraint, select
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from privacyidea.models import db
-from privacyidea.models.config import (TimestampMethodsMixin,
-                                       save_config_timestamp, SAFE_STORE)
 from privacyidea.lib.log import log_with
-from privacyidea.lib.framework import get_app_config_value
+from privacyidea.models import db
+from privacyidea.models.config import (TimestampMethodsMixin)
 
 log = logging.getLogger(__name__)
 
@@ -41,8 +38,9 @@ class Tokengroup(TimestampMethodsMixin, db.Model):
     name: Mapped[str] = mapped_column(Unicode(255), default='', unique=True, nullable=False)
     Description: Mapped[Optional[str]] = mapped_column(Unicode(2000), default='')
 
-    # Define relationship back to TokenTokengroup for deletion cascade
-    tokens: Mapped[List['TokenTokengroup']] = relationship(back_populates='tokengroup', cascade="all, delete-orphan")
+    # Define relationship back to Token for deletion cascade
+    tokens: Mapped[List['TokenTokengroup']] = relationship('Token', secondary='tokentokengroup',
+                                                           back_populates='tokengroup_list')
 
     @log_with(log)
     def __init__(self, groupname: str, description: Optional[str] = None):
@@ -60,11 +58,6 @@ class TokenTokengroup(TimestampMethodsMixin, db.Model):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     token_id: Mapped[Optional[int]] = mapped_column(Integer, db.ForeignKey('token.id'))
     tokengroup_id: Mapped[Optional[int]] = mapped_column(Integer, db.ForeignKey('tokengroup.id'))
-
-    # Define relationships with modern syntax
-    token: Mapped['Token'] = relationship(lazy='joined', backref='tokengroup_list')
-    tokengroup: Mapped['Tokengroup'] = relationship(back_populates='tokens', lazy='joined',
-                                                  single_parent=True)
 
     def __init__(self, tokengroup_id: int = 0, token_id: int = 0, tokengroupname: Optional[str] = None):
         """
