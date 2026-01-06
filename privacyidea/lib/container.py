@@ -305,12 +305,12 @@ def _create_container_query(user: User = None, serial: str = None, ctype: str = 
 
     if last_auth_delta:
         time_delta = parse_timedelta(last_auth_delta)
-        max_time = datetime.now(timezone.utc) - time_delta
+        max_time = datetime.now(timezone.utc).replace(tzinfo=None) - time_delta
         stmt = stmt.where(TokenContainer.last_seen > max_time)
 
     if last_sync_delta:
         time_delta = parse_timedelta(last_sync_delta)
-        max_time = datetime.now(timezone.utc) - time_delta
+        max_time = datetime.now(timezone.utc).replace(tzinfo=None) - time_delta
         stmt = stmt.where(TokenContainer.last_updated > max_time)
 
     if state and state.strip("*"):
