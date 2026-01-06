@@ -1,0 +1,36 @@
+@use "../../../../../../styles/index" as styles;
+
+// override hover style for read only view to not change on hover
+.selected-actions-container .action-card:hover {
+  background-color: var(--mat-sys-surface-container) !important;
+  color: var(--mat-sys-on-surface) !important;
+  cursor: default !important;
+}
+
+.label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+  margin-block: auto;
+}
+
+.value {
+  grid-column: 2;
+  overflow: scroll;
+  display: block;
+  margin-block: auto;
+}
+
+.no-indention {
+  margin-left: 8px;
+  padding-left: 8px;
+}
+
+.task-details {
+  display: grid;
+  grid-template-columns: auto;
+  gap: 16px;
+  padding: 0;
+  border: 0;
+  margin-bottom: auto;
+}

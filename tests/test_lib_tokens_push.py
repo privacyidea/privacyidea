@@ -211,8 +211,8 @@ class PushTokenTestCase(MyTestCase):
         token = init_token(param=token_param)
         detail = token.get_init_detail(params={"policies": {PUSH_ACTION.FIREBASE_CONFIG: POLL_ONLY,
                                                             PUSH_ACTION.REGISTRATION_URL: "https://privacyidea.com/enroll"},
-                                               PolicyAction.FORCE_APP_PIN: True})
-        self.assertIn("pin=True", detail["pushurl"]["value"])
+                                               PolicyAction.APP_FORCE_UNLOCK: "pin"})
+        self.assertIn('app_force_unlock=pin', detail["pushurl"]["value"])
         remove_token(token.get_serial())
 
     def test_02a_lib_enroll(self):

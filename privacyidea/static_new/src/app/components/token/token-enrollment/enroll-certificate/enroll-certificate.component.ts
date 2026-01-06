@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, EventEmitter, inject, linkedSignal, OnInit, Output } from "@angular/core";
+import { Component, computed, effect, EventEmitter, inject, input, linkedSignal, OnInit, Output } from "@angular/core";
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatButtonToggle, MatButtonToggleGroup } from "@angular/material/button-toggle";
 import { ErrorStateMatcher, MatOption } from "@angular/material/core";
@@ -24,16 +24,14 @@ import { MatFormField, MatLabel, MatSuffix } from "@angular/material/form-field"
 import { MatInput } from "@angular/material/input";
 import { MatError, MatSelect } from "@angular/material/select";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
-
-import { Observable, of } from "rxjs";
 import {
-  EnrollmentResponse,
-  TokenEnrollmentData
-} from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
-import { CertificateApiPayloadMapper } from "../../../../mappers/token-api-payload/certificate-token-api-payload.mapper";
+  CertificateApiPayloadMapper,
+  CertificateEnrollmentData
+} from "../../../../mappers/token-api-payload/certificate-token-api-payload.mapper";
 import { SystemService, SystemServiceInterface } from "../../../../services/system/system.service";
-import { ClearButtonComponent } from "../../../shared/clear-button/clear-button.component";
+import { TokenEnrollmentData } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
 import { toSignal } from "@angular/core/rxjs-interop";
+import { ClearButtonComponent } from "../../../shared/clear-button/clear-button.component";
 
 export interface CertificateEnrollmentOptions extends TokenEnrollmentData {
   type: "certificate";
@@ -77,9 +75,13 @@ export class EnrollCertificateComponent implements OnInit {
   @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
-  @Output() clickEnrollChange = new EventEmitter<
-    (basicOptions: TokenEnrollmentData) => Observable<EnrollmentResponse | null>
+  @Output() enrollmentArgsGetterChange = new EventEmitter<
+    (basicOptions: TokenEnrollmentData) => {
+      data: CertificateEnrollmentData;
+      mapper: CertificateApiPayloadMapper;
+    } | null
   >();
+  disabled = input<boolean>(false);
 
   caConnectorControl = new FormControl<string>("", [Validators.required]);
   certTemplateControl = new FormControl<string>("");
@@ -96,20 +98,33 @@ export class EnrollCertificateComponent implements OnInit {
   });
 
   caConnectorOptions = computed(
-    () => this.systemService.caConnectorResource?.value()?.result?.value.map((config: any) => config.connectorname) || []
+    () =>
+      this.systemService.caConnectorResource?.value()?.result?.value.map((config: any) => config.connectorname) || []
   );
 
-  caConnectorValueSignal = toSignal(this.caConnectorControl.valueChanges, { initialValue: this.caConnectorControl.value });
+  caConnectorValueSignal = toSignal(this.caConnectorControl.valueChanges, {
+    initialValue: this.caConnectorControl.value
+  });
 
   certTemplateOptions = linkedSignal({
     source: () => [this.systemService.caConnectors?.(), this.caConnectorValueSignal()],
     computation: ([caConnectors, selectedConnectorName]) => {
-      const selectedConnector = Object.values(caConnectors ?? {}).find((c) => c.connectorname === selectedConnectorName);
+      const selectedConnector = Object.values(caConnectors ?? {}).find(
+        (c) => c.connectorname === selectedConnectorName
+      );
       return selectedConnector && selectedConnector.templates ? Object.keys(selectedConnector.templates) : [];
     }
   });
 
   caConnectorErrorStateMatcher = new CaConnectorErrorStateMatcher();
+
+  constructor() {
+    effect(() =>
+      this.disabled()
+        ? this.certificateForm.disable({ emitEvent: false })
+        : this.certificateForm.enable({ emitEvent: false })
+    );
+  }
 
   ngOnInit(): void {
     this.additionalFormFieldsChange.emit({
@@ -118,7 +133,7 @@ export class EnrollCertificateComponent implements OnInit {
       pem: this.pemControl,
       intentionToggle: this.intentionToggleControl
     });
-    this.clickEnrollChange.emit(this.onClickEnroll);
+    this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
 
     this.intentionToggleControl.valueChanges.subscribe((intention) => {
       if (intention === "uploadRequest" || intention === "uploadCert") {
@@ -136,11 +151,16 @@ export class EnrollCertificateComponent implements OnInit {
     });
   }
 
-  onClickEnroll = (basicOptions: TokenEnrollmentData): Observable<EnrollmentResponse | null> => {
+  enrollmentArgsGetter = (
+    basicOptions: TokenEnrollmentData
+  ): {
+    data: CertificateEnrollmentData;
+    mapper: CertificateApiPayloadMapper;
+  } | null => {
     for (const [name, control] of Object.entries(this.certificateForm.controls)) {
       if (control.invalid) {
         control.markAsTouched();
-        return of(null);
+        return null;
       }
     }
 
@@ -153,10 +173,10 @@ export class EnrollCertificateComponent implements OnInit {
     if (this.intentionToggleControl.value === "uploadRequest" || this.intentionToggleControl.value === "uploadCert") {
       enrollmentData.pem = this.pemControl.value ?? "";
     }
-    return this.tokenService.enrollToken({
+    return {
       data: enrollmentData,
       mapper: this.enrollmentMapper
-    });
+    };
   };
 
   clearTemplateSelection(): void {

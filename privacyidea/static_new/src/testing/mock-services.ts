@@ -21,6 +21,7 @@ import { AuthData, AuthDetail, AuthResponse, AuthRole } from "../app/services/au
 import {
   ContainerDetailData,
   ContainerDetails,
+  ContainerDetailToken,
   ContainerRegisterData,
   ContainerServiceInterface,
   ContainerTemplate,
@@ -327,8 +328,6 @@ export class MockUserService implements UserServiceInterface {
     this.selectedUsername.set(name);
     return name;
   });
-
-
 }
 
 export class MockNotificationService implements NotificationServiceInterface {
@@ -380,29 +379,27 @@ export class MockValidateService implements ValidateServiceInterface {
 export class MockRealmService implements RealmServiceInterface {
   selectedRealms = signal<string[]>([]);
 
-  realmResource: HttpResourceRef<PiResponse<Realms> | undefined> =
-    new MockHttpResourceRef<PiResponse<Realms> | undefined>(
-      MockPiResponse.fromValue<Realms>({} as any)
-    );
+  realmResource: HttpResourceRef<PiResponse<Realms> | undefined> = new MockHttpResourceRef<
+    PiResponse<Realms> | undefined
+  >(MockPiResponse.fromValue<Realms>({} as any));
 
   realmOptions: Signal<string[]> = computed(() => {
     const realms = this.realmResource.value()?.result?.value as any;
     return realms ? Object.keys(realms) : [];
   });
 
-  defaultRealmResource: HttpResourceRef<PiResponse<Realms> | undefined> =
-    new MockHttpResourceRef<PiResponse<Realms> | undefined>(
-      MockPiResponse.fromValue<Realms>(
-        {
-          realm1: {
-            default: true,
-            id: 1,
-            option: "",
-            resolver: []
-          } as Realm
-        } as any
-      )
-    );
+  defaultRealmResource: HttpResourceRef<PiResponse<Realms> | undefined> = new MockHttpResourceRef<
+    PiResponse<Realms> | undefined
+  >(
+    MockPiResponse.fromValue<Realms>({
+      realm1: {
+        default: true,
+        id: 1,
+        option: "",
+        resolver: []
+      } as Realm
+    } as any)
+  );
 
   defaultRealm: Signal<string> = computed(() => {
     const data = this.defaultRealmResource.value()?.result?.value as any;
@@ -411,45 +408,40 @@ export class MockRealmService implements RealmServiceInterface {
 
   createRealm = jest
     .fn()
-    .mockImplementation(
-      (realm: string, nodeId: string, resolvers: { name: string; priority?: number | null }[]) => {
-        const current = (this.realmResource.value()?.result?.value as any) ?? {};
-        const existing: Realm | undefined = current[realm];
+    .mockImplementation((realm: string, nodeId: string, resolvers: { name: string; priority?: number | null }[]) => {
+      const current = (this.realmResource.value()?.result?.value as any) ?? {};
+      const existing: Realm | undefined = current[realm];
 
-        const newResolverEntries = resolvers.map((r) => ({
-          name: r.name,
-          node: nodeId,
-          type: "mock",
-          priority: r.priority ?? null
-        }));
+      const newResolverEntries = resolvers.map((r) => ({
+        name: r.name,
+        node: nodeId,
+        type: "mock",
+        priority: r.priority ?? null
+      }));
 
-        const updatedRealm: Realm = existing
-          ? {
-            ...existing,
-            resolver: [
-              ...(existing.resolver ?? []),
-              ...newResolverEntries
-            ]
-          }
-          : {
-            default: false,
-            id: Object.keys(current).length + 1,
-            option: "",
-            resolver: newResolverEntries
-          };
-
-        const updatedRealms = {
-          ...current,
-          [realm]: updatedRealm
+      const updatedRealm: Realm = existing
+        ? {
+          ...existing,
+          resolver: [...(existing.resolver ?? []), ...newResolverEntries]
+        }
+        : {
+          default: false,
+          id: Object.keys(current).length + 1,
+          option: "",
+          resolver: newResolverEntries
         };
 
-        (this.realmResource as MockHttpResourceRef<PiResponse<Realms> | undefined>).set(
-          MockPiResponse.fromValue<Realms>(updatedRealms as any)
-        );
+      const updatedRealms = {
+        ...current,
+        [realm]: updatedRealm
+      };
 
-        return of(MockPiResponse.fromValue<any>({ realm, nodeId, resolvers }));
-      }
-    );
+      (this.realmResource as MockHttpResourceRef<PiResponse<Realms> | undefined>).set(
+        MockPiResponse.fromValue<Realms>(updatedRealms as any)
+      );
+
+      return of(MockPiResponse.fromValue<any>({ realm, nodeId, resolvers }));
+    });
 
   deleteRealm = jest.fn().mockImplementation((realm: string) => {
     const current = (this.realmResource.value()?.result?.value as any) ?? {};
@@ -477,17 +469,16 @@ export class MockRealmService implements RealmServiceInterface {
     );
 
     (this.defaultRealmResource as MockHttpResourceRef<PiResponse<Realms> | undefined>).set(
-      MockPiResponse.fromValue<Realms>(
-        {
-          [realm]: current[realm] ??
-            ({
-              default: true,
-              id: 1,
-              option: "",
-              resolver: []
-            } as Realm)
-        } as any
-      )
+      MockPiResponse.fromValue<Realms>({
+        [realm]:
+          current[realm] ??
+          ({
+            default: true,
+            id: 1,
+            option: "",
+            resolver: []
+          } as Realm)
+      } as any)
     );
 
     return of(MockPiResponse.fromValue<number>(1));
@@ -508,92 +499,55 @@ export class MockContentService implements ContentServiceInterface {
   tokenSerial: WritableSignal<string> = signal("");
   containerSerial: WritableSignal<string> = signal("");
 
-  onLogin: Signal<boolean> = computed(
-    () => this.routeUrl() === ROUTE_PATHS.LOGIN
+  onLogin: Signal<boolean> = computed(() => this.routeUrl() === ROUTE_PATHS.LOGIN);
+
+  onAudit: Signal<boolean> = computed(() => this.routeUrl() === ROUTE_PATHS.AUDIT);
+
+  onTokens: Signal<boolean> = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS);
+
+  onUsers: Signal<boolean> = computed(() => this.routeUrl() === ROUTE_PATHS.USERS);
+
+  onPolicies: Signal<boolean> = computed(() => this.routeUrl() === ROUTE_PATHS.POLICIES);
+
+  onTokenDetails: Signal<boolean> = computed(() => this.routeUrl().startsWith(ROUTE_PATHS.TOKENS_DETAILS));
+
+  onUserDetails: Signal<boolean> = computed(() => this.routeUrl().startsWith(ROUTE_PATHS.USERS_DETAILS + "/"));
+
+  onUserRealms: Signal<boolean> = computed(() => this.routeUrl() === ROUTE_PATHS.USERS);
+
+  onTokensEnrollment: Signal<boolean> = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS_ENROLLMENT);
+
+  onTokensChallenges: Signal<boolean> = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS_CHALLENGES);
+
+  onTokensApplications: Signal<boolean> = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS_APPLICATIONS);
+
+  onTokensGetSerial: Signal<boolean> = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS_GET_SERIAL);
+
+  onTokensImport: Signal<boolean> = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS_IMPORT);
+
+  onTokensContainers: Signal<boolean> = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS_CONTAINERS);
+
+  onTokensContainersCreate: Signal<boolean> = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS_CONTAINERS_CREATE);
+
+  onTokensContainersDetails: Signal<boolean> = computed(() =>
+    this.routeUrl().startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS)
   );
 
-  onAudit: Signal<boolean> = computed(
-    () => this.routeUrl() === ROUTE_PATHS.AUDIT
-  );
+  onTokensAssignToken: Signal<boolean> = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS_ASSIGN_TOKEN);
 
-  onTokens: Signal<boolean> = computed(
-    () => this.routeUrl() === ROUTE_PATHS.TOKENS
-  );
+  onTokensWizard: Signal<boolean> = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS_WIZARD);
 
-  onUsers: Signal<boolean> = computed(
-    () => this.routeUrl() === ROUTE_PATHS.USERS
-  );
-
-  onPolicies: Signal<boolean> = computed(
-    () => this.routeUrl() === ROUTE_PATHS.POLICIES
-  );
-
-  onTokenDetails: Signal<boolean> = computed(
-    () => this.routeUrl().startsWith(ROUTE_PATHS.TOKENS_DETAILS)
-  );
-
-  onUserDetails: Signal<boolean> = computed(
-    () => this.routeUrl().startsWith(ROUTE_PATHS.USERS_DETAILS + "/")
-  );
-
-  onUserRealms: Signal<boolean> = computed(
-    () => this.routeUrl() === ROUTE_PATHS.USERS);
-
-  onTokensEnrollment: Signal<boolean> = computed(
-    () => this.routeUrl() === ROUTE_PATHS.TOKENS_ENROLLMENT
-  );
-
-  onTokensChallenges: Signal<boolean> = computed(
-    () => this.routeUrl() === ROUTE_PATHS.TOKENS_CHALLENGES
-  );
-
-  onTokensApplications: Signal<boolean> = computed(
-    () => this.routeUrl() === ROUTE_PATHS.TOKENS_APPLICATIONS
-  );
-
-  onTokensGetSerial: Signal<boolean> = computed(
-    () => this.routeUrl() === ROUTE_PATHS.TOKENS_GET_SERIAL
-  );
-
-  onTokensImport: Signal<boolean> = computed(
-    () => this.routeUrl() === ROUTE_PATHS.TOKENS_IMPORT
-  );
-
-  onTokensContainers: Signal<boolean> = computed(
-    () => this.routeUrl() === ROUTE_PATHS.TOKENS_CONTAINERS
-  );
-
-  onTokensContainersCreate: Signal<boolean> = computed(
-    () => this.routeUrl() === ROUTE_PATHS.TOKENS_CONTAINERS_CREATE
-  );
-
-  onTokensContainersDetails: Signal<boolean> = computed(
-    () => this.routeUrl().startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS)
-  );
-
-  onTokensAssignToken: Signal<boolean> = computed(
-    () => this.routeUrl() === ROUTE_PATHS.TOKENS_ASSIGN_TOKEN
-  );
-
-  onTokensWizard: Signal<boolean> = computed(
-    () => this.routeUrl() === ROUTE_PATHS.TOKENS_WIZARD
-  );
-
-  onTokensContainersWizard: Signal<boolean> = computed(
-    () => this.routeUrl() === ROUTE_PATHS.TOKENS_CONTAINERS_WIZARD
-  );
+  onTokensContainersWizard: Signal<boolean> = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS_CONTAINERS_WIZARD);
 
   onAnyTokensRoute: Signal<boolean> = computed(
-    () =>
-      this.routeUrl() === ROUTE_PATHS.TOKENS ||
-      this.routeUrl().startsWith(ROUTE_PATHS.TOKENS + "/")
+    () => this.routeUrl() === ROUTE_PATHS.TOKENS || this.routeUrl().startsWith(ROUTE_PATHS.TOKENS + "/")
   );
 
   onAnyUsersRoute: Signal<boolean> = computed(
-    () =>
-      this.routeUrl() === ROUTE_PATHS.USERS ||
-      this.routeUrl().startsWith(ROUTE_PATHS.USERS + "/")
+    () => this.routeUrl() === ROUTE_PATHS.USERS || this.routeUrl().startsWith(ROUTE_PATHS.USERS + "/")
   );
+
+  onTokensContainersTemplates = signal(false); // Is mocked, not an actual implementation
 
   tokenSelected = jest.fn().mockImplementation((serial: string) => {
     this.tokenSerial.set(serial);
@@ -603,7 +557,7 @@ export class MockContentService implements ContentServiceInterface {
     this.containerSerial.set(serial);
   });
 
-  userSelected: (username: any) => void = jest.fn();
+  userSelected: (username: string, realm: string) => void = jest.fn();
 }
 
 export class MockContainerService implements ContainerServiceInterface {
@@ -652,7 +606,7 @@ export class MockContainerService implements ContainerServiceInterface {
       { containerType: "yubikey", description: "", token_types: [] } as ContainerType
     ];
   });
-  selectedContainerType = signal<ContainerType>({ containerType: "generic", description: "", token_types: [] });
+  selectedContainerType = signal<ContainerType | undefined>(undefined);
   containerDetailResource = new MockHttpResourceRef(
     MockPiResponse.fromValue({
       containers: [
@@ -679,13 +633,6 @@ export class MockContainerService implements ContainerServiceInterface {
     })
   );
   containerDetail = signal<ContainerDetails>({ containers: [], count: 0 });
-  templatesResource: HttpResourceRef<PiResponse<{ templates: ContainerTemplate[] }, unknown> | undefined> =
-    new MockHttpResourceRef(
-      MockPiResponse.fromValue<{ templates: ContainerTemplate[] }>({
-        templates: []
-      })
-    );
-  templates: WritableSignal<ContainerTemplate[]> = signal([]);
   addToken = jest.fn().mockReturnValue(of(null));
   removeToken = jest.fn().mockReturnValue(of(null));
   setContainerRealm = jest.fn().mockReturnValue(of(null));
@@ -717,6 +664,13 @@ export class MockContainerService implements ContainerServiceInterface {
   stopPolling = jest.fn();
   createContainer = jest.fn();
   startPolling = jest.fn();
+  templatesResource: HttpResourceRef<PiResponse<{ templates: ContainerTemplate[] }, unknown> | undefined> =
+    new MockHttpResourceRef(
+      MockPiResponse.fromValue<{ templates: ContainerTemplate[] }>({
+        templates: []
+      })
+    );
+  templates: WritableSignal<ContainerTemplate[]> = signal([]);
   assignContainer = jest.fn().mockReturnValue(of(null));
   unassignContainer = jest.fn().mockReturnValue(of(null));
   pollContainerRolloutState = jest.fn();
@@ -823,12 +777,10 @@ function makeTokenDetailResponse(tokentype: TokenTypeKey): PiResponse<Tokens> {
 }
 
 export class MockTokenService implements TokenServiceInterface {
-  hiddenApiFilter: string[] = [];
+  apiFilterKeyMap: Record<string, string> = {};
   stopPolling$: Subject<void> = new Subject<void>();
   tokenBaseUrl: string = "mockEnvironment.proxyUrl + '/token'";
   readonly eventPageSize = 10;
-  userRealm = signal("");
-
   tokenSerial = signal("");
   selectedTokenType: WritableSignal<TokenType> = signal({
     key: "hotp",
@@ -852,6 +804,7 @@ export class MockTokenService implements TokenServiceInterface {
     })
   );
   detailsUsername: WritableSignal<string> = signal("");
+  userRealm = signal("");
   tokenTypeOptions: WritableSignal<TokenType[]> = signal<TokenType[]>([
     {
       key: "hotp",
@@ -966,24 +919,15 @@ export class MockTokenService implements TokenServiceInterface {
   getTokengroups = jest.fn();
   setTokengroup = jest.fn();
   importTokens = jest.fn();
+  hiddenApiFilter: string[] = [];
 }
 
 export class MockMachineService implements MachineServiceInterface {
   baseUrl: string = "environment.mockProxyUrl + '/machine/'";
   filterValue: WritableSignal<Record<string, string>> = signal({});
-
-  handleFilterInput($event: Event): void {
-    throw new Error("Method not implemented.");
-  }
-
-  clearFilter(): void {
-    throw new Error("Method not implemented.");
-  }
-
   sshApiFilter: string[] = [];
-  sshAdvancedApiFilter: string[] = [];
   offlineApiFilter: string[] = [];
-  offlineAdvancedApiFilter: string[] = [];
+  advancedApiFilter: string[] = [];
   machines: WritableSignal<Machines> = signal<Machines>([]);
   tokenApplications: WritableSignal<TokenApplication[]> = signal([]);
   selectedApplicationType = signal<"ssh" | "offline">("ssh");
@@ -992,8 +936,8 @@ export class MockMachineService implements MachineServiceInterface {
   filterParams = computed(() => {
     let allowedKeywords =
       this.selectedApplicationType() === "ssh"
-        ? [...this.sshApiFilter, ...this.sshAdvancedApiFilter]
-        : [...this.offlineApiFilter, ...this.offlineAdvancedApiFilter];
+        ? [...this.sshApiFilter, ...this.advancedApiFilter]
+        : [...this.offlineApiFilter, ...this.advancedApiFilter];
 
     const filterPairs = Object.entries(this.filterValue())
       .map(([key, value]) => ({ key, value }))
@@ -1023,6 +967,14 @@ export class MockMachineService implements MachineServiceInterface {
   machinesResource = new MockHttpResourceRef(MockPiResponse.fromValue<Machines>([]));
   tokenApplicationResource: HttpResourceRef<PiResponse<TokenApplication[], undefined> | undefined> =
     new MockHttpResourceRef(MockPiResponse.fromValue([]));
+
+  handleFilterInput($event: Event): void {
+    throw new Error("Method not implemented.");
+  }
+
+  clearFilter(): void {
+    throw new Error("Method not implemented.");
+  }
 
   deleteAssignMachineToToken() {
     return of({} as any);
@@ -1121,11 +1073,22 @@ export class MockTableUtilsService implements TableUtilsServiceInterface {
     return cols.map((c) => c.key) as any;
   }
 
+  getSortIcon(columnKey: string, sort: Sort): string {
+    return "";
+  }
+
+  onSortButtonClick(key: string, sort: WritableSignal<Sort>): void {
+  }
+
+  clientsideSortTokenData(data: ContainerDetailToken[], s: Sort): ContainerDetailToken[] {
+    return data;
+  }
+
   handleColumnClick = jest.fn();
 }
 
 export class MockAuditService implements AuditServiceInterface {
-  sort: WritableSignal<Sort> = signal({ active: "time", direction: "desc" });
+  apiFilterKeyMap: Record<string, string> = {};
   apiFilter = ["user", "success"];
   advancedApiFilter = ["machineid", "resolver"];
   auditFilter: WritableSignal<FilterValue> = signal(new FilterValue());
@@ -1149,6 +1112,7 @@ export class MockAuditService implements AuditServiceInterface {
       current: 0
     })
   );
+  sort: WritableSignal<Sort> = signal({ active: "time", direction: "desc" });
   clearFilter = jest.fn().mockImplementation(() => {
     this.auditFilter.set(new FilterValue());
   });
@@ -1271,8 +1235,5 @@ export class MockVersioningService {
 }
 
 export class MockSystemService {
-  nodes = jest.fn(() => [
-    { uuid: "node-1", name: "Node 1" } as any,
-    { uuid: "node-2", name: "Node 2" } as any
-  ]);
+  nodes = jest.fn(() => [{ uuid: "node-1", name: "Node 1" } as any, { uuid: "node-2", name: "Node 2" } as any]);
 }

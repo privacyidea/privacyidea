@@ -2724,11 +2724,37 @@ class APITokenTestCase(MyApiTestCase):
             detail = res.json["detail"]
             self.assertTrue(result.get("status"))
             self.assertTrue(result.get("value"))
-            self.assertTrue('pin=True' in detail.get("googleurl").get("value"),
+            self.assertTrue("app_force_unlock=pin" in detail.get("googleurl").get("value"),
+                            detail.get("googleurl"))
+            self.assertTrue("force_app_pin=True" in detail.get("googleurl").get("value"),
                             detail.get("googleurl"))
 
         remove_token("goog2")
         delete_policy('app_pin')
+
+    def test_30a_app_force_unlock(self):
+        set_policy("app_force", scope=SCOPE.ENROLL,
+                   action={"hotp_" + PolicyAction.APP_FORCE_UNLOCK: 'biometric'})
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "genkey": "1",
+                                                 "realm": self.realm1,
+                                                 "serial": "goog2",
+                                                 "type": 'HOTP',
+                                                 "pin": "test"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json["result"]
+            detail = res.json["detail"]
+            self.assertTrue(result.get("status"))
+            self.assertTrue(result.get("value"))
+            self.assertTrue("app_force_unlock=biometric" in detail.get("googleurl").get("value"),
+                            detail.get("googleurl"))
+
+        remove_token("goog2")
+        delete_policy('app_force')
 
     def test_31_invalid_serial(self):
         # Run a test with an invalid serial

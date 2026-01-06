@@ -16,18 +16,20 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, EventEmitter, inject, Input, OnInit, Output } from "@angular/core";
+import { Component, effect, EventEmitter, inject, input, Input, OnInit, Output } from "@angular/core";
 import { FormControl, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatInput } from "@angular/material/input";
 import { MatError, MatFormField, MatHint, MatLabel, MatOption, MatSelect } from "@angular/material/select";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
-import { Observable, of } from "rxjs";
 import {
-  EnrollmentResponse,
+  TokenApiPayloadMapper,
   TokenEnrollmentData
 } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
-import { HotpApiPayloadMapper } from "../../../../mappers/token-api-payload/hotp-token-api-payload.mapper";
+import {
+  HotpApiPayloadMapper,
+  HotpEnrollmentData
+} from "../../../../mappers/token-api-payload/hotp-token-api-payload.mapper";
 import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
 
 export interface HotpEnrollmentOptions extends TokenEnrollmentData {
@@ -67,16 +69,24 @@ export class EnrollHotpComponent implements OnInit {
     { value: "sha512", viewValue: "SHA512" }
   ];
   @Input() wizard: boolean = false;
-  @Output() clickEnrollChange = new EventEmitter<
-    (basicOptions: TokenEnrollmentData) => Observable<EnrollmentResponse | null>
+  @Output() enrollmentArgsGetterChange = new EventEmitter<
+    (basicOptions: TokenEnrollmentData) => {
+      data: HotpEnrollmentData;
+      mapper: TokenApiPayloadMapper<HotpEnrollmentData>;
+    } | null
   >();
   @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
+  disabled = input<boolean>(false);
   generateOnServerFormControl = new FormControl<boolean>(true, [Validators.required]);
   otpLengthFormControl = new FormControl<number>(6, [Validators.required]);
   otpKeyFormControl = new FormControl<string>({ value: "", disabled: true });
   hashAlgorithmFormControl = new FormControl<string>("sha1", [Validators.required]);
+
+  constructor() {
+    effect(() => (this.disabled() ? this._disableFormControls() : this._enableFormControls()));
+  }
 
   ngOnInit(): void {
     this.additionalFormFieldsChange.emit({
@@ -85,8 +95,11 @@ export class EnrollHotpComponent implements OnInit {
       otpKey: this.otpKeyFormControl,
       hashAlgorithm: this.hashAlgorithmFormControl
     });
-    this.clickEnrollChange.emit(this.onClickEnroll);
+    this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
+    this._applyPolicies();
+  }
 
+  private _applyPolicies() {
     if (this.authService.checkForceServerGenerateOTPKey("hotp")) {
       this.generateOnServerFormControl.disable({ emitEvent: false });
     } else {
@@ -103,7 +116,12 @@ export class EnrollHotpComponent implements OnInit {
     }
   }
 
-  onClickEnroll = (basicOptions: TokenEnrollmentData): Observable<EnrollmentResponse | null> => {
+  enrollmentArgsGetter = (
+    basicOptions: TokenEnrollmentData
+  ): {
+    data: HotpEnrollmentData;
+    mapper: TokenApiPayloadMapper<HotpEnrollmentData>;
+  } | null => {
     if (
       this.generateOnServerFormControl.invalid ||
       this.otpLengthFormControl.invalid ||
@@ -116,7 +134,7 @@ export class EnrollHotpComponent implements OnInit {
       if (!this.generateOnServerFormControl.value) {
         this.otpKeyFormControl.markAsTouched();
       }
-      return of(null);
+      return null;
     }
 
     const enrollmentData: HotpEnrollmentOptions = {
@@ -130,9 +148,26 @@ export class EnrollHotpComponent implements OnInit {
     if (!enrollmentData.generateOnServer) {
       enrollmentData.otpKey = this.otpKeyFormControl.value?.trim() ?? "";
     }
-    return this.tokenService.enrollToken({
+    return {
       data: enrollmentData,
       mapper: this.enrollmentMapper
-    });
+    };
   };
+
+  private _disableFormControls(): void {
+    this.generateOnServerFormControl.disable();
+    this.otpLengthFormControl.disable();
+    this.otpKeyFormControl.disable();
+    this.hashAlgorithmFormControl.disable();
+  }
+
+  private _enableFormControls(): void {
+    this.generateOnServerFormControl.enable();
+    this.otpLengthFormControl.enable();
+    if (!this.generateOnServerFormControl.value) {
+      this.otpKeyFormControl.enable();
+    }
+    this.hashAlgorithmFormControl.enable();
+    this._applyPolicies();
+  }
 }
