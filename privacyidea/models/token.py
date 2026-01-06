@@ -19,7 +19,7 @@ import binascii
 import logging
 from typing import Optional, List
 
-from sqlalchemy import Sequence, Unicode, Integer, Boolean, select
+from sqlalchemy import Sequence, Unicode, Integer, Boolean, select, UnicodeText
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from privacyidea.lib.crypto import (geturandom, encrypt, hexlify_and_unicode,
@@ -457,7 +457,7 @@ class TokenInfo(MethodsMixin, db.Model):
     __tablename__ = 'tokeninfo'
     id: Mapped[int] = mapped_column(Integer, Sequence("tokeninfo_seq"), primary_key=True)
     Key: Mapped[str] = mapped_column(Unicode(255), nullable=False)
-    Value: Mapped[Optional[str]] = mapped_column(Unicode(2000), default='')
+    Value: Mapped[Optional[str]] = mapped_column(UnicodeText(), default='')
     Type: Mapped[Optional[str]] = mapped_column(Unicode(100), default='')
     Description: Mapped[Optional[str]] = mapped_column(Unicode(2000), default='')
     token_id: Mapped[Optional[int]] = mapped_column(Integer, db.ForeignKey('token.id'), index=True)
