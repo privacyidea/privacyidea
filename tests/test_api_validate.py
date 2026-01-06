@@ -5807,9 +5807,9 @@ class AChallengeResponse(MyApiTestCase):
         # If we wait long enough, the challenge has expired,
         # while the HOTP value 287082 in itself would still be valid.
         # However, the authentication with the expired transaction_id has to fail
-        new_utcnow = datetime.datetime.utcnow().replace(tzinfo=None) + datetime.timedelta(minutes=12)
+        new_utcnow = datetime.datetime.now(tz=timezone.utc).replace(tzinfo=None) + datetime.timedelta(minutes=12)
         new_now = datetime.datetime.now().replace(tzinfo=None) + datetime.timedelta(minutes=12)
-        with mock.patch('privacyidea.models.challenge.datetime') as mock_datetime:
+        with mock.patch('privacyidea.models.utils.datetime') as mock_datetime:
             mock_datetime.utcnow.return_value = new_utcnow
             mock_datetime.now.return_value = new_now
             with self.app.test_request_context('/validate/check',
