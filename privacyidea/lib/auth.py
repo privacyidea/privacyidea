@@ -77,18 +77,10 @@ def create_db_admin(username, email=None, password=None):
     admin = db.session.execute(stmt).scalar_one_or_none()
 
     if admin:
-        update_dict = {}
         if email:
-            update_dict["email"] = email
+            admin.email = email
         if pw_dig:
-            update_dict["password"] = pw_dig
-
-        update_stmt = (
-            update(Admin)
-            .where(Admin.username == username)
-            .values(**update_dict)
-        )
-        db.session.execute(update_stmt)
+            admin.password = pw_dig
     else:
         user = Admin(email=email, username=username, password=pw_dig)
         db.session.add(user)

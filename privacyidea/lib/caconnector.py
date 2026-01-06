@@ -115,15 +115,9 @@ def save_caconnector(params: dict) -> int:
         config = db.session.execute(stmt).scalar_one_or_none()
 
         if config:
-            update_stmt = (
-                update(CAConnectorConfig)
-                .where(
-                    CAConnectorConfig.caconnector_id == connector_id,
-                    CAConnectorConfig.Key == key,
-                )
-                .values(Value=value, Type=types.get(key, ""), Description=desc.get(key, ""))
-            )
-            db.session.execute(update_stmt)
+            config.Value = value
+            config.Type = types.get(key, "")
+            config.Description = desc.get(key, "")
         else:
             config = CAConnectorConfig(caconnector_id=connector_id,
                                        Key=key,

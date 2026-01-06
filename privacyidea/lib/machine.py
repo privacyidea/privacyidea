@@ -181,6 +181,7 @@ def attach_token(serial, application, hostname=None, machine_id=None, resolver_n
     machine_resolver_id = db.session.execute(resolver_stmt).scalar_one_or_none()
     token_stmt = select(Token.id).where(Token.serial == serial)
     token_id = db.session.execute(token_stmt).scalar_one_or_none()
+    # TODO: Check if the machine token already exists? Can a token be attached to multiple machines?
     # Now we have all data to create the MachineToken
     machine_token = MachineToken(machineresolver_id=machine_resolver_id, machine_id=machine_id, token_id=token_id,
                                  application=application)
@@ -243,9 +244,12 @@ def detach_token(serial, application, hostname=None, machine_id=None, resolver_n
                     if machine_token.get("options").get(key) != value:
                         delete_mt = False
                 if delete_mt:
-                    machine_token = db.session.get(MachineToken, machine_token.get("id"))
-                    db.session.delete(machine_token)
-                    r += 1
+                    if machine_token.get("id") is not None:
+                        machine_token = db.session.get(MachineToken, machine_token.get("id"))
+                        db.session.delete(machine_token)
+                        r += 1
+                    else:
+                        log.debug("Machine token ID is None, can not delete machine token.")
     save_config_timestamp()
     db.session.commit()
     return r
@@ -288,17 +292,7 @@ def add_option(machine_token_id=None, machine_id=None, resolver_name=None,
 
             if existing_option:
                 # update existing option
-                update_stmt = (
-                    update(MachineTokenOptions)
-                    .where(
-                        and_(
-                            MachineTokenOptions.machinetoken_id == machine_token_id,
-                            MachineTokenOptions.mt_key == option_name
-                        )
-                    )
-                    .values(mt_value=option_value)
-                )
-                db.session.execute(update_stmt)
+                existing_option.mt_value = option_value
             else:
                 # create new option
                 option = MachineTokenOptions(machine_token_id, option_name, option_value)
@@ -331,10 +325,11 @@ def delete_option(machine_token_id=None, machine_id=None, resolver_name=None,
 
     res = 0
     for machine_token_id in machine_token_ids:
-        delete_stmt = delete(MachineTokenOptions).where(MachineTokenOptions.machinetoken_id == machine_token_id,
+        select_stmt = select(MachineTokenOptions).where(MachineTokenOptions.machinetoken_id == machine_token_id,
                                                         MachineTokenOptions.mt_key == key)
-        result = db.session.execute(delete_stmt)
-        res += result.rowcount
+        option = db.session.scalars(select_stmt).unique().first()
+        db.session.delete(option)
+        res += 1
     db.session.commit()
     return res
 

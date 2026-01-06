@@ -348,18 +348,9 @@ class User(object):
         existing_attribute = db.session.execute(stmt).scalar_one_or_none()
 
         if existing_attribute:
+            existing_attribute.Value = attrvalue
+            existing_attribute.Type = attrtype
             attribute_id = existing_attribute.id
-            update_stmt = (
-                update(CustomUserAttribute)
-                .where(
-                    CustomUserAttribute.user_id == self.uid,
-                    CustomUserAttribute.resolver == self.resolver,
-                    CustomUserAttribute.realm_id == self.realm_id,
-                    CustomUserAttribute.Key == attrkey,
-                )
-                .values(Value=attrvalue, Type=attrtype)
-            )
-            db.session.execute(update_stmt)
         else:
             new_attribute = CustomUserAttribute(user_id=self.uid, resolver=self.resolver, realm_id=self.realm_id,
                                      Key=attrkey, Value=attrvalue, Type=attrtype)

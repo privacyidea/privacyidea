@@ -239,23 +239,26 @@ def set_event(name=None, event=None, handlermodule=None, action=None, conditions
     existing_event_handler = db.session.scalars(stmt_exists).one_or_none()
 
     if existing_event_handler:
-        stmt_update = update(EventHandler).where(EventHandler.id == id)
-        stmt_update = stmt_update.values(event=event, handlermodule=handlermodule, action=action, ordering=ordering,
-                                         active=active, position=position)
-        db.session.execute(stmt_update)
-        db.session.commit()
+        if event is not None:
+            existing_event_handler.event = event
+        if handlermodule is not None:
+            existing_event_handler.handlermodule = handlermodule
+        existing_event_handler.action = action or ""
+        if ordering is not None:
+            existing_event_handler.ordering = ordering
+        if active is not None:
+            existing_event_handler.active = active
+        existing_event_handler.position = position or ""
     else:
         id = EventHandler(name=name, event=event, handlermodule=handlermodule, action=action, ordering=ordering,
                           id=id, active=active, position=position).save()
     save_config_timestamp()
 
-    # TODO: Optimize this
     # --- Event Handler Options ---
     # Delete existing options
     options = options or {}
     delete_stmt = delete(EventHandlerOption).where(EventHandlerOption.eventhandler_id == id)
     db.session.execute(delete_stmt)
-    # db.session.commit()
 
     # Add the options to the event handler
     for k, v in options.items():
@@ -270,6 +273,7 @@ def set_event(name=None, event=None, handlermodule=None, action=None, conditions
     for k, v in conditions.items():
         db.session.add(EventHandlerCondition(eventhandler_id=id, Key=k, Value=v))
 
+    db.session.commit()
     return id
 
 

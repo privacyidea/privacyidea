@@ -118,19 +118,9 @@ def save_resolver(params):
         existing_config = db.session.execute(stmt).scalar_one_or_none()
 
         if existing_config:
-            update_stmt = (
-                update(MachineResolverConfig)
-                .where(
-                    MachineResolverConfig.resolver_id == resolver_id,
-                    MachineResolverConfig.Key == key
-                )
-                .values(
-                    Value=value,
-                    Type=types.get(key, ""),
-                    Description=desc.get(key, "")
-                )
-            )
-            db.session.execute(update_stmt)
+            existing_config.Value = value
+            existing_config.Type = types.get(key, "")
+            existing_config.Description = desc.get(key, "")
         else:
             config = MachineResolverConfig(resolver_id=resolver_id,
                                            Key=key,
