@@ -664,7 +664,7 @@ class TokengroupTestCase(MyTestCase):
         self.assertEqual(len(tok1.tokengroup_list), 2)
         self.assertEqual(len(tok2.tokengroup_list), 1)
 
-        self.assertEqual(tok2.tokengroup_list[0].tokengroup.name, "gruppe2")
+        self.assertEqual(tok2.tokengroup_list[0].name, "gruppe2")
 
         # cleanup
         remove_token(tok1.serial)

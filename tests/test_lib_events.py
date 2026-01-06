@@ -3849,7 +3849,7 @@ class TokenEventTestCase(MyTestCase):
         tok = get_tokens(serial="SPASS01")[0]
         self.assertEqual(1, len(tok.token.tokengroup_list))
         tg = tok.token.tokengroup_list[0]
-        self.assertEqual(tg.tokengroup.name, "group1")
+        self.assertEqual(tg.name, "group1")
 
         # now remove the tokengroup
         t_handler = TokenEventHandler()
