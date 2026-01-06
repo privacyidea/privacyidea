@@ -23,7 +23,6 @@ import { take } from "rxjs";
 import { AbstractDialogComponent } from "../../components/shared/dialog/abstract-dialog/abstract-dialog.component";
 
 export interface DialogServiceInterface {
-  openDialogs: Set<MatDialogRef<any, any>>;
   closeDialog<R>(ref: MatDialogRef<any, R>, result?: R): boolean;
   openDialog<T, R>(args: {
     component: ComponentType<AbstractDialogComponent<T, R>>;

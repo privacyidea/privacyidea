@@ -18,25 +18,43 @@
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 
-import { SimpleConfirmationDialogComponent } from "./confirmation-dialog.component";
-import { MAT_DIALOG_DATA } from "@angular/material/dialog";
+import { SimpleConfirmationDialogComponent, SimpleConfirmationDialogData } from "./confirmation-dialog.component";
+import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
+import { MatDialogRefMock } from "../../../../../testing/mat-dialog-ref-mock";
 
 describe("ConfirmationDialogComponent", () => {
   let component: SimpleConfirmationDialogComponent;
   let fixture: ComponentFixture<SimpleConfirmationDialogComponent>;
 
   beforeEach(async () => {
+    const mockValue: SimpleConfirmationDialogData = {
+      title: "Confirm Deletion",
+      confirmAction: {
+        type: "destruct",
+        label: "Delete",
+        value: true,
+        closeOnAction: true
+      },
+      cancelAction: {
+        type: "cancel",
+        label: "Cancel",
+        value: false,
+        closeOnAction: true
+      },
+      items: ["Item 1", "Item 2", "Item 3"],
+      itemType: "items"
+    };
+
     await TestBed.configureTestingModule({
       imports: [SimpleConfirmationDialogComponent],
       providers: [
         {
           provide: MAT_DIALOG_DATA,
-          useValue: {
-            serialList: ["Mock serial"],
-            title: "Mock title",
-            action: "Mock action",
-            type: "Mock type"
-          }
+          useValue: mockValue
+        },
+        {
+          provide: MatDialogRef,
+          useClass: MatDialogRefMock
         }
       ]
     }).compileComponents();

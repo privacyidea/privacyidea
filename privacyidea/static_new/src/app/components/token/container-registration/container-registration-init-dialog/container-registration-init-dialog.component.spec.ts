@@ -18,9 +18,10 @@
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { ContainerRegistrationInitDialogComponent } from "./container-registration-init-dialog.component";
-import { MAT_DIALOG_DATA } from "@angular/material/dialog";
+import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { By } from "@angular/platform-browser";
 import { NO_ERRORS_SCHEMA, signal } from "@angular/core";
+import { MatDialogRefMock } from "../../../../../testing/mat-dialog-ref-mock";
 
 describe("ContainerRegistrationInitDialogComponent", () => {
   let component: ContainerRegistrationInitDialogComponent;
@@ -37,7 +38,10 @@ describe("ContainerRegistrationInitDialogComponent", () => {
     beforeEach(async () => {
       await TestBed.configureTestingModule({
         imports: [ContainerRegistrationInitDialogComponent],
-        providers: [{ provide: MAT_DIALOG_DATA, useValue: mockData }],
+        providers: [
+          { provide: MAT_DIALOG_DATA, useValue: mockData },
+          { provide: MatDialogRef, useClass: MatDialogRefMock }
+        ],
         schemas: [NO_ERRORS_SCHEMA]
       }).compileComponents();
 
@@ -53,6 +57,7 @@ describe("ContainerRegistrationInitDialogComponent", () => {
 
     it("should render Register button", () => {
       const button = fixture.debugElement.query(By.css("button[mat-button]:not([mat-dialog-close])"));
+      expect(button).toBeTruthy();
       expect(button.nativeElement.textContent).toContain("Register");
     });
 

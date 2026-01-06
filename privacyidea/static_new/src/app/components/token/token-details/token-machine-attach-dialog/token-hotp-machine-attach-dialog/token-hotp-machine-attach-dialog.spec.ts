@@ -137,9 +137,14 @@ describe("TokenHotpMachineAssignDialogComponent", () => {
     expect(dialogRef.close).toHaveBeenCalledWith(returned$);
   });
 
-  it("onCancel: closes with null", () => {
-    component.onCancel();
-    expect(dialogRef.close).toHaveBeenCalledWith(null);
+  it("close: closes with undefined", () => {
+    (component as any).close();
+    expect(dialogRef.close).toHaveBeenCalledWith(undefined);
+  });
+
+  it("close: closes with given value", () => {
+    (component as any).close("test-value");
+    expect(dialogRef.close).toHaveBeenCalledWith("test-value");
   });
 
   describe("machineValidator", () => {

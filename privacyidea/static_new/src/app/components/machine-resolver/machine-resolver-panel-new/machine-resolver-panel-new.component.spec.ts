@@ -91,9 +91,9 @@ describe("MachineResolverPanelNewComponent", () => {
     jest.spyOn(panel, "close");
     jest.spyOn(panel, "open");
     component.newMachineResolver.set({ ...component.newMachineResolver(), resolvername: "test" });
-    dialogServiceMock.confirm.mockReturnValue(Promise.resolve(true));
+    dialogServiceMock.openDialog.mockReturnValue(Promise.resolve(true));
     component.handleCollapse(panel);
-    expect(dialogServiceMock.confirm).toHaveBeenCalled();
+    expect(dialogServiceMock.openDialog).toHaveBeenCalled();
   });
 
   it("should check if machineResolver can be saved", () => {

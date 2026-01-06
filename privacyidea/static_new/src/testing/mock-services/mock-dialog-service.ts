@@ -18,18 +18,25 @@
  **/
 
 import { DialogServiceInterface } from "../../app/services/dialog/dialog.service";
-import { signal } from "@angular/core";
+import { MatDialogRefMock } from "../mat-dialog-ref-mock";
+
+// closeDialog<R>(ref: MatDialogRef<any, R>, result?: R): boolean;
+// openDialog<T, R>(args: {
+//   component: ComponentType<AbstractDialogComponent<T, R>>;
+//   data?: T;
+//   configOverride?: Partial<MatDialogConfig<T>>;
+// }): MatDialogRef<T, R>;
+
+// closeLatestDialog(): void;
+// closeAllDialogs(): void;
+// isAnyDialogOpen(): boolean;
+// isDialogOpen(ref: MatDialogRef<any>): boolean;
 
 export class MockDialogService implements DialogServiceInterface {
-  isSelfServing = signal<boolean>(false);
-  tokenEnrollmentFirstStepRef = null;
-  isTokenEnrollmentFirstStepDialogOpen = false;
-  tokenEnrollmentLastStepRef = null;
-  isTokenEnrollmentLastStepDialogOpen = false;
-  openTokenEnrollmentFirstStepDialog = jest.fn().mockReturnValue(undefined);
-  closeTokenEnrollmentFirstStepDialog = jest.fn().mockReturnValue(undefined);
-  openTokenEnrollmentLastStepDialog = jest.fn().mockReturnValue(undefined);
-  closeTokenEnrollmentLastStepDialog = jest.fn().mockReturnValue(undefined);
-  confirm = jest.fn().mockResolvedValue(true);
+  closeDialog = jest.fn().mockReturnValue(true);
+  openDialog = jest.fn().mockReturnValue(new MatDialogRefMock());
+  closeLatestDialog = jest.fn();
+  closeAllDialogs = jest.fn();
+  isDialogOpen = jest.fn().mockReturnValue(false);
   isAnyDialogOpen = jest.fn().mockReturnValue(false);
 }

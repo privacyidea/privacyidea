@@ -27,7 +27,9 @@
       @for (action of actions(); track $index) {
         <button
           class="pi-btn"
-          [class.dialog-action-button-default]="action.type === 'confirm' || action.type === 'auxiliary'"
+          [class.dialog-action-button-default]="
+            action.type === 'confirm' || action.type === 'auxiliary' || !action.type
+          "
           [class.dialog-action-button-destruct]="action.type === 'destruct'"
           [class.dialog-action-button-cancel]="action.type === 'cancel'"
           (click)="onActionClick(action)"

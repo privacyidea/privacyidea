@@ -18,10 +18,11 @@
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { ContainerRegistrationFinalizeDialogComponent } from "./container-registration-finalize-dialog.component";
-import { MAT_DIALOG_DATA } from "@angular/material/dialog";
+import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { By } from "@angular/platform-browser";
 import { NO_ERRORS_SCHEMA, signal } from "@angular/core";
 import { provideHttpClient } from "@angular/common/http";
+import { MatDialogRefMock } from "../../../../../testing/mat-dialog-ref-mock";
 
 const detectChangesStable = async (fixture: ComponentFixture<any>) => {
   fixture.detectChanges();
@@ -53,7 +54,11 @@ describe("ContainerRegistrationFinalizeDialogComponent", () => {
     await TestBed.resetTestingModule();
     await TestBed.configureTestingModule({
       imports: [ContainerRegistrationFinalizeDialogComponent],
-      providers: [provideHttpClient(), { provide: MAT_DIALOG_DATA, useValue: mockData }],
+      providers: [
+        provideHttpClient(),
+        { provide: MAT_DIALOG_DATA, useValue: mockData },
+        { provide: MatDialogRef, useClass: MatDialogRefMock }
+      ],
       schemas: [NO_ERRORS_SCHEMA]
     }).compileComponents();
 
@@ -74,10 +79,14 @@ describe("ContainerRegistrationFinalizeDialogComponent", () => {
 
   it("should render 'Container Rollover' title when rollover is true", async () => {
     const rolloverData = signal({ ...mockData(), rollover: true });
-    await TestBed.resetTestingModule();
+    TestBed.resetTestingModule();
     await TestBed.configureTestingModule({
       imports: [ContainerRegistrationFinalizeDialogComponent],
-      providers: [provideHttpClient(), { provide: MAT_DIALOG_DATA, useValue: rolloverData }],
+      providers: [
+        provideHttpClient(),
+        { provide: MAT_DIALOG_DATA, useValue: rolloverData },
+        { provide: MatDialogRef, useClass: MatDialogRefMock }
+      ],
       schemas: [NO_ERRORS_SCHEMA]
     }).compileComponents();
     fixture = TestBed.createComponent(ContainerRegistrationFinalizeDialogComponent);

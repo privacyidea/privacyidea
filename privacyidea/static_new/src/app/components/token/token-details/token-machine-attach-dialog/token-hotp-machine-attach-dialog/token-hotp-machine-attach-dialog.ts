@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, inject, linkedSignal, signal, WritableSignal } from "@angular/core";
+import { Component, inject } from "@angular/core";
 import {
   AbstractControl,
   FormControl,
@@ -26,18 +26,11 @@ import {
   Validators
 } from "@angular/forms";
 import { MatOptionModule } from "@angular/material/core";
-import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from "@angular/material/dialog";
-import {
-  ApplicationService,
-  ApplicationServiceInterface
-} from "../../../../../services/application/application.service";
+import { MatDialogModule } from "@angular/material/dialog";
 import { Machine, MachineService, MachineServiceInterface } from "../../../../../services/machine/machine.service";
-import { UserService, UserServiceInterface } from "../../../../../services/user/user.service";
-
 import { MatAutocompleteModule } from "@angular/material/autocomplete";
 import { MatDividerModule } from "@angular/material/divider";
 import { MatSelectModule } from "@angular/material/select";
-
 import { MatButtonModule } from "@angular/material/button";
 import { MatInputModule } from "@angular/material/input";
 import { Observable } from "rxjs";
