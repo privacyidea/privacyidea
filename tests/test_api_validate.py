@@ -1513,7 +1513,7 @@ class ValidateAPITestCase(MyApiTestCase):
         pol.save()
 
         # create the challenge by authenticating with the OTP PIN
-        with Replace('privacyidea.models.challenge.datetime',
+        with Replace('privacyidea.models.utils.datetime',
                      test_datetime(2020, 6, 13, 1, 2, 3,
                                    tzinfo=datetime.timezone(datetime.timedelta(hours=+5)))):
             with self.app.test_request_context('/validate/check',

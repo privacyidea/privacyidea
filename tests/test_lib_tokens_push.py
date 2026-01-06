@@ -1590,7 +1590,7 @@ class PushTokenTestCase(MyTestCase):
                             'timestamp': timestamp_str,
                             'signature': b32encode(signature)}
         # poll for challenges
-        with mock.patch('privacyidea.models.challenge._utc_now',
+        with mock.patch('privacyidea.models.utils.utc_now',
                         return_value=timestamp_polling), mock.patch(
             'privacyidea.lib.tokens.pushtoken.datetime') as mock_dt2:
             mock_dt2.now.return_value = timestamp + timedelta(seconds=15)
@@ -1602,7 +1602,7 @@ class PushTokenTestCase(MyTestCase):
         # we need to create a challenge which we can check for with polling
         # use a given time for the challenge (15 seconds before the poll)
         challenge_timestamp = timestamp - timedelta(seconds=15)
-        with mock.patch('privacyidea.models.challenge._utc_now', return_value=challenge_timestamp.replace(tzinfo=None)):
+        with mock.patch('privacyidea.models.utils.utc_now', return_value=challenge_timestamp.replace(tzinfo=None)):
             challenge = b32encode_and_unicode(geturandom())
             db_challenge = Challenge(serial, challenge=challenge)
             db_challenge.save()
@@ -1611,7 +1611,7 @@ class PushTokenTestCase(MyTestCase):
 
         # now check that we receive the challenge when polling
         # since we mock the time we can use the same request data
-        with mock.patch('privacyidea.models.challenge._utc_now', return_value=timestamp_polling), mock.patch(
+        with mock.patch('privacyidea.models.utils.utc_now', return_value=timestamp_polling), mock.patch(
                 'privacyidea.lib.tokens.pushtoken.datetime') as mock_dt2:
             mock_dt2.now.return_value = timestamp + timedelta(seconds=15)
             res = PushTokenClass.api_endpoint(request, g)
@@ -1633,7 +1633,7 @@ class PushTokenTestCase(MyTestCase):
         # Now mark the challenge as answered so we receive an empty list
         db_challenge.set_otp_status(True)
         db_challenge.save()
-        with mock.patch('privacyidea.models.challenge._utc_now',
+        with mock.patch('privacyidea.models.utils.utc_now',
                         return_value=timestamp_polling), mock.patch(
                 'privacyidea.lib.tokens.pushtoken.datetime') as mock_dt2:
             mock_dt2.now.return_value = timestamp + timedelta(seconds=15)
@@ -1643,7 +1643,7 @@ class PushTokenTestCase(MyTestCase):
 
         # disallow polling through a policy
         set_policy('push_poll', SCOPE.AUTH, action=f'{PUSH_ACTION.ALLOW_POLLING}={PushAllowPolling.DENY}')
-        with mock.patch('privacyidea.models.challenge._utc_now',
+        with mock.patch('privacyidea.models.utils.utc_now',
                         return_value=timestamp_polling), mock.patch(
                 'privacyidea.lib.tokens.pushtoken.datetime') as mock_dt2:
             mock_dt2.now.return_value = timestamp + timedelta(seconds=15)
@@ -1654,7 +1654,7 @@ class PushTokenTestCase(MyTestCase):
         # disallow polling based on a per token configuration
         set_policy('push_poll', SCOPE.AUTH, action=f'{PUSH_ACTION.ALLOW_POLLING}={PushAllowPolling.TOKEN}')
         # If no tokeninfo is set, allow polling
-        with mock.patch('privacyidea.models.challenge._utc_now',
+        with mock.patch('privacyidea.models.utils.utc_now',
                         return_value=timestamp_polling), mock.patch(
                 'privacyidea.lib.tokens.pushtoken.datetime') as mock_dt2:
             mock_dt2.now.return_value = timestamp + timedelta(seconds=15)
@@ -1664,7 +1664,7 @@ class PushTokenTestCase(MyTestCase):
 
         # now set the tokeninfo POLLING_ALLOWED to 'False'
         token.add_tokeninfo(POLLING_ALLOWED, 'False')
-        with mock.patch('privacyidea.models.challenge._utc_now',
+        with mock.patch('privacyidea.models.utils.utc_now',
                         return_value=timestamp_polling), mock.patch(
                 'privacyidea.lib.tokens.pushtoken.datetime') as mock_dt2:
             mock_dt2.now.return_value = timestamp + timedelta(seconds=15)
@@ -1672,7 +1672,7 @@ class PushTokenTestCase(MyTestCase):
 
         # Explicitly allow polling for this token
         token.add_tokeninfo(POLLING_ALLOWED, 'True')
-        with mock.patch('privacyidea.models.challenge._utc_now',
+        with mock.patch('privacyidea.models.utils.utc_now',
                         return_value=timestamp_polling), mock.patch(
                 'privacyidea.lib.tokens.pushtoken.datetime') as mock_dt2:
             mock_dt2.now.return_value = timestamp + timedelta(seconds=15)
@@ -1685,7 +1685,7 @@ class PushTokenTestCase(MyTestCase):
         token.add_tokeninfo(POLLING_ALLOWED, 'False')
         set_policy('push_poll', SCOPE.AUTH,
                    action=f'{PUSH_ACTION.ALLOW_POLLING}={PushAllowPolling.ALLOW}')
-        with mock.patch('privacyidea.models.challenge._utc_now',
+        with mock.patch('privacyidea.models.utils.utc_now',
                         return_value=timestamp_polling), mock.patch(
                 'privacyidea.lib.tokens.pushtoken.datetime') as mock_dt2:
             mock_dt2.now.return_value = timestamp + timedelta(seconds=15)
@@ -1695,7 +1695,7 @@ class PushTokenTestCase(MyTestCase):
 
         # this should also work if there is no ALLOW_POLLING policy
         delete_policy('push_poll')
-        with mock.patch('privacyidea.models.challenge._utc_now',
+        with mock.patch('privacyidea.models.utils.utc_now',
                         return_value=timestamp_polling), mock.patch(
                 'privacyidea.lib.tokens.pushtoken.datetime') as mock_dt2:
             mock_dt2.now.return_value = timestamp + timedelta(seconds=15)
@@ -1710,7 +1710,7 @@ class PushTokenTestCase(MyTestCase):
                             'timestamp': timestamp_str,
                             'signature': b32encode(b'no signature check')}
         # poll for challenges
-        with mock.patch('privacyidea.models.challenge._utc_now',
+        with mock.patch('privacyidea.models.utils.utc_now',
                         return_value=timestamp_polling), mock.patch(
                 'privacyidea.lib.tokens.pushtoken.datetime') as mock_dt2:
             mock_dt2.now.return_value = timestamp + timedelta(seconds=15)
@@ -1725,7 +1725,7 @@ class PushTokenTestCase(MyTestCase):
                             'timestamp': timestamp_str,
                             'signature': b32encode(wrong_signature)}
         # poll for challenges
-        with mock.patch('privacyidea.models.challenge._utc_now',
+        with mock.patch('privacyidea.models.utils.utc_now',
                         return_value=timestamp_polling), mock.patch(
                 'privacyidea.lib.tokens.pushtoken.datetime') as mock_dt2:
             mock_dt2.now.return_value = timestamp + timedelta(seconds=15)
@@ -1741,7 +1741,7 @@ class PushTokenTestCase(MyTestCase):
                             'timestamp': timestamp_str,
                             'signature': b32encode(wrong_signature2)}
         # poll for challenges
-        with mock.patch('privacyidea.models.challenge._utc_now',
+        with mock.patch('privacyidea.models.utils.utc_now',
                         return_value=timestamp_polling), mock.patch(
                 'privacyidea.lib.tokens.pushtoken.datetime') as mock_dt2:
             mock_dt2.now.return_value = timestamp + timedelta(seconds=15)
@@ -1769,7 +1769,7 @@ class PushTokenTestCase(MyTestCase):
                             'timestamp': timestamp_str,
                             'signature': b32encode(signature)}
         # poll for challenges
-        with mock.patch('privacyidea.models.challenge._utc_now',
+        with mock.patch('privacyidea.models.utils.utc_now',
                         return_value=timestamp_polling), mock.patch(
                 'privacyidea.lib.tokens.pushtoken.datetime') as mock_dt2:
             mock_dt2.now.return_value = timestamp + timedelta(seconds=15)
@@ -1783,7 +1783,7 @@ class PushTokenTestCase(MyTestCase):
                             'timestamp': timestamp_str,
                             'signature': b32encode(signature)}
         # poll for challenges
-        with mock.patch('privacyidea.models.challenge._utc_now',
+        with mock.patch('privacyidea.models.utils.utc_now',
                         return_value=timestamp_polling), mock.patch(
                 'privacyidea.lib.tokens.pushtoken.datetime') as mock_dt2:
             mock_dt2.now.return_value = timestamp + timedelta(seconds=15)
