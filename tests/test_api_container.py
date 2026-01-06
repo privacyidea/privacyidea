@@ -4320,7 +4320,8 @@ class APIContainerSynchronization(APIContainerTest):
                        "user": "hans"}
         result = self.request_assert_success("/token/init", hotp_params, self.at, "POST")
         initial_enroll_url = result["detail"]["googleurl"]["value"]
-        self.assertIn("pin=True", initial_enroll_url)
+        self.assertIn("force_app_pin=True", initial_enroll_url)
+        self.assertIn("app_force_unlock=pin", initial_enroll_url)
         self.assertIn(f"issuer={self.realm1}", initial_enroll_url)
         self.assertIn("hans", initial_enroll_url)
         hotp = get_one_token(serial=result["detail"]["serial"])
@@ -4363,7 +4364,8 @@ class APIContainerSynchronization(APIContainerTest):
                 hotp_enroll_url = token
                 break
         self.assertNotEqual(initial_enroll_url, hotp_enroll_url)
-        self.assertIn("pin=True", hotp_enroll_url)
+        self.assertIn("force_app_pin=True", hotp_enroll_url)
+        self.assertIn("app_force_unlock=pin", hotp_enroll_url)
         self.assertIn(f"issuer={self.realm1}", hotp_enroll_url)
         self.assertIn("hans", hotp_enroll_url)
 

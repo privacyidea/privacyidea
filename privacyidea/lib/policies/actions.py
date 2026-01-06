@@ -30,6 +30,7 @@ class PolicyAction:
     ENABLE = "enable"
     ENCRYPTPIN = "encrypt_pin"
     FORCE_APP_PIN = "force_app_pin"
+    APP_FORCE_UNLOCK = "app_force_unlock"
     GETSERIAL = "getserial"
     GETRANDOM = "getrandom"
     HIDE_AUDIT_COLUMNS = "hide_audit_columns"

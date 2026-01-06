@@ -411,6 +411,7 @@ $button-low-contrast-variant: linear-gradient(
   height: 24px;
   width: 24px;
 }
+
 .mat-mdc-outlined-button[class*="action-button-delete"] {
   --mat-outlined-button-state-layer-color: var(--rose-bg);
   --mat-outlined-button-ripple-color: var(--rose-bg);
@@ -455,27 +456,90 @@ $button-low-contrast-variant: linear-gradient(
   }
 }
 
-.small-icon-button {
-   width: 36px !important;
-   height: 36px !important;
-   padding: 0px !important;
-   display: inline-flex !important;
-   align-items: center;
-   justify-content: center;
+.action-button-active {
+  @extend %action-button-base;
+  background-color: var(--mat-sys-primary-base-active);
+  color: var(--mat-sys-on-primary);
 
-   & > *[role=img] {
+  &:not([disabled]) {
+    @include action-button-variant(var(--mat-sys-on-primary), var(--mat-sys-primary));
+  }
+}
+
+.filter-button {
+  top: 0;
+  right: 2px;
+  height: 24px;
+  width: 24px;
+  padding: 0;
+
+  span.mat-mdc-button-touch-target {
+    width: 24px !important;
+    height: 24px !important;
+  }
+}
+
+.sort-button {
+  top: 0;
+  right: 2px;
+  height: 24px;
+  width: 24px;
+  padding: 0;
+
+  span.mat-mdc-button-touch-target {
+    width: 24px !important;
+    height: 24px !important;
+  }
+}
+
+.input-attached-button-active {
+  background-color: var(--mat-sys-primary-base-active);
+  color: var(--mat-sys-on-primary);
+}
+
+.input-attached-button-hover:hover:not(:disabled):not(.input-attached-button-active) {
+  background-color: var(--mat-sys-primary-base-hover);
+  color: var(--mat-sys-on-primary);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.input-attached-button {
+  height: 58px;
+  width: 35px;
+  margin-bottom: 18px;
+  padding: 0;
+  border: none;
+  background-color: var(--mat-sys-surface-container-high);
+  border-radius: 0 var(--three-quarters-global-padding) var(--three-quarters-global-padding) 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: background-color 0.2s ease-in-out;
+  flex-shrink: 0;
+
+  .small-icon-button {
+    width: 36px !important;
+    height: 36px !important;
+    padding: 0px !important;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+
+    & > *[role="img"] {
       width: 18px;
       height: 18px;
       font-size: 18px;
 
       svg {
-         width: 18px;
-         height: 18px;
+        width: 18px;
+        height: 18px;
       }
-   }
+    }
 
-   .mat-mdc-button-touch-target {
+    .mat-mdc-button-touch-target {
       width: 36px !important;
       height: 36px !important;
-   }
+    }
+  }
 }

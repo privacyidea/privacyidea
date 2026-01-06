@@ -20,12 +20,14 @@ import { Component, EventEmitter, inject, Input, OnInit, Output } from "@angular
 import { FormControl, FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 
-import { Observable } from "rxjs";
 import {
-  EnrollmentResponse,
+  TanApiPayloadMapper,
+  TanEnrollmentData
+} from "../../../../mappers/token-api-payload/tan-token-api-payload.mapper";
+import {
+  TokenApiPayloadMapper,
   TokenEnrollmentData
 } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
-import { TanApiPayloadMapper } from "../../../../mappers/token-api-payload/tan-token-api-payload.mapper";
 
 export interface TanEnrollmentOptions extends TokenEnrollmentData {
   type: "tan";
@@ -46,23 +48,31 @@ export class EnrollTanComponent implements OnInit {
   @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
-  @Output() clickEnrollChange = new EventEmitter<
-    (basicOptions: TokenEnrollmentData) => Observable<EnrollmentResponse | null>
+  @Output() enrollmentArgsGetterChange = new EventEmitter<
+    (basicOptions: TokenEnrollmentData) => {
+      data: TanEnrollmentData;
+      mapper: TokenApiPayloadMapper<TanEnrollmentData>;
+    } | null
   >();
 
   ngOnInit(): void {
     this.additionalFormFieldsChange.emit({});
-    this.clickEnrollChange.emit(this.onClickEnroll);
+    this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
   }
 
-  onClickEnroll = (basicOptions: TokenEnrollmentData): Observable<EnrollmentResponse | null> => {
+  enrollmentArgsGetter = (
+    basicOptions: TokenEnrollmentData
+  ): {
+    data: TanEnrollmentData;
+    mapper: TokenApiPayloadMapper<TanEnrollmentData>;
+  } | null => {
     const enrollmentData: TanEnrollmentOptions = {
       ...basicOptions,
       type: "tan"
     };
-    return this.tokenService.enrollToken({
+    return {
       data: enrollmentData,
       mapper: this.enrollmentMapper
-    });
+    };
   };
 }

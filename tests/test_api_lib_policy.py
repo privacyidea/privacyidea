@@ -691,6 +691,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         init_tokenlabel(req)
         # Check, if force_app_pin was added and is True
         self.assertTrue(req.all_data.get('force_app_pin'))
+        self.assertEqual(req.all_data.get(PolicyAction.APP_FORCE_UNLOCK), "pin")
 
         # Check that the force_app_pin policy isn't set for totp token
         req.all_data = {"user": "cornelius",

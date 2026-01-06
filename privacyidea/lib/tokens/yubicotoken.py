@@ -237,5 +237,7 @@ class YubicoTokenClass(TokenClass):
     def import_token(self, token_information: dict):
         """
         Import for this token is not supported.
+
+        Concern that the database token must be deleted manually.
         """
         raise NotImplementedError("Import for Yubico token is not supported.")

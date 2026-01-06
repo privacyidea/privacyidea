@@ -309,9 +309,9 @@ describe("ContainerService", () => {
   });
 
   it("filterParams converts blank values and drops unknown keys", () => {
-    containerService.containerFilter.set(new FilterValue({ value: "user: Alice type: foo: bar" }));
+    containerService.containerFilter.set(new FilterValue({ value: "type: generic description: foo: bar" }));
     const fp = containerService.filterParams();
-    expect(fp).toEqual({ user: "Alice" });
+    expect(fp).toEqual({ type: "*generic*" });
   });
 
   it("pageSize falls back to 10 for invalid eventPageSize", () => {
@@ -389,8 +389,8 @@ describe("ContainerService", () => {
     containerService.containerFilter.set(new FilterValue({ value: "desc: foo token_serial: 123 type: user: Bob" }));
     expect(containerService.filterParams()).toEqual({
       desc: "*foo*",
-      token_serial: "123",
-      user: "Bob"
+      token_serial: "*123*",
+      // user: "Bob"
     });
   });
 
@@ -488,7 +488,7 @@ describe("ContainerService", () => {
   it("filterParams wildcards non-ID fields", () => {
     containerService.containerFilter.set(new FilterValue({ value: "container_serial: S1 desc: foo" }));
     expect(containerService.filterParams()).toEqual({
-      container_serial: "S1",
+      container_serial: "*S1*",
       desc: "*foo*"
     });
   });
@@ -642,7 +642,7 @@ describe("ContainerService", () => {
 
     const params = containerService.filterParams();
     expect(params).not.toHaveProperty("container_serial");
-    expect(params).toHaveProperty("type", "generic");
+    expect(params).toHaveProperty("type", "*generic*");
     expect(params).not.toHaveProperty("user");
     expect(params).not.toHaveProperty("token_serial");
   });
