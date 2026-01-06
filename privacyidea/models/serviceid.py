@@ -15,13 +15,14 @@
 #
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
 import logging
-from sqlalchemy import Sequence
+from typing import Optional
+
+from sqlalchemy import Sequence, Unicode, Integer, select, update
+from sqlalchemy.orm import Mapped, mapped_column
 
 from privacyidea.lib.log import log_with
 from privacyidea.models import db
-
 from privacyidea.models.config import TimestampMethodsMixin
 
 log = logging.getLogger(__name__)
@@ -34,24 +35,11 @@ class Serviceid(TimestampMethodsMixin, db.Model):
     from the privacyIDEA system.
     """
     __tablename__ = 'serviceid'
-    id = db.Column(db.Integer, Sequence("serviceid_seq"), primary_key=True,
-                   nullable=False)
-    name = db.Column(db.Unicode(255), default='',
-                     unique=True, nullable=False)
-    Description = db.Column(db.Unicode(2000), default='')
+    id: Mapped[int] = mapped_column(Integer, Sequence("serviceid_seq"), primary_key=True, nullable=False)
+    name: Mapped[str] = mapped_column(Unicode(255), default='', unique=True, nullable=False)
+    Description: Mapped[Optional[str]] = mapped_column(Unicode(2000), default='')
 
     @log_with(log)
     def __init__(self, servicename, description=None):
         self.name = servicename
         self.Description = description
-
-    def save(self):
-        si = Serviceid.query.filter_by(name=self.name).first()
-        if si is None:
-            return TimestampMethodsMixin.save(self)
-        else:
-            # update
-            Serviceid.query.filter_by(id=si.id).update({'Description': self.Description})
-            ret = si.id
-            db.session.commit()
-        return ret

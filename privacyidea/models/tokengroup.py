@@ -15,15 +15,15 @@
 #
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
 import logging
-from sqlalchemy import Sequence, select
+from typing import List, Optional
 
-from privacyidea.models import db
-from privacyidea.models.config import (TimestampMethodsMixin,
-                                       save_config_timestamp, SAFE_STORE)
+from sqlalchemy import Unicode, Integer, UniqueConstraint, select
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 from privacyidea.lib.log import log_with
-from privacyidea.lib.framework import get_app_config_value
+from privacyidea.models import db
+from privacyidea.models.config import (TimestampMethodsMixin)
 
 log = logging.getLogger(__name__)
 
@@ -34,14 +34,16 @@ class Tokengroup(TimestampMethodsMixin, db.Model):
     A token can then be assigned to several of these tokengroups.
     """
     __tablename__ = 'tokengroup'
-    id = db.Column(db.Integer, Sequence("tokengroup_seq"), primary_key=True,
-                   nullable=False)
-    name = db.Column(db.Unicode(255), default='',
-                     unique=True, nullable=False)
-    Description = db.Column(db.Unicode(2000), default='')
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, nullable=False)
+    name: Mapped[str] = mapped_column(Unicode(255), default='', unique=True, nullable=False)
+    Description: Mapped[Optional[str]] = mapped_column(Unicode(2000), default='')
+
+    # Define relationship back to Token for deletion cascade
+    tokens: Mapped[List['TokenTokengroup']] = relationship('Token', secondary='tokentokengroup',
+                                                           back_populates='tokengroup_list')
 
     @log_with(log)
-    def __init__(self, groupname, description=None):
+    def __init__(self, groupname: str, description: Optional[str] = None):
         self.name = groupname
         self.Description = description
 
@@ -52,24 +54,12 @@ class TokenTokengroup(TimestampMethodsMixin, db.Model):
     A token can be assigned to several different token groups.
     """
     __tablename__ = 'tokentokengroup'
-    __table_args__ = (db.UniqueConstraint('token_id',
-                                          'tokengroup_id',
-                                          name='ttgix_2'),)
-    id = db.Column(db.Integer(), Sequence("tokentokengroup_seq"), primary_key=True)
-    token_id = db.Column(db.Integer(),
-                         db.ForeignKey('token.id'))
-    tokengroup_id = db.Column(db.Integer(),
-                              db.ForeignKey('tokengroup.id'))
-    # This creates an attribute "tokengroup_list" in the Token object
-    token = db.relationship('Token',
-                            lazy='joined',
-                            backref='tokengroup_list')
-    # This creates an attribute "token_list" in the Tokengroup object
-    tokengroup = db.relationship('Tokengroup',
-                                 lazy='joined',
-                                 backref='token_list')
+    __table_args__ = (UniqueConstraint('token_id', 'tokengroup_id', name='ttgix_2'),)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    token_id: Mapped[Optional[int]] = mapped_column(Integer, db.ForeignKey('token.id'))
+    tokengroup_id: Mapped[Optional[int]] = mapped_column(Integer, db.ForeignKey('tokengroup.id'))
 
-    def __init__(self, tokengroup_id=0, token_id=0, tokengroupname=None):
+    def __init__(self, tokengroup_id: int = 0, token_id: int = 0, tokengroupname: Optional[str] = None):
         """
         Create a new TokenTokengroup assignment
         :param tokengroup_id: The id of the token group

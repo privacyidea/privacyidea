@@ -47,7 +47,7 @@ from email.mime.text import MIMEText
 from urllib.request import urlopen
 
 from privacyidea.lib import _
-from privacyidea.lib.auth import get_db_admins, get_db_admin
+from privacyidea.lib.auth import get_db_admin, list_db_admin
 from privacyidea.lib.crypto import get_alphanum_str
 from privacyidea.lib.eventhandler.base import BaseEventHandler
 from privacyidea.lib.framework import get_app_config_value
@@ -177,7 +177,7 @@ class UserNotificationEventHandler(BaseEventHandler):
                 "reply_to " + NOTIFY_TYPE.INTERNAL_ADMIN: {
                     "type": "str",
                     "value": [a.username for a in
-                              get_db_admins()],
+                              list_db_admin()],
                     "visibleIf": "reply_to",
                     "visibleValue":
                         NOTIFY_TYPE.INTERNAL_ADMIN},
@@ -230,7 +230,7 @@ class UserNotificationEventHandler(BaseEventHandler):
                 "To " + NOTIFY_TYPE.INTERNAL_ADMIN: {
                     "type": "str",
                     "value": [a.username for a in
-                              get_db_admins()],
+                              list_db_admin()],
                     "visibleIf": "To",
                     "visibleValue":
                         NOTIFY_TYPE.INTERNAL_ADMIN},

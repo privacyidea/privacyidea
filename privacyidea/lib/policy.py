@@ -172,6 +172,7 @@ import copy
 from datetime import datetime
 from typing import Union, Optional
 
+from sqlalchemy import select, exists
 from werkzeug.datastructures.headers import EnvironHeaders
 
 from .log import log_with
@@ -1204,10 +1205,12 @@ def rename_policy(name: str, new_name: str) -> int:
     :return: The database ID of the renamed policy
     """
     check_policy_name(new_name)
-    policy = Policy.query.filter_by(name=name).first()
+    stmt = select(Policy).where(Policy.name == name)
+    policy = db.session.scalars(stmt).first()
     if not policy:
         raise ParameterError(_("Policy does not exist:") + f" {name}")
-    if Policy.query.filter_by(name=new_name).first():
+    new_name_stmt = select(exists().where(Policy.name == new_name))
+    if db.session.scalar(new_name_stmt):
         raise ParameterError(_("Policy already exists:") + f" {new_name}")
 
     policy.name = new_name
@@ -1241,7 +1244,7 @@ def get_policies(active: Optional[bool] = None, name: Optional[str] = None, scop
     :return: A list of all policies as dictionaries
     """
     policies = []
-    sql_query = Policy.query
+    stmt = select(Policy)
 
     # Filter for all attributes that are strings
     filter_options = {"name": name, "scope": scope, "action": action, "realm": realm, "adminrealm": admin_realm,
@@ -1252,19 +1255,20 @@ def get_policies(active: Optional[bool] = None, name: Optional[str] = None, scop
         if value is not None:
             if "*" in value:
                 value = value.replace("*", "%")
-                sql_query = sql_query.filter(getattr(Policy, attribute).ilike(value))
+                stmt = stmt.filter(getattr(Policy, attribute).ilike(value))
             else:
-                sql_query = sql_query.filter(getattr(Policy, attribute) == value)
+                stmt = stmt.filter(getattr(Policy, attribute) == value)
 
     # Other data types
     if active is not None:
-        sql_query = sql_query.filter(Policy.active.is_(active))
+        stmt = stmt.filter(Policy.active.is_(active))
 
     if priority is not None:
-        sql_query = sql_query.filter(Policy.priority == priority)
+        stmt = stmt.filter(Policy.priority == priority)
 
     # Get policies as dict
-    for policy in sql_query.all():
+    policies_db = db.session.scalars(stmt).unique().all()
+    for policy in policies_db:
         policies.append(policy.get())
 
     return policies
@@ -1384,14 +1388,15 @@ def set_policy(name: Optional[str] = None, scope: Optional[str] = None, action: 
         for condition_tuple in conditions:
             condition = PolicyClass.get_policy_condition_from_tuple(condition_tuple, name)
             conditions_data.append(condition)
-    p1 = Policy.query.filter_by(name=name).first()
+    stmt = select(Policy).where(Policy.name == name)
+    policy = db.session.scalars(stmt).first()
 
     # validate action values
     if action is not None:
         if scope is not None:
             validate_actions(scope, action)
-        elif p1:
-            validate_actions(p1.scope, action)
+        elif policy:
+            validate_actions(policy.scope, action)
         else:
             raise ParameterError("Scope is required to set action values!")
     if isinstance(action, dict):
@@ -1405,56 +1410,60 @@ def set_policy(name: Optional[str] = None, scope: Optional[str] = None, action: 
                 action_list.append(k)
         action = ", ".join(action_list)
 
-    if p1:
+    if policy:
         # The policy already exist, we need to update
         if action is not None:
-            p1.action = action
+            policy.action = action
         if scope is not None:
-            p1.scope = scope
+            policy.scope = scope
         if realm is not None:
-            p1.realm = realm
+            policy.realm = realm
         if adminrealm is not None:
-            p1.adminrealm = adminrealm
+            policy.adminrealm = adminrealm
         if resolver is not None:
-            p1.resolver = resolver
+            policy.resolver = resolver
         if user is not None:
-            p1.user = user
+            policy.user = user
         if adminuser is not None:
-            p1.adminuser = adminuser
+            policy.adminuser = adminuser
         if client is not None:
-            p1.client = client
+            policy.client = client
         if time is not None:
-            p1.time = time
+            policy.time = time
         if priority is not None:
-            p1.priority = priority
+            policy.priority = priority
         if pinode is not None:
-            p1.pinode = pinode
+            policy.pinode = pinode
         if user_agents is not None:
-            p1.user_agents = user_agents
-        p1.active = active
-        p1.check_all_resolvers = check_all_resolvers
-        p1.user_case_insensitive = user_case_insensitive
+            policy.user_agents = user_agents
+        policy.active = active
+        policy.check_all_resolvers = check_all_resolvers
+        policy.user_case_insensitive = user_case_insensitive
         if conditions is not None:
             # only update the conditions if there are any
-            set_policy_conditions(conditions_data, p1)
-        save_config_timestamp()
-        db.session.commit()
-        ret = p1.id
+            set_policy_conditions(conditions_data, policy)
+        ret = policy.id
     else:
         # Create a new policy
         policy = Policy(name, action=action, scope=scope, realm=realm, user=user, time=time, client=client,
                         active=active, resolver=resolver, adminrealm=adminrealm, adminuser=adminuser,
                         priority=priority, check_all_resolvers=check_all_resolvers, pinode=pinode,
                         user_case_insensitive=user_case_insensitive, user_agents=user_agents)
-        ret = policy.save()
+        db.session.add(policy)
+        db.session.flush()
+        ret = policy.id
         # Since we create a new policy we always set the conditions, even if the list is empty
         set_policy_conditions(conditions_data, policy)
     if description:
-        d1 = PolicyDescription.query.filter_by(object_id=ret, object_type="policy").first()
-        if d1:
-            d1.description = description
+        description_stmt = select(PolicyDescription).where(PolicyDescription.object_id == ret,
+                                                              PolicyDescription.object_type == "policy")
+        description_db = db.session.scalars(description_stmt).first()
+        if description_db:
+            description_db.description = description
         else:
-            PolicyDescription(object_id=ret, object_type="policy", description=description).save()
+            new_description = PolicyDescription(object_id=ret, object_type="policy", description=description)
+            db.session.add(new_description)
+    save_config_timestamp()
     db.session.commit()
     return ret
 
@@ -1471,12 +1480,16 @@ def enable_policy(name, enable=True):
     :return: ID of the policy
     :rtype: int
     """
-    if not Policy.query.filter(Policy.name == name).first():
+    stmt = select(Policy).where(Policy.name == name)
+    policy = db.session.scalars(stmt).first()
+    if not policy:
         raise ResourceNotFoundError("The policy with name '{0!s}' does not exist".format(name))
 
     # Update the policy
-    p = set_policy(name=name, active=enable)
-    return p
+    policy.active = enable
+    save_config_timestamp()
+    db.session.commit()
+    return policy.id
 
 
 @log_with(log)
@@ -1504,18 +1517,25 @@ def delete_policies(names):
     ids = []
     for name in names:
         try:
-            ids.append(delete_policy(name))
+            policy = fetch_one_resource(Policy, name=name)
+            db.session.delete(policy)
+            ids.append(policy.id)
         except ResourceNotFoundError:
             log.warning(f"Policy with name '{name}' does not exist and therefore can not be deleted.")
             pass
+    save_config_timestamp()
+    db.session.commit()
     return ids
 
 
 @log_with(log)
 def delete_all_policies():
-    policies = Policy.query.all()
+    stmt = select(Policy)
+    policies = db.session.scalars(stmt).unique().all()
     for p in policies:
-        p.delete()
+        db.session.delete(p)
+    save_config_timestamp()
+    db.session.commit()
 
 
 @log_with(log)

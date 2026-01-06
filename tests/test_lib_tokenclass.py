@@ -7,20 +7,24 @@ from datetime import datetime, timezone, timedelta
 
 from dateutil.tz import tzlocal
 from mock import mock
+from sqlalchemy import select
 
 from privacyidea.lib.config import set_privacyidea_config
+from privacyidea.lib.container import init_container, add_token_to_container
 from privacyidea.lib.crypto import geturandom
 from privacyidea.lib.error import TokenAdminError
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.realm import (set_realm)
 from privacyidea.lib.resolver import save_resolver
-from privacyidea.lib.token import init_token
+from privacyidea.lib.token import init_token, assign_tokengroup, get_tokens
 from privacyidea.lib.tokenclass import (TokenClass, DATE_FORMAT, AUTH_DATE_FORMAT)
+from privacyidea.lib.tokengroup import set_tokengroup
 from privacyidea.lib.user import (User)
 from privacyidea.lib.utils import hexlify_and_unicode, to_unicode
 from privacyidea.models import (Token,
                                 Config,
-                                Challenge, Realm, TokenOwner)
+                                Challenge, Realm, TokenOwner, db, TokenRealm, Tokengroup, TokenTokengroup, TokenInfo,
+                                TokenContainer, TokenContainerToken)
 from .base import MyTestCase, FakeFlaskG
 
 PWFILE = "tests/testdata/passwords"
@@ -224,7 +228,7 @@ class TokenBaseTestCase(MyTestCase):
         self.setUp_user_realm2()
         token = init_token({"type": "hotp"})
         realms = token.get_realms()
-        self.assertTrue(len(realms) == 0, realms)
+        self.assertEqual(0, len(realms), realms)
 
         # set multiple realms
         token.set_realms([self.realm1, self.realm2])
@@ -237,7 +241,7 @@ class TokenBaseTestCase(MyTestCase):
             realms = token.get_realms()
             self.assertSetEqual({self.realm1}, set(realms))
             mock_log.assert_any_call(f"Remove realm {self.realm2} from token {token.get_serial()} due to setting "
-                                        f"new realms ({self.realm1}).")
+                                     f"new realms ({self.realm1}).")
 
         # Add realm keeps existing realms
         token.set_realms([self.realm2], add=True)
@@ -271,12 +275,51 @@ class TokenBaseTestCase(MyTestCase):
         token.delete_token()
 
     def test_99_delete_token(self):
-        db_token = Token.query.filter_by(serial=self.serial1).first()
-        token = TokenClass(db_token)
+        # Clear token db
+        db_tokens = db.session.scalars(select(Token)).unique().all()
+        for db_token in db_tokens:
+            token = TokenClass(db_token)
+            token.delete_token()
+
+        token = init_token({"type": "hotp", "serial": self.serial1})
+        # set relationships
+        self.setUp_user_realms()
+        user = User("hans", self.realm1)
+        token.add_user(user)
+        token.set_tokeninfo({"key": "value"})
+        Challenge(serial=self.serial1)
+        db.session.commit()
+        set_tokengroup("group")
+        assign_tokengroup(self.serial1, "group")
+        container_serial = init_container({"type": "generic"})["container_serial"]
+        add_token_to_container(container_serial, self.serial1)
+
         token.delete_token()
 
-        db_token = Token.query.filter_by(serial=self.serial1).first()
-        self.assertTrue(db_token is None, db_token)
+        token = db.session.scalar(select(Token).where(Token.serial == self.serial1))
+        self.assertIsNone(token, "Token was not deleted.")
+
+        # Check relationships are deleted
+        realm = db.session.scalar(select(Realm).where(Realm.name == self.realm1))
+        self.assertIsNotNone(realm, "Realm was deleted.")
+        owner = db.session.scalar(
+            select(TokenOwner).where(TokenOwner.realm_id == realm.id, TokenOwner.resolver == user.resolver,
+                                     TokenOwner.user_id == user.uid))
+        self.assertIsNone(owner, "TokenOwner relationship was not deleted.")
+        token_realm = db.session.scalar(select(TokenRealm).where(TokenRealm.realm_id == realm.id))
+        self.assertIsNone(token_realm, "TokenRealm relationships were not deleted.")
+        challenge = db.session.scalar(select(Challenge).where(Challenge.serial == self.serial1))
+        self.assertIsNone(challenge, "Challenge was not deleted.")
+        token_group = db.session.scalar(select(Tokengroup).where(Tokengroup.name == "group"))
+        self.assertIsNotNone(token_group, "Tokengroup was deleted.")
+        token_token_group = db.session.scalar(select(TokenTokengroup).where(TokenTokengroup.tokengroup_id == token_group.id))
+        self.assertIsNone(token_token_group, "TokenTokengroup relationship was not deleted.")
+        token_info = db.session.scalar(select(TokenInfo).where(TokenInfo.Key == "key", TokenInfo.Value == "value"))
+        self.assertIsNone(token_info, "TokenInfo was not deleted.")
+        container = db.session.scalar(select(TokenContainer).where(TokenContainer.serial == container_serial))
+        self.assertIsNotNone(container, "TokenContainer was deleted.")
+        token_container = db.session.scalar(select(TokenContainerToken).where(TokenContainerToken.container_id == container.id))
+        self.assertIsNone(token_container, "TokenContainerToken was not deleted.")
 
     def test_08_info(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
@@ -785,7 +828,8 @@ class TokenBaseTestCase(MyTestCase):
         self.assertTrue(len(added) == 1)
 
         # Assign token to user "cornelius" "realm1", "resolver1" "uid=1000
-        token = init_token({"type": "spass", "serial": "orphaned"}, user=User(uid="1000", realm=realm, resolver=resolver))
+        token = init_token({"type": "spass", "serial": "orphaned"},
+                           user=User(uid="1000", realm=realm, resolver=resolver))
         orph = token.is_orphaned()
         self.assertFalse(orph)
         # clean up token

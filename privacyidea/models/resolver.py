@@ -15,12 +15,17 @@
 #
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+import logging
+from typing import Optional
 
-from sqlalchemy import Sequence
+from sqlalchemy import Sequence, Unicode, Integer, ForeignKey, UniqueConstraint, select
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from privacyidea.models import db
 from privacyidea.lib.utils import convert_column_to_unicode
-from privacyidea.models.config import TimestampMethodsMixin, save_config_timestamp
+from privacyidea.models import db
+from privacyidea.models.config import TimestampMethodsMixin
+
+log = logging.getLogger(__name__)
 
 
 class Resolver(TimestampMethodsMixin, db.Model):
@@ -30,34 +35,22 @@ class Resolver(TimestampMethodsMixin, db.Model):
     configuration of the resolvers is stored in the table "resolverconfig".
     """
     __tablename__ = 'resolver'
-    id = db.Column(db.Integer, Sequence("resolver_seq"), primary_key=True,
-                   nullable=False)
-    name = db.Column(db.Unicode(255), default="",
-                     unique=True, nullable=False)
-    rtype = db.Column(db.Unicode(255), default="",
-                      nullable=False)
+    id: Mapped[int] = mapped_column(Integer, Sequence("resolver_seq"), primary_key=True,
+                                    nullable=False)
+    name: Mapped[str] = mapped_column(Unicode(255), default="",
+                                      unique=True, nullable=False)
+    rtype: Mapped[str] = mapped_column(Unicode(255), default="",
+                                       nullable=False)
     # This creates an attribute "resolver" in the ResolverConfig object
-    config_list = db.relationship('ResolverConfig',
-                                  lazy='select')
-    realm_list = db.relationship('ResolverRealm',
-                                 lazy='select',
-                                 back_populates='resolver')
+    config_list = relationship('ResolverConfig',
+                               lazy='select', cascade='all, delete-orphan')
+    realm_list = relationship('ResolverRealm',
+                              lazy='select',
+                              back_populates='resolver')
 
     def __init__(self, name, rtype):
         self.name = name
         self.rtype = rtype
-
-    def delete(self):
-        ret = self.id
-        # delete all ResolverConfig
-        db.session.query(ResolverConfig) \
-            .filter(ResolverConfig.resolver_id == ret) \
-            .delete()
-        # delete the Resolver itself
-        db.session.delete(self)
-        save_config_timestamp()
-        db.session.commit()
-        return ret
 
 
 class ResolverConfig(TimestampMethodsMixin, db.Model):
@@ -71,16 +64,13 @@ class ResolverConfig(TimestampMethodsMixin, db.Model):
     The config entries are referenced by the id of the resolver.
     """
     __tablename__ = 'resolverconfig'
-    id = db.Column(db.Integer, Sequence("resolverconf_seq"), primary_key=True)
-    resolver_id = db.Column(db.Integer,
-                            db.ForeignKey('resolver.id'))
-    Key = db.Column(db.Unicode(255), nullable=False)
-    Value = db.Column(db.Unicode(2000), default='')
-    Type = db.Column(db.Unicode(2000), default='')
-    Description = db.Column(db.Unicode(2000), default='')
-    __table_args__ = (db.UniqueConstraint('resolver_id',
-                                          'Key',
-                                          name='rcix_2'),)
+    id: Mapped[int] = mapped_column(Integer, Sequence("resolverconf_seq"), primary_key=True)
+    resolver_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey('resolver.id'))
+    Key: Mapped[str] = mapped_column(Unicode(255), nullable=False)
+    Value: Mapped[Optional[str]] = mapped_column(Unicode(2000), default='')
+    Type: Mapped[Optional[str]] = mapped_column(Unicode(2000), default='')
+    Description: Mapped[Optional[str]] = mapped_column(Unicode(2000), default='')
+    __table_args__ = (UniqueConstraint('resolver_id', 'Key', name='rcix_2'),)
 
     def __init__(self, resolver_id=None,
                  Key=None, Value=None,
@@ -89,32 +79,9 @@ class ResolverConfig(TimestampMethodsMixin, db.Model):
         if resolver_id:
             self.resolver_id = resolver_id
         elif resolver:
-            self.resolver_id = Resolver.query \
-                .filter_by(name=resolver) \
-                .first() \
-                .id
+            stmt = select(Resolver.id).filter_by(name=resolver)
+            self.resolver_id = db.session.execute(stmt).scalar_one_or_none()
         self.Key = convert_column_to_unicode(Key)
         self.Value = convert_column_to_unicode(Value)
         self.Type = convert_column_to_unicode(Type)
         self.Description = convert_column_to_unicode(Description)
-
-    def save(self):
-        c = ResolverConfig.query.filter_by(resolver_id=self.resolver_id,
-                                           Key=self.Key).first()
-        if c is None:
-            # create a new one
-            db.session.add(self)
-            db.session.commit()
-            ret = self.id
-        else:
-            # update
-            ResolverConfig.query.filter_by(resolver_id=self.resolver_id,
-                                           Key=self.Key
-                                           ).update({'Value': self.Value,
-                                                     'Type': self.Type,
-                                                     'Descrip'
-                                                     'tion': self.Description})
-            ret = c.id
-        save_config_timestamp()
-        db.session.commit()
-        return ret

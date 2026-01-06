@@ -17,12 +17,19 @@
 #
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
-from sqlalchemy import select
+import logging
+from datetime import datetime
+from typing import List, Optional
+
+from sqlalchemy import Unicode, Integer, Boolean, DateTime, UniqueConstraint, select
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from privacyidea.lib.utils import convert_column_to_unicode
 from privacyidea.models import db
 from privacyidea.models.realm import Realm
 from privacyidea.models.utils import MethodsMixin
+
+log = logging.getLogger(__name__)
 
 
 class TokenContainer(MethodsMixin, db.Model):
@@ -31,83 +38,79 @@ class TokenContainer(MethodsMixin, db.Model):
     """
 
     __tablename__ = 'tokencontainer'
-    id = db.Column("id", db.Integer, db.Identity(), primary_key=True)
-    type = db.Column(db.Unicode(100), default='Generic', nullable=False)
-    description = db.Column(db.Unicode(1024), default='')
-    tokens = db.relationship('Token', secondary='tokencontainertoken', back_populates='container')
-    serial = db.Column(db.Unicode(40), default='', unique=True, nullable=False, index=True)
-    owners = db.relationship('TokenContainerOwner', lazy='dynamic', back_populates='container',
-                             cascade="all, delete-orphan")
-    last_seen = db.Column(db.DateTime, default=None)
-    last_updated = db.Column(db.DateTime, default=None)
-    states = db.relationship('TokenContainerStates', lazy='dynamic', back_populates='container',
-                             cascade="all, delete-orphan")
-    info_list = db.relationship('TokenContainerInfo', lazy='select', back_populates='container',
-                                cascade="all, delete-orphan")
-    realms = db.relationship('Realm', secondary='tokencontainerrealm', back_populates='container')
-    template_id = db.Column(db.ForeignKey('tokencontainertemplate.id', name="tokencontainertemplate_id"))
-    template = db.relationship('TokenContainerTemplate', back_populates='containers')
+    id: Mapped[int] = mapped_column("id", Integer, primary_key=True)
+    type: Mapped[str] = mapped_column(Unicode(100), default='Generic', nullable=False)
+    description: Mapped[Optional[str]] = mapped_column(Unicode(1024), default='')
+    serial: Mapped[str] = mapped_column(Unicode(40), default='', unique=True, nullable=False, index=True)
+    last_seen: Mapped[Optional[datetime]] = mapped_column(DateTime, default=None)
+    last_updated: Mapped[Optional[datetime]] = mapped_column(DateTime, default=None)
+    template_id: Mapped[Optional[int]] = mapped_column(Integer, db.ForeignKey('tokencontainertemplate.id',
+                                                                              name="tokencontainertemplate_id"))
 
-    def __init__(self, serial, container_type="Generic", tokens=None, description="", states=None):
+    tokens: Mapped[List['Token']] = relationship(secondary='tokencontainertoken', back_populates='container')
+    owners: Mapped[List['TokenContainerOwner']] = relationship(lazy='dynamic', back_populates='container',
+                                                               cascade="all, delete-orphan")
+    states: Mapped[List['TokenContainerStates']] = relationship(lazy='dynamic', back_populates='container',
+                                                                cascade="all, delete-orphan")
+    info_list: Mapped[List['TokenContainerInfo']] = relationship(lazy='select', back_populates='container',
+                                                                 cascade="all, delete-orphan")
+    realms: Mapped[List['Realm']] = relationship(secondary='tokencontainerrealm', back_populates='container')
+    template: Mapped['TokenContainerTemplate'] = relationship(back_populates='containers')
+
+    def __init__(self, serial: str, container_type: str = "Generic", tokens: Optional[List['Token']] = None,
+                 description: str = "", states: Optional[List['TokenContainerStates']] = None):
         self.serial = serial
         self.type = container_type
         self.description = description
         if tokens:
-            self.tokens = [t.token for t in tokens]
+            # Assumes the tokens list contains Token objects
+            self.tokens = tokens
         if states:
             self.states = states
 
 
 class TokenContainerOwner(MethodsMixin, db.Model):
     __tablename__ = 'tokencontainerowner'
-    id = db.Column("id", db.Integer, db.Identity(), primary_key=True)
-    container_id = db.Column(db.Integer(), db.ForeignKey("tokencontainer.id"))
-    container = db.relationship('TokenContainer', back_populates='owners')
-    resolver = db.Column(db.Unicode(120), default='', index=True)
-    user_id = db.Column(db.Unicode(320), default='', index=True)
-    realm_id = db.Column(db.Integer(), db.ForeignKey('realm.id'))
-    realm = db.relationship('Realm', lazy='joined', backref='tokencontainerowners')
+    id: Mapped[int] = mapped_column("id", Integer, primary_key=True)
+    container_id: Mapped[Optional[int]] = mapped_column(Integer, db.ForeignKey("tokencontainer.id"))
+    resolver: Mapped[Optional[str]] = mapped_column(Unicode(120), default='', index=True)
+    user_id: Mapped[Optional[str]] = mapped_column(Unicode(320), default='', index=True)
+    realm_id: Mapped[Optional[int]] = mapped_column(Integer, db.ForeignKey('realm.id'))
 
-    def __init__(self, container_id=None, container_serial=None, resolver=None, user_id=None, realm_id=None,
-                 realm_name=None):
+    container: Mapped['TokenContainer'] = relationship(back_populates='owners')
+    realm: Mapped['Realm'] = relationship(lazy='joined', backref='tokencontainerowners')
+
+    def __init__(self, container_id: Optional[int] = None, container_serial: Optional[str] = None,
+                 resolver: Optional[str] = None, user_id: Optional[str] = None, realm_id: Optional[int] = None,
+                 realm_name: Optional[str] = None):
         """
         Create a new TokenContainerOwner assignment.
-
-        :param container_id:
-        :param container_serial: alternative to container_id
-        :param resolver:
-        :param user_id:
-        :param realm_id:
-        :param realm_name: alternative to realm_id
         """
         if realm_id is not None:
             self.realm_id = realm_id
         elif realm_name:
-            statement = select(Realm).filter_by(name=realm_name)
-            realm = db.session.execute(statement).scalar_one()
-            self.realm_id = realm.id
+            stmt = select(Realm).filter_by(name=realm_name)
+            realm = db.session.execute(stmt).scalar_one_or_none()
+            self.realm_id = realm.id if realm else None
         if container_id is not None:
             self.container_id = container_id
         elif container_serial:
-            statement = select(TokenContainer).filter_by(serial=container_serial)
-            container = db.session.execute(statement).scalar_one()
-            self.container_id = container.id
+            stmt = select(TokenContainer).filter_by(serial=container_serial)
+            container = db.session.execute(stmt).scalar_one_or_none()
+            self.container_id = container.id if container else None
         self.resolver = resolver
         self.user_id = user_id
 
 
 class TokenContainerStates(MethodsMixin, db.Model):
     __tablename__ = 'tokencontainerstates'
-    id = db.Column("id", db.Integer, db.Identity(), primary_key=True)
-    container_id = db.Column(db.Integer(), db.ForeignKey("tokencontainer.id"))
-    container = db.relationship("TokenContainer", back_populates="states")
-    state = db.Column(db.Unicode(100), default='active', nullable=False)
+    id: Mapped[int] = mapped_column("id", Integer, primary_key=True)
+    container_id: Mapped[Optional[int]] = mapped_column(Integer, db.ForeignKey("tokencontainer.id"))
+    state: Mapped[str] = mapped_column(Unicode(100), default='active', nullable=False)
 
-    """
-    The table "tokencontainerstates" is used to store the states of the container. A container can be in several states.
-    """
+    container: Mapped['TokenContainer'] = relationship("TokenContainer", back_populates="states")
 
-    def __init__(self, container_id=None, state="active"):
+    def __init__(self, container_id: Optional[int] = None, state: str = "active"):
         self.container_id = container_id
         self.state = state
 
@@ -116,22 +119,20 @@ class TokenContainerInfo(MethodsMixin, db.Model):
     """
     The table "tokencontainerinfo" is used to store additional, long information that
     is specific to the containertype.
-
-    The tokencontainerinfo is reference by the foreign key to the "tokencontainer" table.
     """
     __tablename__ = 'tokencontainerinfo'
-    id = db.Column(db.Integer, db.Identity(), primary_key=True)
-    key = db.Column(db.Unicode(255), nullable=False)
-    value = db.Column(db.UnicodeText(), default='')
-    type = db.Column(db.Unicode(100), default='')
-    description = db.Column(db.Unicode(2000), default='')
-    container_id = db.Column(db.Integer(), db.ForeignKey('tokencontainer.id'), index=True)
-    container = db.relationship('TokenContainer', back_populates='info_list')
-    __table_args__ = (db.UniqueConstraint('container_id', 'key', name='container_id_constraint'),)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    key: Mapped[str] = mapped_column(Unicode(255), nullable=False)
+    value: Mapped[Optional[str]] = mapped_column(Unicode(2000), default='')
+    type: Mapped[Optional[str]] = mapped_column(Unicode(100), default='')
+    description: Mapped[Optional[str]] = mapped_column(Unicode(2000), default='')
+    container_id: Mapped[Optional[int]] = mapped_column(Integer, db.ForeignKey('tokencontainer.id'), index=True)
 
-    def __init__(self, container_id, key, value,
-                 type=None,
-                 description=None):
+    container: Mapped['TokenContainer'] = relationship('TokenContainer', back_populates='info_list')
+    __table_args__ = (UniqueConstraint('container_id', 'key', name='container_id_constraint'),)
+
+    def __init__(self, container_id: int, key: str, value: str, type: Optional[str] = None,
+                 description: Optional[str] = None):
         """
         Create a new tokencontainerinfo for a given token_id
         """
@@ -144,25 +145,24 @@ class TokenContainerInfo(MethodsMixin, db.Model):
 
 class TokenContainerRealm(MethodsMixin, db.Model):
     """
-    This table stores to which realms a container is assigned. A container is in the
-    realm of the user it is assigned to. But a container can also be put into
-    many additional realms.
+    This table stores to which realms a container is assigned.
     """
     __tablename__ = 'tokencontainerrealm'
-    container_id = db.Column(db.Integer(), db.ForeignKey("tokencontainer.id"), primary_key=True)
-    realm_id = db.Column(db.Integer(), db.ForeignKey('realm.id'), primary_key=True)
+    container_id: Mapped[int] = mapped_column(Integer, db.ForeignKey("tokencontainer.id"), primary_key=True)
+    realm_id: Mapped[int] = mapped_column(Integer, db.ForeignKey('realm.id'), primary_key=True)
 
 
 class TokenContainerTemplate(MethodsMixin, db.Model):
     __tablename__ = 'tokencontainertemplate'
-    id = db.Column("id", db.Integer, db.Identity(), primary_key=True)
-    options = db.Column(db.Unicode(2000), default='')
-    name = db.Column(db.Unicode(200), default='')
-    container_type = db.Column(db.Unicode(100), default='generic', nullable=False)
-    default = db.Column(db.Boolean, default=False, nullable=False)
-    containers = db.relationship('TokenContainer', back_populates='template')
+    id: Mapped[int] = mapped_column("id", Integer, primary_key=True)
+    options: Mapped[Optional[str]] = mapped_column(Unicode(2000), default='')
+    name: Mapped[Optional[str]] = mapped_column(Unicode(200), default='')
+    container_type: Mapped[str] = mapped_column(Unicode(100), default='generic', nullable=False)
+    default: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
-    def __init__(self, name, container_type="generic", options='', default=False):
+    containers: Mapped[List['TokenContainer']] = relationship('TokenContainer', back_populates='template')
+
+    def __init__(self, name: str, container_type: str = "generic", options: str = '', default: bool = False):
         self.name = name
         self.container_type = container_type
         self.options = options
@@ -174,5 +174,6 @@ class TokenContainerToken(MethodsMixin, db.Model):
     Association table to link tokens to containers.
     """
     __tablename__ = 'tokencontainertoken'
-    token_id = db.Column('token_id', db.Integer, db.ForeignKey('token.id'), primary_key=True)
-    container_id = db.Column('container_id', db.Integer, db.ForeignKey('tokencontainer.id'), primary_key=True)
+    token_id: Mapped[int] = mapped_column('token_id', Integer, db.ForeignKey('token.id'), primary_key=True)
+    container_id: Mapped[int] = mapped_column('container_id', Integer, db.ForeignKey('tokencontainer.id'),
+                                              primary_key=True)

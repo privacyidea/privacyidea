@@ -515,17 +515,13 @@ class IdResolver (UserIdResolver):
             self.pool_size, self.pool_timeout, self.pool_recycle))
         try:
             engine = create_engine(self.connect_string,
-                                   encoding=self.encoding,
-                                   convert_unicode=False,
                                    pool_size=self.pool_size,
                                    pool_recycle=self.pool_recycle,
                                    pool_timeout=self.pool_timeout)
         except TypeError:
             # The DB Engine/Poolclass might not support the pool_size.
             log.debug("connecting without pool_size.")
-            engine = create_engine(self.connect_string,
-                                   encoding=self.encoding,
-                                   convert_unicode=False)
+            engine = create_engine(self.connect_string)
         return engine
 
     @classmethod

@@ -56,7 +56,7 @@ class ConfigTestCase(MyTestCase):
         # delete privacyidea config
         delete_privacyidea_config("Hallo")
         conf = get_from_config("Hallo")
-        self.assertFalse(conf == "What?", conf)
+        self.assertNotEqual("What?", conf)
 
         # set more values to create a timestamp and overwrite
         set_privacyidea_config(key="k1", value="v1")

@@ -23,19 +23,24 @@ Client Application information was saved during authentication requests.
 The code is tested in tests/test_lib_clientapplication.py.
 """
 
-from sqlalchemy import func
 import logging
+import traceback
+from datetime import datetime
+from typing import Union
+
+from netaddr import IPAddress
+from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
+
+from privacyidea.lib.config import get_privacyidea_node
 from .log import log_with
 from ..models import ClientApplication, db
-from privacyidea.lib.config import get_privacyidea_node
-from netaddr import IPAddress
-
 
 log = logging.getLogger(__name__)
 
 
 @log_with(log)
-def save_clientapplication(ip, clienttype):
+def save_clientapplication(ip: Union[IPAddress, str], clienttype: str):
     """
     Save (or update) the IP and the clienttype to the database table.
 
@@ -48,11 +53,26 @@ def save_clientapplication(ip, clienttype):
     node = get_privacyidea_node()
     # Check for a valid IP address
     ip = IPAddress(ip)
+    last_seen = datetime.now()
     # TODO: resolve hostname
-    app = ClientApplication(ip="{0!s}".format(ip),
-                            clienttype=clienttype,
-                            node=node)
-    app.save()
+
+    stmt = select(ClientApplication).where(
+        ClientApplication.ip == f"{ip}",
+        ClientApplication.clienttype == clienttype,
+        ClientApplication.node == node
+    )
+    client_app = db.session.execute(stmt).scalar_one_or_none()
+
+    if client_app:
+        client_app.last_seen = last_seen
+    else:
+        client_app = ClientApplication(ip=f"{ip}", clienttype=clienttype, node=node, lastseen=last_seen)
+        db.session.add(client_app)
+    try:
+        db.session.commit()
+    except IntegrityError as e:  # pragma: no cover
+        log.info(f'Unable to write ClientApplication entry to db: {e}')
+        log.debug(traceback.format_exc())
 
 
 @log_with(log)
@@ -77,23 +97,24 @@ def get_clientapplication(ip=None, clienttype=None, group_by="clienttype"):
     # then fetch MAX(lastseen) of each group to retrieve the most recent timestamp at
     # which the client was seen on *any* node. It is written to the ``max_lastseen``
     # attribute.
-    sql_query = db.session.query(ClientApplication.ip,
-                                 ClientApplication.hostname,
-                                 ClientApplication.clienttype,
-                                 func.max(ClientApplication.lastseen).label("max_lastseen"))
+    stmt = select(ClientApplication.ip,
+                  ClientApplication.hostname,
+                  ClientApplication.clienttype,
+                  func.max(ClientApplication.lastseen).label("max_lastseen"))
     if ip:
         # Check for a valid IP address
         ip = IPAddress(ip)
-        sql_query = sql_query.filter(ClientApplication.ip == "{0!s}".format(ip))
+        stmt = stmt.where(ClientApplication.ip == f"{ip}")
 
     if clienttype:
-        sql_query = sql_query.filter(ClientApplication.clienttype == clienttype)
+        stmt = stmt.where(ClientApplication.clienttype == clienttype)
 
-    sql_query = sql_query.group_by(ClientApplication.ip,
-                                   ClientApplication.hostname,
-                                   ClientApplication.clienttype)
+    stmt = stmt.group_by(ClientApplication.ip,
+                         ClientApplication.hostname,
+                         ClientApplication.clienttype)
 
-    for row in sql_query.all():
+    applications = db.session.execute(stmt).all()
+    for row in applications:
         if group_by.lower() == "clienttype":
             clients.setdefault(row.clienttype, []).append({"ip": row.ip,
                                                            "hostname": row.hostname,

@@ -459,7 +459,7 @@ def get_tokens_paginated_generator(tokentype=None, realm=None, assigned=None, us
         if last_id is not None:
             sql_query = sql_query.where(Token.id > last_id)
         sql_query = sql_query.limit(psize)
-        tokens = session.execute(sql_query).scalars().all()
+        tokens = session.scalars(sql_query).unique().all()
         if tokens:
             token_objects = []
             for token in tokens:
@@ -624,7 +624,7 @@ def get_tokens(tokentype=None, token_type_list=None, realm=None, assigned=None, 
             select(func.count()).select_from(sql_query.subquery())
         ).scalar_one()
     else:
-        tokens = session.execute(sql_query).scalars().all()
+        tokens = session.execute(sql_query).unique().scalars().all()
         token_list = []
         for token in tokens:
             token = create_tokenclass_object(token)
@@ -720,7 +720,7 @@ def get_tokens_paginate(tokentype=None, token_type_list=None, realm=None, assign
 
     # Now apply the limit and offset for the current page
     offset = (page - 1) * psize
-    tokens = session.execute(sql_query.limit(psize).offset(offset)).scalars().all()
+    tokens = session.scalars(sql_query.limit(psize).offset(offset)).unique().all()
 
     token_list = []
     for token in tokens:
@@ -2945,10 +2945,10 @@ def list_tokengroups(tokengroup=None):
 
     if tg:
         stmt = select(TokenTokengroup).where(TokenTokengroup.tokengroup_id == tg.id)
-        tgs = session.execute(stmt).scalars().all()
+        tgs = session.scalars(stmt).unique().all()
     else:
         stmt = select(TokenTokengroup)
-        tgs = session.execute(stmt).scalars().all()
+        tgs = session.scalars(stmt).unique().all()
     return tgs
 
 

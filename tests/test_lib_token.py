@@ -77,7 +77,7 @@ from privacyidea.lib.tokengroup import set_tokengroup, delete_tokengroup
 from privacyidea.lib.tokens.totptoken import TotpTokenClass
 from privacyidea.lib.user import (User)
 from privacyidea.lib.utils import b32encode_and_unicode, hexlify_and_unicode
-from privacyidea.models import (db, Token, Challenge, TokenRealm)
+from privacyidea.models import (db, Token, Challenge, TokenRealm, Tokengroup)
 from .base import MyTestCase, FakeAudit, FakeFlaskG
 
 PWFILE = "tests/testdata/passwords"
@@ -2553,11 +2553,11 @@ class TokenGroupTestCase(MyTestCase):
 
         # Check the tokengroups of the first token
         tok1 = get_one_token(serial="s1")
-        self.assertSetEqual({"g1", "g2"}, {tg.tokengroup.name for tg in tok1.token.tokengroup_list})
+        self.assertSetEqual({"g1", "g2"}, {tg.name for tg in tok1.token.tokengroup_list})
 
         # check the tokengroups of the 2nd token
         tok2 = get_one_token(serial="s2")
-        self.assertSetEqual({"g2"}, {tg.tokengroup.name for tg in tok2.token.tokengroup_list})
+        self.assertSetEqual({"g2"}, {tg.name for tg in tok2.token.tokengroup_list})
 
         # Try to add an already added group
         logger = logging.getLogger('privacyidea.lib.tokenclass')
@@ -2584,7 +2584,9 @@ class TokenGroupTestCase(MyTestCase):
         # one token in group1
         grouplist = list_tokengroups("g1")
         self.assertEqual(len(grouplist), 1)
-        self.assertEqual(grouplist[0].token.serial, "s1")
+        group_g1 = db.session.scalar(select(Tokengroup).where(Tokengroup.name == "g1"))
+        self.assertEqual(1, len(group_g1.tokens))
+        self.assertEqual("s1", group_g1.tokens[0].serial)
         # two tokens in group2
         grouplist = list_tokengroups("g2")
         self.assertEqual(len(grouplist), 2)
@@ -2592,7 +2594,7 @@ class TokenGroupTestCase(MyTestCase):
         # Remove tokengroup "g1" from token "s1"
         tok1.delete_tokengroup("g1")
         # Only the 2nd group remains
-        self.assertEqual(tok1.token.tokengroup_list[0].tokengroup.name, "g2")
+        self.assertEqual(tok1.token.tokengroup_list[0].name, "g2")
         # Remove it from token "s2"
         unassign_tokengroup("s2", "g2")
         tok2 = get_one_token(serial="s2")
@@ -2624,22 +2626,22 @@ class TokenGroupTestCase(MyTestCase):
         # Set two groups
         set_tokengroups("s1", ["g1", "g2"])
         token = get_one_token(serial="s1")
-        self.assertSetEqual({"g1", "g2"}, {tg.tokengroup.name for tg in token.token.tokengroup_list})
+        self.assertSetEqual({"g1", "g2"}, {tg.name for tg in token.token.tokengroup_list})
 
         # Set one different group
         set_tokengroups("s1", ["g3", "g1"])
         token = get_one_token(serial="s1")
-        self.assertSetEqual({"g1", "g3"}, {tg.tokengroup.name for tg in token.token.tokengroup_list})
+        self.assertSetEqual({"g1", "g3"}, {tg.name for tg in token.token.tokengroup_list})
 
         # Set empty list removes all groups
         set_tokengroups("s1", [])
         token = get_one_token(serial="s1")
-        self.assertSetEqual(set(), {tg.tokengroup.name for tg in token.token.tokengroup_list})
+        self.assertSetEqual(set(), {tg.name for tg in token.token.tokengroup_list})
 
         # Set non-existing group
         set_tokengroups("s1", ["random", "g2"])
         token = get_one_token(serial="s1")
-        self.assertSetEqual({"g2"}, {tg.tokengroup.name for tg in token.token.tokengroup_list})
+        self.assertSetEqual({"g2"}, {tg.name for tg in token.token.tokengroup_list})
         expected_message = "Tokengroup random does not exist. Cannot add it to token s1."
         actual_messages = [record.getMessage() for record in capture.records]
         self.assertIn(expected_message, actual_messages, msg=f"Available log messages: {actual_messages}")
@@ -2661,27 +2663,27 @@ class TokenGroupTestCase(MyTestCase):
         # Set two groups
         set_tokengroups("s1", ["g1", "g2"])
         token = get_one_token(serial="s1")
-        self.assertSetEqual({"g1", "g2"}, {tg.tokengroup.name for tg in token.token.tokengroup_list})
+        self.assertSetEqual({"g1", "g2"}, {tg.name for tg in token.token.tokengroup_list})
 
         # delete one group by name
         unassign_tokengroup("s1", tokengroup="g1")
         token = get_one_token(serial="s1")
-        self.assertSetEqual({"g2"}, {tg.tokengroup.name for tg in token.token.tokengroup_list})
+        self.assertSetEqual({"g2"}, {tg.name for tg in token.token.tokengroup_list})
 
         # delete one token by id
         unassign_tokengroup("s1", tokengroup_id=g2_id)
         token = get_one_token(serial="s1")
-        self.assertSetEqual(set(), {tg.tokengroup.name for tg in token.token.tokengroup_list})
+        self.assertSetEqual(set(), {tg.name for tg in token.token.tokengroup_list})
 
         # Set two groups
         set_tokengroups("s1", ["g1", "g2"])
         token = get_one_token(serial="s1")
-        self.assertSetEqual({"g1", "g2"}, {tg.tokengroup.name for tg in token.token.tokengroup_list})
+        self.assertSetEqual({"g1", "g2"}, {tg.name for tg in token.token.tokengroup_list})
 
         # Remove all groups
         unassign_tokengroup("s1")
         token = get_one_token(serial="s1")
-        self.assertSetEqual(set(), {tg.tokengroup.name for tg in token.token.tokengroup_list})
+        self.assertSetEqual(set(), {tg.name for tg in token.token.tokengroup_list})
 
         token.delete_token()
         delete_tokengroup('g1')

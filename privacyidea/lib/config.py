@@ -35,31 +35,33 @@ The code is tested in tests/test_lib_config
 """
 
 import copy
-import json
-import sys
-import logging
+import datetime
+import importlib
 import inspect
+import json
+import logging
+import sys
 import threading
 import traceback
 
-from .log import log_with
-from ..models import (Config, db, Resolver, Realm, PRIVACYIDEA_TIMESTAMP,
-                      save_config_timestamp, Policy, EventHandler, CAConnector,
-                      NodeName)
+from sqlalchemy import select, delete
+
 from privacyidea.config import DefaultConfigValues, ConfigKey
 from privacyidea.lib.framework import get_request_local_store, get_app_config_value, get_app_local_store
 from privacyidea.lib.utils import to_list
 from privacyidea.lib.utils.export import (register_import, register_export)
-from .crypto import encryptPassword
-from .crypto import decryptPassword
-from .resolvers.UserIdResolver import UserIdResolver
-from .machines.base import BaseMachineResolver
 from .caconnectors.baseca import BaseCAConnector
+from .crypto import decryptPassword
+from .crypto import encryptPassword
+from .log import log_with
+from .machines.base import BaseMachineResolver
+from .resolvers.UserIdResolver import UserIdResolver
 # We need these imports to return the list of CA connector types. Bummer: New import for each new Class anyway.
 from .caconnectors import localca, msca
 from .utils import reload_db, is_true
-import importlib
-import datetime
+from ..models import (Config, db, Resolver, Realm, PRIVACYIDEA_TIMESTAMP,
+                      save_config_timestamp, Policy, EventHandler, CAConnector,
+                      NodeName)
 
 log = logging.getLogger(__name__)
 
@@ -107,9 +109,10 @@ class SharedConfigClass(object):
         from .resolvers.HTTPResolver import ADVANCED, HEADERS
         from .resolver import get_resolver_class
         check_reload_config = get_app_config_value("PI_CHECK_RELOAD_CONFIG", 0)
-        if not self.timestamp or \
-                self.timestamp + datetime.timedelta(seconds=check_reload_config) < datetime.datetime.now():
-            db_ts = Config.query.filter_by(Key=PRIVACYIDEA_TIMESTAMP).first()
+        if not self.timestamp or self.timestamp + datetime.timedelta(
+                seconds=check_reload_config) < datetime.datetime.now():
+            stmt = select(Config).filter_by(Key=PRIVACYIDEA_TIMESTAMP)
+            db_ts = db.session.scalars(stmt).first()
             if reload_db(self.timestamp, db_ts):
                 log.debug("Reloading shared config from database")
                 config = {}
@@ -179,14 +182,17 @@ class SharedConfigClass(object):
                                                      "node": x.node_uuid})
                     realmconfig[realm.name] = realmdef
                 # Load all policies
-                for pol in Policy.query.all():
+                policies_db = db.session.scalars(select(Policy)).unique().all()
+                for pol in policies_db:
                     policies.append(pol.get())
                 # Load all events
-                for event in EventHandler.query.order_by(EventHandler.ordering):
+                event_handlers = db.session.scalars(select(EventHandler).order_by(EventHandler.ordering)).all()
+                for event in event_handlers:
                     events.append(event.get())
                 # Load all CA connectors
                 from privacyidea.lib.caconnector import get_caconnector_object
-                for ca in CAConnector.query.all():
+                ca_connectors_db = db.session.scalars(select(CAConnector)).all()
+                for ca in ca_connectors_db:
                     try:
                         ca_obj = get_caconnector_object(ca.name)
                         caconnectors.append({"connectorname": ca.name,
@@ -979,14 +985,15 @@ def set_privacyidea_config(key, value, typ="", desc=""):
         # store value in encrypted way
         value = encryptPassword(value)
     # We need to check, if the value already exist
-    c1 = Config.query.filter_by(Key=key).first()
-    if c1:
+    stmt = select(Config).where(Config.Key == key)
+    pi_config = db.session.scalars(stmt).first()
+    if pi_config:
         # The value already exist, we need to update
-        c1.Value = value
+        pi_config.Value = value
         if typ:
-            c1.Type = typ
+            pi_config.Type = typ
         if desc:
-            c1.Description = desc
+            pi_config.Description = desc
         save_config_timestamp()
         db.session.commit()
         ret = "update"
@@ -1002,20 +1009,15 @@ def set_privacyidea_config(key, value, typ="", desc=""):
     return ret
 
 
-def delete_privacyidea_config(key):
+def delete_privacyidea_config(key: str) -> bool:
     """
     Delete a config entry
     """
-    ret = 0
-    # We need to check, if the value already exist
-    if Config.query.filter_by(Key=key).first().delete():
-        ret = True
-    # if q:
-    #    db.session.delete(q)
-    #    db.session.commit()
-    #    ret = True
-    #    save_config_timestamp()
-    return ret
+    delete_stmt = delete(Config).where(Config.Key == key)
+    result = db.session.execute(delete_stmt)
+    db.session.commit()
+    save_config_timestamp()
+    return result.rowcount > 0
 
 
 # @cache.cached(key_prefix="pin")
@@ -1088,7 +1090,7 @@ def get_privacyidea_nodes() -> list:
     :rtype: list
     """
     nodes_list = []
-    nodes = db.session.query(NodeName).all()
+    nodes = db.session.scalars(select(NodeName)).all()
 
     for node in nodes:
         nodes_list.append({
@@ -1116,7 +1118,8 @@ def check_node_uuid_exists(node_uuid) -> bool:
     :param node_uuid: the UUID of the node
     :return: True if the node exists in the database, False otherwise
     """
-    return db.session.query(NodeName).filter_by(id=node_uuid).first() is not None
+    stmt = select(NodeName).where(NodeName.id == node_uuid)
+    return db.session.scalars(stmt).first() is not None
 
 
 @register_export()

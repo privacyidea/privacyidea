@@ -22,7 +22,7 @@ import datetime
 
 from privacyidea.lib.config import get_from_config
 from privacyidea.models import UserCache, db
-from sqlalchemy import and_, delete
+from sqlalchemy import and_, delete, select
 
 log = logging.getLogger(__name__)
 EXPIRATION_SECONDS = "UserCacheExpiration"
@@ -137,7 +137,12 @@ def retrieve_latest_entry(filter_condition):
     :param filter_condition: SQLAlchemy filter, as created (for example) by create_filter
     :return: A `UserCache` object or None, if no entry matches the given condition.
     """
-    return UserCache.query.filter(filter_condition).order_by(UserCache.timestamp.desc()).first()
+    stmt = select(UserCache)
+    if filter_condition is not None:
+        stmt = stmt.where(filter_condition)
+    stmt = stmt.order_by(UserCache.timestamp.desc())
+    result = db.session.scalar(stmt)
+    return result
 
 
 def create_filter(username=None, used_login=None, resolver=None,

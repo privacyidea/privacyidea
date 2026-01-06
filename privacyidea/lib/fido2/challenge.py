@@ -1,19 +1,20 @@
-from typing import Union
 import logging
+from datetime import datetime, timezone
+from typing import Union
 
+from sqlalchemy import select
 from webauthn.helpers import bytes_to_base64url
 
 from privacyidea.api.lib.utils import get_required_one_of, get_optional_one_of, get_required
+from privacyidea.lib import fido2
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.crypto import geturandom
 from privacyidea.lib.error import ResourceNotFoundError, AuthError
 from privacyidea.lib.fido2.config import FIDO2ConfigOptions
-from privacyidea.lib.tokenclass import TokenClass
-from privacyidea.models import Challenge
-from privacyidea.lib import fido2
-from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
 from privacyidea.lib.policies.actions import PolicyAction
-from datetime import datetime, timezone
+from privacyidea.lib.tokenclass import TokenClass
+from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
+from privacyidea.models import Challenge, db
 
 log = logging.getLogger(__name__)
 
@@ -82,7 +83,8 @@ def verify_fido2_challenge(transaction_id: str, token: TokenClass, params: dict)
     If the challenge is bound to a token serial and the token serial does not match the input token, an AuthError
     is raised.
     """
-    db_challenges = Challenge.query.filter(Challenge.transaction_id == transaction_id).all()
+    stmt = select(Challenge).where(Challenge.transaction_id == transaction_id)
+    db_challenges = db.session.scalars(stmt).all()
     if not db_challenges:
         raise ResourceNotFoundError(f"Challenge with transaction_id {transaction_id} not found.")
 

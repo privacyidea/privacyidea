@@ -24,6 +24,8 @@ It depends on the models.py
 
 import logging
 
+from sqlalchemy import select
+
 from privacyidea.lib.utils import fetch_one_resource
 from privacyidea.lib.error import privacyIDEAError, ResourceNotFoundError
 from privacyidea.models import Serviceid, db
@@ -33,8 +35,24 @@ log = logging.getLogger(__name__)
 ENCODING = "utf-8"
 
 
-def set_serviceid(name, description=None):
-    return Serviceid(name, description).save()
+def set_serviceid(name: str, description: str = None) -> int:
+    """
+    Set or update a service id.
+
+    :param name: Name of the serviceid
+    :param description: Description of the serviceid
+    """
+    stmt = select(Serviceid).filter_by(name=name)
+    service_id = db.session.execute(stmt).scalar_one_or_none()
+    if service_id:
+        # update
+        service_id.Description = description
+    else:
+        # create new
+        service_id = Serviceid(servicename=name, description=description)
+        db.session.add(service_id)
+    db.session.commit()
+    return service_id.id
 
 
 def delete_serviceid(name=None, sid=None):
@@ -67,9 +85,9 @@ def delete_serviceid(name=None, sid=None):
 
 
 def get_serviceids(name=None, id=None):
-    query = Serviceid.query
+    stmt = select(Serviceid)
     if name:
-        query = query.filter(Serviceid.name == name)
+        stmt = stmt.filter(Serviceid.name == name)
     if id:
-        query = query.filter(Serviceid.id == id)
-    return query.all()
+        stmt = stmt.filter(Serviceid.id == id)
+    return db.session.scalars(stmt).all()

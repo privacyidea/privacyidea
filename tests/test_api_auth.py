@@ -24,7 +24,7 @@ from privacyidea.lib.token import get_tokens, remove_token, init_token, get_one_
 from privacyidea.lib.tokenclass import FAILCOUNTER_EXCEEDED, DATE_FORMAT, FAILCOUNTER_CLEAR_TIMEOUT
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import to_unicode, AUTH_RESPONSE
-from privacyidea.models import Realm
+from privacyidea.models import Realm, db
 from . import ldap3mock
 from .base import MyApiTestCase, OverrideConfigTestCase
 
@@ -984,6 +984,7 @@ class AuthApiTestCase(MyApiTestCase):
         self.assertRaises(ResourceNotFoundError, get_one_token, serial=serial)
 
         # Enroll new token
+        db.session.expunge_all()    # Clear session for new request
         with self.app.test_request_context('/token/init',
                                            method='POST',
                                            headers={"Authorization": auth_token},

@@ -28,24 +28,25 @@ The code is tested in tests/test_lib_caconnector.py.
 """
 
 import logging
-from .log import log_with
-from .config import (get_caconnector_types,
-                     get_caconnector_class_dict)
-from ..models import (CAConnector,
-                      CAConnectorConfig)
-from ..api.lib.utils import required
-from ..api.lib.utils import getParam
-from sqlalchemy import func
-from .crypto import encryptPassword, decryptPassword
+
+from sqlalchemy import func, select, update
+
+from privacyidea.lib.config import get_config_object
 from privacyidea.lib.utils import (sanity_name_check, get_data_from_params, fetch_one_resource)
 from privacyidea.lib.utils.export import (register_import, register_export)
-from privacyidea.lib.config import get_config_object
+from .config import (get_caconnector_types,
+                     get_caconnector_class_dict)
+from .crypto import encryptPassword, decryptPassword
+from .log import log_with
+from ..api.lib.utils import get_required
+from ..models import (CAConnector,
+                      CAConnectorConfig, db, save_config_timestamp)
 
 log = logging.getLogger(__name__)
 
 
 @log_with(log)
-def save_caconnector(params):
+def save_caconnector(params: dict) -> int:
     """
     Create a new CA connector from the given parameters and save it to the
     database.
@@ -59,15 +60,14 @@ def save_caconnector(params):
 
     :param params: request parameters like "caconnector" (name) and "type"
         and the specific attributes of the ca connector.
-    :type params: dict
     :return: the database ID of the CA connector
-    :rtype: int
     """
     # before we create the resolver in the database, we need to check
     # for the name and type thing...
-    connector_name = getParam(params, 'caconnector', required)
-    connector_type = getParam(params, 'type', required)
+    connector_name = get_required(params, 'caconnector')
+    connector_type = get_required(params, 'type')
     update_connector = False
+    existing_connector_name = None
     sanity_name_check(connector_name)
     # check the type
     if connector_type not in get_caconnector_types():
@@ -80,6 +80,7 @@ def save_caconnector(params):
             # There is a CA connector with the same name, so we will update
             # the CA Connector config
             update_connector = True
+            existing_connector_name = connector.get("connectorname")
         else:  # pragma: no cover
             raise Exception("CA Connector with similar name and other type "
                             "already exists: %s" % connector_name)
@@ -96,21 +97,36 @@ def save_caconnector(params):
 
     # Everything passed. So lets actually create the CA Connector in the DB
     if update_connector:
-        connector_id = CAConnector.query.filter(func.lower(CAConnector.name)
-                                                == connector_name.lower()).first().id
+        stmt = select(CAConnector).where(CAConnector.name == existing_connector_name)
+        connector_id = db.session.scalars(stmt).first().id
     else:
         db_connector = CAConnector(params.get("caconnector"),
                                    params.get("type"))
-        connector_id = db_connector.save()
+        db.session.add(db_connector)
+        db.session.flush()  # flush to assign id
+        connector_id = db_connector.id
+
     # create the config
     for key, value in data.items():
         if types.get(key) == "password":
             value = encryptPassword(value)
-        CAConnectorConfig(caconnector_id=connector_id,
-                          Key=key,
-                          Value=value,
-                          Type=types.get(key, ""),
-                          Description=desc.get(key, "")).save()
+
+        stmt = select(CAConnectorConfig).filter_by(caconnector_id=connector_id, Key=key)
+        config = db.session.execute(stmt).scalar_one_or_none()
+
+        if config:
+            config.Value = value
+            config.Type = types.get(key, "")
+            config.Description = desc.get(key, "")
+        else:
+            config = CAConnectorConfig(caconnector_id=connector_id,
+                                       Key=key,
+                                       Value=value,
+                                       Type=types.get(key, ""),
+                                       Description=desc.get(key, ""))
+            db.session.add(config)
+    db.session.commit()
+    save_config_timestamp()
     return connector_id
 
 
@@ -187,7 +203,7 @@ def delete_caconnector(connector_name):
 
 
 @log_with(log)
-#@cache.memoize(10)
+# @cache.memoize(10)
 def get_caconnector_config(connector_name):
     """
     return the complete config of a given CA connector from the database
@@ -201,8 +217,8 @@ def get_caconnector_config(connector_name):
     return conn[0].get("data", {})
 
 
-#@log_with(log)
-#@cache.memoize(10)
+# @log_with(log)
+# @cache.memoize(10)
 def get_caconnector_config_description(caconnector_type):
     """
     Get the description of the configuration of a CA connector
@@ -225,7 +241,7 @@ def get_caconnector_config_description(caconnector_type):
     return descriptor
 
 
-#@cache.memoize(10)
+# @cache.memoize(10)
 def get_caconnector_class(connector_type):
     """
     Return the class for a given CA connector type.
@@ -246,7 +262,7 @@ def get_caconnector_class(connector_type):
     return ret
 
 
-#@cache.memoize(10)
+# @cache.memoize(10)
 def get_caconnector_type(connector_name):
     """
     return the type of CA connector
@@ -271,8 +287,9 @@ def get_caconnector_object(connector_name):
     """
     c_obj = None
 
-    connectors = CAConnector.query.filter(func.lower(CAConnector.name) ==
-                                          connector_name.lower()).all()
+    stmt = select(CAConnector).where(func.lower(CAConnector.name) == connector_name.lower())
+    connectors = db.session.scalars(stmt).all()
+
     for conn in connectors:
         c_obj_class = get_caconnector_class(conn.catype)
 

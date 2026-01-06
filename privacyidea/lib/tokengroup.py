@@ -80,10 +80,10 @@ def delete_tokengroup(name: str = None, tokengroup_id: int = None):
         error_msg += "does not exist."
         raise ResourceNotFoundError(error_msg)
 
-    if len(token_group.token_list) > 0:
+    if len(token_group.tokens) > 0:
         raise privacyIDEAError(
             "The token group with name '{0!s}' still has {1:d} tokens assigned.".format(token_group.name,
-                                                                                        len(token_group.token_list)))
+                                                                                        len(token_group.tokens)))
 
     db.session.delete(token_group)
     db.session.commit()

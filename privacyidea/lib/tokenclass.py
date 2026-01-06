@@ -104,7 +104,7 @@ from .policydecorators import libpolicy, auth_otppin, challenge_response_allowed
 from .user import (User)
 from ..api.lib.utils import getParam
 from ..models import (TokenOwner, TokenTokengroup, Challenge, cleanup_challenges, TokenInfo, db, TokenRealm, Realm,
-                      Tokengroup, MachineToken, TokenCredentialIdHash)
+                      Tokengroup, MachineToken, TokenCredentialIdHash, Token)
 
 DATE_FORMAT = '%Y-%m-%dT%H:%M%z'
 AUTH_DATE_FORMAT = "%Y-%m-%d %H:%M:%S.%f%z"
@@ -236,7 +236,8 @@ class TokenClass(object):
         # FIXME: We need to remove this, if we one day want to assign several users to one token
         token_owner = self.user
         if not token_owner:
-            new_owner = TokenOwner(token_id=self.token.id, user_id=uid, resolver=resolvername, realmname=user.realm)
+            new_owner = TokenOwner(token_id=self.token.id, user_id=uid, resolver=resolvername, realm_id=user.realm_id,
+                                   realmname=user.realm)
             db.session.add(new_owner)
             # Add users realm to token realms
             self.set_realms([user.realm], add=True, commit_db_session=False)
@@ -273,8 +274,7 @@ class TokenClass(object):
             log.error("Tokengroup %s does not exist. Cannot add it to token %s.", tokengroup, self.get_serial())
             raise ResourceNotFoundError(_("The tokengroup does not exist."))
 
-        existing_groups: list[str] = [association.tokengroup for association in self.token.tokengroup_list]
-        if tokengroup_db not in existing_groups:
+        if tokengroup_db not in self.token.tokengroup_list:
             association = TokenTokengroup(token_id=self.token.id, tokengroup_id=tokengroup_db.id)
             db.session.add(association)
         else:
@@ -451,8 +451,8 @@ class TokenClass(object):
             db.session.add(token_info)
         else:
             # Update existing info
-            statement = update(TokenInfo).where(TokenInfo.id == token_info.id).values(Value=value, Type=value_type)
-            db.session.execute(statement)
+            token_info.Value = value
+            token_info.Type = value_type
         if commit_db_session:
             db.session.commit()
 
@@ -757,31 +757,20 @@ class TokenClass(object):
         """
         delete the database token
         """
-        # First delete all relationships (TODO: should be handled automatically by cascade delete)
-        stmt = delete(TokenRealm).where(TokenRealm.token_id == self.token.id)
-        db.session.execute(stmt)
+        # First delete all relationships that are not automatically removed by cascade delete
+        delete_stmt_token_realm = delete(TokenRealm).where(TokenRealm.token_id == self.token.id)
+        db.session.execute(delete_stmt_token_realm)
 
-        stmt = delete(TokenOwner).where(TokenOwner.token_id == self.token.id)
-        db.session.execute(stmt)
-
-        stmt = delete(MachineToken).where(MachineToken.token_id == self.token.id)
-        db.session.execute(stmt)
-
-        stmt = delete(Challenge).where(Challenge.serial == self.token.serial)
-        db.session.execute(stmt)
-
-        stmt = delete(TokenInfo).where(TokenInfo.token_id == self.token.id)
-        db.session.execute(stmt)
-
-        stmt = delete(TokenTokengroup).where(TokenTokengroup.token_id == self.token.id)
-        db.session.execute(stmt)
+        delete_stmt_challenge = delete(Challenge).where(Challenge.serial == self.token.serial)
+        db.session.execute(delete_stmt_challenge)
 
         if self.get_tokentype().lower() in ["webauthn", "passkey"]:
-            stmt = delete(TokenCredentialIdHash).where(TokenCredentialIdHash.token_id == self.token.id)
-            db.session.execute(stmt)
-        db.session.commit()
+            delete_stmt_token_credential = delete(TokenCredentialIdHash).where(
+                TokenCredentialIdHash.token_id == self.token.id)
+            db.session.execute(delete_stmt_token_credential)
 
-        self.token.delete()
+        db.session.delete(self.token)
+        db.session.commit()
 
     def save(self):
         """
@@ -862,7 +851,7 @@ class TokenClass(object):
         :param tokengroups: token groups the token should be assigned to
         :param add: if the tokengroups should be added and not replaced
         """
-        existing_groups: list[Tokengroup] = [association.tokengroup for association in self.token.tokengroup_list]
+        existing_groups: list[Tokengroup] = self.token.tokengroup_list
         new_groups: set[str] = set(tokengroups) - {group.name for group in existing_groups}
         if not add:
             # delete existing token groups which are not in the new list
@@ -896,7 +885,7 @@ class TokenClass(object):
         """
         # get existing realms
         statement = select(TokenRealm).where(TokenRealm.token_id == self.token.id)
-        existing_realms = db.session.execute(statement).scalars().all()
+        existing_realms = db.session.scalars(statement).unique().all()
         existing_realm_names = {tr.realm.name for tr in existing_realms}
         realms_to_add = set(realms) - existing_realm_names
 
