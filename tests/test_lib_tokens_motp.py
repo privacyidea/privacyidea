@@ -190,7 +190,7 @@ class MotpTokenTestCase(MyTestCase):
         self.assertRaises(NotImplementedError, token.export_token)
 
         # Clean up
-        token.token.delete()
+        token.delete_token()
 
     def test_08_motp_token_import(self):
         token_data = [{

@@ -125,7 +125,7 @@ def generic_challenge_response_reset_pin(wrapped_function, *args, **kwds):
                         else:
                             # Obviously the admin removed the policy for changing pins,
                             # so we will not require to change the PIN again
-                            token_obj.del_tokeninfo("next_pin_change")
+                            token_obj.delete_tokeninfo("next_pin_change")
                         return True, {"message": "PIN successfully set.",
                                       "serial": token_obj.token.serial}
                     else:

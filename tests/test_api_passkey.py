@@ -31,6 +31,7 @@ from privacyidea.lib.token import remove_token, init_token, get_tokens, get_one_
 from privacyidea.lib.tokens.webauthn import CoseAlgorithm
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import AUTH_RESPONSE
+from privacyidea.models import db
 from tests.base import MyApiTestCase, OverrideConfigTestCase
 from tests.passkey_base import PasskeyTestBase
 
@@ -38,6 +39,8 @@ from tests.passkey_base import PasskeyTestBase
 class PasskeyAPITestBase(MyApiTestCase, PasskeyTestBase):
 
     def setUp(self):
+        # Clear session before each test to avoid side effects
+        db.session.expunge_all()
         PasskeyTestBase.setUp(self)
         self.setUp_user_realms()
         self.user = User(login="hans", realm=self.realm1,

@@ -127,19 +127,14 @@ class API000TokenAdminRealmList(MyApiTestCase):
             self.assertEqual(2, result.get("value").get("count"))
 
         # admin is allowed to see realm1
-        set_policy(name="pol-realm1",
-                   scope=SCOPE.ADMIN,
-                   action=PolicyAction.TOKENLIST, adminuser=self.testadmin, realm=self.realm1)
+        set_policy(name="pol-realm1", scope=SCOPE.ADMIN, action=PolicyAction.TOKENLIST, adminuser=self.testadmin,
+                   realm=self.realm1)
 
         # admin is allowed to list all realms
-        set_policy(name="pol-all-realms",
-                   scope=SCOPE.ADMIN,
-                   action=PolicyAction.TOKENLIST, adminuser=self.testadmin)
+        set_policy(name="pol-all-realms", scope=SCOPE.ADMIN, action=PolicyAction.TOKENLIST, adminuser=self.testadmin)
 
         # admin is allowed to only init, not list
-        set_policy(name="pol-only-init",
-                   scope=SCOPE.ADMIN,
-                   action="enrollHOTP")
+        set_policy(name="pol-only-init", scope=SCOPE.ADMIN, action="enrollHOTP")
 
         with self.app.test_request_context('/token/',
                                            method='GET',
@@ -174,7 +169,7 @@ class API000TokenAdminRealmList(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            # we have two tokens
+            # we have no tokens
             self.assertEqual(0, result.get("value").get("count"))
 
         delete_policy("pol-realm1")
@@ -439,13 +434,13 @@ class API000TokenAdminRealmList(MyApiTestCase):
         assign_token(t2.get_serial(), user=User(login='hans', realm=self.realm2))
 
         # set realm1 to token in another realm shall fail (no exception)
-        self.request_denied_assert_403(f"/token/realm/{t2.get_serial()}", {"realms": [self.realm1]}, self.at, 'POST')
+        self.request_denied_assert_403(f"/token/realm/{t2.get_serial()}", {"realms": self.realm1}, self.at, 'POST')
         t2_realms = t2.get_realms()
         self.assertNotIn(self.realm1, t2_realms)
         self.assertIn(self.realm2, t2_realms)
 
         # set realm2 to a token in no realm shall not work
-        self.request_denied_assert_403(f"/token/realm/{t3.get_serial()}", {"realms": [self.realm2]}, self.at,
+        self.request_denied_assert_403(f"/token/realm/{t3.get_serial()}", {"realms": self.realm2}, self.at,
                                        'POST')
         # check realm is not set
         t3_realms = t3.get_realms()
@@ -453,21 +448,22 @@ class API000TokenAdminRealmList(MyApiTestCase):
         self.assertNotIn(self.realm2, t3_realms)
 
         # set realm1 to token without realm shall not work
-        self.request_denied_assert_403(f"/token/realm/{t3.get_serial()}", {"realms": [self.realm1, self.realm3]},
+        self.request_denied_assert_403(f"/token/realm/{t3.get_serial()}", {"realms": f"{self.realm1},{self.realm3}"},
                                        self.at, 'POST')
         t3_realms = t3.get_realms()
         self.assertEqual(0, len(t3_realms))
 
         # set realm3 to a token in realm1 shall work
-        self.request_assert_200(f"/token/realm/{t1.get_serial()}", {"realms": [self.realm3, self.realm1]}, self.at,
+        self.request_assert_200(f"/token/realm/{t1.get_serial()}", {"realms": f"{self.realm3},{self.realm1}"}, self.at,
                                 'POST')
 
-        # set realm2 to a token in realm 1 shall fail (no exception)
-        self.request_assert_200(f"/token/realm/{t1.get_serial()}", {"realms": [self.realm2]}, self.at, 'POST')
+        # set realm2 to a token in realm 1 shall fail: realm2 is not set, realm1 is kept due to user and realm3 is removed
+        self.request_assert_200(f"/token/realm/{t1.get_serial()}", {"realms": self.realm2}, self.at, 'POST')
         # check realm is not set
         t1_realms = t1.get_realms()
         self.assertIn(self.realm1, t1_realms)
         self.assertNotIn(self.realm2, t1_realms)
+        self.assertNotIn(self.realm3, t1_realms)
 
         delete_policy("pol-reso1")
 
@@ -3580,7 +3576,7 @@ class API00TokenPerformance(MyApiTestCase):
         self.setUp_user_realms()
 
     def test_01_number_of_tokens(self):
-        # The GET /token returns a wildcard 100 tokens
+        # The GET /token returns a wildcard 21 tokens
         with self.app.test_request_context('/token/',
                                            method='GET',
                                            query_string={"serial": "perf*"},
@@ -3588,7 +3584,7 @@ class API00TokenPerformance(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            self.assertEqual(result.get("value").get("count"), self.token_count)
+            self.assertEqual(self.token_count, result.get("value").get("count"))
 
         init_token({"genkey": 1, "serial": "realmtoken"}, tokenrealms=[self.realm1])
         tokens = get_tokens(realm="*realm1*")
@@ -3603,7 +3599,7 @@ class API00TokenPerformance(MyApiTestCase):
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
             # Even if we fetch tokenrealm=** we also get all the tokens without a tokenrealm
-            self.assertEqual(result.get("value").get("count"), self.token_count + 10 + 1)
+            self.assertEqual(self.token_count + 10 + 1, result.get("value").get("count"))
 
         with self.app.test_request_context('/token/',
                                            method='GET',
@@ -3612,7 +3608,7 @@ class API00TokenPerformance(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            self.assertEqual(result.get("value").get("count"), 1)
+            self.assertEqual(1, result.get("value").get("count"))
 
         remove_token(serial="realmtoken")
 
@@ -3625,7 +3621,7 @@ class API00TokenPerformance(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            self.assertEqual(result.get("value").get("count"), 0)
+            self.assertEqual(0, result.get("value").get("count"))
 
         # Run POST assign with a wildcard. This shall not assign.
         with self.app.test_request_context('/token/assign',

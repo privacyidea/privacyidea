@@ -628,7 +628,7 @@ class SmsTokenClass(HotpTokenClass):
         :param options:
         :return:
         """
-        self.del_tokeninfo("dynamic_phone")
+        self.delete_tokeninfo("dynamic_phone")
         self.add_tokeninfo("phone", passw)
         # Dynamically we remember that we need to do another challenge
         self.currently_in_challenge = True
