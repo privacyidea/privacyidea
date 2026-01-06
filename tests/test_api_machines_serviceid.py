@@ -126,14 +126,13 @@ class APIMachinesServiceIDTestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
             self.assertEqual(result["status"], True)
-            value = result.get("value")
-            self.assertEqual(len(value), 2)
-            self.assertEqual(value[0]["application"], "ssh")
-            self.assertEqual(value[0].get("options").get("service_id"), self.serviceID2)
-            self.assertEqual(value[0].get("serial"), self.serial1)
-            self.assertEqual(value[1]["application"], "ssh")
-            self.assertEqual(value[1].get("options").get("service_id"), self.serviceID2)
-            self.assertEqual(value[1].get("serial"), self.serial2)
+            machine_tokens = result.get("value")
+            self.assertEqual(2, len(machine_tokens), machine_tokens)
+            serials = {machine.get("serial") for machine in machine_tokens}
+            self.assertSetEqual({self.serial1, self.serial2}, serials, serials)
+            for machine_token in machine_tokens:
+                self.assertEqual("ssh", machine_token["application"])
+                self.assertEqual(self.serviceID2, machine_token.get("options").get("service_id"))
 
         # combine filter and get service_id self.serviceID2 for serial1
         with self.app.test_request_context('/machine/token?service_id={0!s}&serial={1!s}'.format(
@@ -158,14 +157,12 @@ class APIMachinesServiceIDTestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
             self.assertEqual(result["status"], True)
-            value = result.get("value")
-            self.assertEqual(len(value), 2)
-            self.assertEqual(value[0]["application"], "ssh")
-            self.assertEqual(value[0].get("options").get("service_id"), self.serviceID2)
-            self.assertEqual(value[0].get("serial"), self.serial1)
-            self.assertEqual(value[1]["application"], "ssh")
-            self.assertEqual(value[1].get("options").get("service_id"), self.serviceID2)
-            self.assertEqual(value[1].get("serial"), self.serial2)
+            machine_tokens = result.get("value")
+            serials = {machine.get("serial") for machine in machine_tokens}
+            self.assertSetEqual({self.serial1, self.serial2}, serials, serials)
+            for machine_token in machine_tokens:
+                self.assertEqual("ssh", machine_token["application"])
+                self.assertEqual(self.serviceID2, machine_token.get("options").get("service_id"))
 
         # Get token for service_id self.serviceID2 and the wrong application
         with self.app.test_request_context(

@@ -1063,7 +1063,7 @@ class BaseEventHandlerTestCase(MyTestCase):
         self.assertFalse(r)
 
         # set last auth to 1 year ago: condition shall not match
-        container._db_container.last_updated = datetime.now(timezone.utc) - timedelta(days=365)
+        container._db_container.last_updated = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=365)
         container._db_container.save()
         r = event_handler.check_condition(options)
         self.assertFalse(r)
