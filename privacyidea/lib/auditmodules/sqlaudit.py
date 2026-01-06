@@ -63,6 +63,7 @@ from privacyidea.lib.utils import censor_connect_string
 from privacyidea.lib.utils import truncate_comma_list, is_true
 from privacyidea.models import Audit as LogEntry
 from privacyidea.models import audit_column_length as column_length
+from privacyidea.models.utils import utc_now
 
 log = logging.getLogger(__name__)
 
@@ -92,14 +93,6 @@ def fn_to_isodate(element, compiler, **kw):
     # The four percent signs are necessary for two format substitutions
     return "date_format(%s, '%%%%Y-%%%%m-%%%%d %%%%H:%%%%i:%%%%s')" % compiler.process(
         element.clauses, **kw)
-
-
-def _now():
-    """
-    Returns the current local date and time.
-    This function is required to be able to mock datetime.now() in tests.
-    """
-    return datetime.datetime.now()
 
 
 class Audit(AuditBase):
@@ -342,7 +335,7 @@ class Audit(AuditBase):
                             "Error occurs in action: {0!r}.".format(self.audit_data.get("action")))
                 if "token_type" not in self.audit_data:
                     self.audit_data["token_type"] = self.audit_data.get("tokentype")
-            end_date = _now()
+            end_date = utc_now()
             if self.audit_data.get("startdate"):
                 duration = end_date - self.audit_data.get("startdate")
             else:
