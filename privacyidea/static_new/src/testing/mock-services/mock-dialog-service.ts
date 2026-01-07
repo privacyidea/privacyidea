@@ -18,23 +18,11 @@
  **/
 
 import { DialogServiceInterface } from "../../app/services/dialog/dialog.service";
-import { MatDialogRefMock } from "../mat-dialog-ref-mock";
-
-// closeDialog<R>(ref: MatDialogRef<any, R>, result?: R): boolean;
-// openDialog<T, R>(args: {
-//   component: ComponentType<AbstractDialogComponent<T, R>>;
-//   data?: T;
-//   configOverride?: Partial<MatDialogConfig<T>>;
-// }): MatDialogRef<T, R>;
-
-// closeLatestDialog(): void;
-// closeAllDialogs(): void;
-// isAnyDialogOpen(): boolean;
-// isDialogOpen(ref: MatDialogRef<any>): boolean;
+import { MockMatDialogRef } from "../mock-mat-dialog-ref";
 
 export class MockDialogService implements DialogServiceInterface {
   closeDialog = jest.fn().mockReturnValue(true);
-  openDialog = jest.fn().mockReturnValue(new MatDialogRefMock());
+  openDialog = jest.fn().mockReturnValue(new MockMatDialogRef());
   closeLatestDialog = jest.fn();
   closeAllDialogs = jest.fn();
   isDialogOpen = jest.fn().mockReturnValue(false);

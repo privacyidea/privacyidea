@@ -104,7 +104,10 @@ export class EnrollPushComponent implements OnInit {
     } else {
       return {
         ...initResponse,
-        detail: { ...initResponse.detail, rollout_state: pollResponse.result?.value?.tokens[0].rollout_state }
+        detail: {
+          ...initResponse.detail,
+          rollout_state: pollResponse.result?.value?.tokens[0].rollout_state ?? initResponse.detail.rollout_state
+        }
       };
     }
   }

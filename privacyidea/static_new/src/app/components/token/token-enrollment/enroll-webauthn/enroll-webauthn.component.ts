@@ -107,26 +107,18 @@ export class EnrollWebauthnComponent implements OnInit {
     enrollmentResponse: EnrollmentResponse,
     enrollmentData: TokenEnrollmentData
   ): Promise<EnrollmentResponse | null> {
-    let webauthnEnrollmentResponse: WebauthnEnrollmentResponse;
-    if ((enrollmentResponse as any).detail.webAuthnRegisterRequest === undefined) {
-      return null;
-    } else {
-      webauthnEnrollmentResponse = enrollmentResponse as WebauthnEnrollmentResponse;
-    }
-    let webauthnEnrollmentData: WebAuthnEnrollmentData;
-    if (enrollmentData.type !== "webauthn") {
-      console.warn("Received enrollment data is not of type 'webauthn'. Cannot proceed with WebAuthn enrollment.");
-      return null;
-    } else {
-      webauthnEnrollmentData = enrollmentData as WebAuthnEnrollmentData;
-    }
-
-    if (!webauthnEnrollmentResponse || !webauthnEnrollmentResponse.detail) {
+    if (!(enrollmentResponse as any)?.detail?.webAuthnRegisterRequest?.detail) {
       this.notificationService.openSnackBar(
         "Failed to initiate WebAuthn registration: Invalid server response or missing details."
       );
+    }
+    const webauthnEnrollmentResponse = enrollmentResponse as WebauthnEnrollmentResponse;
+
+    if (enrollmentData.type !== "webauthn") {
+      console.warn("Received enrollment data is not of type 'webauthn'. Cannot proceed with WebAuthn enrollment.");
       return null;
     }
+    const webauthnEnrollmentData = enrollmentData as WebAuthnEnrollmentData;
 
     const detail = webauthnEnrollmentResponse.detail;
     const webAuthnRegOptions = detail?.webAuthnRegisterRequest;

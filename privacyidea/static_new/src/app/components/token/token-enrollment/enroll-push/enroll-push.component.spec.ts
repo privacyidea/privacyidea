@@ -24,12 +24,13 @@ import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { EnrollmentResponse } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
 import { PiResponse } from "../../../../app.component";
-import { MockDialogService, MockTokenService } from "../../../../../testing/mock-services";
+import { MockTokenService } from "../../../../../testing/mock-services";
 import { Tokens, TokenService } from "../../../../services/token/token.service";
 import { DialogService } from "../../../../services/dialog/dialog.service";
 import { PushApiPayloadMapper } from "../../../../mappers/token-api-payload/push-token-api-payload.mapper";
 import { lastValueFrom, of, throwError } from "rxjs";
 import { ReopenDialogFn } from "../token-enrollment.component";
+import { MockDialogService } from "../../../../../testing/mock-services/mock-dialog-service";
 
 function makeInitResp(serial = "S-1"): EnrollmentResponse {
   return {
@@ -95,7 +96,7 @@ describe("EnrollPushComponent", () => {
 
     expect(addSpy).toHaveBeenCalledWith({});
     expect(clickSpy).toHaveBeenCalled();
-    const emitted = clickSpy.mock.calls[0][0] as (opts: any) => Promise<EnrollmentResponse | null>;
+    const emitted = clickSpy.mock.calls[0][0];
     expect(typeof emitted).toBe("function");
   });
 
@@ -111,10 +112,9 @@ describe("EnrollPushComponent", () => {
     await component.onEnrollmentResponse(initResponse as EnrollmentResponse);
 
     expect(tokenSvc.enrollToken).toHaveBeenCalledTimes(1);
-    expect(dialogSvc.openTokenEnrollmentFirstStepDialog).toHaveBeenCalledTimes(1);
+    expect(dialogSvc.openDialog).toHaveBeenCalledTimes(1);
     expect(tokenSvc.pollTokenRolloutState).toHaveBeenCalledTimes(1);
-    expect(dialogSvc.closeTokenEnrollmentFirstStepDialog).toHaveBeenCalledTimes(1);
-    expect(component.pollResponse()).toBeUndefined();
+    expect(component.pollResponse()).toEqual(pollResp);
   });
 
   it("keeps dialog open when rollout_state is clientwait", async () => {
@@ -126,8 +126,7 @@ describe("EnrollPushComponent", () => {
     await component.onEnrollmentResponse(initResponse as EnrollmentResponse);
 
     expect(initResponse).not.toBeNull();
-    expect(dialogSvc.openTokenEnrollmentFirstStepDialog).toHaveBeenCalled();
-    expect(dialogSvc.closeTokenEnrollmentFirstStepDialog).not.toHaveBeenCalled();
+    expect(dialogSvc.openDialog).toHaveBeenCalled();
   });
 
   it("reopenDialogChange provides a Promise callback that re-triggers polling when dialog is not open", async () => {
@@ -145,13 +144,14 @@ describe("EnrollPushComponent", () => {
 
     expect(typeof reopenFn!).toBe("function");
 
-    dialogSvc.isTokenEnrollmentFirstStepDialogOpen = true;
-    const r1 = await reopenFn!();
-    expect(r1).toBeNull();
-
-    dialogSvc.isTokenEnrollmentFirstStepDialogOpen = false;
     const r2 = await reopenFn!();
-    expect(r2).toEqual(initResp);
+    expect(r2).toEqual({
+      ...initResp,
+      detail: {
+        ...initResp.detail,
+        rollout_state: pollResp.result?.value?.tokens[0].rollout_state ?? initResp.detail.rollout_state
+      }
+    });
     expect(tokenSvc.pollTokenRolloutState).toHaveBeenCalledTimes(2);
   });
 

@@ -543,6 +543,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     };
 
     const enrollmentArgs = this.enrollmentArgsGetter(basicOptions);
+    console.log(enrollmentArgs);
     if (!enrollmentArgs) return;
     const enrollResponse = this.tokenService.enrollToken(enrollmentArgs);
 

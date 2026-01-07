@@ -33,7 +33,7 @@ import { MockDialogService } from "../../../../testing/mock-services/mock-dialog
 import { MachineResolverPanelEditComponent } from "./machine-resolver-panel-edit.component";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { MatDialogRefMock } from "../../../../testing/mat-dialog-ref-mock";
+import { MockMatDialogRef } from "../../../../testing/mock-mat-dialog-ref";
 import { of } from "rxjs";
 
 @Component({
@@ -143,7 +143,7 @@ describe("MachineResolverPanelEditComponent", () => {
   it("should save machineResolver despite test failure if confirmed", async () => {
     machineResolverServiceMock.postTestMachineResolver.mockReturnValue(Promise.reject(Error("post-failed")));
     machineResolverServiceMock.postMachineResolver.mockReturnValue(Promise.resolve(null));
-    const dialogRefMock = new MatDialogRefMock();
+    const dialogRefMock = new MockMatDialogRef();
     dialogRefMock.afterClosed.mockReturnValue(of(true));
     dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
     component.isEditMode.set(true);
@@ -157,7 +157,7 @@ describe("MachineResolverPanelEditComponent", () => {
   it("should not save machineResolver if test fails and not confirmed", async () => {
     machineResolverServiceMock.postTestMachineResolver.mockReturnValue(Promise.reject(Error("post-failed")));
     machineResolverServiceMock.postMachineResolver.mockReturnValue(Promise.resolve(null));
-    const dialogRefMock = new MatDialogRefMock();
+    const dialogRefMock = new MockMatDialogRef();
     dialogRefMock.afterClosed.mockReturnValue(of(false));
     dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
     component.isEditMode.set(true);
@@ -179,7 +179,7 @@ describe("MachineResolverPanelEditComponent", () => {
   });
 
   it("should delete machineResolver if confirmed", async () => {
-    const dialogRefMock = new MatDialogRefMock();
+    const dialogRefMock = new MockMatDialogRef();
     dialogRefMock.afterClosed.mockReturnValue(of(true));
     dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
     machineResolverServiceMock.deleteMachineResolver.mockReturnValue(Promise.resolve(null));
@@ -189,7 +189,7 @@ describe("MachineResolverPanelEditComponent", () => {
   });
 
   it("should not delete machineResolver if cancelled", async () => {
-    const dialogRefMock = new MatDialogRefMock();
+    const dialogRefMock = new MockMatDialogRef();
     dialogRefMock.afterClosed.mockReturnValue(of(false));
     dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
     machineResolverServiceMock.deleteMachineResolver.mockReturnValue(Promise.resolve(null));
@@ -211,7 +211,7 @@ describe("MachineResolverPanelEditComponent", () => {
     component.editedMachineResolver.set({ ...machineResolver, type: "ldap" });
     TestBed.flushEffects();
     expect(component.isEdited()).toBeTruthy();
-    const dialogRefMock = new MatDialogRefMock();
+    const dialogRefMock = new MockMatDialogRef();
     dialogRefMock.afterClosed.mockReturnValue(of(true));
     dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
     component.cancelEditMode();
@@ -226,7 +226,7 @@ describe("MachineResolverPanelEditComponent", () => {
     component.editedMachineResolver.set({ ...machineResolver, type: "ldap" });
     TestBed.flushEffects();
     expect(component.isEdited()).toBeTruthy();
-    const dialogRefMock = new MatDialogRefMock();
+    const dialogRefMock = new MockMatDialogRef();
     dialogRefMock.afterClosed.mockReturnValue(of(false));
     dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
     component.cancelEditMode();

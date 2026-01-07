@@ -270,6 +270,11 @@ describe("TokenDetailsComponent", () => {
   });
 
   it("openSshMachineAssignDialog opens the dialog with expected data", () => {
+    const reloadSpy = machineSvc.tokenApplicationResource.reload as jest.Mock;
+    reloadSpy.mockClear();
+    matDialogOpen.mockReturnValue({
+      afterClosed: () => of(of({}))
+    });
     matDialogOpen.mockClear();
     component.openSshMachineAssignDialog();
     expect(matDialogOpen).toHaveBeenCalledTimes(1);

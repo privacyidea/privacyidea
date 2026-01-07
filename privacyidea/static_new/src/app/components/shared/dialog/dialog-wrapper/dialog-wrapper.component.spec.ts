@@ -10,21 +10,16 @@ describe("DialogWrapperComponent", () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [DialogWrapperComponent],
-      schemas: [CUSTOM_ELEMENTS_SCHEMA]
     }).compileComponents();
 
     fixture = TestBed.createComponent(DialogWrapperComponent);
     component = fixture.componentInstance;
     nativeElement = fixture.nativeElement;
-
-    // ZUERST die Required Inputs setzen:
     fixture.componentRef.setInput("title", "Test Title");
     fixture.componentRef.setInput("actions", [
       { id: "confirm", label: "Confirm", type: "confirm" },
-      { id: "cancel", label: "Cancel", type: "cancel" }
+      { id: "cancel", label: "Cancel", type: "cancel" },
     ]);
-
-    // ERST DANN detectChanges:
     fixture.detectChanges();
   });
 
@@ -34,7 +29,20 @@ describe("DialogWrapperComponent", () => {
 
   it("should display the title", () => {
     const titleEl = nativeElement.querySelector("h2");
-    expect(titleEl?.textContent).toBe("Test Title");
+    expect(titleEl?.textContent).toContain("Test Title");
+  });
+
+  it("should display the icon", () => {
+    fixture.componentRef.setInput("icon", "test_icon");
+    fixture.detectChanges();
+    const iconEl = nativeElement.querySelector("mat-icon");
+    expect(iconEl).toBeTruthy();
+    expect(iconEl?.textContent).toBe("test_icon");
+  });
+
+  it("should not display the icon", () => {
+    const iconEl = nativeElement.querySelector("mat-icon");
+    expect(iconEl).toBeFalsy();
   });
 
   it("should show the close button when showCloseButton is true", () => {

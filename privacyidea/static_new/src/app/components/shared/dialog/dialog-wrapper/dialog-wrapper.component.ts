@@ -3,16 +3,18 @@ import { assert } from "../../../../utils/assert";
 import { DialogAction } from "../../../../models/dialog";
 import { CommonModule } from "@angular/common";
 import { MatDialogModule } from "@angular/material/dialog";
+import { MatIconModule } from "@angular/material/icon";
 
 @Component({
   selector: "app-dialog-wrapper",
   templateUrl: "./dialog-wrapper.component.html",
   standalone: true,
-  imports: [CommonModule, MatDialogModule],
-  styleUrls: ["./dialog-wrapper.component.scss"]
+  imports: [CommonModule, MatDialogModule, MatIconModule],
+  styleUrls: ["./dialog-wrapper.component.scss"],
 })
 export class DialogWrapperComponent<R = any> {
   title = input.required<string>();
+  icon = input<string>();
   showCloseButton = input<boolean>(true);
   cancelButtonLabel = input<string>("Cancel");
   actions = input<DialogAction<R>[]>([]);
@@ -30,7 +32,7 @@ export class DialogWrapperComponent<R = any> {
   ngOnInit() {
     assert(
       this.actions().length != 0 || this.showCloseButton(),
-      "Dialog must have at least one action or a close button."
+      "Dialog must have at least one action or a close button.",
     );
   }
 }

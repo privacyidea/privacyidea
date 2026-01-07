@@ -27,9 +27,10 @@ import { TokenService } from "../../../services/token/token.service";
 import { NotificationService } from "../../../services/notification/notification.service";
 import { ContentService } from "../../../services/content/content.service";
 import { MockContentService, MockNotificationService, MockTokenService } from "../../../../testing/mock-services";
-import { MatDialog } from "@angular/material/dialog";
-import { SimpleConfirmationDialogComponent } from "../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { GetSerialResultDialogComponent } from "./get-serial-result-dialog/get-serial-result-dialog.component";
+import { DialogService } from "../../../services/dialog/dialog.service";
+import { MockDialogService } from "../../../../testing/mock-services/mock-dialog-service";
+import { MockMatDialogRef } from "../../../../testing/mock-mat-dialog-ref";
 
 const makeCountResp = (count: number) => ({ result: { value: { count } } }) as any;
 
@@ -37,19 +38,6 @@ const makeSerialResp = (serial?: string) => ({ result: { value: { serial } } }) 
 
 let confirmClosed$: Subject<boolean>;
 let lastResultDialogData: any;
-const matDialogMock = {
-  open: jest.fn((cmp: any, cfg: any) => {
-    if (cmp === SimpleConfirmationDialogComponent) {
-      return { afterClosed: () => confirmClosed$.asObservable() };
-    }
-    if (cmp === GetSerialResultDialogComponent) {
-      lastResultDialogData = cfg?.data;
-      return { afterClosed: () => of(undefined) };
-    }
-    return { afterClosed: () => of(undefined) };
-  }),
-  closeAll: jest.fn()
-};
 
 const routerMock = {
   navigateByUrl: jest.fn().mockResolvedValue(true)
@@ -60,6 +48,7 @@ describe("TokenGetSerialComponent", () => {
   let component: TokenGetSerialComponent;
   let tokenSvc: MockTokenService;
   let notif: MockNotificationService;
+  let dialogServiceMock: MockDialogService;
 
   beforeEach(async () => {
     jest.clearAllMocks();
@@ -73,7 +62,7 @@ describe("TokenGetSerialComponent", () => {
         { provide: TokenService, useClass: MockTokenService },
         { provide: NotificationService, useClass: MockNotificationService },
         { provide: ContentService, useClass: MockContentService },
-        { provide: MatDialog, useValue: matDialogMock },
+        { provide: DialogService, useClass: MockDialogService },
         { provide: Router, useValue: routerMock }
       ]
     }).compileComponents();
@@ -83,6 +72,7 @@ describe("TokenGetSerialComponent", () => {
 
     tokenSvc = TestBed.inject(TokenService) as unknown as MockTokenService;
     notif = TestBed.inject(NotificationService) as unknown as MockNotificationService;
+    dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
 
     (tokenSvc as any).getSerial = jest.fn();
 
@@ -140,20 +130,40 @@ describe("TokenGetSerialComponent", () => {
     expect(tokenSvc.getSerial).toHaveBeenCalledTimes(2);
     expect(component.currentStep()).toBe("found");
     expect(component.foundSerial()).toBe("SER-1");
-    expect(matDialogMock.open).toHaveBeenCalledWith(GetSerialResultDialogComponent, expect.anything());
+    expect(dialogServiceMock.openDialog).toHaveBeenCalledWith({
+      component: GetSerialResultDialogComponent,
+      data: {
+        foundSerial: "SER-1",
+        onClickSerial: expect.any(Function),
+        otpValue: "000000",
+        reset: expect.any(Function)
+      }
+    });
   });
 
-  it("large count: asks confirmation, proceed -> find; cancel -> reset", () => {
+  it("large count: asks confirmation, proceed -> find; cancel -> reset", async () => {
     (tokenSvc.getSerial as jest.Mock)
       .mockImplementationOnce((_otp: string, params: HttpParams) => {
         expect(params.get("count")).toBe("1");
         return of(makeCountResp(150));
       })
       .mockImplementationOnce(() => of(makeSerialResp("BIG-1")));
-
+    const dialogRefMock = new MockMatDialogRef();
+    dialogRefMock.afterClosed.mockReturnValue(of(true));
+    dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
     component.countTokens();
+    await Promise.resolve();
+    TestBed.flushEffects();
     expect(component.currentStep()).toBe("countDone");
-    expect(matDialogMock.open).toHaveBeenCalledWith(SimpleConfirmationDialogComponent, expect.anything());
+    expect(dialogServiceMock.openDialog).toHaveBeenCalledWith({
+      component: GetSerialResultDialogComponent,
+      data: {
+        foundSerial: "SER-1",
+        onClickSerial: expect.any(Function),
+        otpValue: "000000",
+        reset: expect.any(Function)
+      }
+    });
 
     confirmClosed$.next(true);
     confirmClosed$.complete();

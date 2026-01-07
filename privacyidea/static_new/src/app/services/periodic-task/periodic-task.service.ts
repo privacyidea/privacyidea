@@ -26,7 +26,7 @@ import { ROUTE_PATHS } from "../../route_paths";
 import { forkJoin, lastValueFrom, Observable, of, throwError } from "rxjs";
 import { catchError } from "rxjs/operators";
 import { NotificationService } from "../notification/notification.service";
-import { SimpleDialogComponent } from "../../components/shared/dialog/message-dialog/message-dialog.component";
+import { MessageDialogComponent } from "../../components/shared/dialog/message-dialog/message-dialog.component";
 import { SimpleConfirmationDialogComponent } from "../../components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 
 export type PeriodicTask = {

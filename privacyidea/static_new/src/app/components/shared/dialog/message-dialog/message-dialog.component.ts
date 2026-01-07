@@ -24,6 +24,7 @@ import { DialogWrapperComponent } from "../dialog-wrapper/dialog-wrapper.compone
 export type MessageDialogData = {
   title: string | null;
   texts: string[];
+  icon?: string;
 };
 
 @Component({
@@ -32,4 +33,4 @@ export type MessageDialogData = {
   templateUrl: "./message-dialog.component.html",
   styleUrl: "./message-dialog.component.scss"
 })
-export class SimpleDialogComponent extends AbstractDialogComponent<MessageDialogData> {}
+export class MessageDialogComponent extends AbstractDialogComponent<MessageDialogData> {}

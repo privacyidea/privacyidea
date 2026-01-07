@@ -22,7 +22,7 @@ import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { By } from "@angular/platform-browser";
 import { NO_ERRORS_SCHEMA, signal } from "@angular/core";
 import { provideHttpClient } from "@angular/common/http";
-import { MatDialogRefMock } from "../../../../../testing/mat-dialog-ref-mock";
+import { MockMatDialogRef } from "../../../../../testing/mock-mat-dialog-ref";
 
 const detectChangesStable = async (fixture: ComponentFixture<any>) => {
   fixture.detectChanges();
@@ -57,7 +57,7 @@ describe("ContainerRegistrationFinalizeDialogComponent", () => {
       providers: [
         provideHttpClient(),
         { provide: MAT_DIALOG_DATA, useValue: mockData },
-        { provide: MatDialogRef, useClass: MatDialogRefMock }
+        { provide: MatDialogRef, useClass: MockMatDialogRef }
       ],
       schemas: [NO_ERRORS_SCHEMA]
     }).compileComponents();
@@ -85,7 +85,7 @@ describe("ContainerRegistrationFinalizeDialogComponent", () => {
       providers: [
         provideHttpClient(),
         { provide: MAT_DIALOG_DATA, useValue: rolloverData },
-        { provide: MatDialogRef, useClass: MatDialogRefMock }
+        { provide: MatDialogRef, useClass: MockMatDialogRef }
       ],
       schemas: [NO_ERRORS_SCHEMA]
     }).compileComponents();

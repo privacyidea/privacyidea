@@ -28,6 +28,8 @@ import { DialogService } from "../../../services/dialog/dialog.service";
 import { MockDialogService } from "../../../../testing/mock-services/mock-dialog-service";
 import { MockMachineResolverService } from "../../../../testing/mock-services/mock-machine-resolver-service";
 import { MachineResolverPanelNewComponent } from "./machine-resolver-panel-new.component";
+import { MockMatDialogRef } from "../../../../testing/mock-mat-dialog-ref";
+import { of } from "rxjs";
 
 describe("MachineResolverPanelNewComponent", () => {
   let component: MachineResolverPanelNewComponent;
@@ -91,7 +93,9 @@ describe("MachineResolverPanelNewComponent", () => {
     jest.spyOn(panel, "close");
     jest.spyOn(panel, "open");
     component.newMachineResolver.set({ ...component.newMachineResolver(), resolvername: "test" });
-    dialogServiceMock.openDialog.mockReturnValue(Promise.resolve(true));
+    const dialogRefMock = new MockMatDialogRef();
+    dialogRefMock.afterClosed.mockReturnValue(of(true));
+    dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
     component.handleCollapse(panel);
     expect(dialogServiceMock.openDialog).toHaveBeenCalled();
   });

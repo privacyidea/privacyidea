@@ -20,7 +20,7 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideExperimentalZonelessChangeDetection } from "@angular/core";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { lastValueFrom, map, of, throwError } from "rxjs";
+import { lastValueFrom, of, throwError } from "rxjs";
 import { EnrollWebauthnComponent } from "./enroll-webauthn.component";
 import {
   WebAuthnApiPayloadMapper,
@@ -35,15 +35,7 @@ import {
 } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
 import { provideHttpClient } from "@angular/common/http";
 import { DialogService } from "../../../../services/dialog/dialog.service";
-
-const dialogStub = {
-  isTokenEnrollmentFirstStepDialogOpen: false,
-  openTokenEnrollmentFirstStepDialog: jest.fn(() => ({
-    afterClosed: () => of(undefined),
-    close: jest.fn()
-  })),
-  closeTokenEnrollmentFirstStepDialog: jest.fn()
-};
+import { MockDialogService } from "../../../../../testing/mock-services/mock-dialog-service";
 
 const makeEnrollInitResponse = () => ({
   detail: {
@@ -89,6 +81,7 @@ describe("EnrollWebauthnComponent", () => {
   let tokenService: jest.Mocked<TokenService>;
   let notification: jest.Mocked<NotificationService>;
   let base64: jest.Mocked<Base64Service>;
+  let dialogServiceMock: MockDialogService;
 
   const setNavigatorCreate = (impl: () => Promise<any>) => {
     (navigator as any).credentials = {
@@ -114,11 +107,12 @@ describe("EnrollWebauthnComponent", () => {
         { provide: Base64Service, useValue: base64 },
         { provide: WebAuthnApiPayloadMapper, useValue: {} },
         { provide: WebAuthnFinalizeApiPayloadMapper, useValue: {} },
-        { provide: DialogService, useValue: dialogStub }
+        { provide: DialogService, useClass: MockDialogService }
       ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(EnrollWebauthnComponent);
+    dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
     component = fixture.componentInstance;
   });
 
@@ -210,14 +204,6 @@ describe("EnrollWebauthnComponent", () => {
   });
 
   it("should return null when credential creation throws and close dialog", async () => {
-    const openDialog = jest.fn();
-    const closeDialog = jest.fn();
-    (component as any).dialogService = {
-      isTokenEnrollmentFirstStepDialogOpen: false,
-      openTokenEnrollmentFirstStepDialog: openDialog,
-      closeTokenEnrollmentFirstStepDialog: closeDialog
-    };
-
     setNavigatorCreate(async () => {
       throw new Error("blocked");
     });
@@ -230,21 +216,12 @@ describe("EnrollWebauthnComponent", () => {
       initResponse as EnrollmentResponse,
       enrollmentArgs!.data
     );
-    expect(openDialog).toHaveBeenCalled();
-    expect(closeDialog).toHaveBeenCalled();
+    expect(dialogServiceMock.openDialog).toHaveBeenCalled();
     expect(finalResponse).toBeNull();
     expect(notification.openSnackBar).toHaveBeenCalledWith("WebAuthn credential creation failed: blocked");
   });
 
   it("should complete full happy path and return final response", async () => {
-    const openDialog = jest.fn();
-    const closeDialog = jest.fn();
-    (component as any).dialogService = {
-      isTokenEnrollmentFirstStepDialogOpen: false,
-      openTokenEnrollmentFirstStepDialog: openDialog,
-      closeTokenEnrollmentFirstStepDialog: closeDialog
-    };
-
     setNavigatorCreate(async () => makePublicKeyCredential());
     tokenService.enrollToken
       .mockReturnValueOnce(of(makeEnrollInitResponse() as any) as any)
@@ -258,22 +235,13 @@ describe("EnrollWebauthnComponent", () => {
       enrollmentArgs!.data
     );
 
-    expect(openDialog).toHaveBeenCalled();
-    expect(closeDialog).toHaveBeenCalled();
+    expect(dialogServiceMock.openDialog).toHaveBeenCalled();
     expect(base64.base64URLToBytes).toHaveBeenCalled();
     expect(base64.bytesToBase64).toHaveBeenCalled();
     expect(finalResponse).toEqual({ detail: { serial: "SER123" }, type: "webauthn" });
   });
 
   it("should notify when finalization fails", async () => {
-    const openDialog = jest.fn();
-    const closeDialog = jest.fn();
-    (component as any).dialogService = {
-      isTokenEnrollmentFirstStepDialogOpen: false,
-      openTokenEnrollmentFirstStepDialog: openDialog,
-      closeTokenEnrollmentFirstStepDialog: closeDialog
-    };
-
     setNavigatorCreate(async () => makePublicKeyCredential());
     tokenService.enrollToken
       .mockReturnValueOnce(of(makeEnrollInitResponse() as any) as any)

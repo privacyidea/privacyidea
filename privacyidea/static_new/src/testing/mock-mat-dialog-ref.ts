@@ -1,7 +1,7 @@
 import { MatDialogRef } from "@angular/material/dialog";
 import { of } from "rxjs";
 
-export class MatDialogRefMock<T, R = any> implements Partial<MatDialogRef<T, R>> {
+export class MockMatDialogRef<T, R = any> implements Partial<MatDialogRef<T, R>> {
   close = jest.fn();
   afterClosed = jest.fn().mockReturnValue(of(undefined));
   afterOpened = jest.fn().mockReturnValue(of(undefined));

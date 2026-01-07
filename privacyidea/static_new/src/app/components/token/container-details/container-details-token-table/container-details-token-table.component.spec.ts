@@ -229,15 +229,16 @@ describe("ContainerDetailsTokenTableComponent", () => {
       .spyOn(containerServiceMock, "removeTokenFromContainer")
       .mockReturnValue(of({ result: { value: true } } as any));
     component.removeTokenFromContainer("CONT-1", "Mock serial");
-    expect(matDialogMock.open).toHaveBeenCalledWith(
-      SimpleConfirmationDialogComponent,
-      expect.objectContaining({
-        data: expect.objectContaining({
-          serialList: ["Mock serial"],
-          action: "remove"
-        })
-      })
-    );
+    expect(matDialogMock.open).toHaveBeenCalledWith(SimpleConfirmationDialogComponent, {
+      data: {
+        confirmAction: { label: "Remove", type: "destruct", value: true },
+        itemType: "token",
+        items: ["Mock serial"],
+        title: "Remove Token"
+      },
+      disableClose: false,
+      hasBackdrop: true
+    });
     expect(containerServiceMock.removeTokenFromContainer).toHaveBeenCalledWith("CONT-1", "Mock serial");
     expect(containerServiceMock.containerDetailResource.reload).toHaveBeenCalled();
   });
@@ -250,15 +251,16 @@ describe("ContainerDetailsTokenTableComponent", () => {
 
   it("deleteTokenFromContainer confirms and deletes on confirm=true", () => {
     component.deleteTokenFromContainer("Another serial");
-    expect(matDialogMock.open).toHaveBeenCalledWith(
-      SimpleConfirmationDialogComponent,
-      expect.objectContaining({
-        data: expect.objectContaining({
-          serialList: ["Another serial"],
-          action: "delete"
-        })
-      })
-    );
+    expect(matDialogMock.open).toHaveBeenCalledWith(SimpleConfirmationDialogComponent, {
+      data: {
+        confirmAction: { label: "Delete", type: "destruct", value: true },
+        itemType: "token",
+        items: ["Another serial"],
+        title: "Delete Token"
+      },
+      disableClose: false,
+      hasBackdrop: true
+    });
     expect(tokenServiceMock.deleteToken as any).toHaveBeenCalledWith("Another serial");
     expect(containerServiceMock.containerDetailResource.reload).toHaveBeenCalled();
   });

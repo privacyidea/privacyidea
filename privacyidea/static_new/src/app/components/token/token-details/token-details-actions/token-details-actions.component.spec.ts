@@ -39,6 +39,9 @@ import { MatDialog } from "@angular/material/dialog";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { MockAuthService } from "../../../../../testing/mock-services/mock-auth-service";
+import { MockMatDialogRef } from "../../../../../testing/mock-mat-dialog-ref";
+import { DialogService } from "../../../../services/dialog/dialog.service";
+import { MockDialogService } from "../../../../../testing/mock-services/mock-dialog-service";
 
 describe("TokenDetailsActionsComponent", () => {
   let fixture: ComponentFixture<TokenDetailsActionsComponent>;
@@ -79,7 +82,6 @@ describe("TokenDetailsActionsComponent", () => {
     machineSvc = TestBed.inject(MachineService) as unknown as MockMachineService;
     notifSvc = TestBed.inject(NotificationService) as unknown as MockNotificationService;
     dialog = TestBed.inject(MatDialog) as unknown as jest.Mocked<MatDialog>;
-
     fixture = TestBed.createComponent(TokenDetailsActionsComponent);
     component = fixture.componentInstance;
 
@@ -190,12 +192,21 @@ describe("TokenDetailsActionsComponent", () => {
 
   describe("openLostTokenDialog()", () => {
     it("passes the isLost & tokenSerial signals to the dialog", () => {
+      const reloadSpy = machineSvc.tokenApplicationResource.reload as jest.Mock;
+      reloadSpy.mockClear();
+
+      matDialogOpen.mockReturnValue({
+        afterClosed: () => of(of({}))
+      });
+
       component.openLostTokenDialog();
       expect(dialog.open).toHaveBeenCalledWith(expect.any(Function), {
         data: {
           isLost: component.isLost,
           tokenSerial: component.tokenSerial
-        }
+        },
+        disableClose: false,
+        hasBackdrop: true
       });
     });
   });

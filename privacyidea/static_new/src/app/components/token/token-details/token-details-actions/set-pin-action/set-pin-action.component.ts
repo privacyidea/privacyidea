@@ -23,7 +23,7 @@ import {
   NotificationServiceInterface
 } from "../../../../../services/notification/notification.service";
 import {
-  SimpleDialogComponent as MessageDialogComponent,
+  MessageDialogComponent as MessageDialogComponent,
   MessageDialogData as MessageDialogData
 } from "../../../../shared/dialog/message-dialog/message-dialog.component";
 import { TokenService, TokenServiceInterface } from "../../../../../services/token/token.service";

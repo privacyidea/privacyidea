@@ -21,7 +21,7 @@ import { ContainerRegistrationInitDialogComponent } from "./container-registrati
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { By } from "@angular/platform-browser";
 import { NO_ERRORS_SCHEMA, signal } from "@angular/core";
-import { MatDialogRefMock } from "../../../../../testing/mat-dialog-ref-mock";
+import { MockMatDialogRef } from "../../../../../testing/mock-mat-dialog-ref";
 
 describe("ContainerRegistrationInitDialogComponent", () => {
   let component: ContainerRegistrationInitDialogComponent;
@@ -40,7 +40,7 @@ describe("ContainerRegistrationInitDialogComponent", () => {
         imports: [ContainerRegistrationInitDialogComponent],
         providers: [
           { provide: MAT_DIALOG_DATA, useValue: mockData },
-          { provide: MatDialogRef, useClass: MatDialogRefMock }
+          { provide: MatDialogRef, useClass: MockMatDialogRef }
         ],
         schemas: [NO_ERRORS_SCHEMA]
       }).compileComponents();
