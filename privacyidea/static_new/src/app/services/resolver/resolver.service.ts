@@ -98,7 +98,7 @@ export interface ResolverServiceInterface {
   resolvers: Signal<Resolver[]>;
   resolverOptions: Signal<string[]>;
 
-  postResolverTest(): Observable<any>;
+  postResolverTest(data: any): Observable<any>;
 
   postResolver(resolverName: string, data: any): Observable<any>;
 
@@ -127,8 +127,8 @@ export class ResolverService implements ResolverServiceInterface {
     return resolvers ? Object.keys(resolvers) : [];
   });
 
-  postResolverTest() {
-    return this.http.post(this.resolverBaseUrl + "test", {}, { headers: this.authService.getHeaders() }).pipe(
+  postResolverTest(data: any = {}) {
+    return this.http.post(this.resolverBaseUrl + "test", data, { headers: this.authService.getHeaders() }).pipe(
       catchError((error) => {
         console.error("Error during resolver test:", error);
         return throwError(() => error);

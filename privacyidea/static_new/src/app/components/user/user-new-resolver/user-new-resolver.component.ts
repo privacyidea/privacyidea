@@ -127,6 +127,8 @@ export class UserNewResolverComponent {
   };
   isSaving = false;
   isTesting = false;
+  testUsername = "";
+  testUserId = "";
 
   constructor() {
     effect(() => {
@@ -310,8 +312,24 @@ export class UserNewResolverComponent {
   onTest(): void {
     this.isTesting = true;
 
+    const payload: any = {
+      type: this.resolverType,
+      ...this.formData,
+      test_username: this.testUsername,
+      test_userid: this.testUserId
+    };
+
+    if (this.isEditMode) {
+      payload["resolver"] = this.resolverName;
+    }
+
+    for (const [key, control] of Object.entries(this.additionalFormFields)) {
+      if (!control) continue;
+      payload[key] = control.value;
+    }
+
     this.resolverService
-      .postResolverTest()
+      .postResolverTest(payload)
       .subscribe({
         next: () => {
           this.notificationService.openSnackBar(
@@ -336,5 +354,8 @@ export class UserNewResolverComponent {
       }
     }
     this.additionalFormFields = validControls;
+  }
+
+  protected onQuickTest() {
   }
 }

@@ -153,16 +153,46 @@
         [type]="resolverType" />
     }
 
-    <div class="flex-row gap-1 margin-top-1">
-      <button
-        (click)="onTest()"
-        [disabled]="isSaving || isTesting || !resolverType"
-        class="action-button-1 width-238"
-        mat-stroked-button>
-        <mat-icon>wifi</mat-icon>
-        <span i18n>Test connection</span>
-      </button>
+    <div class="flex-row gap-16 margin-top-1 margin-left-1 ali-center just-center">
 
+      @if (resolverType !== 'passwdresolver') {
+        @if (resolverType !== 'ldapresolver') {
+          <div class="flex-column gap-16">
+          @if (resolverType === 'httpresolver' || resolverType === 'entraidresolver' || resolverType === 'keycloakresolver') {
+            <mat-form-field subscriptSizing="dynamic">
+              <mat-label i18n>Test username</mat-label>
+              <input
+                [(ngModel)]="testUsername"
+                matInput />
+            </mat-form-field>
+            <mat-form-field subscriptSizing="dynamic">
+              <mat-label i18n>Test user ID</mat-label>
+              <input
+                [(ngModel)]="testUserId"
+                matInput />
+            </mat-form-field>
+          }
+        </div>
+        } @else {
+          <button
+            (click)="onQuickTest()"
+            [disabled]="isSaving || isTesting || !resolverType"
+            class="action-button-1 width-238"
+            mat-stroked-button>
+            <mat-icon>wifi</mat-icon>
+            <span i18n>Quick Resolver Test</span>
+          </button>
+        }
+
+        <button
+          (click)="onTest()"
+          [disabled]="isSaving || isTesting || !resolverType"
+          class="action-button-1 width-238"
+          mat-stroked-button>
+          <mat-icon>wifi</mat-icon>
+          <span i18n>Test connection</span>
+        </button>
+      }
       <button
         (click)="onSave()"
         [disabled]="!resolverName || !resolverType"
