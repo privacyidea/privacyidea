@@ -70,6 +70,54 @@ export class UserNewResolverComponent {
   private readonly resolverService = inject(ResolverService);
   private readonly notificationService = inject(NotificationService);
   private readonly router = inject(Router);
+  readonly sqlPresets = [
+    {
+      name: "Wordpress",
+      table: "wp_users",
+      map: "{ \"userid\" : \"ID\", \"username\": \"user_login\", \"email\" : \"user_email\", \"givenname\" : \"display_name\", \"password\" : \"user_pass\" }"
+    },
+    {
+      name: "OTRS",
+      table: "users",
+      map: "{ \"userid\" : \"id\", \"username\": \"login\", \"givenname\" : \"first_name\", \"surname\" : \"last_name\", \"password\" : \"pw\" }"
+    },
+    {
+      name: "TINE 2.0",
+      table: "tine20_accounts",
+      map: "{ \"userid\" : \"id\", \"username\": \"login_name\", \"email\" : \"email\", \"givenname\" : \"first_name\", \"surname\" : \"last_name\", \"password\" : \"password\" }"
+    },
+    {
+      name: "Owncloud",
+      table: "oc_users",
+      map: "{ \"userid\" : \"uid\", \"username\": \"uid\", \"givenname\" : \"displayname\", \"password\" : \"password\" }"
+    },
+    {
+      name: "Typo3",
+      table: "be_users",
+      map: "{ \"userid\" : \"uid\", \"username\": \"username\", \"givenname\" : \"realName\", \"password\" : \"password\", \"email\": \"email\" }"
+    },
+    {
+      name: "Drupal",
+      table: "user",
+      map: "{\"userid\": \"uid\", \"username\": \"name\", \"email\": \"mail\", \"password\": \"pass\" }"
+    }
+  ];
+  readonly ldapPresets = [
+    {
+      name: "OpenLDAP",
+      loginName: "uid",
+      searchFilter: "(uid=*)(objectClass=inetOrgPerson)",
+      userInfo: "{ \"phone\" : \"telephoneNumber\", \"mobile\" : \"mobile\", \"email\" : \"mail\", \"surname\" : \"sn\", \"givenname\" : \"givenName\" }",
+      uidType: "entryUUID"
+    },
+    {
+      name: "Active Directory",
+      loginName: "sAMAccountName",
+      searchFilter: "(sAMAccountName=*)(objectCategory=person)",
+      userInfo: "{ \"phone\" : \"telephoneNumber\", \"mobile\" : \"mobile\", \"email\" : \"mail\", \"surname\" : \"sn\", \"givenname\" : \"givenName\" }",
+      uidType: "objectGUID"
+    }
+  ];
   private editInitialized = false;
   additionalFormFields: { [key: string]: FormControl<any> } = {};
   resolverName = "";
@@ -108,6 +156,29 @@ export class UserNewResolverComponent {
       this.formData = {};
       this.additionalFormFields = {};
     }
+  }
+
+  applySqlPreset(preset: any): void {
+    this.formData = {
+      ...this.formData,
+      Table: preset.table,
+      Map: preset.map,
+      poolSize: 5,
+      poolTimeout: 10,
+      poolRecycle: 7200,
+      Editable: true
+    };
+  }
+
+  applyLdapPreset(preset: any): void {
+    this.formData = {
+      ...this.formData,
+      LOGINNAMEATTRIBUTE: preset.loginName,
+      LDAPSEARCHFILTER: preset.searchFilter,
+      USERINFO: preset.userInfo,
+      UIDTYPE: preset.uidType,
+      MULTIVALUEATTRIBUTES: ""
+    };
   }
 
   onSave(): void {
