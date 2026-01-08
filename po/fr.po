@@ -4,15 +4,15 @@
 # nicolas hahang <nicolas.hahang@gmail.com>, 2024.
 # Julien Mutterer <Julien_M@users.noreply.hosted.weblate.org>, 2024.
 # Jelina Unger <jelina.unger@netknights.it>, 2024.
-# Gregory Bouzinac <gregory.b@orange.fr>, 2024, 2025.
+# Gregory Bouzinac <gregory.b@orange.fr>, 2024, 2025, 2026.
 # Takoz <lucasandlauer@free.fr>, 2025.
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: translations@privacyidea.org\n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2025-11-07 12:51+0000\n"
-"Last-Translator: Takoz <lucasandlauer@free.fr>\n"
+"PO-Revision-Date: 2026-01-08 17:01+0000\n"
+"Last-Translator: Gregory Bouzinac <gregory.b@orange.fr>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-webui/fr/>\n"
 "Language: fr\n"
@@ -20,7 +20,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Weblate 5.15-dev\n"
+"X-Generator: Weblate 5.15.1\n"
 
 #. level of subscription
 #: privacyidea/static/components/components/views/component.subscriptions.html:27
@@ -655,7 +655,7 @@ msgstr "Authentifications dans les dernières 24 heures"
 
 #: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:166
 msgid "Authority"
-msgstr ""
+msgstr "Autorité"
 
 #: privacyidea/static/components/config/views/config.system.edit.html:80
 msgid "Auto resync timeout"
@@ -2353,7 +2353,7 @@ msgstr "IP/FQDN"
 #: privacyidea/static/components/config/views/config.tokengroup.list.html:5
 #: privacyidea/static/components/machine/views/machine.list.html:23
 msgid "Id"
-msgstr "Identifiant"
+msgstr "Id"
 
 #: privacyidea/static/components/config/views/config.privacyideaserver.edit.html:13
 #: privacyidea/static/components/config/views/config.privacyideaserver.list.html:5
