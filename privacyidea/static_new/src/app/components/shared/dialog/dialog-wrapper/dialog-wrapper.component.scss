@@ -1,0 +1,61 @@
+@use "../../../../../styles";
+
+.pi-dialog {
+  background-color: var(--mat-sys-surface);
+  border-radius: var(--border-radius);
+  overflow: auto;
+}
+
+.pi-dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--half-global-padding) var(--global-padding);
+  border-bottom: 1px solid var(--mat-sys-on-surface-variant);
+}
+
+.pi-dialog-header h2 {
+  margin: 0;
+}
+
+.pi-close-button {
+  background: none;
+  border: none;
+  font-size: 1.7em;
+  cursor: pointer;
+  color: var(--mat-sys-on-surface);
+}
+
+.pi-dialog-body {
+  padding: var(--global-padding);
+  color: var(--mat-sys-on-surface);
+  font-size: 1rem;
+}
+
+.pi-dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: var(--half-global-padding) var(--global-padding);
+  border-top: 1px solid var(--mat-sys-on-surface-variant);
+}
+
+.dialog-action-button-default {
+  @extend styles, .button, .action-button-1 !optional;
+  border-width: thin;
+  padding: var(--third-global-padding);
+  font-size: 1rem;
+}
+
+.dialog-action-button-destruct {
+  @extend styles, .button, .action-button-delete !optional;
+  border-width: thin;
+  padding: var(--third-global-padding);
+  font-size: 1rem;
+}
+
+.dialog-action-button-cancel {
+  @extend styles, .button, .action-button-cancel !optional;
+  border-width: thin;
+  padding: var(--third-global-padding);
+  font-size: 1rem;
+}

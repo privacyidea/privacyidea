@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -55,6 +55,7 @@ import { MachineService, MachineServiceInterface } from "../../../services/machi
 import { FilterValue } from "../../../core/models/filter_value/filter_value";
 import { MatTooltip } from "@angular/material/tooltip";
 import { AuditService, AuditServiceInterface } from "../../../services/audit/audit.service";
+import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
 
 export const tokenDetailsKeyMap = [
   { key: "tokentype", label: "Type" },
@@ -127,7 +128,7 @@ export const infoDetailsKeyMap = [{ key: "info", label: "Information" }];
   styleUrls: ["./token-details.component.scss"]
 })
 export class TokenDetailsComponent {
-  protected readonly matDialog: MatDialog = inject(MatDialog);
+  protected readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
   protected readonly realmService: RealmServiceInterface = inject(RealmService);
@@ -371,9 +372,7 @@ export class TokenDetailsComponent {
       tokenType: this.tokenType()
     };
 
-    this.matDialog.open(TokenSshMachineAssignDialogComponent, {
-      data: data
-    });
+    this.dialogService.openDialog({ component: TokenSshMachineAssignDialogComponent, data: data });
   }
 
   protected showTokenAuditLog() {

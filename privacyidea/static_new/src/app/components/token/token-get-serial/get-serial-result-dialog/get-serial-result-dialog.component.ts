@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,16 +16,12 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, inject } from "@angular/core";
+import { Component } from "@angular/core";
 import { MatButton } from "@angular/material/button";
-import {
-  MAT_DIALOG_DATA,
-  MatDialogActions,
-  MatDialogClose,
-  MatDialogContent,
-  MatDialogRef,
-  MatDialogTitle
-} from "@angular/material/dialog";
+import { MatDialogActions, MatDialogClose, MatDialogContent } from "@angular/material/dialog";
+import { AbstractDialogComponent } from "../../../shared/dialog/abstract-dialog/abstract-dialog.component";
+import { DialogWrapperComponent } from "../../../shared/dialog/dialog-wrapper/dialog-wrapper.component";
+import { DialogAction } from "../../../../models/dialog";
 
 export type GetSerialResultDialogData = {
   foundSerial: string;
@@ -36,19 +32,16 @@ export type GetSerialResultDialogData = {
 
 @Component({
   selector: "app-get-serial-result-dialog",
-  imports: [
-    MatDialogContent,
-    MatDialogTitle,
-    MatDialogActions,
-    MatButton,
-    MatDialogClose
-  ],
+  imports: [MatDialogContent, MatDialogActions, MatButton, MatDialogClose, DialogWrapperComponent],
   templateUrl: "./get-serial-result-dialog.component.html",
   styleUrl: "./get-serial-result-dialog.component.scss",
   standalone: true
 })
-export class GetSerialResultDialogComponent {
-  public readonly dialogRef: MatDialogRef<GetSerialResultDialogComponent> =
-    inject(MatDialogRef);
-  public readonly data: GetSerialResultDialogData = inject(MAT_DIALOG_DATA);
+export class GetSerialResultDialogComponent extends AbstractDialogComponent<GetSerialResultDialogData, true> {
+  action: DialogAction<true> = {
+    type: "confirm",
+    label: $localize`OK`,
+    closeOnAction: true,
+    value: true
+  };
 }

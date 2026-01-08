@@ -1,5 +1,5 @@
 <!--
- (c) NetKnights GmbH 2025,  https://netknights.it
+ (c) NetKnights GmbH 2026,  https://netknights.it
 
  This code is free software; you can redistribute it and/or
  modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,24 +16,21 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-@if (data.header) {
-  <h2 mat-dialog-title>{{ data.header }}</h2>
-}
-<mat-dialog-content>
-  <div class="text-center">
-    <div>
-      {{ data.text }}
-    </div>
-    <div>
-      {{ data.data }}
-    </div>
-  </div>
-</mat-dialog-content>
-
-<mat-dialog-actions>
-  <button
-    mat-button
-    mat-dialog-close>
-    Close
-  </button>
-</mat-dialog-actions>
+<app-dialog-wrapper
+  [title]="data.title"
+  (close)="close()"
+  [actions]="actions">
+  <p i18n>
+    Are you sure you want to {{ data.confirmAction.label.toLocaleLowerCase() }}
+    @if (data.items.length > 1) {
+      all selected ({{ data.items.length }}) {{ data.itemType }}s?
+    } @else {
+      this {{ data.itemType }}?
+    }
+  </p>
+  <ul>
+    @for (item of data.items; track item) {
+      <li>{{ item }}</li>
+    }
+  </ul>
+</app-dialog-wrapper>

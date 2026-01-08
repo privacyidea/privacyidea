@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -17,41 +17,27 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, inject } from "@angular/core";
-import { MatButton } from "@angular/material/button";
-import {
-  MAT_DIALOG_DATA,
-  MatDialogActions,
-  MatDialogClose,
-  MatDialogContent,
-  MatDialogRef,
-  MatDialogTitle
-} from "@angular/material/dialog";
+import { MatDialogContent } from "@angular/material/dialog";
 import { EnrollmentResponse } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
 import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
+import { DialogWrapperComponent } from "../../../shared/dialog/dialog-wrapper/dialog-wrapper.component";
+import { AbstractDialogComponent } from "../../../shared/dialog/abstract-dialog/abstract-dialog.component";
 
 @Component({
   selector: "app-token-enrollment-first-step-dialog",
-  imports: [
-    MatButton,
-    MatDialogActions,
-    MatDialogClose,
-    MatDialogContent,
-    MatDialogTitle
-  ],
+  imports: [MatDialogContent, DialogWrapperComponent],
   templateUrl: "./token-enrollment-first-step-dialog.component.html",
   styleUrl: "./token-enrollment-first-step-dialog.component.scss"
 })
-export class TokenEnrollmentFirstStepDialogComponent {
-  protected readonly dialogRef: MatDialogRef<TokenEnrollmentFirstStepDialogComponent> =
-    inject(MatDialogRef);
-  public readonly data: {
+export class TokenEnrollmentFirstStepDialogComponent extends AbstractDialogComponent<
+  {
     enrollmentResponse: EnrollmentResponse;
-  } = inject(MAT_DIALOG_DATA);
+  },
+  boolean
+> {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
-  protected readonly contentService: ContentServiceInterface =
-    inject(ContentService);
-
+  protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly Object = Object;
 
   tokenSelected(tokenSerial: string) {

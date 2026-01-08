@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -28,6 +28,8 @@ import { DialogService } from "../../../services/dialog/dialog.service";
 import { MockDialogService } from "../../../../testing/mock-services/mock-dialog-service";
 import { MockMachineResolverService } from "../../../../testing/mock-services/mock-machine-resolver-service";
 import { MachineResolverPanelNewComponent } from "./machine-resolver-panel-new.component";
+import { MockMatDialogRef } from "../../../../testing/mock-mat-dialog-ref";
+import { of } from "rxjs";
 
 describe("MachineResolverPanelNewComponent", () => {
   let component: MachineResolverPanelNewComponent;
@@ -91,9 +93,11 @@ describe("MachineResolverPanelNewComponent", () => {
     jest.spyOn(panel, "close");
     jest.spyOn(panel, "open");
     component.newMachineResolver.set({ ...component.newMachineResolver(), resolvername: "test" });
-    dialogServiceMock.confirm.mockReturnValue(Promise.resolve(true));
+    const dialogRefMock = new MockMatDialogRef();
+    dialogRefMock.afterClosed.mockReturnValue(of(true));
+    dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
     component.handleCollapse(panel);
-    expect(dialogServiceMock.confirm).toHaveBeenCalled();
+    expect(dialogServiceMock.openDialog).toHaveBeenCalled();
   });
 
   it("should check if machineResolver can be saved", () => {

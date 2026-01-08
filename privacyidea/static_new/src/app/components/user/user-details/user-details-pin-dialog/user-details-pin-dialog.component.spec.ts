@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -20,7 +20,7 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 
 import { UserDetailsPinDialogComponent } from "./user-details-pin-dialog.component";
 import { By } from "@angular/platform-browser";
-import { MatDialogRef } from "@angular/material/dialog";
+import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 
 describe("UserDetailsPinDialogComponent", () => {
   let component: UserDetailsPinDialogComponent;
@@ -33,7 +33,10 @@ describe("UserDetailsPinDialogComponent", () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [UserDetailsPinDialogComponent],
-      providers: [{ provide: MatDialogRef, useValue: dialogRefMock }]
+      providers: [
+        { provide: MatDialogRef, useValue: dialogRefMock },
+        { provide: MAT_DIALOG_DATA, useValue: {} }
+      ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(UserDetailsPinDialogComponent);
@@ -45,25 +48,26 @@ describe("UserDetailsPinDialogComponent", () => {
     expect(component).toBeTruthy();
   });
 
-  it('should disable "assign" when PINs do not match', () => {
+  it('should disable "assign" when PINs do not match', async () => {
     component.pin.set("1234");
     component.pinRepeat.set("4321");
     fixture.detectChanges();
 
-    const assignBtn = fixture.debugElement.query(By.css('mat-dialog-actions button[color="primary"]'))
-      .nativeElement as HTMLButtonElement;
+    const assignBtn = fixture.debugElement.query(By.css(".pi-dialog-footer .pi-btn.dialog-action-button-default"))
+      ?.nativeElement as HTMLButtonElement;
 
+    expect(assignBtn).toBeDefined();
     expect(assignBtn.disabled).toBe(true);
   });
-
   it('should enable "assign" when PINs match', () => {
     component.pin.set("1234");
     component.pinRepeat.set("1234");
     fixture.detectChanges();
 
-    const assignBtn = fixture.debugElement.query(By.css('mat-dialog-actions button[color="primary"]'))
-      .nativeElement as HTMLButtonElement;
+    const assignBtn = fixture.debugElement.query(By.css(".pi-dialog-footer .pi-btn.dialog-action-button-default"))
+      ?.nativeElement as HTMLButtonElement;
 
+    expect(assignBtn).toBeDefined();
     expect(assignBtn.disabled).toBe(false);
   });
 
@@ -71,14 +75,8 @@ describe("UserDetailsPinDialogComponent", () => {
     component.pin.set("1234");
     component.pinRepeat.set("1234");
 
-    component.onConfirm();
+    component.onAction("confirm");
 
     expect(dialogRefMock.close).toHaveBeenCalledWith("1234");
-  });
-
-  it("should close on cancel", () => {
-    component.onCancel();
-
-    expect(dialogRefMock.close).toHaveBeenCalled();
   });
 });

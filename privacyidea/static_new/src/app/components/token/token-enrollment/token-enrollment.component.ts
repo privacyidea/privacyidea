@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -105,9 +105,11 @@ import {
 import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
 import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
-import { TokenEnrollmentLastStepDialogData } from "./token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
 import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
 import { UserAssignmentComponent } from "../user-assignment/user-assignment.component";
+import { TokenEnrollmentLastStepDialogComponent } from "./token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
+import { MatDialogConfig } from "@angular/material/dialog";
+import { TokenEnrollmentLastStepDialogData } from "./token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.self-service.component";
 
 export type enrollmentArgsGetterFn<T extends TokenEnrollmentData = TokenEnrollmentData> = (
   enrollmentOptions: TokenEnrollmentData
@@ -408,18 +410,27 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     return `${year}-${month}-${day}T${formattedHours}:${formattedMinutes}${offsetNoColon}`;
   }
 
-  reopenEnrollmentDialog() {
+  async reopenEnrollmentDialog() {
     const reopenFunction = this.reopenDialog();
     if (reopenFunction) {
-      reopenFunction();
+      let enrollPromise = this._toPromise(reopenFunction());
+      if (!enrollPromise) return;
+      let enrollmentResponse: EnrollmentResponse | null = await enrollPromise;
+      this.enrollResponse.set(enrollmentResponse);
+      if (enrollmentResponse) {
+        this._handleEnrollmentResponse({
+          response: enrollmentResponse,
+          user: this.userService.selectedUser()
+        });
+      }
       return;
     }
     const lastStepData = this._lastTokenEnrollmentLastStepDialogData();
     if (lastStepData) {
-      this.dialogService.openTokenEnrollmentLastStepDialog({
+      this.dialogService.openDialog({
+        component: TokenEnrollmentLastStepDialogComponent,
         data: lastStepData
       });
-      return;
     }
   }
 
@@ -535,18 +546,13 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     if (!enrollmentArgs) return;
     const enrollResponse = this.tokenService.enrollToken(enrollmentArgs);
 
-    let enrollPromise: Promise<EnrollmentResponse | null>;
-    if (enrollResponse instanceof Promise) {
-      enrollPromise = enrollResponse;
-    } else {
-      enrollPromise = lastValueFrom(enrollResponse);
-    }
+    let enrollPromise = this._toPromise(enrollResponse);
 
     enrollPromise.catch((error) => {
       const message = error.error?.result?.error?.message || "";
       this.notificationService.openSnackBar(`Failed to enroll token: ${message || error.message || error}`);
     });
-    let enrollmentResponse = await enrollPromise;
+    let enrollmentResponse: EnrollmentResponse | null = await enrollPromise;
     const onEnrollmentResponseFn = this.onEnrollmentResponse();
     if (onEnrollmentResponseFn && enrollmentResponse) {
       enrollmentResponse = await onEnrollmentResponseFn(enrollmentResponse, enrollmentArgs.data);
@@ -557,6 +563,14 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
         response: enrollmentResponse,
         user: user
       });
+    }
+  }
+
+  private _toPromise<T>(observable: Observable<T> | Promise<T>): Promise<T> {
+    if (observable instanceof Promise) {
+      return observable;
+    } else {
+      return lastValueFrom(observable);
     }
   }
 
@@ -577,7 +591,9 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
       onlyAddToRealm: this.userAssignmentComponent?.onlyAddToRealm() ?? false
     };
     this._lastTokenEnrollmentLastStepDialogData.set(dialogData);
-    this.dialogService.openTokenEnrollmentLastStepDialog({
+
+    this.dialogService.openDialog({
+      component: TokenEnrollmentLastStepDialogComponent,
       data: dialogData
     });
   }

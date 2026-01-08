@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -18,18 +18,13 @@
  **/
 
 import { DialogServiceInterface } from "../../app/services/dialog/dialog.service";
-import { signal } from "@angular/core";
+import { MockMatDialogRef } from "../mock-mat-dialog-ref";
 
 export class MockDialogService implements DialogServiceInterface {
-  isSelfServing = signal<boolean>(false);
-  tokenEnrollmentFirstStepRef = null;
-  isTokenEnrollmentFirstStepDialogOpen = false;
-  tokenEnrollmentLastStepRef = null;
-  isTokenEnrollmentLastStepDialogOpen = false;
-  openTokenEnrollmentFirstStepDialog = jest.fn().mockReturnValue(undefined);
-  closeTokenEnrollmentFirstStepDialog = jest.fn().mockReturnValue(undefined);
-  openTokenEnrollmentLastStepDialog = jest.fn().mockReturnValue(undefined);
-  closeTokenEnrollmentLastStepDialog = jest.fn().mockReturnValue(undefined);
-  confirm = jest.fn().mockResolvedValue(true);
+  closeDialog = jest.fn().mockReturnValue(true);
+  openDialog = jest.fn().mockReturnValue(new MockMatDialogRef());
+  closeLatestDialog = jest.fn();
+  closeAllDialogs = jest.fn();
+  isDialogOpen = jest.fn().mockReturnValue(false);
   isAnyDialogOpen = jest.fn().mockReturnValue(false);
 }

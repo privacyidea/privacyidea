@@ -1,0 +1,13 @@
+<app-dialog-wrapper
+  title="Find Serial"
+  i18n-title="@@DialogTitleFindSerial"
+  [actions]="[action]"
+  (close)="close()">
+  <div>
+    <p i18n>
+      This search request will check {{ data }} tokens in the system for the given OTP value.
+      <br />
+      This could take a lot of time and could even time out.
+    </p>
+  </div>
+</app-dialog-wrapper>

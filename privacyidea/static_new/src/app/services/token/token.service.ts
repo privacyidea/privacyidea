@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -44,7 +44,9 @@ import { FilterValue } from "../../core/models/filter_value/filter_value";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
 import { StringUtils } from "../../utils/string.utils";
-import { ConfirmationDialogComponent } from "../../components/shared/confirmation-dialog/confirmation-dialog.component";
+import { SimpleConfirmationDialogComponent } from "../../components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { DialogService, DialogServiceInterface } from "../dialog/dialog.service";
+import { DialogAction } from "../../models/dialog";
 
 export type TokenTypeKey =
   | "hotp"
@@ -74,15 +76,7 @@ export type TokenTypeKey =
   | "webauthn"
   | "passkey";
 
-const apiFilter = [
-  "serial",
-  "type",
-  "active",
-  "description",
-  "rollout_state",
-  "tokenrealm",
-  "container_serial"
-];
+const apiFilter = ["serial", "type", "active", "description", "rollout_state", "tokenrealm", "container_serial"];
 
 const advancedApiFilter = ["infokey & infovalue", "userid", "resolver", "assigned"];
 
@@ -238,7 +232,7 @@ export interface TokenServiceInterface {
 
   bulkDeleteTokens(selectedTokens: string[]): Observable<PiResponse<BulkResult, any>>;
 
-  bulkDeleteWithConfirmDialog(serialList: string[], dialog: any, afterDelete?: () => void): void;
+  bulkDeleteWithConfirmDialog(serialList: string[], afterDelete?: () => void): void;
 
   revokeToken(tokenSerial: string): Observable<any>;
 
@@ -266,7 +260,7 @@ export interface TokenServiceInterface {
 
   setPin(tokenSerial: string, userPin: string): Observable<any>;
 
-  setRandomPin(tokenSerial: string): Observable<any>;
+  setRandomPin(tokenSerial: string): Observable<any>; // TODO: Specify return type
 
   resyncOTPToken(tokenSerial: string, firstOTPValue: string, secondOTPValue: string): Observable<Object>;
 
@@ -300,6 +294,7 @@ export class TokenService implements TokenServiceInterface {
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
+  private readonly dialogService: DialogServiceInterface = inject(DialogService);
 
   readonly hiddenApiFilter = hiddenApiFilter;
   readonly apiFilterKeyMap = apiFilterKeyMap;
@@ -310,13 +305,7 @@ export class TokenService implements TokenServiceInterface {
   tokenSerial = this.contentService.tokenSerial;
   detailsUsername = this.contentService.detailsUsername;
   filterParams = computed<Record<string, string>>(() => {
-    const allowed = [
-      ...this.apiFilter,
-      ...this.advancedApiFilter,
-      ...this.hiddenApiFilter,
-      "infokey",
-      "infovalue"
-    ];
+    const allowed = [...this.apiFilter, ...this.advancedApiFilter, ...this.hiddenApiFilter, "infokey", "infovalue"];
 
     const plainKeys = new Set(["user", "infokey", "infovalue", "active", "assigned", "container_serial"]);
 
@@ -579,15 +568,19 @@ export class TokenService implements TokenServiceInterface {
     );
   }
 
-  bulkDeleteWithConfirmDialog(serialList: string[], dialog: any, afterDelete?: () => void) {
-    dialog
-      .open(ConfirmationDialogComponent, {
+  bulkDeleteWithConfirmDialog(serialList: string[], afterDelete?: () => void) {
+    this.dialogService
+      .openDialog({
+        component: SimpleConfirmationDialogComponent,
         data: {
-          serialList: serialList,
           title: "Delete Selected Tokens",
-          type: "token",
-          action: "delete",
-          numberOfTokens: serialList.length
+          items: serialList,
+          itemType: "token",
+          confirmAction: {
+            type: "destruct",
+            label: $localize`Delete`,
+            value: true
+          }
         }
       })
       .afterClosed()

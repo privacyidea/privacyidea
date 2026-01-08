@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -52,6 +52,7 @@ import { AuditService, AuditServiceInterface } from "../../../services/audit/aud
 import { MatTooltip } from "@angular/material/tooltip";
 import { RouterLink } from "@angular/router";
 import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
+import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
 
 @Component({
   selector: "app-user-details",
@@ -85,7 +86,7 @@ export class UserDetailsComponent {
   protected readonly userService: UserServiceInterface = inject(UserService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   private readonly auditService: AuditServiceInterface = inject(AuditService);
-  protected readonly dialog: MatDialog = inject(MatDialog);
+  protected readonly dialogService: DialogServiceInterface = inject(DialogService);
   readonly labels: Record<string, string> = {
     username: "Username",
     givenname: "Given name",
@@ -225,8 +226,8 @@ export class UserDetailsComponent {
   }
 
   assignUserToToken(option: TokenDetails) {
-    this.dialog
-      .open(UserDetailsPinDialogComponent)
+    this.dialogService
+      .openDialog({ component: UserDetailsPinDialogComponent })
       .afterClosed()
       .pipe(filter((pin): pin is string => pin != null))
       .subscribe((pin: string) => {
