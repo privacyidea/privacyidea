@@ -56,7 +56,7 @@
         <mat-form-field>
           <mat-label i18n>Type</mat-label>
           <mat-select
-            (ngModelChange)="onTypeChange()"
+            (ngModelChange)="onTypeChange($event)"
             [(ngModel)]="resolverType"
             [disabled]="isEditMode">
             <mat-option [value]="'ldapresolver'">LDAP</mat-option>

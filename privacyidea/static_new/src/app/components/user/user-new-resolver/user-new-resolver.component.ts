@@ -122,7 +122,9 @@ export class UserNewResolverComponent {
   additionalFormFields: { [key: string]: FormControl<any> } = {};
   resolverName = "";
   resolverType: ResolverType = "passwdresolver";
-  formData: Record<string, any> = {};
+  formData: Record<string, any> = {
+    fileName: "/etc/passwd"
+  };
   isSaving = false;
   isTesting = false;
 
@@ -151,10 +153,29 @@ export class UserNewResolverComponent {
     return !!this.resolverService.selectedResolverName();
   }
 
-  onTypeChange(): void {
+  onTypeChange(type: ResolverType): void {
     if (!this.isEditMode) {
       this.formData = {};
       this.additionalFormFields = {};
+
+      if (type === "passwdresolver") {
+        this.formData = {
+          fileName: "/etc/passwd"
+        };
+      } else if (type === "ldapresolver") {
+        this.formData = {
+          TLS_VERSION: "TLSv1_3",
+          TLS_VERIFY: true,
+          SCOPE: "SUBTREE",
+          AUTHTYPE: "simple",
+          TIMEOUT: 5,
+          CACHE_TIMEOUT: 120,
+          SIZELIMIT: 500,
+          SERVERPOOL_ROUNDS: 2,
+          SERVERPOOL_SKIP: 30,
+          UIDTYPE: "dn"
+        };
+      }
     }
   }
 
