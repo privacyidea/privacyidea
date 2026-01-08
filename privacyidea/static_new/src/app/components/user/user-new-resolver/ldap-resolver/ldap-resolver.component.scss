@@ -2,13 +2,13 @@
 
 :host {
   display: block;
-  width: 100%;
+  width: 1100px;
 }
 
 .type-sections-container {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 2rem;
+  gap: 1rem;
   width: 100%;
 
   @media (max-width: 1100px) {
