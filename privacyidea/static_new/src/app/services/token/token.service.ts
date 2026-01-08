@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -76,15 +76,7 @@ export type TokenTypeKey =
   | "webauthn"
   | "passkey";
 
-const apiFilter = [
-  "serial",
-  "type",
-  "active",
-  "description",
-  "rollout_state",
-  "tokenrealm",
-  "container_serial"
-];
+const apiFilter = ["serial", "type", "active", "description", "rollout_state", "tokenrealm", "container_serial"];
 
 const advancedApiFilter = ["infokey & infovalue", "userid", "resolver", "assigned"];
 
@@ -313,13 +305,7 @@ export class TokenService implements TokenServiceInterface {
   tokenSerial = this.contentService.tokenSerial;
   detailsUsername = this.contentService.detailsUsername;
   filterParams = computed<Record<string, string>>(() => {
-    const allowed = [
-      ...this.apiFilter,
-      ...this.advancedApiFilter,
-      ...this.hiddenApiFilter,
-      "infokey",
-      "infovalue"
-    ];
+    const allowed = [...this.apiFilter, ...this.advancedApiFilter, ...this.hiddenApiFilter, "infokey", "infovalue"];
 
     const plainKeys = new Set(["user", "infokey", "infovalue", "active", "assigned", "container_serial"]);
 

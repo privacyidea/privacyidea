@@ -1,3 +1,22 @@
+/**
+ * (c) NetKnights GmbH 2026,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ **/
+
 import { Component, input, output } from "@angular/core";
 import { assert } from "../../../../utils/assert";
 import { DialogAction } from "../../../../models/dialog";
@@ -10,7 +29,7 @@ import { MatIconModule } from "@angular/material/icon";
   templateUrl: "./dialog-wrapper.component.html",
   standalone: true,
   imports: [CommonModule, MatDialogModule, MatIconModule],
-  styleUrls: ["./dialog-wrapper.component.scss"],
+  styleUrls: ["./dialog-wrapper.component.scss"]
 })
 export class DialogWrapperComponent<R = any> {
   title = input.required<string>();
@@ -32,7 +51,7 @@ export class DialogWrapperComponent<R = any> {
   ngOnInit() {
     assert(
       this.actions().length != 0 || this.showCloseButton(),
-      "Dialog must have at least one action or a close button.",
+      "Dialog must have at least one action or a close button."
     );
   }
 }
