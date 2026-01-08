@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -22,12 +22,7 @@ import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { EnrollPasskeyComponent } from "./enroll-passkey.component";
-import {
-  MockBase64Service,
-  MockDialogService,
-  MockNotificationService,
-  MockTokenService
-} from "../../../../../testing/mock-services";
+import { MockBase64Service, MockNotificationService, MockTokenService } from "../../../../../testing/mock-services";
 import { TokenService } from "../../../../services/token/token.service";
 import { DialogService } from "../../../../services/dialog/dialog.service";
 import { Base64Service } from "../../../../services/base64/base64.service";
@@ -37,6 +32,8 @@ import {
   TokenEnrollmentData
 } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
 import { lastValueFrom, of, throwError } from "rxjs";
+import { MockDialogService } from "../../../../../testing/mock-services/mock-dialog-service";
+import { MockMatDialogRef } from "../../../../../testing/mock-mat-dialog-ref";
 
 describe("EnrollPasskeyComponent", () => {
   let component: EnrollPasskeyComponent;
@@ -103,7 +100,6 @@ describe("EnrollPasskeyComponent", () => {
 
   it("happy path: init -> open dialog -> create cred -> finalize -> close", async () => {
     const finalResp = { detail: { serial: "S-1" } };
-
     const createdCred = {
       id: "cred-1",
       rawId: new Uint8Array([9, 9]).buffer,
@@ -144,13 +140,15 @@ describe("EnrollPasskeyComponent", () => {
     } as any;
     const args = component.enrollmentArgsGetter(initData);
     expect(args).not.toBeNull();
+    const dialogRefMock = new MockMatDialogRef();
+    dialogRefMock.afterClosed.mockReturnValue(of(true));
+    dialogSvc.openDialog.mockReturnValue(dialogRefMock);
     tokenSvc.enrollToken.mockReturnValueOnce(lastValueFrom(of(initResp)));
     const initResponse = await tokenSvc.enrollToken(args);
     const res = await component.onEnrollmentResponse(initResponse, args!.data);
 
     expect(tokenSvc.enrollToken).toHaveBeenCalledTimes(2);
-    expect(dialogSvc.openTokenEnrollmentFirstStepDialog).toHaveBeenCalledTimes(1);
-    expect(dialogSvc.closeTokenEnrollmentFirstStepDialog).toHaveBeenCalledTimes(1);
+    expect(dialogSvc.openDialog).toHaveBeenCalledTimes(1);
 
     expect(b64.base64URLToBytes).toHaveBeenCalled();
     expect(b64.bytesToBase64).toHaveBeenCalled();
@@ -165,21 +163,17 @@ describe("EnrollPasskeyComponent", () => {
   it("handles invalid server response (no passkey_registration)", async () => {
     const initResp = { detail: { transaction_id: "t", serial: "S-9" } };
     tokenSvc.enrollToken.mockReturnValueOnce(of(initResp));
-
     setNavigatorCredentials({
       create: jest.fn()
     });
-
     const enrollmentArgs = component.enrollmentArgsGetter({} as any);
     const initResponse = await lastValueFrom(tokenSvc.enrollToken(enrollmentArgs));
     const finalResponse = component.onEnrollmentResponse(initResponse as EnrollmentResponse, enrollmentArgs!.data);
-
     await expect(finalResponse).rejects.toThrow(/Invalid server response/i);
-
     expect(notif.openSnackBar).toHaveBeenCalledWith(
       "Failed to initiate Passkey registration: Invalid server response."
     );
-    expect(dialogSvc.openTokenEnrollmentFirstStepDialog).not.toHaveBeenCalled();
+    expect(dialogSvc.openDialog).not.toHaveBeenCalled();
   });
 
   it("finalize error: deletes token and notifies", async () => {
@@ -280,8 +274,7 @@ describe("EnrollPasskeyComponent", () => {
       enrollmentArgs!.data
     );
     expect(finalResponse).toEqual(finalize("S-1"));
-    expect(dialogSvc.openTokenEnrollmentFirstStepDialog).toHaveBeenCalledTimes(1);
-    expect(dialogSvc.closeTokenEnrollmentFirstStepDialog).toHaveBeenCalledTimes(1);
+    expect(dialogSvc.openDialog).toHaveBeenCalledTimes(1);
 
     expect(reopenCb).toBeUndefined();
   });

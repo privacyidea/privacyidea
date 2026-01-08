@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -137,9 +137,14 @@ describe("TokenHotpMachineAssignDialogComponent", () => {
     expect(dialogRef.close).toHaveBeenCalledWith(returned$);
   });
 
-  it("onCancel: closes with null", () => {
-    component.onCancel();
-    expect(dialogRef.close).toHaveBeenCalledWith(null);
+  it("close: closes with undefined", () => {
+    (component as any).close();
+    expect(dialogRef.close).toHaveBeenCalledWith(undefined);
+  });
+
+  it("close: closes with given value", () => {
+    (component as any).close("test-value");
+    expect(dialogRef.close).toHaveBeenCalledWith("test-value");
   });
 
   describe("machineValidator", () => {

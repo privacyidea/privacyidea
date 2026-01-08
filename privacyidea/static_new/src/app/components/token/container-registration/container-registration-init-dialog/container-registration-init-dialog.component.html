@@ -1,5 +1,5 @@
 <!--
- (c) NetKnights GmbH 2025,  https://netknights.it
+ (c) NetKnights GmbH 2026,  https://netknights.it
 
  This code is free software; you can redistribute it and/or
  modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,41 +16,13 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-@if (data.rollover) {
-  <h2
-    mat-dialog-title>
-    Container Rollover
-  </h2>
-} @else {
-  <h2
-    mat-dialog-title>
-    Register Container
-  </h2>
-}
-<mat-dialog-content>
-  <app-container-registration-config
-    [containerHasOwner]="data.containerHasOwner"
-    (validInputChange)="onValidInputChange($event)"></app-container-registration-config>
-</mat-dialog-content>
-<mat-dialog-actions>
-  @if (data.rollover) {
-    <button
-      (click)="onRegister()"
-      mat-button
-      [disabled]="!validInput">
-      Rollover
-    </button>
-  } @else {
-    <button
-      (click)="onRegister()"
-      mat-button
-      [disabled]="!validInput">
-      Register
-    </button>
-  }
-  <button
-    mat-button
-    mat-dialog-close>
-    Close
-  </button>
-</mat-dialog-actions>
+<app-dialog-wrapper
+  [title]="data.rollover ? 'Container Rollover' : 'Register Container'"
+  [actions]="[getAction()]"
+  (close)="close()">
+  <mat-dialog-content>
+    <app-container-registration-config
+      [containerHasOwner]="data.containerHasOwner"
+      (validInputChange)="onValidInputChange($event)"></app-container-registration-config>
+  </mat-dialog-content>
+</app-dialog-wrapper>

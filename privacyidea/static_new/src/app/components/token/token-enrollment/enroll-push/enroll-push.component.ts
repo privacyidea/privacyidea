@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -25,16 +25,17 @@ import {
   PushEnrollmentData
 } from "../../../../mappers/token-api-payload/push-token-api-payload.mapper";
 import { DialogService, DialogServiceInterface } from "../../../../services/dialog/dialog.service";
-import { TokenEnrollmentFirstStepDialogComponent } from "../token-enrollment-firtst-step-dialog/token-enrollment-first-step-dialog.component";
 import { ReopenDialogFn } from "../token-enrollment.component";
 import {
   EnrollmentResponse,
+  EnrollmentResponseDetail,
   TokenApiPayloadMapper,
   TokenEnrollmentData
 } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
 import { PiResponse } from "../../../../app.component";
 import { lastValueFrom } from "rxjs";
 import { MatDialogRef } from "@angular/material/dialog";
+import { TokenEnrollmentFirstStepDialogComponent } from "../token-enrollment-firtst-step-dialog/token-enrollment-first-step-dialog.component";
 
 @Component({
   selector: "app-enroll-push",
@@ -101,20 +102,31 @@ export class EnrollPushComponent implements OnInit {
     if (!pollResponse) {
       return null;
     } else {
-      return initResponse;
+      return {
+        ...initResponse,
+        detail: {
+          ...initResponse.detail,
+          rollout_state: pollResponse.result?.value?.tokens[0].rollout_state ?? initResponse.detail.rollout_state
+        }
+      };
     }
   }
+  firstStepDialogRef: MatDialogRef<
+    {
+      enrollmentResponse: EnrollmentResponse<EnrollmentResponseDetail>;
+    },
+    boolean
+  > | null = null;
 
   private pollTokenRolloutState = (
     initResponse: EnrollmentResponse,
     initDelay: number
   ): Promise<PiResponse<Tokens>> => {
-    this._openStepOneDialog(initResponse)
-      .afterClosed()
-      .subscribe(() => {
-        this.tokenService.stopPolling();
-        this.pollResponse.set(undefined);
-      });
+    this.firstStepDialogRef = this._openStepOneDialog(initResponse);
+    this.firstStepDialogRef.afterClosed().subscribe(() => {
+      this.tokenService.stopPolling();
+      this.pollResponse.set(undefined);
+    });
     const observable = this.tokenService.pollTokenRolloutState({
       tokenSerial: initResponse.detail.serial,
       initDelay
@@ -123,25 +135,33 @@ export class EnrollPushComponent implements OnInit {
       next: (pollResponse) => {
         this.pollResponse.set(pollResponse);
         if (pollResponse.result?.value?.tokens[0].rollout_state !== "clientwait") {
-          this.dialogService.closeTokenEnrollmentFirstStepDialog();
+          this.firstStepDialogRef?.close(true);
         }
       }
     });
     return lastValueFrom(observable);
   };
 
-  private _openStepOneDialog(
-    enrollmentResponse: EnrollmentResponse
-  ): MatDialogRef<TokenEnrollmentFirstStepDialogComponent, any> {
+  private _openStepOneDialog(enrollmentResponse: EnrollmentResponse): MatDialogRef<
+    {
+      enrollmentResponse: EnrollmentResponse<EnrollmentResponseDetail>;
+    },
+    boolean
+  > {
     this.reopenDialogChange.emit(async () => {
-      if (!this.dialogService.isTokenEnrollmentFirstStepDialogOpen) {
-        await this.pollTokenRolloutState(enrollmentResponse, 0);
-        return enrollmentResponse;
+      if (this.firstStepDialogRef && this.dialogService.isDialogOpen(this.firstStepDialogRef)) {
+        return null;
       }
-      return null;
+
+      const pollResponse = await this.pollTokenRolloutState(enrollmentResponse, 0);
+      return {
+        ...enrollmentResponse,
+        detail: { ...enrollmentResponse.detail, rollout_state: pollResponse.result?.value?.tokens[0].rollout_state }
+      };
     });
 
-    return this.dialogService.openTokenEnrollmentFirstStepDialog({
+    return this.dialogService.openDialog({
+      component: TokenEnrollmentFirstStepDialogComponent,
       data: { enrollmentResponse }
     });
   }

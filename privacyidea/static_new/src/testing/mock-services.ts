@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -55,8 +55,8 @@ import { PiResponse } from "../app/app.component";
 import { Router } from "@angular/router";
 import { Sort } from "@angular/material/sort";
 import { ColumnDef, ColumnKey, TableUtilsServiceInterface } from "../app/services/table-utils/table-utils.service";
-import { TokenEnrollmentLastStepDialogData } from "../app/components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
 import { ROUTE_PATHS } from "../app/route_paths";
+import { TokenEnrollmentLastStepDialogData } from "../app/components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.self-service.component";
 
 export function makeResource<T>(initial: T) {
   return {
@@ -248,7 +248,7 @@ export class MockUserService implements UserServiceInterface {
   attributeSetMap = signal<Record<string, string[]>>({});
   hasWildcardKey: Signal<boolean> = signal(false);
   keyOptions: Signal<string[]> = signal([]);
-  selectedUser: Signal<UserData | null> = signal(null);
+  selectedUser: WritableSignal<UserData | null> = signal(null);
   usersOfRealmResource: HttpResourceRef<PiResponse<UserData[], undefined> | undefined> = new MockHttpResourceRef(
     MockPiResponse.fromValue([])
   );
@@ -421,15 +421,15 @@ export class MockRealmService implements RealmServiceInterface {
 
       const updatedRealm: Realm = existing
         ? {
-          ...existing,
-          resolver: [...(existing.resolver ?? []), ...newResolverEntries]
-        }
+            ...existing,
+            resolver: [...(existing.resolver ?? []), ...newResolverEntries]
+          }
         : {
-          default: false,
-          id: Object.keys(current).length + 1,
-          option: "",
-          resolver: newResolverEntries
-        };
+            default: false,
+            id: Object.keys(current).length + 1,
+            option: "",
+            resolver: newResolverEntries
+          };
 
       const updatedRealms = {
         ...current,
@@ -1064,9 +1064,9 @@ export class MockTableUtilsService implements TableUtilsServiceInterface {
     cols: C
   ): {
     readonly [I in keyof C]: C[I] extends Readonly<{
-        key: infer KK extends ColumnKey;
-        label: string;
-      }>
+      key: infer KK extends ColumnKey;
+      label: string;
+    }>
       ? KK
       : never;
   } {
@@ -1077,8 +1077,7 @@ export class MockTableUtilsService implements TableUtilsServiceInterface {
     return "";
   }
 
-  onSortButtonClick(key: string, sort: WritableSignal<Sort>): void {
-  }
+  onSortButtonClick(key: string, sort: WritableSignal<Sort>): void {}
 
   clientsideSortTokenData(data: ContainerDetailToken[], s: Sort): ContainerDetailToken[] {
     return data;

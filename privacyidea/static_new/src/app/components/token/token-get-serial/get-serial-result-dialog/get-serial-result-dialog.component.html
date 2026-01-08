@@ -1,5 +1,5 @@
 <!--
- (c) NetKnights GmbH 2025,  https://netknights.it
+ (c) NetKnights GmbH 2026,  https://netknights.it
 
  This code is free software; you can redistribute it and/or
  modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,39 +16,41 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<h2
-  i18n
-  mat-dialog-title>
-  Search for Token
-</h2>
-<mat-dialog-content>
-  @if (data.foundSerial) {
-    <div class="alert alert-success">
-      <span i18n>
-        The Serial number for the OTP value {{ data.otpValue }} is
-        <a
-          class="link"
-          attr.aria-label="{{ data.foundSerial }} Link"
-          (click)="data.onClickSerial()">
-          {{ data.foundSerial }}</a>
-        .
-      </span>
-    </div>
-  } @else {
-    <div class="alert alert-warning">
-      <span i18n> No Serial number could be found for OTP value {{ data.otpValue }}. </span>
-    </div>
-  }
-  <br />
-</mat-dialog-content>
 
-<mat-dialog-actions>
-  <button
-    (click)="data.reset()"
-    [mat-dialog-close]="true"
-    class="dialog-button"
-    i18n
-    mat-button>
-    OK
-  </button>
-</mat-dialog-actions>
+<app-dialog-wrapper
+  title="Search for Token"
+  [actions]="[action]"
+  (close)="close()">
+  <mat-dialog-content>
+    @if (data.foundSerial) {
+      <div class="alert alert-success">
+        <span i18n>
+          The Serial number for the OTP value {{ data.otpValue }} is
+          <a
+            class="link"
+            attr.aria-label="{{ data.foundSerial }} Link"
+            (click)="data.onClickSerial()">
+            {{ data.foundSerial }}</a
+          >
+          .
+        </span>
+      </div>
+    } @else {
+      <div class="alert alert-warning">
+        <span i18n> No Serial number could be found for OTP value {{ data.otpValue }}. </span>
+      </div>
+    }
+    <br />
+  </mat-dialog-content>
+
+  <mat-dialog-actions>
+    <button
+      (click)="data.reset()"
+      [mat-dialog-close]="true"
+      class="dialog-button"
+      i18n
+      mat-button>
+      OK
+    </button>
+  </mat-dialog-actions>
+</app-dialog-wrapper>
