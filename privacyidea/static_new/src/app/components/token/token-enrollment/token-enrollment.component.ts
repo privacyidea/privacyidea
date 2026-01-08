@@ -413,7 +413,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
   async reopenEnrollmentDialog() {
     const reopenFunction = this.reopenDialog();
     if (reopenFunction) {
-      let enrollPromise = this._toPromice(reopenFunction());
+      let enrollPromise = this._toPromise(reopenFunction());
       if (!enrollPromise) return;
       let enrollmentResponse: EnrollmentResponse | null = await enrollPromise;
       this.enrollResponse.set(enrollmentResponse);
@@ -543,11 +543,10 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     };
 
     const enrollmentArgs = this.enrollmentArgsGetter(basicOptions);
-    console.log(enrollmentArgs);
     if (!enrollmentArgs) return;
     const enrollResponse = this.tokenService.enrollToken(enrollmentArgs);
 
-    let enrollPromise = this._toPromice(enrollResponse);
+    let enrollPromise = this._toPromise(enrollResponse);
 
     enrollPromise.catch((error) => {
       const message = error.error?.result?.error?.message || "";
@@ -567,7 +566,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     }
   }
 
-  private _toPromice<T>(observable: Observable<T> | Promise<T>): Promise<T> {
+  private _toPromise<T>(observable: Observable<T> | Promise<T>): Promise<T> {
     if (observable instanceof Promise) {
       return observable;
     } else {

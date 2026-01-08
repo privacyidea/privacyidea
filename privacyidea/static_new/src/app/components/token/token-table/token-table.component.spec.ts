@@ -107,7 +107,7 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
         { provide: TokenService, useClass: MockTokenService },
         { provide: TableUtilsService, useClass: MockTableUtilsService },
         { provide: ContentService, useClass: MockContentService },
-        { provide: DialogService, useCalss: MockDialogService },
+        { provide: DialogService, useClass: MockDialogService },
         { provide: AuthService, useClass: MockAuthService },
         { provide: ContainerService, useClass: MockContainerService },
         { provide: MatDialog, useClass: MockMatDialog },
