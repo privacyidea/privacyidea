@@ -23,7 +23,6 @@ import { UserService } from "../../../services/user/user.service";
 import {
   MockContainerService,
   MockContentService,
-  MockDialogService,
   MockLocalService,
   MockNotificationService,
   MockRealmService,
@@ -55,6 +54,7 @@ import { TokenEnrollmentWizardComponent } from "./token-enrollment.wizard.compon
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
 import { MockAuthService } from "../../../../testing/mock-services/mock-auth-service";
 import { environment } from "../../../../environments/environment";
+import { MockDialogService } from "../../../../testing/mock-services/mock-dialog-service";
 
 describe("TokenEnrollmentComponent", () => {
   let fixture: ComponentFixture<TokenEnrollmentComponent>;
@@ -64,9 +64,9 @@ describe("TokenEnrollmentComponent", () => {
 
   let tokenSvc: MockTokenService;
   let userSvc: MockUserService;
-  let notifications: MockNotificationService;
-  let dialog: MockDialogService;
-  let authService: MockAuthService;
+  let notificationServiceMock: MockNotificationService;
+  let dialogServiceMock: MockDialogService;
+  let authServiceMock: MockAuthService;
   let httpTestingController: HttpTestingController;
 
   beforeAll(() => {
@@ -125,10 +125,10 @@ describe("TokenEnrollmentComponent", () => {
 
     tokenSvc = TestBed.inject(TokenService) as unknown as MockTokenService;
     userSvc = TestBed.inject(UserService) as unknown as MockUserService;
-    notifications = TestBed.inject(NotificationService) as unknown as MockNotificationService;
+    notificationServiceMock = TestBed.inject(NotificationService) as unknown as MockNotificationService;
     mockVersioningService = TestBed.inject(VersioningService) as unknown as MockVersioningService;
-    dialog = TestBed.inject(DialogService) as unknown as MockDialogService;
-    authService = TestBed.inject(AuthService) as unknown as MockAuthService;
+    dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
+    authServiceMock = TestBed.inject(AuthService) as unknown as MockAuthService;
     httpTestingController = TestBed.inject(HttpTestingController);
 
     fixture.detectChanges();
@@ -227,7 +227,7 @@ describe("TokenEnrollmentComponent", () => {
 
       await (component as any).enrollToken();
 
-      expect(notifications.openSnackBar).toHaveBeenCalledWith("Please select a token type.");
+      expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith("Please select a token type.");
     });
 
     it("snacks when user is required but missing", async () => {
@@ -241,7 +241,7 @@ describe("TokenEnrollmentComponent", () => {
 
       await (component as any).enrollToken();
 
-      expect(notifications.openSnackBar).toHaveBeenCalledWith(
+      expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith(
         "Please fill in all required fields or correct invalid entries."
       );
     });
@@ -255,7 +255,7 @@ describe("TokenEnrollmentComponent", () => {
 
       await (component as any).enrollToken();
 
-      expect(notifications.openSnackBar).toHaveBeenCalledWith(
+      expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith(
         "Please fill in all required fields or correct invalid entries."
       );
     });
@@ -270,7 +270,7 @@ describe("TokenEnrollmentComponent", () => {
 
       await component.enrollToken();
 
-      expect(notifications.openSnackBar).toHaveBeenCalledWith(
+      expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith(
         "Enrollment action is not available for the selected token type."
       );
     });
@@ -311,7 +311,7 @@ describe("TokenEnrollmentComponent", () => {
 
       await component.enrollToken().catch(() => undefined);
 
-      expect(notifications.openSnackBar).toHaveBeenCalledWith("Failed to enroll token: nope");
+      expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith("Failed to enroll token: nope");
     });
 
     it("does NOT open dialog if rollout_state is 'clientwait'", async () => {
@@ -337,7 +337,7 @@ describe("TokenEnrollmentComponent", () => {
         user: null
       });
 
-      expect(notifications.openSnackBar).toHaveBeenCalledWith(
+      expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith(
         "User is required for this token type, but no user was provided."
       );
     });
@@ -346,7 +346,7 @@ describe("TokenEnrollmentComponent", () => {
   describe("open/reopen dialog flows", () => {
     it("openLastStepDialog: snacks when response is null", () => {
       (component as any).openLastStepDialog({ response: null, user: null });
-      expect(notifications.openSnackBar).toHaveBeenCalledWith("No enrollment response available.");
+      expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith("No enrollment response available.");
     });
 
     it("openLastStepDialog: stores last-step data and opens dialog", () => {
@@ -354,9 +354,21 @@ describe("TokenEnrollmentComponent", () => {
       const response = { detail: {} } as any;
       (component as any).openLastStepDialog({ response, user: null });
 
-      expect(dialog.openTokenEnrollmentLastStepDialog).toHaveBeenCalledTimes(1);
-      const callArg = (dialog.openTokenEnrollmentLastStepDialog as jest.Mock).mock.calls[0][0];
-      expect(callArg.data.response).toBe(response);
+      expect(dialogServiceMock.openDialog).toHaveBeenCalledTimes(1);
+      expect(dialogServiceMock.openDialog).toHaveBeenCalledWith(
+        expect.objectContaining({
+          component: expect.any(Function),
+          data: expect.objectContaining({
+            tokentype: tokenSvc.selectedTokenType(),
+            response,
+            serial: expect.any(Function),
+            enrollToken: expect.any(Function),
+            user: null,
+            userRealm: "",
+            onlyAddToRealm: false
+          })
+        })
+      );
 
       expect(component._lastTokenEnrollmentLastStepDialogData()).toBeTruthy();
     });
@@ -367,7 +379,7 @@ describe("TokenEnrollmentComponent", () => {
       component.reopenEnrollmentDialog();
 
       expect(fn).toHaveBeenCalledTimes(1);
-      expect(dialog.openTokenEnrollmentLastStepDialog).not.toHaveBeenCalled();
+      expect(dialogServiceMock.openDialog).not.toHaveBeenCalled();
     });
 
     it("reopenEnrollmentDialog: falls back to last-step data", () => {
@@ -383,7 +395,7 @@ describe("TokenEnrollmentComponent", () => {
       } as any);
 
       component.reopenEnrollmentDialog();
-      expect(dialog.openTokenEnrollmentLastStepDialog).toHaveBeenCalledTimes(1);
+      expect(dialogServiceMock.openDialog).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -478,8 +490,8 @@ describe("TokenEnrollmentComponent", () => {
     });
 
     it("show default content if no custom content is defined", () => {
-      authService.authData.set({
-        ...authService.authData()!,
+      authServiceMock.authData.set({
+        ...authServiceMock.authData()!,
         token_wizard: true
       });
       wizardFixture.detectChanges();
@@ -496,8 +508,8 @@ describe("TokenEnrollmentComponent", () => {
     });
 
     it("show custom content if defined", () => {
-      authService.authData.set({
-        ...authService.authData()!,
+      authServiceMock.authData.set({
+        ...authServiceMock.authData()!,
         token_wizard: true
       });
       wizardFixture.detectChanges();

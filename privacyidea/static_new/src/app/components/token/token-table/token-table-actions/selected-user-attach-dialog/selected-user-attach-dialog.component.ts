@@ -61,7 +61,7 @@ export interface SelectedUserAssignResult {
   templateUrl: "./selected-user-attach-dialog.component.html",
   styleUrl: "./selected-user-attach-dialog.component.scss"
 })
-export class SelectedUserAssignDialogComponent extends AbstractDialogComponent<null, SelectedUserAssignResult | null> {
+export class SelectedUserAssignDialogComponent extends AbstractDialogComponent<any, SelectedUserAssignResult | null> {
   protected readonly userService: UserServiceInterface = inject(UserService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly realmService: RealmServiceInterface = inject(RealmService);

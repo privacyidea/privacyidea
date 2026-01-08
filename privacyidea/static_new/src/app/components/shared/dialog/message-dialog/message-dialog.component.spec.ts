@@ -49,7 +49,21 @@ describe("MessageDialogComponent", () => {
   });
 
   it("should display the icon", () => {
-    component.data.icon = "test_icon";
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      imports: [NoopAnimationsModule, MessageDialogComponent],
+      providers: [
+        { provide: MatDialogRef, useValue: mockDialogRef },
+        {
+          provide: MAT_DIALOG_DATA,
+          useValue: {
+            ...dialogData,
+            icon: "test_icon"
+          }
+        }
+      ]
+    }).compileComponents();
+    fixture = TestBed.createComponent(MessageDialogComponent);
     fixture.detectChanges();
     const iconElement = fixture.nativeElement.querySelector("mat-icon");
     expect(iconElement).toBeTruthy();
@@ -84,7 +98,21 @@ describe("MessageDialogComponent", () => {
   });
 
   it("should work with empty texts", () => {
-    component.data.texts = [];
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      imports: [NoopAnimationsModule, MessageDialogComponent],
+      providers: [
+        { provide: MatDialogRef, useValue: mockDialogRef },
+        {
+          provide: MAT_DIALOG_DATA,
+          useValue: {
+            ...dialogData,
+            texts: []
+          }
+        }
+      ]
+    }).compileComponents();
+    fixture = TestBed.createComponent(MessageDialogComponent);
     fixture.detectChanges();
     const textElements: NodeListOf<HTMLDivElement> = fixture.nativeElement.querySelectorAll(".text-center div");
     expect(textElements.length).toBe(0);

@@ -42,17 +42,22 @@ import { DialogAction } from "../../../../models/dialog";
     DialogWrapperComponent
   ]
 })
-export class UserDetailsPinDialogComponent extends AbstractDialogComponent<null, string | null> {
+export class UserDetailsPinDialogComponent extends AbstractDialogComponent<any, string | null> {
   pin: WritableSignal<string> = signal("");
   pinRepeat: WritableSignal<string> = signal("");
   hidePin: WritableSignal<boolean> = signal(true);
   pinsMatch = computed(() => this.pin() === this.pinRepeat());
 
-  confirmAction: DialogAction<string> = {
-    label: "Confirm",
-    value: "confirm",
-    type: "confirm"
-  };
+  dialogActions = computed((): DialogAction<string>[] => {
+    return [
+      {
+        label: "Confirm",
+        value: "confirm",
+        type: "confirm",
+        disabled: !this.pinsMatch()
+      }
+    ];
+  });
 
   togglePinVisibility(): void {
     this.hidePin.update((prev) => !prev);

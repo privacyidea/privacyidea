@@ -150,11 +150,7 @@ describe("TokenTableActionsComponent", () => {
 
       component.deleteSelectedTokens();
 
-      expect(tokenService.bulkDeleteWithConfirmDialog).toHaveBeenCalledWith(
-        ["TOKEN1", "TOKEN2"],
-        expect.objectContaining({ open: expect.any(Function) }),
-        expect.any(Function)
-      );
+      expect(tokenService.bulkDeleteWithConfirmDialog).toHaveBeenCalledWith(["TOKEN1", "TOKEN2"], expect.any(Function));
     });
   });
 
@@ -185,15 +181,15 @@ describe("TokenTableActionsComponent", () => {
       component.tokenSelection.set(mockTokens);
       component.unassignSelectedTokens();
 
-      expect(dialogSpy).toHaveBeenCalledWith({
-        component: SimpleConfirmationDialogComponent,
+      expect(dialogSpy).toHaveBeenCalledWith(SimpleConfirmationDialogComponent, {
         data: {
-          serialList: ["TOKEN1"],
-          title: "Unassign Selected Tokens",
-          type: "token",
-          action: "unassign",
-          numberOfTokens: 1
-        }
+          confirmAction: { label: "Unassign", type: "destruct", value: true },
+          itemType: "token",
+          items: ["TOKEN1"],
+          title: "Unassign Selected Tokens"
+        },
+        disableClose: false,
+        hasBackdrop: true
       });
       expect(bulkUnassignSpy).toHaveBeenCalledWith(mockTokens);
       expect(notificationService.openSnackBar).toHaveBeenCalledWith("Successfully unassigned 1 token.");
