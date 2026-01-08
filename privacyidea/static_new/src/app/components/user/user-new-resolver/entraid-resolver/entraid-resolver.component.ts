@@ -50,11 +50,50 @@ export class EntraidResolverComponent extends HttpResolverComponent {
     if (!data.base_url) {
       data.base_url = "https://graph.microsoft.com/v1.0";
     }
+    if (!data.authority) {
+      data.authority = "https://login.microsoftonline.com/{tenant}";
+    }
+    if (!data.client_credential_type) {
+      data.client_credential_type = "secret";
+    }
+    if (!data.client_certificate) {
+      data.client_certificate = {};
+    }
     if (!data.timeout) {
       data.timeout = 60;
     }
-    if (data.verify_tls === undefined) {
+    if (!data.verify_tls && data.verify_tls !== false) {
       data.verify_tls = true;
+    }
+
+    if (!data.config_get_user_by_id || Object.keys(data.config_get_user_by_id).length === 0) {
+      data.config_get_user_by_id = { "method": "GET", "endpoint": "/users/{userid}" };
+    }
+    if (!data.config_get_user_by_name || Object.keys(data.config_get_user_by_name).length === 0) {
+      data.config_get_user_by_name = { "method": "GET", "endpoint": "/users/{username}" };
+    }
+    if (!data.config_get_user_list || Object.keys(data.config_get_user_list).length === 0) {
+      data.config_get_user_list = { "method": "GET", "endpoint": "/users", "headers": "{\"ConsistencyLevel\": \"eventual\"}" };
+    }
+    if (!data.config_create_user || Object.keys(data.config_create_user).length === 0) {
+      data.config_create_user = {
+        "method": "POST", "endpoint": "/users",
+        "requestMapping": "{\"accountEnabled\": true, \"displayName\": \"{givenname} {surname}\", \"mailNickname\": \"{givenname}\", \"passwordProfile\": {\"password\": \"{password}\"}}"
+      };
+    }
+    if (!data.config_edit_user || Object.keys(data.config_edit_user).length === 0) {
+      data.config_edit_user = { "method": "PATCH", "endpoint": "/users/{userid}" };
+    }
+    if (!data.config_delete_user || Object.keys(data.config_delete_user).length === 0) {
+      data.config_delete_user = { "method": "DELETE", "endpoint": "/users/{userid}" };
+    }
+    if (!data.config_user_auth || Object.keys(data.config_user_auth).length === 0) {
+      data.config_user_auth = {
+        "method": "POST",
+        "headers": "{\"Content-Type\": \"application/x-www-form-urlencoded\"}",
+        "endpoint": "https://login.microsoftonline.com/{tenant}/oauth2/v2.0/token",
+        "requestMapping": "client_id={client_id}&scope=https://graph.microsoft.com/.default&username={username}&password={password}&grant_type=password&client_secret={client_credential}"
+      };
     }
 
     super.ngOnInit();

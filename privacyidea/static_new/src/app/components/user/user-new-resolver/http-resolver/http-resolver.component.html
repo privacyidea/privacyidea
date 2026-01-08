@@ -71,34 +71,6 @@
     }
   } @else {
 
-    @if (type() === 'entraidresolver') {
-      <div class="form-grid">
-        <mat-form-field>
-          <mat-label i18n>Tenant ID</mat-label>
-          <input
-            [(ngModel)]="data()['tenant']"
-            matInput
-            placeholder="e.g. 12345678-1234-1234-1234-123456789012" />
-        </mat-form-field>
-
-        <mat-form-field>
-          <mat-label i18n>Client ID</mat-label>
-          <input
-            [(ngModel)]="data()['client_id']"
-            matInput
-            placeholder="e.g. 87654321-4321-4321-4321-210987654321" />
-        </mat-form-field>
-
-        <mat-form-field>
-          <mat-label i18n>Client Secret</mat-label>
-          <input
-            [(ngModel)]="data()['client_secret']"
-            matInput
-            type="password" />
-        </mat-form-field>
-      </div>
-    }
-
     @if (type() === 'keycloakresolver') {
       <div class="form-grid">
         <mat-form-field>
@@ -303,91 +275,181 @@
           </mat-expansion-panel-header>
 
           <div class="auth-panel-body">
-            <p
-              class="auth-description"
-              i18n>
-              This section allows to configure an endpoint to which the privacyIDEA server must authenticate in order to
-              receive an access token. This token can then be used to access the user store API.
-            </p>
-
-            <div class="auth-grid">
-              <mat-form-field>
-                <mat-label i18n>Username</mat-label>
-                <input
-                  [(ngModel)]="data()['username']"
-                  matInput
-                  placeholder="privacyIDEA" />
-              </mat-form-field>
-
-              <mat-form-field>
-                <mat-label i18n>Password</mat-label>
-                <input
-                  [(ngModel)]="data()['password']"
-                  matInput
-                  placeholder="t0p_SeCr3t!"
-                  type="password" />
-              </mat-form-field>
-
-              <mat-form-field>
-                <mat-label i18n>Method</mat-label>
-                <mat-select [(ngModel)]="data()['config_authorization']['method']">
-                  <mat-option value="POST">POST</mat-option>
-                  <mat-option value="GET">GET</mat-option>
-                  <mat-option value="PUT">PUT</mat-option>
-                  <mat-option value="PATCH">PATCH</mat-option>
-                  <mat-option value="DELETE">DELETE</mat-option>
-                </mat-select>
-              </mat-form-field>
-
-              <mat-form-field class="auth-endpoint">
-                <mat-label i18n>Endpoint</mat-label>
-                <input
-                  [(ngModel)]="data()['config_authorization']['endpoint']"
-                  matInput
-                  placeholder="https://example.com/auth" />
-              </mat-form-field>
-
-              <mat-form-field class="auth-wide">
-                <mat-label i18n>Headers (JSON format)</mat-label>
-                <textarea
-                  [(ngModel)]="data()['config_authorization']['headers']"
-                  matInput
-                  placeholder='{"Content-Type":"application/json"}'></textarea>
-              </mat-form-field>
-
-              <mat-form-field class="auth-wide">
-                <mat-label i18n>Request Mapping (JSON format)</mat-label>
-                <textarea
-                  [(ngModel)]="data()['config_authorization']['requestMapping']"
-                  matInput
-                  placeholder='{"username":"{username}","password":"{password}"}'></textarea>
-              </mat-form-field>
-
-              <mat-form-field class="auth-wide">
-                <mat-label i18n>Response Mapping (JSON format)</mat-label>
-                <textarea
-                  [(ngModel)]="data()['config_authorization']['responseMapping']"
-                  matInput
-                  placeholder='{"Authorization":"Bearer {access_token}"}'></textarea>
-              </mat-form-field>
-
-              <mat-checkbox
-                [(ngModel)]="data()['config_authorization']['hasSpecialErrorHandler']"
-                class="auth-wide checkbox-inline"
+            @if (type() === 'entraidresolver') {
+              <p
+                class="auth-description"
                 i18n>
-                Special Error Handling
-              </mat-checkbox>
+                This section allows to configure an endpoint to which the privacyIDEA server must authenticate in order
+                to receive an access token. This token can then be used to access the user store API.
 
-              @if (data()['config_authorization']['hasSpecialErrorHandler']) {
+                You can find most of these settings in the app registration in the Entra Admin Center or you also have
+                to add them there.
+              </p>
+              <div class="auth-grid">
                 <mat-form-field class="auth-wide">
-                  <mat-label i18n>Response contains (JSON format)</mat-label>
-                  <textarea
-                    [(ngModel)]="data()['config_authorization']['errorResponse']"
+                  <mat-label i18n>Authority</mat-label>
+                  <input
+                    [(ngModel)]="data()['authority']"
                     matInput
-                    placeholder='{"success": false, "message": "An error occurred!"}'></textarea>
+                    placeholder="https://login.microsoftonline.com/{tenant}" />
                 </mat-form-field>
-              }
-            </div>
+
+                <mat-form-field>
+                  <mat-label i18n>Tenant ID</mat-label>
+                  <input
+                    [(ngModel)]="data()['tenant']"
+                    matInput
+                    placeholder="e.g. 12345678-1234-1234-1234-123456789012" />
+                </mat-form-field>
+
+                <mat-form-field>
+                  <mat-label i18n>Client ID</mat-label>
+                  <input
+                    [(ngModel)]="data()['client_id']"
+                    matInput
+                    placeholder="e.g. 87654321-4321-4321-4321-210987654321" />
+                </mat-form-field>
+
+                <mat-form-field>
+                  <mat-label i18n>Client Credential Type</mat-label>
+                  <mat-select [(ngModel)]="data()['client_credential_type']">
+                    <mat-option value="secret">Secret</mat-option>
+                    <mat-option value="certificate">Certificate</mat-option>
+                  </mat-select>
+                </mat-form-field>
+
+                @if (data()['client_credential_type'] === 'secret' || !data()['client_credential_type']) {
+                  <mat-form-field>
+                    <mat-label i18n>Client Secret</mat-label>
+                    <input
+                      [(ngModel)]="data()['client_secret']"
+                      matInput
+                      type="password" />
+                  </mat-form-field>
+                } @else if (data()['client_credential_type'] === 'certificate') {
+                  <p
+                    class="auth-description auth-wide"
+                    i18n>
+                    This credential type does not support to check the user's password.
+                    <br>
+                    <br>
+                    Specify the path to the private key file of the servers certificate. If you use an encrypted key,
+                    add the password here, otherwise leave the field empty. The server certificate must be uploaded in
+                    Entra's app registration as client credential.
+                  </p>
+
+                  <mat-form-field>
+                    <mat-label i18n>Path to the private key file</mat-label>
+                    <input
+                      [(ngModel)]="data()['client_certificate']['private_key_file']"
+                      matInput
+                      placeholder="/etc/privacyidea/entra.key" />
+                  </mat-form-field>
+
+                  <mat-form-field>
+                    <mat-label i18n>Password for the private key</mat-label>
+                    <input
+                      [(ngModel)]="data()['client_certificate']['private_key_password']"
+                      matInput
+                      type="password" />
+                  </mat-form-field>
+
+                  <mat-form-field>
+                    <mat-label i18n>Thumbprint of the certificate</mat-label>
+                    <input
+                      [(ngModel)]="data()['client_certificate']['certificate_fingerprint']"
+                      matInput
+                      placeholder="e.g. 1234567890ABCDEF1234567890ABCDEF12345678" />
+                  </mat-form-field>
+                }
+              </div>
+            } @else {
+              <p
+                class="auth-description"
+                i18n>
+                This section allows to configure an endpoint to which the privacyIDEA server must authenticate in order
+                to receive an access token. This token can then be used to access the user store API.
+              </p>
+
+              <div class="auth-grid">
+                <mat-form-field>
+                  <mat-label i18n>Username</mat-label>
+                  <input
+                    [(ngModel)]="data()['username']"
+                    matInput
+                    placeholder="privacyIDEA" />
+                </mat-form-field>
+
+                <mat-form-field>
+                  <mat-label i18n>Password</mat-label>
+                  <input
+                    [(ngModel)]="data()['password']"
+                    matInput
+                    placeholder="t0p_SeCr3t!"
+                    type="password" />
+                </mat-form-field>
+
+                <mat-form-field>
+                  <mat-label i18n>Method</mat-label>
+                  <mat-select [(ngModel)]="data()['config_authorization']['method']">
+                    <mat-option value="POST">POST</mat-option>
+                    <mat-option value="GET">GET</mat-option>
+                    <mat-option value="PUT">PUT</mat-option>
+                    <mat-option value="PATCH">PATCH</mat-option>
+                    <mat-option value="DELETE">DELETE</mat-option>
+                  </mat-select>
+                </mat-form-field>
+
+                <mat-form-field class="auth-endpoint">
+                  <mat-label i18n>Endpoint</mat-label>
+                  <input
+                    [(ngModel)]="data()['config_authorization']['endpoint']"
+                    matInput
+                    placeholder="https://example.com/auth" />
+                </mat-form-field>
+
+                <mat-form-field class="auth-wide">
+                  <mat-label i18n>Headers (JSON format)</mat-label>
+                  <textarea
+                    [(ngModel)]="data()['config_authorization']['headers']"
+                    matInput
+                    placeholder='{"Content-Type":"application/json"}'></textarea>
+                </mat-form-field>
+
+                <mat-form-field class="auth-wide">
+                  <mat-label i18n>Request Mapping (JSON format)</mat-label>
+                  <textarea
+                    [(ngModel)]="data()['config_authorization']['requestMapping']"
+                    matInput
+                    placeholder='{"username":"{username}","password":"{password}"}'></textarea>
+                </mat-form-field>
+
+                <mat-form-field class="auth-wide">
+                  <mat-label i18n>Response Mapping (JSON format)</mat-label>
+                  <textarea
+                    [(ngModel)]="data()['config_authorization']['responseMapping']"
+                    matInput
+                    placeholder='{"Authorization":"Bearer {access_token}"}'></textarea>
+                </mat-form-field>
+
+                <mat-checkbox
+                  [(ngModel)]="data()['config_authorization']['hasSpecialErrorHandler']"
+                  class="auth-wide checkbox-inline"
+                  i18n>
+                  Special Error Handling
+                </mat-checkbox>
+
+                @if (data()['config_authorization']['hasSpecialErrorHandler']) {
+                  <mat-form-field class="auth-wide">
+                    <mat-label i18n>Response contains (JSON format)</mat-label>
+                    <textarea
+                      [(ngModel)]="data()['config_authorization']['errorResponse']"
+                      matInput
+                      placeholder='{"success": false, "message": "An error occurred!"}'></textarea>
+                  </mat-form-field>
+                }
+              </div>
+            }
           </div>
         </mat-expansion-panel>
 

@@ -57,6 +57,43 @@ export class KeycloakResolverComponent extends HttpResolverComponent {
       data.verify_tls = true;
     }
 
+    if (!data.config_authorization || Object.keys(data.config_authorization).length === 0) {
+      data.config_authorization = {
+        method: "POST",
+        endpoint: "/realms/{realm}/protocol/openid-connect/token",
+        headers: "{\"Content-Type\": \"application/x-www-form-urlencoded\"}",
+        requestMapping: "grant_type=password&client_id=admin-cli&username={username}&password={password}",
+        responseMapping: "{\"Authorization\": \"Bearer {access_token}\"}"
+      };
+    }
+    if (!data.config_user_auth || Object.keys(data.config_user_auth).length === 0) {
+      data.config_user_auth = {
+        method: "POST",
+        endpoint: "/realms/{realm}/protocol/openid-connect/token",
+        headers: "{\"Content-Type\": \"application/x-www-form-urlencoded\"}",
+        requestMapping: "grant_type=password&client_id=admin-cli&username={username}&password={password}"
+      };
+    }
+    if (!data.config_get_user_list || Object.keys(data.config_get_user_list).length === 0) {
+      data.config_get_user_list = {
+        method: "GET",
+        endpoint: "/admin/realms/{realm}/users"
+      };
+    }
+    if (!data.config_get_user_by_id || Object.keys(data.config_get_user_by_id).length === 0) {
+      data.config_get_user_by_id = {
+        method: "GET",
+        endpoint: "/admin/realms/{realm}/users/{userid}"
+      };
+    }
+    if (!data.config_get_user_by_name || Object.keys(data.config_get_user_by_name).length === 0) {
+      data.config_get_user_by_name = {
+        method: "GET",
+        endpoint: "/admin/realms/{realm}/users",
+        requestMapping: "{\"username\": \"{username}\", \"exact\": true}"
+      };
+    }
+
     super.ngOnInit();
   }
 

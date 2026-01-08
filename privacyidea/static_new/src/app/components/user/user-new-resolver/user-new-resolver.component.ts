@@ -173,7 +173,60 @@ export class UserNewResolverComponent {
           SIZELIMIT: 500,
           SERVERPOOL_ROUNDS: 2,
           SERVERPOOL_SKIP: 30,
-          UIDTYPE: "dn"
+          UIDTYPE: "DN"
+        };
+      } else if (type === "entraidresolver") {
+        this.formData = {
+          base_url: "https://graph.microsoft.com/v1.0",
+          authority: "https://login.microsoftonline.com/{tenant}",
+          client_credential_type: "secret",
+          client_certificate: {},
+          timeout: 60,
+          verify_tls: true,
+          config_get_user_by_id: { "method": "GET", "endpoint": "/users/{userid}" },
+          config_get_user_by_name: { "method": "GET", "endpoint": "/users/{username}" },
+          config_get_user_list: { "method": "GET", "endpoint": "/users", "headers": "{\"ConsistencyLevel\": \"eventual\"}" },
+          config_create_user: {
+            "method": "POST", "endpoint": "/users",
+            "requestMapping": "{\"accountEnabled\": true, \"displayName\": \"{givenname} {surname}\", \"mailNickname\": \"{givenname}\", \"passwordProfile\": {\"password\": \"{password}\"}}"
+          },
+          config_edit_user: { "method": "PATCH", "endpoint": "/users/{userid}" },
+          config_delete_user: { "method": "DELETE", "endpoint": "/users/{userid}" },
+          config_user_auth: {
+            "method": "POST",
+            "headers": "{\"Content-Type\": \"application/x-www-form-urlencoded\"}",
+            "endpoint": "https://login.microsoftonline.com/{tenant}/oauth2/v2.0/token",
+            "requestMapping": "client_id={client_id}&scope=https://graph.microsoft.com/.default&username={username}&password={password}&grant_type=password&client_secret={client_credential}"
+          }
+        };
+      } else if (type === "keycloakresolver") {
+        this.formData = {
+          config_authorization: {
+            method: "POST",
+            endpoint: "/realms/{realm}/protocol/openid-connect/token",
+            headers: "{\"Content-Type\": \"application/x-www-form-urlencoded\"}",
+            requestMapping: "grant_type=password&client_id=admin-cli&username={username}&password={password}",
+            responseMapping: "{\"Authorization\": \"Bearer {access_token}\"}"
+          },
+          config_user_auth: {
+            method: "POST",
+            endpoint: "/realms/{realm}/protocol/openid-connect/token",
+            headers: "{\"Content-Type\": \"application/x-www-form-urlencoded\"}",
+            requestMapping: "grant_type=password&client_id=admin-cli&username={username}&password={password}"
+          },
+          config_get_user_list: {
+            method: "GET",
+            endpoint: "/admin/realms/{realm}/users"
+          },
+          config_get_user_by_id: {
+            method: "GET",
+            endpoint: "/admin/realms/{realm}/users/{userid}"
+          },
+          config_get_user_by_name: {
+            method: "GET",
+            endpoint: "/admin/realms/{realm}/users",
+            requestMapping: "{\"username\": \"{username}\", \"exact\": true}"
+          }
         };
       }
     }
@@ -201,6 +254,7 @@ export class UserNewResolverComponent {
       MULTIVALUEATTRIBUTES: ""
     };
   }
+
 
   onSave(): void {
     const name = this.resolverName.trim();
