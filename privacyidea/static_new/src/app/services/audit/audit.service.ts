@@ -169,7 +169,7 @@ export class AuditService implements AuditServiceInterface {
       pageSize: this.pageSize(),
       routeUrl: this.contentService.routeUrl()
     }),
-    computation: () => 0
+    computation: () => 1
   });
 
   private auditBaseUrl = environment.proxyUrl + "/audit/";

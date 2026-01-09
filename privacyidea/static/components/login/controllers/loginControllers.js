@@ -197,7 +197,7 @@ angular.module("privacyideaApp")
             $scope.login = {
                 username: $scope.remoteUser,
                 password: "",
-                realm: ""
+                realm: $scope.piRealms[0] || ""
             };
             $scope.transactionid = "";
             AuthFactory.setUser();
@@ -615,6 +615,7 @@ angular.module("privacyideaApp")
                 $scope.dialogNoToken = false;
                 $scope.privacyideaSupportLink = $rootScope.publicLink;
                 $state.go("login");
+                $scope.login.realm = $scope.piRealms[0] || "";
                 Idle.unwatch();
                 // Jump to top when the policy is saved
                 $('html,body').scrollTop(0);

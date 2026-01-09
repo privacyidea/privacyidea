@@ -107,10 +107,13 @@ def search(config, param=None, admin_params: Optional[dict] = None):
         sortorder = param["sortorder"]
         del param["sortorder"]
     if "page" in param:
-        page = param["page"]
+        page = max(1, int(param["page"]))
         del param["page"]
     if "page_size" in param:
-        page_size = param["page_size"]
+        page_size = int(param["page_size"])
+        if page_size < 1:
+            log.info("Requested Audit-Log page size is negative. Setting it to 15")
+            page_size = 15
         del param["page_size"]
     if "timelimit" in param:
         timelimit = parse_timedelta(param["timelimit"])

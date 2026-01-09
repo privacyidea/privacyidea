@@ -278,6 +278,7 @@ def create_app(config_name="development",
                     index_html))
         return jsonify(error="Not found"), 404
 
+
     # Overwrite default config with environment setting
     config_name = os.environ.get(ConfigKey.CONFIG_NAME, config_name)
     if app.config.get(ConfigKey.VERBOSE):

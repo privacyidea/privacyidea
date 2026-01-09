@@ -428,6 +428,10 @@ class TwoStepInitTestCase(MyApiTestCase):
             action=["totp_2step=allow", "enrollTOTP=1", "delete"],
             scope=SCOPE.ADMIN,
         )
+        # Make sure that <tokentype>_force_server_generate does not interfere with 2step enrollments
+        # 2step enrollments take precedence.
+        set_policy("force_generate", scope=SCOPE.ADMIN, action="totp_force_server_generate=True")
+
         with self.app.test_request_context('/token/init',
                                            method='POST',
                                            data={"type": "totp",
@@ -540,6 +544,7 @@ class TwoStepInitTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
         delete_policy("allow_2step")
+        delete_policy("force_generate")
 
     def test_06_force_totp_parameters(self):
         set_policy(

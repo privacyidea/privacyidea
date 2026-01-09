@@ -78,6 +78,11 @@
               <mat-option [value]="realmOption">{{ realmOption }}</mat-option>
             }
           </mat-select>
+          @if (realm() !== "") {
+            <app-clear-button
+              matSuffix
+              (onClick)="clearRealmSelection()"></app-clear-button>
+          }
         </mat-form-field>
       }
 

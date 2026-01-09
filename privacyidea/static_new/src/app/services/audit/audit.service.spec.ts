@@ -79,14 +79,14 @@ describe("AuditService (signals & helpers)", () => {
 
     expect(auditService.filterParams()).toEqual({ serial: "*otp123*" });
     expect(auditService.pageSize()).toBe(25);
-    expect(auditService.pageIndex()).toBe(0);
+    expect(auditService.pageIndex()).toBe(1);
   });
 
-  it("resets pageIndex to 0 when auditFilter change", () => {
+  it("resets pageIndex to 1 when auditFilter change", () => {
     auditService.pageIndex.set(3);
     auditService.auditFilter.set(new FilterValue({ value: "user: bob success: true" }));
 
-    expect(auditService.pageIndex()).toBe(0);
+    expect(auditService.pageIndex()).toBe(1);
   });
 
   it("should not include empty filter values in filterParams", () => {

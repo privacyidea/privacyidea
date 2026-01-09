@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2015 NetKnights GmbH <https://netknights.it>
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 
@@ -54,8 +57,6 @@ class APIAuditTestCase(MyApiTestCase):
             audit_response = set(json_response['result']['value']['auditdata'][0].keys())
             self.assertEqual(audit_response, set(a.available_audit_columns),
                              json_response['result']['value']['auditcolumns'])
-
-        # TODO: test audit columns if HIDE_AUDIT_COLUMNS policy is set.
 
         # check for entry in audit log
         aentry = self.find_most_recent_audit_entry(action='GET /audit/')
@@ -181,9 +182,31 @@ class APIAuditTestCase(MyApiTestCase):
             admin_audit = [a for a in audit_list if a.get("administrator") == "testadmin"]
             self.assertEqual(3, len(admin_audit))
             self.assertEqual(5, json_response.get("result").get("value").get("count"))
+            # Check that all audit columns are available
+            self.assertEqual(set(BaseAudit().available_audit_columns),
+                             set(json_response.get("result").get("value").get("auditcolumns")))
 
+        # Set policy to restrict audit columns
+        set_policy("audit02", scope=SCOPE.ADMIN,
+                   action=f"{PolicyAction.HIDE_AUDIT_COLUMNS}=serial action")
+
+        # Check, that the normal user can only see the restricted audit columns
+        with self.app.test_request_context('/audit/',
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            json_response = res.json
+            self.assertTrue(json_response.get("result").get("status"), res)
+            # Check that only restricted audit columns are available
+            self.assertTrue({"serial", "action"}.isdisjoint(
+                set(json_response.get("result").get("value").get("auditcolumns"))),
+                json_response.get("result").get("value").get("auditcolumns"))
+            self.assertEqual(len(json_response.get("result").get("value").get("auditdata")[0]),
+                             len(json_response.get("result").get("value").get("auditcolumns")))
         # delete policy
         delete_policy("audit01")
+        delete_policy("audit02")
 
     def test_03_get_allowed_audit_realm(self):
         self.setUp_user_realms()
@@ -343,7 +366,7 @@ class APIAuditTestCase(MyApiTestCase):
         # check, that the normal user only sees his own entries
         with self.app.test_request_context('/audit/',
                                            method='GET',
-                                           query_string={"action": "**",
+                                           query_string={"action": "enroll",
                                                          "action_detail": "**",
                                                          "administrator": "**",
                                                          "client": "**",
@@ -370,10 +393,32 @@ class APIAuditTestCase(MyApiTestCase):
             # We now have 3 entries, as we added one by the search in line #43
             count = json_response.get("result").get("value").get("count")
             auditdata = json_response.get("result").get("value").get("auditdata")
-            self.assertGreaterEqual(count, 3)
+            self.assertEqual(2, count, json_response)
+            # Check that all audit columns are available
+            self.assertEqual(set(BaseAudit().available_audit_columns),
+                             set(json_response.get("result").get("value").get("auditcolumns")))
             # All entries are in realm1A!
             for ad in auditdata:
                 self.assertEqual(ad.get("realm"), self.realm1a)
+
+        # Set policy to restrict audit columns
+        set_policy("audit02", scope=SCOPE.USER,
+                   action=f"{PolicyAction.HIDE_AUDIT_COLUMNS}=serial action")
+
+        # Check, that the normal user can only see the restricted audit columns
+        with self.app.test_request_context('/audit/',
+                                           method='GET',
+                                           headers={'Authorization': user_authorization}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            json_response = res.json
+            self.assertTrue(json_response.get("result").get("status"), res)
+            # Check that only restricted audit columns are available
+            self.assertTrue({"serial", "action"}.isdisjoint(
+                set(json_response.get("result").get("value").get("auditcolumns"))),
+                json_response.get("result").get("value").get("auditcolumns"))
+            self.assertEqual(len(json_response.get("result").get("value").get("auditdata")[0]),
+                             len(json_response.get("result").get("value").get("auditcolumns")))
 
         # try to explicitly query another realm
         with self.app.test_request_context('/audit/',
@@ -408,6 +453,7 @@ class APIAuditTestCase(MyApiTestCase):
 
         # delete policy
         delete_policy("audit01")
+        delete_policy("audit02")
 
     def test_05_audit_age(self):
         # Check that audit age policy is applied correctly
@@ -474,3 +520,67 @@ class APIAuditTestCase(MyApiTestCase):
                 self.assertNotEqual(self.realm1a, audit.get("realm"), audit)
 
         delete_policy("audit_age")
+
+    def test_06_audit_pagination(self):
+        self.setUp_user_realms()
+        # prepare some log entries
+        Audit(action="enroll", success=1, user="selfservice", administrator=None,
+              resolver="resolver1", realm=self.realm1a).save()
+        Audit(action="enroll", success=1, user="selfservice", administrator=None,
+              resolver="resolver1", realm=self.realm1a).save()
+        Audit(action="enroll", success=1, user="selfservice", administrator=None,
+              resolver="resolver1", realm=self.realm2b).save()
+        Audit(action="enroll", success=1, user="selfservice", administrator=None,
+              resolver="resolver1", realm=self.realm2b).save()
+        Audit(action="enroll", success=1, user="selfservice", administrator=None,
+              resolver="resolver1", realm=self.realm2b).save()
+
+        # Query API with page size parameter
+        with self.app.test_request_context('/audit/',
+                                           method='GET',
+                                           query_string={'page_size': 3},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            json_response = res.json
+            self.assertTrue(json_response.get("result").get("status"), json_response)
+            self.assertGreaterEqual(json_response.get("result").get("value").get(
+                "count"), 6,  json_response)
+            self.assertEqual(3, len(json_response.get("result").get("value").get(
+                "auditdata")), json_response)
+            self.assertEqual(1, json_response.get("result").get("value").get(
+                "current"), json_response)
+            self.assertEqual(2, json_response.get("result").get("value").get(
+                "next"), json_response)
+
+        # Query API with negative page size parameter
+        with self.app.test_request_context('/audit/',
+                                           method='GET',
+                                           query_string={'page_size': -5},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            json_response = res.json
+            self.assertTrue(json_response.get("result").get("status"), json_response)
+            self.assertGreaterEqual(json_response.get("result").get("value").get(
+                "count"), 6,  json_response)
+            self.assertGreaterEqual(len(json_response.get("result").get("value").get(
+                "auditdata")), 5, json_response)
+            self.assertEqual(1, json_response.get("result").get("value").get(
+                "current"), json_response)
+
+        # Query API with negative page parameter
+        with self.app.test_request_context('/audit/',
+                                           method='GET',
+                                           query_string={'page': -1},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            json_response = res.json
+            self.assertTrue(json_response.get("result").get("status"), json_response)
+            self.assertGreaterEqual(json_response.get("result").get("value").get(
+                "count"), 6,  json_response)
+            self.assertGreaterEqual(len(json_response.get("result").get("value").get(
+                "auditdata")), 5, json_response)
+            self.assertEqual(1, json_response.get("result").get("value").get(
+                "current"), json_response)

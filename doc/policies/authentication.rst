@@ -268,6 +268,27 @@ If set, a new OTP Email will be sent, when successfully authenticated with an
 Email Token.
 
 
+.. _policy_set_realm:
+
+set_realm
+~~~~~~~~~
+
+.. index:: Set realm for authentication
+
+type: ``string``
+
+This policy sets or overwrites the realm parameter at the beginning of authentication requests to :http:post:`/auth`
+and :http:post:`/validate/check`. It is applied before the first user resolving to avoid unnecessary user store
+requests.
+
+This can be used if the user can not pass their realm when authenticating at a certain
+client, but the realm needs to be available during authentication, since the user is not located in the default realm or
+the user should not be unnecessarily annoyed with a realm selection.
+
+.. note:: This policy takes precedence over the :ref:`policy_mangle` and :ref:`policy_setrealm` policies.
+
+.. versionadded:: 3.12
+
 .. _policy_mangle:
 
 mangle
@@ -280,6 +301,13 @@ type: ``string``
 The ``mangle`` policy can mangle the authentication request data before they
 are processed. Meaning the parameters ``user``, ``pass`` and ``realm`` can be
 modified prior to authentication.
+
+.. note:: This policy is only applied to :http:post:`/validate/check`.
+
+    If the policy :ref:`policy_set_realm` is set, this policy is only applied for ``user`` and ``pass``
+    parameters. Policies with the ``realm`` parameter are ignored.
+
+    However, it is still applied after the policy :ref:`policy_setrealm` is executed.
 
 This is useful if either information needs to be stripped or added to such a
 parameter.
@@ -341,6 +369,8 @@ type: ``string``
 
 This is a list of token types that are not allowed to be used during authentication.
 The list is separated by whitespaces like *"hotp totp"*.
+
+.. versionadded:: 3.12
 
 .. _policy_change_pin_via_validate:
 
@@ -482,6 +512,7 @@ If this policy contains an invalid template name, the container is enrolled anyw
 
 The policy :ref:`policy_enroll_via_multichallenge` has to be set to `smartphone` for this policy to take effect.
 
+.. versionadded:: 3.12
 
 .. _policy_u2f_facets:
 
@@ -981,6 +1012,8 @@ client you are using will show the correct login for the user's preferred client
 used a TOTP token to authenticate, an input field to enter the OTP value is displayed.
 
 This policy takes precedence over the `preferred_client_mode` policy.
+
+.. versionadded:: 3.12
 
 passkey_trigger_by_pin
 ~~~~~~~~~~~~~~~~~~~~~~

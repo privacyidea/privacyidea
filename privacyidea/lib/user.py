@@ -317,7 +317,7 @@ class User(object):
         :return: a dict with all the userinformation
         :rtype: dict
         """
-        if self.is_empty():
+        if self.is_empty() or not self.exist():
             # An empty user has no info
             return {}
         (uid, _rtype, _resolver) = self.get_user_identifiers()

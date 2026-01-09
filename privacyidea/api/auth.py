@@ -50,7 +50,7 @@ import jwt
 from functools import wraps
 from datetime import (datetime, timezone)
 
-from privacyidea.api.lib.policyhelper import check_last_auth_policy
+from privacyidea.api.lib.policyhelper import check_last_auth_policy, get_realm_for_authentication
 from privacyidea.lib.error import AuthError, ERROR
 from privacyidea.lib.crypto import geturandom, init_hsm
 from privacyidea.lib.audit import getAudit
@@ -135,6 +135,9 @@ def before_request():
             request.User = User(login_name)
         else:
             realm = realm or get_default_realm()
+            # Check if realm should be overwritten
+            realm = get_realm_for_authentication(g, login_name, realm)
+            request.all_data["realm"] = realm
             try:
                 request.User = User(login_name, realm)
             except Exception as e:
@@ -275,7 +278,8 @@ def get_auth_token():
                             id=ERROR.AUTHENTICATE_MISSING_USERNAME)
         if token.get_type() in request.all_data.get("disabled_token_types", []):
             raise AuthError(
-                _("Authentication failure. The token type {token_type} is disabled.").format(token.get_type()),
+                _("Authentication failure. The token type {token_type} is disabled.").format(
+                    token_type=token.get_type()),
                 id=ERROR.AUTHENTICATE_WRONG_CREDENTIALS)
         if not check_last_auth_policy(g, token):
             log.debug(f"Last authentication policy check failed for token {token.get_serial()}.")

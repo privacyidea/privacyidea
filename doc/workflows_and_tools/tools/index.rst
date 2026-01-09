@@ -421,9 +421,8 @@ This script can be well used with the :ref:`scripthandler`.
 
 The pi-tokenjanitor Script
 --------------------------
-
-.. versionadded:: 3.11
 .. index:: pi-token-janitor
+.. versionadded:: 3.11
 
 Starting with version 3.11 privacyIDEA comes with an improved version of the :ref:`token_janitor` script.
 The new script is called **pi-token-janitor**. The script can be used for three different tasks: to find

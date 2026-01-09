@@ -20,7 +20,7 @@
         <label for="generate" translate>Generate OTP Key on the Server</label>
     </div>
 
-    <div ng-show="form.genkey">
+    <div ng-show="form.genkey && !form['2stepinit']">
         <p class="help-block" translate>
             The server will create the OTP key
             and a QR Code
