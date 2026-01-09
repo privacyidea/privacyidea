@@ -9,7 +9,7 @@ msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: translations@privacyidea.org\n"
 "POT-Creation-Date: 2025-09-05 15:12+0200\n"
-"PO-Revision-Date: 2026-01-08 10:01+0000\n"
+"PO-Revision-Date: 2026-01-09 11:01+0000\n"
 "Last-Translator: Gregory Bouzinac <gregory.b@orange.fr>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/fr/>\n"
@@ -2907,12 +2907,16 @@ msgid ""
 "If the required data is not available, the condition is considered to be "
 "true. Hence, the policy is applied."
 msgstr ""
+"Si la donnée requise n'est pas disponible, la condition est considérée comme "
+"vraie. Par conséquent, la politique est appliquée."
 
 #: lib/policies/conditions.py:108
 msgid ""
 "If the required data is not available, the condition is considered to be "
 "false. Hence, the policy is not applied."
 msgstr ""
+"Si la donnée requise n'est pas disponible, la condition est considérée comme "
+"fausse. Par conséquent, la politique n'est pas appliquée."
 
 #: lib/resolvers/LDAPIdResolver.py:1209
 #, python-brace-format
@@ -3665,8 +3669,8 @@ msgid ""
 "code>: user defined. Does only apply if <em>{0!s}</em> is set."
 msgstr ""
 "Les options qui peuvent être présentées à l'utilisateur pour confirmer la "
-"connexion. <code>ALPHABETIQUE</code>: A-Z, <code>NUMERIQUE</code>: 01-99, "
-"<code>PERSO</code>: prédéfinies. S'applique seulement si <em>{0!s}</em> est "
+"connexion. <code>ALPHABETIQUE</code> : A-Z, <code>NUMERIQUE</code> : 01-99, "
+"<code>PERSO</code> : prédéfinies. S'applique seulement si <em>{0!s}</em> est "
 "défini."
 
 #: lib/tokens/pushtoken.py:470
