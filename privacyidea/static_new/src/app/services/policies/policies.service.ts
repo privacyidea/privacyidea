@@ -215,6 +215,33 @@ export class PolicyService implements PolicyServiceInterface {
     source: () => this.contentService.routeUrl(),
     computation: (_) => false
   });
+  savePolicyEdits(policyName: string, edits: Partial<PolicyDetail>) {
+    // Optimistic update
+    const allPolicies = this.allPolicies();
+    const backupPolicies = [...allPolicies];
+    const index = allPolicies.findIndex((p) => p.name === policyName);
+    if (index !== -1) {
+      allPolicies[index] = { ...allPolicies[index], ...edits };
+    }
+    this.allPolicies.set(allPolicies);
+
+    // Do request
+    this.http
+      .post<PiResponse<any>>(`${this.policyBaseUrl}${policyName}`, edits, {
+        headers: this.authService.getHeaders()
+      })
+      .subscribe({
+        next: () => {
+          // Do request that may revert the optimistic update
+          this.allPoliciesRecource.reload();
+        },
+        error: (err) => {
+          // Rollback optimistic update
+          this.allPolicies.set(backupPolicies);
+          console.error("Error updating policy: ", err);
+        }
+      });
+  }
 
   // updateActionInSelectedPolicy() {
   //   const selectedPolicy = this.selectedPolicy();

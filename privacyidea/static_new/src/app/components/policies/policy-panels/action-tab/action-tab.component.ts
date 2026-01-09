@@ -45,10 +45,9 @@ export class ActionTabComponent {
   isEditMode = input.required<boolean>();
 
   policy = input.required<PolicyDetail>();
-  policyChange = output<PolicyDetail>();
-  onPolicyChange(updatedPolicy: PolicyDetail) {
-    this.policyChange.emit(updatedPolicy);
-  }
+  actionsUpdate = output<{
+    [actionName: string]: string;
+  }>();
 
   selectedAction: WritableSignal<{ name: string; value: any } | null> = linkedSignal({
     source: () => ({
@@ -74,16 +73,15 @@ export class ActionTabComponent {
   });
 
   onActionsChange(updatedActions: { name: string; value: any }[]) {
-    console.log("ActionTabComponent Actions changed to:", updatedActions);
+    console.log("ActionTabComponent Actions changed tooooo:", updatedActions);
     const newActions: { [key: string]: any } = {};
+    console.log("Preparing to emit actionsUpdate with:", updatedActions);
     updatedActions.forEach((action) => {
+      console.log("Adding action:", action);
       newActions[action.name] = action.value;
     });
-    const updatedPolicy: PolicyDetail = {
-      ...this.policy(),
-      action: newActions
-    };
-    this.policyChange.emit(updatedPolicy);
+    console.log("Emitting actionsUpdate with:", newActions);
+    this.actionsUpdate.emit(newActions);
   }
   onActionAdd(action: { name: string; value: any }) {
     console.log("ActionTabComponent Adding action:", action);

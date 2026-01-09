@@ -1,5 +1,5 @@
 <!--
-  (c) NetKnights GmbH 2025,  https://netknights.it
+  (c) NetKnights GmbH 2026,  https://netknights.it
 
   This code is free software; you can redistribute it and/or
  modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,23 +16,21 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
  -->
-<!--
 
 <div class="list-item-card">
   <mat-expansion-panel
     #panel
     class="margin-4"
-    [disabled]="isEditMode() || policyService.isSelectedPolicyEdited()"
-    (opened)="handleExpansion(panel, policy().name)"
-    (closed)="handleCollapse(panel, policy().name)">
+    [disabled]="isEditMode() && isPolicyEdited() && panel.expanded === true"
+    (closed)="handleCollapse(panel)">
     <mat-expansion-panel-header class="mat-expansion-panel-header">
       <mat-panel-title>
-        @if (isEditingPolicy(policy().name)) {
+        @if (isEditMode()) {
           <input
             type="text"
             class="policy-name-input"
             placeholder="Policy Name"
-            [ngModel]="selectedPolicy()!.name"
+            [ngModel]="currentPolicy().name"
             (ngModelChange)="onNameChange($event)"
             (click)="$event.stopPropagation(); panel.expanded = true"
             (keydown)="$event.stopPropagation()" />
@@ -44,14 +42,14 @@
       </mat-panel-title>
       <mat-panel-description class="header-description">
         <div class="description-label">
-          @if (isEditingPolicy(policy().name) && policyService.isScopeChangeable(selectedPolicy()!)) {
+          @if (isEditMode() && policyService.isScopeChangeable(currentPolicy())) {
             <mat-form-field
               appearance="fill"
               class="policy-scope-dropdown"
               (click)="$event.stopPropagation()">
               <mat-label i18n>Scope</mat-label>
               <mat-select
-                [value]="selectedPolicy()!.scope"
+                [value]="currentPolicy().scope"
                 (selectionChange)="selectPolicyScope($event.value)">
                 @for (scopeOption of policyService.allPolicyScopes(); track scopeOption) {
                   <mat-option [value]="scopeOption">{{ scopeOption }}</mat-option>
@@ -66,7 +64,7 @@
         </div>
         <div class="actions">
           @if (panel.expanded) {
-            @if (isEditingPolicy(policy().name)) {
+            @if (isEditMode()) {
               <button
                 mat-icon-button
                 [disabled]="!canSavePolicy()"
@@ -94,7 +92,7 @@
           }
           <mat-slide-toggle
             #slideToggle
-            [checked]="panel.expanded ? selectedPolicy()!.active : policy().active"
+            [checked]="panel.expanded ? currentPolicy().active : policy().active"
             (change)="togglePolicyActive(policy(), $event.checked); slideToggle._switchElement.nativeElement.blur()"
             (click)="$event.stopPropagation()"
             [disableRipple]="true">
@@ -106,14 +104,14 @@
       <div class="priority-description">
         <app-policy-priority
           [editMode]="isEditMode()"
-          [priority]="selectedPolicy()?.priority ?? policy().priority"
+          [priority]="currentPolicy().priority"
           (priorityChange)="updatePolicyPriority($event)" />
         <app-policy-description
           [isEditMode]="isEditMode()"
-          [policy]="selectedPolicy() ?? policy()"
-          (policyChange)="onPolicyChange($event)" />
+          [policy]="currentPolicy()"
+          (policyChange)="addPolicyEdit($event)" />
       </div>
-      @if (isEditingPolicy(policy().name) || policyService.selectedPolicyHasConditions()) {
+      @if (isEditMode() || currentPolicyHasConditions()) {
         <div class="tab-buttons">
           <button
             mat-stroked-button
@@ -134,14 +132,14 @@
       @if (activeTab() === "actions") {
         <app-action-tab
           [isEditMode]="isEditMode()"
-          [policy]="policy()"
-          (policyChange)="onPolicyChange($event)" />
+          [policy]="currentPolicy()"
+          (actionsUpdate)="updateActions($event)" />
       }
-      @if (activeTab() === "conditions" && selectedPolicy()) {
+      @if (activeTab() === "conditions" && currentPolicy()) {
         <app-conditions-tab
           [isEditMode]="isEditMode()"
-          [policy]="selectedPolicy()!" />
+          [policy]="currentPolicy()!" />
       }
     </div>
   </mat-expansion-panel>
-</div> -->
+</div>

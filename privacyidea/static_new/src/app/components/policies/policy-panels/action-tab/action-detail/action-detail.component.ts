@@ -113,8 +113,7 @@ export class ActionDetailComponent {
     return Object.keys(currentActions);
   });
 
-  // Public Methods
-
+  // Public Methods-
   updateSelectedActionValue(newValue: any) {
     const selectedAction = this.selectedAction();
     if (!selectedAction) return;
