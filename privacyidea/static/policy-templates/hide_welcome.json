@@ -1,0 +1,7 @@
+{
+  "name": "hide_welcome",
+  "scope": "webui",
+  "action": {
+    "hide_welcome_info": true
+  }
+}
