@@ -26,7 +26,7 @@ import { MatButtonToggleModule } from "@angular/material/button-toggle";
 import { FormsModule } from "@angular/forms";
 import { MatExpansionModule, MatExpansionPanel } from "@angular/material/expansion";
 import { MatSlideToggleModule } from "@angular/material/slide-toggle";
-import { PolicyDetail, PolicyService } from "../../../../services/policies/policies.service";
+import { PolicyDetail, PolicyService, PolicyServiceInterface } from "../../../../services/policies/policies.service";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatSelectModule } from "@angular/material/select";
 import { MatOptionModule } from "@angular/material/core";
@@ -34,6 +34,8 @@ import { PolicyPriorityComponent } from "../action-tab/policy-priority/policy-pr
 import { PolicyDescriptionComponent } from "../action-tab/policy-description/policy-description.component";
 import { ActionTabComponent } from "../action-tab/action-tab.component";
 import { ConditionsTabComponent } from "../conditions-tab/conditions-tab.component";
+import { DialogService, DialogServiceInterface } from "../../../../services/dialog/dialog.service";
+import { SimpleConfirmationDialogComponent } from "../../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
 
 type PolicyTab = "actions" | "conditions";
 
@@ -61,9 +63,10 @@ type PolicyTab = "actions" | "conditions";
   styleUrl: "./policy-panel-edit.component.scss"
 })
 export class PolicyPanelEditComponent {
-  // Angular Inputs and Services
+  readonly policyService: PolicyServiceInterface = inject(PolicyService);
+  readonly dialogService: DialogServiceInterface = inject(DialogService);
+
   readonly isEditMode = signal<boolean>(false);
-  readonly policyService: PolicyService = inject(PolicyService);
   readonly policy = input.required<PolicyDetail>();
   readonly policyEdits = signal<Partial<PolicyDetail>>({});
   readonly currentPolicy = computed<PolicyDetail>(() => {
@@ -134,13 +137,54 @@ export class PolicyPanelEditComponent {
     this.policyEdits.set({});
   }
 
+  /*
+export type SimpleConfirmationDialogData = {
+  title: string;
+  confirmAction: DialogAction<true>;
+  cancelAction?: DialogAction<false>;
+  items: string[];
+  itemType: string;
+};
+*/
+
   deletePolicy(policyName: string): void {
-    if (confirm(`Are you sure you want to delete the policy "${policyName}"? This action cannot be undone.`)) {
-      this.policyService.deletePolicy(policyName).then((response) => {
-        this.policyService.allPoliciesRecource.reload();
+    this.dialogService
+      .openDialog({
+        component: SimpleConfirmationDialogComponent,
+        data: {
+          title: "Confirm Deletion",
+          confirmAction: {
+            type: "destruct",
+            label: "Delete",
+            value: true,
+            closeOnAction: true
+          },
+          cancelAction: {
+            type: "cancel",
+            label: "Cancel",
+            value: false,
+            closeOnAction: true
+          },
+          items: [policyName],
+          itemType: "policy"
+        }
+      })
+      .afterClosed()
+      .subscribe((confirmed) => {
+        if (confirmed) {
+          this.policyService.deletePolicy(policyName).then(() => {
+            this.policyService.allPoliciesRecource.reload();
+          });
+        }
       });
-    }
   }
+
+  //   if (confirm(`Are you sure you want to delete the policy "${policyName}"? This action cannot be undone.`)) {
+  //     this.policyService.deletePolicy(policyName).then((response) => {
+  //       this.policyService.allPoliciesRecource.reload();
+  //     });
+  //   }
+  // }
 
   cancelEditMode() {
     if (!this.confirmDiscardChanges()) return;

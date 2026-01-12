@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { HttpClient, httpResource } from "@angular/common/http";
+import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
 import { computed, inject, Injectable, linkedSignal, Signal, signal, WritableSignal } from "@angular/core";
 import { lastValueFrom, Observable, of, switchMap } from "rxjs";
 import { environment } from "../../../environments/environment";
@@ -161,6 +161,15 @@ export interface PolicyServiceInterface {
   actionNamesOfGroup(scope: string, group: string): string[];
   actionValueIsValid(action: PolicyActionDetail, value: string | number): boolean;
   saveNewPolicy(newPolicy: PolicyDetail): Promise<void>;
+  policyHasConditions(policy: PolicyDetail): boolean;
+  policyHasAdminConditions(policy: PolicyDetail): boolean;
+  policyHasUserConditions(policy: PolicyDetail): boolean;
+  policyHasNodeConditions(policy: PolicyDetail): boolean;
+  policyHasAdditionalConditions(policy: PolicyDetail): boolean;
+  policyHasActions(policy: PolicyDetail): boolean;
+  savePolicyEdits(policyName: string, edits: Partial<PolicyDetail>): void;
+  isPolicyEdited(editedPolicy: PolicyDetail, originalPolicy: PolicyDetail): boolean;
+  allPoliciesRecource: HttpResourceRef<PiResponse<PolicyDetail[], unknown> | undefined>;
 }
 
 @Injectable({
