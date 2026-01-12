@@ -1,0 +1,97 @@
+<!--
+ (c) NetKnights GmbH 2025,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+
+<div class="machine-resolver-card">
+  <mat-expansion-panel
+    #panel
+    class="margin-4"
+    [disabled]="isEdited()"
+    (closed)="handleCollapse(panel)">
+    <mat-expansion-panel-header class="mat-expansion-panel-header">
+      <mat-panel-title>
+        @if (panel.expanded) {
+          <input
+            type="text"
+            class="machine-resolver-name-input"
+            placeholder="Name"
+            [ngModel]="newMachineResolver().resolvername"
+            (ngModelChange)="onResolvernameChange($event)"
+            (click)="$event.stopPropagation(); panel.expanded = true"
+            (keydown)="$event.stopPropagation()" />
+        } @else {
+          <p i18n>New Machine Resolver</p>
+        }
+      </mat-panel-title>
+      <mat-panel-description class="header-description">
+        <div class="machine-resolver-type-label">
+          @if (panel.expanded) {
+            <mat-form-field
+              appearance="fill"
+              class="machine-resolver-type-dropdown"
+              (click)="$event.stopPropagation()">
+              <mat-label i18n>Type</mat-label>
+              <mat-select
+                [value]="newMachineResolver().type"
+                (selectionChange)="onMachineResolverTypeChange($event.value)">
+                @for (machineResolverType of machineResolverTypes; track machineResolverType) {
+                  <mat-option [value]="machineResolverType">{{ machineResolverType }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+          }
+        </div>
+        <div class="machine-resolver-actions">
+          @if (panel.expanded) {
+            <button
+              mat-icon-button
+              [disabled]="!canSaveMachineResolver() || !isEdited()"
+              (click)="$event.stopPropagation(); saveMachineResolver(panel)">
+              <mat-icon>save</mat-icon>
+            </button>
+            <button
+              mat-icon-button
+              (click)="$event.stopPropagation(); handleCollapse(panel)">
+              <mat-icon>close</mat-icon>
+            </button>
+          }
+        </div>
+      </mat-panel-description>
+    </mat-expansion-panel-header>
+    @switch (newMachineResolver().type) {
+      @case ("hosts") {
+        <app-machine-resolver-hosts-tab
+          [isEditMode]="true"
+          [machineResolverData]="newMachineResolver().data"
+          (onNewData)="onNewData($event)"
+          (onNewValidator)="onNewValidator($event)" />
+      }
+      @case ("ldap") {
+        <app-machine-resolver-ldap-tab
+          [isEditMode]="true"
+          [machineResolverData]="newMachineResolver().data"
+          (onNewData)="onNewData($event)"
+          (onNewValidator)="onNewValidator($event)" />
+      }
+      @default {
+        <!-- Fallback for unknown types -->
+        <p i18n>Unknown machine resolver type: {{ newMachineResolver().type }}</p>
+      }
+    }
+  </mat-expansion-panel>
+</div>

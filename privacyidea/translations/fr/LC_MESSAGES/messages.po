@@ -3,13 +3,13 @@
 # This file is distributed under the same license as the PROJECT project.
 # FIRST AUTHOR <EMAIL@ADDRESS>, 2020.
 # sebastien C <sebastien.netknights@outlook.com>, 2023, 2025.
-# Gregory Bouzinac <gregory.b@orange.fr>, 2024, 2025.
+# Gregory Bouzinac <gregory.b@orange.fr>, 2024, 2025, 2026.
 msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: translations@privacyidea.org\n"
 "POT-Creation-Date: 2025-09-05 15:12+0200\n"
-"PO-Revision-Date: 2025-04-22 23:21+0000\n"
+"PO-Revision-Date: 2026-01-08 10:01+0000\n"
 "Last-Translator: Gregory Bouzinac <gregory.b@orange.fr>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/fr/>\n"
@@ -18,7 +18,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Weblate 5.11.1-dev\n"
+"X-Generator: Weblate 5.15.1\n"
 "Generated-By: Babel 2.12.1\n"
 
 #: api/auth.py:256
@@ -36,7 +36,7 @@ msgstr "Échec de l'authentification. Le jeton n'a pas d'utilisateur."
 #: api/auth.py:277
 #, python-brace-format
 msgid "Authentication failure. The token type {token_type} is disabled."
-msgstr ""
+msgstr "Echec authentification. Le type de jeton {token_type} est désactivé."
 
 #: api/auth.py:282
 #, python-brace-format
@@ -44,6 +44,8 @@ msgid ""
 "Authentication failure. Last authentication policy check failed for token "
 "{serial}"
 msgstr ""
+"Echec authentification. La dernière vérification de la politique "
+"d'authentification a échoué pour le jeton {serial}"
 
 #: api/auth.py:294
 msgid "Authentication failure using passkey."
@@ -71,24 +73,27 @@ msgstr "Impossible de vérifier les données dans la requête !"
 
 #: api/validate.py:443
 msgid "Cancelled enrollment via multichallenge"
-msgstr ""
+msgstr "Enrôlement via multichallenge annulé"
 
 #: api/validate.py:445
 msgid "Cancelled enrollment via multichallenge for transaction_id "
-msgstr ""
+msgstr "Enrôlement via multichallenge annulé pour transaction_id "
 
 #: api/validate.py:448
 msgid "Failed to cancel enrollment via multichallenge"
-msgstr ""
+msgstr "Echec de l'annulation de l'enrôlement via multichallenge"
 
 #: api/validate.py:450
 msgid "Failed to cancel enrollment via multichallenge for transaction_id "
 msgstr ""
+"Echec de l'annulation de l'enrôlement via multichallenge pour transaction_id "
 
 #: api/validate.py:500
 #, python-brace-format
 msgid "Last authentication policy check failed for token {serial}"
 msgstr ""
+"La dernière vérification de la politique d'authentification a échoué pour le "
+"jeton {serial}"
 
 #: api/validate.py:519 lib/token.py:2636
 msgid "Found matching challenge"
@@ -109,13 +114,15 @@ msgstr ""
 
 #: api/lib/postpolicy.py:911
 msgid "Please scan the QR code to register the container."
-msgstr ""
+msgstr "Veuillez scanner le code QR pour enregistrer le conteneur."
 
 #: api/lib/prepolicy.py:2884
 msgid ""
 "Authentication failure. The account has exceeded the authentication time "
 "limit!"
 msgstr ""
+"Echec Authentification. Le compte a atteint la durée maximale pour "
+"l'authentification !"
 
 #: api/lib/utils.py:401
 msgid "Authentication failure. Missing Authorization header."
@@ -210,11 +217,11 @@ msgstr ""
 
 #: lib/policy.py:1209
 msgid "Policy does not exist:"
-msgstr ""
+msgstr "La politique n'existe pas :"
 
 #: lib/policy.py:1211
 msgid "Policy already exists:"
-msgstr ""
+msgstr "La politique existe déjà :"
 
 #: lib/policy.py:1374
 msgid "Invalid client definition!"
