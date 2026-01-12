@@ -113,8 +113,8 @@ export class TokenEnrollmentLastStepDialogWizardComponent extends TokenEnrollmen
   protected readonly RouterLink = RouterLink;
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
 
-  onAction(action: DialogAction<"create_container" | "logout">): void {
-    switch (action.value) {
+  onAction(value: "create_container" | "logout"): void {
+    switch (value) {
       case "create_container":
         this.createContainer();
         break;

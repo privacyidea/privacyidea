@@ -19,7 +19,8 @@
 <app-dialog-wrapper
   title="Token successfully enrolled"
   [actions]="actions"
-  (close)="close()">
+  (close)="close()"
+  (onAction)="onAction($event)">
   <mat-dialog-content>
     @let postTopHtml = postTopHtml$ | async;
     @if (postTopHtml?.hasContent) {

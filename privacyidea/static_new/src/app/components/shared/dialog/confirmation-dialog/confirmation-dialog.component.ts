@@ -41,6 +41,9 @@ export class SimpleConfirmationDialogComponent extends AbstractDialogComponent<S
     ...(this.data.cancelAction ? [this.data.cancelAction] : []),
     this.data.confirmAction
   ];
+  onAction(value: boolean): void {
+    this.close(value);
+  }
 }
 
 export type SimpleConfirmationDialogData = {

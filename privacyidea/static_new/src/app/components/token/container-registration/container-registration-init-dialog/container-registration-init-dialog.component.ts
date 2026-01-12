@@ -50,7 +50,7 @@ export class ContainerRegistrationInitDialogComponent extends AbstractDialogComp
       };
     }
   }
-  onActionClick(value: "register" | "rollover") {
+  onAction(value: "register" | "rollover") {
     switch (value) {
       case "register":
         this.onRegister();

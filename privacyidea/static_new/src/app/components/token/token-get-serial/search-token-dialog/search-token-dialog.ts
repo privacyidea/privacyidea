@@ -35,4 +35,7 @@ export class SearchTokenDialogComponent extends AbstractDialogComponent<string> 
     type: "confirm",
     closeOnAction: true
   };
+  onAction(value: boolean) {
+    this.close(value);
+  }
 }

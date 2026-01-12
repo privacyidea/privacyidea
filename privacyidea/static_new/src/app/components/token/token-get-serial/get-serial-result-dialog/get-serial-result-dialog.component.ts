@@ -44,4 +44,8 @@ export class GetSerialResultDialogComponent extends AbstractDialogComponent<GetS
     closeOnAction: true,
     value: true
   };
+
+  onAction(value: true) {
+    this.close(value);
+  }
 }
