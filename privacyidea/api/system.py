@@ -51,7 +51,7 @@ from flask import (Blueprint,
                    request)
 from flask import (g, current_app, render_template)
 
-from privacyidea.lib.auth import list_db_admin
+from privacyidea.lib.auth import get_all_db_admins
 from privacyidea.lib.crypto import geturandom, set_hsm_password, get_hsm
 from privacyidea.lib.importotp import GPGImport
 from privacyidea.lib.policy import PolicyClass
@@ -96,7 +96,7 @@ def get_config_documentation():
     resolvers = get_resolver_list()
     realms = get_realms()
     policies = P.list_policies()
-    admins = list_db_admin()
+    admins = get_all_db_admins()
     context = {"system": socket.getfqdn(socket.gethostname()),
                "date": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
                "systemconfig": config,

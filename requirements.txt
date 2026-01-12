@@ -44,19 +44,16 @@ asn1crypto==1.5.1 \
     --hash=sha256:13ae38502be632115abf8a24cbe5f4da52e3b5231990aff31123c805306ccb9c \
     --hash=sha256:db4e40728b728508912cbb3d44f19ce188f218e9eba635821bb4b68564f8fd67
     # via
-    #   -r requirements.txt
     #   webauthn
 async-timeout==5.0.1 ; python_version <= "3.10" \
     --hash=sha256:39e3809566ff85354557ec2398b55e096c8364bacac9405a7a1fa429e77fe76c \
     --hash=sha256:d9321a7a3d5a6a5e187e824d2fa0793ce379a202935782d555d6e9d2735677d3
     # via
-    #   -r requirements.txt
     #   redis
 babel==2.17.0 \
     --hash=sha256:0c54cffb19f690cdcc52a3b50bcbf71e07a808d1c80d549f2459b9d2cf0afb9d \
     --hash=sha256:4d0b53093fdfb4b21c92b5213dba5a1b23885afa8383709427046b21c366e5f2
     # via
-    #   -r requirements.txt
     #   flask-babel
 bcrypt==4.3.0 \
     --hash=sha256:0042b2e342e9ae3d2ed22727c1262f76cc4f345683b5c1715f0250cf4277294f \
@@ -119,7 +116,6 @@ blinker==1.9.0 \
     --hash=sha256:b4ce2265a7abece45e7cc896e98dbebe6cead56bcf805a3d23136d145f5445bf \
     --hash=sha256:ba0efaa9080b619ff2f3459d1d500c57bddea4a6b424b60a91141db6fd2f08bc
     # via
-    #   -r requirements.txt
     #   flask
 cachetools==5.5.2 \
     --hash=sha256:1a661caa9175d26759571b2e19580f9d6393969e5dfca11fdb1f947a23e640d4 \
@@ -269,7 +265,6 @@ cffi==2.0.0 \
     --hash=sha256:fc7de24befaeae77ba923797c7c87834c73648a05a4bde34b3b7e5588973a453 \
     --hash=sha256:fe562eb1a64e67dd297ccc4f5addea2501664954f2692b69a76449ec7913ecbf
     # via
-    #   -r requirements.txt
     #   argon2-cffi-bindings
     #   cryptography
 charset-normalizer==3.4.3 \
@@ -361,7 +356,6 @@ click==8.1.8;python_version == "3.9" \
     --hash=sha256:63c132bbbed01578a06712a2d1f497bb62d9c1c0d329b7903a866228027263b2 \
     --hash=sha256:ed53c9d8990d83c2a27deae68e4ee337473f6330c040a31d4225c9574d16096a
     # via
-    #   -r requirements.txt
     #   flask
 configobj==5.0.9 \
     --hash=sha256:03c881bbf23aa07bccf1b837005975993c4ab4427ba57f959afdd9d1a2386848 \
@@ -410,7 +404,6 @@ cryptography==45.0.7 \
     --hash=sha256:f5414a788ecc6ee6bc58560e85ca624258a55ca434884445440a810796ea0e0b \
     --hash=sha256:fa26fa54c0a9384c27fcdc905a2fb7d60ac6e47d14bc2692145f2b3b1e2cfdbd
     # via
-    #   -r requirements.txt
     #   msal
     #   privacyIDEA (pyproject.toml)
     #   pyjwt
@@ -428,7 +421,6 @@ flask==3.1.2 \
     --hash=sha256:bf656c15c80190ed628ad08cdfd3aaa35beb087855e2f494910aa3774cc4fd87 \
     --hash=sha256:ca1d8112ec8a6158cc29ea4858963350011b5c846a414cdb7a954aa9e967d03c
     # via
-    #   -r requirements.txt
     #   flask-babel
     #   flask-migrate
     #   flask-sqlalchemy
@@ -446,7 +438,6 @@ flask-sqlalchemy==3.0.5 \
     --hash=sha256:c5765e58ca145401b52106c0f46178569243c5da25556be2c231ecc60867c5b1 \
     --hash=sha256:cabb6600ddd819a9f859f36515bb1bd8e7dbf30206cc679d2b081dff9e383283
     # via
-    #   -r requirements.txt
     #   flask-migrate
     #   privacyIDEA (pyproject.toml)
 flask-versioned==0.9.4.post20101221 \
@@ -576,20 +567,17 @@ importlib-metadata==8.7.0;python_version == "3.9" \
     --hash=sha256:d13b81ad223b890aa16c5471f2ac3056cf76c5f10f82d6f9292f0b415f389000 \
     --hash=sha256:e5dd1551894c77868a30651cef00984d50e1002d06942a7101d34870c5f02afd
     # via
-    #   -r requirements.txt
     #   flask
     #   segno
 itsdangerous==2.2.0 \
     --hash=sha256:c6242fc49e35958c8b15141343aa660db5fc54d4f13a1db01a3f5891b98700ef \
     --hash=sha256:e0050c0b7da1eea53ffaf149c0cfbb5c6e2e2b69c4bef22c81fa6eb73e5f6173
     # via
-    #   -r requirements.txt
     #   flask
 jinja2==3.1.6 \
     --hash=sha256:0137fb05990d35f1275a587e9aee6d56da821fc83491a0fb838183be43f66d6d \
     --hash=sha256:85ece4451f492d0c13c5dd7c13a64681a86afae63a5f347908daf103ce6d2f67
     # via
-    #   -r requirements.txt
     #   flask
     #   flask-babel
 ldap3==2.8.1 \
@@ -781,7 +769,6 @@ markupsafe==3.0.2 \
     --hash=sha256:f8b3d067f2e40fe93e1ccdd6b2e1d16c43140e76f02fb1319a05cf2b79d99430 \
     --hash=sha256:fcabf5ff6eea076f859677f5f0b6b5c1a51e70a376b0579e0eadef8db48c6b50
     # via
-    #   -r requirements.txt
     #   flask
     #   jinja2
     #   mako
@@ -815,7 +802,6 @@ pyasn1==0.6.1 \
     --hash=sha256:0d632f46f2ba09143da3a8afe9e33fb6f92fa2320ab7e886e2d0f7672af84629 \
     --hash=sha256:6f580d2bdd84365380830acf45550f2511469f673cb4a5ae3857a3170128b034
     # via
-    #   -r requirements.txt
     #   ldap3
     #   pyasn1-modules
     #   rsa
@@ -835,7 +821,6 @@ pyjwt[crypto]==2.10.1 \
     --hash=sha256:3cc5772eb20009233caf06e9d8a0577824723b44e6648ee0a2aedb6cf9381953 \
     --hash=sha256:dcdd193e30abefd5debf142f9adfcdd2b58004e644f25406ffaebd50bd98dacb
     # via
-    #   -r requirements.txt
     #   msal
     #   privacyIDEA (pyproject.toml)
 pymysql==1.1.2 \
@@ -856,7 +841,6 @@ python-dateutil==2.9.0.post0 \
     --hash=sha256:37dd54208da7e1cd875388217d5e00ebd4179249f90fb72437e91a35459a0ad3 \
     --hash=sha256:a8b2bc7bffae282281c8140a97d3aa9c14da0b136dfe83f850eea9a5f7470427
     # via
-    #   -r requirements.txt
     #   croniter
     #   privacyIDEA (pyproject.toml)
 python-gnupg==0.5.5 \
@@ -867,7 +851,6 @@ pytz==2025.2 \
     --hash=sha256:360b9e3dbb49a209c21ad61809c7fb453643e048b38924c765813546746e81c3 \
     --hash=sha256:5ddf76296dd8c44c26eb8f4b6f35488f3ccbf6fbbd7adee0b7262d43f0ec2f00
     # via
-    #   -r requirements.txt
     #   croniter
     #   flask-babel
 pyyaml==6.0.2 \
@@ -933,7 +916,6 @@ requests==2.32.5 \
     --hash=sha256:2462f94637a34fd532264295e186976db0f5d453d1cdd31473c85a6a161affb6 \
     --hash=sha256:dbba0bac56e100853db0ea71b82b4dfd5fe2bf6d3754a8893c3af500cec7d7cf
     # via
-    #   -r requirements.txt
     #   msal
     #   privacyIDEA (pyproject.toml)
 rsa==4.9.1 \
@@ -947,13 +929,11 @@ segno==1.6.6 \
 sgmllib3k==1.0.0 \
     --hash=sha256:7868fb1c8bfa764c1ac563d3cf369c381d1325d36124933a726f29fcdaa812e9
     # via
-    #   -r requirements.txt
     #   feedparser
 six==1.17.0 \
     --hash=sha256:4721f391ed90541fddacab5acf947aa0d3dc7d27b2e1e8eda2be8970586c3274 \
     --hash=sha256:ff70335d468e7eb6ec65b95b99d3a2836546063f63acc5171de367e834932a81
     # via
-    #   -r requirements.txt
     #   pyrad
     #   python-dateutil
     #   smpplib
@@ -965,7 +945,6 @@ soupsieve==2.8 \
     --hash=sha256:0cc76456a30e20f5d7f2e14a98a4ae2ee4e5abdc7c5ea0aafe795f344bc7984c \
     --hash=sha256:e2dd4a40a628cb5f28f6d4b0db8800b8f581b65bb380b97de22ba5ca8d72572f
     # via
-    #   -r requirements.txt
     #   beautifulsoup4
 sqlalchemy==2.0.43 \
     --hash=sha256:022e436a1cb39b13756cf93b48ecce7aa95382b9cfacceb80a7d263129dfd019 \
@@ -1026,7 +1005,6 @@ sqlalchemy==2.0.43 \
     --hash=sha256:f42f23e152e4545157fa367b2435a1ace7571cab016ca26038867eb7df2c3631 \
     --hash=sha256:fe2b3b4927d0bc03d02ad883f402d5de201dbc8894ac87d2e981e7d87430e60d
     # via
-    #   -r requirements.txt
     #   alembic
     #   flask-sqlalchemy
     #   privacyIDEA (pyproject.toml)
@@ -1068,7 +1046,6 @@ typing-extensions==4.15.0 \
     --hash=sha256:0cea48d173cc12fa28ecabc3b837ea3cf6f38c6d1136f85cbaaf598984861466 \
     --hash=sha256:f0fa19c6845758ab08074a0cfa8b7aecb71c999ca73d62883bc25cc018c4e548
     # via
-    #   -r requirements.txt
     #   alembic
     #   beautifulsoup4
     #   pydash
@@ -1095,5 +1072,4 @@ setuptools==80.9.0 \
     --hash=sha256:062d34222ad13e0cc312a4c02d73f059e86a4acbfbdea8f8f76b28c99f306922 \
     --hash=sha256:f36b47402ecde768dbfafc46e8e4207b4360c654f1f3bb84475f0a28628fb19c
     # via
-    #   -r requirements.txt
     #   flask-versioned

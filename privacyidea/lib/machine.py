@@ -219,11 +219,11 @@ def detach_token(serial, application, hostname=None, machine_id=None, resolver_n
     :type filter_params: dict
     :return: the number of deleted MachineToken objects
     """
-    r = 0
+    count_deleted = 0
     if machine_token_id:
         machine_token = db.session.get(MachineToken, machine_token_id)
         db.session.delete(machine_token)
-        r = 1
+        count_deleted = 1
     else:
         filter_params = filter_params or {}
         if machine_id == ANY_MACHINE and resolver_name == NO_RESOLVER:
@@ -247,12 +247,12 @@ def detach_token(serial, application, hostname=None, machine_id=None, resolver_n
                     if machine_token.get("id") is not None:
                         machine_token = db.session.get(MachineToken, machine_token.get("id"))
                         db.session.delete(machine_token)
-                        r += 1
+                        count_deleted += 1
                     else:
                         log.debug("Machine token ID is None, can not delete machine token.")
     save_config_timestamp()
     db.session.commit()
-    return r
+    return count_deleted
 
 
 def add_option(machine_token_id=None, machine_id=None, resolver_name=None,
@@ -323,15 +323,15 @@ def delete_option(machine_token_id=None, machine_id=None, resolver_name=None,
         machine_id, resolver_name = _get_host_identifier(hostname, machine_id, resolver_name)
         machine_token_ids = get_machinetoken_ids(machine_id, resolver_name, serial, application)
 
-    res = 0
+    count_deleted = 0
     for machine_token_id in machine_token_ids:
         select_stmt = select(MachineTokenOptions).where(MachineTokenOptions.machinetoken_id == machine_token_id,
                                                         MachineTokenOptions.mt_key == key)
         option = db.session.scalars(select_stmt).unique().first()
         db.session.delete(option)
-        res += 1
+        count_deleted += 1
     db.session.commit()
-    return res
+    return count_deleted
 
 
 @log_with(log)

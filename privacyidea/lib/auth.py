@@ -87,7 +87,7 @@ def create_db_admin(username, email=None, password=None):
     db.session.commit()
 
 
-def list_db_admin() -> list[Admin]:
+def get_all_db_admins() -> list[Admin]:
     return db.session.scalars(select(Admin)).all()
 
 

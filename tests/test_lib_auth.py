@@ -7,7 +7,7 @@ from sqlalchemy import select
 from privacyidea.models import Admin, db
 from .base import MyTestCase
 from privacyidea.lib.auth import (create_db_admin, verify_db_admin,
-                                  list_db_admin, delete_db_admin,
+                                  get_all_db_admins, delete_db_admin,
                                   check_webui_user, db_admin_exists)
 from privacyidea.lib.user import User
 
@@ -45,7 +45,7 @@ class AuthTestCase(MyTestCase):
         self.assertEqual("newadmin@localhost", admin.email)  # Email changed
 
         # This only prints to stdout!
-        list_db_admin()
+        get_all_db_admins()
 
         # Delete the admin
         delete_db_admin("mytestadmin")
