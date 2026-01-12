@@ -72,7 +72,6 @@ export class ActionSelectorComponent {
   // Computed Signals
   readonly addedActionNames = computed(() => {
     const policy = this.policy();
-    console.log("Computing addedActionNames for policy:", policy);
     if (!policy || !policy.action) return [];
     return Object.keys(policy.action);
   });
@@ -83,7 +82,6 @@ export class ActionSelectorComponent {
   });
 
   readonly actionGroupsFiltered = computed(() => {
-    console.log("Computing actionGroupsFiltered for policy:", this.policy());
     return this.policyService.filteredPolicyActionGroups(this.addedActionNames(), this.actionFilter().toLowerCase());
   });
 

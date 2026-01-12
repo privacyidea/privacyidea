@@ -122,7 +122,6 @@ export class PolicyPanelNewComponent {
   }
 
   setActiveTab(tab: PolicyTab): void {
-    console.log("Setting active tab to:", tab);
     this.activeTab.set(tab);
   }
 

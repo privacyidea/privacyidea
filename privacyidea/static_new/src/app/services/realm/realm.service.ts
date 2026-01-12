@@ -155,7 +155,6 @@ export class RealmService implements RealmServiceInterface {
   });
   adminRealmOptions: Signal<string[]> = computed(() => {
     const realms = this.adminRealmResource.value()?.result?.value;
-    console.log("Admin Realms:", realms);
     return realms ? realms : [];
   });
 

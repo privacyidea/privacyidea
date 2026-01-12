@@ -217,11 +217,9 @@ export type SimpleConfirmationDialogData = {
     this.addPolicyEdit({ priority });
   }
   updateActions(actions: { [actionName: string]: string }) {
-    console.log("PolicyPanelEditComponent updating actions to:", actions);
     this.addPolicyEdit({ action: actions });
   }
   addPolicyEdit(edits: Partial<PolicyDetail>) {
-    console.log("PolicyPanelEditComponent onPolicyEdit called with edits:", edits);
     this.policyEdits.update((currentChanges) => ({ ...currentChanges, ...edits }));
   }
 }

@@ -94,7 +94,6 @@ export class ConditionsUserComponent {
   });
   availableResolvers = computed(() => {
     const selectedRealms = this.selectedRealms();
-    console.log("selectedRealms", selectedRealms);
     if (selectedRealms.length === 0) {
       // No realms selected, return all resolvers
       return this.resolverService.resolverOptions();

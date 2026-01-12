@@ -169,7 +169,6 @@ export class FilterValueGeneric<T> {
     // Adds a new filterKeyword to the string if it does not already exist.
     const optionFromMap = this.availableFilters.get(key);
     if (!optionFromMap) {
-      console.log(`Creating dummy FilterOption for unknown key "${key}".`);
       return this._copyWith({
         filterMap: new Map(this.filterMap).set(key, new DummyFilterOption({ key: key }))
       });
@@ -290,7 +289,6 @@ export class FilterValueGeneric<T> {
 
   setByString(filterString: string) {
     const newFilterMap = parseToMap(filterString.trim().toLocaleLowerCase());
-    console.log(newFilterMap);
     let updatedFilterValue = this._copyWith({
       filterMap: new Map<string, FilterOption>()
     });

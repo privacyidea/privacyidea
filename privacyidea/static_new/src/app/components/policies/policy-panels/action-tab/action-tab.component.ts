@@ -56,13 +56,7 @@ export class ActionTabComponent {
   });
   selectedActionDetail = signal<PolicyActionDetail | null>(null);
   onSelectedActionChange(action: { name: string; value: any }) {
-    console.log("Updating selectedAction to:", action);
     this.selectedAction.set(action);
-  }
-  constructor() {
-    effect(() => {
-      console.log("ActionTabComponent Selected action changed to:", this.selectedAction());
-    });
   }
 
   actions: Signal<{ name: string; value: any }[]> = computed(() => {
@@ -72,18 +66,13 @@ export class ActionTabComponent {
   });
 
   onActionsChange(updatedActions: { name: string; value: any }[]) {
-    console.log("ActionTabComponent Actions changed tooooo:", updatedActions);
     const newActions: { [key: string]: any } = {};
-    console.log("Preparing to emit actionsUpdate with:", updatedActions);
     updatedActions.forEach((action) => {
-      console.log("Adding action:", action);
       newActions[action.name] = action.value;
     });
-    console.log("Emitting actionsUpdate with:", newActions);
     this.actionsUpdate.emit(newActions);
   }
   onActionAdd(action: { name: string; value: any }) {
-    console.log("ActionTabComponent Adding action:", action);
     const newActions = [...this.actions(), action];
     this.onActionsChange(newActions);
     if (this.selectedAction()?.name === action.name) {
