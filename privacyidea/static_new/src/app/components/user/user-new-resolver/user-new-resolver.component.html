@@ -163,21 +163,21 @@
       @if (resolverType !== 'passwdresolver') {
         @if (resolverType !== 'ldapresolver') {
           <div class="flex-column gap-16">
-          @if (resolverType === 'httpresolver' || resolverType === 'entraidresolver' || resolverType === 'keycloakresolver') {
             <mat-form-field subscriptSizing="dynamic">
               <mat-label i18n>Test username</mat-label>
               <input
                 [(ngModel)]="testUsername"
+                placeholder="foo@bar.com"
                 matInput />
             </mat-form-field>
             <mat-form-field subscriptSizing="dynamic">
               <mat-label i18n>Test user ID</mat-label>
               <input
                 [(ngModel)]="testUserId"
+                placeholder="foo@bar.com"
                 matInput />
             </mat-form-field>
-          }
-        </div>
+          </div>
         } @else {
           <button
             (click)="onQuickTest()"

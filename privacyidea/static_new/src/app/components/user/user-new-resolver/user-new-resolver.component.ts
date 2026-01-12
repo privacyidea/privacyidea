@@ -381,6 +381,14 @@ export class UserNewResolverComponent {
   }
 
   onTest(): void {
+    this.executeTest();
+  }
+
+  protected onQuickTest() {
+    this.executeTest(true);
+  }
+
+  private executeTest(quickTest = false): void {
     if (!this.resolverType) {
       this.notificationService.openSnackBar($localize`Please select a resolver type.`);
       return;
@@ -399,6 +407,10 @@ export class UserNewResolverComponent {
       test_username: this.testUsername,
       test_userid: this.testUserId
     };
+
+    if (quickTest) {
+      payload["SIZELIMIT"] = 1;
+    }
 
     if (this.isEditMode) {
       payload["resolver"] = this.resolverName;
@@ -442,8 +454,5 @@ export class UserNewResolverComponent {
       }
     }
     this.additionalFormFields = validControls;
-  }
-
-  protected onQuickTest() {
   }
 }
