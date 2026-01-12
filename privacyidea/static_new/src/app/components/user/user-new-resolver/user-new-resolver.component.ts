@@ -384,7 +384,7 @@ export class UserNewResolverComponent {
     this.executeTest();
   }
 
-  protected onQuickTest() {
+  onQuickTest() {
     this.executeTest(true);
   }
 

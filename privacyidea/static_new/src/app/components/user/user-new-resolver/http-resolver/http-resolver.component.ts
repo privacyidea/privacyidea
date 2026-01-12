@@ -201,11 +201,11 @@ export class HttpResolverComponent implements OnInit {
     }
   }
 
-  protected isCustomAttr(value: string | null): boolean {
+  isCustomAttr(value: string | null): boolean {
     return value === this.CUSTOM_ATTR_VALUE;
   }
 
-  protected setCustomAttr(rowIndex: number, customValue: string): void {
+  setCustomAttr(rowIndex: number, customValue: string): void {
     const v = (customValue ?? "").trim();
     const rows = [...this.mappingRows()];
     rows[rowIndex].privacyideaAttr = v ? v : null;
@@ -213,12 +213,12 @@ export class HttpResolverComponent implements OnInit {
     this.onMappingChanged();
   }
 
-  protected onPrivacyIdeaAttrChanged(rowIndex: number): void {
+  onPrivacyIdeaAttrChanged(rowIndex: number): void {
     if (this.mappingRows()[rowIndex].privacyideaAttr === this.CUSTOM_ATTR_VALUE) return;
     this.onMappingChanged();
   }
 
-  protected addMappingRow(): void {
+  addMappingRow(): void {
     this.mappingRows.update(rows => [
       ...rows,
       { privacyideaAttr: null, userStoreAttr: "" }
@@ -226,7 +226,7 @@ export class HttpResolverComponent implements OnInit {
     this.syncMappingToData();
   }
 
-  protected removeMappingRow(index: number): void {
+  removeMappingRow(index: number): void {
     this.mappingRows.update(rows => rows.filter((_, i) => i !== index));
     this.syncMappingToData();
   }

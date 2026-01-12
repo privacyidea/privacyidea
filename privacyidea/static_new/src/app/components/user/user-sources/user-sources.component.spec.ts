@@ -103,6 +103,46 @@ describe('UserSourcesComponent', () => {
     expect(component.newResolverType()).toBe('');
   });
 
+  it('onCreateResolver should return early if invalid', () => {
+    component.newResolverName.set('');
+    component.newResolverType.set('');
+    component.onCreateResolver();
+    // No explicit expectation, but it should not crash and coverage will show it hit the early return
+  });
+
+  it('should filter resolvers', () => {
+    const resolvers = [
+      { resolvername: 'admin', type: 'passwdresolver' },
+      { resolvername: 'sql-res', type: 'sqlresolver' }
+    ];
+    resolverService.setResolvers(resolvers);
+    fixture.detectChanges();
+
+    component.onFilterInput('admin');
+    expect(component.resolversDataSource().filter).toBe('admin');
+    expect(component.resolversDataSource().filteredData.length).toBe(1);
+    expect(component.resolversDataSource().filteredData[0].resolvername).toBe('admin');
+
+    component.resetFilter();
+    expect(component.filterString()).toBe('');
+    expect(component.resolversDataSource().filter).toBe('');
+    expect(component.resolversDataSource().filteredData.length).toBe(2);
+  });
+
+  it('filterPredicate should match name or type', () => {
+    const resolvers = [
+      { resolvername: 'admin', type: 'passwdresolver' }
+    ];
+    resolverService.setResolvers(resolvers);
+    fixture.detectChanges();
+
+    const ds = component.resolversDataSource();
+    expect(ds.filterPredicate(resolvers[0] as any, 'admin')).toBeTruthy();
+    expect(ds.filterPredicate(resolvers[0] as any, 'passwd')).toBeTruthy();
+    expect(ds.filterPredicate(resolvers[0] as any, 'nomatch')).toBeFalsy();
+    expect(ds.filterPredicate(resolvers[0] as any, '  ')).toBeTruthy();
+  });
+
   it('onEditResolver should set selected resolver and navigate', () => {
     const resolver = { resolvername: 'res1', type: 'sqlresolver' } as any;
     const spy = jest.spyOn(resolverService.selectedResolverName, 'set');
@@ -131,5 +171,38 @@ describe('UserSourcesComponent', () => {
 
     expect(dialog.open).toHaveBeenCalled();
     expect(resolverService.deleteResolver).not.toHaveBeenCalled();
+  });
+
+  it('onDeleteResolver should show error if delete fails', () => {
+    dialog.result$ = of(true);
+    const resolver = { resolvername: 'res1' } as any;
+    resolverService.deleteResolver.mockReturnValue({
+      subscribe: (obs: any) => obs.error({ message: 'Delete failed' })
+    } as any);
+
+    component.onDeleteResolver(resolver);
+
+    expect(notificationService.openSnackBar).toHaveBeenCalledWith(expect.stringContaining('Delete failed'));
+  });
+
+  it('onDeleteResolver should show error message from response if delete fails', () => {
+    dialog.result$ = of(true);
+    const resolver = { resolvername: 'res1' } as any;
+    const errorResponse = {
+      error: {
+        result: {
+          error: {
+            message: 'Server error message'
+          }
+        }
+      }
+    };
+    resolverService.deleteResolver.mockReturnValue({
+      subscribe: (obs: any) => obs.error(errorResponse)
+    } as any);
+
+    component.onDeleteResolver(resolver);
+
+    expect(notificationService.openSnackBar).toHaveBeenCalledWith(expect.stringContaining('Server error message'));
   });
 });

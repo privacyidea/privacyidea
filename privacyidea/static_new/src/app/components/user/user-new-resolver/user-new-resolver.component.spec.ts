@@ -10,6 +10,7 @@ import { MockResolverService } from "../../../../testing/mock-services/mock-reso
 import { MockNotificationService, MockPiResponse } from "../../../../testing/mock-services";
 import { ResourceStatus, signal } from "@angular/core";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
+import { FormControl, Validators } from "@angular/forms";
 
 describe("UserNewResolverComponent", () => {
   let component: UserNewResolverComponent;
@@ -217,5 +218,208 @@ describe("UserNewResolverComponent", () => {
     expect(notificationService.openSnackBar).toHaveBeenCalledWith(
       expect.stringContaining("Connection test failed.")
     );
+  });
+
+  it("should show success on save", async () => {
+    await detectChangesStable();
+    component.resolverName = "new-res";
+    component.resolverType = "passwdresolver";
+
+    const successResponse = new MockPiResponse<number, any>({
+      result: { status: true, value: 1 }
+    });
+    resolverService.postResolver.mockReturnValue(of(successResponse));
+
+    const notificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
+    const router = TestBed.inject(Router);
+
+    component.onSave();
+
+    expect(notificationService.openSnackBar).toHaveBeenCalledWith(expect.stringContaining("created"));
+    expect(router.navigateByUrl).toHaveBeenCalled();
+  });
+
+  it("should show success on save in edit mode", async () => {
+    resolverService.selectedResolverName.set("edit-res");
+    const resolverData = {
+      "edit-res": {
+        resolvername: "edit-res",
+        type: "passwdresolver",
+        data: { fileName: "/etc/passwd" }
+      }
+    };
+    (resolverService.selectedResolverResource as any).value.set({
+      result: { status: true, value: resolverData }
+    });
+    await detectChangesStable();
+
+    const successResponse = new MockPiResponse<number, any>({
+      result: { status: true, value: 1 }
+    });
+    resolverService.postResolver.mockReturnValue(of(successResponse));
+    const notificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
+
+    component.onSave();
+
+    expect(notificationService.openSnackBar).toHaveBeenCalledWith(expect.stringContaining("updated"));
+  });
+
+  it("should show error on save when subscription fails", async () => {
+    component.resolverName = "err-res";
+    component.resolverType = "passwdresolver";
+    const errorResponse = { message: "Network error", error: { result: { error: { message: "Detailed error" } } } };
+    resolverService.postResolver.mockReturnValue({
+      subscribe: (obs: any) => {
+        obs.error(errorResponse);
+        return { add: jest.fn() };
+      }
+    } as any);
+    const notificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
+
+    component.onSave();
+
+    expect(notificationService.openSnackBar).toHaveBeenCalledWith(expect.stringContaining("Detailed error"));
+  });
+
+  it("should validate before save", async () => {
+    const notificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
+
+    component.resolverName = "";
+    component.onSave();
+    expect(notificationService.openSnackBar).toHaveBeenCalledWith(expect.stringContaining("enter a resolver name"));
+
+    component.resolverName = "res";
+    component.resolverType = "" as any;
+    component.onSave();
+    expect(notificationService.openSnackBar).toHaveBeenCalledWith(expect.stringContaining("select a resolver type"));
+
+    component.resolverType = "passwdresolver";
+    component.updateAdditionalFormFields({ "fileName": new FormControl("", Validators.required) });
+    component.onSave();
+    expect(notificationService.openSnackBar).toHaveBeenCalledWith(expect.stringContaining("fill in all required fields"));
+  });
+
+  it("should include additional fields in save payload", async () => {
+    component.resolverName = "res";
+    component.resolverType = "passwdresolver";
+    component.updateAdditionalFormFields({ "fileName": new FormControl("/etc/passwd") });
+
+    resolverService.postResolver.mockReturnValue(of(new MockPiResponse({ result: { status: true, value: 1 } })));
+    component.onSave();
+
+    expect(resolverService.postResolver).toHaveBeenCalledWith("res", expect.objectContaining({
+      fileName: "/etc/passwd"
+    }));
+  });
+
+  it("should execute test successfully", async () => {
+    component.resolverType = "passwdresolver";
+    const successResponse = new MockPiResponse<number, any>({
+      result: { status: true, value: 1 }
+    });
+    resolverService.postResolverTest.mockReturnValue(of(successResponse));
+    const notificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
+
+    component.onTest();
+    expect(notificationService.openSnackBar).toHaveBeenCalledWith(expect.stringContaining("test executed"));
+
+    component.onQuickTest();
+    expect(notificationService.openSnackBar).toHaveBeenCalledWith(expect.stringContaining("test executed"));
+  });
+
+  it("should show error on test when subscription fails", async () => {
+    component.resolverType = "passwdresolver";
+    const errorResponse = { message: "Network error" };
+    resolverService.postResolverTest.mockReturnValue({
+      subscribe: (obs: any) => {
+        obs.error(errorResponse);
+        return { add: jest.fn() };
+      }
+    } as any);
+    const notificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
+
+    component.onTest();
+    expect(notificationService.openSnackBar).toHaveBeenCalledWith(expect.stringContaining("Network error"));
+  });
+
+  it("should update additional form fields", () => {
+    const control = new FormControl("test");
+    component.updateAdditionalFormFields({ "extra": control });
+    expect(component["additionalFormFields"]["extra"]).toBe(control);
+  });
+
+  it("should apply SQL presets", () => {
+    component.resolverType = "sqlresolver";
+    const preset = component.sqlPresets[0];
+    component.applySqlPreset(preset);
+    expect(component.formData["Table"]).toBe(preset.table);
+    expect(component.formData["Map"]).toBe(preset.map);
+  });
+
+  it("should apply LDAP presets", () => {
+    component.resolverType = "ldapresolver";
+    const preset = component.ldapPresets[0];
+    component.applyLdapPreset(preset);
+    expect(component.formData["LOGINNAMEATTRIBUTE"]).toBe(preset.loginName);
+  });
+
+  it("should validate before test", async () => {
+    const notificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
+
+    component.resolverType = "" as any;
+    component.onTest();
+    expect(notificationService.openSnackBar).toHaveBeenCalledWith(expect.stringContaining("select a resolver type"));
+
+    component.resolverType = "passwdresolver";
+    // passwdresolver has fileName as required, and it's currently empty if not set
+    component.updateAdditionalFormFields({ "fileName": new FormControl("", Validators.required) });
+    component.onTest();
+    expect(notificationService.openSnackBar).toHaveBeenCalledWith(expect.stringContaining("fill in all required fields"));
+  });
+
+  it("should include resolver name in test payload when in edit mode", async () => {
+    resolverService.selectedResolverName.set("edit-res");
+    const resolverData = { "edit-res": { resolvername: "edit-res", type: "passwdresolver", data: { fileName: "/etc/passwd" } } };
+    (resolverService.selectedResolverResource as any).value.set({ result: { status: true, value: resolverData } });
+    await detectChangesStable();
+
+    resolverService.postResolverTest.mockReturnValue(of(new MockPiResponse({ result: { status: true, value: 1 } })));
+    component.onTest();
+
+    expect(resolverService.postResolverTest).toHaveBeenCalledWith(expect.objectContaining({
+      resolver: "edit-res"
+    }));
+  });
+
+  it("should handle type change", () => {
+    component.resolverType = "sqlresolver";
+    component.onTypeChange("sqlresolver");
+    expect(component.resolverType).toBe("sqlresolver");
+    expect(component.formData["Driver"]).toBe("mysql+pymysql");
+
+    component.resolverType = "ldapresolver";
+    component.onTypeChange("ldapresolver");
+    expect(component.resolverType).toBe("ldapresolver");
+    expect(component.formData["TLS_VERSION"]).toBe("TLSv1_3");
+
+    component.resolverType = "entraidresolver";
+    component.onTypeChange("entraidresolver");
+    expect(component.formData["base_url"]).toBeDefined();
+
+    component.resolverType = "keycloakresolver";
+    component.onTypeChange("keycloakresolver");
+    expect(component.formData["config_authorization"]).toBeDefined();
+
+    component.resolverType = "scimresolver";
+    component.onTypeChange("scimresolver");
+    expect(component.formData["Authserver"]).toBeDefined();
+
+    component.resolverType = "httpresolver";
+    component.onTypeChange("httpresolver");
+    expect(component.formData["endpoint"]).toBeDefined();
+
+    component.resolverType = "passwdresolver";
+    component.onTypeChange("passwdresolver");
+    expect(component.formData["fileName"]).toBe("/etc/passwd");
   });
 });
