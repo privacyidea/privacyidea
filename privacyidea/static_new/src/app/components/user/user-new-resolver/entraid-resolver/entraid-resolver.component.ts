@@ -4,7 +4,6 @@ import { FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { MatFormField, MatHint, MatInput, MatLabel } from "@angular/material/input";
 import { MatError, MatOption, MatSelect } from "@angular/material/select";
 import { MatCheckbox } from "@angular/material/checkbox";
-import { MatSlideToggle } from "@angular/material/slide-toggle";
 import { MatTableModule } from "@angular/material/table";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
@@ -15,6 +14,7 @@ import {
   MatExpansionPanelTitle
 } from "@angular/material/expansion";
 import { MatDivider } from "@angular/material/list";
+import { MatButtonToggle, MatButtonToggleGroup } from "@angular/material/button-toggle";
 
 @Component({
   selector: "app-entraid-resolver",
@@ -27,7 +27,6 @@ import { MatDivider } from "@angular/material/list";
     MatSelect,
     MatOption,
     MatCheckbox,
-    MatSlideToggle,
     MatHint,
     MatTableModule,
     MatButtonModule,
@@ -39,6 +38,9 @@ import { MatDivider } from "@angular/material/list";
     MatDivider,
     MatError,
     ReactiveFormsModule,
+    MatDivider,
+    MatButtonToggleGroup,
+    MatButtonToggle
   ],
   templateUrl: "../http-resolver/http-resolver.component.html",
   styleUrl: "../http-resolver/http-resolver.component.scss"

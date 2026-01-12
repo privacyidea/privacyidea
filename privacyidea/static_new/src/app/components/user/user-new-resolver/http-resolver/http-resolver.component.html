@@ -1,12 +1,20 @@
 <div class="type-section">
-  <h3 i18n>HTTP settings</h3>
+  @if (type() === 'entraidresolver') {
+    <h3 i18n>Entra ID settings</h3>
+  } @else if (type() === 'keycloakresolver') {
+    <h3 i18n>Keycloak settings</h3>
+  } @else {
+    <h3 i18n>HTTP settings</h3>
+  }
 
   @if (!isAdvanced) {
-    <mat-slide-toggle
-      [(ngModel)]="basicSettings"
-      class="example-margin">
-      {{ basicSettings() ? "Basic Settings" : "Advanced Settings" }}
-    </mat-slide-toggle>
+    <mat-button-toggle-group
+      class="mode-toggle"
+      [(ngModel)]="basicSettings">
+      <mat-button-toggle i18n [value]="true">Basic</mat-button-toggle>
+      <mat-button-toggle i18n [value]="false">Advanced</mat-button-toggle>
+    </mat-button-toggle-group>
+
     <mat-divider class="margin-top-1 margin-bottom-1" />
   }
 
@@ -363,8 +371,8 @@
                     <input
                       [formControl]="clientSecretControl"
                       matInput
-                      type="password"
-                      required />
+                      required
+                      type="password" />
                     @if (clientSecretControl.hasError('required') && clientSecretControl.touched) {
                       <mat-error i18n>Client secret is <strong>required</strong>.</mat-error>
                     }

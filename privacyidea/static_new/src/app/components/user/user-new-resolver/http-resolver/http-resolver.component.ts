@@ -15,7 +15,6 @@ import { FormControl, FormsModule, ReactiveFormsModule, Validators } from "@angu
 import { MatFormField, MatHint, MatInput, MatLabel } from "@angular/material/input";
 import { MatOption, MatSelect } from "@angular/material/select";
 import { MatCheckbox } from "@angular/material/checkbox";
-import { MatSlideToggle } from "@angular/material/slide-toggle";
 import { MatTableModule } from "@angular/material/table";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
@@ -28,6 +27,7 @@ import {
 } from "@angular/material/expansion";
 import { MatDivider } from "@angular/material/list";
 import { MatError } from "@angular/material/form-field";
+import { MatButtonToggle, MatButtonToggleGroup } from "@angular/material/button-toggle";
 
 export type AttributeMappingRow = {
   privacyideaAttr: string | null;
@@ -47,7 +47,6 @@ export type AttributeMappingRow = {
     MatSelect,
     MatOption,
     MatCheckbox,
-    MatSlideToggle,
     MatHint,
     MatTableModule,
     MatButtonModule,
@@ -56,7 +55,9 @@ export type AttributeMappingRow = {
     MatExpansionPanel,
     MatExpansionPanelHeader,
     MatExpansionPanelTitle,
-    MatDivider
+    MatDivider,
+    MatButtonToggleGroup,
+    MatButtonToggle
   ],
   templateUrl: "./http-resolver.component.html",
   styleUrl: "./http-resolver.component.scss"
@@ -78,8 +79,6 @@ export class HttpResolverComponent implements OnInit {
   @Output() additionalFormFieldsChange = new EventEmitter<{ [key: string]: FormControl<any> }>();
   isAdvanced: boolean = false;
   isAuthorizationExpanded: boolean = false;
-  protected basicSettings: WritableSignal<boolean> = signal(true);
-
   endpointControl = new FormControl<string>("", { nonNullable: true, validators: [Validators.required] });
   methodControl = new FormControl<string>("GET", { nonNullable: true, validators: [Validators.required] });
   requestMappingControl = new FormControl<string>("", { nonNullable: true, validators: [Validators.required] });
@@ -90,11 +89,30 @@ export class HttpResolverComponent implements OnInit {
   tenantControl = new FormControl<string>("", { nonNullable: true, validators: [Validators.required] });
   clientIdControl = new FormControl<string>("", { nonNullable: true, validators: [Validators.required] });
   clientSecretControl = new FormControl<string>("", { nonNullable: true, validators: [Validators.required] });
-
+  protected basicSettings: WritableSignal<boolean> = signal(true);
   protected defaultMapping = signal<AttributeMappingRow[]>([
     { privacyideaAttr: "userid", userStoreAttr: "userid" },
     { privacyideaAttr: "givenname", userStoreAttr: "givenname" }
   ]);
+  protected mappingRows = linkedSignal<AttributeMappingRow[]>(() => {
+    const existing = this.data()?.attribute_mapping;
+    if (existing && Object.keys(existing).length > 0) {
+      return Object.entries(existing).map(([privacyideaAttr, userStoreAttr]) => ({
+        privacyideaAttr,
+        userStoreAttr: userStoreAttr as string
+      }));
+    }
+    return this.defaultMapping();
+  });
+  protected availableAttributes = computed(() => {
+    const rows = this.mappingRows();
+    return rows.map((_, rowIndex) => {
+      const selectedAttributes = rows
+        .filter((_, i) => i !== rowIndex)
+        .map(row => row.privacyideaAttr);
+      return this.privacyideaAttributes.filter(attr => !selectedAttributes.includes(attr));
+    });
+  });
 
   constructor() {
     effect(() => {
@@ -102,6 +120,12 @@ export class HttpResolverComponent implements OnInit {
       this.syncControls();
       this.emitControls();
     });
+  }
+
+  ngOnInit(): void {
+    if (this.isAdvanced) {
+      this.basicSettings.set(false);
+    }
   }
 
   protected syncControls(): void {
@@ -176,34 +200,6 @@ export class HttpResolverComponent implements OnInit {
       this.syncMappingToData();
     }
   }
-
-  protected mappingRows = linkedSignal<AttributeMappingRow[]>(() => {
-    const existing = this.data()?.attribute_mapping;
-    if (existing && Object.keys(existing).length > 0) {
-      return Object.entries(existing).map(([privacyideaAttr, userStoreAttr]) => ({
-        privacyideaAttr,
-        userStoreAttr: userStoreAttr as string
-      }));
-    }
-    return this.defaultMapping();
-  });
-
-  protected availableAttributes = computed(() => {
-    const rows = this.mappingRows();
-    return rows.map((_, rowIndex) => {
-      const selectedAttributes = rows
-        .filter((_, i) => i !== rowIndex)
-        .map(row => row.privacyideaAttr);
-      return this.privacyideaAttributes.filter(attr => !selectedAttributes.includes(attr));
-    });
-  });
-
-  ngOnInit(): void {
-    if (this.isAdvanced) {
-      this.basicSettings.set(false);
-    }
-  }
-
 
   protected isCustomAttr(value: string | null): boolean {
     return value === this.CUSTOM_ATTR_VALUE;

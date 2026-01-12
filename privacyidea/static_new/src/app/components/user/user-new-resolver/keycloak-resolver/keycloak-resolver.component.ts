@@ -3,7 +3,6 @@ import { FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { MatFormField, MatHint, MatInput, MatLabel } from "@angular/material/input";
 import { MatError, MatOption, MatSelect } from "@angular/material/select";
 import { MatCheckbox } from "@angular/material/checkbox";
-import { MatSlideToggle } from "@angular/material/slide-toggle";
 import { MatTableModule } from "@angular/material/table";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
@@ -15,6 +14,7 @@ import {
 } from "@angular/material/expansion";
 import { MatDivider } from "@angular/material/list";
 import { AttributeMappingRow, HttpResolverComponent } from "../http-resolver/http-resolver.component";
+import { MatButtonToggle, MatButtonToggleGroup } from "@angular/material/button-toggle";
 
 @Component({
   selector: "app-keycloak-resolver",
@@ -27,7 +27,6 @@ import { AttributeMappingRow, HttpResolverComponent } from "../http-resolver/htt
     MatSelect,
     MatOption,
     MatCheckbox,
-    MatSlideToggle,
     MatHint,
     MatTableModule,
     MatButtonModule,
@@ -39,6 +38,9 @@ import { AttributeMappingRow, HttpResolverComponent } from "../http-resolver/htt
     MatDivider,
     MatError,
     ReactiveFormsModule,
+    MatDivider,
+    MatButtonToggleGroup,
+    MatButtonToggle
   ],
   templateUrl: "../http-resolver/http-resolver.component.html",
   styleUrl: "../http-resolver/http-resolver.component.scss"
@@ -46,6 +48,13 @@ import { AttributeMappingRow, HttpResolverComponent } from "../http-resolver/htt
 export class KeycloakResolverComponent extends HttpResolverComponent {
   override isAdvanced: boolean = true;
   override isAuthorizationExpanded: boolean = true;
+  override defaultMapping = signal<AttributeMappingRow[]>([
+    { privacyideaAttr: "userid", userStoreAttr: "id" },
+    { privacyideaAttr: "username", userStoreAttr: "userPrincipalName" },
+    { privacyideaAttr: "email", userStoreAttr: "mail" },
+    { privacyideaAttr: "givenname", userStoreAttr: "firstName" },
+    { privacyideaAttr: "surname", userStoreAttr: "lastName" }
+  ]);
 
   constructor() {
     super();
@@ -105,12 +114,4 @@ export class KeycloakResolverComponent extends HttpResolverComponent {
       };
     }
   }
-
-  override defaultMapping = signal<AttributeMappingRow[]>([
-    { privacyideaAttr: "userid", userStoreAttr: "id" },
-    { privacyideaAttr: "username", userStoreAttr: "userPrincipalName" },
-    { privacyideaAttr: "email", userStoreAttr: "mail" },
-    { privacyideaAttr: "givenname", userStoreAttr: "firstName" },
-    { privacyideaAttr: "surname", userStoreAttr: "lastName" }
-  ]);
 }

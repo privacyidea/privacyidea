@@ -129,3 +129,8 @@ textarea[matInput] {
   display: flex;
   flex-direction: column;
 }
+
+.mat-button-toggle-appearance-standard.mat-button-toggle-checked {
+  background-color: var(--mat-sys-primary-base-active);
+  color: white;
+}
