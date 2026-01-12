@@ -1,4 +1,4 @@
-import { Component, signal } from "@angular/core";
+import { Component, effect, signal } from "@angular/core";
 import { AttributeMappingRow, HttpResolverComponent } from "../http-resolver/http-resolver.component";
 import { FormsModule } from "@angular/forms";
 import { MatFormField, MatHint, MatInput, MatLabel } from "@angular/material/input";
@@ -44,8 +44,16 @@ import { MatDivider } from "@angular/material/list";
 export class EntraidResolverComponent extends HttpResolverComponent {
   override isAdvanced: boolean = true;
 
-  override ngOnInit(): void {
+  constructor() {
+    super();
+    effect(() => {
+      this.initializeEntraidData();
+    });
+  }
+
+  protected initializeEntraidData(): void {
     const data: any = this.data();
+    if (!data) return;
 
     if (!data.base_url) {
       data.base_url = "https://graph.microsoft.com/v1.0";
@@ -95,8 +103,6 @@ export class EntraidResolverComponent extends HttpResolverComponent {
         "requestMapping": "client_id={client_id}&scope=https://graph.microsoft.com/.default&username={username}&password={password}&grant_type=password&client_secret={client_credential}"
       };
     }
-
-    super.ngOnInit();
   }
 
   override defaultMapping = signal<AttributeMappingRow[]>([

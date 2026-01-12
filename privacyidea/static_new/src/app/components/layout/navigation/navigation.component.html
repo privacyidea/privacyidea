@@ -332,7 +332,7 @@
         </mat-list-item>
         <mat-list-item>
           <button
-            [routerLink]="[ROUTE_PATHS.USERS_NEW_RESOLVER]"
+            (click)="onNewResolver()"
             [ngClass]="contentService.routeUrl() === ROUTE_PATHS.USERS_NEW_RESOLVER ?
                   'card-button-active' : 'card-button-1'"
             mat-stroked-button>

@@ -93,27 +93,23 @@ describe('UserSourcesComponent', () => {
     expect(component.newResolverType()).toBe('');
   });
 
-  it('onCreateResolver should navigate to edit page', () => {
+  it('onCreateResolver should reset form', () => {
     component.newResolverName.set('new-res');
     component.newResolverType.set('ldapresolver');
 
     component.onCreateResolver();
 
-    expect(router.navigate).toHaveBeenCalledWith(
-      ['edit', 'ldapresolver', 'new-res'],
-      expect.objectContaining({ relativeTo: expect.anything() })
-    );
     expect(component.newResolverName()).toBe('');
+    expect(component.newResolverType()).toBe('');
   });
 
-  it('onEditResolver should navigate to edit page', () => {
+  it('onEditResolver should set selected resolver and navigate', () => {
     const resolver = { resolvername: 'res1', type: 'sqlresolver' } as any;
+    const spy = jest.spyOn(resolverService.selectedResolverName, 'set');
     component.onEditResolver(resolver);
 
-    expect(router.navigate).toHaveBeenCalledWith(
-      ['edit', 'sqlresolver', 'res1'],
-      expect.objectContaining({ relativeTo: expect.anything() })
-    );
+    expect(spy).toHaveBeenCalledWith('res1');
+    expect(router.navigate).toHaveBeenCalledWith(['users/new-resolver']);
   });
 
   it('onDeleteResolver should delete after confirmation', () => {

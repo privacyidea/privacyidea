@@ -5,7 +5,7 @@
     <mat-form-field class="field-lg">
       <mat-label i18n>Authentication Server URI</mat-label>
       <input
-        [(ngModel)]="data['Authserver']"
+        [(ngModel)]="data()['Authserver']"
         placeholder="http://localhost:8080/osiam-auth-server"
         matInput />
     </mat-form-field>
@@ -13,7 +13,7 @@
     <mat-form-field class="field-lg">
       <mat-label i18n>Resource Server Uri</mat-label>
       <input
-        [(ngModel)]="data['Resourceserver']"
+        [(ngModel)]="data()['Resourceserver']"
         placeholder="http://localhost:8080/osiam-resource-server"
         matInput />
     </mat-form-field>
@@ -21,7 +21,7 @@
     <mat-form-field>
       <mat-label i18n>Client</mat-label>
       <input
-        [(ngModel)]="data['Client']"
+        [(ngModel)]="data()['Client']"
         placeholder="hostname"
         matInput />
     </mat-form-field>
@@ -29,7 +29,7 @@
     <mat-form-field>
       <mat-label i18n>Secret</mat-label>
       <input
-        [(ngModel)]="data['Secret']"
+        [(ngModel)]="data()['Secret']"
         placeholder="d81c31e4-9f65-4805-b5ba-6edf0761f954"
         matInput
         type="password" />
@@ -38,7 +38,7 @@
     <mat-form-field class="field-lg">
       <mat-label i18n>Mapping</mat-label>
       <textarea
-        [(ngModel)]="data['Mapping']"
+        [(ngModel)]="data()['Mapping']"
         placeholder='{"userName": "username", "id": "userid", "emails.0.value": "email"}'
         matInput></textarea>
     </mat-form-field>

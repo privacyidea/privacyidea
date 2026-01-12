@@ -1,6 +1,7 @@
 import {
   Component,
   computed,
+  effect,
   EventEmitter,
   input,
   linkedSignal,
@@ -80,6 +81,39 @@ export class HttpResolverComponent implements OnInit {
     { privacyideaAttr: "givenname", userStoreAttr: "givenname" }
   ]);
 
+  constructor() {
+    effect(() => {
+      this.initializeData();
+    });
+  }
+
+  protected initializeData(): void {
+    const data = this.data();
+    if (!data) return;
+
+    const configs = [
+      "config_authorization",
+      "config_user_auth",
+      "config_get_user_list",
+      "config_get_user_by_id",
+      "config_get_user_by_name",
+      "config_create_user",
+      "config_edit_user",
+      "config_delete_user"
+    ];
+    configs.forEach(c => {
+      if (!data[c]) {
+        data[c] = {};
+      }
+    });
+
+    const existing = data?.attribute_mapping as Record<string, string> | undefined;
+
+    if (!existing || Object.keys(existing).length === 0) {
+      this.syncMappingToData();
+    }
+  }
+
   protected mappingRows = linkedSignal<AttributeMappingRow[]>(() => {
     const existing = this.data()?.attribute_mapping;
     if (existing && Object.keys(existing).length > 0) {
@@ -104,28 +138,6 @@ export class HttpResolverComponent implements OnInit {
   ngOnInit(): void {
     if (this.isAdvanced) {
       this.basicSettings.set(false);
-    }
-
-    const configs = [
-      "config_authorization",
-      "config_user_auth",
-      "config_get_user_list",
-      "config_get_user_by_id",
-      "config_get_user_by_name",
-      "config_create_user",
-      "config_edit_user",
-      "config_delete_user"
-    ];
-    configs.forEach(c => {
-      if (!(this.data() as any)[c]) {
-        (this.data() as any)[c] = {};
-      }
-    });
-
-    const existing = (this.data() as any)?.attribute_mapping as Record<string, string> | undefined;
-
-    if (!existing || Object.keys(existing).length === 0) {
-      this.syncMappingToData();
     }
   }
 

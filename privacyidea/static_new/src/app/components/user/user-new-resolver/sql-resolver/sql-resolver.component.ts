@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from "@angular/core";
+import { Component, EventEmitter, input, Output } from "@angular/core";
 import { FormControl, FormsModule } from "@angular/forms";
 import { MatHint, MatInput } from "@angular/material/input";
 import { MatFormField, MatLabel } from "@angular/material/form-field";
@@ -20,7 +20,7 @@ import { SQLResolverData } from "../../../../services/resolver/resolver.service"
   styleUrl: "./sql-resolver.component.scss"
 })
 export class SqlResolverComponent {
-  @Input() data: Partial<SQLResolverData> = {};
+  data = input<Partial<SQLResolverData>>({});
   @Output() additionalFormFieldsChange = new EventEmitter<{ [key: string]: FormControl<any> }>();
 
 }

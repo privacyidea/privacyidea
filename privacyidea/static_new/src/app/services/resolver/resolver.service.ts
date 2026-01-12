@@ -95,14 +95,15 @@ export interface SCIMResolverData extends ResolverData {
 export interface ResolverServiceInterface {
   resolversResource: HttpResourceRef<PiResponse<Resolvers> | undefined>;
   selectedResolverName: WritableSignal<string>;
+  selectedResolverResource: HttpResourceRef<PiResponse<any> | undefined>;
   resolvers: Signal<Resolver[]>;
   resolverOptions: Signal<string[]>;
 
-  postResolverTest(data: any): Observable<any>;
+  postResolverTest(data: any): Observable<PiResponse<any, any>>;
 
-  postResolver(resolverName: string, data: any): Observable<any>;
+  postResolver(resolverName: string, data: any): Observable<PiResponse<any, any>>;
 
-  deleteResolver(resolverName: string): Observable<any>;
+  deleteResolver(resolverName: string): Observable<PiResponse<any, any>>;
 }
 
 @Injectable({
@@ -120,15 +121,18 @@ export class ResolverService implements ResolverServiceInterface {
   selectedResolverName = signal<string>("");
   resolvers = computed<Resolver[]>(() => {
     const resolvers = this.resolversResource.value()?.result?.value;
-    return resolvers ? Object.values(resolvers) : [];
+    return resolvers ? Object.entries(resolvers).map(([name, data]) => ({
+      ...data,
+      resolvername: data.resolvername || name
+    })) : [];
   });
   resolverOptions = computed(() => {
     const resolvers = this.resolversResource.value()?.result?.value;
     return resolvers ? Object.keys(resolvers) : [];
   });
 
-  postResolverTest(data: any = {}) {
-    return this.http.post(this.resolverBaseUrl + "test", data, { headers: this.authService.getHeaders() }).pipe(
+  postResolverTest(data: any = {}): Observable<PiResponse<any, any>> {
+    return this.http.post<PiResponse<any, any>>(this.resolverBaseUrl + "test", data, { headers: this.authService.getHeaders() }).pipe(
       catchError((error) => {
         console.error("Error during resolver test:", error);
         return throwError(() => error);
@@ -136,8 +140,8 @@ export class ResolverService implements ResolverServiceInterface {
     );
   }
 
-  postResolver(resolverName: string, data: any) {
-    return this.http.post(this.resolverBaseUrl + resolverName, data, { headers: this.authService.getHeaders() }).pipe(
+  postResolver(resolverName: string, data: any): Observable<PiResponse<any, any>> {
+    return this.http.post<PiResponse<any, any>>(this.resolverBaseUrl + resolverName, data, { headers: this.authService.getHeaders() }).pipe(
       catchError((error) => {
         console.error(`Error during posting resolver ${resolverName}:`, error);
         return throwError(() => error);
@@ -145,8 +149,8 @@ export class ResolverService implements ResolverServiceInterface {
     );
   }
 
-  deleteResolver(resolverName: string) {
-    return this.http.delete(this.resolverBaseUrl + resolverName, { headers: this.authService.getHeaders() }).pipe(
+  deleteResolver(resolverName: string): Observable<PiResponse<any, any>> {
+    return this.http.delete<PiResponse<any, any>>(this.resolverBaseUrl + resolverName, { headers: this.authService.getHeaders() }).pipe(
       catchError((error) => {
         console.error(`Error during deleting resolver ${resolverName}:`, error);
         return throwError(() => error);

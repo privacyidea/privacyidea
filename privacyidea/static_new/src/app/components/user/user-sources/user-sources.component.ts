@@ -132,6 +132,8 @@ export class UserSourcesComponent {
   }
 
   onEditResolver(resolver: Resolver): void {
+    this.resolverService.selectedResolverName.set(resolver.resolvername);
+    this.resolverService.selectedResolverResource.reload?.();
     this.router.navigate(["users/new-resolver"]);
   }
 

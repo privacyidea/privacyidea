@@ -5,7 +5,7 @@
       <mat-form-field class="field-lg">
         <mat-label i18n>Driver</mat-label>
         <input
-          [(ngModel)]="data['Driver']"
+          [(ngModel)]="data()['Driver']"
           matInput
           placeholder="mysql+pymysql" />
       </mat-form-field>
@@ -13,7 +13,7 @@
       <mat-form-field class="field-lg">
         <mat-label i18n>Database</mat-label>
         <input
-          [(ngModel)]="data['Database']"
+          [(ngModel)]="data()['Database']"
           matInput
           placeholder="YourDatabase" />
       </mat-form-field>
@@ -21,7 +21,7 @@
       <mat-form-field>
         <mat-label i18n>Server</mat-label>
         <input
-          [(ngModel)]="data['Server']"
+          [(ngModel)]="data()['Server']"
           matInput
           placeholder="127.0.0.1" />
       </mat-form-field>
@@ -29,7 +29,7 @@
       <mat-form-field>
         <mat-label i18n>Port</mat-label>
         <input
-          [(ngModel)]="data['Port']"
+          [(ngModel)]="data()['Port']"
           matInput
           placeholder="3306" />
       </mat-form-field>
@@ -42,7 +42,7 @@
       <mat-form-field>
         <mat-label i18n>User</mat-label>
         <input
-          [(ngModel)]="data['User']"
+          [(ngModel)]="data()['User']"
           matInput
           placeholder="user" />
       </mat-form-field>
@@ -50,7 +50,7 @@
       <mat-form-field>
         <mat-label i18n>Password</mat-label>
         <input
-          [(ngModel)]="data['Password']"
+          [(ngModel)]="data()['Password']"
           matInput
           placeholder="topsecret"
           type="password" />
@@ -58,7 +58,7 @@
 
       <div class="flex-column">
         <mat-checkbox
-          [(ngModel)]="data['Editable']"
+          [(ngModel)]="data()['Editable']"
           i18n>
           Edit user store
         </mat-checkbox>
@@ -67,11 +67,11 @@
           i18n>The user data in this database can be modified from within privacyIDEA.</span>
       </div>
 
-      @if (data['Editable']) {
+      @if (data()['Editable']) {
         <mat-form-field class="field-lg">
           <mat-label i18n>Password Hash for editable users</mat-label>
           <input
-            [(ngModel)]="data['Password_Hash_Type']"
+            [(ngModel)]="data()['Password_Hash_Type']"
             matInput
             placeholder="">
           <mat-hint i18n>
@@ -91,7 +91,7 @@
       <mat-form-field>
         <mat-label i18n>Table</mat-label>
         <input
-          [(ngModel)]="data['Table']"
+          [(ngModel)]="data()['Table']"
           matInput
           placeholder="Users" />
       </mat-form-field>
@@ -99,7 +99,7 @@
       <mat-form-field>
         <mat-label i18n>Limit</mat-label>
         <input
-          [(ngModel)]="data['Limit']"
+          [(ngModel)]="data()['Limit']"
           matInput
           placeholder="500"
           type="number" />
@@ -108,7 +108,7 @@
       <mat-form-field class="field-lg">
         <mat-label i18n>Mapping</mat-label>
         <textarea
-          [(ngModel)]="data['Map']"
+          [(ngModel)]="data()['Map']"
           matInput
           placeholder='{"userid":"id","username":"user","phone":"telephoneNumber","mobile":"mobile","email":"mail","surname":"sn","givenname":"givenName","password":"password"}'></textarea>
       </mat-form-field>
@@ -116,28 +116,28 @@
       <mat-form-field>
         <mat-label i18n>Connection Parameters</mat-label>
         <input
-          [(ngModel)]="data['conParams']"
+          [(ngModel)]="data()['conParams']"
           matInput />
       </mat-form-field>
 
       <mat-form-field>
         <mat-label i18n>Database Encoding</mat-label>
         <input
-          [(ngModel)]="data['Encoding']"
+          [(ngModel)]="data()['Encoding']"
           matInput />
       </mat-form-field>
 
       <mat-form-field class="field-lg">
         <mat-label i18n>Where statement</mat-label>
         <input
-          [(ngModel)]="data['Where']"
+          [(ngModel)]="data()['Where']"
           matInput />
       </mat-form-field>
 
       <mat-form-field>
         <mat-label i18n>Pool size</mat-label>
         <input
-          [(ngModel)]="data['poolSize']"
+          [(ngModel)]="data()['poolSize']"
           matInput
           type="number" />
       </mat-form-field>
@@ -145,7 +145,7 @@
       <mat-form-field>
         <mat-label i18n>Pool timeout</mat-label>
         <input
-          [(ngModel)]="data['poolTimeout']"
+          [(ngModel)]="data()['poolTimeout']"
           matInput
           type="number" />
       </mat-form-field>
@@ -153,7 +153,7 @@
       <mat-form-field>
         <mat-label i18n>Pool recycle timeout</mat-label>
         <input
-          [(ngModel)]="data['poolRecycle']"
+          [(ngModel)]="data()['poolRecycle']"
           matInput
           type="number" />
       </mat-form-field>

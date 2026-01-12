@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, effect, inject } from "@angular/core";
+import { Component, effect, inject, ResourceStatus } from "@angular/core";
 import { FormControl, FormsModule } from "@angular/forms";
 import { MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
@@ -26,8 +26,9 @@ import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
 import { MatCardModule } from "@angular/material/card";
 import { HttpErrorResponse } from "@angular/common/http";
+import { PiResponse } from "../../../app.component";
 
-import { Resolver, ResolverService, ResolverType } from "../../../services/resolver/resolver.service";
+import { ResolverService, ResolverType } from "../../../services/resolver/resolver.service";
 import { NotificationService } from "../../../services/notification/notification.service";
 import { PasswdResolverComponent } from "./passwd-resolver/passwd-resolver.component";
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
@@ -133,9 +134,29 @@ export class UserNewResolverComponent {
   constructor() {
     effect(() => {
       const selectedName = this.resolverService.selectedResolverName();
-      const resource = (this.resolverService as any).selectedResolverResource?.value?.();
 
-      if (!selectedName || !resource?.result?.value) {
+      if (!selectedName) {
+        if (this.editInitialized) {
+          this.resolverName = "";
+          this.resolverType = "passwdresolver";
+          this.formData = {
+            fileName: "/etc/passwd"
+          };
+          this.editInitialized = false;
+        }
+        return;
+      }
+
+      const resourceRef = this.resolverService.selectedResolverResource;
+
+      if (resourceRef.status() === ResourceStatus.Loading || resourceRef.status() === ResourceStatus.Reloading) {
+        this.editInitialized = false;
+        return;
+      }
+
+      const resource = resourceRef.value();
+
+      if (!resource?.result?.value) {
         return;
       }
 
@@ -143,11 +164,15 @@ export class UserNewResolverComponent {
         return;
       }
 
-      const resolver = resource.result.value as Resolver;
-      this.resolverName = resolver.resolvername;
-      this.resolverType = resolver.type;
-      this.formData = { ...(resolver.data || {}) };
-      this.editInitialized = true;
+      const resolverData = resource.result.value;
+      const resolver = resolverData[selectedName];
+
+      if (resolver) {
+        this.resolverName = resolver.resolvername || selectedName;
+        this.resolverType = resolver.type;
+        this.formData = { ...(resolver.data || {}) };
+        this.editInitialized = true;
+      }
     });
   }
 
@@ -187,7 +212,11 @@ export class UserNewResolverComponent {
           verify_tls: true,
           config_get_user_by_id: { "method": "GET", "endpoint": "/users/{userid}" },
           config_get_user_by_name: { "method": "GET", "endpoint": "/users/{username}" },
-          config_get_user_list: { "method": "GET", "endpoint": "/users", "headers": "{\"ConsistencyLevel\": \"eventual\"}" },
+          config_get_user_list: {
+            "method": "GET",
+            "endpoint": "/users",
+            "headers": "{\"ConsistencyLevel\": \"eventual\"}"
+          },
           config_create_user: {
             "method": "POST", "endpoint": "/users",
             "requestMapping": "{\"accountEnabled\": true, \"displayName\": \"{givenname} {surname}\", \"mailNickname\": \"{givenname}\", \"passwordProfile\": {\"password\": \"{password}\"}}"
@@ -284,19 +313,26 @@ export class UserNewResolverComponent {
     this.resolverService
       .postResolver(name, payload)
       .subscribe({
-        next: () => {
-          this.notificationService.openSnackBar(
-            this.isEditMode
-              ? $localize`Resolver "${name}" updated.`
-              : $localize`Resolver "${name}" created.`
-          );
-          this.resolverService.resolversResource.reload?.();
+        next: (res: PiResponse<any, any>) => {
+          if (res.result?.status === true && (res.result.value ?? 0) >= 0) {
+            this.notificationService.openSnackBar(
+              this.isEditMode
+                ? $localize`Resolver "${name}" updated.`
+                : $localize`Resolver "${name}" created.`
+            );
+            this.resolverService.resolversResource.reload?.();
 
-          if (!this.isEditMode) {
-            this.resolverName = "";
-            this.formData = {};
-            this.additionalFormFields = {};
-            this.router.navigateByUrl(ROUTE_PATHS.USERS_SOURCES);
+            if (!this.isEditMode) {
+              this.resolverName = "";
+              this.formData = {};
+              this.additionalFormFields = {};
+              this.router.navigateByUrl(ROUTE_PATHS.USERS_SOURCES);
+            }
+          } else {
+            const message = res.detail?.description || res.result?.error?.message || $localize`Unknown error occurred.`;
+            this.notificationService.openSnackBar(
+              $localize`Failed to save resolver. ${message}`
+            );
           }
         },
         error: (err: HttpErrorResponse) => {
@@ -331,10 +367,17 @@ export class UserNewResolverComponent {
     this.resolverService
       .postResolverTest(payload)
       .subscribe({
-        next: () => {
-          this.notificationService.openSnackBar(
-            $localize`Resolver test executed. Check server response.`
-          );
+        next: (res: PiResponse<any, any>) => {
+          if (res.result?.status === true && (res.result.value ?? 0) >= 0) {
+            this.notificationService.openSnackBar(
+              $localize`Resolver test executed. Check server response.`
+            );
+          } else {
+            const message = res.detail?.description || res.result?.error?.message || $localize`Unknown error occurred.`;
+            this.notificationService.openSnackBar(
+              $localize`Failed to test resolver. ${message}`
+            );
+          }
         },
         error: (err: HttpErrorResponse) => {
           const message = err.error?.result?.error?.message || err.message;

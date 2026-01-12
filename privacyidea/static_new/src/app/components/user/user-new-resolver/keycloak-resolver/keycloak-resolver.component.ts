@@ -1,4 +1,4 @@
-import { Component, signal } from "@angular/core";
+import { Component, effect, signal } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { MatFormField, MatHint, MatInput, MatLabel } from "@angular/material/input";
 import { MatOption, MatSelect } from "@angular/material/select";
@@ -44,8 +44,16 @@ import { AttributeMappingRow, HttpResolverComponent } from "../http-resolver/htt
 export class KeycloakResolverComponent extends HttpResolverComponent {
   override isAdvanced: boolean = true;
 
-  override ngOnInit(): void {
+  constructor() {
+    super();
+    effect(() => {
+      this.initializeKeycloakData();
+    });
+  }
+
+  protected initializeKeycloakData(): void {
     const data: any = this.data();
+    if (!data) return;
 
     if (!data.base_url) {
       data.base_url = "http://localhost:8080";
@@ -93,8 +101,6 @@ export class KeycloakResolverComponent extends HttpResolverComponent {
         requestMapping: "{\"username\": \"{username}\", \"exact\": true}"
       };
     }
-
-    super.ngOnInit();
   }
 
   override defaultMapping = signal<AttributeMappingRow[]>([

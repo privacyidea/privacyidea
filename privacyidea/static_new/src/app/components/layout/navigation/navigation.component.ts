@@ -167,6 +167,11 @@ export class NavigationComponent {
     }
   }
 
+  onNewResolver(): void {
+    this.resolverService.selectedResolverName.set("");
+    this.router.navigate([ROUTE_PATHS.USERS_NEW_RESOLVER]);
+  }
+
   onPoliciesHeaderClick(event: MouseEvent): void {
     event.preventDefault();
     (event as any).stopImmediatePropagation?.();
