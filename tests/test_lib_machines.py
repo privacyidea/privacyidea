@@ -6,6 +6,9 @@ lib.machine
 lib.machines.base
 lib.machines.hosts
 """
+from sqlalchemy import select
+
+from privacyidea.models import db, MachineResolver, MachineResolverConfig
 
 HOSTSFILE = "tests/testdata/hosts"
 from .base import MyTestCase
@@ -67,17 +70,70 @@ class MachineResolverTestCase(MyTestCase):
                                 "filename": "somefile",
                                 "unknown_param": "xyz"})
         self.assertTrue(mr_obj > 0)
+        # Check that the data is written correctly to the database
+        machine = db.session.scalars(select(MachineResolver).filter_by(id=mr_obj)).first()
+        self.assertEqual("testresolver", machine.name)
+        self.assertEqual("hosts", machine.rtype)
+        # check configs
+        configs = machine.rconfig.all()
+        self.assertEqual(2, len(configs))
+        file_config = None
+        unknown_config = None
+        for config in configs:
+            self.assertEqual(mr_obj, config.resolver_id)
+            if config.Key == "filename":
+                file_config = config
+            elif config.Key == "unknown_param":
+                unknown_config = config
+        self.assertEqual("filename", file_config.Key)
+        self.assertEqual("somefile", file_config.Value)
+        self.assertEqual("string", file_config.Type)
+        self.assertEqual("", file_config.Description)
+        self.assertEqual("unknown_param", unknown_config.Key)
+        self.assertEqual("xyz", unknown_config.Value)
+        self.assertEqual("", unknown_config.Type)
+        self.assertEqual("", unknown_config.Description)
 
         # update the resolver
         mr_obj = save_resolver({"name": "testresolver",
                                 "type": "hosts",
                                 "filename": HOSTSFILE,
                                 "type.filename": "string",
-                                "desc.filename": "the filename with the "
-                                                  "hosts",
+                                "desc.filename": "the filename with the hosts",
                                 "pw": "secretöö",
                                 "type.pw": "password"})
         self.assertTrue(mr_obj > 0)
+        # Check that the data is written correctly to the database
+        machine = db.session.scalars(select(MachineResolver).filter_by(id=mr_obj)).first()
+        self.assertEqual("testresolver", machine.name)
+        self.assertEqual("hosts", machine.rtype)
+        # check configs
+        configs = machine.rconfig.all()
+        self.assertEqual(3, len(configs))
+        file_config = None
+        unknown_config = None
+        pw_config = None
+        for config in configs:
+            self.assertEqual(mr_obj, config.resolver_id)
+            if config.Key == "filename":
+                file_config = config
+            elif config.Key == "unknown_param":
+                unknown_config = config
+            elif config.Key == "pw":
+                pw_config = config
+        self.assertEqual("filename", file_config.Key)
+        self.assertEqual(HOSTSFILE, file_config.Value)
+        self.assertEqual("string", file_config.Type)
+        self.assertEqual("the filename with the hosts", file_config.Description)
+        self.assertEqual("pw", pw_config.Key)
+        self.assertNotEqual("secretöö", pw_config.Value)   # encrypted in DB
+        self.assertEqual("password", pw_config.Type)
+        self.assertEqual("", pw_config.Description)
+        # previously set config is still there
+        self.assertEqual("unknown_param", unknown_config.Key)
+        self.assertEqual("xyz", unknown_config.Value)
+        self.assertEqual("", unknown_config.Type)
+        self.assertEqual("", unknown_config.Description)
 
         # wrong machine resolver definitions
         # missing value with type
@@ -103,8 +159,10 @@ class MachineResolverTestCase(MyTestCase):
 
     def test_03_get_resolver_config(self):
         c = get_resolver_config("testresolver")
+        self.assertSetEqual({"filename", "pw", "unknown_param"}, set(c.keys()))
         self.assertEqual(c.get("filename"), HOSTSFILE)
         self.assertEqual(c.get("pw"), "secretöö")
+        self.assertEqual(c.get("unknown_param"), "xyz")
 
     def test_04_get_machines(self):
         # get resolver object
@@ -128,9 +186,17 @@ class MachineResolverTestCase(MyTestCase):
             self.assertEqual(machine.resolver_name, "testresolver")
 
     def test_99_delete_resolver(self):
+        machine_id = db.session.scalars(select(MachineResolver).filter_by(name="testresolver")).first().id
         delete_resolver("testresolver")
         l = get_resolver_list(filter_resolver_name="testresolver")
         self.assertTrue("testresolver" not in l, l)
+
+        # Check that also the configs are deleted
+        configs = db.session.scalars(select(MachineResolverConfig)).all()
+        for config in configs:
+            # Ensure there is no config with the deleted resolver_id and also no config without any resolver_id
+            self.assertNotEqual(machine_id, config.resolver_id, config)
+            self.assertIsNotNone(config.resolver_id, config)
 
 
 class BaseMachineTestCase(MyTestCase):

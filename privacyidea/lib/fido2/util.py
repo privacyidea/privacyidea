@@ -1,12 +1,13 @@
 import hashlib
 from typing import Union
 
+from sqlalchemy import select
 from webauthn import base64url_to_bytes
 
 from privacyidea.lib.token import create_tokenclass_object, log, get_tokens
 from privacyidea.lib.tokenclass import ROLLOUTSTATE, TokenClass
 from privacyidea.lib.user import User
-from privacyidea.models import TokenInfo, Token, Challenge, TokenCredentialIdHash
+from privacyidea.models import TokenInfo, Token, Challenge, TokenCredentialIdHash, db
 
 
 def get_fido2_token_by_credential_id(credential_id: str) -> Union[TokenClass, None]:
@@ -18,17 +19,17 @@ def get_fido2_token_by_credential_id(credential_id: str) -> Union[TokenClass, No
     """
     credential_id_hash = hash_credential_id(credential_id)
     try:
-        tcih = TokenCredentialIdHash.query.filter(
-            TokenCredentialIdHash.credential_id_hash == credential_id_hash).first()
+        tcih_stmt = select(TokenCredentialIdHash).where(TokenCredentialIdHash.credential_id_hash == credential_id_hash)
+        tcih = db.session.scalar(tcih_stmt)
         if tcih:
-            db_token = Token.query.filter(Token.id == tcih.token_id).first()
+            db_token = db.session.get(Token, tcih.token_id)
             if db_token:
                 return create_tokenclass_object(db_token)
         else:
             log.debug(f"TokenCredentialIdHash entry not found for credential_id {credential_id}. Trying token info...")
-            token_id = (TokenInfo.query.filter(TokenInfo.Key == "credential_id_hash")
-                        .filter(TokenInfo.Value == credential_id_hash).first().token_id)
-            db_token = Token.query.filter(Token.id == token_id).first()
+            token_id_stmt = select(TokenInfo.token_id).where(TokenInfo.Key == "credential_id_hash", TokenInfo.Value == credential_id_hash)
+            token_id = db.session.scalar(token_id_stmt)
+            db_token = db.session.get(Token, token_id) if token_id else None
             if db_token:
                 # Create a new TokenCredentialIdHash entry for the next time
                 tcih = TokenCredentialIdHash(token_id=db_token.id, credential_id_hash=credential_id_hash)
@@ -51,13 +52,15 @@ def get_fido2_token_by_transaction_id(transaction_id: str, credential_id: str) -
     :param credential_id: The credential_id as returned by an authenticator
     :return: The token object or None
     """
-    challenges = Challenge.query.filter(Challenge.transaction_id == transaction_id).all()
+    stmt = select(Challenge).where(Challenge.transaction_id == transaction_id)
+    challenges = db.session.scalars(stmt).all()
     if not challenges:
         log.info(f"No challenges with transaction_id {transaction_id} not found.")
         return None
     token = None
     for challenge in challenges:
-        t = Token.query.filter(Token.serial == challenge.serial).first()
+        stmt = select(Token).where(Token.serial == challenge.serial)
+        t = db.session.scalar(stmt)
         if not t:
             continue
         if t.tokentype == "webauthn":
@@ -107,9 +110,10 @@ def save_credential_id_hash(credentials_id_hash: str, token_id: int) -> None:
     :param token_id: The id of the token
     """
     # Check if an entry with that hash already exists
-    tcih = TokenCredentialIdHash.query.filter(TokenCredentialIdHash.credential_id_hash == credentials_id_hash).first()
+    stmt = select(TokenCredentialIdHash).where(TokenCredentialIdHash.credential_id_hash == credentials_id_hash)
+    tcih = db.session.scalar(stmt)
     if tcih:
-        token = Token.query.filter(Token.id == tcih.token_id).first()
+        token = db.session.get(Token, tcih.token_id)
         if token.id == token_id:
             return
         else:

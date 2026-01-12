@@ -15,13 +15,14 @@
 #
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
 import logging
 import traceback
 from datetime import datetime
+from typing import Optional
 
-from sqlalchemy import Sequence
+from sqlalchemy import Sequence, Unicode, Integer, DateTime, UniqueConstraint, select, update, and_
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Mapped, mapped_column
 
 from privacyidea.models import db
 from privacyidea.models.utils import MethodsMixin
@@ -31,46 +32,20 @@ log = logging.getLogger(__name__)
 
 class ClientApplication(MethodsMixin, db.Model):
     """
-    This table stores the clients, which sent an authentication request to
-    privacyIDEA.
+    This table stores the clients, which sent an authentication request to privacyIDEA.
     This table is filled automatically by authentication requests.
     """
     __tablename__ = 'clientapplication'
-    id = db.Column(db.Integer, Sequence("clientapp_seq"), primary_key=True)
-    ip = db.Column(db.Unicode(255), nullable=False, index=True)
-    hostname = db.Column(db.Unicode(255))
-    clienttype = db.Column(db.Unicode(255), nullable=False, index=True)
-    lastseen = db.Column(db.DateTime, index=True, default=datetime.utcnow())
-    node = db.Column(db.Unicode(255), nullable=False)
-    __table_args__ = (db.UniqueConstraint('ip',
-                                          'clienttype',
-                                          'node',
-                                          name='caix'),)
-
-    def save(self):
-        clientapp = ClientApplication.query.filter(
-            ClientApplication.ip == self.ip,
-            ClientApplication.clienttype == self.clienttype,
-            ClientApplication.node == self.node).first()
-        self.lastseen = datetime.now()
-        if clientapp is None:
-            # create a new one
-            db.session.add(self)
-        else:
-            # update
-            values = {"lastseen": self.lastseen}
-            if self.hostname is not None:
-                values["hostname"] = self.hostname
-            ClientApplication.query.filter(ClientApplication.id == clientapp.id).update(values)
-        try:
-            db.session.commit()
-        except IntegrityError as e:  # pragma: no cover
-            log.info('Unable to write ClientApplication entry to db: {0!s}'.format(e))
-            log.debug(traceback.format_exc())
+    id: Mapped[int] = mapped_column(Integer, Sequence("clientapp_seq"), primary_key=True)
+    ip: Mapped[str] = mapped_column(Unicode(255), nullable=False, index=True)
+    hostname: Mapped[Optional[str]] = mapped_column(Unicode(255))
+    clienttype: Mapped[str] = mapped_column(Unicode(255), nullable=False, index=True)
+    lastseen: Mapped[Optional[datetime]] = mapped_column(DateTime, index=True, default=datetime.now)
+    node: Mapped[str] = mapped_column(Unicode(255), nullable=False)
+    __table_args__ = (UniqueConstraint('ip', 'clienttype', 'node', name='caix'),)
 
     def __repr__(self):
-        return "<ClientApplication [{0!s}][{1!s}:{2!s}] on {3!s}>".format(
-            self.id, self.ip, self.clienttype, self.node)
+        return f"<ClientApplication [{self.id}][{self.ip}:{self.clienttype}] on {self.node}>"
 
 
 class Subscription(MethodsMixin, db.Model):
@@ -78,55 +53,29 @@ class Subscription(MethodsMixin, db.Model):
     This table stores the imported subscription files.
     """
     __tablename__ = 'subscription'
-    id = db.Column(db.Integer, Sequence("subscription_seq"), primary_key=True)
-    application = db.Column(db.Unicode(80), index=True)
-    for_name = db.Column(db.Unicode(80), nullable=False)
-    for_address = db.Column(db.Unicode(128))
-    for_email = db.Column(db.Unicode(128), nullable=False)
-    for_phone = db.Column(db.Unicode(50), nullable=False)
-    for_url = db.Column(db.Unicode(80))
-    for_comment = db.Column(db.Unicode(255))
-    by_name = db.Column(db.Unicode(50), nullable=False)
-    by_email = db.Column(db.Unicode(128), nullable=False)
-    by_address = db.Column(db.Unicode(128))
-    by_phone = db.Column(db.Unicode(50))
-    by_url = db.Column(db.Unicode(80))
-    date_from = db.Column(db.DateTime)
-    date_till = db.Column(db.DateTime)
-    num_users = db.Column(db.Integer)
-    num_tokens = db.Column(db.Integer)
-    num_clients = db.Column(db.Integer)
-    level = db.Column(db.Unicode(80))
-    signature = db.Column(db.Unicode(640))
-
-    def save(self):
-        subscription = Subscription.query.filter(
-            Subscription.application == self.application).first()
-        if subscription is None:
-            # create a new one
-            db.session.add(self)
-            db.session.commit()
-            ret = self.id
-        else:
-            # update
-            values = self.get()
-            Subscription.query.filter(
-                Subscription.id == subscription.id).update(values)
-            ret = subscription.id
-        db.session.commit()
-        return ret
+    id: Mapped[int] = mapped_column(Integer, Sequence("subscription_seq"), primary_key=True)
+    application: Mapped[str] = mapped_column(Unicode(80), index=True)
+    for_name: Mapped[str] = mapped_column(Unicode(80), nullable=False)
+    for_address: Mapped[Optional[str]] = mapped_column(Unicode(128))
+    for_email: Mapped[str] = mapped_column(Unicode(128), nullable=False)
+    for_phone: Mapped[str] = mapped_column(Unicode(50), nullable=False)
+    for_url: Mapped[Optional[str]] = mapped_column(Unicode(80))
+    for_comment: Mapped[Optional[str]] = mapped_column(Unicode(255))
+    by_name: Mapped[str] = mapped_column(Unicode(50), nullable=False)
+    by_email: Mapped[str] = mapped_column(Unicode(128), nullable=False)
+    by_address: Mapped[Optional[str]] = mapped_column(Unicode(128))
+    by_phone: Mapped[Optional[str]] = mapped_column(Unicode(50))
+    by_url: Mapped[Optional[str]] = mapped_column(Unicode(80))
+    date_from: Mapped[Optional[datetime]] = mapped_column(DateTime)
+    date_till: Mapped[Optional[datetime]] = mapped_column(DateTime)
+    num_users: Mapped[Optional[int]] = mapped_column(Integer)
+    num_tokens: Mapped[Optional[int]] = mapped_column(Integer)
+    num_clients: Mapped[Optional[int]] = mapped_column(Integer)
+    level: Mapped[Optional[str]] = mapped_column(Unicode(80))
+    signature: Mapped[Optional[str]] = mapped_column(Unicode(640))
 
     def __repr__(self):
-        return "<Subscription [{0!s}][{1!s}:{2!s}:{3!s}]>".format(
-            self.id, self.application, self.for_name, self.by_name)
+        return f"<Subscription [{self.id}][{self.application}:{self.for_name}:{self.by_name}]>"
 
     def get(self):
-        """
-        Return the database object as dict
-        :return:
-        """
-        d = {}
-        for attr in Subscription.__table__.columns.keys():
-            if getattr(self, attr) is not None:
-                d[attr] = getattr(self, attr)
-        return d
+        return {attr: getattr(self, attr) for attr in self.__table__.columns.keys() if getattr(self, attr) is not None}

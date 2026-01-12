@@ -19,7 +19,7 @@
 
 from flask.cli import AppGroup
 import click
-from privacyidea.lib.auth import (create_db_admin, list_db_admin,
+from privacyidea.lib.auth import (create_db_admin, get_all_db_admins,
                                   delete_db_admin)
 
 admin_cli = AppGroup("admin", help="Manage local administrators")
@@ -42,7 +42,7 @@ def list_admin():
     """
     List all administrators.
     """
-    admins = list_db_admin()
+    admins = get_all_db_admins()
     click.echo("Name \t email")
     click.echo(30 * "=")
     for admin in admins:

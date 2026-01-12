@@ -159,9 +159,9 @@ def find_container_by_serial(serial: str) -> TokenContainerClass:
     if not serial:
         db_container = None
     else:
-        db_container = db.session.execute(
+        db_container = db.session.scalars(
             select(TokenContainer).where(func.upper(TokenContainer.serial) == serial.upper())
-        ).scalar_one_or_none()
+        ).unique().one_or_none()
     if not db_container:
         raise ResourceNotFoundError(f"Unable to find container with serial {serial}.")
 
@@ -305,12 +305,12 @@ def _create_container_query(user: User = None, serial: str = None, ctype: str = 
 
     if last_auth_delta:
         time_delta = parse_timedelta(last_auth_delta)
-        max_time = datetime.now(timezone.utc) - time_delta
+        max_time = datetime.now(timezone.utc).replace(tzinfo=None) - time_delta
         stmt = stmt.where(TokenContainer.last_seen > max_time)
 
     if last_sync_delta:
         time_delta = parse_timedelta(last_sync_delta)
-        max_time = datetime.now(timezone.utc) - time_delta
+        max_time = datetime.now(timezone.utc).replace(tzinfo=None) - time_delta
         stmt = stmt.where(TokenContainer.last_updated > max_time)
 
     if state and state.strip("*"):
@@ -395,7 +395,7 @@ def get_all_containers(user: User = None, serial: str = None, ctype: str = None,
     if page > 0 or pagesize > 0:
         ret = create_pagination(page, pagesize, sql_query, "containers")
     else:  # No pagination
-        ret["containers"] = db.session.execute(sql_query).scalars().all()
+        ret["containers"] = db.session.scalars(sql_query).unique().all()
 
     container_list = [create_container_from_db_object(db_container) for db_container in ret["containers"]]
     ret["containers"] = container_list
@@ -441,7 +441,7 @@ def create_pagination(page: int, pagesize: int, sql_query: Select,
 
     offset = (page - 1) * pagesize
     paginated_query = sql_query.limit(pagesize).offset(offset)
-    db_objects = db.session.execute(paginated_query).scalars().all()
+    db_objects = db.session.scalars(paginated_query).unique().all()
 
     # Get total count
     count_query = select(func.count()).select_from(sql_query.subquery())
@@ -459,7 +459,7 @@ def create_pagination(page: int, pagesize: int, sql_query: Select,
     }
 
 
-def find_container_for_token(serial: str) -> TokenContainerClass:
+def find_container_for_token(serial: str) -> Union[TokenContainerClass, None]:
     """
     Returns a TokenContainerClass object for the given token or raises a ResourceNotFoundError
     if the token does not exist.
@@ -470,7 +470,7 @@ def find_container_for_token(serial: str) -> TokenContainerClass:
     session = db.session
     db_token = session.execute(
         select(Token).where(Token.serial == serial)
-    ).scalar_one_or_none()
+    ).unique().scalar_one_or_none()
     if not db_token:
         raise ResourceNotFoundError(f"Unable to find token with serial {serial}.")
     token_id = db_token.id

@@ -1,23 +1,24 @@
 """ API testcases for the "/system/ endpoint """
-import gnupg
+import datetime
 import json
 import os
 import unittest
 from urllib.parse import urlencode
 
-from .base import MyApiTestCase
+import gnupg
 
-from privacyidea.lib.policy import PolicyClass, set_policy, delete_policy, SCOPE
-from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.caconnector import save_caconnector, delete_caconnector
 from privacyidea.lib.caconnectors.localca import ATTR
+from privacyidea.lib.policies.actions import PolicyAction
+from privacyidea.lib.policy import PolicyClass, set_policy, delete_policy, SCOPE
 from privacyidea.lib.radiusserver import add_radius, delete_radius
-from privacyidea.lib.resolver import save_resolver, delete_resolver, CENSORED
 from privacyidea.lib.realm import delete_realm, get_realms
-from privacyidea.models import db, NodeName
-from .test_lib_resolver import LDAPDirectory, ldap3mock
-from .test_lib_caconnector import CACERT, CAKEY, WORKINGDIR, OPENSSLCNF
+from privacyidea.lib.resolver import save_resolver, delete_resolver, CENSORED
 from privacyidea.models import UserCache
+from privacyidea.models import db, NodeName
+from .base import MyApiTestCase
+from .test_lib_caconnector import CACERT, CAKEY, WORKINGDIR, OPENSSLCNF
+from .test_lib_resolver import LDAPDirectory, ldap3mock
 
 PWFILE = "tests/testdata/passwords"
 POLICYFILE = "tests/testdata/policy.cfg"
@@ -1244,25 +1245,26 @@ class APIConfigTestCase(MyApiTestCase):
         delete_caconnector("localCA")
 
     def test_24_delete_user_cache_endpoint(self):
+        now = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
         UserCache(username='alice', used_login='', resolver='',
-                  user_id='', timestamp=None).save()
+                  user_id='', timestamp=now).save()
         UserCache(username='bob', used_login='', resolver='',
-                  user_id='', timestamp=None).save()
+                  user_id='', timestamp=now).save()
 
         count = UserCache.query.count()
-        self.assertEqual(count, 2, f"expected 2 cache rows, found {count}")
+        self.assertEqual(2, count, f"expected 2 cache rows, found {count}")
 
         with self.app.test_request_context('/system/user-cache',
                                            method='DELETE',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, 200, res.data)
+            self.assertEqual(200, res.status_code, res.data)
             result = res.json.get("result")
             self.assertTrue(result["status"], result)
             self.assertTrue(result["value"]["status"], result)
 
         remaining = UserCache.query.count()
-        self.assertEqual(remaining, 0,
+        self.assertEqual(0, remaining,
                          f"user-cache still contains {remaining} rows")
 
     def test_30_realms_with_nodes(self):

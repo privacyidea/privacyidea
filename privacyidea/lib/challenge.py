@@ -27,13 +27,14 @@ The method is tested in test_lib_challenges
 import datetime
 import logging
 
-from sqlalchemy import select
+from sqlalchemy import select, delete
 from sqlalchemy.sql import Select
 
 from .log import log_with
 from .policies.actions import PolicyAction
 from .sqlutils import delete_matching_rows
 from ..models import Challenge, db
+from ..models.utils import utc_now
 
 log = logging.getLogger(__name__)
 
@@ -154,10 +155,14 @@ def delete_challenges(serial: str = None, transaction_id: str = None) -> int:
     :param transaction_id: challenges with this very transaction id
     :return: number of deleted challenges
     """
-    challenges = get_challenges(serial=serial, transaction_id=transaction_id)
-    for challenge in challenges:
-        challenge.delete()
-    return len(challenges)
+    delete_stmt = delete(Challenge)
+    if serial is not None:
+        delete_stmt = delete_stmt.where(Challenge.serial == serial)
+    if transaction_id is not None:
+        delete_stmt = delete_stmt.where(Challenge.transaction_id == transaction_id)
+    result = db.session.execute(delete_stmt)
+    db.session.commit()
+    return result.rowcount
 
 
 def _build_challenge_criterion(age: int = None) -> 'sqlalchemy.sql.expression.BinaryExpression':
@@ -167,12 +172,12 @@ def _build_challenge_criterion(age: int = None) -> 'sqlalchemy.sql.expression.Bi
     :param age: If given, delete challenges older than this many minutes.
     :return: SQLAlchemy binary expression
     """
-    utc_now = datetime.datetime.utcnow()
+    now = utc_now()
     if age is not None:
-        cutoff = utc_now - datetime.timedelta(minutes=age)
+        cutoff = now - datetime.timedelta(minutes=age)
         return Challenge.timestamp < cutoff
 
-    return Challenge.expiration < utc_now
+    return Challenge.expiration < now
 
 
 def cleanup_expired_challenges(chunk_size: int = None, age: int = None) -> int:
