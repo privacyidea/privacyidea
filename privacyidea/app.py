@@ -418,9 +418,6 @@ def create_docker_app():
     app.config[ConfigKey.APP_READY] = False
     app.config[ConfigKey.VERBOSE] = bool(app.debug)
 
-    if not app.config.get(ConfigKey.PI_DISABLE_TALISMAN, False):
-        talisman = Talisman(app, content_security_policy=CSP)
-
     # Begin the app configuration
     # First we load a default configuration
     if app.debug:
@@ -441,6 +438,9 @@ def create_docker_app():
 
     # And then we check if we have a minimal viable config
     _check_config(app)
+
+    if not app.config.get(ConfigKey.PI_DISABLE_TALISMAN, False):
+        talisman = Talisman(app, content_security_policy=CSP)
 
     if app.debug:
         DOCKER_LOGGING_CONFIG["loggers"]["privacyidea"]["level"] = logging.DEBUG
