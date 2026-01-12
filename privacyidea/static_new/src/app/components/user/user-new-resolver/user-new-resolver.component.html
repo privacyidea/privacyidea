@@ -47,12 +47,12 @@
             }
           </mat-hint>
           <input
+            #nameInput="ngModel"
             [(ngModel)]="resolverName"
             [disabled]="isEditMode"
             matInput
             placeholder="resolver1"
-            required
-            #nameInput="ngModel" />
+            required />
           @if (nameInput.invalid && (nameInput.dirty || nameInput.touched)) {
             <mat-error i18n>Resolver name is <strong>required</strong>.</mat-error>
           }
@@ -158,46 +158,52 @@
         [type]="resolverType" />
     }
 
-    <div class="flex-row gap-16 margin-top-1 margin-left-1 ali-center just-center">
+    <div class="flex-column gap-16 margin-top-1 margin-left-1 ali-center just-center">
 
       @if (resolverType !== 'passwdresolver') {
-        @if (resolverType !== 'ldapresolver') {
-          <div class="flex-column gap-16">
+        <div class="flex-row gap-16 ali-center">
+
+          @if (['entraidresolver', 'keycloakresolver', 'httpresolver'].includes(resolverType)) {
             <mat-form-field subscriptSizing="dynamic">
               <mat-label i18n>Test username</mat-label>
               <input
                 [(ngModel)]="testUsername"
-                placeholder="foo@bar.com"
-                matInput />
+                matInput
+                placeholder="foo@bar.com" />
             </mat-form-field>
+
             <mat-form-field subscriptSizing="dynamic">
               <mat-label i18n>Test user ID</mat-label>
               <input
                 [(ngModel)]="testUserId"
-                placeholder="foo@bar.com"
-                matInput />
+                matInput
+                placeholder="foo@bar.com" />
             </mat-form-field>
-          </div>
-        } @else {
+
+          }
+
+          @if (resolverType === 'ldapresolver') {
+            <button
+              (click)="onQuickTest()"
+              [disabled]="isSaving || isTesting || !resolverType || !isAdditionalFieldsValid"
+              class="action-button-1 width-238"
+              mat-stroked-button>
+              <mat-icon>wifi</mat-icon>
+              <span i18n>Quick Resolver Test</span>
+            </button>
+          }
+
           <button
-            (click)="onQuickTest()"
+            (click)="onTest()"
             [disabled]="isSaving || isTesting || !resolverType || !isAdditionalFieldsValid"
             class="action-button-1 width-238"
             mat-stroked-button>
             <mat-icon>wifi</mat-icon>
-            <span i18n>Quick Resolver Test</span>
+            <span i18n>Test connection</span>
           </button>
-        }
-
-        <button
-          (click)="onTest()"
-          [disabled]="isSaving || isTesting || !resolverType || !isAdditionalFieldsValid"
-          class="action-button-1 width-238"
-          mat-stroked-button>
-          <mat-icon>wifi</mat-icon>
-          <span i18n>Test connection</span>
-        </button>
+        </div>
       }
+
       <button
         (click)="onSave()"
         [disabled]="!resolverName || !resolverType || !isAdditionalFieldsValid"
