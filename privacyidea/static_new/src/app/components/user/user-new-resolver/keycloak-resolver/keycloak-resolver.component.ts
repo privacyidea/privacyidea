@@ -1,7 +1,7 @@
 import { Component, effect, signal } from "@angular/core";
-import { FormsModule } from "@angular/forms";
+import { FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { MatFormField, MatHint, MatInput, MatLabel } from "@angular/material/input";
-import { MatOption, MatSelect } from "@angular/material/select";
+import { MatError, MatOption, MatSelect } from "@angular/material/select";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatSlideToggle } from "@angular/material/slide-toggle";
 import { MatTableModule } from "@angular/material/table";
@@ -36,13 +36,16 @@ import { AttributeMappingRow, HttpResolverComponent } from "../http-resolver/htt
     MatExpansionPanel,
     MatExpansionPanelHeader,
     MatExpansionPanelTitle,
-    MatDivider
+    MatDivider,
+    MatError,
+    ReactiveFormsModule,
   ],
   templateUrl: "../http-resolver/http-resolver.component.html",
   styleUrl: "../http-resolver/http-resolver.component.scss"
 })
 export class KeycloakResolverComponent extends HttpResolverComponent {
   override isAdvanced: boolean = true;
+  override isAuthorizationExpanded: boolean = true;
 
   constructor() {
     super();

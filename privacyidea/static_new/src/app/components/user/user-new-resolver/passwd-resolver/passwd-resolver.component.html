@@ -24,7 +24,8 @@
       <input
         matInput
         [formControl]="filenameControl"
-        placeholder="/etc/passwd" />
+        placeholder="/etc/passwd"
+        required />
 
       @if (filenameControl.hasError('required') && filenameControl.touched) {
         <mat-error i18n>Filename is <strong>required</strong>.</mat-error>

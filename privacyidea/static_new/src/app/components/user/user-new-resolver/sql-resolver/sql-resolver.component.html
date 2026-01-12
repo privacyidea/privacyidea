@@ -5,9 +5,13 @@
       <mat-form-field class="field-lg">
         <mat-label i18n>Driver</mat-label>
         <input
-          [(ngModel)]="data()['Driver']"
+          [formControl]="driverControl"
           matInput
-          placeholder="mysql+pymysql" />
+          placeholder="mysql+pymysql"
+          required />
+        @if (driverControl.hasError('required') && driverControl.touched) {
+          <mat-error i18n>Driver is <strong>required</strong>.</mat-error>
+        }
       </mat-form-field>
 
       <mat-form-field class="field-lg">
@@ -21,9 +25,13 @@
       <mat-form-field>
         <mat-label i18n>Server</mat-label>
         <input
-          [(ngModel)]="data()['Server']"
+          [formControl]="serverControl"
           matInput
-          placeholder="127.0.0.1" />
+          placeholder="127.0.0.1"
+          required />
+        @if (serverControl.hasError('required') && serverControl.touched) {
+          <mat-error i18n>Server is <strong>required</strong>.</mat-error>
+        }
       </mat-form-field>
 
       <mat-form-field>
@@ -91,26 +99,38 @@
       <mat-form-field>
         <mat-label i18n>Table</mat-label>
         <input
-          [(ngModel)]="data()['Table']"
+          [formControl]="tableControl"
           matInput
-          placeholder="Users" />
+          placeholder="Users"
+          required />
+        @if (tableControl.hasError('required') && tableControl.touched) {
+          <mat-error i18n>Table is <strong>required</strong>.</mat-error>
+        }
       </mat-form-field>
 
       <mat-form-field>
         <mat-label i18n>Limit</mat-label>
         <input
-          [(ngModel)]="data()['Limit']"
+          [formControl]="limitControl"
           matInput
           placeholder="500"
+          required
           type="number" />
+        @if (limitControl.hasError('required') && limitControl.touched) {
+          <mat-error i18n>Limit is <strong>required</strong>.</mat-error>
+        }
       </mat-form-field>
 
       <mat-form-field class="field-lg">
         <mat-label i18n>Mapping</mat-label>
         <textarea
-          [(ngModel)]="data()['Map']"
+          [formControl]="mapControl"
           matInput
-          placeholder='{"userid":"id","username":"user","phone":"telephoneNumber","mobile":"mobile","email":"mail","surname":"sn","givenname":"givenName","password":"password"}'></textarea>
+          placeholder='{"userid":"id","username":"user","phone":"telephoneNumber","mobile":"mobile","email":"mail","surname":"sn","givenname":"givenName","password":"password"}'
+          required></textarea>
+        @if (mapControl.hasError('required') && mapControl.touched) {
+          <mat-error i18n>Mapping is <strong>required</strong>.</mat-error>
+        }
       </mat-form-field>
 
       <mat-form-field>

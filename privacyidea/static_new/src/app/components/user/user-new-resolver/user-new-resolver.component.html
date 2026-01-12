@@ -50,7 +50,12 @@
             [(ngModel)]="resolverName"
             [disabled]="isEditMode"
             matInput
-            placeholder="resolver1" />
+            placeholder="resolver1"
+            required
+            #nameInput="ngModel" />
+          @if (nameInput.invalid && (nameInput.dirty || nameInput.touched)) {
+            <mat-error i18n>Resolver name is <strong>required</strong>.</mat-error>
+          }
         </mat-form-field>
 
         <mat-form-field>
@@ -176,7 +181,7 @@
         } @else {
           <button
             (click)="onQuickTest()"
-            [disabled]="isSaving || isTesting || !resolverType"
+            [disabled]="isSaving || isTesting || !resolverType || !isAdditionalFieldsValid"
             class="action-button-1 width-238"
             mat-stroked-button>
             <mat-icon>wifi</mat-icon>
@@ -186,7 +191,7 @@
 
         <button
           (click)="onTest()"
-          [disabled]="isSaving || isTesting || !resolverType"
+          [disabled]="isSaving || isTesting || !resolverType || !isAdditionalFieldsValid"
           class="action-button-1 width-238"
           mat-stroked-button>
           <mat-icon>wifi</mat-icon>
@@ -195,7 +200,7 @@
       }
       <button
         (click)="onSave()"
-        [disabled]="!resolverName || !resolverType"
+        [disabled]="!resolverName || !resolverType || !isAdditionalFieldsValid"
         class="action-button-1 width-238"
         mat-stroked-button>
         <mat-icon>add</mat-icon>

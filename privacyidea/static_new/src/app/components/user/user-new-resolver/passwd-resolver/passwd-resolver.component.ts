@@ -40,8 +40,8 @@ export class PasswdResolverComponent implements OnInit {
 
   constructor() {
     effect(() => {
-      const initial = this.data()?.fileName ?? "";
-      if (initial) {
+      const initial = this.data()?.fileName;
+      if (initial !== undefined) {
         this.filenameControl.setValue(initial, { emitEvent: false });
       }
     });

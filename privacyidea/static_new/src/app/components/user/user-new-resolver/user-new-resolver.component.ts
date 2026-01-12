@@ -18,7 +18,7 @@
  **/
 import { Component, effect, inject, ResourceStatus } from "@angular/core";
 import { FormControl, FormsModule } from "@angular/forms";
-import { MatFormField, MatLabel } from "@angular/material/form-field";
+import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { MatSelect, MatSelectModule } from "@angular/material/select";
 import { MatOption } from "@angular/material/core";
@@ -48,6 +48,7 @@ import { ROUTE_PATHS } from "../../../route_paths";
     FormsModule,
     MatFormField,
     MatLabel,
+    MatError,
     MatInput,
     MatSelectModule,
     MatSelect,
@@ -180,6 +181,10 @@ export class UserNewResolverComponent {
     return !!this.resolverService.selectedResolverName();
   }
 
+  get isAdditionalFieldsValid(): boolean {
+    return Object.values(this.additionalFormFields).every(control => control.valid);
+  }
+
   onTypeChange(type: ResolverType): void {
     if (!this.isEditMode) {
       this.formData = {};
@@ -201,6 +206,15 @@ export class UserNewResolverComponent {
           SERVERPOOL_ROUNDS: 2,
           SERVERPOOL_SKIP: 30,
           UIDTYPE: "DN"
+        };
+      } else if (type === "sqlresolver") {
+        this.formData = {
+          Driver: "mysql+pymysql",
+          Server: "localhost",
+          Limit: 500,
+          poolSize: 5,
+          poolTimeout: 10,
+          poolRecycle: 7200
         };
       } else if (type === "entraidresolver") {
         this.formData = {
@@ -259,6 +273,22 @@ export class UserNewResolverComponent {
             requestMapping: "{\"username\": \"{username}\", \"exact\": true}"
           }
         };
+      } else if (type === "scimresolver") {
+        this.formData = {
+          Authserver: "http://localhost:8080/osiam-auth-server",
+          Resourceserver: "http://localhost:8080/osiam-resource-server",
+          Mapping: "{\"userName\": \"username\", \"id\": \"userid\", \"emails.0.value\": \"email\"}"
+        };
+      } else if (type === "httpresolver") {
+        this.formData = {
+          method: "GET",
+          endpoint: "https://example.com/path/to/users/:userid",
+          requestMapping: "{}",
+          headers: '{"Content-Type":"application/json; charset=UTF-8"}',
+          responseMapping: '{"username":"{username}", "userid":"{userid}"}',
+          hasSpecialErrorHandler: false,
+          errorResponse: '{"success": false, "message": "An error occurred!"}'
+        };
       }
     }
   }
@@ -295,6 +325,11 @@ export class UserNewResolverComponent {
     }
     if (!this.resolverType) {
       this.notificationService.openSnackBar($localize`Please select a resolver type.`);
+      return;
+    }
+
+    if (!this.isAdditionalFieldsValid) {
+      this.notificationService.openSnackBar($localize`Please fill in all required fields.`);
       return;
     }
 
@@ -346,6 +381,16 @@ export class UserNewResolverComponent {
   }
 
   onTest(): void {
+    if (!this.resolverType) {
+      this.notificationService.openSnackBar($localize`Please select a resolver type.`);
+      return;
+    }
+
+    if (!this.isAdditionalFieldsValid) {
+      this.notificationService.openSnackBar($localize`Please fill in all required fields.`);
+      return;
+    }
+
     this.isTesting = true;
 
     const payload: any = {

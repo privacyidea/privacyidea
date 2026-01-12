@@ -1,8 +1,8 @@
 import { Component, effect, signal } from "@angular/core";
 import { AttributeMappingRow, HttpResolverComponent } from "../http-resolver/http-resolver.component";
-import { FormsModule } from "@angular/forms";
+import { FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { MatFormField, MatHint, MatInput, MatLabel } from "@angular/material/input";
-import { MatOption, MatSelect } from "@angular/material/select";
+import { MatError, MatOption, MatSelect } from "@angular/material/select";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatSlideToggle } from "@angular/material/slide-toggle";
 import { MatTableModule } from "@angular/material/table";
@@ -36,13 +36,25 @@ import { MatDivider } from "@angular/material/list";
     MatExpansionPanel,
     MatExpansionPanelHeader,
     MatExpansionPanelTitle,
-    MatDivider
+    MatDivider,
+    MatError,
+    ReactiveFormsModule,
   ],
   templateUrl: "../http-resolver/http-resolver.component.html",
   styleUrl: "../http-resolver/http-resolver.component.scss"
 })
 export class EntraidResolverComponent extends HttpResolverComponent {
   override isAdvanced: boolean = true;
+  override isAuthorizationExpanded: boolean = true;
+  override defaultMapping = signal<AttributeMappingRow[]>([
+    { privacyideaAttr: "userid", userStoreAttr: "id" },
+    { privacyideaAttr: "username", userStoreAttr: "userPrincipalName" },
+    { privacyideaAttr: "email", userStoreAttr: "mail" },
+    { privacyideaAttr: "givenname", userStoreAttr: "givenName" },
+    { privacyideaAttr: "mobile", userStoreAttr: "mobilePhone" },
+    { privacyideaAttr: "phone", userStoreAttr: "businessPhones" },
+    { privacyideaAttr: "surname", userStoreAttr: "surname" }
+  ]);
 
   constructor() {
     super();
@@ -81,7 +93,11 @@ export class EntraidResolverComponent extends HttpResolverComponent {
       data.config_get_user_by_name = { "method": "GET", "endpoint": "/users/{username}" };
     }
     if (!data.config_get_user_list || Object.keys(data.config_get_user_list).length === 0) {
-      data.config_get_user_list = { "method": "GET", "endpoint": "/users", "headers": "{\"ConsistencyLevel\": \"eventual\"}" };
+      data.config_get_user_list = {
+        "method": "GET",
+        "endpoint": "/users",
+        "headers": "{\"ConsistencyLevel\": \"eventual\"}"
+      };
     }
     if (!data.config_create_user || Object.keys(data.config_create_user).length === 0) {
       data.config_create_user = {
@@ -104,14 +120,4 @@ export class EntraidResolverComponent extends HttpResolverComponent {
       };
     }
   }
-
-  override defaultMapping = signal<AttributeMappingRow[]>([
-    { privacyideaAttr: "userid", userStoreAttr: "id" },
-    { privacyideaAttr: "username", userStoreAttr: "userPrincipalName" },
-    { privacyideaAttr: "email", userStoreAttr: "mail" },
-    { privacyideaAttr: "givenname", userStoreAttr: "givenName" },
-    { privacyideaAttr: "mobile", userStoreAttr: "mobilePhone" },
-    { privacyideaAttr: "phone", userStoreAttr: "businessPhones" },
-    { privacyideaAttr: "surname", userStoreAttr: "surname" }
-  ]);
 }

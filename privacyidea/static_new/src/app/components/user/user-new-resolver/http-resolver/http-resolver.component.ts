@@ -10,7 +10,7 @@ import {
   signal,
   WritableSignal
 } from "@angular/core";
-import { FormControl, FormsModule } from "@angular/forms";
+import { FormControl, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 
 import { MatFormField, MatHint, MatInput, MatLabel } from "@angular/material/input";
 import { MatOption, MatSelect } from "@angular/material/select";
@@ -27,6 +27,7 @@ import {
   MatExpansionPanelTitle
 } from "@angular/material/expansion";
 import { MatDivider } from "@angular/material/list";
+import { MatError } from "@angular/material/form-field";
 
 export type AttributeMappingRow = {
   privacyideaAttr: string | null;
@@ -38,8 +39,10 @@ export type AttributeMappingRow = {
   standalone: true,
   imports: [
     FormsModule,
+    ReactiveFormsModule,
     MatFormField,
     MatLabel,
+    MatError,
     MatInput,
     MatSelect,
     MatOption,
@@ -74,7 +77,19 @@ export class HttpResolverComponent implements OnInit {
   type = input<string>("httpresolver");
   @Output() additionalFormFieldsChange = new EventEmitter<{ [key: string]: FormControl<any> }>();
   isAdvanced: boolean = false;
+  isAuthorizationExpanded: boolean = false;
   protected basicSettings: WritableSignal<boolean> = signal(true);
+
+  endpointControl = new FormControl<string>("", { nonNullable: true, validators: [Validators.required] });
+  methodControl = new FormControl<string>("GET", { nonNullable: true, validators: [Validators.required] });
+  requestMappingControl = new FormControl<string>("", { nonNullable: true, validators: [Validators.required] });
+  headersControl = new FormControl<string>("", { nonNullable: true, validators: [Validators.required] });
+  responseMappingControl = new FormControl<string>("", { nonNullable: true, validators: [Validators.required] });
+  errorResponseControl = new FormControl<string>("", { nonNullable: true, validators: [Validators.required] });
+  baseUrlControl = new FormControl<string>("", { nonNullable: true, validators: [Validators.required] });
+  tenantControl = new FormControl<string>("", { nonNullable: true, validators: [Validators.required] });
+  clientIdControl = new FormControl<string>("", { nonNullable: true, validators: [Validators.required] });
+  clientSecretControl = new FormControl<string>("", { nonNullable: true, validators: [Validators.required] });
 
   protected defaultMapping = signal<AttributeMappingRow[]>([
     { privacyideaAttr: "userid", userStoreAttr: "userid" },
@@ -84,7 +99,55 @@ export class HttpResolverComponent implements OnInit {
   constructor() {
     effect(() => {
       this.initializeData();
+      this.syncControls();
+      this.emitControls();
     });
+  }
+
+  protected syncControls(): void {
+    const data = this.data();
+    if (!data) return;
+
+    if (data.endpoint !== undefined) this.endpointControl.setValue(data.endpoint, { emitEvent: false });
+    if (data.method !== undefined) this.methodControl.setValue(data.method, { emitEvent: false });
+    if (data.requestMapping !== undefined) this.requestMappingControl.setValue(data.requestMapping, { emitEvent: false });
+    if (data.headers !== undefined) this.headersControl.setValue(data.headers, { emitEvent: false });
+    if (data.responseMapping !== undefined) this.responseMappingControl.setValue(data.responseMapping, { emitEvent: false });
+    if (data.errorResponse !== undefined) this.errorResponseControl.setValue(data.errorResponse, { emitEvent: false });
+    if (data.base_url !== undefined) this.baseUrlControl.setValue(data.base_url, { emitEvent: false });
+    if (data.tenant !== undefined) this.tenantControl.setValue(data.tenant, { emitEvent: false });
+    if (data.client_id !== undefined) this.clientIdControl.setValue(data.client_id, { emitEvent: false });
+    if (data.client_secret !== undefined) this.clientSecretControl.setValue(data.client_secret, { emitEvent: false });
+  }
+
+  protected emitControls(): void {
+    const controls: { [key: string]: FormControl<any> } = {};
+    const data = this.data();
+
+    if (!this.isAdvanced && this.basicSettings()) {
+      controls["endpoint"] = this.endpointControl;
+      controls["method"] = this.methodControl;
+      controls["requestMapping"] = this.requestMappingControl;
+      controls["headers"] = this.headersControl;
+      controls["responseMapping"] = this.responseMappingControl;
+
+      if (data?.hasSpecialErrorHandler) {
+        controls["errorResponse"] = this.errorResponseControl;
+      }
+    } else {
+      controls["base_url"] = this.baseUrlControl;
+
+      if (this.type() === "entraidresolver") {
+        controls["tenant"] = this.tenantControl;
+        controls["client_id"] = this.clientIdControl;
+
+        if (data?.client_credential_type === "secret" || !data?.client_credential_type) {
+          controls["client_secret"] = this.clientSecretControl;
+        }
+      }
+    }
+
+    this.additionalFormFieldsChange.emit(controls);
   }
 
   protected initializeData(): void {

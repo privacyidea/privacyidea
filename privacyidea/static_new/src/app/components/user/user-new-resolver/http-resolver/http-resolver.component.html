@@ -15,41 +15,62 @@
       <mat-form-field class="field-lg">
         <mat-label i18n>Endpoint (URL)</mat-label>
         <input
-          [(ngModel)]="data()['endpoint']"
+          [formControl]="endpointControl"
           matInput
-          placeholder="https://example.com/path/to/users/:userid" />
+          placeholder="https://example.com/path/to/users/:userid"
+          required />
+        @if (endpointControl.hasError('required') && endpointControl.touched) {
+          <mat-error i18n>Endpoint is <strong>required</strong>.</mat-error>
+        }
       </mat-form-field>
 
       <mat-form-field>
         <mat-label i18n>Method</mat-label>
-        <mat-select [(ngModel)]="data()['method']">
+        <mat-select
+          [formControl]="methodControl"
+          required>
           <mat-option value="GET">GET</mat-option>
           <mat-option value="POST">POST</mat-option>
         </mat-select>
+        @if (methodControl.hasError('required') && methodControl.touched) {
+          <mat-error i18n>Method is <strong>required</strong>.</mat-error>
+        }
       </mat-form-field>
 
       <mat-form-field class="field-lg">
         <mat-label i18n>Request Mapping (JSON Format)</mat-label>
         <textarea
-          [(ngModel)]="data()['requestMapping']"
+          [formControl]="requestMappingControl"
           matInput
-          placeholder='{"customerid":"{userid}","accessKey":"secr3t!"}'></textarea>
+          placeholder='{"customerid":"{userid}","accessKey":"secr3t!"}'
+          required></textarea>
+        @if (requestMappingControl.hasError('required') && requestMappingControl.touched) {
+          <mat-error i18n>Request mapping is <strong>required</strong>.</mat-error>
+        }
       </mat-form-field>
 
       <mat-form-field class="field-lg">
         <mat-label i18n>Headers (JSON Format)</mat-label>
         <textarea
-          [(ngModel)]="data()['headers']"
+          [formControl]="headersControl"
           matInput
-          placeholder='{"Content-Type":"application/json; charset=UTF-8"}'></textarea>
+          placeholder='{"Content-Type":"application/json; charset=UTF-8"}'
+          required></textarea>
+        @if (headersControl.hasError('required') && headersControl.touched) {
+          <mat-error i18n>Headers are <strong>required</strong>.</mat-error>
+        }
       </mat-form-field>
 
       <mat-form-field class="field-lg">
         <mat-label i18n>Response Mapping (JSON Format)</mat-label>
         <textarea
-          [(ngModel)]="data()['responseMapping']"
+          [formControl]="responseMappingControl"
           matInput
-          placeholder='{"username":"{Username}","email":"{Email}"}'></textarea>
+          placeholder='{"username":"{Username}","email":"{Email}"}'
+          required></textarea>
+        @if (responseMappingControl.hasError('required') && responseMappingControl.touched) {
+          <mat-error i18n>Response mapping is <strong>required</strong>.</mat-error>
+        }
       </mat-form-field>
     </div>
 
@@ -64,9 +85,13 @@
       <mat-form-field class="field-lg width-100">
         <mat-label i18n>Response contains (JSON Format)</mat-label>
         <textarea
-          [(ngModel)]="data()['errorResponse']"
+          [formControl]="errorResponseControl"
           matInput
-          placeholder='{"success": false, "message": "An error occurred!"}'></textarea>
+          placeholder='{"success": false, "message": "An error occurred!"}'
+          required></textarea>
+        @if (errorResponseControl.hasError('required') && errorResponseControl.touched) {
+          <mat-error i18n>Response contains is <strong>required</strong>.</mat-error>
+        }
       </mat-form-field>
     }
   } @else {
@@ -87,12 +112,16 @@
       <mat-form-field class="field-lg">
         <mat-label i18n>Base URL</mat-label>
         <input
-          [(ngModel)]="data()['base_url']"
+          [formControl]="baseUrlControl"
           matInput
-          placeholder="https://example.com/path/to/users" />
+          placeholder="https://example.com/path/to/users"
+          required />
         <mat-hint i18n>The base URL of the API of the user store which will be concatenated with the user endpoints
                        defined below.
         </mat-hint>
+        @if (baseUrlControl.hasError('required') && baseUrlControl.touched) {
+          <mat-error i18n>Base URL is <strong>required</strong>.</mat-error>
+        }
       </mat-form-field>
     </div>
 
@@ -269,7 +298,7 @@
     </div>
     <div class="margin-top-1">
       <mat-accordion>
-        <mat-expansion-panel>
+        <mat-expansion-panel [expanded]="isAuthorizationExpanded">
           <mat-expansion-panel-header>
             <mat-panel-title i18n>Authorization</mat-panel-title>
           </mat-expansion-panel-header>
@@ -297,22 +326,32 @@
                 <mat-form-field>
                   <mat-label i18n>Tenant ID</mat-label>
                   <input
-                    [(ngModel)]="data()['tenant']"
+                    [formControl]="tenantControl"
                     matInput
-                    placeholder="e.g. 12345678-1234-1234-1234-123456789012" />
+                    placeholder="e.g. 12345678-1234-1234-1234-123456789012"
+                    required />
+                  @if (tenantControl.hasError('required') && tenantControl.touched) {
+                    <mat-error i18n>Tenant ID is <strong>required</strong>.</mat-error>
+                  }
                 </mat-form-field>
 
                 <mat-form-field>
                   <mat-label i18n>Client ID</mat-label>
                   <input
-                    [(ngModel)]="data()['client_id']"
+                    [formControl]="clientIdControl"
                     matInput
-                    placeholder="e.g. 87654321-4321-4321-4321-210987654321" />
+                    placeholder="e.g. 87654321-4321-4321-4321-210987654321"
+                    required />
+                  @if (clientIdControl.hasError('required') && clientIdControl.touched) {
+                    <mat-error i18n>Client ID is <strong>required</strong>.</mat-error>
+                  }
                 </mat-form-field>
 
                 <mat-form-field>
                   <mat-label i18n>Client Credential Type</mat-label>
-                  <mat-select [(ngModel)]="data()['client_credential_type']">
+                  <mat-select
+                    (selectionChange)="emitControls()"
+                    [(ngModel)]="data()['client_credential_type']">
                     <mat-option value="secret">Secret</mat-option>
                     <mat-option value="certificate">Certificate</mat-option>
                   </mat-select>
@@ -322,9 +361,13 @@
                   <mat-form-field>
                     <mat-label i18n>Client Secret</mat-label>
                     <input
-                      [(ngModel)]="data()['client_secret']"
+                      [formControl]="clientSecretControl"
                       matInput
-                      type="password" />
+                      type="password"
+                      required />
+                    @if (clientSecretControl.hasError('required') && clientSecretControl.touched) {
+                      <mat-error i18n>Client secret is <strong>required</strong>.</mat-error>
+                    }
                   </mat-form-field>
                 } @else if (data()['client_credential_type'] === 'certificate') {
                   <p

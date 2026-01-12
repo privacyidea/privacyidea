@@ -75,6 +75,7 @@ export interface SQLResolverData extends ResolverData {
   User: string;
   Password: string;
   Table: string;
+  Limit?: number;
   Map: string;
   Editable: boolean;
   Password_Hash_Type: string;
