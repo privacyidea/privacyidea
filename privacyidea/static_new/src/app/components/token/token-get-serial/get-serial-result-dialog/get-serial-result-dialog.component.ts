@@ -41,7 +41,7 @@ export class GetSerialResultDialogComponent extends AbstractDialogComponent<GetS
   action: DialogAction<true> = {
     type: "confirm",
     label: $localize`OK`,
-    closeOnAction: true,
+
     value: true
   };
 

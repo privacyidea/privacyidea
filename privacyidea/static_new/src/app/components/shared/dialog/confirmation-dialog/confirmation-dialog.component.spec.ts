@@ -32,14 +32,12 @@ describe("ConfirmationDialogComponent", () => {
       confirmAction: {
         type: "destruct",
         label: "Delete",
-        value: true,
-        closeOnAction: true
+        value: true
       },
       cancelAction: {
         type: "cancel",
         label: "Cancel",
-        value: false,
-        closeOnAction: true
+        value: false
       },
       items: ["Item 1", "Item 2", "Item 3"],
       itemType: "items"
