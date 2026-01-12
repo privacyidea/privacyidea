@@ -1,20 +1,26 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { UserNewResolverComponent } from './user-new-resolver.component';
-import { ResolverService } from '../../../services/resolver/resolver.service';
-import { NotificationService } from '../../../services/notification/notification.service';
-import { Router } from '@angular/router';
-import { of } from 'rxjs';
-import { provideHttpClient } from '@angular/common/http';
-import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { MockResolverService } from '../../../../testing/mock-services/mock-resolver-service';
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { UserNewResolverComponent } from "./user-new-resolver.component";
+import { ResolverService } from "../../../services/resolver/resolver.service";
+import { NotificationService } from "../../../services/notification/notification.service";
+import { Router } from "@angular/router";
+import { of } from "rxjs";
+import { provideHttpClient } from "@angular/common/http";
+import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { MockResolverService } from "../../../../testing/mock-services/mock-resolver-service";
 import { MockNotificationService, MockPiResponse } from "../../../../testing/mock-services";
-import { ResourceStatus, signal } from '@angular/core';
-import { NoopAnimationsModule } from '@angular/platform-browser/animations';
+import { ResourceStatus, signal } from "@angular/core";
+import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 
-describe('UserNewResolverComponent', () => {
+describe("UserNewResolverComponent", () => {
   let component: UserNewResolverComponent;
   let fixture: ComponentFixture<UserNewResolverComponent>;
   let resolverService: MockResolverService;
+
+  async function detectChangesStable() {
+    fixture.detectChanges(false);
+    await fixture.whenStable();
+    fixture.detectChanges(false);
+  }
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -32,128 +38,136 @@ describe('UserNewResolverComponent', () => {
           }
         }
       ]
-    })
-    .compileComponents();
+    }).compileComponents();
 
     fixture = TestBed.createComponent(UserNewResolverComponent);
     component = fixture.componentInstance;
     resolverService = TestBed.inject(ResolverService) as unknown as MockResolverService;
-    fixture.detectChanges();
   });
 
-  it('should create', () => {
+  it("should create", async () => {
+    await detectChangesStable();
     expect(component).toBeTruthy();
   });
 
-  it('should pre-fill form when a resolver is selected (edit mode)', async () => {
-    const resolverName = 'test-resolver';
+  it("should pre-fill form when a resolver is selected (edit mode)", async () => {
+    const resolverName = "test-resolver";
     const resolverData = {
       [resolverName]: {
         resolvername: resolverName,
-        type: 'passwdresolver',
+        type: "passwdresolver",
         data: {
-          fileName: '/tmp/test'
+          fileName: "/tmp/test"
         }
       }
     };
 
     resolverService.selectedResolverName.set(resolverName);
 
-    const resourceValue = {
+    const resourceValue = signal({
       result: {
         status: true,
         value: resolverData
       }
-    };
-    (resolverService.selectedResolverResource as any).value = signal(resourceValue);
+    });
+    const resourceStatus = signal(ResourceStatus.Resolved);
 
-    fixture.detectChanges();
-    await fixture.whenStable();
+    (resolverService.selectedResolverResource as any).value = resourceValue;
+    (resolverService.selectedResolverResource as any).status = resourceStatus;
+
+    await detectChangesStable();
 
     expect(component.isEditMode).toBeTruthy();
     expect(component.resolverName).toBe(resolverName);
-    expect(component.resolverType).toBe('passwdresolver');
-    expect(component.formData['fileName']).toBe('/tmp/test');
+    expect(component.resolverType).toBe("passwdresolver");
+    expect(component.formData["fileName"]).toBe("/tmp/test");
 
-    const inputElement = fixture.nativeElement.querySelector('input[placeholder="/etc/passwd"]');
-    expect(inputElement.value).toBe('/tmp/test');
+    const inputElement = fixture.nativeElement.querySelector("input[placeholder=\"/etc/passwd\"]");
+    expect(inputElement?.value).toBe("/tmp/test");
   });
 
-  it('should pre-fill form for sqlresolver when selected (edit mode)', async () => {
-    const resolverName = 'sql-res';
+  it("should pre-fill form for sqlresolver when selected (edit mode)", async () => {
+    const resolverName = "sql-res";
     const resolverData = {
       [resolverName]: {
         resolvername: resolverName,
-        type: 'sqlresolver',
+        type: "sqlresolver",
         data: {
-          Database: 'testdb',
-          Driver: 'mysql'
+          Database: "testdb",
+          Driver: "mysql"
         }
       }
     };
 
     resolverService.selectedResolverName.set(resolverName);
-    const resourceValue = {
+
+    const resourceValue = signal({
       result: {
         status: true,
         value: resolverData
       }
-    };
-    (resolverService.selectedResolverResource as any).value = signal(resourceValue);
+    });
+    const resourceStatus = signal(ResourceStatus.Resolved);
 
-    fixture.detectChanges();
-    await fixture.whenStable();
+    (resolverService.selectedResolverResource as any).value = resourceValue;
+    (resolverService.selectedResolverResource as any).status = resourceStatus;
 
-    expect(component.resolverType).toBe('sqlresolver');
-    const dbInput = fixture.nativeElement.querySelector('input[placeholder="YourDatabase"]');
-    expect(dbInput.value).toBe('testdb');
+    await detectChangesStable();
+
+    expect(component.isEditMode).toBeTruthy();
+    expect(component.resolverType).toBe("sqlresolver");
+
+    const dbInput = fixture.nativeElement.querySelector("input[placeholder=\"YourDatabase\"]");
+    expect(dbInput?.value).toBe("testdb");
   });
 
-  it('should re-fill form when resource reloads', async () => {
-    const resolverName = 'test-resolver';
+  it("should re-fill form when resource reloads", async () => {
+    const resolverName = "test-resolver";
     const initialData = {
       [resolverName]: {
         resolvername: resolverName,
-        type: 'passwdresolver',
-        data: { fileName: '/initial' }
+        type: "passwdresolver",
+        data: { fileName: "/initial" }
       }
     };
 
     resolverService.selectedResolverName.set(resolverName);
+
     const resourceValue = signal({
       result: { status: true, value: initialData }
     });
     const resourceStatus = signal(ResourceStatus.Resolved);
+
     (resolverService.selectedResolverResource as any).value = resourceValue;
     (resolverService.selectedResolverResource as any).status = resourceStatus;
 
-    fixture.detectChanges();
-    await fixture.whenStable();
-    expect(component.formData['fileName']).toBe('/initial');
+    await detectChangesStable();
+    expect(component.formData["fileName"]).toBe("/initial");
 
     resourceStatus.set(ResourceStatus.Reloading);
-    fixture.detectChanges();
+    await detectChangesStable();
 
     const updatedData = {
       [resolverName]: {
         resolvername: resolverName,
-        type: 'passwdresolver',
-        data: { fileName: '/updated' }
+        type: "passwdresolver",
+        data: { fileName: "/updated" }
       }
     };
+
     resourceValue.set({ result: { status: true, value: updatedData } });
     resourceStatus.set(ResourceStatus.Resolved);
 
-    fixture.detectChanges();
-    await fixture.whenStable();
-
-    expect(component.formData['fileName']).toBe('/updated');
+    await detectChangesStable();
+    expect(component.formData["fileName"]).toBe("/updated");
   });
 
-  it('should show error and not redirect when postResolver returns status true but value -1', async () => {
-    const resolverName = 'test-error';
+  it("should show error and not redirect when postResolver returns status true but value -1", async () => {
+    await detectChangesStable();
+
+    const resolverName = "test-error";
     component.resolverName = resolverName;
-    component.resolverType = 'sqlresolver';
+    component.resolverType = "sqlresolver";
 
     const errorResponse = new MockPiResponse<number, { description: string }>({
       result: {
@@ -161,25 +175,28 @@ describe('UserNewResolverComponent', () => {
         value: -1
       },
       detail: {
-        description: 'Unable to connect to database.'
+        description: "Unable to connect to database."
       }
     });
 
     resolverService.postResolver.mockReturnValue(of(errorResponse));
+
     const notificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
     const router = TestBed.inject(Router);
 
     component.onSave();
 
     expect(notificationService.openSnackBar).toHaveBeenCalledWith(
-      expect.stringContaining('Unable to connect to database.')
+      expect.stringContaining("Unable to connect to database.")
     );
     expect(router.navigateByUrl).not.toHaveBeenCalled();
     expect(component.resolverName).toBe(resolverName);
   });
 
-  it('should show error when postResolverTest returns status true but value -1', async () => {
-    component.resolverType = 'sqlresolver';
+  it("should show error when postResolverTest returns status true but value -1", async () => {
+    await detectChangesStable();
+
+    component.resolverType = "sqlresolver";
 
     const errorResponse = new MockPiResponse<number, { description: string }>({
       result: {
@@ -187,17 +204,18 @@ describe('UserNewResolverComponent', () => {
         value: -1
       },
       detail: {
-        description: 'Connection test failed.'
+        description: "Connection test failed."
       }
     });
 
     resolverService.postResolverTest.mockReturnValue(of(errorResponse));
+
     const notificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
 
     component.onTest();
 
     expect(notificationService.openSnackBar).toHaveBeenCalledWith(
-      expect.stringContaining('Connection test failed.')
+      expect.stringContaining("Connection test failed.")
     );
   });
 });
