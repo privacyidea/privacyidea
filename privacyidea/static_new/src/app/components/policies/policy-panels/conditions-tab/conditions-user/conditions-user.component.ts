@@ -50,129 +50,129 @@ import { MatTooltip } from "@angular/material/tooltip";
   styleUrl: "./conditions-user.component.scss"
 })
 export class ConditionsUserComponent {
-  // // ViewChild
-  // @ViewChild("resolverSelect") resolverSelect!: MatSelect;
-  // @ViewChild("realmSelect") realmSelect!: MatSelect;
-  // // Services
-  // realmService: RealmServiceInterface = inject(RealmService);
-  // resolverService: ResolverService = inject(ResolverService);
-  // policyService = inject(PolicyService);
-  // // Component State
-  // isEditMode = input.required<boolean>();
-  // policy = input.required<PolicyDetail>();
-  // policyChange = output<PolicyDetail>();
-  // // Form Controls
-  // userFormControl = new FormControl<string>("", this.userValidator.bind(this));
-  // // Computed Properties
-  // selectedRealms = computed(() => this.policy().realm || []);
-  // selectedResolvers = computed(() => this.policy().resolver || []);
-  // selectedUsers = computed(() => this.policy().user || []);
-  // userCaseInsensitive = computed(() => this.policy().user_case_insensitive || false);
-  // isAllRealmsSelected = computed(() => this.selectedRealms().length === this.realmService.realmOptions().length);
-  // isAllResolversSelected = computed(
-  //   () => this.selectedResolvers().length === this.resolverService.resolverOptions().length
-  // );
-  // availableRealms = computed(() => {
-  //   const selectedResolvers = this.selectedResolvers();
-  //   if (selectedResolvers.length === 0) {
-  //     // No resolvers selected, return all realms
-  //     return this.realmService.realmOptions();
-  //   }
-  //   const realms = this.realmService.realms();
-  //   let availableRealms: string[] = [];
-  //   for (const [realmName, realm] of Object.entries(realms)) {
-  //     const realmResolvers = realm.resolver.map((r) => r.name);
-  //     if (selectedResolvers.some((sr) => realmResolvers.includes(sr))) {
-  //       availableRealms.push(realmName);
-  //     }
-  //   }
-  //   return availableRealms;
-  // });
-  // availableResolvers = computed(() => {
-  //   const selectedRealms = this.selectedRealms();
-  //   console.log("selectedRealms", selectedRealms);
-  //   if (selectedRealms.length === 0) {
-  //     // No realms selected, return all resolvers
-  //     return this.resolverService.resolverOptions();
-  //   }
-  //   const realms = this.realmService.realms();
-  //   let availableResolversSet: Set<string> = new Set();
-  //   for (const realmName of selectedRealms) {
-  //     console.log("Checking realm:", realmName);
-  //     const realm = realms[realmName];
-  //     if (realm) {
-  //       console.log("Realm found:", realm);
-  //       realm.resolver.forEach((r) => {
-  //         console.log("Adding resolver:", r.name, "because it's in realm", realmName);
-  //         return availableResolversSet.add(r.name);
-  //       });
-  //     }
-  //   }
-  //   console.log("Available Resolvers:", Array.from(availableResolversSet));
-  //   return Array.from(availableResolversSet);
-  // });
-  // selectResolverTooltip = computed(() => {
-  //   if (this.availableResolvers().length === 0) {
-  //     return $localize`No resolvers available for the selected realms.`;
-  //   }
-  //   return "";
-  // });
-  // selectRealmTooltip = computed(() => {
-  //   if (this.availableRealms().length === 0) {
-  //     return $localize`No realms available for the selected resolvers.`;
-  //   }
-  //   return "";
-  // });
-  // // Realm Management
-  // selectRealm(realmNames: string[]): void {
-  //   this.policyService.updateSelectedPolicy({ realm: realmNames });
-  // }
-  // toggleAllRealms() {
-  //   if (this.isAllRealmsSelected()) {
-  //     this.policyService.updateSelectedPolicy({ realm: [] });
-  //   } else {
-  //     const allRealms = this.realmService.realmOptions();
-  //     this.policyService.updateSelectedPolicy({ realm: allRealms });
-  //   }
-  //   setTimeout(() => {
-  //     this.realmSelect.close();
-  //   });
-  // }
-  // // Resolver Management
-  // selectResolver(resolverNames: string[]): void {
-  //   this.policyService.updateSelectedPolicy({ resolver: resolverNames });
-  // }
-  // toggleAllResolvers() {
-  //   if (this.isAllResolversSelected()) {
-  //     this.policyService.updateSelectedPolicy({ resolver: [] });
-  //   } else {
-  //     const allResolvers = this.resolverService.resolverOptions();
-  //     this.policyService.updateSelectedPolicy({ resolver: allResolvers });
-  //   }
-  //   setTimeout(() => {
-  //     this.resolverSelect.close();
-  //   });
-  // }
-  // // User Management
-  // addUser(user: string) {
-  //   if (this.userFormControl.invalid) {
-  //     return;
-  //   }
-  //   if (user && !this.selectedUsers().includes(user)) {
-  //     this.policyService.updateSelectedPolicy({ user: [...this.selectedUsers(), user] });
-  //   }
-  // }
-  // removeUser(user: string) {
-  //   this.policyService.updateSelectedPolicy({ user: this.selectedUsers().filter((u) => u !== user) });
-  // }
-  // clearUsers() {
-  //   this.policyService.updateSelectedPolicy({ user: [] });
-  // }
-  // toggleUserCaseInsensitive() {
-  //   this.policyService.updateSelectedPolicy({ user_case_insensitive: !this.userCaseInsensitive() });
-  // }
-  // // Validators
-  // userValidator(control: AbstractControl): ValidationErrors | null {
-  //   return /[,]/.test(control.value) ? { includesComma: { value: control.value } } : null;
-  // }
+  // ViewChild
+  @ViewChild("resolverSelect") resolverSelect!: MatSelect;
+  @ViewChild("realmSelect") realmSelect!: MatSelect;
+  // Services
+  realmService: RealmServiceInterface = inject(RealmService);
+  resolverService: ResolverService = inject(ResolverService);
+  policyService = inject(PolicyService);
+  // Component State
+  isEditMode = input.required<boolean>();
+  policy = input.required<PolicyDetail>();
+  policyEdit = output<Partial<PolicyDetail>>();
+  emitEdits(edits: Partial<PolicyDetail>) {
+    this.policyEdit.emit(edits);
+  }
+
+  // Form Controls
+  userFormControl = new FormControl<string>("", this.userValidator.bind(this));
+  // Computed Properties
+  selectedRealms = computed(() => this.policy().realm || []);
+  selectedResolvers = computed(() => this.policy().resolver || []);
+  selectedUsers = computed(() => this.policy().user || []);
+  userCaseInsensitive = computed(() => this.policy().user_case_insensitive || false);
+  isAllRealmsSelected = computed(() => this.selectedRealms().length === this.realmService.realmOptions().length);
+  isAllResolversSelected = computed(
+    () => this.selectedResolvers().length === this.resolverService.resolverOptions().length
+  );
+  availableRealms = computed(() => {
+    const selectedResolvers = this.selectedResolvers();
+    if (selectedResolvers.length === 0) {
+      // No resolvers selected, return all realms
+      return this.realmService.realmOptions();
+    }
+    const realms = this.realmService.realms();
+    let availableRealms: string[] = [];
+    for (const [realmName, realm] of Object.entries(realms)) {
+      const realmResolvers = realm.resolver.map((r) => r.name);
+      if (selectedResolvers.some((sr) => realmResolvers.includes(sr))) {
+        availableRealms.push(realmName);
+      }
+    }
+    return availableRealms;
+  });
+  availableResolvers = computed(() => {
+    const selectedRealms = this.selectedRealms();
+    console.log("selectedRealms", selectedRealms);
+    if (selectedRealms.length === 0) {
+      // No realms selected, return all resolvers
+      return this.resolverService.resolverOptions();
+    }
+    const realms = this.realmService.realms();
+    let availableResolversSet: Set<string> = new Set();
+    for (const realmName of selectedRealms) {
+      const realm = realms[realmName];
+      if (realm) {
+        realm.resolver.forEach((r) => {
+          return availableResolversSet.add(r.name);
+        });
+      }
+    }
+    return Array.from(availableResolversSet);
+  });
+  selectResolverTooltip = computed(() => {
+    if (this.availableResolvers().length === 0) {
+      return $localize`No resolvers available for the selected realms.`;
+    }
+    return "";
+  });
+  selectRealmTooltip = computed(() => {
+    if (this.availableRealms().length === 0) {
+      return $localize`No realms available for the selected resolvers.`;
+    }
+    return "";
+  });
+  // Realm Management
+  selectRealm(realmNames: string[]): void {
+    this.emitEdits({ realm: realmNames });
+  }
+  toggleAllRealms() {
+    if (this.isAllRealmsSelected()) {
+      this.emitEdits({ realm: [] });
+    } else {
+      const allRealms = this.realmService.realmOptions();
+      this.emitEdits({ realm: allRealms });
+    }
+    setTimeout(() => {
+      this.realmSelect.close();
+    });
+  }
+  // Resolver Management
+  selectResolver(resolverNames: string[]): void {
+    this.emitEdits({ resolver: resolverNames });
+  }
+  toggleAllResolvers() {
+    if (this.isAllResolversSelected()) {
+      this.emitEdits({ resolver: [] });
+    } else {
+      const allResolvers = this.resolverService.resolverOptions();
+      this.emitEdits({ resolver: allResolvers });
+    }
+    setTimeout(() => {
+      this.resolverSelect.close();
+    });
+  }
+  // User Management
+  addUser(user: string) {
+    if (this.userFormControl.invalid) {
+      return;
+    }
+    if (user && !this.selectedUsers().includes(user)) {
+      this.emitEdits({ user: [...this.selectedUsers(), user] });
+    }
+  }
+  removeUser(user: string) {
+    this.emitEdits({ user: this.selectedUsers().filter((u) => u !== user) });
+  }
+  clearUsers() {
+    this.emitEdits({ user: [] });
+  }
+  toggleUserCaseInsensitive() {
+    this.emitEdits({ user_case_insensitive: !this.userCaseInsensitive() });
+  }
+  // Validators
+  userValidator(control: AbstractControl): ValidationErrors | null {
+    return /[,]/.test(control.value) ? { includesComma: { value: control.value } } : null;
+  }
 }

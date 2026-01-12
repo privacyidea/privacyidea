@@ -71,11 +71,7 @@
   padding-bottom: var(--three-quarters-global-padding);
   flex-shrink: 0;
   flex-grow: 0;
-}
-
-.clear-button {
-  margin-left: var(--global-padding);
-  flex-shrink: 0;
+  gap: calc(var(--global-gap) / 2);
 }
 
 .full-width {
@@ -98,19 +94,6 @@
   width: 100%;
   border-radius: 0;
   justify-content: flex-start;
-}
-
-.add-user-button {
-  height: 56px;
-  margin-bottom: var(--global-padding);
-  padding: 0;
-  border: none;
-  background-color: var(--mat-sys-surface-container-high);
-  border-radius: 0 var(--three-quarters-global-padding) var(--three-quarters-global-padding) 0 !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  transition: background-color 0.2s ease-in-out;
 }
 
 .readonly-user-grid-container {

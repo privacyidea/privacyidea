@@ -140,60 +140,26 @@ export const allHandleMissingDataOptions: HandleMissingDataOption[] = [
 ];
 
 export interface PolicyServiceInterface {
-  //canSavePolicy, savePolicyEdits, deselectNewPolicy, deselectPolicy
   getEmptyPolicy(): PolicyDetail;
-
   readonly isEditMode: Signal<boolean>;
-  // readonly selectedPolicyHasActions: Signal<boolean>;
-  // readonly selectedPolicyHasUserConditions: Signal<boolean>;
-  // readonly selectedPolicyHasNodeConditions: Signal<boolean>;
-  // readonly selectedPolicyHasAdditionalConditions: Signal<boolean>;
-  // readonly selectedPolicyHasConditions: Signal<boolean>;
-  // readonly isSelectedPolicyEdited: Signal<boolean>;
-  // readonly selectedPolicy: Signal<PolicyDetail | null>;
-  // readonly selectedPolicyOriginal: Signal<PolicyDetail | null>;
-  // readonly actionFilter: WritableSignal<string>;
-  // readonly groupNamesOfSelectedScope: Signal<string[]>;
-  // readonly selectedActionGroup: WritableSignal<string>;
-  // readonly selectedAction: WritableSignal<{ name: string; value: any } | null>;
   readonly policyActions: Signal<ScopedPolicyActions>;
   readonly allPolicyActionsFlat: Signal<{ [actionName: string]: PolicyActionDetail }>;
   readonly allPolicyScopes: Signal<string[]>;
   readonly policyActionsByGroup: Signal<PolicyActionGroups>;
-  // readonly alreadyAddedActionNames: Signal<string[]>;
   filteredPolicyActionGroups(alreadyAddedActionNames: string[], filterValue: string): PolicyActionGroups;
   getActionDetail(actionName: string, scope: string): PolicyActionDetail | null;
   getGroupOfAction(actionName: string, scope: string): string | null;
-  // readonly currentActionGroupsFiltered: Signal<PolicyActionGroups>;
   readonly allPolicies: Signal<PolicyDetail[]>;
-  // readonly selectedPolicyScope: Signal<string>;
-  // readonly selectedActionDetail: Signal<PolicyActionDetail | null>;
-
-  // updateActionInSelectedPolicy(): void;
-  // updateActionValue(actionName: string, newValue: boolean): void;
-  // selectPolicyByName(policyName: string): void;
   canSavePolicy(policy: PolicyDetail): boolean;
-  // savePolicyEdits(args?: { asNew?: boolean }): Promise<void> | undefined;
   getDetailsOfAction(actionName: string): PolicyActionDetail | null;
-  // deselectNewPolicy(): void;
-  // deselectPolicy(name: string): void;
-  // initializeNewPolicy(): void;
-  // selectPolicy(policy: PolicyDetail): void;
-  // updateSelectedPolicy(args: Partial<PolicyDetail>): void;
-  // selectActionByName(actionName: string): void;
-  // updateSelectedActionValue(value: any): void;
   createPolicy(policyData: PolicyDetail): Promise<PiResponse<any>>;
   updatePolicy(oldPolicyName: String, policyData: PolicyDetail): Promise<PiResponse<any>>;
   deletePolicy(name: string): Promise<PiResponse<number>>;
   enablePolicy(name: string): Promise<PiResponse<any>>;
   disablePolicy(name: string): Promise<PiResponse<any>>;
-  // addActionToSelectedPolicy(): void;
-  // removeActionFromSelectedPolicy(actionName: string): void;
   isScopeChangeable(policy: PolicyDetail): boolean;
   actionNamesOfGroup(scope: string, group: string): string[];
-  // actionNamesOfSelectedGroup(): string[];
   actionValueIsValid(action: PolicyActionDetail, value: string | number): boolean;
-  // cancelEditMode(): void;
   saveNewPolicy(newPolicy: PolicyDetail): Promise<void>;
 }
 
@@ -220,14 +186,18 @@ export class PolicyService implements PolicyServiceInterface {
     const allPolicies = this.allPolicies();
     const backupPolicies = [...allPolicies];
     const index = allPolicies.findIndex((p) => p.name === policyName);
-    if (index !== -1) {
-      allPolicies[index] = { ...allPolicies[index], ...edits };
+    const originalPolicy = allPolicies[index];
+    if (!originalPolicy) {
+      console.error("Original policy not found for update");
+      return;
     }
+    const updatedPolicy = { ...originalPolicy, ...edits };
+    allPolicies[index] = updatedPolicy;
     this.allPolicies.set(allPolicies);
 
     // Do request
     this.http
-      .post<PiResponse<any>>(`${this.policyBaseUrl}${policyName}`, edits, {
+      .post<PiResponse<any>>(`${this.policyBaseUrl}${policyName}`, updatedPolicy, {
         headers: this.authService.getHeaders()
       })
       .subscribe({
@@ -243,42 +213,7 @@ export class PolicyService implements PolicyServiceInterface {
       });
   }
 
-  // updateActionInSelectedPolicy() {
-  //   const selectedPolicy = this.selectedPolicy();
-  //   const selectedAction = this.selectedAction();
-  //   const actionName = selectedAction?.name;
-  //   const actionValue = selectedAction?.value;
-  //   if (!selectedPolicy || !actionName || actionValue === undefined) return;
-  //   if (!selectedPolicy || !selectedPolicy.action) return;
-  //   const currentAction = selectedPolicy.action;
-  //   if (!(actionName in currentAction)) return;
-  //   const updatedAction = {
-  //     ...currentAction,
-  //     [actionName]: actionValue
-  //   };
-  //   this.updateSelectedPolicy({ action: updatedAction });
-  // }
-
   private readonly contentService: ContentServiceInterface = inject(ContentService);
-
-  // updateActionValue(actionName: string, newValue: boolean) {
-  //   const selectedPolicy = this.selectedPolicy();
-  //   if (!selectedPolicy || !selectedPolicy.action) return;
-  //   const currentAction = selectedPolicy.action;
-  //   if (!(actionName in currentAction)) return;
-  //   const updatedAction = {
-  //     ...currentAction,
-  //     [actionName]: newValue.toString()
-  //   };
-  //   this.updateSelectedPolicy({ action: updatedAction });
-  // }
-
-  // selectPolicyByName(policyName: string) {
-  //   const policy = this.allPolicies().find((p) => p.name === policyName);
-  //   if (policy) {
-  //     this.selectPolicy(policy);
-  //   }
-  // }
 
   canSavePolicy(policy: PolicyDetail): boolean {
     if (!policy) return false;
@@ -295,23 +230,11 @@ export class PolicyService implements PolicyServiceInterface {
     return false;
   }
 
-  // readonly selectedPolicyHasActions = computed<boolean>(() => {
-  //   const policy = this.selectedPolicy();
-  //   if (!policy) return false;
-  //   return this.policyHasActions(policy);
-  // });
-
   policyHasAdminConditions(policy: PolicyDetail): boolean {
     if (policy?.adminrealm && policy.adminrealm.length > 0) return true;
     if (policy?.adminuser && policy.adminuser.length > 0) return true;
     return false;
   }
-
-  // readonly selectedPolicyHasAdminConditions = computed(() => {
-  //   const policy = this.selectedPolicy();
-  //   if (!policy) return false;
-  //   return this.policyHasAdminConditions(policy);
-  // });
 
   policyHasUserConditions(policy: PolicyDetail): boolean {
     if (policy?.realm && policy.realm.length > 0) return true;
@@ -319,12 +242,6 @@ export class PolicyService implements PolicyServiceInterface {
     if (policy?.user && policy.user.length > 0) return true;
     return false;
   }
-
-  // readonly selectedPolicyHasUserConditions = computed(() => {
-  //   const policy = this.selectedPolicy();
-  //   if (!policy) return false;
-  //   return this.policyHasUserConditions(policy);
-  // });
 
   policyHasNodeConditions(policy: PolicyDetail): boolean {
     if (policy?.pinode && policy.pinode.length > 0) return true;
@@ -334,22 +251,10 @@ export class PolicyService implements PolicyServiceInterface {
     return false;
   }
 
-  // readonly selectedPolicyHasNodeConditions = computed(() => {
-  //   const policy = this.selectedPolicy();
-  //   if (!policy) return false;
-  //   return this.policyHasNodeConditions(policy);
-  // });
-
   policyHasAdditionalConditions(policy: PolicyDetail): boolean {
     if (policy?.conditions && policy.conditions.length > 0) return true;
     return false;
   }
-
-  // readonly selectedPolicyHasAdditionalConditions = computed(() => {
-  //   const policy = this.selectedPolicy();
-  //   if (!policy) return false;
-  //   return this.policyHasAdditionalConditions(policy);
-  // });
 
   policyHasConditions(policy: PolicyDetail): boolean {
     if (this.policyHasAdminConditions(policy)) return true;
@@ -358,37 +263,6 @@ export class PolicyService implements PolicyServiceInterface {
     if (this.policyHasAdditionalConditions(policy)) return true;
     return false;
   }
-
-  // readonly selectedPolicyHasConditions = computed(() => {
-  //   const policy = this.selectedPolicy();
-  //   if (!policy) return false;
-  //   return this.policyHasConditions(policy);
-  // });
-
-  // savePolicyEdits(): Promise<void> | undefined {
-  //   const selectedPolicy = this.selectedPolicy();
-  //   const oldPolicyName = this.selectedPolicyOriginal()?.name;
-  //   if (!selectedPolicy || !oldPolicyName) return;
-
-  //   const allPolicies = this.allPolicies();
-  //   if (oldPolicyName) {
-  //     const index = allPolicies.findIndex((p) => p.name === oldPolicyName);
-  //     if (index !== -1) {
-  //       allPolicies[index] = selectedPolicy;
-  //     }
-  //   }
-
-  //   const promise = this.updatePolicy(oldPolicyName, selectedPolicy)
-  //     .then((_) => {
-  //       this.allPoliciesRecource.reload();
-  //     })
-  //     .catch((error) => {
-  //       console.error("Error updating policy: ", error);
-  //     });
-
-  //   this.selectPolicy(selectedPolicy);
-  //   return promise;
-  // }
 
   saveNewPolicy(newPolicy: PolicyDetail): Promise<void> {
     const allPoliciesCopy = this.allPolicies();
@@ -415,16 +289,6 @@ export class PolicyService implements PolicyServiceInterface {
     return null;
   }
 
-  // deselectNewPolicy() {
-  //   this.deselectPolicy(this.getEmptyPolicy().name);
-  // }
-
-  // deselectPolicy(name: string) {
-  //   if (this.selectedPolicyOriginal()?.name !== name) return;
-  //   this._selectedPolicy.set(null);
-  //   this._selectedPolicyOriginal.set(null);
-  // }
-
   getEmptyPolicy(): PolicyDetail {
     return {
       action: null,
@@ -448,11 +312,6 @@ export class PolicyService implements PolicyServiceInterface {
     };
   }
 
-  // initializeNewPolicy() {
-  //   this._selectedPolicy.set({ ...this.getEmptyPolicy() });
-  //   this._selectedPolicyOriginal.set({ ...this.getEmptyPolicy() });
-  // }
-
   isPolicyEdited(editedPolicy: PolicyDetail, originalPolicy: PolicyDetail): boolean {
     if (JSON.stringify(originalPolicy) === JSON.stringify(this.getEmptyPolicy())) {
       // remove scope temporarily and then compare to ignore scope changes
@@ -463,27 +322,6 @@ export class PolicyService implements PolicyServiceInterface {
       return JSON.stringify(editedPolicy) !== JSON.stringify(originalPolicy);
     }
   }
-  // readonly isSelectedPolicyEdited = computed(() => {
-  //   const selectedPolicy = this.selectedPolicy();
-  //   const originalPolicy = this.selectedPolicyOriginal();
-  //   if (!selectedPolicy || !originalPolicy) return false;
-  //   return this.isPolicyEdited(selectedPolicy, originalPolicy);
-  // });
-
-  // selectPolicy(policy: PolicyDetail) {
-  //   this._selectedPolicy.set(policy);
-  //   this._selectedPolicyOriginal.set({ ...policy });
-  // }
-
-  // updateSelectedPolicy(args: Partial<PolicyDetail>) {
-  //   const selectedPolicy = this.selectedPolicy();
-  //   if (!selectedPolicy) return;
-  //   const updatedPolicy = {
-  //     ...selectedPolicy,
-  //     ...args
-  //   };
-  //   this._selectedPolicy.set(updatedPolicy);
-  // }
 
   readonly policyBaseUrl = environment.proxyUrl + "/policy/";
 
@@ -512,69 +350,8 @@ export class PolicyService implements PolicyServiceInterface {
     };
   });
 
-  // private readonly _selectedPolicy = signal<PolicyDetail | null>(null);
-  // readonly selectedPolicy = computed(() => this._selectedPolicy());
-
-  // private _selectedPolicyOriginal = signal<PolicyDetail | null>(null);
-  // selectedPolicyOriginal = computed(() => this._selectedPolicyOriginal());
-
-  // actionFilter = linkedSignal({
-  //   source: () => {
-  //     this._selectedPolicyOriginal();
-  //   },
-  //   computation: (_) => ""
-  // });
-
-  // selectedActionGroup: WritableSignal<string> = linkedSignal({
-  //   source: () => this.groupNamesOfSelectedScope(),
-  //   computation: (source, previous) => {
-  //     if (source.length < 1) return "";
-  //     if (previous && source.includes(previous.value)) return previous.value;
-  //     return source[0];
-  //   }
-  // });
-
   selectedAction = signal<{ name: string; value: any } | null>(null);
   selectedPolicyScope = signal<string>("");
-
-  // selectedAction: WritableSignal<{ name: string; value: any } | null> = linkedSignal({
-  //   source: () => ({
-  //     actionNamesOfSelectedGroup: this.actionNamesOfSelectedGroup() ?? [],
-  //     _selectedPolicy: this._selectedPolicy(),
-  //     isEditMode: this.isEditMode()
-  //   }),
-  //   computation: (source, previous) => {
-  //     const { actionNamesOfSelectedGroup, _selectedPolicy } = source;
-  //     if (previous?.value && _selectedPolicy?.action?.[previous.value.name]) {
-  //       return previous.value;
-  //     }
-  //     if (this.isEditMode()) {
-  //       const previousValue = previous?.value;
-  //       if (actionNamesOfSelectedGroup.length < 1) return null;
-  //       if (previousValue && actionNamesOfSelectedGroup.includes(previousValue.name)) return previous.value;
-  //       const firstActionName = actionNamesOfSelectedGroup[0];
-  //       const defaultValue =
-  //         this.getActionDetail(firstActionName, _selectedPolicy?.scope ?? "")?.type === "bool" ? "true" : "";
-  //       return { name: firstActionName, value: defaultValue };
-  //     } else {
-  //       if (_selectedPolicy && _selectedPolicy.action) {
-  //         const actionNames = Object.keys(_selectedPolicy.action);
-  //         if (actionNames.length > 0) {
-  //           const firstActionName = actionNames[0];
-  //           const actionValue = _selectedPolicy.action[firstActionName];
-  //           return { name: firstActionName, value: actionValue };
-  //         }
-  //       }
-  //       return null;
-  //     }
-  //   }
-  // });
-
-  // updateSelectedActionValue(value: any) {
-  //   const selectedAction = this.selectedAction();
-  //   if (!selectedAction) return;
-  //   this.selectedAction.set({ name: selectedAction.name, value: value });
-  // }
 
   // -----------------------------------
   // 2.3 Computed Signals (Derived State)
@@ -621,12 +398,6 @@ export class PolicyService implements PolicyServiceInterface {
     }
     return grouped;
   });
-
-  // alreadyAddedActionNames = computed(() => {
-  //   const currentActions = this._selectedPolicy()?.action;
-  //   if (!currentActions) return [];
-  //   return Object.keys(currentActions);
-  // });
 
   filteredPolicyActionGroups(alreadyAddedActionNames: string[], filterValue: string): PolicyActionGroups {
     // Also filter out already added actions
@@ -677,21 +448,11 @@ export class PolicyService implements PolicyServiceInterface {
     }
   });
 
-  // selectedPolicyScope = linkedSignal(() => {
-  //   return this._selectedPolicy()?.scope || "";
-  // });
-
   filteredGroupNamesOf(selectedScope: string, alreadyAddedActionNames: string[], filter: string): string[] {
     const policyActionGroupFiltered = this.filteredPolicyActionGroups(alreadyAddedActionNames, filter)[selectedScope];
     if (!policyActionGroupFiltered) return [];
     return Object.keys(policyActionGroupFiltered);
   }
-
-  // groupNamesOfSelectedScope: Signal<string[]> = computed(() => {
-  //   const selectedScope = this.selectedPolicyScope();
-  //   if (!selectedScope) return [];
-  //   return this.filteredGroupNamesOf(selectedScope, this.alreadyAddedActionNames(), this.actionFilter());
-  // });
 
   getActionDetail = (actionName: string, scope: string): PolicyActionDetail | null => {
     const actions = this.policyActions();
@@ -702,24 +463,12 @@ export class PolicyService implements PolicyServiceInterface {
     return null;
   };
 
-  // selectedActionDetail: Signal<PolicyActionDetail | null> = computed(() => {
-  //   const actionName = this.selectedAction()?.name;
-  //   if (!actionName) return null;
-  //   return this.getActionDetail(actionName, this.selectedPolicyScope());
-  // });
-
   actionNamesOfGroup(scope: string, group: string): string[] {
     const actionsByGroup = this.policyActionsByGroup();
 
     if (!scope || !actionsByGroup[scope]) return [];
     return Object.keys(actionsByGroup[scope][group] || {});
   }
-
-  // actionNamesOfSelectedGroup = computed<string[]>(() => {
-  //   const group: string = this.selectedActionGroup();
-  //   const scope: string = this.selectedPolicyScope();
-  //   return this.actionNamesOfGroup(scope, group);
-  // });
 
   createPolicy(policyData: PolicyDetail): Promise<PiResponse<any>> {
     const allPoliciesCopy = [...this.allPolicies()];
@@ -775,40 +524,6 @@ export class PolicyService implements PolicyServiceInterface {
     return lastValueFrom(this.http.post<PiResponse<any>>(`${this.policyBaseUrl}disable/${name}`, {}, { headers }));
   }
 
-  // addActionToSelectedPolicy() {
-  //   const selectedAction = this.selectedAction();
-  //   const selectedActionDetail = this.selectedActionDetail();
-  //   if (!selectedAction || !selectedActionDetail) return;
-  //   if (this.alreadyAddedActionNames().includes(selectedAction.name)) return;
-  //   if (!this.actionValueIsValid(selectedActionDetail, selectedAction.value)) return;
-
-  //   const selectedPolicy = this.selectedPolicy();
-  //   if (!selectedPolicy) return;
-  //   const currentAction = selectedPolicy.action || {};
-  //   const updatedAction = {
-  //     ...currentAction,
-  //     [selectedAction.name]: selectedAction.value
-  //   };
-  //   const updatedPolicy = {
-  //     ...selectedPolicy,
-  //     action: updatedAction
-  //   };
-  //   this._selectedPolicy.set(updatedPolicy);
-  // }
-
-  // removeActionFromSelectedPolicy(actionName: string) {
-  //   const selectedPolicy = this.selectedPolicy();
-  //   if (!selectedPolicy || !selectedPolicy.action) return;
-  //   const currentAction = selectedPolicy.action;
-  //   if (!(actionName in currentAction)) return;
-  //   const { [actionName]: _, ...updatedAction } = currentAction;
-  //   const updatedPolicy = {
-  //     ...selectedPolicy,
-  //     action: Object.keys(updatedAction).length > 0 ? updatedAction : null
-  //   };
-  //   this._selectedPolicy.set(updatedPolicy);
-  // }
-
   isScopeChangeable(policy: PolicyDetail): boolean {
     if (!policy.action) return true;
     return Object.keys(policy.action).length === 0;
@@ -832,11 +547,4 @@ export class PolicyService implements PolicyServiceInterface {
     }
     return false;
   }
-
-  // cancelEditMode() {
-  //   const originalPolicy = this.selectedPolicyOriginal();
-  //   if (originalPolicy) {
-  //     this._selectedPolicy.set({ ...originalPolicy });
-  //   }
-  // }
 }

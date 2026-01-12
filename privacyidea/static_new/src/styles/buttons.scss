@@ -500,21 +500,9 @@ $button-low-contrast-variant: linear-gradient(
   }
 }
 
-.input-attached-button-active {
-  background-color: var(--mat-sys-primary-base-active);
-  color: var(--mat-sys-on-primary);
-}
-
-.input-attached-button-hover:hover:not(:disabled):not(.input-attached-button-active) {
-  background-color: var(--mat-sys-primary-base-hover);
-  color: var(--mat-sys-on-primary);
-  font-weight: 600;
-  cursor: pointer;
-}
-
 .input-attached-button {
   height: 58px;
-  width: 35px;
+  width: 26px;
   margin-bottom: 18px;
   padding: 0;
   border: none;
@@ -525,6 +513,13 @@ $button-low-contrast-variant: linear-gradient(
   justify-content: center !important;
   transition: background-color 0.2s ease-in-out;
   flex-shrink: 0;
+
+  &:hover:not(:disabled) {
+    background-color: var(--mat-sys-primary-base-hover);
+    color: var(--mat-sys-on-primary);
+    font-weight: 600;
+    cursor: pointer;
+  }
 
   .small-icon-button {
     width: 36px !important;

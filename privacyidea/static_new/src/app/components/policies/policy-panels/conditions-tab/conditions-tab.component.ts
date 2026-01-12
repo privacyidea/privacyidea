@@ -19,7 +19,7 @@
 
 import { Component, inject, input, output } from "@angular/core";
 import { ConditionsUserComponent } from "./conditions-user/conditions-user.component";
-import { ConditionsNodesComponent } from "./conditions-nodes/conditions-nodes.component";
+import { ConditionsEnviromentComponent } from "./conditions-nodes/conditions-enviroment.component";
 import { ConditionsAdditionalComponent } from "./conditions-additional/conditions-additional.component";
 import { PolicyDetail, PolicyService } from "../../../../services/policies/policies.service";
 import { ConditionsAdminComponent } from "./conditions-admin/conditions-admin.component";
@@ -27,16 +27,21 @@ import { ConditionsAdminComponent } from "./conditions-admin/conditions-admin.co
 @Component({
   selector: "app-conditions-tab",
   standalone: true,
-  imports: [ConditionsUserComponent, ConditionsNodesComponent, ConditionsAdditionalComponent, ConditionsAdminComponent],
+  imports: [
+    ConditionsUserComponent,
+    ConditionsEnviromentComponent,
+    ConditionsAdditionalComponent,
+    ConditionsAdminComponent
+  ],
   templateUrl: "./conditions-tab.component.html",
   styleUrl: "./conditions-tab.component.scss"
 })
 export class ConditionsTabComponent {
   isEditMode = input.required<boolean>();
   policy = input.required<PolicyDetail>();
-  policyChange = output<PolicyDetail>();
+  policyEdit = output<Partial<PolicyDetail>>();
 
-  onPolicyChange($event: PolicyDetail) {
-    this.policyChange.emit($event);
+  onPolicyEdit($event: Partial<PolicyDetail>) {
+    this.policyEdit.emit($event);
   }
 }

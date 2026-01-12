@@ -39,7 +39,7 @@ export class PolicyDescriptionComponent {
   // Component State
   isEditMode = input.required<boolean>();
   policy = input.required<PolicyDetail>();
-  policyChange = output<PolicyDetail>();
+  policyEdit = output<Partial<PolicyDetail>>();
 
   openDocumentation(page: string) {
     this.documentationService.openDocumentation(page);
@@ -49,6 +49,6 @@ export class PolicyDescriptionComponent {
     this.updateSelectedPolicy({ description: $event });
   }
   updateSelectedPolicy(patch: Partial<PolicyDetail>) {
-    this.policyChange.emit({ ...this.policy(), ...patch });
+    this.policyEdit.emit(patch);
   }
 }

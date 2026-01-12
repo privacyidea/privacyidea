@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { ConditionsNodesComponent } from "./conditions-nodes.component";
+import { ConditionsEnviromentComponent } from "./conditions-enviroment.component";
 import { PolicyService } from "../../../../../services/policies/policies.service";
 import { PiNode, SystemService } from "../../../../../services/system/system.service";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
@@ -26,21 +26,21 @@ import { MockPolicyService } from "../../../../../../testing/mock-services/mock-
 import { MockSystemService } from "../../../../../../testing/mock-services/mock-system-service";
 
 describe("ConditionsNodesComponent", () => {
-  let component: ConditionsNodesComponent;
-  let fixture: ComponentFixture<ConditionsNodesComponent>;
+  let component: ConditionsEnviromentComponent;
+  let fixture: ComponentFixture<ConditionsEnviromentComponent>;
   let policyServiceMock: MockPolicyService;
   let systemServiceMock: MockSystemService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ConditionsNodesComponent, NoopAnimationsModule],
+      imports: [ConditionsEnviromentComponent, NoopAnimationsModule],
       providers: [
         { provide: PolicyService, useClass: MockPolicyService },
         { provide: SystemService, useClass: MockSystemService }
       ]
     }).compileComponents();
 
-    fixture = TestBed.createComponent(ConditionsNodesComponent);
+    fixture = TestBed.createComponent(ConditionsEnviromentComponent);
     policyServiceMock = TestBed.inject(PolicyService) as unknown as MockPolicyService;
     systemServiceMock = TestBed.inject(SystemService) as unknown as MockSystemService;
     component = fixture.componentInstance;

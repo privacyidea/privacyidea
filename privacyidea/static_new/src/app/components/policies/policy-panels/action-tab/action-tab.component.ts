@@ -41,7 +41,6 @@ import { PolicyActionDetail, PolicyDetail } from "../../../../services/policies/
   styleUrl: "./action-tab.component.scss"
 })
 export class ActionTabComponent {
-  // policyService = inject(PolicyService);
   isEditMode = input.required<boolean>();
 
   policy = input.required<PolicyDetail>();

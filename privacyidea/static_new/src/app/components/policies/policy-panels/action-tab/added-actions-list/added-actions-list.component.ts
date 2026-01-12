@@ -54,7 +54,11 @@ export class AddedActionsListComponent {
 
   // Event Handlers
   onActionClick(action: { name: string; value: any }) {
-    this.selectedActionChange.emit(action);
+    if (this.selectedAction()?.name === action.name) {
+      this.selectedActionChange.emit(null);
+    } else {
+      this.selectedActionChange.emit(action);
+    }
   }
 
   onToggleChange(actionName: string, newValue: boolean): void {

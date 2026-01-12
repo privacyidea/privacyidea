@@ -84,18 +84,7 @@ export class PolicyPanelNewComponent {
     }
   });
 
-  readonly activeTab = linkedSignal<any, PolicyTab>({
-    source: () => ({
-      selectedPolicyHasConditions: this.policyService.policyHasConditions(this.newPolicy())
-    }),
-    computation: (source, previous) => {
-      const { isEditMode, selectedPolicyHasConditions } = source;
-      if (isEditMode || selectedPolicyHasConditions) {
-        return previous?.value || "actions";
-      }
-      return "actions";
-    }
-  });
+  readonly activeTab = signal<PolicyTab>("actions");
 
   isPolicyEdited = computed(() => {
     return this.policyService.isPolicyEdited(this.newPolicy(), this.policyService.getEmptyPolicy());
@@ -133,6 +122,7 @@ export class PolicyPanelNewComponent {
   }
 
   setActiveTab(tab: PolicyTab): void {
+    console.log("Setting active tab to:", tab);
     this.activeTab.set(tab);
   }
 
@@ -192,7 +182,10 @@ export class PolicyPanelNewComponent {
     return this.policyService.policyHasConditions(this.newPolicy());
   }
 
-  onPolicyChange(policy: PolicyDetail) {
-    this.newPolicy.set(policy);
+  onPolicyEdit(policyEdit: Partial<PolicyDetail>) {
+    this.newPolicy.set({ ...this.newPolicy(), ...policyEdit });
+  }
+  onActionsUpdate($event: { [actionName: string]: string }) {
+    this.newPolicy.set({ ...this.newPolicy(), action: $event });
   }
 }

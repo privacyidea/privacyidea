@@ -19,7 +19,7 @@
 
 import { Component, computed, inject, signal } from "@angular/core";
 import { CommonModule } from "@angular/common";
-import { MatExpansionModule } from "@angular/material/expansion";
+import { MatAccordion, MatExpansionModule } from "@angular/material/expansion";
 import { PolicyDetail, PolicyService, PolicyServiceInterface } from "../../services/policies/policies.service";
 import { MatIconModule } from "@angular/material/icon";
 import { AuthService, AuthServiceInterface } from "../../services/auth/auth.service";
@@ -47,7 +47,18 @@ export class PoliciesComponent {
   readonly authService: AuthServiceInterface = inject(AuthService);
 
   readonly policiesListFiltered = signal<PolicyDetail[]>([]);
-  onPolicyListFilteredChange(filteredPolicies: PolicyDetail[]): void {
+  readonly multiOpenAccordion = signal<boolean>(false);
+
+  onPolicyListFilteredChange(filteredPolicies: PolicyDetail[], accordion: MatAccordion): void {
+    if (accordion) {
+      if (filteredPolicies.length !== this.policyService.allPolicies().length) {
+        this.multiOpenAccordion.set(true);
+        setTimeout(() => accordion.openAll(), 0);
+      } else {
+        this.multiOpenAccordion.set(false);
+        setTimeout(() => accordion.closeAll(), 0);
+      }
+    }
     this.policiesListFiltered.set(filteredPolicies);
   }
 }

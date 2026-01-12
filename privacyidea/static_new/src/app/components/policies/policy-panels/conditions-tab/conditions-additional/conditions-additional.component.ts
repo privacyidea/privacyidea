@@ -69,7 +69,10 @@ export class ConditionsAdditionalComponent {
   // Component State
   isEditMode = input.required<boolean>();
   policy = input.required<PolicyDetail>();
-  policyChange = output<PolicyDetail>();
+  policyEdit = output<Partial<PolicyDetail>>();
+  emitEdits(edits: Partial<PolicyDetail>) {
+    this.policyEdit.emit({ ...edits });
+  }
 
   showAddConditionForm = signal(false);
   editIndex = signal<number | null>(null);
@@ -196,6 +199,6 @@ export class ConditionsAdditionalComponent {
   }
 
   updateSelectedPolicy(patch: Partial<PolicyDetail>) {
-    this.policyChange.emit({ ...this.policy(), ...patch });
+    this.emitEdits({ ...patch });
   }
 }

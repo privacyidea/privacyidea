@@ -16,8 +16,8 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
  -->
-<!--
-@if (isEditMode() || policyService.selectedPolicyHasNodeConditions()) {
+
+@if (isEditMode() || policyService.policyHasNodeConditions(policy())) {
   <div class="nodes-container">
     <h2
       class="nodes-title"
@@ -58,6 +58,9 @@
           @if (validTimeFormControl.touched && validTimeFormControl.invalid) {
             <mat-error i18n> Please enter a valid time format, e.g., Mon-Fri: 9-18 or Sat: 10-15 </mat-error>
           }
+          <app-clear-button
+            matSuffix
+            (onClick)="clearValidTime()"></app-clear-button>
         </mat-form-field>
         <mat-form-field
           appearance="fill"
@@ -70,6 +73,9 @@
           @if (clientFormControl.touched && clientFormControl.invalid) {
             <mat-error i18> Please enter a valid client format, e.g., 10.0.0.0/8, !10.0.0.124 </mat-error>
           }
+          <app-clear-button
+            matSuffix
+            (onClick)="clearClients()"></app-clear-button>
         </mat-form-field>
       </div>
       <div class="user-agent-list-wrapper">
@@ -113,7 +119,7 @@
           }
         </mat-form-field>
         <button
-          class="add-user-agent-button button-hover"
+          class="input-attached-button"
           [disabled]="!userAgentInput.value.trim() || addUserAgentFormControl.invalid"
           (click)="addUserAgent(); userAgentInput.value = ''">
           <mat-icon>add</mat-icon>
@@ -153,4 +159,3 @@
     }
   </div>
 }
--->

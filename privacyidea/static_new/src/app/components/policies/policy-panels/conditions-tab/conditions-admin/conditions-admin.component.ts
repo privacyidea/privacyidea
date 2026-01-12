@@ -60,7 +60,7 @@ export class ConditionsAdminComponent {
   // Component State
   isEditMode = input.required<boolean>();
   policy = input.required<PolicyDetail>();
-  policyChange = output<PolicyDetail>();
+  policyEdit = output<PolicyDetail>();
 
   // Form Controls
   adminFormControl = new FormControl<string>("", this.adminValidator.bind(this));
@@ -134,6 +134,6 @@ export class ConditionsAdminComponent {
   }
 
   updatePolicy(patch: Partial<PolicyDetail>) {
-    this.policyChange.emit({ ...this.policy(), ...patch });
+    this.policyEdit.emit({ ...this.policy(), ...patch });
   }
 }

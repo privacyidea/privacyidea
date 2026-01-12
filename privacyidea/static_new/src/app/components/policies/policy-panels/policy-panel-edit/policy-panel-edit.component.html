@@ -109,21 +109,21 @@
         <app-policy-description
           [isEditMode]="isEditMode()"
           [policy]="currentPolicy()"
-          (policyChange)="addPolicyEdit($event)" />
+          (policyEdit)="addPolicyEdit($event)" />
       </div>
       @if (isEditMode() || currentPolicyHasConditions()) {
         <div class="tab-buttons">
           <button
             mat-stroked-button
-            class="button-hover"
-            [class.button-active]="activeTab() === 'actions'"
+            class="action-button-1"
+            [class.action-button-active]="activeTab() === 'actions'"
             (click)="setActiveTab('actions')">
             ACTIONS
           </button>
           <button
             mat-stroked-button
-            class="button-hover"
-            [class.button-active]="activeTab() === 'conditions'"
+            class="action-button-1"
+            [class.action-button-active]="activeTab() === 'conditions'"
             (click)="setActiveTab('conditions')">
             CONDITIONS
           </button>
@@ -138,7 +138,8 @@
       @if (activeTab() === "conditions" && currentPolicy()) {
         <app-conditions-tab
           [isEditMode]="isEditMode()"
-          [policy]="currentPolicy()!" />
+          [policy]="currentPolicy()!"
+          (policyEdit)="addPolicyEdit($event)" />
       }
     </div>
   </mat-expansion-panel>

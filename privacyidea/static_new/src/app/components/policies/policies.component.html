@@ -21,14 +21,19 @@
   aria-label="Policies Layout">
   <h2 i18n>Policies</h2>
 
-  <mat-accordion class="list-layout">
+  <mat-accordion
+    class="list-layout"
+    #accordion="matAccordion"
+    [multi]="multiOpenAccordion()">
     @if (authService.actionAllowed("policyread")) {
       <app-policy-filter
-        (filteredPoliciesChange)="onPolicyListFilteredChange($event)"
+        (filteredPoliciesChange)="onPolicyListFilteredChange($event, accordion)"
         [unfilteredPolicies]="policyService.allPolicies()">
       </app-policy-filter>
     }
-    @if (authService.actionAllowed("policywrite")) {
+    @if (
+      authService.actionAllowed("policywrite") && policiesListFiltered().length === policyService.allPolicies().length
+    ) {
       <app-policy-panel-new></app-policy-panel-new>
     }
     @if (authService.actionAllowed("policyread")) {
