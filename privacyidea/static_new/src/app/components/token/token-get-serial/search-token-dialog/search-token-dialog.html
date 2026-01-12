@@ -2,7 +2,8 @@
   title="Find Serial"
   i18n-title="@@DialogTitleFindSerial"
   [actions]="[action]"
-  (close)="close()">
+  (close)="close()"
+  (onAction)="onAction($event)">
   <div>
     <p i18n>
       This search request will check {{ data }} tokens in the system for the given OTP value.
