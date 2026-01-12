@@ -19,7 +19,8 @@
 <app-dialog-wrapper
   [title]="data.title"
   (close)="close()"
-  [actions]="actions">
+  [actions]="actions"
+  (onAction)="onAction($event)">
   <p i18n>
     Are you sure you want to {{ data.confirmAction.label.toLocaleLowerCase() }}
     @if (data.items.length > 1) {
