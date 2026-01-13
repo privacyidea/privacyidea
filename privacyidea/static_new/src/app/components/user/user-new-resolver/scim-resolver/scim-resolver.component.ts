@@ -1,5 +1,5 @@
-import { Component, effect, EventEmitter, input, OnInit, Output } from "@angular/core";
-import { FormControl, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
+import { Component, computed, effect, input } from "@angular/core";
+import { AbstractControl, FormControl, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatInput } from "@angular/material/input";
 import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
 import { SCIMResolverData } from "../../../../services/resolver/resolver.service";
@@ -15,12 +15,11 @@ import { SCIMResolverData } from "../../../../services/resolver/resolver.service
     MatInput,
     MatError
   ],
-  templateUrl: './scim-resolver.component.html',
-  styleUrl: './scim-resolver.component.scss'
+  templateUrl: "./scim-resolver.component.html",
+  styleUrl: "./scim-resolver.component.scss"
 })
-export class ScimResolverComponent implements OnInit {
+export class ScimResolverComponent {
   data = input<Partial<SCIMResolverData>>({});
-  @Output() additionalFormFieldsChange = new EventEmitter<{ [key: string]: FormControl<any> }>();
 
   authServerControl = new FormControl<string>("", {
     nonNullable: true,
@@ -43,6 +42,14 @@ export class ScimResolverComponent implements OnInit {
     validators: [Validators.required]
   });
 
+  controls = computed<Record<string, AbstractControl>>(() => ({
+    Authserver: this.authServerControl,
+    Resourceserver: this.resourceServerControl,
+    Client: this.clientControl,
+    Secret: this.secretControl,
+    Mapping: this.mappingControl
+  }));
+
   constructor() {
     effect(() => {
       const initial = this.data();
@@ -63,15 +70,4 @@ export class ScimResolverComponent implements OnInit {
       }
     });
   }
-
-  ngOnInit(): void {
-    this.additionalFormFieldsChange.emit({
-      Authserver: this.authServerControl,
-      Resourceserver: this.resourceServerControl,
-      Client: this.clientControl,
-      Secret: this.secretControl,
-      Mapping: this.mappingControl
-    });
-  }
-
 }

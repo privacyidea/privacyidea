@@ -15,6 +15,7 @@ import {
 } from "@angular/material/expansion";
 import { MatDivider } from "@angular/material/list";
 import { MatButtonToggle, MatButtonToggleGroup } from "@angular/material/button-toggle";
+import { HttpConfigComponent } from "../http-resolver/http-config/http-config.component";
 
 @Component({
   selector: "app-entraid-resolver",
@@ -40,7 +41,8 @@ import { MatButtonToggle, MatButtonToggleGroup } from "@angular/material/button-
     ReactiveFormsModule,
     MatDivider,
     MatButtonToggleGroup,
-    MatButtonToggle
+    MatButtonToggle,
+    HttpConfigComponent
   ],
   templateUrl: "../http-resolver/http-resolver.component.html",
   styleUrl: "../http-resolver/http-resolver.component.scss"
@@ -70,56 +72,59 @@ export class EntraidResolverComponent extends HttpResolverComponent {
     if (!data) return;
 
     if (!data.base_url) {
-      data.base_url = "https://graph.microsoft.com/v1.0";
+      this.baseUrlControl.setValue("https://graph.microsoft.com/v1.0", { emitEvent: false });
     }
     if (!data.authority) {
-      data.authority = "https://login.microsoftonline.com/{tenant}";
+      this.authorityControl.setValue("https://login.microsoftonline.com/{tenant}", { emitEvent: false });
     }
     if (!data.client_credential_type) {
-      data.client_credential_type = "secret";
-    }
-    if (!data.client_certificate) {
-      data.client_certificate = {};
+      this.clientCredentialTypeControl.setValue("secret", { emitEvent: false });
     }
     if (!data.timeout) {
-      data.timeout = 60;
+      this.timeoutControl.setValue(60, { emitEvent: false });
     }
-    if (!data.verify_tls && data.verify_tls !== false) {
-      data.verify_tls = true;
+    if (data.verify_tls === undefined) {
+      this.verifyTlsControl.setValue(true, { emitEvent: false });
     }
 
     if (!data.config_get_user_by_id || Object.keys(data.config_get_user_by_id).length === 0) {
-      data.config_get_user_by_id = { "method": "GET", "endpoint": "/users/{userid}" };
+      this.configGetUserByIdGroup.patchValue({ "method": "GET", "endpoint": "/users/{userid}" }, { emitEvent: false });
     }
     if (!data.config_get_user_by_name || Object.keys(data.config_get_user_by_name).length === 0) {
-      data.config_get_user_by_name = { "method": "GET", "endpoint": "/users/{username}" };
+      this.configGetUserByNameGroup.patchValue({
+        "method": "GET",
+        "endpoint": "/users/{username}"
+      }, { emitEvent: false });
     }
     if (!data.config_get_user_list || Object.keys(data.config_get_user_list).length === 0) {
-      data.config_get_user_list = {
+      this.configGetUserListGroup.patchValue({
         "method": "GET",
         "endpoint": "/users",
         "headers": "{\"ConsistencyLevel\": \"eventual\"}"
-      };
+      }, { emitEvent: false });
     }
     if (!data.config_create_user || Object.keys(data.config_create_user).length === 0) {
-      data.config_create_user = {
+      this.configCreateUserGroup.patchValue({
         "method": "POST", "endpoint": "/users",
         "requestMapping": "{\"accountEnabled\": true, \"displayName\": \"{givenname} {surname}\", \"mailNickname\": \"{givenname}\", \"passwordProfile\": {\"password\": \"{password}\"}}"
-      };
+      }, { emitEvent: false });
     }
     if (!data.config_edit_user || Object.keys(data.config_edit_user).length === 0) {
-      data.config_edit_user = { "method": "PATCH", "endpoint": "/users/{userid}" };
+      this.configEditUserGroup.patchValue({ "method": "PATCH", "endpoint": "/users/{userid}" }, { emitEvent: false });
     }
     if (!data.config_delete_user || Object.keys(data.config_delete_user).length === 0) {
-      data.config_delete_user = { "method": "DELETE", "endpoint": "/users/{userid}" };
+      this.configDeleteUserGroup.patchValue({
+        "method": "DELETE",
+        "endpoint": "/users/{userid}"
+      }, { emitEvent: false });
     }
     if (!data.config_user_auth || Object.keys(data.config_user_auth).length === 0) {
-      data.config_user_auth = {
+      this.configUserAuthGroup.patchValue({
         "method": "POST",
         "headers": "{\"Content-Type\": \"application/x-www-form-urlencoded\"}",
         "endpoint": "https://login.microsoftonline.com/{tenant}/oauth2/v2.0/token",
         "requestMapping": "client_id={client_id}&scope=https://graph.microsoft.com/.default&username={username}&password={password}&grant_type=password&client_secret={client_credential}"
-      };
+      }, { emitEvent: false });
     }
   }
 }

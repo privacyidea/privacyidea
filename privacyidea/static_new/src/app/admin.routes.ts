@@ -68,7 +68,8 @@ export const routes: Routes = [
       { path: "details/:username", component: UserDetailsComponent },
       { path: "realms", component: RealmTableComponent },
       { path: "sources", component: UserSourcesComponent },
-      { path: "new-resolver", component: UserNewResolverComponent }
+      { path: "new-resolver", component: UserNewResolverComponent },
+      { path: "edit-resolver/:name", component: UserNewResolverComponent }
     ]
   },
   {

@@ -16,8 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, effect, inject, ResourceStatus } from "@angular/core";
-import { FormControl, FormsModule } from "@angular/forms";
+import { Component, computed, effect, inject, OnDestroy, ResourceStatus, viewChild } from "@angular/core";
+import { AbstractControl, FormsModule } from "@angular/forms";
 import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { MatSelect, MatSelectModule } from "@angular/material/select";
@@ -38,8 +38,9 @@ import { ScimResolverComponent } from "./scim-resolver/scim-resolver.component";
 import { HttpResolverComponent } from "./http-resolver/http-resolver.component";
 import { EntraidResolverComponent } from "./entraid-resolver/entraid-resolver.component";
 import { KeycloakResolverComponent } from "./keycloak-resolver/keycloak-resolver.component";
-import { Router } from "@angular/router";
+import { ActivatedRoute, Router } from "@angular/router";
 import { ROUTE_PATHS } from "../../../route_paths";
+import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 
 @Component({
   selector: "app-user-new-resolver",
@@ -68,10 +69,11 @@ import { ROUTE_PATHS } from "../../../route_paths";
   templateUrl: "./user-new-resolver.component.html",
   styleUrl: "./user-new-resolver.component.scss"
 })
-export class UserNewResolverComponent {
+export class UserNewResolverComponent implements OnDestroy {
   private readonly resolverService = inject(ResolverService);
   private readonly notificationService = inject(NotificationService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   readonly sqlPresets = [
     {
       name: "Wordpress",
@@ -121,7 +123,23 @@ export class UserNewResolverComponent {
     }
   ];
   private editInitialized = false;
-  additionalFormFields: { [key: string]: FormControl<any> } = {};
+  ldapResolver = viewChild(LdapResolverComponent);
+  sqlResolver = viewChild(SqlResolverComponent);
+  passwdResolver = viewChild(PasswdResolverComponent);
+  scimResolver = viewChild(ScimResolverComponent);
+  httpResolver = viewChild(HttpResolverComponent);
+  entraidResolver = viewChild(EntraidResolverComponent);
+  keycloakResolver = viewChild(KeycloakResolverComponent);
+  additionalFormFields = computed<Record<string, AbstractControl>>(() => {
+    const resolver = this.ldapResolver() ||
+      this.sqlResolver() ||
+      this.passwdResolver() ||
+      this.scimResolver() ||
+      this.entraidResolver() ||
+      this.keycloakResolver() ||
+      this.httpResolver();
+    return resolver?.controls() ?? {};
+  });
   resolverName = "";
   resolverType: ResolverType = "passwdresolver";
   formData: Record<string, any> = {
@@ -133,6 +151,10 @@ export class UserNewResolverComponent {
   testUserId = "";
 
   constructor() {
+    this.route.paramMap.pipe(takeUntilDestroyed()).subscribe(params => {
+      this.resolverService.selectedResolverName.set(params.get("name") || "");
+    });
+
     effect(() => {
       const selectedName = this.resolverService.selectedResolverName();
 
@@ -182,13 +204,16 @@ export class UserNewResolverComponent {
   }
 
   get isAdditionalFieldsValid(): boolean {
-    return Object.values(this.additionalFormFields).every(control => control.valid);
+    return Object.values(this.additionalFormFields()).every(control => control.valid);
+  }
+
+  ngOnDestroy(): void {
+    this.resolverService.selectedResolverName.set("");
   }
 
   onTypeChange(type: ResolverType): void {
     if (!this.isEditMode) {
       this.formData = {};
-      this.additionalFormFields = {};
 
       if (type === "passwdresolver") {
         this.formData = {
@@ -284,10 +309,10 @@ export class UserNewResolverComponent {
           method: "GET",
           endpoint: "https://example.com/path/to/users/:userid",
           requestMapping: "{}",
-          headers: '{"Content-Type":"application/json; charset=UTF-8"}',
-          responseMapping: '{"username":"{username}", "userid":"{userid}"}',
+          headers: "{\"Content-Type\":\"application/json; charset=UTF-8\"}",
+          responseMapping: "{\"username\":\"{username}\", \"userid\":\"{userid}\"}",
           hasSpecialErrorHandler: false,
-          errorResponse: '{"success": false, "message": "An error occurred!"}'
+          errorResponse: "{\"success\": false, \"message\": \"An error occurred!\"}"
         };
       }
     }
@@ -338,7 +363,7 @@ export class UserNewResolverComponent {
       ...this.formData
     };
 
-    for (const [key, control] of Object.entries(this.additionalFormFields)) {
+    for (const [key, control] of Object.entries(this.additionalFormFields())) {
       if (!control) continue;
       payload[key] = control.value;
     }
@@ -360,7 +385,6 @@ export class UserNewResolverComponent {
             if (!this.isEditMode) {
               this.resolverName = "";
               this.formData = {};
-              this.additionalFormFields = {};
               this.router.navigateByUrl(ROUTE_PATHS.USERS_SOURCES);
             }
           } else {
@@ -416,7 +440,7 @@ export class UserNewResolverComponent {
       payload["resolver"] = this.resolverName;
     }
 
-    for (const [key, control] of Object.entries(this.additionalFormFields)) {
+    for (const [key, control] of Object.entries(this.additionalFormFields())) {
       if (!control) continue;
       payload[key] = control.value;
     }
@@ -444,15 +468,5 @@ export class UserNewResolverComponent {
         }
       })
       .add(() => (this.isTesting = false));
-  }
-
-  updateAdditionalFormFields(event: { [key: string]: FormControl<any> | undefined | null }): void {
-    const validControls: { [key: string]: FormControl<any> } = {};
-    for (const key in event) {
-      if (event.hasOwnProperty(key) && event[key] instanceof FormControl) {
-        validControls[key] = event[key] as FormControl<any>;
-      }
-    }
-    this.additionalFormFields = validControls;
   }
 }

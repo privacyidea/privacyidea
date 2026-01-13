@@ -1,9 +1,9 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { EntraidResolverComponent } from './entraid-resolver.component';
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { EntraidResolverComponent } from "./entraid-resolver.component";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { ComponentRef } from "@angular/core";
 
-describe('EntraidResolverComponent', () => {
+describe("EntraidResolverComponent", () => {
   let component: EntraidResolverComponent;
   let componentRef: ComponentRef<EntraidResolverComponent>;
   let fixture: ComponentFixture<EntraidResolverComponent>;
@@ -12,7 +12,7 @@ describe('EntraidResolverComponent', () => {
     await TestBed.configureTestingModule({
       imports: [EntraidResolverComponent, NoopAnimationsModule]
     })
-    .compileComponents();
+      .compileComponents();
 
     fixture = TestBed.createComponent(EntraidResolverComponent);
     component = fixture.componentInstance;
@@ -20,16 +20,15 @@ describe('EntraidResolverComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create', () => {
+  it("should create", () => {
     expect(component).toBeTruthy();
   });
 
-  it('should initialize default data on creation', () => {
-    const data: any = {};
-    componentRef.setInput('data', data);
+  it("should initialize default data on creation", () => {
+    componentRef.setInput("data", {});
     fixture.detectChanges();
-    expect(data.base_url).toBe('https://graph.microsoft.com/v1.0');
-    expect(data.authority).toBe('https://login.microsoftonline.com/{tenant}');
-    expect(data.config_get_user_list).toBeDefined();
+    expect(component.baseUrlControl.value).toBe("https://graph.microsoft.com/v1.0");
+    expect(component.authorityControl.value).toBe("https://login.microsoftonline.com/{tenant}");
+    expect(component.configGetUserListGroup.value.endpoint).toBe("/users");
   });
 });

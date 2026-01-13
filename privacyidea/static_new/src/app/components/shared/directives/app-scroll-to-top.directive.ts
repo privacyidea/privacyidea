@@ -16,16 +16,17 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Directive, ElementRef, HostListener, Renderer2 } from "@angular/core";
+import { Directive, ElementRef, HostListener, OnDestroy, Renderer2 } from "@angular/core";
 
 @Directive({
   selector: "[appScrollToTop]",
   standalone: true
 })
-export class ScrollToTopDirective {
+export class ScrollToTopDirective implements OnDestroy {
   private readonly SCROLL_THRESHOLD = 200;
   private button!: HTMLElement;
   private isButtonVisible = false;
+  private clickListenerDispose?: () => void;
 
   constructor(
     private el: ElementRef,
@@ -46,10 +47,16 @@ export class ScrollToTopDirective {
     }
   }
 
+  ngOnDestroy() {
+    if (this.clickListenerDispose) {
+      this.clickListenerDispose();
+    }
+  }
+
   private createButton() {
-    this.button = this.renderer.createElement('button');
-    this.renderer.addClass(this.button, 'mat-fab');
-    this.renderer.addClass(this.button, 'scroll-to-top-fab');
+    this.button = this.renderer.createElement("button");
+    this.renderer.addClass(this.button, "mat-fab");
+    this.renderer.addClass(this.button, "scroll-to-top-fab");
 
     const icon = this.renderer.createElement("mat-icon");
     this.renderer.addClass(icon, "material-icons");
@@ -69,7 +76,7 @@ export class ScrollToTopDirective {
     // Align the button to the right side of its grid cell
     this.renderer.setStyle(this.button, "justify-self", "end");
 
-    this.renderer.listen(this.button, "click", () => {
+    this.clickListenerDispose = this.renderer.listen(this.button, "click", () => {
       this.el.nativeElement.scrollTo({
         top: 0,
         behavior: "smooth"

@@ -65,6 +65,18 @@ export interface LDAPResolverData extends ResolverData {
   START_TLS: boolean;
   TLS_VERIFY: boolean;
   TLS_VERSION: string;
+  SCOPE: string;
+  TLS_CA_FILE?: string;
+  SERVERPOOL_ROUNDS?: number;
+  SERVERPOOL_SKIP?: number;
+  SERVERPOOL_PERSISTENT?: boolean;
+  OBJECT_CLASSES?: string;
+  DN_TEMPLATE?: string;
+  MULTIVALUEATTRIBUTES?: string;
+  recursive_group_search?: boolean;
+  group_search_filter?: string;
+  group_name_attribute?: string;
+  group_attribute_mapping_key?: string;
 }
 
 export interface SQLResolverData extends ResolverData {
@@ -79,6 +91,12 @@ export interface SQLResolverData extends ResolverData {
   Map: string;
   Editable: boolean;
   Password_Hash_Type: string;
+  poolSize?: number;
+  poolTimeout?: number;
+  poolRecycle?: number;
+  conParams?: string;
+  Encoding?: string;
+  Where?: string;
 }
 
 export interface PasswdResolverData extends ResolverData {

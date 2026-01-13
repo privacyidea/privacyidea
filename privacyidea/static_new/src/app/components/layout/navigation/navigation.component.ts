@@ -168,7 +168,6 @@ export class NavigationComponent {
   }
 
   onNewResolver(): void {
-    this.resolverService.selectedResolverName.set("");
     this.router.navigate([ROUTE_PATHS.USERS_NEW_RESOLVER]);
   }
 

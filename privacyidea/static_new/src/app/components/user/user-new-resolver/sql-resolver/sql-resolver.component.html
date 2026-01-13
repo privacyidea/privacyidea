@@ -17,7 +17,7 @@
       <mat-form-field class="field-lg">
         <mat-label i18n>Database</mat-label>
         <input
-          [(ngModel)]="data()['Database']"
+          [formControl]="databaseControl"
           matInput
           placeholder="YourDatabase" />
       </mat-form-field>
@@ -37,7 +37,7 @@
       <mat-form-field>
         <mat-label i18n>Port</mat-label>
         <input
-          [(ngModel)]="data()['Port']"
+          [formControl]="portControl"
           matInput
           placeholder="3306" />
       </mat-form-field>
@@ -50,7 +50,7 @@
       <mat-form-field>
         <mat-label i18n>User</mat-label>
         <input
-          [(ngModel)]="data()['User']"
+          [formControl]="userControl"
           matInput
           placeholder="user" />
       </mat-form-field>
@@ -58,7 +58,7 @@
       <mat-form-field>
         <mat-label i18n>Password</mat-label>
         <input
-          [(ngModel)]="data()['Password']"
+          [formControl]="passwordControl"
           matInput
           placeholder="topsecret"
           type="password" />
@@ -66,7 +66,7 @@
 
       <div class="flex-column">
         <mat-checkbox
-          [(ngModel)]="data()['Editable']"
+          [formControl]="editableControl"
           i18n>
           Edit user store
         </mat-checkbox>
@@ -75,11 +75,11 @@
           i18n>The user data in this database can be modified from within privacyIDEA.</span>
       </div>
 
-      @if (data()['Editable']) {
+      @if (editableControl.value) {
         <mat-form-field class="field-lg">
           <mat-label i18n>Password Hash for editable users</mat-label>
           <input
-            [(ngModel)]="data()['Password_Hash_Type']"
+            [formControl]="passwordHashTypeControl"
             matInput
             placeholder="">
           <mat-hint i18n>
@@ -136,28 +136,28 @@
       <mat-form-field>
         <mat-label i18n>Connection Parameters</mat-label>
         <input
-          [(ngModel)]="data()['conParams']"
+          [formControl]="conParamsControl"
           matInput />
       </mat-form-field>
 
       <mat-form-field>
         <mat-label i18n>Database Encoding</mat-label>
         <input
-          [(ngModel)]="data()['Encoding']"
+          [formControl]="encodingControl"
           matInput />
       </mat-form-field>
 
       <mat-form-field class="field-lg">
         <mat-label i18n>Where statement</mat-label>
         <input
-          [(ngModel)]="data()['Where']"
+          [formControl]="whereControl"
           matInput />
       </mat-form-field>
 
       <mat-form-field>
         <mat-label i18n>Pool size</mat-label>
         <input
-          [(ngModel)]="data()['poolSize']"
+          [formControl]="poolSizeControl"
           matInput
           type="number" />
       </mat-form-field>
@@ -165,7 +165,7 @@
       <mat-form-field>
         <mat-label i18n>Pool timeout</mat-label>
         <input
-          [(ngModel)]="data()['poolTimeout']"
+          [formControl]="poolTimeoutControl"
           matInput
           type="number" />
       </mat-form-field>
@@ -173,7 +173,7 @@
       <mat-form-field>
         <mat-label i18n>Pool recycle timeout</mat-label>
         <input
-          [(ngModel)]="data()['poolRecycle']"
+          [formControl]="poolRecycleControl"
           matInput
           type="number" />
       </mat-form-field>

@@ -115,45 +115,38 @@
 
     @if (resolverType === 'ldapresolver') {
       <app-ldap-resolver
-        (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
         [data]="formData" />
     }
 
     @if (resolverType === 'sqlresolver') {
       <app-sql-resolver
-        (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
         [data]="formData" />
     }
 
     @if (resolverType === 'passwdresolver') {
       <app-passwd-resolver
-        (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
         [data]="formData" />
     }
 
     @if (resolverType === 'scimresolver') {
       <app-scim-resolver
-        (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
         [data]="formData" />
     }
 
     @if (resolverType === 'httpresolver') {
       <app-http-resolver
-        (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
         [data]="formData"
         [type]="resolverType" />
     }
 
     @if (resolverType === 'entraidresolver') {
       <app-entraid-resolver
-        (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
         [data]="formData"
         [type]="resolverType" />
     }
 
     @if (resolverType === 'keycloakresolver') {
       <app-keycloak-resolver
-        (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
         [data]="formData"
         [type]="resolverType" />
     }

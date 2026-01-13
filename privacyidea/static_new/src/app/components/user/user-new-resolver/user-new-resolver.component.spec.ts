@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { UserNewResolverComponent } from "./user-new-resolver.component";
 import { ResolverService } from "../../../services/resolver/resolver.service";
 import { NotificationService } from "../../../services/notification/notification.service";
-import { Router } from "@angular/router";
+import { ActivatedRoute, Router } from "@angular/router";
 import { of } from "rxjs";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
@@ -10,7 +10,6 @@ import { MockResolverService } from "../../../../testing/mock-services/mock-reso
 import { MockNotificationService, MockPiResponse } from "../../../../testing/mock-services";
 import { ResourceStatus, signal } from "@angular/core";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { FormControl, Validators } from "@angular/forms";
 
 describe("UserNewResolverComponent", () => {
   let component: UserNewResolverComponent;
@@ -31,6 +30,12 @@ describe("UserNewResolverComponent", () => {
         provideHttpClientTesting(),
         { provide: ResolverService, useClass: MockResolverService },
         { provide: NotificationService, useClass: MockNotificationService },
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            paramMap: of({ get: (key: string) => "" })
+          }
+        },
         {
           provide: Router,
           useValue: {
@@ -57,6 +62,7 @@ describe("UserNewResolverComponent", () => {
       [resolverName]: {
         resolvername: resolverName,
         type: "passwdresolver",
+        censor_keys: [],
         data: {
           fileName: "/tmp/test"
         }
@@ -93,6 +99,7 @@ describe("UserNewResolverComponent", () => {
       [resolverName]: {
         resolvername: resolverName,
         type: "sqlresolver",
+        censor_keys: [],
         data: {
           Database: "testdb",
           Driver: "mysql"
@@ -128,6 +135,7 @@ describe("UserNewResolverComponent", () => {
       [resolverName]: {
         resolvername: resolverName,
         type: "passwdresolver",
+        censor_keys: [],
         data: { fileName: "/initial" }
       }
     };
@@ -152,6 +160,7 @@ describe("UserNewResolverComponent", () => {
       [resolverName]: {
         resolvername: resolverName,
         type: "passwdresolver",
+        censor_keys: [],
         data: { fileName: "/updated" }
       }
     };
@@ -245,6 +254,7 @@ describe("UserNewResolverComponent", () => {
       "edit-res": {
         resolvername: "edit-res",
         type: "passwdresolver",
+        censor_keys: [],
         data: { fileName: "/etc/passwd" }
       }
     };
@@ -294,7 +304,8 @@ describe("UserNewResolverComponent", () => {
     expect(notificationService.openSnackBar).toHaveBeenCalledWith(expect.stringContaining("select a resolver type"));
 
     component.resolverType = "passwdresolver";
-    component.updateAdditionalFormFields({ "fileName": new FormControl("", Validators.required) });
+    await detectChangesStable();
+    component.passwdResolver()?.filenameControl.setValue("");
     component.onSave();
     expect(notificationService.openSnackBar).toHaveBeenCalledWith(expect.stringContaining("fill in all required fields"));
   });
@@ -302,7 +313,8 @@ describe("UserNewResolverComponent", () => {
   it("should include additional fields in save payload", async () => {
     component.resolverName = "res";
     component.resolverType = "passwdresolver";
-    component.updateAdditionalFormFields({ "fileName": new FormControl("/etc/passwd") });
+    await detectChangesStable();
+    component.passwdResolver()?.filenameControl.setValue("/etc/passwd");
 
     resolverService.postResolver.mockReturnValue(of(new MockPiResponse({ result: { status: true, value: 1 } })));
     component.onSave();
@@ -342,11 +354,6 @@ describe("UserNewResolverComponent", () => {
     expect(notificationService.openSnackBar).toHaveBeenCalledWith(expect.stringContaining("Network error"));
   });
 
-  it("should update additional form fields", () => {
-    const control = new FormControl("test");
-    component.updateAdditionalFormFields({ "extra": control });
-    expect(component["additionalFormFields"]["extra"]).toBe(control);
-  });
 
   it("should apply SQL presets", () => {
     component.resolverType = "sqlresolver";
@@ -371,15 +378,22 @@ describe("UserNewResolverComponent", () => {
     expect(notificationService.openSnackBar).toHaveBeenCalledWith(expect.stringContaining("select a resolver type"));
 
     component.resolverType = "passwdresolver";
-    // passwdresolver has fileName as required, and it's currently empty if not set
-    component.updateAdditionalFormFields({ "fileName": new FormControl("", Validators.required) });
+    await detectChangesStable();
+    component.passwdResolver()?.filenameControl.setValue("");
     component.onTest();
     expect(notificationService.openSnackBar).toHaveBeenCalledWith(expect.stringContaining("fill in all required fields"));
   });
 
   it("should include resolver name in test payload when in edit mode", async () => {
     resolverService.selectedResolverName.set("edit-res");
-    const resolverData = { "edit-res": { resolvername: "edit-res", type: "passwdresolver", data: { fileName: "/etc/passwd" } } };
+    const resolverData = {
+      "edit-res": {
+        resolvername: "edit-res",
+        type: "passwdresolver",
+        censor_keys: [],
+        data: { fileName: "/etc/passwd" }
+      }
+    };
     (resolverService.selectedResolverResource as any).value.set({ result: { status: true, value: resolverData } });
     await detectChangesStable();
 

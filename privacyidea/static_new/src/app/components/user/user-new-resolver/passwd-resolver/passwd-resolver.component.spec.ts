@@ -1,9 +1,9 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { PasswdResolverComponent } from './passwd-resolver.component';
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { PasswdResolverComponent } from "./passwd-resolver.component";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { ComponentRef } from "@angular/core";
 
-describe('PasswdResolverComponent', () => {
+describe("PasswdResolverComponent", () => {
   let component: PasswdResolverComponent;
   let componentRef: ComponentRef<PasswdResolverComponent>;
   let fixture: ComponentFixture<PasswdResolverComponent>;
@@ -12,7 +12,7 @@ describe('PasswdResolverComponent', () => {
     await TestBed.configureTestingModule({
       imports: [PasswdResolverComponent, NoopAnimationsModule]
     })
-    .compileComponents();
+      .compileComponents();
 
     fixture = TestBed.createComponent(PasswdResolverComponent);
     component = fixture.componentInstance;
@@ -20,25 +20,24 @@ describe('PasswdResolverComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create', () => {
+  it("should create", () => {
     expect(component).toBeTruthy();
   });
 
-  it('should emit additionalFormFieldsChange on init', () => {
-    const spy = jest.spyOn(component.additionalFormFieldsChange, 'emit');
-    component.ngOnInit();
-    expect(spy).toHaveBeenCalledWith(expect.objectContaining({
+  it("should expose controls via signal", () => {
+    const controls = component.controls();
+    expect(controls).toEqual(expect.objectContaining({
       fileName: component.filenameControl
     }));
   });
 
-  it('should update controls when data input changes', () => {
-    componentRef.setInput('data', {
-      fileName: '/etc/passwd'
+  it("should update controls when data input changes", () => {
+    componentRef.setInput("data", {
+      fileName: "/etc/passwd"
     });
 
     fixture.detectChanges();
 
-    expect(component.filenameControl.value).toBe('/etc/passwd');
+    expect(component.filenameControl.value).toBe("/etc/passwd");
   });
 });

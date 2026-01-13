@@ -1,0 +1,70 @@
+@if (description) {
+  <p class="auth-description">{{ description }}</p>
+}
+
+<div
+  [formGroup]="formGroup"
+  class="auth-grid">
+  <mat-form-field>
+    <mat-label i18n>Method</mat-label>
+    <mat-select formControlName="method">
+      <mat-option value="POST">POST</mat-option>
+      <mat-option value="GET">GET</mat-option>
+      <mat-option value="PUT">PUT</mat-option>
+      <mat-option value="PATCH">PATCH</mat-option>
+      <mat-option value="DELETE">DELETE</mat-option>
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field class="auth-endpoint">
+    <mat-label i18n>Endpoint</mat-label>
+    <input
+      formControlName="endpoint"
+      matInput
+      placeholder="/users" />
+    @if (endpointHint) {
+      <mat-hint>{{ endpointHint }}</mat-hint>
+    }
+  </mat-form-field>
+
+  <mat-form-field class="auth-wide">
+    <mat-label i18n>Headers (JSON format)</mat-label>
+    <textarea
+      formControlName="headers"
+      matInput
+      placeholder='{"Content-Type":"application/json; charset=UTF-8"}'></textarea>
+  </mat-form-field>
+
+  <mat-form-field class="auth-wide">
+    <mat-label i18n>Request Mapping (JSON format)</mat-label>
+    <textarea
+      formControlName="requestMapping"
+      matInput
+      placeholder='{"customerid":"{userid}","accessKey":"{secre3t!}"}'></textarea>
+  </mat-form-field>
+
+  <mat-form-field class="auth-wide">
+    <mat-label i18n>Response Mapping (JSON format)</mat-label>
+    <textarea
+      formControlName="responseMapping"
+      matInput
+      placeholder='{"Authorization":"Bearer {access_token}"}'></textarea>
+  </mat-form-field>
+
+  <mat-checkbox
+    class="auth-wide checkbox-inline"
+    formControlName="hasSpecialErrorHandler"
+    i18n>
+    Special Error Handling
+  </mat-checkbox>
+
+  @if (formGroup.get('hasSpecialErrorHandler')?.value) {
+    <mat-form-field class="auth-wide">
+      <mat-label i18n>Response contains (JSON format)</mat-label>
+      <textarea
+        formControlName="errorResponse"
+        matInput
+        placeholder='{"success": false, "message": "An error occurred!"}'></textarea>
+    </mat-form-field>
+  }
+</div>

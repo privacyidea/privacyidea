@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, effect, EventEmitter, input, OnInit, Output } from "@angular/core";
+import { Component, computed, effect, input } from "@angular/core";
 import { FormControl, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
@@ -29,14 +29,17 @@ import { PasswdResolverData } from "../../../../services/resolver/resolver.servi
   templateUrl: "./passwd-resolver.component.html",
   styleUrl: "./passwd-resolver.component.scss"
 })
-export class PasswdResolverComponent implements OnInit {
+export class PasswdResolverComponent {
   data = input<Partial<PasswdResolverData>>({});
-  @Output() additionalFormFieldsChange = new EventEmitter<{ [key: string]: FormControl<any> }>();
 
   filenameControl = new FormControl<string>("", {
     nonNullable: true,
     validators: [Validators.required]
   });
+
+  controls = computed(() => ({
+    fileName: this.filenameControl
+  }));
 
   constructor() {
     effect(() => {
@@ -44,12 +47,6 @@ export class PasswdResolverComponent implements OnInit {
       if (initial !== undefined) {
         this.filenameControl.setValue(initial, { emitEvent: false });
       }
-    });
-  }
-
-  ngOnInit(): void {
-    this.additionalFormFieldsChange.emit({
-      fileName: this.filenameControl
     });
   }
 }

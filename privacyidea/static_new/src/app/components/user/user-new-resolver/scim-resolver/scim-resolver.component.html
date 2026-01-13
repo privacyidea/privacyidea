@@ -6,8 +6,8 @@
       <mat-label i18n>Authentication Server URI</mat-label>
       <input
         [formControl]="authServerControl"
-        placeholder="http://localhost:8080/osiam-auth-server"
         matInput
+        placeholder="http://localhost:8080/osiam-auth-server"
         required />
       @if (authServerControl.hasError('required') && authServerControl.touched) {
         <mat-error i18n>Authentication server URI is <strong>required</strong>.</mat-error>
@@ -18,8 +18,8 @@
       <mat-label i18n>Resource Server Uri</mat-label>
       <input
         [formControl]="resourceServerControl"
-        placeholder="http://localhost:8080/osiam-resource-server"
         matInput
+        placeholder="http://localhost:8080/osiam-resource-server"
         required />
       @if (resourceServerControl.hasError('required') && resourceServerControl.touched) {
         <mat-error i18n>Resource server URI is <strong>required</strong>.</mat-error>
@@ -30,8 +30,8 @@
       <mat-label i18n>Client</mat-label>
       <input
         [formControl]="clientControl"
-        placeholder="hostname"
         matInput
+        placeholder="hostname"
         required />
       @if (clientControl.hasError('required') && clientControl.touched) {
         <mat-error i18n>Client is <strong>required</strong>.</mat-error>
@@ -42,10 +42,10 @@
       <mat-label i18n>Secret</mat-label>
       <input
         [formControl]="secretControl"
-        placeholder="d81c31e4-9f65-4805-b5ba-6edf0761f954"
         matInput
-        type="password"
-        required />
+        placeholder="d81c31e4-9f65-4805-b5ba-6edf0761f954"
+        required
+        type="password" />
       @if (secretControl.hasError('required') && secretControl.touched) {
         <mat-error i18n>Secret is <strong>required</strong>.</mat-error>
       }
@@ -55,8 +55,8 @@
       <mat-label i18n>Mapping</mat-label>
       <textarea
         [formControl]="mappingControl"
-        placeholder='{"userName": "username", "id": "userid", "emails.0.value": "email"}'
         matInput
+        placeholder='{"userName": "username", "id": "userid", "emails.0.value": "email"}'
         required></textarea>
       @if (mappingControl.hasError('required') && mappingControl.touched) {
         <mat-error i18n>Mapping is <strong>required</strong>.</mat-error>

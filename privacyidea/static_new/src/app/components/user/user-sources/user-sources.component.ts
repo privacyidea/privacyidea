@@ -1,4 +1,4 @@
-import { Component, inject, linkedSignal, signal, ViewChild, WritableSignal } from "@angular/core";
+import { Component, inject, linkedSignal, signal, viewChild, WritableSignal } from "@angular/core";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { MatPaginator, MatPaginatorModule } from "@angular/material/paginator";
 import { MatSort, MatSortModule } from "@angular/material/sort";
@@ -57,32 +57,22 @@ export class UserSourcesComponent {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
 
-  @ViewChild(MatPaginator) paginator!: MatPaginator;
-  @ViewChild(MatSort) sort!: MatSort;
+  paginator = viewChild(MatPaginator);
+  sort = viewChild(MatSort);
 
   pageSizeOptions = this.tableUtilsService.pageSizeOptions;
   filterString = signal<string>("");
 
-  newResolverName = signal<string>("");
-  newResolverType = signal<string>("");
-  isCreatingResolver = signal<boolean>(false);
-
-  resolverTypes = [
-    "passwdresolver",
-    "ldapresolver",
-    "sqlresolver",
-    "scimresolver",
-    "httpresolver",
-    "entraidresolver",
-    "keycloakresolver"
-  ];
-
   resolversDataSource: WritableSignal<MatTableDataSource<Resolver>> = linkedSignal({
-    source: this.resolverService.resolvers,
-    computation: (resolvers, previous) => {
-      const dataSource = new MatTableDataSource(resolvers ?? []);
-      dataSource.paginator = this.paginator;
-      dataSource.sort = this.sort;
+    source: () => ({
+      resolvers: this.resolverService.resolvers(),
+      paginator: this.paginator(),
+      sort: this.sort()
+    }),
+    computation: (source) => {
+      const dataSource = new MatTableDataSource(source.resolvers ?? []);
+      dataSource.paginator = source.paginator ?? null;
+      dataSource.sort = source.sort ?? null;
 
       dataSource.filterPredicate = (data: Resolver, filter: string) => {
         const normalizedFilter = filter.trim().toLowerCase();
@@ -112,29 +102,8 @@ export class UserSourcesComponent {
     ds.filter = "";
   }
 
-  canSubmitNewResolver(): boolean {
-    return this.newResolverName().trim().length > 0 && this.newResolverType().length > 0 && !this.isCreatingResolver();
-  }
-
-  resetCreateForm(): void {
-    this.newResolverName.set("");
-    this.newResolverType.set("");
-  }
-
-  onCreateResolver(): void {
-    if (!this.canSubmitNewResolver()) {
-      return;
-    }
-    const name = this.newResolverName();
-    const type = this.newResolverType();
-
-    this.resetCreateForm();
-  }
-
   onEditResolver(resolver: Resolver): void {
-    this.resolverService.selectedResolverName.set(resolver.resolvername);
-    this.resolverService.selectedResolverResource.reload?.();
-    this.router.navigate(["users/new-resolver"]);
+    this.router.navigate(["users/edit-resolver", resolver.resolvername]);
   }
 
   onDeleteResolver(resolver: Resolver): void {

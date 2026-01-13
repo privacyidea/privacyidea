@@ -1,9 +1,9 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { SqlResolverComponent } from './sql-resolver.component';
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { SqlResolverComponent } from "./sql-resolver.component";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { ComponentRef } from "@angular/core";
 
-describe('SqlResolverComponent', () => {
+describe("SqlResolverComponent", () => {
   let component: SqlResolverComponent;
   let componentRef: ComponentRef<SqlResolverComponent>;
   let fixture: ComponentFixture<SqlResolverComponent>;
@@ -12,7 +12,7 @@ describe('SqlResolverComponent', () => {
     await TestBed.configureTestingModule({
       imports: [SqlResolverComponent, NoopAnimationsModule]
     })
-    .compileComponents();
+      .compileComponents();
 
     fixture = TestBed.createComponent(SqlResolverComponent);
     component = fixture.componentInstance;
@@ -20,34 +20,33 @@ describe('SqlResolverComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create', () => {
+  it("should create", () => {
     expect(component).toBeTruthy();
   });
 
-  it('should emit additionalFormFieldsChange on init', () => {
-    const spy = jest.spyOn(component.additionalFormFieldsChange, 'emit');
-    component.ngOnInit();
-    expect(spy).toHaveBeenCalledWith(expect.objectContaining({
+  it("should expose controls via signal", () => {
+    const controls = component.controls();
+    expect(controls).toEqual(expect.objectContaining({
       Driver: component.driverControl,
       Server: component.serverControl
     }));
   });
 
-  it('should update controls when data input changes', () => {
-    componentRef.setInput('data', {
-      Driver: 'mysql',
-      Server: 'localhost',
-      Table: 'users',
+  it("should update controls when data input changes", () => {
+    componentRef.setInput("data", {
+      Driver: "mysql",
+      Server: "localhost",
+      Table: "users",
       Limit: 100,
-      Map: '{}'
+      Map: "{}"
     });
 
     fixture.detectChanges();
 
-    expect(component.driverControl.value).toBe('mysql');
-    expect(component.serverControl.value).toBe('localhost');
-    expect(component.tableControl.value).toBe('users');
+    expect(component.driverControl.value).toBe("mysql");
+    expect(component.serverControl.value).toBe("localhost");
+    expect(component.tableControl.value).toBe("users");
     expect(component.limitControl.value).toBe(100);
-    expect(component.mapControl.value).toBe('{}');
+    expect(component.mapControl.value).toBe("{}");
   });
 });

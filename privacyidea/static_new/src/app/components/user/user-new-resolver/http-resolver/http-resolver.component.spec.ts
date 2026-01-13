@@ -24,12 +24,12 @@ describe("HttpResolverComponent", () => {
     expect(component).toBeTruthy();
   });
 
-  it("should emit additionalFormFieldsChange on init", () => {
-    fixture = TestBed.createComponent(HttpResolverComponent);
-    component = fixture.componentInstance;
-    const spy = jest.spyOn(component.additionalFormFieldsChange, "emit");
-    fixture.detectChanges();
-    expect(spy).toHaveBeenCalled();
+  it("should expose controls via signal", () => {
+    const controls = component.controls();
+    expect(controls).toEqual(expect.objectContaining({
+      endpoint: component.endpointControl,
+      method: component.methodControl
+    }));
   });
 
   it("should update controls when data input changes", () => {
@@ -55,18 +55,6 @@ describe("HttpResolverComponent", () => {
     expect(component["mappingRows"]().length).toBe(initialCount);
   });
 
-  it("should emit additionalFormFieldsChange on init", async () => {
-    const fixture = TestBed.createComponent(HttpResolverComponent);
-    const component = fixture.componentInstance;
-
-    const spy = jest.spyOn(component.additionalFormFieldsChange, "emit");
-
-    fixture.detectChanges();
-    await fixture.whenStable();
-    fixture.detectChanges();
-
-    expect(spy).toHaveBeenCalled();
-  });
 
   it("should handle privacyidea attribute change", () => {
     component.addMappingRow();

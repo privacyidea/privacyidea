@@ -1,9 +1,9 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { KeycloakResolverComponent } from './keycloak-resolver.component';
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { KeycloakResolverComponent } from "./keycloak-resolver.component";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { ComponentRef } from "@angular/core";
 
-describe('KeycloakResolverComponent', () => {
+describe("KeycloakResolverComponent", () => {
   let component: KeycloakResolverComponent;
   let componentRef: ComponentRef<KeycloakResolverComponent>;
   let fixture: ComponentFixture<KeycloakResolverComponent>;
@@ -12,7 +12,7 @@ describe('KeycloakResolverComponent', () => {
     await TestBed.configureTestingModule({
       imports: [KeycloakResolverComponent, NoopAnimationsModule]
     })
-    .compileComponents();
+      .compileComponents();
 
     fixture = TestBed.createComponent(KeycloakResolverComponent);
     component = fixture.componentInstance;
@@ -20,15 +20,14 @@ describe('KeycloakResolverComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create', () => {
+  it("should create", () => {
     expect(component).toBeTruthy();
   });
 
-  it('should initialize default data on creation', () => {
-    const data: any = {};
-    componentRef.setInput('data', data);
+  it("should initialize default data on creation", () => {
+    componentRef.setInput("data", {});
     fixture.detectChanges();
-    expect(data.base_url).toBe('http://localhost:8080');
-    expect(data.config_authorization).toBeDefined();
+    expect(component.baseUrlControl.value).toBe("http://localhost:8080");
+    expect(component.configAuthorizationGroup.value.endpoint).toBe("/realms/{realm}/protocol/openid-connect/token");
   });
 });

@@ -15,7 +15,7 @@
 
       <mat-form-field>
         <mat-label i18n>TLS version</mat-label>
-        <mat-select [(ngModel)]="data()['TLS_VERSION']">
+        <mat-select [formControl]="tlsVersionControl">
           <mat-option
             i18n
             value="TLSv1">TLS v1.0
@@ -36,20 +36,20 @@
       </mat-form-field>
 
       <mat-checkbox
-        [(ngModel)]="data()['TLS_VERIFY']"
+        [formControl]="tlsVerifyControl"
         class="checkbox-inline"
         i18n>
         Verify TLS certificate of the server.
       </mat-checkbox>
 
-      @if (data()['TLS_VERIFY']) {
+      @if (tlsVerifyControl.value) {
         <mat-form-field class="margin-bottom-1">
           <mat-label i18n>CA certificate</mat-label>
           <mat-hint i18n>
             The file containing the CA certificate which signed the LDAP TLS certificate.
           </mat-hint>
           <input
-            [(ngModel)]="data()['TLS_CA_FILE']"
+            [formControl]="tlsCaFileControl"
             matInput
             placeholder="/etc/privacyidea/ldap-ca.crt" />
         </mat-form-field>
@@ -68,7 +68,7 @@
 
       <mat-form-field>
         <mat-label i18n>Scope</mat-label>
-        <mat-select [(ngModel)]="data()['SCOPE']">
+        <mat-select [formControl]="scopeControl">
           <mat-option
             i18n
             value="SUBTREE">SUBTREE
@@ -91,7 +91,7 @@
     <div class="form-grid">
       <mat-form-field>
         <mat-label i18n>Bind type</mat-label>
-        <mat-select [(ngModel)]="data()['AUTHTYPE']">
+        <mat-select [formControl]="authTypeControl">
           <mat-option
             i18n
             value="simple">Simple
@@ -118,7 +118,7 @@
       <mat-form-field class="field-lg">
         <mat-label i18n>Bind DN</mat-label>
         <input
-          [(ngModel)]="data()['BINDDN']"
+          [formControl]="bindDnControl"
           matInput
           placeholder="cn=admin,ou=user,dc=domain,dc=tld" />
       </mat-form-field>
@@ -126,7 +126,7 @@
       <mat-form-field class="field-md">
         <mat-label i18n>Bind password</mat-label>
         <input
-          [(ngModel)]="data()['BINDPW']"
+          [formControl]="bindPwControl"
           matInput
           placeholder="topsecret"
           type="password" />
@@ -141,14 +141,14 @@
       <mat-form-field>
         <mat-label i18n>Timeout (seconds)</mat-label>
         <input
-          [(ngModel)]="data()['TIMEOUT']"
+          [formControl]="timeoutControl"
           matInput
           type="number" />
       </mat-form-field>
       <mat-form-field>
         <mat-label i18n>Cache timeout (seconds)</mat-label>
         <input
-          [(ngModel)]="data()['CACHE_TIMEOUT']"
+          [formControl]="cacheTimeoutControl"
           matInput
           type="number" />
       </mat-form-field>
@@ -156,7 +156,7 @@
       <mat-form-field>
         <mat-label i18n>Size limit</mat-label>
         <input
-          [(ngModel)]="data()['SIZELIMIT']"
+          [formControl]="sizeLimitControl"
           matInput
           type="number" />
       </mat-form-field>
@@ -164,7 +164,7 @@
       <mat-form-field>
         <mat-label i18n>Server pool retry rounds</mat-label>
         <input
-          [(ngModel)]="data()['SERVERPOOL_ROUNDS']"
+          [formControl]="serverPoolRoundsControl"
           matInput
           type="number" />
       </mat-form-field>
@@ -172,14 +172,14 @@
       <mat-form-field>
         <mat-label i18n>Server pool skip timeout (seconds)</mat-label>
         <input
-          [(ngModel)]="data()['SERVERPOOL_SKIP']"
+          [formControl]="serverPoolSkipControl"
           matInput
           type="number" />
       </mat-form-field>
 
       <div class="flex-column">
         <mat-checkbox
-          [(ngModel)]="data()['SERVERPOOL_PERSISTENT']"
+          [formControl]="serverPoolPersistentControl"
           i18n>
           Per-process server pool
         </mat-checkbox>
@@ -188,25 +188,25 @@
 
       <div class="flex-column">
         <mat-checkbox
-          [(ngModel)]="data()['EDITABLE']"
+          [formControl]="editableControl"
           i18n>
           Edit user store
         </mat-checkbox>
         <span class="hint">The user data in this database can be modified from within privacyIDEA.</span>
       </div>
 
-      @if (data()['EDITABLE']) {
+      @if (editableControl.value) {
         <mat-form-field>
           <mat-label i18n> Object classes of a new created user object</mat-label>
           <input
-            [(ngModel)]="data()['OBJECT_CLASSES']"
+            [formControl]="objectClassesControl"
             matInput />
         </mat-form-field>
 
         <mat-form-field>
           <mat-label i18n> DN of a new created user object</mat-label>
           <input
-            [(ngModel)]="data()['DN_TEMPLATE']"
+            [formControl]="dnTemplateControl"
             matInput
             placeholder="CN=<username>,<basendn>" />
         </mat-form-field>
@@ -256,7 +256,7 @@
       <mat-form-field>
         <mat-label i18n>Multivalue attributes</mat-label>
         <input
-          [(ngModel)]="data()['MULTIVALUEATTRIBUTES']"
+          [formControl]="multivalueAttributesControl"
           matInput
           placeholder='["mobile"]' />
       </mat-form-field>
@@ -264,18 +264,18 @@
       <mat-form-field>
         <mat-label i18n>UID type</mat-label>
         <input
-          [(ngModel)]="data()['UIDTYPE']"
+          [formControl]="uidTypeControl"
           matInput
           placeholder="DN" />
       </mat-form-field>
 
       <mat-checkbox
-        [(ngModel)]="data()['recursive_group_search']"
+        [formControl]="recursiveGroupSearchControl"
         i18n>
         Recursive Search of User Groups
       </mat-checkbox>
 
-      @if (data()['recursive_group_search']) {
+      @if (recursiveGroupSearchControl.value) {
         <mat-form-field>
           <mat-label i18n>
             Search Filter for User Groups
@@ -284,7 +284,7 @@
             Possible tags: {{ '{' }}base_dn{{ '}' }}, {{ '{' }}username{{ '}' }}
           </mat-hint>
           <input
-            [(ngModel)]="data()['group_search_filter']"
+            [formControl]="groupSearchFilterControl"
             matInput
             placeholder="(&(sAMAccountName=*)(objectCategory=group)
             (member:1.2.840.113556.1.4.1941:=cn={distinguishedName},{base_dn}))" />
@@ -296,7 +296,7 @@
             The group attribute defining the group's name, which should be stored in the user info.
           </mat-hint>
           <input
-            [(ngModel)]="data()['group_name_attribute']"
+            [formControl]="groupNameAttributeControl"
             matInput
             placeholder="distinguishedName" />
         </mat-form-field>
@@ -307,20 +307,20 @@
             The key to store the groups in the user info (attribute mapping key).
           </mat-hint>
           <input
-            [(ngModel)]="data()['group_attribute_mapping_key']"
+            [formControl]="groupAttributeMappingKeyControl"
             matInput
             placeholder="groups" />
         </mat-form-field>
       }
 
       <mat-checkbox
-        [(ngModel)]="data()['NOREFERRALS']"
+        [formControl]="noReferralsControl"
         i18n>
         No anonymous referral chasing
       </mat-checkbox>
 
       <mat-checkbox
-        [(ngModel)]="data()['NOSCHEMAS']"
+        [formControl]="noSchemasControl"
         i18n>
         No retrieval of schema information
       </mat-checkbox>
