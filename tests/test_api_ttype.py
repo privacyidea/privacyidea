@@ -8,7 +8,7 @@ from .base import MyApiTestCase
 from privacyidea.lib.user import (User)
 from privacyidea.lib.config import (set_privacyidea_config)
 from privacyidea.lib.token import (get_tokens, init_token, remove_token)
-from privacyidea.lib.policy import (SCOPE, set_policy, delete_policy)
+from privacyidea.lib.policy import (SCOPE, PolicyAction, set_policy, delete_policy)
 from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway
 from privacyidea.lib.smsprovider.FirebaseProvider import FirebaseConfig
 from cryptography.hazmat.primitives import serialization, hashes
@@ -194,6 +194,16 @@ class TtypePushAPITestCase(MyApiTestCase):
     smartphone_public_key_pem_urlsafe = strip_key(smartphone_public_key_pem).replace("+", "-").replace("/", "_")
     serial_push = "PIPU001"
 
+    def _resend_and_check_unspecific_error(self, status_code: int):
+        set_policy(name="hide_ttype_error_details", scope=SCOPE.TOKEN, action=f"{PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE_FOR_TTYPE}=true")
+        try:
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == status_code, res)
+            data = res.json
+            self.assertEqual(data["result"]["error"]["message"], "Failed special token function")
+        finally:
+            delete_policy("hide_ttype_error_details")
+
     def _create_push_token(self):
         tparams = {'type': 'push', 'genkey': 1}
         tparams.update(FB_CONFIG_VALS)
@@ -268,6 +278,8 @@ class TtypePushAPITestCase(MyApiTestCase):
             self.assertEqual(error.get("message"),
                              "No token with this serial number in the rollout state 'clientwait'.")
 
+            self._resend_and_check_unspecific_error(404)
+
         # 2nd step. Fails with missing enrollment credential
         with self.app.test_request_context('/ttype/push',
                                            method='POST',
@@ -282,6 +294,8 @@ class TtypePushAPITestCase(MyApiTestCase):
             error = res.json.get("result").get("error")
             self.assertEqual(error.get("message"),
                              "ERR905: Invalid enrollment credential. You are not authorized to finalize this token.")
+
+            self._resend_and_check_unspecific_error(400)
 
         # 2nd step: as performed by the smartphone
         with self.app.test_request_context('/ttype/push',

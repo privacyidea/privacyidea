@@ -473,6 +473,17 @@ class AValidateOfflineTestCase(MyApiTestCase):
     Test api.validate endpoints that are responsible for offline auth.
     """
 
+    def _resend_and_check_unspecific_error(self, status_code: int):
+        set_policy(name="hide_specific_error_message", scope=SCOPE.TOKEN, action=f"{PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE_FOR_OFFLINE_REFILL}=true")
+        try:
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, status_code, res)
+            data = res.json
+            self.assertEqual(data["result"]["error"]["code"], ERROR.VALIDATE)
+            self.assertEqual(data["result"]["error"]["message"], "Failed offline token refill")
+        finally:
+            delete_policy("hide_specific_error_message")
+
     def test_00_create_realms(self):
         self.setUp_user_realms()
         self.setUp_user_realm2()
@@ -569,6 +580,8 @@ class AValidateOfflineTestCase(MyApiTestCase):
             self.assertEqual(data.get("result").get("error").get("message"),
                              "ERR905: Token is not an offline token or refill token is incorrect")
 
+            self._resend_and_check_unspecific_error(400)
+
         # Disable token. Refill should fail.
         enable_token(self.serials[0], False)
         with self.app.test_request_context('/validate/offlinerefill',
@@ -584,6 +597,9 @@ class AValidateOfflineTestCase(MyApiTestCase):
             error = result.get("error")
             self.assertEqual(905, error.get("code"))
             self.assertEqual("ERR905: The token is not valid.", error.get("message"))
+
+            self._resend_and_check_unspecific_error(400)
+
         # Enable token again
         enable_token(self.serials[0], True)
 
@@ -632,6 +648,9 @@ class AValidateOfflineTestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 400, res)
             self.assertEqual(data.get("result").get("error").get("message"),
                              "ERR401: You provided a wrong OTP value.")
+
+            self._resend_and_check_unspecific_error(400)
+
         # The failed refill should not modify the token counter!
         self.assertEqual(old_counter, token_obj.token.count)
 
@@ -648,6 +667,8 @@ class AValidateOfflineTestCase(MyApiTestCase):
             self.assertEqual(data.get("result").get("error").get("message"),
                              "ERR905: The token does not exist")
 
+            self._resend_and_check_unspecific_error(400)
+
         # Detach the token, refill should then fail
         detach_token(self.serials[0], "offline", "pippin")
         with self.app.test_request_context('/validate/offlinerefill',
@@ -662,6 +683,8 @@ class AValidateOfflineTestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 400, res)
             self.assertEqual(data.get("result").get("error").get("message"),
                              "ERR905: Token is not an offline token or refill token is incorrect")
+
+            self._resend_and_check_unspecific_error(400)
 
 
 class ValidateAPITestCase(MyApiTestCase):
