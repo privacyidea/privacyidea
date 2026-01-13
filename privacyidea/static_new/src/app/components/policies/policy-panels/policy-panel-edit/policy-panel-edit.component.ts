@@ -35,7 +35,11 @@ import { PolicyDescriptionComponent } from "../action-tab/policy-description/pol
 import { ActionTabComponent } from "../action-tab/action-tab.component";
 import { ConditionsTabComponent } from "../conditions-tab/conditions-tab.component";
 import { DialogService, DialogServiceInterface } from "../../../../services/dialog/dialog.service";
-import { SimpleConfirmationDialogComponent } from "../../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import {
+  SimpleConfirmationDialogComponent,
+  SimpleConfirmationDialogData
+} from "../../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { lastValueFrom } from "rxjs";
 
 type PolicyTab = "actions" | "conditions";
 
@@ -102,8 +106,8 @@ export class PolicyPanelEditComponent {
     }
   });
 
-  handleCollapse(panel: MatExpansionPanel) {
-    if (this.isPolicyEdited() && !this.confirmDiscardChanges()) {
+  async handleCollapse(panel: MatExpansionPanel) {
+    if (this.isPolicyEdited() && !(await this.confirmDiscardChanges())) {
       panel.open();
       return;
     }
@@ -137,57 +141,30 @@ export class PolicyPanelEditComponent {
     this.policyEdits.set({});
   }
 
-  /*
-export type SimpleConfirmationDialogData = {
-  title: string;
-  confirmAction: DialogAction<true>;
-  cancelAction?: DialogAction<false>;
-  items: string[];
-  itemType: string;
-};
-*/
-
-  deletePolicy(policyName: string): void {
-    this.dialogService
-      .openDialog({
-        component: SimpleConfirmationDialogComponent,
-        data: {
-          title: "Confirm Deletion",
-          confirmAction: {
-            type: "destruct",
-            label: "Delete",
-            value: true,
-            closeOnAction: true
-          },
-          cancelAction: {
-            type: "cancel",
-            label: "Cancel",
-            value: false,
-            closeOnAction: true
-          },
-          items: [policyName],
-          itemType: "policy"
-        }
+  async deletePolicy(policyName: string): Promise<void> {
+    if (
+      await this._confirm({
+        title: "Confirm Deletion",
+        confirmAction: {
+          type: "destruct",
+          label: "Delete",
+          value: true
+        },
+        cancelAction: {
+          type: "cancel",
+          label: "Cancel",
+          value: false
+        },
+        items: [policyName],
+        itemType: "policy"
       })
-      .afterClosed()
-      .subscribe((confirmed) => {
-        if (confirmed) {
-          this.policyService.deletePolicy(policyName).then(() => {
-            this.policyService.allPoliciesRecource.reload();
-          });
-        }
-      });
+    ) {
+      this.policyService.deletePolicy(policyName);
+    }
   }
 
-  //   if (confirm(`Are you sure you want to delete the policy "${policyName}"? This action cannot be undone.`)) {
-  //     this.policyService.deletePolicy(policyName).then((response) => {
-  //       this.policyService.allPoliciesRecource.reload();
-  //     });
-  //   }
-  // }
-
-  cancelEditMode() {
-    if (!this.confirmDiscardChanges()) return;
+  async cancelEditMode() {
+    if (!(await this.confirmDiscardChanges())) return;
     this.policyEdits.set({});
     this.isEditMode.set(false);
   }
@@ -202,9 +179,23 @@ export type SimpleConfirmationDialogData = {
     return true;
   }
 
-  confirmDiscardChanges(): boolean {
-    if (this.isPolicyEdited() && !confirm("Are you sure you want to discard the changes? All changes will be lost.")) {
-      return false;
+  async confirmDiscardChanges(): Promise<boolean> {
+    if (this.isPolicyEdited()) {
+      return this._confirm({
+        title: "Discard Changes",
+        confirmAction: {
+          type: "destruct",
+          label: "Discard",
+          value: true
+        },
+        cancelAction: {
+          type: "cancel",
+          label: "Keep Editing",
+          value: false
+        },
+        items: [],
+        itemType: ""
+      });
     }
     return true;
   }
@@ -221,5 +212,18 @@ export type SimpleConfirmationDialogData = {
   }
   addPolicyEdit(edits: Partial<PolicyDetail>) {
     this.policyEdits.update((currentChanges) => ({ ...currentChanges, ...edits }));
+  }
+
+  async _confirm(data: SimpleConfirmationDialogData): Promise<boolean> {
+    return (
+      (await lastValueFrom(
+        this.dialogService
+          .openDialog({
+            component: SimpleConfirmationDialogComponent,
+            data: data
+          })
+          .afterClosed()
+      )) === true
+    );
   }
 }

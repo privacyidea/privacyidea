@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, inject, input, linkedSignal, signal, WritableSignal } from "@angular/core";
+import { Component, computed, inject, linkedSignal, signal, WritableSignal } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { MatCardModule } from "@angular/material/card";
 import { MatIconModule } from "@angular/material/icon";
@@ -26,7 +26,7 @@ import { MatButtonToggleModule } from "@angular/material/button-toggle";
 import { FormsModule } from "@angular/forms";
 import { MatExpansionModule, MatExpansionPanel } from "@angular/material/expansion";
 import { MatSlideToggleModule } from "@angular/material/slide-toggle";
-import { PolicyDetail, PolicyService, PolicyServiceInterface } from "../../../../services/policies/policies.service";
+import { PolicyDetail, PolicyService } from "../../../../services/policies/policies.service";
 import { ActionTabComponent } from "../action-tab/action-tab.component";
 import { ConditionsTabComponent } from "../conditions-tab/conditions-tab.component";
 import { PolicyDescriptionComponent } from "../action-tab/policy-description/policy-description.component";
@@ -34,8 +34,6 @@ import { PolicyPriorityComponent } from "../action-tab/policy-priority/policy-pr
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatSelectModule } from "@angular/material/select";
 import { MatOptionModule } from "@angular/material/core";
-import { FilterValueGeneric } from "../../../../core/models/filter_value_generic/filter_value_generic";
-import { empty } from "rxjs";
 
 type PolicyTab = "actions" | "conditions";
 
@@ -144,6 +142,7 @@ export class PolicyPanelNewComponent {
 
   resetPolicy(): boolean {
     if (this.isPolicyEdited()) {
+      // TODO: Confirm dialog
       if (confirm("Are you sure you want to discard the new policy? All changes will be lost.")) {
         this._resetNewPolicy();
         return true;

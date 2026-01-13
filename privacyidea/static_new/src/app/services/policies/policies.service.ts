@@ -513,14 +513,29 @@ export class PolicyService implements PolicyServiceInterface {
     return lastValueFrom(request$);
   }
 
-  deletePolicy(name: string): Promise<PiResponse<number>> {
+  async deletePolicy(name: string): Promise<PiResponse<number>> {
     const allPolicies = this.allPolicies();
     if (!allPolicies) return Promise.reject("No policies found");
     const policy = allPolicies.find((p) => p.name === name);
     if (!policy) return Promise.reject(`Policy with name ${name} not found`);
 
+    // Optimistic update
+    const updatedPolicies = allPolicies.filter((p) => p.name !== name);
+    this.allPolicies.set(updatedPolicies);
+
+    // Do request
     const headers = this.authService.getHeaders();
-    return lastValueFrom(this.http.delete<PiResponse<number>>(`${this.policyBaseUrl}${name}`, { headers }));
+    const result = await lastValueFrom(
+      this.http.delete<PiResponse<number>>(`${this.policyBaseUrl}${name}`, { headers })
+    );
+    // Reload policies to ensure state is correct
+    if (result && !result.result?.error) {
+      this.allPoliciesRecource.reload();
+    } else {
+      // Rollback optimistic update
+      this.allPolicies.set(allPolicies);
+    }
+    return result;
   }
 
   enablePolicy(name: string): Promise<PiResponse<any>> {
