@@ -2930,14 +2930,6 @@ def list_tokengroups(tokengroup=None):
     :return:
     """
     tg = None
-    """
-    if tokengroup:
-        tg = Tokengroup.query.filter_by(name=tokengroup).first()
-    if tg:
-        tgs = TokenTokengroup.query.filter_by(tokengroup_id=tg.id).all()
-    else:
-        tgs = TokenTokengroup.query.all()
-    """
     session = db.session
     if tokengroup:
         stmt = select(Tokengroup).where(Tokengroup.name == tokengroup)

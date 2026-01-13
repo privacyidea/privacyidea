@@ -1600,10 +1600,6 @@ def get_template_obj(template_name: str) -> ContainerTemplateBase:
     """
     session = db.session
     stmt = select(TokenContainerTemplate).where(TokenContainerTemplate.name == template_name)
-    # print("----------------------------- CREATE TOKEN QUERY -----------------------------")
-    # from sqlalchemy.dialects import postgresql
-    # print(stmt.compile(dialect=postgresql.dialect(), compile_kwargs={"literal_binds": True}))
-    # print("-------------------------------------------------------------------------------")
     db_template = session.execute(stmt).scalar_one_or_none()
     if not db_template:
         raise ResourceNotFoundError(f"Template {template_name} does not exist.")
