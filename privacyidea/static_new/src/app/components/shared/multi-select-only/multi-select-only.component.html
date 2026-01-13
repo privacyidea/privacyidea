@@ -1,0 +1,38 @@
+<mat-form-field
+  appearance="fill"
+  class="full-width"
+  [matTooltip]="tooltipText()"
+  [matTooltipDisabled]="!isDisabled()">
+  <mat-label>{{ label() }}</mat-label>
+
+  <mat-select
+    [value]="selectedItems()"
+    [multiple]="true"
+    [disabled]="isDisabled()"
+    (selectionChange)="onSelectionChange($event)">
+    <mat-select-trigger>
+      {{ selectedItems().join(", ") }}
+    </mat-select-trigger>
+
+    <button
+      mat-button
+      class="toggle-all-button"
+      (click)="toggleAll()">
+      {{ isAllSelected() ? "Deselect all" : "Select all" }}
+    </button>
+
+    @for (item of uniqueItems(); track item) {
+      <mat-option [value]="item">
+        <div class="option-row-layout">
+          <span>{{ item }}</span>
+          <button
+            mat-button
+            class="text-button"
+            (click)="selectOnly($event, item)">
+            Only
+          </button>
+        </div>
+      </mat-option>
+    }
+  </mat-select>
+</mat-form-field>

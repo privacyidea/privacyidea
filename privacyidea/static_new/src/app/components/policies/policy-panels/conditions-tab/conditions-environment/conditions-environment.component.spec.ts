@@ -17,30 +17,29 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { ConditionsEnviromentComponent } from "./conditions-enviroment.component";
+import { ConditionsEnvironmentComponent } from "./conditions-environment.component";
 import { PolicyService } from "../../../../../services/policies/policies.service";
-import { PiNode, SystemService } from "../../../../../services/system/system.service";
+import { SystemService } from "../../../../../services/system/system.service";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { MatSelectChange } from "@angular/material/select";
 import { MockPolicyService } from "../../../../../../testing/mock-services/mock-policies-service";
 import { MockSystemService } from "../../../../../../testing/mock-services/mock-system-service";
 
 describe("ConditionsNodesComponent", () => {
-  let component: ConditionsEnviromentComponent;
-  let fixture: ComponentFixture<ConditionsEnviromentComponent>;
+  let component: ConditionsEnvironmentComponent;
+  let fixture: ComponentFixture<ConditionsEnvironmentComponent>;
   let policyServiceMock: MockPolicyService;
   let systemServiceMock: MockSystemService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ConditionsEnviromentComponent, NoopAnimationsModule],
+      imports: [ConditionsEnvironmentComponent, NoopAnimationsModule],
       providers: [
         { provide: PolicyService, useClass: MockPolicyService },
         { provide: SystemService, useClass: MockSystemService }
       ]
     }).compileComponents();
 
-    fixture = TestBed.createComponent(ConditionsEnviromentComponent);
+    fixture = TestBed.createComponent(ConditionsEnvironmentComponent);
     policyServiceMock = TestBed.inject(PolicyService) as unknown as MockPolicyService;
     systemServiceMock = TestBed.inject(SystemService) as unknown as MockSystemService;
     component = fixture.componentInstance;
@@ -68,7 +67,7 @@ describe("ConditionsNodesComponent", () => {
   });
 
   it("should update selected pinodes", () => {
-    const event = { value: ["node1"] } as MatSelectChange<string[]>;
+    const event = ["node1"] as string[];
     component.updateSelectedPinodes(event);
     expect(policyServiceMock.updateSelectedPolicy).toHaveBeenCalledWith({ pinode: ["node1"] });
   });

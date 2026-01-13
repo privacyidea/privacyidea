@@ -26,26 +26,12 @@
     </h2>
 
     @if (isEditMode()) {
-      <mat-form-field
-        appearance="fill"
-        class="full-width">
-        <mat-label i18n>privacyIDEA Nodes</mat-label>
-        <mat-select
-          #nodeSelect
-          [value]="selectedPinodes()"
-          [multiple]="true"
-          (selectionChange)="updateSelectedPinodes($event)">
-          <button
-            mat-button
-            class="toggle-all-button"
-            (click)="toggleAllNodes()">
-            {{ isAllNodesSelected() ? "Deselect all" : "Select all" }}
-          </button>
-          @for (node of availablePinodesList(); track $index) {
-            <mat-option [value]="node">{{ node }}</mat-option>
-          }
-        </mat-select>
-      </mat-form-field>
+      <app-multi-select-only
+        label="privacyIDEA Nodes"
+        [items]="availablePinodesList()"
+        [selectedItems]="selectedPinodes()"
+        (selectionChange)="updateSelectedPinodes($event)">
+      </app-multi-select-only>
       <div class="flex-row-stretch">
         <mat-form-field
           appearance="fill"

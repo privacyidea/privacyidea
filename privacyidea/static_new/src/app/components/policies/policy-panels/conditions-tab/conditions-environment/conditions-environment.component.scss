@@ -95,19 +95,6 @@
   }
 }
 
-// .add-user-agent-button {
-//   height: 56px;
-//   margin-bottom: var(--global-padding);
-//   padding: 0;
-//   border: none;
-//   background-color: var(--mat-sys-surface-container-high);
-//   border-radius: 0 var(--three-quarters-global-padding) var(--three-quarters-global-padding) 0 !important;
-//   display: flex !important;
-//   align-items: center !important;
-//   justify-content: center !important;
-//   transition: background-color 0.2s ease-in-out;
-// }
-
 .custom-error-message {
   color: var(--mat-form-field-error-text-color, #f44336);
   font-size: 75%;
@@ -140,4 +127,14 @@
 
 .readonly-chip {
   @extend .user-agent-chip;
+}
+.option-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.option-container button {
+  transform: scale(0.8);
 }

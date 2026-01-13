@@ -17,11 +17,11 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, inject, input, output } from "@angular/core";
+import { Component, input, output } from "@angular/core";
 import { ConditionsUserComponent } from "./conditions-user/conditions-user.component";
-import { ConditionsEnviromentComponent } from "./conditions-nodes/conditions-enviroment.component";
+import { ConditionsEnvironmentComponent } from "./conditions-environment/conditions-environment.component";
 import { ConditionsAdditionalComponent } from "./conditions-additional/conditions-additional.component";
-import { PolicyDetail, PolicyService } from "../../../../services/policies/policies.service";
+import { PolicyDetail } from "../../../../services/policies/policies.service";
 import { ConditionsAdminComponent } from "./conditions-admin/conditions-admin.component";
 
 @Component({
@@ -29,7 +29,7 @@ import { ConditionsAdminComponent } from "./conditions-admin/conditions-admin.co
   standalone: true,
   imports: [
     ConditionsUserComponent,
-    ConditionsEnviromentComponent,
+    ConditionsEnvironmentComponent,
     ConditionsAdditionalComponent,
     ConditionsAdminComponent
   ],

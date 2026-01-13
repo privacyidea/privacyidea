@@ -30,6 +30,7 @@ import { MatButtonModule } from "@angular/material/button";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { PolicyDetail, PolicyService } from "../../../../../services/policies/policies.service";
 import { MatTooltip } from "@angular/material/tooltip";
+import { MultiSelectOnlyComponent } from "../../../../shared/multi-select-only/multi-select-only.component";
 
 @Component({
   selector: "app-conditions-user",
@@ -44,7 +45,8 @@ import { MatTooltip } from "@angular/material/tooltip";
     MatButtonModule,
     MatExpansionModule,
     ReactiveFormsModule,
-    MatTooltip
+    MatTooltip,
+    MultiSelectOnlyComponent
   ],
   templateUrl: "./conditions-user.component.html",
   styleUrl: "./conditions-user.component.scss"

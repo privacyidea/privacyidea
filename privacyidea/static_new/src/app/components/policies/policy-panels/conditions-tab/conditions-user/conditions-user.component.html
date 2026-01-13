@@ -25,29 +25,13 @@
     </h2>
 
     @if (isEditMode()) {
-      <mat-form-field
-        appearance="fill"
-        class="full-width"
-        [matTooltip]="selectRealmTooltip()"
-        [matTooltipDisabled]="availableRealms().length > 0">
-        <mat-label i18n>Select Realms</mat-label>
-        <mat-select
-          #realmSelect
-          [value]="this.selectedRealms()"
-          [multiple]="true"
-          (selectionChange)="selectRealm($event.value)"
-          [disabled]="availableRealms().length === 0">
-          <button
-            mat-button
-            class="toggle-all-button"
-            (click)="toggleAllRealms()">
-            {{ isAllRealmsSelected() ? "Deselect all" : "Select all" }}
-          </button>
-          @for (realmOption of availableRealms(); track $index) {
-            <mat-option [value]="realmOption">{{ realmOption }}</mat-option>
-          }
-        </mat-select>
-      </mat-form-field>
+      <app-multi-select-only
+        label="Select Realms"
+        [items]="availableRealms()"
+        [selectedItems]="selectedRealms()"
+        [tooltipText]="selectRealmTooltip()"
+        (selectionChange)="selectRealm($event)">
+      </app-multi-select-only>
 
       @if (this.realmService.selectedRealms()) {
         <mat-form-field

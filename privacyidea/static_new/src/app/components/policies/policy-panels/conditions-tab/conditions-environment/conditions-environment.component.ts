@@ -29,6 +29,7 @@ import { MatExpansionModule } from "@angular/material/expansion";
 import { PolicyDetail, PolicyService } from "../../../../../services/policies/policies.service";
 import { SystemServiceInterface, SystemService } from "../../../../../services/system/system.service";
 import { ClearButtonComponent } from "../../../../shared/clear-button/clear-button.component";
+import { MultiSelectOnlyComponent } from "../../../../shared/multi-select-only/multi-select-only.component";
 
 @Component({
   selector: "app-conditions-nodes",
@@ -43,12 +44,13 @@ import { ClearButtonComponent } from "../../../../shared/clear-button/clear-butt
     MatFormFieldModule,
     MatExpansionModule,
     ReactiveFormsModule,
-    ClearButtonComponent
+    ClearButtonComponent,
+    MultiSelectOnlyComponent
   ],
-  templateUrl: "./conditions-enviroment.component.html",
-  styleUrl: "./conditions-enviroment.component.scss"
+  templateUrl: "./conditions-environment.component.html",
+  styleUrl: "./conditions-environment.component.scss"
 })
-export class ConditionsEnviromentComponent {
+export class ConditionsEnvironmentComponent {
   // ViewChild
   @ViewChild("nodeSelect") nodeSelect!: MatSelect;
   // Services
@@ -68,6 +70,7 @@ export class ConditionsEnviromentComponent {
   // Computed Properties
   selectedPolicyName = computed(() => this.policy().name);
   availablePinodesList = computed(() => this.systemService.nodes().map((node) => node.name));
+  availablePinodesSet = computed(() => new Set(this.availablePinodesList()));
   selectedPinodes = computed<string[]>(() => this.policy().pinode || []);
   selectedUserAgents = computed(() => this.policy().user_agents || []);
   selectedValidTime = computed(() => this.policy().time || "");
@@ -99,7 +102,8 @@ export class ConditionsEnviromentComponent {
     this.clientFormControl.setValue(this.policy().client?.join(", ") || "");
   }
   // Node Selection
-  toggleAllNodes() {
+  toggleAllNodes($event?: MouseEvent) {
+    $event?.stopPropagation();
     if (this.isAllNodesSelected()) {
       this.emitEdits({ pinode: [] });
     } else {
@@ -109,8 +113,12 @@ export class ConditionsEnviromentComponent {
       this.nodeSelect.close();
     });
   }
-  updateSelectedPinodes($event: MatSelectChange<string[]>) {
-    this.emitEdits({ pinode: $event.value });
+  selectOnlyThisNode($event: MouseEvent, node: string): void {
+    $event.stopPropagation();
+    this.emitEdits({ pinode: [node] });
+  }
+  updateSelectedPinodes($event: string[]) {
+    this.emitEdits({ pinode: $event });
   }
   // User Agent Management
   addUserAgent() {

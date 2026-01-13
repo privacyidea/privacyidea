@@ -545,3 +545,23 @@ $button-low-contrast-variant: linear-gradient(
     height: 36px !important;
   }
 }
+.text-button {
+  background: none !important;
+  border: none !important;
+  color: var(--mat-sys-primary) !important;
+  padding: 0 8px;
+  cursor: pointer;
+  text-transform: none;
+  font-weight: 500;
+  transition: opacity 0.2s ease-in-out;
+
+  &:hover:not(:disabled) {
+    background-color: var(--sky-bg) !important;
+    border-radius: var(--border-radius);
+  }
+
+  &:disabled {
+    color: var(--grey-light) !important;
+    cursor: default;
+  }
+}
