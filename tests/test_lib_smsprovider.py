@@ -8,6 +8,9 @@ This test file tests the modules:
  lib.smsprovider.scriptsmsprovider
 """
 
+from sqlalchemy import select
+
+from privacyidea.models import SMSGatewayOption, db
 from .base import MyTestCase
 from privacyidea.lib.smsprovider.HttpSMSProvider import HttpSMSProvider
 from privacyidea.lib.smsprovider.SipgateSMSProvider import SipgateSMSProvider
@@ -85,13 +88,35 @@ class SMSTestCase(MyTestCase):
                                      "BANANA": "will be eaten"})
         self.assertTrue(id > 0)
 
+        # Check everything is stored correctly
         gw = get_smsgateway(id=id)
-        self.assertEqual(gw[0].description, "test")
+        my_gw = gw[0]
+        self.assertEqual(my_gw.description, "test")
+        self.assertEqual(provider_module, my_gw.providermodule)
+        option_keys = {option.Key for option in my_gw.options}
+        self.assertSetEqual({"HTTP_METHOD", "URL", "Authorization", "BANANA"}, option_keys)
+        for option in my_gw.options:
+            self.assertEqual(id, option.gateway_id)
+            if option.Key == "HTTP_METHOD":
+                self.assertEqual(option.Value, "POST")
+                self.assertEqual(option.Type, "option")
+            if option.Key == "URL":
+                self.assertEqual(option.Value, "example.com")
+                self.assertEqual(option.Type, "option")
+            if option.Key == "Authorization":
+                self.assertEqual(option.Value, "QWERTZ")
+                self.assertEqual(option.Type, "header")
+            if option.Key == "BANANA":
+                self.assertEqual(option.Value, "will be eaten")
+                self.assertEqual(option.Type, "header")
+
         # update the description
         set_smsgateway(identifier, provider_module,
                        description="This is a sensible description")
         gw = get_smsgateway(id=id)
         self.assertEqual(gw[0].description, "This is a sensible description")
+        # All options are removed when updating the smsgateway without options
+        self.assertEqual(0, len(gw[0].options.all()))
 
         # update some options
         set_smsgateway(identifier, provider_module,
@@ -110,6 +135,7 @@ class SMSTestCase(MyTestCase):
         self.assertEqual(gw[0].header_dict.get("BANANA"), None)
         self.assertEqual(gw[0].header_dict.get("IDENTICAL_KEY"), "new header")
         self.assertEqual(gw[0].header_dict.get("URL"), "URL_in_headers")
+        self.assertIsNone(gw[0].description)
 
         # delete a single option
         r = delete_smsgateway_option(id, "URL")
@@ -132,6 +158,12 @@ class SMSTestCase(MyTestCase):
         # finally delete the gateway definition
         r = delete_smsgateway(identifier)
         self.assertEqual(r, id)
+
+        # check that there are no remaining options
+        options = db.session.scalars(select(SMSGatewayOption)).all()
+        for option in options:
+            self.assertIsNotNone(option.gateway_id)
+            self.assertNotEqual(r, option.gateway_id)
 
         # delete successful?
         gw = get_smsgateway()

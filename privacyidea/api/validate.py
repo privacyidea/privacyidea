@@ -611,8 +611,9 @@ def check():
                 if token:
                     token_type = token.get_tokentype()
                     user_agent, _, _ = get_plugin_info_from_useragent(request.user_agent.string)
-                    user.set_attribute(f"{InternalCustomUserAttributes.LAST_USED_TOKEN}_{user_agent}",
-                                       token_type, INTERNAL_USAGE)
+                    if user.exist():
+                        user.set_attribute(f"{InternalCustomUserAttributes.LAST_USED_TOKEN}_{user_agent}",
+                                           token_type, INTERNAL_USAGE)
 
     serials = ",".join(serial_list)
     ret = send_result(result, rid=2, details=details)

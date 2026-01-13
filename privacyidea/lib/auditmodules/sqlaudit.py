@@ -48,7 +48,7 @@ import traceback
 from collections import OrderedDict
 from typing import Optional
 
-from sqlalchemy import asc, desc, and_, or_
+from sqlalchemy import asc, desc, and_, or_, select, delete
 from sqlalchemy import create_engine
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.orm import sessionmaker, scoped_session
@@ -93,6 +93,12 @@ def fn_to_isodate(element, compiler, **kw):
     return "date_format(%s, '%%%%Y-%%%%m-%%%%d %%%%H:%%%%i:%%%%s')" % compiler.process(
         element.clauses, **kw)
 
+def _now():
+    """
+    Returns the current local date and time.
+    This function is required to be able to mock datetime.now() in tests.
+    """
+    return datetime.datetime.now()
 
 class Audit(AuditBase):
     """
@@ -213,7 +219,8 @@ class Audit(AuditBase):
                 self.audit_data[column] = data
 
     @staticmethod
-    def _create_filter(param: dict, admin_params: Optional[dict] = None, timelimit: Optional[datetime.timedelta] = None):
+    def _create_filter(param: dict, admin_params: Optional[dict] = None,
+                       timelimit: Optional[datetime.timedelta] = None):
         """
         create a filter condition for the logentry
 
@@ -292,7 +299,10 @@ class Audit(AuditBase):
             conditions.append(LogEntry.date >= datetime.datetime.now() -
                               timelimit)
         # Combine them with or to a BooleanClauseList
-        filter_condition = and_(*conditions)
+        if conditions:
+            filter_condition = and_(*conditions)
+        else:
+            filter_condition = and_(True, *conditions)
         if filter_realm is not None:
             filter_condition = and_(filter_condition, filter_realm)
         return filter_condition
@@ -330,8 +340,9 @@ class Audit(AuditBase):
                             "Error occurs in action: {0!r}.".format(self.audit_data.get("action")))
                 if "token_type" not in self.audit_data:
                     self.audit_data["token_type"] = self.audit_data.get("tokentype")
+            end_date = _now()
             if self.audit_data.get("startdate"):
-                duration = datetime.datetime.now() - self.audit_data.get("startdate")
+                duration = end_date - self.audit_data.get("startdate")
             else:
                 duration = None
             le = LogEntry(action=self.audit_data.get("action"),
@@ -356,6 +367,7 @@ class Audit(AuditBase):
                           policies=self.audit_data.get("policies"),
                           startdate=self.audit_data.get("startdate"),
                           duration=duration,
+                          date=end_date,
                           thread_id=self.audit_data.get("thread_id")
                           )
             self.session.add(le)
@@ -500,7 +512,8 @@ class Audit(AuditBase):
         :return: None. It yields results as a generator
         """
         filter_condition = self._create_filter(param, admin_params=admin_params, timelimit=timelimit)
-        logentries = self.session.query(LogEntry).filter(filter_condition).order_by(LogEntry.date).all()
+        stmt = select(LogEntry).where(filter_condition).order_by(LogEntry.date)
+        logentries = self.session.scalars(stmt).all()
 
         for le in logentries:
             audit_dict = self.audit_entry_to_dict(le)
@@ -517,7 +530,10 @@ class Audit(AuditBase):
             conditions.append(LogEntry.date >= datetime.datetime.now() -
                               timedelta)
 
-        filter_condition = and_(*conditions)
+        if conditions:
+            filter_condition = and_(*conditions)
+        else:
+            filter_condition = and_(True, *conditions)
         log_count = self.session.query(LogEntry).filter(filter_condition).count()
 
         return log_count
@@ -600,17 +616,16 @@ class Audit(AuditBase):
 
             # create filter condition
             filter_condition = self._create_filter(search_dict, admin_params, timelimit=timelimit)
+            stmt = select(LogEntry).where(filter_condition)
 
             if sortorder == "desc":
-                logentries = self.session.query(LogEntry).filter(
-                    filter_condition).order_by(
-                    desc(self._get_logentry_attribute("number"))).limit(
-                    limit).offset(offset)
+                stmt = stmt.order_by(
+                    desc(self._get_logentry_attribute("number")))
             else:
-                logentries = self.session.query(LogEntry).filter(
-                    filter_condition).order_by(
-                    asc(self._get_logentry_attribute("number"))).limit(
-                    limit).offset(offset)
+                stmt = stmt.order_by(
+                    asc(self._get_logentry_attribute("number")))
+            stmt = stmt.limit(limit).offset(offset)
+            logentries = self.session.scalars(stmt).all()
 
         except Exception as exx:  # pragma: no cover
             log.error("exception {0!r}".format(exx))
@@ -630,7 +645,8 @@ class Audit(AuditBase):
         This is only used for test cases!
         :return:
         """
-        self.session.query(LogEntry).delete()
+        stmt = delete(LogEntry)
+        self.session.execute(stmt)
         self.session.commit()
 
     def audit_entry_to_dict(self, audit_entry):

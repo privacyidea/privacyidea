@@ -1425,6 +1425,7 @@ class ValidateAPITestCase(MyApiTestCase):
             token.set_pin(pin)
             # Set the failcounter
             token.set_failcount(5)
+            token.save()
             tokens.append(token)
 
         # create a challenge for the first token by authenticating with the OTP PIN
@@ -1482,6 +1483,7 @@ class ValidateAPITestCase(MyApiTestCase):
 
         # Set the same failcount for both tokens
         tokens[0].set_failcount(5)
+        tokens[0].save()
 
         # trigger a challenge for both tokens
         with self.app.test_request_context('/validate/triggerchallenge',
@@ -1534,7 +1536,7 @@ class ValidateAPITestCase(MyApiTestCase):
         pol.save()
 
         # create the challenge by authenticating with the OTP PIN
-        with Replace('privacyidea.models.challenge.datetime',
+        with Replace('privacyidea.models.utils.datetime',
                      test_datetime(2020, 6, 13, 1, 2, 3,
                                    tzinfo=datetime.timezone(datetime.timedelta(hours=+5)))):
             with self.app.test_request_context('/validate/check',
@@ -3297,6 +3299,7 @@ class ValidateAPITestCase(MyApiTestCase):
 
         # Set the failcounter
         token.set_failcount(5)
+        token.save()
 
         # set a chalresp policy for HOTP
         set_policy("policy", scope=SCOPE.AUTH, action=f"{PolicyAction.CHALLENGERESPONSE}=hotp")
@@ -3578,6 +3581,7 @@ class ValidateAPITestCase(MyApiTestCase):
             self._assert_unspecific_message_with_200(res)
 
         token.set_failcount(10)
+        token.save()
         # Failcount exceeded: currently 200, should be 401
         with self.app.test_request_context('/validate/check', method="POST",
                                            data={
@@ -3588,6 +3592,7 @@ class ValidateAPITestCase(MyApiTestCase):
             self._assert_unspecific_message_with_200(res)
 
         token.set_failcount(0)
+        token.save()
 
         # lastauth: currently 200, should be 401
         now = datetime.datetime.now(datetime.timezone.utc)
@@ -3775,6 +3780,7 @@ class RegistrationAndPasswordToken(MyApiTestCase):
             self.assertEqual(200, res.status_code)
             serial = res.json.get("detail").get("serial")
             remove_token(serial)
+            db.session.expunge_all()
 
         # Try setting an explicit password
         with self.app.test_request_context('/token/init',
@@ -3801,6 +3807,7 @@ class RegistrationAndPasswordToken(MyApiTestCase):
             self.assertEqual("ACCEPT", data.get("result").get("authentication"), data)
         # delete token
         remove_token(serial)
+        db.session.expunge_all()
 
         # Try getting a generated password
         with self.app.test_request_context('/token/init',
@@ -4613,8 +4620,8 @@ class AChallengeResponse(MyApiTestCase):
 
     def test_01_challenge_response_token_deactivate(self):
         # New token for the user "selfservice"
-        Token("hotp1", "hotp", otpkey=self.otpkey, userid=1004, resolver=self.resolvername1,
-              realm=self.realm1).save()
+        init_token({"type": "hotp", "serial": "hotp1", "otpkey": self.otpkey},
+                   user=User(uid=1004, realm=self.realm1, resolver=self.resolvername1))
         # Define HOTP token to be challenge response
         set_policy(name="pol_cr", scope=SCOPE.AUTH, action="{0!s}=hotp".format(PolicyAction.CHALLENGERESPONSE))
         set_pin(self.serial, "pin")
@@ -5341,8 +5348,8 @@ class AChallengeResponse(MyApiTestCase):
             # The two challenges should be the same
             multichallenge = data.get("detail").get("multi_challenge")
             transaction_id = data.get("detail").get("transaction_id")
-            self.assertEqual(multichallenge[0].get("transaction_id"), transaction_id)
-            self.assertEqual(multichallenge[1].get("transaction_id"), transaction_id)
+            self.assertEqual(transaction_id, multichallenge[0].get("transaction_id"))
+            self.assertEqual(transaction_id, multichallenge[1].get("transaction_id"))
 
         # Check that serials are written to the audit log
         entry = self.find_most_recent_audit_entry(action="*/validate/triggerchallenge*")
@@ -5361,12 +5368,12 @@ class AChallengeResponse(MyApiTestCase):
         # POST is not allowed
         with self.app.test_request_context("/validate/polltransaction", method="POST"):
             res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, 405)
+            self.assertEqual(405, res.status_code)
 
         # transaction_id is required
         with self.app.test_request_context("/validate/polltransaction", method="GET"):
             res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, 400)
+            self.assertEqual(400, res.status_code)
             self.assertFalse(res.json["result"]["status"])
             self.assertIn("Missing parameter: 'transaction_id'", res.json["result"]["error"]["message"])
 
@@ -5374,7 +5381,7 @@ class AChallengeResponse(MyApiTestCase):
         with self.app.test_request_context("/validate/polltransaction", method="GET",
                                            query_string={"transaction_id": "*"}):
             res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, 200)
+            self.assertEqual(200, res.status_code)
             self.assertTrue(res.json["result"]["status"])
             self.assertFalse(res.json["result"]["value"])
 
@@ -5382,50 +5389,50 @@ class AChallengeResponse(MyApiTestCase):
         with self.app.test_request_context("/validate/polltransaction", method="GET",
                                            query_string={"transaction_id": "123456"}):
             res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, 200)
+            self.assertEqual(200, res.status_code)
             self.assertTrue(res.json["result"]["status"])
             self.assertFalse(res.json["result"]["value"])
 
         # check audit log
         entry = self.find_most_recent_audit_entry(action="*/validate/polltransaction*")
-        self.assertEqual(entry["action_detail"], "transaction_id: 123456")
-        self.assertEqual(entry["info"], "status: pending")
-        self.assertEqual(entry["serial"], None)
+        self.assertEqual("transaction_id: 123456", entry["action_detail"])
+        self.assertEqual("status: pending", entry["info"])
+        self.assertEqual("", entry["serial"])
         # Instead of None the "user" entry is now (v3.11.3) an empty string
-        self.assertEqual(entry["user"], "")
+        self.assertEqual("", entry["user"])
 
         # polling the transaction returns false, because no challenge has been answered
         with self.app.test_request_context("/validate/polltransaction", method="GET",
                                            query_string={"transaction_id": transaction_id}):
             res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, 200)
+            self.assertEqual(200, res.status_code)
             self.assertTrue(res.json["result"]["status"])
             self.assertFalse(res.json["result"]["value"])
 
         # but audit log contains both serials and the user
         entry = self.find_most_recent_audit_entry(action="*/validate/polltransaction*")
-        self.assertEqual(entry["action_detail"], "transaction_id: {}".format(transaction_id))
-        self.assertEqual(entry["info"], "status: pending")
+        self.assertEqual(f"transaction_id: {transaction_id}", entry["action_detail"])
+        self.assertEqual("status: pending", entry["info"])
         self.assertIn("tok1", entry["serial"])
         self.assertIn("tok2", entry["serial"])
         self.assertFalse(entry["success"])
-        self.assertEqual(entry["user"], "cornelius")
-        self.assertEqual(entry["resolver"], "resolver1")
-        self.assertEqual(entry["realm"], self.realm1)
+        self.assertEqual("cornelius", entry["user"])
+        self.assertEqual("resolver1", entry["resolver"])
+        self.assertEqual(self.realm1, entry["realm"])
 
         # polling the expired transaction returns false
         with self.app.test_request_context("/validate/polltransaction", method="GET",
                                            query_string={"transaction_id": old_transaction_id}):
             res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, 200)
+            self.assertEqual(200, res.status_code)
             self.assertTrue(res.json["result"]["status"])
             self.assertFalse(res.json["result"]["value"])
 
         # and the audit log contains no serials and the user
         entry = self.find_most_recent_audit_entry(action="*/validate/polltransaction*")
-        self.assertEqual(entry["action_detail"], "transaction_id: {}".format(old_transaction_id))
-        self.assertEqual(entry["info"], "status: pending")
-        self.assertEqual(entry["serial"], None)
+        self.assertEqual(f"transaction_id: {old_transaction_id}", entry["action_detail"])
+        self.assertEqual("status: pending", entry["info"])
+        self.assertEqual("", entry["serial"])
         self.assertFalse(entry["success"])
 
         # Mark one challenge as answered
@@ -5436,25 +5443,25 @@ class AChallengeResponse(MyApiTestCase):
         with self.app.test_request_context("/validate/polltransaction", method="GET",
                                            query_string={"transaction_id": transaction_id}):
             res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, 200)
+            self.assertEqual(200, res.status_code)
             self.assertTrue(res.json["result"]["status"])
             self.assertTrue(res.json["result"]["value"])
 
         entry = self.find_most_recent_audit_entry(action="*/validate/polltransaction*")
-        self.assertEqual(entry["action_detail"], "transaction_id: {}".format(transaction_id))
-        self.assertEqual(entry["info"], "status: accept")
+        self.assertEqual(f"transaction_id: {transaction_id}", entry["action_detail"])
+        self.assertEqual("status: accept", entry["info"])
         # tok2 is not written to the audit log
-        self.assertEqual(entry["serial"], "tok1")
+        self.assertEqual("tok1", entry["serial"])
         self.assertTrue(entry["success"])
-        self.assertEqual(entry["user"], "cornelius")
-        self.assertEqual(entry["resolver"], "resolver1")
-        self.assertEqual(entry["realm"], self.realm1)
+        self.assertEqual("cornelius", entry["user"])
+        self.assertEqual("resolver1", entry["resolver"])
+        self.assertEqual(self.realm1, entry["realm"])
 
         # polling the transaction again gives the same result, even with the more REST-y endpoint
         with self.app.test_request_context(f"/validate/polltransaction/{transaction_id}",
                                            method="GET"):
             res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, 200)
+            self.assertEqual(200, res.status_code)
             self.assertTrue(res.json["result"]["status"])
             self.assertTrue(res.json["result"]["value"])
 
@@ -5466,7 +5473,7 @@ class AChallengeResponse(MyApiTestCase):
                                            method="GET",
                                            query_string={"transaction_id": transaction_id}):
             res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, 200)
+            self.assertEqual(200, res.status_code)
             self.assertTrue(res.json["result"]["status"])
             self.assertFalse(res.json["result"]["value"])
 
@@ -5505,6 +5512,9 @@ class AChallengeResponse(MyApiTestCase):
 
         # ennroll an empty indexedsecret token and check the raised exception
         remove_token("PIIX01")
+        # Clear session before adding new entries to avoid conflicts due to re-adding user cache entry which gets the
+        # same primary key ID as the deleted one.
+        db.session.expunge_all()
         init_token({"otpkey": "",
                     "pin": "test",
                     "serial": "PIIX01",
@@ -5820,9 +5830,9 @@ class AChallengeResponse(MyApiTestCase):
         # If we wait long enough, the challenge has expired,
         # while the HOTP value 287082 in itself would still be valid.
         # However, the authentication with the expired transaction_id has to fail
-        new_utcnow = datetime.datetime.utcnow().replace(tzinfo=None) + datetime.timedelta(minutes=12)
+        new_utcnow = datetime.datetime.now(tz=timezone.utc).replace(tzinfo=None) + datetime.timedelta(minutes=12)
         new_now = datetime.datetime.now().replace(tzinfo=None) + datetime.timedelta(minutes=12)
-        with mock.patch('privacyidea.models.challenge.datetime') as mock_datetime:
+        with mock.patch('privacyidea.models.utils.datetime') as mock_datetime:
             mock_datetime.utcnow.return_value = new_utcnow
             mock_datetime.now.return_value = new_now
             with self.app.test_request_context('/validate/check',

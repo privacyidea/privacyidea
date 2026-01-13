@@ -24,7 +24,7 @@ from privacyidea.lib.monitoringmodules.base import Monitoring as MonitoringBase
 from privacyidea.lib.pooling import get_engine
 from privacyidea.lib.utils import censor_connect_string, convert_timestamp_to_utc
 from privacyidea.lib.lifecycle import register_finalizer
-from sqlalchemy import MetaData
+from sqlalchemy import MetaData, delete, select, distinct
 from sqlalchemy import and_
 from privacyidea.models import MonitoringStats
 from sqlalchemy import create_engine
@@ -83,8 +83,8 @@ class Monitoring(MonitoringBase):
             self.session.commit()
             if reset_values:
                 # Successfully saved the new stats entry, so remove old entries
-                self.session.query(MonitoringStats).filter(and_(MonitoringStats.stats_key == stats_key,
-                                                                MonitoringStats.timestamp < utc_timestamp)).delete()
+                delete_stmt = delete(MonitoringStats).where(MonitoringStats.stats_key == stats_key, MonitoringStats.timestamp < utc_timestamp)
+                self.session.execute(delete_stmt)
                 self.session.commit()
         except Exception as exx:  # pragma: no cover
             log.error("exception {0!r}".format(exx))
@@ -105,7 +105,9 @@ class Monitoring(MonitoringBase):
             utc_end_timestamp = convert_timestamp_to_utc(end_timestamp)
             conditions.append(MonitoringStats.timestamp <= utc_end_timestamp)
         try:
-            r = self.session.query(MonitoringStats).filter(and_(*conditions)).delete()
+            delete_stmt = delete(MonitoringStats).where(and_(*conditions))
+            result = self.session.execute(delete_stmt)
+            r = result.rowcount
             self.session.commit()
         except Exception as exx:  # pragma: no cover
             log.error("exception {0!r}".format(exx))
@@ -125,8 +127,10 @@ class Monitoring(MonitoringBase):
         """
         keys = []
         try:
-            for monStat in self.session.query(MonitoringStats).with_entities(MonitoringStats.stats_key).distinct():
-                keys.append(monStat.stats_key)
+            stmt = select(distinct(MonitoringStats.stats_key))
+            monitoring_stats_keys = self.session.scalars(stmt).all()
+            for stat_key in monitoring_stats_keys:
+                keys.append(stat_key)
         except Exception as exx:  # pragma: no cover
             log.error("exception {0!r}".format(exx))
             log.error("could not fetch list of keys")
@@ -139,7 +143,6 @@ class Monitoring(MonitoringBase):
 
     def get_values(self, stats_key, start_timestamp=None, end_timestamp=None, date_strings=False):
         values = []
-
         try:
             conditions = [MonitoringStats.stats_key == stats_key]
             if start_timestamp:
@@ -148,8 +151,9 @@ class Monitoring(MonitoringBase):
             if end_timestamp:
                 utc_end_timestamp = convert_timestamp_to_utc(end_timestamp)
                 conditions.append(MonitoringStats.timestamp <= utc_end_timestamp)
-            for ms in self.session.query(MonitoringStats).filter(and_(*conditions)). \
-                    order_by(MonitoringStats.timestamp.asc()):
+            stmt = select(MonitoringStats).where(and_(*conditions)).order_by(MonitoringStats.timestamp.asc())
+            monitoring_states = self.session.scalars(stmt)
+            for ms in monitoring_states:
                 aware_timestamp = ms.timestamp.replace(tzinfo=tzutc())
                 values.append((aware_timestamp, ms.stats_value))
         except Exception as exx:  # pragma: no cover
@@ -157,26 +161,22 @@ class Monitoring(MonitoringBase):
             log.error("could not fetch list of keys")
             log.debug("{0!s}".format(traceback.format_exc()))
             self.session.rollback()
-
         finally:
             self.session.close()
-
         return values
 
     def get_last_value(self, stats_key):
         val = None
         try:
-            s = self.session.query(MonitoringStats).filter(MonitoringStats.stats_key == stats_key). \
-                order_by(MonitoringStats.timestamp.desc()).first()
-            if s:
-                val = s.stats_value
+            stmt = select(MonitoringStats).where(MonitoringStats.stats_key == stats_key).order_by(MonitoringStats.timestamp.desc())
+            monitoring_stat = self.session.scalars(stmt).first()
+            if monitoring_stat:
+                val = monitoring_stat.stats_value
         except Exception as exx:  # pragma: no cover
             log.error("exception {0!r}".format(exx))
             log.error("could not fetch list of keys")
             log.debug("{0!s}".format(traceback.format_exc()))
             self.session.rollback()
-
         finally:
             self.session.close()
-
         return val

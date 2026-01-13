@@ -38,7 +38,7 @@ import re
 from privacyidea.lib.resolvers.UserIdResolver import UserIdResolver
 
 from sqlalchemy import (Integer, cast, String, MetaData, Table, and_,
-                        create_engine, select, insert, delete)
+                        create_engine, select, insert, delete, update)
 from sqlalchemy.orm import sessionmaker, scoped_session
 
 import traceback
@@ -156,7 +156,6 @@ hash_type_dict = {"PHPASS": 'phpass',
                   }
 
 log = logging.getLogger(__name__)
-
 
 class IdResolver (UserIdResolver):
 
@@ -408,7 +407,10 @@ class IdResolver (UserIdResolver):
 
         conditions = self._append_where_filter(conditions, self.TABLE,
                                                self.where)
-        filter_condition = and_(*conditions)
+        if conditions:
+            filter_condition = and_(*conditions)
+        else:
+            filter_condition = and_(True, *conditions)
 
         result = self.session.execute(select(self.TABLE).
                                       filter(filter_condition).
@@ -513,17 +515,13 @@ class IdResolver (UserIdResolver):
             self.pool_size, self.pool_timeout, self.pool_recycle))
         try:
             engine = create_engine(self.connect_string,
-                                   encoding=self.encoding,
-                                   convert_unicode=False,
                                    pool_size=self.pool_size,
                                    pool_recycle=self.pool_recycle,
                                    pool_timeout=self.pool_timeout)
         except TypeError:
             # The DB Engine/Poolclass might not support the pool_size.
             log.debug("connecting without pool_size.")
-            engine = create_engine(self.connect_string,
-                                   encoding=self.encoding,
-                                   convert_unicode=False)
+            engine = create_engine(self.connect_string)
         return engine
 
     @classmethod
@@ -619,7 +617,10 @@ class IdResolver (UserIdResolver):
             TABLE = Table(table_name, MetaData(), autoload_with=engine, schema=schema)
             conditions = cls._append_where_filter([], TABLE,
                                                   param.get("Where"))
-            filter_condition = and_(*conditions)
+            if conditions:
+                filter_condition = and_(*conditions)
+            else:
+                filter_condition = and_(True, *conditions)
             result = session.query(TABLE).filter(filter_condition).count()
 
             num = result
@@ -656,7 +657,8 @@ class IdResolver (UserIdResolver):
         r = self.session.execute(insert(self.TABLE).values(**kwargs))
         self.session.commit()
         # Return the UID of the new object
-        return r.inserted_primary_key[self.map.get("userid")]
+        primary_key_dict = r.inserted_primary_key._asdict()
+        return primary_key_dict[self.map.get("userid")]
 
     def prepare_attributes_for_db(self, attributes):
         """
@@ -718,12 +720,14 @@ class IdResolver (UserIdResolver):
         :type attributes: dict
         :return: True in case of success
         """
-        r = False
+        success = False
         attributes = attributes or {}
         try:
             params = self.prepare_attributes_for_db(attributes)
-            kwargs = {self.map.get("userid"): uid}
-            r = self.session.query(self.TABLE).filter_by(**kwargs).update(params)
+            filter_condition = self._get_userid_filter(uid)
+            stmt = update(self.TABLE).filter(filter_condition).values(**params)
+            result = self.session.execute(stmt)
+            success = result.rowcount > 0
             self.session.commit()
             log.info('Updated user attributes for user with uid {0!s}'.format(uid))
         except Exception as exx:
@@ -731,7 +735,7 @@ class IdResolver (UserIdResolver):
                       '{1!s}'.format(uid, exx))
             log.debug('Error updating attributes {0!s}'.format(attributes), exc_info=True)
 
-        return r
+        return success
 
     @property
     def editable(self):
