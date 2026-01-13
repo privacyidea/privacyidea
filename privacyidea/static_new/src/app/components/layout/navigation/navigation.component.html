@@ -68,13 +68,15 @@
       An open-source project
       <a
         href="https://netknights.it/"
-        target="_blank">maintained by NetKnights
+        target="_blank">
+        maintained by NetKnights
       </a>
       <br />
       in collaboration with
       <a
         href="https://github.com/privacyidea/privacyidea"
-        target="_blank">community contributors
+        target="_blank"
+        >community contributors
       </a>
     </p>
   </div>
@@ -342,8 +344,7 @@
         </mat-list-item>
         <mat-list-item>
           <button
-            [ngClass]="contentService.routeUrl() === ROUTE_PATHS.USERS_REALMS ?
-                  'card-button-active' : 'card-button-1'"
+            [ngClass]="contentService.routeUrl() === ROUTE_PATHS.USERS_REALMS ? 'card-button-active' : 'card-button-1'"
             [routerLink]="[ROUTE_PATHS.USERS_REALMS]"
             mat-stroked-button>
             <mat-icon>public</mat-icon>
@@ -355,10 +356,9 @@
     @if (authService.actionAllowed("policyread")) {
       <mat-expansion-panel
         [disabled]="true"
-        [ngClass]="{'childless-expension-panel-header-active': this.contentService.onPolicies()}"
+        [ngClass]="{ 'childless-expension-panel-header-active': this.contentService.onPolicies() }"
         class="childless-expension-panel-header">
-        <mat-expansion-panel-header
-          (click)="onPoliciesHeaderClick($event)">
+        <mat-expansion-panel-header (click)="onPoliciesHeaderClick($event)">
           <mat-panel-title>
             <mat-icon>gavel</mat-icon>
             Policies
@@ -523,19 +523,27 @@
             Machines
           </button>
         </mat-list-item>
-        <mat-list-item>
-          <button
-            class="card-button-1"
-            disabled
-            mat-stroked-button>
-            <mat-icon>lan</mat-icon>
-            Machine Resolver
-          </button>
-        </mat-list-item>
+        @if (authService.actionAllowed("mresolverread")) {
+          <mat-list-item>
+            <button
+              [ngClass]="
+                contentService.routeUrl() === ROUTE_PATHS.MACHINE_RESOLVER ? 'card-button-active' : 'card-button-1'
+              "
+              [routerLink]="[ROUTE_PATHS.MACHINE_RESOLVER]"
+              mat-stroked-button>
+              <mat-icon>lan</mat-icon>
+              Machine Resolver
+            </button>
+          </mat-list-item>
+        }
         @if (authService.actionAllowed("periodictask_read")) {
           <mat-list-item>
             <button
-              [ngClass]="contentService.routeUrl() === ROUTE_PATHS.CONFIGURATION_PERIODIC_TASKS ? 'card-button-active' : 'card-button-1'"
+              [ngClass]="
+                contentService.routeUrl() === ROUTE_PATHS.CONFIGURATION_PERIODIC_TASKS
+                  ? 'card-button-active'
+                  : 'card-button-1'
+              "
               [routerLink]="[ROUTE_PATHS.CONFIGURATION_PERIODIC_TASKS]"
               mat-stroked-button>
               <mat-icon>event_repeat</mat-icon>
