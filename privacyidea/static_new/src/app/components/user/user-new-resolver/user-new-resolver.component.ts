@@ -1,22 +1,16 @@
-/**
- * (c) NetKnights GmbH 2025,  https://netknights.it
- *
- * This code is free software; you can redistribute it and/or
- * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
- * as published by the Free Software Foundation; either
- * version 3 of the License, or any later version.
- *
- * This code is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
- *
- * You should have received a copy of the GNU Affero General Public
- * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
- *
- * SPDX-License-Identifier: AGPL-3.0-or-later
- **/
-import { Component, computed, effect, inject, OnDestroy, ResourceStatus, viewChild } from "@angular/core";
+import {
+  AfterViewInit,
+  Component,
+  computed,
+  effect,
+  ElementRef,
+  inject,
+  OnDestroy,
+  Renderer2,
+  ResourceStatus,
+  ViewChild,
+  viewChild
+} from "@angular/core";
 import { AbstractControl, FormsModule } from "@angular/forms";
 import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
@@ -69,11 +63,13 @@ import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
   templateUrl: "./user-new-resolver.component.html",
   styleUrl: "./user-new-resolver.component.scss"
 })
-export class UserNewResolverComponent implements OnDestroy {
+export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
   private readonly resolverService = inject(ResolverService);
   private readonly notificationService = inject(NotificationService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
+  protected readonly renderer: Renderer2 = inject(Renderer2);
+
   readonly sqlPresets = [
     {
       name: "Wordpress",
@@ -106,6 +102,7 @@ export class UserNewResolverComponent implements OnDestroy {
       map: "{\"userid\": \"uid\", \"username\": \"name\", \"email\": \"mail\", \"password\": \"pass\" }"
     }
   ];
+
   readonly ldapPresets = [
     {
       name: "OpenLDAP",
@@ -122,7 +119,16 @@ export class UserNewResolverComponent implements OnDestroy {
       uidType: "objectGUID"
     }
   ];
+
+  private observer!: IntersectionObserver;
   private editInitialized = false;
+
+  @ViewChild("scrollContainer") scrollContainer!: ElementRef<HTMLElement>;
+  @ViewChild("stickyHeader") stickyHeader!: ElementRef<HTMLElement>;
+  @ViewChild("stickySentinel") stickySentinel!: ElementRef<HTMLElement>;
+  @ViewChild("stickyPlaceholder") stickyPlaceholder!: ElementRef<HTMLElement>;
+  @ViewChild("leftColumn") leftColumn!: ElementRef<HTMLElement>;
+
   ldapResolver = viewChild(LdapResolverComponent);
   sqlResolver = viewChild(SqlResolverComponent);
   passwdResolver = viewChild(PasswdResolverComponent);
@@ -130,6 +136,7 @@ export class UserNewResolverComponent implements OnDestroy {
   httpResolver = viewChild(HttpResolverComponent);
   entraidResolver = viewChild(EntraidResolverComponent);
   keycloakResolver = viewChild(KeycloakResolverComponent);
+
   additionalFormFields = computed<Record<string, AbstractControl>>(() => {
     const resolver = this.ldapResolver() ||
       this.sqlResolver() ||
@@ -140,6 +147,7 @@ export class UserNewResolverComponent implements OnDestroy {
       this.httpResolver();
     return resolver?.controls() ?? {};
   });
+
   resolverName = "";
   resolverType: ResolverType = "passwdresolver";
   formData: Record<string, any> = {
@@ -207,8 +215,38 @@ export class UserNewResolverComponent implements OnDestroy {
     return Object.values(this.additionalFormFields()).every(control => control.valid);
   }
 
+  ngAfterViewInit(): void {
+    if (!this.scrollContainer || !this.stickyHeader || !this.stickySentinel || !this.stickyPlaceholder || !this.leftColumn) {
+      return;
+    }
+
+    const options: IntersectionObserverInit = {
+      root: this.scrollContainer.nativeElement,
+      threshold: [0, 1]
+    };
+
+    this.observer = new IntersectionObserver(([entry]) => {
+      if (!entry.rootBounds) return;
+
+      const shouldFloat = entry.boundingClientRect.top < entry.rootBounds.top;
+
+      if (shouldFloat) {
+        this.renderer.addClass(this.stickyHeader.nativeElement, "is-sticky");
+        this.updatePlaceholder();
+      } else {
+        this.renderer.removeClass(this.stickyHeader.nativeElement, "is-sticky");
+        this.clearPlaceholder();
+      }
+    }, options);
+
+    this.observer.observe(this.stickySentinel.nativeElement);
+  }
+
   ngOnDestroy(): void {
     this.resolverService.selectedResolverName.set("");
+    if (this.observer) {
+      this.observer.disconnect();
+    }
   }
 
   onTypeChange(type: ResolverType): void {
@@ -341,7 +379,6 @@ export class UserNewResolverComponent implements OnDestroy {
     };
   }
 
-
   onSave(): void {
     const name = this.resolverName.trim();
     if (!name) {
@@ -410,6 +447,15 @@ export class UserNewResolverComponent implements OnDestroy {
 
   onQuickTest() {
     this.executeTest(true);
+  }
+
+  private updatePlaceholder(): void {
+    const h = this.stickyHeader.nativeElement.offsetHeight;
+    this.stickyPlaceholder.nativeElement.style.height = `${h}px`;
+  }
+
+  private clearPlaceholder(): void {
+    this.stickyPlaceholder.nativeElement.style.height = "0px";
   }
 
   private executeTest(quickTest = false): void {

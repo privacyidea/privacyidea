@@ -12,6 +12,7 @@
   max-width: calc(100vw - var(--global-padding) * 5 - 48px);
   display: grid;
   overflow: auto;
+  position: relative;
 }
 
 .form-row {
@@ -23,12 +24,35 @@
   width: 492px;
 }
 
+.right-column {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.sticky-header {
+  position: relative;
+  z-index: 5;
+}
+
+.sticky-header.is-sticky {
+  position: fixed;
+  top: 48px;
+  z-index: 1000;
+}
+
+.sticky-placeholder {
+  height: 0;
+  width: 100%;
+}
+
 .preset-buttons-container {
   display: flex;
   flex-wrap: wrap;
   margin-left: 1rem;
   align-items: center;
   flex-direction: column;
+  margin-bottom: 16px;
 
   .preset-label {
     font-weight: 500;

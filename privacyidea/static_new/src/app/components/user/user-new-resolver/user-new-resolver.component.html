@@ -1,26 +1,9 @@
-<!--
- (c) NetKnights GmbH 2025,  https://netknights.it
-
- This code is free software; you can redistribute it and/or
- modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
- as published by the Free Software Foundation; either
- version 3 of the License, or any later version.
-
- This code is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- GNU AFFERO GENERAL PUBLIC LICENSE for more details.
-
- You should have received a copy of the GNU Affero General Public
- License along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
- SPDX-License-Identifier: AGPL-3.0-or-later
--->
 <div
   aria-label="User Resolver Editor"
   class="user-new-resolver-layout"
   i18n-aria-label>
   <div
+    #scrollContainer
     appScrollToTop
     class="user-new-resolver-container">
     @if (isEditMode) {
@@ -35,102 +18,169 @@
       </h3>
     }
 
-    <div class="flex-row gap-2 align-items-center">
-      <div class="form-row margin-bottom-0">
-        <mat-form-field>
-          <mat-label i18n>Resolver name</mat-label>
-          <mat-hint>
-            @if (isEditMode) {
-              <span i18n>Change the configuration of the selected resolver.</span>
-            } @else {
-              <span i18n>Define a new resolver used as a user source.</span>
+    <div class="flex-row">
+      <div class="flex-row gap-2 align-items-start">
+        <div
+          #leftColumn
+          class="form-row margin-bottom-0">
+          <mat-form-field>
+            <mat-label i18n>Resolver name</mat-label>
+            <mat-hint>
+              @if (isEditMode) {
+                <span i18n>Change the configuration of the selected resolver.</span>
+              } @else {
+                <span i18n>Define a new resolver used as a user source.</span>
+              }
+            </mat-hint>
+            <input
+              #nameInput="ngModel"
+              [(ngModel)]="resolverName"
+              [disabled]="isEditMode"
+              matInput
+              placeholder="resolver1"
+              required />
+            @if (nameInput.invalid && (nameInput.dirty || nameInput.touched)) {
+              <mat-error i18n>Resolver name is <strong>required</strong>.</mat-error>
             }
-          </mat-hint>
-          <input
-            #nameInput="ngModel"
-            [(ngModel)]="resolverName"
-            [disabled]="isEditMode"
-            matInput
-            placeholder="resolver1"
-            required />
-          @if (nameInput.invalid && (nameInput.dirty || nameInput.touched)) {
-            <mat-error i18n>Resolver name is <strong>required</strong>.</mat-error>
+          </mat-form-field>
+
+          <mat-form-field>
+            <mat-label i18n>Type</mat-label>
+            <mat-select
+              (ngModelChange)="onTypeChange($event)"
+              [(ngModel)]="resolverType"
+              [disabled]="isEditMode">
+              <mat-option [value]="'ldapresolver'">LDAP</mat-option>
+              <mat-option [value]="'sqlresolver'">SQL</mat-option>
+              <mat-option [value]="'passwdresolver'">Passwd</mat-option>
+              <mat-option [value]="'scimresolver'">SCIM</mat-option>
+              <mat-option [value]="'httpresolver'">HTTP</mat-option>
+              <mat-option [value]="'entraidresolver'">EntraID</mat-option>
+              <mat-option [value]="'keycloakresolver'">Keycloak</mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+
+        <div class="right-column">
+          <div
+            #stickySentinel
+            class="sticky-sentinel"></div>
+
+          <div
+            #stickyHeader
+            class="sticky-header">
+            <div class="sticky-controls ali-center">
+              @if (resolverType !== 'passwdresolver') {
+                <div class="flex-column gap-16 ali-center">
+                  @if (['entraidresolver', 'keycloakresolver', 'httpresolver'].includes(resolverType)) {
+                    <mat-form-field subscriptSizing="dynamic">
+                      <mat-label i18n>Test username</mat-label>
+                      <input
+                        [(ngModel)]="testUsername"
+                        matInput
+                        placeholder="foo@bar.com" />
+                    </mat-form-field>
+
+                    <mat-form-field subscriptSizing="dynamic">
+                      <mat-label i18n>Test user ID</mat-label>
+                      <input
+                        [(ngModel)]="testUserId"
+                        matInput
+                        placeholder="foo@bar.com" />
+                    </mat-form-field>
+                  }
+
+                  @if (resolverType === 'ldapresolver') {
+                    <button
+                      (click)="onQuickTest()"
+                      [disabled]="isSaving || isTesting || !resolverType || !isAdditionalFieldsValid"
+                      class="action-button-1 width-238"
+                      mat-stroked-button>
+                      <mat-icon>wifi</mat-icon>
+                      <span i18n>Quick Resolver Test</span>
+                    </button>
+                  }
+
+                  <button
+                    (click)="onTest()"
+                    [disabled]="isSaving || isTesting || !resolverType || !isAdditionalFieldsValid"
+                    class="action-button-1 width-238"
+                    mat-stroked-button>
+                    <mat-icon>wifi</mat-icon>
+                    <span i18n>Test connection</span>
+                  </button>
+                </div>
+              }
+
+              <button
+                (click)="onSave()"
+                [disabled]="!resolverName || !resolverType || !isAdditionalFieldsValid"
+                class="action-button-1 width-238"
+                mat-stroked-button>
+                <mat-icon>add</mat-icon>
+                Save
+              </button>
+            </div>
+          </div>
+
+          <div
+            #stickyPlaceholder
+            class="sticky-placeholder"></div>
+
+          @if (!isEditMode) {
+            @if (resolverType === 'sqlresolver') {
+              <div class="preset-buttons-container">
+                <span
+                  class="preset-label"
+                  i18n>Presets:</span>
+                <div class="preset-buttons">
+                  @for (preset of sqlPresets; track preset.name) {
+                    <button
+                      (click)="applySqlPreset(preset)"
+                      mat-stroked-button
+                      type="button">
+                      {{ preset.name }}
+                    </button>
+                  }
+                </div>
+              </div>
+            }
+            @if (resolverType === 'ldapresolver') {
+              <div class="preset-buttons-container">
+                <span
+                  class="preset-label"
+                  i18n>Presets:</span>
+                <div class="preset-buttons">
+                  @for (preset of ldapPresets; track preset.name) {
+                    <button
+                      (click)="applyLdapPreset(preset)"
+                      mat-stroked-button
+                      type="button">
+                      {{ preset.name }}
+                    </button>
+                  }
+                </div>
+              </div>
+            }
           }
-        </mat-form-field>
-
-        <mat-form-field>
-          <mat-label i18n>Type</mat-label>
-          <mat-select
-            (ngModelChange)="onTypeChange($event)"
-            [(ngModel)]="resolverType"
-            [disabled]="isEditMode">
-            <mat-option [value]="'ldapresolver'">LDAP</mat-option>
-            <mat-option [value]="'sqlresolver'">SQL</mat-option>
-            <mat-option [value]="'passwdresolver'">Passwd</mat-option>
-            <mat-option [value]="'scimresolver'">SCIM</mat-option>
-            <mat-option [value]="'httpresolver'">HTTP</mat-option>
-            <mat-option [value]="'entraidresolver'">EntraID</mat-option>
-            <mat-option [value]="'keycloakresolver'">Keycloak</mat-option>
-          </mat-select>
-        </mat-form-field>
+        </div>
       </div>
-
-      @if (!isEditMode) {
-        @if (resolverType === 'sqlresolver') {
-          <div class="preset-buttons-container">
-            <span
-              class="preset-label"
-              i18n>Presets:</span>
-            <div class="preset-buttons">
-              @for (preset of sqlPresets; track preset.name) {
-                <button
-                  (click)="applySqlPreset(preset)"
-                  mat-stroked-button
-                  type="button">
-                  {{ preset.name }}
-                </button>
-              }
-            </div>
-          </div>
-        }
-        @if (resolverType === 'ldapresolver') {
-          <div class="preset-buttons-container">
-            <span
-              class="preset-label"
-              i18n>Presets:</span>
-            <div class="preset-buttons">
-              @for (preset of ldapPresets; track preset.name) {
-                <button
-                  (click)="applyLdapPreset(preset)"
-                  mat-stroked-button
-                  type="button">
-                  {{ preset.name }}
-                </button>
-              }
-            </div>
-          </div>
-        }
-      }
     </div>
 
     @if (resolverType === 'ldapresolver') {
-      <app-ldap-resolver
-        [data]="formData" />
+      <app-ldap-resolver [data]="formData" />
     }
 
     @if (resolverType === 'sqlresolver') {
-      <app-sql-resolver
-        [data]="formData" />
+      <app-sql-resolver [data]="formData" />
     }
 
     @if (resolverType === 'passwdresolver') {
-      <app-passwd-resolver
-        [data]="formData" />
+      <app-passwd-resolver [data]="formData" />
     }
 
     @if (resolverType === 'scimresolver') {
-      <app-scim-resolver
-        [data]="formData" />
+      <app-scim-resolver [data]="formData" />
     }
 
     @if (resolverType === 'httpresolver') {
@@ -150,61 +200,5 @@
         [data]="formData"
         [type]="resolverType" />
     }
-
-    <div class="flex-column gap-16 margin-top-1 margin-left-1 ali-center just-center">
-
-      @if (resolverType !== 'passwdresolver') {
-        <div class="flex-row gap-16 ali-center">
-
-          @if (['entraidresolver', 'keycloakresolver', 'httpresolver'].includes(resolverType)) {
-            <mat-form-field subscriptSizing="dynamic">
-              <mat-label i18n>Test username</mat-label>
-              <input
-                [(ngModel)]="testUsername"
-                matInput
-                placeholder="foo@bar.com" />
-            </mat-form-field>
-
-            <mat-form-field subscriptSizing="dynamic">
-              <mat-label i18n>Test user ID</mat-label>
-              <input
-                [(ngModel)]="testUserId"
-                matInput
-                placeholder="foo@bar.com" />
-            </mat-form-field>
-
-          }
-
-          @if (resolverType === 'ldapresolver') {
-            <button
-              (click)="onQuickTest()"
-              [disabled]="isSaving || isTesting || !resolverType || !isAdditionalFieldsValid"
-              class="action-button-1 width-238"
-              mat-stroked-button>
-              <mat-icon>wifi</mat-icon>
-              <span i18n>Quick Resolver Test</span>
-            </button>
-          }
-
-          <button
-            (click)="onTest()"
-            [disabled]="isSaving || isTesting || !resolverType || !isAdditionalFieldsValid"
-            class="action-button-1 width-238"
-            mat-stroked-button>
-            <mat-icon>wifi</mat-icon>
-            <span i18n>Test connection</span>
-          </button>
-        </div>
-      }
-
-      <button
-        (click)="onSave()"
-        [disabled]="!resolverName || !resolverType || !isAdditionalFieldsValid"
-        class="action-button-1 width-238"
-        mat-stroked-button>
-        <mat-icon>add</mat-icon>
-        Save
-      </button>
-    </div>
   </div>
 </div>
