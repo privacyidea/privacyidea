@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, effect, inject, input, linkedSignal, output, signal, Signal } from "@angular/core";
+import { Component, computed, inject, input, linkedSignal, output, Signal } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
@@ -113,7 +113,7 @@ export class ActionDetailComponent {
     return Object.keys(currentActions);
   });
 
-  // Public Methods-
+  // Public Methods
   updateSelectedActionValue(newValue: any) {
     const selectedAction = this.selectedAction();
     if (!selectedAction) return;

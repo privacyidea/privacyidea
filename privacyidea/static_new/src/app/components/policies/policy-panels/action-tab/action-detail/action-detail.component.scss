@@ -19,7 +19,6 @@
   color: #e5a500;
 }
 
-
 /*
  * When .detail-row is used for the [innerHTML] container itself inside
  * .action-detail-card, it must not be a flex container, otherwise the
@@ -28,4 +27,10 @@
  */
 .action-detail-card > .detail-row {
   display: block;
+}
+
+.action-detail-column {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
