@@ -385,7 +385,7 @@ export class UserNewResolverComponent implements OnDestroy {
             if (!this.isEditMode) {
               this.resolverName = "";
               this.formData = {};
-              this.router.navigateByUrl(ROUTE_PATHS.USERS_SOURCES);
+              this.router.navigateByUrl(ROUTE_PATHS.USERS_RESOLVERS);
             }
           } else {
             const message = res.detail?.description || res.result?.error?.message || $localize`Unknown error occurred.`;

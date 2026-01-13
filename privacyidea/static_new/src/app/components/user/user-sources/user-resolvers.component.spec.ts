@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { UserSourcesComponent } from "./user-sources.component";
+import { UserResolversComponent } from "./user-resolvers.component";
 import { Resolver, ResolverService } from "../../../services/resolver/resolver.service";
 import { TableUtilsService } from "../../../services/table-utils/table-utils.service";
 import { NotificationService } from "../../../services/notification/notification.service";
@@ -21,8 +21,8 @@ class LocalMockMatDialog {
 }
 
 describe("UserSourcesComponent", () => {
-  let component: UserSourcesComponent;
-  let fixture: ComponentFixture<UserSourcesComponent>;
+  let component: UserResolversComponent;
+  let fixture: ComponentFixture<UserResolversComponent>;
   let resolverService: MockResolverService;
   let notificationService: MockNotificationService;
   let dialog: LocalMockMatDialog;
@@ -30,7 +30,7 @@ describe("UserSourcesComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [UserSourcesComponent],
+      imports: [UserResolversComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
@@ -55,7 +55,7 @@ describe("UserSourcesComponent", () => {
     })
       .compileComponents();
 
-    fixture = TestBed.createComponent(UserSourcesComponent);
+    fixture = TestBed.createComponent(UserResolversComponent);
     component = fixture.componentInstance;
     resolverService = TestBed.inject(ResolverService) as unknown as MockResolverService;
     notificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;

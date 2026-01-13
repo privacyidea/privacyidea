@@ -26,7 +26,7 @@ const columnKeysMap = [
 ];
 
 @Component({
-  selector: "app-user-sources",
+  selector: "app-user-resolvers",
   standalone: true,
   imports: [
     FormsModule,
@@ -42,10 +42,10 @@ const columnKeysMap = [
     ClearableInputComponent,
     ScrollToTopDirective
   ],
-  templateUrl: "./user-sources.component.html",
-  styleUrl: "./user-sources.component.scss"
+  templateUrl: "./user-resolvers.component.html",
+  styleUrl: "./user-resolvers.component.scss"
 })
-export class UserSourcesComponent {
+export class UserResolversComponent {
   protected readonly columnKeysMap = columnKeysMap;
   readonly columnKeys: string[] = this.columnKeysMap.map((column) => column.key);
 
