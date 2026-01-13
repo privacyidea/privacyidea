@@ -175,9 +175,3 @@ version_scheme = "only-version"
 [tool.pip-tools]
 generate_hashes = true
 allow_unsafe = true
-
-[tool.pytest.ini_options]
-filterwarnings = [
-    #"error::DeprecationWarning",
-    "ignore:Accessing argon2.__version__ is deprecated and will be removed in a future release.*:DeprecationWarning"
-]
