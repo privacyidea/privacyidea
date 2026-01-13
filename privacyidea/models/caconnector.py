@@ -62,7 +62,7 @@ class CAConnectorConfig(db.Model):
     """
     __tablename__ = 'caconnectorconfig'
     id: Mapped[int] = mapped_column(Integer, Sequence("caconfig_seq"), primary_key=True)
-    caconnector_id: Mapped[int] = mapped_column(ForeignKey('caconnector.id'))
+    caconnector_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey('caconnector.id'))
     Key: Mapped[str] = mapped_column(Unicode(255), nullable=False)
     Value: Mapped[Optional[str]] = mapped_column(Unicode(2000), default='')
     Type: Mapped[Optional[str]] = mapped_column(Unicode(2000), default='')

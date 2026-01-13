@@ -20,7 +20,7 @@ import re
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import Sequence, Unicode, Integer, Boolean, Text, ForeignKey, DateTime
+from sqlalchemy import Sequence, Unicode, Integer, Boolean, Text, ForeignKey, DateTime, UnicodeText
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from privacyidea.lib.utils import is_true
@@ -212,7 +212,7 @@ class PolicyDescription(TimestampMethodsMixin, db.Model):
     object_id: Mapped[int] = mapped_column(Integer, ForeignKey('policy.id'), nullable=False)
     object_type: Mapped[str] = mapped_column(Unicode(64), unique=False, nullable=False)
     last_update: Mapped[Optional[datetime]] = mapped_column(DateTime, default=datetime.utcnow)
-    description: Mapped[Optional[str]] = mapped_column(Unicode(255))
+    description: Mapped[Optional[str]] = mapped_column(UnicodeText())
 
     def __init__(self, object_id, name="", object_type="", description=""):
         self.name = name

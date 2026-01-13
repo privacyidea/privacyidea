@@ -18,7 +18,8 @@
 import logging
 from typing import Optional
 
-from sqlalchemy import Sequence, Unicode, Integer, ForeignKey, UniqueConstraint, and_, select, update, delete
+from sqlalchemy import Sequence, Unicode, Integer, ForeignKey, UniqueConstraint, and_, select, update, delete, \
+    UnicodeText
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from privacyidea.models import db
@@ -103,7 +104,7 @@ class SMSGatewayOption(MethodsMixin, db.Model):
     __tablename__ = 'smsgatewayoption'
     id: Mapped[int] = mapped_column(Integer, Sequence("smsgwoption_seq"), primary_key=True)
     Key: Mapped[str] = mapped_column(Unicode(255), nullable=False)
-    Value: Mapped[Optional[str]] = mapped_column(Unicode(2000), default='')
+    Value: Mapped[Optional[str]] = mapped_column(UnicodeText(), default='')
     Type: Mapped[Optional[str]] = mapped_column(Unicode(100), default='option')
     gateway_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey('smsgateway.id'), index=True)
 

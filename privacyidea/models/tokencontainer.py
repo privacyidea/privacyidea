@@ -21,7 +21,7 @@ import logging
 from datetime import datetime
 from typing import List, Optional
 
-from sqlalchemy import Unicode, Integer, Boolean, DateTime, UniqueConstraint, select
+from sqlalchemy import Unicode, Integer, Boolean, DateTime, UniqueConstraint, select, UnicodeText
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from privacyidea.lib.utils import convert_column_to_unicode
@@ -123,7 +123,7 @@ class TokenContainerInfo(MethodsMixin, db.Model):
     __tablename__ = 'tokencontainerinfo'
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     key: Mapped[str] = mapped_column(Unicode(255), nullable=False)
-    value: Mapped[Optional[str]] = mapped_column(Unicode(2000), default='')
+    value: Mapped[Optional[str]] = mapped_column(UnicodeText(), default='')
     type: Mapped[Optional[str]] = mapped_column(Unicode(100), default='')
     description: Mapped[Optional[str]] = mapped_column(Unicode(2000), default='')
     container_id: Mapped[Optional[int]] = mapped_column(Integer, db.ForeignKey('tokencontainer.id'), index=True)

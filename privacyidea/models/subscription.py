@@ -54,7 +54,7 @@ class Subscription(MethodsMixin, db.Model):
     """
     __tablename__ = 'subscription'
     id: Mapped[int] = mapped_column(Integer, Sequence("subscription_seq"), primary_key=True)
-    application: Mapped[str] = mapped_column(Unicode(80), index=True)
+    application: Mapped[Optional[str]] = mapped_column(Unicode(80), index=True)
     for_name: Mapped[str] = mapped_column(Unicode(80), nullable=False)
     for_address: Mapped[Optional[str]] = mapped_column(Unicode(128))
     for_email: Mapped[str] = mapped_column(Unicode(128), nullable=False)
