@@ -8,7 +8,7 @@
 .user-new-resolver-container {
   @include styles.table-container-styles;
   @include styles.base-table-structure(".token-table", ".token-table-filter", ".table-scroll-container");
-  max-height: var(--max-height);
+  max-height: 90vh;
   max-width: calc(100vw - var(--global-padding) * 5 - 48px);
   display: grid;
   overflow: auto;

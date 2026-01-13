@@ -60,11 +60,11 @@ export class ScrollToTopDirective {
 
     this.renderer.setStyle(this.button, "position", "sticky");
     this.renderer.setStyle(this.button, "bottom", "0px");
-    this.renderer.setStyle(this.button, "right", "0px");
     this.renderer.setStyle(this.button, "cursor", "pointer");
     this.renderer.setStyle(this.button, "order", "999");
     this.renderer.setStyle(this.button, "aspect-ratio", "1");
     this.renderer.setStyle(this.button, "display", "none");
+    this.renderer.setStyle(this.button, "margin-right", "64px");
 
     // Align the button to the right side of its grid cell
     this.renderer.setStyle(this.button, "justify-self", "end");
