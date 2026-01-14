@@ -58,8 +58,17 @@ describe("DialogWrapperComponent", () => {
     expect(iconEl?.textContent).toBe("test_icon");
   });
 
-  it("should not display the icon", () => {
-    const iconEl = nativeElement.querySelector("mat-icon");
+  it("display the close icon button by default", () => {
+    const iconEl = nativeElement.querySelector("button.pi-close-button mat-icon");
+
+    expect(iconEl).toBeTruthy();
+    expect(iconEl?.textContent?.trim()).toBe("close");
+  });
+
+  it("should not display the icon when showCloseButton is false", () => {
+    fixture.componentRef.setInput("showCloseButton", false);
+    fixture.detectChanges();
+    const iconEl = nativeElement.querySelector("button.pi-close-button mat-icon");
     expect(iconEl).toBeFalsy();
   });
 
@@ -83,7 +92,7 @@ describe("DialogWrapperComponent", () => {
   });
 
   it("should render action buttons", () => {
-    const actionButtons = nativeElement.querySelectorAll(".pi-btn");
+    const actionButtons = nativeElement.querySelectorAll(".pi-dialog-footer button");
     expect(actionButtons.length).toBe(2);
     expect(actionButtons[0].textContent?.trim()).toBe("Confirm");
     expect(actionButtons[1].textContent?.trim()).toBe("Cancel");
@@ -91,13 +100,13 @@ describe("DialogWrapperComponent", () => {
 
   it("should emit onAction event with correct value when an action button is clicked", () => {
     jest.spyOn(component, "onActionClick");
-    const actionButtons = nativeElement.querySelectorAll(".pi-btn") as NodeListOf<HTMLButtonElement>;
+    const actionButtons = nativeElement.querySelectorAll(".pi-dialog-footer button") as NodeListOf<HTMLButtonElement>;
     actionButtons[0].click();
     expect(component.onActionClick).toHaveBeenCalledWith({ id: "confirm", label: "Confirm", type: "confirm" });
   });
 
   it("should apply correct classes to action buttons", () => {
-    const actionButtons = nativeElement.querySelectorAll(".pi-btn");
+    const actionButtons = nativeElement.querySelectorAll(".pi-dialog-footer button");
     expect(actionButtons[0].classList).toContain("dialog-action-button-default");
     expect(actionButtons[1].classList).toContain("dialog-action-button-cancel");
   });

@@ -56,7 +56,7 @@ describe("ContainerRegistrationInitDialogComponent", () => {
     });
 
     it("should render Register button", () => {
-      const button = fixture.debugElement.query(By.css(".pi-dialog-footer .pi-btn.dialog-action-button-default"))
+      const button = fixture.debugElement.query(By.css(".pi-dialog-footer .dialog-action-button-default"))
         ?.nativeElement as HTMLButtonElement;
       expect(button).toBeDefined();
       expect(button.textContent).toContain("Register");
@@ -78,7 +78,7 @@ describe("ContainerRegistrationInitDialogComponent", () => {
       // Simulate invalid input by mocking the getter
       Object.defineProperty(component, "validInput", { get: () => false });
       fixture.detectChanges();
-      const button = fixture.debugElement.query(By.css(".pi-dialog-footer .pi-btn.dialog-action-button-default"))
+      const button = fixture.debugElement.query(By.css(".pi-dialog-footer .dialog-action-button-default"))
         ?.nativeElement as HTMLButtonElement;
       expect(button).toBeDefined();
       expect(button.disabled).toBe(true);
@@ -118,7 +118,7 @@ describe("ContainerRegistrationInitDialogComponent", () => {
     });
 
     it("should render Rollover button", async () => {
-      const button = fixture.debugElement.query(By.css(".pi-dialog-footer .pi-btn.dialog-action-button-default"))
+      const button = fixture.debugElement.query(By.css(".pi-dialog-footer .dialog-action-button-default"))
         ?.nativeElement as HTMLButtonElement;
       expect(button).toBeDefined();
       expect(button.textContent).toContain("Rollover");
@@ -140,7 +140,7 @@ describe("ContainerRegistrationInitDialogComponent", () => {
       // Simulate invalid input by mocking the getter
       Object.defineProperty(component, "validInput", { get: () => false });
       fixture.detectChanges();
-      const button = fixture.debugElement.query(By.css(".pi-dialog-footer .pi-btn.dialog-action-button-default"))
+      const button = fixture.debugElement.query(By.css(".pi-dialog-footer .dialog-action-button-default"))
         ?.nativeElement as HTMLButtonElement;
       expect(button).toBeDefined();
       expect(button.disabled).toBe(true);
