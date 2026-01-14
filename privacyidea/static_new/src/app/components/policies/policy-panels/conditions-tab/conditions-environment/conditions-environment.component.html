@@ -44,9 +44,11 @@
           @if (validTimeFormControl.touched && validTimeFormControl.invalid) {
             <mat-error i18n> Please enter a valid time format, e.g., Mon-Fri: 9-18 or Sat: 10-15 </mat-error>
           }
-          <app-clear-button
-            matSuffix
-            (onClick)="clearValidTime()"></app-clear-button>
+          @if (validTimeFormControl.value != "") {
+            <app-clear-button
+              matSuffix
+              (onClick)="clearValidTimeControl()"></app-clear-button>
+          }
         </mat-form-field>
         <mat-form-field
           appearance="fill"
@@ -59,9 +61,11 @@
           @if (clientFormControl.touched && clientFormControl.invalid) {
             <mat-error i18> Please enter a valid client format, e.g., 10.0.0.0/8, !10.0.0.124 </mat-error>
           }
-          <app-clear-button
-            matSuffix
-            (onClick)="clearClients()"></app-clear-button>
+          @if (clientFormControl.value != "") {
+            <app-clear-button
+              matSuffix
+              (onClick)="clearClientControl()"></app-clear-button>
+          }
         </mat-form-field>
       </div>
       <div class="user-agent-list-wrapper">

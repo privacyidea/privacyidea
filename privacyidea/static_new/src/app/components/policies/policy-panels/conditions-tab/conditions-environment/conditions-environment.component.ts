@@ -147,6 +147,9 @@ export class ConditionsEnvironmentComponent {
     }
     this.emitEdits({ time: validTime });
   }
+  clearValidTimeControl() {
+    this.validTimeFormControl.setValue("");
+  }
   clearValidTime() {
     this.emitEdits({ time: "" });
   }
@@ -160,9 +163,13 @@ export class ConditionsEnvironmentComponent {
     const clientsArray = client.split(",").map((c) => c.trim());
     this.emitEdits({ client: clientsArray });
   }
+  clearClientControl() {
+    this.clientFormControl.setValue("");
+  }
   clearClients() {
     this.emitEdits({ client: [] });
   }
+
   // Validators
   validTimeValidator(control: AbstractControl): ValidationErrors | null {
     const validTime = control.value;

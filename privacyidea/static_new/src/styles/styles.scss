@@ -528,6 +528,7 @@ body {
 
 .flex-grow-1 {
   flex-grow: 1;
+  flex-basis: 0;
 }
 
 ::ng-deep {
