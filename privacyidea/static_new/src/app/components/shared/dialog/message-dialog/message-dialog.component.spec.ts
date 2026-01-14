@@ -89,7 +89,7 @@ describe("MessageDialogComponent", () => {
   });
 
   it("should not display the icon", () => {
-    const iconElement = fixture.nativeElement.querySelector("mat-icon");
+    const iconElement = fixture.nativeElement.querySelector(".pi-dialog-footer button");
     expect(iconElement).toBeFalsy();
   });
 

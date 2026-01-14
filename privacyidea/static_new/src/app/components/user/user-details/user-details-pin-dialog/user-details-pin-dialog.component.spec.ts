@@ -53,7 +53,7 @@ describe("UserDetailsPinDialogComponent", () => {
     component.pinRepeat.set("4321");
     fixture.detectChanges();
 
-    const assignBtn = fixture.debugElement.query(By.css(".pi-dialog-footer .pi-btn.dialog-action-button-default"))
+    const assignBtn = fixture.debugElement.query(By.css(".pi-dialog-footer .dialog-action-button-default"))
       ?.nativeElement as HTMLButtonElement;
 
     expect(assignBtn).toBeDefined();
@@ -64,7 +64,7 @@ describe("UserDetailsPinDialogComponent", () => {
     component.pinRepeat.set("1234");
     fixture.detectChanges();
 
-    const assignBtn = fixture.debugElement.query(By.css(".pi-dialog-footer .pi-btn.dialog-action-button-default"))
+    const assignBtn = fixture.debugElement.query(By.css(".pi-dialog-footer .dialog-action-button-default"))
       ?.nativeElement as HTMLButtonElement;
 
     expect(assignBtn).toBeDefined();

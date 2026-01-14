@@ -41,6 +41,7 @@ import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { MockAuthService } from "../../../../testing/mock-services/mock-auth-service";
 import { MockDialogService } from "../../../../testing/mock-services/mock-dialog-service";
+import { MockMatDialogRef } from "../../../../testing/mock-mat-dialog-ref";
 
 class MockMatDialog {
   result = true;
@@ -58,7 +59,8 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
 
   let tokenService: MockTokenService;
   let authServiceMock: MockAuthService;
-  let mockDialogMock: MockMatDialog;
+  let dialogServiceMock: MockDialogService;
+  let dialogMock: MockMatDialog;
 
   beforeAll(() => {
     Object.defineProperty(window, "matchMedia", {
@@ -124,7 +126,8 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
 
     tokenService = TestBed.inject(TokenService) as unknown as MockTokenService;
     authServiceMock = TestBed.inject(AuthService) as unknown as MockAuthService;
-    mockDialogMock = TestBed.inject(MatDialog) as unknown as MockMatDialog;
+    dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
+    dialogMock = TestBed.inject(MatDialog) as unknown as MockMatDialog;
 
     tokenService.toggleActive.mockReturnValue(of({}));
     tokenService.resetFailCount.mockReturnValue(of(null));
@@ -312,18 +315,23 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
 
   it("revokeToken: always calls service; reloads only when dialog returns true", () => {
     const serial = "R-1";
+    let dialogRefMock = new MockMatDialogRef();
+    dialogRefMock.afterClosed.mockReturnValue(of(true));
+    dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
 
-    mockDialogMock.result = true;
     component.revokeToken(serial);
-    expect(mockDialogMock.open).toHaveBeenCalledTimes(1);
+
+    expect(dialogServiceMock.openDialog).toHaveBeenCalledTimes(1);
     expect((tokenService as any).revokeToken).toHaveBeenCalledWith(serial);
     expect(tokenService.tokenResource.reload).toHaveBeenCalledTimes(1);
 
     jest.clearAllMocks();
 
-    mockDialogMock.result = false;
+    dialogRefMock = new MockMatDialogRef();
+    dialogRefMock.afterClosed.mockReturnValue(of(false));
+    dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
     component.revokeToken(serial);
-    expect(mockDialogMock.open).toHaveBeenCalledTimes(1);
+    expect(dialogServiceMock.openDialog).toHaveBeenCalledTimes(1);
     expect((tokenService as any).revokeToken).toHaveBeenCalledWith(serial);
     expect(tokenService.tokenResource.reload).not.toHaveBeenCalled();
   });
@@ -331,17 +339,21 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
   it("deleteToken: always calls service; reloads only when dialog returns true", () => {
     const serial = "D-1";
 
-    mockDialogMock.result = true;
+    let dialogRefMock = new MockMatDialogRef();
+    dialogRefMock.afterClosed.mockReturnValue(of(true));
+    dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
     component.deleteToken(serial);
-    expect(mockDialogMock.open).toHaveBeenCalledTimes(1);
+    expect(dialogServiceMock.openDialog).toHaveBeenCalledTimes(1);
     expect((tokenService as any).deleteToken).toHaveBeenCalledWith(serial);
     expect(tokenService.tokenResource.reload).toHaveBeenCalledTimes(1);
 
     jest.clearAllMocks();
 
-    mockDialogMock.result = false;
+    dialogRefMock = new MockMatDialogRef();
+    dialogRefMock.afterClosed.mockReturnValue(of(false));
+    dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
     component.deleteToken(serial);
-    expect(mockDialogMock.open).toHaveBeenCalledTimes(1);
+    expect(dialogServiceMock.openDialog).toHaveBeenCalledTimes(1);
     expect((tokenService as any).deleteToken).toHaveBeenCalledWith(serial);
     expect(tokenService.tokenResource.reload).not.toHaveBeenCalled();
   });
