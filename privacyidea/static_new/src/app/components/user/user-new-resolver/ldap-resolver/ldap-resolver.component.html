@@ -115,22 +115,24 @@
         </mat-select>
       </mat-form-field>
 
-      <mat-form-field class="field-lg">
-        <mat-label i18n>Bind DN</mat-label>
-        <input
-          [formControl]="bindDnControl"
-          matInput
-          placeholder="cn=admin,ou=user,dc=domain,dc=tld" />
-      </mat-form-field>
+      @if (authTypeControl.value !== "anonymous") {
+        <mat-form-field class="field-lg">
+          <mat-label i18n>Bind DN</mat-label>
+          <input
+            [formControl]="bindDnControl"
+            matInput
+            placeholder="cn=admin,ou=user,dc=domain,dc=tld" />
+        </mat-form-field>
 
-      <mat-form-field class="field-md">
-        <mat-label i18n>Bind password</mat-label>
-        <input
-          [formControl]="bindPwControl"
-          matInput
-          placeholder="topsecret"
-          type="password" />
-      </mat-form-field>
+        <mat-form-field class="field-md">
+          <mat-label i18n>{{ authTypeControl.value === "SASL Kerberos" ? "Keyfile Path" : "Bind password" }}</mat-label>
+          <input
+            [formControl]="bindPwControl"
+            matInput
+            placeholder="topsecret"
+            type="password" />
+        </mat-form-field>
+      }
     </div>
   </div>
 </div>

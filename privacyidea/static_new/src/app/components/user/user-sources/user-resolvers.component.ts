@@ -21,8 +21,7 @@ import { ConfirmationDialogComponent } from "../../shared/confirmation-dialog/co
 
 const columnKeysMap = [
   { key: "resolvername", label: "Name" },
-  { key: "type", label: "Type" },
-  { key: "actions", label: "Actions" }
+  { key: "type", label: "Type" }
 ];
 
 @Component({

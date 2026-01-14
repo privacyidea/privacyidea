@@ -47,7 +47,36 @@
         <td
           *matCellDef="let element"
           mat-cell>
-          {{ element.resolvername }}
+          <div class="name-actions-container">
+            <a
+              (click)="onEditResolver(element)"
+              tabindex="0">
+              {{ element.resolvername }}
+            </a>
+            <div class="actions-buttons">
+            @if (authService.actionAllowed("resolverwrite")) {
+                <button
+                  (click)="onEditResolver(element)"
+                  aria-label="Edit resolver"
+                  mat-icon-button
+                  matTooltip="Edit resolver"
+                  type="button">
+                  <mat-icon>edit</mat-icon>
+                </button>
+              }
+              @if (authService.actionAllowed("resolverdelete")) {
+                <button
+                  (click)="onDeleteResolver(element)"
+                  aria-label="Delete resolver"
+                  color="warn"
+                  mat-icon-button
+                  matTooltip="Delete resolver"
+                  type="button">
+                  <mat-icon>delete</mat-icon>
+                </button>
+              }
+            </div>
+          </div>
         </td>
       </ng-container>
 
@@ -62,44 +91,6 @@
           *matCellDef="let element"
           mat-cell>
           {{ element.type }}
-        </td>
-      </ng-container>
-
-      <ng-container matColumnDef="actions">
-        <th
-          *matHeaderCellDef
-          disabled
-          mat-header-cell
-          mat-sort-header>
-          <span i18n>Actions</span>
-        </th>
-        <td
-          *matCellDef="let element"
-          class="actions-cell"
-          mat-cell>
-          <div class="actions-buttons">
-            @if (authService.actionAllowed("resolverwrite")) {
-              <button
-                (click)="onEditResolver(element)"
-                aria-label="Edit resolver"
-                mat-icon-button
-                matTooltip="Edit resolver"
-                type="button">
-                <mat-icon>edit</mat-icon>
-              </button>
-            }
-            @if (authService.actionAllowed("resolverdelete")) {
-              <button
-                (click)="onDeleteResolver(element)"
-                aria-label="Delete resolver"
-                color="warn"
-                mat-icon-button
-                matTooltip="Delete resolver"
-                type="button">
-                <mat-icon>delete</mat-icon>
-              </button>
-            }
-          </div>
         </td>
       </ng-container>
 

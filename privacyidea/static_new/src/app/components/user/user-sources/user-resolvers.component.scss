@@ -11,33 +11,38 @@
   @include styles.base-table-structure(".user-sources-table", ".table-filter", ".table-scroll-container");
   max-height: var(--max-height);
   max-width: calc(100vw - var(--global-padding) * 5 - 48px);
-  width: 1370px;
   display: grid;
   overflow: auto;
+
+  .table-filter {
+    width: 29rem;
+  }
 }
 
 .new-resolver-footer-row {
   background-color: rgba(0, 0, 0, 0.02);
 }
 
-.new-resolver-name-field,
-.new-resolver-type-field {
-  width: 100%;
+.name-actions-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
 }
 
-.actions-cell {
-  max-width: unset !important;
+
+.resolver-link {
+  cursor: pointer;
+  text-decoration: underline;
+  color: var(--mdc-theme-primary);
+
+  &:hover {
+    color: var(--mdc-theme-secondary);
+  }
 }
 
 .actions-buttons {
   display: flex;
   gap: 0.25rem;
-  justify-content: center;
   align-items: center;
-}
-
-.user-sources-table {
-  ::ng-deep th.mat-mdc-header-cell.mat-column-actions .mat-sort-header-container {
-    justify-content: center;
-  }
 }

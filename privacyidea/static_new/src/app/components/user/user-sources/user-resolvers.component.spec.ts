@@ -72,7 +72,7 @@ describe("UserSourcesComponent", () => {
   it("should have columns defined", () => {
     expect(component.columnKeys).toContain("resolvername");
     expect(component.columnKeys).toContain("type");
-    expect(component.columnKeys).toContain("actions");
+    expect(component.columnKeys).not.toContain("actions");
   });
 
 
