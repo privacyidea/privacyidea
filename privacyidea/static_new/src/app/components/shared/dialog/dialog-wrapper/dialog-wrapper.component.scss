@@ -36,7 +36,8 @@
   display: flex;
   justify-content: flex-end;
   padding: var(--half-global-padding) var(--global-padding);
-  border-top: 1px solid var(--mat-sys-on-surface-variant);
+
+  gap: calc(var(--global-gap) / 2);
 }
 
 .dialog-action-button-default {
@@ -44,6 +45,15 @@
   border-width: thin;
   padding: var(--third-global-padding);
   font-size: 1rem;
+  transition:
+    background-color 0.2s ease-in-out,
+    box-shadow 0.2s ease-in-out;
+
+  &:not(:disabled):hover {
+    background-color: var(--mat-sys-primary-base-hover);
+    box-shadow: 0 4px 8px var(--mat-sys-shadow-color-high);
+    cursor: pointer;
+  }
 }
 
 .dialog-action-button-destruct {
@@ -51,6 +61,13 @@
   border-width: thin;
   padding: var(--third-global-padding);
   font-size: 1rem;
+  transition: background-color 0.1s ease;
+
+  &:not(:disabled):hover {
+    background-color: var(--red-base-hover);
+    box-shadow: 0 4px 8px var(--mat-sys-shadow-color-high);
+    cursor: pointer;
+  }
 }
 
 .dialog-action-button-cancel {
@@ -58,4 +75,11 @@
   border-width: thin;
   padding: var(--third-global-padding);
   font-size: 1rem;
+  transition: background-color 0.1s ease;
+
+  &:not(:disabled):hover {
+    background-color: var(--grey-base-hover);
+    box-shadow: 0 4px 8px var(--mat-sys-shadow-color-high);
+    cursor: pointer;
+  }
 }

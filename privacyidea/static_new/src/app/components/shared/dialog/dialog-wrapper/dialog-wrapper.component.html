@@ -1,15 +1,24 @@
 <div class="pi-dialog">
-  <div class="pi-dialog-header" mat-dialog-title>
+  <div
+    class="pi-dialog-header"
+    mat-dialog-title>
     @if (title()) {
-    <h2>
-      @if (icon()) {
-      <mat-icon [style.margin-right.px]="8">{{ icon() }}</mat-icon>
-      } {{ title() }}
-    </h2>
+      <h2>
+        @if (icon()) {
+          <mat-icon [style.margin-right.px]="8">{{ icon() }}</mat-icon>
+        }
+        {{ title() }}
+      </h2>
     } @else {
-    <h2 i18n>Dialog</h2>
-    } @if (showCloseButton()) {
-    <button class="pi-close-button" (click)="onCloseClick()">&times;</button>
+      <h2 i18n>Dialog</h2>
+    }
+    @if (showCloseButton()) {
+      <button
+        mat-icon-button
+        class="pi-close-button"
+        (click)="onCloseClick()">
+        <mat-icon>close</mat-icon>
+      </button>
     }
   </div>
   <mat-dialog-content>
@@ -20,21 +29,19 @@
     </div>
   </mat-dialog-content>
   @if (actions().length > 0) {
-  <div class="pi-dialog-footer">
-    @for (action of actions(); track $index) {
-    <button
-      class="pi-btn"
-      [class.dialog-action-button-default]="
-        action.type === 'confirm' || action.type === 'auxiliary' || !action.type
-      "
-      [class.dialog-action-button-destruct]="action.type === 'destruct'"
-      [class.dialog-action-button-cancel]="action.type === 'cancel'"
-      (click)="onActionClick(action)"
-      [disabled]="action.disabled"
-    >
-      {{ action.label }}
-    </button>
-    }
-  </div>
+    <div class="pi-dialog-footer">
+      @for (action of actions(); track $index) {
+        <button
+          [class.dialog-action-button-default]="
+            action.type === 'confirm' || action.type === 'auxiliary' || !action.type
+          "
+          [class.dialog-action-button-destruct]="action.type === 'destruct'"
+          [class.dialog-action-button-cancel]="action.type === 'cancel'"
+          (click)="onActionClick(action)"
+          [disabled]="action.disabled">
+          {{ action.label }}
+        </button>
+      }
+    </div>
   }
 </div>
