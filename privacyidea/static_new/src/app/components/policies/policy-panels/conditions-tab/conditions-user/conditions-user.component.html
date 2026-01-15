@@ -34,29 +34,13 @@
       </app-multi-select-only>
 
       @if (this.realmService.selectedRealms()) {
-        <mat-form-field
-          appearance="fill"
-          class="full-width"
-          matTooltip="selectResolverTooltip()"
-          [matTooltipDisabled]="availableResolvers().length > 0">
-          <mat-label i18n>Select Resolvers</mat-label>
-          <mat-select
-            #resolverSelect
-            [value]="this.selectedResolvers()"
-            [multiple]="true"
-            (selectionChange)="selectResolver($event.value)"
-            [disabled]="availableResolvers().length === 0">
-            <button
-              mat-button
-              class="toggle-all-button"
-              (click)="toggleAllResolvers()">
-              {{ isAllResolversSelected() ? "Deselect all" : "Select all" }}
-            </button>
-            @for (resolverOption of availableResolvers(); track $index) {
-              <mat-option [value]="resolverOption">{{ resolverOption }}</mat-option>
-            }
-          </mat-select>
-        </mat-form-field>
+        <app-multi-select-only
+          label="Select Resolvers"
+          [items]="availableResolvers()"
+          [selectedItems]="selectedResolvers()"
+          [tooltipText]="selectResolverTooltip()"
+          (selectionChange)="selectResolver($event)">
+        </app-multi-select-only>
       }
 
       <div class="user-list-wrapper">

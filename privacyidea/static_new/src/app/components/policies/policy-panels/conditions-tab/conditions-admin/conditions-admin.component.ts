@@ -29,6 +29,7 @@ import { MatSelect, MatSelectModule } from "@angular/material/select";
 import { MatButtonModule } from "@angular/material/button";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { PolicyDetail, PolicyService } from "../../../../../services/policies/policies.service";
+import { MultiSelectOnlyComponent } from "../../../../shared/multi-select-only/multi-select-only.component";
 
 @Component({
   selector: "app-conditions-admin",
@@ -42,7 +43,8 @@ import { PolicyDetail, PolicyService } from "../../../../../services/policies/po
     MatSelectModule,
     MatButtonModule,
     MatExpansionModule,
-    ReactiveFormsModule
+    ReactiveFormsModule,
+    MultiSelectOnlyComponent
   ],
   templateUrl: "./conditions-admin.component.html",
   styleUrl: "./conditions-admin.component.scss"
@@ -111,6 +113,10 @@ export class ConditionsAdminComponent {
   }
 
   // Admin Management
+  selectAdminRealm($event: string[]) {
+    this.updatePolicy({ adminrealm: $event });
+  }
+
   addAdmin(adminuser: string) {
     if (this.adminFormControl.invalid) {
       return;

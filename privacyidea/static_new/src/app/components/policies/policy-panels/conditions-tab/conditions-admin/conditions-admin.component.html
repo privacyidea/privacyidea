@@ -25,26 +25,12 @@
     </h2>
 
     @if (isEditMode()) {
-      <mat-form-field
-        appearance="fill"
-        class="full-width">
-        <mat-label i18n>Select Admin Realms</mat-label>
-        <mat-select
-          #realmSelect
-          [value]="this.selectedRealms()"
-          [multiple]="true"
-          (selectionChange)="selectRealm($event.value)">
-          <button
-            mat-button
-            class="toggle-all-button"
-            (click)="toggleAllRealms()">
-            {{ isAllRealmsSelected() ? "Deselect all" : "Select all" }}
-          </button>
-          @for (adminRealmOption of this.realmService.adminRealmOptions(); track $index) {
-            <mat-option [value]="adminRealmOption">{{ adminRealmOption }}</mat-option>
-          }
-        </mat-select>
-      </mat-form-field>
+      <app-multi-select-only
+        label="Select Admin Realms"
+        [items]="realmService.adminRealmOptions()"
+        [selectedItems]="selectedAdminrealm()"
+        (selectionChange)="selectAdminRealm($event)">
+      </app-multi-select-only>
       <div class="admin-list-wrapper">
         <div class="admin-list">
           @for (admin of selectedAdmins(); track admin) {
@@ -76,8 +62,9 @@
             <mat-error i18n> Admin must not contain commas. </mat-error>
           }
         </mat-form-field>
+
         <button
-          class="add-admin-button button-hover"
+          class="input-attached-button"
           [disabled]="!adminInput.value.trim() || adminFormControl.invalid"
           (click)="addAdmin(adminInput.value); adminInput.value = ''">
           <mat-icon>add</mat-icon>

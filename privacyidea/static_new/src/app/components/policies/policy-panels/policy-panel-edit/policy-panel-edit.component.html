@@ -20,7 +20,6 @@
 <div class="list-item-card">
   <mat-expansion-panel
     #panel
-    class="margin-4"
     [disabled]="isEditMode() && isPolicyEdited() && panel.expanded === true"
     (closed)="handleCollapse(panel)">
     <mat-expansion-panel-header class="mat-expansion-panel-header">
@@ -91,6 +90,7 @@
             </button>
           }
           <mat-slide-toggle
+            class="small-toggle"
             #slideToggle
             [checked]="panel.expanded ? currentPolicy().active : policy().active"
             (change)="togglePolicyActive(policy(), $event.checked); slideToggle._switchElement.nativeElement.blur()"
@@ -100,7 +100,7 @@
         </div>
       </mat-panel-description>
     </mat-expansion-panel-header>
-    <div class="mat-expansion-panel-body">
+    <div>
       <div class="priority-description">
         <app-policy-priority
           [editMode]="isEditMode()"

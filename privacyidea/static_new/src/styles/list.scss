@@ -1,4 +1,3 @@
-
 .list-layout {
   flex: 1;
   display: flex;
@@ -38,6 +37,8 @@
     display: flex;
     flex-direction: column;
     border-radius: var(--border-radius);
+    padding: var(--global-padding);
+    padding-top: 0;
   }
 
   .actions {

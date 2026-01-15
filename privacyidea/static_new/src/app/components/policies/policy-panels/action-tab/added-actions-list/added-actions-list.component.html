@@ -16,27 +16,56 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<div class="added-actions-container">
-  @for (action of actions(); track action.name) {
-    <div
-      class="action-card"
-      [class.action-card-selected]="selectedAction()?.name === action.name"
-      (click)="onActionClick(action)">
-      <div class="action-row">
-        <span class="action-label">{{ action.name }}</span>
-        @if (!isBooleanAction(action.name)) {
-          <span class="action-value">{{ action.value }}</span>
-        }
-        @if (isEditMode()) {
-          <div class="gap-div-8px"></div>
-          <button
-            mat-icon-button
-            class="action-button"
-            (click)="removeActionFromSelectedPolicy(action.name); $event.stopPropagation()">
-            <mat-icon>delete</mat-icon>
-          </button>
+@if (isEditMode()) {
+  <div class="added-actions-list-container">
+    <mat-expansion-panel
+      #panel
+      expanded="true">
+      <mat-expansion-panel-header class="mat-expansion-panel-header">
+        <mat-panel-title>
+          <p i18n>Actions</p>
+        </mat-panel-title>
+      </mat-expansion-panel-header>
+      <div class="added-actions-container">
+        @for (action of actions(); track action.name) {
+          <div
+            class="action-card"
+            [class.action-card-selected]="selectedAction()?.name === action.name"
+            (click)="onActionClick(action)">
+            <div class="action-row">
+              <span class="action-label">{{ action.name }}</span>
+              @if (!isBooleanAction(action.name)) {
+                <span class="action-value">{{ action.value }}</span>
+              }
+              @if (isEditMode()) {
+                <div class="gap-div-8px"></div>
+                <button
+                  mat-icon-button
+                  class="action-button"
+                  (click)="removeActionFromSelectedPolicy(action.name); $event.stopPropagation()">
+                  <mat-icon>delete</mat-icon>
+                </button>
+              }
+            </div>
+          </div>
         }
       </div>
-    </div>
-  }
-</div>
+    </mat-expansion-panel>
+  </div>
+} @else {
+  <div class="added-actions-container">
+    @for (action of actions(); track action.name) {
+      <div
+        class="action-card"
+        [class.action-card-selected]="selectedAction()?.name === action.name"
+        (click)="onActionClick(action)">
+        <div class="action-row">
+          <span class="action-label">{{ action.name }}</span>
+          @if (!isBooleanAction(action.name)) {
+            <span class="action-value">{{ action.value }}</span>
+          }
+        </div>
+      </div>
+    }
+  </div>
+}

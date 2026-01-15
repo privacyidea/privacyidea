@@ -8,6 +8,20 @@
   flex-direction: column;
   max-height: var(--max-height);
   width: 1000px;
+
+  ::ng-deep mat-expansion-panel.mat-expansion-panel-header {
+    padding: var(--half-global-padding) var(--three-quarters-global-padding) !important;
+    height: 1rem;
+  }
+
+  ::ng-deep mat-expansion-panel.mat-expansion-panel-spacing {
+    margin: 0;
+  }
+
+  ::ng-deep .mat-accordion .mat-expansion-panel:last-of-type .mat-expansion-panel-header {
+    height: 1rem;
+    padding: var(--global-padding);
+  }
 }
 .full-width {
   width: 100%;

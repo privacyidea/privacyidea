@@ -17,3 +17,16 @@
   width: 36px;
   height: 36px;
 }
+
+.action-card {
+  padding: 0px var(--global-padding);
+}
+.added-actions-list-container {
+  ::ng-deep mat-expansion-panel.mat-expansion-panel {
+    background-color: var(--mat-sys-surface-container) !important;
+  }
+  ::ng-deep mat-expansion-panel.mat-expansion-panel-header {
+    padding: var(--half-global-padding) var(--three-quarters-global-padding) !important;
+    height: 1rem;
+  }
+}

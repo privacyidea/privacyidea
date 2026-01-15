@@ -45,7 +45,6 @@ import { MultiSelectOnlyComponent } from "../../../../shared/multi-select-only/m
     MatButtonModule,
     MatExpansionModule,
     ReactiveFormsModule,
-    MatTooltip,
     MultiSelectOnlyComponent
   ],
   templateUrl: "./conditions-user.component.html",

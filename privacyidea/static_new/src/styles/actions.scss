@@ -34,6 +34,7 @@ This file contains all styles for actions as used e.g. in policies, event handle
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: var(--global-gap);
 }
 
 .action-row:not(:last-child) {
@@ -45,10 +46,12 @@ This file contains all styles for actions as used e.g. in policies, event handle
 }
 
 .action-label {
+  padding: var(--half-global-padding) 0px;
   font-weight: 500;
 }
 
 .action-value {
+  padding: var(--half-global-padding) 0px;
   text-align: right;
   flex-grow: 1;
 }

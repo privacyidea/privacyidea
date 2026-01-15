@@ -20,7 +20,6 @@
 <div class="list-item-card">
   <mat-expansion-panel
     #panel
-    class="margin-4 sticky-panel-container"
     [disabled]="isPolicyEdited()"
     (opened)="handleExpansion()"
     (closed)="handleCollapse(panel)">
@@ -78,46 +77,44 @@
         </div>
       </mat-panel-description>
     </mat-expansion-panel-header>
-    <div class="mat-expansion-panel-body">
-      <div class="priority-description">
-        <app-policy-priority
-          [editMode]="true"
-          [priority]="newPolicy().priority"
-          (priorityChange)="onPriorityChange($event)" />
-        <app-policy-description
-          [isEditMode]="true"
-          [policy]="newPolicy()"
-          (policyEdit)="onPolicyEdit($event)" />
-      </div>
-
-      <div class="tab-buttons">
-        <button
-          mat-stroked-button
-          class="action-button-1"
-          [class.action-button-active]="activeTab() === 'actions'"
-          (click)="setActiveTab('actions')">
-          ACTIONS
-        </button>
-        <button
-          mat-stroked-button
-          class="action-button-1"
-          [class.action-button-active]="activeTab() === 'conditions'"
-          (click)="setActiveTab('conditions')">
-          CONDITIONS
-        </button>
-      </div>
-      @if (activeTab() === "actions") {
-        <app-action-tab
-          [isEditMode]="true"
-          [policy]="newPolicy()"
-          (actionsUpdate)="onActionsUpdate($event)" />
-      }
-      @if (activeTab() === "conditions") {
-        <app-conditions-tab
-          [isEditMode]="true"
-          [policy]="newPolicy()"
-          (policyEdit)="onPolicyEdit($event)" />
-      }
+    <div class="priority-description">
+      <app-policy-priority
+        [editMode]="true"
+        [priority]="newPolicy().priority"
+        (priorityChange)="onPriorityChange($event)" />
+      <app-policy-description
+        [isEditMode]="true"
+        [policy]="newPolicy()"
+        (policyEdit)="onPolicyEdit($event)" />
     </div>
+
+    <div class="tab-buttons">
+      <button
+        mat-stroked-button
+        class="action-button-1"
+        [class.action-button-active]="activeTab() === 'actions'"
+        (click)="setActiveTab('actions')">
+        ACTIONS
+      </button>
+      <button
+        mat-stroked-button
+        class="action-button-1"
+        [class.action-button-active]="activeTab() === 'conditions'"
+        (click)="setActiveTab('conditions')">
+        CONDITIONS
+      </button>
+    </div>
+    @if (activeTab() === "actions") {
+      <app-action-tab
+        [isEditMode]="true"
+        [policy]="newPolicy()"
+        (actionsUpdate)="onActionsUpdate($event)" />
+    }
+    @if (activeTab() === "conditions") {
+      <app-conditions-tab
+        [isEditMode]="true"
+        [policy]="newPolicy()"
+        (policyEdit)="onPolicyEdit($event)" />
+    }
   </mat-expansion-panel>
 </div>

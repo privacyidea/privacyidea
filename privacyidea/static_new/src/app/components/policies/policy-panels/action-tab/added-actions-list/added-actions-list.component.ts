@@ -24,11 +24,12 @@ import { MatButtonModule } from "@angular/material/button";
 import { MatSlideToggleModule } from "@angular/material/slide-toggle";
 import { PolicyService } from "../../../../../services/policies/policies.service";
 import { parseBooleanValue } from "../../../../../utils/parse-boolean-value";
+import { MatExpansionModule } from "@angular/material/expansion";
 
 @Component({
   selector: "app-added-actions-list",
   standalone: true,
-  imports: [CommonModule, MatIconModule, MatButtonModule, MatSlideToggleModule],
+  imports: [CommonModule, MatIconModule, MatButtonModule, MatSlideToggleModule, MatExpansionModule],
   templateUrl: "./added-actions-list.component.html",
   styleUrl: "./added-actions-list.component.scss"
 })

@@ -145,19 +145,3 @@
     height: 100%;
   }
 }
-.sticky-panel-container {
-  ::ng-deep .mat-expansion-panel-content {
-    overflow: visible !important;
-  }
-}
-/* Ändere das, was man in deinem Screenshot image_72c89e.jpg sieht: */
-.mat-expansion-panel-body {
-  max-height: none !important; /* Entferne die Begrenzung hier */
-  overflow: visible !important;
-}
-
-/* Sicherstellen, dass die Flex-Row im Child-Component nicht streckt */
-.policy-flex-row {
-  display: flex;
-  align-items: flex-start; // WICHTIG
-}
