@@ -53,6 +53,9 @@ export class EventConditionDetailsComponent {
       return this.originalConditionValue();
     }
     const details = this.conditionDetails();
+    if (details && details.type === "multi") {
+      return [];
+    }
     if (details && Array.isArray(details.value) && details.value.length > 0
     ) {
       return details.value[0];

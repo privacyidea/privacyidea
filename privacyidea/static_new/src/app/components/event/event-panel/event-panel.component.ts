@@ -110,7 +110,7 @@ export class EventPanelComponent {
     if (!this.editEvent().action) {
       return false;
     }
-    const options = this.eventService.moduleActions()[this.editEvent().action];
+    const options = this.eventService.moduleActions()[this.editEvent().action] || {};
     for (const [optionName, optionDetails] of Object.entries(options)) {
       if (optionDetails.required) {
         // Required options must be included and contain a valid value

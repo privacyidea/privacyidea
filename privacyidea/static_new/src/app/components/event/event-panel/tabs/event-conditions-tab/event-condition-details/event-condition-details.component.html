@@ -40,7 +40,7 @@
             appearance="fill"
             class="full-width">
             <mat-select
-              [value]="conditionValue()"
+              [value]="conditionValue() || []"
               [multiple]="true"
               (selectionChange)="conditionValue.set($event.value)">
               @for (option of availableConditionValues(); track option) {
@@ -67,15 +67,6 @@
           @case ("bool") {
             <!-- Show Nothing -->
           }
-          @case ("str") {
-            <input
-              type="text"
-              placeholder="Text"
-              [ngModel]="conditionValue()"
-              (ngModelChange)="conditionValue.set($event)"
-              class="action-value-input"
-              (keydown.enter)="submitCondition()" />
-          }
           @case ("int") {
             <input
               type="number"
@@ -93,7 +84,14 @@
               class="action-value-textarea"></textarea>
           }
           @default {
-            <p i18n>Unknown action type: {{ conditionDetails()?.type }}</p>
+            <!-- str, regex -->
+            <input
+              type="text"
+              placeholder="Text"
+              [ngModel]="conditionValue()"
+              (ngModelChange)="conditionValue.set($event)"
+              class="action-value-input"
+              (keydown.enter)="submitCondition()" />
           }
         }
       }
