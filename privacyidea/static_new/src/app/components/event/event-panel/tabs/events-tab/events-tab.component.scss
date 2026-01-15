@@ -20,19 +20,3 @@
     height: 36px;
   }
 }
-
-.add-action-details {
-  max-height: 300px;
-}
-
-.flex-body {
-  flex: 9 1 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--global-gap);
-  min-width: 0;
-}
-.flex-detail {
-  flex: 5 1 0;
-  min-width: 0;
-}

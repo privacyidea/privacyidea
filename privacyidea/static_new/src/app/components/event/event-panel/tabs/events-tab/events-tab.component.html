@@ -23,7 +23,7 @@
         @for (event of editEvents(); track event) {
           <div
             class="action-card">
-            <div class="action-row">
+            <div class="action-card-row">
               <span class="action-label">{{ event }}</span>
               @if (isEditMode()) {
                 <div class="gap-div-8px"></div>
@@ -66,7 +66,7 @@
           <div class="selected-actions-container">
             @for (eventName of remainingEvents(); track eventName) {
               <div
-                class="action-card action-row">
+                class="action-card action-card-row">
                 <span class="action-label">{{ eventName }}</span>
                 <div class="gap-div-8px"></div>
                 <button

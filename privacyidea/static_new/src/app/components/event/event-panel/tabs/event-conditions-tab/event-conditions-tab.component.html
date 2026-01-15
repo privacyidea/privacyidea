@@ -26,7 +26,7 @@
           class="action-card"
           [class.action-card-selected]="clickedCondition() === conditionName"
           (click)="clickedCondition.set(conditionName)">
-          <div class="action-row">
+          <div class="action-card-row">
             <span class="action-label">{{ conditionName }}</span>
             @if (!isBooleanCondition(conditionName)) {
               <span class="action-value">{{ selectedConditions()[conditionName] }}</span>

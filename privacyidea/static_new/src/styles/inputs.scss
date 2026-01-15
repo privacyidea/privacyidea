@@ -36,3 +36,11 @@ $focus-outline: 3px solid var(--mat-sys-primary-light);
   flex-direction: column;
   gap: 8px;
 }
+
+.checkbox-hint {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--mat-sys-primary);
+  margin-left: 1rem;
+  min-height: 18px;
+}
