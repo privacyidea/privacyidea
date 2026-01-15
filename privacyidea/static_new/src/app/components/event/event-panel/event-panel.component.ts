@@ -40,6 +40,7 @@ import { MatFormField, MatHint } from "@angular/material/form-field";
 import { MatOption, MatSelect } from "@angular/material/select";
 import { deepCopy } from "../../../utils/deep-copy.utils";
 import { EventActionTabReadComponent } from "./tabs/event-action-tab-read/event-action-tab-read.component";
+import { NotificationService } from "../../../services/notification/notification.service";
 
 export type eventTab = "events" | "action" | "conditions";
 
@@ -75,6 +76,7 @@ export type eventTab = "events" | "action" | "conditions";
 export class EventPanelComponent {
   eventService = inject(EventService);
   authService = inject(AuthService);
+  notificiationService = inject(NotificationService);
   private readonly dialog: MatDialog = inject(MatDialog);
   event = input.required<EventHandler>();
   isNewEvent = input<boolean>(false);
@@ -129,7 +131,7 @@ export class EventPanelComponent {
     validity["events"] = this.editEvent().event.length > 0;
     validity["action"] = this.validActionDefinition();
     validity["name"] = this.editEvent().name !== "";
-    validity["handlerModule"] = this.eventService.selectedHandlerModule() !== null;
+    validity["handlerModule"] = this.eventService.selectedHandlerModule() !== null && this.eventService.selectedHandlerModule() !== "";
     validity["position"] = this.editEvent().position !== null && this.editEvent().position !== "";
     return validity;
   });
@@ -156,18 +158,25 @@ export class EventPanelComponent {
     this.editEvent.set({ ...this.editEvent(), [key]: value });
   }
 
-  saveEvent(): void {
+  getSaveParameters(): Record<string, any> {
     let eventParams = deepCopy(this.editEvent()) as Record<string, any>;
     for (const [optionKey, optionValue] of Object.entries(eventParams["options"] || {})) {
       eventParams["option." + optionKey] = optionValue;
     }
     eventParams["id"] = eventParams["id"].toString();
+    eventParams["handlermodule"] = this.eventService.selectedHandlerModule();
     delete eventParams["options"];
+    return eventParams;
+  }
+
+  saveEvent(): void {
+    let eventParams = this.getSaveParameters();
     this.eventService.saveEventHandler(eventParams).subscribe({
       next: (response) => {
         if (response?.result?.value !== undefined) {
           this.eventService.allEventsResource.reload();
           this.isEditMode.set(false);
+          this.notificiationService.openSnackBar("Event handler updated successfully.");
         }
       }
     });

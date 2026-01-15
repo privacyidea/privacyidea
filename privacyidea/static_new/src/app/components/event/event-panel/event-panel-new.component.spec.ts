@@ -22,38 +22,31 @@ import { provideHttpClient } from "@angular/common/http";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MockEventService } from "../../../../testing/mock-services/mock-event-service";
 import { EMPTY_EVENT, EventService } from "../../../services/event/event.service";
-
+import { NotificationService } from '../../../services/notification/notification.service';
+import { MockNotificationService } from "../../../../testing/mock-services";
 
 describe("EventPanelNewComponent", () => {
   let component: EventPanelNewComponent;
   let fixture: ComponentFixture<EventPanelNewComponent>;
   let mockEventService: MockEventService;
+  let mockNotificationService: MockNotificationService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [EventPanelNewComponent],
       providers: [
         provideHttpClient(),
-        { provide: EventService, useClass: MockEventService }
+        { provide: EventService, useClass: MockEventService },
+        { provide: NotificationService, useClass: MockNotificationService }
       ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(EventPanelNewComponent);
     component = fixture.componentInstance;
     mockEventService = TestBed.inject(EventService) as unknown as MockEventService;
+    mockNotificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
     // Provide required inherited inputs
-    fixture.componentRef.setInput("event", {
-      id: "1",
-      name: "TestHandlerNew",
-      handlermodule: "anotherMockModule",
-      active: true,
-      event: ["eventA"],
-      action: "actionA",
-      options: { opt1: "val1" },
-      conditions: { condA: true },
-      position: "post",
-      ordering: 0
-    });
+    fixture.componentRef.setInput("event", EMPTY_EVENT);
     fixture.componentRef.setInput("isNewEvent", true);
     fixture.detectChanges();
   });
@@ -85,5 +78,39 @@ describe("EventPanelNewComponent", () => {
     component.isExpanded.set(true);
     fixture.detectChanges();
     expect(mockEventService.selectedHandlerModule()).toBe("anotherMockModule");
+  });
+
+  it("should save new event and reload events", () => {
+    // set params for new event handler
+    mockEventService.selectedHandlerModule.set("mockModule");
+    component.setNewAction("actionB");
+    component.setNewOptions({ opt3: "true" });
+    component.setNewEvents(["eventA", "eventB"]);
+    component.setNewConditions({ condA: true });
+    component.updateEventHandler("name", "TestHandler");
+    component.updateEventHandler("position", "pre");
+
+    const reloadSpy = jest.spyOn(mockEventService.allEventsResource, "reload");
+    const snackBarSpy = jest.spyOn(mockNotificationService, "openSnackBar");
+    const editEventSpy = jest.spyOn(component.editEvent, "set");
+    const panelCloseSpy = jest.spyOn(component.panel, "close");
+    component.saveEvent();
+    const convertedParams = {
+      name: "TestHandler",
+      handlermodule: "mockModule",
+      active: true,
+      event: ["eventA", "eventB"],
+      action: "actionB",
+      "option.opt3": "true",
+      conditions: { condA: true },
+      position: "pre",
+      ordering: 0
+    };
+    expect(mockEventService.saveEventHandler).toHaveBeenCalledWith(convertedParams);
+    expect(reloadSpy).toHaveBeenCalled();
+    expect(component.isEditMode()).toBe(false);
+    expect(editEventSpy).toHaveBeenCalledWith(EMPTY_EVENT);
+    expect(panelCloseSpy).toHaveBeenCalled();
+    expect(snackBarSpy).toHaveBeenCalledWith("Event handler created successfully.");
   });
 });

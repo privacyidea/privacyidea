@@ -22,18 +22,22 @@ import { provideHttpClient } from "@angular/common/http";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MockEventService } from "../../../../testing/mock-services/mock-event-service";
 import { EventService } from "../../../services/event/event.service";
+import { MockNotificationService } from "../../../../testing/mock-services";
+import { NotificationService } from "../../../services/notification/notification.service";
 
 describe("EventPanelComponent", () => {
   let component: EventPanelComponent;
   let fixture: ComponentFixture<EventPanelComponent>;
   let mockEventService: MockEventService;
+  let mockNotificationService: MockNotificationService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [EventPanelComponent],
       providers: [
         provideHttpClient(),
-        { provide: EventService, useClass: MockEventService }
+        { provide: EventService, useClass: MockEventService },
+        { provide: NotificationService, useClass: MockNotificationService }
       ]
     }).compileComponents();
 
@@ -53,6 +57,7 @@ describe("EventPanelComponent", () => {
     fixture.componentRef.setInput("isNewEvent", false);
     component.isEditMode.set(true);
     mockEventService = TestBed.inject(EventService) as unknown as MockEventService;
+    mockNotificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
     fixture.detectChanges();
   });
 
@@ -209,7 +214,14 @@ describe("EventPanelComponent", () => {
 
   it("should save event and reload events", () => {
     const reloadSpy = jest.spyOn(mockEventService.allEventsResource, "reload");
+    const snackBarSpy = jest.spyOn(mockNotificationService, "openSnackBar");
+    // ensure effect is triggered to set the selected handler module in the service
+    component.onPanelOpened();
+    fixture.detectChanges();
+
+    // act
     component.saveEvent();
+
     // id converted to string and converted options in ugly format
     const convertedParams = {
       id: "1",
@@ -224,6 +236,7 @@ describe("EventPanelComponent", () => {
     expect(mockEventService.saveEventHandler).toHaveBeenCalledWith(convertedParams);
     expect(reloadSpy).toHaveBeenCalled();
     expect(component.isEditMode()).toBe(false);
+    expect(snackBarSpy).toHaveBeenCalledWith("Event handler updated successfully.");
   });
 
   it("should delete event and reload events", () => {
