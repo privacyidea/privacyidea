@@ -1,0 +1,103 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<mat-form-field
+  class="width-100 margin-bottom-32"
+  subscriptSizing="dynamic">
+  <mat-label i18n>Action</mat-label>
+  <mat-select
+    [value]="selectedAction()"
+    [(ngModel)]="selectedAction"
+    [ngModelOptions]="{ standalone: true }"
+    (selectionChange)="onActionSelectionChange()"
+    required>
+    @for (action of Object.keys(eventService.moduleActions()); track action) {
+      <mat-option [value]="action">
+        {{ action }}
+      </mat-option>
+    }
+  </mat-select>
+  <mat-hint i18n>Select an action to be executed on the specified events.</mat-hint>
+</mat-form-field>
+
+<div class="flex-column gap-16">
+  @for (optionName of Object.keys(actionOptions()); track optionName) {
+    @if (checkOptionVisibility(optionName)) {
+      <div class="pad-0 width-100">
+        @if (actionOptions()[optionName].type == "bool") {
+          <mat-checkbox
+            class="margin-0 width-100"
+            [ngModel]="selectedOptions()[optionName]"
+            (ngModelChange)="onOptionChange(optionName, $event)">
+            {{ optionName }}
+          </mat-checkbox>
+        } @else {
+          <mat-form-field
+            class="width-100"
+            subscriptSizing="dynamic">
+            <mat-label>
+              {{ optionName }}
+            </mat-label>
+            @if (actionOptions()[optionName].value) {
+              <mat-select
+                [ngModel]="selectedOptions()[optionName]"
+                [required]="actionOptions()[optionName].required || false"
+                (ngModelChange)="onOptionChange(optionName, $event)">
+                @for (valueOption of actionOptions()[optionName].value; track valueOption) {
+                  <mat-option [value]="valueOption">
+                    {{ valueOption }}
+                  </mat-option>
+                }
+              </mat-select>
+            } @else {
+              @switch (actionOptions()[optionName].type) {
+                @case ("int") {
+                  <input
+                    matInput
+                    type="number"
+                    [ngModel]="selectedOptions()[optionName]"
+                    [required]="actionOptions()[optionName].required || false"
+                    (ngModelChange)="onOptionChange(optionName, $event)" />
+                }
+                @case ("text") {
+                  <textarea
+                    matInput
+                    rows="3"
+                    [ngModel]="selectedOptions()[optionName]"
+                    [required]="actionOptions()[optionName].required || false"
+                    (ngModelChange)="onOptionChange(optionName, $event)"></textarea>
+                }
+                @default {
+                  <input
+                    matInput
+                    type="text"
+                    [ngModel]="selectedOptions()[optionName]"
+                    [required]="actionOptions()[optionName].required || false"
+                    (ngModelChange)="onOptionChange(optionName, $event)" />
+                }
+              }
+            }
+          </mat-form-field>
+        }
+        <div
+          class="checkbox-hint margin-0"
+          [innerHTML]="actionOptions()[optionName].desc || actionOptions()[optionName].description || ''"></div>
+      </div>
+    }
+  }
+</div>

@@ -543,3 +543,13 @@ $button-low-contrast-variant: linear-gradient(
     }
   }
 }
+
+.tab-buttons {
+  display: flex;
+  gap: calc(var(--global-gap) / 2);
+  align-items: center;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: center;
+  padding: var(--half-global-padding) 0;
+}

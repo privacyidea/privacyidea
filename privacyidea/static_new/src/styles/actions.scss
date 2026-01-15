@@ -2,11 +2,27 @@
 This file contains all styles for actions as used e.g. in policies, event handlers, periodic tasks, etc.
 */
 
+.action-selector-container {
+  background-color: var(--mat-sys-surface-container);
+  border-radius: var(--border-radius);
+  box-shadow: var(--mat-sys-level2);
+  color: var(--mat-sys-on-surface);
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--global-gap) / 2);
+  min-width: 0;
+  overflow: scroll;
+  padding: var(--three-quarters-global-padding);
+}
+
 .selected-actions-container {
   display: flex;
   flex-direction: column;
   gap: calc(var(--global-gap) / 2);
   min-width: 0;
+  max-height: 28rem;
+  overflow-y: scroll;
+  padding: 6px;
 }
 
 .action-card {

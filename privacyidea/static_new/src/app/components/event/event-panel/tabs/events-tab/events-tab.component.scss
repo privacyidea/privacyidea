@@ -1,0 +1,38 @@
+@use "../../../../../../styles" as styles;
+
+// event cards are not clickable
+.selected-actions-container .action-card:hover {
+  background-color: var(--mat-sys-surface-container) !important;
+  color: var(--mat-sys-on-surface) !important;
+  cursor: default !important;
+}
+
+.action-icon-button {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  .mat-mdc-button-touch-target {
+    width: 36px;
+    height: 36px;
+  }
+}
+
+.add-action-details {
+  max-height: 300px;
+}
+
+.flex-body {
+  flex: 9 1 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--global-gap);
+  min-width: 0;
+}
+.flex-detail {
+  flex: 5 1 0;
+  min-width: 0;
+}

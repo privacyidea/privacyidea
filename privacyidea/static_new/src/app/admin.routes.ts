@@ -36,6 +36,7 @@ import { RealmTableComponent } from "./components/user/realm-table/realm-table.c
 import { ClientsComponent } from "./components/audit/clients/clients.component";
 import { MachineResolverComponent } from "./components/machine-resolver/machine-resolver.component";
 import { PeriodicTaskComponent } from "./components/configuration/periodic-task/periodic-task.component";
+import { EventComponent } from "./components/event/event.component";
 
 export const routes: Routes = [
   {
@@ -70,6 +71,10 @@ export const routes: Routes = [
   {
     path: "policies",
     children: [{ path: "", component: PoliciesComponent }]
+  },
+  {
+    path: "events",
+    children: [{ path: "", component: EventComponent }]
   },
   {
     path: "configuration",

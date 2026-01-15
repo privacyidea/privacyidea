@@ -1,0 +1,181 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<div class="list-item-card">
+  <mat-expansion-panel
+    #panel
+    class="margin-4"
+    (opened)="onPanelOpened()"
+    (closed)="onPanelClosed()">
+    <mat-expansion-panel-header>
+      <mat-panel-title>
+        @if (!panel.expanded) {
+          <mat-icon>add</mat-icon>
+        } @else {
+          <!-- Empty icon as placeholder to avoid too much layout shifts -->
+          <mat-icon></mat-icon>
+        }
+        <div
+          class="task-name"
+          i18n>
+          Create New Event Handler
+        </div>
+      </mat-panel-title>
+      <mat-panel-description class="header-description">
+        <div class="description-label"></div>
+        <div class="actions">
+          @if (panel.expanded && authService.actionAllowed("eventhandling_write")) {
+            <button
+              mat-icon-button
+              matTooltip="Save Changes"
+              [disabled]="!canSave()"
+              (click)="$event.stopPropagation(); saveEvent();">
+              <mat-icon>save</mat-icon>
+            </button>
+            <button
+              mat-icon-button
+              matTooltip="Cancel Edit"
+              (click)="$event.stopPropagation(); cancelEdit(); panel.close();">
+              <mat-icon>cancel</mat-icon>
+            </button>
+          }
+          @if (panel.expanded) {
+            <mat-slide-toggle
+              matTooltip="Toggle Active Status"
+              [checked]="event().active"
+              (change)="toggleActive($event.checked)"
+              (click)="$event.stopPropagation()"
+              [disabled]="!authService.actionAllowed('eventhandling_write')"
+              [disableRipple]="true"></mat-slide-toggle>
+          }
+        </div>
+      </mat-panel-description>
+    </mat-expansion-panel-header>
+    <div class="mat-expansion-panel-body">
+      <div class="flex-row">
+        <div class="flex-size-1">
+          <mat-form-field
+            class="width-100"
+            subscriptSizing="dynamic">
+            <mat-label i18n>Name</mat-label>
+            <input
+              matInput
+              type="text"
+              [(ngModel)]="editEvent().name"
+              (ngModelChange)="updateEventHandler('name', $event)"
+              required />
+          </mat-form-field>
+        </div>
+        <div class="flex-size-1">
+          <mat-form-field
+            class="width-100"
+            subscriptSizing="dynamic">
+            <mat-label i18n>Handler Module</mat-label>
+            <mat-select
+              [ngModel]="eventService.selectedHandlerModule()"
+              (ngModelChange)="eventService.selectedHandlerModule.set($event)"
+              required>
+              @for (module of eventService.eventHandlerModules(); track module) {
+                <mat-option [value]="module">
+                  {{ module }}
+                </mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        </div>
+      </div>
+      <div class="flex-row">
+        <div class="flex-size-1">
+          <mat-form-field
+            class="width-100"
+            subscriptSizing="dynamic">
+            <mat-label i18n>Position</mat-label>
+            <mat-select
+              [value]="editEvent().position"
+              (selectionChange)="updateEventHandler('position', $event)"
+              required>
+              @for (position of eventService.modulePositions(); track position) {
+                <mat-option [value]="position">
+                  {{ position }}
+                </mat-option>
+              }
+            </mat-select>
+            <mat-hint i18n>Whether the action should be taken before (pre) or after (post) the actual event.</mat-hint>
+          </mat-form-field>
+        </div>
+        <div class="flex-size-1">
+          <mat-form-field
+            class="width-100"
+            subscriptSizing="dynamic">
+            <mat-label i18n>Ordering</mat-label>
+            <input
+              matInput
+              type="number"
+              [(ngModel)]="editEvent().ordering"
+              (ngModelChange)="updateEventHandler('ordering', $event)" />
+            <mat-hint i18n>Event handlers with lower ordering number are executed first.</mat-hint>
+          </mat-form-field>
+        </div>
+      </div>
+
+      <div class="tab-buttons">
+        <button
+          mat-stroked-button
+          [class.action-button-active]="activeTab() === 'events'"
+          (click)="activeTab.set('events')">
+          EVENTS
+        </button>
+        <button
+          mat-stroked-button
+          [class.action-button-active]="activeTab() === 'action'"
+          (click)="activeTab.set('action')">
+          ACTION
+        </button>
+        <button
+          mat-stroked-button
+          [class.action-button-active]="activeTab() === 'conditions'"
+          (click)="activeTab.set('conditions')">
+          CONDITIONS
+        </button>
+      </div>
+
+      @switch (activeTab()) {
+        @case ("events") {
+          <app-events-tab
+            [events]="editEvent().event"
+            [isEditMode]="panel.expanded"
+            (newEvents)="setNewEvents($event)"></app-events-tab>
+        }
+        @case ("action") {
+          <app-event-action-tab
+            [action]="editEvent().action"
+            [options]="editEvent().options || {}"
+            [isEditMode]="panel.expanded"
+            (newAction)="setNewAction($event)"
+            (newOptions)="setNewOptions($event)"></app-event-action-tab>
+        }
+        @case ("conditions") {
+          <app-event-conditions-tab
+            [conditions]="editEvent().conditions"
+            [isEditMode]="panel.expanded"
+            (newConditions)="setNewConditions($event)"></app-event-conditions-tab>
+        }
+      }
+    </div>
+  </mat-expansion-panel>
+</div>

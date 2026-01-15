@@ -1,0 +1,14 @@
+@use "../../../../../../styles" as styles;
+
+.flex-body {
+  flex: 9 1 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--global-gap);
+  min-width: 0;
+}
+
+.action-selector-container {
+  max-width: calc(0.5 * (100vw - var(--global-padding) * 5 - 48px));;
+  min-width: 0;
+}

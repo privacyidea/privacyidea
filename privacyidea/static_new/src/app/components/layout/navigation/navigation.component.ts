@@ -167,11 +167,11 @@ export class NavigationComponent {
     }
   }
 
-  onPoliciesHeaderClick(event: MouseEvent): void {
+  onSingleHeaderClick(event: MouseEvent, route_path: string): void {
     event.preventDefault();
     (event as any).stopImmediatePropagation?.();
     event.stopPropagation();
 
-    this.router.navigate([ROUTE_PATHS.POLICIES]);
+    this.router.navigate([route_path]);
   }
 }
