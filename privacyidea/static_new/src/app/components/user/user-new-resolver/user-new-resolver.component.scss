@@ -15,60 +15,8 @@
   position: relative;
 }
 
-.form-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  margin-bottom: 1rem;
-  flex-direction: column;
-  width: 492px;
-}
-
-.right-column {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-}
-
-.sticky-header {
-  position: relative;
-  z-index: 5;
-}
-
-.sticky-header.is-sticky {
-  position: fixed;
-  top: 48px;
-  z-index: 1000;
-}
-
-.sticky-placeholder {
-  height: 0;
-  width: 100%;
-}
-
-.preset-buttons-container {
-  display: flex;
-  flex-wrap: wrap;
-  margin-left: 1rem;
-  align-items: center;
-  flex-direction: column;
-  margin-bottom: 16px;
-
-  .preset-label {
-    font-weight: 500;
-    margin-bottom: 1rem;
-    margin-right: auto;
-  }
-
-  .preset-buttons {
-    display: flex;
-    gap: 0.25rem;
-  }
-
-  button {
-    height: 36px;
-    line-height: 34px;
-  }
+.min-width-40 {
+  min-width: 40%;
 }
 
 .type-section {

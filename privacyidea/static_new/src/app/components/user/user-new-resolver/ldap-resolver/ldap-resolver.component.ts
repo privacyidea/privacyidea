@@ -1,11 +1,12 @@
-import { Component, computed, effect, input } from "@angular/core";
+import { Component, computed, effect, inject, input } from "@angular/core";
 import { AbstractControl, FormControl, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { MatSelect, MatSelectModule } from "@angular/material/select";
 import { MatOption } from "@angular/material/core";
 import { MatCheckboxModule } from "@angular/material/checkbox";
-import { LDAPResolverData } from "../../../../services/resolver/resolver.service";
+import { MatButtonModule } from "@angular/material/button";
+import { LDAPResolverData, ResolverService } from "../../../../services/resolver/resolver.service";
 
 @Component({
   selector: "app-ldap-resolver",
@@ -20,13 +21,35 @@ import { LDAPResolverData } from "../../../../services/resolver/resolver.service
     MatSelectModule,
     MatSelect,
     MatOption,
-    MatCheckboxModule
+    MatCheckboxModule,
+    MatButtonModule
   ],
   templateUrl: "./ldap-resolver.component.html",
   styleUrl: "./ldap-resolver.component.scss"
 })
 export class LdapResolverComponent {
+  private readonly resolverService = inject(ResolverService);
+
   data = input<Partial<LDAPResolverData>>({});
+
+  isEditMode = computed(() => !!this.resolverService.selectedResolverName());
+
+  readonly ldapPresets = [
+    {
+      name: "OpenLDAP",
+      loginName: "uid",
+      searchFilter: "(uid=*)(objectClass=inetOrgPerson)",
+      userInfo: "{ \"phone\" : \"telephoneNumber\", \"mobile\" : \"mobile\", \"email\" : \"mail\", \"surname\" : \"sn\", \"givenname\" : \"givenName\" }",
+      uidType: "entryUUID"
+    },
+    {
+      name: "Active Directory",
+      loginName: "sAMAccountName",
+      searchFilter: "(sAMAccountName=*)(objectCategory=person)",
+      userInfo: "{ \"phone\" : \"telephoneNumber\", \"mobile\" : \"mobile\", \"email\" : \"mail\", \"surname\" : \"sn\", \"givenname\" : \"givenName\" }",
+      uidType: "objectGUID"
+    }
+  ];
 
   ldapUriControl = new FormControl<string>("", { nonNullable: true, validators: [Validators.required] });
   ldapBaseControl = new FormControl<string>("", { nonNullable: true, validators: [Validators.required] });
@@ -90,6 +113,14 @@ export class LdapResolverComponent {
     NOREFERRALS: this.noReferralsControl,
     NOSCHEMAS: this.noSchemasControl
   }));
+
+  applyLdapPreset(preset: any): void {
+    this.loginNameAttributeControl.setValue(preset.loginName);
+    this.ldapSearchFilterControl.setValue(preset.searchFilter);
+    this.userInfoControl.setValue(preset.userInfo);
+    this.uidTypeControl.setValue(preset.uidType);
+    this.multivalueAttributesControl.setValue("");
+  }
 
   constructor() {
     effect(() => {

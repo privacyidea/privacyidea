@@ -1,5 +1,15 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { UserNewResolverComponent } from "./user-new-resolver.component";
+
+// Mock IntersectionObserver
+global.IntersectionObserver = class IntersectionObserver {
+  constructor() {}
+  disconnect() {}
+  observe() {}
+  unobserve() {}
+  takeRecords() { return []; }
+} as any;
+
 import { ResolverService } from "../../../services/resolver/resolver.service";
 import { NotificationService } from "../../../services/notification/notification.service";
 import { ActivatedRoute, Router } from "@angular/router";
@@ -354,21 +364,6 @@ describe("UserNewResolverComponent", () => {
     expect(notificationService.openSnackBar).toHaveBeenCalledWith(expect.stringContaining("Network error"));
   });
 
-
-  it("should apply SQL presets", () => {
-    component.resolverType = "sqlresolver";
-    const preset = component.sqlPresets[0];
-    component.applySqlPreset(preset);
-    expect(component.formData["Table"]).toBe(preset.table);
-    expect(component.formData["Map"]).toBe(preset.map);
-  });
-
-  it("should apply LDAP presets", () => {
-    component.resolverType = "ldapresolver";
-    const preset = component.ldapPresets[0];
-    component.applyLdapPreset(preset);
-    expect(component.formData["LOGINNAMEATTRIBUTE"]).toBe(preset.loginName);
-  });
 
   it("should validate before test", async () => {
     const notificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;

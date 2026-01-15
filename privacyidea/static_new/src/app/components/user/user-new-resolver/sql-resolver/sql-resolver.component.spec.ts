@@ -2,6 +2,8 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { SqlResolverComponent } from "./sql-resolver.component";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { ComponentRef } from "@angular/core";
+import { ResolverService } from "../../../../services/resolver/resolver.service";
+import { MockResolverService } from "../../../../../testing/mock-services/mock-resolver-service";
 
 describe("SqlResolverComponent", () => {
   let component: SqlResolverComponent;
@@ -10,7 +12,10 @@ describe("SqlResolverComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [SqlResolverComponent, NoopAnimationsModule]
+      imports: [SqlResolverComponent, NoopAnimationsModule],
+      providers: [
+        { provide: ResolverService, useClass: MockResolverService }
+      ]
     })
       .compileComponents();
 
@@ -48,5 +53,16 @@ describe("SqlResolverComponent", () => {
     expect(component.tableControl.value).toBe("users");
     expect(component.limitControl.value).toBe(100);
     expect(component.mapControl.value).toBe("{}");
+  });
+
+  it("should apply SQL presets", () => {
+    const preset = component.sqlPresets[0];
+    component.applySqlPreset(preset);
+    expect(component.tableControl.value).toBe(preset.table);
+    expect(component.mapControl.value).toBe(preset.map);
+    expect(component.poolSizeControl.value).toBe(5);
+    expect(component.poolTimeoutControl.value).toBe(10);
+    expect(component.poolRecycleControl.value).toBe(7200);
+    expect(component.editableControl.value).toBe(true);
   });
 });

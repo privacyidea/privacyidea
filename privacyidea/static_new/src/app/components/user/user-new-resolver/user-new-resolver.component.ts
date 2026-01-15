@@ -70,63 +70,12 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   protected readonly renderer: Renderer2 = inject(Renderer2);
 
-  readonly sqlPresets = [
-    {
-      name: "Wordpress",
-      table: "wp_users",
-      map: "{ \"userid\" : \"ID\", \"username\": \"user_login\", \"email\" : \"user_email\", \"givenname\" : \"display_name\", \"password\" : \"user_pass\" }"
-    },
-    {
-      name: "OTRS",
-      table: "users",
-      map: "{ \"userid\" : \"id\", \"username\": \"login\", \"givenname\" : \"first_name\", \"surname\" : \"last_name\", \"password\" : \"pw\" }"
-    },
-    {
-      name: "TINE 2.0",
-      table: "tine20_accounts",
-      map: "{ \"userid\" : \"id\", \"username\": \"login_name\", \"email\" : \"email\", \"givenname\" : \"first_name\", \"surname\" : \"last_name\", \"password\" : \"password\" }"
-    },
-    {
-      name: "Owncloud",
-      table: "oc_users",
-      map: "{ \"userid\" : \"uid\", \"username\": \"uid\", \"givenname\" : \"displayname\", \"password\" : \"password\" }"
-    },
-    {
-      name: "Typo3",
-      table: "be_users",
-      map: "{ \"userid\" : \"uid\", \"username\": \"username\", \"givenname\" : \"realName\", \"password\" : \"password\", \"email\": \"email\" }"
-    },
-    {
-      name: "Drupal",
-      table: "user",
-      map: "{\"userid\": \"uid\", \"username\": \"name\", \"email\": \"mail\", \"password\": \"pass\" }"
-    }
-  ];
-
-  readonly ldapPresets = [
-    {
-      name: "OpenLDAP",
-      loginName: "uid",
-      searchFilter: "(uid=*)(objectClass=inetOrgPerson)",
-      userInfo: "{ \"phone\" : \"telephoneNumber\", \"mobile\" : \"mobile\", \"email\" : \"mail\", \"surname\" : \"sn\", \"givenname\" : \"givenName\" }",
-      uidType: "entryUUID"
-    },
-    {
-      name: "Active Directory",
-      loginName: "sAMAccountName",
-      searchFilter: "(sAMAccountName=*)(objectCategory=person)",
-      userInfo: "{ \"phone\" : \"telephoneNumber\", \"mobile\" : \"mobile\", \"email\" : \"mail\", \"surname\" : \"sn\", \"givenname\" : \"givenName\" }",
-      uidType: "objectGUID"
-    }
-  ];
-
   private observer!: IntersectionObserver;
   private editInitialized = false;
 
   @ViewChild("scrollContainer") scrollContainer!: ElementRef<HTMLElement>;
   @ViewChild("stickyHeader") stickyHeader!: ElementRef<HTMLElement>;
   @ViewChild("stickySentinel") stickySentinel!: ElementRef<HTMLElement>;
-  @ViewChild("stickyPlaceholder") stickyPlaceholder!: ElementRef<HTMLElement>;
   @ViewChild("leftColumn") leftColumn!: ElementRef<HTMLElement>;
 
   ldapResolver = viewChild(LdapResolverComponent);
@@ -216,7 +165,7 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
   }
 
   ngAfterViewInit(): void {
-    if (!this.scrollContainer || !this.stickyHeader || !this.stickySentinel || !this.stickyPlaceholder || !this.leftColumn) {
+    if (!this.scrollContainer || !this.stickyHeader || !this.stickySentinel || !this.leftColumn) {
       return;
     }
 
@@ -232,10 +181,8 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
 
       if (shouldFloat) {
         this.renderer.addClass(this.stickyHeader.nativeElement, "is-sticky");
-        this.updatePlaceholder();
       } else {
         this.renderer.removeClass(this.stickyHeader.nativeElement, "is-sticky");
-        this.clearPlaceholder();
       }
     }, options);
 
@@ -356,29 +303,6 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
     }
   }
 
-  applySqlPreset(preset: any): void {
-    this.formData = {
-      ...this.formData,
-      Table: preset.table,
-      Map: preset.map,
-      poolSize: 5,
-      poolTimeout: 10,
-      poolRecycle: 7200,
-      Editable: true
-    };
-  }
-
-  applyLdapPreset(preset: any): void {
-    this.formData = {
-      ...this.formData,
-      LOGINNAMEATTRIBUTE: preset.loginName,
-      LDAPSEARCHFILTER: preset.searchFilter,
-      USERINFO: preset.userInfo,
-      UIDTYPE: preset.uidType,
-      MULTIVALUEATTRIBUTES: ""
-    };
-  }
-
   onSave(): void {
     const name = this.resolverName.trim();
     if (!name) {
@@ -447,15 +371,6 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
 
   onQuickTest() {
     this.executeTest(true);
-  }
-
-  private updatePlaceholder(): void {
-    const h = this.stickyHeader.nativeElement.offsetHeight;
-    this.stickyPlaceholder.nativeElement.style.height = `${h}px`;
-  }
-
-  private clearPlaceholder(): void {
-    this.stickyPlaceholder.nativeElement.style.height = "0px";
   }
 
   private executeTest(quickTest = false): void {

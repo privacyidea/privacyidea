@@ -2,6 +2,8 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { LdapResolverComponent } from "./ldap-resolver.component";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { ComponentRef } from "@angular/core";
+import { ResolverService } from "../../../../services/resolver/resolver.service";
+import { MockResolverService } from "../../../../../testing/mock-services/mock-resolver-service";
 
 describe("LdapResolverComponent", () => {
   let component: LdapResolverComponent;
@@ -10,7 +12,10 @@ describe("LdapResolverComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [LdapResolverComponent, NoopAnimationsModule]
+      imports: [LdapResolverComponent, NoopAnimationsModule],
+      providers: [
+        { provide: ResolverService, useClass: MockResolverService }
+      ]
     })
       .compileComponents();
 
@@ -48,5 +53,15 @@ describe("LdapResolverComponent", () => {
     expect(component.loginNameAttributeControl.value).toBe("uid");
     expect(component.ldapSearchFilterControl.value).toBe("(objectClass=*)");
     expect(component.userInfoControl.value).toBe("description");
+  });
+
+  it("should apply LDAP presets", () => {
+    const preset = component.ldapPresets[0];
+    component.applyLdapPreset(preset);
+    expect(component.loginNameAttributeControl.value).toBe(preset.loginName);
+    expect(component.ldapSearchFilterControl.value).toBe(preset.searchFilter);
+    expect(component.userInfoControl.value).toBe(preset.userInfo);
+    expect(component.uidTypeControl.value).toBe(preset.uidType);
+    expect(component.multivalueAttributesControl.value).toBe("");
   });
 });

@@ -1,3 +1,21 @@
+@if (!isEditMode()) {
+  <div class="preset-buttons-container">
+    <span
+      class="preset-label"
+      i18n>Presets:</span>
+    <div class="preset-buttons">
+      @for (preset of sqlPresets; track preset.name) {
+        <button
+          (click)="applySqlPreset(preset)"
+          mat-stroked-button
+          type="button">
+          {{ preset.name }}
+        </button>
+      }
+    </div>
+  </div>
+}
+
 <div class="type-sections-container">
   <div class="type-section">
     <h3 i18n>Database Connection</h3>

@@ -516,9 +516,8 @@ body {
   gap: var(--global-gap);
 }
 
-.sticky-controls .mat-mdc-form-field {
-  flex-grow: 1;
-  width: 100%;
+.sticky-controls .mat-mdc-form-field-subscript-wrapper {
+  height: 0;
 }
 
 .flex-row-stretch {

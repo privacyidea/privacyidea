@@ -1,6 +1,8 @@
 <div class="type-sections-container">
   <div class="type-section">
     <div class="form-grid">
+      <h3 i18n>Connection Details</h3>
+
       <mat-form-field class="field-lg">
         <mat-label i18n>Server URI</mat-label>
         <input
@@ -89,6 +91,8 @@
 
   <div class="type-section">
     <div class="form-grid">
+      <h3 i18n>Credentials</h3>
+
       <mat-form-field>
         <mat-label i18n>Bind type</mat-label>
         <mat-select [formControl]="authTypeControl">
@@ -139,7 +143,9 @@
 
 <div class="type-sections-container">
   <div class="type-section">
-    <div class="form-grid">
+    <h3 i18n>Settings</h3>
+
+    <div class="form-grid field-4fr">
       <mat-form-field>
         <mat-label i18n>Timeout (seconds)</mat-label>
         <input
@@ -216,7 +222,27 @@
     </div>
   </div>
 
+  @if (!isEditMode()) {
+    <div class="preset-buttons-container">
+    <span
+      class="preset-label"
+      i18n>Presets:</span>
+      <div class="preset-buttons">
+        @for (preset of ldapPresets; track preset.name) {
+          <button
+            (click)="applyLdapPreset(preset)"
+            mat-stroked-button
+            type="button">
+            {{ preset.name }}
+          </button>
+        }
+      </div>
+    </div>
+  }
+
   <div class="type-section">
+    <h3 i18n>Attributes & Mapping</h3>
+
     <div class="form-grid">
       <mat-form-field>
         <mat-label i18n>Loginname attribute</mat-label>
