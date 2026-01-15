@@ -507,7 +507,7 @@ angular.module("privacyideaApp")
                     switch (resolver.type) {
                         case "ldapresolver":
                             userinfo = JSON.parse(resolver.data.USERINFO);
-                            if (resolver.data.recursive_group_search) {
+                            if (resolver.data.recursive_group_search && resolver.data.group_attribute_mapping_key) {
                                 userinfo[resolver.data.group_attribute_mapping_key] = "";
                             }
                             break;
