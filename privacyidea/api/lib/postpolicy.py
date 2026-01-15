@@ -540,7 +540,7 @@ def save_pin_change(request, response, serial=None):
             pin = request.all_data.get("pin")
             # The user sets a pin or enrolls a token. -> delete the pin_change
             if otppin or pin:
-                token.del_tokeninfo("next_pin_change")
+                token.delete_tokeninfo("next_pin_change")
 
                 # If there is a change_pin_every policy, we need to set the PIN anew.
                 policy = Match.token(g, scope=SCOPE.ENROLL, action=PolicyAction.CHANGE_PIN_EVERY,
@@ -1061,7 +1061,7 @@ def multichallenge_enroll_via_validate(request, response):
                     params["policies"] = g.get("policies", {})
                     init_details = token.get_init_detail(params, user)
                     if not init_details:
-                        token.token.delete()
+                        token.delete_token()
                     content.get("result")["value"] = False
                     content.get("result")["authentication"] = AUTH_RESPONSE.CHALLENGE
                     detail = content.setdefault("detail", {})
@@ -1075,7 +1075,7 @@ def multichallenge_enroll_via_validate(request, response):
                     detail["client_mode"] = "webauthn"
                 except Exception as e:
                     log.error(f"Error during enroll_via_validate: {e}")
-                    token.token.delete()
+                    token.delete_token()
                     raise e
             # ------------------------------
             else:

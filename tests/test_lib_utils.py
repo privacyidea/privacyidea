@@ -448,8 +448,8 @@ class UtilsTestCase(MyTestCase):
                          "psql+odbc://pi:***@localhost/pi")
         self.assertEqual(censor_connect_string("mysql://pi:kW44s%40%40qqWtGYX@localhost/pi"),
                          "mysql://pi:***@localhost/pi")
-        self.assertEqual(censor_connect_string("mysql://knöbel:föö@localhost/pi"),
-                         "mysql://knöbel:***@localhost/pi")
+        # Percentage-encoded special characters
+        self.assertEqual("mysql://kn%C3%B6bel:***@localhost/pi", censor_connect_string("mysql://knöbel:föö@localhost/pi"))
         self.assertEqual(censor_connect_string(
             "oracle+cx_oracle://pi:MySecretPassword1234@localhost:1521/?service_name=my_database"),
             "oracle+cx_oracle://pi:***@localhost:1521/?service_name=my_database")

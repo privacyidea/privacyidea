@@ -569,8 +569,8 @@ class HotpTokenClass(TokenClass):
                     res = -1  # pragma: no cover
 
                 # now clean the resync data
-                self.del_tokeninfo("dueDate")
-                self.del_tokeninfo("otp1c")
+                self.delete_tokeninfo("dueDate")
+                self.delete_tokeninfo("otp1c")
 
             else:
                 self.add_tokeninfo("otp1c", res)

@@ -15,16 +15,25 @@
 #
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-from datetime import datetime, timedelta
-from dateutil.tz import tzutc
 import logging
-from sqlalchemy import Sequence
+from datetime import datetime, timedelta, timezone
+from typing import Optional
 
+from dateutil.tz import tzutc
+from sqlalchemy import (
+    Sequence,
+    Unicode,
+    Integer,
+    DateTime,
+    select,
+    update,
+)
+from sqlalchemy.orm import Mapped, mapped_column
+
+from privacyidea.lib.log import log_with
+from privacyidea.lib.utils import convert_column_to_unicode
 from privacyidea.models import db
 from privacyidea.models.utils import MethodsMixin
-from privacyidea.lib.utils import convert_column_to_unicode
-from privacyidea.lib.log import log_with
 
 log = logging.getLogger(__name__)
 
@@ -38,12 +47,15 @@ def save_config_timestamp(invalidate_config=True):
     invalidate the current request-local config object.
     :param invalidate_config: defaults to True
     """
-    c1 = Config.query.filter_by(Key=PRIVACYIDEA_TIMESTAMP).first()
+    # Replaced .query with a modern select statement
+    stmt = select(Config).filter_by(Key=PRIVACYIDEA_TIMESTAMP)
+    c1 = db.session.execute(stmt).scalar_one_or_none()
+
     if c1:
-        c1.Value = datetime.now().strftime("%s")
+        c1.Value = str(datetime.now().timestamp())
     else:
         new_timestamp = Config(PRIVACYIDEA_TIMESTAMP,
-                               datetime.now().strftime("%s"),
+                               str(datetime.now().timestamp()),
                                Description="config timestamp. last changed.")
         db.session.add(new_timestamp)
     if invalidate_config:
@@ -54,9 +66,11 @@ def save_config_timestamp(invalidate_config=True):
         # a new request-local config object, which holds the *new* config.
         from privacyidea.lib.config import invalidate_config_object
         invalidate_config_object()
+    # Commit the changes at the end of the function.
+    db.session.commit()
 
 
-class TimestampMethodsMixin(object):
+class TimestampMethodsMixin:
     """
     This class mixes in the table functions including update of the timestamp
     """
@@ -78,19 +92,15 @@ class TimestampMethodsMixin(object):
 class Config(TimestampMethodsMixin, db.Model):
     """
     The config table holds all the system configuration in key value pairs.
-
     Additional configuration for realms, resolvers and machine resolvers is
     stored in specific tables.
     """
     __tablename__ = "config"
-    Key = db.Column(db.Unicode(255),
-                    primary_key=True,
-                    nullable=False)
-    Value = db.Column(db.Unicode(2000), default='')
-    Type = db.Column(db.Unicode(2000), default='')
-    Description = db.Column(db.Unicode(2000), default='')
+    Key: Mapped[str] = mapped_column(Unicode(255), primary_key=True, nullable=False)
+    Value: Mapped[Optional[str]] = mapped_column(Unicode(2000), default='')
+    Type: Mapped[Optional[str]] = mapped_column(Unicode(2000), default='')
+    Description: Mapped[Optional[str]] = mapped_column(Unicode(2000), default='')
 
-    @log_with(log)
     def __init__(self, Key, Value, Type='', Description=''):
         self.Key = convert_column_to_unicode(Key)
         self.Value = convert_column_to_unicode(Value)
@@ -99,6 +109,9 @@ class Config(TimestampMethodsMixin, db.Model):
 
     def __str__(self):
         return "<{0!s} ({1!s})>".format(self.Key, self.Type)
+
+    # Needs to overwrite the save and delete method as the Config table has no id column which is used in the parent
+    # functions
 
     def save(self):
         db.session.add(self)
@@ -118,9 +131,9 @@ class NodeName(db.Model):
     __tablename__ = "nodename"
     # TODO: we can use the UUID type here when switching to SQLAlchemy 2.0
     #  <https://docs.sqlalchemy.org/en/20/core/custom_types.html#backend-agnostic-guid-type>
-    id = db.Column(db.Unicode(36), primary_key=True)
-    name = db.Column(db.Unicode(100), index=True)
-    lastseen = db.Column(db.DateTime(), index=True, default=datetime.now(tz=tzutc()))
+    id: Mapped[str] = mapped_column(Unicode(36), primary_key=True)
+    name: Mapped[Optional[str]] = mapped_column(Unicode(100), index=True)
+    lastseen: Mapped[Optional[datetime]] = mapped_column(DateTime, index=True, default=datetime.now(tz=tzutc()))
 
 
 class Admin(db.Model):
@@ -139,71 +152,42 @@ class Admin(db.Model):
     :type email: basestring
     """
     __tablename__ = "admin"
-    username = db.Column(db.Unicode(120),
-                         primary_key=True,
-                         nullable=False)
-    password = db.Column(db.Unicode(255))
-    email = db.Column(db.Unicode(255))
-
-    def save(self):
-        c = Admin.query.filter_by(username=self.username).first()
-        if c is None:
-            # create a new one
-            db.session.add(self)
-            db.session.commit()
-            ret = self.username
-        else:
-            # update
-            update_dict = {}
-            if self.email:
-                update_dict["email"] = self.email
-            if self.password:
-                update_dict["password"] = self.password
-            Admin.query.filter_by(username=self.username) \
-                .update(update_dict)
-            ret = c.username
-        db.session.commit()
-        return ret
-
-    def delete(self):
-        db.session.delete(self)
-        db.session.commit()
+    username: Mapped[str] = mapped_column(Unicode(120), primary_key=True, nullable=False)
+    password: Mapped[Optional[str]] = mapped_column(Unicode(255))
+    email: Mapped[Optional[Optional[str]]] = mapped_column(Unicode(255))
 
 
 class PasswordReset(MethodsMixin, db.Model):
     """
     Table for handling password resets.
     This table stores the recoverycodes sent to a given user
-
     The application should save the HASH of the recovery code. Just like the
     password for the Admins the application shall salt and pepper the hash of
     the recoverycode. A database admin will not be able to inject a rogue
     recovery code.
-
     A user can get several recoverycodes.
     A recovery code has a validity period
-
     Optional: The email to which the recoverycode was sent, can be stored.
     """
     __tablename__ = "passwordreset"
-    id = db.Column(db.Integer(), Sequence("pwreset_seq"), primary_key=True,
-                   nullable=False)
-    recoverycode = db.Column(db.Unicode(255), nullable=False)
-    username = db.Column(db.Unicode(64), nullable=False, index=True)
-    realm = db.Column(db.Unicode(64), nullable=False, index=True)
-    resolver = db.Column(db.Unicode(64))
-    email = db.Column(db.Unicode(255))
-    timestamp = db.Column(db.DateTime, default=datetime.now())
-    expiration = db.Column(db.DateTime)
+    id: Mapped[int] = mapped_column(Integer, Sequence("pwreset_seq"), primary_key=True, nullable=False)
+    recoverycode: Mapped[str] = mapped_column(Unicode(255), nullable=False)
+    username: Mapped[str] = mapped_column(Unicode(64), nullable=False, index=True)
+    realm: Mapped[str] = mapped_column(Unicode(64), nullable=False, index=True)
+    resolver: Mapped[Optional[str]] = mapped_column(Unicode(64))
+    email: Mapped[Optional[str]] = mapped_column(Unicode(255))
+    timestamp: Mapped[Optional[datetime]] = mapped_column(DateTime, default=datetime.utcnow)
+    expiration: Mapped[Optional[datetime]] = mapped_column(DateTime)
 
     @log_with(log)
     def __init__(self, recoverycode, username, realm, resolver="", email=None,
                  timestamp=None, expiration=None, expiration_seconds=3600):
-        # The default expiration time is 60 minutes
+        # We manually assign attributes here as they depend on the function parameters
         self.recoverycode = recoverycode
         self.username = username
         self.realm = realm
         self.resolver = resolver
         self.email = email
-        self.timestamp = timestamp or datetime.now()
-        self.expiration = expiration or datetime.now() + timedelta(seconds=expiration_seconds)
+        # Create UTC timestamp but remove tzinfo for DB storage as not all DBs can handle timezones
+        self.timestamp = timestamp or datetime.now(timezone.utc).replace(tzinfo=None)
+        self.expiration = expiration or datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(seconds=expiration_seconds)

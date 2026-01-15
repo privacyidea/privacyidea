@@ -16,16 +16,27 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from datetime import datetime, timedelta
 import json
 import logging
-from sqlalchemy import Sequence
+from datetime import datetime, timedelta
+from typing import Optional
 
-from privacyidea.models import db
-from privacyidea.models.utils import MethodsMixin
+from sqlalchemy import (
+    Sequence,
+    Unicode,
+    Integer,
+    Text,
+    DateTime,
+    Boolean,
+    delete,
+)
+from sqlalchemy.orm import Mapped, mapped_column
+
 from privacyidea.lib.crypto import get_rand_digit_str
-from privacyidea.lib.utils import convert_column_to_unicode
 from privacyidea.lib.log import log_with
+from privacyidea.lib.utils import convert_column_to_unicode
+from privacyidea.models import db
+from privacyidea.models.utils import MethodsMixin, utc_now
 
 log = logging.getLogger(__name__)
 
@@ -35,32 +46,31 @@ class Challenge(MethodsMixin, db.Model):
     Table for handling of the generic challenges.
     """
     __tablename__ = "challenge"
-    id = db.Column(db.Integer(), Sequence("challenge_seq"), primary_key=True,
-                   nullable=False)
-    transaction_id = db.Column(db.Unicode(64), nullable=False, index=True)
-    data = db.Column(db.Unicode(512), default='')
-    challenge = db.Column(db.Text, default='')
-    session = db.Column(db.Unicode(512), default='', quote=True, name="session")
+    id: Mapped[int] = mapped_column(Integer, Sequence("challenge_seq"), primary_key=True, nullable=False)
+    transaction_id: Mapped[str] = mapped_column(Unicode(64), nullable=False, index=True)
+    data: Mapped[Optional[str]] = mapped_column(Unicode(512), default='')
+    challenge: Mapped[Optional[str]] = mapped_column(Text, default='')
+    session: Mapped[Optional[str]] = mapped_column(Unicode(512), default='', quote=True, name="session")
     # The token serial number
-    serial = db.Column(db.Unicode(40), default='', index=True)
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow(), index=True)
-    expiration = db.Column(db.DateTime, index=True)
-    received_count = db.Column(db.Integer(), default=0)
-    otp_valid = db.Column(db.Boolean, default=False)
+    serial: Mapped[Optional[str]] = mapped_column(Unicode(40), default='', index=True)
+    timestamp: Mapped[Optional[datetime]] = mapped_column(DateTime, default=utc_now(), index=True)
+    expiration: Mapped[Optional[datetime]] = mapped_column(DateTime, index=True)
+    received_count: Mapped[Optional[int]] = mapped_column(Integer, default=0)
+    otp_valid: Mapped[Optional[bool]] = mapped_column(Boolean, default=False)
 
     @log_with(log)
     def __init__(self, serial, transaction_id=None,
                  challenge='', data='', session='', validitytime=120):
-
+        # We manually assign attributes here as they depend on the function parameters
         self.transaction_id = transaction_id or self.create_transaction_id()
         self.challenge = challenge
         self.serial = serial
         self.set_data(data)
-        self.timestamp = datetime.utcnow()
+        self.timestamp = utc_now()
         self.session = session
         self.received_count = 0
         self.otp_valid = False
-        self.expiration = datetime.utcnow() + timedelta(seconds=validitytime)
+        self.expiration = self.timestamp + timedelta(seconds=validitytime)
 
     @staticmethod
     def create_transaction_id(length=20):
@@ -73,11 +83,10 @@ class Challenge(MethodsMixin, db.Model):
         :return: True if valid
         :rtype: bool
         """
-        ret = False
-        c_now = datetime.utcnow()
+        c_now = utc_now()
         if self.timestamp <= c_now < self.expiration:
-            ret = True
-        return ret
+            return True
+        return False
 
     def set_data(self, data):
         """
@@ -170,6 +179,11 @@ def cleanup_challenges(serial):
 
     :return: None
     """
-    c_now = datetime.utcnow()
-    Challenge.query.filter(Challenge.expiration < c_now, Challenge.serial == serial).delete()
+    c_now = utc_now()  # DB contains naive datetime
+    # Replaced the legacy .query.delete() with a modern delete statement
+    delete_stmt = delete(Challenge).where(
+        Challenge.expiration < c_now,
+        Challenge.serial == serial
+    )
+    db.session.execute(delete_stmt)
     db.session.commit()

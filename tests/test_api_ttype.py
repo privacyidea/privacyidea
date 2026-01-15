@@ -213,7 +213,7 @@ class TtypePushAPITestCase(MyApiTestCase):
         tok.add_tokeninfo('firebase_token', 'firebaseT')
         tok.add_tokeninfo(PUBLIC_KEY_SERVER, self.server_public_key_pem)
         tok.add_tokeninfo(PRIVATE_KEY_SERVER, self.server_private_key_pem, 'password')
-        tok.del_tokeninfo("enrollment_credential")
+        tok.delete_tokeninfo("enrollment_credential")
         tok.token.rollout_state = "enrolled"
         tok.token.active = True
         return tok

@@ -984,6 +984,7 @@ class AuthApiTestCase(MyApiTestCase):
         self.assertRaises(ResourceNotFoundError, get_one_token, serial=serial)
 
         # Enroll new token
+        db.session.expunge_all()    # Clear session for new request
         with self.app.test_request_context('/token/init',
                                            method='POST',
                                            headers={"Authorization": auth_token},
