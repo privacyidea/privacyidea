@@ -71,7 +71,7 @@ dependencies = [
     "requests",
     "segno",
     "smpplib",
-    "SQLAlchemy<2.0",
+    "SQLAlchemy",
     "webauthn"
 ]
 

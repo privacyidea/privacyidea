@@ -178,7 +178,7 @@ def init():
     :jsonparam description: A description for the token
     :jsonparam pin: the pin of the token. "OTP PIN"
     :jsonparam user: the login user name. This user gets the token assigned
-    :jsonparam realm: the realm of the user.
+    :jsonparam realm: the realm of the user, or, if no user is given, just the token will be assigned to this realm
     :jsonparam type: the type of the token
     :jsonparam tokenrealm: additional realms, the token should be put into
     :jsonparam otplen: length of the OTP value

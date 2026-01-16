@@ -1,0 +1,95 @@
+@use "../../../../../styles";
+@use "../../container-templates/container-templates.component.scss";
+@use "@angular/material" as mat;
+
+// --- Main Layout ---
+
+.placeholder-for-right-column {
+  grid-area: right-column;
+}
+
+.template-card {
+  --mat-expansion-header-disabled-state-text-color: var(--mat-sys-on-surface);
+  --mat-checkbox-disabled-label-color: var(--mat-sys-on-surface);
+  --mdc-filled-text-field-disabled-label-text-color: var(--mat-sys-on-surface);
+  --mat-select-disabled-trigger-text-color: var(--mat-sys-on-surface);
+  // --mat-form-field-disabled-input-text-placeholder-color: var(--mat-sys-on-surface);
+  --mdc-filled-text-field-disabled-input-text-color: var(--mat-sys-on-surface);
+
+  border-radius: var(--border-radius);
+  mat-expansion-panel {
+    border-radius: var(--border-radius);
+  }
+  mat-expansion-panel-header {
+    padding: 0 var(--global-padding);
+    display: flex;
+    align-items: center;
+    gap: var(--global-gap);
+    .mat-content {
+      gap: var(--global-gap);
+    }
+    .template-default-indicator-container {
+      width: 40px;
+      flex-shrink: 0;
+    }
+
+    .template-name-container {
+      align-content: center;
+      width: 164px;
+      .template-name-input {
+        background-color: transparent;
+        border: none;
+        border-bottom: 1px solid var(--mat-sys-outline-variant);
+        border-radius: 0;
+        box-sizing: border-box;
+        font-size: 1rem;
+        margin-left: 2px;
+        padding: var(--half-global-padding) 0;
+      }
+
+      .template-name-plain {
+        font-size: 1rem;
+        font-weight: 500;
+      }
+    }
+
+    .template-type-select-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-grow: 1;
+      mat-select {
+        width: 300px;
+      }
+
+      ::ng-deep .mat-mdc-select-trigger {
+        border-bottom: 1px solid var(--mat-sys-outline-variant);
+      }
+    }
+
+    .template-actions {
+      display: flex;
+      align-items: center;
+      justify-content: end;
+      width: 120px;
+      button {
+        background: transparent;
+        border: none;
+        cursor: pointer;
+      }
+    }
+  }
+}
+
+.mat-expansion-panel-body {
+  gap: var(--global-gap);
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--border-radius);
+}
+
+.add-token-row {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}

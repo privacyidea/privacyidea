@@ -324,7 +324,7 @@ class TiqrTokenClass(OcraTokenClass):
                 # save the secret
                 enroll_token.set_otpkey(secret)
                 # delete the session
-                enroll_token.del_tokeninfo("session")
+                enroll_token.delete_tokeninfo("session")
                 res = "OK"
             else:
                 raise ParameterError("Invalid Session")

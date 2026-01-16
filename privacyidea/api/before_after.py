@@ -29,7 +29,7 @@ import copy
 
 from flask_babel import gettext
 
-from .lib.utils import (send_error, get_all_params, verify_auth_token, get_optional)
+from .lib.utils import (get_all_params, get_optional, map_error_to_code, send_error, verify_auth_token)
 from .container import container_blueprint
 from ..lib.container import find_container_for_token, find_container_by_serial
 from ..lib.framework import get_app_config_value
@@ -517,7 +517,7 @@ def auth_error(error):
 
         g.audit_object.add_to_log({"info": message}, add_with_comma=True)
 
-    return send_error(error.message, error_code=error.id, details=error.details), 401
+    return send_error(error.message, error_code=error.id, details=error.details), map_error_to_code(error)
 
 
 @system_blueprint.errorhandler(PolicyError)
@@ -543,7 +543,7 @@ def auth_error(error):
 def policy_error(error):
     if "audit_object" in g:
         g.audit_object.add_to_log({"info": error.message}, add_with_comma=True)
-    return send_error(error.message, error_code=error.id), 403
+    return send_error(error.message, error_code=error.id), map_error_to_code(error)
 
 
 @system_blueprint.app_errorhandler(ResourceNotFoundError)
@@ -572,7 +572,7 @@ def resource_not_found_error(error):
     """
     if "audit_object" in g:
         g.audit_object.log({"info": error.message})
-    return send_error(error.message, error_code=error.id), 404
+    return send_error(error.message, error_code=error.id), map_error_to_code(error)
 
 
 @system_blueprint.app_errorhandler(privacyIDEAError)
@@ -602,7 +602,7 @@ def privacyidea_error(error):
     """
     if "audit_object" in g:
         g.audit_object.log({"info": str(error)})
-    return send_error(str(error), error_code=error.id), 400
+    return send_error(str(error), error_code=error.id), map_error_to_code(error)
 
 
 @system_blueprint.app_errorhandler(NotImplementedError)
@@ -630,7 +630,8 @@ def not_implemented_error(error):
     """
     if "audit_object" in g:
         g.audit_object.log({"info": str(error)})
-    return send_error(str(error), error_code=-501), 501
+    http_status_code = map_error_to_code(error)
+    return send_error(str(error), error_code=-http_status_code), http_status_code
 
 
 # other errors

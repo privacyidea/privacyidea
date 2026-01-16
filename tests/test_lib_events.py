@@ -15,9 +15,11 @@ from dateutil.parser import parse as parse_date_string
 from dateutil.tz import tzlocal
 from flask import Request, Response
 from mock import patch
+from sqlalchemy import select
 from testfixtures import log_capture
 from werkzeug.test import EnvironBuilder
 
+from privacyidea.api.event import get_eventhandling
 from privacyidea.lib.audit import getAudit
 from privacyidea.lib.config import get_config_object
 from privacyidea.lib.container import (init_container, find_container_by_serial, get_all_containers,
@@ -45,6 +47,23 @@ from privacyidea.lib.eventhandler.webhookeventhandler import (ACTION_TYPE as WHE
                                                               WebHookHandler,
                                                               CONTENT_TYPE)
 from privacyidea.lib.machine import list_token_machines
+from .base import MyTestCase, FakeFlaskG, FakeAudit
+from privacyidea.lib.config import get_config_object
+from privacyidea.lib.eventhandler.tokenhandler import (TokenEventHandler,
+                                                       ACTION_TYPE, VALIDITY)
+from privacyidea.lib.eventhandler.scripthandler import ScriptEventHandler, SCRIPT_WAIT
+from privacyidea.lib.eventhandler.counterhandler import CounterEventHandler
+from privacyidea.lib.eventhandler.responsemangler import ResponseManglerEventHandler
+from privacyidea.models import EventCounter, TokenOwner, db, EventHandler
+from privacyidea.lib.eventhandler.federationhandler import FederationEventHandler
+from privacyidea.lib.eventhandler.requestmangler import RequestManglerEventHandler
+from privacyidea.lib.eventhandler.base import BaseEventHandler, CONDITION
+from privacyidea.lib.counter import increase as counter_increase
+from flask import Request, Response
+from werkzeug.test import EnvironBuilder
+from privacyidea.lib.event import (delete_event, set_event,
+                                   EventConfiguration, get_handler_object,
+                                   enable_event)
 from privacyidea.lib.token import (init_token, remove_token, get_realms_of_token, get_tokens,
                                    add_tokeninfo, unassign_token, get_tokens_paginate)
 from privacyidea.lib.tokenclass import DATE_FORMAT, CHALLENGE_SESSION
@@ -63,6 +82,20 @@ class EventHandlerLibTestCase(MyTestCase):
                         conditions={"bla": "yes"},
                         options={"emailconfig": "themis"})
         self.assertEqual(eid, 1)
+        event_1 = db.session.scalars(select(EventHandler).where(EventHandler.id == eid)).one_or_none()
+        self.assertEqual("token_init", event_1.event)
+        self.assertEqual("UserNotification", event_1.handlermodule)
+        self.assertEqual("sendmail", event_1.action)
+        # Defaults
+        self.assertEqual(0, event_1.ordering)
+        self.assertTrue(event_1.active)
+        self.assertEqual("post", event_1.position)
+        self.assertEqual("", event_1.condition)
+        # Relationships
+        self.assertEqual("emailconfig", event_1.options[0].Key)
+        self.assertEqual("themis", event_1.options[0].Value)
+        self.assertEqual("bla", event_1.conditions[0].Key)
+        self.assertEqual("yes", event_1.conditions[0].Value)
 
         # create a new event!
         r = set_event("name2", ["token_init", "token_assign"],
@@ -82,6 +115,16 @@ class EventHandlerLibTestCase(MyTestCase):
                                "always": "immer"},
                       id=eid)
         self.assertEqual(r, eid)
+        event_1 = db.session.scalars(select(EventHandler).where(EventHandler.id == eid)).one_or_none()
+        self.assertEqual("token_init, token_assign", event_1.event)
+        self.assertEqual(0, len(event_1.conditions.all()))
+        self.assertSetEqual({"emailconfig", "always"}, {option.Key for option in event_1.options})
+        for opt in event_1.options:
+            if opt.Key == "emailconfig":
+                self.assertEqual("themis", opt.Value)
+            if opt.Key == "always":
+                self.assertEqual("immer", opt.Value)
+
 
         # check that the config timestamp has been updated
         self.assertGreater(get_config_object().timestamp, current_timestamp)
@@ -275,6 +318,7 @@ class BaseEventHandlerTestCase(MyTestCase):
 
         # check for failcounter
         tok.set_failcount(8)
+        db.session.commit()
         options["handler_def"] = {"conditions": {CONDITION.FAILCOUNTER: "<9"}}
         r = uhandler.check_condition(options)
         self.assertTrue(r)
@@ -928,12 +972,12 @@ class BaseEventHandlerTestCase(MyTestCase):
         self.assertFalse(r)
 
         # Condition not match: wrong info value
-        container.set_container_info({"registration_state": "client_wait"})
+        container.set_container_info([TokenContainerInfoData("registration_state", "client_wait")])
         r = event_handler.check_condition(options)
         self.assertFalse(r)
 
         # Condition match
-        container.set_container_info({"registration_state": "registered"})
+        container.set_container_info([TokenContainerInfoData("registration_state", "registered")])
         r = event_handler.check_condition(options)
         self.assertTrue(r)
 
@@ -945,12 +989,12 @@ class BaseEventHandlerTestCase(MyTestCase):
         self.assertFalse(r)
 
         # Condition not match: value is greater
-        container.set_container_info({"challenge_ttl": "10"})
+        container.set_container_info([TokenContainerInfoData("challenge_ttl", "10")])
         r = event_handler.check_condition(options)
         self.assertFalse(r)
 
         # Condition match
-        container.set_container_info({"challenge_ttl": 3})
+        container.set_container_info([TokenContainerInfoData("challenge_ttl", "3")])
         r = event_handler.check_condition(options)
         self.assertTrue(r)
 
@@ -963,12 +1007,12 @@ class BaseEventHandlerTestCase(MyTestCase):
         self.assertFalse(r)
 
         # condition not match: value is smaller
-        container.set_container_info({"challenge_ttl": 3})
+        container.set_container_info([TokenContainerInfoData("challenge_ttl", "3")])
         r = event_handler.check_condition(options)
         self.assertFalse(r)
 
         # condition match
-        container.set_container_info({"challenge_ttl": 10})
+        container.set_container_info([TokenContainerInfoData("challenge_ttl", "10")])
         r = event_handler.check_condition(options)
         self.assertTrue(r)
 
@@ -1019,7 +1063,7 @@ class BaseEventHandlerTestCase(MyTestCase):
         self.assertFalse(r)
 
         # set last auth to 1 year ago: condition shall not match
-        container._db_container.last_updated = datetime.now(timezone.utc) - timedelta(days=365)
+        container._db_container.last_updated = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=365)
         container._db_container.save()
         r = event_handler.check_condition(options)
         self.assertFalse(r)
@@ -3643,6 +3687,7 @@ class TokenEventTestCase(MyTestCase):
             options["handler_def"] = {"options": {"change fail counter": diff}}
             res = t_handler.do(ACTION_TYPE.CHANGE_FAILCOUNTER, options=options)
             self.assertTrue(res)
+            db.session.commit()
             # Check if the token has the correct fail counter
             t = get_tokens(serial="SPASS01")
             tw = t[0].get_failcount()
@@ -3804,7 +3849,7 @@ class TokenEventTestCase(MyTestCase):
         tok = get_tokens(serial="SPASS01")[0]
         self.assertEqual(1, len(tok.token.tokengroup_list))
         tg = tok.token.tokengroup_list[0]
-        self.assertEqual(tg.tokengroup.name, "group1")
+        self.assertEqual(tg.name, "group1")
 
         # now remove the tokengroup
         t_handler = TokenEventHandler()

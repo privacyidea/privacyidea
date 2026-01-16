@@ -61,12 +61,14 @@ class LoginUITestCase(MyTestCase):
         self.app.config['PI_UI_DEACTIVATED'] = False
 
     def test_03_realm_dropdown(self):
+        self.setUp_user_realms()
+        self.setUp_user_realm2()
         set_policy("realmdrop", scope=SCOPE.WEBUI,
-                   action="{0!s}=Hello World".format(PolicyAction.REALMDROPDOWN))
+                   action=f"{PolicyAction.REALMDROPDOWN}={self.realm1} {self.realm2}")
         with self.app.test_request_context('/', method='GET'):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            self.assertIsNotNone(re.search(r'id="REALMS" value=".*World.*"',
+            self.assertIsNotNone(re.search(r'id="REALMS" value=".*realm1.*realm2.*"',
                                            to_unicode(res.data)), res)
 
     def test_04_custom_menu_baseline(self):
@@ -180,12 +182,14 @@ class ConfigTestCase(MyApiTestCase):
             self.assertEqual(get_version_number(), config["privacyideaVersionNumber"])
 
     def test_02_get_ui_config_custom_values(self):
+        self.setUp_user_realms()
+        self.setUp_user_realm2()
         self.app.config['PI_CUSTOMIZATION'] = '/my/custom/path'
         self.app.config["PI_LOGO"] = 'mylogo.png'
         self.app.config["PI_PAGE_TITLE"] = 'My Custom Title'
 
         set_policy("ui", scope=SCOPE.WEBUI,
-                   action=f"{PolicyAction.REALMDROPDOWN}=realm1 realm2,{PolicyAction.SHOW_NODE},"
+                   action=f"{PolicyAction.REALMDROPDOWN}={self.realm1} {self.realm2},{PolicyAction.SHOW_NODE},"
                           f"{PolicyAction.CUSTOM_MENU}=myMenu.html,{PolicyAction.LOGIN_TEXT}=Please log in")
 
         with self.app.test_request_context("/config",

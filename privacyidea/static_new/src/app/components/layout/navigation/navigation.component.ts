@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, effect, inject } from "@angular/core";
+import { Component, inject } from "@angular/core";
 import { DatePipe, NgClass, NgOptimizedImage } from "@angular/common";
 import {
   MatAccordion,
@@ -54,6 +54,7 @@ import {
 import { FormsModule } from "@angular/forms";
 import { RealmService, RealmServiceInterface } from "../../../services/realm/realm.service";
 import { ResolverService, ResolverServiceInterface } from "../../../services/resolver/resolver.service";
+import { PeriodicTaskService } from "../../../services/periodic-task/periodic-task.service";
 
 @Component({
   selector: "app-navigation",
@@ -100,6 +101,7 @@ export class NavigationComponent {
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   protected readonly sessionTimerService: SessionTimerServiceInterface = inject(SessionTimerService);
   private readonly resolverService: ResolverServiceInterface = inject(ResolverService);
+  protected readonly periodicTaskService = inject(PeriodicTaskService);
   protected readonly router: Router = inject(Router);
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
 
@@ -111,18 +113,24 @@ export class NavigationComponent {
   }
 
   refreshPage() {
-    if (this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_DETAILS)) {
+    if (this.contentService.onTokenDetails()) {
       this.tokenService.tokenDetailResource.reload();
-      if (this.authService.anyContainerActionAllowed()) {
-        this.containerService.containerResource.reload();
-      }
-    } else if (this.contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS)) {
+      this.containerService.containerResource.reload();
+      return;
+
+    } else if (this.contentService.onTokensContainersDetails()) {
       this.containerService.containerDetailResource.reload();
       this.tokenService.tokenResource.reload();
-    } else if (this.contentService.routeUrl().startsWith(ROUTE_PATHS.USERS_DETAILS)) {
+      return;
+
+    } else if (this.contentService.onUserDetails()) {
       this.userService.usersResource.reload();
+      this.tokenService.tokenResource.reload();
+      this.tokenService.userTokenResource.reload();
+      this.containerService.containerResource.reload();
       return;
     }
+
     switch (this.contentService.routeUrl()) {
       case ROUTE_PATHS.TOKENS:
         this.tokenService.tokenResource.reload();
@@ -152,6 +160,10 @@ export class NavigationComponent {
       case ROUTE_PATHS.USERS_REALMS:
         this.realmService.realmResource.reload();
         this.resolverService.resolversResource.reload();
+        break;
+      case ROUTE_PATHS.CONFIGURATION_PERIODIC_TASKS:
+        this.periodicTaskService.periodicTasksResource.reload();
+        break;
     }
   }
 

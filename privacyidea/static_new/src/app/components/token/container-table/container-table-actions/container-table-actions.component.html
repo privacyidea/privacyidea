@@ -16,14 +16,15 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<div class="flex-row margin-bottom-1 gap-8">
+<div class="flex-row margin-bottom-1 margin-top-1 gap-8">
   @if (authService.actionAllowed("container_delete")) {
     <button
       class="action-button-delete"
       (click)="deleteSelectedContainer()"
       [disabled]="containerSelection().length === 0"
-      mat-stroked-button
-      i18n>
+      class="action-button-delete"
+      i18n
+      mat-stroked-button>
       <mat-icon> delete_sweep</mat-icon>
       Delete Selected
     </button>
@@ -35,4 +36,21 @@
     <mat-icon> create_new_folder</mat-icon>
     Create Container
   </button>
+  <button
+    [matMenuTriggerFor]="advancedFilterMenu"
+    class="action-button-1"
+    mat-stroked-button>
+    <mat-icon> filter_list</mat-icon>
+    More Filter
+  </button>
+  <mat-menu #advancedFilterMenu="matMenu">
+    @for (keyword of containerService.advancedApiFilter; track keyword) {
+      <button
+        (click)="onAdvancedFilterClick(keyword)"
+        mat-menu-item>
+        <mat-icon class="margin-right-1">{{ getFilterIconName(keyword) }}</mat-icon>
+        {{ keyword }}
+      </button>
+    }
+  </mat-menu>
 </div>

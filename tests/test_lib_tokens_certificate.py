@@ -752,7 +752,7 @@ class MSCACertTestCase(MyTestCase):
             self.assertEqual(5, r)
             self.assertEqual(ROLLOUTSTATE.PENDING, cert_tok.rollout_state)
             # turn the certificate token to be broken
-            cert_tok.del_tokeninfo("requestId")
+            cert_tok.delete_tokeninfo("requestId")
 
             # Fetch the rolloutstate again, it will fail, since no requestId available
             r = cert_tok._update_rollout_state()

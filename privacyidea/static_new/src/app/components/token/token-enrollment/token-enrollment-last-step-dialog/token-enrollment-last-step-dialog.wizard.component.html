@@ -35,7 +35,7 @@
       }
     </div>
   }
-  <div class="flex-row gap-1">
+  <div class="flex-row gap-16">
     @if (showQRCode() && qrCode) {
       <img
         alt="QR Code"
@@ -44,7 +44,7 @@
         src="{{ qrCode }}"
         width="300px" />
     }
-    <div class="flex-column gap-1">
+    <div class="flex-column gap-16">
       @if (data.response.detail["password"]) {
         <p>
           Your Password: <strong>{{ data.response.detail["password"] }}</strong>.

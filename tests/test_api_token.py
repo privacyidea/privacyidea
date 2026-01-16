@@ -54,6 +54,7 @@ from privacyidea.lib.tokenclass import ROLLOUTSTATE
 from privacyidea.lib.tokens.hotptoken import VERIFY_ENROLLMENT_MESSAGE
 from privacyidea.lib.tokens.smstoken import SMSACTION
 from privacyidea.lib.user import User
+from privacyidea.models import db
 from .base import MyApiTestCase, PWFILE2
 from .mscamock import CAServiceMock
 from .test_lib_tokens_certificate import REQUEST, CERTIFICATE
@@ -127,19 +128,14 @@ class API000TokenAdminRealmList(MyApiTestCase):
             self.assertEqual(2, result.get("value").get("count"))
 
         # admin is allowed to see realm1
-        set_policy(name="pol-realm1",
-                   scope=SCOPE.ADMIN,
-                   action=PolicyAction.TOKENLIST, adminuser=self.testadmin, realm=self.realm1)
+        set_policy(name="pol-realm1", scope=SCOPE.ADMIN, action=PolicyAction.TOKENLIST, adminuser=self.testadmin,
+                   realm=self.realm1)
 
         # admin is allowed to list all realms
-        set_policy(name="pol-all-realms",
-                   scope=SCOPE.ADMIN,
-                   action=PolicyAction.TOKENLIST, adminuser=self.testadmin)
+        set_policy(name="pol-all-realms", scope=SCOPE.ADMIN, action=PolicyAction.TOKENLIST, adminuser=self.testadmin)
 
         # admin is allowed to only init, not list
-        set_policy(name="pol-only-init",
-                   scope=SCOPE.ADMIN,
-                   action="enrollHOTP")
+        set_policy(name="pol-only-init", scope=SCOPE.ADMIN, action="enrollHOTP")
 
         with self.app.test_request_context('/token/',
                                            method='GET',
@@ -174,7 +170,7 @@ class API000TokenAdminRealmList(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            # we have two tokens
+            # we have no tokens
             self.assertEqual(0, result.get("value").get("count"))
 
         delete_policy("pol-realm1")
@@ -439,13 +435,13 @@ class API000TokenAdminRealmList(MyApiTestCase):
         assign_token(t2.get_serial(), user=User(login='hans', realm=self.realm2))
 
         # set realm1 to token in another realm shall fail (no exception)
-        self.request_denied_assert_403(f"/token/realm/{t2.get_serial()}", {"realms": [self.realm1]}, self.at, 'POST')
+        self.request_denied_assert_403(f"/token/realm/{t2.get_serial()}", {"realms": self.realm1}, self.at, 'POST')
         t2_realms = t2.get_realms()
         self.assertNotIn(self.realm1, t2_realms)
         self.assertIn(self.realm2, t2_realms)
 
         # set realm2 to a token in no realm shall not work
-        self.request_denied_assert_403(f"/token/realm/{t3.get_serial()}", {"realms": [self.realm2]}, self.at,
+        self.request_denied_assert_403(f"/token/realm/{t3.get_serial()}", {"realms": self.realm2}, self.at,
                                        'POST')
         # check realm is not set
         t3_realms = t3.get_realms()
@@ -453,21 +449,22 @@ class API000TokenAdminRealmList(MyApiTestCase):
         self.assertNotIn(self.realm2, t3_realms)
 
         # set realm1 to token without realm shall not work
-        self.request_denied_assert_403(f"/token/realm/{t3.get_serial()}", {"realms": [self.realm1, self.realm3]},
+        self.request_denied_assert_403(f"/token/realm/{t3.get_serial()}", {"realms": f"{self.realm1},{self.realm3}"},
                                        self.at, 'POST')
         t3_realms = t3.get_realms()
         self.assertEqual(0, len(t3_realms))
 
         # set realm3 to a token in realm1 shall work
-        self.request_assert_200(f"/token/realm/{t1.get_serial()}", {"realms": [self.realm3, self.realm1]}, self.at,
+        self.request_assert_200(f"/token/realm/{t1.get_serial()}", {"realms": f"{self.realm3},{self.realm1}"}, self.at,
                                 'POST')
 
-        # set realm2 to a token in realm 1 shall fail (no exception)
-        self.request_assert_200(f"/token/realm/{t1.get_serial()}", {"realms": [self.realm2]}, self.at, 'POST')
+        # set realm2 to a token in realm 1 shall fail: realm2 is not set, realm1 is kept due to user and realm3 is removed
+        self.request_assert_200(f"/token/realm/{t1.get_serial()}", {"realms": self.realm2}, self.at, 'POST')
         # check realm is not set
         t1_realms = t1.get_realms()
         self.assertIn(self.realm1, t1_realms)
         self.assertNotIn(self.realm2, t1_realms)
+        self.assertNotIn(self.realm3, t1_realms)
 
         delete_policy("pol-reso1")
 
@@ -805,6 +802,28 @@ class APITokenTestCase(MyApiTestCase):
             self.assertTrue("OATH" in serial, detail)
             remove_token(serial)
 
+        # Init only with realm
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"type": "hotp",
+                                                 "genkey": True,
+                                                 "realm": self.realm1},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            data = res.json
+            self.assertEqual(200, res.status_code, res)
+            result = data.get("result")
+            detail = data.get("detail")
+            self.assertTrue(result.get("status"), result)
+            self.assertTrue(result.get("value"), result)
+            self.assertIn("googleurl", detail, detail)
+            self.assertIn("value", detail.get("googleurl"), detail)
+            serial = detail.get("serial")
+            token = get_one_token(serial=serial)
+            self.assertIn(self.realm1, token.get_realms())
+            self.assertIsNone(token.user)
+            token.delete_token()
+
         container_serial = init_container({"type": "generic"})["container_serial"]
         with self.app.test_request_context('/token/init',
                                            method='POST',
@@ -924,6 +943,7 @@ class APITokenTestCase(MyApiTestCase):
             self.assertTrue(len(tokenlist) == 2, len(tokenlist))
 
         remove_token(serial="totp1")
+        db.session.expunge_all()
 
         # get tokens with a specific tokeninfo
         with self.app.test_request_context('/token/',
@@ -954,6 +974,7 @@ class APITokenTestCase(MyApiTestCase):
             tokenlist = result.get("value").get("tokens")
             self.assertEqual(len(tokenlist), 1)
         remove_token("hw001")
+        db.session.expunge_all()
 
         # get tokens with specific serials
         hotp_token = init_token({"otpkey": self.otpkey}, tokenkind="hotp")
@@ -984,6 +1005,7 @@ class APITokenTestCase(MyApiTestCase):
         remove_token(hotp_token.get_serial())
         remove_token(totp_token.get_serial())
         remove_token(spass_token.get_serial())
+        db.session.expunge_all()
 
         # create token in container
         container_serial = init_container({"type": "generic", "user": "hans", "realm": self.realm1})["container_serial"]
@@ -2340,9 +2362,7 @@ class APITokenTestCase(MyApiTestCase):
         delete_policy("deleteToken")
 
     def test_23_change_pin_on_first_use(self):
-
-        set_policy("firstuse", scope=SCOPE.ENROLL,
-                   action=PolicyAction.CHANGE_PIN_FIRST_USE)
+        set_policy("firstuse", scope=SCOPE.ENROLL, action=PolicyAction.CHANGE_PIN_FIRST_USE)
 
         current_time = datetime.datetime.now(tzlocal())
         with mock.patch('privacyidea.lib.tokenclass.datetime') as mock_dt:
@@ -2360,6 +2380,7 @@ class APITokenTestCase(MyApiTestCase):
                 token = get_tokens(serial=serial)[0]
                 ti = token.get_tokeninfo("next_pin_change")
                 self.assertEqual(ti, current_time.strftime(DATE_FORMAT))
+                token.delete_token()
 
         # If the administrator sets a PIN of the user, the next_pin_change
         # must also be created!
@@ -2382,6 +2403,79 @@ class APITokenTestCase(MyApiTestCase):
                 token = get_tokens(serial=serial)[0]
                 ti = token.get_tokeninfo("next_pin_change")
                 self.assertEqual(ti, current_time.strftime(DATE_FORMAT))
+                token.delete_token()
+
+        # Restrict policy to a resolver
+        self.setUp_user_realm4_with_2_resolvers()
+        set_policy("firstuse", scope=SCOPE.ENROLL, action=PolicyAction.CHANGE_PIN_FIRST_USE, realm=self.realm4,
+                   resolver=self.resolvername1)
+
+        # Create token of resolver 1 sets next_pin_change
+        current_time = datetime.datetime.now(tzlocal())
+        with mock.patch('privacyidea.lib.tokenclass.datetime') as mock_dt:
+            mock_dt.now.return_value = current_time
+            with self.app.test_request_context('/token/init',
+                                               method='POST',
+                                               data={"type": "spass", "pin": "123456", "user": "hans", "realm": self.realm4},
+                                               headers={'Authorization': self.at}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code)
+                detail = res.json.get("detail")
+                token = get_tokens(serial=detail.get("serial"))[0]
+                text_pin_change = token.get_tokeninfo("next_pin_change")
+                self.assertEqual(current_time.strftime(DATE_FORMAT), text_pin_change)
+
+        with self.app.test_request_context("/validate/check", method="POST",
+                                           data={"user": "hans", "realm": self.realm4, "pass": "123456"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code)
+            detail = res.json.get("detail")
+            self.assertTrue(detail.get("pin_change"))
+        token.delete_token()
+
+        # Create token of resolver 3 does not set next_pin_change
+        with mock.patch('privacyidea.lib.tokenclass.datetime') as mock_dt:
+            mock_dt.now.return_value = current_time
+            with self.app.test_request_context('/token/init',
+                                               method='POST',
+                                               data={"type": "spass", "pin": "123456", "user": "corny", "realm": self.realm4},
+                                               headers={'Authorization': self.at}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code)
+                detail = res.json.get("detail")
+                token = get_tokens(serial=detail.get("serial"))[0]
+                self.assertIsNone(token.get_tokeninfo("next_pin_change"))
+
+        with self.app.test_request_context("/validate/check", method="POST",
+                                           data={"user": "corny", "realm": self.realm4, "pass": "123456"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code)
+            detail = res.json.get("detail")
+            self.assertFalse(detail.get("pin_change"))
+        token.delete_token()
+
+        # Creates token without user does not contain the next_pin_change info
+        with mock.patch('privacyidea.lib.tokenclass.datetime') as mock_dt:
+            mock_dt.now.return_value = current_time
+            with self.app.test_request_context('/token/init',
+                                               method='POST',
+                                               data={"pin": "123456"},
+                                               headers={'Authorization': self.at}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code)
+                detail = res.json.get("detail")
+                token = get_tokens(serial=detail.get("serial"))[0]
+                self.assertIsNone(token.get_tokeninfo("next_pin_change"))
+
+        # Even if we now assign user from resolver 1 to the token, it does not trigger a pin change
+        token.add_user(User("hans", self.realm4))
+        with self.app.test_request_context("/validate/check", method="POST",
+                                           data={"user": "hans", "realm": self.realm4, "pass": "123456"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code)
+            detail = res.json.get("detail")
+            self.assertFalse(detail.get("pin_change"))
+        token.delete_token()
 
         delete_policy("firstuse")
 
@@ -2724,11 +2818,37 @@ class APITokenTestCase(MyApiTestCase):
             detail = res.json["detail"]
             self.assertTrue(result.get("status"))
             self.assertTrue(result.get("value"))
-            self.assertTrue('pin=True' in detail.get("googleurl").get("value"),
+            self.assertTrue("app_force_unlock=pin" in detail.get("googleurl").get("value"),
+                            detail.get("googleurl"))
+            self.assertTrue("force_app_pin=True" in detail.get("googleurl").get("value"),
                             detail.get("googleurl"))
 
         remove_token("goog2")
         delete_policy('app_pin')
+
+    def test_30a_app_force_unlock(self):
+        set_policy("app_force", scope=SCOPE.ENROLL,
+                   action={"hotp_" + PolicyAction.APP_FORCE_UNLOCK: 'biometric'})
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "genkey": "1",
+                                                 "realm": self.realm1,
+                                                 "serial": "goog2",
+                                                 "type": 'HOTP',
+                                                 "pin": "test"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json["result"]
+            detail = res.json["detail"]
+            self.assertTrue(result.get("status"))
+            self.assertTrue(result.get("value"))
+            self.assertTrue("app_force_unlock=biometric" in detail.get("googleurl").get("value"),
+                            detail.get("googleurl"))
+
+        remove_token("goog2")
+        delete_policy('app_force')
 
     def test_31_invalid_serial(self):
         # Run a test with an invalid serial
@@ -3536,6 +3656,138 @@ class APITokenTestCase(MyApiTestCase):
 
         delete_policy("policy")
 
+    def test_64_change_pin_every(self):
+        self.setUp_user_realms()
+        self.authenticate_selfservice_user()
+        set_policy("change_pin", scope=SCOPE.ENROLL, action=f"{PolicyAction.CHANGE_PIN_EVERY}=1d")
+
+        # user enrolls a token
+        current_time = datetime.datetime.now(tzlocal())
+        with mock.patch('privacyidea.lib.tokenclass.datetime') as mock_dt:
+            mock_dt.now.return_value = current_time
+            with self.app.test_request_context('/token/init',
+                                               method='POST',
+                                               data={"type": "spass", "pin": "123456"},
+                                               headers={'Authorization': self.at_user}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code)
+                detail = res.json.get("detail")
+
+                serial = detail.get("serial")
+                token = get_tokens(serial=serial)[0]
+                next_pin_change = token.get_tokeninfo("next_pin_change")
+                tomorrow = current_time + datetime.timedelta(days=1)
+                self.assertEqual(tomorrow.strftime(DATE_FORMAT), next_pin_change)
+                token.delete_token()
+
+        # user sets pin of existing token
+        token = init_token({"serial": "SP001", "type": "spass", "pin": "123456"}, user=User("selfservice", self.realm1))
+        next_pin_change = token.get_tokeninfo("next_pin_change")
+        self.assertIsNone(next_pin_change)
+        # Now we set the PIN
+        current_time = datetime.datetime.now(tzlocal())
+        with mock.patch('privacyidea.lib.tokenclass.datetime') as mock_dt:
+            mock_dt.now.return_value = current_time
+            with self.app.test_request_context('/token/setpin/SP001',
+                                               method='POST',
+                                               data={"otppin": "1234"},
+                                               headers={'Authorization': self.at_user}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code)
+
+                serial = "SP001"
+                token = get_tokens(serial=serial)[0]
+                next_pin_change = token.get_tokeninfo("next_pin_change")
+                tomorrow = current_time + datetime.timedelta(days=1)
+                self.assertEqual(tomorrow.strftime(DATE_FORMAT), next_pin_change)
+        token.delete_token()
+
+        # Restrict policy to a resolver
+        self.setUp_user_realm4_with_2_resolvers()
+        set_policy("change_pin", scope=SCOPE.ENROLL, action=f"{PolicyAction.CHANGE_PIN_EVERY}=1d",
+                   realm=self.realm4, resolver=self.resolvername1)
+        set_policy("loginmode", scope=SCOPE.WEBUI, action=f"{PolicyAction.LOGINMODE}=privacyIDEA")
+
+        token_hans = init_token({"type": "spass", "pin": "123456"}, user=User("hans", self.realm4))
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "hans", "realm": self.realm4, "password": "123456"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            at_hans = result.get("value").get("token")
+
+        # user from resolver 1 sets pin sets next_pin_change
+        current_time = datetime.datetime.now(tzlocal())
+        with mock.patch('privacyidea.lib.tokenclass.datetime') as mock_dt:
+            mock_dt.now.return_value = current_time
+            with self.app.test_request_context('/token/setpin/' + token_hans.get_serial(),
+                                               method='POST',
+                                               data={"otppin": "new_pin"},
+                                               headers={'Authorization': at_hans}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code)
+
+                next_pin_change = token_hans.get_tokeninfo("next_pin_change")
+                tomorrow = current_time + datetime.timedelta(days=1)
+                self.assertEqual(tomorrow.strftime(DATE_FORMAT), next_pin_change)
+
+        # authenticating immediately does not trigger pin change
+        with self.app.test_request_context("/validate/check", method="POST",
+                                           data={"user": "hans", "realm": self.realm4, "pass": "new_pin"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code)
+            self.assertEqual("ACCEPT", res.json.get("result").get("authentication"))
+            detail = res.json.get("detail")
+            self.assertFalse(detail.get("pin_change"))
+
+        # authenticating after a day triggers pin change
+        with mock.patch('privacyidea.lib.tokenclass.datetime') as mock_dt:
+            mock_dt.now.return_value = current_time + datetime.timedelta(days=1, hours=1)
+            with self.app.test_request_context("/validate/check", method="POST",
+                                               data={"user": "hans", "realm": self.realm4, "pass": "new_pin"}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code)
+                self.assertEqual("ACCEPT", res.json.get("result").get("authentication"))
+                detail = res.json.get("detail")
+                self.assertTrue(detail.get("pin_change"))
+
+        # Create token of resolver 3 does not set next_pin_change
+        token_corny = init_token({"type": "spass", "pin": "123456"}, user=User("corny", self.realm4))
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "corny", "realm": self.realm4, "password": "123456"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            at_corny = result.get("value").get("token")
+
+        with mock.patch('privacyidea.lib.tokenclass.datetime') as mock_dt:
+            mock_dt.now.return_value = current_time
+            with self.app.test_request_context('/token/setpin/' + token_corny.get_serial(),
+                                               method='POST',
+                                               data={"otppin": "new_pin"},
+                                               headers={'Authorization': at_corny}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code)
+                self.assertIsNone(token_corny.get_tokeninfo("next_pin_change"))
+
+        # authentication does not contain pin_change request
+        with mock.patch('privacyidea.lib.tokenclass.datetime') as mock_dt:
+            mock_dt.now.return_value = current_time + datetime.timedelta(days=1, hours=1)
+            with self.app.test_request_context("/validate/check", method="POST",
+                                               data={"user": "corny", "realm": self.realm4, "pass": "new_pin"}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code)
+                self.assertEqual("ACCEPT", res.json.get("result").get("authentication"))
+                detail = res.json.get("detail")
+                self.assertIsNone(detail.get("pin_change"))
+
+        token_corny.delete_token()
+        token_hans.delete_token()
+        delete_policy("change_pin")
+        delete_policy("loginmode")
+
 
 class API00TokenPerformance(MyApiTestCase):
     token_count = 21
@@ -3554,7 +3806,7 @@ class API00TokenPerformance(MyApiTestCase):
         self.setUp_user_realms()
 
     def test_01_number_of_tokens(self):
-        # The GET /token returns a wildcard 100 tokens
+        # The GET /token returns a wildcard 21 tokens
         with self.app.test_request_context('/token/',
                                            method='GET',
                                            query_string={"serial": "perf*"},
@@ -3562,7 +3814,7 @@ class API00TokenPerformance(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            self.assertEqual(result.get("value").get("count"), self.token_count)
+            self.assertEqual(self.token_count, result.get("value").get("count"))
 
         init_token({"genkey": 1, "serial": "realmtoken"}, tokenrealms=[self.realm1])
         tokens = get_tokens(realm="*realm1*")
@@ -3577,7 +3829,7 @@ class API00TokenPerformance(MyApiTestCase):
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
             # Even if we fetch tokenrealm=** we also get all the tokens without a tokenrealm
-            self.assertEqual(result.get("value").get("count"), self.token_count + 10 + 1)
+            self.assertEqual(self.token_count + 10 + 1, result.get("value").get("count"))
 
         with self.app.test_request_context('/token/',
                                            method='GET',
@@ -3586,7 +3838,7 @@ class API00TokenPerformance(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            self.assertEqual(result.get("value").get("count"), 1)
+            self.assertEqual(1, result.get("value").get("count"))
 
         remove_token(serial="realmtoken")
 
@@ -3599,7 +3851,7 @@ class API00TokenPerformance(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            self.assertEqual(result.get("value").get("count"), 0)
+            self.assertEqual(0, result.get("value").get("count"))
 
         # Run POST assign with a wildcard. This shall not assign.
         with self.app.test_request_context('/token/assign',
@@ -4121,6 +4373,7 @@ class APITokengroupTestCase(MyApiTestCase):
             self.assertEqual(tok.get("tokengroup"), [])
 
         # Now assign the tokengroup grupp1 again.
+        db.session.expunge_all()    # Clear session before re-adding the token group db entry
         with self.app.test_request_context('/token/group/{0!s}/gruppe1'.format(serial),
                                            method='POST',
                                            headers={'Authorization': self.at}):

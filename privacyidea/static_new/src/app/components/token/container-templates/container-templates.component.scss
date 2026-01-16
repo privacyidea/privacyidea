@@ -1,0 +1,30 @@
+@use "../../../../styles" as styles;
+@use "@angular/material" as mat;
+
+.container-templates-layout {
+  @include styles.table-container-styles;
+  @include styles.base-table-structure(".token-table", ".token-table-filter", ".table-scroll-container");
+  display: flex;
+  flex-direction: column;
+  max-height: var(--max-height);
+  width: 1000px;
+}
+
+.container-templates-list-layout {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--global-gap) / 4);
+  overflow: auto;
+}
+
+.button-active {
+  background-color: var(--mat-sys-primary-base-active);
+  color: var(--mat-sys-on-primary);
+}
+.button-hover:hover:not(:disabled):not(.button-active) {
+  background-color: var(--mat-sys-primary-base-hover);
+  color: var(--mat-sys-on-primary);
+  font-weight: 600;
+  cursor: pointer;
+}

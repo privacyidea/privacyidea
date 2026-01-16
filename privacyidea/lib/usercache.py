@@ -22,7 +22,7 @@ import datetime
 
 from privacyidea.lib.config import get_from_config
 from privacyidea.models import UserCache, db
-from sqlalchemy import and_
+from sqlalchemy import and_, delete, select
 
 log = logging.getLogger(__name__)
 EXPIRATION_SECONDS = "UserCacheExpiration"
@@ -101,7 +101,11 @@ def delete_user_cache(resolver: str = None, username: str = None, expired: bool 
     """
     filter_condition = create_filter(username=username, resolver=resolver,
                                      expired=expired)
-    row_count = db.session.query(UserCache).filter(filter_condition).delete()
+    stmt = delete(UserCache)
+    if filter_condition is not None:
+        stmt = stmt.where(filter_condition)
+    result = db.session.execute(stmt)
+    row_count = result.rowcount
     db.session.commit()
     log.info('Deleted {} entries from the user cache (resolver={!r}, username={!r}, expired={!r})'.format(
         row_count, resolver, username, expired
@@ -133,7 +137,12 @@ def retrieve_latest_entry(filter_condition):
     :param filter_condition: SQLAlchemy filter, as created (for example) by create_filter
     :return: A `UserCache` object or None, if no entry matches the given condition.
     """
-    return UserCache.query.filter(filter_condition).order_by(UserCache.timestamp.desc()).first()
+    stmt = select(UserCache)
+    if filter_condition is not None:
+        stmt = stmt.where(filter_condition)
+    stmt = stmt.order_by(UserCache.timestamp.desc())
+    result = db.session.scalar(stmt)
+    return result
 
 
 def create_filter(username=None, used_login=None, resolver=None,
@@ -169,8 +178,10 @@ def create_filter(username=None, used_login=None, resolver=None,
         conditions.append(UserCache.resolver == resolver)
     if user_id:
         conditions.append(UserCache.user_id == user_id)
-    filter_condition = and_(*conditions)
-    return filter_condition
+
+    if conditions:
+        return and_(*conditions)
+    return None
 
 
 def cache_username(wrapped_function, userid, resolvername):

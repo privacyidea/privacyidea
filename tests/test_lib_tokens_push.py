@@ -7,7 +7,6 @@ import time
 from base64 import b32decode, b32encode
 from datetime import datetime, timedelta, timezone
 from threading import Timer
-from testfixtures import LogCapture
 
 import mock
 import responses
@@ -21,6 +20,7 @@ from cryptography.hazmat.primitives.serialization import load_pem_public_key
 from flask import Request
 from google.oauth2 import service_account
 from pytz import utc
+from testfixtures import LogCapture
 from werkzeug.test import EnvironBuilder
 
 from privacyidea.lib.challenge import get_challenges
@@ -43,7 +43,7 @@ from privacyidea.lib.tokens.pushtoken import (PushTokenClass, PUSH_ACTION,
                                               PushPresenceOptions)
 from privacyidea.lib.user import (User)
 from privacyidea.lib.utils import to_bytes, b32encode_and_unicode, to_unicode, AUTH_RESPONSE
-from privacyidea.models import Token, Challenge
+from privacyidea.models import Token, Challenge, db
 from .base import MyTestCase, FakeFlaskG
 
 PWFILE = "tests/testdata/passwords"
@@ -112,7 +112,7 @@ class PushTokenTestCase(MyTestCase):
         token.add_tokeninfo("firebase_token", "firebaseT")
         token.add_tokeninfo(PUBLIC_KEY_SERVER, self.server_public_key_pem)
         token.add_tokeninfo(PRIVATE_KEY_SERVER, self.server_private_key_pem, "password")
-        token.del_tokeninfo("enrollment_credential")
+        token.delete_tokeninfo("enrollment_credential")
         token.token.rollout_state = "enrolled"
         token.token.active = True
         return token
@@ -211,8 +211,8 @@ class PushTokenTestCase(MyTestCase):
         token = init_token(param=token_param)
         detail = token.get_init_detail(params={"policies": {PUSH_ACTION.FIREBASE_CONFIG: POLL_ONLY,
                                                             PUSH_ACTION.REGISTRATION_URL: "https://privacyidea.com/enroll"},
-                                               PolicyAction.FORCE_APP_PIN: True})
-        self.assertIn("pin=True", detail["pushurl"]["value"])
+                                               PolicyAction.APP_FORCE_UNLOCK: "pin"})
+        self.assertIn('app_force_unlock=pin', detail["pushurl"]["value"])
         remove_token(token.get_serial())
 
     def test_02a_lib_enroll(self):
@@ -521,6 +521,9 @@ class PushTokenTestCase(MyTestCase):
 
                 # In two seconds we need to run an update on the challenge table.
                 Timer(2, self._mark_challenge_as_accepted).start()
+
+                # Clear session before recreating a new challenge to avoid conflicts
+                db.session.expunge_all()
 
                 set_policy("push1", scope=SCOPE.AUTH, action=f"{PUSH_ACTION.WAIT}=20")
                 # Send the first authentication request to trigger the challenge
@@ -1573,6 +1576,7 @@ class PushTokenTestCase(MyTestCase):
 
         # this is the default timestamp for polling in this test
         timestamp = datetime(2020, 6, 19, 13, 27, tzinfo=utc)
+        timestamp_polling = timestamp.replace(tzinfo=None) + timedelta(seconds=15)
 
         # create a poll request
         # first create a signature
@@ -1586,9 +1590,9 @@ class PushTokenTestCase(MyTestCase):
                             'timestamp': timestamp_str,
                             'signature': b32encode(signature)}
         # poll for challenges
-        with mock.patch('privacyidea.models.challenge.datetime') as mock_dt1, mock.patch(
-                'privacyidea.lib.tokens.pushtoken.datetime') as mock_dt2:
-            mock_dt1.utcnow.return_value = timestamp.replace(tzinfo=None) + timedelta(seconds=15)
+        with mock.patch('privacyidea.models.utils.utc_now',
+                        return_value=timestamp_polling), mock.patch(
+            'privacyidea.lib.tokens.pushtoken.datetime') as mock_dt2:
             mock_dt2.now.return_value = timestamp + timedelta(seconds=15)
             res = PushTokenClass.api_endpoint(request, g)
         self.assertTrue(res[1]['result']['status'], res)
@@ -1598,8 +1602,7 @@ class PushTokenTestCase(MyTestCase):
         # we need to create a challenge which we can check for with polling
         # use a given time for the challenge (15 seconds before the poll)
         challenge_timestamp = timestamp - timedelta(seconds=15)
-        with mock.patch('privacyidea.models.challenge.datetime') as mock_datetime:
-            mock_datetime.utcnow.return_value = challenge_timestamp.replace(tzinfo=None)
+        with mock.patch('privacyidea.models.utils.utc_now', return_value=challenge_timestamp.replace(tzinfo=None)):
             challenge = b32encode_and_unicode(geturandom())
             db_challenge = Challenge(serial, challenge=challenge)
             db_challenge.save()
@@ -1608,9 +1611,8 @@ class PushTokenTestCase(MyTestCase):
 
         # now check that we receive the challenge when polling
         # since we mock the time we can use the same request data
-        with mock.patch('privacyidea.models.challenge.datetime') as mock_dt1, \
-                mock.patch('privacyidea.lib.tokens.pushtoken.datetime') as mock_dt2:
-            mock_dt1.utcnow.return_value = timestamp.replace(tzinfo=None) + timedelta(seconds=15)
+        with mock.patch('privacyidea.models.utils.utc_now', return_value=timestamp_polling), mock.patch(
+                'privacyidea.lib.tokens.pushtoken.datetime') as mock_dt2:
             mock_dt2.now.return_value = timestamp + timedelta(seconds=15)
             res = PushTokenClass.api_endpoint(request, g)
         self.assertTrue(res[1]['result']['status'], res)
@@ -1630,9 +1632,10 @@ class PushTokenTestCase(MyTestCase):
 
         # Now mark the challenge as answered so we receive an empty list
         db_challenge.set_otp_status(True)
-        with mock.patch('privacyidea.models.challenge.datetime') as mock_dt1, mock.patch(
+        db_challenge.save()
+        with mock.patch('privacyidea.models.utils.utc_now',
+                        return_value=timestamp_polling), mock.patch(
                 'privacyidea.lib.tokens.pushtoken.datetime') as mock_dt2:
-            mock_dt1.utcnow.return_value = timestamp.replace(tzinfo=None) + timedelta(seconds=15)
             mock_dt2.now.return_value = timestamp + timedelta(seconds=15)
             res = PushTokenClass.api_endpoint(request, g)
         self.assertTrue(res[1]['result']['status'], res)
@@ -1640,9 +1643,9 @@ class PushTokenTestCase(MyTestCase):
 
         # disallow polling through a policy
         set_policy('push_poll', SCOPE.AUTH, action=f'{PUSH_ACTION.ALLOW_POLLING}={PushAllowPolling.DENY}')
-        with mock.patch('privacyidea.models.challenge.datetime') as mock_dt1, mock.patch(
+        with mock.patch('privacyidea.models.utils.utc_now',
+                        return_value=timestamp_polling), mock.patch(
                 'privacyidea.lib.tokens.pushtoken.datetime') as mock_dt2:
-            mock_dt1.utcnow.return_value = timestamp.replace(tzinfo=None) + timedelta(seconds=15)
             mock_dt2.now.return_value = timestamp + timedelta(seconds=15)
             self.assertRaisesRegex(PolicyError,
                                    r'Polling not allowed!',
@@ -1651,9 +1654,9 @@ class PushTokenTestCase(MyTestCase):
         # disallow polling based on a per token configuration
         set_policy('push_poll', SCOPE.AUTH, action=f'{PUSH_ACTION.ALLOW_POLLING}={PushAllowPolling.TOKEN}')
         # If no tokeninfo is set, allow polling
-        with mock.patch('privacyidea.models.challenge.datetime') as mock_dt1, mock.patch(
+        with mock.patch('privacyidea.models.utils.utc_now',
+                        return_value=timestamp_polling), mock.patch(
                 'privacyidea.lib.tokens.pushtoken.datetime') as mock_dt2:
-            mock_dt1.utcnow.return_value = timestamp.replace(tzinfo=None) + timedelta(seconds=15)
             mock_dt2.now.return_value = timestamp + timedelta(seconds=15)
             res = PushTokenClass.api_endpoint(request, g)
         self.assertTrue(res[1]['result']['status'], res)
@@ -1661,17 +1664,17 @@ class PushTokenTestCase(MyTestCase):
 
         # now set the tokeninfo POLLING_ALLOWED to 'False'
         token.add_tokeninfo(POLLING_ALLOWED, 'False')
-        with mock.patch('privacyidea.models.challenge.datetime') as mock_dt1, mock.patch(
+        with mock.patch('privacyidea.models.utils.utc_now',
+                        return_value=timestamp_polling), mock.patch(
                 'privacyidea.lib.tokens.pushtoken.datetime') as mock_dt2:
-            mock_dt1.utcnow.return_value = timestamp.replace(tzinfo=None) + timedelta(seconds=15)
             mock_dt2.now.return_value = timestamp + timedelta(seconds=15)
             self.assertRaisesRegex(PolicyError, r'Polling not allowed!', PushTokenClass.api_endpoint, request, g)
 
         # Explicitly allow polling for this token
         token.add_tokeninfo(POLLING_ALLOWED, 'True')
-        with mock.patch('privacyidea.models.challenge.datetime') as mock_dt1, mock.patch(
+        with mock.patch('privacyidea.models.utils.utc_now',
+                        return_value=timestamp_polling), mock.patch(
                 'privacyidea.lib.tokens.pushtoken.datetime') as mock_dt2:
-            mock_dt1.utcnow.return_value = timestamp.replace(tzinfo=None) + timedelta(seconds=15)
             mock_dt2.now.return_value = timestamp + timedelta(seconds=15)
             res = PushTokenClass.api_endpoint(request, g)
         self.assertTrue(res[1]['result']['status'], res)
@@ -1682,9 +1685,9 @@ class PushTokenTestCase(MyTestCase):
         token.add_tokeninfo(POLLING_ALLOWED, 'False')
         set_policy('push_poll', SCOPE.AUTH,
                    action=f'{PUSH_ACTION.ALLOW_POLLING}={PushAllowPolling.ALLOW}')
-        with mock.patch('privacyidea.models.challenge.datetime') as mock_dt1, mock.patch(
+        with mock.patch('privacyidea.models.utils.utc_now',
+                        return_value=timestamp_polling), mock.patch(
                 'privacyidea.lib.tokens.pushtoken.datetime') as mock_dt2:
-            mock_dt1.utcnow.return_value = timestamp.replace(tzinfo=None) + timedelta(seconds=15)
             mock_dt2.now.return_value = timestamp + timedelta(seconds=15)
             res = PushTokenClass.api_endpoint(request, g)
         self.assertTrue(res[1]['result']['status'], res)
@@ -1692,9 +1695,9 @@ class PushTokenTestCase(MyTestCase):
 
         # this should also work if there is no ALLOW_POLLING policy
         delete_policy('push_poll')
-        with mock.patch('privacyidea.models.challenge.datetime') as mock_dt1, mock.patch(
+        with mock.patch('privacyidea.models.utils.utc_now',
+                        return_value=timestamp_polling), mock.patch(
                 'privacyidea.lib.tokens.pushtoken.datetime') as mock_dt2:
-            mock_dt1.utcnow.return_value = timestamp.replace(tzinfo=None) + timedelta(seconds=15)
             mock_dt2.now.return_value = timestamp + timedelta(seconds=15)
             res = PushTokenClass.api_endpoint(request, g)
         self.assertTrue(res[1]['result']['status'], res)
@@ -1707,9 +1710,9 @@ class PushTokenTestCase(MyTestCase):
                             'timestamp': timestamp_str,
                             'signature': b32encode(b'no signature check')}
         # poll for challenges
-        with mock.patch('privacyidea.models.challenge.datetime') as mock_dt1, mock.patch(
+        with mock.patch('privacyidea.models.utils.utc_now',
+                        return_value=timestamp_polling), mock.patch(
                 'privacyidea.lib.tokens.pushtoken.datetime') as mock_dt2:
-            mock_dt1.utcnow.return_value = timestamp.replace(tzinfo=None) + timedelta(seconds=15)
             mock_dt2.now.return_value = timestamp + timedelta(seconds=15)
             self.assertRaisesRegex(privacyIDEAError,
                                    r'Could not verify signature!',
@@ -1722,9 +1725,9 @@ class PushTokenTestCase(MyTestCase):
                             'timestamp': timestamp_str,
                             'signature': b32encode(wrong_signature)}
         # poll for challenges
-        with mock.patch('privacyidea.models.challenge.datetime') as mock_dt1, mock.patch(
+        with mock.patch('privacyidea.models.utils.utc_now',
+                        return_value=timestamp_polling), mock.patch(
                 'privacyidea.lib.tokens.pushtoken.datetime') as mock_dt2:
-            mock_dt1.utcnow.return_value = timestamp.replace(tzinfo=None) + timedelta(seconds=15)
             mock_dt2.now.return_value = timestamp + timedelta(seconds=15)
             self.assertRaisesRegex(privacyIDEAError,
                                    r'Could not verify signature!',
@@ -1738,9 +1741,9 @@ class PushTokenTestCase(MyTestCase):
                             'timestamp': timestamp_str,
                             'signature': b32encode(wrong_signature2)}
         # poll for challenges
-        with mock.patch('privacyidea.models.challenge.datetime') as mock_dt1, mock.patch(
+        with mock.patch('privacyidea.models.utils.utc_now',
+                        return_value=timestamp_polling), mock.patch(
                 'privacyidea.lib.tokens.pushtoken.datetime') as mock_dt2:
-            mock_dt1.utcnow.return_value = timestamp.replace(tzinfo=None) + timedelta(seconds=15)
             mock_dt2.now.return_value = timestamp + timedelta(seconds=15)
             self.assertRaisesRegex(privacyIDEAError,
                                    r'Could not verify signature!',
@@ -1759,16 +1762,16 @@ class PushTokenTestCase(MyTestCase):
                                PushTokenClass.api_endpoint, request, g)
 
         # wrongly configured push token (no firebase config)
-        token.del_tokeninfo(PUSH_ACTION.FIREBASE_CONFIG)
+        token.delete_tokeninfo(PUSH_ACTION.FIREBASE_CONFIG)
         # We are missing a registration URL, thus polling of challenges fails
         delete_policy("push1")
         request.all_data = {'serial': serial,
                             'timestamp': timestamp_str,
                             'signature': b32encode(signature)}
         # poll for challenges
-        with mock.patch('privacyidea.models.challenge.datetime') as mock_dt1, mock.patch(
+        with mock.patch('privacyidea.models.utils.utc_now',
+                        return_value=timestamp_polling), mock.patch(
                 'privacyidea.lib.tokens.pushtoken.datetime') as mock_dt2:
-            mock_dt1.utcnow.return_value = timestamp.replace(tzinfo=None) + timedelta(seconds=15)
             mock_dt2.now.return_value = timestamp + timedelta(seconds=15)
             self.assertRaisesRegex(privacyIDEAError,
                                    r'Could not verify signature!',
@@ -1780,9 +1783,9 @@ class PushTokenTestCase(MyTestCase):
                             'timestamp': timestamp_str,
                             'signature': b32encode(signature)}
         # poll for challenges
-        with mock.patch('privacyidea.models.challenge.datetime') as mock_dt1, mock.patch(
+        with mock.patch('privacyidea.models.utils.utc_now',
+                        return_value=timestamp_polling), mock.patch(
                 'privacyidea.lib.tokens.pushtoken.datetime') as mock_dt2:
-            mock_dt1.utcnow.return_value = timestamp.replace(tzinfo=None) + timedelta(seconds=15)
             mock_dt2.now.return_value = timestamp + timedelta(seconds=15)
             self.assertRaisesRegex(privacyIDEAError,
                                    r'Could not verify signature!',

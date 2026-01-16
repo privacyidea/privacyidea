@@ -72,7 +72,7 @@ from privacyidea.lib.subscriptions import (subscription_status,
                                            check_subscription,
                                            SubscriptionError,
                                            EXPIRE_MESSAGE)
-from privacyidea.lib.token import get_tokens, assign_token, get_realms_of_token, get_one_token, init_token
+from privacyidea.lib.token import get_tokens, assign_token, get_one_token, init_token
 from privacyidea.lib.tokenclass import ROLLOUTSTATE, CHALLENGE_SESSION
 from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
 from privacyidea.lib.utils import (create_img, get_version, AUTH_RESPONSE,
@@ -525,15 +525,12 @@ def save_pin_change(request, response, serial=None):
         log.error("Can not determine serial number. Have no idea of any "
                   "realm!")
     else:
-        # Determine the realm by the serial
-        realm = get_realms_of_token(serial, only_first_realm=True)
-        realm = realm or get_default_realm()
+        token = get_one_token(serial=serial, silent_fail=True)
 
         if g.logged_in_user.get("role") == ROLE.ADMIN:
-            policy = Match.realm(g, scope=SCOPE.ENROLL, action=PolicyAction.CHANGE_PIN_FIRST_USE,
-                                 realm=realm).policies()
+            policy = Match.token(g, scope=SCOPE.ENROLL, action=PolicyAction.CHANGE_PIN_FIRST_USE,
+                                 token=token).policies()
             if policy:
-                token = get_one_token(serial=serial)
                 token.set_next_pin_change(diff="0d")
 
         elif g.logged_in_user.get("role") == ROLE.USER:
@@ -542,14 +539,12 @@ def save_pin_change(request, response, serial=None):
             pin = request.all_data.get("pin")
             # The user sets a pin or enrolls a token. -> delete the pin_change
             if otppin or pin:
-                token = get_one_token(serial=serial)
-                token.del_tokeninfo("next_pin_change")
+                token.delete_tokeninfo("next_pin_change")
 
                 # If there is a change_pin_every policy, we need to set the PIN anew.
-                policy = Match.realm(g, scope=SCOPE.ENROLL, action=PolicyAction.CHANGE_PIN_EVERY,
-                                     realm=realm).action_values(unique=True)
+                policy = Match.token(g, scope=SCOPE.ENROLL, action=PolicyAction.CHANGE_PIN_EVERY,
+                                       token=token).action_values(unique=True)
                 if policy:
-                    token = get_one_token(serial=serial)
                     token.set_next_pin_change(diff=list(policy)[0])
 
     # we do not modify the response!
@@ -1065,7 +1060,7 @@ def multichallenge_enroll_via_validate(request, response):
                     params["policies"] = g.get("policies", {})
                     init_details = token.get_init_detail(params, user)
                     if not init_details:
-                        token.token.delete()
+                        token.delete_token()
                     content.get("result")["value"] = False
                     content.get("result")["authentication"] = AUTH_RESPONSE.CHALLENGE
                     detail = content.setdefault("detail", {})
@@ -1079,7 +1074,7 @@ def multichallenge_enroll_via_validate(request, response):
                     detail["client_mode"] = "webauthn"
                 except Exception as e:
                     log.error(f"Error during enroll_via_validate: {e}")
-                    token.token.delete()
+                    token.delete_token()
                     raise e
             # ------------------------------
             else:

@@ -27,7 +27,7 @@ register.
 The methods are tested in the file tests/test_api_register.py
 """
 from flask import (Blueprint, request, g)
-from .lib.utils import send_result, getParam
+from .lib.utils import getParam, map_error_to_code, send_error, send_result
 from .lib.utils import required
 import logging
 from privacyidea.lib.policy import SCOPE
@@ -37,7 +37,7 @@ from privacyidea.lib.user import User
 from privacyidea.lib.token import init_token
 from privacyidea.lib.policy import Match
 from privacyidea.lib.realm import get_default_realm
-from privacyidea.lib.error import RegistrationError
+from privacyidea.lib.error import RegistrationError, ERROR
 from privacyidea.api.lib.prepolicy import required_email, prepolicy
 from privacyidea.lib.smtpserver import send_email_identifier
 
@@ -136,43 +136,55 @@ def register_post():
     if not resolvername:
         raise RegistrationError("No resolver specified to register in!")
     resolvername = list(resolvername)[0]
-    # Check if the user exists
-    user = User(username, realm=realm, resolver=resolvername)
-    if user.exist():
-        raise RegistrationError("The username is already registered!")
-    # Create user
-    uid = create_user(resolvername, {"username": username,
-                                     "email": email,
-                                     "phone": phone,
-                                     "mobile": mobile,
-                                     "surname": surname,
-                                     "givenname": givenname,
-                                     "password": password})
 
-    # 3. create a registration token for this user
-    user = User(realm=realm, resolver=resolvername, uid=uid)
-    token = init_token({"type": "registration"}, user=user)
-    # 4. send the registration token to the users email
-    registration_key = token.init_details.get("otpkey")
+    try:
+        # Check if the user exists
+        user = User(username, realm=realm, resolver=resolvername)
+        if user.exist():
+            raise RegistrationError("The username is already registered!")
+        # Create user
+        uid = create_user(resolvername, {"username": username,
+                                         "email": email,
+                                         "phone": phone,
+                                         "mobile": mobile,
+                                         "surname": surname,
+                                         "givenname": givenname,
+                                         "password": password})
 
-    smtpconfig = list(smtpconfig)[0]
-    # Send the registration key via email
-    body = Match.action_only(g, scope=SCOPE.REGISTER, action=PolicyAction.REGISTERBODY)\
-        .action_values(unique=True)
-    body = body or DEFAULT_BODY
-    email_sent = send_email_identifier(
-        smtpconfig, email,
-        "Your privacyIDEA registration",
-        body.format(regkey=registration_key))
-    if not email_sent:
-        log.warning("Failed to send registration email to {0!r}".format(email))
-        # delete registration token
-        token.delete_token()
-        # delete user
-        user.delete()
-        raise RegistrationError("Failed to send email!")
+        # 3. create a registration token for this user
+        user = User(realm=realm, resolver=resolvername, uid=uid)
+        token = init_token({"type": "registration"}, user=user)
+        # 4. send the registration token to the users email
+        registration_key = token.init_details.get("otpkey")
 
-    log.debug("Registration email sent to {0!r}".format(email))
+        smtpconfig = list(smtpconfig)[0]
+        # Send the registration key via email
+        body = Match.action_only(g, scope=SCOPE.REGISTER, action=PolicyAction.REGISTERBODY)\
+            .action_values(unique=True)
+        body = body or DEFAULT_BODY
+        email_sent = send_email_identifier(
+            smtpconfig, email,
+            "Your privacyIDEA registration",
+            body.format(regkey=registration_key))
+        if not email_sent:
+            log.warning("Failed to send registration email to {0!r}".format(email))
+            # delete registration token
+            token.delete_token()
+            # delete user
+            user.delete()
+            raise RegistrationError("Failed to send email!")
 
-    g.audit_object.log({"success": email_sent})
-    return send_result(email_sent)
+        log.debug("Registration email sent to {0!r}".format(email))
+
+        g.audit_object.log({"success": email_sent})
+        return send_result(email_sent)
+
+    except Exception as e:
+        if Match.realm(
+            g,
+            scope=SCOPE.REGISTER,
+            action=PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE,
+            realm=realm,
+        ).any():
+            return send_error("Failed registering new user", error_code=ERROR.REGISTRATION), map_error_to_code(e)
+        raise
