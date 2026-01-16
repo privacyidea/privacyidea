@@ -1,6 +1,6 @@
 {
   "/proxy": {
-    "target": "http://localhost:5000",
+    "target": "https://pi.fritz.box:5000",
     "secure": false,
     "changeOrigin": true,
     "logLevel": "debug",

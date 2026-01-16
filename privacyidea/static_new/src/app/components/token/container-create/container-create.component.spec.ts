@@ -299,7 +299,7 @@ describe("ContainerCreateComponent", () => {
     host.innerHTML = `
       <div id="scroller">
         <div id="header"></div>
-        <div style="height: 200px"></div>
+        <div class="spacer-200"></div>
         <div id="sentinel"></div>
       </div>
     `;

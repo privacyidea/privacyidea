@@ -24,7 +24,7 @@
   <div class="details-flex-layout flex-column">
     <div class="container-details-header">
       <h3 i18n>Details for Container:</h3>
-      <h3 style="color: var(--mat-sys-primary)">{{ containerSerial() }}</h3>
+      <h3 class="container-serial">{{ containerSerial() }}</h3>
       <app-copy-button [copyText]="containerSerial()"></app-copy-button>
       @if (authService.actionAllowed("auditlog")) {
         <button
