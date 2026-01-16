@@ -2309,6 +2309,8 @@ class LDAPResolverTestCase(MyTestCase):
         resolver.loadConfig(params)
 
         def mock_search(search_base, search_filter, attributes):
+            # record the search_base for assertion
+            mock_search.last_search_base = search_base
             if "{username}" in search_filter or "{base_dn}" in search_filter or "{distinguishedName}" in search_filter:
                 raise Exception("Invalid filter!")
             if None in attributes or "" in attributes:
@@ -2341,6 +2343,22 @@ class LDAPResolverTestCase(MyTestCase):
             self.assertEqual("Cooper", user_info["surname"])
             self.assertSetEqual({"cn=testgroup,ou=example,o=test", "cn=subgroup,ou=example,o=test"},
                                 set(user_info["groups"]))
+
+        # Check that base_dn is used if group_base_dn is not defined
+        self.assertIsNone(resolver.group_base_dn)
+        with mock.patch("privacyidea.lib.resolvers.LDAPIdResolver.IdResolver._search", wraps=mock_search):
+            groups = resolver._get_user_groups_recursive(user_info)
+            self.assertEqual(mock_search.last_search_base, params['LDAPBASE'])
+            self.assertSetEqual({"cn=testgroup,ou=example,o=test", "cn=subgroup,ou=example,o=test"}, set(groups))
+
+        # Check that group_base_dn is used if defined
+        params['group_base_dn'] = "ou=example,o=test"
+        resolver.loadConfig(params)
+        self.assertEqual("ou=example,o=test", resolver.group_base_dn)
+        with mock.patch("privacyidea.lib.resolvers.LDAPIdResolver.IdResolver._search", wraps=mock_search):
+            groups = resolver._get_user_groups_recursive(user_info)
+            self.assertEqual(mock_search.last_search_base, params['group_base_dn'])
+            self.assertSetEqual({"cn=testgroup,ou=example,o=test", "cn=subgroup,ou=example,o=test"}, set(groups))
 
         # tag not in user info
         params['group_search_filter'] = ('(&(sAMAccountName=*)(objectCategory=group)'
@@ -2383,6 +2401,36 @@ class LDAPResolverTestCase(MyTestCase):
             self.assertEqual("Alice", user_info["givenname"])
             self.assertEqual("Cooper", user_info["surname"])
             self.assertNotIn("groups", user_info)
+
+    def test_39_create_search_filter(self):
+        resolver = LDAPResolver()
+        resolver.loadConfig({'LDAPURI': 'ldap://localhost',
+                      'LDAPBASE': 'o=test',
+                      'BINDDN': 'cn=manager,ou=example,o=test',
+                      'BINDPW': 'ldaptest',
+                      'LOGINNAMEATTRIBUTE': 'cn',
+                      'LDAPSEARCHFILTER': '(cn=*)',
+                      'USERINFO': '{ "username": "cn",'
+                                  '"phone" : "telephoneNumber", '
+                                  '"mobile" : "mobile"'
+                                  ', "email" : "mail", '
+                                  '"surname" : "sn", '
+                                  '"givenname" : "givenName",'
+                                  '"accountExpired": "accountExpired" }',
+                      'UIDTYPE': 'DN',
+                      })
+
+        search_filter = resolver._create_search_filter({"surname": "***"})
+        self.assertEqual("(&(cn=*))", search_filter)
+
+        search_filter = resolver._create_search_filter({"surname": "*"})
+        self.assertEqual("(&(cn=*))", search_filter)
+
+        search_filter = resolver._create_search_filter({"username": "*hans*", "email": "*.*@example*"})
+        self.assertEqual("(&(cn=*)(cn=*hans*)(mail=*.*@example*))", search_filter)
+
+        search_filter = resolver._create_search_filter({"accountExpired": 1})
+        self.assertEqual("(&(cn=*)(accountExpired=1))", search_filter)
 
 
 class BaseResolverTestCase(MyTestCase):

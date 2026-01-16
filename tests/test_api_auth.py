@@ -24,7 +24,7 @@ from privacyidea.lib.token import get_tokens, remove_token, init_token, get_one_
 from privacyidea.lib.tokenclass import FAILCOUNTER_EXCEEDED, DATE_FORMAT, FAILCOUNTER_CLEAR_TIMEOUT
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import to_unicode, AUTH_RESPONSE
-from privacyidea.models import Realm, db
+from privacyidea.models import Realm, NodeName, db
 from . import ldap3mock
 from .base import MyApiTestCase, OverrideConfigTestCase
 
@@ -941,7 +941,7 @@ class AuthApiTestCase(MyApiTestCase):
         set_policy("login-mode", scope=SCOPE.WEBUI, action=f"{PolicyAction.LOGINMODE}=privacyIDEA")
         set_policy("verify", scope=SCOPE.ENROLL, action=f"{PolicyAction.VERIFY_ENROLLMENT}=hotp")
         event_id = set_event("delete_verify", event="auth", handlermodule="Token", action="delete",
-                  conditions={"rollout_state": "verify"}, position="pre")
+                             conditions={"rollout_state": "verify"}, position="pre")
         self.setUp_user_realms()
 
         with self.app.test_request_context('/auth',
@@ -1039,7 +1039,207 @@ class AuthApiTestCase(MyApiTestCase):
         delete_policy("verify")
         delete_event(event_id)
 
-    def test_11_hide_specific_error_message(self):
+    def test_13_set_realm(self):
+        self.setUp_user_realms()
+        self.setUp_user_realm3()
+        set_policy("login-mode", scope=SCOPE.WEBUI, action=f"{PolicyAction.LOGINMODE}=privacyIDEA")
+
+        token = init_token({"type": "spass", "pin": "test"}, user=User("corny", self.realm3))
+
+        # auth without realm fails (as user is not in default realm)
+        with self.app.test_request_context("/auth",
+                                           method="POST",
+                                           data={"username": "corny",
+                                                 "password": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 401, res)
+
+        # set policy for auth realm
+        set_policy("realm_auth", scope=SCOPE.AUTH, action=f"{PolicyAction.SET_REALM}={self.realm3}")
+
+        # pass no realm
+        with self.app.test_request_context("/auth",
+                                           method="POST",
+                                           data={"username": "corny",
+                                                 "password": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"), result)
+            self.assertEqual(self.realm3, result.get("value").get("realm"))
+
+        # pass a different realm
+        with self.app.test_request_context("/auth",
+                                           method="POST",
+                                           data={"username": "corny",
+                                                 "realm": self.realm1,
+                                                 "password": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"), result)
+            self.assertEqual(self.realm3, result.get("value").get("realm"))
+
+        # pass non-existing realm
+        with self.app.test_request_context("/auth",
+                                           method="POST",
+                                           data={"username": "corny",
+                                                 "realm": "random",
+                                                 "password": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"), result)
+            self.assertEqual(self.realm3, result.get("value").get("realm"))
+
+        token.delete_token()
+        delete_policy("realm_auth")
+        delete_policy("login-mode")
+
+    def test_14_set_realm_conditions(self):
+        self.setUp_user_realms()
+        self.setUp_user_realm3()
+        set_policy("login-mode", scope=SCOPE.WEBUI, action=f"{PolicyAction.LOGINMODE}=privacyIDEA")
+        token_corny = init_token({"type": "spass", "pin": "test"}, user=User("corny", self.realm3))
+        token_hans = init_token({"type": "spass", "pin": "test1234"}, user=User("hans", self.realm1))
+
+        # set policy for auth realm with condition on IP address
+        set_policy("realm_auth", scope=SCOPE.AUTH, action=f"{PolicyAction.SET_REALM}={self.realm3}",
+                   client="6.7.8.9")
+
+        # auth with different realm from different IP works
+        with self.app.test_request_context("/auth",
+                                           method="POST",
+                                           data={"username": "hans",
+                                                 "realm": self.realm1,
+                                                 "password": "test1234"},
+                                           environ_base={"REMOTE_ADDR": "1.2.3.4"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"), result)
+            self.assertEqual(self.realm1, result.get("value").get("realm"))
+
+        # auth from matching IP enforces realm3
+        with self.app.test_request_context("/auth",
+                                           method="POST",
+                                           data={"username": "corny",
+                                                 "password": "test"},
+                                           environ_base={"REMOTE_ADDR": "6.7.8.9"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"), result)
+            self.assertEqual(self.realm3, result.get("value").get("realm"))
+
+        # set policy for auth realm with condition on user agent
+        delete_policy("realm_auth")
+        set_policy("realm_auth", scope=SCOPE.AUTH, action=f"{PolicyAction.SET_REALM}={self.realm3}",
+                   user_agents="privacyIDEA-Keycloak")
+
+        # auth with different realm from different User Agent works
+        with self.app.test_request_context("/auth",
+                                           method="POST",
+                                           data={"username": "hans",
+                                                 "realm": self.realm1,
+                                                 "password": "test1234"},
+                                           headers={"User-Agent": "PAM"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"), result)
+            self.assertEqual(self.realm1, result.get("value").get("realm"))
+
+        # auth from matching User-Agent enforces realm3
+        with self.app.test_request_context("/auth",
+                                           method="POST",
+                                           data={"username": "corny",
+                                                 "password": "test"},
+                                           headers={"User-Agent": "privacyIDEA-Keycloak"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"), result)
+            self.assertEqual(self.realm3, result.get("value").get("realm"))
+
+        # set policy for auth realm with condition on node
+        delete_policy("realm_auth")
+        node1 = NodeName(id="8e4272a9-9037-40df-8aa3-976e4a04b5a9", name="Node1")
+        node2 = NodeName(id="d1d7fde6-330f-4c12-88f3-58a1752594bf", name="Node2")
+        db.session.add_all([node1, node2])
+        set_policy("realm_auth", scope=SCOPE.AUTH, action=f"{PolicyAction.SET_REALM}={self.realm3}",
+                   pinode="Node1")
+
+        # auth with different realm on different node
+        with mock.patch("privacyidea.lib.policy.get_privacyidea_node") as mock_node:
+            mock_node.return_value = "Node2"
+            with self.app.test_request_context("/auth",
+                                               method="POST",
+                                               data={"username": "hans",
+                                                     "realm": self.realm1,
+                                                     "password": "test1234"}):
+                res = self.app.full_dispatch_request()
+                self.assertTrue(res.status_code == 200, res)
+                result = res.json.get("result")
+                self.assertTrue(result.get("status"), result)
+                self.assertEqual(self.realm1, result.get("value").get("realm"))
+
+        # auth on matching node
+        with mock.patch("privacyidea.lib.policy.get_privacyidea_node") as mock_node:
+            mock_node.return_value = "Node1"
+            with self.app.test_request_context("/auth",
+                                               method="POST",
+                                               data={"username": "corny",
+                                                     "password": "test"}):
+                res = self.app.full_dispatch_request()
+                self.assertTrue(res.status_code == 200, res)
+                result = res.json.get("result")
+                self.assertTrue(result.get("status"), result)
+                self.assertEqual(self.realm3, result.get("value").get("realm"))
+
+        # set policy for auth realm with condition on user
+        delete_policy("realm_auth")
+        set_policy("realm_auth", scope=SCOPE.AUTH,
+                   action=f"{PolicyAction.SET_REALM}={self.realm3}",
+                   user="corny")
+
+        # auth with different realm from different User Agent works
+        with self.app.test_request_context("/auth",
+                                           method="POST",
+                                           data={"username": "hans",
+                                                 "realm": self.realm1,
+                                                 "password": "test1234"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"), result)
+            self.assertEqual(self.realm1, result.get("value").get("realm"))
+
+        # auth from matching User-Agent enforces realm3
+        with self.app.test_request_context("/auth",
+                                           method="POST",
+                                           data={"username": "corny",
+                                                 "password": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"), result)
+            self.assertEqual(self.realm3, result.get("value").get("realm"))
+
+        # set policy for auth realm with condition on user agent
+        delete_policy("realm_auth")
+        set_policy("realm_auth", scope=SCOPE.AUTH,
+                   action=f"{PolicyAction.SET_REALM}={self.realm3}",
+                   user_agents="privacyIDEA-Keycloak")
+
+        token_corny.delete_token()
+        token_hans.delete_token()
+        delete_policy("realm_auth")
+        delete_policy("login-mode")
+        db.session.delete(node1)
+        db.session.delete(node2)
+
+    def test_15_hide_specific_error_message(self):
         # Wrong password results in 401 with error 4301
         with self.app.test_request_context('/auth',
                                            method='POST',

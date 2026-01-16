@@ -53,7 +53,8 @@ from privacyidea.lib.user import (User)
 from privacyidea.lib.users.custom_user_attributes import InternalCustomUserAttributes
 from privacyidea.lib.utils import AUTH_RESPONSE
 from privacyidea.lib.utils import to_unicode
-from privacyidea.models import (Token, Policy, Challenge, AuthCache, db, TokenOwner, Realm, CustomUserAttribute)
+from privacyidea.models import (Token, Policy, Challenge, AuthCache, db, TokenOwner, Realm, CustomUserAttribute,
+                                NodeName)
 from . import smtpmock, ldap3mock, radiusmock
 from .base import MyApiTestCase
 from .test_lib_tokencontainer import MockSmartphone
@@ -3538,7 +3539,244 @@ class ValidateAPITestCase(MyApiTestCase):
         token.delete_token()
         token_realm1.delete_token()
 
-    def test_40_hide_specific_error_message(self):
+    def test_40_set_realm(self):
+        self.setUp_user_realms()
+        set_default_realm(self.realm1)
+        self.setUp_user_realm3()
+
+        token = init_token({"type": "spass", "pin": "test"}, user=User("corny", self.realm3))
+
+        # auth without realm fails (as user is not in default realm)
+        with self.app.test_request_context("/validate/check",
+                                           method="POST",
+                                           data={"user": "corny",
+                                                 "pass": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 400, res)
+
+        # set policy for auth realm
+        set_policy("realm_auth", scope=SCOPE.AUTH, action=f"{PolicyAction.SET_REALM}={self.realm3}")
+
+        # pass no realm
+        self.set_default_g_variables()
+        with self.app.test_request_context("/validate/check",
+                                           method="POST",
+                                           data={"user": "corny",
+                                                 "pass": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"), result)
+            self.assertTrue(result.get("value"), result)
+            self.assertEqual("ACCEPT", result.get("authentication"), result)
+
+        # pass a different realm
+        self.set_default_g_variables()
+        with self.app.test_request_context("/validate/check",
+                                           method="POST",
+                                           data={"user": "corny",
+                                                 "realm": self.realm1,
+                                                 "pass": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"), result)
+            self.assertTrue(result.get("value"), result)
+            self.assertEqual("ACCEPT", result.get("authentication"), result)
+
+        # pass non-existing different realm
+        self.set_default_g_variables()
+        with self.app.test_request_context("/validate/check",
+                                           method="POST",
+                                           data={"user": "corny",
+                                                 "realm": "random",
+                                                 "pass": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"), result)
+            self.assertTrue(result.get("value"), result)
+            self.assertEqual("ACCEPT", result.get("authentication"), result)
+
+        # set_realm takes precedence over mangle and setrealm policy
+        set_policy("mangle", scope=SCOPE.AUTH, action=f"{PolicyAction.MANGLE}=realm/.*/mangledRealm/")
+        set_policy("setrealm", scope=SCOPE.AUTHZ, action=f"{PolicyAction.SETREALM}=setrealm")
+        self.set_default_g_variables()
+        with self.app.test_request_context("/validate/check",
+                                           method="POST",
+                                           data={"user": "corny",
+                                                 "realm": self.realm1,
+                                                 "pass": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"), result)
+            self.assertTrue(result.get("value"), result)
+            self.assertEqual("ACCEPT", result.get("authentication"), result)
+
+        token.delete_token()
+        delete_policy("realm_auth")
+        delete_policy("mangle")
+        delete_policy("setrealm")
+
+    def test_41_set_realm_conditions(self):
+        self.setUp_user_realms()
+        self.setUp_user_realm3()
+        token_corny = init_token({"type": "spass", "pin": "test"}, user=User("corny", self.realm3))
+        token_hans = init_token({"type": "spass", "pin": "test1234"}, user=User("hans", self.realm1))
+
+        # set policy for auth realm with condition on IP address
+        set_policy("realm_auth", scope=SCOPE.AUTH, action=f"{PolicyAction.SET_REALM}={self.realm3}",
+                   client="6.7.8.9")
+
+        # auth with different realm from different IP works
+        with self.app.test_request_context("/validate/check",
+                                           method="POST",
+                                           data={"user": "hans",
+                                                 "realm": self.realm1,
+                                                 "pass": "test1234"},
+                                           environ_base={"REMOTE_ADDR": "1.2.3.4"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"), result)
+            self.assertTrue(result.get("value"), result)
+            self.assertEqual("ACCEPT", result.get("authentication"), result)
+            self.assertEqual(token_hans.get_serial(), res.json.get("detail").get("serial"))
+
+        # auth from matching IP enforces realm3
+        with self.app.test_request_context("/validate/check",
+                                           method="POST",
+                                           data={"user": "corny",
+                                                 "pass": "test"},
+                                           environ_base={"REMOTE_ADDR": "6.7.8.9"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"), result)
+            self.assertTrue(result.get("value"), result)
+            self.assertEqual("ACCEPT", result.get("authentication"), result)
+            self.assertEqual(token_corny.get_serial(), res.json.get("detail").get("serial"))
+
+        # set policy for auth realm with condition on user agent
+        delete_policy("realm_auth")
+        set_policy("realm_auth", scope=SCOPE.AUTH, action=f"{PolicyAction.SET_REALM}={self.realm3}",
+                   user_agents="privacyIDEA-Keycloak")
+
+        # auth with different realm from different User Agent works
+        with self.app.test_request_context("/validate/check",
+                                           method="POST",
+                                           data={"user": "hans",
+                                                 "realm": self.realm1,
+                                                 "pass": "test1234"},
+                                           headers={"User-Agent": "PAM"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"), result)
+            self.assertTrue(result.get("value"), result)
+            self.assertEqual("ACCEPT", result.get("authentication"), result)
+            self.assertEqual(token_hans.get_serial(), res.json.get("detail").get("serial"))
+
+        # auth from matching User-Agent enforces realm3
+        with self.app.test_request_context("/validate/check",
+                                           method="POST",
+                                           data={"user": "corny",
+                                                 "pass": "test"},
+                                           headers={"User-Agent": "privacyIDEA-Keycloak"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"), result)
+            self.assertTrue(result.get("value"), result)
+            self.assertEqual("ACCEPT", result.get("authentication"), result)
+            self.assertEqual(token_corny.get_serial(), res.json.get("detail").get("serial"))
+
+        # set policy for auth realm with condition on node
+        delete_policy("realm_auth")
+        node1 = NodeName(id="8e4272a9-9037-40df-8aa3-976e4a04b5a9", name="Node1")
+        node2 = NodeName(id="d1d7fde6-330f-4c12-88f3-58a1752594bf", name="Node2")
+        db.session.add_all([node1, node2])
+        set_policy("realm_auth", scope=SCOPE.AUTH, action=f"{PolicyAction.SET_REALM}={self.realm3}",
+                   pinode="Node1")
+
+        # auth with different realm on different node
+        with mock.patch("privacyidea.lib.policy.get_privacyidea_node") as mock_node:
+            mock_node.return_value = "Node2"
+            with self.app.test_request_context("/validate/check",
+                                               method="POST",
+                                               data={"user": "hans",
+                                                     "realm": self.realm1,
+                                                     "pass": "test1234"}):
+                res = self.app.full_dispatch_request()
+                self.assertTrue(res.status_code == 200, res)
+                result = res.json.get("result")
+                self.assertTrue(result.get("status"), result)
+                self.assertTrue(result.get("value"), result)
+                self.assertEqual("ACCEPT", result.get("authentication"), result)
+                self.assertEqual(token_hans.get_serial(), res.json.get("detail").get("serial"))
+
+        # auth on matching node
+        with mock.patch("privacyidea.lib.policy.get_privacyidea_node") as mock_node:
+            mock_node.return_value = "Node1"
+            with self.app.test_request_context("/validate/check",
+                                               method="POST",
+                                               data={"user": "corny",
+                                                     "pass": "test"}):
+                res = self.app.full_dispatch_request()
+                self.assertTrue(res.status_code == 200, res)
+                result = res.json.get("result")
+                self.assertTrue(result.get("status"), result)
+                self.assertTrue(result.get("value"), result)
+                self.assertEqual("ACCEPT", result.get("authentication"), result)
+                self.assertEqual(token_corny.get_serial(), res.json.get("detail").get("serial"))
+
+        # set policy for auth realm with condition on user
+        delete_policy("realm_auth")
+        set_policy("realm_auth", scope=SCOPE.AUTH,
+                   action=f"{PolicyAction.SET_REALM}={self.realm3}",
+                   user="corny")
+
+        # auth with different realm from different User Agent works
+        with self.app.test_request_context("/validate/check",
+                                           method="POST",
+                                           data={"user": "hans",
+                                                 "realm": self.realm1,
+                                                 "pass": "test1234"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"), result)
+            self.assertTrue(result.get("value"), result)
+            self.assertEqual("ACCEPT", result.get("authentication"), result)
+            self.assertEqual(token_hans.get_serial(), res.json.get("detail").get("serial"))
+
+        # auth from matching User-Agent enforces realm3
+        with self.app.test_request_context("/validate/check",
+                                           method="POST",
+                                           data={"user": "corny",
+                                                 "pass": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"), result)
+            self.assertTrue(result.get("value"), result)
+            self.assertEqual("ACCEPT", result.get("authentication"), result)
+            self.assertEqual(token_corny.get_serial(), res.json.get("detail").get("serial"))
+
+        # set policy for auth realm with condition on user agent
+        delete_policy("realm_auth")
+        set_policy("realm_auth", scope=SCOPE.AUTH,
+                   action=f"{PolicyAction.SET_REALM}={self.realm3}",
+                   user_agents="privacyIDEA-Keycloak")
+
+        token_corny.delete_token()
+        token_hans.delete_token()
+        delete_policy("realm_auth")
+        db.session.delete(node1)
+        db.session.delete(node2)
+
+    def test_42_hide_specific_error_message(self):
         """
         Currently, the HTTP Status codes that are returned are mixed 200 and 401.
         # TODO we need to consistently apply 401 for any kind of authentication failure, 403 for authorization failure

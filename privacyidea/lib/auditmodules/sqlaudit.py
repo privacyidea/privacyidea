@@ -556,8 +556,8 @@ class Audit(AuditBase):
         :param sortorder: "asc" - ascending or "desc" - descending
         :param timelimit: Only audit entries newer than this timedelta will be searched
         """
-        page = int(page)
-        page_size = int(page_size)
+        page = page
+        page_size = page_size
         paging_object = Paginate()
         paging_object.page = page
         paging_object.total = self.get_total(search_dict, admin_params=admin_params, timelimit=timelimit)
@@ -611,8 +611,8 @@ class Audit(AuditBase):
         """
         logentries = None
         try:
-            limit = int(page_size)
-            offset = (int(page) - 1) * limit
+            limit = page_size
+            offset = (page - 1) * limit
 
             # create filter condition
             filter_condition = self._create_filter(search_dict, admin_params, timelimit=timelimit)

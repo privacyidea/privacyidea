@@ -168,44 +168,43 @@ Time formats are::
 and any combination of it. ``dow`` being day of week Mon, Tue, Wed, Thu, Fri,
 Sat, Sun.
 """
+import ast
 import copy
+import logging
+import re
+import traceback
 from datetime import datetime
+from operator import itemgetter
 from typing import Union, Optional
 
+from configobj import ConfigObj
+from netaddr import AddrFormatError
 from sqlalchemy import select, exists
 from werkzeug.datastructures.headers import EnvironHeaders
 
-from .log import log_with
-from configobj import ConfigObj
-
-from operator import itemgetter
-import logging
-
-from .policies.actions import PolicyAction
-from ..api.lib.utils import check_policy_name
-from .policies.conditions import PolicyConditionClass, ConditionCheck, ConditionSection
-from ..models import (Policy, db, save_config_timestamp, PolicyDescription, PolicyCondition)
+from privacyidea.lib import _, lazy_gettext
 from privacyidea.lib.config import (get_token_classes, get_token_types,
                                     get_config_object, get_privacyidea_node,
                                     get_multichallenge_enrollable_types,
                                     get_email_validators, get_privacyidea_nodes, get_enrollable_token_types)
 from privacyidea.lib.error import ParameterError, PolicyError, ResourceNotFoundError, ServerError
+from privacyidea.lib.error import privacyIDEAError
+from privacyidea.lib.radiusserver import get_radiusservers
 from privacyidea.lib.realm import get_realms
 from privacyidea.lib.resolver import get_resolver_list
 from privacyidea.lib.smtpserver import get_smtpservers
-from privacyidea.lib.radiusserver import get_radiusservers
+from privacyidea.lib.user import User
 from privacyidea.lib.utils import (check_time_in_range, check_pin_contents,
                                    fetch_one_resource, is_true, check_ip_in_policy,
                                    determine_logged_in_userparams, parse_string_to_dict)
 from privacyidea.lib.utils.compare import COMPARATOR_DESCRIPTIONS
 from privacyidea.lib.utils.export import (register_import, register_export)
-from privacyidea.lib.user import User
-from privacyidea.lib import _, lazy_gettext
-from netaddr import AddrFormatError
-from privacyidea.lib.error import privacyIDEAError
-import re
-import ast
-import traceback
+from .log import log_with
+from .policies.actions import PolicyAction
+from .policies.conditions import PolicyConditionClass, ConditionCheck, ConditionSection
+from .policies.evaluators import EVALUATOR_FUNCTIONS
+from ..api.lib.utils import check_policy_name
+from ..models import (Policy, db, save_config_timestamp, PolicyDescription, PolicyCondition)
 
 log = logging.getLogger(__name__)
 
@@ -1153,15 +1152,23 @@ def validate_actions(scope: str, action: Union[str, dict]) -> bool:
     from .token import get_dynamic_policy_definitions
     policy_definitions_static = get_static_policy_definitions(scope)
     policy_definitions_dynamic = get_dynamic_policy_definitions(scope)
-    allowed_actions = set(policy_definitions_static.keys()) | set(policy_definitions_dynamic.keys())
+    policy_definitions = policy_definitions_static | policy_definitions_dynamic
+    allowed_actions = set(policy_definitions.keys())
+    actions = {}
     if isinstance(action, dict):
         action_keys = list(action.keys())
+        actions = action
     elif isinstance(action, str):
         # This is similarly implemented in models.py in Policy.get(), but with the actual code structure there is no
         # possibility to use the same function without mixing up the layers
-        action_keys = [x.strip().split("=", 1)[0] for x in re.split(r'(?<!\\),', action or "")]
+        for x in re.split(r'(?<!\\),', action or ""):
+            action_tmp = x.strip().split("=", 1)
+            action_key = action_tmp[0]
+            action_value = action_tmp[1] if len(action_tmp) == 2 else True
+            actions[action_key] = action_value
+        action_keys = list(actions.keys())
     else:
-        raise ParameterError(f"Invalid actions type '{type(action)}'. Must be a string or a dictionary.")
+        raise ParameterError(f"Invalid actions type {type(action)}. Must be a string or a dictionary.")
 
     raw_actions = remove_wildcards_and_negations(action_keys)
     invalid_actions = list(set(raw_actions) - allowed_actions)
@@ -1169,8 +1176,17 @@ def validate_actions(scope: str, action: Union[str, dict]) -> bool:
     if len(invalid_actions) > 0:
         log.error(f"The following actions are not valid for scope '{scope}': {invalid_actions}")
         raise ParameterError(f"Invalid actions {invalid_actions}!")
-    else:
-        return True
+
+    # Evaluate the action values
+    for action_key, action_value in actions.items():
+        evaluator = EVALUATOR_FUNCTIONS.get(action_key)
+        if evaluator:
+            try:
+                evaluator(action_value)
+            except ParameterError as e:
+                raise ParameterError(f"Invalid value for action '{action_key}': {e.message}")
+
+    return True
 
 
 def validate_values(values: Union[str, list, None], allowed_values: list, name: str) -> bool:
@@ -1218,6 +1234,7 @@ def rename_policy(name: str, new_name: str) -> int:
     db.session.commit()
 
     return policy.id
+
 
 def get_policies(active: Optional[bool] = None, name: Optional[str] = None, scope: Optional[str] = None,
                  action: Optional[str] = None, realm: Optional[str] = None, admin_realm: Optional[str] = None,
@@ -1272,6 +1289,7 @@ def get_policies(active: Optional[bool] = None, name: Optional[str] = None, scop
         policies.append(policy.get())
 
     return policies
+
 
 @log_with(log)
 def set_policy(name: Optional[str] = None, scope: Optional[str] = None, action: Union[str, list, None] = None,
@@ -1627,397 +1645,397 @@ def get_static_policy_definitions(scope=None):
     pol = {
         SCOPE.REGISTER: {
             PolicyAction.RESOLVER: {'type': 'str',
-                              'value': resolvers,
-                              'desc': _('Define in which resolver the user '
-                                        'should be registered.')},
+                                    'value': resolvers,
+                                    'desc': _('Define in which resolver the user '
+                                              'should be registered.')},
             PolicyAction.REALM: {'type': 'str',
-                           'value': realms,
-                           'desc': _('Define in which realm the user should '
-                                     'be registered.')},
+                                 'value': realms,
+                                 'desc': _('Define in which realm the user should '
+                                           'be registered.')},
             PolicyAction.EMAILCONFIG: {'type': 'str',
-                                 'value': smtpconfigs,
-                                 'desc': _('The SMTP server configuration, '
-                                           'that should be used to send the '
-                                           'registration email.')},
+                                       'value': smtpconfigs,
+                                       'desc': _('The SMTP server configuration, '
+                                                 'that should be used to send the '
+                                                 'registration email.')},
             PolicyAction.REQUIREDEMAIL: {'type': 'str',
-                                   'desc': _('Only users with this email '
-                                             'address are allowed to '
-                                             'register. This is a regular '
-                                             'expression.')},
+                                         'desc': _('Only users with this email '
+                                                   'address are allowed to '
+                                                   'register. This is a regular '
+                                                   'expression.')},
             PolicyAction.REGISTERBODY: {'type': 'text',
-                                  'desc': _("The body of the registration "
-                                            "email. Use '{regkey}' as tag "
-                                            "for the registration key.")},
+                                        'desc': _("The body of the registration "
+                                                  "email. Use '{regkey}' as tag "
+                                                  "for the registration key.")},
             PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE: {'type': 'bool',
-                                  'desc': _('Enable to return an unspecific '
-                                            'error message for failed '
-                                            'registrations.')}
+                                                       'desc': _('Enable to return an unspecific '
+                                                                 'error message for failed '
+                                                                 'registrations.')}
         },
         SCOPE.ADMIN: {
             PolicyAction.ENABLE: {'type': 'bool',
-                            'desc': _('Admin is allowed to enable tokens.'),
-                            'mainmenu': [MAIN_MENU.TOKENS],
-                            'group': GROUP.TOKEN},
+                                  'desc': _('Admin is allowed to enable tokens.'),
+                                  'mainmenu': [MAIN_MENU.TOKENS],
+                                  'group': GROUP.TOKEN},
             PolicyAction.DISABLE: {'type': 'bool',
-                             'desc': _('Admin is allowed to disable tokens.'),
-                             'mainmenu': [MAIN_MENU.TOKENS],
-                             'group': GROUP.TOKEN},
+                                   'desc': _('Admin is allowed to disable tokens.'),
+                                   'mainmenu': [MAIN_MENU.TOKENS],
+                                   'group': GROUP.TOKEN},
             PolicyAction.SET: {'type': 'bool',
-                         'desc': _(
-                             'Admin is allowed to set token properties.'),
-                         'mainmenu': [MAIN_MENU.TOKENS],
-                         'group': GROUP.TOKEN},
-            PolicyAction.SETDESCRIPTION: {'type': 'bool',
-                                    'desc': _('The admin is allowed to set the token description.'),
-                                    'mainmenu': [MAIN_MENU.TOKENS],
-                                    'group': GROUP.TOKEN},
-            PolicyAction.SETPIN: {'type': 'bool',
-                            'desc': _(
-                                'Admin is allowed to set the OTP PIN of '
-                                'tokens.'),
-                            'mainmenu': [MAIN_MENU.TOKENS],
-                            'group': GROUP.TOKEN},
-            PolicyAction.SETRANDOMPIN: {'type': 'bool',
-                                  'desc': _('Admin is allowed to set a random OTP PIN of tokens.'),
-                                  'mainmenu': [MAIN_MENU.TOKENS],
-                                  'group': GROUP.TOKEN},
-            PolicyAction.SETTOKENINFO: {'type': 'bool',
-                                  'desc': _('Admin is allowed to manually set and delete token info.'),
-                                  'mainmenu': [MAIN_MENU.TOKENS],
-                                  'group': GROUP.TOKEN},
-            PolicyAction.ENROLLPIN: {'type': 'bool',
-                               "desc": _("Admin is allowed to set the OTP "
-                                         "PIN during enrollment."),
-                               'mainmenu': [MAIN_MENU.TOKENS],
-                               'group': GROUP.ENROLLMENT},
-            PolicyAction.RESYNC: {'type': 'bool',
-                            'desc': _('Admin is allowed to resync tokens.'),
-                            'mainmenu': [MAIN_MENU.TOKENS],
-                            'group': GROUP.TOKEN},
-            PolicyAction.RESET: {'type': 'bool',
-                           'desc': _(
-                               'Admin is allowed to reset the Failcounter of '
-                               'a token.'),
-                           'mainmenu': [MAIN_MENU.TOKENS],
-                           'group': GROUP.TOKEN},
-            PolicyAction.REVOKE: {'type': 'bool',
-                            'desc': _("Admin is allowed to revoke a token"),
-                            'mainmenu': [MAIN_MENU.TOKENS],
-                            'group': GROUP.TOKEN},
-            PolicyAction.ASSIGN: {'type': 'bool',
-                            'desc': _(
-                                'Admin is allowed to assign a token to a '
-                                'user.'),
-                            'mainmenu': [MAIN_MENU.TOKENS, MAIN_MENU.USERS],
-                            'group': GROUP.TOKEN},
-            PolicyAction.UNASSIGN: {'type': 'bool',
-                              'desc': _(
-                                  'Admin is allowed to remove the token from '
-                                  'a user, i.e. unassign a token.'),
-                              'mainmenu': [MAIN_MENU.TOKENS],
-                              'group': GROUP.TOKEN},
-            PolicyAction.IMPORT: {'type': 'bool',
-                            'desc': _(
-                                'Admin is allowed to import token files.'),
-                            'mainmenu': [MAIN_MENU.TOKENS],
-                            'group': GROUP.SYSTEM},
-            PolicyAction.DELETE: {'type': 'bool',
-                            'desc': _(
-                                'Admin is allowed to remove tokens from the '
-                                'database.'),
-                            'mainmenu': [MAIN_MENU.TOKENS],
-                            'group': GROUP.TOKEN},
-            PolicyAction.USERLIST: {'type': 'bool',
-                              'desc': _(
-                                  'Admin is allowed to view the list of the '
-                                  'users.'),
-                              'mainmenu': [MAIN_MENU.USERS],
-                              'group': GROUP.GENERAL},
-            PolicyAction.MACHINELIST: {'type': 'bool',
-                                 'desc': _('The Admin is allowed to list '
-                                           'the machines.'),
-                                 'mainmenu': [MAIN_MENU.MACHINES],
-                                 'group': GROUP.MACHINE},
-            PolicyAction.MACHINETOKENS: {'type': 'bool',
-                                   'desc': _('The Admin is allowed to attach '
-                                             'and detach tokens to '
-                                             'machines.'),
-                                   'mainmenu': [MAIN_MENU.TOKENS,
-                                                MAIN_MENU.MACHINES],
-                                   'group': GROUP.MACHINE},
-            PolicyAction.AUTHITEMS: {'type': 'bool',
-                               'desc': _('The Admin is allowed to fetch '
-                                         'authentication items of tokens '
-                                         'assigned to machines.'),
-                               'group': GROUP.GENERAL},
-            PolicyAction.TOKENREALMS: {'type': 'bool',
-                                 'desc': _('Admin is allowed to manage the '
-                                           'realms of a token.'),
-                                 'mainmenu': [MAIN_MENU.TOKENS],
-                                 'group': GROUP.TOKEN},
-            PolicyAction.TOKENLIST: {'type': 'bool',
-                               'desc': _('Admin is allowed to list tokens.'),
+                               'desc': _(
+                                   'Admin is allowed to set token properties.'),
                                'mainmenu': [MAIN_MENU.TOKENS],
                                'group': GROUP.TOKEN},
-            PolicyAction.GETSERIAL: {'type': 'bool',
-                               'desc': _('Admin is allowed to retrieve a serial'
-                                         ' for a given OTP value.'),
-                               'mainmenu': [MAIN_MENU.TOKENS],
-                               "group": GROUP.TOOLS},
-            PolicyAction.GETRANDOM: {'type': 'bool',
-                               'desc': _('Admin is allowed to retrieve '
-                                         'random keys from privacyIDEA.'),
-                               'group': GROUP.TOOLS},
-            PolicyAction.COPYTOKENPIN: {'type': 'bool',
+            PolicyAction.SETDESCRIPTION: {'type': 'bool',
+                                          'desc': _('The admin is allowed to set the token description.'),
+                                          'mainmenu': [MAIN_MENU.TOKENS],
+                                          'group': GROUP.TOKEN},
+            PolicyAction.SETPIN: {'type': 'bool',
                                   'desc': _(
-                                      'Admin is allowed to copy the PIN of '
-                                      'one token to another token.'),
-                                  "group": GROUP.TOOLS},
+                                      'Admin is allowed to set the OTP PIN of '
+                                      'tokens.'),
+                                  'mainmenu': [MAIN_MENU.TOKENS],
+                                  'group': GROUP.TOKEN},
+            PolicyAction.SETRANDOMPIN: {'type': 'bool',
+                                        'desc': _('Admin is allowed to set a random OTP PIN of tokens.'),
+                                        'mainmenu': [MAIN_MENU.TOKENS],
+                                        'group': GROUP.TOKEN},
+            PolicyAction.SETTOKENINFO: {'type': 'bool',
+                                        'desc': _('Admin is allowed to manually set and delete token info.'),
+                                        'mainmenu': [MAIN_MENU.TOKENS],
+                                        'group': GROUP.TOKEN},
+            PolicyAction.ENROLLPIN: {'type': 'bool',
+                                     "desc": _("Admin is allowed to set the OTP "
+                                               "PIN during enrollment."),
+                                     'mainmenu': [MAIN_MENU.TOKENS],
+                                     'group': GROUP.ENROLLMENT},
+            PolicyAction.RESYNC: {'type': 'bool',
+                                  'desc': _('Admin is allowed to resync tokens.'),
+                                  'mainmenu': [MAIN_MENU.TOKENS],
+                                  'group': GROUP.TOKEN},
+            PolicyAction.RESET: {'type': 'bool',
+                                 'desc': _(
+                                     'Admin is allowed to reset the Failcounter of '
+                                     'a token.'),
+                                 'mainmenu': [MAIN_MENU.TOKENS],
+                                 'group': GROUP.TOKEN},
+            PolicyAction.REVOKE: {'type': 'bool',
+                                  'desc': _("Admin is allowed to revoke a token"),
+                                  'mainmenu': [MAIN_MENU.TOKENS],
+                                  'group': GROUP.TOKEN},
+            PolicyAction.ASSIGN: {'type': 'bool',
+                                  'desc': _(
+                                      'Admin is allowed to assign a token to a '
+                                      'user.'),
+                                  'mainmenu': [MAIN_MENU.TOKENS, MAIN_MENU.USERS],
+                                  'group': GROUP.TOKEN},
+            PolicyAction.UNASSIGN: {'type': 'bool',
+                                    'desc': _(
+                                        'Admin is allowed to remove the token from '
+                                        'a user, i.e. unassign a token.'),
+                                    'mainmenu': [MAIN_MENU.TOKENS],
+                                    'group': GROUP.TOKEN},
+            PolicyAction.IMPORT: {'type': 'bool',
+                                  'desc': _(
+                                      'Admin is allowed to import token files.'),
+                                  'mainmenu': [MAIN_MENU.TOKENS],
+                                  'group': GROUP.SYSTEM},
+            PolicyAction.DELETE: {'type': 'bool',
+                                  'desc': _(
+                                      'Admin is allowed to remove tokens from the '
+                                      'database.'),
+                                  'mainmenu': [MAIN_MENU.TOKENS],
+                                  'group': GROUP.TOKEN},
+            PolicyAction.USERLIST: {'type': 'bool',
+                                    'desc': _(
+                                        'Admin is allowed to view the list of the '
+                                        'users.'),
+                                    'mainmenu': [MAIN_MENU.USERS],
+                                    'group': GROUP.GENERAL},
+            PolicyAction.MACHINELIST: {'type': 'bool',
+                                       'desc': _('The Admin is allowed to list '
+                                                 'the machines.'),
+                                       'mainmenu': [MAIN_MENU.MACHINES],
+                                       'group': GROUP.MACHINE},
+            PolicyAction.MACHINETOKENS: {'type': 'bool',
+                                         'desc': _('The Admin is allowed to attach '
+                                                   'and detach tokens to '
+                                                   'machines.'),
+                                         'mainmenu': [MAIN_MENU.TOKENS,
+                                                      MAIN_MENU.MACHINES],
+                                         'group': GROUP.MACHINE},
+            PolicyAction.AUTHITEMS: {'type': 'bool',
+                                     'desc': _('The Admin is allowed to fetch '
+                                               'authentication items of tokens '
+                                               'assigned to machines.'),
+                                     'group': GROUP.GENERAL},
+            PolicyAction.TOKENREALMS: {'type': 'bool',
+                                       'desc': _('Admin is allowed to manage the '
+                                                 'realms of a token.'),
+                                       'mainmenu': [MAIN_MENU.TOKENS],
+                                       'group': GROUP.TOKEN},
+            PolicyAction.TOKENLIST: {'type': 'bool',
+                                     'desc': _('Admin is allowed to list tokens.'),
+                                     'mainmenu': [MAIN_MENU.TOKENS],
+                                     'group': GROUP.TOKEN},
+            PolicyAction.GETSERIAL: {'type': 'bool',
+                                     'desc': _('Admin is allowed to retrieve a serial'
+                                               ' for a given OTP value.'),
+                                     'mainmenu': [MAIN_MENU.TOKENS],
+                                     "group": GROUP.TOOLS},
+            PolicyAction.GETRANDOM: {'type': 'bool',
+                                     'desc': _('Admin is allowed to retrieve '
+                                               'random keys from privacyIDEA.'),
+                                     'group': GROUP.TOOLS},
+            PolicyAction.COPYTOKENPIN: {'type': 'bool',
+                                        'desc': _(
+                                            'Admin is allowed to copy the PIN of '
+                                            'one token to another token.'),
+                                        "group": GROUP.TOOLS},
             PolicyAction.COPYTOKENUSER: {'type': 'bool',
-                                   'desc': _(
-                                       'Admin is allowed to copy the assigned '
-                                       'user to another token, i.e. assign a user to '
-                                       'another token.'),
-                                   "group": GROUP.TOOLS},
+                                         'desc': _(
+                                             'Admin is allowed to copy the assigned '
+                                             'user to another token, i.e. assign a user to '
+                                             'another token.'),
+                                         "group": GROUP.TOOLS},
             PolicyAction.LOSTTOKEN: {'type': 'bool',
-                               'desc': _('Admin is allowed to trigger the '
-                                         'lost token workflow.'),
-                               'mainmenu': [MAIN_MENU.TOKENS],
-                               'group': GROUP.TOOLS},
+                                     'desc': _('Admin is allowed to trigger the '
+                                               'lost token workflow.'),
+                                     'mainmenu': [MAIN_MENU.TOKENS],
+                                     'group': GROUP.TOOLS},
 
             PolicyAction.SYSTEMWRITE: {'type': 'bool',
-                                 "desc": _("Admin is allowed to write and "
-                                           "modify the system configuration."),
-                                 "group": GROUP.SYSTEM,
-                                 'mainmenu': [MAIN_MENU.CONFIG]},
-            PolicyAction.SYSTEMDELETE: {'type': 'bool',
-                                  "desc": _("Admin is allowed to delete "
-                                            "keys in the system "
-                                            "configuration."),
-                                  "group": GROUP.SYSTEM,
-                                  'mainmenu': [MAIN_MENU.CONFIG]},
-            PolicyAction.SYSTEMREAD: {'type': 'bool',
-                                "desc": _("Admin is allowed to read "
-                                          "basic system configuration."),
-                                "group": GROUP.SYSTEM,
-                                'mainmenu': [MAIN_MENU.CONFIG]},
-            PolicyAction.CONFIGDOCUMENTATION: {'type': 'bool',
-                                         'desc': _('Admin is allowed to '
-                                                   'export a documentation '
-                                                   'of the complete '
-                                                   'configuration including '
-                                                   'resolvers and realm.'),
-                                         'group': GROUP.SYSTEM,
-                                         'mainmenu': [MAIN_MENU.CONFIG]},
-            PolicyAction.POLICYWRITE: {'type': 'bool',
-                                 "desc": _("Admin is allowed to write and "
-                                           "modify the policies."),
-                                 "group": GROUP.SYSTEM,
-                                 'mainmenu': [MAIN_MENU.CONFIG]},
-            PolicyAction.POLICYDELETE: {'type': 'bool',
-                                  "desc": _("Admin is allowed to delete "
-                                            "policies."),
-                                  "group": GROUP.SYSTEM,
-                                  'mainmenu': [MAIN_MENU.CONFIG]},
-            PolicyAction.POLICYREAD: {'type': 'bool',
-                                'desc': _("Admin is allowed to read policies."),
-                                'group': GROUP.SYSTEM,
-                                'mainmenu': [MAIN_MENU.CONFIG]},
-            PolicyAction.RESOLVERWRITE: {'type': 'bool',
-                                   "desc": _("Admin is allowed to write and "
-                                             "modify the "
-                                             "resolver and realm "
-                                             "configuration."),
-                                   "group": GROUP.SYSTEM,
-                                   'mainmenu': [MAIN_MENU.CONFIG]},
-            PolicyAction.RESOLVERDELETE: {'type': 'bool',
-                                    "desc": _("Admin is allowed to delete "
-                                              "resolvers and realms."),
-                                    "group": GROUP.SYSTEM,
-                                    'mainmenu': [MAIN_MENU.CONFIG]},
-            PolicyAction.RESOLVERREAD: {'type': 'bool',
-                                  'desc': _("Admin is allowed to read resolvers."),
-                                  'group': GROUP.SYSTEM,
-                                  '   mainmenu': [MAIN_MENU.CONFIG]},
-            PolicyAction.CACONNECTORWRITE: {'type': 'bool',
-                                      "desc": _("Admin is allowed to create new"
-                                                " CA Connector definitions "
-                                                "and modify existing ones."),
-                                      "group": GROUP.SYSTEM,
-                                      'mainmenu': [MAIN_MENU.CONFIG]},
-            PolicyAction.CACONNECTORDELETE: {'type': 'bool',
-                                       "desc": _("Admin is allowed to delete "
-                                                 "CA Connector definitions."),
+                                       "desc": _("Admin is allowed to write and "
+                                                 "modify the system configuration."),
                                        "group": GROUP.SYSTEM,
                                        'mainmenu': [MAIN_MENU.CONFIG]},
-            PolicyAction.CACONNECTORREAD: {'type': 'bool',
-                                     "desc": _("Admin is allowed to read CA Connector "
-                                               "definitions."),
-                                     "group": GROUP.SYSTEM,
-                                     'mainmenu': [MAIN_MENU.CONFIG]},
-            PolicyAction.MACHINERESOLVERWRITE: {'type': 'bool',
-                                          'desc': _("Admin is allowed to "
-                                                    "write and modify the "
-                                                    "machine resolvers."),
-                                          'group': GROUP.SYSTEM,
-                                          'mainmenu': [MAIN_MENU.CONFIG]},
-            PolicyAction.MACHINERESOLVERDELETE: {'type': 'bool',
-                                           'desc': _("Admin is allowed to "
-                                                     "delete "
-                                                     "machine resolvers."),
-                                           'group': GROUP.SYSTEM,
-                                           'mainmenu': [MAIN_MENU.CONFIG]},
-            PolicyAction.MACHINERESOLVERREAD: {'type': 'bool',
-                                         'desc': _("Admin is allowed to "
-                                                   "read "
-                                                   "machine resolvers."),
-                                         'group': GROUP.SYSTEM,
+            PolicyAction.SYSTEMDELETE: {'type': 'bool',
+                                        "desc": _("Admin is allowed to delete "
+                                                  "keys in the system "
+                                                  "configuration."),
+                                        "group": GROUP.SYSTEM,
+                                        'mainmenu': [MAIN_MENU.CONFIG]},
+            PolicyAction.SYSTEMREAD: {'type': 'bool',
+                                      "desc": _("Admin is allowed to read "
+                                                "basic system configuration."),
+                                      "group": GROUP.SYSTEM,
+                                      'mainmenu': [MAIN_MENU.CONFIG]},
+            PolicyAction.CONFIGDOCUMENTATION: {'type': 'bool',
+                                               'desc': _('Admin is allowed to '
+                                                         'export a documentation '
+                                                         'of the complete '
+                                                         'configuration including '
+                                                         'resolvers and realm.'),
+                                               'group': GROUP.SYSTEM,
+                                               'mainmenu': [MAIN_MENU.CONFIG]},
+            PolicyAction.POLICYWRITE: {'type': 'bool',
+                                       "desc": _("Admin is allowed to write and "
+                                                 "modify the policies."),
+                                       "group": GROUP.SYSTEM,
+                                       'mainmenu': [MAIN_MENU.CONFIG]},
+            PolicyAction.POLICYDELETE: {'type': 'bool',
+                                        "desc": _("Admin is allowed to delete "
+                                                  "policies."),
+                                        "group": GROUP.SYSTEM,
+                                        'mainmenu': [MAIN_MENU.CONFIG]},
+            PolicyAction.POLICYREAD: {'type': 'bool',
+                                      'desc': _("Admin is allowed to read policies."),
+                                      'group': GROUP.SYSTEM,
+                                      'mainmenu': [MAIN_MENU.CONFIG]},
+            PolicyAction.RESOLVERWRITE: {'type': 'bool',
+                                         "desc": _("Admin is allowed to write and "
+                                                   "modify the "
+                                                   "resolver and realm "
+                                                   "configuration."),
+                                         "group": GROUP.SYSTEM,
                                          'mainmenu': [MAIN_MENU.CONFIG]},
+            PolicyAction.RESOLVERDELETE: {'type': 'bool',
+                                          "desc": _("Admin is allowed to delete "
+                                                    "resolvers and realms."),
+                                          "group": GROUP.SYSTEM,
+                                          'mainmenu': [MAIN_MENU.CONFIG]},
+            PolicyAction.RESOLVERREAD: {'type': 'bool',
+                                        'desc': _("Admin is allowed to read resolvers."),
+                                        'group': GROUP.SYSTEM,
+                                        '   mainmenu': [MAIN_MENU.CONFIG]},
+            PolicyAction.CACONNECTORWRITE: {'type': 'bool',
+                                            "desc": _("Admin is allowed to create new"
+                                                      " CA Connector definitions "
+                                                      "and modify existing ones."),
+                                            "group": GROUP.SYSTEM,
+                                            'mainmenu': [MAIN_MENU.CONFIG]},
+            PolicyAction.CACONNECTORDELETE: {'type': 'bool',
+                                             "desc": _("Admin is allowed to delete "
+                                                       "CA Connector definitions."),
+                                             "group": GROUP.SYSTEM,
+                                             'mainmenu': [MAIN_MENU.CONFIG]},
+            PolicyAction.CACONNECTORREAD: {'type': 'bool',
+                                           "desc": _("Admin is allowed to read CA Connector "
+                                                     "definitions."),
+                                           "group": GROUP.SYSTEM,
+                                           'mainmenu': [MAIN_MENU.CONFIG]},
+            PolicyAction.MACHINERESOLVERWRITE: {'type': 'bool',
+                                                'desc': _("Admin is allowed to "
+                                                          "write and modify the "
+                                                          "machine resolvers."),
+                                                'group': GROUP.SYSTEM,
+                                                'mainmenu': [MAIN_MENU.CONFIG]},
+            PolicyAction.MACHINERESOLVERDELETE: {'type': 'bool',
+                                                 'desc': _("Admin is allowed to "
+                                                           "delete "
+                                                           "machine resolvers."),
+                                                 'group': GROUP.SYSTEM,
+                                                 'mainmenu': [MAIN_MENU.CONFIG]},
+            PolicyAction.MACHINERESOLVERREAD: {'type': 'bool',
+                                               'desc': _("Admin is allowed to "
+                                                         "read "
+                                                         "machine resolvers."),
+                                               'group': GROUP.SYSTEM,
+                                               'mainmenu': [MAIN_MENU.CONFIG]},
             PolicyAction.OTPPINMAXLEN: {'type': 'int',
-                                  'value': list(range(0, 32)),
-                                  "desc": _("Set the maximum allowed length "
-                                            "of the OTP PIN."),
-                                  'group': GROUP.PIN},
+                                        'value': list(range(0, 32)),
+                                        "desc": _("Set the maximum allowed length "
+                                                  "of the OTP PIN."),
+                                        'group': GROUP.PIN},
             PolicyAction.OTPPINMINLEN: {'type': 'int',
-                                  'value': list(range(0, 32)),
-                                  "desc": _("Set the minimum required length "
-                                            "of the OTP PIN."),
-                                  'group': GROUP.PIN},
+                                        'value': list(range(0, 32)),
+                                        "desc": _("Set the minimum required length "
+                                                  "of the OTP PIN."),
+                                        'group': GROUP.PIN},
             PolicyAction.OTPPINCONTENTS: {'type': 'str',
-                                    "desc": _("Specifiy the required "
-                                              "contents of the OTP PIN. "
-                                              "(c)haracters, (n)umeric, "
-                                              "(s)pecial. Use modifiers +/- or a list "
-                                              "of allowed characters [1234567890]"),
-                                    'group': GROUP.PIN},
+                                          "desc": _("Specify the required "
+                                                    "contents of the OTP PIN. "
+                                                    "(c)haracters, (n)umeric, "
+                                                    "(s)pecial. Use modifiers +/- or a list "
+                                                    "of allowed characters [1234567890]"),
+                                          'group': GROUP.PIN},
             PolicyAction.OTPPINSETRANDOM: {
                 'type': 'int',
                 'value': list(range(1, 32)),
                 'desc': _("The length of a random PIN set by the administrator."),
                 'group': GROUP.PIN},
             PolicyAction.AUDIT: {'type': 'bool',
-                           "desc": _("Admin is allowed to view the Audit log."),
-                           "group": GROUP.SYSTEM,
-                           'mainmenu': [MAIN_MENU.AUDIT]},
+                                 "desc": _("Admin is allowed to view the Audit log."),
+                                 "group": GROUP.SYSTEM,
+                                 'mainmenu': [MAIN_MENU.AUDIT]},
             PolicyAction.AUDIT_AGE: {'type': 'str',
-                               "desc": _("The admin will only see audit "
-                                         "entries of the last 10d, 3m or 2y."),
-                               "group": GROUP.SYSTEM,
-                               'mainmenu': [MAIN_MENU.AUDIT]},
+                                     "desc": _("The admin will only see audit "
+                                               "entries of the last 10d, 3m or 2y."),
+                                     "group": GROUP.SYSTEM,
+                                     'mainmenu': [MAIN_MENU.AUDIT]},
             PolicyAction.HIDE_AUDIT_COLUMNS: {'type': 'str',
-                                        "desc": _("The admin will not see the specified columns "
-                                                  "in the audit."),
-                                        "group": GROUP.SYSTEM,
-                                        'mainmenu': [MAIN_MENU.AUDIT]},
+                                              "desc": _("The admin will not see the specified columns "
+                                                        "in the audit."),
+                                              "group": GROUP.SYSTEM,
+                                              'mainmenu': [MAIN_MENU.AUDIT]},
             PolicyAction.AUDIT_DOWNLOAD: {'type': 'bool',
-                                    "desc": _("The admin is allowed to download "
-                                              "the complete auditlog."),
-                                    "group": GROUP.SYSTEM,
-                                    'mainmenu': [MAIN_MENU.AUDIT]},
+                                          "desc": _("The admin is allowed to download "
+                                                    "the complete auditlog."),
+                                          "group": GROUP.SYSTEM,
+                                          'mainmenu': [MAIN_MENU.AUDIT]},
             PolicyAction.ADDUSER: {'type': 'bool',
-                             "desc": _("Admin is allowed to add users in a "
-                                       "userstore/UserIdResolver."),
-                             "group": GROUP.USER,
-                             'mainmenu': [MAIN_MENU.USERS]},
+                                   "desc": _("Admin is allowed to add users in a "
+                                             "userstore/UserIdResolver."),
+                                   "group": GROUP.USER,
+                                   'mainmenu': [MAIN_MENU.USERS]},
             PolicyAction.UPDATEUSER: {'type': 'bool',
-                                "desc": _("Admin is allowed to update the "
-                                          "users data in a userstore."),
-                                "group": GROUP.USER,
-                                'mainmenu': [MAIN_MENU.USERS]},
+                                      "desc": _("Admin is allowed to update the "
+                                                "users data in a userstore."),
+                                      "group": GROUP.USER,
+                                      'mainmenu': [MAIN_MENU.USERS]},
             PolicyAction.DELETEUSER: {'type': 'bool',
-                                "desc": _("Admin is allowed to delete a user "
-                                          "object in a userstore."),
-                                'mainmenu': [MAIN_MENU.USERS],
-                                'group': GROUP.USER},
+                                      "desc": _("Admin is allowed to delete a user "
+                                                "object in a userstore."),
+                                      'mainmenu': [MAIN_MENU.USERS],
+                                      'group': GROUP.USER},
             PolicyAction.SETHSM: {'type': 'bool',
-                            'desc': _("Admin is allowed to set the password "
-                                      "of the HSM/Security Module."),
-                            'group': GROUP.SYSTEM},
+                                  'desc': _("Admin is allowed to set the password "
+                                            "of the HSM/Security Module."),
+                                  'group': GROUP.SYSTEM},
             PolicyAction.GETCHALLENGES: {'type': 'bool',
-                                   'desc': _("Admin is allowed to retrieve "
-                                             "the list of active "
-                                             "challenges."),
-                                   'mainmenu': [MAIN_MENU.TOKENS],
-                                   'group': GROUP.GENERAL},
+                                         'desc': _("Admin is allowed to retrieve "
+                                                   "the list of active "
+                                                   "challenges."),
+                                         'mainmenu': [MAIN_MENU.TOKENS],
+                                         'group': GROUP.GENERAL},
             PolicyAction.SMTPSERVERWRITE: {'type': 'bool',
-                                     'desc': _("Admin is allowed to write new "
-                                               "SMTP server definitions."),
-                                     'mainmenu': [MAIN_MENU.CONFIG],
-                                     'group': GROUP.SYSTEM},
+                                           'desc': _("Admin is allowed to write new "
+                                                     "SMTP server definitions."),
+                                           'mainmenu': [MAIN_MENU.CONFIG],
+                                           'group': GROUP.SYSTEM},
             PolicyAction.SMTPSERVERREAD: {'type': 'bool',
-                                    'desc': _("Admin is allowed to read "
-                                              "SMTP server definitions."),
-                                    'mainmenu': [MAIN_MENU.CONFIG],
-                                    'group': GROUP.SYSTEM},
+                                          'desc': _("Admin is allowed to read "
+                                                    "SMTP server definitions."),
+                                          'mainmenu': [MAIN_MENU.CONFIG],
+                                          'group': GROUP.SYSTEM},
             PolicyAction.RADIUSSERVERWRITE: {'type': 'bool',
-                                       'desc': _("Admin is allowed to write "
-                                                 "new RADIUS server "
-                                                 "definitions."),
-                                       'mainmenu': [MAIN_MENU.CONFIG],
-                                       'group': GROUP.SYSTEM},
+                                             'desc': _("Admin is allowed to write "
+                                                       "new RADIUS server "
+                                                       "definitions."),
+                                             'mainmenu': [MAIN_MENU.CONFIG],
+                                             'group': GROUP.SYSTEM},
             PolicyAction.RADIUSSERVERREAD: {'type': 'bool',
-                                      'desc': _("Admin is allowed to read "
-                                                "RADIUS server definitions."),
-                                      'mainmenu': [MAIN_MENU.CONFIG],
-                                      'group': GROUP.SYSTEM},
-            PolicyAction.PRIVACYIDEASERVERWRITE: {'type': 'bool',
-                                            'desc': _("Admin is allowed to "
-                                                      "write remote "
-                                                      "privacyIDEA server "
-                                                      "definitions."),
+                                            'desc': _("Admin is allowed to read "
+                                                      "RADIUS server definitions."),
                                             'mainmenu': [MAIN_MENU.CONFIG],
                                             'group': GROUP.SYSTEM},
+            PolicyAction.PRIVACYIDEASERVERWRITE: {'type': 'bool',
+                                                  'desc': _("Admin is allowed to "
+                                                            "write remote "
+                                                            "privacyIDEA server "
+                                                            "definitions."),
+                                                  'mainmenu': [MAIN_MENU.CONFIG],
+                                                  'group': GROUP.SYSTEM},
             PolicyAction.PRIVACYIDEASERVERREAD: {'type': 'bool',
-                                           'desc': _("Admin is allowed to "
-                                                     "read remote "
-                                                     "privacyIDEA server "
+                                                 'desc': _("Admin is allowed to "
+                                                           "read remote "
+                                                           "privacyIDEA server "
+                                                           "definitions."),
+                                                 'mainmenu': [MAIN_MENU.CONFIG],
+                                                 'group': GROUP.SYSTEM},
+            PolicyAction.PERIODICTASKWRITE: {'type': 'bool',
+                                             'desc': _("Admin is allowed to write "
+                                                       "periodic task definitions."),
+                                             'mainmenu': [MAIN_MENU.CONFIG],
+                                             'group': GROUP.SYSTEM},
+            PolicyAction.PERIODICTASKREAD: {'type': 'bool',
+                                            'desc': _("Admin is allowed to read "
+                                                      "periodic task definitions."),
+                                            'mainmenu': [MAIN_MENU.CONFIG],
+                                            'group': GROUP.SYSTEM},
+            PolicyAction.STATISTICSREAD: {'type': 'bool',
+                                          'desc': _("Admin is allowed to read statistics data."),
+                                          'group': GROUP.SYSTEM},
+            PolicyAction.STATISTICSDELETE: {'type': 'bool',
+                                            'desc': _("Admin is allowed to delete statistics data."),
+                                            'group': GROUP.SYSTEM},
+            PolicyAction.EVENTHANDLINGWRITE: {'type': 'bool',
+                                              'desc': _("Admin is allowed to write "
+                                                        "and modify the event "
+                                                        "handling configuration."),
+                                              'mainmenu': [MAIN_MENU.CONFIG],
+                                              'group': GROUP.SYSTEM},
+            PolicyAction.EVENTHANDLINGREAD: {'type': 'bool',
+                                             'desc': _("Admin is allowed to read event "
+                                                       "handling configuration."),
+                                             'mainmenu': [MAIN_MENU.CONFIG],
+                                             'group': GROUP.SYSTEM},
+            PolicyAction.SMSGATEWAYWRITE: {'type': 'bool',
+                                           'desc': _("Admin is allowed to write "
+                                                     "and modify SMS gateway "
                                                      "definitions."),
                                            'mainmenu': [MAIN_MENU.CONFIG],
                                            'group': GROUP.SYSTEM},
-            PolicyAction.PERIODICTASKWRITE: {'type': 'bool',
-                                       'desc': _("Admin is allowed to write "
-                                                 "periodic task definitions."),
-                                       'mainmenu': [MAIN_MENU.CONFIG],
-                                       'group': GROUP.SYSTEM},
-            PolicyAction.PERIODICTASKREAD: {'type': 'bool',
-                                      'desc': _("Admin is allowed to read "
-                                                "periodic task definitions."),
-                                      'mainmenu': [MAIN_MENU.CONFIG],
-                                      'group': GROUP.SYSTEM},
-            PolicyAction.STATISTICSREAD: {'type': 'bool',
-                                    'desc': _("Admin is allowed to read statistics data."),
-                                    'group': GROUP.SYSTEM},
-            PolicyAction.STATISTICSDELETE: {'type': 'bool',
-                                      'desc': _("Admin is allowed to delete statistics data."),
-                                      'group': GROUP.SYSTEM},
-            PolicyAction.EVENTHANDLINGWRITE: {'type': 'bool',
-                                        'desc': _("Admin is allowed to write "
-                                                  "and modify the event "
-                                                  "handling configuration."),
-                                        'mainmenu': [MAIN_MENU.CONFIG],
-                                        'group': GROUP.SYSTEM},
-            PolicyAction.EVENTHANDLINGREAD: {'type': 'bool',
-                                       'desc': _("Admin is allowed to read event "
-                                                 "handling configuration."),
-                                       'mainmenu': [MAIN_MENU.CONFIG],
-                                       'group': GROUP.SYSTEM},
-            PolicyAction.SMSGATEWAYWRITE: {'type': 'bool',
-                                     'desc': _("Admin is allowed to write "
-                                               "and modify SMS gateway "
-                                               "definitions."),
-                                     'mainmenu': [MAIN_MENU.CONFIG],
-                                     'group': GROUP.SYSTEM},
             PolicyAction.SMSGATEWAYREAD: {'type': 'bool',
-                                    'desc': _("Admin is allowed to read "
-                                              "SMS gateway definitions."),
-                                    'mainmenu': [MAIN_MENU.CONFIG],
-                                    'group': GROUP.SYSTEM},
+                                          'desc': _("Admin is allowed to read "
+                                                    "SMS gateway definitions."),
+                                          'mainmenu': [MAIN_MENU.CONFIG],
+                                          'group': GROUP.SYSTEM},
             PolicyAction.CLIENTTYPE: {'type': 'bool',
-                                'desc': _("Admin is allowed to get the list "
-                                          "of authenticated clients and their "
-                                          "types."),
-                                'mainmenu': [MAIN_MENU.COMPONENTS],
-                                'group': GROUP.SYSTEM},
+                                      'desc': _("Admin is allowed to get the list "
+                                                "of authenticated clients and their "
+                                                "types."),
+                                      'mainmenu': [MAIN_MENU.COMPONENTS],
+                                      'group': GROUP.SYSTEM},
             PolicyAction.MANAGESUBSCRIPTION: {
                 'type': 'bool',
                 'desc': _("Admin is allowed to add and delete component "
@@ -2087,78 +2105,81 @@ def get_static_policy_definitions(scope=None):
                 'group': GROUP.TOKEN},
             # CONTAINER
             PolicyAction.CONTAINER_INFO: {'type': 'bool',
-                                    'desc': _('Admin is allowed to edit the container info.'),
-                                    'mainmenu': [MAIN_MENU.TOKENS],
-                                    'group': GROUP.CONTAINER},
-            PolicyAction.CONTAINER_STATE: {'type': 'bool',
-                                     'desc': _('Admin is allowed to edit the container state.'),
-                                     'mainmenu': [MAIN_MENU.TOKENS],
-                                     'group': GROUP.CONTAINER},
-            PolicyAction.CONTAINER_DESCRIPTION: {'type': 'bool',
-                                           'desc': _('Admin is allowed to edit the container description.'),
-                                           'mainmenu': [MAIN_MENU.TOKENS],
-                                           'group': GROUP.CONTAINER},
-            PolicyAction.CONTAINER_CREATE: {'type': 'bool',
-                                      'desc': _('Admin is allowed to create containers.'),
-                                      'mainmenu': [MAIN_MENU.TOKENS],
-                                      'group': GROUP.CONTAINER},
-            PolicyAction.CONTAINER_DELETE: {'type': 'bool',
-                                      'desc': _('Admin is allowed to delete containers.'),
-                                      'mainmenu': [MAIN_MENU.TOKENS],
-                                      'group': GROUP.CONTAINER},
-            PolicyAction.CONTAINER_ADD_TOKEN: {'type': 'bool',
-                                         'desc': _('Admin is allowed to add tokens to containers.'),
-                                         'mainmenu': [MAIN_MENU.TOKENS],
-                                         'group': GROUP.CONTAINER},
-            PolicyAction.CONTAINER_REMOVE_TOKEN: {'type': 'bool',
-                                            'desc': _('Admin is allowed to remove tokens from containers.'),
-                                            'mainmenu': [MAIN_MENU.TOKENS],
-                                            'group': GROUP.CONTAINER},
-            PolicyAction.CONTAINER_ASSIGN_USER: {'type': 'bool',
-                                           'desc': _('Admin is allowed to assign users to containers.'),
-                                           'mainmenu': [MAIN_MENU.TOKENS],
-                                           'group': GROUP.CONTAINER},
-            PolicyAction.CONTAINER_UNASSIGN_USER: {'type': 'bool',
-                                             'desc': _('Admin is allowed to unassign users from containers.'),
-                                             'mainmenu': [MAIN_MENU.TOKENS],
-                                             'group': GROUP.CONTAINER},
-            PolicyAction.CONTAINER_REALMS: {'type': 'bool',
-                                      'desc': _('Admin is allowed to set the realm of containers.'),
-                                      'mainmenu': [MAIN_MENU.TOKENS],
-                                      'group': GROUP.CONTAINER},
-            PolicyAction.CONTAINER_LIST: {'type': 'bool',
-                                    'desc': _('Admin is allowed to list containers.'),
-                                    'mainmenu': [MAIN_MENU.TOKENS],
-                                    'group': GROUP.CONTAINER},
-            PolicyAction.CONTAINER_REGISTER: {'type': 'bool',
-                                        'desc': _('Admin is allowed to register containers.'),
-                                        'mainmenu': [MAIN_MENU.TOKENS],
-                                        'group': GROUP.CONTAINER},
-            PolicyAction.CONTAINER_UNREGISTER: {'type': 'bool',
-                                          'desc': _('Admin is allowed to unregister containers.'),
+                                          'desc': _('Admin is allowed to edit the container info.'),
                                           'mainmenu': [MAIN_MENU.TOKENS],
                                           'group': GROUP.CONTAINER},
+            PolicyAction.CONTAINER_STATE: {'type': 'bool',
+                                           'desc': _('Admin is allowed to edit the container state.'),
+                                           'mainmenu': [MAIN_MENU.TOKENS],
+                                           'group': GROUP.CONTAINER},
+            PolicyAction.CONTAINER_DESCRIPTION: {'type': 'bool',
+                                                 'desc': _('Admin is allowed to edit the container description.'),
+                                                 'mainmenu': [MAIN_MENU.TOKENS],
+                                                 'group': GROUP.CONTAINER},
+            PolicyAction.CONTAINER_CREATE: {'type': 'bool',
+                                            'desc': _('Admin is allowed to create containers.'),
+                                            'mainmenu': [MAIN_MENU.TOKENS],
+                                            'group': GROUP.CONTAINER},
+            PolicyAction.CONTAINER_DELETE: {'type': 'bool',
+                                            'desc': _('Admin is allowed to delete containers.'),
+                                            'mainmenu': [MAIN_MENU.TOKENS],
+                                            'group': GROUP.CONTAINER},
+            PolicyAction.CONTAINER_ADD_TOKEN: {'type': 'bool',
+                                               'desc': _('Admin is allowed to add tokens to containers.'),
+                                               'mainmenu': [MAIN_MENU.TOKENS],
+                                               'group': GROUP.CONTAINER},
+            PolicyAction.CONTAINER_REMOVE_TOKEN: {'type': 'bool',
+                                                  'desc': _('Admin is allowed to remove tokens from containers.'),
+                                                  'mainmenu': [MAIN_MENU.TOKENS],
+                                                  'group': GROUP.CONTAINER},
+            PolicyAction.CONTAINER_ASSIGN_USER: {'type': 'bool',
+                                                 'desc': _('Admin is allowed to assign users to containers.'),
+                                                 'mainmenu': [MAIN_MENU.TOKENS],
+                                                 'group': GROUP.CONTAINER},
+            PolicyAction.CONTAINER_UNASSIGN_USER: {'type': 'bool',
+                                                   'desc': _('Admin is allowed to unassign users from containers.'),
+                                                   'mainmenu': [MAIN_MENU.TOKENS],
+                                                   'group': GROUP.CONTAINER},
+            PolicyAction.CONTAINER_REALMS: {'type': 'bool',
+                                            'desc': _('Admin is allowed to set the realm of containers.'),
+                                            'mainmenu': [MAIN_MENU.TOKENS],
+                                            'group': GROUP.CONTAINER},
+            PolicyAction.CONTAINER_LIST: {'type': 'bool',
+                                          'desc': _('Admin is allowed to list containers.'),
+                                          'mainmenu': [MAIN_MENU.TOKENS],
+                                          'group': GROUP.CONTAINER},
+            PolicyAction.CONTAINER_REGISTER: {'type': 'bool',
+                                              'desc': _('Admin is allowed to register containers.'),
+                                              'mainmenu': [MAIN_MENU.TOKENS],
+                                              'group': GROUP.CONTAINER},
+            PolicyAction.CONTAINER_UNREGISTER: {'type': 'bool',
+                                                'desc': _('Admin is allowed to unregister containers.'),
+                                                'mainmenu': [MAIN_MENU.TOKENS],
+                                                'group': GROUP.CONTAINER},
             PolicyAction.CONTAINER_ROLLOVER: {'type': 'bool',
-                                        'desc': _('Admin is allowed to perform a container rollover including a '
-                                                  'rollover of all contained tokens.'),
-                                        'mainmenu': [MAIN_MENU.TOKENS],
-                                        'group': GROUP.CONTAINER},
+                                              'desc': _('Admin is allowed to perform a container rollover including a '
+                                                        'rollover of all contained tokens.'),
+                                              'mainmenu': [MAIN_MENU.TOKENS],
+                                              'group': GROUP.CONTAINER},
             PolicyAction.CONTAINER_TEMPLATE_CREATE: {'type': 'bool',
-                                               'desc': _('Admin is allowed to create and edit container templates.'),
-                                               'mainmenu': [MAIN_MENU.TOKENS],
-                                               'group': GROUP.CONTAINER},
+                                                     'desc': _(
+                                                         'Admin is allowed to create and edit container templates.'),
+                                                     'mainmenu': [MAIN_MENU.TOKENS],
+                                                     'group': GROUP.CONTAINER},
             PolicyAction.CONTAINER_TEMPLATE_DELETE: {'type': 'bool',
-                                               'desc': _('Admin is allowed to delete templates.'),
-                                               'mainmenu': [MAIN_MENU.TOKENS],
-                                               'group': GROUP.CONTAINER},
+                                                     'desc': _('Admin is allowed to delete templates.'),
+                                                     'mainmenu': [MAIN_MENU.TOKENS],
+                                                     'group': GROUP.CONTAINER},
             PolicyAction.CONTAINER_TEMPLATE_LIST: {'type': 'bool',
-                                             'desc': _('Admin is allowed to list templates and view their details.'),
-                                             'mainmenu': [MAIN_MENU.TOKENS],
-                                             'group': GROUP.CONTAINER},
+                                                   'desc': _(
+                                                       'Admin is allowed to list templates and view their details.'),
+                                                   'mainmenu': [MAIN_MENU.TOKENS],
+                                                   'group': GROUP.CONTAINER},
             PolicyAction.HIDE_CONTAINER_INFO: {'type': TYPE.STRING,
-                                         'desc': _('A whitespace-separated list of container info keys that shall '
+                                               'desc': _(
+                                                   'A whitespace-separated list of container info keys that shall '
                                                    'not be displayed to the admin.'),
-                                         'group': GROUP.CONTAINER}
+                                               'group': GROUP.CONTAINER}
         },
         SCOPE.USER: {
             PolicyAction.ASSIGN: {
@@ -2169,87 +2190,88 @@ def get_static_policy_definitions(scope=None):
                 'mainmenu': [MAIN_MENU.TOKENS],
                 'group': GROUP.TOKEN},
             PolicyAction.DISABLE: {'type': 'bool',
-                             'desc': _('The user is allowed to disable his own tokens.'),
-                             'mainmenu': [MAIN_MENU.TOKENS],
-                             'group': GROUP.TOKEN},
+                                   'desc': _('The user is allowed to disable his own tokens.'),
+                                   'mainmenu': [MAIN_MENU.TOKENS],
+                                   'group': GROUP.TOKEN},
             PolicyAction.ENABLE: {'type': 'bool',
-                            'desc': _('The user is allowed to enable his own tokens.'),
-                            'mainmenu': [MAIN_MENU.TOKENS],
-                            'group': GROUP.TOKEN},
-            PolicyAction.DELETE: {'type': 'bool',
-                            "desc": _('The user is allowed to delete his own tokens.'),
-                            'mainmenu': [MAIN_MENU.TOKENS],
-                            'group': GROUP.TOKEN},
-            PolicyAction.UNASSIGN: {'type': 'bool',
-                              'desc': _('The user is allowed to unassign his own tokens.'),
-                              'mainmenu': [MAIN_MENU.TOKENS],
-                              'group': GROUP.TOKEN},
-            PolicyAction.RESYNC: {'type': 'bool',
-                            "desc": _('The user is allowed to resynchronize his tokens.'),
-                            'mainmenu': [MAIN_MENU.TOKENS],
-                            'group': GROUP.TOKEN},
-            PolicyAction.REVOKE: {'type': 'bool',
-                            'desc': _('The user is allowed to revoke a token'),
-                            'mainmenu': [MAIN_MENU.TOKENS],
-                            'group': GROUP.TOKEN},
-            PolicyAction.RESET: {'type': 'bool',
-                           'desc': _('The user is allowed to reset the failcounter of his tokens.'),
-                           'mainmenu': [MAIN_MENU.TOKENS],
-                           'group': GROUP.TOKEN},
-            PolicyAction.SETPIN: {'type': 'bool',
-                            'desc': _('The user is allowed to set the OTP PIN of his tokens.'),
-                            'mainmenu': [MAIN_MENU.TOKENS],
-                            'group': GROUP.PIN},
-            PolicyAction.SETRANDOMPIN: {'type': 'bool',
-                                  'desc': _('The user is allowed to set a random OTP PIN of his tokens.'),
+                                  'desc': _('The user is allowed to enable his own tokens.'),
                                   'mainmenu': [MAIN_MENU.TOKENS],
-                                  'group': GROUP.PIN},
-            PolicyAction.OTPPINSETRANDOM: {'type': 'int',
-                                     'value': list(range(1, 32)),
-                                     'desc': _('The length of a random PIN set by the user.'),
-                                     'group': GROUP.PIN},
-            PolicyAction.SETDESCRIPTION: {'type': 'bool',
-                                    'desc': _('The user is allowed to set the token description.'),
+                                  'group': GROUP.TOKEN},
+            PolicyAction.DELETE: {'type': 'bool',
+                                  "desc": _('The user is allowed to delete his own tokens.'),
+                                  'mainmenu': [MAIN_MENU.TOKENS],
+                                  'group': GROUP.TOKEN},
+            PolicyAction.UNASSIGN: {'type': 'bool',
+                                    'desc': _('The user is allowed to unassign his own tokens.'),
                                     'mainmenu': [MAIN_MENU.TOKENS],
                                     'group': GROUP.TOKEN},
+            PolicyAction.RESYNC: {'type': 'bool',
+                                  "desc": _('The user is allowed to resynchronize his tokens.'),
+                                  'mainmenu': [MAIN_MENU.TOKENS],
+                                  'group': GROUP.TOKEN},
+            PolicyAction.REVOKE: {'type': 'bool',
+                                  'desc': _('The user is allowed to revoke a token'),
+                                  'mainmenu': [MAIN_MENU.TOKENS],
+                                  'group': GROUP.TOKEN},
+            PolicyAction.RESET: {'type': 'bool',
+                                 'desc': _('The user is allowed to reset the failcounter of his tokens.'),
+                                 'mainmenu': [MAIN_MENU.TOKENS],
+                                 'group': GROUP.TOKEN},
+            PolicyAction.SETPIN: {'type': 'bool',
+                                  'desc': _('The user is allowed to set the OTP PIN of his tokens.'),
+                                  'mainmenu': [MAIN_MENU.TOKENS],
+                                  'group': GROUP.PIN},
+            PolicyAction.SETRANDOMPIN: {'type': 'bool',
+                                        'desc': _('The user is allowed to set a random OTP PIN of his tokens.'),
+                                        'mainmenu': [MAIN_MENU.TOKENS],
+                                        'group': GROUP.PIN},
+            PolicyAction.OTPPINSETRANDOM: {'type': 'int',
+                                           'value': list(range(1, 32)),
+                                           'desc': _('The length of a random PIN set by the user.'),
+                                           'group': GROUP.PIN},
+            PolicyAction.SETDESCRIPTION: {'type': 'bool',
+                                          'desc': _('The user is allowed to set the token description.'),
+                                          'mainmenu': [MAIN_MENU.TOKENS],
+                                          'group': GROUP.TOKEN},
             PolicyAction.ENROLLPIN: {'type': 'bool',
-                               'desc': _('The user is allowed to set the OTP PIN during enrollment.'),
-                               'group': GROUP.PIN},
+                                     'desc': _('The user is allowed to set the OTP PIN during enrollment.'),
+                                     'group': GROUP.PIN},
             PolicyAction.OTPPINMAXLEN: {'type': 'int',
-                                  'value': list(range(0, 32)),
-                                  'desc': _('Set the maximum allowed length of the OTP PIN.'),
-                                  'group': GROUP.PIN},
+                                        'value': list(range(0, 32)),
+                                        'desc': _('Set the maximum allowed length of the OTP PIN.'),
+                                        'group': GROUP.PIN},
             PolicyAction.OTPPINMINLEN: {'type': 'int',
-                                  'value': list(range(0, 32)),
-                                  'desc': _('Set the minimum required length of the OTP PIN.'),
-                                  'group': GROUP.PIN},
+                                        'value': list(range(0, 32)),
+                                        'desc': _('Set the minimum required length of the OTP PIN.'),
+                                        'group': GROUP.PIN},
             PolicyAction.OTPPINCONTENTS: {'type': 'str',
-                                    'desc': _('Specify the required contents of the OTP PIN. (c)haracters, (n)umeric, '
+                                          'desc': _(
+                                              'Specify the required contents of the OTP PIN. (c)haracters, (n)umeric, '
                                               '(s)pecial. Use modifiers +/- or a list of allowed '
                                               'characters [1234567890]'),
-                                    'group': GROUP.PIN},
+                                          'group': GROUP.PIN},
             PolicyAction.AUDIT: {
                 'type': 'bool',
                 'desc': _('Allow the user to view his own token history.'),
                 'mainmenu': [MAIN_MENU.AUDIT]},
             PolicyAction.AUDIT_AGE: {'type': 'str',
-                               'desc': _('The user will only see audit entries of the last 10d, 3m or 2y.'),
-                               'mainmenu': [MAIN_MENU.AUDIT]},
+                                     'desc': _('The user will only see audit entries of the last 10d, 3m or 2y.'),
+                                     'mainmenu': [MAIN_MENU.AUDIT]},
             PolicyAction.HIDE_AUDIT_COLUMNS: {'type': 'str',
-                                        'desc': _('The user will not see the specified columns in the audit.'),
-                                        'group': GROUP.SYSTEM,
-                                        'mainmenu': [MAIN_MENU.AUDIT]},
+                                              'desc': _('The user will not see the specified columns in the audit.'),
+                                              'group': GROUP.SYSTEM,
+                                              'mainmenu': [MAIN_MENU.AUDIT]},
             PolicyAction.USERLIST: {'type': 'bool',
-                              'desc': _('The user is allowed to view his own user information.'),
-                              'mainmenu': [MAIN_MENU.USERS]},
+                                    'desc': _('The user is allowed to view his own user information.'),
+                                    'mainmenu': [MAIN_MENU.USERS]},
             PolicyAction.UPDATEUSER: {'type': 'bool',
-                                'desc': _('The user is allowed to update his own user information, like changing '
-                                          'his password.'),
-                                'mainmenu': [MAIN_MENU.USERS]},
+                                      'desc': _('The user is allowed to update his own user information, like changing '
+                                                'his password.'),
+                                      'mainmenu': [MAIN_MENU.USERS]},
             PolicyAction.PASSWORDRESET: {'type': 'bool',
-                                   'desc': _(
-                                       'The user is allowed to do a password reset in an editable UserIdResolver.'),
-                                   'mainmenu': []},
+                                         'desc': _(
+                                             'The user is allowed to do a password reset in an editable UserIdResolver.'),
+                                         'mainmenu': []},
             PolicyAction.SET_USER_ATTRIBUTES: {
                 'type': TYPE.STRING,
                 'desc': _(
@@ -2274,76 +2296,83 @@ def get_static_policy_definitions(scope=None):
             },
             # CONTAINER
             PolicyAction.CONTAINER_STATE: {'type': 'bool',
-                                     'desc': _('Users are allowed to edit the state of their own containers.'),
-                                     'mainmenu': [MAIN_MENU.TOKENS],
-                                     'group': GROUP.CONTAINER},
-            PolicyAction.CONTAINER_DESCRIPTION: {'type': 'bool',
-                                           'desc': _(
-                                               'Users are allowed to edit the description of their own containers.'),
+                                           'desc': _('Users are allowed to edit the state of their own containers.'),
                                            'mainmenu': [MAIN_MENU.TOKENS],
                                            'group': GROUP.CONTAINER},
+            PolicyAction.CONTAINER_DESCRIPTION: {'type': 'bool',
+                                                 'desc': _(
+                                                     'Users are allowed to edit the description of their own containers.'),
+                                                 'mainmenu': [MAIN_MENU.TOKENS],
+                                                 'group': GROUP.CONTAINER},
             PolicyAction.CONTAINER_CREATE: {'type': 'bool',
-                                      'desc': _('Users are allowed to create containers.'),
-                                      'mainmenu': [MAIN_MENU.TOKENS],
-                                      'group': GROUP.CONTAINER},
-            PolicyAction.CONTAINER_DELETE: {'type': 'bool',
-                                      'desc': _('Users are allowed to delete their own containers.'),
-                                      'mainmenu': [MAIN_MENU.TOKENS],
-                                      'group': GROUP.CONTAINER},
-            PolicyAction.CONTAINER_ADD_TOKEN: {'type': 'bool',
-                                         'desc': _(
-                                             'Users are allowed to add their own tokens to their own containers.'),
-                                         'mainmenu': [MAIN_MENU.TOKENS],
-                                         'group': GROUP.CONTAINER},
-            PolicyAction.CONTAINER_REMOVE_TOKEN: {'type': 'bool',
-                                            'desc': _('Users are allowed to remove their own tokens from their own '
-                                                      'containers.'),
+                                            'desc': _('Users are allowed to create containers.'),
                                             'mainmenu': [MAIN_MENU.TOKENS],
                                             'group': GROUP.CONTAINER},
+            PolicyAction.CONTAINER_DELETE: {'type': 'bool',
+                                            'desc': _('Users are allowed to delete their own containers.'),
+                                            'mainmenu': [MAIN_MENU.TOKENS],
+                                            'group': GROUP.CONTAINER},
+            PolicyAction.CONTAINER_ADD_TOKEN: {'type': 'bool',
+                                               'desc': _(
+                                                   'Users are allowed to add their own tokens to their own containers.'),
+                                               'mainmenu': [MAIN_MENU.TOKENS],
+                                               'group': GROUP.CONTAINER},
+            PolicyAction.CONTAINER_REMOVE_TOKEN: {'type': 'bool',
+                                                  'desc': _(
+                                                      'Users are allowed to remove their own tokens from their own '
+                                                      'containers.'),
+                                                  'mainmenu': [MAIN_MENU.TOKENS],
+                                                  'group': GROUP.CONTAINER},
             PolicyAction.CONTAINER_ASSIGN_USER: {'type': 'bool',
-                                           'desc': _('Users are allowed to assign themselves to containers without an '
+                                                 'desc': _(
+                                                     'Users are allowed to assign themselves to containers without an '
                                                      'owner.'),
-                                           'mainmenu': [MAIN_MENU.TOKENS],
-                                           'group': GROUP.CONTAINER},
+                                                 'mainmenu': [MAIN_MENU.TOKENS],
+                                                 'group': GROUP.CONTAINER},
             PolicyAction.CONTAINER_UNASSIGN_USER: {'type': 'bool',
-                                             'desc': _('Users are allowed to unassign themselves from containers.'),
-                                             'mainmenu': [MAIN_MENU.TOKENS],
-                                             'group': GROUP.CONTAINER},
+                                                   'desc': _(
+                                                       'Users are allowed to unassign themselves from containers.'),
+                                                   'mainmenu': [MAIN_MENU.TOKENS],
+                                                   'group': GROUP.CONTAINER},
             PolicyAction.CONTAINER_LIST: {'type': 'bool',
-                                    'desc': _('Users are allowed to list their own containers.'),
-                                    'mainmenu': [MAIN_MENU.TOKENS],
-                                    'group': GROUP.CONTAINER},
-            PolicyAction.CONTAINER_REGISTER: {'type': 'bool',
-                                        'desc': _(
-                                            'Users are allowed to register their own containers.'),
-                                        'mainmenu': [MAIN_MENU.TOKENS],
-                                        'group': GROUP.CONTAINER},
-            PolicyAction.CONTAINER_UNREGISTER: {'type': 'bool',
-                                          'desc': _('Users are allowed to unregister containers.'),
+                                          'desc': _('Users are allowed to list their own containers.'),
                                           'mainmenu': [MAIN_MENU.TOKENS],
                                           'group': GROUP.CONTAINER},
+            PolicyAction.CONTAINER_REGISTER: {'type': 'bool',
+                                              'desc': _(
+                                                  'Users are allowed to register their own containers.'),
+                                              'mainmenu': [MAIN_MENU.TOKENS],
+                                              'group': GROUP.CONTAINER},
+            PolicyAction.CONTAINER_UNREGISTER: {'type': 'bool',
+                                                'desc': _('Users are allowed to unregister containers.'),
+                                                'mainmenu': [MAIN_MENU.TOKENS],
+                                                'group': GROUP.CONTAINER},
             PolicyAction.CONTAINER_ROLLOVER: {'type': 'bool',
-                                        'desc': _('Users are allowed to perform a container rollover of their own '
+                                              'desc': _(
+                                                  'Users are allowed to perform a container rollover of their own '
                                                   'containers. This includes a rollover of all contained tokens even '
                                                   'if the user is not the owner of a contained token.'),
-                                        'mainmenu': [MAIN_MENU.TOKENS],
-                                        'group': GROUP.CONTAINER},
+                                              'mainmenu': [MAIN_MENU.TOKENS],
+                                              'group': GROUP.CONTAINER},
             PolicyAction.CONTAINER_TEMPLATE_CREATE: {'type': 'bool',
-                                               'desc': _('Users are allowed to create and edit container templates.'),
-                                               'mainmenu': [MAIN_MENU.TOKENS],
-                                               'group': GROUP.CONTAINER},
+                                                     'desc': _(
+                                                         'Users are allowed to create and edit container templates.'),
+                                                     'mainmenu': [MAIN_MENU.TOKENS],
+                                                     'group': GROUP.CONTAINER},
             PolicyAction.CONTAINER_TEMPLATE_DELETE: {'type': 'bool',
-                                               'desc': _('Users are allowed to delete templates.'),
-                                               'mainmenu': [MAIN_MENU.TOKENS],
-                                               'group': GROUP.CONTAINER},
+                                                     'desc': _('Users are allowed to delete templates.'),
+                                                     'mainmenu': [MAIN_MENU.TOKENS],
+                                                     'group': GROUP.CONTAINER},
             PolicyAction.CONTAINER_TEMPLATE_LIST: {'type': 'bool',
-                                             'desc': _('Users are allowed to list templates and view their details.'),
-                                             'mainmenu': [MAIN_MENU.TOKENS],
-                                             'group': GROUP.CONTAINER},
+                                                   'desc': _(
+                                                       'Users are allowed to list templates and view their details.'),
+                                                   'mainmenu': [MAIN_MENU.TOKENS],
+                                                   'group': GROUP.CONTAINER},
             PolicyAction.HIDE_CONTAINER_INFO: {'type': TYPE.STRING,
-                                         'desc': _('A whitespace-separated list of container info keys that shall '
+                                               'desc': _(
+                                                   'A whitespace-separated list of container info keys that shall '
                                                    'not be displayed to the users.'),
-                                         'group': GROUP.CONTAINER}
+                                               'group': GROUP.CONTAINER}
         },
         SCOPE.ENROLL: {
             PolicyAction.MAXTOKENREALM: {
@@ -2581,6 +2610,12 @@ def get_static_policy_definitions(scope=None):
                 'desc': _('Can be used to modify the parameters pass, '
                           'user and realm in an authentication request. See '
                           'the documentation for an example.')
+            },
+            PolicyAction.SET_REALM: {
+                'type': 'str',
+                'value': realms,
+                'desc': _('In authentication requests, sets or overwrites the realm parameter. It takes precedence '
+                          'over the mangle and setrealm policies.')
             },
             PolicyAction.RESETALLTOKENS: {
                 'type': 'bool',
@@ -2907,30 +2942,33 @@ def get_static_policy_definitions(scope=None):
                 'group': 'QR Codes'
             },
             PolicyAction.RSS_FEEDS: {'type': 'str',
-                               'desc': _("The RSS feeds fetched for the user defined in the format: "
-                                         "<code>'Title':'URL'-'Title':'URL'</code> ")},
+                                     'desc': _("The RSS feeds fetched for the user defined in the format: "
+                                               "<code>'Title':'URL'-'Title':'URL'</code> ")},
             PolicyAction.RSS_AGE: {'type': 'int',
-                             'desc': _('The age of the RSS feed entries in days. Use <code>0</code> to hide the news '
+                                   'desc': _(
+                                       'The age of the RSS feed entries in days. Use <code>0</code> to hide the news '
                                        'feed. For admins the default is 180 days and for users 0 days.')},
             PolicyAction.CONTAINER_WIZARD_TYPE: {'type': 'str',
-                                           'value': list(get_container_token_types().keys()),
-                                           'desc': _('Container type to be created with the container wizard. It is '
+                                                 'value': list(get_container_token_types().keys()),
+                                                 'desc': _(
+                                                     'Container type to be created with the container wizard. It is '
                                                      'required to set at least this option to enable the container '
                                                      'wizard. As long as the user has no container assigned he will '
                                                      'only see the container wizard in the UI.'),
-                                           'group': GROUP.WIZARD},
+                                                 'group': GROUP.WIZARD},
             PolicyAction.CONTAINER_WIZARD_TEMPLATE: {'type': 'str',
-                                               'value': get_all_templates_with_type(),
-                                               'desc': _('Name of the container template to be used to create a '
-                                                         'container in the container wizard (optional). Note that the '
-                                                         'template must be of the same type as selected in the '
-                                                         'container_wizard_type.'),
-                                               'group': GROUP.WIZARD},
+                                                     'value': get_all_templates_with_type(),
+                                                     'desc': _('Name of the container template to be used to create a '
+                                                               'container in the container wizard (optional). Note that the '
+                                                               'template must be of the same type as selected in the '
+                                                               'container_wizard_type.'),
+                                                     'group': GROUP.WIZARD},
             PolicyAction.CONTAINER_WIZARD_REGISTRATION: {'type': 'bool',
-                                                   'desc': _('In the container wizard, a QR code will be generated '
+                                                         'desc': _(
+                                                             'In the container wizard, a QR code will be generated '
                                                              'to register the new container on the smartphone. '
                                                              '(Only applicable for smartphone containers)'),
-                                                   'group': GROUP.WIZARD}
+                                                         'group': GROUP.WIZARD}
         },
         SCOPE.CONTAINER: {
             PolicyAction.CONTAINER_SERVER_URL: {
@@ -2986,7 +3024,8 @@ def get_static_policy_definitions(scope=None):
             },
             PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE: {
                 'type': 'bool',
-                'desc': _('Enable to return an unspecific error message for failures in the authentication-free container endpoints.')
+                'desc': _(
+                    'Enable to return an unspecific error message for failures in the authentication-free container endpoints.')
             }
         },
         SCOPE.TOKEN: {
@@ -3000,7 +3039,8 @@ def get_static_policy_definitions(scope=None):
             },
             PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE_FOR_TTYPE: {
                 'type': 'bool',
-                'desc': _('Enable to return an unspecific error message for failures in the special token endpoints /ttype/*.')
+                'desc': _(
+                    'Enable to return an unspecific error message for failures in the special token endpoints /ttype/*.')
             },
             PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE_FOR_OFFLINE_REFILL: {
                 'type': 'bool',
@@ -3307,34 +3347,31 @@ class Match(object):
                    sort_by_priority=True, serial=g.serial, user_agent=g.get("user_agent"))
 
     @classmethod
-    def token(cls, g, scope, action, token_obj):
+    def token(cls, g, scope: str, action: str, token) -> "Match":
         """
         Match active policies with a scope, an action and a token object.
         The client IP is matched implicitly.
-        From the token object we try to determine the user as the owner.
-        If the token has no owner, we try to determine the tokenrealm.
-        We fall back to realm=None
+        From the token object we try to determine the user as the owner and the token realms.
+        The default is an empty user object and an empty realm list to avoid matching policies with any user and realm
+        condition.
 
         :param g: context object
-        :param scope: the policy scope. SCOPE.ADMIN cannot be passed, ``admin``
-            must be used instead.
+        :param scope: the policy scope. SCOPE.ADMIN cannot be passed, ``admin`` must be used instead.
         :param action: the policy action
-        :param token_obj: The token where the user object or the realm should match.
+        :param token: The token where the user object or the realm should match.
         :rtype: Match
         """
-        if token_obj.user:
-            return cls.user(g, scope, action, token_obj.user)
+        if token:
+            owner = token.user or User()
+            realms = token.get_realms()
+            # serial is required for the extended condition checks (TODO: allow passing the token object)
+            serial = token.get_serial()
         else:
-            realms = token_obj.get_realms()
-            if len(realms) == 0:
-                return cls.action_only(g, scope, action)
-            elif len(realms) == 1:
-                # We have one distinct token realm
-                log.debug("Matching policies with tokenrealm {0!s}.".format(realms[0]))
-                return cls.realm(g, scope, action, realms[0])
-            else:
-                log.warning("The token has more than one tokenrealm. Probably not able to match correctly.")
-                return cls.action_only(g, scope, action)
+            log.debug("No token available. Matching policies without user and realm.")
+            owner = User()
+            realms = None
+            serial = None
+        return cls.generic(g, scope=scope, action=action, user_object=owner, additional_realms=realms, serial=serial)
 
     @classmethod
     def admin(cls, g, action: str, user_obj: User = None, serial: str = None, container_serial: str = None) -> "Match":
