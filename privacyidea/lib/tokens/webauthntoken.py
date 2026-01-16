@@ -22,6 +22,7 @@ import binascii
 import logging
 
 from cryptography import x509
+from sqlalchemy import select
 from webauthn.helpers import bytes_to_base64url
 
 from privacyidea.api.lib.utils import (attestation_certificate_allowed, get_required_one_of,
@@ -37,8 +38,8 @@ from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction
 from privacyidea.lib.fido2.token_info import FIDO2TokenInfo
 from privacyidea.lib.fido2.util import hash_credential_id, save_credential_id_hash
 from privacyidea.lib.log import log_with
-from privacyidea.lib.policy import SCOPE, GROUP
 from privacyidea.lib.policies.actions import PolicyAction
+from privacyidea.lib.policy import SCOPE, GROUP
 from privacyidea.lib.token import get_tokens
 from privacyidea.lib.tokenclass import TokenClass, CLIENTMODE, ROLLOUTSTATE
 from privacyidea.lib.tokens.u2ftoken import IMAGES
@@ -456,7 +457,7 @@ native encoding of the language (usually utf-16).
 
 """
 
-from privacyidea.models import Challenge, TokenCredentialIdHash
+from privacyidea.models import Challenge, TokenCredentialIdHash, db
 
 IMAGES = IMAGES
 
@@ -1235,8 +1236,9 @@ class WebAuthnTokenClass(TokenClass):
 
             # Save the credential_id hash to an extra table to be able to find the token faster
             credential_id_hash = hash_credential_id(credential_id)
-            existing_entry = TokenCredentialIdHash.query.filter_by(token_id=self.token.id,
-                                                                   credential_id_hash=credential_id_hash).first()
+            stmt = select(TokenCredentialIdHash).where(TokenCredentialIdHash.token_id == self.token.id,
+                                                       TokenCredentialIdHash.credential_id_hash == credential_id_hash)
+            existing_entry = db.session.scalars(stmt).first()
             if not existing_entry:
                 token_cred_id_hash = TokenCredentialIdHash(token_id=self.token.id,
                                                            credential_id_hash=credential_id_hash)

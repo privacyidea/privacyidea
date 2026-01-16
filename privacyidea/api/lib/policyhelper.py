@@ -33,6 +33,7 @@ from privacyidea.lib.log import log_with
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policies.conditions import ConditionSection
 from privacyidea.lib.policy import Match, SCOPE
+from privacyidea.lib.realm import realm_is_defined
 from privacyidea.lib.token import get_tokens_from_serial_or_user, get_token_owner
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.user import User
@@ -410,3 +411,32 @@ def check_last_auth_policy(g, token: TokenClass) -> bool:
         last_auth_token = datetime.fromisoformat(last_auth_info)
         return last_auth_token <= datetime.now(timezone.utc) <= last_auth_token + time_delta
     return True
+
+
+def get_realm_for_authentication(g, username: str, realm: str) -> str:
+    """
+    Checks if the set_realm policy action from the authentication scope defines a realm that should be used for the
+    authentication.
+    Returns the defined realm if the policy is set or the given realm otherwise.
+    In case the realm defined in the policy does not exist the given realm is returned.
+
+    :param g: The global flask object g
+    :param username: The username of the user
+    :param realm: The realm from the request parameters
+    :return: The realm to be used for authentication
+    """
+    auth_realm_policy = Match.generic(g, scope=SCOPE.AUTH, action=PolicyAction.SET_REALM,
+                                      user=username, realm=realm or None).action_values(unique=True)
+    if auth_realm_policy:
+        new_realm = list(auth_realm_policy)[0]
+        if not realm_is_defined(new_realm):
+            log.warning("Realm '%s' defined in the policy '%s' does not exist. Using realm '%s' instead.", new_realm,
+                        PolicyAction.SET_REALM, realm)
+            return realm
+        log.debug("Setting realm for authentication to '%s' due to policy action %s", new_realm, PolicyAction.SET_REALM)
+        if "policies" in g:
+            g.policies[PolicyAction.SET_REALM] = new_realm
+        else:
+            g.policies = {PolicyAction.SET_REALM: new_realm}
+        return new_realm
+    return realm

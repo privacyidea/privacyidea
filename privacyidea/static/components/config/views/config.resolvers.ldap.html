@@ -347,6 +347,19 @@
                        translate>Recursive Search of User Groups</label>
                 <div ng-show="params.recursive_group_search">
                     <div>
+                        <label for="base_dn_groups"
+                               class="col-sm-3 control-label"
+                               translate>Base DN of User Groups</label>
+                        <div class="col-sm-9">
+                            <input name="base_dn_groups" class="form-control" ng-model="params.group_base_dn"
+                                   placeholder="ou=groups,dc=domain,dc=tld"/>
+                            <p class="help-block" translate>
+                                Enter the base DN for the user groups. Leave this field empty if the groups are located
+                                in the same base DN as defined for the users above.
+                            </p>
+                        </div>
+                    </div>
+                    <div>
                         <label for="group_search_filter"
                                class="col-sm-3 control-label"
                                translate>Search Filter for User Groups</label>
@@ -356,8 +369,8 @@
                                    placeholder='(&(sAMAccountName=*)(objectCategory=group)(member:1.2.840.113556.1.4.1941:=cn={username},{base_dn}))'
                             />
                             <p class="help-block" translate>
-                                Filter to get the groups of a single user. Possible tags: <code>{base_dn}</code>,
-                                <code>{username}</code>, and all attribute mapping keys.
+                                Filter to get the groups of a single user. Possible tags: <code>{base_dn}</code> (from
+                                the users), <code>{username}</code>, and all attribute mapping keys.
                             </p>
                         </div>
                     </div>

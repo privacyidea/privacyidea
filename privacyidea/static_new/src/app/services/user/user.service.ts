@@ -246,7 +246,7 @@ export class UserService implements UserServiceInterface {
     if (!this.authService.actionAllowed("userlist")) {
       return undefined;
     }
-    // Only load user details on the user details page.
+    // Only load user details on the user details page for admins and always for users.
     if (!this.contentService.onUserDetails() && this.authService.role() !== "user") {
       return undefined;
     }

@@ -149,7 +149,6 @@ export class ClientsComponent {
         });
       });
     }
-    console.log(rows);
     return rows;
   };
 

@@ -14,8 +14,8 @@ respective sections in the documentation.
 
 New WebUI
 ---------
-
 .. index:: new webui
+.. versionadded:: 3.12
 
 To enable the new WebUI, edit the configuration file `pi.cfg` and add the following lines::
 
