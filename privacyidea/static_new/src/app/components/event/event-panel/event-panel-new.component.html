@@ -133,13 +133,11 @@
         </div>
       </div>
 
+      <app-event-selection
+          [events]="editEvent().event"
+          (newEvents)="setNewEvents($event)"></app-event-selection>
+
       <div class="tab-buttons">
-        <button
-          mat-stroked-button
-          [class.action-button-active]="activeTab() === 'events'"
-          (click)="activeTab.set('events')">
-          EVENTS
-        </button>
         <button
           mat-stroked-button
           [class.action-button-active]="activeTab() === 'action'"
@@ -155,12 +153,6 @@
       </div>
 
       @switch (activeTab()) {
-        @case ("events") {
-          <app-events-tab
-            [events]="editEvent().event"
-            [isEditMode]="panel.expanded"
-            (newEvents)="setNewEvents($event)"></app-events-tab>
-        }
         @case ("action") {
           <app-event-action-tab
             [action]="editEvent().action"

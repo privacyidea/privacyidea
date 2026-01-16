@@ -17,26 +17,26 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { EventsTabComponent } from "./events-tab.component";
-import { EventService } from "../../../../../services/event/event.service";
-import { MockEventService } from "../../../../../../testing/mock-services/mock-event-service";
 import { provideHttpClient } from "@angular/common/http";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { EventSelectionComponent } from "./event-selection.component";
+import { EventService } from "../../../../services/event/event.service";
+import { MockEventService } from "../../../../../testing/mock-services/mock-event-service";
 
-describe("EventsTabComponent", () => {
-  let component: EventsTabComponent;
-  let fixture: ComponentFixture<EventsTabComponent>;
+describe("EventsSelectionComponent", () => {
+  let component: EventSelectionComponent;
+  let fixture: ComponentFixture<EventSelectionComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [EventsTabComponent],
+      imports: [EventSelectionComponent],
       providers: [
         provideHttpClient(),
         { provide: EventService, useClass: MockEventService }
       ]
     }).compileComponents();
 
-    fixture = TestBed.createComponent(EventsTabComponent);
+    fixture = TestBed.createComponent(EventSelectionComponent);
     component = fixture.componentInstance;
     fixture.componentRef.setInput("events", ["eventA", "eventB"]);
     fixture.componentRef.setInput("isEditMode", true);
@@ -49,65 +49,96 @@ describe("EventsTabComponent", () => {
   });
 
   it("should initialize editEvents from input", () => {
-    component.editEvents.set([]);
+    component.selectedEvents.set([]);
     fixture.componentRef.setInput("events", ["foo", "bar"]);
     fixture.detectChanges();
-    expect(component.editEvents()).toEqual(["foo", "bar"]);
+    expect(component.selectedEvents()).toEqual(["foo", "bar"]);
   });
 
   it("should remove an event", () => {
-    component.editEvents.set(["eventA", "eventB", "eventC"]);
+    component.selectedEvents.set(["eventA", "eventB", "eventC"]);
     component.removeEvent("eventB");
-    expect(component.editEvents()).toEqual(["eventA", "eventC"]);
+    expect(component.selectedEvents()).toEqual(["eventA", "eventC"]);
     expect(component.newEvents.emit).toHaveBeenCalledWith(["eventA", "eventC"]);
   });
 
   it("remove a non existing event should do nothing", () => {
-    component.editEvents.set(["eventA", "eventB", "eventC"]);
+    component.selectedEvents.set(["eventA", "eventB", "eventC"]);
     component.removeEvent("invalid");
-    expect(component.editEvents()).toEqual(["eventA", "eventB", "eventC"]);
+    expect(component.selectedEvents()).toEqual(["eventA", "eventB", "eventC"]);
     expect(component.newEvents.emit).not.toHaveBeenCalled();
   });
 
   it("should add an event", () => {
-    component.editEvents.set(["eventA"]);
+    component.selectedEvents.set(["eventA"]);
     component.addEvent("eventC");
-    expect(component.editEvents()).toEqual(["eventA", "eventC"]);
+    expect(component.selectedEvents()).toEqual(["eventA", "eventC"]);
     expect(component.newEvents.emit).toHaveBeenCalledWith(["eventA", "eventC"]);
   });
 
   it("should return all available events if none selected and no search", () => {
-    component.editEvents.set([]);
+    component.selectedEvents.set([]);
     component.searchTerm.set("");
     const result = component.remainingEvents();
     expect(result).toEqual(["eventA", "eventAB", "eventB", "eventC"]);
   });
 
   it("remainingEvents should filter out selected events", () => {
-    component.editEvents.set(["eventA"]);
+    component.selectedEvents.set(["eventA"]);
     component.searchTerm.set("");
     const result = component.remainingEvents();
     expect(result).toEqual(["eventAB", "eventB", "eventC"]);
   });
 
   it("remainingEvents should filter by search term (case-insensitive)", () => {
-    component.editEvents.set([]);
+    component.selectedEvents.set([]);
     component.searchTerm.set("eventb");
     const result = component.remainingEvents();
     expect(result).toEqual(["eventB"]);
   });
 
   it("remainingEvents should filter by search term (case-insensitive) and filter out selected events", () => {
-    component.editEvents.set(["eventA"]);
+    component.selectedEvents.set(["eventA"]);
     component.searchTerm.set("entA");
     const result = component.remainingEvents();
     expect(result).toEqual(["eventAB"]);
   });
 
   it("remainingEvents should return empty if all events are selected", () => {
-    component.editEvents.set(["eventA", "eventAB", "eventB", "eventC"]);
+    component.selectedEvents.set(["eventA", "eventAB", "eventB", "eventC"]);
     component.searchTerm.set("");
     const result = component.remainingEvents();
     expect(result).toEqual([]);
+  });
+
+  it("should reopen autocomplete panel after selecting an option", () => {
+    // Mock the MatAutocompleteTrigger
+    component.autocompleteTrigger = {
+      openPanel: jest.fn()
+    } as any;
+    // Simulate selecting an option
+    const event = { option: { viewValue: "eventB", deselect: jest.fn() } } as any;
+    component.lastSearchTerm = "ev";
+    component.selected(event);
+    setTimeout(() => {
+      // The panel should be reopened
+      expect(component.autocompleteTrigger.openPanel).toHaveBeenCalled();
+    });
+  });
+
+  it("should keep the search term after selecting an option", () => {
+    component.searchTerm.set("ev");
+    component.lastSearchTerm = "ev";
+    const event = { option: { viewValue: "eventB", deselect: jest.fn() } } as any;
+    component.selected(event);
+    // The search term should remain unchanged
+    expect(component.searchTerm()).toBe("ev");
+  });
+
+  it("should remove an event and emit the updated list", () => {
+    component.selectedEvents.set(["eventA", "eventB"]);
+    component.removeEvent("eventA");
+    expect(component.selectedEvents()).toEqual(["eventB"]);
+    expect(component.newEvents.emit).toHaveBeenCalledWith(["eventB"]);
   });
 });

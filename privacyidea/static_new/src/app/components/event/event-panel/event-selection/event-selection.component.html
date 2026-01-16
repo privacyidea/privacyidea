@@ -1,0 +1,61 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<form>
+  <mat-form-field class="width-100">
+    <mat-label>Events</mat-label>
+    <mat-chip-grid
+      #chipGrid
+      aria-label="Event selection">
+      @for (event of selectedEvents(); track $index) {
+        <mat-chip-row (removed)="removeEvent(event)">
+          {{ event }}
+          <button
+            matChipRemove
+            [attr.aria-label]="'remove ' + event">
+            <mat-icon>cancel</mat-icon>
+          </button>
+        </mat-chip-row>
+      }
+    </mat-chip-grid>
+    <input
+      name="currentEvent"
+      placeholder="New Event..."
+      [value]="searchTerm()"
+      (input)="onSearchInputChanges($event)"
+      [(ngModel)]="searchTerm"
+      [matChipInputFor]="chipGrid"
+      [matAutocomplete]="auto"
+      [matChipInputSeparatorKeyCodes]="separatorKeysCodes"
+      (matChipInputTokenEnd)="addEvent($event.value)"
+      #autocompleteTrigger="matAutocompleteTrigger"
+      matAutocompleteTrigger
+      (focus)="autocompleteTrigger.openPanel()"
+      (click)="autocompleteTrigger.openPanel()" />
+    <mat-autocomplete
+      #auto="matAutocomplete"
+      (optionSelected)="selected($event)">
+      @for (event of remainingEvents(); track event) {
+        <mat-option [value]="event">{{ event }}</mat-option>
+      }
+    </mat-autocomplete>
+    <mat-hint i18n>
+      Events that should trigger this event handler.
+    </mat-hint>
+  </mat-form-field>
+</form>

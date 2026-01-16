@@ -126,49 +126,9 @@
           </div>
         </div>
 
-        <!-- Events -->
-        Search term: {{eventSearchTerm()}}
-        <form>
-          <mat-form-field class="width-100">
-            <mat-label>Events</mat-label>
-            <mat-chip-grid
-              #chipGrid
-              aria-label="Event selection">
-              @for (event of selectedEvents(); track $index) {
-                <mat-chip-row (removed)="removeEvent(event)">
-                  {{ event }}
-                  <button
-                    matChipRemove
-                    [attr.aria-label]="'remove ' + event">
-                    <mat-icon>cancel</mat-icon>
-                  </button>
-                </mat-chip-row>
-              }
-            </mat-chip-grid>
-            <input
-              name="currentEvent"
-              placeholder="New Event..."
-              [value]="eventSearchTerm()"
-              (input)="onSearchInputChanges($event)"
-              [(ngModel)]="eventSearchTerm"
-              [matChipInputFor]="chipGrid"
-              [matAutocomplete]="auto"
-              [matChipInputSeparatorKeyCodes]="separatorKeysCodes"
-              (matChipInputTokenEnd)="addEvent($event.value)"
-              #autocompleteTrigger="matAutocompleteTrigger"
-              matAutocompleteTrigger
-              (focus)="autocompleteTrigger.openPanel()"
-              (click)="autocompleteTrigger.openPanel()"
-            />
-            <mat-autocomplete
-              #auto="matAutocomplete"
-              (optionSelected)="selected($event)">
-              @for (event of remainingEvents(); track event) {
-                <mat-option [value]="event">{{ event }}</mat-option>
-              }
-            </mat-autocomplete>
-          </mat-form-field>
-        </form>
+        <app-event-selection
+          [events]="editEvent().event"
+          (newEvents)="setNewEvents($event)"></app-event-selection>
 
       } @else {
         <div class="event-details">
