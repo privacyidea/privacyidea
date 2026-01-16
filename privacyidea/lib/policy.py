@@ -1472,15 +1472,15 @@ def set_policy(name: Optional[str] = None, scope: Optional[str] = None, action: 
         ret = policy.id
         # Since we create a new policy we always set the conditions, even if the list is empty
         set_policy_conditions(conditions_data, policy)
-    if description:
-        description_stmt = select(PolicyDescription).where(PolicyDescription.object_id == ret,
-                                                              PolicyDescription.object_type == "policy")
-        description_db = db.session.scalars(description_stmt).first()
-        if description_db:
-            description_db.description = description
-        else:
-            new_description = PolicyDescription(object_id=ret, object_type="policy", description=description)
-            db.session.add(new_description)
+
+    description_stmt = select(PolicyDescription).where(PolicyDescription.object_id == ret,
+                                                       PolicyDescription.object_type == "policy")
+    description_db = db.session.scalars(description_stmt).first()
+    if description_db:
+        description_db.description = description
+    else:
+        new_description = PolicyDescription(object_id=ret, object_type="policy", description=description)
+        db.session.add(new_description)
     save_config_timestamp()
     db.session.commit()
     return ret
