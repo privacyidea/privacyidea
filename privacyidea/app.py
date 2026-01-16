@@ -119,7 +119,8 @@ CSP = {
         "'sha256-KpSV7LuPYEu58+3u9LJr9v5Drm0uIKEv0h3u/+NVNm8='",
         "'sha256-N90MKmRow2DpYEVeqcc3uc8pOUsS4Rg4sNmkau1k0xQ='",
         "'sha256-Vois/bpqZahvBcyohHpVvTSyXN1GBToEOBP1fnFv8OQ='",
-        "'sha256-YwVkay1kjkGiuRM9oW8JUzwK2yXE5Dz412KzI4K7I9w='"
+        "'sha256-YwVkay1kjkGiuRM9oW8JUzwK2yXE5Dz412KzI4K7I9w='",
+        "'sha256-QdXSwG0lFVqEzH3nNnFcjWceQ68gfeuFj6C0DdxGekE='"
     ]
 }
 
