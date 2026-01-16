@@ -17,7 +17,18 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, effect, inject, input, linkedSignal, signal, WritableSignal } from "@angular/core";
+import {
+  Component,
+  computed,
+  effect,
+  inject,
+  input,
+  linkedSignal,
+  model,
+  signal,
+  ViewChild,
+  WritableSignal
+} from "@angular/core";
 import {
   MatExpansionPanel,
   MatExpansionPanelDescription,
@@ -25,22 +36,29 @@ import {
   MatExpansionPanelTitle
 } from "@angular/material/expansion";
 import { MatSlideToggle } from "@angular/material/slide-toggle";
-import { MatIcon } from "@angular/material/icon";
+import { MatIcon, MatIconModule } from "@angular/material/icon";
 import { MatButton, MatIconButton } from "@angular/material/button";
 import { MatTooltip } from "@angular/material/tooltip";
 import { AuthService } from "../../../services/auth/auth.service";
 import { MatDialog } from "@angular/material/dialog";
 import { EventHandler, EventService } from "../../../services/event/event.service";
-import { EventsTabComponent } from "./tabs/events-tab/events-tab.component";
 import { EventActionTabComponent } from "./tabs/event-action-tab/event-action-tab.component";
 import { EventConditionsTabComponent } from "./tabs/event-conditions-tab/event-conditions-tab.component";
 import { MatInput, MatLabel } from "@angular/material/input";
 import { FormsModule, ReactiveFormsModule } from "@angular/forms";
-import { MatFormField, MatHint } from "@angular/material/form-field";
-import { MatOption, MatSelect } from "@angular/material/select";
+import { MatFormField, MatFormFieldModule, MatHint } from "@angular/material/form-field";
+import { MatOption, MatSelect, MatSelectModule } from "@angular/material/select";
 import { deepCopy } from "../../../utils/deep-copy.utils";
 import { EventActionTabReadComponent } from "./tabs/event-action-tab-read/event-action-tab-read.component";
 import { NotificationService } from "../../../services/notification/notification.service";
+import { MatChipsModule } from "@angular/material/chips";
+import {
+  MatAutocompleteModule,
+  MatAutocompleteSelectedEvent,
+  MatAutocompleteTrigger
+} from "@angular/material/autocomplete";
+import { ENTER } from "@angular/cdk/keycodes";
+import { CommonModule } from "@angular/common";
 
 export type eventTab = "events" | "action" | "conditions";
 
@@ -56,7 +74,6 @@ export type eventTab = "events" | "action" | "conditions";
     MatSlideToggle,
     MatTooltip,
     MatButton,
-    EventsTabComponent,
     EventActionTabComponent,
     EventConditionsTabComponent,
     MatFormField,
@@ -67,7 +84,15 @@ export type eventTab = "events" | "action" | "conditions";
     FormsModule,
     MatSelect,
     MatOption,
-    EventActionTabReadComponent
+    EventActionTabReadComponent,
+    MatAutocompleteModule,
+    CommonModule,
+    MatFormFieldModule,
+    MatChipsModule,
+    MatSelectModule,
+    MatIconModule,
+    FormsModule,
+    ReactiveFormsModule
   ],
   standalone: true,
   templateUrl: "./event-panel.component.html",
@@ -83,6 +108,8 @@ export class EventPanelComponent {
   isEditMode = signal(false);
   activeTab: WritableSignal<eventTab> = signal("events");
   isExpanded = signal(false);
+
+  selectedEvents = linkedSignal(() => this.event().event);
 
   onPanelOpened() {
     this.isExpanded.set(true);
@@ -153,6 +180,51 @@ export class EventPanelComponent {
     this.editEvent.set({ ...this.editEvent(), event: events });
   }
 
+  eventSearchTerm = model("");
+  lastSearchTerm = "";
+  readonly separatorKeysCodes: number[] = [ENTER];
+
+  removeEvent(event: string): void {
+    const index = this.selectedEvents().indexOf(event);
+    if (index > -1) {
+      this.selectedEvents().splice(index, 1);
+    }
+  }
+
+  addEvent(event: string): void {
+    if (event && this.selectedEvents().indexOf(event) === -1) {
+      this.selectedEvents().push(event);
+    }
+  }
+
+  @ViewChild("autocompleteTrigger") autocompleteTrigger!: MatAutocompleteTrigger;
+
+  selected(event: MatAutocompleteSelectedEvent): void {
+    this.addEvent(event.option.viewValue);
+    this.eventSearchTerm.set(this.lastSearchTerm);
+    setTimeout(() => {
+      this.autocompleteTrigger.openPanel();
+    });
+
+  }
+
+  onSearchInputChanges(event: any): void {
+    this.lastSearchTerm = event.target.value;
+  }
+
+  remainingEvents = linkedSignal({
+    source: () => ({
+      available: this.eventService.availableEvents(),
+      selected: this.editEvent().event,
+      search: this.eventSearchTerm()
+    }),
+    computation: ({ available, selected, search }) =>
+      available.filter(event =>
+        !selected.includes(event) &&
+        (!search || event.toLowerCase().includes(search.toLowerCase()))
+      )
+  });
+
   updateEventHandler(key: string, value: any): void {
     // Update function to trigger change detection
     this.editEvent.set({ ...this.editEvent(), [key]: value });
@@ -160,6 +232,7 @@ export class EventPanelComponent {
 
   getSaveParameters(): Record<string, any> {
     let eventParams = deepCopy(this.editEvent()) as Record<string, any>;
+    eventParams["event"] = this.selectedEvents();
     for (const [optionKey, optionValue] of Object.entries(eventParams["options"] || {})) {
       eventParams["option." + optionKey] = optionValue;
     }

@@ -125,6 +125,51 @@
             </mat-form-field>
           </div>
         </div>
+
+        <!-- Events -->
+        Search term: {{eventSearchTerm()}}
+        <form>
+          <mat-form-field class="width-100">
+            <mat-label>Events</mat-label>
+            <mat-chip-grid
+              #chipGrid
+              aria-label="Event selection">
+              @for (event of selectedEvents(); track $index) {
+                <mat-chip-row (removed)="removeEvent(event)">
+                  {{ event }}
+                  <button
+                    matChipRemove
+                    [attr.aria-label]="'remove ' + event">
+                    <mat-icon>cancel</mat-icon>
+                  </button>
+                </mat-chip-row>
+              }
+            </mat-chip-grid>
+            <input
+              name="currentEvent"
+              placeholder="New Event..."
+              [value]="eventSearchTerm()"
+              (input)="onSearchInputChanges($event)"
+              [(ngModel)]="eventSearchTerm"
+              [matChipInputFor]="chipGrid"
+              [matAutocomplete]="auto"
+              [matChipInputSeparatorKeyCodes]="separatorKeysCodes"
+              (matChipInputTokenEnd)="addEvent($event.value)"
+              #autocompleteTrigger="matAutocompleteTrigger"
+              matAutocompleteTrigger
+              (focus)="autocompleteTrigger.openPanel()"
+              (click)="autocompleteTrigger.openPanel()"
+            />
+            <mat-autocomplete
+              #auto="matAutocomplete"
+              (optionSelected)="selected($event)">
+              @for (event of remainingEvents(); track event) {
+                <mat-option [value]="event">{{ event }}</mat-option>
+              }
+            </mat-autocomplete>
+          </mat-form-field>
+        </form>
+
       } @else {
         <div class="event-details">
           <div
@@ -138,16 +183,16 @@
             i18n>Ordering
           </div>
           <div class="value">{{ editEvent().ordering }}</div>
+
+          <div
+            class="label"
+            i18n>Events
+          </div>
+          <div class="value">{{ editEvent().event.join(", ") }}</div>
         </div>
       }
 
       <div class="tab-buttons">
-        <button
-          mat-stroked-button
-          [class.action-button-active]="activeTab() === 'events'"
-          (click)="activeTab.set('events')">
-          EVENTS
-        </button>
         <button
           mat-stroked-button
           [class.action-button-active]="activeTab() === 'action'"
@@ -163,12 +208,6 @@
       </div>
 
       @switch (activeTab()) {
-        @case ("events") {
-          <app-events-tab
-            [events]="editEvent().event"
-            [isEditMode]="isEditMode()"
-            (newEvents)="setNewEvents($event)"></app-events-tab>
-        }
         @case ("action") {
           @if (isEditMode()) {
             <app-event-action-tab
