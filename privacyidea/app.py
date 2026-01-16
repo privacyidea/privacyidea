@@ -338,10 +338,10 @@ def create_app(config_name="development",
                 sys.stderr.write(f"  ({e})\n")
             sys.stderr.write("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n")
 
-    if app.config.get(ConfigKey.PI_ENABLE_CSP, False):
-        # adding Talisman and CSP
-        talisman = Talisman(app, content_security_policy=CSP, force_https=app.config.get(ConfigKey.FORCE_HTTPS, True),
-                            session_cookie_secure=app.config.get(ConfigKey.SESSION_COOKIE_SECURE, True))
+    # CSP with Talisman
+    if app.config.get(ConfigKey.ENABLE_CSP, False):
+        Talisman(app, content_security_policy=CSP, force_https=app.config.get(ConfigKey.FORCE_HTTPS, True),
+                 session_cookie_secure=app.config.get(ConfigKey.SESSION_COOKIE_SECURE, True))
         if app.config.get(ConfigKey.VERBOSE):
             print("Enabling CSP with Talisman")
 
@@ -442,8 +442,10 @@ def create_docker_app():
     # And then we check if we have a minimal viable config
     _check_config(app)
 
-    if app.config.get(ConfigKey.PI_ENABLE_CSP, False):
-        talisman = Talisman(app, content_security_policy=CSP)
+    # CSP with Talisman
+    if app.config.get(ConfigKey.ENABLE_CSP, False):
+        Talisman(app, content_security_policy=CSP, force_https=app.config.get(ConfigKey.FORCE_HTTPS, True),
+                 session_cookie_secure=app.config.get(ConfigKey.SESSION_COOKIE_SECURE, True))
         if app.debug:
             sys.stderr.write("Enabling CSP with Talisman")
 

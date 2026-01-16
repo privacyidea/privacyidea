@@ -48,6 +48,7 @@ The file should contain the following contents::
    # PI_CSS = '/location/of/theme.css'
    # PI_UI_DEACTIVATED = True
    # PI_ENABLE_CSP = True
+   # PI_FORCE_HTTPS = True
 
 .. note:: The config file is parsed as python code, so you can use variables to
    set the path and you need to take care of the indentation.
@@ -106,6 +107,7 @@ Security
 --------
 
 ``PI_ENABLE_CSP`` will make the server return a strict Content Security Policy for the browser.
+``PI_FORCE_HTTPS`` will enforce the use of HTTPS.
 
 Translation
 -----------
