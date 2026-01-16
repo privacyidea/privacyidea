@@ -16,6 +16,11 @@ An SMTP server configuration contains the
    * a username and password in case of authentication
    * an optional description
    * a TLS flag.
+   * a S/MIME signing flag.
+
+.. Note:: To use S/MIME you need to add the path to your certificates to your configuration file.
+          The parameters to use are ``SMIME_PRIVATE_KEY`` and ``SMIME_CERTIFICATES``.
+          You also have to activate it in the SMTP configuration.
 
 Each SMTP server configuration is addressed via a *unique identifier*.
 You can then use such a configuration for Email or SMS token, for PIN

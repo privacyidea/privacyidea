@@ -1,5 +1,6 @@
-from .base import MyApiTestCase
+from privacyidea.lib.crypto import encryptPassword
 from . import smtpmock
+from .base import MyApiTestCase
 
 
 class SMTPServerTestCase(MyApiTestCase):
@@ -75,7 +76,7 @@ class SMTPServerTestCase(MyApiTestCase):
                                            method='POST',
                                            data={"identifier": "someServer",
                                                  "username": "cornelius",
-                                                 "password": "secret",
+                                                 "password": encryptPassword("secret"),
                                                  "port": "123",
                                                  "server": "1.2.3.4",
                                                  "sender": "privacyidea@local",
@@ -88,3 +89,28 @@ class SMTPServerTestCase(MyApiTestCase):
             data = res.json
             self.assertEqual(data.get("result").get("value"), True)
 
+    @smtpmock.activate
+    def test_03_send_smime_email(self):
+        smtpmock.setdata(response={"recp@example.com": (200, "OK")})
+
+        with self.app.test_request_context('/smtpserver/send_test_email',
+                                           method='POST',
+                                           data={"identifier": "someServer",
+                                                 "username": "cornelius",
+                                                 "password": encryptPassword("secret"),
+                                                 "port": "123",
+                                                 "server": "1.2.3.4",
+                                                 "sender": "privacyidea@local",
+                                                 "recipient":
+                                                     "recp@example.com",
+                                                 "description": "myServer",
+                                                 "smime": True},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            data = res.json
+            self.assertEqual(data.get("result").get("value"), True)
+
+            msg = smtpmock.get_sent_message()
+            self.assertTrue("application/x-pkcs7-signature" in msg)
+            self.assertTrue("smime.p7s" in msg)

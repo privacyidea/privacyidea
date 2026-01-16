@@ -16,18 +16,17 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from __future__ import annotations
 
-import os
-import sys
 import logging
-from pathlib import Path
+import os
 import secrets
 import string
+import sys
+from pathlib import Path
 
 log = logging.getLogger(__name__)
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 basedir = "/".join(basedir.split("/")[:-1]) + "/"
-
 
 pubtest_key = b"""-----BEGIN PUBLIC KEY-----
 MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA0stF+PVh/qR7I82ywgDW
@@ -100,6 +99,9 @@ class ConfigKey:
     NO_RESPONSE_SIGN = "PI_NO_RESPONSE_SIGN"
     RESPONSE_NO_PRIVATE_KEY_CHECK = "PI_RESPONSE_NO_PRIVATE_KEY_CHECK"
 
+    SMIME_PRIVATE_KEY = "PI_SMIME_PRIVATE_KEY"
+    SMIME_CERTIFICATES = "PI_SMIME_CERTIFICATES"
+
 
 class DefaultConfigValues:
     UUID_FILE = "/etc/privacyidea/uuid.txt"
@@ -143,7 +145,7 @@ class DevelopmentConfig(Config):
     DEBUG = True
     SECRET_KEY = os.environ.get(ConfigKey.SECRET_KEY) or 't0p s3cr3t'
     SQLALCHEMY_DATABASE_URI = os.environ.get(ConfigKey.DEV_DATABASE_URL) or \
-        'sqlite:///' + os.path.join(basedir, 'data-dev.sqlite')
+                              'sqlite:///' + os.path.join(basedir, 'data-dev.sqlite')
     PI_LOGLEVEL = logging.DEBUG
     PI_TRANSLATION_WARNING = "[Missing]"
 
@@ -154,7 +156,7 @@ class TestingConfig(Config):
     SUPERUSER_REALM = ['adminrealm']
     SECRET_KEY = 'secret'  # nosec B105 # used for testing
     SQLALCHEMY_DATABASE_URI = os.environ.get(ConfigKey.TEST_DATABASE_URL) or \
-        'sqlite:///' + os.path.join(basedir, 'data-test.sqlite')
+                              'sqlite:///' + os.path.join(basedir, 'data-test.sqlite')
     # This is used to encrypt the admin passwords
     PI_PEPPER = ""
     # This is only for testing encrypted files
@@ -203,7 +205,7 @@ class AltUIConfig(TestingConfig):
 
 class ProductionConfig(Config):
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
-        'sqlite:///' + os.path.join(basedir, 'data.sqlite')
+                              'sqlite:///' + os.path.join(basedir, 'data.sqlite')
     # This is used to encrypt the auth_token
     SECRET_KEY = os.environ.get(ConfigKey.SECRET_KEY) or _random_password(24)
     # This is used to encrypt the admin passwords
@@ -245,7 +247,6 @@ def _get_secrets_paths_from_environment(path: str, name: str) -> str | None:
 
 
 class DockerConfig:
-
     # Try to set the database url from the environment variables
     # First we try if the URL component was set individually
     if db_password := _get_secrets_from_environment(ConfigKey.DB_PASSWORD):

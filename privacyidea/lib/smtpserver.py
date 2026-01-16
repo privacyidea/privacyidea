@@ -15,19 +15,24 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 #
-from urllib.parse import urlparse
-from privacyidea.lib.queue import job, wrap_job, has_job_queue
-from privacyidea.models import SMTPServer as SMTPServerDB
-from privacyidea.lib.crypto import (decryptPassword, encryptPassword,
-                                    FAILED_TO_DECRYPT_PASSWORD)
-from privacyidea.lib.utils import fetch_one_resource, to_unicode
-from privacyidea.lib.utils.export import (register_import, register_export)
 import logging
-from privacyidea.lib.log import log_with
-from time import gmtime, strftime
 import smtplib
 from email.mime.base import MIMEBase
 from email.mime.text import MIMEText
+from time import gmtime, strftime
+from urllib.parse import urlparse
+
+import smime_email
+from flask import current_app
+
+from privacyidea.config import ConfigKey
+from privacyidea.lib.crypto import (decryptPassword, encryptPassword,
+                                    FAILED_TO_DECRYPT_PASSWORD)
+from privacyidea.lib.log import log_with
+from privacyidea.lib.queue import job, wrap_job, has_job_queue
+from privacyidea.lib.utils import fetch_one_resource, to_unicode
+from privacyidea.lib.utils.export import (register_import, register_export)
+from privacyidea.models import SMTPServer as SMTPServerDB
 
 __doc__ = """
 This is the library for creating, listing and deleting SMTPServer objects in
@@ -129,7 +134,19 @@ class SMTPServer(object):
             if password == FAILED_TO_DECRYPT_PASSWORD:
                 password = config['password']
             mail.login(config['username'], password)
-        r = mail.sendmail(mail_from, recipient, msg.as_string())
+        msg = msg.as_bytes()
+        if config.get('smime', False):
+            try:
+                SMIME_PRIVATE_KEY = smime_email.load_key(
+                    current_app.config.get(ConfigKey.SMIME_PRIVATE_KEY, "key_path.pem"))
+                SMIME_CHAIN = smime_email.load_certificates(
+                    current_app.config.get(ConfigKey.SMIME_CERTIFICATES, "intermediate_path.pem"))
+                SMIME_CERTIFICATE = SMIME_CHAIN[0]
+                msg = smime_email.get_smime_attachment_content(msg, SMIME_PRIVATE_KEY, SMIME_CERTIFICATE,
+                                                               SMIME_CHAIN)
+            except Exception as ex:
+                log.error(f'Can`t create smime attachment: {ex}')
+        r = mail.sendmail(mail_from, recipient, msg.decode('utf-8'))
         log.info("Mail sent: {0!s}".format(r))
         # r is a dictionary like {"recp@destination.com": (200, 'OK')}
         # we change this to True or False
@@ -284,7 +301,7 @@ def list_smtpservers(identifier=None, server=None):
 @log_with(log)
 def add_smtpserver(identifier, server=None, port=25, username="", password="",
                    sender="", description="", tls=False, timeout=TIMEOUT,
-                   enqueue_job=False):
+                   enqueue_job=False, smime=False):
     """
     This adds an smtp server to the smtp server database table.
 
@@ -302,7 +319,7 @@ def add_smtpserver(identifier, server=None, port=25, username="", password="",
     r = SMTPServerDB(identifier=identifier, server=server, port=port,
                      username=username, password=cryptedPassword, sender=sender,
                      description=description, tls=tls, timeout=timeout,
-                     enqueue_job=enqueue_job).save()
+                     enqueue_job=enqueue_job, smime=smime).save()
     return r
 
 

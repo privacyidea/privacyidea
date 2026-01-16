@@ -153,6 +153,7 @@ class SMTPServer(MethodsMixin, db.Model):
     description = db.Column(db.Unicode(2000), default='')
     timeout = db.Column(db.Integer, default=10)
     enqueue_job = db.Column(db.Boolean, nullable=False, default=False)
+    smime = db.Column(db.Boolean, nullable=False, default=False)
 
     def get(self):
         """
@@ -170,6 +171,7 @@ class SMTPServer(MethodsMixin, db.Model):
             "description": self.description,
             "timeout": self.timeout,
             "enqueue_job": self.enqueue_job,
+            "smime": self.smime
         }
 
     def save(self):
@@ -197,6 +199,8 @@ class SMTPServer(MethodsMixin, db.Model):
                 values["description"] = self.description
             if self.timeout is not None:
                 values["timeout"] = self.timeout
+            if self.smime is not None:
+                values["smime"] = self.smime
             if self.enqueue_job is not None:
                 values["enqueue_job"] = self.enqueue_job
             SMTPServer.query.filter(SMTPServer.identifier ==

@@ -28,10 +28,11 @@ myApp.controller("smtpServerController", ["$scope", "$stateParams", "inform",
         }
         $scope.identifier = $stateParams.identifier;
         $scope.params = {
-                tls: true,
-                port: 25,
-                timeout: 10
-            }
+            tls: true,
+            smime: false,
+            port: 25,
+            timeout: 10
+        }
 
         // Get all servers
         $scope.getSmtpServers = function () {
@@ -44,11 +45,11 @@ myApp.controller("smtpServerController", ["$scope", "$stateParams", "inform",
                     // We are editing an existing SMTP Server
                     $scope.params = $scope.smtpServers[$scope.identifier];
                     $scope.params["identifier"] = $scope.identifier;
-                }
-                else {
+                } else {
                     // This is a new SMTP server
                     $scope.params = {
                         tls: true,
+                        smime: false,
                         port: 25,
                         timeout: 10
                     };
