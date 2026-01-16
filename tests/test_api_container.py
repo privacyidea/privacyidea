@@ -1,7 +1,9 @@
 import base64
+import json
 from dataclasses import dataclass
 from datetime import datetime, timezone, timedelta
-import json
+
+from typing import Optional
 
 import passlib
 from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PublicKey
@@ -10,16 +12,17 @@ from privacyidea.lib.applications.offline import MachineApplication, REFILLTOKEN
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.container import (create_container_template, get_template_obj, delete_container_by_serial,
                                        get_container_realms, set_container_states, unregister)
+from privacyidea.lib.container import (init_container, find_container_by_serial, add_token_to_container, assign_user,
+                                       add_container_realms, remove_token_from_container)
 from privacyidea.lib.containers.container_info import PI_INTERNAL, TokenContainerInfoData, RegistrationState
 from privacyidea.lib.containers.container_states import ContainerStates
 from privacyidea.lib.containers.smartphone import SmartphoneOptions
 from privacyidea.lib.crypto import generate_keypair_ecc, decrypt_aes
-from privacyidea.lib.container import (init_container, find_container_by_serial, add_token_to_container, assign_user,
-                                       add_container_realms, remove_token_from_container)
+from privacyidea.lib.error import ERROR
 from privacyidea.lib.machine import attach_token
+from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policies.conditions import ConditionSection, ConditionHandleMissingData
 from privacyidea.lib.policy import set_policy, SCOPE, delete_policy
-from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.privacyideaserver import add_privacyideaserver
 from privacyidea.lib.realm import set_realm, set_default_realm
 from privacyidea.lib.resolver import save_resolver
@@ -28,15 +31,24 @@ from privacyidea.lib.smsprovider.FirebaseProvider import FirebaseConfig
 from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway
 from privacyidea.lib.token import (get_one_token, get_tokens_from_serial_or_user,
                                    get_tokeninfo, get_tokens)
+from privacyidea.lib.token import init_token, get_tokens_paginate, unassign_token
 from privacyidea.lib.tokens.papertoken import PAPERACTION
 from privacyidea.lib.tokens.pushtoken import PUSH_ACTION
 from privacyidea.lib.tokens.tantoken import TANACTION
-from privacyidea.lib.token import init_token, get_tokens_paginate, unassign_token
 from privacyidea.lib.user import User
 from privacyidea.lib.utils.compare import PrimaryComparators
 from privacyidea.models import Realm
 from tests.base import MyApiTestCase
 from tests.test_lib_tokencontainer import MockSmartphone
+
+
+UNSPECIFIC_ERROR_MESSAGES: dict[str, str] = {
+    "container/rollover": "Failed container rollover",
+    "container/synchronize": "Failed container synchronization",
+    "container/challenge": "Failed creating container challenge",
+    "container/register/finalize": "Failed finalizing container registration",
+    "container/register/terminate/client": "Failed terminating container registration",
+}
 
 
 class APIContainerTest(MyApiTestCase):
@@ -60,7 +72,10 @@ class APIContainerTest(MyApiTestCase):
         self.clear_flask_g()
         return res.json
 
-    def request_assert_error(self, status_code, url, data: dict, auth_token, method='POST'):
+    def request_assert_error(self, status_code, url, data: dict, auth_token, method='POST',
+                             error_code: Optional[int] = None,
+                             error_message: Optional[str] = None,
+                             try_unspecific: bool = False):
         with self.app.test_request_context(url,
                                            method=method,
                                            data=data if method == 'POST' else None,
@@ -69,7 +84,21 @@ class APIContainerTest(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertEqual(status_code, res.status_code, res.json)
             self.assertFalse(res.json["result"]["status"])
+            if error_code is not None:
+                self.assertEqual(res.json["result"]["error"]["code"], error_code)
+            if error_message is not None:
+                self.assertEqual(res.json["result"]["error"]["message"], error_message)
         self.clear_flask_g()
+
+        if try_unspecific:
+            set_policy(name="hide_specific_error_message", scope=SCOPE.CONTAINER, action=f"{PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE}=true")
+            try:
+                return self.request_assert_error(status_code, url, data, auth_token,
+                                                 method=method, error_code=ERROR.CONTAINER,
+                                                 error_message=UNSPECIFIC_ERROR_MESSAGES[url])
+            finally:
+                delete_policy("hide_specific_error_message")
+
         return res.json
 
     def request_assert_405(self, url, data: dict, auth_token, method='POST'):
@@ -120,7 +149,8 @@ class APIContainerAuthorization(APIContainerTest):
         self.assertEqual(expected, user_repr)
         self.authenticate_selfservice_user()
 
-    def request_denied_assert_403(self, url, data: dict, auth_token, method='POST'):
+    def request_denied_assert_403(self, url, data: dict, auth_token, method='POST',
+                                  error_message: Optional[str] = None):
         with self.app.test_request_context(url,
                                            method=method,
                                            data=data if method == 'POST' else None,
@@ -129,6 +159,8 @@ class APIContainerAuthorization(APIContainerTest):
             res = self.app.full_dispatch_request()
             self.assertEqual(403, res.status_code, res.json)
             self.assertEqual(res.json["result"]["error"]["code"], 303)
+            if error_message is not None:
+                self.assertEqual(res.json["result"]["error"]["message"], error_message)
         self.clear_flask_g()
         return res.json
 
@@ -1301,7 +1333,7 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
     def test_09_helpdesk_add_token_allowed(self):
         self.setUp_user_realm3()
         set_policy("policy_realm", scope=SCOPE.ADMIN,
-                   action={PolicyAction.CONTAINER_ADD_TOKEN: True, PolicyAction.CONTAINER_REMOVE_TOKEN: True},
+                   action=f"{PolicyAction.CONTAINER_ADD_TOKEN}=true, {PolicyAction.CONTAINER_REMOVE_TOKEN}=true",
                    realm=self.realm1)
         set_policy("policy_resolver", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_ADD_TOKEN,
                    resolver=self.resolvername3)
@@ -1341,6 +1373,7 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
                                              method='POST')
         token_serial = result["detail"]["serial"]
         tokens = get_tokens_paginate(serial=token_serial)
+        t = tokens["tokens"][0]
         self.assertEqual(container_serial, tokens["tokens"][0]["container_serial"])
         delete_policy("policy")
 
@@ -1509,15 +1542,12 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         add_token_to_container(c_serial_user, token_user.get_serial())
         token_serials = ','.join([token_no_user.get_serial(), token_user.get_serial()])
 
-        response = self.request_denied_assert_403(f"/container/{c_serial_user}/removeall", {"serial": token_serials},
-                                                self.at,
-                                                method='POST')
-        result = response.get("result")
-        self.assertIn("error", result)
-        error = result.get("error")
-        self.assertEqual(303, error.get("code"))
-        self.assertEqual("Admin actions are defined, but the action container_remove_token is not allowed for any of"
-                         " the serials provided!", error.get("message"))
+        self.request_denied_assert_403(f"/container/{c_serial_user}/removeall", {"serial": token_serials},
+                                       self.at,
+                                       method='POST',
+                                       error_message=("Admin actions are defined, but the action "
+                                                      "container_remove_token is not allowed for any of "
+                                                      "the serials provided!"))
         delete_policy("policy_realm")
         delete_policy("policy_resolver")
 
@@ -1690,13 +1720,12 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         # Helpdesk for realm1
         set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_REALMS, realm=self.realm1)
 
-        # container in realm1, set realm2
+        # container in realm1, set realm2 (not allowed)
         result = self.request_assert_success(f"/container/{container_serial}/realms", {"realms": "realm2"}, self.at)
         self.assertFalse(result["result"]["value"]["realm2"])
         container = find_container_by_serial(container_serial)
         realms = [realm.name for realm in container.realms]
-        self.assertEqual(1, len(realms))
-        self.assertEqual("realm1", realms[0])
+        self.assertSetEqual({self.realm1}, set(realms))
 
         # helpdesk of user realm realm1: container in realm1, set realm2 and realm1 (only realm1 allowed)
         result = self.request_assert_success(f"/container/{container_serial}/realms", {"realms": "realm2,realm1"},
@@ -1755,7 +1784,7 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         delete_policy("policy")
         delete_policy("policy2")
 
-    def test_20_helpdesk_container_register_allowed(self):
+    def helpdesk_container_register_allowed(self):
         container_serial = self.create_container_for_user("smartphone")
         set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_REGISTER,
                    realm=[self.realm2, self.realm1])
@@ -1766,6 +1795,9 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         delete_policy("policy")
         delete_policy("container_policy")
         return container_serial
+
+    def test_20_helpdesk_container_register_allowed_2(self):
+        self.helpdesk_container_register_allowed()
 
     def test_21_helpdesk_container_register_denied(self):
         container_serial = self.create_container_for_user("smartphone")
@@ -1780,13 +1812,13 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         delete_policy("container_policy")
 
     def test_22_helpdesk_container_unregister_allowed(self):
-        container_serial = self.test_20_helpdesk_container_register_allowed()
+        container_serial = self.helpdesk_container_register_allowed()
         set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_UNREGISTER, realm=self.realm1)
         self.request_assert_success(f'/container/register/{container_serial}/terminate', {}, self.at, 'POST')
         delete_policy("policy")
 
     def test_23_helpdesk_container_unregister_denied(self):
-        container_serial = self.test_20_helpdesk_container_register_allowed()
+        container_serial = self.helpdesk_container_register_allowed()
         # Admin does not have CONTAINER_UNREGISTER rights for the realm of the container (realm 1)
         set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_UNREGISTER, realm=self.realm2)
         self.request_denied_assert_403(f'/container/register/{container_serial}/terminate', {}, self.at, 'POST')
@@ -2139,7 +2171,8 @@ class ContainerPolicyConditions(APIContainerAuthorization):
                                     {"user": "cornelius", "realm": self.realm1}, self.at, "POST")
 
         # Simulate registration
-        smartphone.set_container_info({"registration_state": RegistrationState.REGISTERED.value})
+        smartphone.set_container_info(
+            [TokenContainerInfoData("registration_state", RegistrationState.REGISTERED.value)])
 
         # Unassign user from (not registered) generic container is allowed
         self.request_assert_success(f"/container/{generic_serial}/unassign",
@@ -2338,14 +2371,14 @@ class ContainerPolicyConditions(APIContainerAuthorization):
                         True),
                        (ConditionSection.USERINFO, "phone", PrimaryComparators.MATCHES, ".+", True,
                         ConditionHandleMissingData.IS_FALSE.value)])
-        set_policy("registration", scope=SCOPE.CONTAINER, action={PolicyAction.CONTAINER_SERVER_URL: "https://pi.net/"})
+        set_policy("registration", scope=SCOPE.CONTAINER, action=f"{PolicyAction.CONTAINER_SERVER_URL}=https://pi.net/")
         container_serial = init_container({"type": "smartphone", "user": "selfservice", "realm": self.realm1})[
             "container_serial"]
         container = find_container_by_serial(container_serial)
 
         # Register smartphone
-        container.set_container_info(
-            {"registration_state": RegistrationState.REGISTERED.value, "server_url": "https://pi.net/"})
+        container.set_container_info([TokenContainerInfoData("registration_state", RegistrationState.REGISTERED.value),
+                                      TokenContainerInfoData("server_url", "https://pi.net/")])
 
         # Rollover fails
         self.request_assert_error(403, "container/register/initialize",
@@ -2487,7 +2520,7 @@ class ContainerPolicyConditions(APIContainerAuthorization):
         rollover_scope = "https://pi.net/container/rollover"
         params = mock_smph.register_finalize(challenge_data["nonce"], challenge_data["time_stamp"],
                                              rollover_scope, mock_smph.container_serial)
-        self.request_assert_error(403, "container/rollover", params, None, "POST")
+        self.request_assert_error(403, "container/rollover", params, None, "POST", try_unspecific=False)
 
         # Client rollover: User not allowed
         container.set_states([ContainerStates.ACTIVE.value])
@@ -2499,7 +2532,8 @@ class ContainerPolicyConditions(APIContainerAuthorization):
         rollover_scope = "https://pi.net/container/rollover"
         params = mock_smph.register_finalize(challenge_data["nonce"], challenge_data["time_stamp"],
                                              rollover_scope, mock_smph.container_serial)
-        self.request_assert_error(403, "container/rollover", params, None, "POST")
+        self.request_assert_error(403, "container/rollover", params, None, "POST",
+                                  try_unspecific=False)
 
         # Client rollover: State not allowed
         container.remove_user(User("selfservice", self.realm1))
@@ -2513,7 +2547,8 @@ class ContainerPolicyConditions(APIContainerAuthorization):
         rollover_scope = "https://pi.net/container/rollover"
         params = mock_smph.register_finalize(challenge_data["nonce"], challenge_data["time_stamp"],
                                              rollover_scope, mock_smph.container_serial)
-        self.request_assert_error(403, "container/rollover", params, None, "POST")
+        self.request_assert_error(403, "container/rollover", params, None, "POST",
+                                  try_unspecific=False)
 
         # Client rollover: Success
         container.set_states([ContainerStates.ACTIVE.value])
@@ -2552,32 +2587,28 @@ class APIContainer(APIContainerTest):
     def test_01_init_container_fail(self):
         # Init with non-existing type
         payload = {"type": "wrongType", "description": "test description!!"}
-        result = self.request_assert_error(400, '/container/init', payload, self.at, 'POST')
-        error = result["result"]["error"]
-        self.assertEqual(404, error["code"])
-        self.assertEqual("ERR404: Type 'wrongType' is not a valid type!", error["message"])
+        self.request_assert_error(400, '/container/init', payload, self.at, 'POST',
+                                  error_code=404,
+                                  error_message="ERR404: Type 'wrongType' is not a valid type!")
 
         # Init without type
-        result = self.request_assert_error(400, '/container/init', {}, self.at, 'POST')
-        error = result["result"]["error"]
-        self.assertEqual(404, error["code"])
-        self.assertEqual("ERR404: Type parameter is required!", error["message"])
+        self.request_assert_error(400, '/container/init', {}, self.at, 'POST',
+                                  error_code=404,
+                                  error_message="ERR404: Type parameter is required!")
 
         # Init without auth token
         payload = {"type": "Smartphone", "description": "test description!!"}
-        result = self.request_assert_error(401, '/container/init',
-                                           payload, None, 'POST')
-        error = result["result"]["error"]
-        self.assertEqual(4033, error["code"])
-        self.assertEqual("Authentication failure. Missing Authorization header.", error["message"])
+        self.request_assert_error(401, '/container/init',
+                                  payload, None, 'POST',
+                                  error_code=4033,
+                                  error_message="Authentication failure. Missing Authorization header.")
 
     def test_02_delete_container_fail(self):
         # Delete non-existing container
-        result = self.request_assert_error(404, '/container/wrong_serial',
-                                           {}, self.at, 'DELETE')
-        error = result["result"]["error"]
-        self.assertEqual(601, error["code"])
-        self.assertEqual("Unable to find container with serial wrong_serial.", error["message"])
+        self.request_assert_error(404, '/container/wrong_serial',
+                                  {}, self.at, 'DELETE',
+                                  error_code=601,
+                                  error_message="Unable to find container with serial wrong_serial.")
 
         # Call without serial
         self.request_assert_405('/container/', {}, self.at, 'DELETE')
@@ -2588,28 +2619,25 @@ class APIContainer(APIContainerTest):
 
         # Assign without realm
         payload = {"user": "hans"}
-        result = self.request_assert_error(400, f'/container/{container_serial}/assign',
-                                           payload, self.at, 'POST')
-        error = result["result"]["error"]
-        self.assertEqual(904, error["code"])
-        self.assertEqual("ERR904: The user can not be found in any resolver in this realm!", error["message"])
+        self.request_assert_error(400, f'/container/{container_serial}/assign',
+                                  payload, self.at, 'POST',
+                                  error_code=904,
+                                  error_message="ERR904: The user can not be found in any resolver in this realm!")
 
         # Assign user with non-existing realm
         payload = {"user": "hans", "realm": "non_existing"}
-        result = self.request_assert_error(400, f'/container/{container_serial}/assign',
-                                           payload, self.at, 'POST')
-        error = result["result"]["error"]
-        self.assertEqual(904, error["code"])
-        self.assertEqual("ERR904: The user can not be found in any resolver in this realm!", error["message"])
+        self.request_assert_error(400, f'/container/{container_serial}/assign',
+                                  payload, self.at, 'POST',
+                                  error_code=904,
+                                  error_message="ERR904: The user can not be found in any resolver in this realm!")
 
         # Assign without user
         self.setUp_user_realm2()
         payload = {"realm": self.realm2}
-        result = self.request_assert_error(400, f'/container/{container_serial}/assign',
-                                           payload, self.at, 'POST')
-        error = result["result"]["error"]
-        self.assertEqual(905, error["code"])
-        self.assertEqual("ERR905: Missing parameter: 'user'", error["message"])
+        self.request_assert_error(400, f'/container/{container_serial}/assign',
+                                  payload, self.at, 'POST',
+                                  error_code=905,
+                                  error_message="ERR905: Missing parameter: 'user'")
 
         delete_container_by_serial(container_serial)
 
@@ -2625,11 +2653,10 @@ class APIContainer(APIContainerTest):
 
         # Assign another user fails
         payload = {"user": "cornelius", "realm": self.realm1}
-        result = self.request_assert_error(400, f'/container/{container_serial}/assign',
-                                           payload, self.at, 'POST')
-        error = result["result"]["error"]
-        self.assertEqual(301, error["code"])
-        self.assertEqual("ERR301: This container is already assigned to another user.", error["message"])
+        self.request_assert_error(400, f'/container/{container_serial}/assign',
+                                  payload, self.at, 'POST',
+                                  error_code=301,
+                                  error_message="ERR301: This container is already assigned to another user.")
 
         delete_container_by_serial(container_serial)
 
@@ -2671,11 +2698,10 @@ class APIContainer(APIContainerTest):
         # Assign without realm where default realm is not correct
         container_serial = init_container({"type": "generic"})["container_serial"]
         payload = {"user": "root"}
-        result = self.request_assert_error(400, f'/container/{container_serial}/assign',
-                                           payload, self.at, 'POST')
-        error = result["result"]["error"]
-        self.assertEqual(904, error["code"])
-        self.assertEqual("ERR904: The user can not be found in any resolver in this realm!", error["message"])
+        self.request_assert_error(400, f'/container/{container_serial}/assign',
+                                  payload, self.at, 'POST',
+                                  error_code=904,
+                                  error_message="ERR904: The user can not be found in any resolver in this realm!")
 
         container.delete()
 
@@ -2736,41 +2762,36 @@ class APIContainer(APIContainerTest):
 
         # Missing input parameters
         # No parameters
-        result = self.request_assert_error(400, f'/container/{container_serial}/unassign', {}, self.at, 'POST')
-        error = result["result"]["error"]
-        self.assertEqual(905, error["code"])
-        self.assertEqual("ERR905: Missing one of the following parameters: ['user', 'user_id']", error["message"])
+        self.request_assert_error(400, f'/container/{container_serial}/unassign', {}, self.at, 'POST',
+                                  error_code=905,
+                                  error_message="ERR905: Missing one of the following parameters: ['user', 'user_id']")
 
         # Only username, realm / resolver / uid missing (if user is not in defrealm)
         payload = {"user": user.login}
-        result = self.request_assert_error(400, f'/container/{container_serial}/unassign',
-                                           payload, self.at, 'POST')
-        error = result["result"]["error"]
-        self.assertEqual(904, error["code"])
-        self.assertEqual("ERR904: The user can not be found in any resolver in this realm!", error["message"])
+        self.request_assert_error(400, f'/container/{container_serial}/unassign',
+                                  payload, self.at, 'POST',
+                                  error_code=904,
+                                  error_message="ERR904: The user can not be found in any resolver in this realm!")
         # If no default realm exists, another error is raised
         set_default_realm()
-        result = self.request_assert_error(400, f'/container/{container_serial}/unassign',
-                                           payload, self.at, 'POST')
-        error = result["result"]["error"]
-        self.assertEqual(905, error["code"])
-        self.assertEqual("ERR905: Missing parameter 'realm', 'resolver', and/or 'user_id'", error["message"])
+        self.request_assert_error(400, f'/container/{container_serial}/unassign',
+                                  payload, self.at, 'POST',
+                                  error_code=905,
+                                  error_message="ERR905: Missing parameter 'realm', 'resolver', and/or 'user_id'")
 
         # Only realm: user / user_id missing
         payload = {"realm": self.realm3}
-        result = self.request_assert_error(400, f'/container/{container_serial}/unassign',
-                                           payload, self.at, 'POST')
-        error = result["result"]["error"]
-        self.assertEqual(905, error["code"])
-        self.assertEqual("ERR905: Missing one of the following parameters: ['user', 'user_id']", error["message"])
+        self.request_assert_error(400, f'/container/{container_serial}/unassign',
+                                  payload, self.at, 'POST',
+                                  error_code=905,
+                                  error_message="ERR905: Missing one of the following parameters: ['user', 'user_id']")
 
         # Unassign user with non-existing realm
         payload = {"user": user.login, "realm": "non_existing"}
-        result = self.request_assert_error(400, f'/container/{container_serial}/unassign',
-                                           payload, self.at, 'POST')
-        error = result["result"]["error"]
-        self.assertEqual(904, error["code"])
-        self.assertEqual("ERR904: The user can not be found in any resolver in this realm!", error["message"])
+        self.request_assert_error(400, f'/container/{container_serial}/unassign',
+                                  payload, self.at, 'POST',
+                                  error_code=904,
+                                  error_message="ERR904: The user can not be found in any resolver in this realm!")
 
         # Unassign not assigned user
         payload = {"user": "hans", "realm": self.realm1}
@@ -2794,19 +2815,17 @@ class APIContainer(APIContainerTest):
         # --- Fail ---
         # Only with username and realm
         payload = {"user": "invalid", "realm": self.realm1}
-        result = self.request_assert_error(400, f'/container/{container_serial}/unassign',
-                                           payload, self.at, 'POST')
-        error = result["result"]["error"]
-        self.assertEqual(904, error["code"])
-        self.assertEqual("ERR904: The user can not be found in any resolver in this realm!", error["message"])
+        self.request_assert_error(400, f'/container/{container_serial}/unassign',
+                                  payload, self.at, 'POST',
+                                  error_code=904,
+                                  error_message="ERR904: The user can not be found in any resolver in this realm!")
 
         # Remove non-existing not assigned user
         payload = {"user": "another_invalid", "realm": self.realm1, "user_id": "987"}
-        result = self.request_assert_error(400, f'/container/{container_serial}/unassign',
-                                           payload, self.at, 'POST')
-        error = result["result"]["error"]
-        self.assertEqual(904, error["code"])
-        self.assertEqual("ERR904: The user can not be found in any resolver in this realm!", error["message"])
+        self.request_assert_error(400, f'/container/{container_serial}/unassign',
+                                  payload, self.at, 'POST',
+                                  error_code=904,
+                                  error_message="ERR904: The user can not be found in any resolver in this realm!")
 
         # --- Success ---
         # Only with user_id should work as long as the container can only have one user
@@ -2856,11 +2875,10 @@ class APIContainer(APIContainerTest):
         Realm.query.filter_by(name=self.realm3).first().delete()
         # Also fails if not providing realm (sets default realm)
         payload = {"user": "corny", "user_id": user.uid, "resolver": user.resolver}
-        result = self.request_assert_error(400, f'/container/{container_serial}/unassign',
-                                           payload, self.at, 'POST')
-        error = result["result"]["error"]
-        self.assertEqual(904, error["code"])
-        self.assertEqual("ERR904: The user can not be found in any resolver in this realm!", error["message"])
+        self.request_assert_error(400, f'/container/{container_serial}/unassign',
+                                  payload, self.at, 'POST',
+                                  error_code=904,
+                                  error_message="ERR904: The user can not be found in any resolver in this realm!")
         # Success when providing only user_id and resolver, even if realm does not exist
         payload = {"user_id": user.uid, "resolver": user.resolver}
         result = self.request_assert_success(f'/container/{container_serial}/unassign', payload, self.at, 'POST')
@@ -2880,7 +2898,7 @@ class APIContainer(APIContainerTest):
         result = self.request_assert_success(f'/container/{container_serial}/realms', payload, self.at, 'POST')
         result = result["result"]
         self.assertTrue(result["value"])
-        self.assertTrue(result["value"]["deleted"])
+        self.assertFalse(result["value"]["deleted"])
         self.assertTrue(result["value"][self.realm1])
         self.assertTrue(result["value"][self.realm2])
 
@@ -2899,7 +2917,8 @@ class APIContainer(APIContainerTest):
         container_serial = init_container({"type": "generic", "user": "hans", "realm": self.realm1})["container_serial"]
         payload = {"realms": self.realm2}
         result = self.request_assert_success(f'/container/{container_serial}/realms', payload, self.at, 'POST')
-        self.assertTrue(result["result"]["value"][self.realm1])
+        # TODO: Should we also add the result for the users realm even if they are not in the requested realms?
+        #self.assertTrue(result["result"]["value"][self.realm1])
         self.assertTrue(result["result"]["value"][self.realm2])
 
         delete_container_by_serial(container_serial)
@@ -2911,11 +2930,10 @@ class APIContainer(APIContainerTest):
         container_serial = init_container({"type": "generic"})["container_serial"]
 
         # Missing realm parameter
-        result = self.request_assert_error(400, f'/container/{container_serial}/realms',
-                                           {}, self.at, 'POST')
-        error = result["result"]["error"]
-        self.assertEqual(905, error["code"])
-        self.assertEqual("ERR905: Missing parameter: 'realms'", error["message"])
+        self.request_assert_error(400, f'/container/{container_serial}/realms',
+                                  {}, self.at, 'POST',
+                                  error_code=905,
+                                  error_message="ERR905: Missing parameter: 'realms'")
 
         # Set non-existing realm
         payload = {"realms": "nonexistingrealm"}
@@ -2951,18 +2969,16 @@ class APIContainer(APIContainerTest):
         container_serial = init_container({"type": "generic", "description": "test container"})["container_serial"]
 
         # Missing description parameter
-        result = self.request_assert_error(400, f'/container/{container_serial}/description',
-                                           {}, self.at, 'POST')
-        error = result["result"]["error"]
-        self.assertEqual(905, error["code"])
-        self.assertEqual("ERR905: Missing parameter: 'description'", error["message"])
+        self.request_assert_error(400, f'/container/{container_serial}/description',
+                                  {}, self.at, 'POST',
+                                  error_code=905,
+                                  error_message="ERR905: Missing parameter: 'description'")
 
         # Description parameter is None
-        result = self.request_assert_error(400, f'/container/{container_serial}/description',
-                                           {"description": None}, self.at, 'POST')
-        error = result["result"]["error"]
-        self.assertEqual(905, error["code"])
-        self.assertEqual("ERR905: Missing parameter: 'description'", error["message"])
+        self.request_assert_error(400, f'/container/{container_serial}/description',
+                                  {"description": None}, self.at, 'POST',
+                                  error_code=905,
+                                  error_message="ERR905: Missing parameter: 'description'")
 
         # Missing container serial
         self.request_assert_405('/container/description', {"description": "new description"},
@@ -2990,11 +3006,10 @@ class APIContainer(APIContainerTest):
         container_serial = init_container({"type": "generic", "description": "test container"})["container_serial"]
 
         # Missing states parameter
-        result = self.request_assert_error(400, f'/container/{container_serial}/states',
-                                           {}, self.at, 'POST')
-        error = result["result"]["error"]
-        self.assertEqual(905, error["code"])
-        self.assertEqual("ERR905: Missing parameter: 'states'", error["message"])
+        self.request_assert_error(400, f'/container/{container_serial}/states',
+                                  {}, self.at, 'POST',
+                                  error_code=905,
+                                  error_message="ERR905: Missing parameter: 'states'")
 
         # Missing container serial
         self.request_assert_405('/container/states', {"states": "active,damaged,lost"},
@@ -3002,11 +3017,10 @@ class APIContainer(APIContainerTest):
 
         # Set exclusive states
         payload = {"states": "active,disabled"}
-        result = self.request_assert_error(400, f'/container/{container_serial}/states',
-                                           payload, self.at, 'POST')
-        error = result["result"]["error"]
-        self.assertEqual(905, error["code"])
-        self.assertEqual("ERR905: The state list ['active', 'disabled'] contains exclusive states!", error["message"])
+        self.request_assert_error(400, f'/container/{container_serial}/states',
+                                  payload, self.at, 'POST',
+                                  error_code=905,
+                                  error_message="ERR905: The state list ['active', 'disabled'] contains exclusive states!")
 
         delete_container_by_serial(container_serial)
 
@@ -3025,11 +3039,10 @@ class APIContainer(APIContainerTest):
         container_serial = init_container({"type": "generic"})["container_serial"]
 
         # Missing value parameter
-        result = self.request_assert_error(400, f'/container/{container_serial}/info/key1',
-                                           {}, self.at, 'POST')
-        error = result["result"]["error"]
-        self.assertEqual(905, error["code"])
-        self.assertEqual("ERR905: Missing parameter: 'value'", error["message"])
+        self.request_assert_error(400, f'/container/{container_serial}/info/key1',
+                                  {}, self.at, 'POST',
+                                  error_code=905,
+                                  error_message="ERR905: Missing parameter: 'value'")
 
         # Missing container serial
         self.request_assert_404_no_result('/container/info/key1', {"value": "value1"}, self.at, 'POST')
@@ -3101,11 +3114,10 @@ class APIContainer(APIContainerTest):
         hotp_01_serial = hotp_01.get_serial()
 
         # Add token without serial
-        result = self.request_assert_error(400, f'/container/{container_serial}/add',
-                                           {}, self.at, 'POST')
-        error = result["result"]["error"]
-        self.assertEqual(905, error["code"])
-        self.assertEqual("ERR905: Missing parameter: 'serial' or 'serials'", error["message"])
+        self.request_assert_error(400, f'/container/{container_serial}/add',
+                                  {}, self.at, 'POST',
+                                  error_code=905,
+                                  error_message="ERR905: Missing parameter: 'serial' or 'serials'")
 
         # Add token without container serial
         self.request_assert_405('/container/add', {"serial": hotp_01_serial}, self.at, 'POST')
@@ -3120,11 +3132,10 @@ class APIContainer(APIContainerTest):
         add_token_to_container(container_serial, hotp_01_serial)
 
         # Remove token without serial
-        result = self.request_assert_error(400, f'/container/{container_serial}/remove',
-                                           {}, self.at, 'POST')
-        error = result["result"]["error"]
-        self.assertEqual(905, error["code"])
-        self.assertEqual("ERR905: Missing parameter: 'serial' or 'serials'", error["message"])
+        self.request_assert_error(400, f'/container/{container_serial}/remove',
+                                  {}, self.at, 'POST',
+                                  error_code=905,
+                                  error_message="ERR905: Missing parameter: 'serial' or 'serials'")
 
         # Remove token without container serial
         self.request_assert_405('/container/remove', {"serial": hotp_01_serial}, self.at, 'POST')
@@ -3164,7 +3175,6 @@ class APIContainer(APIContainerTest):
         token_serial = token.get_serial()
         add_token_to_container(container_serials[1], token_serial)
         # Assign user to container 1
-        self.setUp_user_realms()
         user_hans = User(login="hans", realm=self.realm1)
         container.add_user(user_hans)
         # Add second realm
@@ -3186,13 +3196,16 @@ class APIContainer(APIContainerTest):
                                              self.at, 'GET')
         self.assertEqual(1, result["result"]["value"]["count"])
 
-        # filter for realm the admin is not allowed to manage
+        # filter for realm the admin is not allowed to manage (only get the container that is also in realm 1)
+        container_serial = init_container({"type": "generic", "realm": self.realm2})["container_serial"]
         set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_LIST, realm=self.realm1)
         result = self.request_assert_success('/container/',
                                              {"container_realm": self.realm2, "pagesize": 15},
                                              self.at, 'GET')
-        self.assertEqual(0, result["result"]["value"]["count"])
+        self.assertEqual(1, result["result"]["value"]["count"])
+        self.assertEqual(container_serials[1], result["result"]["value"]["containers"][0]["serial"])
         delete_policy("policy")
+        delete_container_by_serial(container_serial)
 
         # Filter for token serial
         result = self.request_assert_success('/container/',
@@ -3205,8 +3218,11 @@ class APIContainer(APIContainerTest):
         set_policy("hide_info", scope=SCOPE.ADMIN,
                    action=f"{PolicyAction.HIDE_CONTAINER_INFO}=encrypt_algorithm device,{PolicyAction.CONTAINER_LIST}")
         container3 = find_container_by_serial(container_serials[3])
-        container3.set_container_info({"encrypt_algorithm": "AES", "encrypt_mode": "GCM", "device": "ABC1234",
-                                       RegistrationState.get_key(): RegistrationState.REGISTERED.value})
+        container3.set_container_info([TokenContainerInfoData(key="encrypt_algorithm", value="AES"),
+                                       TokenContainerInfoData(key="encrypt_mode", value="GCM"),
+                                       TokenContainerInfoData(key="device", value="ABC1234"),
+                                       TokenContainerInfoData(key=RegistrationState.get_key(),
+                                                              value=RegistrationState.REGISTERED.value)])
         # Filter for container serial
         result = self.request_assert_success('/container/',
                                              {"container_serial": container_serials[3], "pagesize": 15},
@@ -3489,10 +3505,9 @@ class APIContainerSynchronization(APIContainerTest):
     def test_03_register_init_fail(self):
         # Policy with server url not defined
         container_serial = init_container({"type": "smartphone"})["container_serial"]
-        result = self.request_assert_error(403, 'container/register/initialize',
-                                           {"container_serial": container_serial}, self.at, 'POST')
-        error = result["result"]["error"]
-        self.assertEqual(303, error["code"])
+        self.request_assert_error(403, 'container/register/initialize',
+                                  {"container_serial": container_serial}, self.at, 'POST',
+                                  error_code=303)
 
         # conflicting server url policies
         self.setUp_user_realms()
@@ -3510,43 +3525,40 @@ class APIContainerSynchronization(APIContainerTest):
                 "passphrase_prompt": "Enter your passphrase",
                 "passphrase_response": "top_secret"}
 
-        result = self.request_assert_error(403, 'container/register/initialize',
-                                           data,
-                                           self.at, 'POST')
-        self.assertEqual(303, result["result"]["error"]["code"])
+        self.request_assert_error(403, 'container/register/initialize',
+                                  data, self.at, 'POST',
+                                  error_code=303)
         delete_policy("another_policy")
         delete_container_by_serial(smartphone_serial)
 
         # Missing container serial
-        result = self.request_assert_error(400, 'container/register/initialize',
-                                           {}, self.at, 'POST')
-        error = result["result"]["error"]
-        self.assertEqual(905, error["code"])
-        self.assertEqual("ERR905: Missing parameter: 'container_serial'", error["message"])
+        self.request_assert_error(400, 'container/register/initialize',
+                                  {}, self.at, 'POST',
+                                  error_code=905,
+                                  error_message="ERR905: Missing parameter: 'container_serial'")
 
         # Invalid container serial
-        result = self.request_assert_error(404, 'container/register/initialize',
-                                           {"container_serial": "invalid_serial"}, self.at, 'POST')
-        error = result["result"]["error"]
-        self.assertEqual(601, error["code"])  # ResourceNotFound
+        self.request_assert_error(404, 'container/register/initialize',
+                                  {"container_serial": "invalid_serial"}, self.at, 'POST',
+                                  error_code=601)
 
         delete_policy("policy")
 
     def test_04_register_finalize_wrong_params(self):
         # Missing container serial
-        result = self.request_assert_error(400, 'container/register/finalize',
-                                           {"device_brand": "LG", "device_model": "ABC123"}, None, 'POST')
-        error = result["result"]["error"]
-        self.assertEqual(905, error["code"])
-        self.assertEqual("ERR905: Missing parameter: 'container_serial'", error["message"])
+        self.request_assert_error(400, 'container/register/finalize',
+                                  {"device_brand": "LG", "device_model": "ABC123"}, None, 'POST',
+                                  error_code=905,
+                                  error_message="ERR905: Missing parameter: 'container_serial'",
+                                  try_unspecific=False)
 
         # Invalid container serial
-        result = self.request_assert_error(404, 'container/register/finalize',
-                                           {"container_serial": "invalid_serial", "device_brand": "LG",
-                                            "device_model": "ABC123"},
-                                           None, 'POST')
-        error = result["result"]["error"]
-        self.assertEqual(601, error["code"])  # ResourceNotFound
+        self.request_assert_error(404, 'container/register/finalize',
+                                  {"container_serial": "invalid_serial", "device_brand": "LG",
+                                   "device_model": "ABC123"},
+                                  None, 'POST',
+                                  error_code=601,
+                                  try_unspecific=True)
 
     def test_05_register_finalize_invalid_challenge(self):
         # Invalid challenge
@@ -3567,9 +3579,10 @@ class APIContainerSynchronization(APIContainerTest):
                                              "https://pi.net/container/register/finalize", smartphone_serial,
                                              "top_secret")
 
-        result = self.request_assert_error(400, 'container/register/finalize', params,
-                                           None, 'POST')
-        self.assertEqual(3002, result["result"]["error"]["code"])
+        self.request_assert_error(400, 'container/register/finalize', params,
+                                  None, 'POST',
+                                  error_code=3002,
+                                  try_unspecific=True)
 
     def test_06_register_twice_fails(self):
         # register container successfully
@@ -3597,12 +3610,13 @@ class APIContainerSynchronization(APIContainerTest):
 
         # try register second time with same data
         self.request_assert_error(400, 'container/register/finalize',
-                                  params, None, 'POST')
+                                  params, None, 'POST',
+                                  try_unspecific=True)
 
         # try to reinit registration
-        result = self.request_assert_error(400, 'container/register/initialize',
-                                           data, self.at, 'POST')
-        self.assertEqual(3000, result["result"]["error"]["code"])
+        self.request_assert_error(400, 'container/register/initialize',
+                                  data, self.at, 'POST',
+                                  error_code=3000)
 
         delete_policy("policy")
 
@@ -3616,10 +3630,9 @@ class APIContainerSynchronization(APIContainerTest):
 
     def test_08_register_terminate_fail(self):
         # Invalid container serial
-        result = self.request_assert_error(404, "container/register/invalidSerial/terminate",
-                                           {}, self.at, 'POST')
-        error = result["result"]["error"]
-        self.assertEqual(601, error["code"])  # ResourceNotFound
+        self.request_assert_error(404, "container/register/invalidSerial/terminate",
+                                  {}, self.at, 'POST',
+                                  error_code=601)
 
     def test_09_challenge_success(self):
         set_policy("challenge_ttl", scope="container", action={PolicyAction.CONTAINER_CHALLENGE_TTL: 3}, priority=1)
@@ -3660,21 +3673,24 @@ class APIContainerSynchronization(APIContainerTest):
     def test_10_challenge_fail(self):
         # container does not exists
         scope = "https://pi.net/container/synchronize"
-        result = self.request_assert_error(404, "container/challenge",
-                                           {"scope": scope, "container_serial": "random"}, None, "POST")
-        self.assertEqual(601, result["result"]["error"]["code"])
+        self.request_assert_error(404, "container/challenge",
+                                  {"scope": scope, "container_serial": "random"}, None, "POST",
+                                  error_code=601,
+                                  try_unspecific=True)
 
         # container is not registered
         smph_serial = init_container({"type": "smartphone"})["container_serial"]
         scope = "container/synchronize"
-        result = self.request_assert_error(400, "container/challenge",
-                                           {"scope": scope, "container_serial": smph_serial}, None, "POST")
-        self.assertEqual(3001, result["result"]["error"]["code"])
+        self.request_assert_error(400, "container/challenge",
+                                  {"scope": scope, "container_serial": smph_serial}, None, "POST",
+                                  error_code=3001,
+                                  try_unspecific=True)
 
         # Missing serial
-        result = self.request_assert_error(400, "container/challenge",
-                                           {"scope": scope}, None, "POST")
-        self.assertEqual(905, result["result"]["error"]["code"])
+        self.request_assert_error(400, "container/challenge",
+                                  {"scope": scope}, None, "POST",
+                                  error_code=905,
+                                  try_unspecific=False)
 
     def register_terminate_client_success(self, smartphone_serial=None):
         # Registration
@@ -3765,10 +3781,11 @@ class APIContainerSynchronization(APIContainerTest):
         params = mock_smph.register_terminate(result["result"]["value"], scope)
 
         # Terminate
-        res = self.request_assert_error(403, "container/register/terminate/client",
-                                        params,
-                                        None, 'POST')
-        self.assertEqual(303, res["result"]["error"]["code"])
+        self.request_assert_error(403, "container/register/terminate/client",
+                                  params,
+                                  None, 'POST',
+                                  error_code=303,
+                                  try_unspecific=False)
 
     def test_14_register_terminate_client_no_user_denied(self):
         # Generic policy
@@ -3822,31 +3839,33 @@ class APIContainerSynchronization(APIContainerTest):
                                     {"scope": scope, "container_serial": mock_smph.container_serial}, None, 'POST')
 
         # Terminate without signature
-        result = self.request_assert_error(400,
-                                           "container/register/terminate/client",
-                                           {"container_serial": mock_smph.container_serial}, None, 'POST')
-        self.assertEqual(905, result["result"]["error"]["code"])
+        self.request_assert_error(400,
+                                  "container/register/terminate/client",
+                                  {"container_serial": mock_smph.container_serial}, None, 'POST',
+                                  error_code=905,
+                                  try_unspecific=True)
 
         # Terminate without container serial
-        result = self.request_assert_error(400,
-                                           "container/register/terminate/client",
-                                           {"signature": "123"}, None, 'POST')
-        self.assertEqual(905, result["result"]["error"]["code"])
+        self.request_assert_error(400,
+                                  "container/register/terminate/client",
+                                  {"signature": "123"}, None, 'POST',
+                                  error_code=905)
 
     def test_19_register_terminate_client_invalid_serial(self):
         # container does not exists
-        result = self.request_assert_error(404,
-                                           "container/register/terminate/client",
-                                           {"container_serial": "random"},
-                                           self.at, "POST")
-        self.assertEqual(601, result["result"]["error"]["code"])
+        self.request_assert_error(404,
+                                  "container/register/terminate/client",
+                                  {"container_serial": "random"},
+                                  self.at, "POST",
+                                  error_code=601,
+                                  try_unspecific=True)
 
         # Missing serial
-        result = self.request_assert_error(400,
-                                           "container/register/terminate/client",
-                                           {},
-                                           self.at, "POST")
-        self.assertEqual(905, result["result"]["error"]["code"])
+        self.request_assert_error(400,
+                                  "container/register/terminate/client",
+                                  {},
+                                  self.at, "POST",
+                                  error_code=905)
 
     def test_20_register_terminate_client_invalid_challenge(self):
         # Registration
@@ -3865,9 +3884,10 @@ class APIContainerSynchronization(APIContainerTest):
         params["container_serial"] = correct_serial
 
         # Terminate
-        result = self.request_assert_error(400, "container/register/terminate/client",
-                                           params, self.at, 'POST')
-        self.assertEqual(3002, result["result"]["error"]["code"])
+        self.request_assert_error(400, "container/register/terminate/client",
+                                  params, self.at, 'POST',
+                                  error_code=3002,
+                                  try_unspecific=True)
 
     def test_21_register_terminate_client_not_registered(self):
         # Registration
@@ -3887,9 +3907,10 @@ class APIContainerSynchronization(APIContainerTest):
 
         # client tries to terminate
         params = mock_smph.register_terminate(result["result"]["value"], scope)
-        result = self.request_assert_error(400, "container/register/terminate/client",
-                                           params, self.at, "POST")
-        self.assertEqual(3001, result["result"]["error"]["code"])
+        self.request_assert_error(400, "container/register/terminate/client",
+                                  params, self.at, "POST",
+                                  error_code=3001,
+                                  try_unspecific=True)
 
     def test_22_register_generic_fail(self):
         set_policy("policy", scope=SCOPE.CONTAINER, action={PolicyAction.CONTAINER_SERVER_URL: "https://pi.net/",
@@ -3908,7 +3929,8 @@ class APIContainerSynchronization(APIContainerTest):
         data = {"container_serial": generic_serial}
         self.request_assert_error(501, 'container/register/finalize',
                                   data,
-                                  None, 'POST')
+                                  None, 'POST',
+                                  try_unspecific=True)
 
         # Terminate
         self.request_assert_error(501, f'container/register/{generic_serial}/terminate',
@@ -3933,7 +3955,8 @@ class APIContainerSynchronization(APIContainerTest):
         data = {"container_serial": yubi_serial}
         self.request_assert_error(501, 'container/register/finalize',
                                   data,
-                                  None, 'POST')
+                                  None, 'POST',
+                                  try_unspecific=True)
 
         # Terminate
         self.request_assert_error(501, f'container/register/{yubi_serial}/terminate',
@@ -3992,25 +4015,25 @@ class APIContainerSynchronization(APIContainerTest):
 
         # missing signature
         params = {"public_enc_key_client": "123", "container_serial": smartphone_serial}
-        result = self.request_assert_error(400, "container/synchronize",
-                                           params, None, "POST")
-        error = result["result"]["error"]
-        self.assertEqual(905, error["code"])
+        self.request_assert_error(400, "container/synchronize",
+                                  params, None, "POST",
+                                  error_code=905,
+                                  try_unspecific=True)
 
         # missing serial
         params = {"public_enc_key_client": "123", "signature": "0001"}
-        result = self.request_assert_error(400, "container/synchronize",
-                                           params, None, "POST")
-        error = result["result"]["error"]
-        self.assertEqual(905, error["code"])
+        self.request_assert_error(400, "container/synchronize",
+                                  params, None, "POST",
+                                  error_code=905,
+                                  try_unspecific=False)
 
     def test_26_synchronize_invalid_container(self):
         # container does not exists
         params = {"public_enc_key_client": "123", "signature": "abcd", "container_serial": "random"}
-        result = self.request_assert_error(404, "container/synchronize",
-                                           params, None, 'POST')
-        error = result["result"]["error"]
-        self.assertEqual(601, error["code"])
+        self.request_assert_error(404, "container/synchronize",
+                                  params, None, "POST",
+                                  error_code=601,
+                                  try_unspecific=True)
 
     def test_27_synchronize_container_not_registered(self):
         # Registration
@@ -4030,9 +4053,10 @@ class APIContainerSynchronization(APIContainerTest):
                                     self.at, "POST")
 
         # Sync
-        result = self.request_assert_error(400, "container/synchronize",
-                                           params, None, "POST")
-        self.assertEqual(3001, result["result"]["error"]["code"])
+        self.request_assert_error(400, "container/synchronize",
+                                  params, None, "POST",
+                                  error_code=3001,
+                                  try_unspecific=True)
 
     def test_28_synchronize_invalid_challenge(self):
         # invalid challenge
@@ -4046,10 +4070,10 @@ class APIContainerSynchronization(APIContainerTest):
 
         # mock client with invalid scope (wrong serial)
         params = mock_smph.synchronize(result["result"]["value"], "https://pi.net/container/register/initialize")
-        result = self.request_assert_error(400, "container/synchronize",
-                                           params, None, 'POST')
-        error = result["result"]["error"]
-        self.assertEqual(3002, error["code"])
+        self.request_assert_error(400, "container/synchronize",
+                                  params, None, 'POST',
+                                  error_code=3002,
+                                  try_unspecific=True)
 
     def test_29_synchronize_man_in_the_middle(self):
         # client register successfully
@@ -4069,10 +4093,10 @@ class APIContainerSynchronization(APIContainerTest):
 
         # man in the middle sends modified request to the server
         # Fails due to invalid signature (client signed the public encryption key which is now different)
-        result = self.request_assert_error(400, "container/synchronize",
-                                           params, None, 'POST')
-        error = result["result"]["error"]
-        self.assertEqual(3002, error["code"])
+        self.request_assert_error(400, "container/synchronize",
+                                  params, None, 'POST',
+                                  error_code=3002,
+                                  try_unspecific=True)
 
     def test_30_synchronize_smartphone_with_push_fb(self):
         # Registration
@@ -4311,7 +4335,8 @@ class APIContainerSynchronization(APIContainerTest):
                        "user": "hans"}
         result = self.request_assert_success("/token/init", hotp_params, self.at, "POST")
         initial_enroll_url = result["detail"]["googleurl"]["value"]
-        self.assertIn("pin=True", initial_enroll_url)
+        self.assertIn("force_app_pin=True", initial_enroll_url)
+        self.assertIn("app_force_unlock=pin", initial_enroll_url)
         self.assertIn(f"issuer={self.realm1}", initial_enroll_url)
         self.assertIn("hans", initial_enroll_url)
         hotp = get_one_token(serial=result["detail"]["serial"])
@@ -4354,7 +4379,8 @@ class APIContainerSynchronization(APIContainerTest):
                 hotp_enroll_url = token
                 break
         self.assertNotEqual(initial_enroll_url, hotp_enroll_url)
-        self.assertIn("pin=True", hotp_enroll_url)
+        self.assertIn("force_app_pin=True", hotp_enroll_url)
+        self.assertIn("app_force_unlock=pin", hotp_enroll_url)
         self.assertIn(f"issuer={self.realm1}", hotp_enroll_url)
         self.assertIn("hans", hotp_enroll_url)
 
@@ -4366,18 +4392,20 @@ class APIContainerSynchronization(APIContainerTest):
 
         # Challenge
         scope = "https://pi.net/container/synchronize"
-        result = self.request_assert_error(400, "container/challenge",
-                                           {"scope": scope, "container_serial": generic_serial}, None, 'POST')
-        self.assertEqual(3001, result["result"]["error"]["code"])
+        self.request_assert_error(400, "container/challenge",
+                                  {"scope": scope, "container_serial": generic_serial}, None, 'POST',
+                                  error_code=3001,
+                                  try_unspecific=True)
 
     def test_36_yubi_sync_fail(self):
         generic_serial = init_container({"type": "generic"})["container_serial"]
 
         # Challenge
         scope = "https://pi.net/container/synchronize"
-        result = self.request_assert_error(400, "container/challenge",
-                                           {"scope": scope, "container_serial": generic_serial}, None, "POST")
-        self.assertEqual(3001, result["result"]["error"]["code"])
+        self.request_assert_error(400, "container/challenge",
+                                  {"scope": scope, "container_serial": generic_serial}, None, "POST",
+                                  error_code=3001,
+                                  try_unspecific=True)
 
     def setup_rollover(self, smartphone_serial=None):
         # Registration
@@ -4458,9 +4486,10 @@ class APIContainerSynchronization(APIContainerTest):
         smartphone_serial = smartphone_params['container_serial']
 
         # Init rollover
-        result = self.request_assert_error(403, "container/rollover", smartphone_params,
-                                           None, "POST")
-        self.assertEqual(303, result["result"]["error"]["code"])
+        self.request_assert_error(403, "container/rollover", smartphone_params,
+                                  None, "POST",
+                                  error_code=303,
+                                  try_unspecific=False)
 
         delete_policy("register_policy")
 
@@ -4642,15 +4671,17 @@ class APIContainerSynchronization(APIContainerTest):
 
         # Challenge for init rollover
         scope = "https://pi.net/container/rollover"
-        result = self.request_assert_error(400, "container/challenge",
-                                           {"scope": scope, "container_serial": smartphone_serial}, None, "POST")
-        self.assertEqual(3001, result["result"]["error"]["code"])
+        self.request_assert_error(400, "container/challenge",
+                                  {"scope": scope, "container_serial": smartphone_serial}, None, "POST",
+                                  error_code=3001,
+                                  try_unspecific=True)
 
         # Init rollover
-        result = self.request_assert_error(400, "container/rollover",
-                                           {"container_serial": smartphone_serial},
-                                           None, 'POST')
-        self.assertEqual(3001, result["result"]["error"]["code"])
+        self.request_assert_error(400, "container/rollover",
+                                  {"container_serial": smartphone_serial},
+                                  None, 'POST',
+                                  error_code=3001,
+                                  try_unspecific=True)
 
         delete_policy("policy")
         delete_policy("policy_rollover")
@@ -4688,10 +4719,11 @@ class APIContainerSynchronization(APIContainerTest):
                                              rollover_scope)
 
         # Init rollover
-        result = self.request_assert_error(400, "container/rollover",
-                                           params,
-                                           None, 'POST')
-        self.assertEqual(3002, result["result"]["error"]["code"])
+        self.request_assert_error(400, "container/rollover",
+                                  params,
+                                  None, 'POST',
+                                  error_code=3002,
+                                  try_unspecific=True)
 
         delete_policy("policy")
         delete_policy("policy_rollover")
@@ -4742,10 +4774,11 @@ class APIContainerSynchronization(APIContainerTest):
                                              "https://pi.net/container/register/finalize", passphrase=passphrase)
 
         # Finalize rollover (finalize registration)
-        result = self.request_assert_error(400, 'container/register/finalize',
-                                           params,
-                                           None, 'POST')
-        self.assertEqual(3002, result["result"]["error"]["code"])
+        self.request_assert_error(400, 'container/register/finalize',
+                                  params,
+                                  None, 'POST',
+                                  error_code=3002,
+                                  try_unspecific=True)
 
         # Invalid time stamp
         # Mock smartphone
@@ -4753,10 +4786,11 @@ class APIContainerSynchronization(APIContainerTest):
                                              "https://pi.net/container/register/finalize", passphrase=passphrase)
 
         # Finalize rollover (finalize registration)
-        result = self.request_assert_error(400, 'container/register/finalize',
-                                           params,
-                                           None, 'POST')
-        self.assertEqual(3002, result["result"]["error"]["code"])
+        self.request_assert_error(400, 'container/register/finalize',
+                                  params,
+                                  None, 'POST',
+                                  error_code=3002,
+                                  try_unspecific=True)
 
         # Invalid passphrase
         # Mock smartphone
@@ -4764,10 +4798,11 @@ class APIContainerSynchronization(APIContainerTest):
                                              "https://pi.net/container/register/finalize", passphrase="test1234")
 
         # Finalize rollover (finalize registration)
-        result = self.request_assert_error(400, 'container/register/finalize',
-                                           params,
-                                           None, 'POST')
-        self.assertEqual(3002, result["result"]["error"]["code"])
+        self.request_assert_error(400, 'container/register/finalize',
+                                  params,
+                                  None, 'POST',
+                                  error_code=3002,
+                                  try_unspecific=True)
 
         delete_policy("policy")
         delete_policy("policy_rollover")
@@ -4777,8 +4812,9 @@ class APIContainerSynchronization(APIContainerTest):
                                                             PolicyAction.CONTAINER_REGISTRATION_TTL: 36,
                                                             PolicyAction.CONTAINER_CLIENT_ROLLOVER: True})
 
-        result = self.request_assert_error(400, "container/rollover", {}, None, 'POST')
-        self.assertEqual(905, result["result"]["error"]["code"])
+        self.request_assert_error(400, "container/rollover", {}, None, 'POST',
+                                  error_code=905,
+                                  try_unspecific=False)
 
         delete_policy("policy")
 
@@ -4904,9 +4940,10 @@ class APIContainerSynchronization(APIContainerTest):
         params = mock_smph.synchronize(result["result"]["value"], scope)
 
         # Call sync endpoint with rollover signature
-        result = self.request_assert_error(400, "container/synchronize",
-                                           params, None, 'POST')
-        self.assertEqual(3002, result["result"]["error"]["code"])
+        self.request_assert_error(400, "container/synchronize",
+                                  params, None, 'POST',
+                                  error_code=3002,
+                                  try_unspecific=True)
 
         delete_policy("policy")
         delete_policy("policy_rollover")
@@ -5006,9 +5043,10 @@ class APIContainerSynchronization(APIContainerTest):
                                              {"scope": scope, "container_serial": mock_smph.container_serial}, None,
                                              "POST")
         params = mock_smph.synchronize(result["result"]["value"], scope)
-        result = self.request_assert_error(400, "container/synchronize",
-                                           params, None, 'POST')
-        self.assertEqual(3002, result["result"]["error"]["code"])
+        self.request_assert_error(400, "container/synchronize",
+                                  params, None, 'POST',
+                                  error_code=3002,
+                                  try_unspecific=True)
         self.assertEqual(RegistrationState.ROLLOVER_COMPLETED, smartphone.registration_state)
 
         # Sync with new smartphone
@@ -5597,9 +5635,9 @@ class APIContainerTemplate(APIContainerTest):
         params = json.dumps({"template_options": json.dumps({
             "tokens": [{"type": "hotp", "genkey": True}, {"type": "totp", "genkey": True, "hashlib": "sha256"}]})})
 
-        result = self.request_assert_error(400, f'/container/generic/template/{template_name}',
-                                           params, self.at, 'POST')
-        self.assertEqual(905, result["result"]["error"]["code"])
+        self.request_assert_error(400, f'/container/generic/template/{template_name}',
+                                  params, self.at, 'POST',
+                                  error_code=905)
 
         template = get_template_obj(template_name)
         template.delete()

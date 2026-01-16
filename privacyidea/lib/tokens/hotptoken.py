@@ -43,34 +43,33 @@ It is inherited from lib.tokenclass and is thus dependent on models.py
 This code is tested in tests/test_lib_tokens_hotp
 """
 
-import time
 import binascii
+import logging
+import time
+import traceback
 
-from .HMAC import HmacOtp
-from privacyidea.api.lib.utils import getParam
+from passlib.crypto.digest import pbkdf2_hmac
+
 from privacyidea.api.lib.policyhelper import get_init_tokenlabel_parameters
+from privacyidea.api.lib.utils import getParam
+from privacyidea.lib import _, lazy_gettext
+from privacyidea.lib.apps import create_google_authenticator_url as cr_google
+from privacyidea.lib.apps import create_oathtoken_url as cr_oath
 from privacyidea.lib.config import get_from_config
+from privacyidea.lib.decorators import check_token_locked, check_token_otp_length
+from privacyidea.lib.error import ParameterError
+from privacyidea.lib.log import log_with
+from privacyidea.lib.policy import SCOPE, GROUP, Match
+from privacyidea.lib.token import init_token
+from privacyidea.lib.tokenclass import CLIENTMODE
 from privacyidea.lib.tokenclass import (TokenClass,
                                         TWOSTEP_DEFAULT_DIFFICULTY,
                                         TWOSTEP_DEFAULT_CLIENTSIZE,
                                         TOKENKIND)
-from privacyidea.lib.log import log_with
-from privacyidea.lib.apps import create_google_authenticator_url as cr_google
-from privacyidea.lib.error import ParameterError
-from privacyidea.lib.apps import create_oathtoken_url as cr_oath
 from privacyidea.lib.utils import (create_img, is_true, b32encode_and_unicode,
                                    hexlify_and_unicode, determine_logged_in_userparams)
-from privacyidea.lib.decorators import check_token_locked, check_token_otp_length
-from privacyidea.lib.policy import SCOPE, GROUP, Match
+from .HMAC import HmacOtp
 from ..policies.actions import PolicyAction
-from privacyidea.lib.token import init_token
-from privacyidea.lib.tokenclass import CLIENTMODE
-from privacyidea.lib import _, lazy_gettext
-import traceback
-import logging
-
-from passlib.crypto.digest import pbkdf2_hmac
-
 from ..user import User
 
 optional = True
@@ -172,6 +171,15 @@ class HotpTokenClass(TokenClass):
                            'type': 'bool',
                            'desc': _('Enforce setting an app pin for the privacyIDEA '
                                      'Authenticator App')
+                       },
+                       'hotp_' + PolicyAction.APP_FORCE_UNLOCK: {
+                           'type': 'str',
+                           'value': ["any",
+                                     "biometric",
+                                     "pin"],
+                           'desc': _(
+                               'Enforces the privacyIDEA Authenticator App that the token has to be unlocked '
+                               'with pin or biometric. This needs the privacyIDEA Authenticator app 4.6.1 or higher.')
                        }
                    },
                    SCOPE.USER: {
@@ -203,7 +211,7 @@ class HotpTokenClass(TokenClass):
                                       'value': ['allow', 'force'],
                                       'desc': HotpTokenClass.desc_two_step_admin},
                        PolicyAction.FORCE_SERVER_GENERATE: {'type': 'bool',
-                                                      'desc': HotpTokenClass.desc_key_gen}
+                                                            'desc': HotpTokenClass.desc_key_gen}
                    }
                }
                }
@@ -254,55 +262,59 @@ class HotpTokenClass(TokenClass):
         imageurl = params.get("appimageurl")
         if imageurl:
             extra_data.update({"image": imageurl})
-        force_app_pin = params.get(PolicyAction.FORCE_APP_PIN)
-        if force_app_pin:
-            extra_data.update({'pin': True})
+        if params.get(PolicyAction.FORCE_APP_PIN):
+            extra_data.update({'force_app_pin': True})
+        if params.get(PolicyAction.APP_FORCE_UNLOCK):
+            extra_data.update({'app_force_unlock': params.get(PolicyAction.APP_FORCE_UNLOCK)})
         if otpkey:
             tok_type = self.type.lower()
-            if user is not None:
-                time_step = self.get_tokeninfo("timeStep", default="30")
-                try:
-                    key_bin = binascii.unhexlify(otpkey)
-                    # also strip the padding =, as it will get problems with the google app.
-                    value_b32_str = b32encode_and_unicode(key_bin).strip('=')
-                    response_detail["otpkey"]["value_b32"] = value_b32_str
-                    goo_url = cr_google(key=otpkey,
-                                        user=user.login,
-                                        realm=user.realm,
-                                        tokentype=tok_type.lower(),
-                                        serial=self.get_serial(),
-                                        tokenlabel=tokenlabel,
-                                        hash_algo=self.hashlib,
-                                        digits=params.get("otplen", 6),
-                                        period=time_step,
-                                        issuer=tokenissuer,
-                                        user_obj=user,
-                                        extra_data=extra_data)
-                    response_detail["googleurl"] = {"description": _("URL for google Authenticator"),
-                                                    "value": goo_url,
-                                                    "img": create_img(goo_url)
-                                                    }
+            time_step = self.get_tokeninfo("timeStep", default="30")
+            try:
+                key_bin = binascii.unhexlify(otpkey)
+                # also strip the padding =, as it will get problems with the google app.
+                value_b32_str = b32encode_and_unicode(key_bin).strip('=')
+                response_detail["otpkey"]["value_b32"] = value_b32_str
+                goo_url = cr_google(key=otpkey,
+                                    user=user.login if user else None,
+                                    realm=user.realm if user else None,
+                                    tokentype=tok_type.lower(),
+                                    serial=self.get_serial(),
+                                    tokenlabel=tokenlabel,
+                                    hash_algo=self.hashlib,
+                                    digits=params.get("otplen", 6),
+                                    period=time_step,
+                                    issuer=tokenissuer,
+                                    user_obj=user,
+                                    extra_data=extra_data)
 
-                    oath_url = cr_oath(otpkey=otpkey,
-                                       user=user.login,
-                                       realm=user.realm,
-                                       type=tok_type,
-                                       serial=self.get_serial(),
-                                       tokenlabel=tokenlabel,
-                                       extra_data=extra_data)
-                    response_detail["oathurl"] = {"description": _("URL for"
-                                                                   " OATH "
-                                                                   "token"),
-                                                  "value": oath_url,
-                                                  "img": create_img(oath_url)
-                                                  }
-                except KeyError as ex:
-                    log.debug("{0!s}".format((traceback.format_exc())))
-                    log.error('Unknown Tag {0!s} in one of your policy definition'
-                              .format(ex))
-                except Exception as ex:  # pragma: no cover
-                    log.debug("{0!s}".format((traceback.format_exc())))
-                    log.error('failed to set oath or google url: {0!r}'.format(ex))
+                response_detail["googleurl"] = {
+                    "description": _("URL for google Authenticator"),
+                    "value": goo_url,
+                    "img": create_img(goo_url)
+                }
+
+                oath_url = cr_oath(otpkey=otpkey,
+                                   user=user.login,
+                                   realm=user.realm,
+                                   type=tok_type,
+                                   serial=self.get_serial(),
+                                   tokenlabel=tokenlabel,
+                                   extra_data=extra_data)
+
+                response_detail["oathurl"] = {
+                    "description": _("URL for"
+                                     " OATH "
+                                     "token"),
+                    "value": oath_url,
+                    "img": create_img(oath_url)
+                }
+            except KeyError as ex:
+                log.debug("{0!s}".format((traceback.format_exc())))
+                log.error('Unknown Tag {0!s} in one of your policy definition'
+                          .format(ex))
+            except Exception as ex:  # pragma: no cover
+                log.debug("{0!s}".format((traceback.format_exc())))
+                log.error('failed to set oath or google url: {0!r}'.format(ex))
 
         return response_detail
 
@@ -347,31 +359,38 @@ class HotpTokenClass(TokenClass):
 
         val = getParam(upd_param, "hashlib", optional)
         if val is not None:
-            hashlibStr = val
+            hashlib_str = val
         else:
-            hashlibStr = self.hashlib
+            hashlib_str = self.hashlib
 
         # check if the key_size is provided
         # if not, we could derive it from the hashlib
         key_size = upd_param.get('keysize')
         if key_size is None:
-            upd_param['keysize'] = keylen.get(hashlibStr)
+            upd_param['keysize'] = keylen.get(hashlib_str)
 
         otp_key = upd_param.get("otpkey")
-        force_genkey = param.get("policies", {}).get(f"{self.get_tokentype()}_{PolicyAction.FORCE_SERVER_GENERATE}", False)
+        force_genkey = param.get("policies", {}).get(f"{self.get_tokentype()}_{PolicyAction.FORCE_SERVER_GENERATE}",
+                                                     False)
+        # If force_server_generate is enabled and this is a 2step enrollments second step
+        # (identified by the 2step_clientsize tokeninfo), don't do force_generate,
+        # because the server has already generated its part of the 2step enrollment previously.
         if force_genkey or not otp_key:
-            upd_param["genkey"] = True
+            if bool(self.get_tokeninfo("2step_clientsize")):
+                log.debug("force_server_generate is enabled for this enrollment but is overwritten by 2step enrollment")
+            else:
+                upd_param["genkey"] = True
         genkey = is_true(upd_param.get("genkey"))
         if genkey and otp_key is not None:
             # The Base TokenClass does not allow otpkey and genkey at the
             # same time
             del upd_param['otpkey']
-        upd_param['hashlib'] = hashlibStr
+        upd_param['hashlib'] = hashlib_str
         # We first need to call the parent class. Since exceptions would be
         # raised here.
         TokenClass.update(self, upd_param, reset_failcount)
 
-        self.add_tokeninfo("hashlib", hashlibStr)
+        self.add_tokeninfo("hashlib", hashlib_str)
 
         # check the tokenkind
         if self.token.serial.startswith("UB"):
@@ -379,9 +398,7 @@ class HotpTokenClass(TokenClass):
 
     @property
     def hashlib(self):
-        hashlibStr = self.get_tokeninfo("hashlib") or \
-                     get_from_config("hotp.hashlib", 'sha1')
-        return hashlibStr
+        return self.get_tokeninfo("hashlib") or get_from_config("hotp.hashlib", 'sha1')
 
     def _calc_otp(self, counter):
         """
@@ -391,15 +408,15 @@ class HotpTokenClass(TokenClass):
         :return: OTP value as string
         """
         otplen = int(self.token.otplen)
-        secretHOtp = self.token.get_otpkey()
-        hmac2Otp = HmacOtp(secretHOtp,
-                           self.get_otp_count(),
-                           otplen,
-                           self.get_hashlib(self.hashlib))
+        otp_key = self.token.get_otpkey()
+        hmac = HmacOtp(otp_key,
+                       self.get_otp_count(),
+                       otplen,
+                       self.get_hashlib(self.hashlib))
 
-        otpval = hmac2Otp.generate(counter=counter,
-                                   inc_counter=False,
-                                   do_truncation=True)
+        otpval = hmac.generate(counter=counter,
+                               inc_counter=False,
+                               do_truncation=True)
         return otpval
 
     @log_with(log)
@@ -552,8 +569,8 @@ class HotpTokenClass(TokenClass):
                     res = -1  # pragma: no cover
 
                 # now clean the resync data
-                self.del_tokeninfo("dueDate")
-                self.del_tokeninfo("otp1c")
+                self.delete_tokeninfo("dueDate")
+                self.delete_tokeninfo("otp1c")
 
             else:
                 self.add_tokeninfo("otp1c", res)
@@ -907,7 +924,6 @@ class HotpTokenClass(TokenClass):
         init_details = self.get_init_detail(params, user)
         enroll_url = init_details.get("googleurl").get("value")
         return enroll_url
-
 
     def export_token(self, export_user: bool = False) -> dict:
         """

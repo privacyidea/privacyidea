@@ -24,7 +24,8 @@
   i18n-aria-label>
   <h3
     class="margin-left-1"
-    i18n>Create a New Container
+    i18n>
+    Create a New Container
   </h3>
   <div #stickySentinel></div>
   <div
@@ -76,12 +77,14 @@
     class="container-type-hint"
     i18n>
     Supported Token Types:
-    @if (containerService.selectedContainerType().token_types.length >= tokenService.tokenTypeOptions().length) {
+    @if (
+      (containerService.selectedContainerType()?.token_types?.length ?? 0) >= tokenService.tokenTypeOptions().length
+    ) {
       All
-    } @else if (containerService.selectedContainerType().token_types.length > 1) {
-      {{ containerService.selectedContainerType().token_types.join(", ") }}
+    } @else if ((containerService.selectedContainerType()?.token_types?.length ?? 0) > 1) {
+      {{ containerService.selectedContainerType()?.token_types?.join(", ") }}
     } @else {
-      {{ containerService.selectedContainerType().token_types[0] }}
+      {{ containerService.selectedContainerType()?.token_types?.[0] }}
     }
   </div>
 
@@ -97,12 +100,13 @@
       rows="3"></textarea>
   </mat-form-field>
 
-  <div class="flex-column width-100 gap-1">
+  <div class="flex-column width-100 gap-16">
     @if (authService.actionAllowed("container_template_list")) {
       <div class="flex-column width-66">
         <h4
           class="enroll-h4"
-          i18n>Use a Template
+          i18n>
+          Use a Template
         </h4>
         <mat-form-field class="width-100 input-height">
           <mat-label i18n>Template</mat-label>
@@ -123,15 +127,15 @@
     }
     <h4
       class="enroll-h4"
-      i18n>Assign the Container to a User
+      i18n>
+      Assign the Container to a User
     </h4>
-    <div class="flex-row gap-1">
-      <app-user-assignment
-        [showOnlyAddToRealm]="true"></app-user-assignment>
+    <div class="flex-row gap-16">
+      <app-user-assignment [showOnlyAddToRealm]="true"></app-user-assignment>
     </div>
   </div>
 
-  @if (containerService.selectedContainerType().containerType === "smartphone") {
+  @if (containerService.selectedContainerType()?.containerType === "smartphone") {
     <h4
       i18n
       class="enroll-h4">

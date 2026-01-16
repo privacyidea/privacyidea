@@ -185,6 +185,7 @@ type: ``bool``
 
 If the administrator enrolls a token or resets a PIN of a token, then the PIN
 of this token is marked to be changed on the first (or next) use.
+This action is only triggered if an administrator enrolls the token.
 When the user authenticates with the old PIN, the user is authenticated
 successfully. But the detail-response contains the keys "next_pin_change" and
 "pin_change". If "pin_change" is *True* the authenticating application must
@@ -409,6 +410,10 @@ to force the user to protect the token with a pin (unrelated to the token pin).
    This policy has no effect if the QR code is scanned with other smartphone
    apps.
 
+.. note::
+   Starting with privacyIDEA 3.13, the :ref:`policy_app_force_unlock` policy is recommended. This will also set
+   app_force_unlock=pin in the QR code.
+
 .. versionadded:: 3.1
 
 
@@ -474,6 +479,8 @@ type: ``bool``
 
 Use the ``pia`` scheme in the enrollment URL for push tokens to automatically open the privacyIDEA Authenticator app.
 If this policy is not enabled, the ``otpauth`` scheme is used by default.
+
+.. versionadded:: 3.12
 
 .. _policy_verify_enrollment:
 
@@ -888,3 +895,15 @@ This action can be used to validate the email address of the user during enrollm
 The administrator specifies the Python module that should be used to validate the email address.
 The modules can be defined in the `pi.cfg` file.
 See :ref:`picfg_email_validators` for more information.
+
+.. _policy_app_force_unlock:
+
+app_force_unlock
+~~~~~~~~~~~~~~~~
+
+type: ``string``
+
+This policy can be used to force the privacyIDEA Authenticator App to secure the token with a pin or
+biometric. If you select any, the token can be unlocked with both.
+
+.. note:: This needs the privacyIDEA Authenticator app 4.6.1 or higher.

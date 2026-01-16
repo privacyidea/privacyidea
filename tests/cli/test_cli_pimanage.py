@@ -195,13 +195,13 @@ class TestPIManageSetupClass:
     def test_02_pimanage_setup_drop_tables(self, app):
         with app.app_context():
             # First check that the database is empty
-            inspector = sa.inspect(db.get_engine())
+            inspector = sa.inspect(db.engine)
             assert "token" in inspector.get_table_names()
         runner = app.test_cli_runner()
         result = runner.invoke(pi_manage, ["setup", "drop_tables", "-d", "yes"])
         assert "Dropping all database tables!" in result.output
         with app.app_context():
-            inspector = sa.inspect(db.get_engine())
+            inspector = sa.inspect(db.engine)
             assert inspector.get_table_names() == []
 
 

@@ -29,8 +29,9 @@ import { environment } from "../../../environments/environment";
 import { ROUTE_PATHS } from "../../route_paths";
 import { StringUtils } from "../../utils/string.utils";
 import { Observable } from "rxjs";
+import { Router } from "@angular/router";
 
-const apiFilter = ["description", "email", "givenname", "mobile", "phone", "resolver", "surname", "userid", "username"];
+const apiFilter = ["description", "email", "givenname", "mobile", "phone", "resolver", "surname", "username"];
 const advancedApiFilter: string[] = [];
 
 export interface UserData {
@@ -106,6 +107,7 @@ export class UserService implements UserServiceInterface {
   private readonly tokenService: TokenServiceInterface = inject(TokenService);
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly http = inject(HttpClient);
+  private readonly router = inject(Router);
   readonly apiFilter = apiFilter;
   readonly advancedApiFilter = advancedApiFilter;
   private baseUrl = environment.proxyUrl + "/user/";
@@ -199,13 +201,27 @@ export class UserService implements UserServiceInterface {
   selectedUserRealm: WritableSignal<string> = linkedSignal({
     source: () => ({
       routeUrl: this.contentService.routeUrl(),
+      currentUrl: this.router.url,
       defaultRealm: this.realmService.defaultRealm(),
       selectedTokenType: this.tokenService.selectedTokenType(),
       authRole: this.authService.role(),
       authRealm: this.authService.realm()
     }),
     computation: (source, previous): string => {
-      if (source.routeUrl.startsWith(ROUTE_PATHS.USERS) && previous?.value) {
+      // On user details set realm from the URL query param if present
+      if (this.contentService.onUserDetails()) {
+        const qIndex = source.currentUrl.indexOf("?");
+        if (qIndex !== -1) {
+          const params = new URLSearchParams(source.currentUrl.substring(qIndex + 1));
+          const realm = params.get("realm") ?? "";
+          if (realm) {
+            return realm;
+          }
+        }
+        if (previous?.value) {
+          return previous.value;
+        }
+      } else if (source.routeUrl.startsWith(ROUTE_PATHS.USERS) && previous?.value) {
         return previous.value;
       }
       return source.authRole === "user" ? source.authRealm : source.defaultRealm;
@@ -230,7 +246,7 @@ export class UserService implements UserServiceInterface {
     if (!this.authService.actionAllowed("userlist")) {
       return undefined;
     }
-    // Only load user details on the user details page.
+    // Only load user details on the user details page for admins and always for users.
     if (!this.contentService.onUserDetails() && this.authService.role() !== "user") {
       return undefined;
     }

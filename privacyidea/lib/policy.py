@@ -179,6 +179,7 @@ from typing import Union, Optional
 
 from configobj import ConfigObj
 from netaddr import AddrFormatError
+from sqlalchemy import select, exists
 from werkzeug.datastructures.headers import EnvironHeaders
 
 from privacyidea.lib import _, lazy_gettext
@@ -201,6 +202,7 @@ from privacyidea.lib.utils.export import (register_import, register_export)
 from .log import log_with
 from .policies.actions import PolicyAction
 from .policies.conditions import PolicyConditionClass, ConditionCheck, ConditionSection
+from .policies.evaluators import EVALUATOR_FUNCTIONS
 from ..api.lib.utils import check_policy_name
 from ..models import (Policy, db, save_config_timestamp, PolicyDescription, PolicyCondition)
 
@@ -1150,15 +1152,23 @@ def validate_actions(scope: str, action: Union[str, dict]) -> bool:
     from .token import get_dynamic_policy_definitions
     policy_definitions_static = get_static_policy_definitions(scope)
     policy_definitions_dynamic = get_dynamic_policy_definitions(scope)
-    allowed_actions = set(policy_definitions_static.keys()) | set(policy_definitions_dynamic.keys())
+    policy_definitions = policy_definitions_static | policy_definitions_dynamic
+    allowed_actions = set(policy_definitions.keys())
+    actions = {}
     if isinstance(action, dict):
         action_keys = list(action.keys())
+        actions = action
     elif isinstance(action, str):
         # This is similarly implemented in models.py in Policy.get(), but with the actual code structure there is no
         # possibility to use the same function without mixing up the layers
-        action_keys = [x.strip().split("=", 1)[0] for x in re.split(r'(?<!\\),', action or "")]
+        for x in re.split(r'(?<!\\),', action or ""):
+            action_tmp = x.strip().split("=", 1)
+            action_key = action_tmp[0]
+            action_value = action_tmp[1] if len(action_tmp) == 2 else True
+            actions[action_key] = action_value
+        action_keys = list(actions.keys())
     else:
-        raise ParameterError(f"Invalid actions type '{type(action)}'. Must be a string or a dictionary.")
+        raise ParameterError(f"Invalid actions type {type(action)}. Must be a string or a dictionary.")
 
     raw_actions = remove_wildcards_and_negations(action_keys)
     invalid_actions = list(set(raw_actions) - allowed_actions)
@@ -1166,8 +1176,17 @@ def validate_actions(scope: str, action: Union[str, dict]) -> bool:
     if len(invalid_actions) > 0:
         log.error(f"The following actions are not valid for scope '{scope}': {invalid_actions}")
         raise ParameterError(f"Invalid actions {invalid_actions}!")
-    else:
-        return True
+
+    # Evaluate the action values
+    for action_key, action_value in actions.items():
+        evaluator = EVALUATOR_FUNCTIONS.get(action_key)
+        if evaluator:
+            try:
+                evaluator(action_value)
+            except ParameterError as e:
+                raise ParameterError(f"Invalid value for action '{action_key}': {e.message}")
+
+    return True
 
 
 def validate_values(values: Union[str, list, None], allowed_values: list, name: str) -> bool:
@@ -1202,10 +1221,12 @@ def rename_policy(name: str, new_name: str) -> int:
     :return: The database ID of the renamed policy
     """
     check_policy_name(new_name)
-    policy = Policy.query.filter_by(name=name).first()
+    stmt = select(Policy).where(Policy.name == name)
+    policy = db.session.scalars(stmt).first()
     if not policy:
         raise ParameterError(_("Policy does not exist:") + f" {name}")
-    if Policy.query.filter_by(name=new_name).first():
+    new_name_stmt = select(exists().where(Policy.name == new_name))
+    if db.session.scalar(new_name_stmt):
         raise ParameterError(_("Policy already exists:") + f" {new_name}")
 
     policy.name = new_name
@@ -1240,7 +1261,7 @@ def get_policies(active: Optional[bool] = None, name: Optional[str] = None, scop
     :return: A list of all policies as dictionaries
     """
     policies = []
-    sql_query = Policy.query
+    stmt = select(Policy)
 
     # Filter for all attributes that are strings
     filter_options = {"name": name, "scope": scope, "action": action, "realm": realm, "adminrealm": admin_realm,
@@ -1251,19 +1272,20 @@ def get_policies(active: Optional[bool] = None, name: Optional[str] = None, scop
         if value is not None:
             if "*" in value:
                 value = value.replace("*", "%")
-                sql_query = sql_query.filter(getattr(Policy, attribute).ilike(value))
+                stmt = stmt.filter(getattr(Policy, attribute).ilike(value))
             else:
-                sql_query = sql_query.filter(getattr(Policy, attribute) == value)
+                stmt = stmt.filter(getattr(Policy, attribute) == value)
 
     # Other data types
     if active is not None:
-        sql_query = sql_query.filter(Policy.active.is_(active))
+        stmt = stmt.filter(Policy.active.is_(active))
 
     if priority is not None:
-        sql_query = sql_query.filter(Policy.priority == priority)
+        stmt = stmt.filter(Policy.priority == priority)
 
     # Get policies as dict
-    for policy in sql_query.all():
+    policies_db = db.session.scalars(stmt).unique().all()
+    for policy in policies_db:
         policies.append(policy.get())
 
     return policies
@@ -1384,14 +1406,15 @@ def set_policy(name: Optional[str] = None, scope: Optional[str] = None, action: 
         for condition_tuple in conditions:
             condition = PolicyClass.get_policy_condition_from_tuple(condition_tuple, name)
             conditions_data.append(condition)
-    p1 = Policy.query.filter_by(name=name).first()
+    stmt = select(Policy).where(Policy.name == name)
+    policy = db.session.scalars(stmt).first()
 
     # validate action values
     if action is not None:
         if scope is not None:
             validate_actions(scope, action)
-        elif p1:
-            validate_actions(p1.scope, action)
+        elif policy:
+            validate_actions(policy.scope, action)
         else:
             raise ParameterError("Scope is required to set action values!")
     if isinstance(action, dict):
@@ -1405,56 +1428,60 @@ def set_policy(name: Optional[str] = None, scope: Optional[str] = None, action: 
                 action_list.append(k)
         action = ", ".join(action_list)
 
-    if p1:
+    if policy:
         # The policy already exist, we need to update
         if action is not None:
-            p1.action = action
+            policy.action = action
         if scope is not None:
-            p1.scope = scope
+            policy.scope = scope
         if realm is not None:
-            p1.realm = realm
+            policy.realm = realm
         if adminrealm is not None:
-            p1.adminrealm = adminrealm
+            policy.adminrealm = adminrealm
         if resolver is not None:
-            p1.resolver = resolver
+            policy.resolver = resolver
         if user is not None:
-            p1.user = user
+            policy.user = user
         if adminuser is not None:
-            p1.adminuser = adminuser
+            policy.adminuser = adminuser
         if client is not None:
-            p1.client = client
+            policy.client = client
         if time is not None:
-            p1.time = time
+            policy.time = time
         if priority is not None:
-            p1.priority = priority
+            policy.priority = priority
         if pinode is not None:
-            p1.pinode = pinode
+            policy.pinode = pinode
         if user_agents is not None:
-            p1.user_agents = user_agents
-        p1.active = active
-        p1.check_all_resolvers = check_all_resolvers
-        p1.user_case_insensitive = user_case_insensitive
+            policy.user_agents = user_agents
+        policy.active = active
+        policy.check_all_resolvers = check_all_resolvers
+        policy.user_case_insensitive = user_case_insensitive
         if conditions is not None:
             # only update the conditions if there are any
-            set_policy_conditions(conditions_data, p1)
-        save_config_timestamp()
-        db.session.commit()
-        ret = p1.id
+            set_policy_conditions(conditions_data, policy)
+        ret = policy.id
     else:
         # Create a new policy
         policy = Policy(name, action=action, scope=scope, realm=realm, user=user, time=time, client=client,
                         active=active, resolver=resolver, adminrealm=adminrealm, adminuser=adminuser,
                         priority=priority, check_all_resolvers=check_all_resolvers, pinode=pinode,
                         user_case_insensitive=user_case_insensitive, user_agents=user_agents)
-        ret = policy.save()
+        db.session.add(policy)
+        db.session.flush()
+        ret = policy.id
         # Since we create a new policy we always set the conditions, even if the list is empty
         set_policy_conditions(conditions_data, policy)
     if description:
-        d1 = PolicyDescription.query.filter_by(object_id=ret, object_type="policy").first()
-        if d1:
-            d1.description = description
+        description_stmt = select(PolicyDescription).where(PolicyDescription.object_id == ret,
+                                                              PolicyDescription.object_type == "policy")
+        description_db = db.session.scalars(description_stmt).first()
+        if description_db:
+            description_db.description = description
         else:
-            PolicyDescription(object_id=ret, object_type="policy", description=description).save()
+            new_description = PolicyDescription(object_id=ret, object_type="policy", description=description)
+            db.session.add(new_description)
+    save_config_timestamp()
     db.session.commit()
     return ret
 
@@ -1471,12 +1498,16 @@ def enable_policy(name, enable=True):
     :return: ID of the policy
     :rtype: int
     """
-    if not Policy.query.filter(Policy.name == name).first():
+    stmt = select(Policy).where(Policy.name == name)
+    policy = db.session.scalars(stmt).first()
+    if not policy:
         raise ResourceNotFoundError("The policy with name '{0!s}' does not exist".format(name))
 
     # Update the policy
-    p = set_policy(name=name, active=enable)
-    return p
+    policy.active = enable
+    save_config_timestamp()
+    db.session.commit()
+    return policy.id
 
 
 @log_with(log)
@@ -1504,18 +1535,25 @@ def delete_policies(names):
     ids = []
     for name in names:
         try:
-            ids.append(delete_policy(name))
+            policy = fetch_one_resource(Policy, name=name)
+            db.session.delete(policy)
+            ids.append(policy.id)
         except ResourceNotFoundError:
             log.warning(f"Policy with name '{name}' does not exist and therefore can not be deleted.")
             pass
+    save_config_timestamp()
+    db.session.commit()
     return ids
 
 
 @log_with(log)
 def delete_all_policies():
-    policies = Policy.query.all()
+    stmt = select(Policy)
+    policies = db.session.scalars(stmt).unique().all()
     for p in policies:
-        p.delete()
+        db.session.delete(p)
+    save_config_timestamp()
+    db.session.commit()
 
 
 @log_with(log)
@@ -1627,7 +1665,11 @@ def get_static_policy_definitions(scope=None):
             PolicyAction.REGISTERBODY: {'type': 'text',
                                         'desc': _("The body of the registration "
                                                   "email. Use '{regkey}' as tag "
-                                                  "for the registration key.")}
+                                                  "for the registration key.")},
+            PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE: {'type': 'bool',
+                                                       'desc': _('Enable to return an unspecific '
+                                                                 'error message for failed '
+                                                                 'registrations.')}
         },
         SCOPE.ADMIN: {
             PolicyAction.ENABLE: {'type': 'bool',
@@ -2569,6 +2611,12 @@ def get_static_policy_definitions(scope=None):
                           'user and realm in an authentication request. See '
                           'the documentation for an example.')
             },
+            PolicyAction.SET_REALM: {
+                'type': 'str',
+                'value': realms,
+                'desc': _('In authentication requests, sets or overwrites the realm parameter. It takes precedence '
+                          'over the mangle and setrealm policies.')
+            },
             PolicyAction.RESETALLTOKENS: {
                 'type': 'bool',
                 'desc': _('If a user authenticates successfully reset the '
@@ -2972,6 +3020,11 @@ def get_static_policy_definitions(scope=None):
                 'desc': _('The client is not allowed to unregister the container. The user can not delete the '
                           'container locally on the smartphone.'),
                 'group': GROUP.SMARTPHONE
+            },
+            PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE: {
+                'type': 'bool',
+                'desc': _(
+                    'Enable to return an unspecific error message for failures in the authentication-free container endpoints.')
             }
         },
         SCOPE.TOKEN: {
@@ -2982,6 +3035,15 @@ def get_static_policy_definitions(scope=None):
                 'group': GROUP.TOKEN,
                 'multiple': True,
                 'value': get_token_types()
+            },
+            PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE_FOR_TTYPE: {
+                'type': 'bool',
+                'desc': _(
+                    'Enable to return an unspecific error message for failures in the special token endpoints /ttype/*.')
+            },
+            PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE_FOR_OFFLINE_REFILL: {
+                'type': 'bool',
+                'desc': _('Enable to return an unspecific error message for failed offline token refills.')
             }
         }
 
@@ -3284,34 +3346,31 @@ class Match(object):
                    sort_by_priority=True, serial=g.serial, user_agent=g.get("user_agent"))
 
     @classmethod
-    def token(cls, g, scope, action, token_obj):
+    def token(cls, g, scope: str, action: str, token) -> "Match":
         """
         Match active policies with a scope, an action and a token object.
         The client IP is matched implicitly.
-        From the token object we try to determine the user as the owner.
-        If the token has no owner, we try to determine the tokenrealm.
-        We fall back to realm=None
+        From the token object we try to determine the user as the owner and the token realms.
+        The default is an empty user object and an empty realm list to avoid matching policies with any user and realm
+        condition.
 
         :param g: context object
-        :param scope: the policy scope. SCOPE.ADMIN cannot be passed, ``admin``
-            must be used instead.
+        :param scope: the policy scope. SCOPE.ADMIN cannot be passed, ``admin`` must be used instead.
         :param action: the policy action
-        :param token_obj: The token where the user object or the realm should match.
+        :param token: The token where the user object or the realm should match.
         :rtype: Match
         """
-        if token_obj.user:
-            return cls.user(g, scope, action, token_obj.user)
+        if token:
+            owner = token.user or User()
+            realms = token.get_realms()
+            # serial is required for the extended condition checks (TODO: allow passing the token object)
+            serial = token.get_serial()
         else:
-            realms = token_obj.get_realms()
-            if len(realms) == 0:
-                return cls.action_only(g, scope, action)
-            elif len(realms) == 1:
-                # We have one distinct token realm
-                log.debug("Matching policies with tokenrealm {0!s}.".format(realms[0]))
-                return cls.realm(g, scope, action, realms[0])
-            else:
-                log.warning("The token has more than one tokenrealm. Probably not able to match correctly.")
-                return cls.action_only(g, scope, action)
+            log.debug("No token available. Matching policies without user and realm.")
+            owner = User()
+            realms = None
+            serial = None
+        return cls.generic(g, scope=scope, action=action, user_object=owner, additional_realms=realms, serial=serial)
 
     @classmethod
     def admin(cls, g, action: str, user_obj: User = None, serial: str = None, container_serial: str = None) -> "Match":

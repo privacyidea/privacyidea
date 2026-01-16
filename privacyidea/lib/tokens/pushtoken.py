@@ -27,50 +27,49 @@ and send it back to the authentication endpoint.
 This code is tested in tests/test_lib_tokens_push
 """
 
-from base64 import b32decode
-from binascii import Error as BinasciiError
-from datetime import datetime, timedelta, timezone
-from dateutil.parser import isoparse
-from enum import Enum
+import logging
 import random
 import secrets
 import string
+import time
+import traceback
+from base64 import b32decode
+from binascii import Error as BinasciiError
+from datetime import datetime, timedelta, timezone
+from enum import Enum
 from typing import Optional, Union
 from urllib.parse import quote
-import traceback
 
-from privacyidea.api.lib.utils import getParam, get_required
-from privacyidea.api.lib.policyhelper import get_pushtoken_add_config, get_init_tokenlabel_parameters
-from privacyidea.lib.token import get_one_token, init_token
-from privacyidea.lib.utils import prepare_result, to_bytes, is_true, create_tag_dict
-from privacyidea.lib.error import (ResourceNotFoundError, ValidateError,
-                                   privacyIDEAError, ConfigAdminError, PolicyError)
-
-from privacyidea.lib.config import get_from_config
-from privacyidea.lib.policy import (SCOPE, GROUP, Match,
-                                    get_action_values_from_options)
-from privacyidea.lib.policies.actions import PolicyAction
-from privacyidea.lib.log import log_with
-from privacyidea.lib import _, lazy_gettext
-
-from privacyidea.lib.tokenclass import (TokenClass, AUTHENTICATIONMODE, CLIENTMODE,
-                                        ROLLOUTSTATE, CHALLENGE_SESSION)
-from privacyidea.models import Challenge, db
-from privacyidea.lib.decorators import check_token_locked
-import logging
-from privacyidea.lib.utils import create_img, b32encode_and_unicode
-from privacyidea.lib.error import ParameterError
-from privacyidea.lib.user import User
-from privacyidea.lib.apps import _construct_extra_parameters
-from privacyidea.lib.crypto import geturandom, generate_keypair
-from privacyidea.lib.smsprovider.SMSProvider import get_smsgateway, create_sms_instance
-from privacyidea.lib.challenge import get_challenges
-from cryptography.hazmat.primitives import serialization
+from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import padding
-from cryptography.exceptions import InvalidSignature
-import time
+from dateutil.parser import isoparse
+
+from privacyidea.api.lib.policyhelper import get_pushtoken_add_config, get_init_tokenlabel_parameters
+from privacyidea.api.lib.utils import getParam, get_required
+from privacyidea.lib import _, lazy_gettext
+from privacyidea.lib.apps import _construct_extra_parameters
+from privacyidea.lib.challenge import get_challenges
+from privacyidea.lib.config import get_from_config
+from privacyidea.lib.crypto import geturandom, generate_keypair
+from privacyidea.lib.decorators import check_token_locked
+from privacyidea.lib.error import ParameterError
+from privacyidea.lib.error import (ResourceNotFoundError, ValidateError,
+                                   privacyIDEAError, ConfigAdminError, PolicyError)
+from privacyidea.lib.log import log_with
+from privacyidea.lib.policies.actions import PolicyAction
+from privacyidea.lib.policy import (SCOPE, GROUP, Match,
+                                    get_action_values_from_options)
+from privacyidea.lib.smsprovider.SMSProvider import get_smsgateway, create_sms_instance
+from privacyidea.lib.token import get_one_token, init_token
+from privacyidea.lib.tokenclass import (TokenClass, AUTHENTICATIONMODE, CLIENTMODE,
+                                        ROLLOUTSTATE, CHALLENGE_SESSION)
+from privacyidea.lib.user import User
+from privacyidea.lib.utils import create_img, b32encode_and_unicode
+from privacyidea.lib.utils import prepare_result, to_bytes, is_true, create_tag_dict
+from privacyidea.models import Challenge, db
 
 log = logging.getLogger(__name__)
 
@@ -437,6 +436,15 @@ class PushTokenClass(TokenClass):
                                'group': "PUSH",
                                'desc': _('Require to unlock the Smartphone before Push requests can be accepted')
                            },
+                           'push_' + PolicyAction.APP_FORCE_UNLOCK: {
+                               'type': 'str',
+                               'value': ["any",
+                                         "biometric",
+                                         "pin"],
+                               'desc': _(
+                                   'Enforces the privacyIDEA Authenticator App that the token has to be unlocked '
+                                   'with pin or biometric. This needs the privacyIDEA Authenticator app 4.6.1 or higher.')
+                           },
                            PUSH_ACTION.USE_PIA_SCHEME: {
                                'type': 'bool',
                                'desc': _("Use the privacyIDEA app URL scheme 'pia' in the enroll URL for push tokens "
@@ -565,7 +573,7 @@ class PushTokenClass(TokenClass):
             enrollment_credential = getParam(upd_param, "enrollment_credential", optional=False)
             if enrollment_credential != self.get_tokeninfo("enrollment_credential"):
                 raise ParameterError("Invalid enrollment credential. You are not authorized to finalize this token.")
-            self.del_tokeninfo("enrollment_credential")
+            self.delete_tokeninfo("enrollment_credential")
             self.token.rollout_state = "enrolled"
             self.token.active = True
             self.add_tokeninfo(PUBLIC_KEY_SMARTPHONE, upd_param.get("pubkey"))
@@ -628,7 +636,9 @@ class PushTokenClass(TokenClass):
 
             # enforce App pin
             if params.get(PolicyAction.FORCE_APP_PIN):
-                extra_data.update({'pin': True})
+                extra_data.update({'force_app_pin': True})
+            if params.get(PolicyAction.APP_FORCE_UNLOCK):
+                extra_data.update({'app_force_unlock': params.get(PolicyAction.APP_FORCE_UNLOCK)})
 
             # Get scheme to use
             pia_scheme = policy_params.get(PUSH_ACTION.USE_PIA_SCHEME, False)

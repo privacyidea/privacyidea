@@ -1,24 +1,7 @@
+@use "../../../../../../styles" as styles;
+
 .h3-margin {
   margin: var(--half-global-padding) 0;
-}
-
-.action-detail-column {
-  background-color: var(--mat-sys-surface-container);
-  border-radius: var(--border-radius);
-  box-shadow: var(--mat-sys-level2);
-  color: var(--mat-sys-on-surface);
-  display: flex;
-  flex-direction: column;
-  gap: var(--global-gap);
-  min-width: 0;
-  padding: var(--three-quarters-global-padding);
-}
-
-.action-detail-card {
-  background-color: var(--mat-sys-surface-container-high);
-  border-radius: var(--border-radius);
-  box-shadow: var(--mat-sys-level2);
-  padding: var(--global-padding);
 }
 
 .detail-row {
@@ -27,130 +10,15 @@
   justify-content: space-between;
 }
 
-.action-value-input {
-  background-color: transparent;
-  border: none;
-  border-bottom: 1px solid var(--mat-sys-outline-variant);
-  border-radius: 0;
-  box-sizing: border-box;
-  font-size: 1rem;
-  padding: var(--half-global-padding) 0;
-  width: 100%;
-}
-
-.action-value-textarea {
-  background-color: transparent;
-  border: none;
-  border-bottom: 1px solid var(--mat-sys-outline-variant);
-  border-radius: 0;
-  box-sizing: border-box;
-  font-size: 1rem;
-  min-height: 80px;
-  padding: var(--half-global-padding) 0;
-  resize: vertical;
-  width: 100%;
-}
-
-.action-value-input:focus {
-  border-bottom-color: var(--mat-sys-primary);
-  outline: none;
-}
-
 .add-action-button {
   align-self: flex-end;
   color: var(--mat-sys-primary);
-}
-.action-detail-title {
-  display: flex;
-  align-items: center;
-  gap: var(--global-gap);
-}
-
-.action-detail-title-buttons {
-  flex-grow: 1;
-  display: flex;
-  justify-content: flex-end;
-  gap: calc(var(--global-gap) / 2);
-  button[mat-icon-button] {
-    padding: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 24px;
-    height: 24px;
-  }
 }
 
 .warning-icon {
   color: #e5a500;
 }
 
-.action-docu,
-.action-notes {
-  padding: 1rem;
-  margin-top: 1rem;
-  border-radius: 0.25rem;
-  border: 1px solid;
-}
-
-// Apply styles to dynamically loaded content inside action-docu and action-notes.
-// The ::ng-deep selector is used to pierce the component's style encapsulation.
-:host ::ng-deep {
-  .action-docu,
-  .action-notes,
-  .action-detail-card {
-    code {
-      display: inline-block; // Use inline-block to allow padding and prevent line breaks
-      background-color: rgba(0, 0, 0, 0.08);
-      padding: 0.2em 0.4em;
-      margin: 0;
-      font-size: 85%;
-      border-radius: 3px;
-      font-family: "Courier New", Courier, monospace;
-    }
-
-    em {
-      display: inline; // Ensure em flows with the text
-      font-style: italic;
-    }
-
-    p {
-      margin-block-start: 1em;
-      margin-block-end: 1em;
-    }
-
-    a {
-      color: var(--mat-sys-primary);
-      text-decoration: underline;
-    }
-
-    strong,
-    b {
-      font-weight: bold;
-    }
-
-    ul,
-    ol {
-      padding-inline-start: 40px;
-    }
-
-    li {
-      margin-bottom: 0.5em;
-    }
-  }
-}
-
-.action-docu {
-  background-color: #e7f3fe;
-  border-color: #d0e5fc;
-  color: #31708f;
-}
-
-.action-notes {
-  background-color: #fef3e7;
-  border-color: #fce8d3;
-  color: #8a6d3b;
-}
 
 /*
  * When .detail-row is used for the [innerHTML] container itself inside

@@ -87,6 +87,7 @@ class MyTestCase(unittest.TestCase):
         self.app_context.g.client_ip = None
         self.app_context.g.request_headers = None
         self.app_context.g.serial = None
+        self.app_context.g.policies = {}
 
     def tearDown(self):
         # Rollback uncommitted changes to the DB and close the session to

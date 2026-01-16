@@ -50,15 +50,15 @@ describe("EnrollHotpComponent", () => {
     }).compileComponents();
   });
 
-  const createAndInit = () => {
+  function createAndInit() {
     fixture = TestBed.createComponent(EnrollHotpComponent);
     component = fixture.componentInstance;
     tokenService = TestBed.inject(TokenService) as unknown as MockTokenService;
     authService = TestBed.inject(AuthService) as unknown as MockAuthService;
     jest.spyOn(component.additionalFormFieldsChange, "emit");
-    jest.spyOn(component.clickEnrollChange, "emit");
+    jest.spyOn(component.enrollmentArgsGetterChange, "emit");
     fixture.detectChanges();
-  };
+  }
 
   it("should create", () => {
     createAndInit();
@@ -72,12 +72,15 @@ describe("EnrollHotpComponent", () => {
     const fieldsArg = (component.additionalFormFieldsChange.emit as jest.Mock).mock.calls[0][0];
     expect(Object.keys(fieldsArg)).toEqual(["generateOnServer", "otpLength", "otpKey", "hashAlgorithm"]);
 
-    expect(component.clickEnrollChange.emit).toHaveBeenCalledWith(component.onClickEnroll);
+    expect(component.enrollmentArgsGetterChange.emit).toHaveBeenCalledWith(component.enrollmentArgsGetter);
   });
 
   it("disables generateOnServer when policy forces server-side key generation", () => {
     (TestBed.inject(AuthService) as unknown as MockAuthService).checkForceServerGenerateOTPKey.mockReturnValue(true);
     createAndInit();
+    fixture.detectChanges();
+    TestBed.flushEffects();
+    fixture.detectChanges();
 
     expect(component.generateOnServerFormControl.disabled).toBe(true);
 
@@ -102,21 +105,21 @@ describe("EnrollHotpComponent", () => {
     expect(component.otpKeyFormControl.disabled).toBe(true);
   });
 
-  it("onClickEnroll returns null and marks controls when manual key is required but missing", (done) => {
+  it("enrollmentArgsGetter returns null and marks controls when manual key is required but missing", (done) => {
     (TestBed.inject(AuthService) as unknown as MockAuthService).checkForceServerGenerateOTPKey.mockReturnValue(false);
     createAndInit();
 
     component.generateOnServerFormControl.setValue(false);
     component.otpKeyFormControl.setValue("");
 
-    component.onClickEnroll({} as any).subscribe((res) => {
-      expect(res).toBeNull();
-      expect(component.generateOnServerFormControl.touched).toBe(true);
-      expect(component.otpLengthFormControl.touched).toBe(true);
-      expect(component.hashAlgorithmFormControl.touched).toBe(true);
-      expect(component.otpKeyFormControl.touched).toBe(true);
-      done();
-    });
+    const res = component.enrollmentArgsGetter({} as any);
+
+    expect(res).toBeNull();
+    expect(component.generateOnServerFormControl.touched).toBe(true);
+    expect(component.otpLengthFormControl.touched).toBe(true);
+    expect(component.hashAlgorithmFormControl.touched).toBe(true);
+    expect(component.otpKeyFormControl.touched).toBe(true);
+    done();
   });
 
   it("calls enrollToken with server-generated key (default values respected)", () => {
@@ -128,11 +131,9 @@ describe("EnrollHotpComponent", () => {
     component.hashAlgorithmFormControl.setValue("sha256");
 
     const basic = { realm: "r", username: "u" } as any;
-    component.onClickEnroll(basic).subscribe();
-
-    expect(tokenService.enrollToken).toHaveBeenCalledTimes(1);
-    const arg = (tokenService.enrollToken as jest.Mock).mock.calls[0][0];
-    expect(arg.data).toEqual(
+    const args = component.enrollmentArgsGetter(basic);
+    expect(args).not.toBeNull();
+    expect(args!.data).toEqual(
       expect.objectContaining({
         ...basic,
         type: "hotp",
@@ -141,7 +142,7 @@ describe("EnrollHotpComponent", () => {
         hashAlgorithm: "sha256"
       })
     );
-    expect(arg.mapper).toBe(TestBed.inject(HotpApiPayloadMapper));
+    expect(args!.mapper).toBe(TestBed.inject(HotpApiPayloadMapper));
   });
 
   it("calls enrollToken with user-provided otpKey (trimmed) when not generating on server", () => {
@@ -152,10 +153,9 @@ describe("EnrollHotpComponent", () => {
     component.otpKeyFormControl.setValue("  ABC123  ");
 
     const basic = { foo: "bar" } as any;
-    component.onClickEnroll(basic).subscribe();
-
-    const arg = (tokenService.enrollToken as jest.Mock).mock.calls.pop()[0];
-    expect(arg.data).toEqual(
+    const args = component.enrollmentArgsGetter(basic);
+    expect(args).not.toBeNull();
+    expect(args!.data).toEqual(
       expect.objectContaining({
         type: "hotp",
         generateOnServer: false,

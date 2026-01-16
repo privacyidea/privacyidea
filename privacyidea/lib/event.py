@@ -20,13 +20,16 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 #
-from privacyidea.lib.config import get_config_object
-from privacyidea.lib.utils import fetch_one_resource
-from privacyidea.models import EventHandler
-from privacyidea.lib.audit import getAudit
-from privacyidea.lib.utils.export import (register_import, register_export)
 import functools
 import logging
+
+from sqlalchemy import select, update, delete
+
+from privacyidea.lib.audit import getAudit
+from privacyidea.lib.config import get_config_object
+from privacyidea.lib.utils import fetch_one_resource
+from privacyidea.lib.utils.export import (register_import, register_export)
+from privacyidea.models import EventHandler, db, save_config_timestamp, EventHandlerOption, EventHandlerCondition
 
 log = logging.getLogger(__name__)
 
@@ -192,6 +195,7 @@ def enable_event(event_id, enable=True):
     # Update the event
     ev.active = enable
     r = ev.save()
+    save_config_timestamp()
     return r
 
 
@@ -229,24 +233,61 @@ def set_event(name=None, event=None, handlermodule=None, action=None, conditions
     if isinstance(event, list):
         event = ",".join(event)
     conditions = conditions or {}
-    if id:
-        id = int(id)
-    event = EventHandler(name, event, handlermodule, action,
-                         conditions=conditions, ordering=ordering,
-                         options=options, id=id, active=active,
-                         position=position)
-    return event.id
+
+    # --- Event Handler ---
+    stmt_exists = select(EventHandler).where(EventHandler.id == id)
+    existing_event_handler = db.session.scalars(stmt_exists).one_or_none()
+
+    if existing_event_handler:
+        if event is not None:
+            existing_event_handler.event = event
+        if handlermodule is not None:
+            existing_event_handler.handlermodule = handlermodule
+        existing_event_handler.action = action or ""
+        if ordering is not None:
+            existing_event_handler.ordering = ordering
+        if active is not None:
+            existing_event_handler.active = active
+        existing_event_handler.position = position or ""
+    else:
+        id = EventHandler(name=name, event=event, handlermodule=handlermodule, action=action, ordering=ordering,
+                          id=id, active=active, position=position).save()
+    save_config_timestamp()
+
+    # --- Event Handler Options ---
+    # Delete existing options
+    options = options or {}
+    delete_stmt = delete(EventHandlerOption).where(EventHandlerOption.eventhandler_id == id)
+    db.session.execute(delete_stmt)
+
+    # Add the options to the event handler
+    for k, v in options.items():
+        db.session.add(EventHandlerOption(eventhandler_id=id, Key=k, Value=v))
+
+    # --- Event Handler Conditions ---
+    # Delete existing conditions
+    delete_stmt = delete(EventHandlerCondition).where(EventHandlerCondition.eventhandler_id == id)
+    db.session.execute(delete_stmt)
+
+    conditions = conditions or {}
+    for k, v in conditions.items():
+        db.session.add(EventHandlerCondition(eventhandler_id=id, Key=k, Value=v))
+
+    db.session.commit()
+    return id
 
 
-def delete_event(event_id):
+def delete_event(event_id: int) -> int:
     """
     Delete the event configuration with this given ID.
     :param event_id: The database ID of the event.
-    :type event_id: int
-    :return:
+    :return: event ID
     """
     event_id = int(event_id)
-    return fetch_one_resource(EventHandler, id=event_id).delete()
+    db.session.delete(fetch_one_resource(EventHandler, id=event_id))
+    save_config_timestamp()
+    db.session.commit()
+    return event_id
 
 
 class EventConfiguration(object):

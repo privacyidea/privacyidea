@@ -21,15 +21,16 @@
   @if (!defaultRadiusServerIsSet() && authService.role() === "admin") {
     <span
       i18n
-      class="inline-hint">To ease the enrolling of RADIUS tokens you can set default values in the
-      <a href="#">RADIUS Token Config</a>.</span>
+      class="inline-hint"
+      >To ease the enrolling of RADIUS tokens you can set default values in the <a href="#">RADIUS Token Config</a>.
+    </span>
   }
   <mat-checkbox
     [formControl]="checkPinLocallyControl"
     i18n>
     Check the PIN locally
   </mat-checkbox>
-  <div class="flex-row gap-1">
+  <div class="flex-row gap-16">
     @if (!wizard || !defaultRadiusServerIsSet()) {
       <mat-form-field class="width-66">
         <mat-label i18n>RADIUS server configuration</mat-label>

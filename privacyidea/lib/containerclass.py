@@ -19,12 +19,12 @@
 #
 import logging
 from datetime import datetime, timezone
-
 from typing import List, Union
 
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePublicKey
 from flask import json
+from sqlalchemy import select, delete, and_, update
 
 from privacyidea.lib import _
 from privacyidea.lib.challenge import get_challenges
@@ -32,8 +32,8 @@ from privacyidea.lib.config import get_token_types
 from privacyidea.lib.containers.container_info import (TokenContainerInfoData, PI_INTERNAL, RegistrationState,
                                                        INITIALLY_SYNCHRONIZED)
 from privacyidea.lib.containers.container_states import ContainerStates
-from privacyidea.lib.crypto import verify_ecc, decryptPassword, FAILED_TO_DECRYPT_PASSWORD
-from privacyidea.lib.error import ParameterError, ResourceNotFoundError, TokenAdminError
+from privacyidea.lib.crypto import verify_ecc, decryptPassword, FAILED_TO_DECRYPT_PASSWORD, encryptPassword
+from privacyidea.lib.error import ParameterError, ResourceNotFoundError, TokenAdminError, UserError
 from privacyidea.lib.log import log_with
 from privacyidea.lib.machine import is_offline_token
 from privacyidea.lib.token import (create_tokenclass_object, get_tokens, get_serial_by_otp_list,
@@ -194,7 +194,7 @@ class TokenContainerClass:
     def realms(self) -> list[Realm]:
         return self._db_container.realms
 
-    def set_realms(self, realms, add=False) -> dict[str, bool]:
+    def set_realms(self, realms: List[str], add=False) -> dict[str, bool]:
         """
         Set the realms of the container. If `add` is True, the realms will be added to the existing realms, otherwise
         the existing realms will be removed.
@@ -204,55 +204,57 @@ class TokenContainerClass:
         :return: Dictionary in the format {realm: success}, the entry 'deleted' indicates whether existing realms were
                  deleted.
         """
-        result = {}
+        result = {"deleted": False}
 
         if not realms:
             realms = []
 
+        existing_realms = self.realms
+        existing_realm_names = {realm.name for realm in existing_realms}
+        realms_to_add = set(realms) - existing_realm_names
+        already_added_realms = set(realms) & existing_realm_names
+
         # delete all container realms
         if not add:
-            TokenContainerRealm.query.filter_by(container_id=self._db_container.id).delete()
-            result["deleted"] = True
-            self._db_container.save()
+            realm_names_to_delete = existing_realm_names - set(realms)
+            # exclude user realms from deletion
+            if self.owner_realms:
+                # realms of owners that would be deleted
+                owner_realms_delete = realm_names_to_delete & self.owner_realms
+                if owner_realms_delete:
+                    log.info(f"The realms ({', '.join(owner_realms_delete)}) of assigned users cannot be removed from "
+                             f"the container {self.serial}.")
+                # remove owner realms from delete list
+                realm_names_to_delete -= self.owner_realms
 
-            # Check that user realms are kept
-            user_realms = self._get_user_realms()
-            missing_realms = list(set(user_realms).difference(realms))
-            realms.extend(missing_realms)
-            for realm in missing_realms:
-                log.warning(
-                    f"Realm {realm} can not be removed from container {self.serial} "
-                    f"because a user from this realm is assigned th the container.")
-        else:
-            result["deleted"] = False
+            realms_to_delete = [realm for realm in existing_realms if realm.name in realm_names_to_delete]
+            for realm in realms_to_delete:
+                self._db_container.realms.remove(realm)
+            if realms_to_delete:
+                result["deleted"] = True
 
-        for realm in realms:
+        # Add new realms
+        for realm in realms_to_add:
             if realm:
-                realm_db = Realm.query.filter_by(name=realm).first()
+                stmt = select(Realm).filter_by(name=realm)
+                realm_db = db.session.execute(stmt).scalar_one_or_none()
                 if not realm_db:
                     result[realm] = False
-                    log.warning(f"Realm {realm} does not exist.")
+                    log.warning(f"Realm {realm} does not exist. Cannot add it to container {self.serial}.")
                 else:
-                    realm_id = realm_db.id
-                    # Check if realm is already assigned to the container
-                    if not TokenContainerRealm.query.filter_by(container_id=self._db_container.id,
-                                                               realm_id=realm_id).first():
-                        self._db_container.realms.append(realm_db)
-                        result[realm] = True
-                    else:
-                        log.info(f"Realm {realm} is already assigned to container {self.serial}.")
-                        result[realm] = False
+                    self._db_container.realms.append(realm_db)
+                    result[realm] = True
+
+        # Set success status for already added realms
+        for realm in already_added_realms:
+            # If the realms are set completely new, the status for already added realms is True, if they should only be
+            # added, the status is False
+            # TODO: Not sure whether this makes sense, but this is the actual behaviour ...
+            result[realm] = not add
+
         self._db_container.save()
 
         return result
-
-    def _get_user_realms(self) -> list[str]:
-        """
-        Returns a list of the realm names of the users that are assigned to the container.
-        """
-        owners = self.get_users()
-        realms = [owner.realm for owner in owners]
-        return realms
 
     @property
     def registration_state(self) -> RegistrationState:
@@ -265,6 +267,15 @@ class TokenContainerClass:
         state = container_info.get(RegistrationState.get_key())
         return RegistrationState(state)
 
+    @property
+    def owner_realms(self) -> set[str]:
+        """
+        Returns a set of the realm names of the users that are assigned to the container.
+        """
+        owners = self._db_container.owners.all()
+        realms = {owner.realm.name for owner in owners if owner.realm}
+        return realms
+
     def remove_token(self, serial: str) -> bool:
         """
         Remove a token from the container. Raises a ResourceNotFoundError if the token does not exist.
@@ -272,7 +283,8 @@ class TokenContainerClass:
         :param serial: Serial of the token
         :return: True if the token was successfully removed, False if the token was not found in the container
         """
-        token = Token.query.filter(Token.serial == serial).first()
+        stmt = select(Token).filter(Token.serial == serial)
+        token = db.session.scalars(stmt).unique().one_or_none()
         if not token:
             raise ResourceNotFoundError(f"Token with serial {serial} does not exist.")
         if token not in self._db_container.tokens:
@@ -331,16 +343,24 @@ class TokenContainerClass:
         :return: True if the user was assigned
         """
         (user_id, resolver_type, resolver_name) = user.get_user_identifiers()
-        if not self._db_container.owners.first():
-            TokenContainerOwner(container_id=self._db_container.id,
-                                user_id=user_id,
-                                resolver=resolver_name,
-                                realm_id=user.realm_id).save()
+        # The relationship on the TokenContainer object returns a dynamic query, which is already a modern feature
+        # So we can use .first() here
+        container_owner = self._db_container.owners.first()
+        if not container_owner:
+            new_owner = TokenContainerOwner(container_id=self._db_container.id,
+                                            user_id=user_id,
+                                            resolver=resolver_name,
+                                            realm_id=user.realm_id)
+            db.session.add(new_owner)
             # Add user realm to container realms
-            realm_db = Realm.query.filter_by(name=user.realm).first()
+            statement = select(Realm).filter_by(name=user.realm)
+            realm_db = db.session.execute(statement).scalar_one()
             if realm_db and realm_db not in self._db_container.realms:
                 self._db_container.realms.append(realm_db)
             self._db_container.save()
+            return True
+        elif container_owner == user:
+            log.debug(f"User {user.login} in realm {user.realm} is already assigned to container {self.serial}.")
             return True
         log.info(f"Container {self.serial} already has an owner.")
         raise TokenAdminError("This container is already assigned to another user.")
@@ -356,13 +376,19 @@ class TokenContainerClass:
         user_id = user.uid if user.uid else None
         resolver = user.resolver if user.resolver else None
         realm_id = user.realm_id if user.realm_id else None
+        if not user_id:
+            # We have no identifiers to remove the user: raise user error
+            raise UserError("The user can not be found in any resolver in this realm!")
 
-        query = TokenContainerOwner.query.filter_by(container_id=self._db_container.id, user_id=user_id)
+        stmt = delete(TokenContainerOwner).where(TokenContainerOwner.container_id == self._db_container.id)
+        if user_id:
+            stmt = stmt.where(TokenContainerOwner.user_id == user_id)
         if resolver:
-            query = query.filter_by(resolver=resolver)
+            stmt = stmt.where(TokenContainerOwner.resolver == resolver)
         if realm_id:
-            query = query.filter_by(realm_id=realm_id)
-        count = query.delete()
+            stmt = stmt.where(TokenContainerOwner.realm_id == realm_id)
+
+        count = db.session.execute(stmt).rowcount
         db.session.commit()
 
         if count <= 0:
@@ -375,12 +401,12 @@ class TokenContainerClass:
         """
         Returns a list of users that are assigned to the container.
         """
-        db_container_owners: List[TokenContainerOwner] = TokenContainerOwner.query.filter_by(
-            container_id=self._db_container.id).all()
+        db_container_owners = self._db_container.owners.all()
 
         users: list[User] = []
         for owner in db_container_owners:
-            realm = Realm.query.filter_by(id=owner.realm_id).first()
+            stmt = select(Realm).filter_by(id=owner.realm_id)
+            realm = db.session.execute(stmt).scalar_one_or_none()
             realm_name = realm.name if realm else None
             try:
                 user = User(uid=owner.user_id, realm=realm_name, resolver=owner.resolver)
@@ -429,12 +455,15 @@ class TokenContainerClass:
             raise ParameterError(f"The state list {state_list} contains exclusive states!")
 
         # Remove old state entries
-        TokenContainerStates.query.filter_by(container_id=self._db_container.id).delete()
+        stmt = delete(TokenContainerStates).where(TokenContainerStates.container_id == self._db_container.id)
+        db.session.execute(stmt)
 
         # Set new states
         for state in enum_states:
-            TokenContainerStates(container_id=self._db_container.id, state=state.value).save()
+            state_db = TokenContainerStates(container_id=self._db_container.id, state=state.value)
+            db.session.add(state_db)
             res[state.value] = True
+        db.session.commit()
 
         return res
 
@@ -470,12 +499,19 @@ class TokenContainerClass:
         for state in enum_states:
             # Remove old states that are excluded from the new state
             for excluded_state in exclusive_states[state]:
-                TokenContainerStates.query.filter_by(container_id=self._db_container.id,
-                                                     state=excluded_state.value).delete()
+                stmt = delete(TokenContainerStates).where(
+                    and_(
+                        TokenContainerStates.container_id == self._db_container.id,
+                        TokenContainerStates.state == excluded_state.value
+                    )
+                )
+                db.session.execute(stmt)
                 log.debug(f"Removed state {excluded_state.value} from container {self.serial} because it is excluded "
                           f"by the new state {state.value}.")
-            TokenContainerStates(container_id=self._db_container.id, state=state.value).save()
+            state_db = TokenContainerStates(container_id=self._db_container.id, state=state.value)
+            db.session.add(state_db)
             res[state.value] = True
+        db.session.commit()
 
         return res
 
@@ -495,15 +531,15 @@ class TokenContainerClass:
         }
         return state_types_exclusions
 
-    def set_container_info(self, info):
+    def set_container_info(self, info: list[TokenContainerInfoData]):
         """
-        Set the containerinfo field in the DB. Old values will be deleted.
+        Set the container info entries in the DB. Old values will be deleted.
 
         :param info: dictionary in the format: {key: value}
         """
         self.delete_container_info(keep_internal=True)
         if info:
-            self._db_container.set_info(info)
+            self.update_container_info(info)
 
     def update_container_info(self, info: list[TokenContainerInfoData]):
         """
@@ -513,8 +549,22 @@ class TokenContainerClass:
         :param info: list of TokenContainerInfoData objects
         """
         for data in info:
-            TokenContainerInfo(self.db_id, data.key, data.value, type=data.type, description=data.description).save(
-                persistent=False)
+            if data.type == "password":
+                data.value = encryptPassword(data.value)
+
+            statement = select(TokenContainerInfo).where(TokenContainerInfo.container_id == self._db_container.id,
+                                                         TokenContainerInfo.key == data.key)
+            db_info = db.session.execute(statement).scalar_one_or_none()
+
+            if db_info is None:
+                # Create new entry
+                new_info = TokenContainerInfo(self._db_container.id, data.key, data.value, data.type)
+                db.session.add(new_info)
+            else:
+                # Update existing entry
+                statement = update(TokenContainerInfo).where(TokenContainerInfo.id == db_info.id).values(
+                    value=data.value, type=data.type)
+                db.session.execute(statement)
         db.session.commit()
 
     def get_container_info(self) -> list[TokenContainerInfo]:
@@ -551,11 +601,12 @@ class TokenContainerClass:
         """
         res = {}
         if key:
-            container_infos = TokenContainerInfo.query.filter_by(container_id=self._db_container.id, key=key)
+            stmt = select(TokenContainerInfo).filter_by(container_id=self._db_container.id, key=key)
         else:
-            container_infos = TokenContainerInfo.query.filter_by(container_id=self._db_container.id)
+            stmt = select(TokenContainerInfo).filter_by(container_id=self._db_container.id)
+        container_infos = db.session.execute(stmt).scalars().all()
 
-        if container_infos.count() == 0:
+        if not container_infos:
             res[key] = False
             log.debug(f"Container {self.serial} has no info with key {key} or no info at all.")
 
@@ -597,7 +648,8 @@ class TokenContainerClass:
         """
         Set the template the container is based on.
         """
-        db_template = TokenContainerTemplate.query.filter_by(name=template_name).first()
+        stmt = select(TokenContainerTemplate).filter_by(name=template_name)
+        db_template = db.session.execute(stmt).scalar_one_or_none()
         if db_template:
             if db_template.container_type == self.type:
                 self._db_container.template = db_template
