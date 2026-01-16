@@ -132,12 +132,12 @@ describe("ActionDetailComponent", () => {
     const docu = { actionDocu: ["doc1", "doc2"], actionNotes: [] };
     documentationServiceMock.policyActionDocumentation.set(docu);
     fixture.detectChanges();
-    expect(component.actionDocuString()).toBe("doc1\ndoc2");
+    expect(component.actionDocuInfo()).toBe("doc1\ndoc2");
 
     // Test with null
     documentationServiceMock.policyActionDocumentation.set(null);
     fixture.detectChanges();
-    expect(component.actionDocuString()).toBeUndefined();
+    expect(component.actionDocuInfo()).toBeUndefined();
   });
 
   it("should compute actionNotesString correctly", () => {
@@ -145,12 +145,12 @@ describe("ActionDetailComponent", () => {
     const docu = { actionDocu: [], actionNotes: ["note1", "note2"] };
     documentationServiceMock.policyActionDocumentation.set(docu);
     fixture.detectChanges();
-    expect(component.actionNotesString()).toBe("note1\nnote2");
+    expect(component.actionDocuNotes()).toBe("note1\nnote2");
 
     // Test with null
     documentationServiceMock.policyActionDocumentation.set(null);
     fixture.detectChanges();
-    expect(component.actionNotesString()).toBeUndefined();
+    expect(component.actionDocuNotes()).toBeUndefined();
   });
 
   describe("inputIsValid", () => {

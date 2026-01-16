@@ -23,14 +23,14 @@
         {{ selectedAction()?.name }}
       </h3>
       <div class="action-detail-title-buttons">
-        @if (actionDocuString() && actionDocuString()!.length > 0) {
+        @if (actionDocuInfo() && actionDocuInfo()!.length > 0) {
           <button
             mat-icon-button
-            (click)="toggleContent('docu')">
+            (click)="toggleContent('info')">
             <mat-icon>info_outline</mat-icon>
           </button>
         }
-        @if (actionNotesString() && actionNotesString()!.length > 0) {
+        @if (actionDocuNotes() && actionDocuNotes()!.length > 0) {
           <button
             mat-icon-button
             (click)="toggleContent('notes')">
@@ -40,15 +40,15 @@
       </div>
     </div>
     <div>
-      @if (visibleContent() === "docu") {
+      @if (visibleContent() === "info") {
         <div
           class="action-docu"
-          [innerHTML]="actionDocuString()"></div>
+          [innerHTML]="actionDocuInfo()"></div>
       }
       @if (visibleContent() === "notes") {
         <div
           class="action-notes"
-          [innerHTML]="actionNotesString()"></div>
+          [innerHTML]="actionDocuNotes()"></div>
       }
     </div>
     <div class="action-detail-card">

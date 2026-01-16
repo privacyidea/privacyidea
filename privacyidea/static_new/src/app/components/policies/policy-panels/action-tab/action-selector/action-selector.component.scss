@@ -29,9 +29,6 @@
   gap: calc(var(--global-gap) / 2);
   max-height: 32rem;
   overflow-y: none;
-  padding-right: var(
-    --half-global-padding
-  ); /* Adds space for the scrollbar to prevent content from touching the edge */
 }
 
 .policy-action-items {
@@ -48,7 +45,7 @@
   display: flex;
   font-weight: 500;
   justify-content: space-between;
-  margin: var(--half-global-padding);
+  margin: var(--half-global-padding) 0;
   padding: var(--half-global-padding) var(--three-quarters-global-padding);
   background-color: var(--mat-sys-surface-container-high);
 }

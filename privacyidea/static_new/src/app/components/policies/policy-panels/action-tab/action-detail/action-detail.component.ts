@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, inject, input, linkedSignal, output, Signal } from "@angular/core";
+import { Component, computed, effect, inject, input, linkedSignal, output, signal, Signal } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
@@ -32,6 +32,7 @@ import { MatAutocompleteModule } from "@angular/material/autocomplete";
 import { MatSelectModule } from "@angular/material/select";
 import { SelectorButtons } from "../selector-buttons/selector-buttons.component";
 import {
+  ActionDocumentation,
   DocumentationService,
   DocumentationServiceInterface
 } from "../../../../../services/documentation/documentation.service";
@@ -85,18 +86,20 @@ export class ActionDetailComponent {
     if (actionDetail === null) return false;
     return this.policyService.actionValueIsValid(actionDetail, actionValue);
   });
-  readonly actionDocuString = computed<string | undefined>(() => {
-    const docuList = this.documentationService.policyActionDocumentation()?.actionDocu ?? null;
+  readonly actionDocu = signal<ActionDocumentation | null>(null);
+
+  readonly actionDocuInfo = computed<string | undefined>(() => {
+    const docuList = this.actionDocu()?.info ?? null;
     return docuList?.join("\n");
   });
-  readonly actionNotesString = computed<string | undefined>(() => {
-    const notesList = this.documentationService.policyActionDocumentation()?.actionNotes ?? null;
+  readonly actionDocuNotes = computed<string | undefined>(() => {
+    const notesList = this.actionDocu()?.notes ?? null;
     return notesList?.join("\n");
   });
-  readonly visibleContent = linkedSignal<any, "docu" | "notes" | "none">({
+  readonly visibleContent = linkedSignal<any, "info" | "notes" | "none">({
     source: () => ({
-      docu: this.actionDocuString(),
-      notes: this.actionNotesString()
+      docu: this.actionDocuInfo(),
+      notes: this.actionDocuNotes()
     }),
     computation: (_) => "none"
   });
@@ -113,6 +116,19 @@ export class ActionDetailComponent {
     return Object.keys(currentActions);
   });
 
+  constructor() {
+    effect(() => {
+      const selectedAction = this.selectedAction();
+      if (!selectedAction) {
+        this.actionDocu.set(null);
+        return;
+      }
+      this.documentationService.getPolicyActionDocumentation(this.policy().scope, selectedAction.name).then((docu) => {
+        this.actionDocu.set(docu);
+      });
+    });
+  }
+
   // Public Methods
   updateSelectedActionValue(newValue: any) {
     const selectedAction = this.selectedAction();
@@ -127,7 +143,7 @@ export class ActionDetailComponent {
     this.actionsUpdate.emit(selectedAction);
   }
 
-  toggleContent(contentType: "docu" | "notes") {
+  toggleContent(contentType: "info" | "notes") {
     if (this.visibleContent() === contentType) {
       this.visibleContent.set("none");
     } else {

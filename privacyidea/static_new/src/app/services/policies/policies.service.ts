@@ -359,9 +359,6 @@ export class PolicyService implements PolicyServiceInterface {
     };
   });
 
-  selectedAction = signal<{ name: string; value: any } | null>(null);
-  selectedPolicyScope = signal<string>("");
-
   // -----------------------------------
   // 2.3 Computed Signals (Derived State)
   // -----------------------------------

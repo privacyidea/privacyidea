@@ -29,23 +29,22 @@
       <div class="added-actions-container">
         @for (action of actions(); track action.name) {
           <div
-            class="action-card"
-            [class.action-card-selected]="selectedAction()?.name === action.name"
+            class="action-card-in-panel"
+            [class.action-card-in-panel-selected]="selectedAction()?.name === action.name"
             (click)="onActionClick(action)">
             <div class="action-row">
               <span class="action-label">{{ action.name }}</span>
               @if (!isBooleanAction(action.name)) {
                 <span class="action-value">{{ action.value }}</span>
               }
-              @if (isEditMode()) {
-                <div class="gap-div-8px"></div>
-                <button
-                  mat-icon-button
-                  class="action-button"
-                  (click)="removeActionFromSelectedPolicy(action.name); $event.stopPropagation()">
-                  <mat-icon>delete</mat-icon>
-                </button>
-              }
+
+              <div class="gap-div-8px"></div>
+              <button
+                mat-icon-button
+                class="action-button-in-panel"
+                (click)="removeActionFromSelectedPolicy(action.name); $event.stopPropagation()">
+                <mat-icon>delete</mat-icon>
+              </button>
             </div>
           </div>
         }
