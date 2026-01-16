@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, inject, input, linkedSignal, signal } from "@angular/core";
+import { Component, computed, effect, inject, input, model, signal } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { MatCardModule } from "@angular/material/card";
 import { MatIconModule } from "@angular/material/icon";
@@ -26,25 +26,25 @@ import { MatButtonToggleModule } from "@angular/material/button-toggle";
 import { FormsModule } from "@angular/forms";
 import { MatExpansionModule, MatExpansionPanel } from "@angular/material/expansion";
 import { MatSlideToggleModule } from "@angular/material/slide-toggle";
-import { PolicyDetail, PolicyService, PolicyServiceInterface } from "../../../../services/policies/policies.service";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatSelectModule } from "@angular/material/select";
 import { MatOptionModule } from "@angular/material/core";
-import { PolicyPriorityComponent } from "../action-tab/policy-priority/policy-priority.component";
-import { PolicyDescriptionComponent } from "../action-tab/policy-description/policy-description.component";
-import { ActionTabComponent } from "../action-tab/action-tab.component";
-import { ConditionsTabComponent } from "../conditions-tab/conditions-tab.component";
-import { DialogService, DialogServiceInterface } from "../../../../services/dialog/dialog.service";
-import {
-  SimpleConfirmationDialogComponent,
-  SimpleConfirmationDialogData
-} from "../../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { PolicyPanelViewComponent } from "./policy-panel-view/policy-panel-view.component";
+import { PolicyDetail, PolicyService, PolicyServiceInterface } from "../../../../services/policies/policies.service";
+import { PolicyPanelEditComponent } from "./policy-panel-edit/policy-panel-edit.component";
 import { lastValueFrom } from "rxjs";
+import { DialogServiceInterface, DialogService } from "../../../../services/dialog/dialog.service";
+import {
+  SimpleConfirmationDialogData,
+  SimpleConfirmationDialogComponent
+} from "../../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { PolicyPanelEditHeaderComponent } from "./policy-panel-edit-header/policy-panel-edit-header.component";
+import { PolicyPanelViewHeaderComponent } from "./policy-panel-view-header/policy-panel-view-header.component";
 
-type PolicyTab = "actions" | "conditions";
+export type PolicyTab = "actions" | "conditions";
 
 @Component({
-  selector: "app-policy-panel-edit",
+  selector: "app-policy-panel-edit-view",
   standalone: true,
   imports: [
     CommonModule,
@@ -58,15 +58,15 @@ type PolicyTab = "actions" | "conditions";
     MatFormFieldModule,
     MatSelectModule,
     MatOptionModule,
-    PolicyPriorityComponent,
-    PolicyDescriptionComponent,
-    ActionTabComponent,
-    ConditionsTabComponent
+    PolicyPanelViewComponent,
+    PolicyPanelEditComponent,
+    PolicyPanelEditHeaderComponent,
+    PolicyPanelViewHeaderComponent
   ],
-  templateUrl: "./policy-panel-edit.component.html",
-  styleUrl: "./policy-panel-edit.component.scss"
+  templateUrl: "./policy-panel-edit-view.component.html",
+  styleUrl: "./policy-panel-edit-view.component.scss"
 })
-export class PolicyPanelEditComponent {
+export class PolicyPanelEditViewComponent {
   readonly policyService: PolicyServiceInterface = inject(PolicyService);
   readonly dialogService: DialogServiceInterface = inject(DialogService);
 
@@ -89,22 +89,6 @@ export class PolicyPanelEditComponent {
       })
     );
   });
-  currentPolicyHasConditions = computed(() => this.policyService.policyHasConditions(this.currentPolicy()));
-
-  // Component State Signals
-  readonly activeTab = linkedSignal<any, PolicyTab>({
-    source: () => ({
-      isEditMode: this.isEditMode(),
-      currentPolicyHasConditions: this.currentPolicyHasConditions()
-    }),
-    computation: (source, previous) => {
-      const { isEditMode, currentPolicyHasConditions } = source;
-      if (isEditMode || currentPolicyHasConditions) {
-        return previous?.value || "actions";
-      }
-      return "actions";
-    }
-  });
 
   async handleCollapse(panel: MatExpansionPanel) {
     if (this.isPolicyEdited() && !(await this.confirmDiscardChanges())) {
@@ -115,58 +99,13 @@ export class PolicyPanelEditComponent {
     this.isEditMode.set(false);
   }
 
-  onNameChange(name: string): void {
-    this.policyEdits.update((changes) => ({ ...changes, name }));
-  }
-
-  setActiveTab(tab: PolicyTab): void {
-    this.activeTab.set(tab);
-  }
-
-  togglePolicyActive(policy: PolicyDetail, activate: boolean) {
-    if (activate) {
-      this.policyService.enablePolicy(policy.name);
-    } else {
-      this.policyService.disablePolicy(policy.name);
-    }
-  }
-
-  // Action Methods
-  savePolicy(panel?: MatExpansionPanel) {
+  savePolicy() {
     if (!this.canSavePolicy()) return;
 
     this.policyService.savePolicyEdits(this.policy().name, this.policyEdits());
 
     this.isEditMode.set(false);
     this.policyEdits.set({});
-  }
-
-  async deletePolicy(policyName: string): Promise<void> {
-    if (
-      await this._confirm({
-        title: "Confirm Deletion",
-        confirmAction: {
-          type: "destruct",
-          label: "Delete",
-          value: true
-        },
-        cancelAction: {
-          type: "cancel",
-          label: "Cancel",
-          value: false
-        },
-        items: [policyName],
-        itemType: "policy"
-      })
-    ) {
-      this.policyService.deletePolicy(policyName);
-    }
-  }
-
-  async cancelEditMode() {
-    if (!(await this.confirmDiscardChanges())) return;
-    this.policyEdits.set({});
-    this.isEditMode.set(false);
   }
 
   // State-checking Methods
@@ -200,15 +139,8 @@ export class PolicyPanelEditComponent {
     return true;
   }
 
-  selectPolicyScope(scope: string) {
-    this.addPolicyEdit({ scope });
-  }
-
   updatePolicyPriority(priority: number) {
     this.addPolicyEdit({ priority });
-  }
-  updateActions(actions: { [actionName: string]: string }) {
-    this.addPolicyEdit({ action: actions });
   }
   addPolicyEdit(edits: Partial<PolicyDetail>) {
     this.policyEdits.update((currentChanges) => ({ ...currentChanges, ...edits }));

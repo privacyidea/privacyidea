@@ -1,0 +1,62 @@
+<mat-panel-title>
+  <input
+    type="text"
+    class="policy-name-input"
+    placeholder="Policy Name"
+    [ngModel]="currentPolicy().name"
+    (ngModelChange)="onNameChange($event)"
+    (click)="$event.stopPropagation()"
+    (keydown)="$event.stopPropagation()" />
+</mat-panel-title>
+<mat-panel-description class="header-description">
+  <div class="description-label">
+    @if (policyService.isScopeChangeable(currentPolicy())) {
+      <mat-form-field
+        appearance="fill"
+        class="policy-scope-dropdown"
+        (click)="$event.stopPropagation()">
+        <mat-label i18n>Scope</mat-label>
+        <mat-select
+          [value]="currentPolicy().scope"
+          (selectionChange)="selectPolicyScope($event.value)">
+          @for (scopeOption of policyService.allPolicyScopes(); track scopeOption) {
+            <mat-option [value]="scopeOption">{{ scopeOption }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+    } @else {
+      <span>
+        {{ policy().scope.toLocaleUpperCase() }}
+      </span>
+    }
+  </div>
+  <div class="actions">
+    @if (panel().expanded) {
+      <button
+        mat-icon-button
+        [disabled]="!canSavePolicy()"
+        (click)="$event.stopPropagation(); savePolicy()">
+        <mat-icon>save</mat-icon>
+      </button>
+      <button
+        mat-icon-button
+        class="action-button"
+        (click)="$event.stopPropagation(); cancelEditMode()">
+        <mat-icon>cancel</mat-icon>
+      </button>
+      <button
+        mat-icon-button
+        (click)="$event.stopPropagation(); deletePolicy(policy().name)">
+        <mat-icon>delete</mat-icon>
+      </button>
+    }
+    <mat-slide-toggle
+      class="small-toggle"
+      #slideToggle
+      [checked]="panel().expanded ? currentPolicy().active : policy().active"
+      (change)="togglePolicyActive(policy(), $event.checked); slideToggle._switchElement.nativeElement.blur()"
+      (click)="$event.stopPropagation()"
+      [disableRipple]="true">
+    </mat-slide-toggle>
+  </div>
+</mat-panel-description>

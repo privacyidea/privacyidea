@@ -25,7 +25,7 @@
     [multi]="multiOpenAccordion()">
     @if (authService.actionAllowed("policyread")) {
       <app-policy-filter
-        (filteredPoliciesChange)="onPolicyListFilteredChange($event, accordion)"
+        (filteredPoliciesChange)="onPolicyListFilteredChange($event)"
         [unfilteredPolicies]="policyService.allPolicies()">
       </app-policy-filter>
     }
@@ -36,7 +36,7 @@
     }
     @if (authService.actionAllowed("policyread")) {
       @for (policy of policiesListFiltered(); track policy.name) {
-        <app-policy-panel-edit [policy]="policy"> </app-policy-panel-edit>
+        <app-policy-panel-edit-view [policy]="policy"> </app-policy-panel-edit-view>
       }
     }
   </mat-accordion>

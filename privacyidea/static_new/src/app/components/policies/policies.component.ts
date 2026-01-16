@@ -17,16 +17,15 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, inject, signal } from "@angular/core";
+import { Component, computed, effect, inject, linkedSignal, signal, viewChild } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { MatAccordion, MatExpansionModule } from "@angular/material/expansion";
 import { PolicyDetail, PolicyService, PolicyServiceInterface } from "../../services/policies/policies.service";
 import { MatIconModule } from "@angular/material/icon";
 import { AuthService, AuthServiceInterface } from "../../services/auth/auth.service";
 import { PolicyFilterComponent } from "./policy-panels/policy-filter/policy-filter.component";
-import { FilterValueGeneric } from "../../core/models/filter_value_generic/filter_value_generic";
 import { PolicyPanelNewComponent } from "./policy-panels/policy-panel-new/policy-panel-new.component";
-import { PolicyPanelEditComponent } from "./policy-panels/policy-panel-edit/policy-panel-edit.component";
+import { PolicyPanelEditViewComponent } from "./policy-panels/policy-panel-edit-view/policy-panel-edit-view.component";
 
 @Component({
   selector: "app-policies",
@@ -37,28 +36,37 @@ import { PolicyPanelEditComponent } from "./policy-panels/policy-panel-edit/poli
     MatIconModule,
     PolicyFilterComponent,
     PolicyPanelNewComponent,
-    PolicyPanelEditComponent
+    PolicyPanelEditViewComponent
   ],
   templateUrl: "./policies.component.html",
   styleUrl: "./policies.component.scss"
 })
 export class PoliciesComponent {
+  readonly accordion = viewChild(MatAccordion);
+
   readonly policyService: PolicyServiceInterface = inject(PolicyService);
   readonly authService: AuthServiceInterface = inject(AuthService);
 
-  readonly policiesListFiltered = signal<PolicyDetail[]>([]);
-  readonly multiOpenAccordion = signal<boolean>(false);
+  readonly policiesListFiltered = linkedSignal<PolicyDetail[], PolicyDetail[]>({
+    source: () => this.policyService.allPolicies(),
+    computation: (allPolicies) => allPolicies
+  });
+  readonly policiesAreFiltered = computed(
+    () => this.policiesListFiltered().length !== this.policyService.allPolicies().length
+  );
+  readonly multiOpenAccordion = computed(() => this.policiesAreFiltered());
 
-  onPolicyListFilteredChange(filteredPolicies: PolicyDetail[], accordion: MatAccordion): void {
-    if (accordion) {
-      if (filteredPolicies.length !== this.policyService.allPolicies().length) {
-        this.multiOpenAccordion.set(true);
-        setTimeout(() => accordion.openAll(), 0);
-      } else {
-        this.multiOpenAccordion.set(false);
-        setTimeout(() => accordion.closeAll(), 0);
-      }
-    }
+  onPolicyListFilteredChange(filteredPolicies: PolicyDetail[]): void {
     this.policiesListFiltered.set(filteredPolicies);
+  }
+
+  constructor() {
+    effect(() => {
+      if (this.multiOpenAccordion()) {
+        setTimeout(() => this.accordion()?.openAll(), 0);
+      } else {
+        setTimeout(() => this.accordion()?.closeAll(), 0);
+      }
+    });
   }
 }

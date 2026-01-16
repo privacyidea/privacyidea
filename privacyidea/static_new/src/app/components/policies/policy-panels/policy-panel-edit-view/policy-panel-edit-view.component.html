@@ -1,0 +1,37 @@
+<div class="list-item-card">
+  <mat-expansion-panel
+    #panel
+    (closed)="handleCollapse(panel)">
+    <mat-expansion-panel-header>
+      @if (isEditMode()) {
+        <app-policy-panel-edit-header
+          class="app-policy-panel-header"
+          [panel]="panel"
+          [isEditMode]="isEditMode()"
+          [policy]="policy()"
+          [policyEdits]="policyEdits()"
+          (isEditModeChange)="isEditMode.set($event)"
+          (policyEditsChange)="policyEdits.set($event)"
+          [currentPolicy]="currentPolicy()"
+          [isPolicyEdited]="isPolicyEdited()" />
+      } @else {
+        <app-policy-panel-view-header
+          class="app-policy-panel-header"
+          [panel]="panel"
+          [isEditMode]="isEditMode()"
+          [policy]="policy()"
+          (isEditModeChange)="isEditMode.set($event)" />
+      }
+    </mat-expansion-panel-header>
+    @if (isEditMode()) {
+      <app-policy-panel-edit
+        [policy]="policy()"
+        [(policyEdits)]="policyEdits"
+        (onEditModeChange)="isEditMode.set($event)"></app-policy-panel-edit>
+    } @else {
+      <app-policy-panel-view
+        [policy]="policy()"
+        (onEditModeChange)="isEditMode.set($event)"></app-policy-panel-view>
+    }
+  </mat-expansion-panel>
+</div>

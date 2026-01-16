@@ -446,9 +446,7 @@ export class PolicyService implements PolicyServiceInterface {
   //   return this.filteredPolicyActionGroups(this.alreadyAddedActionNames(), this.actionFilter());
   // });
 
-  _allPolicies = computed(() => {
-    return this.allPoliciesRecource.value()?.result?.value ?? [];
-  });
+  _allPolicies = computed(() => this.allPoliciesRecource.value()?.result?.value ?? []);
 
   allPolicies = linkedSignal({
     source: () => this._allPolicies(),

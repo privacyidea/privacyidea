@@ -19,6 +19,7 @@
 
 import { Directive, inject } from "@angular/core";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
+import { DialogService } from "../../../../services/dialog/dialog.service";
 
 @Directive()
 export abstract class AbstractDialogComponent<T = any, R = any> {

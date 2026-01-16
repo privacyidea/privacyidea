@@ -1,0 +1,34 @@
+<mat-panel-title>
+  <div class="policy-name">
+    {{ policy().name }}
+  </div>
+</mat-panel-title>
+<mat-panel-description class="header-description">
+  <div class="description-label">
+    <span>
+      {{ policy().scope.toLocaleUpperCase() }}
+    </span>
+  </div>
+  <div class="actions">
+    @if (panel().expanded) {
+      <button
+        mat-icon-button
+        (click)="$event.stopPropagation(); isEditModeChange.emit(true)">
+        <mat-icon>edit</mat-icon>
+      </button>
+      <button
+        mat-icon-button
+        (click)="$event.stopPropagation(); deletePolicy(policy().name)">
+        <mat-icon>delete</mat-icon>
+      </button>
+    }
+    <mat-slide-toggle
+      class="small-toggle"
+      #slideToggle
+      [checked]="policy().active"
+      (change)="togglePolicyActive(policy(), $event.checked); slideToggle._switchElement.nativeElement.blur()"
+      (click)="$event.stopPropagation()"
+      [disableRipple]="true">
+    </mat-slide-toggle>
+  </div>
+</mat-panel-description>

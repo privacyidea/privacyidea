@@ -1,0 +1,71 @@
+import { Component, inject, input, output } from "@angular/core";
+import { MatExpansionModule, MatExpansionPanel } from "@angular/material/expansion";
+import { MatSlideToggleModule } from "@angular/material/slide-toggle";
+import { MatIconModule } from "@angular/material/icon";
+import { lastValueFrom } from "rxjs/internal/lastValueFrom";
+import { PolicyDetail, PolicyService, PolicyServiceInterface } from "../../../../../services/policies/policies.service";
+import {
+  SimpleConfirmationDialogData,
+  SimpleConfirmationDialogComponent
+} from "../../../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { DialogServiceInterface, DialogService } from "../../../../../services/dialog/dialog.service";
+import { CommonModule } from "@angular/common";
+
+@Component({
+  selector: "app-policy-panel-view-header",
+  templateUrl: "./policy-panel-view-header.component.html",
+  styleUrls: ["./policy-panel-view-header.component.scss"],
+  imports: [CommonModule, MatExpansionModule, MatSlideToggleModule, MatIconModule]
+})
+export class PolicyPanelViewHeaderComponent {
+  readonly policyService: PolicyServiceInterface = inject(PolicyService);
+  readonly dialogService: DialogServiceInterface = inject(DialogService);
+
+  readonly policy = input.required<PolicyDetail>();
+  readonly panel = input.required<MatExpansionPanel>();
+  readonly isEditMode = input.required<boolean>();
+  readonly isEditModeChange = output<boolean>();
+
+  async deletePolicy(policyName: string): Promise<void> {
+    if (
+      await this._confirm({
+        title: "Confirm Deletion",
+        confirmAction: {
+          type: "destruct",
+          label: "Delete",
+          value: true
+        },
+        cancelAction: {
+          type: "cancel",
+          label: "Cancel",
+          value: false
+        },
+        items: [policyName],
+        itemType: "policy"
+      })
+    ) {
+      this.policyService.deletePolicy(policyName);
+    }
+  }
+
+  togglePolicyActive(policy: PolicyDetail, activate: boolean) {
+    if (activate) {
+      this.policyService.enablePolicy(policy.name);
+    } else {
+      this.policyService.disablePolicy(policy.name);
+    }
+  }
+
+  async _confirm(data: SimpleConfirmationDialogData): Promise<boolean> {
+    return (
+      (await lastValueFrom(
+        this.dialogService
+          .openDialog({
+            component: SimpleConfirmationDialogComponent,
+            data: data
+          })
+          .afterClosed()
+      )) === true
+    );
+  }
+}
