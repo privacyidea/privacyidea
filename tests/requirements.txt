@@ -1067,6 +1067,10 @@ six==1.17.0 \
     #   pyrad
     #   python-dateutil
     #   smpplib
+smime-email==1.0.1 \
+    --hash=sha256:26e54546f92cde2350fb6d1c3a7b321e039590c86f1ab3df27ac43e058965ba3 \
+    --hash=sha256:9e9588489e077c9466c7a9ea95d40c1cb1ba9b74ee8240a49a61d68320f77da5
+    # via privacyIDEA (pyproject.toml)
 smpplib==2.2.4 \
     --hash=sha256:0fab94702f0a70500d654e8df69933465728770e75838ecceef0314b4442d0c2 \
     --hash=sha256:6f3b036fcb2643c1b7a3289bb5ac4c9a720af1bf73e572e2729db6b5d800c273
