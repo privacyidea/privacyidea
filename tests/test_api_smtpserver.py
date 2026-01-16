@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 from privacyidea.lib.crypto import encryptPassword
 from . import smtpmock
 from .base import MyApiTestCase
@@ -104,7 +106,9 @@ class SMTPServerTestCase(MyApiTestCase):
                                                  "recipient":
                                                      "recp@example.com",
                                                  "description": "myServer",
-                                                 "smime": True},
+                                                 "smime": True,
+                                                 "private_key": 'tests/testdata/ca/cakey.pem',
+                                                 "certificate": 'tests/testdata/ca/cacert.pem'},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
@@ -114,3 +118,34 @@ class SMTPServerTestCase(MyApiTestCase):
             msg = smtpmock.get_sent_message()
             self.assertTrue("application/x-pkcs7-signature" in msg)
             self.assertTrue("smime.p7s" in msg)
+
+    @smtpmock.activate
+    def test_04_dont_send_email_on_smime_error(self):
+        smtpmock.setdata(response={"recp@example.com": (200, "OK")})
+
+        with patch("privacyidea.lib.smtpserver.smime_email.load_key") as mock_load:
+            mock_load.side_effect = Exception("Something went wrong")
+
+            with self.app.test_request_context('/smtpserver/send_test_email',
+                                               method='POST',
+                                               data={"identifier": "someServer",
+                                                     "username": "cornelius",
+                                                     "password": encryptPassword("secret"),
+                                                     "port": "123",
+                                                     "server": "1.2.3.4",
+                                                     "sender": "privacyidea@local",
+                                                     "recipient":
+                                                         "recp@example.com",
+                                                     "description": "myServer",
+                                                     "smime": True,
+                                                     "dont_send_on_error": True,
+                                                     "private_key": 'tests/testdata/ca/cakey.pem',
+                                                     "certificate": 'tests/testdata/ca/cacert.pem'},
+                                               headers={'Authorization': self.at}):
+                res = self.app.full_dispatch_request()
+                self.assertTrue(res.status_code == 200, res)
+                data = res.json
+                self.assertEqual(data.get("result").get("value"), False)
+
+                msg = smtpmock.get_sent_message()
+                self.assertIsNone(msg)

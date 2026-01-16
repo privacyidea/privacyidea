@@ -23,9 +23,7 @@ from time import gmtime, strftime
 from urllib.parse import urlparse
 
 import smime_email
-from flask import current_app
 
-from privacyidea.config import ConfigKey
 from privacyidea.lib.crypto import (decryptPassword, encryptPassword,
                                     FAILED_TO_DECRYPT_PASSWORD)
 from privacyidea.lib.log import log_with
@@ -137,15 +135,17 @@ class SMTPServer(object):
         msg = msg.as_bytes()
         if config.get('smime', False):
             try:
-                SMIME_PRIVATE_KEY = smime_email.load_key(
-                    current_app.config.get(ConfigKey.SMIME_PRIVATE_KEY, "key_path.pem"))
-                SMIME_CHAIN = smime_email.load_certificates(
-                    current_app.config.get(ConfigKey.SMIME_CERTIFICATES, "intermediate_path.pem"))
+                SMIME_PRIVATE_KEY = smime_email.load_key(config['private_key'])
+                SMIME_CHAIN = smime_email.load_certificates(config['certificate'])
                 SMIME_CERTIFICATE = SMIME_CHAIN[0]
                 msg = smime_email.get_smime_attachment_content(msg, SMIME_PRIVATE_KEY, SMIME_CERTIFICATE,
                                                                SMIME_CHAIN)
             except Exception as ex:
-                log.error(f'Can`t create smime attachment: {ex}')
+                abort = config.get('dont_send_on_error')
+                action = "not be sent" if abort else "be sent anyway"
+                log.error(f"Can't create smime attachment: {ex}. Email will {action}")
+                if abort:
+                    return False
         r = mail.sendmail(mail_from, recipient, msg.decode('utf-8'))
         log.info("Mail sent: {0!s}".format(r))
         # r is a dictionary like {"recp@destination.com": (200, 'OK')}
@@ -301,7 +301,7 @@ def list_smtpservers(identifier=None, server=None):
 @log_with(log)
 def add_smtpserver(identifier, server=None, port=25, username="", password="",
                    sender="", description="", tls=False, timeout=TIMEOUT,
-                   enqueue_job=False, smime=False):
+                   enqueue_job=False, smime=False, send_on_error=False, private_key="", certificate=""):
     """
     This adds an smtp server to the smtp server database table.
 
@@ -319,7 +319,8 @@ def add_smtpserver(identifier, server=None, port=25, username="", password="",
     r = SMTPServerDB(identifier=identifier, server=server, port=port,
                      username=username, password=cryptedPassword, sender=sender,
                      description=description, tls=tls, timeout=timeout,
-                     enqueue_job=enqueue_job, smime=smime).save()
+                     enqueue_job=enqueue_job, smime=smime, send_on_error=send_on_error,
+                     private_key=private_key, certificate=certificate).save()
     return r
 
 

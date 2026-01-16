@@ -30,6 +30,9 @@ myApp.controller("smtpServerController", ["$scope", "$stateParams", "inform",
         $scope.params = {
             tls: true,
             smime: false,
+            dont_send_on_error: false,
+            private_key: "",
+            certificate: "",
             port: 25,
             timeout: 10
         }
@@ -50,6 +53,9 @@ myApp.controller("smtpServerController", ["$scope", "$stateParams", "inform",
                     $scope.params = {
                         tls: true,
                         smime: false,
+                        dont_send_on_error: false,
+                        private_key: "",
+                        certificate: "",
                         port: 25,
                         timeout: 10
                     };

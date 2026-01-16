@@ -4,17 +4,17 @@
 
 [project]
 name = "privacyIDEA"
-description="privacyIDEA: multifactor authentication management system"
+description = "privacyIDEA: multifactor authentication management system"
 readme = "README.rst"
 requires-python = ">=3.9"
 license = "AGPL-3.0-or-later"
 license-files = ["LICENSE"]
 keywords = ["OTP", "two-factor authentication", "management", "security", "2fa", "mfa"]
 authors = [
-    {name = "Cornelius Kölbel", email = "cornelius@privacyidea.org"}
+    { name = "Cornelius Kölbel", email = "cornelius@privacyidea.org" }
 ]
 maintainers = [
-    {name = "Cornelius Kölbel", email = "cornelius@privacyidea.org"}
+    { name = "Cornelius Kölbel", email = "cornelius@privacyidea.org" }
 ]
 classifiers = [
     "Framework :: Flask",
@@ -69,6 +69,7 @@ dependencies = [
     "PyYAML",
     "requests",
     "segno",
+    "smime_email",
     "smpplib",
     "SQLAlchemy<2.0",
     "webauthn"

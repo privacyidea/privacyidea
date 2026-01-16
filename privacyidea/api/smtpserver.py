@@ -74,11 +74,15 @@ def create(identifier=None):
     timeout = int(getParam(param, "timeout") or 10)
     enqueue_job = is_true(getParam(param, "enqueue_job", default=False))
     smime = is_true(getParam(param, "smime", default=False))
+    dont_send_on_error = is_true(getParam(param, "dont_send_on_error", default=False))
+    private_key = getParam(param, "private_key", default="")
+    certificate = getParam(param, "certificate", default="")
 
     r = add_smtpserver(identifier, server, port=port, username=username,
                        password=password, tls=tls, description=description,
                        sender=sender, timeout=timeout, enqueue_job=enqueue_job,
-                       smime=smime)
+                       smime=smime, dont_send_on_error=dont_send_on_error, private_key=private_key,
+                       certificate=certificate)
 
     g.audit_object.log({'success': r > 0,
                         'info': r})
@@ -133,11 +137,15 @@ def test():
     timeout = int(getParam(param, "timeout") or 10)
     enqueue_job = is_true(getParam(param, "enqueue_job", default=False))
     smime = is_true(getParam(param, "smime", default=False))
+    dont_send_on_error = is_true(getParam(param, "dont_send_on_error", default=False))
+    private_key = getParam(param, "private_key", default="")
+    certificate = getParam(param, "certificate", default="")
 
     s = dict(identifier=identifier, server=server, port=port,
              username=username, password=password, sender=sender,
              tls=tls, timeout=timeout, enqueue_job=enqueue_job,
-             smime=smime)
+             smime=smime, dont_send_on_error=dont_send_on_error, private_key=private_key,
+             certificate=certificate)
     r = send_or_enqueue_email(s, recipient,
                               "Test Email from privacyIDEA",
                               "This is a test email from privacyIDEA. "

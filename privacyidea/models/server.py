@@ -154,6 +154,9 @@ class SMTPServer(MethodsMixin, db.Model):
     timeout = db.Column(db.Integer, default=10)
     enqueue_job = db.Column(db.Boolean, nullable=False, default=False)
     smime = db.Column(db.Boolean, nullable=False, default=False)
+    dont_send_on_error = db.Column(db.Boolean, nullable=False, default=False)
+    private_key = db.Column(db.Unicode(255), default="")
+    certificate = db.Column(db.Unicode(255), default="")
 
     def get(self):
         """
@@ -171,7 +174,10 @@ class SMTPServer(MethodsMixin, db.Model):
             "description": self.description,
             "timeout": self.timeout,
             "enqueue_job": self.enqueue_job,
-            "smime": self.smime
+            "smime": self.smime,
+            "dont_send_on_error": self.dont_send_on_error,
+            "private_key": self.private_key,
+            "certificate": self.certificate
         }
 
     def save(self):
@@ -201,6 +207,12 @@ class SMTPServer(MethodsMixin, db.Model):
                 values["timeout"] = self.timeout
             if self.smime is not None:
                 values["smime"] = self.smime
+            if self.dont_send_on_error is not None:
+                values["dont_send_on_error"] = self.dont_send_on_error
+            if self.private_key is not None:
+                values["private_key"] = self.private_key
+            if self.certificate is not None:
+                values["certificate"] = self.certificate
             if self.enqueue_job is not None:
                 values["enqueue_job"] = self.enqueue_job
             SMTPServer.query.filter(SMTPServer.identifier ==
