@@ -93,12 +93,14 @@ ENV_KEY = "PRIVACYIDEA_CONFIGFILE"
 CSP = {
     'default-src': [
         '\'self\'',
-        'community.privacyidea.org'
+        'community.privacyidea.org',
+        'privacyidea.readthedocs.io'
     ],
     'img-src': [
         '\'self\'',
         'data:',
         'community.privacyidea.org'
+        'privacyidea.readthedocs.io'
     ],
     'script-src': [
         '\'self\''
@@ -312,7 +314,6 @@ def create_app(config_name="development",
                 render_template(
                     index_html))
         return jsonify(error="Not found"), 404
-
 
     # Overwrite default config with environment setting
     config_name = os.environ.get(ConfigKey.CONFIG_NAME, config_name)
