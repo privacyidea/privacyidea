@@ -10,10 +10,6 @@
   row-gap: 12px;
   align-items: start;
 
-  mat-form-field {
-    width: 100%;
-  }
-
   @media (max-width: 1100px) {
     grid-template-columns: 1fr;
   }

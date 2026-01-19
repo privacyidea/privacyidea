@@ -512,6 +512,50 @@
               [title]="'Get User by Name'" />
           </div>
         </mat-expansion-panel>
+
+        @if (editableControl.value) {
+          <mat-expansion-panel>
+            <mat-expansion-panel-header>
+              <mat-panel-title i18n>Create User</mat-panel-title>
+            </mat-expansion-panel-header>
+
+            <div class="auth-panel-body">
+              <app-http-config
+                [description]="'Configure the endpoint to create a new user in the user store. The above defined attributes can be set in the UI and will be added to the request body. Additionally, you can define a password which must be specified in the request mapping using the tag &quot;{password}&quot;.'"
+                [endpointHint]="'Possible tags: {username} {userid} {surname} {givenname} {email} {mobile} {phone} {password}'"
+                [formGroup]="configCreateUserGroup"
+                [title]="'Create User'" />
+            </div>
+          </mat-expansion-panel>
+
+          <mat-expansion-panel>
+            <mat-expansion-panel-header>
+              <mat-panel-title i18n>Edit User</mat-panel-title>
+            </mat-expansion-panel-header>
+
+            <div class="auth-panel-body">
+              <app-http-config
+                [description]="'Configure the endpoint to edit an existing user in the user store. The above defined attributes can be set in the UI and will be added to the request body. Additionally, you can define custom request parameters in the request mapping.'"
+                [endpointHint]="'Possible tags: {username} {userid} {surname} {givenname} {email} {mobile} {phone} {password}'"
+                [formGroup]="configEditUserGroup"
+                [title]="'Edit User'" />
+            </div>
+          </mat-expansion-panel>
+
+          <mat-expansion-panel>
+            <mat-expansion-panel-header>
+              <mat-panel-title i18n>Delete User</mat-panel-title>
+            </mat-expansion-panel-header>
+
+            <div class="auth-panel-body">
+              <app-http-config
+                [description]="'Configure the endpoint to delete an existing user from the user store.'"
+                [endpointHint]="'Possible tags: {userid}'"
+                [formGroup]="configDeleteUserGroup"
+                [title]="'Delete User'" />
+            </div>
+          </mat-expansion-panel>
+        }
       </mat-accordion>
     </div>
   }
