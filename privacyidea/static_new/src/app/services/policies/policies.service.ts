@@ -96,14 +96,14 @@ export interface SectionOption {
 }
 
 export const SECTION_OPTIONS: SectionOption[] = [
-  { key: "HTTP Environment", label: "HTTP Environment" },
-  { key: "HTTP Request header", label: "HTTP Request header" },
-  { key: "Request Data", label: "Request Data" },
-  { key: "container", label: "Container" },
-  { key: "container_info", label: "Container Info" },
-  { key: "token", label: "Token" },
-  { key: "tokeninfo", label: "Token Info" },
-  { key: "userinfo", label: "User Info" }
+  { key: "HTTP Environment", label: $localize`HTTP Environment` },
+  { key: "HTTP Request header", label: $localize`HTTP Request header` },
+  { key: "Request Data", label: $localize`Request Data` },
+  { key: "container", label: $localize`Container` },
+  { key: "container_info", label: $localize`Container Info` },
+  { key: "token", label: $localize`Token` },
+  { key: "tokeninfo", label: $localize`Token Info` },
+  { key: "userinfo", label: $localize`User Info` }
 ];
 // 1. Comparator Options
 export type ComparatorOptionKey =
@@ -130,22 +130,22 @@ export interface ComparatorOption {
 }
 
 export const COMPARATOR_OPTIONS: ComparatorOption[] = [
-  { key: "contains", label: "Contains" },
-  { key: "!contains", label: "Does not contain" },
-  { key: "equals", label: "Equals" },
-  { key: "!equals", label: "Does not equal" },
-  { key: "matches", label: "Matches (Regex)" },
-  { key: "!matches", label: "Does not match (Regex)" },
-  { key: "in", label: "In" },
-  { key: "!in", label: "Not in" },
-  { key: "string_contains", label: "String contains" },
-  { key: "!string_contains", label: "String does not contain" },
-  { key: "date_after", label: "Date after" },
-  { key: "date_before", label: "Date before" },
-  { key: "date_within_last", label: "Within last..." },
-  { key: "!date_within_last", label: "Not within last..." },
-  { key: "<", label: "Less than" },
-  { key: ">", label: "Greater than" }
+  { key: "contains", label: $localize`Contains` },
+  { key: "!contains", label: $localize`Does not contain` },
+  { key: "equals", label: $localize`Equals` },
+  { key: "!equals", label: $localize`Does not equal` },
+  { key: "matches", label: $localize`Matches (Regex)` },
+  { key: "!matches", label: $localize`Does not match (Regex)` },
+  { key: "in", label: $localize`In` },
+  { key: "!in", label: $localize`Not in` },
+  { key: "string_contains", label: $localize`String contains` },
+  { key: "!string_contains", label: $localize`String does not contain` },
+  { key: "date_within_last", label: $localize`Within last...` },
+  { key: "!date_within_last", label: $localize`Not within last...` },
+  { key: "date_after", label: $localize`Date after` },
+  { key: "date_before", label: $localize`Date before` },
+  { key: "<", label: $localize`Less than` },
+  { key: ">", label: $localize`Greater than` }
 ];
 
 // 2. Handle Missing Data Options
@@ -187,7 +187,7 @@ export interface PolicyServiceInterface {
   policyHasConditions(policy: PolicyDetail): boolean;
   policyHasAdminConditions(policy: PolicyDetail): boolean;
   policyHasUserConditions(policy: PolicyDetail): boolean;
-  policyHasNodeConditions(policy: PolicyDetail): boolean;
+  policyHasEnviromentConditions(policy: PolicyDetail): boolean;
   policyHasAdditionalConditions(policy: PolicyDetail): boolean;
   policyHasActions(policy: PolicyDetail): boolean;
   savePolicyEdits(policyName: string, edits: Partial<PolicyDetail>): void;
@@ -275,7 +275,7 @@ export class PolicyService implements PolicyServiceInterface {
     return false;
   }
 
-  policyHasNodeConditions(policy: PolicyDetail): boolean {
+  policyHasEnviromentConditions(policy: PolicyDetail): boolean {
     if (policy?.pinode && policy.pinode.length > 0) return true;
     if (policy?.time && policy.time.length > 0) return true;
     if (policy?.client && policy.client.length > 0) return true;
@@ -291,7 +291,7 @@ export class PolicyService implements PolicyServiceInterface {
   policyHasConditions(policy: PolicyDetail): boolean {
     if (this.policyHasAdminConditions(policy)) return true;
     if (this.policyHasUserConditions(policy)) return true;
-    if (this.policyHasNodeConditions(policy)) return true;
+    if (this.policyHasEnviromentConditions(policy)) return true;
     if (this.policyHasAdditionalConditions(policy)) return true;
     return false;
   }

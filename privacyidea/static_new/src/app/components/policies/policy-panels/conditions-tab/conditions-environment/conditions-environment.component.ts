@@ -32,7 +32,7 @@ import { ClearButtonComponent } from "../../../../shared/clear-button/clear-butt
 import { MultiSelectOnlyComponent } from "../../../../shared/multi-select-only/multi-select-only.component";
 
 @Component({
-  selector: "app-conditions-nodes",
+  selector: "app-conditions-environment",
   standalone: true,
   imports: [
     CommonModule,
@@ -76,7 +76,7 @@ export class ConditionsEnvironmentComponent {
   selectedValidTime = computed(() => this.policy().time || "");
   selectedClient = computed(() => this.policy().client || []);
   isAllNodesSelected = computed(() => this.selectedPinodes().length === this.availablePinodesList().length);
-  availableUserAgents = signal<string[]>([
+  userAgentPresets = [
     "Credential Provider",
     "Keycloak",
     "AD FS",
@@ -88,7 +88,22 @@ export class ConditionsEnvironmentComponent {
     "LDAP Proxy",
     "privacyIDEA Authenticator",
     "privacyIDEA WebUI"
-  ]);
+  ];
+  userAgentSearch = signal<string>("");
+
+  filteredUserAgentPresets = computed(() => {
+    const selected = this.selectedUserAgents();
+    const search = this.userAgentSearch().toLowerCase();
+
+    return this.userAgentPresets.filter((ua) => !selected.includes(ua) && ua.toLowerCase().includes(search));
+  });
+
+  // Methode zum Zurücksetzen der Suche beim Schließen/Öffnen
+  onDropdownToggled(isOpen: boolean) {
+    if (!isOpen) {
+      this.userAgentSearch.set("");
+    }
+  }
   constructor() {
     this.validTimeFormControl.valueChanges.subscribe(() => {
       this.setValidTime();
@@ -120,6 +135,19 @@ export class ConditionsEnvironmentComponent {
   updateSelectedPinodes($event: string[]) {
     this.emitEdits({ pinode: $event });
   }
+
+  addUserAgentFromSelect($event: MatSelectChange, selectRef: MatSelect) {
+    setTimeout(() => {
+      selectRef.value = null;
+    });
+    const userAgent = $event.value;
+    if (!userAgent) return;
+    const oldUserAgents = this.selectedUserAgents();
+    if (oldUserAgents.includes(userAgent)) return;
+    const newUserAgents = [...oldUserAgents, userAgent];
+    this.emitEdits({ user_agents: newUserAgents });
+  }
+
   // User Agent Management
   addUserAgent() {
     if (this.addUserAgentFormControl.invalid) return;

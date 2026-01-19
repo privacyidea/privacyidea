@@ -16,18 +16,16 @@
     </span>
   </div>
   <div class="actions">
-    @if (panel().expanded) {
-      <button
-        mat-icon-button
-        (click)="$event.stopPropagation(); isEditModeChange.emit(true)">
-        <mat-icon>edit</mat-icon>
-      </button>
-      <button
-        mat-icon-button
-        (click)="$event.stopPropagation(); deletePolicy(policy().name)">
-        <mat-icon>delete</mat-icon>
-      </button>
-    }
+    <button
+      mat-icon-button
+      (click)="$event.stopPropagation(); editPolicy()">
+      <mat-icon>edit</mat-icon>
+    </button>
+    <button
+      mat-icon-button
+      (click)="$event.stopPropagation(); deletePolicy(policy().name)">
+      <mat-icon>delete</mat-icon>
+    </button>
     <mat-slide-toggle
       class="small-toggle"
       #slideToggle

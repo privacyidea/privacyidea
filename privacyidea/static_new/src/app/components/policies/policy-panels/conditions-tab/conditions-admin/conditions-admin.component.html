@@ -16,101 +16,111 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-@if (isEditMode() || policyService.policyHasAdminConditions(policy())) {
-  <div class="admin-container">
-    <h2
-      class="admin-title"
-      i18n>
-      Admin Conditions
-    </h2>
+<div class="admin-container">
+  <h2
+    class="admin-title"
+    i18n>
+    Admin Conditions
+  </h2>
 
-    @if (isEditMode()) {
-      <app-multi-select-only
-        label="Select Admin Realms"
-        [items]="realmService.adminRealmOptions()"
-        [selectedItems]="selectedAdminrealm()"
-        (selectionChange)="selectAdminRealm($event)">
-      </app-multi-select-only>
-      <div class="admin-list-wrapper">
-        <div class="admin-list">
-          @for (admin of selectedAdmins(); track admin) {
-            <div class="admin-chip">
-              <span>{{ admin }}</span>
-              <button
-                mat-icon-button
-                (click)="removeAdmin(admin)"
-                class="remove-admin-btn">
-                <mat-icon class="remove-admin-icon">close</mat-icon>
-              </button>
+  @if (isEditMode()) {
+    <app-multi-select-only
+      label="Select Admin Realms"
+      [items]="realmService.adminRealmOptions()"
+      [selectedItems]="selectedAdminrealm()"
+      (selectionChange)="selectAdminRealm($event)">
+    </app-multi-select-only>
+    <div class="admin-list-wrapper">
+      <div class="admin-list">
+        @for (admin of selectedAdmins(); track admin) {
+          <div class="admin-chip">
+            <span>{{ admin }}</span>
+            <button
+              mat-icon-button
+              (click)="removeAdmin(admin)"
+              class="remove-admin-btn">
+              <mat-icon class="remove-admin-icon">close</mat-icon>
+            </button>
+          </div>
+        }
+      </div>
+    </div>
+    <div class="admin-input-container">
+      <mat-form-field class="add-admin-input">
+        <mat-label i18n>Add Admin</mat-label>
+        <input
+          matInput
+          [formControl]="adminFormControl"
+          #adminInput
+          (keyup.enter)="
+            adminFormControl.markAsTouched();
+            addAdmin(adminInput.value);
+            !adminFormControl.invalid && (adminInput.value = '')
+          " />
+        @if (adminFormControl.hasError("includesComma")) {
+          <mat-error i18n> Admin must not contain commas. </mat-error>
+        }
+      </mat-form-field>
+
+      <button
+        class="input-attached-button"
+        [disabled]="!adminInput.value.trim() || adminFormControl.invalid"
+        (click)="addAdmin(adminInput.value); adminInput.value = ''">
+        <mat-icon>add</mat-icon>
+      </button>
+    </div>
+  } @else {
+    <div class="readonly-admin-grid-container">
+      @if (selectedRealms().length > 0) {
+        <span
+          class="readonly-label"
+          i18n
+          >Realms:</span
+        >
+        <div class="readonly-chips-container">
+          @for (realm of selectedRealms(); track realm) {
+            <div
+              class="readonly-chip"
+              [title]="realm">
+              {{ realm }}
             </div>
           }
         </div>
-      </div>
-      <div class="admin-input-container">
-        <mat-form-field class="add-admin-input">
-          <mat-label i18n>Add Admin</mat-label>
-          <input
-            matInput
-            [formControl]="adminFormControl"
-            #adminInput
-            (keyup.enter)="
-              adminFormControl.markAsTouched();
-              addAdmin(adminInput.value);
-              !adminFormControl.invalid && (adminInput.value = '')
-            " />
-          @if (adminFormControl.hasError("includesComma")) {
-            <mat-error i18n> Admin must not contain commas. </mat-error>
-          }
-        </mat-form-field>
+      }
 
-        <button
-          class="input-attached-button"
-          [disabled]="!adminInput.value.trim() || adminFormControl.invalid"
-          (click)="addAdmin(adminInput.value); adminInput.value = ''">
-          <mat-icon>add</mat-icon>
-        </button>
-      </div>
-    } @else {
-      <div class="readonly-admin-grid-container">
-        @if (selectedRealms().length > 0) {
-          <span
-            class="readonly-label"
-            i18n>
-            Realms:
-          </span>
-          <div class="readonly-chips-container">
-            @for (realm of selectedRealms(); track realm) {
-              <div class="readonly-chip">{{ realm }}</div>
-            }
-          </div>
-        }
-        @if (selectedResolvers().length > 0) {
-          <span
-            class="readonly-label"
-            i18n>
-            Resolvers:
-          </span>
-          <div class="readonly-chips-container">
-            @for (resolver of selectedResolvers(); track resolver) {
-              <div class="readonly-chip">{{ resolver }}</div>
-            }
-          </div>
-        }
-        @if (selectedAdmins().length > 0) {
-          <span
-            class="readonly-label"
-            i18n>
-            Admins:
-          </span>
-          <div class="admins-container">
-            <div class="readonly-chips-container">
-              @for (admin of selectedAdmins(); track admin) {
-                <div class="readonly-chip">{{ admin }}</div>
-              }
+      @if (selectedResolvers().length > 0) {
+        <span
+          class="readonly-label"
+          i18n
+          >Resolvers:</span
+        >
+        <div class="readonly-chips-container">
+          @for (resolver of selectedResolvers(); track resolver) {
+            <div
+              class="readonly-chip"
+              [title]="resolver">
+              {{ resolver }}
             </div>
-          </div>
-        }
-      </div>
-    }
-  </div>
-}
+          }
+        </div>
+      }
+
+      @if (selectedAdmins().length > 0) {
+        <span
+          class="readonly-label"
+          i18n
+          >Admins:</span
+        >
+        <div class="readonly-chips-container">
+          @for (admin of selectedAdmins(); track admin) {
+            <div
+              class="readonly-chip"
+              [title]="admin">
+              {{ admin }}
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+</div>

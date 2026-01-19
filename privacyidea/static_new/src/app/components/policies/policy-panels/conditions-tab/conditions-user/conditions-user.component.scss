@@ -45,6 +45,10 @@
   border-radius: var(--border-radius);
   padding: var(--quarter-global-padding) var(--half-global-padding);
   flex-shrink: 0;
+  display: block;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  max-width: 250px;
 }
 
 .remove-user-btn {
@@ -74,10 +78,6 @@
   gap: calc(var(--global-gap) / 2);
 }
 
-.full-width {
-  width: 100%;
-}
-
 .add-user-input {
   width: 100%;
   border-radius: var(--border-radius);
@@ -90,15 +90,9 @@
   }
 }
 
-.toggle-all-button {
-  width: 100%;
-  border-radius: 0;
-  justify-content: flex-start;
-}
-
 .readonly-user-grid-container {
   display: grid;
-  grid-template-columns: 1fr 5fr;
+  grid-template-columns: auto minmax(0, 1fr);
   gap: calc(var(--half-global-padding) * 1.5);
   margin: 0 var(--half-global-padding);
 }
@@ -121,20 +115,15 @@
   @extend .user-chip;
 }
 
-.users-chip-container {
-  @extend .readonly-chips-container;
-  flex: 1;
-}
-
 .users-container {
   display: flex;
   flex-direction: row;
   gap: calc(var(--global-gap) / 2);
-  margin-bottom: var(--global-padding);
 }
 
 .sensitivity-chip {
   @extend .user-chip;
   border: 1px solid var(--mat-sys-outline);
   background-color: var(--mat-sys-surface);
+  display: flex;
 }

@@ -45,15 +45,14 @@
           </button>
         </div>
       } -->
-<div>
-  <!-- Make it a row -->
+<div class="tabs-row-container">
   <app-action-tab
+    class="flex-ratio-2"
     [isEditMode]="false"
     [policy]="policy()" />
 
-  <!-- @if (activeTab() === "conditions" && currentPolicy()) {
-          <app-conditions-tab
-            [isEditMode]="false"
-            [policy]="policy()!" />
-        } -->
+  <app-conditions-tab
+    class="flex-ratio-1"
+    [isEditMode]="false"
+    [policy]="policy()" />
 </div>

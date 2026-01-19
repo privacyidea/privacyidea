@@ -1,0 +1,17 @@
+.tabs-row-container {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  gap: calc(var(--global-gap) / 4 * 3);
+  align-items: flex-start;
+}
+
+.flex-ratio-1 {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.flex-ratio-2 {
+  flex: 2 1 0;
+  min-width: 0;
+}

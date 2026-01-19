@@ -55,6 +55,17 @@ export class ActionTabComponent {
     computation: () => null
   });
   selectedActionDetail = signal<PolicyActionDetail | null>(null);
+
+  actionsFirstHalf = computed(() => {
+    const list = this.actions();
+    return list.slice(0, Math.ceil(list.length / 2));
+  });
+
+  actionsSecondHalf = computed(() => {
+    const list = this.actions();
+    return list.slice(Math.ceil(list.length / 2));
+  });
+
   onSelectedActionChange(action: { name: string; value: any }) {
     this.selectedAction.set(action);
   }

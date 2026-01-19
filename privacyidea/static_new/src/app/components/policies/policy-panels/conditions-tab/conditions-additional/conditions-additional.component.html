@@ -16,8 +16,7 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-
-@if (isEditMode() || policyService.policyHasAdditionalConditions(policy())) {
+@if (isEditMode()) {
   <div class="additional-conditions-container">
     <h2
       class="additional-conditions-title"
@@ -165,4 +164,33 @@
       }
     }
   </div>
+} @else {
+  @if (additionalConditions().length > 0) {
+    <table class="additional-conditions-table">
+      <thead>
+        <tr>
+          <th>Active</th>
+          <th>Section</th>
+          <th>Key</th>
+          <th>Comparator</th>
+          <th>Value</th>
+          <th>If Data Missing</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (condition of additionalConditions(); track $index) {
+          <tr>
+            <td>
+              <mat-icon>{{ !condition[4] ? "check" : "close" }}</mat-icon>
+            </td>
+            <td>{{ getSectionLabel(condition[0]) }}</td>
+            <td>{{ condition[1] }}</td>
+            <td>{{ getComparatorLabel(condition[2]) }}</td>
+            <td>{{ condition[3] }}</td>
+            <td>{{ getMissingDataLabel(condition[5]) }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
 }

@@ -1,18 +1,9 @@
 @use "../../../../../../styles" as styles;
 
-.h3-margin {
-  margin: var(--half-global-padding) 0;
-}
-
 .detail-row {
   align-items: center;
   display: flex;
   justify-content: space-between;
-}
-
-.add-action-button {
-  align-self: flex-end;
-  color: var(--mat-sys-primary);
 }
 
 .warning-icon {

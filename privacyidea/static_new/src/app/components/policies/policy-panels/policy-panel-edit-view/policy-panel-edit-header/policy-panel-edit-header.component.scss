@@ -1,148 +1,28 @@
 @use "../../../../../../styles";
 @use "../../../policies.component.scss";
 @use "@angular/material" as mat;
-.placeholder-for-right-column {
-  grid-area: right-column;
-}
-
-// --- Content Sections ---
-.actions-list {
-  display: flex;
-  flex-direction: column;
-  gap: calc(var(--global-gap) / 2);
-}
-
-.action-card {
-  padding: var(--quarter-global-padding) var(--global-padding);
-  border-radius: var(--border-radius);
-  box-shadow:
-    0px 2px 4px -1px rgba(0, 0, 0, 0.2),
-    0px 4px 5px 0px rgba(0, 0, 0, 0.14),
-    0px 1px 10px 0px rgba(0, 0, 0, 0.12);
-}
-
-.conditions-list {
-  padding: var(--global-padding);
-  border-radius: var(--border-radius);
-  box-shadow:
-    0px 2px 4px -1px rgba(0, 0, 0, 0.2),
-    0px 4px 5px 0px rgba(0, 0, 0, 0.14),
-    0px 1px 10px 0px rgba(0, 0, 0, 0.12);
-}
-
-.add-action-section {
-  display: flex;
-  flex-direction: column;
-  gap: var(--global-gap);
-  padding: var(--global-padding);
-  border-radius: var(--border-radius);
-  box-shadow:
-    0px 2px 4px -1px rgba(0, 0, 0, 0.2),
-    0px 4px 5px 0px rgba(0, 0, 0, 0.14),
-    0px 1px 10px 0px rgba(0, 0, 0, 0.12);
-}
-
-.add-action-details {
-  display: flex;
-  flex-direction: column;
-  gap: calc(var(--global-gap) / 2);
-  max-height: 200px;
-  overflow-y: auto;
-  padding-right: var(
-    --half-global-padding
-  ); /* Adds space for the scrollbar to prevent content from touching the edge */
-}
-
-.search-input {
-  border: none;
-  border-bottom: 1px solid var(--mat-sys-outline-variant);
-  border-radius: 0;
-  padding: var(--half-global-padding) 0;
-  font-size: 1rem;
-  background-color: transparent;
-  width: 100%;
-  box-sizing: border-box;
-}
-
-.search-input:focus {
-  outline: none;
-  border-bottom-color: var(--mat-sys-primary);
-}
-
-.add-action-button {
-  align-self: flex-end;
-  color: var(--mat-sys-primary);
-}
-
-// --- Detail Rows ---
-.detail-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.detail-row:not(:last-child) {
-  padding-bottom: var(--half-global-padding);
-}
-
-.detail-row:not(:first-child) {
-  padding-top: var(--half-global-padding);
-}
-
-.detail-label {
-  color: var(--mat-sys-on-surface);
-  font-weight: 500;
-  margin-right: var(--half-global-padding);
-}
-
-.detail-value {
-  color: var(--mat-sys-on-surface-variant);
-  text-align: right;
-  flex-grow: 1;
-}
-
-.delete-action-button {
-  margin-left: var(--half-global-padding);
-  flex-shrink: 0;
-}
-
-.priority-description {
-  display: flex;
-  align-items: stretch;
-  gap: var(--global-gap);
-  app-policy-priority {
-    flex: 1 1 0;
-    height: 100%;
-  }
-  app-policy-description {
-    flex: 5 1 0;
-    height: 100%;
-  }
-}
 .small-toggle {
-  transform: scale(0.8);
+  transform: scale(0.7);
   transform-origin: left center;
 }
 .policy-title-container {
   display: flex;
   align-items: center;
   gap: 16px;
-  height: 100%; // Nutzt die volle Höhe des Panel-Headers
+  height: 100%;
 }
 
 .policy-priority-input {
-  // Schrift-Angleichung
   font-family: inherit;
   font-size: 0.95rem;
   font-weight: 600;
   color: #29b6f6;
-
-  // Dimensionen
-  width: 42px;
-  height: 32px;
+  width: 33px;
+  height: 28px;
+  padding: 5px;
+  margin: 1px;
   text-align: center;
 
-  // Optik
   background-color: var(--mat-sys-surface-container-highest);
   border: none;
   border-radius: 6px;
@@ -150,7 +30,6 @@
   padding: 0;
   box-sizing: border-box;
 
-  // Entfernt Pfeile (Spin-Buttons)
   appearance: textfield;
   -moz-appearance: textfield;
   &::-webkit-outer-spin-button,
@@ -159,7 +38,6 @@
     margin: 0;
   }
 
-  // Optional: Fokus-Zustand
   &:focus {
     box-shadow: 0 0 0 1px var(--mat-sys-primary);
   }

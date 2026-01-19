@@ -37,6 +37,7 @@ import {
   SimpleConfirmationDialogData
 } from "../../../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { lastValueFrom } from "rxjs";
+import { ConditionsTabComponent } from "../../conditions-tab/conditions-tab.component";
 
 @Component({
   selector: "app-policy-panel-view",
@@ -54,7 +55,8 @@ import { lastValueFrom } from "rxjs";
     MatFormFieldModule,
     MatSelectModule,
     MatOptionModule,
-    ActionTabComponent
+    ActionTabComponent,
+    ConditionsTabComponent
   ],
   templateUrl: "./policy-panel-view.component.html",
   styleUrl: "./policy-panel-view.component.scss"

@@ -17,29 +17,42 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, input, output } from "@angular/core";
+import { Component, computed, inject, input, output } from "@angular/core";
 import { ConditionsUserComponent } from "./conditions-user/conditions-user.component";
-import { ConditionsEnvironmentComponent } from "./conditions-environment/conditions-environment.component";
 import { ConditionsAdditionalComponent } from "./conditions-additional/conditions-additional.component";
-import { PolicyDetail } from "../../../../services/policies/policies.service";
+import { PolicyDetail, PolicyService, PolicyServiceInterface } from "../../../../services/policies/policies.service";
 import { ConditionsAdminComponent } from "./conditions-admin/conditions-admin.component";
+import { ConditionsEnvironmentComponent } from "./conditions-environment/conditions-environment.component";
 
 @Component({
   selector: "app-conditions-tab",
   standalone: true,
   imports: [
     ConditionsUserComponent,
-    ConditionsEnvironmentComponent,
     ConditionsAdditionalComponent,
-    ConditionsAdminComponent
+    ConditionsAdminComponent,
+    ConditionsEnvironmentComponent
   ],
   templateUrl: "./conditions-tab.component.html",
   styleUrl: "./conditions-tab.component.scss"
 })
 export class ConditionsTabComponent {
+  policyService: PolicyServiceInterface = inject(PolicyService);
   isEditMode = input.required<boolean>();
   policy = input.required<PolicyDetail>();
   policyEdit = output<Partial<PolicyDetail>>();
+  showAdminConditions = computed(
+    () =>
+      this.policy().scope === "admin" &&
+      (this.isEditMode() || this.policyService.policyHasAdminConditions(this.policy()))
+  );
+  showUserConditions = computed(() => this.isEditMode() || this.policyService.policyHasUserConditions(this.policy()));
+  showEnvironmentConditions = computed(
+    () => this.isEditMode() || this.policyService.policyHasEnviromentConditions(this.policy())
+  );
+  showAdditionalConditions = computed(
+    () => this.isEditMode() || this.policyService.policyHasAdditionalConditions(this.policy())
+  );
 
   onPolicyEdit($event: Partial<PolicyDetail>) {
     this.policyEdit.emit($event);

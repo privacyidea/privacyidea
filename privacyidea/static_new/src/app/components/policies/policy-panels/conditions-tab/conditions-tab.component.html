@@ -17,22 +17,28 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div class="conditions-grid-container">
-  @if (policy().scope === "admin") {
+  @if (showAdminConditions()) {
     <app-conditions-admin
       [policy]="policy()"
       (policyEdit)="onPolicyEdit($event)"
       [isEditMode]="isEditMode()" />
   }
-  <app-conditions-user
-    [policy]="policy()"
-    (policyEdit)="onPolicyEdit($event)"
-    [isEditMode]="isEditMode()" />
-  <app-conditions-nodes
-    [policy]="policy()"
-    (policyEdit)="onPolicyEdit($event)"
-    [isEditMode]="isEditMode()" />
-  <app-conditions-additional
-    [policy]="policy()"
-    (policyEdit)="onPolicyEdit($event)"
-    [isEditMode]="isEditMode()" />
+  @if (showUserConditions()) {
+    <app-conditions-user
+      [policy]="policy()"
+      (policyEdit)="onPolicyEdit($event)"
+      [isEditMode]="isEditMode()" />
+  }
+  @if (showEnvironmentConditions()) {
+    <app-conditions-environment
+      [policy]="policy()"
+      (policyEdit)="onPolicyEdit($event)"
+      [isEditMode]="isEditMode()" />
+  }
+  @if (showAdditionalConditions()) {
+    <app-conditions-additional
+      [policy]="policy()"
+      (policyEdit)="onPolicyEdit($event)"
+      [isEditMode]="isEditMode()" />
+  }
 </div>

@@ -19,6 +19,11 @@ import { MatTooltipModule } from "@angular/material/tooltip";
   imports: [CommonModule, MatExpansionModule, MatSlideToggleModule, MatIconModule, MatTooltipModule]
 })
 export class PolicyPanelViewHeaderComponent {
+  editPolicy() {
+    this.isEditModeChange.emit(true);
+    this.panel().open();
+  }
+
   readonly policyService: PolicyServiceInterface = inject(PolicyService);
   readonly dialogService: DialogServiceInterface = inject(DialogService);
 

@@ -1,5 +1,5 @@
 <!--
-  (c) NetKnights GmbH 2025,  https://netknights.it
+  (c) NetKnights GmbH 2026,  https://netknights.it
 
   This code is free software; you can redistribute it and/or
   modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -17,133 +17,186 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
  -->
 
-@if (isEditMode() || policyService.policyHasNodeConditions(policy())) {
+@if (isEditMode()) {
   <div class="nodes-container">
     <h2
       class="nodes-title"
       i18n>
       Environment Conditions
     </h2>
+    <app-multi-select-only
+      label="privacyIDEA Nodes"
+      [items]="availablePinodesList()"
+      [selectedItems]="selectedPinodes()"
+      (selectionChange)="updateSelectedPinodes($event)">
+    </app-multi-select-only>
 
-    @if (isEditMode()) {
-      <app-multi-select-only
-        label="privacyIDEA Nodes"
-        [items]="availablePinodesList()"
-        [selectedItems]="selectedPinodes()"
-        (selectionChange)="updateSelectedPinodes($event)">
-      </app-multi-select-only>
-      <div class="flex-row-stretch">
-        <mat-form-field
-          appearance="fill"
-          class="flex-grow-1">
-          <mat-label i18n>Valid time</mat-label>
-          <input
-            matInput
-            [formControl]="validTimeFormControl"
-            placeholder="Mon-Fri: 9-18, Sat: 10-15" />
-          @if (validTimeFormControl.touched && validTimeFormControl.invalid) {
-            <mat-error i18n> Please enter a valid time format, e.g., Mon-Fri: 9-18 or Sat: 10-15 </mat-error>
-          }
-          @if (validTimeFormControl.value != "") {
-            <app-clear-button
-              matSuffix
-              (onClick)="clearValidTimeControl()"></app-clear-button>
-          }
-        </mat-form-field>
-        <mat-form-field
-          appearance="fill"
-          class="flex-grow-1">
-          <mat-label i18n>Client</mat-label>
-          <input
-            matInput
-            [formControl]="clientFormControl"
-            placeholder="10.0.0.0/8, !10.0.0.124" />
-          @if (clientFormControl.touched && clientFormControl.invalid) {
-            <mat-error i18> Please enter a valid client format, e.g., 10.0.0.0/8, !10.0.0.124 </mat-error>
-          }
-          @if (clientFormControl.value != "") {
-            <app-clear-button
-              matSuffix
-              (onClick)="clearClientControl()"></app-clear-button>
-          }
-        </mat-form-field>
-      </div>
-      <div class="user-agent-list-wrapper">
-        <div class="user-agent-list">
-          @for (userAgend of selectedUserAgents(); track $index) {
-            <div class="user-agent-chip">
-              <span>{{ userAgend }}</span>
-              <button
-                mat-icon-button
-                (click)="removeUserAgent(userAgend)"
-                class="remove-user-agent-btn">
-                <mat-icon class="remove-user-agent-icon">close</mat-icon>
-              </button>
-            </div>
-          }
-        </div>
-        @if (selectedUserAgents().length > 0) {
-          <div class="clear-user-agents-container">
+    <div class="flex-row-stretch">
+      <mat-form-field
+        appearance="fill"
+        class="flex-grow-1">
+        <mat-label i18n>Valid time</mat-label>
+        <input
+          matInput
+          [formControl]="validTimeFormControl"
+          placeholder="Mon-Fri: 9-18, Sat: 10-15" />
+        @if (validTimeFormControl.touched && validTimeFormControl.invalid) {
+          <mat-error i18n> Please enter a valid time format, e.g., Mon-Fri: 9-18 or Sat: 10-15 </mat-error>
+        }
+        @if (validTimeFormControl.value != "") {
+          <app-clear-button
+            matSuffix
+            (onClick)="clearValidTimeControl()"></app-clear-button>
+        }
+      </mat-form-field>
+
+      <mat-form-field
+        appearance="fill"
+        class="flex-grow-1">
+        <mat-label i18n>Client</mat-label>
+        <input
+          matInput
+          [formControl]="clientFormControl"
+          placeholder="10.0.0.0/8, !10.0.0.124" />
+        @if (clientFormControl.touched && clientFormControl.invalid) {
+          <mat-error i18n> Please enter a valid client format, e.g., 10.0.0.0/8, !10.0.0.124 </mat-error>
+        }
+        @if (clientFormControl.value != "") {
+          <app-clear-button
+            matSuffix
+            (onClick)="clearClientControl()"></app-clear-button>
+        }
+      </mat-form-field>
+    </div>
+
+    <div class="user-agent-list-wrapper">
+      <div class="user-agent-list">
+        @for (userAgent of selectedUserAgents(); track $index) {
+          <div class="user-agent-chip">
+            <span>{{ userAgent }}</span>
             <button
-              mat-stroked-button
-              (click)="clearUserAgents()">
-              Clear user agents
+              mat-icon-button
+              (click)="removeUserAgent(userAgent)"
+              class="remove-user-agent-btn">
+              <mat-icon class="remove-user-agent-icon">close</mat-icon>
             </button>
           </div>
         }
       </div>
-      <div class="user-agent-input-container">
-        <mat-form-field class="add-user-agent-input">
-          <mat-label i18n>Add User Agent</mat-label>
-          <input
-            matInput
-            [formControl]="addUserAgentFormControl"
-            #userAgentInput
-            (keyup.enter)="
-              addUserAgentFormControl.markAsTouched();
-              addUserAgentFormControl.invalid ? null : (userAgentInput.value = '');
-              addUserAgent()
-            " />
-          @if (addUserAgentFormControl.hasError("includesComma")) {
-            <mat-error i18n> User Agent must not contain commas. </mat-error>
+      @if (selectedUserAgents().length > 0) {
+        <div class="clear-user-agents-container">
+          <button
+            mat-stroked-button
+            (click)="clearUserAgents()">
+            Clear user agents
+          </button>
+        </div>
+      }
+    </div>
+
+    <div class="user-agent-input-container">
+      <mat-form-field
+        appearance="fill"
+        class="user-agent-select">
+        <mat-label i18n>Common User Agents</mat-label>
+        <mat-select
+          #uaSelect
+          [value]="null"
+          (selectionChange)="addUserAgentFromSelect($event, uaSelect)"
+          (openedChange)="onDropdownToggled($event)"
+          panelClass="auto-width-dropdown">
+          <div class="select-search-header">
+            <input
+              matInput
+              placeholder="Search..."
+              i18n-placeholder
+              (input)="userAgentSearch.set($any($event.target).value)"
+              (keydown)="$event.stopPropagation()"
+              class="select-search-input" />
+          </div>
+
+          @for (ua of filteredUserAgentPresets(); track ua) {
+            <mat-option [value]="ua">{{ ua }}</mat-option>
           }
-        </mat-form-field>
-        <button
-          class="input-attached-button"
-          [disabled]="!userAgentInput.value.trim() || addUserAgentFormControl.invalid"
-          (click)="addUserAgent(); userAgentInput.value = ''">
-          <mat-icon>add</mat-icon>
-        </button>
+
+          @if (filteredUserAgentPresets().length === 0) {
+            <mat-option
+              disabled
+              i18n
+              >No agents found</mat-option
+            >
+          }
+        </mat-select>
+      </mat-form-field>
+      <mat-form-field
+        appearance="fill"
+        class="add-user-agent-input flex-grow-1">
+        <mat-label i18n>Add Custom User Agent</mat-label>
+        <input
+          matInput
+          [formControl]="addUserAgentFormControl"
+          #userAgentInput
+          (keyup.enter)="
+            addUserAgentFormControl.markAsTouched();
+            addUserAgentFormControl.invalid ? null : (userAgentInput.value = '');
+            addUserAgent()
+          " />
+        @if (addUserAgentFormControl.hasError("includesComma")) {
+          <mat-error i18n> User Agent must not contain commas. </mat-error>
+        }
+      </mat-form-field>
+
+      <button
+        class="input-attached-button"
+        [disabled]="!userAgentInput.value.trim() || addUserAgentFormControl.invalid"
+        (click)="addUserAgent(); userAgentInput.value = ''">
+        <mat-icon>add</mat-icon>
+      </button>
+    </div>
+  </div>
+} @else {
+  <div class="readonly-grid-container">
+    @if (selectedPinodes().length > 0) {
+      <div
+        class="readonly-label"
+        i18n>
+        privacyIDEA Nodes:
       </div>
-    } @else {
-      <div class="readonly-grid-container">
-        @if (selectedPinodes().length > 0) {
-          <div class="readonly-label">privacyIDEA Nodes:</div>
-          <div class="readonly-chips-container">
-            @for (node of selectedPinodes(); track $index) {
-              <div class="readonly-chip">{{ node }}</div>
-            }
-          </div>
+      <div class="readonly-chips-container">
+        @for (node of selectedPinodes(); track $index) {
+          <div class="readonly-chip">{{ node }}</div>
         }
-        @if (selectedValidTime() != "") {
-          <div class="readonly-label">Valid time:</div>
-          <div class="readonly-chips-container">
-            <div class="readonly-chip">{{ selectedValidTime() }}</div>
-          </div>
-        }
-        @if (selectedClient() && selectedClient().length > 0) {
-          <div class="readonly-label">Client:</div>
-          <div class="readonly-chips-container">
-            <div class="readonly-chip">{{ selectedClient() }}</div>
-          </div>
-        }
-        @if (selectedUserAgents().length > 0) {
-          <div class="readonly-label">User Agents:</div>
-          <div class="readonly-chips-container">
-            @for (userAgent of selectedUserAgents(); track userAgent) {
-              <div class="readonly-chip">{{ userAgent }}</div>
-            }
-          </div>
+      </div>
+    }
+    @if (selectedValidTime() != "") {
+      <div
+        class="readonly-label"
+        i18n>
+        Valid time:
+      </div>
+      <div class="readonly-chips-container">
+        <div class="readonly-chip">{{ selectedValidTime() }}</div>
+      </div>
+    }
+    @if (selectedClient() && selectedClient().length > 0) {
+      <div
+        class="readonly-label"
+        i18n>
+        Client:
+      </div>
+      <div class="readonly-chips-container">
+        <div class="readonly-chip">{{ selectedClient() }}</div>
+      </div>
+    }
+    @if (selectedUserAgents().length > 0) {
+      <div
+        class="readonly-label"
+        i18n>
+        User Agents:
+      </div>
+      <div class="readonly-chips-container">
+        @for (userAgent of selectedUserAgents(); track userAgent) {
+          <div class="readonly-chip">{{ userAgent }}</div>
         }
       </div>
     }

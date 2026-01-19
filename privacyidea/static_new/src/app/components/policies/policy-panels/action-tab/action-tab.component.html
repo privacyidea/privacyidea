@@ -1,46 +1,54 @@
-<!--
- (c) NetKnights GmbH 2025,  https://netknights.it
+<div
+  class="policy-flex-row"
+  [class.view-mode]="!isEditMode()">
+  @if (isEditMode()) {
+    <div class="flex-body">
+      @if (actions().length > 0) {
+        <app-added-actions-list
+          [isEditMode]="true"
+          [actions]="actions()"
+          (actionsChange)="onActionsChange($event)"
+          (actionRemove)="onActionRemove($event)"
+          [(selectedAction)]="selectedAction" />
+      }
 
- This code is free software; you can redistribute it and/or
- modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
- as published by the Free Software Foundation; either
- version 3 of the License, or any later version.
-
- This code is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- GNU AFFERO GENERAL PUBLIC LICENSE for more details.
-
- You should have received a copy of the GNU Affero General Public
- License along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
- SPDX-License-Identifier: AGPL-3.0-or-later
--->
-<div class="policy-flex-row">
-  <div class="flex-body">
-    @if (actions().length > 0) {
-      <app-added-actions-list
-        class="grid-area-body-top"
-        [isEditMode]="isEditMode()"
-        [actions]="actions()"
-        (actionsChange)="onActionsChange($event)"
-        (actionRemove)="onActionRemove($event)"
-        [(selectedAction)]="selectedAction" />
-    }
-    @if (isEditMode()) {
       <app-action-selector
-        class="grid-area-body-bottom"
         [selectedPolicyAction]="selectedAction()"
         (selectedPolicyActionChange)="onSelectedActionChange($event)"
         [policy]="policy()"
         (actionAdd)="onActionAdd($event)" />
-    }
-  </div>
-  <app-action-detail
-    class="flex-detail"
-    [isEditMode]="isEditMode()"
-    [(selectedAction)]="selectedAction"
-    (actionAdd)="onActionAdd($event)"
-    (actionsUpdate)="onActionUpdate($event)"
-    [policy]="policy()" />
+    </div>
+
+    <app-action-detail
+      class="flex-detail"
+      [isEditMode]="true"
+      [(selectedAction)]="selectedAction"
+      (actionAdd)="onActionAdd($event)"
+      (actionsUpdate)="onActionUpdate($event)"
+      [policy]="policy()" />
+  } @else {
+    <div class="view-mode-container">
+      <div class="view-column">
+        @if (actionsFirstHalf().length > 0) {
+          <app-added-actions-list
+            [isEditMode]="false"
+            [actions]="actionsFirstHalf()"
+            (actionsChange)="onActionsChange($event)"
+            (actionRemove)="onActionRemove($event)"
+            [(selectedAction)]="selectedAction" />
+        }
+      </div>
+
+      <div class="view-column">
+        @if (actionsSecondHalf().length > 0) {
+          <app-added-actions-list
+            [isEditMode]="false"
+            [actions]="actionsSecondHalf()"
+            (actionsChange)="onActionsChange($event)"
+            (actionRemove)="onActionRemove($event)"
+            [(selectedAction)]="selectedAction" />
+        }
+      </div>
+    </div>
+  }
 </div>

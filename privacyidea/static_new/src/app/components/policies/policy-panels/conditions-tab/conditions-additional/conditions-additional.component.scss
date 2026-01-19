@@ -36,12 +36,6 @@
   font-weight: 500;
   padding: var(--half-global-padding) var(--three-quarters-global-padding);
 
-  &.new-condition-row {
-    border-top: 1px solid var(--mat-sys-outline-variant);
-    padding-top: 16px;
-    margin-top: 8px;
-  }
-
   &.edit-mode {
     grid-template-columns: 1.2fr 3fr 2fr 4fr 2fr 3fr 1fr;
   }
@@ -84,20 +78,6 @@
   }
 }
 
-.additional-condition-header {
-  display: grid;
-  grid-template-columns: 0.8fr 3fr 2fr 4fr 2fr 3fr;
-  gap: 16px;
-  place-items: center;
-  text-align: center;
-  padding: var(--half-global-padding) var(--three-quarters-global-padding);
-  font-weight: 600;
-
-  &.edit-mode {
-    grid-template-columns: 1.2fr 3fr 2fr 4fr 2fr 3fr 1fr;
-  }
-}
-
 mat-form-field {
   width: 100%;
 }
@@ -137,4 +117,34 @@ mat-checkbox {
 .divider-margin {
   margin-top: 16px;
   margin-bottom: 16px;
+}
+
+.additional-conditions-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: var(--half-global-padding);
+
+  th,
+  td {
+    padding: var(--quarter-global-padding) var(--half-global-padding);
+    text-align: center;
+    border-bottom: 1px solid var(--mat-sys-outline-variant);
+  }
+
+  th {
+    background-color: var(--mat-sys-surface-container-high);
+    font-weight: 600;
+  }
+
+  tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  tbody tr:nth-child(odd) {
+    background-color: var(--mat-sys-surface-container-low);
+  }
+
+  tbody tr:nth-child(even) {
+    background-color: var(--mat-sys-surface-container);
+  }
 }
