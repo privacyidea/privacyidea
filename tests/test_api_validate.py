@@ -475,7 +475,8 @@ class AValidateOfflineTestCase(MyApiTestCase):
     """
 
     def _resend_and_check_unspecific_error(self, status_code: int):
-        set_policy(name="hide_specific_error_message", scope=SCOPE.TOKEN, action=f"{PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE_FOR_OFFLINE_REFILL}=true")
+        set_policy(name="hide_specific_error_message", scope=SCOPE.TOKEN,
+                   action=f"{PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE_FOR_OFFLINE_REFILL}=true")
         try:
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, status_code, res)
@@ -2393,7 +2394,7 @@ class ValidateAPITestCase(MyApiTestCase):
             detail = res.json.get("detail")
             self.assertEqual(detail.get("messages")[0], _("Enter the OTP from the Email"))
             # check the send message
-            sent_message = smtpmock.get_sent_message()
+            sent_message = smtpmock.get_sent_message().decode('utf-8')
             self.assertTrue("RGVpbiAyODcwODI=" in sent_message)
             self.assertTrue("Subject: Dein OTP" in sent_message)
 
