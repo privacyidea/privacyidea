@@ -5,8 +5,8 @@ Revises: 1c48d4ffb8c3
 Create Date: 2025-09-15 13:29:06.058342
 
 """
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = '056b6642ff5d'
@@ -16,14 +16,16 @@ depends_on = None
 
 
 def upgrade():
-    op.alter_column('pidea_audit', 'signature',
-                    existing_type=sa.VARCHAR(length=620),
-                    type_=sa.Unicode(length=1100),
-                    existing_nullable=True)
+    with op.batch_alter_table('pidea_audit', schema=None) as batch_op:
+        batch_op.alter_column('signature',
+                              existing_type=sa.VARCHAR(length=620),
+                              type_=sa.Unicode(length=1100),
+                              existing_nullable=True)
 
 
 def downgrade():
-    op.alter_column('pidea_audit', 'signature',
-                    existing_type=sa.Unicode(length=1100),
-                    type_=sa.VARCHAR(length=620),
-                    existing_nullable=True)
+    with op.batch_alter_table('pidea_audit', schema=None) as batch_op:
+        batch_op.alter_column('signature',
+                              existing_type=sa.Unicode(length=1100),
+                              type_=sa.VARCHAR(length=620),
+                              existing_nullable=True)
