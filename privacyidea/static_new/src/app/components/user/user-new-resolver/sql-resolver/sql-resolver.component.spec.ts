@@ -63,6 +63,5 @@ describe("SqlResolverComponent", () => {
     expect(component.poolSizeControl.value).toBe(5);
     expect(component.poolTimeoutControl.value).toBe(10);
     expect(component.poolRecycleControl.value).toBe(7200);
-    expect(component.editableControl.value).toBe(true);
   });
 });

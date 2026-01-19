@@ -411,7 +411,7 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
           if (res.result?.status === true && (res.result.value ?? 0) >= 0) {
             console.log(res.result.value);
             this.notificationService.openSnackBar(
-              $localize`Resolver test execute: ${res.detail.description}`, 20000
+              $localize`Resolver test executed: ${res.detail.description}`, 20000
             );
           } else {
             const message = res.detail?.description || res.result?.error?.message || $localize`Unknown error occurred.`;

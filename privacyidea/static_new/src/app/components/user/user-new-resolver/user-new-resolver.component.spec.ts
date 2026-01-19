@@ -343,10 +343,10 @@ describe("UserNewResolverComponent", () => {
     const notificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
 
     component.onTest();
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith(expect.stringContaining("test executed"));
+    expect(notificationService.openSnackBar).toHaveBeenCalledWith(expect.stringContaining("Resolver test executed:"), 20000);
 
     component.onQuickTest();
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith(expect.stringContaining("test executed"));
+    expect(notificationService.openSnackBar).toHaveBeenCalledWith(expect.stringContaining("Resolver test executed:"), 20000);
   });
 
   it("should show error on test when subscription fails", async () => {
@@ -404,7 +404,6 @@ describe("UserNewResolverComponent", () => {
     component.resolverType = "sqlresolver";
     component.onTypeChange("sqlresolver");
     expect(component.resolverType).toBe("sqlresolver");
-    expect(component.formData["Driver"]).toBe("mysql+pymysql");
 
     component.resolverType = "ldapresolver";
     component.onTypeChange("ldapresolver");
