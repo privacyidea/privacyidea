@@ -18,6 +18,7 @@ import { AuthService } from "../../../services/auth/auth.service";
 import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { ConfirmationDialogComponent } from "../../shared/confirmation-dialog/confirmation-dialog.component";
+import { UserNewResolverComponent } from "../user-new-resolver/user-new-resolver.component";
 
 const columnKeysMap = [
   { key: "resolvername", label: "Name" },
@@ -101,8 +102,22 @@ export class UserResolversComponent {
     ds.filter = "";
   }
 
+  onNewResolver(): void {
+    this.openResolverDialog();
+  }
+
   onEditResolver(resolver: Resolver): void {
-    this.router.navigate(["users/edit-resolver", resolver.resolvername]);
+    this.openResolverDialog(resolver);
+  }
+
+  private openResolverDialog(resolver?: Resolver): void {
+    this.dialog.open(UserNewResolverComponent, {
+      data: { resolver },
+      width: "auto",
+      height: "auto",
+      maxWidth: "100vw",
+      maxHeight: "100vh"
+    });
   }
 
   onDeleteResolver(resolver: Resolver): void {

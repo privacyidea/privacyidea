@@ -1,15 +1,5 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { UserNewResolverComponent } from "./user-new-resolver.component";
-
-// Mock IntersectionObserver
-global.IntersectionObserver = class IntersectionObserver {
-  constructor() {}
-  disconnect() {}
-  observe() {}
-  unobserve() {}
-  takeRecords() { return []; }
-} as any;
-
 import { ResolverService } from "../../../services/resolver/resolver.service";
 import { NotificationService } from "../../../services/notification/notification.service";
 import { ActivatedRoute, Router } from "@angular/router";
@@ -20,6 +10,20 @@ import { MockResolverService } from "../../../../testing/mock-services/mock-reso
 import { MockNotificationService, MockPiResponse } from "../../../../testing/mock-services";
 import { ResourceStatus, signal } from "@angular/core";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
+import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
+import { ROUTE_PATHS } from "../../../route_paths";
+
+global.IntersectionObserver = class IntersectionObserver {
+  constructor() {}
+
+  disconnect() {}
+
+  observe() {}
+
+  unobserve() {}
+
+  takeRecords() { return []; }
+} as any;
 
 describe("UserNewResolverComponent", () => {
   let component: UserNewResolverComponent;
@@ -50,9 +54,13 @@ describe("UserNewResolverComponent", () => {
           provide: Router,
           useValue: {
             navigate: jest.fn(),
-            navigateByUrl: jest.fn()
+            navigateByUrl: jest.fn(),
+            events: of(),
+            url: ROUTE_PATHS.USERS_RESOLVERS
           }
-        }
+        },
+        { provide: MatDialogRef, useValue: { close: jest.fn() } },
+        { provide: MAT_DIALOG_DATA, useValue: {} }
       ]
     }).compileComponents();
 
@@ -250,12 +258,12 @@ describe("UserNewResolverComponent", () => {
     resolverService.postResolver.mockReturnValue(of(successResponse));
 
     const notificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
-    const router = TestBed.inject(Router);
+    const dialogRef = TestBed.inject(MatDialogRef);
 
     component.onSave();
 
     expect(notificationService.openSnackBar).toHaveBeenCalledWith(expect.stringContaining("created"));
-    expect(router.navigateByUrl).toHaveBeenCalled();
+    expect(dialogRef.close).toHaveBeenCalledWith(true);
   });
 
   it("should show success on save in edit mode", async () => {
@@ -278,10 +286,12 @@ describe("UserNewResolverComponent", () => {
     });
     resolverService.postResolver.mockReturnValue(of(successResponse));
     const notificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
+    const dialogRef = TestBed.inject(MatDialogRef);
 
     component.onSave();
 
     expect(notificationService.openSnackBar).toHaveBeenCalledWith(expect.stringContaining("updated"));
+    expect(dialogRef.close).toHaveBeenCalledWith(true);
   });
 
   it("should show error on save when subscription fails", async () => {
@@ -429,5 +439,50 @@ describe("UserNewResolverComponent", () => {
     component.resolverType = "passwdresolver";
     component.onTypeChange("passwdresolver");
     expect(component.formData["fileName"]).toBe("/etc/passwd");
+  });
+
+  it("should initialize from dialog data resolver object", async () => {
+    const resolver = {
+      resolvername: "dialog-resolver",
+      type: "ldapresolver" as any,
+      censor_keys: [],
+      data: { LDAPURI: "ldap://localhost" }
+    };
+
+    TestBed.resetTestingModule();
+    await TestBed.configureTestingModule({
+      imports: [UserNewResolverComponent, NoopAnimationsModule],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: ResolverService, useClass: MockResolverService },
+        { provide: NotificationService, useClass: MockNotificationService },
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            paramMap: of({ get: () => "" })
+          }
+        },
+        {
+          provide: Router,
+          useValue: {
+            navigate: jest.fn(),
+            navigateByUrl: jest.fn(),
+            events: of(),
+            url: ROUTE_PATHS.USERS_RESOLVERS
+          }
+        },
+        { provide: MatDialogRef, useValue: { close: jest.fn() } },
+        { provide: MAT_DIALOG_DATA, useValue: { resolver } }
+      ]
+    }).compileComponents();
+
+    const fixtureDialog = TestBed.createComponent(UserNewResolverComponent);
+    const componentDialog = fixtureDialog.componentInstance;
+
+    expect(componentDialog.resolverName).toBe("dialog-resolver");
+    expect(componentDialog.resolverType).toBe("ldapresolver");
+    expect(componentDialog.formData["LDAPURI"]).toBe("ldap://localhost");
+    expect(componentDialog.isEditMode).toBeTruthy();
   });
 });

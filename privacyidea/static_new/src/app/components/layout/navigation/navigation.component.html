@@ -333,17 +333,6 @@
         </mat-list-item>
         <mat-list-item>
           <button
-            (click)="onNewResolver()"
-            [ngClass]="contentService.routeUrl() === ROUTE_PATHS.USERS_NEW_RESOLVER ||
-                  contentService.routeUrl().startsWith(ROUTE_PATHS.USERS_EDIT_RESOLVER) ?
-                  'card-button-active' : 'card-button-1'"
-            mat-stroked-button>
-            <mat-icon class="ms--add-database"></mat-icon>
-            New Resolver
-          </button>
-        </mat-list-item>
-        <mat-list-item>
-          <button
             [ngClass]="contentService.routeUrl() === ROUTE_PATHS.USERS_REALMS ? 'card-button-active' : 'card-button-1'"
             [routerLink]="[ROUTE_PATHS.USERS_REALMS]"
             mat-stroked-button>

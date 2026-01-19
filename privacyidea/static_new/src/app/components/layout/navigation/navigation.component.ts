@@ -167,9 +167,6 @@ export class NavigationComponent {
     }
   }
 
-  onNewResolver(): void {
-    this.router.navigate([ROUTE_PATHS.USERS_NEW_RESOLVER]);
-  }
 
   onPoliciesHeaderClick(event: MouseEvent): void {
     event.preventDefault();

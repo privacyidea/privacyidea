@@ -9,12 +9,12 @@
     @if (isEditMode) {
       <h3
         class="margin-left-1"
-        i18n>Edit user source
+        i18n>Edit User Source
       </h3>
     } @else {
       <h3
         class="margin-left-1"
-        i18n>Create user source
+        i18n>Create User Source
       </h3>
     }
 
@@ -22,7 +22,7 @@
       #leftColumn
       class="flex-row margin-bottom-0">
       <mat-form-field class="min-width-40">
-        <mat-label i18n>Resolver name</mat-label>
+        <mat-label i18n>Resolver Name</mat-label>
         <mat-hint>
           @if (isEditMode) {
             <span i18n>Change the configuration of the selected resolver.</span>
@@ -70,7 +70,7 @@
         @if (resolverType !== 'passwdresolver') {
           @if (['entraidresolver', 'keycloakresolver', 'httpresolver'].includes(resolverType)) {
             <mat-form-field>
-              <mat-label i18n>Test username</mat-label>
+              <mat-label i18n>Test Username</mat-label>
               <input
                 [(ngModel)]="testUsername"
                 matInput
@@ -78,7 +78,7 @@
             </mat-form-field>
 
             <mat-form-field>
-              <mat-label i18n>Test user ID</mat-label>
+              <mat-label i18n>Test User ID</mat-label>
               <input
                 [(ngModel)]="testUserId"
                 matInput
@@ -114,6 +114,12 @@
           mat-stroked-button>
           <mat-icon>add</mat-icon>
           Save
+        </button>
+
+        <button
+          (click)="onCancel()"
+          mat-button>
+          <span i18n>Cancel</span>
         </button>
       </div>
     </div>

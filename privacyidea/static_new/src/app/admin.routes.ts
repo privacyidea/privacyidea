@@ -37,7 +37,6 @@ import { ClientsComponent } from "./components/audit/clients/clients.component";
 import { MachineResolverComponent } from "./components/machine-resolver/machine-resolver.component";
 import { PeriodicTaskComponent } from "./components/configuration/periodic-task/periodic-task.component";
 import { UserResolversComponent } from "./components/user/user-sources/user-resolvers.component";
-import { UserNewResolverComponent } from "./components/user/user-new-resolver/user-new-resolver.component";
 
 export const routes: Routes = [
   {
@@ -67,9 +66,7 @@ export const routes: Routes = [
       { path: "", component: UserTableComponent },
       { path: "details/:username", component: UserDetailsComponent },
       { path: "realms", component: RealmTableComponent },
-      { path: "resolvers", component: UserResolversComponent },
-      { path: "new-resolver", component: UserNewResolverComponent },
-      { path: "edit-resolver/:name", component: UserNewResolverComponent }
+      { path: "resolvers", component: UserResolversComponent }
     ]
   },
   {

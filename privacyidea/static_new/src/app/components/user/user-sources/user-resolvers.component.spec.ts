@@ -109,11 +109,29 @@ describe("UserSourcesComponent", () => {
     expect(ds.filterPredicate(resolvers[0] as any, "  ")).toBeTruthy();
   });
 
-  it("onEditResolver should navigate to edit URL", () => {
+  it("onEditResolver should open dialog", () => {
     const resolver = { resolvername: "res1", type: "sqlresolver", censor_keys: [], data: {} } as Resolver;
     component.onEditResolver(resolver);
 
-    expect(router.navigate).toHaveBeenCalledWith(["users/edit-resolver", "res1"]);
+    expect(dialog.open).toHaveBeenCalledWith(expect.any(Function), expect.objectContaining({
+      data: { resolver },
+      height: "auto",
+      maxHeight: "100vh",
+      maxWidth: "100vw",
+      width: "auto"
+    }));
+  });
+
+  it("onNewResolver should open dialog", () => {
+    component.onNewResolver();
+
+    expect(dialog.open).toHaveBeenCalledWith(expect.any(Function), expect.objectContaining({
+      data: { resolver: undefined },
+      height: "auto",
+      maxHeight: "100vh",
+      maxWidth: "100vw",
+      width: "auto"
+    }));
   });
 
   it("onDeleteResolver should delete after confirmation", () => {

@@ -6,24 +6,36 @@
     appScrollToTop
     class="user-sources-table-container">
     <div class="filter-paginator-container margin-bottom-1">
-      <mat-form-field
-        class="table-filter"
-        subscriptSizing="dynamic">
-        <mat-label i18n>Filter Resolvers...</mat-label>
-        <app-clearable-input
-          (onClick)="resetFilter()"
-          [showClearButton]="filterString().length > 0">
-          <input
-            #filterHTMLInputElement
-            (input)="onFilterInput(filterHTMLInputElement.value)"
-            [value]="filterString()"
-            aria-label="Filter Input"
-            i18n-aria-label
-            i18n-placeholder
-            matInput
-            placeholder="Filter by name or type" />
-        </app-clearable-input>
-      </mat-form-field>
+      <div class="flex-row ali-center">
+        <mat-form-field
+          class="table-filter"
+          subscriptSizing="dynamic">
+          <mat-label i18n>Filter Resolvers...</mat-label>
+          <app-clearable-input
+            (onClick)="resetFilter()"
+            [showClearButton]="filterString().length > 0">
+            <input
+              #filterHTMLInputElement
+              (input)="onFilterInput(filterHTMLInputElement.value)"
+              [value]="filterString()"
+              aria-label="Filter Input"
+              i18n-aria-label
+              i18n-placeholder
+              matInput
+              placeholder="Filter by name or type" />
+          </app-clearable-input>
+        </mat-form-field>
+
+        @if (authService.actionAllowed("resolverwrite")) {
+          <button
+            (click)="onNewResolver()"
+            class="margin-left-1"
+            mat-stroked-button>
+            <mat-icon>add</mat-icon>
+            <span i18n>New Resolver</span>
+          </button>
+        }
+      </div>
       <mat-paginator
         [length]="resolversDataSource().data.length"
         [pageSizeOptions]="pageSizeOptions()"
@@ -54,7 +66,7 @@
               {{ element.resolvername }}
             </a>
             <div class="actions-buttons">
-            @if (authService.actionAllowed("resolverwrite")) {
+              @if (authService.actionAllowed("resolverwrite")) {
                 <button
                   (click)="onEditResolver(element)"
                   aria-label="Edit resolver"

@@ -33,8 +33,10 @@ import { HttpResolverComponent } from "./http-resolver/http-resolver.component";
 import { EntraidResolverComponent } from "./entraid-resolver/entraid-resolver.component";
 import { KeycloakResolverComponent } from "./keycloak-resolver/keycloak-resolver.component";
 import { ActivatedRoute, Router } from "@angular/router";
-import { ROUTE_PATHS } from "../../../route_paths";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
+import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from "@angular/material/dialog";
+import { ROUTE_PATHS } from "../../../route_paths";
+import { ContentService } from "../../../services/content/content.service";
 
 @Component({
   selector: "app-user-new-resolver",
@@ -58,7 +60,8 @@ import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
     ScimResolverComponent,
     HttpResolverComponent,
     EntraidResolverComponent,
-    KeycloakResolverComponent
+    KeycloakResolverComponent,
+    MatDialogModule
   ],
   templateUrl: "./user-new-resolver.component.html",
   styleUrl: "./user-new-resolver.component.scss"
@@ -68,7 +71,10 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
   private readonly notificationService = inject(NotificationService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
+  private readonly contentService = inject(ContentService);
   protected readonly renderer: Renderer2 = inject(Renderer2);
+  public readonly dialogRef = inject(MatDialogRef<UserNewResolverComponent>, { optional: true });
+  public readonly data = inject(MAT_DIALOG_DATA, { optional: true });
 
   private observer!: IntersectionObserver;
   private editInitialized = false;
@@ -108,9 +114,28 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
   testUserId = "";
 
   constructor() {
-    this.route.paramMap.pipe(takeUntilDestroyed()).subscribe(params => {
-      this.resolverService.selectedResolverName.set(params.get("name") || "");
-    });
+    const dialogResolver = this.data?.resolver;
+    const dialogResolverName = this.data?.resolverName || dialogResolver?.resolvername;
+
+    if (dialogResolver) {
+      this.resolverName = dialogResolver.resolvername;
+      this.resolverType = dialogResolver.type;
+      this.formData = { ...(dialogResolver.data || {}) };
+      this.editInitialized = true;
+      this.resolverService.selectedResolverName.set(dialogResolver.resolvername);
+    } else if (dialogResolverName) {
+      this.resolverService.selectedResolverName.set(dialogResolverName);
+    } else {
+      this.route.paramMap.pipe(takeUntilDestroyed()).subscribe(params => {
+        this.resolverService.selectedResolverName.set(params.get("name") || "");
+      });
+    }
+
+    effect (() => {
+      if (!this.contentService.routeUrl().startsWith(ROUTE_PATHS.USERS_RESOLVERS)) {
+        this.dialogRef?.close(true);
+      }
+    })
 
     effect(() => {
       const selectedName = this.resolverService.selectedResolverName();
@@ -130,7 +155,9 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
       const resourceRef = this.resolverService.selectedResolverResource;
 
       if (resourceRef.status() === ResourceStatus.Loading || resourceRef.status() === ResourceStatus.Reloading) {
-        this.editInitialized = false;
+        if (resourceRef.status() === ResourceStatus.Reloading) {
+          this.editInitialized = false;
+        }
         return;
       }
 
@@ -341,7 +368,9 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
             );
             this.resolverService.resolversResource.reload?.();
 
-            if (!this.isEditMode) {
+            if (this.dialogRef) {
+              this.dialogRef.close(true);
+            } else if (!this.isEditMode) {
               this.resolverName = "";
               this.formData = {};
               this.router.navigateByUrl(ROUTE_PATHS.USERS_RESOLVERS);
@@ -369,6 +398,14 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
 
   onQuickTest() {
     this.executeTest(true);
+  }
+
+  onCancel(): void {
+    if (this.dialogRef) {
+      this.dialogRef.close();
+    } else {
+      this.router.navigateByUrl(ROUTE_PATHS.USERS_RESOLVERS);
+    }
   }
 
   private executeTest(quickTest = false): void {

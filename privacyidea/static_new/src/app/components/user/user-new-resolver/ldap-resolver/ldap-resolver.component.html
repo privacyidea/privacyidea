@@ -16,7 +16,7 @@
       </mat-form-field>
 
       <mat-form-field>
-        <mat-label i18n>TLS version</mat-label>
+        <mat-label i18n>TLS Version</mat-label>
         <mat-select [formControl]="tlsVersionControl">
           <mat-option
             i18n
@@ -46,7 +46,7 @@
 
       @if (tlsVerifyControl.value) {
         <mat-form-field class="margin-bottom-1">
-          <mat-label i18n>CA certificate</mat-label>
+          <mat-label i18n>CA Certificate</mat-label>
           <mat-hint i18n>
             The file containing the CA certificate which signed the LDAP TLS certificate.
           </mat-hint>
@@ -94,7 +94,7 @@
       <h3 i18n>Credentials</h3>
 
       <mat-form-field>
-        <mat-label i18n>Bind type</mat-label>
+        <mat-label i18n>Bind Type</mat-label>
         <mat-select [formControl]="authTypeControl">
           <mat-option
             i18n
