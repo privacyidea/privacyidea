@@ -119,16 +119,15 @@ class APIMachinesTestCase(MyApiTestCase):
                                                  "count": "12"},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res)
+            self.assertEqual(200, res.status_code, res)
             result = res.json.get("result")
-            self.assertEqual(result["status"], True)
-            self.assertTrue(result["value"] >= 1)
+            self.assertTrue(result["status"])
+            self.assertGreaterEqual(result["value"], 1)
 
         # check if the options were set.
         token_obj = get_tokens(serial=serial)[0]
-        self.assertEqual(token_obj.token.machine_list[0].application, "offline")
-        self.assertEqual(token_obj.token.machine_list[0].option_list[0].mt_key,
-                         "count")
+        self.assertEqual("offline", token_obj.token.machine_list[0].application)
+        self.assertEqual("count", token_obj.token.machine_list[0].option_list[0].mt_key)
 
         # Get the token
         with self.app.test_request_context('/machine/token',
@@ -136,19 +135,18 @@ class APIMachinesTestCase(MyApiTestCase):
                                            query_string={"serial": serial},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res)
+            self.assertEqual(200, res.status_code, res)
             result = res.json.get("result")
-            self.assertEqual(result["status"], True)
+            self.assertTrue(result["status"])
             machine_list = result.get("value")
-            self.assertEqual(len(machine_list), 1)
-            self.assertEqual(machine_list[0].get("serial"), serial)
-            self.assertEqual(machine_list[0].get("hostname"), "any host")
+            self.assertEqual(1, len(machine_list))
+            self.assertEqual(serial, machine_list[0].get("serial"))
+            self.assertEqual("any host", machine_list[0].get("hostname"))
 
         # check if the options were set.
         token_obj = get_tokens(serial=serial)[0]
-        self.assertEqual(token_obj.token.machine_list[0].application, "offline")
-        self.assertEqual(token_obj.token.machine_list[0].option_list[0].mt_key,
-                         "count")
+        self.assertEqual("offline", token_obj.token.machine_list[0].application)
+        self.assertEqual("count", token_obj.token.machine_list[0].option_list[0].mt_key)
 
         # Now detach the offline token. In this case we ignore the machine and resolver.
         with self.app.test_request_context('/machine/token/{0!s}/{1!s}/{2!s}/offline'.format(serial,
@@ -157,14 +155,14 @@ class APIMachinesTestCase(MyApiTestCase):
                                            method='DELETE',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res)
+            self.assertEqual(200, res.status_code, res)
             result = res.json.get("result")
-            self.assertEqual(result["status"], True)
-            self.assertEqual(result["value"], 1)
+            self.assertTrue(result["status"])
+            self.assertEqual(1, result["value"])
 
         # check that the token has no applications/machines anymore
         token_obj = get_tokens(serial=serial)[0]
-        self.assertEqual(len(token_obj.token.machine_list), 0)
+        self.assertEqual(0, len(token_obj.token.machine_list))
 
         remove_token(serial)
 
@@ -186,9 +184,13 @@ class APIMachinesTestCase(MyApiTestCase):
 
         # check if the options were set.
         token_obj = get_tokens(serial=serial)[0]
-        self.assertEqual(token_obj.token.machine_list[0].application, "luks")
-        self.assertEqual(token_obj.token.machine_list[0].option_list[
-                             1].mt_value, "/dev/sdb1")
+        self.assertEqual("luks", token_obj.token.machine_list[0].application)
+        self.assertEqual(2, len(token_obj.token.machine_list[0].option_list))
+        for option in token_obj.token.machine_list[0].option_list:
+            if option.mt_key == "slot":
+                self.assertEqual("1", option.mt_value)
+            elif option.mt_key == "partition":
+                self.assertEqual("/dev/sdb1", option.mt_value)
 
         # delete slot!
         with self.app.test_request_context('/machine/tokenoption',

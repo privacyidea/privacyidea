@@ -2,21 +2,17 @@
 This test file tests the lib.caconnector.py and
 lib.caconnectors.localca.py
 """
-from cryptography import x509
 import datetime
-from io import StringIO
-import mock
 import os
 import shutil
 import tempfile
 import unittest
+from io import StringIO
 
-from .base import MyTestCase
-from .mscamock import CAServiceMock
-from privacyidea.lib.caconnectors.localca import LocalCAConnector, ATTR
-from privacyidea.lib.caconnectors.msca import MSCAConnector, ATTR as MS_ATTR
-from privacyidea.lib.utils import int_to_hex
-from privacyidea.lib.error import CAError, CSRError, CSRPending
+import mock
+from cryptography import x509
+from sqlalchemy import select
+
 from privacyidea.lib.caconnector import (get_caconnector_list,
                                          get_caconnector_class,
                                          get_caconnector_config,
@@ -26,7 +22,13 @@ from privacyidea.lib.caconnector import (get_caconnector_list,
                                          get_caconnector_types,
                                          save_caconnector, delete_caconnector)
 from privacyidea.lib.caconnectors.baseca import AvailableCAConnectors
-
+from privacyidea.lib.caconnectors.localca import LocalCAConnector, ATTR
+from privacyidea.lib.caconnectors.msca import MSCAConnector, ATTR as MS_ATTR
+from privacyidea.lib.error import CAError, CSRError, CSRPending
+from privacyidea.lib.utils import int_to_hex
+from privacyidea.models import db, CAConnectorConfig
+from .base import MyTestCase
+from .mscamock import CAServiceMock
 
 CAKEY = "cakey.pem"
 CACERT = "cacert.pem"
@@ -131,6 +133,7 @@ class CAConnectorTestCase(MyTestCase):
     """
     Test the CA connector lib functions
     """
+
     def test_01_base_functions(self):
         types = get_caconnector_types()
         self.assertIn("local", types)
@@ -147,14 +150,25 @@ class CAConnectorTestCase(MyTestCase):
         self.assertEqual(description.get("local").get("cacert"), "string")
 
     def test_02_db_caconnector(self):
-        pass
         # save a CA connector
         ca_id = save_caconnector({"caconnector": "myCA",
                                   "type": "local",
                                   "cakey": "/opt/ca/key.pem",
                                   "cacert": "/opt/ca/cert.pem"})
         self.assertTrue(ca_id > 0, ca_id)
-        # Update the CA connector. Thus we check if SharedConfigClass is updated.
+        # check if connector is in DB
+        calist = get_caconnector_list()
+        self.assertEqual(1, len(calist))
+        # check the config values of "myCA"
+        my_ca = calist[0]
+        self.assertEqual("local", my_ca.get("type"))
+        self.assertEqual("myCA", my_ca.get("connectorname"))
+        my_ca_config = my_ca.get("data")
+        self.assertEqual(2, len(my_ca_config))
+        self.assertEqual("/opt/ca/key.pem", my_ca_config.get("cakey"))
+        self.assertEqual("/opt/ca/cert.pem", my_ca_config.get("cacert"))
+
+        # Update the CA connector. Thus, we check if SharedConfigClass is updated.
         save_caconnector({"caconnector": "myCA",
                           "type": "local",
                           "WorkingDir": "/opt/ca",
@@ -165,9 +179,16 @@ class CAConnectorTestCase(MyTestCase):
         self.assertEqual(len(calist), 1)
         calist = get_caconnector_list(filter_caconnector_type="local")
         self.assertEqual(len(calist), 1)
+        my_ca = calist[0]
+        self.assertEqual("local", my_ca.get("type"))
+        self.assertEqual("myCA", my_ca.get("connectorname"))
         # check the config values of "myCA"
-        self.assertEqual(calist[0].get("data").get("WorkingDir"), "/opt/ca")
-        self.assertEqual(calist[0].get("data").get("cakey"), "/opt/ca/key.pem")
+        my_ca_config = my_ca.get("data")
+        self.assertEqual(4, len(my_ca_config))
+        self.assertEqual("/opt/ca/key.pem", my_ca_config.get("cakey"))
+        self.assertEqual("/opt/ca/cert.pem", my_ca_config.get("cacert"))
+        self.assertEqual("/opt/ca", my_ca_config.get("WorkingDir"))
+        self.assertEqual("secret", my_ca_config.get("Password"))
 
         # get the CA connector list without a config
         calist = get_caconnector_list(return_config=False)
@@ -189,7 +210,12 @@ class CAConnectorTestCase(MyTestCase):
         delete_caconnector("myCA")
 
         # check if connector is deleted from DB
-        self.assertEqual(len(calist), 1)
+        calist = get_caconnector_list(return_config=False)
+        self.assertEqual(0, len(calist))
+        # Check corresponding config is also deleted
+        config_stmt = select(CAConnectorConfig)
+        config_entries = db.session.scalars(config_stmt).all()
+        self.assertEqual(len(config_entries), 0)
 
     def test_03_errors(self):
         # unknown type
@@ -393,7 +419,6 @@ VBC5Qos8/IabJpV5Bvqq4/7ZmVeAOXRQCVPomugzU1L6cs7GWCZpmuB7WG5VT+hL
 WYx05kOaYFFvb1u8ub+qSExyHGX9Lh6w32RCoM8kJP7F6YCepKJRboka1/BY3GbF
 17qsUVtb+0YLznMdHEFtWc51SpzA0h3a7w==
 -----END CERTIFICATE-----"""
-
 
 CONF = {MS_ATTR.HOSTNAME: MY_CA_NAME,
         MS_ATTR.PORT: 50061,

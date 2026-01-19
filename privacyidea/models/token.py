@@ -15,33 +15,31 @@
 #
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
 import binascii
 import logging
-from sqlalchemy import Sequence
+from typing import Optional, List
 
+from sqlalchemy import Sequence, Unicode, Integer, Boolean, select, UnicodeText
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from privacyidea.lib.crypto import (geturandom, encrypt, hexlify_and_unicode,
+                                    pass_hash, encryptPin, decryptPin, hash,
+                                    verify_pass_hash, SecretObj)
 from privacyidea.lib.error import ResourceNotFoundError
+from privacyidea.lib.log import log_with
+from privacyidea.lib.utils import convert_column_to_unicode
 from privacyidea.models import db
 from privacyidea.models.realm import Realm
 from privacyidea.models.utils import MethodsMixin
-from privacyidea.models.challenge import Challenge
-from privacyidea.models.config import SAFE_STORE
-from privacyidea.models.tokengroup import Tokengroup, TokenTokengroup
-from privacyidea.lib.crypto import (geturandom, encrypt, hexlify_and_unicode,
-                                    pass_hash, encryptPin, decryptPin, hash,
-                                    verify_pass_hash, SecretObj, encryptPassword)
-from privacyidea.lib.framework import get_app_config_value
-from privacyidea.lib.utils import convert_column_to_unicode
-from privacyidea.lib.log import log_with
 
 log = logging.getLogger(__name__)
 
 
 class TokenCredentialIdHash(MethodsMixin, db.Model):
     __tablename__ = "tokencredentialidhash"
-    id = db.Column("id", db.Integer, db.Identity(), primary_key=True)
-    credential_id_hash = db.Column(db.String(256), nullable=False)
-    token_id = db.Column(db.Integer(), db.ForeignKey("token.id"), nullable=False)
+    id: Mapped[int] = mapped_column("id", Integer, Sequence("tokencredentialidhash_seq"), primary_key=True)
+    credential_id_hash: Mapped[str] = mapped_column(db.String(256), nullable=False)
+    token_id: Mapped[int] = mapped_column(db.ForeignKey("token.id"), nullable=False)
     __table_args__ = (db.Index('ix_tokencredentialidhash_credentialidhash',
                                'credential_id_hash', unique=True),)
 
@@ -66,65 +64,73 @@ class Token(MethodsMixin, db.Model):
     that is specific to the tokentype.
     """
     __tablename__ = 'token'
-    id = db.Column(db.Integer, Sequence("token_seq"),
-                   primary_key=True,
-                   nullable=False)
-    description = db.Column(db.Unicode(80), default='')
-    serial = db.Column(db.Unicode(40), default='',
-                       unique=True,
-                       nullable=False,
-                       index=True)
-    tokentype = db.Column(db.Unicode(30),
-                          default='HOTP',
-                          index=True)
-    user_pin = db.Column(db.Unicode(512),
-                         default='')  # encrypt
-    user_pin_iv = db.Column(db.Unicode(32),
-                            default='')  # encrypt
-    so_pin = db.Column(db.Unicode(512),
-                       default='')  # encrypt
-    so_pin_iv = db.Column(db.Unicode(32),
-                          default='')  # encrypt
-    pin_seed = db.Column(db.Unicode(32),
-                         default='')
-    otplen = db.Column(db.Integer(),
-                       default=6)
-    pin_hash = db.Column(db.Unicode(512),
-                         default='')  # hashed
-    key_enc = db.Column(db.Unicode(2800),
-                        default='')  # encrypt
-    key_iv = db.Column(db.Unicode(32),
-                       default='')
-    maxfail = db.Column(db.Integer(),
-                        default=10)
-    active = db.Column(db.Boolean(),
-                       nullable=False,
-                       default=True)
-    revoked = db.Column(db.Boolean(),
-                        default=False)
-    locked = db.Column(db.Boolean(),
-                       default=False)
-    failcount = db.Column(db.Integer(),
-                          default=0)
-    count = db.Column(db.Integer(),
-                      default=0)
-    count_window = db.Column(db.Integer(),
-                             default=10)
-    sync_window = db.Column(db.Integer(),
-                            default=1000)
-    rollout_state = db.Column(db.Unicode(10),
-                              default='')
-    info_list = db.relationship('TokenInfo', lazy='select', backref='token')
-    # This creates an attribute "token" in the TokenOwner object
-    owners = db.relationship('TokenOwner', lazy='dynamic', backref='token')
+    id: Mapped[int] = mapped_column(Integer, Sequence("token_seq"),
+                                    primary_key=True,
+                                    nullable=False)
+    description: Mapped[Optional[str]] = mapped_column(Unicode(80), default='')
+    serial: Mapped[str] = mapped_column(Unicode(40), default='',
+                                        unique=True,
+                                        nullable=False,
+                                        index=True)
+    tokentype: Mapped[Optional[str]] = mapped_column(Unicode(30),
+                                                     default='HOTP',
+                                                     index=True)
+    user_pin: Mapped[Optional[str]] = mapped_column(Unicode(512),
+                                                    default='')  # encrypt
+    user_pin_iv: Mapped[Optional[str]] = mapped_column(Unicode(32),
+                                                       default='')  # encrypt
+    so_pin: Mapped[Optional[str]] = mapped_column(Unicode(512),
+                                                  default='')  # encrypt
+    so_pin_iv: Mapped[Optional[str]] = mapped_column(Unicode(32),
+                                                     default='')  # encrypt
+    pin_seed: Mapped[Optional[str]] = mapped_column(Unicode(32),
+                                                    default='')
+    otplen: Mapped[Optional[int]] = mapped_column(Integer,
+                                                  default=6)
+    pin_hash: Mapped[Optional[str]] = mapped_column(Unicode(512),
+                                                    default='')  # hashed
+    key_enc: Mapped[Optional[str]] = mapped_column(Unicode(2800),
+                                                   default='')  # encrypt
+    key_iv: Mapped[Optional[str]] = mapped_column(Unicode(32),
+                                                  default='')
+    maxfail: Mapped[Optional[int]] = mapped_column(Integer,
+                                                   default=10)
+    active: Mapped[bool] = mapped_column(Boolean,
+                                         nullable=False,
+                                         default=True)
+    revoked: Mapped[Optional[bool]] = mapped_column(Boolean,
+                                                    default=False)
+    locked: Mapped[Optional[bool]] = mapped_column(Boolean,
+                                                   default=False)
+    failcount: Mapped[Optional[int]] = mapped_column(Integer,
+                                                     default=0)
+    count: Mapped[Optional[int]] = mapped_column(Integer,
+                                                 default=0)
+    count_window: Mapped[Optional[int]] = mapped_column(Integer,
+                                                        default=10)
+    sync_window: Mapped[Optional[int]] = mapped_column(Integer,
+                                                       default=1000)
+    rollout_state: Mapped[Optional[str]] = mapped_column(Unicode(10),
+                                                         default='')
+    info_list = relationship('TokenInfo', lazy='select', back_populates='token', cascade="all, delete-orphan")
+    owners = relationship('TokenOwner', lazy='dynamic', back_populates='token', cascade="all, delete-orphan")
 
     # Container
-    container = db.relationship('TokenContainer', secondary='tokencontainertoken', back_populates='tokens')
+    container = relationship('TokenContainer', secondary='tokencontainertoken', back_populates='tokens')
+
+    # This creates an attribute "realm_list" in the Token object
+    # TODO: could be updated to a modern relationship that stores a list of realms here and not of the association
+    #  table TokenRealm (requires changes in the token query, etc.)
+    realm_list = relationship('TokenRealm', lazy='joined', back_populates='token')
+
+    tokengroup_list: Mapped[List['TokenTokengroup']] = relationship('Tokengroup', secondary='tokentokengroup',
+                                                                    back_populates='tokens', single_parent=True)
+    machine_list: Mapped[List['MachineToken']] = relationship('MachineToken', back_populates='token',
+                                                              cascade="all, delete-orphan")
 
     def __init__(self, serial, tokentype="",
                  isactive=True, otplen=6,
                  otpkey="",
-                 userid=None, resolver=None, realm=None,
                  **kwargs):
         super(Token, self).__init__(**kwargs)
         self.serial = '' + serial
@@ -140,23 +146,6 @@ class Token(MethodsMixin, db.Model):
         self.pin_seed = ""
         self.set_otpkey(otpkey)
 
-        # also create the user assignment
-        if userid and resolver and realm:
-            # We can not create the tokenrealm-connection and owner-connection, yet
-            # since we need to token_id.
-            token_id = self.save()
-            realm_id = Realm.query.filter_by(name=realm).first().id
-            tr = TokenRealm(realm_id=realm_id, token_id=token_id)
-            if tr:
-                db.session.add(tr)
-
-            to = TokenOwner(token_id=token_id, user_id=userid, resolver=resolver, realm_id=realm_id)
-            if to:
-                db.session.add(to)
-
-            if tr or to:
-                db.session.commit()
-
     @property
     def first_owner(self):
         return self.owners.first()
@@ -164,36 +153,6 @@ class Token(MethodsMixin, db.Model):
     @property
     def all_owners(self):
         return self.owners.all()
-
-    @log_with(log)
-    def delete(self):
-        from .machine import MachineToken
-        # some DBs (e.g. DB2) run in a deadlock, if the TokenRealm entry
-        # is deleted via key relation, so we delete it explicitly
-        ret = self.id
-        db.session.query(TokenRealm) \
-            .filter(TokenRealm.token_id == self.id) \
-            .delete()
-        db.session.query(TokenOwner) \
-            .filter(TokenOwner.token_id == self.id) \
-            .delete()
-        for mt in db.session.execute(db.select(MachineToken).filter(MachineToken.token_id == self.id)).scalars():
-            mt.delete()
-        db.session.query(Challenge) \
-            .filter(Challenge.serial == self.serial) \
-            .delete()
-        db.session.query(TokenInfo) \
-            .filter(TokenInfo.token_id == self.id) \
-            .delete()
-        db.session.query(TokenTokengroup) \
-            .filter(TokenTokengroup.token_id == self.id) \
-            .delete()
-        if self.tokentype.lower() in ["webauthn", "passkey"]:
-            db.session.query(TokenCredentialIdHash).filter(TokenCredentialIdHash.token_id == self.id).delete()
-
-        db.session.delete(self)
-        db.session.commit()
-        return ret
 
     @staticmethod
     def _fix_spaces(data):
@@ -224,73 +183,6 @@ class Token(MethodsMixin, db.Model):
         self.count = 0
         if reset_failcount is True:
             self.failcount = 0
-
-    def set_tokengroups(self, tokengroups, add=False):
-        """
-        Set the list of the tokengroups.
-
-        This is done by filling the :py:class:`privacyidea.models.TokenTokengroup` table.
-
-        :param tokengroups: the tokengroups
-        :type tokengroups: list[str]
-        :param add: If set, the tokengroups are added. I.e. old tokengroups are not deleted
-        :type add: bool
-        """
-        # delete old Tokengroups
-        if not add:
-            db.session.query(TokenTokengroup) \
-                .filter(TokenTokengroup.token_id == self.id) \
-                .delete()
-        # add new Tokengroups
-        # We must not set the same tokengroup more than once...
-        # uniquify: tokengroups -> set(tokengroups)
-        for tokengroup in set(tokengroups):
-            # Get the id of the realm to add
-            g = Tokengroup.query.filter_by(name=tokengroup).first()
-            if g:
-                # Check if TokenTokengroup already exists
-                tg = TokenTokengroup.query.filter_by(token_id=self.id,
-                                                     tokengroup_id=g.id).first()
-                if not tg:
-                    # If the Tokengroup is not yet attached to the token
-                    token_group = TokenTokengroup(token_id=self.id, tokengroup_id=g.id)
-                    db.session.add(token_group)
-        db.session.commit()
-
-    def set_realms(self, realms, add=False):
-        """
-        Set the list of the realms.
-
-        This is done by filling the :py:class:`privacyidea.models.TokenRealm` table.
-
-        :param realms: realms
-        :type realms: list[str]
-        :param add: If set, the realms are added. I.e. old realms are not deleted
-        :type add: bool
-        """
-        # delete old TokenRealms
-        if not add:
-            db.session.query(TokenRealm).filter(TokenRealm.token_id == self.id).delete()
-        # add new TokenRealms
-        # We must not set the same realm more than once...
-        # uniquify: realms -> set(realms)
-        if self.first_owner and self.first_owner.realm:
-            if self.first_owner.realm.name not in realms:
-                realms.append(self.first_owner.realm.name)
-                log.info(f"The realm of an assigned user cannot be removed from "
-                         f"token {self.first_owner.token.serial} "
-                         f"(realm: {self.first_owner.realm.name})")
-        for realm in set(realms):
-            # Get the id of the realm to add
-            realm_db = Realm.query.filter_by(name=realm).first()
-            if realm_db:
-                # Check if tokenrealm already exists
-                token_realm_db = TokenRealm.query.filter_by(token_id=self.id, realm_id=realm_db.id).first()
-                if not token_realm_db:
-                    # If the realm is not yet attached to the token
-                    token_realm = TokenRealm(token_id=self.id, realm_id=realm_db.id)
-                    db.session.add(token_realm)
-        db.session.commit()
 
     def get_realms(self):
         """
@@ -375,7 +267,7 @@ class Token(MethodsMixin, db.Model):
         Set the OTP pin in a hashed way
         """
         real_pin = pin or ""
-        if hashed is True:
+        if hashed:
             self.set_hashed_pin(real_pin)
             log.debug(f"set_pin hash: {self.pin_hash!r}")
         else:
@@ -485,8 +377,8 @@ class Token(MethodsMixin, db.Model):
         ret['realms'] = realm_list
         # list of tokengroups
         tokengroup_list = []
-        for tg_entry in self.tokengroup_list:
-            tokengroup_list.append(tg_entry.tokengroup.name)
+        for token_group in self.tokengroup_list:
+            tokengroup_list.append(token_group.name)
         ret['tokengroup'] = tokengroup_list
         return ret
 
@@ -507,73 +399,6 @@ class Token(MethodsMixin, db.Model):
             ldict[key] = val
         res = "<{0!r} {1!r}>".format(self.__class__, ldict)
         return res
-
-    def set_info(self, info):
-        """
-        Set the additional token info for this token
-
-        Entries that end with ".type" are used as type for the keys.
-        I.e. two entries sshkey="XYZ" and sshkey.type="password" will store
-        the key sshkey as type "password".
-
-        :param info: The key-values to set for this token
-        :type info: dict
-        """
-        if not self.id:
-            # If there is no ID to reference the token, we need to save the token
-            self.save()
-        types = {}
-        for k, v in info.items():
-            if k.endswith(".type"):
-                key = ".".join(k.split(".")[:-1])
-                types[key] = v
-                if v == "password":
-                    # If the type is password, we need to encrypt the value
-                    # as it is a secret.
-                    info[key] = encryptPassword(info[key])
-        for k, v in info.items():
-            if not k.endswith(".type"):
-                TokenInfo(self.id, k, v, Type=types.get(k)).save(persistent=False)
-        db.session.commit()
-
-    def del_info(self, key=None):
-        """
-        Deletes tokeninfo for a given token.
-        If the key is omitted, all Tokeninfo is deleted.
-
-        :param key: searches for the given key to delete the entry
-        :return:
-        """
-        if key:
-            tokeninfos = TokenInfo.query.filter_by(token_id=self.id, Key=key)
-        else:
-            tokeninfos = TokenInfo.query.filter_by(token_id=self.id)
-        for ti in tokeninfos:
-            ti.delete()
-
-    def del_tokengroup(self, tokengroup=None, tokengroup_id=None):
-        """
-        Deletes the tokengroup from the given token.
-        If tokengroup name and id are omitted, all tokengroups are deleted.
-
-        :param tokengroup: The name of the tokengroup
-        :type tokengroup: str
-        :param tokengroup_id: The id of the tokengroup
-        :type tokengroup_id: int
-        :return:
-        """
-        if tokengroup:
-            # We need to resolve the id of the tokengroup
-            t = Tokengroup.query.filter_by(name=tokengroup).first()
-            if not t:
-                raise Exception("tokengroup does not exist")
-            tokengroup_id = t.id
-        if tokengroup_id:
-            tokengroups = TokenTokengroup.query.filter_by(tokengroup_id=tokengroup_id, token_id=self.id)
-        else:
-            tokengroups = TokenTokengroup.query.filter_by(token_id=self.id)
-        for tokengroup in tokengroups:
-            tokengroup.delete()
 
     def get_info(self):
         """
@@ -630,14 +455,15 @@ class TokenInfo(MethodsMixin, db.Model):
     The tokeninfo is reference by the foreign key to the "token" table.
     """
     __tablename__ = 'tokeninfo'
-    id = db.Column(db.Integer, Sequence("tokeninfo_seq"), primary_key=True)
-    Key = db.Column(db.Unicode(255),
-                    nullable=False)
-    Value = db.Column(db.UnicodeText(), default='')
-    Type = db.Column(db.Unicode(100), default='')
-    Description = db.Column(db.Unicode(2000), default='')
-    token_id = db.Column(db.Integer(),
-                         db.ForeignKey('token.id'), index=True)
+    id: Mapped[int] = mapped_column(Integer, Sequence("tokeninfo_seq"), primary_key=True)
+    Key: Mapped[str] = mapped_column(Unicode(255), nullable=False)
+    Value: Mapped[Optional[str]] = mapped_column(UnicodeText(), default='')
+    Type: Mapped[Optional[str]] = mapped_column(Unicode(100), default='')
+    Description: Mapped[Optional[str]] = mapped_column(Unicode(2000), default='')
+    token_id: Mapped[Optional[int]] = mapped_column(Integer, db.ForeignKey('token.id'), index=True)
+
+    token = relationship("Token", back_populates="info_list")
+
     __table_args__ = (db.UniqueConstraint('token_id',
                                           'Key',
                                           name='tiix_2'),)
@@ -652,29 +478,6 @@ class TokenInfo(MethodsMixin, db.Model):
         self.Type = Type
         self.Description = Description
 
-    def save(self, persistent=True):
-        ti_func = TokenInfo.query.filter_by(token_id=self.token_id, Key=self.Key).first
-        ti = ti_func()
-        if ti is None:
-            # create a new one
-            db.session.add(self)
-            db.session.commit()
-            if get_app_config_value(SAFE_STORE, False):
-                ti = ti_func()
-                ret = ti.id
-            else:
-                ret = self.id
-        else:
-            # update
-            TokenInfo.query.filter_by(token_id=self.token_id,
-                                      Key=self.Key).update({'Value': self.Value,
-                                                            'Description': self.Description,
-                                                            'Type': self.Type})
-            ret = ti.id
-        if persistent:
-            db.session.commit()
-        return ret
-
 
 class TokenOwner(MethodsMixin, db.Model):
     """
@@ -682,13 +485,14 @@ class TokenOwner(MethodsMixin, db.Model):
     A token can be assigned to several users.
     """
     __tablename__ = 'tokenowner'
-    id = db.Column(db.Integer(), Sequence("tokenowner_seq"), primary_key=True)
-    token_id = db.Column(db.Integer(), db.ForeignKey('token.id'))
-    resolver = db.Column(db.Unicode(120), default='', index=True)
-    user_id = db.Column(db.Unicode(320), default='', index=True)
-    realm_id = db.Column(db.Integer(), db.ForeignKey('realm.id'))
-    # This creates an attribute "tokenowners" in the realm objects
-    realm = db.relationship('Realm', lazy='joined', backref='tokenowners')
+    id: Mapped[int] = mapped_column(Integer, Sequence("tokenowner_seq"), primary_key=True)
+    token_id: Mapped[Optional[int]] = mapped_column(Integer, db.ForeignKey('token.id'))
+    resolver: Mapped[Optional[str]] = mapped_column(Unicode(120), default='', index=True)
+    user_id: Mapped[Optional[str]] = mapped_column(Unicode(320), default='', index=True)
+    realm_id: Mapped[Optional[int]] = mapped_column(Integer, db.ForeignKey('realm.id'))
+
+    token = relationship('Token', lazy='joined', back_populates='owners')
+    realm = relationship('Realm', lazy='joined', back_populates='tokenowners')
 
     def __init__(self, token_id=None, serial=None, user_id=None, resolver=None,
                  realm_id=None, realmname=None):
@@ -704,43 +508,22 @@ class TokenOwner(MethodsMixin, db.Model):
         if realm_id is not None:
             self.realm_id = realm_id
         elif realmname:
-            realm = Realm.query.filter_by(name=realmname).first()
-            if not realm:
+            stmt = select(Realm).filter_by(name=realmname)
+            r = db.session.execute(stmt).scalar_one_or_none()
+            if not r:
                 raise ResourceNotFoundError(f"Realm '{realmname}' does not exist.")
-            self.realm_id = realm.id
+            self.realm_id = r.id
         if token_id is not None:
             self.token_id = token_id
         elif serial:
-            token = Token.query.filter_by(serial=serial).first()
-            if not token: # pragma: no cover
+            stmt = select(Token).filter_by(serial=serial)
+            r = db.session.execute(stmt).scalar_one_or_none()
+            if not r:  # pragma: no cover
                 # usually this is already covered by the lib / token class functions
                 raise ResourceNotFoundError(f"Token with serial '{serial}' does not exist.")
-            self.token_id = token.id
+            self.token_id = r.id
         self.resolver = resolver
         self.user_id = user_id
-
-    def save(self, persistent=True):
-        to_func = TokenOwner.query.filter_by(token_id=self.token_id,
-                                             user_id=self.user_id,
-                                             realm_id=self.realm_id,
-                                             resolver=self.resolver).first
-        to = to_func()
-        if to is None:
-            # This very assignment does not exist, yet:
-            db.session.add(self)
-            db.session.commit()
-            if get_app_config_value(SAFE_STORE, False):
-                to = to_func()
-                ret = to.id
-            else:
-                ret = self.id
-        else:
-            ret = to.id
-            # There is nothing to update
-
-        if persistent:
-            db.session.commit()
-        return ret
 
 
 class TokenRealm(MethodsMixin, db.Model):
@@ -750,45 +533,35 @@ class TokenRealm(MethodsMixin, db.Model):
     many additional realms.
     """
     __tablename__ = 'tokenrealm'
-    id = db.Column(db.Integer(), Sequence("tokenrealm_seq"), primary_key=True)
-    token_id = db.Column(db.Integer(),
-                         db.ForeignKey('token.id'))
-    realm_id = db.Column(db.Integer(),
-                         db.ForeignKey('realm.id'))
+    id: Mapped[int] = mapped_column(Integer, Sequence("tokenrealm_seq"), primary_key=True)
+    token_id: Mapped[Optional[int]] = mapped_column(Integer,
+                                                    db.ForeignKey('token.id'))
+    realm_id: Mapped[Optional[int]] = mapped_column(Integer,
+                                                    db.ForeignKey('realm.id'))
     # This creates an attribute "realm_list" in the Token object
-    token = db.relationship('Token',
-                            lazy='joined',
-                            backref='realm_list')
+    token = relationship('Token',
+                         lazy='joined',
+                         back_populates='realm_list')
     # This creates an attribute "token_list" in the Realm object
-    realm = db.relationship('Realm',
-                            lazy='joined',
-                            backref='token_list')
+    realm = relationship('Realm',
+                         lazy='joined',
+                         back_populates='token_list')
     __table_args__ = (db.UniqueConstraint('token_id',
                                           'realm_id',
                                           name='trix_2'),)
 
     def __init__(self, realm_id=0, token_id=0, realmname=None):
-        """
-        Create a new TokenRealm entry.
-        :param realm_id: The id of the realm
-        :param token_id: The id of the token
-        """
-        log.debug("setting realm_id to {0:d}".format(realm_id))
-        if realmname:
-            r = Realm.query.filter_by(name=realmname).first()
-            self.realm_id = r.id
+        log.debug(f"setting realm_id to {realm_id}")
         if realm_id:
             self.realm_id = realm_id
+        elif realmname:
+            stmt = select(Realm).filter_by(name=realmname)
+            r = db.session.execute(stmt).scalar_one_or_none()
+            self.realm_id = r.id
         self.token_id = token_id
 
 
 def get_token_id(serial):
-    """
-    Return the database token ID for a given serial number
-
-    :param serial:
-    :return: token ID
-    :rtpye: int
-    """
-    token = Token.query.filter(Token.serial == serial).first()
-    return token.id
+    stmt = select(Token).filter(Token.serial == serial)
+    token = db.session.scalars(stmt).unique().one_or_none()
+    return token.id if token else None

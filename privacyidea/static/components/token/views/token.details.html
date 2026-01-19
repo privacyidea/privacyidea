@@ -755,10 +755,18 @@
                 >
                 </select>
             </div>
-
-            <div ng-hide="form.application=='offline'"
+            <!--
+            <div ng-hide="!form.application=='offline'"
                  attach-machine new-machine="newMachine"></div>
-
+            <div>
+            -->
+            <div ng-show="form.application">
+                <label for="machineresolver_select">Machine Resolver</label>
+                <select class="form-control" id="machineresolver_select"
+                        ng-model="form.options.selectedMachineresolver"
+                        ng-options="key as value.resolvername for (key, value) in form.options.machineresolvers">
+                </select>
+            </div>
             <!-- Options for a new MachineToken -->
             <div class="form-group"
                  ng-repeat="(optionname, option) in Applications[form.application].options[token.tokentype]">

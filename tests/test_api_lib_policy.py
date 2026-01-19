@@ -5,37 +5,28 @@ The api.lib.policy.py depends on lib.policy and on flask!
 """
 import json
 import logging
+from datetime import datetime, timedelta
+
+import jwt
+from dateutil.tz import tzlocal
+from flask import Request, g, current_app, jsonify
+from passlib.hash import pbkdf2_sha512
 from testfixtures import log_capture, LogCapture
 from werkzeug.datastructures.headers import Headers
+from werkzeug.test import EnvironBuilder
 
-from privacyidea.lib.container import (init_container, find_container_by_serial, create_container_template,
-                                       get_all_containers)
-from privacyidea.lib.containers.container_info import RegistrationState
-from privacyidea.lib.policies.helper import get_jwt_validity
-from privacyidea.lib.tokens.webauthn import (webauthn_b64_decode, AuthenticatorAttachmentType,
-                                             AttestationLevel, AttestationForm,
-                                             UserVerificationLevel)
-from privacyidea.lib.tokens.webauthntoken import (DEFAULT_ALLOWED_TRANSPORTS,
-                                                  WebAuthnTokenClass, DEFAULT_CHALLENGE_TEXT_AUTH,
-                                                  PUBLIC_KEY_CREDENTIAL_ALGORITHMS,
-                                                  DEFAULT_PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE,
-                                                  DEFAULT_AUTHENTICATOR_ATTESTATION_LEVEL,
-                                                  DEFAULT_AUTHENTICATOR_ATTESTATION_FORM,
-                                                  DEFAULT_CHALLENGE_TEXT_ENROLL, DEFAULT_TIMEOUT,
-                                                  DEFAULT_USER_VERIFICATION_REQUIREMENT,
-                                                  PUBKEY_CRED_ALGORITHMS_ORDER)
-from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction
-from privacyidea.lib.users.custom_user_attributes import InternalCustomUserAttributes, INTERNAL_USAGE
-from privacyidea.lib.utils import hexlify_and_unicode, AUTH_RESPONSE
-from privacyidea.lib.config import set_privacyidea_config, SYSCONF
-from .base import (MyApiTestCase)
-
-from privacyidea.lib.subscriptions import EXPIRE_MESSAGE
-from privacyidea.lib.policy import (set_policy, delete_policy, enable_policy,
-                                    PolicyClass, SCOPE, REMOTE_USER,
-                                    AUTOASSIGNVALUE, AUTHORIZED,
-                                    DEFAULT_ANDROID_APP_URL, DEFAULT_IOS_APP_URL)
-from privacyidea.lib.policies.actions import PolicyAction
+from privacyidea.api.lib.policyhelper import get_realm_for_authentication
+from privacyidea.api.lib.postpolicy import (check_serial, check_tokentype,
+                                            check_tokeninfo,
+                                            no_detail_on_success,
+                                            no_detail_on_fail, autoassign,
+                                            offline_info, sign_response,
+                                            get_webui_settings,
+                                            save_pin_change,
+                                            add_user_detail_to_response,
+                                            mangle_challenge_response, is_authorized,
+                                            check_verify_enrollment, preferred_client_mode,
+                                            multichallenge_enroll_via_validate)
 from privacyidea.api.lib.prepolicy import (check_token_upload,
                                            check_base_action, check_token_init,
                                            check_max_token_user,
@@ -61,52 +52,61 @@ from privacyidea.api.lib.prepolicy import (check_token_upload,
                                            required_piv_attestation, check_custom_user_attributes,
                                            hide_tokeninfo, init_ca_template, init_ca_connector,
                                            init_subject_components, increase_failcounter_on_challenge,
-                                           require_description, jwt_validity, check_container_action,
+                                           require_description, check_container_action,
                                            check_token_action, check_user_params,
                                            check_client_container_action, container_registration_config,
                                            smartphone_config, check_client_container_disabled_action, rss_age,
-                                           hide_container_info, require_description_on_edit, force_server_generate_key)
-from privacyidea.lib.realm import set_realm as create_realm
+                                           hide_container_info, force_server_generate_key)
+from privacyidea.lib.auth import ROLE
+from privacyidea.lib.config import set_privacyidea_config, SYSCONF
+from privacyidea.lib.container import (init_container, find_container_by_serial, create_container_template,
+                                       get_all_containers, delete_container_template)
+from privacyidea.lib.containers.container_info import RegistrationState, TokenContainerInfoData
+from privacyidea.lib.error import PolicyError, RegistrationError, ValidateError
+from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction
+from privacyidea.lib.machine import attach_token
+from privacyidea.lib.machineresolver import save_resolver
+from privacyidea.lib.policies.actions import PolicyAction
+from privacyidea.lib.policies.helper import get_jwt_validity
+from privacyidea.lib.policy import (set_policy, delete_policy, enable_policy,
+                                    PolicyClass, SCOPE, REMOTE_USER,
+                                    AUTOASSIGNVALUE, AUTHORIZED,
+                                    DEFAULT_ANDROID_APP_URL, DEFAULT_IOS_APP_URL)
 from privacyidea.lib.realm import delete_realm
-from privacyidea.api.lib.postpolicy import (check_serial, check_tokentype,
-                                            check_tokeninfo,
-                                            no_detail_on_success,
-                                            no_detail_on_fail, autoassign,
-                                            offline_info, sign_response,
-                                            get_webui_settings,
-                                            save_pin_change,
-                                            add_user_detail_to_response,
-                                            mangle_challenge_response, is_authorized,
-                                            check_verify_enrollment, preferred_client_mode,
-                                            multichallenge_enroll_via_validate)
+from privacyidea.lib.realm import set_realm as create_realm
+from privacyidea.lib.subscriptions import EXPIRE_MESSAGE
 from privacyidea.lib.token import (init_token, get_tokens, remove_token,
                                    set_realms, check_user_pass, unassign_token,
                                    enable_token)
-from privacyidea.lib.user import User
-from privacyidea.lib.tokens.papertoken import PAPERACTION
-from privacyidea.lib.tokens.tantoken import TANACTION
-from privacyidea.lib.tokens.smstoken import SMSACTION
-from privacyidea.lib.tokens.pushtoken import PUSH_ACTION
-from privacyidea.lib.tokens.indexedsecrettoken import PIIXACTION
-from privacyidea.lib.tokens.registrationtoken import DEFAULT_LENGTH, DEFAULT_CONTENTS
-from privacyidea.lib.tokens.certificatetoken import ACTION as CERTIFICATE_ACTION
-
-from flask import Request, g, current_app, jsonify
-from werkzeug.test import EnvironBuilder
-from privacyidea.lib.error import PolicyError, RegistrationError, ValidateError
-from privacyidea.lib.machineresolver import save_resolver
-from privacyidea.lib.machine import attach_token
-from privacyidea.lib.auth import ROLE
-import jwt
-from passlib.hash import pbkdf2_sha512
-from datetime import datetime, timedelta
-from dateutil.tz import tzlocal
 from privacyidea.lib.tokenclass import DATE_FORMAT
+from privacyidea.lib.tokens.certificatetoken import ACTION as CERTIFICATE_ACTION
+from privacyidea.lib.tokens.indexedsecrettoken import PIIXACTION
+from privacyidea.lib.tokens.papertoken import PAPERACTION
+from privacyidea.lib.tokens.pushtoken import PUSH_ACTION
+from privacyidea.lib.tokens.registrationtoken import DEFAULT_LENGTH, DEFAULT_CONTENTS
+from privacyidea.lib.tokens.smstoken import SMSACTION
+from privacyidea.lib.tokens.tantoken import TANACTION
+from privacyidea.lib.tokens.webauthn import (webauthn_b64_decode, AuthenticatorAttachmentType,
+                                             AttestationLevel, AttestationForm,
+                                             UserVerificationLevel)
+from privacyidea.lib.tokens.webauthntoken import (DEFAULT_ALLOWED_TRANSPORTS,
+                                                  WebAuthnTokenClass, DEFAULT_CHALLENGE_TEXT_AUTH,
+                                                  PUBLIC_KEY_CREDENTIAL_ALGORITHMS,
+                                                  DEFAULT_PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE,
+                                                  DEFAULT_AUTHENTICATOR_ATTESTATION_LEVEL,
+                                                  DEFAULT_AUTHENTICATOR_ATTESTATION_FORM,
+                                                  DEFAULT_CHALLENGE_TEXT_ENROLL, DEFAULT_TIMEOUT,
+                                                  DEFAULT_USER_VERIFICATION_REQUIREMENT,
+                                                  PUBKEY_CRED_ALGORITHMS_ORDER)
+from privacyidea.lib.user import User
+from privacyidea.lib.users.custom_user_attributes import InternalCustomUserAttributes, INTERNAL_USAGE
+from privacyidea.lib.utils import (create_img, generate_charlists_from_pin_policy,
+                                   CHARLIST_CONTENTPOLICY, check_pin_contents)
+from privacyidea.lib.utils import hexlify_and_unicode, AUTH_RESPONSE
+from .base import (MyApiTestCase)
 from .test_lib_tokens_webauthn import (ALLOWED_TRANSPORTS, CRED_ID, ASSERTION_RESPONSE_TMPL,
                                        ASSERTION_CHALLENGE, RP_ID, RP_NAME, ORIGIN,
                                        REGISTRATION_RESPONSE_TMPL)
-from privacyidea.lib.utils import (create_img, generate_charlists_from_pin_policy,
-                                   CHARLIST_CONTENTPOLICY, check_pin_contents)
 
 HOSTSFILE = "tests/testdata/hosts"
 SSHKEY = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDO1rx366cmSSs/89j" \
@@ -626,6 +626,16 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         set_realm(req)
         # Check, if the realm was modified to the realm specified in the policy
         self.assertEqual(req.all_data.get("realm"), self.realm1)
+
+        # do not set realm if set_realm policy is set
+        req.all_data = {"realm": self.realm3, "user": "cornelius"}
+        req.User = User(login="cornelius", realm=self.realm3)
+        g.policies = {PolicyAction.SET_REALM: self.realm3}
+        set_realm(req)
+        # Check that realm was not modified
+        self.assertEqual(self.realm3, req.all_data.get("realm"))
+        self.assertEqual(User("cornelius", self.realm3), req.User)
+        g.policies = {}
 
         # A request, that does not match the policy:
         req.all_data = {"realm": "otherrealm"}
@@ -1320,6 +1330,16 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # Check if the realm was modified
         self.assertEqual(req.all_data.get("realm"), "lowerRealm")
         self.assertEqual(req.User, User("", "lowerrealm"))
+
+        # do not mangle realm if set_realm policy is set
+        req.all_data = {"realm": "lower Realm", "user": "Thiswillbesplit_user"}
+        req.User = User("Thiswillbesplit_user", "lower Realm")
+        g.policies = {PolicyAction.SET_REALM: "lower Realm"}
+        mangle(req)
+        # Check that realm was not modified, but username is modified
+        self.assertEqual("lower Realm", req.all_data.get("realm"))
+        self.assertEqual("user", req.all_data.get("user"))
+        self.assertEqual(User("user", "lower realm"), req.User)
 
         # finally delete policy
         delete_policy("mangle1")
@@ -5009,7 +5029,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
 
         # Set a policy, but the token has no tokeninfo!
         # Thus the authorization will fail
-        token_obj.del_tokeninfo("testkey")
+        token_obj.delete_tokeninfo("testkey")
         self.assertRaises(PolicyError,
                           check_tokeninfo,
                           req, resp)
@@ -6537,7 +6557,8 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         container_serial = init_container({"type": "smartphone", "user": "hans", "realm": self.realm1})[
             "container_serial"]
         container = find_container_by_serial(container_serial)
-        container.set_container_info({RegistrationState.get_key(): RegistrationState.REGISTERED.value})
+        container.set_container_info(
+            [TokenContainerInfoData(RegistrationState.get_key(), RegistrationState.REGISTERED.value)])
         response = multichallenge_enroll_via_validate(request, response)
         check_response(response)
         container_of_hans = get_all_containers(user=hans)["containers"]
@@ -6549,6 +6570,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         # Missing registration policies
         delete_policy("registration")
         g.policies = {}
+        delete_container_template("test")
         # create with template to check that also no tokens are created
         template_options = {"tokens": [{"type": "hotp", "genkey": True}, {"type": "totp", "genkey": True}]}
         create_container_template(container_type="smartphone", template_name="test", options=template_options)
@@ -6563,3 +6585,41 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
 
         delete_policy("enroll_via_multichallenge")
         delete_policy("enroll_via_multichallenge_template")
+        delete_container_template("test")
+
+
+class PolicyHelperTestCase(MyApiTestCase):
+
+    def test_01_set_realm_for_authentication(self):
+        self.setUp_user_realms()
+        self.setUp_user_realm2()
+
+        # policy not set
+        realm = get_realm_for_authentication(g, "hans", "realm1")
+        self.assertEqual("realm1", realm)
+        self.assertNotIn("policies", g)
+
+        realm = get_realm_for_authentication(g, "hans", "")
+        self.assertEqual("", realm)
+        self.assertNotIn("policies", g)
+
+        # policy with non-existing realm
+        set_policy("auth_realm", scope=SCOPE.AUTH, action=f"{PolicyAction.SET_REALM}=random")
+        realm = get_realm_for_authentication(g, "hans", "realm1")
+        self.assertEqual("realm1", realm)
+        self.assertNotIn("policies", g)
+
+        realm = get_realm_for_authentication(g, "hans", "")
+        self.assertEqual("", realm)
+        self.assertNotIn("policies", g)
+
+        # set policy
+        set_policy("auth_realm", scope=SCOPE.AUTH, action=f"{PolicyAction.SET_REALM}=realm2")
+        realm = get_realm_for_authentication(g, "hans", "realm1")
+        self.assertEqual("realm2", realm)
+        self.assertEqual("realm2", g.policies.get(PolicyAction.SET_REALM))
+
+        realm = get_realm_for_authentication(g, "hans", "")
+        self.assertEqual("realm2", realm)
+
+        delete_policy("auth_realm")

@@ -19,6 +19,7 @@
 <div class="flex-row margin-bottom-1 margin-top-1 gap-8">
   @if (authService.actionAllowed("container_delete")) {
     <button
+      class="action-button-delete"
       (click)="deleteSelectedContainer()"
       [disabled]="containerSelection().length === 0"
       class="action-button-delete"

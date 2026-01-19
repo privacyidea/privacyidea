@@ -67,8 +67,6 @@ export class EnrollPushComponent implements OnInit {
     (enrollmentResponse: EnrollmentResponse) => Promise<EnrollmentResponse | null>
   >();
 
-  pushForm = new FormGroup({});
-
   ngOnInit(): void {
     this.additionalFormFieldsChange.emit({});
     this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
