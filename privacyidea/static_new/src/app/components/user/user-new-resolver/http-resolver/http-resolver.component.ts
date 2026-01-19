@@ -1,4 +1,4 @@
-import { Component, computed, effect, input, linkedSignal, OnInit, signal, WritableSignal } from "@angular/core";
+import { Component, computed, effect, input, linkedSignal, signal, WritableSignal } from "@angular/core";
 import { AbstractControl, FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { toSignal } from "@angular/core/rxjs-interop";
 
@@ -23,6 +23,7 @@ import { HttpConfigComponent } from "./http-config/http-config.component";
 export type AttributeMappingRow = {
   privacyideaAttr: string | null;
   userStoreAttr: string;
+  isCustom?: boolean;
 };
 
 @Component({
@@ -54,7 +55,7 @@ export type AttributeMappingRow = {
   templateUrl: "./http-resolver.component.html",
   styleUrl: "./http-resolver.component.scss"
 })
-export class HttpResolverComponent implements OnInit {
+export class HttpResolverComponent {
   protected readonly privacyideaAttributes: string[] = [
     "userid",
     "givenname",
@@ -109,7 +110,20 @@ export class HttpResolverComponent implements OnInit {
   configCreateUserGroup = this.createConfigGroup();
   configEditUserGroup = this.createConfigGroup();
   configDeleteUserGroup = this.createConfigGroup();
-  protected basicSettings: WritableSignal<boolean> = signal(true);
+
+  checkUserPasswordHint = computed(() => {
+    if (this.type() === "entraidresolver") {
+      return $localize`Possible tags: {userid} {username} {password} {client_id} {client_credential} {tenant}`;
+    }
+    return $localize`Possible tags: {userid} {username} {password}`;
+  });
+
+  protected basicSettings = linkedSignal<boolean>(() => {
+    if (this.isAdvanced) {
+      return false;
+    }
+    return this.data().base_url === undefined;
+  });
   controls = computed<Record<string, AbstractControl>>(() => {
     const controls: Record<string, AbstractControl> = {};
     const data = this.data();
@@ -166,13 +180,19 @@ export class HttpResolverComponent implements OnInit {
   ]);
   protected mappingRows = linkedSignal<AttributeMappingRow[]>(() => {
     const existing = this.data()?.attribute_mapping;
+    let rows: AttributeMappingRow[] = [];
     if (existing && Object.keys(existing).length > 0) {
-      return Object.entries(existing).map(([privacyideaAttr, userStoreAttr]) => ({
+      rows = Object.entries(existing).map(([privacyideaAttr, userStoreAttr]) => ({
         privacyideaAttr,
-        userStoreAttr: userStoreAttr as string
+        userStoreAttr: userStoreAttr as string,
+        isCustom: !this.privacyideaAttributes.includes(privacyideaAttr)
       }));
+    } else {
+      rows = this.defaultMapping().map(row => ({ ...row, isCustom: false }));
     }
-    return this.defaultMapping();
+    // Always add an empty row at the end to allow adding new attributes
+    rows.push({ privacyideaAttr: null, userStoreAttr: "", isCustom: false });
+    return rows;
   });
   protected availableAttributes = computed(() => {
     const rows = this.mappingRows();
@@ -190,39 +210,50 @@ export class HttpResolverComponent implements OnInit {
     });
   }
 
-  ngOnInit(): void {
-    if (this.isAdvanced) {
-      this.basicSettings.set(false);
-    }
-  }
 
-  isCustomAttr(value: string | null): boolean {
-    return value === this.CUSTOM_ATTR_VALUE;
-  }
 
   setCustomAttr(rowIndex: number, customValue: string): void {
     const v = (customValue ?? "").trim();
     const rows = [...this.mappingRows()];
-    rows[rowIndex].privacyideaAttr = v ? v : null;
+    rows[rowIndex].privacyideaAttr = v;
     this.mappingRows.set(rows);
     this.onMappingChanged();
   }
 
-  onPrivacyIdeaAttrChanged(rowIndex: number): void {
-    if (this.mappingRows()[rowIndex].privacyideaAttr === this.CUSTOM_ATTR_VALUE) return;
+  onPrivacyIdeaAttrChanged(rowIndex: number, value: string | null): void {
+    const rows = [...this.mappingRows()];
+    const row = rows[rowIndex];
+
+    if (value === this.CUSTOM_ATTR_VALUE) {
+      row.isCustom = true;
+      row.privacyideaAttr = "";
+      if (rowIndex === rows.length - 1) {
+        rows.push({ privacyideaAttr: null, userStoreAttr: "", isCustom: false });
+      }
+      this.mappingRows.set(rows);
+      this.onMappingChanged();
+      return;
+    }
+
+    row.isCustom = false;
+    row.privacyideaAttr = value;
+
+    if (rowIndex === rows.length - 1 && value !== null) {
+      rows.push({ privacyideaAttr: null, userStoreAttr: "", isCustom: false });
+    }
+    this.mappingRows.set(rows);
     this.onMappingChanged();
   }
 
-  addMappingRow(): void {
-    this.mappingRows.update(rows => [
-      ...rows,
-      { privacyideaAttr: null, userStoreAttr: "" }
-    ]);
-    this.syncMappingToData();
-  }
 
   removeMappingRow(index: number): void {
-    this.mappingRows.update(rows => rows.filter((_, i) => i !== index));
+    this.mappingRows.update(rows => {
+      const newRows = rows.filter((_, i) => i !== index);
+      if (newRows.length === 0 || newRows[newRows.length - 1].privacyideaAttr !== null || newRows[newRows.length - 1].isCustom) {
+        newRows.push({ privacyideaAttr: null, userStoreAttr: "", isCustom: false });
+      }
+      return newRows;
+    });
     this.syncMappingToData();
   }
 

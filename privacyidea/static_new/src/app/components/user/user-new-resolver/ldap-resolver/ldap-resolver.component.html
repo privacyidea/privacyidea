@@ -202,24 +202,25 @@
         </mat-checkbox>
         <span class="hint">The user data in this database can be modified from within privacyIDEA.</span>
       </div>
-
-      @if (editableControl.value) {
-        <mat-form-field>
+    </div>
+    @if (editableControl.value) {
+      <div class="flex-column">
+        <mat-form-field class="width-100">
           <mat-label i18n> Object classes of a new created user object</mat-label>
           <input
             [formControl]="objectClassesControl"
             matInput />
         </mat-form-field>
 
-        <mat-form-field>
+        <mat-form-field class="width-100">
           <mat-label i18n> DN of a new created user object</mat-label>
           <input
             [formControl]="dnTemplateControl"
             matInput
             placeholder="CN=<username>,<basendn>" />
         </mat-form-field>
-      }
-    </div>
+      </div>
+    }
   </div>
 
   @if (!isEditMode()) {
@@ -244,7 +245,7 @@
     <h3 i18n>Attributes & Mapping</h3>
 
     <div class="form-grid">
-      <mat-form-field>
+      <mat-form-field class="field-lg">
         <mat-label i18n>Loginname attribute</mat-label>
         <input
           [formControl]="loginNameAttributeControl"
@@ -270,12 +271,12 @@
 
       <mat-form-field class="field-lg">
         <mat-label i18n>Attribute mapping</mat-label>
-        <input
+        <textarea
           [formControl]="userInfoControl"
           matInput
           placeholder='{"phone:" : "telephoneNumber", "mobile": "mobile", "email" : "mail", "surname" : "sn",
            "givenname" : "givenName"}'
-          required />
+          required></textarea>
         @if (userInfoControl.hasError('required') && userInfoControl.touched) {
           <mat-error i18n>Attribute mapping is <strong>required</strong>.</mat-error>
         }
@@ -304,7 +305,7 @@
       </mat-checkbox>
 
       @if (recursiveGroupSearchControl.value) {
-        <mat-form-field>
+        <mat-form-field class="field-lg">
           <mat-label i18n>
             Search Filter for User Groups
           </mat-label>

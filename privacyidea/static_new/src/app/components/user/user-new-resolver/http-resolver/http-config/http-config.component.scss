@@ -5,10 +5,14 @@
 
 .auth-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: auto 1fr;
   column-gap: 16px;
   row-gap: 12px;
   align-items: start;
+
+  mat-form-field {
+    width: 100%;
+  }
 
   @media (max-width: 1100px) {
     grid-template-columns: 1fr;

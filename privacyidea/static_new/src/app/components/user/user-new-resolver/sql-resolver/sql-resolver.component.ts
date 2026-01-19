@@ -5,6 +5,7 @@ import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatButtonModule } from "@angular/material/button";
 import { ResolverService, SQLResolverData } from "../../../../services/resolver/resolver.service";
+import { MatOption, MatSelect } from "@angular/material/select";
 
 @Component({
   selector: "app-sql-resolver",
@@ -18,7 +19,9 @@ import { ResolverService, SQLResolverData } from "../../../../services/resolver/
     MatCheckbox,
     MatHint,
     MatError,
-    MatButtonModule
+    MatButtonModule,
+    MatSelect,
+    MatOption
   ],
   templateUrl: "./sql-resolver.component.html",
   styleUrl: "./sql-resolver.component.scss"
@@ -73,7 +76,7 @@ export class SqlResolverComponent {
   portControl = new FormControl<number | undefined>(undefined);
   userControl = new FormControl<string>("", { nonNullable: true });
   passwordControl = new FormControl<string>("", { nonNullable: true });
-  passwordHashTypeControl = new FormControl<string>("plain", { nonNullable: true });
+  passwordHashTypeControl = new FormControl<string>("", { nonNullable: true });
   poolSizeControl = new FormControl<number>(5, { nonNullable: true });
   poolTimeoutControl = new FormControl<number>(10, { nonNullable: true });
   poolRecycleControl = new FormControl<number>(7200, { nonNullable: true });
@@ -108,7 +111,6 @@ export class SqlResolverComponent {
     this.poolSizeControl.setValue(5);
     this.poolTimeoutControl.setValue(10);
     this.poolRecycleControl.setValue(7200);
-    this.editableControl.setValue(true);
   }
 
   constructor() {

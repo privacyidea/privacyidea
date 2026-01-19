@@ -26,20 +26,8 @@
   }
 
   @if (!isAdvanced && basicSettings()) {
-    <div class="form-grid flex-column">
-      <mat-form-field class="field-lg">
-        <mat-label i18n>Endpoint (URL)</mat-label>
-        <input
-          [formControl]="endpointControl"
-          matInput
-          placeholder="https://example.com/path/to/users/:userid"
-          required />
-        @if (endpointControl.hasError('required') && endpointControl.touched) {
-          <mat-error i18n>Endpoint is <strong>required</strong>.</mat-error>
-        }
-      </mat-form-field>
-
-      <mat-form-field>
+    <div class="auth-grid">
+      <mat-form-field class="width-238">
         <mat-label i18n>Method</mat-label>
         <mat-select
           [formControl]="methodControl"
@@ -52,7 +40,19 @@
         }
       </mat-form-field>
 
-      <mat-form-field class="field-lg">
+      <mat-form-field class="auth-endpoint">
+        <mat-label i18n>Endpoint (URL)</mat-label>
+        <input
+          [formControl]="endpointControl"
+          matInput
+          placeholder="https://example.com/path/to/users/:userid"
+          required />
+        @if (endpointControl.hasError('required') && endpointControl.touched) {
+          <mat-error i18n>Endpoint is <strong>required</strong>.</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field class="auth-wide">
         <mat-label i18n>Request Mapping (JSON Format)</mat-label>
         <textarea
           [formControl]="requestMappingControl"
@@ -64,7 +64,7 @@
         }
       </mat-form-field>
 
-      <mat-form-field class="field-lg">
+      <mat-form-field class="auth-wide">
         <mat-label i18n>Headers (JSON Format)</mat-label>
         <textarea
           [formControl]="headersControl"
@@ -76,7 +76,7 @@
         }
       </mat-form-field>
 
-      <mat-form-field class="field-lg">
+      <mat-form-field class="auth-wide">
         <mat-label i18n>Response Mapping (JSON Format)</mat-label>
         <textarea
           [formControl]="responseMappingControl"
@@ -97,7 +97,7 @@
     </mat-checkbox>
 
     @if (editableControl.value) {
-      <mat-form-field class="field-lg width-100">
+      <mat-form-field class="auth-wide width-100">
         <mat-label i18n>Response contains (JSON Format)</mat-label>
         <textarea
           [formControl]="errorResponseControl"
@@ -142,13 +142,6 @@
 
     <div class="mapping-header">
       <h4 i18n>Attribute Mapping</h4>
-      <button
-        (click)="addMappingRow()"
-        mat-stroked-button
-        type="button">
-        <mat-icon>add</mat-icon>
-        <span i18n>Add mapping</span>
-      </button>
     </div>
 
     <table
@@ -169,8 +162,8 @@
             class="cell-field"
             subscriptSizing="dynamic">
             <mat-select
-              (selectionChange)="onPrivacyIdeaAttrChanged(i)"
-              [(ngModel)]="row.privacyideaAttr"
+              (selectionChange)="onPrivacyIdeaAttrChanged(i, $event.value)"
+              [value]="row.isCustom ? CUSTOM_ATTR_VALUE : row.privacyideaAttr"
               i18n-placeholder
               placeholder="Select PrivacyIDEA Attribute">
 
@@ -187,13 +180,13 @@
             </mat-select>
           </mat-form-field>
 
-          @if (isCustomAttr(row.privacyideaAttr)) {
+          @if (row.isCustom) {
             <mat-form-field
               class="cell-field"
               subscriptSizing="dynamic">
               <input
                 (ngModelChange)="setCustomAttr(i, $event)"
-                [ngModel]="''"
+                [ngModel]="row.privacyideaAttr"
                 i18n-placeholder
                 matInput
                 placeholder="Enter custom attribute" />
@@ -234,16 +227,18 @@
           *matCellDef="let row; let i = index"
           class="actions-cell"
           mat-cell>
-          <div class="actions-buttons">
-            <button
-              (click)="removeMappingRow(i)"
-              aria-label="Remove mapping"
-              color="warn"
-              mat-icon-button
-              type="button">
-              <mat-icon>delete</mat-icon>
-            </button>
-          </div>
+          @if (row.privacyideaAttr !== null || row.isCustom) {
+            <div class="actions-buttons">
+              <button
+                (click)="removeMappingRow(i)"
+                aria-label="Remove mapping"
+                color="warn"
+                mat-icon-button
+                type="button">
+                <mat-icon>delete</mat-icon>
+              </button>
+            </div>
+          }
         </td>
       </ng-container>
 
@@ -255,7 +250,9 @@
         mat-row></tr>
     </table>
 
-    <mat-hint i18n>
+    <mat-hint
+      class="hint"
+      i18n>
       The left column defines the user attributes used in privacyIDEA and the right column the equivalent attribute in
       the user store.
     </mat-hint>
@@ -338,7 +335,7 @@
                     placeholder="https://login.microsoftonline.com/{tenant}" />
                 </mat-form-field>
 
-                <mat-form-field>
+                <mat-form-field class="width-238">
                   <mat-label i18n>Tenant ID</mat-label>
                   <input
                     [formControl]="tenantControl"
@@ -362,7 +359,7 @@
                   }
                 </mat-form-field>
 
-                <mat-form-field>
+                <mat-form-field class="width-238">
                   <mat-label i18n>Client Credential Type</mat-label>
                   <mat-select
                     [formControl]="clientCredentialTypeControl">
@@ -458,19 +455,21 @@
           </div>
         </mat-expansion-panel>
 
-        <mat-expansion-panel>
-          <mat-expansion-panel-header>
-            <mat-panel-title i18n>Check User Password</mat-panel-title>
-          </mat-expansion-panel-header>
+        @if (clientCredentialTypeControl.value !== 'certificate') {
+          <mat-expansion-panel>
+            <mat-expansion-panel-header>
+              <mat-panel-title i18n>Check User Password</mat-panel-title>
+            </mat-expansion-panel-header>
 
-          <div class="auth-panel-body">
-            <app-http-config
-              [description]="'Configure the endpoint to authenticate the user with its username/userid and password.'"
-              [endpointHint]="'Possible tags: {userid} {username} {password}'"
-              [formGroup]="configUserAuthGroup"
-              [title]="'Check User Password'" />
-          </div>
-        </mat-expansion-panel>
+            <div class="auth-panel-body">
+              <app-http-config
+                [description]="'Configure the endpoint to authenticate the user with its username/userid and password.'"
+                [endpointHint]="checkUserPasswordHint()"
+                [formGroup]="configUserAuthGroup"
+                [title]="'Check User Password'" />
+            </div>
+          </mat-expansion-panel>
+        }
 
         <mat-expansion-panel>
           <mat-expansion-panel-header>

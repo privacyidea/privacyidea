@@ -1,21 +1,3 @@
-@if (!isEditMode()) {
-  <div class="preset-buttons-container">
-    <span
-      class="preset-label"
-      i18n>Presets:</span>
-    <div class="preset-buttons">
-      @for (preset of sqlPresets; track preset.name) {
-        <button
-          (click)="applySqlPreset(preset)"
-          mat-stroked-button
-          type="button">
-          {{ preset.name }}
-        </button>
-      }
-    </div>
-  </div>
-}
-
 <div class="type-sections-container">
   <div class="type-section">
     <h3 i18n>Database Connection</h3>
@@ -96,10 +78,42 @@
       @if (editableControl.value) {
         <mat-form-field class="field-lg">
           <mat-label i18n>Password Hash for editable users</mat-label>
-          <input
+          <mat-select
             [formControl]="passwordHashTypeControl"
-            matInput
             placeholder="">
+            <mat-option
+              i18n
+              value="PHPASS">PHPASS
+            </mat-option>
+            <mat-option
+              i18n
+              value="SHA">SHA
+            </mat-option>
+            <mat-option
+              i18n
+              value="SSHA">SSHA
+            </mat-option>
+            <mat-option
+              i18n
+              value="SSHA256">SSHA256
+            </mat-option>
+            <mat-option
+              i18n
+              value="SSHA512">SSHA512
+            </mat-option>
+            <mat-option
+              i18n
+              value="OTRS">OTRS
+            </mat-option>
+            <mat-option
+              i18n
+              value="SHA512CRYPT">SHA512CRYPT
+            </mat-option>
+            <mat-option
+              i18n
+              value="MD5CRYPT">MD5CRYPT
+            </mat-option>
+          </mat-select>
           <mat-hint i18n>
             The hashing algorithm for the passwords of newly created users. Can be PHPASS, SHA, SSHA, SSHA256, SHA512,
             OTRS.
@@ -109,6 +123,24 @@
     </div>
   </div>
 </div>
+
+@if (!isEditMode()) {
+  <div class="preset-buttons-container">
+    <span
+      class="preset-label"
+      i18n>Presets:</span>
+    <div class="preset-buttons">
+      @for (preset of sqlPresets; track preset.name) {
+        <button
+          (click)="applySqlPreset(preset)"
+          mat-stroked-button
+          type="button">
+          {{ preset.name }}
+        </button>
+      }
+    </div>
+  </div>
+}
 
 <div class="type-sections-container">
   <div class="type-section section-full">

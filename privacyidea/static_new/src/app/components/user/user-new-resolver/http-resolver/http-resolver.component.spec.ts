@@ -43,12 +43,19 @@ describe("HttpResolverComponent", () => {
 
     expect(component.endpointControl.value).toBe("http://test");
     expect(component.methodControl.value).toBe("POST");
-    expect(component["mappingRows"]()).toContainEqual({ privacyideaAttr: "username", userStoreAttr: "user" });
+    expect(component["mappingRows"]()).toContainEqual({
+      privacyideaAttr: "username",
+      userStoreAttr: "user",
+      isCustom: false
+    });
   });
 
   it("should add and remove mapping rows", () => {
     const initialCount = component["mappingRows"]().length;
-    component.addMappingRow();
+    // Simulate selecting an attribute in the last row
+    const lastIndex = initialCount - 1;
+    component.onPrivacyIdeaAttrChanged(lastIndex, "mobile");
+
     expect(component["mappingRows"]().length).toBe(initialCount + 1);
 
     component.removeMappingRow(0);
@@ -56,14 +63,46 @@ describe("HttpResolverComponent", () => {
   });
 
 
-  it("should handle privacyidea attribute change", () => {
-    component.addMappingRow();
-    const index = component["mappingRows"]().length - 1;
+  it("should add a new empty row when the last row's attribute is set", () => {
+    const rows = component["mappingRows"]();
+    const lastIndex = rows.length - 1;
+    expect(rows[lastIndex].privacyideaAttr).toBeNull();
 
-    component["mappingRows"]()[index].privacyideaAttr = component["CUSTOM_ATTR_VALUE"];
-    component.onPrivacyIdeaAttrChanged(index);
+    // Simulate selecting an attribute in the last row
+    component.onPrivacyIdeaAttrChanged(lastIndex, "mobile");
 
-    expect(component["mappingRows"]()[index].privacyideaAttr).toBe(component["CUSTOM_ATTR_VALUE"]);
+    const newRows = component["mappingRows"]();
+    expect(newRows.length).toBe(rows.length + 1);
+    expect(newRows[newRows.length - 1].privacyideaAttr).toBeNull();
+  });
+
+
+  it("should handle privacyidea custom attribute selection", () => {
+    const rows = component["mappingRows"]();
+    const index = rows.length - 1;
+    component.onPrivacyIdeaAttrChanged(index, component["CUSTOM_ATTR_VALUE"]);
+
+    const updatedRows = component["mappingRows"]();
+    expect(updatedRows[index].isCustom).toBe(true);
+    expect(updatedRows[index].privacyideaAttr).toBe("");
+    // Should have added a new row because it's no longer the placeholder
+    expect(updatedRows.length).toBe(rows.length + 1);
+    expect(updatedRows[updatedRows.length - 1].privacyideaAttr).toBeNull();
+  });
+
+  it("should return correct checkUserPasswordHint based on type", () => {
+    // Default type
+    expect(component.checkUserPasswordHint()).toBe("Possible tags: {userid} {username} {password}");
+
+    // EntraID type
+    componentRef.setInput("type", "entraidresolver");
+    fixture.detectChanges();
+    expect(component.checkUserPasswordHint()).toBe("Possible tags: {userid} {username} {password} {client_id} {client_credential} {tenant}");
+
+    // Switch back
+    componentRef.setInput("type", "httpresolver");
+    fixture.detectChanges();
+    expect(component.checkUserPasswordHint()).toBe("Possible tags: {userid} {username} {password}");
   });
 
 });

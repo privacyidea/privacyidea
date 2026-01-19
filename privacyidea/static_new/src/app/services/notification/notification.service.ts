@@ -38,14 +38,14 @@ export class NotificationService implements NotificationServiceInterface {
   timerSub: Subscription = new Subscription();
   startTime: number = 0;
 
-  openSnackBar(message: string): void {
+  openSnackBar(message: string, duration?: number): void {
     const snackBarRef = this.snackBar.open(message, "🗙", {
       horizontalPosition: "center",
       verticalPosition: "bottom",
       duration: undefined
     });
 
-    this.remainingTime = this.totalDuration;
+    this.remainingTime = duration ?? this.totalDuration;
     this.startTime = Date.now();
     this.startTimer(snackBarRef);
 

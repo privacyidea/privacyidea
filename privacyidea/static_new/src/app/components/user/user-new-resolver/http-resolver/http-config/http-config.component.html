@@ -5,7 +5,7 @@
 <div
   [formGroup]="formGroup"
   class="auth-grid">
-  <mat-form-field>
+  <mat-form-field class="width-238">
     <mat-label i18n>Method</mat-label>
     <mat-select formControlName="method">
       <mat-option value="POST">POST</mat-option>
@@ -41,6 +41,9 @@
       formControlName="requestMapping"
       matInput
       placeholder='{"customerid":"{userid}","accessKey":"{secre3t!}"}'></textarea>
+    @if (endpointHint) {
+      <mat-hint>{{ endpointHint }}</mat-hint>
+    }
   </mat-form-field>
 
   <mat-form-field class="auth-wide">
