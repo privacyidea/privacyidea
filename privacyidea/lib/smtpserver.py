@@ -147,7 +147,7 @@ class SMTPServer(object):
                 log.error(f"Can't create smime attachment: {ex}. Email will {action}")
                 if abort:
                     return False
-        r = mail.sendmail(mail_from, recipient, msg.decode('utf-8'))
+        r = mail.sendmail(mail_from, recipient, msg)
         log.info("Mail sent: {0!s}".format(r))
         # r is a dictionary like {"recp@destination.com": (200, 'OK')}
         # we change this to True or False
@@ -354,7 +354,7 @@ def add_smtpserver(identifier, server=None, port=25, username="", password="",
         # Create new entry
         smtp_server = SMTPServerDB(identifier=identifier, server=server, port=port, username=username,
                                    password=encrypted_password, sender=sender, description=description, tls=tls,
-                                   timeout=timeout, enqueue_job=enqueue_job, smine=smime,
+                                   timeout=timeout, enqueue_job=enqueue_job, smime=smime,
                                    dont_send_on_error=dont_send_on_error, private_key=private_key,
                                    certificate=certificate)
         db.session.add(smtp_server)

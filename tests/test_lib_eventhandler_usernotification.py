@@ -118,7 +118,7 @@ class UserNotificationTestCase(MyTestCase):
         un_handler = UserNotificationEventHandler()
         res = un_handler.do("sendmail", options=options)
         self.assertTrue(res)
-        msg = smtpmock.get_sent_message()
+        msg = smtpmock.get_sent_message().decode('utf-8')
         self.assertIn("token description: It works token serial: SomeSerial", msg, msg)
         assert 'To: user@localhost.localdomain' in msg
 
@@ -167,7 +167,7 @@ class UserNotificationTestCase(MyTestCase):
         un_handler = UserNotificationEventHandler()
         res = un_handler.do("sendmail", options=options)
         self.assertFalse(res)
-        msg = smtpmock.get_sent_message()
+        msg = smtpmock.get_sent_message().decode('utf-8')
         self.assertIn('To: user@localhost.localdomain', msg)
 
     @smtpmock.activate
@@ -855,7 +855,7 @@ class UserNotificationTestCase(MyTestCase):
         un_handler = UserNotificationEventHandler()
         res = un_handler.do("sendmail", options=options)
         self.assertTrue(res)
-        msg = smtpmock.get_sent_message()
+        msg = smtpmock.get_sent_message().decode('utf-8')
         assert 'Subject: An action was performed on your token.' in msg
         assert 'To: user@localhost.localdomain' in msg
 
@@ -912,7 +912,7 @@ class UserNotificationTestCase(MyTestCase):
         un_handler = UserNotificationEventHandler()
         res = un_handler.do("sendmail", options=options)
         self.assertTrue(res)
-        msg = smtpmock.get_sent_message()
+        msg = smtpmock.get_sent_message().decode('utf-8')
         assert 'Subject: An action was performed on your token.' in msg
         assert 'To: user2@localhost.localdomain' in msg
 
@@ -929,7 +929,7 @@ class UserNotificationTestCase(MyTestCase):
         un_handler = UserNotificationEventHandler()
         res = un_handler.do("sendmail", options=options)
         self.assertTrue(res)
-        msg = smtpmock.get_sent_message()
+        msg = smtpmock.get_sent_message().decode('utf-8')
         assert 'Subject: An action was performed on your token.' in msg
         assert 'To: user@localhost.localdomain' in msg
 
@@ -1427,7 +1427,7 @@ class UserNotificationTestCase(MyTestCase):
         un_handler = UserNotificationEventHandler()
         res = un_handler.do("sendmail", options=options)
         self.assertTrue(res)
-        parsed_email = email.message_from_string(smtpmock.get_sent_message())
+        parsed_email = email.message_from_string(smtpmock.get_sent_message().decode('utf-8'))
         payload = to_unicode(parsed_email.get_payload(decode=True))
         self.assertEqual(parsed_email.get_content_type(), "text/plain")
         self.assertIn("<b>agent</b>", payload)
@@ -1444,7 +1444,7 @@ class UserNotificationTestCase(MyTestCase):
         un_handler = UserNotificationEventHandler()
         res = un_handler.do("sendmail", options=options)
         self.assertTrue(res)
-        parsed_email = email.message_from_string(smtpmock.get_sent_message())
+        parsed_email = email.message_from_string(smtpmock.get_sent_message().decode('utf-8'))
         payload = to_unicode(parsed_email.get_payload(decode=True))
         self.assertEqual(parsed_email.get_content_type(), "text/html")
         self.assertIn("&lt;b&gt;agent&lt;/b&gt;", payload)
@@ -1519,7 +1519,7 @@ class UserNotificationTestCase(MyTestCase):
         un_handler = UserNotificationEventHandler()
         res = un_handler.do("sendmail", options=options)
         self.assertTrue(res)
-        parsed_email = email.message_from_string(smtpmock.get_sent_message())
+        parsed_email = email.message_from_string(smtpmock.get_sent_message().decode('utf-8'))
         payload = to_unicode(parsed_email.get_payload(decode=True))
         self.assertEqual(parsed_email.get_content_type(), "text/html")
         # Check that the base64-encoded image does not get mangled
@@ -1594,7 +1594,7 @@ class UserNotificationTestCase(MyTestCase):
         un_handler = UserNotificationEventHandler()
         res = un_handler.do("sendmail", options=options)
         self.assertTrue(res)
-        parsed_email = email.message_from_string(smtpmock.get_sent_message())
+        parsed_email = email.message_from_string(smtpmock.get_sent_message().decode('utf-8'))
         self.assertEqual(parsed_email.get_content_maintype(), 'multipart', parsed_email)
         payload = parsed_email.get_payload()
         self.assertEqual(len(payload), 2, payload)
@@ -1608,7 +1608,7 @@ class UserNotificationTestCase(MyTestCase):
         options['handler_def']['options']['mimetype'] = 'plain'
         res = un_handler.do("sendmail", options=options)
         self.assertTrue(res)
-        parsed_email = email.message_from_string(smtpmock.get_sent_message())
+        parsed_email = email.message_from_string(smtpmock.get_sent_message().decode('utf-8'))
         self.assertEqual(parsed_email.get_content_maintype(), 'multipart', parsed_email)
         payload = parsed_email.get_payload()
         self.assertEqual(len(payload), 2, payload)

@@ -115,7 +115,7 @@ class SMTPServerTestCase(MyApiTestCase):
             data = res.json
             self.assertEqual(data.get("result").get("value"), True)
 
-            msg = smtpmock.get_sent_message()
+            msg = smtpmock.get_sent_message().decode('utf-8')
             self.assertTrue("application/x-pkcs7-signature" in msg)
             self.assertTrue("smime.p7s" in msg)
 

@@ -21,7 +21,7 @@ An SMTP server configuration contains the
    * S/MIME certificate
    * Don't send on signing error flag
 
-..Note:: To use S/MIME you need to configure the pahts to your S/MIME private_key and certificate for
+..Note:: To use S/MIME you need to configure the paths to your S/MIME private_key and certificate for
         each SMTP server via the web ui.
 
 
