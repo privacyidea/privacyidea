@@ -126,6 +126,13 @@ export class PolicyPanelEditHeaderComponent {
     return true;
   }
 
+  onPriorityChange($event: string) {
+    const priority = parseInt($event, 10);
+    if (!isNaN(priority)) {
+      this.addPolicyEdit({ priority });
+    }
+  }
+
   async _confirm(data: SimpleConfirmationDialogData): Promise<boolean> {
     return (
       (await lastValueFrom(

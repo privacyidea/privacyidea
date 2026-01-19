@@ -5,18 +5,6 @@
   grid-area: right-column;
 }
 
-.policy-name-input {
-  background-color: transparent;
-  border: none;
-  border-bottom: 1px solid var(--mat-sys-outline-variant);
-  border-radius: 0;
-  box-sizing: border-box;
-  font-size: 1rem;
-  margin-left: 2px;
-  padding: var(--half-global-padding) 0;
-  width: 100%;
-}
-
 // --- Content Sections ---
 .actions-list {
   display: flex;
@@ -134,4 +122,57 @@
 .small-toggle {
   transform: scale(0.8);
   transform-origin: left center;
+}
+.policy-title-container {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  height: 100%; // Nutzt die volle Höhe des Panel-Headers
+}
+
+.policy-priority-input {
+  // Schrift-Angleichung
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #29b6f6;
+
+  // Dimensionen
+  width: 42px;
+  height: 32px;
+  text-align: center;
+
+  // Optik
+  background-color: var(--mat-sys-surface-container-highest);
+  border: none;
+  border-radius: 6px;
+  outline: none;
+  padding: 0;
+  box-sizing: border-box;
+
+  // Entfernt Pfeile (Spin-Buttons)
+  appearance: textfield;
+  -moz-appearance: textfield;
+  &::-webkit-outer-spin-button,
+  &::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  // Optional: Fokus-Zustand
+  &:focus {
+    box-shadow: 0 0 0 1px var(--mat-sys-primary);
+  }
+}
+
+.policy-name-input {
+  background-color: transparent;
+  border: none;
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 0;
+  box-sizing: border-box;
+  font-size: 1rem;
+  margin-left: 2px;
+  padding: var(--half-global-padding) 0;
+  width: 100%;
 }

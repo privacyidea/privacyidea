@@ -121,8 +121,8 @@ export class PolicyPanelEditComponent {
   }
 
   setActiveTab(tab: PolicyTab): void {
-    // this.activeTab.set(tab);
-    this.onEditModeChange.emit(true);
+    this.activeTab.set(tab);
+    // this.onEditModeChange.emit(true);
   }
 
   togglePolicyActive(policy: PolicyDetail, activate: boolean) {

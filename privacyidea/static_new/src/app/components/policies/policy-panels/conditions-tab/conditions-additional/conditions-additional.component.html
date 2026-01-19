@@ -1,5 +1,5 @@
 <!--
- (c) NetKnights GmbH 2025,  https://netknights.it
+ (c) NetKnights GmbH 2026,  https://netknights.it
 
  This code is free software; you can redistribute it and/or
  modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -24,6 +24,7 @@
       i18n>
       Additional Conditions
     </h2>
+
     @if (additionalConditions().length > 0) {
       <div
         class="additional-condition-header"
@@ -39,9 +40,9 @@
         }
       </div>
     }
+
     <div class="additional-conditions-list">
       @for (condition of additionalConditions(); track $index) {
-        <!-- Display Row -->
         <div
           class="additional-condition-row"
           [class.edit-mode]="isEditMode()"
@@ -54,22 +55,19 @@
                 #slideToggle
                 [checked]="!condition[4]"
                 (click)="$event.stopPropagation()"
-                (change)="
-                  updateActiveState($index, $event.checked); slideToggle._switchElement.nativeElement.blur()
-                "></mat-slide-toggle>
+                (change)="updateActiveState($index, $event.checked); slideToggle._switchElement.nativeElement.blur()">
+              </mat-slide-toggle>
             } @else {
-              @if (!condition[4]) {
-                <mat-icon>check</mat-icon>
-              } @else {
-                <mat-icon>close</mat-icon>
-              }
+              <mat-icon>{{ !condition[4] ? "check" : "close" }}</mat-icon>
             }
           </div>
-          <div>{{ condition[0] }}</div>
+
+          <div>{{ getSectionLabel(condition[0]) }}</div>
           <div>{{ condition[1] }}</div>
-          <div>{{ condition[2] }}</div>
+          <div>{{ getComparatorLabel(condition[2]) }}</div>
           <div>{{ condition[3] }}</div>
-          <div>{{ condition[5] }}</div>
+          <div>{{ getMissingDataLabel(condition[5]) }}</div>
+
           @if (isEditMode()) {
             <div class="action-buttons">
               <button
@@ -83,11 +81,11 @@
       }
     </div>
 
-    <!-- Add New/Edit Condition Section -->
     @if (isEditMode()) {
       @if (additionalConditions().length > 0) {
         <mat-divider class="divider-margin"></mat-divider>
       }
+
       @if (showAddConditionForm()) {
         <div class="new-condition-form">
           <div class="form-row">
@@ -96,22 +94,24 @@
               <mat-select
                 [(ngModel)]="conditionSection"
                 panelClass="auto-width-dropdown">
-                @for (option of allSectionOptions; track option) {
-                  <mat-option [value]="option">{{ option }}</mat-option>
+                @for (option of SECTION_OPTIONS; track option.key) {
+                  <mat-option [value]="option.key">{{ option.label }}</mat-option>
                 }
               </mat-select>
             </mat-form-field>
+
             <mat-form-field appearance="fill">
               <mat-label>If Data Missing</mat-label>
               <mat-select
                 [(ngModel)]="conditionHandleMissingData"
                 panelClass="auto-width-dropdown">
-                @for (handleMissingDataOption of allHandleMissingDataOptions; track handleMissingDataOption) {
-                  <mat-option [value]="handleMissingDataOption">{{ handleMissingDataOption }}</mat-option>
+                @for (opt of HANDLE_MISSING_DATA_OPTIONS; track opt.key) {
+                  <mat-option [value]="opt.key">{{ opt.label }}</mat-option>
                 }
               </mat-select>
             </mat-form-field>
           </div>
+
           <div class="form-row">
             <mat-form-field appearance="fill">
               <mat-label>Key</mat-label>
@@ -119,16 +119,18 @@
                 matInput
                 [(ngModel)]="conditionKey" />
             </mat-form-field>
+
             <mat-form-field appearance="fill">
               <mat-label>Comparator</mat-label>
               <mat-select
                 [(ngModel)]="conditionComparator"
                 panelClass="auto-width-dropdown">
-                @for (comporatorOption of allComporatorOptions; track comporatorOption) {
-                  <mat-option [value]="comporatorOption">{{ comporatorOption }}</mat-option>
+                @for (opt of COMPARATOR_OPTIONS; track opt.key) {
+                  <mat-option [value]="opt.key">{{ opt.label }}</mat-option>
                 }
               </mat-select>
             </mat-form-field>
+
             <mat-form-field appearance="fill">
               <mat-label>Value</mat-label>
               <input
@@ -136,6 +138,7 @@
                 [(ngModel)]="conditionValue" />
             </mat-form-field>
           </div>
+
           <div class="form-actions">
             <button
               mat-button

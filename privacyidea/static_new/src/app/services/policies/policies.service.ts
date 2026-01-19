@@ -71,9 +71,16 @@ export type PolicyDetail = {
   user_case_insensitive: boolean;
 };
 
-export type AdditionalCondition = [SectionOption, string, ComporatorOption, string, boolean, HandleMissingDataOption];
+export type AdditionalCondition = [
+  SectionOptionKey,
+  string,
+  ComparatorOptionKey,
+  string,
+  boolean,
+  HandleMissingDataOptionKey
+];
 
-export type SectionOption =
+export type SectionOptionKey =
   | "HTTP Environment"
   | "HTTP Request header"
   | "Request Data"
@@ -83,18 +90,23 @@ export type SectionOption =
   | "tokeninfo"
   | "userinfo";
 
-export const allSectionOptions: SectionOption[] = [
-  "HTTP Environment",
-  "HTTP Request header",
-  "Request Data",
-  "container",
-  "container_info",
-  "token",
-  "tokeninfo",
-  "userinfo"
-] as SectionOption[];
+export interface SectionOption {
+  key: SectionOptionKey;
+  label: string;
+}
 
-export type ComporatorOption =
+export const SECTION_OPTIONS: SectionOption[] = [
+  { key: "HTTP Environment", label: "HTTP Environment" },
+  { key: "HTTP Request header", label: "HTTP Request header" },
+  { key: "Request Data", label: "Request Data" },
+  { key: "container", label: "Container" },
+  { key: "container_info", label: "Container Info" },
+  { key: "token", label: "Token" },
+  { key: "tokeninfo", label: "Token Info" },
+  { key: "userinfo", label: "User Info" }
+];
+// 1. Comparator Options
+export type ComparatorOptionKey =
   | "!contains"
   | "!date_within_last"
   | "!equals"
@@ -112,31 +124,42 @@ export type ComporatorOption =
   | "matches"
   | "string_contains";
 
-export const allComporatorOptions: ComporatorOption[] = [
-  "!contains",
-  "!date_within_last",
-  "!equals",
-  "!in",
-  "!matches",
-  "!string_contains",
-  "<",
-  ">",
-  "contains",
-  "date_after",
-  "date_before",
-  "date_within_last",
-  "equals",
-  "in",
-  "matches",
-  "string_contains"
+export interface ComparatorOption {
+  key: ComparatorOptionKey;
+  label: string;
+}
+
+export const COMPARATOR_OPTIONS: ComparatorOption[] = [
+  { key: "contains", label: "Contains" },
+  { key: "!contains", label: "Does not contain" },
+  { key: "equals", label: "Equals" },
+  { key: "!equals", label: "Does not equal" },
+  { key: "matches", label: "Matches (Regex)" },
+  { key: "!matches", label: "Does not match (Regex)" },
+  { key: "in", label: "In" },
+  { key: "!in", label: "Not in" },
+  { key: "string_contains", label: "String contains" },
+  { key: "!string_contains", label: "String does not contain" },
+  { key: "date_after", label: "Date after" },
+  { key: "date_before", label: "Date before" },
+  { key: "date_within_last", label: "Within last..." },
+  { key: "!date_within_last", label: "Not within last..." },
+  { key: "<", label: "Less than" },
+  { key: ">", label: "Greater than" }
 ];
 
-export type HandleMissingDataOption = "raise_error" | "condition_is_false" | "condition_is_true";
+// 2. Handle Missing Data Options
+export type HandleMissingDataOptionKey = "raise_error" | "condition_is_false" | "condition_is_true";
 
-export const allHandleMissingDataOptions: HandleMissingDataOption[] = [
-  "raise_error",
-  "condition_is_false",
-  "condition_is_true"
+export interface HandleMissingDataOption {
+  key: HandleMissingDataOptionKey;
+  label: string;
+}
+
+export const HANDLE_MISSING_DATA_OPTIONS: HandleMissingDataOption[] = [
+  { key: "raise_error", label: "Raise error" },
+  { key: "condition_is_false", label: "Condition is false" },
+  { key: "condition_is_true", label: "Condition is true" }
 ];
 
 export interface PolicyServiceInterface {

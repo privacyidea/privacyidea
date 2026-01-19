@@ -16,8 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-
-import { Component, computed, inject, input, Input, linkedSignal, output, signal, WritableSignal } from "@angular/core";
+import { Component, computed, inject, input, output, signal, linkedSignal } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatFormFieldModule } from "@angular/material/form-field";
@@ -27,19 +26,18 @@ import { MatCheckboxModule } from "@angular/material/checkbox";
 import { FormsModule } from "@angular/forms";
 import {
   AdditionalCondition,
-  allComporatorOptions,
-  allHandleMissingDataOptions,
-  allSectionOptions,
-  ComporatorOption,
-  HandleMissingDataOption,
+  COMPARATOR_OPTIONS,
+  ComparatorOptionKey,
+  HANDLE_MISSING_DATA_OPTIONS,
+  HandleMissingDataOptionKey,
   PolicyDetail,
   PolicyService,
-  SectionOption
+  SECTION_OPTIONS,
+  SectionOptionKey
 } from "../../../../../services/policies/policies.service";
 import { MatButtonModule, MatIconButton } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
 import { MatSlideToggleModule } from "@angular/material/slide-toggle";
-
 import { MatDividerModule } from "@angular/material/divider";
 
 @Component({
@@ -70,26 +68,28 @@ export class ConditionsAdditionalComponent {
   isEditMode = input.required<boolean>();
   policy = input.required<PolicyDetail>();
   policyEdit = output<Partial<PolicyDetail>>();
-  emitEdits(edits: Partial<PolicyDetail>) {
-    this.policyEdit.emit({ ...edits });
-  }
 
   showAddConditionForm = signal(false);
   editIndex = signal<number | null>(null);
 
-  // Form Signals
-  conditionSection = linkedSignal<boolean, SectionOption | "">({
+  // Constants for Template
+  SECTION_OPTIONS = SECTION_OPTIONS;
+  COMPARATOR_OPTIONS = COMPARATOR_OPTIONS;
+  HANDLE_MISSING_DATA_OPTIONS = HANDLE_MISSING_DATA_OPTIONS;
+
+  // Form Signals - Now using Key types instead of Option objects
+  conditionSection = linkedSignal<boolean, SectionOptionKey | "">({
     source: () => this.isEditMode(),
     computation: () => ""
   });
   conditionKey = linkedSignal<boolean, string>({ source: () => this.isEditMode(), computation: () => "" });
-  conditionComparator = linkedSignal<boolean, ComporatorOption | "">({
+  conditionComparator = linkedSignal<boolean, ComparatorOptionKey | "">({
     source: () => this.isEditMode(),
     computation: () => ""
   });
   conditionValue = linkedSignal<boolean, string>({ source: () => this.isEditMode(), computation: () => "" });
   conditionActive = linkedSignal<boolean, boolean>({ source: () => this.isEditMode(), computation: () => false });
-  conditionHandleMissingData = linkedSignal<boolean, HandleMissingDataOption | "">({
+  conditionHandleMissingData = linkedSignal<boolean, HandleMissingDataOptionKey | "">({
     source: () => this.isEditMode(),
     computation: () => ""
   });
@@ -99,46 +99,41 @@ export class ConditionsAdditionalComponent {
     return this.policy().conditions || [];
   });
 
-  // Constants
-  allSectionOptions = allSectionOptions;
-  allComporatorOptions = allComporatorOptions;
-  allHandleMissingDataOptions = allHandleMissingDataOptions;
+  emitEdits(edits: Partial<PolicyDetail>) {
+    this.policyEdit.emit({ ...edits });
+  }
 
   // Condition Form Management
   startEditCondition(condition: AdditionalCondition, index: number) {
-    if (!this.isEditMode) return;
+    if (!this.isEditMode()) return;
     this.editIndex.set(index);
     this.showAddConditionForm.set(true);
 
-    // When starting to edit, copy the values to the editing signals
     this.conditionSection.set(condition[0]);
     this.conditionKey.set(condition[1]);
     this.conditionComparator.set(condition[2]);
     this.conditionValue.set(condition[3]);
-    this.conditionActive.set(condition[4]);
+    this.conditionActive.set(!condition[4]); // UI expects "active", storage is "disabled"
     this.conditionHandleMissingData.set(condition[5]);
   }
 
   saveCondition() {
-    const conditionSection = this.conditionSection();
-    if (conditionSection === "") return;
-    const conditionComparator = this.conditionComparator();
-    if (conditionComparator === "") return;
-    const conditionHandleMissingData = this.conditionHandleMissingData();
-    if (conditionHandleMissingData === "") return;
+    const section = this.conditionSection();
+    const comparator = this.conditionComparator();
+    const missingData = this.conditionHandleMissingData();
 
-    const condition: AdditionalCondition = [
-      conditionSection,
-      this.conditionKey(),
-      conditionComparator,
-      this.conditionValue(),
-      this.conditionActive(),
-      conditionHandleMissingData
-    ];
-
-    if (condition.some((v) => v === "")) {
+    if (section === "" || comparator === "" || missingData === "" || this.conditionKey() === "") {
       return;
     }
+
+    const condition: AdditionalCondition = [
+      section,
+      this.conditionKey(),
+      comparator,
+      this.conditionValue(),
+      !this.conditionActive(), // Store as negated boolean (disabled)
+      missingData
+    ];
 
     const index = this.editIndex();
     if (index !== null) {
@@ -153,7 +148,6 @@ export class ConditionsAdditionalComponent {
   cancelEdit() {
     this.editIndex.set(null);
     this.showAddConditionForm.set(false);
-    // Reset form
     this.conditionSection.set("");
     this.conditionKey.set("");
     this.conditionComparator.set("");
@@ -168,11 +162,10 @@ export class ConditionsAdditionalComponent {
     if (!condition) return;
 
     const updatedCondition: AdditionalCondition = [...condition];
-    updatedCondition[4] = !active; // Store as negate
+    updatedCondition[4] = !active; // Store as negated (disabled)
 
     this.updateCondition(index, updatedCondition);
 
-    // if we are currently editing this condition, update the signal for the form
     if (this.editIndex() === index) {
       this.conditionActive.set(active);
     }
@@ -192,7 +185,6 @@ export class ConditionsAdditionalComponent {
     this.updateSelectedPolicy({
       conditions: this.additionalConditions().filter((_, i) => i !== index)
     });
-    // If we remove the row we are editing, we should cancel the edit mode
     if (this.editIndex() === index) {
       this.editIndex.set(null);
     }
@@ -200,5 +192,18 @@ export class ConditionsAdditionalComponent {
 
   updateSelectedPolicy(patch: Partial<PolicyDetail>) {
     this.emitEdits({ ...patch });
+  }
+
+  // Label Helpers
+  getSectionLabel(key: SectionOptionKey): string {
+    return SECTION_OPTIONS.find((o) => o.key === key)?.label ?? key;
+  }
+
+  getComparatorLabel(key: ComparatorOptionKey): string {
+    return COMPARATOR_OPTIONS.find((o) => o.key === key)?.label ?? key;
+  }
+
+  getMissingDataLabel(key: HandleMissingDataOptionKey): string {
+    return HANDLE_MISSING_DATA_OPTIONS.find((o) => o.key === key)?.label ?? key;
   }
 }

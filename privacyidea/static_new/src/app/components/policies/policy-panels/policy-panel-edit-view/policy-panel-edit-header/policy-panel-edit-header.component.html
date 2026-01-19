@@ -1,4 +1,12 @@
-<mat-panel-title>
+<mat-panel-title class="policy-title-container">
+  <input
+    type="number"
+    class="policy-priority-input"
+    [ngModel]="currentPolicy().priority"
+    (ngModelChange)="onPriorityChange($event)"
+    (click)="$event.stopPropagation()"
+    (keydown)="$event.stopPropagation()" />
+
   <input
     type="text"
     class="policy-name-input"

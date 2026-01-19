@@ -50,7 +50,7 @@
     [policy]="currentPolicy()"
     (actionsUpdate)="updateActions($event)" />
 }
-@if (activeTab() === "conditions" && currentPolicy()) {
+@if (activeTab() === "conditions") {
   <app-conditions-tab
     [isEditMode]="true"
     [policy]="currentPolicy()!"

@@ -10,12 +10,13 @@ import {
 } from "../../../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { DialogServiceInterface, DialogService } from "../../../../../services/dialog/dialog.service";
 import { CommonModule } from "@angular/common";
+import { MatTooltipModule } from "@angular/material/tooltip";
 
 @Component({
   selector: "app-policy-panel-view-header",
   templateUrl: "./policy-panel-view-header.component.html",
   styleUrls: ["./policy-panel-view-header.component.scss"],
-  imports: [CommonModule, MatExpansionModule, MatSlideToggleModule, MatIconModule]
+  imports: [CommonModule, MatExpansionModule, MatSlideToggleModule, MatIconModule, MatTooltipModule]
 })
 export class PolicyPanelViewHeaderComponent {
   readonly policyService: PolicyServiceInterface = inject(PolicyService);

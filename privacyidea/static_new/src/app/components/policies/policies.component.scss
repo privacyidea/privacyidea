@@ -21,8 +21,6 @@
   ::ng-deep .mat-accordion .mat-expansion-panel:last-of-type .mat-expansion-panel-header {
     height: 1rem;
     padding: var(--global-padding);
+    padding-left: var(--half-global-padding) !important;
   }
-}
-.full-width {
-  width: 100%;
 }

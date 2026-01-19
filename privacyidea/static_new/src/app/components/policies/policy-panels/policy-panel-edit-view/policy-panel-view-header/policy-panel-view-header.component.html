@@ -1,4 +1,10 @@
 <mat-panel-title>
+  <div
+    class="policy-priority"
+    matTooltip="Priority">
+    {{ policy().priority }}
+  </div>
+  <div class="gap-div-8px"></div>
   <div class="policy-name">
     {{ policy().name }}
   </div>
