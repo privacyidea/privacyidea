@@ -26,21 +26,22 @@ registration.
 
 The code of this module is tested in tests/test_api_smtpserver.py
 """
+
+import logging
+
 from flask import (Blueprint,
-                   request, current_app)
+                   request)
+from flask import g
+
+from privacyidea.lib.smtpserver import (add_smtpserver, list_smtpservers,
+                                        delete_smtpserver, send_or_enqueue_email)
 from .lib.utils import (getParam,
                         required,
                         send_result)
+from ..api.lib.prepolicy import prepolicy, check_base_action
 from ..lib.log import log_with
-from ..lib.crypto import decryptPassword, FAILED_TO_DECRYPT_PASSWORD
 from ..lib.policies.actions import PolicyAction
 from ..lib.utils import is_true
-from ..api.lib.prepolicy import prepolicy, check_base_action
-from flask import g
-from flask_babel import gettext as _
-import logging
-from privacyidea.lib.smtpserver import (add_smtpserver, list_smtpservers,
-                                        delete_smtpserver, send_or_enqueue_email)
 
 log = logging.getLogger(__name__)
 
@@ -72,13 +73,19 @@ def create(identifier=None):
     description = getParam(param, "description", default="")
     timeout = int(getParam(param, "timeout") or 10)
     enqueue_job = is_true(getParam(param, "enqueue_job", default=False))
+    smime = is_true(getParam(param, "smime", default=False))
+    dont_send_on_error = is_true(getParam(param, "dont_send_on_error", default=False))
+    private_key = getParam(param, "private_key", default="")
+    certificate = getParam(param, "certificate", default="")
 
     r = add_smtpserver(identifier, server, port=port, username=username,
                        password=password, tls=tls, description=description,
-                       sender=sender, timeout=timeout, enqueue_job=enqueue_job)
+                       sender=sender, timeout=timeout, enqueue_job=enqueue_job,
+                       smime=smime, dont_send_on_error=dont_send_on_error,
+                       private_key=private_key, certificate=certificate)
 
     g.audit_object.log({'success': r > 0,
-                        'info':  r})
+                        'info': r})
     return send_result(r > 0)
 
 
@@ -106,7 +113,7 @@ def delete_server(identifier=None):
     r = delete_smtpserver(identifier)
 
     g.audit_object.log({'success': r > 0,
-                        'info':  r})
+                        'info': r})
     return send_result(r > 0)
 
 
@@ -129,15 +136,21 @@ def test():
     recipient = getParam(param, "recipient", required)
     timeout = int(getParam(param, "timeout") or 10)
     enqueue_job = is_true(getParam(param, "enqueue_job", default=False))
+    smime = is_true(getParam(param, "smime", default=False))
+    dont_send_on_error = is_true(getParam(param, "dont_send_on_error", default=False))
+    private_key = getParam(param, "private_key", default="")
+    certificate = getParam(param, "certificate", default="")
 
     s = dict(identifier=identifier, server=server, port=port,
              username=username, password=password, sender=sender,
-             tls=tls, timeout=timeout, enqueue_job=enqueue_job)
+             tls=tls, timeout=timeout, enqueue_job=enqueue_job,
+             smime=smime, dont_send_on_error=dont_send_on_error,
+             private_key=private_key, certificate=certificate)
     r = send_or_enqueue_email(s, recipient,
                               "Test Email from privacyIDEA",
                               "This is a test email from privacyIDEA. "
                               "The configuration {} is working.".format(identifier))
 
     g.audit_object.log({'success': r > 0,
-                        'info':  r})
+                        'info': r})
     return send_result(r > 0)

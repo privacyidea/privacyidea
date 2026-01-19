@@ -15,7 +15,16 @@ An SMTP server configuration contains the
    * the sender email address,
    * a username and password in case of authentication
    * an optional description
-   * a TLS flag.
+   * a TLS flag
+   * S/MIME signing flag
+   * S/MIME private_key
+   * S/MIME certificate
+   * Don't send on signing error flag
+
+..Note:: To use S/MIME you need to configure the pahts to your S/MIME private_key and certificate for
+        each SMTP server via the web ui.
+
+
 
 Each SMTP server configuration is addressed via a *unique identifier*.
 You can then use such a configuration for Email or SMS token, for PIN

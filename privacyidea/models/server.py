@@ -118,4 +118,8 @@ class SMTPServer(MethodsMixin, db.Model):
             "description": self.description,
             "timeout": self.timeout,
             "enqueue_job": self.enqueue_job,
+            "smime": self.smime,
+            "dont_send_on_error": self.dont_send_on_error,
+            "private_key": self.private_key,
+            "certificate": self.certificate
         }
