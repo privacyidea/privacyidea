@@ -154,7 +154,7 @@
           type="number" />
       </mat-form-field>
       <mat-form-field>
-        <mat-label i18n>Cache timeout (seconds)</mat-label>
+        <mat-label i18n>Cache Timeout (seconds)</mat-label>
         <input
           [formControl]="cacheTimeoutControl"
           matInput
@@ -162,7 +162,7 @@
       </mat-form-field>
 
       <mat-form-field>
-        <mat-label i18n>Size limit</mat-label>
+        <mat-label i18n>Size Limit</mat-label>
         <input
           [formControl]="sizeLimitControl"
           matInput
@@ -170,7 +170,7 @@
       </mat-form-field>
 
       <mat-form-field>
-        <mat-label i18n>Server pool retry rounds</mat-label>
+        <mat-label i18n>Server Pool Retry Rounds</mat-label>
         <input
           [formControl]="serverPoolRoundsControl"
           matInput
@@ -178,7 +178,7 @@
       </mat-form-field>
 
       <mat-form-field>
-        <mat-label i18n>Server pool skip timeout (seconds)</mat-label>
+        <mat-label i18n>Server Pool Skip Timeout (Seconds)</mat-label>
         <input
           [formControl]="serverPoolSkipControl"
           matInput
@@ -189,7 +189,7 @@
         <mat-checkbox
           [formControl]="serverPoolPersistentControl"
           i18n>
-          Per-process server pool
+          Per-Process Server Pool
         </mat-checkbox>
         <span class="hint">This setting activates a LDAP server pool that is persisted between requests.</span>
       </div>
@@ -198,7 +198,7 @@
         <mat-checkbox
           [formControl]="editableControl"
           i18n>
-          Edit user store
+          Edit User Store
         </mat-checkbox>
         <span class="hint">The user data in this database can be modified from within privacyIDEA.</span>
       </div>
@@ -206,14 +206,14 @@
     @if (editableControl.value) {
       <div class="flex-column">
         <mat-form-field class="width-100">
-          <mat-label i18n> Object classes of a new created user object</mat-label>
+          <mat-label i18n> Object Classes of a New Created User Object</mat-label>
           <input
             [formControl]="objectClassesControl"
             matInput />
         </mat-form-field>
 
         <mat-form-field class="width-100">
-          <mat-label i18n> DN of a new created user object</mat-label>
+          <mat-label i18n> DN of a New Created User Object</mat-label>
           <input
             [formControl]="dnTemplateControl"
             matInput
@@ -246,7 +246,7 @@
 
     <div class="form-grid">
       <mat-form-field class="field-lg">
-        <mat-label i18n>Loginname attribute</mat-label>
+        <mat-label i18n>Loginname Attribute</mat-label>
         <input
           [formControl]="loginNameAttributeControl"
           matInput
@@ -258,7 +258,7 @@
       </mat-form-field>
 
       <mat-form-field class="field-lg">
-        <mat-label i18n>Search filter</mat-label>
+        <mat-label i18n>Search Filter</mat-label>
         <input
           [formControl]="ldapSearchFilterControl"
           matInput
@@ -270,7 +270,7 @@
       </mat-form-field>
 
       <mat-form-field class="field-lg">
-        <mat-label i18n>Attribute mapping</mat-label>
+        <mat-label i18n>Attribute Mapping</mat-label>
         <textarea
           [formControl]="userInfoControl"
           matInput
@@ -283,7 +283,7 @@
       </mat-form-field>
 
       <mat-form-field>
-        <mat-label i18n>Multivalue attributes</mat-label>
+        <mat-label i18n>Multivalue Attributes</mat-label>
         <input
           [formControl]="multivalueAttributesControl"
           matInput
@@ -291,7 +291,7 @@
       </mat-form-field>
 
       <mat-form-field>
-        <mat-label i18n>UID type</mat-label>
+        <mat-label i18n>UID Type</mat-label>
         <input
           [formControl]="uidTypeControl"
           matInput
@@ -345,13 +345,13 @@
       <mat-checkbox
         [formControl]="noReferralsControl"
         i18n>
-        No anonymous referral chasing
+        No Anonymous Referral Chasing
       </mat-checkbox>
 
       <mat-checkbox
         [formControl]="noSchemasControl"
         i18n>
-        No retrieval of schema information
+        No Retrieval of Schema Information
       </mat-checkbox>
     </div>
   </div>

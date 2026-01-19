@@ -140,7 +140,7 @@
                           <div class="resolver-priority-list">
                             @for (r of getEditNodeResolvers(group.id); track r.name) {
                               <div class="resolver-priority-item">
-                                <span class="priority-label">{{ r.name }} priority:</span>
+                                <span class="priority-label">{{ r.name }} Priority:</span>
                                 <input
                                   (click)="$event.stopPropagation()"
                                   (keydown)="$event.stopPropagation()"
@@ -161,7 +161,7 @@
                 } @else {
                   <div class="resolver-cell">
                     @if (element.resolverGroups.length === 0) {
-                      <span i18n>No resolvers</span>
+                      <span i18n>No Resolvers</span>
                     } @else {
                       @for (group of element.resolverGroups; track group.nodeLabel) {
                         <div class="resolver-node-group">
@@ -257,7 +257,7 @@
                   <mat-form-field
                     class="new-realm-name-field"
                     subscriptSizing="dynamic">
-                    <mat-label i18n>Realm name</mat-label>
+                    <mat-label i18n>Realm Name</mat-label>
                     <input
                       (input)="newRealmName.set($any($event.target).value)"
                       [value]="newRealmName()"
