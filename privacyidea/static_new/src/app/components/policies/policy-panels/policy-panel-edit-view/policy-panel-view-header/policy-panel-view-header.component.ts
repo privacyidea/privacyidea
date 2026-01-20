@@ -11,6 +11,8 @@ import {
 import { DialogServiceInterface, DialogService } from "../../../../../services/dialog/dialog.service";
 import { CommonModule } from "@angular/common";
 import { MatTooltipModule } from "@angular/material/tooltip";
+import { AuthService, AuthServiceInterface } from "../../../../../services/auth/auth.service";
+import { CopyPolicyDialogComponent } from "../../../dialog/copy-policy-dialog/copy-policy-dialog.component";
 
 @Component({
   selector: "app-policy-panel-view-header",
@@ -19,13 +21,9 @@ import { MatTooltipModule } from "@angular/material/tooltip";
   imports: [CommonModule, MatExpansionModule, MatSlideToggleModule, MatIconModule, MatTooltipModule]
 })
 export class PolicyPanelViewHeaderComponent {
-  editPolicy() {
-    this.isEditModeChange.emit(true);
-    this.panel().open();
-  }
-
   readonly policyService: PolicyServiceInterface = inject(PolicyService);
   readonly dialogService: DialogServiceInterface = inject(DialogService);
+  readonly authService: AuthServiceInterface = inject(AuthService);
 
   readonly policy = input.required<PolicyDetail>();
   readonly panel = input.required<MatExpansionPanel>();
@@ -60,6 +58,24 @@ export class PolicyPanelViewHeaderComponent {
     } else {
       this.policyService.disablePolicy(policy.name);
     }
+  }
+  editPolicy() {
+    this.isEditModeChange.emit(true);
+    this.panel().open();
+  }
+  async copyPolicy() {
+    const newName = await lastValueFrom(
+      this.dialogService
+        .openDialog({
+          component: CopyPolicyDialogComponent,
+          data: this.policy().name
+        })
+        .afterClosed()
+    );
+    if (!newName) {
+      return;
+    }
+    this.policyService.copyPolicy(this.policy(), newName);
   }
 
   async _confirm(data: SimpleConfirmationDialogData): Promise<boolean> {

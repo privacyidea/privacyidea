@@ -38,7 +38,7 @@
           [class.dialog-action-button-destruct]="action.type === 'destruct'"
           [class.dialog-action-button-cancel]="action.type === 'cancel'"
           (click)="onActionClick(action)"
-          [disabled]="action.disabled">
+          [disabled]="isDisabled(action)">
           {{ action.label }}
         </button>
       }

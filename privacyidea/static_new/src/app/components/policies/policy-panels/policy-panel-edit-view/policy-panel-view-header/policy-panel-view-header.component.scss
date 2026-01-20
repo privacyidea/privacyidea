@@ -7,20 +7,17 @@
   transform-origin: left center;
 }
 .policy-priority {
-  // Schrift-Angleichung
   font-family: inherit;
   font-size: 0.95rem;
   font-weight: 600;
   color: #29b6f6;
 
-  // Dimensionen (identisch zum Edit-Mode)
   width: 42px;
   height: 32px;
-  display: inline-flex; // inline-flex, damit es sich wie ein Input verhält
+  display: inline-flex;
   align-items: center;
   justify-content: center;
 
-  // Optik
   background-color: transparent;
   padding: 0;
   box-sizing: border-box;

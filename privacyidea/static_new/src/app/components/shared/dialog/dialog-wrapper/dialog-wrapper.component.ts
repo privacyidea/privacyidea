@@ -39,7 +39,12 @@ export class DialogWrapperComponent<R = any> {
   actions = input<DialogAction<R>[]>([]);
   onAction = output<R>();
   close = output<void>();
-
+  isDisabled(action: DialogAction<R>): boolean {
+    if (typeof action.disabled === "function") {
+      return action.disabled();
+    }
+    return !!action.disabled;
+  }
   onActionClick(action: DialogAction<R>): void {
     this.onAction.emit(action.value);
   }

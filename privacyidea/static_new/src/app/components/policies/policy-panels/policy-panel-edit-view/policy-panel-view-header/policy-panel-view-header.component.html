@@ -16,16 +16,25 @@
     </span>
   </div>
   <div class="actions">
-    <button
-      mat-icon-button
-      (click)="$event.stopPropagation(); editPolicy()">
-      <mat-icon>edit</mat-icon>
-    </button>
-    <button
-      mat-icon-button
-      (click)="$event.stopPropagation(); deletePolicy(policy().name)">
-      <mat-icon>delete</mat-icon>
-    </button>
+    @if (authService.actionAllowed("policywrite")) {
+      <button
+        mat-icon-button
+        (click)="$event.stopPropagation(); copyPolicy()">
+        <mat-icon>content_copy</mat-icon>
+      </button>
+      <button
+        mat-icon-button
+        (click)="$event.stopPropagation(); editPolicy()">
+        <mat-icon>edit</mat-icon>
+      </button>
+    }
+    @if (authService.actionAllowed("policydelete")) {
+      <button
+        mat-icon-button
+        (click)="$event.stopPropagation(); deletePolicy(policy().name)">
+        <mat-icon>delete</mat-icon>
+      </button>
+    }
     <mat-slide-toggle
       class="small-toggle"
       #slideToggle
