@@ -36,6 +36,7 @@ import { RealmTableComponent } from "./components/user/realm-table/realm-table.c
 import { ClientsComponent } from "./components/audit/clients/clients.component";
 import { MachineResolverComponent } from "./components/machine-resolver/machine-resolver.component";
 import { PeriodicTaskComponent } from "./components/configuration/periodic-task/periodic-task.component";
+import { SmtpServersComponent } from "./components/external-services/smtp-servers/smtp-servers.component";
 
 export const routes: Routes = [
   {
@@ -81,6 +82,10 @@ export const routes: Routes = [
       { path: "", component: AuditComponent },
       { path: "clients", component: ClientsComponent }
     ]
+  },
+  {
+    path: "external-services",
+    children: [{ path: "smtp", component: SmtpServersComponent }]
   },
   {
     path: "configuration",

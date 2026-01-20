@@ -1,0 +1,133 @@
+<div class="smtp-layout">
+  <div
+    appScrollToTop
+    class="smtp-servers-container">
+    <div class="header-row">
+      <h2 i18n>SMTP Servers</h2>
+      <button
+        (click)="openEditDialog()"
+        color="primary"
+        i18n
+        mat-flat-button>
+        <mat-icon>add</mat-icon>
+        Create SMTP Server
+      </button>
+    </div>
+    <mat-paginator
+      [pageSizeOptions]="[10, 25, 50, 100]"
+      aria-label="Select page of SMTP servers"
+      showFirstLastButtons></mat-paginator>
+    <table
+      [dataSource]="smtpDataSource()"
+      class="width-100"
+      mat-table
+      matSort>
+
+      <ng-container matColumnDef="identifier">
+        <th
+          *matHeaderCellDef
+          i18n
+          mat-header-cell
+          mat-sort-header> Identifier
+        </th>
+        <td
+          *matCellDef="let server"
+          mat-cell>
+          <a
+            (click)="openEditDialog(server)"
+            class="clickable"> {{ server.identifier }}
+          </a>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="server">
+        <th
+          *matHeaderCellDef
+          i18n
+          mat-header-cell
+          mat-sort-header> IP/FQDN
+        </th>
+        <td
+          *matCellDef="let server"
+          mat-cell> {{ server.server }}:{{ server.port }}
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="sender">
+        <th
+          *matHeaderCellDef
+          i18n
+          mat-header-cell
+          mat-sort-header> Sender
+        </th>
+        <td
+          *matCellDef="let server"
+          mat-cell> {{ server.sender }}
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="tls">
+        <th
+          *matHeaderCellDef
+          i18n
+          mat-header-cell
+          mat-sort-header> StartTLS
+        </th>
+        <td
+          *matCellDef="let server"
+          mat-cell>
+          <mat-icon *ngIf="server.tls">check</mat-icon>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="description">
+        <th
+          *matHeaderCellDef
+          i18n
+          mat-header-cell
+          mat-sort-header> Description
+        </th>
+        <td
+          *matCellDef="let server"
+          mat-cell> {{ server.description }}
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="actions">
+        <th
+          *matHeaderCellDef
+          i18n
+          mat-header-cell> Actions
+        </th>
+        <td
+          *matCellDef="let server"
+          mat-cell>
+          <button
+            (click)="deleteServer(server)"
+            color="warn"
+            i18n-matTooltip
+            mat-icon-button
+            matTooltip="Delete">
+            <mat-icon>delete</mat-icon>
+          </button>
+        </td>
+      </ng-container>
+
+      <tr
+        *matHeaderRowDef="displayedColumns"
+        mat-header-row></tr>
+      <tr
+        *matRowDef="let row; columns: displayedColumns;"
+        mat-row></tr>
+
+      <tr
+        *matNoDataRow
+        class="mat-row">
+        <td
+          class="mat-cell"
+          colspan="6"
+          i18n>No SMTP servers found.
+        </td>
+      </tr>
+    </table>
+  </div>

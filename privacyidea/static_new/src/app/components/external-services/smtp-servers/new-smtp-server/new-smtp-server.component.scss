@@ -1,0 +1,38 @@
+.smtp-form {
+  padding-top: 10px;
+}
+
+.width-100 {
+  width: 100%;
+}
+
+.row {
+  display: flex;
+  gap: 16px;
+  width: 100%;
+}
+
+.col-8 {
+  flex: 2;
+}
+
+.col-4 {
+  flex: 1;
+}
+
+.col-6 {
+  flex: 1;
+}
+
+.checkbox-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.test-section {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--mat-sys-outline-variant);
+}

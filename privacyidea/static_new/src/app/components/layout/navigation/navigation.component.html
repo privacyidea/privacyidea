@@ -405,7 +405,7 @@
       </mat-list>
     </mat-expansion-panel>
 
-    <mat-expansion-panel>
+    <mat-expansion-panel [expanded]="router.url.startsWith('/external-services')">
       <mat-expansion-panel-header>
         <mat-panel-title>
           <mat-icon>hub</mat-icon>
@@ -415,8 +415,8 @@
       <mat-list>
         <mat-list-item>
           <button
-            class="card-button-1"
-            disabled
+            [ngClass]="contentService.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_SMTP ? 'card-button-active' : 'card-button-1'"
+            [routerLink]="[ROUTE_PATHS.EXTERNAL_SERVICES_SMTP]"
             mat-stroked-button>
             <mat-icon>email</mat-icon>
             SMTP Servers
