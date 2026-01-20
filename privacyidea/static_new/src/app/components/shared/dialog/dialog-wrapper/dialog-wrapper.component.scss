@@ -10,19 +10,14 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: var(--half-global-padding) var(--global-padding);
-  border-bottom: 1px solid var(--mat-sys-on-surface-variant);
+  padding: var(--global-padding);
 }
 
-.pi-dialog-header h2 {
-  margin: 0;
+.pi-dialog-header h4 {
+  margin: 0 auto 0 0;
 }
 
 .pi-close-button {
-  background: none;
-  border: none;
-  font-size: 1.7em;
-  cursor: pointer;
   color: var(--mat-sys-on-surface);
 }
 
@@ -35,7 +30,7 @@
 .pi-dialog-footer {
   display: flex;
   justify-content: flex-end;
-  padding: var(--half-global-padding) var(--global-padding);
+  padding: var(--global-padding);
 
   gap: calc(var(--global-gap) / 2);
 }
