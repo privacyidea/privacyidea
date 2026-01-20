@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -35,7 +35,7 @@ import {
 import { BulkResult, TokenDetails, TokenService } from "../../../../services/token/token.service";
 
 import { VersioningService } from "../../../../services/version/version.service";
-import { ConfirmationDialogComponent } from "../../../shared/confirmation-dialog/confirmation-dialog.component";
+import { SimpleConfirmationDialogComponent } from "../../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { ContentService } from "../../../../services/content/content.service";
 import { AuthService } from "../../../../services/auth/auth.service";
 import { AuditService } from "../../../../services/audit/audit.service";
@@ -46,7 +46,7 @@ import {
   MockNotificationService,
   MockPiResponse,
   MockTokenService,
-  MockVersioningService,
+  MockVersioningService
 } from "../../../../../testing/mock-services";
 import { MockAuthService } from "../../../../../testing/mock-services/mock-auth-service";
 
@@ -63,7 +63,7 @@ describe("TokenTableActionsComponent", () => {
     const dialogMock = {
       open: jest.fn().mockReturnValue({
         afterClosed: () => of(true)
-      } as unknown as MatDialogRef<ConfirmationDialogComponent>)
+      } as unknown as MatDialogRef<SimpleConfirmationDialogComponent>)
     };
 
     const routerMock = {
@@ -150,11 +150,7 @@ describe("TokenTableActionsComponent", () => {
 
       component.deleteSelectedTokens();
 
-      expect(tokenService.bulkDeleteWithConfirmDialog).toHaveBeenCalledWith(
-        ["TOKEN1", "TOKEN2"],
-        expect.objectContaining({ open: expect.any(Function) }),
-        expect.any(Function)
-      );
+      expect(tokenService.bulkDeleteWithConfirmDialog).toHaveBeenCalledWith(["TOKEN1", "TOKEN2"], expect.any(Function));
     });
   });
 
@@ -185,14 +181,15 @@ describe("TokenTableActionsComponent", () => {
       component.tokenSelection.set(mockTokens);
       component.unassignSelectedTokens();
 
-      expect(dialogSpy).toHaveBeenCalledWith(ConfirmationDialogComponent, {
+      expect(dialogSpy).toHaveBeenCalledWith(SimpleConfirmationDialogComponent, {
         data: {
-          serialList: ["TOKEN1"],
-          title: "Unassign Selected Tokens",
-          type: "token",
-          action: "unassign",
-          numberOfTokens: 1
-        }
+          confirmAction: { label: "Unassign", type: "destruct", value: true },
+          itemType: "token",
+          items: ["TOKEN1"],
+          title: "Unassign Selected Tokens"
+        },
+        disableClose: false,
+        hasBackdrop: true
       });
       expect(bulkUnassignSpy).toHaveBeenCalledWith(mockTokens);
       expect(notificationService.openSnackBar).toHaveBeenCalledWith("Successfully unassigned 1 token.");

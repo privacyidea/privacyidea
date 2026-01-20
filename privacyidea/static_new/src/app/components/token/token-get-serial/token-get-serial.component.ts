@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -33,9 +33,10 @@ import { ROUTE_PATHS } from "../../../route_paths";
 import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
 import { NotificationService, NotificationServiceInterface } from "../../../services/notification/notification.service";
 import { TokenService, TokenServiceInterface, TokenType } from "../../../services/token/token.service";
-import { ConfirmationDialogComponent } from "../../shared/confirmation-dialog/confirmation-dialog.component";
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { GetSerialResultDialogComponent } from "./get-serial-result-dialog/get-serial-result-dialog.component";
+import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
+import { SearchTokenDialogComponent } from "./search-token-dialog/search-token-dialog";
 
 @Component({
   selector: "app-token-get-serial",
@@ -85,11 +86,10 @@ export class TokenGetSerialComponent {
   });
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
-  private readonly dialog: MatDialog = inject(MatDialog);
+  private readonly dialogService: DialogServiceInterface = inject(DialogService);
   private router = inject(Router);
 
   constructor() {
-
     effect(() => {
       this.otpValue();
       this.assignmentState();
@@ -147,13 +147,10 @@ export class TokenGetSerialComponent {
         this.tokenCount.set(response?.result?.value?.count !== undefined ? String(response.result?.value.count) : "");
         this.currentStep.set("countDone");
         if (this.countIsLarge()) {
-          this.dialog
-            .open(ConfirmationDialogComponent, {
-              data: {
-                title: "Search Serial",
-                action: "search",
-                numberOfTokens: this.tokenCount()
-              }
+          this.dialogService
+            .openDialog({
+              component: SearchTokenDialogComponent,
+              data: this.tokenCount()
             })
             .afterClosed()
             .subscribe({
@@ -186,14 +183,15 @@ export class TokenGetSerialComponent {
     this.serialSubscription = this.tokenService.getSerial(this.otpValue(), params).subscribe({
       next: (response) => {
         const serial = response.result?.value?.serial ?? "";
-        this.dialog.open(GetSerialResultDialogComponent, {
+        this.dialogService.openDialog({
+          component: GetSerialResultDialogComponent,
           data: {
             foundSerial: serial,
             otpValue: this.otpValue(),
             onClickSerial: () => {
               this.tokenSerial.set(serial);
               this.router.navigateByUrl(ROUTE_PATHS.TOKENS_DETAILS + serial);
-              this.dialog.closeAll();
+              this.dialogService.closeAllDialogs();
             },
             reset: () => {
               this.resetSteps();

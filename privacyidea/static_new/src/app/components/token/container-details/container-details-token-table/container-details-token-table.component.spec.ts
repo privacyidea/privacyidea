@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -43,7 +43,7 @@ import { OverflowService } from "../../../../services/overflow/overflow.service"
 import { NotificationService } from "../../../../services/notification/notification.service";
 import { MatDialog } from "@angular/material/dialog";
 import { UserService } from "../../../../services/user/user.service";
-import { ConfirmationDialogComponent } from "../../../shared/confirmation-dialog/confirmation-dialog.component";
+import { SimpleConfirmationDialogComponent } from "../../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { ContentService } from "../../../../services/content/content.service";
 
 import { MockAuthService } from "../../../../../testing/mock-services/mock-auth-service";
@@ -229,15 +229,16 @@ describe("ContainerDetailsTokenTableComponent", () => {
       .spyOn(containerServiceMock, "removeTokenFromContainer")
       .mockReturnValue(of({ result: { value: true } } as any));
     component.removeTokenFromContainer("CONT-1", "Mock serial");
-    expect(matDialogMock.open).toHaveBeenCalledWith(
-      ConfirmationDialogComponent,
-      expect.objectContaining({
-        data: expect.objectContaining({
-          serialList: ["Mock serial"],
-          action: "remove"
-        })
-      })
-    );
+    expect(matDialogMock.open).toHaveBeenCalledWith(SimpleConfirmationDialogComponent, {
+      data: {
+        confirmAction: { label: "Remove", type: "destruct", value: true },
+        itemType: "token",
+        items: ["Mock serial"],
+        title: "Remove Token"
+      },
+      disableClose: false,
+      hasBackdrop: true
+    });
     expect(containerServiceMock.removeTokenFromContainer).toHaveBeenCalledWith("CONT-1", "Mock serial");
     expect(containerServiceMock.containerDetailResource.reload).toHaveBeenCalled();
   });
@@ -250,15 +251,16 @@ describe("ContainerDetailsTokenTableComponent", () => {
 
   it("deleteTokenFromContainer confirms and deletes on confirm=true", () => {
     component.deleteTokenFromContainer("Another serial");
-    expect(matDialogMock.open).toHaveBeenCalledWith(
-      ConfirmationDialogComponent,
-      expect.objectContaining({
-        data: expect.objectContaining({
-          serialList: ["Another serial"],
-          action: "delete"
-        })
-      })
-    );
+    expect(matDialogMock.open).toHaveBeenCalledWith(SimpleConfirmationDialogComponent, {
+      data: {
+        confirmAction: { label: "Delete", type: "destruct", value: true },
+        itemType: "token",
+        items: ["Another serial"],
+        title: "Delete Token"
+      },
+      disableClose: false,
+      hasBackdrop: true
+    });
     expect(tokenServiceMock.deleteToken as any).toHaveBeenCalledWith("Another serial");
     expect(containerServiceMock.containerDetailResource.reload).toHaveBeenCalled();
   });

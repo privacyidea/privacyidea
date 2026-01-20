@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -18,132 +18,176 @@
  **/
 import { TestBed } from "@angular/core/testing";
 import { Subject } from "rxjs";
-import { MatDialog } from "@angular/material/dialog";
+import { MatDialog, MatDialogRef } from "@angular/material/dialog";
 import { DialogService } from "./dialog.service";
-import { AuthService } from "../auth/auth.service";
-import { MockLocalService, MockNotificationService } from "../../../testing/mock-services";
-import { provideHttpClient } from "@angular/common/http";
-import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { MockAuthService } from "../../../testing/mock-services/mock-auth-service";
+import { Component } from "@angular/core";
+import { AbstractDialogComponent } from "../../components/shared/dialog/abstract-dialog/abstract-dialog.component";
 
-jest.mock(
-  "../../components/token/token-enrollment/token-enrollment-firtst-step-dialog/token-enrollment-first-step-dialog.component",
-  () => ({
-    TokenEnrollmentFirstStepDialogComponent: class TokenEnrollmentFirstStepDialogComponent {}
-  })
-);
-jest.mock(
-  "../../components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component",
-  () => ({
-    TokenEnrollmentLastStepDialogComponent: class TokenEnrollmentLastStepDialogComponent {}
-  })
-);
-jest.mock(
-  "../../components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.self-service.component",
-  () => ({
-    TokenEnrollmentLastStepDialogSelfServiceComponent: class TokenEnrollmentLastStepDialogSelfServiceComponent {}
-  })
-);
-jest.mock("../../components/shared/confirmation-dialog/confirmation-dialog.component", () => ({
-  ConfirmationDialogComponent: class ConfirmationDialogComponent {}
-}));
+@Component({ template: "" })
+class TestDialogComponent extends AbstractDialogComponent<any, any> {}
 
-const matDialogStub = {
-  openDialogs: [] as any[],
-  open: jest.fn((_c: any, _cfg: any) => {
-    const subj = new Subject<any>();
-    const ref: any = {
-      afterClosed: () => subj.asObservable(),
-      close: (v?: any) => {
-        subj.next(v);
-        subj.complete();
-        matDialogStub.openDialogs = matDialogStub.openDialogs.filter((r) => r !== ref);
-      }
-    };
-    matDialogStub.openDialogs.push(ref);
-    return ref;
-  })
+const matDialogMock = {
+  openDialogs: [] as MatDialogRef<any>[],
+  open: jest.fn(),
+  closeAll: jest.fn()
 };
 
 describe("DialogService", () => {
-  let dialogService: DialogService;
-  let authServiceMock: MockAuthService;
+  let service: DialogService;
+  let matDialog: MatDialog;
 
   beforeEach(() => {
-    TestBed.resetTestingModule();
-    matDialogStub.openDialogs.length = 0;
     TestBed.configureTestingModule({
-      providers: [
-        provideHttpClient(),
-        provideHttpClientTesting(),
-        { provide: MatDialog, useValue: matDialogStub },
-        { provide: AuthService, useClass: MockAuthService },
-        MockLocalService,
-        MockNotificationService
-      ]
+      providers: [{ provide: MatDialog, useValue: matDialogMock }]
     });
-    dialogService = TestBed.inject(DialogService);
-    authServiceMock = TestBed.inject(AuthService) as any;
+    service = TestBed.inject(DialogService);
+    matDialog = TestBed.inject(MatDialog);
+    // Reset mocks before each test
+    matDialogMock.open.mockClear();
+    matDialogMock.closeAll.mockClear();
+    matDialogMock.openDialogs = [];
+    service.openDialogs.clear();
   });
 
-  it("openTokenEnrollmentFirstStepDialog handles multiple opens", () => {
-    const cfg = { data: { enrollmentResponse: {} } } as any;
-    const first = dialogService.openTokenEnrollmentFirstStepDialog(cfg);
-    expect(dialogService.isTokenEnrollmentFirstStepDialogOpen).toBe(true);
-    const second = dialogService.openTokenEnrollmentFirstStepDialog(cfg);
-    expect(first).not.toBe(second);
-    expect(matDialogStub.openDialogs.length).toBe(1);
-    second.close();
-    expect(dialogService.isTokenEnrollmentFirstStepDialogOpen).toBe(false);
+  it("should be created", () => {
+    expect(service).toBeTruthy();
   });
 
-  it("openTokenEnrollmentLastStepDialog picks admin component", async () => {
-    await dialogService.openTokenEnrollmentLastStepDialog({ data: {} } as any);
-    const componentName = matDialogStub.open.mock.calls.at(-1)?.[0].name ?? "none";
-    expect(componentName).toBe("TokenEnrollmentLastStepDialogComponent");
+  describe("openDialog", () => {
+    it("should open a dialog and add it to the openDialogs set", () => {
+      const afterClosed$ = new Subject<void>();
+      const mockDialogRef = {
+        afterClosed: () => afterClosed$.asObservable()
+      } as MatDialogRef<any>;
+      matDialogMock.open.mockReturnValue(mockDialogRef);
+
+      const dialogRef = service.openDialog({ component: TestDialogComponent });
+
+      expect(matDialog.open).toHaveBeenCalledWith(TestDialogComponent, {
+        disableClose: false,
+        hasBackdrop: true,
+        data: undefined
+      });
+      expect(dialogRef).toBe(mockDialogRef);
+      expect(service.openDialogs.has(mockDialogRef)).toBe(true);
+    });
+
+    it("should remove the dialog from the set after it is closed", () => {
+      const afterClosed$ = new Subject<void>();
+      const mockDialogRef = {
+        afterClosed: () => afterClosed$.asObservable()
+      } as MatDialogRef<any>;
+      matDialogMock.open.mockReturnValue(mockDialogRef);
+
+      service.openDialog({ component: TestDialogComponent });
+      expect(service.openDialogs.has(mockDialogRef)).toBe(true);
+
+      afterClosed$.next();
+      afterClosed$.complete();
+
+      expect(service.openDialogs.has(mockDialogRef)).toBe(false);
+    });
+
+    it("should override default config", () => {
+      const afterClosed$ = new Subject<void>();
+      const mockDialogRef = {
+        afterClosed: () => afterClosed$.asObservable()
+      } as MatDialogRef<any>;
+      matDialogMock.open.mockReturnValue(mockDialogRef);
+
+      service.openDialog({
+        component: TestDialogComponent,
+        data: { test: "data" },
+        configOverride: { disableClose: true }
+      });
+
+      expect(matDialog.open).toHaveBeenCalledWith(TestDialogComponent, {
+        disableClose: true,
+        hasBackdrop: true,
+        data: { test: "data" }
+      });
+    });
   });
 
-  it("openTokenEnrollmentLastStepDialog picks self‑service component", async () => {
-    authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, role: "user" });
-    await dialogService.openTokenEnrollmentLastStepDialog({ data: {} } as any);
-    const componentName = matDialogStub.open.mock.calls.at(-1)?.[0].name ?? "none";
-    expect(componentName).toBe("TokenEnrollmentLastStepDialogSelfServiceComponent");
+  describe("closeDialog", () => {
+    it("should close the dialog if it is open", () => {
+      const mockDialogRef = {
+        close: jest.fn()
+      } as unknown as MatDialogRef<any>;
+      service.openDialogs.add(mockDialogRef);
+
+      const result = service.closeDialog(mockDialogRef, "test");
+
+      expect(mockDialogRef.close).toHaveBeenCalledWith("test");
+      expect(result).toBe(true);
+    });
+
+    it("should not close the dialog if it is not open", () => {
+      const mockDialogRef = {
+        close: jest.fn()
+      } as unknown as MatDialogRef<any>;
+
+      const result = service.closeDialog(mockDialogRef);
+
+      expect(mockDialogRef.close).not.toHaveBeenCalled();
+      expect(result).toBe(false);
+    });
   });
 
-  it("closeTokenEnrollmentLastStepDialog closes ref", async () => {
-    await dialogService.openTokenEnrollmentLastStepDialog({ data: {} } as any);
-    expect(matDialogStub.openDialogs.length).toBe(1);
-    dialogService.closeTokenEnrollmentLastStepDialog();
-    expect(matDialogStub.openDialogs.length).toBe(0);
+  describe("closeLatestDialog", () => {
+    it("should close the most recently opened dialog", () => {
+      const firstDialogRef = { close: jest.fn() } as unknown as MatDialogRef<any>;
+      const secondDialogRef = { close: jest.fn() } as unknown as MatDialogRef<any>;
+      service.openDialogs.add(firstDialogRef);
+      service.openDialogs.add(secondDialogRef);
+
+      service.closeLatestDialog();
+
+      expect(firstDialogRef.close).not.toHaveBeenCalled();
+      expect(secondDialogRef.close).toHaveBeenCalled();
+    });
+
+    it("should do nothing if no dialogs are open", () => {
+      // No spy needed, just ensuring no error is thrown
+      service.closeLatestDialog();
+      expect(true).toBe(true); // To avoid empty test
+    });
   });
 
-  it("confirm resolves true and false", async () => {
-    const pTrue = dialogService.confirm({ data: {} } as any);
-    matDialogStub.openDialogs.at(-1)?.close(true);
-    await expect(pTrue).resolves.toBe(true);
+  describe("closeAllDialogs", () => {
+    it("should call MatDialog.closeAll and clear the openDialogs set", () => {
+      service.openDialogs.add({} as MatDialogRef<any>);
+      expect(service.openDialogs.size).toBe(1);
 
-    const pFalse = dialogService.confirm({ data: {} } as any);
-    matDialogStub.openDialogs.at(-1)?.close(null);
-    await expect(pFalse).resolves.toBe(false);
+      service.closeAllDialogs();
+
+      expect(matDialog.closeAll).toHaveBeenCalled();
+      expect(service.openDialogs.size).toBe(0);
+    });
   });
 
-  it("isAnyDialogOpen reflects state", () => {
-    expect(dialogService.isAnyDialogOpen()).toBe(false);
-    dialogService.openTokenEnrollmentFirstStepDialog({
-      data: { enrollmentResponse: {} }
-    } as any);
-    expect(dialogService.isAnyDialogOpen()).toBe(true);
+  describe("isDialogOpen", () => {
+    it("should return true if the dialog is in the openDialogs set", () => {
+      const mockDialogRef = {} as MatDialogRef<any>;
+      service.openDialogs.add(mockDialogRef);
+      expect(service.isDialogOpen(mockDialogRef)).toBe(true);
+    });
+
+    it("should return false if the dialog is not in the openDialogs set", () => {
+      const mockDialogRef = {} as MatDialogRef<any>;
+      expect(service.isDialogOpen(mockDialogRef)).toBe(false);
+    });
   });
 
-  it("closeTokenEnrollmentFirstStepDialog calls close on the ref", () => {
-    const ref = dialogService.openTokenEnrollmentFirstStepDialog({
-      data: { enrollmentResponse: {} }
-    } as any);
+  describe("isAnyDialogOpen", () => {
+    it("should return true if MatDialog.openDialogs has open dialogs", () => {
+      matDialogMock.openDialogs = [{} as MatDialogRef<any>];
+      expect(service.isAnyDialogOpen()).toBe(true);
+    });
 
-    const closeSpy = jest.spyOn(ref, "close");
-    dialogService.closeTokenEnrollmentFirstStepDialog();
-
-    expect(closeSpy).toHaveBeenCalled();
-    expect(dialogService.isTokenEnrollmentFirstStepDialogOpen).toBe(false);
+    it("should return false if MatDialog.openDialogs is empty", () => {
+      matDialogMock.openDialogs = [];
+      expect(service.isAnyDialogOpen()).toBe(false);
+    });
   });
 });
