@@ -59,7 +59,14 @@ describe("UserNewResolverComponent", () => {
             url: ROUTE_PATHS.USERS_RESOLVERS
           }
         },
-        { provide: MatDialogRef, useValue: { close: jest.fn() } },
+        {
+          provide: MatDialogRef,
+          useValue: {
+            close: jest.fn(),
+            backdropClick: jest.fn().mockReturnValue(of()),
+            keydownEvents: jest.fn().mockReturnValue(of())
+          }
+        },
         { provide: MAT_DIALOG_DATA, useValue: {} }
       ]
     }).compileComponents();
@@ -472,7 +479,14 @@ describe("UserNewResolverComponent", () => {
             url: ROUTE_PATHS.USERS_RESOLVERS
           }
         },
-        { provide: MatDialogRef, useValue: { close: jest.fn() } },
+        {
+          provide: MatDialogRef,
+          useValue: {
+            close: jest.fn(),
+            backdropClick: jest.fn().mockReturnValue(of()),
+            keydownEvents: jest.fn().mockReturnValue(of())
+          }
+        },
         { provide: MAT_DIALOG_DATA, useValue: { resolver } }
       ]
     }).compileComponents();

@@ -1,3 +1,21 @@
+/**
+ * (c) NetKnights GmbH 2025,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ **/
 import {
   AfterViewInit,
   Component,
@@ -34,9 +52,11 @@ import { EntraidResolverComponent } from "./entraid-resolver/entraid-resolver.co
 import { KeycloakResolverComponent } from "./keycloak-resolver/keycloak-resolver.component";
 import { ActivatedRoute, Router } from "@angular/router";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
-import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from "@angular/material/dialog";
+import { MAT_DIALOG_DATA, MatDialog, MatDialogModule, MatDialogRef } from "@angular/material/dialog";
 import { ROUTE_PATHS } from "../../../route_paths";
 import { ContentService } from "../../../services/content/content.service";
+import { ConfirmationDialogComponent } from "../../shared/confirmation-dialog/confirmation-dialog.component";
+import { PendingChangesService } from "../../../services/pending-changes/pending-changes.service";
 
 @Component({
   selector: "app-user-new-resolver",
@@ -72,6 +92,8 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly contentService = inject(ContentService);
+  private readonly dialog = inject(MatDialog);
+  private readonly pendingChangesService = inject(PendingChangesService);
   protected readonly renderer: Renderer2 = inject(Renderer2);
   public readonly dialogRef = inject(MatDialogRef<UserNewResolverComponent>, { optional: true });
   public readonly data = inject(MAT_DIALOG_DATA, { optional: true });
@@ -130,6 +152,20 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
         this.resolverService.selectedResolverName.set(params.get("name") || "");
       });
     }
+
+    if (this.dialogRef) {
+      this.dialogRef.disableClose = true;
+      this.dialogRef.backdropClick().subscribe(() => {
+        this.onCancel();
+      });
+      this.dialogRef.keydownEvents().subscribe(event => {
+        if (event.key === "Escape") {
+          this.onCancel();
+        }
+      });
+    }
+
+    this.pendingChangesService.registerHasChanges(() => this.hasChanges);
 
     effect (() => {
       if (!this.contentService.routeUrl().startsWith(ROUTE_PATHS.USERS_RESOLVERS)) {
@@ -191,6 +227,23 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
     return Object.values(this.additionalFormFields()).every(control => control.valid);
   }
 
+  get hasChanges(): boolean {
+    if (Object.values(this.additionalFormFields()).some(control => control.dirty)) {
+      return true;
+    }
+
+    if (this.isEditMode) {
+      return this.testUsername !== "" || this.testUserId !== "";
+    } else {
+      return (
+        this.resolverName !== "" ||
+        this.resolverType !== "passwdresolver" ||
+        this.testUsername !== "" ||
+        this.testUserId !== ""
+      );
+    }
+  }
+
   ngAfterViewInit(): void {
     if (!this.scrollContainer || !this.stickyHeader || !this.stickySentinel || !this.leftColumn) {
       return;
@@ -218,6 +271,7 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.resolverService.selectedResolverName.set("");
+    this.pendingChangesService.unregisterHasChanges();
     if (this.observer) {
       this.observer.disconnect();
     }
@@ -401,6 +455,24 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
   }
 
   onCancel(): void {
+    if (this.hasChanges) {
+      this.dialog.open(ConfirmationDialogComponent, {
+        data: {
+          title: $localize`Discard changes`,
+          action: "discard",
+          type: "resolver"
+        }
+      }).afterClosed().subscribe(result => {
+        if (result) {
+          this.closeActual();
+        }
+      });
+    } else {
+      this.closeActual();
+    }
+  }
+
+  private closeActual(): void {
     if (this.dialogRef) {
       this.dialogRef.close();
     } else {
