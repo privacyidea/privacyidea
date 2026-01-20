@@ -1,3 +1,21 @@
+<!--
+ (c) NetKnights GmbH 2025,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
 <div class="type-sections-container">
   <div class="type-section">
     <div class="form-grid">
@@ -5,11 +23,15 @@
 
       <mat-form-field class="field-lg">
         <mat-label i18n>Server URI</mat-label>
-        <input
-          [formControl]="ldapUriControl"
-          matInput
-          placeholder="ldap://privacyidea.server1, ldap://privacyidea.server2"
-          required />
+        <app-clearable-input
+          (onClick)="ldapUriControl.setValue('')"
+          [showClearButton]="!!ldapUriControl.value">
+          <input
+            [formControl]="ldapUriControl"
+            matInput
+            placeholder="ldap://privacyidea.server1, ldap://privacyidea.server2"
+            required />
+        </app-clearable-input>
         @if (ldapUriControl.hasError('required') && ldapUriControl.touched) {
           <mat-error i18n>Server URI is <strong>required</strong>.</mat-error>
         }
@@ -50,19 +72,27 @@
           <mat-hint i18n>
             The file containing the CA certificate which signed the LDAP TLS certificate.
           </mat-hint>
-          <input
-            [formControl]="tlsCaFileControl"
-            matInput
-            placeholder="/etc/privacyidea/ldap-ca.crt" />
+          <app-clearable-input
+            (onClick)="tlsCaFileControl.setValue('')"
+            [showClearButton]="!!tlsCaFileControl.value">
+            <input
+              [formControl]="tlsCaFileControl"
+              matInput
+              placeholder="/etc/privacyidea/ldap-ca.crt" />
+          </app-clearable-input>
         </mat-form-field>
       }
 
       <mat-form-field class="field-lg">
         <mat-label i18n>Base DN</mat-label>
-        <input
-          [formControl]="ldapBaseControl"
-          matInput
-          required />
+        <app-clearable-input
+          (onClick)="ldapBaseControl.setValue('')"
+          [showClearButton]="!!ldapBaseControl.value">
+          <input
+            [formControl]="ldapBaseControl"
+            matInput
+            required />
+        </app-clearable-input>
         @if (ldapBaseControl.hasError('required') && ldapBaseControl.touched) {
           <mat-error i18n>Base DN is <strong>required</strong>.</mat-error>
         }
@@ -122,19 +152,27 @@
       @if (authTypeControl.value !== "anonymous") {
         <mat-form-field class="field-lg">
           <mat-label i18n>Bind DN</mat-label>
-          <input
-            [formControl]="bindDnControl"
-            matInput
-            placeholder="cn=admin,ou=user,dc=domain,dc=tld" />
+          <app-clearable-input
+            (onClick)="bindDnControl.setValue('')"
+            [showClearButton]="!!bindDnControl.value">
+            <input
+              [formControl]="bindDnControl"
+              matInput
+              placeholder="cn=admin,ou=user,dc=domain,dc=tld" />
+          </app-clearable-input>
         </mat-form-field>
 
         <mat-form-field class="field-md">
           <mat-label i18n>{{ authTypeControl.value === "SASL Kerberos" ? "Keyfile Path" : "Bind password" }}</mat-label>
-          <input
-            [formControl]="bindPwControl"
-            matInput
-            placeholder="topsecret"
-            type="password" />
+          <app-clearable-input
+            (onClick)="bindPwControl.setValue('')"
+            [showClearButton]="!!bindPwControl.value">
+            <input
+              [formControl]="bindPwControl"
+              matInput
+              placeholder="topsecret"
+              type="password" />
+          </app-clearable-input>
         </mat-form-field>
       }
     </div>
@@ -207,17 +245,25 @@
       <div class="flex-column">
         <mat-form-field class="width-100">
           <mat-label i18n> Object Classes of a New Created User Object</mat-label>
-          <input
-            [formControl]="objectClassesControl"
-            matInput />
+          <app-clearable-input
+            (onClick)="objectClassesControl.setValue('')"
+            [showClearButton]="!!objectClassesControl.value">
+            <input
+              [formControl]="objectClassesControl"
+              matInput />
+          </app-clearable-input>
         </mat-form-field>
 
         <mat-form-field class="width-100">
           <mat-label i18n> DN of a New Created User Object</mat-label>
-          <input
-            [formControl]="dnTemplateControl"
-            matInput
-            placeholder="CN=<username>,<basendn>" />
+          <app-clearable-input
+            (onClick)="dnTemplateControl.setValue('')"
+            [showClearButton]="!!dnTemplateControl.value">
+            <input
+              [formControl]="dnTemplateControl"
+              matInput
+              placeholder="CN=<username>,<basendn>" />
+          </app-clearable-input>
         </mat-form-field>
       </div>
     }
@@ -247,11 +293,15 @@
     <div class="form-grid">
       <mat-form-field class="field-lg">
         <mat-label i18n>Loginname Attribute</mat-label>
-        <input
-          [formControl]="loginNameAttributeControl"
-          matInput
-          placeholder="sAMAccountName"
-          required />
+        <app-clearable-input
+          (onClick)="loginNameAttributeControl.setValue('')"
+          [showClearButton]="!!loginNameAttributeControl.value">
+          <input
+            [formControl]="loginNameAttributeControl"
+            matInput
+            placeholder="sAMAccountName"
+            required />
+        </app-clearable-input>
         @if (loginNameAttributeControl.hasError('required') && loginNameAttributeControl.touched) {
           <mat-error i18n>Loginname attribute is <strong>required</strong>.</mat-error>
         }
@@ -259,11 +309,15 @@
 
       <mat-form-field class="field-lg">
         <mat-label i18n>Search Filter</mat-label>
-        <input
-          [formControl]="ldapSearchFilterControl"
-          matInput
-          placeholder="(sAMAccountName=*)(objectClass=person)"
-          required />
+        <app-clearable-input
+          (onClick)="ldapSearchFilterControl.setValue('')"
+          [showClearButton]="!!ldapSearchFilterControl.value">
+          <input
+            [formControl]="ldapSearchFilterControl"
+            matInput
+            placeholder="(sAMAccountName=*)(objectClass=person)"
+            required />
+        </app-clearable-input>
         @if (ldapSearchFilterControl.hasError('required') && ldapSearchFilterControl.touched) {
           <mat-error i18n>Search filter is <strong>required</strong>.</mat-error>
         }
@@ -275,7 +329,7 @@
           [formControl]="userInfoControl"
           matInput
           placeholder='{"phone:" : "telephoneNumber", "mobile": "mobile", "email" : "mail", "surname" : "sn",
-           "givenname" : "givenName"}'
+             "givenname" : "givenName"}'
           required></textarea>
         @if (userInfoControl.hasError('required') && userInfoControl.touched) {
           <mat-error i18n>Attribute mapping is <strong>required</strong>.</mat-error>
@@ -284,18 +338,26 @@
 
       <mat-form-field>
         <mat-label i18n>Multivalue Attributes</mat-label>
-        <input
-          [formControl]="multivalueAttributesControl"
-          matInput
-          placeholder='["mobile"]' />
+        <app-clearable-input
+          (onClick)="multivalueAttributesControl.setValue('')"
+          [showClearButton]="!!multivalueAttributesControl.value">
+          <input
+            [formControl]="multivalueAttributesControl"
+            matInput
+            placeholder='["mobile"]' />
+        </app-clearable-input>
       </mat-form-field>
 
       <mat-form-field>
         <mat-label i18n>UID Type</mat-label>
-        <input
-          [formControl]="uidTypeControl"
-          matInput
-          placeholder="DN" />
+        <app-clearable-input
+          (onClick)="uidTypeControl.setValue('')"
+          [showClearButton]="!!uidTypeControl.value">
+          <input
+            [formControl]="uidTypeControl"
+            matInput
+            placeholder="DN" />
+        </app-clearable-input>
       </mat-form-field>
 
       <mat-checkbox
@@ -312,11 +374,15 @@
           <mat-hint>
             Possible tags: {{ '{' }}base_dn{{ '}' }}, {{ '{' }}username{{ '}' }}
           </mat-hint>
-          <input
-            [formControl]="groupSearchFilterControl"
-            matInput
-            placeholder="(&(sAMAccountName=*)(objectCategory=group)
-            (member:1.2.840.113556.1.4.1941:=cn={distinguishedName},{base_dn}))" />
+          <app-clearable-input
+            (onClick)="groupSearchFilterControl.setValue('')"
+            [showClearButton]="!!groupSearchFilterControl.value">
+            <input
+              [formControl]="groupSearchFilterControl"
+              matInput
+              placeholder="(&(sAMAccountName=*)(objectCategory=group)
+              (member:1.2.840.113556.1.4.1941:=cn={distinguishedName},{base_dn}))" />
+          </app-clearable-input>
         </mat-form-field>
 
         <mat-form-field>
@@ -324,10 +390,14 @@
           <mat-hint>
             The group attribute defining the group's name, which should be stored in the user info.
           </mat-hint>
-          <input
-            [formControl]="groupNameAttributeControl"
-            matInput
-            placeholder="distinguishedName" />
+          <app-clearable-input
+            (onClick)="groupNameAttributeControl.setValue('')"
+            [showClearButton]="!!groupNameAttributeControl.value">
+            <input
+              [formControl]="groupNameAttributeControl"
+              matInput
+              placeholder="distinguishedName" />
+          </app-clearable-input>
         </mat-form-field>
 
         <mat-form-field>
@@ -335,10 +405,14 @@
           <mat-hint>
             The key to store the groups in the user info (attribute mapping key).
           </mat-hint>
-          <input
-            [formControl]="groupAttributeMappingKeyControl"
-            matInput
-            placeholder="groups" />
+          <app-clearable-input
+            (onClick)="groupAttributeMappingKeyControl.setValue('')"
+            [showClearButton]="!!groupAttributeMappingKeyControl.value">
+            <input
+              [formControl]="groupAttributeMappingKeyControl"
+              matInput
+              placeholder="groups" />
+          </app-clearable-input>
         </mat-form-field>
       }
 

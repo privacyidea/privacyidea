@@ -1,14 +1,36 @@
+<!--
+ (c) NetKnights GmbH 2025,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
 <div class="type-section">
   <h3 i18n>SCIM settings</h3>
   <div class="form-grid">
 
     <mat-form-field class="field-lg">
       <mat-label i18n>Authentication Server URI</mat-label>
-      <input
-        [formControl]="authServerControl"
-        matInput
-        placeholder="http://localhost:8080/osiam-auth-server"
-        required />
+      <app-clearable-input
+        (onClick)="authServerControl.setValue('')"
+        [showClearButton]="!!authServerControl.value">
+        <input
+          [formControl]="authServerControl"
+          matInput
+          placeholder="http://localhost:8080/osiam-auth-server"
+          required />
+      </app-clearable-input>
       @if (authServerControl.hasError('required') && authServerControl.touched) {
         <mat-error i18n>Authentication server URI is <strong>required</strong>.</mat-error>
       }
@@ -16,11 +38,15 @@
 
     <mat-form-field class="field-lg">
       <mat-label i18n>Resource Server Uri</mat-label>
-      <input
-        [formControl]="resourceServerControl"
-        matInput
-        placeholder="http://localhost:8080/osiam-resource-server"
-        required />
+      <app-clearable-input
+        (onClick)="resourceServerControl.setValue('')"
+        [showClearButton]="!!resourceServerControl.value">
+        <input
+          [formControl]="resourceServerControl"
+          matInput
+          placeholder="http://localhost:8080/osiam-resource-server"
+          required />
+      </app-clearable-input>
       @if (resourceServerControl.hasError('required') && resourceServerControl.touched) {
         <mat-error i18n>Resource server URI is <strong>required</strong>.</mat-error>
       }
@@ -28,11 +54,15 @@
 
     <mat-form-field>
       <mat-label i18n>Client</mat-label>
-      <input
-        [formControl]="clientControl"
-        matInput
-        placeholder="hostname"
-        required />
+      <app-clearable-input
+        (onClick)="clientControl.setValue('')"
+        [showClearButton]="!!clientControl.value">
+        <input
+          [formControl]="clientControl"
+          matInput
+          placeholder="hostname"
+          required />
+      </app-clearable-input>
       @if (clientControl.hasError('required') && clientControl.touched) {
         <mat-error i18n>Client is <strong>required</strong>.</mat-error>
       }
@@ -40,12 +70,16 @@
 
     <mat-form-field>
       <mat-label i18n>Secret</mat-label>
-      <input
-        [formControl]="secretControl"
-        matInput
-        placeholder="d81c31e4-9f65-4805-b5ba-6edf0761f954"
-        required
-        type="password" />
+      <app-clearable-input
+        (onClick)="secretControl.setValue('')"
+        [showClearButton]="!!secretControl.value">
+        <input
+          [formControl]="secretControl"
+          matInput
+          placeholder="d81c31e4-9f65-4805-b5ba-6edf0761f954"
+          required
+          type="password" />
+      </app-clearable-input>
       @if (secretControl.hasError('required') && secretControl.touched) {
         <mat-error i18n>Secret is <strong>required</strong>.</mat-error>
       }

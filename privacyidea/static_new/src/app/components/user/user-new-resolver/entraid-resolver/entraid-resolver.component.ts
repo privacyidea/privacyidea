@@ -16,6 +16,7 @@ import {
 import { MatDivider } from "@angular/material/list";
 import { MatButtonToggle, MatButtonToggleGroup } from "@angular/material/button-toggle";
 import { HttpConfigComponent } from "../http-resolver/http-config/http-config.component";
+import { ClearableInputComponent } from "../../../shared/clearable-input/clearable-input.component";
 
 @Component({
   selector: "app-entraid-resolver",
@@ -42,7 +43,8 @@ import { HttpConfigComponent } from "../http-resolver/http-config/http-config.co
     MatDivider,
     MatButtonToggleGroup,
     MatButtonToggle,
-    HttpConfigComponent
+    HttpConfigComponent,
+    ClearableInputComponent
   ],
   templateUrl: "../http-resolver/http-resolver.component.html",
   styleUrl: "../http-resolver/http-resolver.component.scss"

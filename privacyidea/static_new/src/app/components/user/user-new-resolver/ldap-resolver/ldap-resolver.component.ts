@@ -1,3 +1,21 @@
+/**
+ * (c) NetKnights GmbH 2025,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ **/
 import { Component, computed, effect, inject, input } from "@angular/core";
 import { AbstractControl, FormControl, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
@@ -7,6 +25,7 @@ import { MatOption } from "@angular/material/core";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatButtonModule } from "@angular/material/button";
 import { LDAPResolverData, ResolverService } from "../../../../services/resolver/resolver.service";
+import { ClearableInputComponent } from "../../../shared/clearable-input/clearable-input.component";
 
 @Component({
   selector: "app-ldap-resolver",
@@ -22,7 +41,8 @@ import { LDAPResolverData, ResolverService } from "../../../../services/resolver
     MatSelect,
     MatOption,
     MatCheckboxModule,
-    MatButtonModule
+    MatButtonModule,
+    ClearableInputComponent
   ],
   templateUrl: "./ldap-resolver.component.html",
   styleUrl: "./ldap-resolver.component.scss"

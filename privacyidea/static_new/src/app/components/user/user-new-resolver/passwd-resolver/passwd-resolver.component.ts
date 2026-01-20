@@ -21,11 +21,20 @@ import { FormControl, FormsModule, ReactiveFormsModule, Validators } from "@angu
 import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { PasswdResolverData } from "../../../../services/resolver/resolver.service";
+import { ClearableInputComponent } from "../../../shared/clearable-input/clearable-input.component";
 
 @Component({
   selector: "app-passwd-resolver",
   standalone: true,
-  imports: [FormsModule, ReactiveFormsModule, MatFormField, MatLabel, MatInput, MatError],
+  imports: [
+    FormsModule,
+    ReactiveFormsModule,
+    MatFormField,
+    MatLabel,
+    MatInput,
+    MatError,
+    ClearableInputComponent
+  ],
   templateUrl: "./passwd-resolver.component.html",
   styleUrl: "./passwd-resolver.component.scss"
 })

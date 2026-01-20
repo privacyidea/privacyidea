@@ -21,11 +21,15 @@
   <div class="form-grid">
     <mat-form-field class="field-lg">
       <mat-label i18n>Filename</mat-label>
-      <input
-        [formControl]="filenameControl"
-        matInput
-        placeholder="/etc/passwd"
-        required />
+      <app-clearable-input
+        (onClick)="filenameControl.setValue('')"
+        [showClearButton]="!!filenameControl.value">
+        <input
+          [formControl]="filenameControl"
+          matInput
+          placeholder="/etc/passwd"
+          required />
+      </app-clearable-input>
 
       @if (filenameControl.hasError('required') && filenameControl.touched) {
         <mat-error i18n>Filename is <strong>required</strong>.</mat-error>

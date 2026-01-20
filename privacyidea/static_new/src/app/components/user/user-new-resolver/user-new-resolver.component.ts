@@ -57,6 +57,7 @@ import { ROUTE_PATHS } from "../../../route_paths";
 import { ContentService } from "../../../services/content/content.service";
 import { ConfirmationDialogComponent } from "../../shared/confirmation-dialog/confirmation-dialog.component";
 import { PendingChangesService } from "../../../services/pending-changes/pending-changes.service";
+import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
 
 @Component({
   selector: "app-user-new-resolver",
@@ -81,7 +82,8 @@ import { PendingChangesService } from "../../../services/pending-changes/pending
     HttpResolverComponent,
     EntraidResolverComponent,
     KeycloakResolverComponent,
-    MatDialogModule
+    MatDialogModule,
+    ClearableInputComponent
   ],
   templateUrl: "./user-new-resolver.component.html",
   styleUrl: "./user-new-resolver.component.scss"
