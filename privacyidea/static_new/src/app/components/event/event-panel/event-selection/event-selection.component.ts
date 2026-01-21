@@ -59,6 +59,8 @@ export class EventSelectionComponent {
   events = input.required<string[]>();
   newEvents = output<string[]>();
 
+  toolTipClearSearch = $localize`Clear Search Term`;
+
   selectedEvents = linkedSignal(() => deepCopy(this.events()));
 
   searchTerm = model("");

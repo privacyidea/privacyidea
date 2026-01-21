@@ -27,15 +27,21 @@
         <div class="flex-column">
           <div class="condition-name-container">
             <span class="action-label">{{ conditionName }}</span>
-            <button
-              mat-icon-button
-              (click)="toggleShowDescription(conditionName)">
-              @if (showDescription[conditionName]) {
+            @if (showDescription[conditionName]) {
+              <button
+                mat-icon-button
+                matTooltip="Hide Description"
+                (click)="disableShowDescription(conditionName)">
                 <mat-icon>info</mat-icon>
-              } @else {
+              </button>
+            } @else {
+              <button
+                mat-icon-button
+                matTooltip="Show Description"
+                (click)="enableShowDescription(conditionName)">
                 <mat-icon>info_outline</mat-icon>
-              }
-            </button>
+              </button>
+            }
           </div>
           @if (showDescription[conditionName]) {
             <div class="condition-name-container">
@@ -126,6 +132,7 @@
           }
           <button
             mat-icon-button
+            [matTooltip]="toolTipText()"
             class="action-button"
             (click)="onActionButtonClicked(conditionName); $event.stopPropagation()">
             <mat-icon>{{ action() }}</mat-icon>

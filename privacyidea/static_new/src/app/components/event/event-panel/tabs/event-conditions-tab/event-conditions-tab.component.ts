@@ -70,6 +70,9 @@ export class EventConditionsTabComponent {
   selectedGroupIndex = 0;
   protected readonly Object = Object;
 
+  addToolTip = $localize`Add Condition`;
+  removeToolTip = $localize`Remove Condition`;
+
   addedCondition = signal("");
   searchTerm = signal("");
 

@@ -38,6 +38,7 @@ import { MatFormField } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
 import { MatIconButton } from "@angular/material/button";
 import { MatOption, MatSelect } from "@angular/material/select";
+import { MatTooltip } from "@angular/material/tooltip";
 
 @Component({
   selector: "app-event-condition-list",
@@ -51,7 +52,8 @@ import { MatOption, MatSelect } from "@angular/material/select";
     ReactiveFormsModule,
     MatIconButton,
     MatIcon,
-    FormsModule
+    FormsModule,
+    MatTooltip
   ],
   templateUrl: "./event-condition-list.component.html",
   styleUrl: "./event-condition-list.component.scss"
@@ -65,6 +67,7 @@ export class EventConditionListComponent {
   actionOnEnter = input<boolean>(false);
   inputName = input<string>("");
   focusConditionName = input<string | null>(null);
+  toolTipText = input<string>("");
   newConditionValue = output<{ conditionName: string, conditionValue: any }>();
   actionButtonClicked = output<{ conditionName: string, conditionValue: any }>();
 
@@ -140,8 +143,11 @@ export class EventConditionListComponent {
     this.actionButtonClicked.emit({ conditionName, conditionValue });
   }
 
-  toggleShowDescription(conditionName: string) {
-    const currentState = this.showDescription[conditionName] || false;
-    this.showDescription[conditionName] = !currentState;
+  disableShowDescription(conditionName: string) {
+    this.showDescription[conditionName] = false;
+  }
+
+  enableShowDescription(conditionName: string) {
+    this.showDescription[conditionName] = true;
   }
 }

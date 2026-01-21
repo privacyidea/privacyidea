@@ -66,6 +66,7 @@
                     [action]="'add'"
                     [emitOnConditionValueChange]="false"
                     [actionOnEnter]="true"
+                    [toolTipText]="addToolTip"
                     (newConditionValue)="onConditionValueToBeAddedChange($event.conditionName, $event.conditionValue)"
                     (actionButtonClicked)="onConditionValueChange($event.conditionName, $event.conditionValue)"></app-event-condition-list>
                 </mat-tab>
@@ -95,6 +96,7 @@
           [action]="'delete'"
           [emitOnConditionValueChange]="true"
           [inputRequired]="true"
+          [toolTipText]="removeToolTip"
           (newConditionValue)="onConditionValueChange($event.conditionName, $event.conditionValue)"
           [focusConditionName]="addedCondition()"
           (actionButtonClicked)="removeCondition($event.conditionName)"></app-event-condition-list>

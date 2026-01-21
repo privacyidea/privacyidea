@@ -53,13 +53,23 @@ describe('EventConditionListComponent', () => {
     expect(component.editConditions()).toEqual({ condA: 'valA', condB: 'valB' });
   });
 
-  it('should toggle showDescription for a condition', () => {
+  it ('enableShowDescription should set showDescription to true', () => {
     expect(component.showDescription['condA']).toBeUndefined();
-    component.toggleShowDescription('condA');
+    component.enableShowDescription("condA");
     expect(component.showDescription['condA']).toBe(true);
-    component.toggleShowDescription('condA');
+    component.showDescription['condA'] = false;
+    component.enableShowDescription("condA");
+    expect(component.showDescription['condA']).toBe(true);
+  })
+
+  it ('disableShowDescription should set showDescription to false', () => {
+    expect(component.showDescription['condA']).toBeUndefined();
+    component.disableShowDescription("condA");
     expect(component.showDescription['condA']).toBe(false);
-  });
+    component.showDescription['condA'] = true;
+    component.disableShowDescription("condA");
+    expect(component.showDescription['condA']).toBe(false);
+  })
 
   it('should get multi values from string and array', () => {
     expect(component.getMultiValues('a,b,c')).toEqual(['a', 'b', 'c']);
