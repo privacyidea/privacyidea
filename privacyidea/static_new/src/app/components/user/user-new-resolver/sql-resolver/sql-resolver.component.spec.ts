@@ -73,6 +73,30 @@ describe("SqlResolverComponent", () => {
     expect(component.mapControl.value).toBe("{}");
   });
 
+  it("should parse boolean and numeric strings from data input", () => {
+    componentRef.setInput("data", {
+      Editable: "0",
+      Port: "3306",
+      poolSize: "10"
+    });
+
+    fixture.detectChanges();
+
+    expect(component.editableControl.value).toBe(false);
+    expect(component.portControl.value).toBe(3306);
+    expect(component.poolSizeControl.value).toBe(10);
+  });
+
+  it("should parse '1' and '0' strings as booleans from data input", () => {
+    componentRef.setInput("data", {
+      Editable: "1"
+    });
+
+    fixture.detectChanges();
+
+    expect(component.editableControl.value).toBe(true);
+  });
+
   it("should apply SQL presets", () => {
     const preset = component.sqlPresets[0];
     component.applySqlPreset(preset);

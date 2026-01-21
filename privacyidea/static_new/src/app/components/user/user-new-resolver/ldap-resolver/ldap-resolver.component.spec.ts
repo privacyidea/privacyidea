@@ -73,6 +73,36 @@ describe("LdapResolverComponent", () => {
     expect(component.userInfoControl.value).toBe("description");
   });
 
+  it("should parse boolean and numeric strings from data input", () => {
+    componentRef.setInput("data", {
+      recursive_group_search: "False",
+      TLS_VERIFY: "True",
+      TIMEOUT: "5",
+      EDITABLE: "False"
+    });
+
+    fixture.detectChanges();
+
+    expect(component.recursiveGroupSearchControl.value).toBe(false);
+    expect(component.tlsVerifyControl.value).toBe(true);
+    expect(component.timeoutControl.value).toBe(5);
+    expect(component.editableControl.value).toBe(false);
+  });
+
+  it("should parse '1' and '0' strings as booleans from data input", () => {
+    componentRef.setInput("data", {
+      recursive_group_search: "1",
+      TLS_VERIFY: "0",
+      EDITABLE: "1"
+    });
+
+    fixture.detectChanges();
+
+    expect(component.recursiveGroupSearchControl.value).toBe(true);
+    expect(component.tlsVerifyControl.value).toBe(false);
+    expect(component.editableControl.value).toBe(true);
+  });
+
   it("should apply LDAP presets", () => {
     const preset = component.ldapPresets[0];
     component.applyLdapPreset(preset);

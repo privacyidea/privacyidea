@@ -25,6 +25,7 @@ import { MatButtonModule } from "@angular/material/button";
 import { ResolverService, SQLResolverData } from "../../../../services/resolver/resolver.service";
 import { MatOption, MatSelect } from "@angular/material/select";
 import { ClearableInputComponent } from "../../../shared/clearable-input/clearable-input.component";
+import { parseBooleanValue } from "../../../../utils/parse-boolean-value";
 
 @Component({
   selector: "app-sql-resolver",
@@ -139,18 +140,18 @@ export class SqlResolverComponent {
       if (initial.Driver !== undefined) this.driverControl.setValue(initial.Driver, { emitEvent: false });
       if (initial.Server !== undefined) this.serverControl.setValue(initial.Server, { emitEvent: false });
       if (initial.Table !== undefined) this.tableControl.setValue(initial.Table, { emitEvent: false });
-      if (initial.Limit !== undefined) this.limitControl.setValue(initial.Limit, { emitEvent: false });
+      if (initial.Limit !== undefined) this.limitControl.setValue(Number(initial.Limit), { emitEvent: false });
       if (initial.Map !== undefined) this.mapControl.setValue(initial.Map, { emitEvent: false });
 
       if (initial.Database !== undefined) this.databaseControl.setValue(initial.Database, { emitEvent: false });
-      if (initial.Port !== undefined) this.portControl.setValue(initial.Port, { emitEvent: false });
+      if (initial.Port !== undefined) this.portControl.setValue(Number(initial.Port), { emitEvent: false });
       if (initial.User !== undefined) this.userControl.setValue(initial.User, { emitEvent: false });
       if (initial.Password !== undefined) this.passwordControl.setValue(initial.Password, { emitEvent: false });
       if (initial.Password_Hash_Type !== undefined) this.passwordHashTypeControl.setValue(initial.Password_Hash_Type, { emitEvent: false });
-      if (initial.poolSize !== undefined) this.poolSizeControl.setValue(initial.poolSize, { emitEvent: false });
-      if (initial.poolTimeout !== undefined) this.poolTimeoutControl.setValue(initial.poolTimeout, { emitEvent: false });
-      if (initial.poolRecycle !== undefined) this.poolRecycleControl.setValue(initial.poolRecycle, { emitEvent: false });
-      if (initial.Editable !== undefined) this.editableControl.setValue(initial.Editable, { emitEvent: false });
+      if (initial.poolSize !== undefined) this.poolSizeControl.setValue(Number(initial.poolSize), { emitEvent: false });
+      if (initial.poolTimeout !== undefined) this.poolTimeoutControl.setValue(Number(initial.poolTimeout), { emitEvent: false });
+      if (initial.poolRecycle !== undefined) this.poolRecycleControl.setValue(Number(initial.poolRecycle), { emitEvent: false });
+      if (initial.Editable !== undefined) this.editableControl.setValue(parseBooleanValue(initial.Editable), { emitEvent: false });
       if (initial.conParams !== undefined) this.conParamsControl.setValue(initial.conParams, { emitEvent: false });
       if (initial.Encoding !== undefined) this.encodingControl.setValue(initial.Encoding, { emitEvent: false });
       if (initial.Where !== undefined) this.whereControl.setValue(initial.Where, { emitEvent: false });

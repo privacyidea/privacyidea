@@ -38,6 +38,7 @@ import { MatError } from "@angular/material/form-field";
 import { MatButtonToggle, MatButtonToggleGroup } from "@angular/material/button-toggle";
 import { HttpConfigComponent } from "./http-config/http-config.component";
 import { ClearableInputComponent } from "../../../shared/clearable-input/clearable-input.component";
+import { parseBooleanValue } from "../../../../utils/parse-boolean-value";
 
 export type AttributeMappingRow = {
   privacyideaAttr: string | null;
@@ -316,10 +317,10 @@ export class HttpResolverComponent {
 
     if (data.realm !== undefined) this.realmControl.setValue(data.realm, { emitEvent: false });
     if (data.headers !== undefined) this.globalHeadersControl.setValue(data.headers, { emitEvent: false });
-    if (data.Editable !== undefined) this.editableControl.setValue(data.Editable, { emitEvent: false });
-    if (data.verify_tls !== undefined) this.verifyTlsControl.setValue(data.verify_tls, { emitEvent: false });
+    if (data.Editable !== undefined) this.editableControl.setValue(parseBooleanValue(data.Editable), { emitEvent: false });
+    if (data.verify_tls !== undefined) this.verifyTlsControl.setValue(parseBooleanValue(data.verify_tls), { emitEvent: false });
     if (data.tls_ca_path !== undefined) this.tlsCaPathControl.setValue(data.tls_ca_path, { emitEvent: false });
-    if (data.timeout !== undefined) this.timeoutControl.setValue(data.timeout, { emitEvent: false });
+    if (data.timeout !== undefined) this.timeoutControl.setValue(Number(data.timeout), { emitEvent: false });
     if (data.username !== undefined) this.usernameControl.setValue(data.username, { emitEvent: false });
     if (data.password !== undefined) this.passwordControl.setValue(data.password, { emitEvent: false });
     if (data.authority !== undefined) this.authorityControl.setValue(data.authority, { emitEvent: false });

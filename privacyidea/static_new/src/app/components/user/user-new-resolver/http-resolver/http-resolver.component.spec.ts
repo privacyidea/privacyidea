@@ -68,6 +68,24 @@ describe("HttpResolverComponent", () => {
     });
   });
 
+  it("should parse boolean and numeric strings from data input", () => {
+    // Switch to advanced mode to see baseUrl and other controls
+    component["basicSettings"].set(false);
+    fixture.detectChanges();
+
+    componentRef.setInput("data", {
+      Editable: "1",
+      verify_tls: "0",
+      timeout: "30"
+    });
+
+    fixture.detectChanges();
+
+    expect(component.editableControl.value).toBe(true);
+    expect(component.verifyTlsControl.value).toBe(false);
+    expect(component.timeoutControl.value).toBe(30);
+  });
+
   it("should add and remove mapping rows", () => {
     const initialCount = component["mappingRows"]().length;
     // Simulate selecting an attribute in the last row

@@ -26,6 +26,7 @@ import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatButtonModule } from "@angular/material/button";
 import { LDAPResolverData, ResolverService } from "../../../../services/resolver/resolver.service";
 import { ClearableInputComponent } from "../../../shared/clearable-input/clearable-input.component";
+import { parseBooleanValue } from "../../../../utils/parse-boolean-value";
 
 @Component({
   selector: "app-ldap-resolver",
@@ -152,29 +153,29 @@ export class LdapResolverComponent {
       if (initial.USERINFO !== undefined) this.userInfoControl.setValue(initial.USERINFO, { emitEvent: false });
 
       if (initial.TLS_VERSION !== undefined) this.tlsVersionControl.setValue(initial.TLS_VERSION, { emitEvent: false });
-      if (initial.TLS_VERIFY !== undefined) this.tlsVerifyControl.setValue(initial.TLS_VERIFY, { emitEvent: false });
+      if (initial.TLS_VERIFY !== undefined) this.tlsVerifyControl.setValue(parseBooleanValue(initial.TLS_VERIFY), { emitEvent: false });
       if (initial.TLS_CA_FILE !== undefined) this.tlsCaFileControl.setValue(initial.TLS_CA_FILE, { emitEvent: false });
       if (initial.SCOPE !== undefined) this.scopeControl.setValue(initial.SCOPE, { emitEvent: false });
       if (initial.AUTHTYPE !== undefined) this.authTypeControl.setValue(initial.AUTHTYPE, { emitEvent: false });
       if (initial.BINDDN !== undefined) this.bindDnControl.setValue(initial.BINDDN, { emitEvent: false });
       if (initial.BINDPW !== undefined) this.bindPwControl.setValue(initial.BINDPW, { emitEvent: false });
-      if (initial.TIMEOUT !== undefined) this.timeoutControl.setValue(initial.TIMEOUT, { emitEvent: false });
-      if (initial.CACHE_TIMEOUT !== undefined) this.cacheTimeoutControl.setValue(initial.CACHE_TIMEOUT, { emitEvent: false });
-      if (initial.SIZELIMIT !== undefined) this.sizeLimitControl.setValue(initial.SIZELIMIT, { emitEvent: false });
-      if (initial.SERVERPOOL_ROUNDS !== undefined) this.serverPoolRoundsControl.setValue(initial.SERVERPOOL_ROUNDS, { emitEvent: false });
-      if (initial.SERVERPOOL_SKIP !== undefined) this.serverPoolSkipControl.setValue(initial.SERVERPOOL_SKIP, { emitEvent: false });
-      if (initial.SERVERPOOL_PERSISTENT !== undefined) this.serverPoolPersistentControl.setValue(initial.SERVERPOOL_PERSISTENT, { emitEvent: false });
-      if (initial.EDITABLE !== undefined) this.editableControl.setValue(initial.EDITABLE, { emitEvent: false });
+      if (initial.TIMEOUT !== undefined) this.timeoutControl.setValue(Number(initial.TIMEOUT), { emitEvent: false });
+      if (initial.CACHE_TIMEOUT !== undefined) this.cacheTimeoutControl.setValue(Number(initial.CACHE_TIMEOUT), { emitEvent: false });
+      if (initial.SIZELIMIT !== undefined) this.sizeLimitControl.setValue(Number(initial.SIZELIMIT), { emitEvent: false });
+      if (initial.SERVERPOOL_ROUNDS !== undefined) this.serverPoolRoundsControl.setValue(Number(initial.SERVERPOOL_ROUNDS), { emitEvent: false });
+      if (initial.SERVERPOOL_SKIP !== undefined) this.serverPoolSkipControl.setValue(Number(initial.SERVERPOOL_SKIP), { emitEvent: false });
+      if (initial.SERVERPOOL_PERSISTENT !== undefined) this.serverPoolPersistentControl.setValue(parseBooleanValue(initial.SERVERPOOL_PERSISTENT), { emitEvent: false });
+      if (initial.EDITABLE !== undefined) this.editableControl.setValue(parseBooleanValue(initial.EDITABLE), { emitEvent: false });
       if (initial.OBJECT_CLASSES !== undefined) this.objectClassesControl.setValue(initial.OBJECT_CLASSES, { emitEvent: false });
       if (initial.DN_TEMPLATE !== undefined) this.dnTemplateControl.setValue(initial.DN_TEMPLATE, { emitEvent: false });
       if (initial.MULTIVALUEATTRIBUTES !== undefined) this.multivalueAttributesControl.setValue(initial.MULTIVALUEATTRIBUTES, { emitEvent: false });
       if (initial.UIDTYPE !== undefined) this.uidTypeControl.setValue(initial.UIDTYPE, { emitEvent: false });
-      if (initial.recursive_group_search !== undefined) this.recursiveGroupSearchControl.setValue(initial.recursive_group_search, { emitEvent: false });
+      if (initial.recursive_group_search !== undefined) this.recursiveGroupSearchControl.setValue(parseBooleanValue(initial.recursive_group_search), { emitEvent: false });
       if (initial.group_search_filter !== undefined) this.groupSearchFilterControl.setValue(initial.group_search_filter, { emitEvent: false });
       if (initial.group_name_attribute !== undefined) this.groupNameAttributeControl.setValue(initial.group_name_attribute, { emitEvent: false });
       if (initial.group_attribute_mapping_key !== undefined) this.groupAttributeMappingKeyControl.setValue(initial.group_attribute_mapping_key, { emitEvent: false });
-      if (initial.NOREFERRALS !== undefined) this.noReferralsControl.setValue(initial.NOREFERRALS, { emitEvent: false });
-      if (initial.NOSCHEMAS !== undefined) this.noSchemasControl.setValue(initial.NOSCHEMAS, { emitEvent: false });
+      if (initial.NOREFERRALS !== undefined) this.noReferralsControl.setValue(parseBooleanValue(initial.NOREFERRALS), { emitEvent: false });
+      if (initial.NOSCHEMAS !== undefined) this.noSchemasControl.setValue(parseBooleanValue(initial.NOSCHEMAS), { emitEvent: false });
     });
   }
 }
