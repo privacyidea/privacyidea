@@ -35,7 +35,9 @@ export class EventActionTabReadComponent {
   relevantOptions = linkedSignal(() => {
     let relevantOptions: Record<string, any> = {};
     const relevantOptionKeys = this.eventService.moduleActions()[this.action()];
-
+    if (!relevantOptionKeys) {
+      return {};
+    }
     Object.entries(this.options()).forEach(([key, value]) => {
       if (key in relevantOptionKeys) {
         relevantOptions[key] = value;
