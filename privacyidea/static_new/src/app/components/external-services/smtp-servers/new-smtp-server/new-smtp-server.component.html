@@ -1,75 +1,145 @@
-<h2 mat-dialog-title i18n>
+<h2
+  i18n
+  mat-dialog-title>
   {{ isEditMode ? 'Edit SMTP Server' : 'Create SMTP Server' }}
 </h2>
 
-<mat-dialog-content>
-  <form [formGroup]="smtpForm" class="smtp-form">
-    <mat-form-field appearance="fill" class="width-100">
+<mat-dialog-content class="smtp-dialog-content">
+  <form
+    [formGroup]="smtpForm"
+    class="smtp-form">
+    <mat-form-field
+      appearance="fill"
+      class="width-100 margin-bottom-1">
       <mat-label i18n>Identifier</mat-label>
-      <input matInput formControlName="identifier" placeholder="mySmtpServer" />
+      <input
+        formControlName="identifier"
+        matInput
+        placeholder="mySmtpServer" />
       <mat-hint i18n>The unique identifying name of the SMTP server definition.</mat-hint>
-      <mat-error *ngIf="smtpForm.get('identifier')?.hasError('required')" i18n>Identifier is required</mat-error>
+      <mat-error
+        *ngIf="smtpForm.get('identifier')?.hasError('required')"
+        i18n>Identifier is required
+      </mat-error>
     </mat-form-field>
 
     <div class="row">
-      <mat-form-field appearance="fill" class="col-8">
+      <mat-form-field
+        appearance="fill"
+        class="col-8">
         <mat-label i18n>IP or FQDN</mat-label>
-        <input matInput formControlName="server" placeholder="smtp://mail.example.com" />
-        <mat-error *ngIf="smtpForm.get('server')?.hasError('required')" i18n>Server is required</mat-error>
+        <input
+          formControlName="server"
+          matInput
+          placeholder="smtp://mail.example.com" />
+        <mat-error
+          *ngIf="smtpForm.get('server')?.hasError('required')"
+          i18n>Server is required
+        </mat-error>
       </mat-form-field>
 
-      <mat-form-field appearance="fill" class="col-4">
+      <mat-form-field
+        appearance="fill"
+        class="col-4">
         <mat-label i18n>Port</mat-label>
-        <input matInput type="number" formControlName="port" placeholder="25" />
+        <input
+          formControlName="port"
+          matInput
+          placeholder="25"
+          type="number" />
       </mat-form-field>
     </div>
 
     <div class="row">
-      <mat-form-field appearance="fill" class="col-6">
+      <mat-form-field
+        appearance="fill"
+        class="col-6">
         <mat-label i18n>Timeout</mat-label>
-        <input matInput type="number" formControlName="timeout" placeholder="10" />
+        <input
+          formControlName="timeout"
+          matInput
+          placeholder="10"
+          type="number" />
       </mat-form-field>
 
-      <mat-form-field appearance="fill" class="col-6">
+      <mat-form-field
+        appearance="fill"
+        class="col-6">
         <mat-label i18n>Sender Email</mat-label>
-        <input matInput formControlName="sender" placeholder="privacyidea@example.com" />
-        <mat-error *ngIf="smtpForm.get('sender')?.hasError('required')" i18n>Sender email is required</mat-error>
-        <mat-error *ngIf="smtpForm.get('sender')?.hasError('email')" i18n>Invalid email format</mat-error>
+        <input
+          formControlName="sender"
+          matInput
+          placeholder="privacyidea@example.com" />
+        <mat-error
+          *ngIf="smtpForm.get('sender')?.hasError('required')"
+          i18n>Sender email is required
+        </mat-error>
+        <mat-error
+          *ngIf="smtpForm.get('sender')?.hasError('email')"
+          i18n>Invalid email format
+        </mat-error>
       </mat-form-field>
     </div>
 
-    <mat-form-field appearance="fill" class="width-100">
+    <mat-form-field
+      appearance="fill"
+      class="width-100 margin-bottom-1">
       <mat-label i18n>Username</mat-label>
-      <input matInput formControlName="username" placeholder="user@example.com" />
+      <input
+        formControlName="username"
+        matInput
+        placeholder="user@example.com" />
       <mat-hint i18n>If the SMTP server requires authentication.</mat-hint>
     </mat-form-field>
 
-    <mat-form-field appearance="fill" class="width-100">
+    <mat-form-field
+      appearance="fill"
+      class="width-100">
       <mat-label i18n>Password</mat-label>
-      <input matInput type="password" formControlName="password" placeholder="topsecret" />
+      <input
+        formControlName="password"
+        matInput
+        placeholder="topsecret"
+        type="password" />
     </mat-form-field>
 
-    <mat-form-field appearance="fill" class="width-100">
+    <mat-form-field
+      appearance="fill"
+      class="width-100">
       <mat-label i18n>Description</mat-label>
-      <input matInput formControlName="description" placeholder="some wise words" />
+      <input
+        formControlName="description"
+        matInput
+        placeholder="some wise words" />
     </mat-form-field>
 
     <div class="checkbox-group">
-      <mat-checkbox formControlName="tls" i18n>Use StartTLS</mat-checkbox>
-      <mat-checkbox formControlName="enqueue_job" i18n>Send mail from job queue</mat-checkbox>
+      <mat-checkbox
+        formControlName="tls"
+        i18n>Use StartTLS
+      </mat-checkbox>
+      <mat-checkbox
+        formControlName="enqueue_job"
+        i18n>Send mail from job queue
+      </mat-checkbox>
     </div>
 
     <div class="test-section">
-      <mat-form-field appearance="fill" class="width-100">
+      <mat-form-field
+        appearance="fill"
+        class="width-100">
         <mat-label i18n>Recipient for testing</mat-label>
-        <input matInput formControlName="recipient" />
+        <input
+          formControlName="recipient"
+          matInput />
         <button
-          mat-icon-button
-          matSuffix
           (click)="test()"
           [disabled]="isTesting()"
-          matTooltip="Send Test Email"
-          i18n-matTooltip>
+          class="margin-right-1"
+          i18n-matTooltip
+          mat-icon-button
+          matSuffix
+          matTooltip="Send Test Email">
           <mat-icon>send</mat-icon>
         </button>
       </mat-form-field>
@@ -78,13 +148,16 @@
 </mat-dialog-content>
 
 <mat-dialog-actions align="end">
-  <button mat-button (click)="cancel()" i18n>Cancel</button>
   <button
-    mat-flat-button
-    color="primary"
+    (click)="cancel()"
+    i18n
+    mat-button>Cancel
+  </button>
+  <button
     (click)="save()"
     [disabled]="smtpForm.invalid"
-    i18n>
+    i18n
+    mat-flat-button>
     Save
   </button>
 </mat-dialog-actions>

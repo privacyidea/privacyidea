@@ -8,6 +8,10 @@
   max-width: calc(100vw - var(--global-padding) * 5 - 48px);
   display: grid;
   overflow: auto;
+
+  .table-filter {
+    width: 29rem;
+  }
 }
 
 .smtp-layout {

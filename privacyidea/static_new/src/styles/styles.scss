@@ -286,6 +286,10 @@ body {
   margin-left: 16px;
 }
 
+.margin-right-1 {
+  margin-right: 16px;
+}
+
 .margin-top-0 {
   margin-top: 0;
 }
@@ -534,7 +538,6 @@ body {
 .flex-row {
   display: flex;
   flex-direction: row;
-  gap: var(--global-gap);
 }
 
 .flex-grow-1 {

@@ -27,6 +27,7 @@ import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatButtonModule } from "@angular/material/button";
 import { CommonModule } from "@angular/common";
 import { MatIconModule } from "@angular/material/icon";
+import { MatTooltip } from "@angular/material/tooltip";
 
 @Component({
   selector: "app-smtp-edit-dialog",
@@ -39,7 +40,8 @@ import { MatIconModule } from "@angular/material/icon";
     MatInputModule,
     MatCheckboxModule,
     MatButtonModule,
-    MatIconModule
+    MatIconModule,
+    MatTooltip
   ],
   templateUrl: "./new-smtp-server.component.html",
   styleUrl: "./new-smtp-server.component.scss"

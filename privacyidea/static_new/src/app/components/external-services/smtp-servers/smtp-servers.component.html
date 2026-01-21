@@ -3,23 +3,45 @@
     appScrollToTop
     class="smtp-servers-container">
     <div class="header-row">
-      <h2 i18n>SMTP Servers</h2>
-      <button
-        (click)="openEditDialog()"
-        color="primary"
-        i18n
-        mat-flat-button>
-        <mat-icon>add</mat-icon>
-        Create SMTP Server
-      </button>
+      <div class="filter-paginator-container margin-bottom-1">
+        <div class="flex-row ali-center">
+          <mat-form-field
+            class="table-filter"
+            subscriptSizing="dynamic">
+            <mat-label i18n>Filter Resolvers...</mat-label>
+            <app-clearable-input
+              (onClick)="resetFilter()"
+              [showClearButton]="filterString().length > 0">
+              <input
+                #filterHTMLInputElement
+                (input)="onFilterInput(filterHTMLInputElement.value)"
+                [value]="filterString()"
+                aria-label="Filter Input"
+                i18n-aria-label
+                i18n-placeholder
+                matInput
+                placeholder="Filter by name or type" />
+            </app-clearable-input>
+          </mat-form-field>
+          <button
+            (click)="openEditDialog()"
+            class="action-button-1 margin-left-1"
+            i18n
+            mat-stroked-button>
+            <mat-icon>add</mat-icon>
+            Create SMTP Server
+          </button>
+        </div>
+        <mat-paginator
+          [length]="totalLength()"
+          [pageSizeOptions]="pageSizeOptions()"
+          [pageSize]="pageSizeOptions()[0]"
+          showFirstLastButtons></mat-paginator>
+      </div>
     </div>
-    <mat-paginator
-      [pageSizeOptions]="[10, 25, 50, 100]"
-      aria-label="Select page of SMTP servers"
-      showFirstLastButtons></mat-paginator>
     <table
       [dataSource]="smtpDataSource()"
-      class="width-100"
+      class="token-table"
       mat-table
       matSort>
 
@@ -33,10 +55,14 @@
         <td
           *matCellDef="let server"
           mat-cell>
-          <a
-            (click)="openEditDialog(server)"
-            class="clickable"> {{ server.identifier }}
-          </a>
+          <div class="flex-row">
+            <a
+              (click)="openEditDialog(server)"
+              class="flex ali-center">
+              {{ server.identifier }}
+            </a>
+            <app-copy-button [copyText]="server.identifier" />
+          </div>
         </td>
       </ng-container>
 
@@ -76,7 +102,9 @@
         <td
           *matCellDef="let server"
           mat-cell>
-          <mat-icon *ngIf="server.tls">check</mat-icon>
+          <div class="flex just-center">
+            <mat-icon *ngIf="server.tls">check</mat-icon>
+          </div>
         </td>
       </ng-container>
 
@@ -102,14 +130,16 @@
         <td
           *matCellDef="let server"
           mat-cell>
-          <button
-            (click)="deleteServer(server)"
-            color="warn"
-            i18n-matTooltip
-            mat-icon-button
-            matTooltip="Delete">
-            <mat-icon>delete</mat-icon>
-          </button>
+          <div class="flex just-center">
+            <button
+              (click)="deleteServer(server)"
+              color="warn"
+              i18n-matTooltip
+              mat-icon-button
+              matTooltip="Delete">
+              <mat-icon>delete</mat-icon>
+            </button>
+          </div>
         </td>
       </ng-container>
 
