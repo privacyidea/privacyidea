@@ -156,8 +156,10 @@
   <button
     (click)="save()"
     [disabled]="smtpForm.invalid"
+    class="action-button-1"
     i18n
-    mat-flat-button>
+    mat-stroked-button>
+    <mat-icon>save</mat-icon>
     Save
   </button>
 </mat-dialog-actions>

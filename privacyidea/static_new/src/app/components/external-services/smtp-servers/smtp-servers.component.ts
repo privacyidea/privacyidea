@@ -19,7 +19,7 @@
 
 import { Component, computed, inject, signal, ViewChild, WritableSignal } from "@angular/core";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
-import { MatPaginator, MatPaginatorModule } from "@angular/material/paginator";
+import { MatPaginator } from "@angular/material/paginator";
 import { MatSort, MatSortModule } from "@angular/material/sort";
 import { MatIconModule } from "@angular/material/icon";
 import { MatButtonModule } from "@angular/material/button";
@@ -42,7 +42,7 @@ import { CopyButtonComponent } from "../../shared/copy-button/copy-button.compon
   imports: [
     CommonModule,
     MatTableModule,
-    MatPaginatorModule,
+    MatPaginator,
     MatSortModule,
     MatIconModule,
     MatButtonModule,
