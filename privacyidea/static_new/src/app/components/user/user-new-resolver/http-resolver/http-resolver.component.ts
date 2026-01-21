@@ -136,7 +136,7 @@ export class HttpResolverComponent {
     if (this.type() === "entraidresolver") {
       return $localize`Possible tags: ` + `{userid} {username} {password} {client_id} {client_credential} {tenant}`;
     }
-    return $localize`Possible tags: \` + \` {userid} {username} {password}`;
+    return $localize`Possible tags: ` + ` {userid} {username} {password}`;
   });
 
   protected basicSettings = linkedSignal<boolean>(() => {
