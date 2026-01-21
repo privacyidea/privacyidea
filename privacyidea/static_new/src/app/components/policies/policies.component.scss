@@ -1,6 +1,16 @@
 @use "../../../styles" as styles;
 @use "@angular/material" as mat;
 
+@mixin policy-name-input-base {
+  background-color: transparent;
+  border: none;
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 0;
+  box-sizing: border-box;
+  font-size: 1rem;
+  width: 100%;
+}
+
 .policies-layout {
   @include styles.table-container-styles;
   @include styles.base-table-structure(".token-table", ".token-table-filter", ".table-scroll-container");
@@ -11,7 +21,7 @@
 
   ::ng-deep mat-expansion-panel.mat-expansion-panel-header {
     padding: var(--half-global-padding) var(--three-quarters-global-padding) !important;
-    height: 1rem;
+    height: 1.5rem;
   }
 
   ::ng-deep mat-expansion-panel.mat-expansion-panel-spacing {
@@ -19,7 +29,7 @@
   }
 
   ::ng-deep .mat-accordion .mat-expansion-panel:last-of-type .mat-expansion-panel-header {
-    height: 1rem;
+    height: 1.5rem;
     padding: var(--half-global-padding);
     padding-right: var(--global-padding);
   }

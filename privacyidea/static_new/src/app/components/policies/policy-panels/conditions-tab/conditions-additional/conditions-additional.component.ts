@@ -93,6 +93,9 @@ export class ConditionsAdditionalComponent {
     source: () => this.isEditMode(),
     computation: () => ""
   });
+  isSelected(index: number): boolean {
+    return this.editIndex() === index;
+  }
 
   // Computed Properties
   additionalConditions = computed<AdditionalCondition[]>(() => {

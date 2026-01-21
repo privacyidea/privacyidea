@@ -20,15 +20,9 @@
 }
 
 .policy-name-input {
-  background-color: transparent;
-  border: none;
-  border-bottom: 1px solid var(--mat-sys-outline-variant);
-  border-radius: 0;
-  box-sizing: border-box;
-  font-size: 1rem;
+  @include policies.policy-name-input-base;
   margin-left: 2px;
   padding: var(--half-global-padding) 0;
-  width: 100%;
 }
 
 // --- Content Sections ---

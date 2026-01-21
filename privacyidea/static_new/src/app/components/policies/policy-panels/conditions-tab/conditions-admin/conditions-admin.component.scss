@@ -13,84 +13,75 @@
 .admin-title {
   font-size: 1.2em;
   font-weight: 500;
-  margin: 0;
-  margin-bottom: var(--half-global-padding);
+  margin: 0 0 var(--half-global-padding);
 }
 
-// --- Chip Definition mit Truncation (Abschneiden) ---
-.admin-chip {
-  display: flex;
-  align-items: center;
-  background-color: var(--mat-sys-surface-container-high);
-  border-radius: var(--border-radius);
-  padding: var(--quarter-global-padding) var(--half-global-padding);
-  flex-shrink: 0;
-
-  // Wichtig für Ellipsis
-  max-width: 100%;
-  box-sizing: border-box;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-
-  span,
-  & {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    display: block;
-  }
-}
-
-.readonly-chip {
-  @extend .admin-chip;
-  max-width: 350px; // Verhindert, dass ein Chip allein die ganze Zeile sprengt
-}
-
-// --- Readonly Grid Fix ---
-.readonly-admin-grid-container {
+.readonly-grid-container {
   display: grid;
-  // minmax(0, 1fr) ist entscheidend, damit die rechte Spalte bei langem Text schrumpft
-  grid-template-columns: 120px minmax(0, 1fr);
-  gap: calc(var(--half-global-padding) * 1.5);
-  margin: 0 var(--half-global-padding);
+  grid-template-columns: 140px minmax(0, 1fr);
+  gap: var(--half-global-padding);
+  align-items: baseline;
+  padding: var(--half-global-padding) 0;
 }
 
 .readonly-label {
   font-weight: 500;
+  color: var(--mat-sys-on-surface-variant);
+  font-size: 0.9rem;
   white-space: nowrap;
-  padding-top: var(--quarter-global-padding);
 }
 
 .readonly-chips-container {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--quarter-global-padding);
-  min-width: 0; // Ermöglicht Flex-Inhalten das Schrumpfen im Grid
+  gap: 6px;
 }
 
-// --- Edit Mode Styles ---
-.admin-list-wrapper {
+@mixin compact-badge-base {
+  font-size: 13px;
+  border-radius: 4px;
+  padding: 2px 8px;
+  line-height: 1.4;
+  flex-shrink: 0;
+}
+
+.readonly-chip {
+  @include compact-badge-base;
+  background-color: var(--mat-sys-surface-container-high);
+  color: var(--mat-sys-on-surface);
+  max-width: 250px;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.admin-chip-edit {
+  @include compact-badge-base;
   display: flex;
   align-items: center;
-  margin-bottom: var(--half-global-padding);
+  background-color: var(--mat-sys-surface-container-high);
+  max-width: 300px;
+
+  span {
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+  }
 }
 
 .admin-list {
   display: flex;
   flex-wrap: nowrap;
   overflow-x: auto;
-  overflow-y: hidden;
-  flex-grow: 1;
-  padding-bottom: var(--quarter-global-padding);
+  gap: 6px;
+  padding-bottom: var(--half-global-padding);
   scrollbar-width: thin;
-  gap: calc(var(--global-gap) / 2);
 }
 
 .admin-input-container {
   display: flex;
   align-items: center;
-  width: 100%;
+  gap: var(--quarter-global-padding);
 }
 
 .add-admin-input {
@@ -98,15 +89,17 @@
 }
 
 .remove-admin-btn {
-  width: 20px;
-  height: 20px;
-  margin-left: var(--quarter-global-padding);
+  width: 18px;
+  height: 18px;
+  margin-left: 4px;
   padding: 0;
-  flex-shrink: 0; // Button bleibt immer sichtbar
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .remove-admin-icon {
-  font-size: 16px;
-  width: 16px;
-  height: 16px;
+  font-size: 14px;
+  width: 14px;
+  height: 14px;
 }

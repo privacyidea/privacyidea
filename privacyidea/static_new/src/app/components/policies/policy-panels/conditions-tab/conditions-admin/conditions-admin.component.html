@@ -30,11 +30,12 @@
       [selectedItems]="selectedAdminrealm()"
       (selectionChange)="selectAdminRealm($event)">
     </app-multi-select-only>
+
     <div class="admin-list-wrapper">
       <div class="admin-list">
         @for (admin of selectedAdmins(); track admin) {
-          <div class="admin-chip">
-            <span>{{ admin }}</span>
+          <div class="admin-chip-edit">
+            <span [title]="admin">{{ admin }}</span>
             <button
               mat-icon-button
               (click)="removeAdmin(admin)"
@@ -45,8 +46,11 @@
         }
       </div>
     </div>
+
     <div class="admin-input-container">
-      <mat-form-field class="add-admin-input">
+      <mat-form-field
+        class="add-admin-input"
+        appearance="outline">
         <mat-label i18n>Add Admin</mat-label>
         <input
           matInput
@@ -58,7 +62,7 @@
             !adminFormControl.invalid && (adminInput.value = '')
           " />
         @if (adminFormControl.hasError("includesComma")) {
-          <mat-error i18n> Admin must not contain commas. </mat-error>
+          <mat-error i18n>Admin must not contain commas.</mat-error>
         }
       </mat-form-field>
 
@@ -70,36 +74,19 @@
       </button>
     </div>
   } @else {
-    <div class="readonly-admin-grid-container">
-      @if (selectedRealms().length > 0) {
+    <div class="readonly-grid-container">
+      @if (selectedAdminrealm().length > 0) {
         <span
           class="readonly-label"
           i18n
           >Realms:</span
         >
         <div class="readonly-chips-container">
-          @for (realm of selectedRealms(); track realm) {
+          @for (realm of selectedAdminrealm(); track realm) {
             <div
               class="readonly-chip"
               [title]="realm">
               {{ realm }}
-            </div>
-          }
-        </div>
-      }
-
-      @if (selectedResolvers().length > 0) {
-        <span
-          class="readonly-label"
-          i18n
-          >Resolvers:</span
-        >
-        <div class="readonly-chips-container">
-          @for (resolver of selectedResolvers(); track resolver) {
-            <div
-              class="readonly-chip"
-              [title]="resolver">
-              {{ resolver }}
             </div>
           }
         </div>

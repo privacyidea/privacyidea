@@ -13,48 +13,112 @@
 .user-title {
   font-size: 1.2em;
   font-weight: 500;
-  margin: 0;
-  margin-bottom: var(--half-global-padding);
+  margin: 0 0 var(--half-global-padding);
+}
+
+.readonly-user-grid-container {
+  display: grid;
+  grid-template-columns: 140px minmax(0, 1fr);
+  gap: var(--half-global-padding);
+  align-items: baseline;
+  padding: var(--half-global-padding) 0;
+}
+
+.readonly-label {
+  font-weight: 500;
+  color: var(--mat-sys-on-surface-variant);
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.readonly-chips-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+@mixin compact-badge-base {
+  font-size: 13px;
+  border-radius: 4px;
+  padding: 2px 8px;
+  line-height: 1.4;
+  flex-shrink: 0;
+}
+
+.readonly-chip {
+  @include compact-badge-base;
+  background-color: var(--mat-sys-surface-container-high);
+  color: var(--mat-sys-on-surface);
+  border: 1px solid transparent;
+  max-width: 200px;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.sensitivity-chip {
+  @include compact-badge-base;
+  border: 1px solid var(--mat-sys-outline-variant);
+  background-color: transparent;
+  color: var(--mat-sys-on-surface);
+}
+
+.user-chip-edit {
+  @include compact-badge-base;
+  display: flex;
+  align-items: center;
+  background-color: var(--mat-sys-surface-container-high);
+}
+
+.user-list-wrapper {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  width: 100%;
+}
+
+.user-list {
+  display: flex;
+  flex-wrap: wrap;
+  flex-grow: 1;
+  gap: 6px;
+  padding-bottom: var(--half-global-padding);
+}
+
+.user-buttons-container {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  flex-shrink: 0;
+  margin-left: auto;
+  padding-bottom: var(--half-global-padding);
+}
+
+.action-button-1 {
+  height: 32px;
+  line-height: 32px;
+  font-size: 12px;
+}
+
+.action-button-active {
+  background-color: var(--mat-sys-primary-container);
+  color: var(--mat-sys-on-primary-container);
 }
 
 .user-input-container {
   display: flex;
   align-items: center;
+  gap: var(--quarter-global-padding);
 }
 
-.user-list-wrapper {
-  display: flex;
-  align-items: center;
-}
-
-.user-list {
-  display: flex;
-  flex-wrap: nowrap;
-  overflow-x: auto;
-  overflow-y: hidden;
+.add-user-input {
   flex-grow: 1;
-  padding-bottom: var(--three-quarters-global-padding);
-  scrollbar-width: thin;
-  gap: calc(var(--global-gap) / 2);
-}
-
-.user-chip {
-  display: flex;
-  align-items: center;
-  background-color: var(--mat-sys-surface-container-high);
-  border-radius: var(--border-radius);
-  padding: var(--quarter-global-padding) var(--half-global-padding);
-  flex-shrink: 0;
-  display: block;
-  text-overflow: ellipsis;
-  overflow: hidden;
-  max-width: 250px;
 }
 
 .remove-user-btn {
-  width: 20px;
-  height: 20px;
-  margin-left: var(--quarter-global-padding);
+  width: 18px;
+  height: 18px;
+  margin-left: 4px;
   padding: 0;
   display: flex;
   align-items: center;
@@ -62,68 +126,7 @@
 }
 
 .remove-user-icon {
-  font-size: 16px;
-  width: 16px;
-  height: 16px;
-  line-height: 16px;
-}
-
-.user-buttons-container {
-  display: flex;
-  justify-content: flex-end;
-  flex-wrap: nowrap;
-  padding-bottom: var(--three-quarters-global-padding);
-  flex-shrink: 0;
-  flex-grow: 0;
-  gap: calc(var(--global-gap) / 2);
-}
-
-.add-user-input {
-  width: 100%;
-  border-radius: var(--border-radius);
-
-  .mdc-text-field--filled {
-    border-top-right-radius: 0 !important;
-  }
-  .mdc-text-field {
-    border-top-right-radius: 0 !important;
-  }
-}
-
-.readonly-user-grid-container {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: calc(var(--half-global-padding) * 1.5);
-  margin: 0 var(--half-global-padding);
-}
-
-.readonly-label {
-  font-weight: 500;
-  margin-right: var(--half-global-padding);
-  white-space: nowrap;
-  padding-top: var(--quarter-global-padding);
-}
-
-.readonly-chips-container {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--quarter-global-padding);
-  flex: 1;
-}
-
-.readonly-chip {
-  @extend .user-chip;
-}
-
-.users-container {
-  display: flex;
-  flex-direction: row;
-  gap: calc(var(--global-gap) / 2);
-}
-
-.sensitivity-chip {
-  @extend .user-chip;
-  border: 1px solid var(--mat-sys-outline);
-  background-color: var(--mat-sys-surface);
-  display: flex;
+  font-size: 14px;
+  width: 14px;
+  height: 14px;
 }

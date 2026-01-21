@@ -17,16 +17,16 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
  -->
 
-<!-- <div class="priority-description">
-        <app-policy-priority
+<div class="priority-description">
+  <!-- <app-policy-priority
         [editMode]="isEditMode()"
         [priority]="currentPolicy().priority"
-          (priorityChange)="updatePolicyPriority($event)" />
-          <app-policy-description
-          [isEditMode]="isEditMode()"
-          [policy]="currentPolicy()"
-          (policyEdit)="addPolicyEdit($event)" />
-        </div> -->
+          (priorityChange)="updatePolicyPriority($event)" /> -->
+  <app-policy-description
+    [isEditMode]="isEditMode()"
+    [policy]="currentPolicy()"
+    (policyEdit)="addPolicyEdit($event)" />
+</div>
 <div class="tab-buttons">
   <button
     mat-stroked-button

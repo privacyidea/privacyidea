@@ -7,18 +7,11 @@
 }
 
 .policy-name-input {
-  background-color: transparent;
-  border: none;
-  border-bottom: 1px solid var(--mat-sys-outline-variant);
-  border-radius: 0;
-  box-sizing: border-box;
-  font-size: 1rem;
-  margin-left: 2px;
-  padding: var(--half-global-padding) 0;
-  width: 100%;
+  @include policies.policy-name-input-base;
+  padding: var(--quarter-global-padding) 0;
+  margin: 2px;
 }
 
-// --- Content Sections ---
 .actions-list {
   display: flex;
   flex-direction: column;
@@ -61,9 +54,7 @@
   gap: calc(var(--global-gap) / 2);
   max-height: 200px;
   overflow-y: auto;
-  padding-right: var(
-    --half-global-padding
-  ); /* Adds space for the scrollbar to prevent content from touching the edge */
+  padding-right: var(--half-global-padding);
 }
 
 .search-input {
@@ -87,7 +78,6 @@
   color: var(--mat-sys-primary);
 }
 
-// --- Detail Rows ---
 .detail-row {
   display: flex;
   justify-content: space-between;
@@ -123,20 +113,38 @@
   display: flex;
   align-items: stretch;
   gap: var(--global-gap);
-  app-policy-priority {
-    flex: 1 1 0;
-    height: 100%;
-  }
-  app-policy-description {
-    flex: 5 1 0;
-    height: 100%;
-  }
 }
+
+.priority-description app-policy-priority {
+  flex: 1 1 0;
+  height: 100%;
+}
+
+.priority-description app-policy-description {
+  flex: 5 1 0;
+  height: 100%;
+}
+
 .small-toggle {
   transform: scale(0.7);
   transform-origin: left center;
 }
+
 .app-policy-panel-header {
   flex: 1;
   display: flex;
+}
+
+mat-expansion-panel-header {
+  transition: background-color 200ms ease-in-out !important;
+}
+
+::ng-deep .mat-expansion-panel-header:not(:has(button:hover, input:hover, mat-select:hover)):hover,
+::ng-deep .mat-expansion-panel-header.mat-expanded:not(:has(button:hover, input:hover, mat-select:hover)):hover {
+  background-color: var(--mat-sys-surface-container-highest) !important;
+}
+
+::ng-deep .mat-expansion-panel-header:hover .mat-content,
+::ng-deep .mat-expansion-panel-header.mat-expanded:hover .mat-content {
+  background-color: transparent !important;
 }

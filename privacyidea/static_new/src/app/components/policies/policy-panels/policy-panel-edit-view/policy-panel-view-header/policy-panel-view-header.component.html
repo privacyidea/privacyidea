@@ -15,6 +15,17 @@
       {{ policy().scope.toLocaleUpperCase() }}
     </span>
   </div>
+  <div class="description-label">
+    <span
+      class="policy-description-text"
+      #descText
+      [matTooltip]="policy().description"
+      [matTooltipDisabled]="
+        descText.scrollWidth <= descText.clientWidth && descText.scrollHeight <= descText.clientHeight
+      ">
+      {{ policy().description }}
+    </span>
+  </div>
   <div class="actions">
     @if (authService.actionAllowed("policywrite")) {
       <button

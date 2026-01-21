@@ -13,138 +13,160 @@
 .additional-conditions-title {
   font-size: 1.2em;
   font-weight: 500;
-  margin: 0;
-  margin-bottom: var(--half-global-padding);
+  margin: 0 0 var(--half-global-padding);
+}
+
+// --- Hilfsklasse für Zentrierung (Active/Actions) ---
+.center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+// --- Edit Mode Grid Definition ---
+$edit-grid-layout: 60px 1.2fr 2fr 1.2fr 2fr 1.2fr 60px;
+
+.additional-condition-header {
+  display: grid;
+  grid-template-columns: $edit-grid-layout;
+  gap: 12px;
+  padding: 8px 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--mat-sys-on-surface-variant);
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
 }
 
 .additional-conditions-list {
   display: flex;
   flex-direction: column;
-  gap: var(--half-global-padding);
 }
 
 .additional-condition-row {
   display: grid;
-  grid-template-columns: 0.8fr 3fr 2fr 4fr 2fr 3fr;
-  gap: 16px;
-  place-items: center;
-  text-align: center;
-
+  grid-template-columns: $edit-grid-layout;
+  gap: 12px;
+  align-items: center;
+  padding: 8px 12px;
   background-color: var(--mat-sys-surface-container-high);
-  border-radius: var(--border-radius);
-  box-shadow: var(--mat-sys-level1);
-  font-weight: 500;
-  padding: var(--half-global-padding) var(--three-quarters-global-padding);
+  border-radius: 4px;
+  margin-top: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
 
-  &.edit-mode {
-    grid-template-columns: 1.2fr 3fr 2fr 4fr 2fr 3fr 1fr;
+  &:hover {
+    background-color: var(--mat-sys-surface-container-highest);
   }
-
-  &.hover-highlight:hover {
-    cursor: pointer;
-    background-color: var(--mat-sys-primary-light);
-    color: var(--mat-sys-on-primary);
-  }
-
   &.selected {
-    background-color: var(--mat-sys-primary-base);
-    color: var(--mat-sys-on-primary);
-    font-weight: 600;
+    border: 1px solid var(--mat-sys-primary);
+    background-color: var(--mat-sys-primary-container);
+  }
+}
 
-    .mat-mdc-slide-toggle {
-      --mdc-switch-selected-handle-color: var(--mat-sys-on-primary);
-      --mdc-switch-selected-track-color: rgba(var(--mat-sys-on-primary-rgb), 0.5);
-      --mdc-switch-selected-focus-handle-color: var(--mat-sys-on-primary);
-      --mdc-switch-selected-hover-handle-color: var(--mat-sys-on-primary);
-      --mdc-switch-selected-pressed-handle-color: var(--mat-sys-on-primary);
-      --mdc-switch-selected-focus-track-color: rgba(var(--mat-sys-on-primary-rgb), 0.5);
-      --mdc-switch-selected-hover-track-color: rgba(var(--mat-sys-on-primary-rgb), 0.5);
-      --mdc-switch-selected-pressed-track-color: rgba(var(--mat-sys-on-primary-rgb), 0.5);
+// Force Wrap Logik für Edit Mode
+.additional-condition-row > div,
+.additional-condition-row > span,
+.additional-condition-row > strong {
+  font-size: 13px;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  white-space: normal;
+  min-width: 0;
+}
+
+// --- Button nach rechts verschieben ---
+.add-condition-button-container {
+  display: flex;
+  justify-content: flex-end; // Schiebt den Button nach rechts
+  width: 100%;
+  padding-top: 12px;
+}
+
+// --- Readonly Mode ---
+.readonly-conditions-grid {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.readonly-condition-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background-color: var(--mat-sys-surface-container-low);
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--mat-sys-outline-variant);
+  min-width: 350px;
+  flex: 1 1 350px;
+  max-width: 100%;
+}
+
+.status-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  .active-status mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    &.active {
+      color: var(--mat-sys-primary);
+    }
+    &:not(.active) {
+      color: var(--mat-sys-error);
     }
   }
-}
 
-.action-buttons {
-  display: flex;
-  justify-content: flex-end;
-
-  .mat-mdc-icon-button {
-    width: 32px;
-    height: 32px;
-    padding: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  .readonly-badge {
+    font-size: 10px;
+    text-transform: uppercase;
+    background: var(--mat-sys-secondary-container);
+    color: var(--mat-sys-on-secondary-container);
+    padding: 1px 6px;
+    border-radius: 4px;
   }
 }
 
-mat-form-field {
+.data-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  align-items: start;
   width: 100%;
 }
 
-mat-checkbox {
-  display: flex;
-  align-items: center;
+.force-wrap {
+  font-size: 13px;
+  color: var(--mat-sys-on-surface);
+  display: block;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  white-space: normal;
+  min-width: 0;
 }
 
-::ng-deep .auto-width-dropdown {
-  width: auto !important;
-  min-width: fit-content !important;
+// --- Form & Divider ---
+.divider-margin {
+  margin: 16px 0;
 }
 
 .new-condition-form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
+  padding-top: 8px;
 }
 
 .form-row {
   display: flex;
-  gap: 16px;
+  gap: 12px;
 }
 
 .form-actions {
   display: flex;
   justify-content: flex-end;
-  margin-top: 8px;
-}
-
-.add-condition-button-container {
-  justify-content: end;
-  display: flex;
-}
-
-.divider-margin {
-  margin-top: 16px;
-  margin-bottom: 16px;
-}
-
-.additional-conditions-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: var(--half-global-padding);
-
-  th,
-  td {
-    padding: var(--quarter-global-padding) var(--half-global-padding);
-    text-align: center;
-    border-bottom: 1px solid var(--mat-sys-outline-variant);
-  }
-
-  th {
-    background-color: var(--mat-sys-surface-container-high);
-    font-weight: 600;
-  }
-
-  tbody tr:last-child td {
-    border-bottom: none;
-  }
-
-  tbody tr:nth-child(odd) {
-    background-color: var(--mat-sys-surface-container-low);
-  }
-
-  tbody tr:nth-child(even) {
-    background-color: var(--mat-sys-surface-container);
-  }
+  gap: 8px;
 }

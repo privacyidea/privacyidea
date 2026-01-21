@@ -39,6 +39,7 @@ import {
 } from "../../../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { lastValueFrom } from "rxjs";
 import { PolicyTab } from "../policy-panel-edit-view.component";
+import { PolicyDescriptionComponent } from "../../action-tab/policy-description/policy-description.component";
 
 @Component({
   selector: "app-policy-panel-edit",
@@ -56,7 +57,8 @@ import { PolicyTab } from "../policy-panel-edit-view.component";
     MatSelectModule,
     MatOptionModule,
     ActionTabComponent,
-    ConditionsTabComponent
+    ConditionsTabComponent,
+    PolicyDescriptionComponent
   ],
   templateUrl: "./policy-panel-edit.component.html",
   styleUrl: "./policy-panel-edit.component.scss"
@@ -65,8 +67,8 @@ export class PolicyPanelEditComponent {
   readonly policyService: PolicyServiceInterface = inject(PolicyService);
   readonly dialogService: DialogServiceInterface = inject(DialogService);
 
-  // readonly isEditMode = signal<boolean>(false);
   onEditModeChange = output<boolean>();
+  readonly isEditMode = input.required<boolean>();
   readonly policy = input.required<PolicyDetail>();
   readonly policyEdits = input.required<Partial<PolicyDetail>>();
   readonly policyEditsChange = output<Partial<PolicyDetail>>();

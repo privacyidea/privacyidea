@@ -8,14 +8,12 @@
   overflow-y: auto;
   align-items: flex-start;
 
-  // View Mode Anpassung
   &.view-mode {
-    display: block; // Erlaubt dem Grid-Container darunter die volle Breite
+    display: block;
   }
 }
 
 .flex-body {
-  // Im Edit-Mode bekommt die linke Seite 9 Anteile
   flex: 9 1 0;
   min-width: 0;
   gap: var(--global-gap);
@@ -24,17 +22,14 @@
 }
 
 .flex-detail {
-  // Im Edit-Mode bekommt die Detail-Ansicht 5 Anteile
   flex: 5 1 0;
   min-width: 0;
   position: sticky;
   top: 0;
 }
 
-// Neues Container-Layout für den View Mode
 .view-mode-container {
   display: grid;
-  // Zwei gleich große Spalten (1:1), da keine Details angezeigt werden
   grid-template-columns: 1fr 1fr;
   gap: var(--global-gap);
   width: 100%;
@@ -43,4 +38,15 @@
 
 .view-column {
   min-width: 0;
+}
+
+@mixin action-tab-input {
+  background-color: transparent;
+  border: none;
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 0;
+  box-sizing: border-box;
+  font-size: 1rem;
+  resize: vertical;
+  width: 100%;
 }
