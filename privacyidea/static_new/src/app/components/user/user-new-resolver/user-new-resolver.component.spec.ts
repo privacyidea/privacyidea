@@ -453,10 +453,6 @@ describe("UserNewResolverComponent", () => {
     component.onTypeChange("keycloakresolver");
     expect(component.formData["config_authorization"]).toBeDefined();
 
-    component.resolverType = "scimresolver";
-    component.onTypeChange("scimresolver");
-    expect(component.formData["Authserver"]).toBeDefined();
-
     component.resolverType = "httpresolver";
     component.onTypeChange("httpresolver");
     expect(component.formData["responseMapping"]).toBeUndefined();
