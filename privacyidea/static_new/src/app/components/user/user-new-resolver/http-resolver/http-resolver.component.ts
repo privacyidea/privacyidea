@@ -232,13 +232,22 @@ export class HttpResolverComponent {
 
     effect(() => {
       const basic = this.basicSettings();
+      const data = this.data();
       if (!basic && !this.responseMappingControl.value) {
-        this.responseMappingControl.setValue("{\"username\":\"{username}\", \"userid\":\"{userid}\"}");
-        this.verifyTlsControl.setValue(true);
+        if (data.responseMapping === undefined) {
+          this.responseMappingControl.setValue("{\"username\":\"{username}\", \"userid\":\"{userid}\"}");
+        }
+        if (data.verify_tls === undefined) {
+          this.verifyTlsControl.setValue(true);
+        }
       }
       if (basic && this.responseMappingControl.value) {
-        this.responseMappingControl.setValue("");
-        this.verifyTlsControl.setValue(false);
+        if (data.responseMapping === undefined) {
+          this.responseMappingControl.setValue("");
+        }
+        if (data.verify_tls === undefined) {
+          this.verifyTlsControl.setValue(false);
+        }
       }
     });
   }
