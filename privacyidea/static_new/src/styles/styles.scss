@@ -566,13 +566,14 @@ body {
 
   .cdk-overlay-container {
     margin-left: 297px;
+    width: calc(100% - 297px);
 
-    .mat-mdc-select-panel {
+    .mat-mdc-select-panel{
       margin-left: -297px;
     }
-  }
 
-  .cdk-overlay-pane.mat-mdc-dialog-panel {
-    margin-left: -297px;
+    .mat-mdc-tooltip {
+      margin-left: -340px;
+    }
   }
 }

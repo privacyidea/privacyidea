@@ -170,7 +170,7 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
     this.pendingChangesService.registerHasChanges(() => this.hasChanges);
 
     effect(() => {
-      if (!this.contentService.routeUrl().startsWith(ROUTE_PATHS.USERS_RESOLVERS)) {
+      if (!this.contentService.routeUrl().startsWith(ROUTE_PATHS.USERS)) {
         this.dialogRef?.close(true);
       }
     });
@@ -307,7 +307,6 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
           base_url: "https://graph.microsoft.com/v1.0",
           authority: "https://login.microsoftonline.com/{tenant}",
           client_credential_type: "secret",
-          client_certificate: {},
           timeout: 60,
           verify_tls: true,
           config_get_user_by_id: { "method": "GET", "endpoint": "/users/{userid}" },

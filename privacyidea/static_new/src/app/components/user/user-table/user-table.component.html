@@ -106,9 +106,9 @@
                   }
                   @case ("resolver") {
                     <a
-                      (click)="onClickResolver(element[column.key])"
+                      (click)="onClickResolver(element[column.key]); $event.preventDefault()"
                       attr.aria-label="{{ column.label }} Link"
-                      routerLink="/users/resolvers">
+                      role="button">
                       {{ element[column.key] }}
                     </a>
                   }

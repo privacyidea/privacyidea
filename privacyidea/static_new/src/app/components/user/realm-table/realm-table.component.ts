@@ -46,7 +46,6 @@ import { MatSelectModule } from "@angular/material/select";
 import { MatIconModule } from "@angular/material/icon";
 import { MatButtonModule } from "@angular/material/button";
 import { MatDialog } from "@angular/material/dialog";
-import { RouterLink } from "@angular/router";
 import { concat, last, take } from "rxjs";
 
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
@@ -111,8 +110,7 @@ const NO_NODE_ID = "";
     MatSelectModule,
     MatIconModule,
     MatButtonModule,
-    MatTooltip,
-    RouterLink
+    MatTooltip
   ],
   templateUrl: "./realm-table.component.html",
   styleUrl: "./realm-table.component.scss"
