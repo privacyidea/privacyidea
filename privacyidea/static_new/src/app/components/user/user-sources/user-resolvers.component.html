@@ -1,0 +1,146 @@
+<!--
+ (c) NetKnights GmbH 2025,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<div
+  aria-label="User Resolvers Layout"
+  class="user-resolvers-layout"
+  i18n-aria-label>
+  <div
+    appScrollToTop
+    class="user-sources-table-container">
+    <div class="filter-paginator-container margin-bottom-1">
+      <div class="flex-row ali-center">
+        <mat-form-field
+          class="table-filter"
+          subscriptSizing="dynamic">
+          <mat-label i18n>Filter Resolvers...</mat-label>
+          <app-clearable-input
+            (onClick)="resetFilter()"
+            [showClearButton]="filterString().length > 0">
+            <input
+              #filterHTMLInputElement
+              (input)="onFilterInput(filterHTMLInputElement.value)"
+              [value]="filterString()"
+              aria-label="Filter Input"
+              i18n-aria-label
+              i18n-placeholder
+              matInput
+              placeholder="Filter by name or type" />
+          </app-clearable-input>
+        </mat-form-field>
+
+        @if (authService.actionAllowed("resolverwrite")) {
+          <button
+            (click)="onNewResolver()"
+            class="margin-left-1"
+            mat-stroked-button>
+            <mat-icon>add</mat-icon>
+            <span i18n>New Resolver</span>
+          </button>
+        }
+      </div>
+      <mat-paginator
+        [length]="resolversDataSource().data.length"
+        [pageSizeOptions]="pageSizeOptions()"
+        [pageSize]="pageSizeOptions()[1]"
+        showFirstLastButtons></mat-paginator>
+    </div>
+
+    <table
+      [dataSource]="resolversDataSource()"
+      aria-label="Resolvers Table"
+      class="user-sources-table"
+      mat-table
+      matSort>
+      <ng-container matColumnDef="resolvername">
+        <th
+          *matHeaderCellDef
+          mat-header-cell
+          mat-sort-header>
+          <span i18n>Name</span>
+        </th>
+        <td
+          *matCellDef="let element"
+          mat-cell>
+          <div class="name-actions-container">
+            <a
+              (click)="onEditResolver(element)"
+              tabindex="0">
+              {{ element.resolvername }}
+            </a>
+            <div class="actions-buttons">
+              @if (authService.actionAllowed("resolverwrite")) {
+                <button
+                  (click)="onEditResolver(element)"
+                  aria-label="Edit resolver"
+                  mat-icon-button
+                  matTooltip="Edit resolver"
+                  type="button">
+                  <mat-icon>edit</mat-icon>
+                </button>
+              }
+              @if (authService.actionAllowed("resolverdelete")) {
+                <button
+                  (click)="onDeleteResolver(element)"
+                  aria-label="Delete resolver"
+                  color="warn"
+                  mat-icon-button
+                  matTooltip="Delete resolver"
+                  type="button">
+                  <mat-icon>delete</mat-icon>
+                </button>
+              }
+            </div>
+          </div>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="type">
+        <th
+          *matHeaderCellDef
+          mat-header-cell
+          mat-sort-header>
+          <span i18n>Type</span>
+        </th>
+        <td
+          *matCellDef="let element"
+          mat-cell>
+          {{ element.type }}
+        </td>
+      </ng-container>
+
+      <tr
+        *matHeaderRowDef="columnKeys"
+        mat-header-row></tr>
+
+      <tr
+        *matRowDef="let row; columns: columnKeys"
+        mat-row></tr>
+
+      <tr
+        *matNoDataRow
+        mat-no-data-row>
+        <td
+          [attr.colspan]="columnKeys.length"
+          aria-label="No Data Cell">
+          No data matching the filter.
+        </td>
+      </tr>
+    </table>
+  </div>
+</div>

@@ -42,42 +42,42 @@ This is the REST API for system calls to create and read system configuration.
 The code of this module is tested in tests/test_api_system.py
 """
 
+import datetime
+import logging
+import re
+import socket
+
 from flask import (Blueprint,
                    request)
+from flask import (g, current_app, render_template)
+
+from privacyidea.lib.auth import get_all_db_admins
+from privacyidea.lib.crypto import geturandom, set_hsm_password, get_hsm
+from privacyidea.lib.importotp import GPGImport
+from privacyidea.lib.policy import PolicyClass
+from privacyidea.lib.realm import get_realms
+from privacyidea.lib.resolver import get_resolver_list
+from privacyidea.lib.usercache import delete_user_cache
+from privacyidea.lib.utils import hexlify_and_unicode, b64encode_and_unicode
+from .auth import admin_required
 from .lib.utils import (getParam,
                         getLowerParams,
                         optional,
                         required,
                         send_result, send_file)
-from ..lib.log import log_with
-from ..lib.radiusserver import get_radiusservers
+from ..api.lib.prepolicy import prepolicy, check_base_action
 from ..lib.caconnector import get_caconnector_list
 from ..lib.config import (get_token_class,
                           set_privacyidea_config,
                           delete_privacyidea_config,
                           get_from_config,
                           get_privacyidea_nodes)
-from ..api.lib.prepolicy import prepolicy, check_base_action
 from ..lib.error import ParameterError
-
-from .auth import admin_required
-from flask import (g, current_app, render_template)
-import logging
-import datetime
-import re
-import socket
-from privacyidea.lib.resolver import get_resolver_list
-from privacyidea.lib.realm import get_realms
-from privacyidea.lib.policy import PolicyClass
+from ..lib.log import log_with
 from ..lib.policies.actions import PolicyAction
-from privacyidea.lib.auth import get_db_admins
-from privacyidea.lib.crypto import geturandom, set_hsm_password, get_hsm
-from privacyidea.lib.importotp import GPGImport
-from privacyidea.lib.utils import hexlify_and_unicode, b64encode_and_unicode
-from privacyidea.lib.usercache import delete_user_cache
+from ..lib.radiusserver import get_radiusservers
 
 log = logging.getLogger(__name__)
-
 
 system_blueprint = Blueprint('system_blueprint', __name__)
 
@@ -96,7 +96,7 @@ def get_config_documentation():
     resolvers = get_resolver_list()
     realms = get_realms()
     policies = P.list_policies()
-    admins = get_db_admins()
+    admins = get_all_db_admins()
     context = {"system": socket.getfqdn(socket.gethostname()),
                "date": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
                "systemconfig": config,
@@ -487,6 +487,7 @@ def list_nodes():
     nodes = get_privacyidea_nodes()
     g.audit_object.log({"success": True})
     return send_result(nodes)
+
 
 @system_blueprint.route("/user-cache", methods=['DELETE'])
 @admin_required

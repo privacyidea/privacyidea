@@ -166,10 +166,15 @@ export class NavigationComponent {
       case ROUTE_PATHS.CONFIGURATION_PERIODIC_TASKS:
         this.periodicTaskService.periodicTasksResource.reload();
         break;
+      case ROUTE_PATHS.USERS_RESOLVERS:
+        this.resolverService.resolversResource.reload();
+        break;
       case ROUTE_PATHS.EVENTS:
         this.eventService.allEventsResource.reload();
+        break;
     }
   }
+
 
   onSingleHeaderClick(event: MouseEvent, route_path: string): void {
     event.preventDefault();

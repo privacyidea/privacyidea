@@ -734,7 +734,7 @@ def remove_tokeninfo(ctx, tokeninfo_key):
     """
     for tlist in ctx.obj['tokens']:
         for token_obj in tlist:
-            token_obj.del_tokeninfo(tokeninfo_key)
+            token_obj.delete_tokeninfo(tokeninfo_key)
             token_obj.save()
             click.echo(f"Removed tokeninfo '{tokeninfo_key}' for token {token_obj.token.serial}")
 

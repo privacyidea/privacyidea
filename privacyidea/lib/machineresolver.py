@@ -30,16 +30,18 @@ webservice!
 """
 
 import logging
-from .log import log_with
-from ..models import (MachineResolver,
-                      MachineResolverConfig)
-from ..api.lib.utils import required
-from ..api.lib.utils import getParam
-from sqlalchemy import func
-from .crypto import encryptPassword, decryptPassword
+
+from sqlalchemy import func, select, update
+
 from privacyidea.lib.config import get_machine_resolver_class_dict
 from privacyidea.lib.utils import (sanity_name_check, get_data_from_params, fetch_one_resource)
 from privacyidea.lib.utils.export import (register_import, register_export)
+from .crypto import encryptPassword, decryptPassword
+from .log import log_with
+from ..api.lib.utils import getParam
+from ..api.lib.utils import required
+from ..models import (MachineResolver,
+                      MachineResolverConfig, db)
 
 log = logging.getLogger(__name__)
 
@@ -100,20 +102,33 @@ def save_resolver(params):
 
     # Everything passed. So lets actually create the resolver in the DB
     if update_resolver:
-        resolver_id = MachineResolver.query.filter(func.lower(
-            MachineResolver.name) == resolvername.lower()).first().id
+        stmt = select(MachineResolver.id).filter(func.lower(MachineResolver.name) == resolvername.lower())
+        resolver_id = db.session.scalar(stmt)
     else:
         resolver = MachineResolver(params.get("name"), params.get("type"))
-        resolver_id = resolver.save()
+        db.session.add(resolver)
+        db.session.flush()  # to get the ID
+        resolver_id = resolver.id
     # create the config
     for key, value in data.items():
         if types.get(key) == "password":
             value = encryptPassword(value)
-        MachineResolverConfig(resolver_id=resolver_id,
-                              Key=key,
-                              Value=value,
-                              Type=types.get(key, ""),
-                              Description=desc.get(key, "")).save()
+
+        stmt = select(MachineResolverConfig).filter_by(resolver_id=resolver_id, Key=key)
+        existing_config = db.session.execute(stmt).scalar_one_or_none()
+
+        if existing_config:
+            existing_config.Value = value
+            existing_config.Type = types.get(key, "")
+            existing_config.Description = desc.get(key, "")
+        else:
+            config = MachineResolverConfig(resolver_id=resolver_id,
+                                           Key=key,
+                                           Value=value,
+                                           Type=types.get(key, ""),
+                                           Description=desc.get(key, ""))
+            db.session.add(config)
+    db.session.commit()
     return resolver_id
 
 
@@ -131,12 +146,12 @@ def get_resolver_list(filter_resolver_type=None,
     :rtype: Dictionary of the resolvers and their configuration
     """
     ret = {}
+    stmt = select(MachineResolver)
     if filter_resolver_name:
-        resolvers = MachineResolver.query.filter(func.lower(MachineResolver.name) == filter_resolver_name.lower())
+        stmt = stmt.filter(func.lower(MachineResolver.name) == filter_resolver_name.lower())
     elif filter_resolver_type:
-        resolvers = MachineResolver.query.filter(MachineResolver.rtype == filter_resolver_type)
-    else:
-        resolvers = MachineResolver.query.all()
+        stmt = stmt.filter(MachineResolver.rtype == filter_resolver_type)
+    resolvers = db.session.scalars(stmt).all()
 
     for reso in resolvers:
         r = {"resolvername": reso.name,

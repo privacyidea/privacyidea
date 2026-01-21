@@ -46,6 +46,9 @@ import { RouterLink } from "@angular/router";
 import { UserTableActionsComponent } from "./user-table-actions/user-table-actions.component";
 import { MatIcon } from "@angular/material/icon";
 import { MatIconButton } from "@angular/material/button";
+import { MatDialog } from "@angular/material/dialog";
+import { Resolver, ResolverService } from "../../../services/resolver/resolver.service";
+import { UserNewResolverComponent } from "../user-new-resolver/user-new-resolver.component";
 
 const columnKeysMap = [
   { key: "username", label: "Username" },
@@ -96,6 +99,8 @@ export class UserTableComponent {
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly userService: UserServiceInterface = inject(UserService);
+  protected readonly resolverService = inject(ResolverService);
+  protected readonly dialog = inject(MatDialog);
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild('filterHTMLInputElement', { static: false }) filterInput!: ElementRef<HTMLInputElement>;
   sort = signal({ active: '', direction: '' } as Sort);
@@ -168,5 +173,18 @@ export class UserTableComponent {
 
   onClickUsername(user: UserData): void {
     this.userService.detailsUsername.set(user.username);
+  }
+
+  onClickResolver(resolverName: unknown): void {
+    const resolver = this.resolverService.resolvers().find(r => r.resolvername === resolverName);
+    if (resolver) {
+      this.dialog.open(UserNewResolverComponent, {
+        data: { resolver },
+        width: "auto",
+        height: "auto",
+        maxWidth: "100vw",
+        maxHeight: "100vh"
+      });
+    }
   }
 }

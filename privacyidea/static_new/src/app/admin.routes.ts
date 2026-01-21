@@ -36,6 +36,8 @@ import { RealmTableComponent } from "./components/user/realm-table/realm-table.c
 import { ClientsComponent } from "./components/audit/clients/clients.component";
 import { MachineResolverComponent } from "./components/machine-resolver/machine-resolver.component";
 import { PeriodicTaskComponent } from "./components/configuration/periodic-task/periodic-task.component";
+import { UserResolversComponent } from "./components/user/user-sources/user-resolvers.component";
+import { pendingChangesGuard } from "./guards/pending-changes.guard";
 import { EventComponent } from "./components/event/event.component";
 
 export const routes: Routes = [
@@ -65,7 +67,8 @@ export const routes: Routes = [
     children: [
       { path: "", component: UserTableComponent },
       { path: "details/:username", component: UserDetailsComponent },
-      { path: "realms", component: RealmTableComponent }
+      { path: "realms", component: RealmTableComponent },
+      { path: "resolvers", component: UserResolversComponent, canDeactivate: [pendingChangesGuard] }
     ]
   },
   {
