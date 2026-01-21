@@ -1,0 +1,286 @@
+<!--
+ (c) NetKnights GmbH 2025,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<div class="type-sections-container">
+  <div class="type-section">
+    <h3 i18n>Database Connection</h3>
+    <div class="form-grid">
+      <mat-form-field class="field-lg">
+        <mat-label i18n>Driver</mat-label>
+        <app-clearable-input
+          (onClick)="driverControl.setValue('')"
+          [showClearButton]="!!driverControl.value">
+          <input
+            [formControl]="driverControl"
+            matInput
+            placeholder="mysql+pymysql"
+            required />
+        </app-clearable-input>
+        @if (driverControl.hasError('required') && driverControl.touched) {
+          <mat-error i18n>Driver is <strong>required</strong>.</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field class="field-lg">
+        <mat-label i18n>Database</mat-label>
+        <app-clearable-input
+          (onClick)="databaseControl.setValue('')"
+          [showClearButton]="!!databaseControl.value">
+          <input
+            [formControl]="databaseControl"
+            matInput
+            placeholder="YourDatabase" />
+        </app-clearable-input>
+      </mat-form-field>
+
+      <mat-form-field>
+        <mat-label i18n>Server</mat-label>
+        <app-clearable-input
+          (onClick)="serverControl.setValue('')"
+          [showClearButton]="!!serverControl.value">
+          <input
+            [formControl]="serverControl"
+            matInput
+            placeholder="127.0.0.1"
+            required />
+        </app-clearable-input>
+        @if (serverControl.hasError('required') && serverControl.touched) {
+          <mat-error i18n>Server is <strong>required</strong>.</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field>
+        <mat-label i18n>Port</mat-label>
+        <input
+          [formControl]="portControl"
+          matInput
+          placeholder="3306" />
+      </mat-form-field>
+    </div>
+  </div>
+
+  <div class="type-section">
+    <h3 i18n>Authentication & Params</h3>
+    <div class="form-grid">
+      <mat-form-field>
+        <mat-label i18n>User</mat-label>
+        <app-clearable-input
+          (onClick)="userControl.setValue('')"
+          [showClearButton]="!!userControl.value">
+          <input
+            [formControl]="userControl"
+            matInput
+            placeholder="user" />
+        </app-clearable-input>
+      </mat-form-field>
+
+      <mat-form-field>
+        <mat-label i18n>Password</mat-label>
+        <app-clearable-input
+          (onClick)="passwordControl.setValue('')"
+          [showClearButton]="!!passwordControl.value">
+          <input
+            [formControl]="passwordControl"
+            matInput
+            placeholder="topsecret"
+            type="password" />
+        </app-clearable-input>
+      </mat-form-field>
+
+      <div class="flex-column">
+        <mat-checkbox
+          [formControl]="editableControl"
+          i18n>
+          Edit user store
+        </mat-checkbox>
+        <span
+          class="hint"
+          i18n>The user data in this database can be modified from within privacyIDEA.</span>
+      </div>
+
+      @if (editableControl.value) {
+        <mat-form-field class="field-lg">
+          <mat-label i18n>Password Hash for Editable Users</mat-label>
+          <mat-select
+            [formControl]="passwordHashTypeControl"
+            placeholder="">
+            <mat-option
+              i18n
+              value="PHPASS">PHPASS
+            </mat-option>
+            <mat-option
+              i18n
+              value="SHA">SHA
+            </mat-option>
+            <mat-option
+              i18n
+              value="SSHA">SSHA
+            </mat-option>
+            <mat-option
+              i18n
+              value="SSHA256">SSHA256
+            </mat-option>
+            <mat-option
+              i18n
+              value="SSHA512">SSHA512
+            </mat-option>
+            <mat-option
+              i18n
+              value="OTRS">OTRS
+            </mat-option>
+            <mat-option
+              i18n
+              value="SHA512CRYPT">SHA512CRYPT
+            </mat-option>
+            <mat-option
+              i18n
+              value="MD5CRYPT">MD5CRYPT
+            </mat-option>
+          </mat-select>
+          <mat-hint i18n>
+            The hashing algorithm for the passwords of newly created users. Can be PHPASS, SHA, SSHA, SSHA256, SHA512,
+            OTRS.
+          </mat-hint>
+        </mat-form-field>
+      }
+    </div>
+  </div>
+</div>
+
+@if (!isEditMode()) {
+  <div class="preset-buttons-container">
+    <span
+      class="preset-label"
+      i18n>Presets:</span>
+    <div class="preset-buttons">
+      @for (preset of sqlPresets; track preset.name) {
+        <button
+          (click)="applySqlPreset(preset)"
+          mat-stroked-button
+          type="button">
+          {{ preset.name }}
+        </button>
+      }
+    </div>
+  </div>
+}
+
+<div class="type-sections-container">
+  <div class="type-section section-full">
+    <h3 i18n>Table, Mapping, Pool & Editable</h3>
+    <div class="form-grid">
+      <mat-form-field>
+        <mat-label i18n>Table</mat-label>
+        <app-clearable-input
+          (onClick)="tableControl.setValue('')"
+          [showClearButton]="!!tableControl.value">
+          <input
+            [formControl]="tableControl"
+            matInput
+            placeholder="Users"
+            required />
+        </app-clearable-input>
+        @if (tableControl.hasError('required') && tableControl.touched) {
+          <mat-error i18n>Table is <strong>required</strong>.</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field>
+        <mat-label i18n>Limit</mat-label>
+        <input
+          [formControl]="limitControl"
+          matInput
+          placeholder="500"
+          required
+          type="number" />
+        @if (limitControl.hasError('required') && limitControl.touched) {
+          <mat-error i18n>Limit is <strong>required</strong>.</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field class="field-lg">
+        <mat-label i18n>Mapping</mat-label>
+        <textarea
+          [formControl]="mapControl"
+          matInput
+          placeholder='{"userid":"id","username":"user","phone":"telephoneNumber","mobile":"mobile","email":"mail","surname":"sn","givenname":"givenName","password":"password"}'
+          required></textarea>
+        @if (mapControl.hasError('required') && mapControl.touched) {
+          <mat-error i18n>Mapping is <strong>required</strong>.</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field>
+        <mat-label i18n>Connection Parameters</mat-label>
+        <app-clearable-input
+          (onClick)="conParamsControl.setValue('')"
+          [showClearButton]="!!conParamsControl.value">
+          <input
+            [formControl]="conParamsControl"
+            matInput />
+        </app-clearable-input>
+      </mat-form-field>
+
+      <mat-form-field>
+        <mat-label i18n>Database Encoding</mat-label>
+        <app-clearable-input
+          (onClick)="encodingControl.setValue('')"
+          [showClearButton]="!!encodingControl.value">
+          <input
+            [formControl]="encodingControl"
+            matInput />
+        </app-clearable-input>
+      </mat-form-field>
+
+      <mat-form-field class="field-lg">
+        <mat-label i18n>Where Statement</mat-label>
+        <app-clearable-input
+          (onClick)="whereControl.setValue('')"
+          [showClearButton]="!!whereControl.value">
+          <input
+            [formControl]="whereControl"
+            matInput />
+        </app-clearable-input>
+      </mat-form-field>
+
+      <mat-form-field>
+        <mat-label i18n>Pool Size</mat-label>
+        <input
+          [formControl]="poolSizeControl"
+          matInput
+          type="number" />
+      </mat-form-field>
+
+      <mat-form-field>
+        <mat-label i18n>Pool Timeout</mat-label>
+        <input
+          [formControl]="poolTimeoutControl"
+          matInput
+          type="number" />
+      </mat-form-field>
+
+      <mat-form-field>
+        <mat-label i18n>Pool Recycle Timeout</mat-label>
+        <input
+          [formControl]="poolRecycleControl"
+          matInput
+          type="number" />
+      </mat-form-field>
+    </div>
+  </div>
+</div>

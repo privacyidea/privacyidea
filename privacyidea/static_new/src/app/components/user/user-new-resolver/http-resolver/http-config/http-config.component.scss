@@ -1,0 +1,39 @@
+.auth-description {
+  margin: 0 0 12px 0;
+  opacity: 0.8;
+}
+
+.auth-grid {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 16px;
+  row-gap: 12px;
+  align-items: start;
+
+  @media (max-width: 1100px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.auth-wide {
+  grid-column: 1 / -1;
+}
+
+.auth-endpoint {
+  grid-column: 2 / -1;
+
+  @media (max-width: 1100px) {
+    grid-column: 1 / -1;
+  }
+}
+
+.checkbox-inline {
+  display: flex;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+textarea[matInput] {
+  min-height: 6rem;
+  resize: vertical;
+}

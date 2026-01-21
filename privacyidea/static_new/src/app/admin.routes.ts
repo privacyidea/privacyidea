@@ -37,6 +37,8 @@ import { ClientsComponent } from "./components/audit/clients/clients.component";
 import { MachineResolverComponent } from "./components/machine-resolver/machine-resolver.component";
 import { PeriodicTaskComponent } from "./components/configuration/periodic-task/periodic-task.component";
 import { SmtpServersComponent } from "./components/external-services/smtp-servers/smtp-servers.component";
+import { UserResolversComponent } from "./components/user/user-sources/user-resolvers.component";
+import { pendingChangesGuard } from "./guards/pending-changes.guard";
 
 export const routes: Routes = [
   {
@@ -65,7 +67,8 @@ export const routes: Routes = [
     children: [
       { path: "", component: UserTableComponent },
       { path: "details/:username", component: UserDetailsComponent },
-      { path: "realms", component: RealmTableComponent }
+      { path: "realms", component: RealmTableComponent },
+      { path: "resolvers", component: UserResolversComponent, canDeactivate: [pendingChangesGuard] }
     ]
   },
   {

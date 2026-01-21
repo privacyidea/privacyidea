@@ -1,0 +1,150 @@
+@use "../../../../../styles";
+
+:host {
+  display: block;
+  width: 1100px;
+}
+
+.type-section {
+  padding: 1rem;
+  border: 1px solid var(--pi-border-color, #dcdcdc);
+  border-radius: var(--border-radius);
+  background: var(--mat-sys-surface-container-low);
+  margin-bottom: 16px;
+
+  h3 {
+    margin-top: 0;
+    margin-bottom: 1rem;
+    font-size: 1.2rem;
+    font-weight: 500;
+  }
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+
+  @media (max-width: 1100px) {
+    grid-template-columns: 1fr;
+  }
+
+  mat-form-field {
+    width: 100%;
+  }
+
+  .field-lg {
+    grid-column: span 2;
+
+    @media (max-width: 1100px) {
+      grid-column: span 1;
+    }
+  }
+}
+
+textarea[matInput] {
+  min-height: 6rem;
+  resize: vertical;
+}
+
+.mapping-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 12px 0 8px;
+}
+
+@include styles.base-table-structure(".mapping-table");
+
+.mapping-table {
+  width: 100%;
+  margin-bottom: 1rem;
+
+  th.mat-column-actions {
+    text-align: center;
+  }
+
+  td,
+  th {
+    background: var(--table-color);
+
+    ::ng-deep .mdc-text-field {
+      background-color: var(--table-color) !important;
+    }
+  }
+
+  .cell-field {
+    width: 100%;
+    height: 56px;
+  }
+}
+
+.actions-cell {
+  width: 80px;
+  text-align: center !important;
+}
+
+.actions-buttons {
+  display: flex;
+  gap: 0.25rem;
+  justify-content: center;
+  align-items: center;
+}
+
+.auth-panel-body {
+  padding-top: 8px;
+}
+
+.auth-description {
+  margin: 0 0 12px 0;
+  opacity: 0.8;
+}
+
+.auth-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 16px;
+  row-gap: 12px;
+  align-items: start;
+
+  mat-form-field {
+    width: 100%;
+  }
+
+  @media (max-width: 1100px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.auth-wide {
+  grid-column: 1 / -1;
+}
+
+.auth-endpoint {
+  grid-column: 2 / -1;
+
+  @media (max-width: 1100px) {
+    grid-column: 1 / -1;
+  }
+}
+
+.hint {
+  font-size: var(--mat-sys-body-small-size);
+  color: var(--mat-sys-primary)
+}
+
+.checkbox-inline {
+  display: flex;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.flex-column {
+  display: flex;
+  flex-direction: column;
+}
+
+.mat-button-toggle-appearance-standard.mat-button-toggle-checked {
+  background-color: var(--mat-sys-primary-base-active);
+  color: white;
+}
