@@ -575,17 +575,4 @@ body {
   .mat-mdc-option:hover:not(.mdc-list-item--selected, .mdc-list-item--disabled) {
     background-color: #f2f9fd;
   }
-
-  .cdk-overlay-container {
-    margin-left: 297px;
-    width: calc(100% - 297px);
-
-    .mat-mdc-select-panel{
-      margin-left: -297px;
-    }
-
-    .mat-mdc-tooltip {
-      margin-left: -340px;
-    }
-  }
 }
