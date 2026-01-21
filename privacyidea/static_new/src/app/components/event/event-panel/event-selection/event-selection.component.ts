@@ -28,9 +28,10 @@ import {
   MatOption
 } from "@angular/material/autocomplete";
 import { FormsModule, ReactiveFormsModule } from "@angular/forms";
-import { MatChipGrid, MatChipInput, MatChipRemove, MatChipRow } from "@angular/material/chips";
-import { MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
+import { MatChipsModule } from "@angular/material/chips";
+import { MatFormFieldModule, MatHint, MatLabel } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
+import { MatInput } from "@angular/material/input";
 
 @Component({
   selector: "app-event-selection",
@@ -38,16 +39,14 @@ import { MatIcon } from "@angular/material/icon";
     FormsModule,
     MatAutocomplete,
     MatAutocompleteTrigger,
-    MatChipGrid,
-    MatChipInput,
-    MatChipRemove,
-    MatChipRow,
-    MatFormField,
+    MatChipsModule,
+    MatFormFieldModule,
     MatHint,
     MatIcon,
     MatLabel,
     MatOption,
-    ReactiveFormsModule
+    ReactiveFormsModule,
+    MatInput
   ],
   templateUrl: "./event-selection.component.html",
   styleUrl: "./event-selection.component.scss"

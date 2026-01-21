@@ -57,46 +57,11 @@ describe("EventConditionsTabComponent", () => {
     expect(component.selectedConditions()).toEqual({ "foo": "bar" });
   });
 
-  it("should initialize clickedCondition with the first selected condition", () => {
-    // No condition available, clickedCondition should be empty
-    component.selectedConditions.set({});
-    expect(component.clickedCondition()).toBe("");
-
-    // Conditions available, clickedCondition should be that first condition
-    component.selectedConditions.set({ "cond1": "val1", "cond2": "val2" });
-    expect(component.clickedCondition()).toBe("cond1");
-  });
-
   it("removeCondition", () => {
     component.selectedConditions.set({ "cond1": "val1", "cond2": "val2" });
     component.removeCondition("cond1");
     expect(component.selectedConditions()).toEqual({ "cond2": "val2" });
     expect(component.newConditions.emit).toHaveBeenCalledWith({ "cond2": "val2" });
-  });
-
-  it("should emit newConditions on condition submit", () => {
-    component.clickedCondition.set("test_condition");
-    component.onConditionSubmitted("new_value");
-    expect(component.selectedConditions()["test_condition"]).toBe("new_value");
-    expect(component.newConditions.emit).toHaveBeenCalledWith(component.selectedConditions());
-  });
-
-  it("onConditionSubmitted without a actual condition be clicked should do nothing", () => {
-    component.selectedConditions.set({ "cond1": "val1", "cond2": "val2" });
-    component.clickedCondition.set("");
-    component.onConditionSubmitted("new_value");
-    expect(component.selectedConditions()).toEqual({ "cond1": "val1", "cond2": "val2" });
-    expect(component.newConditions.emit).not.toHaveBeenCalled();
-  });
-
-  it("should return true for boolean condition", () => {
-    mockEventService.moduleConditions = jest.fn(() => ({ boolCond: { type: "bool" } })) as any;
-    expect(component.isBooleanCondition("boolCond")).toBe(true);
-  });
-
-  it("should return false for non-boolean condition", () => {
-    mockEventService.moduleConditions = jest.fn(() => ({ strCond: { type: "string" } })) as any;
-    expect(component.isBooleanCondition("strCond")).toBe(false);
   });
 
   it("should return all conditions by group if nothing is selected and no search", () => {
@@ -105,11 +70,11 @@ describe("EventConditionsTabComponent", () => {
     const result = component.remainingConditionsByGroup();
     expect(result).toEqual({
       group1: {
-        condA: { type: "bool", desc: "descA" },
-        condB: { type: "str", desc: "descB" }
+        condA: "",
+        condB: ""
       },
       group2: {
-        condC: { type: "int", desc: "descC" }
+        condC: ""
       }
     });
   });
@@ -120,10 +85,10 @@ describe("EventConditionsTabComponent", () => {
     const result = component.remainingConditionsByGroup();
     expect(result).toEqual({
       group1: {
-        condB: { type: "str", desc: "descB" }
+        condB: ""
       },
       group2: {
-        condC: { type: "int", desc: "descC" }
+        condC: ""
       }
     });
   });
@@ -134,7 +99,7 @@ describe("EventConditionsTabComponent", () => {
     const result = component.remainingConditionsByGroup();
     expect(result).toEqual({
       group1: {
-        condB: { type: "str", desc: "descB" }
+        condB: ""
       },
       group2: {}
     });
@@ -145,5 +110,28 @@ describe("EventConditionsTabComponent", () => {
     component.searchTerm.set("");
     const result = component.remainingConditionsByGroup();
     expect(result).toEqual({ group1: {}, group2: {} });
+  });
+
+  it("should update conditionsToBeAdded on onConditionValueToBeAddedChange", () => {
+    component.conditionsToBeAdded = {};
+    component.onConditionValueToBeAddedChange("condX", "valX");
+    expect(component.conditionsToBeAdded["condX"]).toBe("valX");
+  });
+
+  it("should update selectedConditions and emit newConditions on onConditionValueChange", () => {
+    component.selectedConditions.set({ condY: "oldVal" });
+    const emitSpy = jest.fn();
+    component.newConditions = { emit: emitSpy } as any;
+    component.onConditionValueChange("condY", "newVal");
+    expect(component.selectedConditions()).toEqual({ condY: "newVal" });
+    expect(emitSpy).toHaveBeenCalledWith({ condY: "newVal" });
+  });
+
+  it("should set addedCondition when value is empty in onConditionValueChange", () => {
+    component.selectedConditions.set({ condZ: "something" });
+    component.addedCondition.set("");
+    component.newConditions = { emit: jest.fn() } as any;
+    component.onConditionValueChange("condZ", "");
+    expect(component.addedCondition()).toBe("condZ");
   });
 });

@@ -1,0 +1,138 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+
+<div class="selected-actions-container">
+  @for (conditionName of Object.keys(editConditions()); track conditionName) {
+    @let conditionDetails = eventService.moduleConditions()[conditionName] || {};
+    <div
+      class="action-card"
+      (click)="selectedCondition.set(conditionName)">
+      <div class="action-card-row-grid gap-16">
+        <div class="flex-column">
+          <div class="condition-name-container">
+            <span class="action-label">{{ conditionName }}</span>
+            <button
+              mat-icon-button
+              (click)="toggleShowDescription(conditionName)">
+              @if (showDescription[conditionName]) {
+                <mat-icon>info</mat-icon>
+              } @else {
+                <mat-icon>info_outline</mat-icon>
+              }
+            </button>
+          </div>
+          @if (showDescription[conditionName]) {
+            <div class="condition-name-container">
+              <!-- Display description as inner html to correctly render code tags -->
+              <span
+                class="description"
+                [innerHTML]="conditionDetails.desc"></span>
+            </div>
+            <div class="condition-value-container"></div>
+          }
+        </div>
+        <div class="condition-value-container">
+          @if (conditionDetails?.value) {
+            <!-- add dropdown to select value from list -->
+            @if (conditionDetails?.value?.length === 0) {
+              <!-- // Warning: No Value Available. Nothing to select not possible to add. NO MAT FORM FIELD -->
+              <p i18n>No values available for this condition.</p>
+            } @else if (conditionDetails?.type === "multi") {
+              <mat-form-field
+                appearance="fill"
+                class="full-width"
+                subscriptSizing="dynamic">
+                <mat-select
+                  #selectedConditionInput
+                  [placeholder]="'Select values ...'"
+                  [value]="getMultiValues(editConditions()[conditionName]) || []"
+                  [multiple]="true"
+                  (selectionChange)="onConditionValueChange(conditionName, $event.value)"
+                  [required]="inputRequired()">
+                  @for (option of availableConditionValues()[conditionName]; track option) {
+                    <mat-option [value]="option">{{ option }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+            } @else {
+              <!-- Needs to be a separate selection as multiple state can not be changed during runtime -->
+              <mat-form-field
+                appearance="fill"
+                class="full-width"
+                subscriptSizing="dynamic">
+                <mat-select
+                  #selectedConditionInput
+                  placeholder="Select one option ..."
+                  [value]="editConditions()[conditionName]"
+                  (selectionChange)="onConditionValueChange(conditionName, $event.value)"
+                  [required]="inputRequired()">
+                  @for (option of availableConditionValues()[conditionName]; track option) {
+                    <mat-option [value]="option">{{ option }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+            }
+          } @else {
+            <mat-form-field
+              appearance="fill"
+              class="full-width"
+              subscriptSizing="dynamic">
+              @switch (conditionDetails?.type) {
+                @case ("int") {
+                  <input
+                    #selectedConditionInput
+                    matInput
+                    type="number"
+                    class="font-size-16"
+                    [name]="'conditionInput_' + conditionName"
+                    placeholder="Enter a Number ..."
+                    [ngModel]="editConditions()[conditionName]"
+                    (ngModelChange)="onConditionValueChange(conditionName, $event)"
+                    (keydown.enter)="onActionButtonClicked(conditionName)"
+                    [required]="inputRequired()" />
+                }
+                @default {
+                  <!-- str, regex -->
+                  <input
+                    #selectedConditionInput
+                    matInput
+                    type="text"
+                    class="font-size-16"
+                    [name]="'conditionInput_' + conditionName"
+                    placeholder="Enter value ..."
+                    [ngModel]="editConditions()[conditionName] || ''"
+                    (ngModelChange)="onConditionValueChange(conditionName, $event)"
+                    (keydown.enter)="onActionButtonClicked(conditionName)"
+                    [required]="inputRequired()" />
+                }
+              }
+            </mat-form-field>
+          }
+          <button
+            mat-icon-button
+            class="action-button"
+            (click)="onActionButtonClicked(conditionName); $event.stopPropagation()">
+            <mat-icon>{{ action() }}</mat-icon>
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>
+

@@ -30,9 +30,7 @@
           <!-- Empty icon as placeholder to avoid too much layout shifts -->
           <mat-icon></mat-icon>
         }
-        <div
-          class="task-name"
-          i18n>
+        <div class="event-name" i18n>
           Create New Event Handler
         </div>
       </mat-panel-title>
@@ -57,7 +55,7 @@
           @if (panel.expanded) {
             <mat-slide-toggle
               matTooltip="Toggle Active Status"
-              [checked]="event().active"
+              [checked]="editEvent().active"
               (change)="toggleActive($event.checked)"
               (click)="$event.stopPropagation()"
               [disabled]="!authService.actionAllowed('eventhandling_write')"
@@ -106,8 +104,8 @@
             subscriptSizing="dynamic">
             <mat-label i18n>Position</mat-label>
             <mat-select
-              [value]="editEvent().position"
-              (selectionChange)="updateEventHandler('position', $event)"
+              [ngModel]="editEvent().position"
+              (selectionChange)="updateEventHandler('position', $event.value)"
               required>
               @for (position of eventService.modulePositions(); track position) {
                 <mat-option [value]="position">
@@ -133,41 +131,33 @@
         </div>
       </div>
 
-      <app-event-selection
-          [events]="editEvent().event"
-          (newEvents)="setNewEvents($event)"></app-event-selection>
-
-      <div class="tab-buttons">
-        <button
-          mat-stroked-button
-          [class.action-button-active]="activeTab() === 'action'"
-          (click)="activeTab.set('action')">
-          ACTION
-        </button>
-        <button
-          mat-stroked-button
-          [class.action-button-active]="activeTab() === 'conditions'"
-          (click)="activeTab.set('conditions')">
-          CONDITIONS
-        </button>
-      </div>
-
-      @switch (activeTab()) {
-        @case ("action") {
-          <app-event-action-tab
-            [action]="editEvent().action"
-            [options]="editEvent().options || {}"
-            [isEditMode]="panel.expanded"
-            (newAction)="setNewAction($event)"
-            (newOptions)="setNewOptions($event)"></app-event-action-tab>
+      <mat-tab-group
+        animationDuration="0ms"
+        mat-stretch-tabs="false"
+        mat-align-tabs="start">
+        @for (tab of availableTabs; track tab) {
+          <mat-tab [label]="tab.toUpperCase()">
+            <div class="tab-container">
+              @switch (tab) {
+                @case ("action") {
+                  <app-event-action-tab
+                    [action]="editEvent().action"
+                    [options]="editEvent().options || {}"
+                    [isEditMode]="panel.expanded"
+                    (newAction)="setNewAction($event)"
+                    (newOptions)="setNewOptions($event)"></app-event-action-tab>
+                }
+                @case ("conditions") {
+                  <app-event-conditions-tab
+                    [conditions]="editEvent().conditions"
+                    [isEditMode]="panel.expanded"
+                    (newConditions)="setNewConditions($event)"></app-event-conditions-tab>
+                }
+              }
+            </div>
+          </mat-tab>
         }
-        @case ("conditions") {
-          <app-event-conditions-tab
-            [conditions]="editEvent().conditions"
-            [isEditMode]="panel.expanded"
-            (newConditions)="setNewConditions($event)"></app-event-conditions-tab>
-        }
-      }
+      </mat-tab-group>
     </div>
   </mat-expansion-panel>
 </div>

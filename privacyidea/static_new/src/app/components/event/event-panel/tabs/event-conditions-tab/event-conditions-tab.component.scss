@@ -1,7 +1,26 @@
 @use "../../../../../../styles" as styles;
 
-// overwrite some properties of the global style
-.action-selector-container {
+// override hover style for read only view to not change on hover
+.selected-actions-container .action-card:hover {
+  background-color: var(--mat-sys-surface-container) !important;
+  color: var(--mat-sys-on-surface) !important;
+  cursor: default !important;
+}
+
+.add-conditions-container {
   max-width: calc(0.5 * (100vw - var(--global-padding) * 5 - 48px));;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--global-gap) / 2);
+  overflow: scroll;
+  padding: 6px;
+}
+
+.small-icon {
+  font-size: 20px; /* or any smaller value you prefer */
+  width: 20px;
+  height: 20px;
+  line-height: 20px;
+  align-self: center;
 }

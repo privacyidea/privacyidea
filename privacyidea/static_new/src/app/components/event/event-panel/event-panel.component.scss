@@ -31,3 +31,12 @@
   display: block;
   margin-block: auto;
 }
+
+.align-right {
+  text-align: right;
+  justify-content: flex-end;
+}
+
+.tab-container {
+  margin: 16px 8px 8px 8px;
+}

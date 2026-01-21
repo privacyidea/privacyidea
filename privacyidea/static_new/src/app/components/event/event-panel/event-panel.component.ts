@@ -17,7 +17,17 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, effect, inject, input, linkedSignal, signal, WritableSignal } from "@angular/core";
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  input,
+  linkedSignal,
+  signal,
+  ViewChild
+} from "@angular/core";
 import {
   MatExpansionPanel,
   MatExpansionPanelDescription,
@@ -26,7 +36,7 @@ import {
 } from "@angular/material/expansion";
 import { MatSlideToggle } from "@angular/material/slide-toggle";
 import { MatIcon, MatIconModule } from "@angular/material/icon";
-import { MatButton, MatIconButton } from "@angular/material/button";
+import { MatIconButton } from "@angular/material/button";
 import { MatTooltip } from "@angular/material/tooltip";
 import { AuthService } from "../../../services/auth/auth.service";
 import { MatDialog } from "@angular/material/dialog";
@@ -44,6 +54,7 @@ import { MatChipsModule } from "@angular/material/chips";
 import { MatAutocompleteModule } from "@angular/material/autocomplete";
 import { CommonModule } from "@angular/common";
 import { EventSelectionComponent } from "./event-selection/event-selection.component";
+import { MatTab, MatTabGroup } from "@angular/material/tabs";
 
 export type eventTab = "events" | "action" | "conditions";
 
@@ -58,7 +69,6 @@ export type eventTab = "events" | "action" | "conditions";
     MatIconButton,
     MatSlideToggle,
     MatTooltip,
-    MatButton,
     EventActionTabComponent,
     EventConditionsTabComponent,
     MatFormField,
@@ -78,11 +88,14 @@ export type eventTab = "events" | "action" | "conditions";
     MatIconModule,
     FormsModule,
     ReactiveFormsModule,
-    EventSelectionComponent
+    EventSelectionComponent,
+    MatTabGroup,
+    MatTab
   ],
   standalone: true,
   templateUrl: "./event-panel.component.html",
-  styleUrl: "./event-panel.component.scss"
+  styleUrl: "./event-panel.component.scss",
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class EventPanelComponent {
   eventService = inject(EventService);
@@ -92,8 +105,9 @@ export class EventPanelComponent {
   event = input.required<EventHandler>();
   isNewEvent = input<boolean>(false);
   isEditMode = signal(false);
-  activeTab: WritableSignal<eventTab> = signal("events");
   isExpanded = signal(false);
+
+  availableTabs: eventTab[] = ["action", "conditions"];
 
   selectedEvents = linkedSignal(() => this.event().event);
 
@@ -211,6 +225,15 @@ export class EventPanelComponent {
       } else {
         this.eventService.disableEvent(this.event()!.id);
       }
+    }
+  }
+
+  @ViewChild("panel") panel!: MatExpansionPanel;
+
+  onEditMode() {
+    this.isEditMode.set(true);
+    if (this.panel) {
+      this.panel.open();
     }
   }
 }

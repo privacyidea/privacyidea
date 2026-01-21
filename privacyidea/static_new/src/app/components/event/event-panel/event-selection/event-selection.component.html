@@ -16,8 +16,7 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<form>
-  <mat-form-field class="width-100">
+  <mat-form-field class="width-100" floatLabel="always">
     <mat-label>Events</mat-label>
     <mat-chip-grid
       #chipGrid
@@ -34,7 +33,7 @@
       }
     </mat-chip-grid>
     <input
-      name="currentEvent"
+      matInput
       placeholder="New Event..."
       [value]="searchTerm()"
       (input)="onSearchInputChanges($event)"
@@ -58,4 +57,3 @@
       Events that should trigger this event handler.
     </mat-hint>
   </mat-form-field>
-</form>

@@ -311,4 +311,16 @@ describe("EventPanelComponent", () => {
     fixture.detectChanges(); // allow effect to run
     expect(mockEventService.selectedHandlerModule()).not.toBe("testModule2");
   });
+
+  it("should enable edit mode and open panel on onEditMode", () => {
+    // Mock the panel with an open method
+    const openSpy = jest.fn();
+    component.panel = { open: openSpy } as any;
+    component.isEditMode.set(false);
+
+    component.onEditMode();
+
+    expect(component.isEditMode()).toBe(true);
+    expect(openSpy).toHaveBeenCalled();
+  });
 });

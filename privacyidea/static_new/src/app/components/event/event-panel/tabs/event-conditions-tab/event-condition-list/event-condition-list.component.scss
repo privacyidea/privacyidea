@@ -1,0 +1,42 @@
+@use "../../../../../../../styles" as styles;
+
+// override hover style for read only view to not change on hover
+.selected-actions-container .action-card:hover {
+  background-color: var(--mat-sys-surface-container) !important;
+  color: var(--mat-sys-on-surface) !important;
+  cursor: default !important;
+  max-height: 100%;
+}
+
+.condition-name-container {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+.condition-value-container {
+  // grid item
+  justify-self: end;
+  align-self: flex-start;
+  // flex container
+  display: flex;
+  align-items: center;
+  justify-content: end;
+  gap: 16px;
+}
+
+.action-card-row-grid {
+  display: grid;
+  grid-template-columns: auto auto;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.description {
+  font-size: 0.75rem;
+  min-height: 18px;
+}
+
+.font-size-16 {
+  font-size: 16px;
+}

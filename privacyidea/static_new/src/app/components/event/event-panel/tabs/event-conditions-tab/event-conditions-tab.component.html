@@ -17,91 +17,96 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 
-<div class="flex-row">
-  <div class="flex-size-2 flex-column">
-    <!--  Selected Conditions  -->
-    <div class="selected-actions-container">
-      @for (conditionName of Object.keys(selectedConditions()); track conditionName) {
-        <div
-          class="action-card"
-          [class.action-card-selected]="clickedCondition() === conditionName"
-          (click)="clickedCondition.set(conditionName)">
-          <div class="action-card-row">
-            <span class="action-label">{{ conditionName }}</span>
-            @if (!isBooleanCondition(conditionName)) {
-              <span class="action-value">{{ selectedConditions()[conditionName] }}</span>
-            }
-            @if (isEditMode()) {
-              <div class="gap-div-8px"></div>
-              <button
-                mat-icon-button
-                class="action-button"
-                (click)="removeCondition(conditionName); $event.stopPropagation()">
-                <mat-icon>delete</mat-icon>
-              </button>
-            }
-          </div>
-        </div>
-      }
-      @if (Object.keys(selectedConditions()).length === 0) {
-        <div
-          class="italic"
-          i18n>
-          No conditions selected.
-        </div>
-      }
-    </div>
+<div class="flex-row gap-32">
+  <div class="flex-size-1">
     @if (isEditMode()) {
-      <!--   Add New Conditions (Selector)   -->
-      <mat-divider class="margin-top-16 margin-bottom-16"></mat-divider>
-      <div class="action-selector-container">
-        <h4 class="margin-top-8 margin-bottom-8">Add new condition</h4>
-        <!-- Search bar -->
-        <mat-form-field
-          subscriptSizing="dynamic">
-          <mat-label i18n>Search condition ...</mat-label>
-          <app-clearable-input
-            (onClick)="searchTerm.set('')"
-            [showClearButton]="searchTerm().length > 0">
-            <input
-              matInput
-              type="text"
-              placeholder="Search condition ..."
-              [ngModel]="searchTerm()"
-              (ngModelChange)="searchTerm.set($event)" />
-          </app-clearable-input>
-        </mat-form-field>
-        <!-- Condition Groups -->
-        <mat-tab-group animationDuration="0ms">
-          @for (group of availableGroups(); track $index) {
-            <mat-tab class="overflow-hidden" [disabled]="Object.keys(remainingConditionsByGroup()[group]).length === 0">
-              <ng-template mat-tab-label>
-                {{ group | titlecase }}
-              </ng-template>
-              <!-- Conditions in Group -->
-              <div class="selected-actions-container">
-                @for (conditionName of Object.keys(remainingConditionsByGroup()[group] || {}); track conditionName) {
-                  <div
-                    class="action-card"
-                    [class.action-card-selected]="clickedCondition() === conditionName"
-                    (click)="clickedCondition.set(conditionName)">
-                    <span class="action-label">{{ conditionName }}</span>
-                  </div>
-                }
-              </div>
-            </mat-tab>
-          }
-        </mat-tab-group>
-      </div>
+      <!--   Add New Conditions   -->
+      <mat-card>
+        <mat-card-header>
+          <div class="flex margin-bottom-8 gap-8">
+            <mat-icon class="small-icon">add_circle</mat-icon>
+            <h4
+              class="margin-0"
+              i18n>Add New Conditions
+            </h4>
+          </div>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="add-conditions-container">
+            <!-- Search bar -->
+            <mat-form-field
+              subscriptSizing="dynamic">
+              <mat-label i18n>Search condition ...</mat-label>
+              <app-clearable-input
+                (onClick)="searchTerm.set('')"
+                [showClearButton]="searchTerm().length > 0">
+                <input
+                  matInput
+                  type="text"
+                  placeholder="Search condition ..."
+                  [ngModel]="searchTerm()"
+                  (ngModelChange)="searchTerm.set($event)" />
+              </app-clearable-input>
+            </mat-form-field>
+            <!-- Condition Groups -->
+            <mat-tab-group
+              #conditionTabs
+              [(selectedIndex)]="selectedGroupIndex"
+              animationDuration="0ms">
+              @for (group of availableGroups(); track $index) {
+                <mat-tab
+                  class="overflow-hidden"
+                  [disabled]="Object.keys(remainingConditionsByGroup()[group]).length === 0">
+                  <ng-template mat-tab-label>
+                    {{ group | titlecase }}
+                  </ng-template>
+                  <!-- Conditions in Group -->
+                  <app-event-condition-list
+                    [conditions]="remainingConditionsByGroup()[group]"
+                    [action]="'add'"
+                    [emitOnConditionValueChange]="false"
+                    [actionOnEnter]="true"
+                    (newConditionValue)="onConditionValueToBeAddedChange($event.conditionName, $event.conditionValue)"
+                    (actionButtonClicked)="onConditionValueChange($event.conditionName, $event.conditionValue)"></app-event-condition-list>
+                </mat-tab>
+              }
+            </mat-tab-group>
+          </div>
+        </mat-card-content>
+      </mat-card>
     }
   </div>
-  <!--   Condition Details (description and edit field)   -->
+
   <div class="flex-size-1">
-    <app-event-condition-details
-      [conditionName]="clickedCondition()"
-      [originalConditionValue]="selectedConditions()[clickedCondition()]"
-      [isEditMode]="isEditMode()"
-      [isNewCondition]="Object.keys(selectedConditions()).indexOf(clickedCondition()) >= 0"
-      (conditionSubmitted)="onConditionSubmitted($event)"></app-event-condition-details>
+    <!--  Selected Conditions  -->
+    <mat-card>
+      <mat-card-header>
+        <div class="flex margin-bottom-8 gap-8">
+          <mat-icon class="small-icon">settings</mat-icon>
+          <h4
+            class="margin-0"
+            i18n>Configured Conditions
+          </h4>
+        </div>
+      </mat-card-header>
+      <mat-card-content>
+        <app-event-condition-list
+          [conditions]="selectedConditions()"
+          [action]="'delete'"
+          [emitOnConditionValueChange]="true"
+          [inputRequired]="true"
+          (newConditionValue)="onConditionValueChange($event.conditionName, $event.conditionValue)"
+          [focusConditionName]="addedCondition()"
+          (actionButtonClicked)="removeCondition($event.conditionName)"></app-event-condition-list>
+        <div class="selected-actions-container">
+
+          @if (Object.keys(selectedConditions()).length === 0) {
+            <div class="italic" i18n>
+              No conditions configured yet.
+            </div>
+          }
+        </div>
+      </mat-card-content>
+    </mat-card>
   </div>
 </div>

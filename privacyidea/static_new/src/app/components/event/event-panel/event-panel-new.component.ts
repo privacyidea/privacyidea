@@ -17,79 +17,78 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import {Component, effect, linkedSignal, ViewChild} from "@angular/core";
+import { Component, effect, linkedSignal } from "@angular/core";
 import {
+  MatExpansionPanel,
+  MatExpansionPanelDescription,
+  MatExpansionPanelHeader,
+  MatExpansionPanelTitle
+} from "@angular/material/expansion";
+import { MatSlideToggle } from "@angular/material/slide-toggle";
+import { MatIcon } from "@angular/material/icon";
+import { MatIconButton } from "@angular/material/button";
+import { MatTooltip } from "@angular/material/tooltip";
+import { EventActionTabComponent } from "./tabs/event-action-tab/event-action-tab.component";
+import { EventConditionsTabComponent } from "./tabs/event-conditions-tab/event-conditions-tab.component";
+import { MatInput, MatLabel } from "@angular/material/input";
+import { FormsModule, ReactiveFormsModule } from "@angular/forms";
+import { MatFormField, MatHint } from "@angular/material/form-field";
+import { MatOption, MatSelect } from "@angular/material/select";
+import { EventPanelComponent } from "./event-panel.component";
+import { EMPTY_EVENT } from "../../../services/event/event.service";
+import { MatTab, MatTabGroup } from "@angular/material/tabs";
+
+@Component({
+  selector: "app-event-panel-new",
+  imports: [
     MatExpansionPanel,
     MatExpansionPanelDescription,
     MatExpansionPanelHeader,
-    MatExpansionPanelTitle
-} from "@angular/material/expansion";
-import {MatSlideToggle} from "@angular/material/slide-toggle";
-import {MatIcon} from "@angular/material/icon";
-import {MatButton, MatIconButton} from "@angular/material/button";
-import {MatTooltip} from "@angular/material/tooltip";
-import {EventActionTabComponent} from "./tabs/event-action-tab/event-action-tab.component";
-import {EventConditionsTabComponent} from "./tabs/event-conditions-tab/event-conditions-tab.component";
-import {MatInput, MatLabel} from "@angular/material/input";
-import {FormsModule, ReactiveFormsModule} from "@angular/forms";
-import {MatFormField, MatHint} from "@angular/material/form-field";
-import {MatOption, MatSelect} from "@angular/material/select";
-import {EventPanelComponent} from "./event-panel.component";
-import {EMPTY_EVENT} from "../../../services/event/event.service";
-import {EventSelectionComponent} from "./event-selection/event-selection.component";
-
-@Component({
-    selector: "app-event-panel-new",
-    imports: [
-        MatExpansionPanel,
-        MatExpansionPanelDescription,
-        MatExpansionPanelHeader,
-        MatExpansionPanelTitle,
-        MatIcon,
-        MatIconButton,
-        MatSlideToggle,
-        MatTooltip,
-        MatButton,
-        EventActionTabComponent,
-        EventConditionsTabComponent,
-        MatFormField,
-        MatHint,
-        MatInput,
-        MatLabel,
-        ReactiveFormsModule,
-        FormsModule,
-        MatSelect,
-        MatOption,
-        EventSelectionComponent
-    ],
-    templateUrl: "./event-panel-new.component.html",
-    styleUrl: "./event-panel.component.scss"
+    MatExpansionPanelTitle,
+    MatIcon,
+    MatIconButton,
+    MatSlideToggle,
+    MatTooltip,
+    EventActionTabComponent,
+    EventConditionsTabComponent,
+    MatFormField,
+    MatHint,
+    MatInput,
+    MatLabel,
+    ReactiveFormsModule,
+    FormsModule,
+    MatSelect,
+    MatOption,
+    MatTab,
+    MatTabGroup
+  ],
+  templateUrl: "./event-panel-new.component.html",
+  styleUrl: "./event-panel.component.scss"
 })
 export class EventPanelNewComponent extends EventPanelComponent {
-    @ViewChild('panel') panel!: MatExpansionPanel;
-    override isEditMode = linkedSignal(() => this.isExpanded());
+  override isEditMode = linkedSignal(() => this.isExpanded());
 
-    protected override readonly setHandlerModuleEffect = effect(() => {
-        const modules = this.eventService.eventHandlerModules();
-        if (this.isExpanded() && modules.length > 0 && !this.eventService.selectedHandlerModule()) {
-            this.eventService.selectedHandlerModule.set(modules[0]);
-        }
-    });
-
-    override saveEvent(): void {
-        let eventParams = this.getSaveParameters();
-        // new event handler do not yet have an ID
-        delete eventParams["id"];
-        this.eventService.saveEventHandler(eventParams).subscribe({
-            next: (response) => {
-                if (response?.result?.value !== undefined) {
-                    this.eventService.allEventsResource.reload();
-                    this.isEditMode.set(false);
-                    this.editEvent.set(EMPTY_EVENT);
-                    this.panel.close();
-                    this.notificiationService.openSnackBar("Event handler created successfully.");
-                }
-            }
-        });
+  protected override readonly setHandlerModuleEffect = effect(() => {
+    const modules = this.eventService.eventHandlerModules();
+    if (this.isExpanded() && modules.length > 0 && !this.eventService.selectedHandlerModule()) {
+      this.eventService.selectedHandlerModule.set(modules[0]);
     }
+  });
+
+  override saveEvent(): void {
+    let eventParams = this.getSaveParameters();
+    // new event handler do not yet have an ID
+    delete eventParams["id"];
+    this.eventService.saveEventHandler(eventParams).subscribe({
+      next: (response) => {
+        if (response?.result?.value !== undefined) {
+          this.eventService.allEventsResource.reload();
+          this.isEditMode.set(false);
+          this.editEvent.set(EMPTY_EVENT);
+          this.panel.close();
+          this.notificiationService.openSnackBar("Event handler created successfully.");
+        }
+      }
+    });
+  }
 }

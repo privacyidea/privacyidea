@@ -17,27 +17,31 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, inject, input, linkedSignal, output, signal } from "@angular/core";
-import { EventCondition, EventService } from "../../../../../services/event/event.service";
-import { deepCopy } from "../../../../../utils/deep-copy.utils";
-import { MatIcon } from "@angular/material/icon";
-import { MatIconButton } from "@angular/material/button";
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  input,
+  linkedSignal,
+  output,
+  signal
+} from "@angular/core";
+import { EventService } from "../../../../../services/event/event.service";
 import { ClearableInputComponent } from "../../../../shared/clearable-input/clearable-input.component";
-import { MatDivider } from "@angular/material/divider";
 import { MatInput, MatLabel } from "@angular/material/input";
 import { FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { MatFormField } from "@angular/material/form-field";
 import { TitleCasePipe } from "@angular/common";
 import { MatTab, MatTabGroup, MatTabLabel } from "@angular/material/tabs";
-import { EventConditionDetailsComponent } from "./event-condition-details/event-condition-details.component";
+import { EventConditionListComponent } from "./event-condition-list/event-condition-list.component";
+import { MatCardModule } from "@angular/material/card";
+import { MatIcon } from "@angular/material/icon";
 
 @Component({
   selector: "app-event-conditions-tab",
   imports: [
-    MatIcon,
-    MatIconButton,
     ClearableInputComponent,
-    MatDivider,
     MatFormField,
     MatInput,
     MatLabel,
@@ -47,10 +51,13 @@ import { EventConditionDetailsComponent } from "./event-condition-details/event-
     MatTabGroup,
     MatTab,
     MatTabLabel,
-    EventConditionDetailsComponent
+    EventConditionListComponent,
+    MatCardModule,
+    MatIcon
   ],
   templateUrl: "./event-conditions-tab.component.html",
-  styleUrl: "./event-conditions-tab.component.scss"
+  styleUrl: "./event-conditions-tab.component.scss",
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class EventConditionsTabComponent {
   protected readonly eventService = inject(EventService);
@@ -58,20 +65,13 @@ export class EventConditionsTabComponent {
   isEditMode = input.required<boolean>();
   newConditions = output<Record<string, any>>();
 
-  selectedConditions = linkedSignal(() => deepCopy(this.conditions()));
-  clickedCondition = linkedSignal(() => Object.keys(this.selectedConditions())[0] || "");
+  selectedConditions = linkedSignal(() => this.conditions());
+  conditionsToBeAdded: Record<string, any> = {};
+  selectedGroupIndex = 0;
+  protected readonly Object = Object;
+
+  addedCondition = signal("");
   searchTerm = signal("");
-
-  isBooleanCondition(conditionName: string) {
-    const conditionDefinition = this.eventService.moduleConditions()[conditionName];
-    return conditionDefinition?.type === "bool";
-  }
-
-  removeCondition(conditionName: string) {
-    delete this.selectedConditions()[conditionName];
-    this.selectedConditions.set({ ...this.selectedConditions() }); // Trigger change detection
-    this.newConditions.emit(this.selectedConditions());
-  }
 
   availableGroups = computed(() => Object.keys(this.eventService.moduleConditionsByGroup()));
 
@@ -82,14 +82,16 @@ export class EventConditionsTabComponent {
       search: this.searchTerm()
     }),
     computation: ({ available, selected, search }) => {
-      if (search === "" && Object.keys(selected).length === 0) {
-        return available;
-      }
-      let remaining = deepCopy(available);
-      for (const [groupName, condition] of Object.entries(remaining)) {
+      // TODO: Can we simplify this logic?
+      // let remaining = deepCopy(available);
+      let remaining: Record<string, any> = {};
+      for (const [groupName, condition] of Object.entries(available)) {
+        remaining[groupName] = {};
         for (const conditionName of Object.keys(condition)) {
           if (conditionName in selected || !conditionName.toLowerCase().includes(search.toLowerCase())) {
-            delete remaining[groupName][conditionName];
+            // delete remaining[groupName][conditionName];
+          } else {
+            remaining[groupName][conditionName] = this.conditionsToBeAdded[conditionName] || "";
           }
         }
       }
@@ -97,17 +99,25 @@ export class EventConditionsTabComponent {
     }
   });
 
-  onConditionSubmitted(value: any) {
-    const name = this.clickedCondition();
-    if (name) {
-      // Add or update the selected condition
-      this.selectedConditions.update((dict) => ({
-        ...dict,
-        [name]: value
-      }));
-      this.newConditions.emit(this.selectedConditions());
+  onConditionValueToBeAddedChange(conditionName: string, value: any) {
+    this.conditionsToBeAdded[conditionName] = value;
+  }
+
+  onConditionValueChange(conditionName: string, value: any) {
+    this.selectedConditions.set({
+      ...this.selectedConditions(),
+      [conditionName]: value
+    });
+    this.newConditions.emit(this.selectedConditions());
+    if (value === "") {
+      // notify selected condition list to focus the new empty input
+      this.addedCondition.set(conditionName);
     }
   }
 
-  protected readonly Object = Object;
+  removeCondition(conditionName: string) {
+    delete this.selectedConditions()[conditionName];
+    this.selectedConditions.set({ ...this.selectedConditions() }); // Trigger change detection
+    this.newConditions.emit(this.selectedConditions());
+  }
 }
