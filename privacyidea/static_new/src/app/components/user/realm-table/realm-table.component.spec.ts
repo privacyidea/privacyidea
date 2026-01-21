@@ -39,6 +39,7 @@ import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ResolverService } from "../../../services/resolver/resolver.service";
 import { MockResolverService } from "../../../../testing/mock-services/mock-resolver-service";
+import { UserNewResolverComponent } from "../user-new-resolver/user-new-resolver.component";
 
 class LocalMockMatDialog {
   result$ = of(true);
@@ -526,5 +527,26 @@ describe("RealmTableComponent", () => {
     expect(notificationService.openSnackBar).toHaveBeenCalledWith('Realm "realmA" set as default.');
     expect(realmService.realmResource.reload).toHaveBeenCalled();
     expect(realmService.defaultRealmResource.reload).toHaveBeenCalled();
+  });
+  
+  it("onClickResolver should open UserNewResolverComponent with resolver data", () => {
+    const resolver = { resolvername: "res1", type: "ldapresolver" } as any;
+    resolverService.setResolvers([resolver]);
+
+    component.onClickResolver("res1");
+
+    expect(dialog.open).toHaveBeenCalledWith(UserNewResolverComponent, {
+      data: { resolver },
+      width: "auto",
+      height: "auto",
+      maxWidth: "100vw",
+      maxHeight: "100vh"
+    });
+  });
+
+  it("onClickResolver should do nothing if resolver not found", () => {
+    resolverService.setResolvers([]);
+    component.onClickResolver("non-existing");
+    expect(dialog.open).not.toHaveBeenCalled();
   });
 });

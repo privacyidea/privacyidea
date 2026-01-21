@@ -1,0 +1,95 @@
+<!--
+ (c) NetKnights GmbH 2025,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+@if (description) {
+  <p class="auth-description">{{ description }}</p>
+}
+
+<div
+  [formGroup]="formGroup"
+  class="auth-grid">
+  <mat-form-field class="width-238">
+    <mat-label i18n>Method</mat-label>
+    <mat-select formControlName="method">
+      <mat-option value="POST">POST</mat-option>
+      <mat-option value="GET">GET</mat-option>
+      <mat-option value="PUT">PUT</mat-option>
+      <mat-option value="PATCH">PATCH</mat-option>
+      <mat-option value="DELETE">DELETE</mat-option>
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field class="auth-endpoint">
+    <mat-label i18n>Endpoint</mat-label>
+    <app-clearable-input
+      (onClick)="formGroup.get('endpoint')?.setValue('')"
+      [showClearButton]="!!formGroup.get('endpoint')?.value">
+      <input
+        formControlName="endpoint"
+        matInput
+        placeholder="/users" />
+    </app-clearable-input>
+    @if (endpointHint) {
+      <mat-hint>{{ endpointHint }}</mat-hint>
+    }
+  </mat-form-field>
+
+  <mat-form-field class="auth-wide">
+    <mat-label i18n>Headers (JSON format)</mat-label>
+    <textarea
+      formControlName="headers"
+      matInput
+      placeholder='{"Content-Type":"application/json; charset=UTF-8"}'></textarea>
+  </mat-form-field>
+
+  <mat-form-field class="auth-wide">
+    <mat-label i18n>Request Mapping (JSON format)</mat-label>
+    <textarea
+      formControlName="requestMapping"
+      matInput
+      placeholder='{"customerid":"{userid}","accessKey":"{secre3t!}"}'></textarea>
+    @if (endpointHint) {
+      <mat-hint>{{ endpointHint }}</mat-hint>
+    }
+  </mat-form-field>
+
+  <mat-form-field class="auth-wide">
+    <mat-label i18n>Response Mapping (JSON format)</mat-label>
+    <textarea
+      formControlName="responseMapping"
+      matInput
+      placeholder='{"Authorization":"Bearer {access_token}"}'></textarea>
+  </mat-form-field>
+
+  <mat-checkbox
+    class="auth-wide checkbox-inline"
+    formControlName="hasSpecialErrorHandler"
+    i18n>
+    Special Error Handling
+  </mat-checkbox>
+
+  @if (formGroup.get('hasSpecialErrorHandler')?.value) {
+    <mat-form-field class="auth-wide">
+      <mat-label i18n>Response Contains (JSON format)</mat-label>
+      <textarea
+        formControlName="errorResponse"
+        matInput
+        placeholder='{"success": false, "message": "An error occurred!"}'></textarea>
+    </mat-form-field>
+  }
+</div>

@@ -27,19 +27,20 @@ export function parseBooleanValue(initialValue: string | number | boolean): bool
   if (typeofInitialValue === "number") {
     if (initialValue === 1) return true;
     if (initialValue === 0) return false;
-    assert(false, `Initial value for BoolSelectButtonsComponent must be 0 or 1 if number, but was ${initialValue}`);
+    assert(false, `Initial value for parseBooleanValue must be 0 or 1 if number, but was ${initialValue}`);
   }
   if (typeofInitialValue === "string") {
-    if (String(initialValue).toLowerCase() === "true") return true;
-    if (String(initialValue).toLowerCase() === "false") return false;
+    const lower = String(initialValue).toLowerCase();
+    if (lower === "true" || lower === "1") return true;
+    if (lower === "false" || lower === "0") return false;
     assert(
       false,
-      `Initial value for BoolSelectButtonsComponent must be "true" or "false" if string, but was ${initialValue}`
+      `Initial value for parseBooleanValue must be "true", "false", "1" or "0" if string, but was ${initialValue}`
     );
   }
   assert(
     false,
-    `Initial value for BoolSelectButtonsComponent must be boolean, 0, 1, "true" or "false", but was ${initialValue}`
+    `Initial value for parseBooleanValue must be boolean, 0, 1, "true", "false", "1" or "0", but was ${initialValue}`
   );
   return false;
 }
