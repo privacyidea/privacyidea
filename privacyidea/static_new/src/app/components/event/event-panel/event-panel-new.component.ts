@@ -37,6 +37,7 @@ import { MatOption, MatSelect } from "@angular/material/select";
 import { EventPanelComponent } from "./event-panel.component";
 import { EMPTY_EVENT } from "../../../services/event/event.service";
 import { MatTab, MatTabGroup } from "@angular/material/tabs";
+import { EventSelectionComponent } from "./event-selection/event-selection.component";
 
 @Component({
   selector: "app-event-panel-new",
@@ -60,7 +61,8 @@ import { MatTab, MatTabGroup } from "@angular/material/tabs";
     MatSelect,
     MatOption,
     MatTab,
-    MatTabGroup
+    MatTabGroup,
+    EventSelectionComponent
   ],
   templateUrl: "./event-panel-new.component.html",
   styleUrl: "./event-panel.component.scss"

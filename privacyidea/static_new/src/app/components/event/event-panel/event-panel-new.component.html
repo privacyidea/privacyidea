@@ -131,6 +131,10 @@
         </div>
       </div>
 
+      <app-event-selection
+          [events]="editEvent().event"
+          (newEvents)="setNewEvents($event)"></app-event-selection>
+
       <mat-tab-group
         animationDuration="0ms"
         mat-stretch-tabs="false"

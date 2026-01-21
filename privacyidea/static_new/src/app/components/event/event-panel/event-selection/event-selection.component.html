@@ -16,6 +16,7 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
+<form>
   <mat-form-field class="width-100" floatLabel="always">
     <mat-label>Events</mat-label>
     <mat-chip-grid
@@ -37,7 +38,6 @@
       placeholder="New Event..."
       [value]="searchTerm()"
       (input)="onSearchInputChanges($event)"
-      [(ngModel)]="searchTerm"
       [matChipInputFor]="chipGrid"
       [matAutocomplete]="auto"
       [matChipInputSeparatorKeyCodes]="separatorKeysCodes"
@@ -46,6 +46,12 @@
       matAutocompleteTrigger
       (focus)="autocompleteTrigger.openPanel()"
       (click)="autocompleteTrigger.openPanel()" />
+      @if(searchTerm() !== "") {
+          <app-clear-button
+                  class="suffix-bottom"
+                  matSuffix
+                  (onClick)="clearSearchTerm()"></app-clear-button>
+      }
     <mat-autocomplete
       #auto="matAutocomplete"
       (optionSelected)="selected($event)">
@@ -57,3 +63,4 @@
       Events that should trigger this event handler.
     </mat-hint>
   </mat-form-field>
+</form>

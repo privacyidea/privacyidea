@@ -1,1 +1,6 @@
 @use "../../../../../styles" as styles;
+
+.mat-mdc-form-field-icon-suffix {
+  align-self: flex-end !important;
+  margin-bottom: 8px !important;
+}

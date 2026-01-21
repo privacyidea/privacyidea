@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, inject, input, linkedSignal, model, output, ViewChild } from "@angular/core";
+import {Component, inject, input, linkedSignal, model, output, ViewChild, ViewEncapsulation} from "@angular/core";
 import { EventService } from "../../../../services/event/event.service";
 import { deepCopy } from "../../../../utils/deep-copy.utils";
 import { ENTER } from "@angular/cdk/keycodes";
@@ -32,6 +32,7 @@ import { MatChipsModule } from "@angular/material/chips";
 import { MatFormFieldModule, MatHint, MatLabel } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
+import { ClearButtonComponent } from "../../../shared/clear-button/clear-button.component";
 
 @Component({
   selector: "app-event-selection",
@@ -46,10 +47,12 @@ import { MatInput } from "@angular/material/input";
     MatLabel,
     MatOption,
     ReactiveFormsModule,
-    MatInput
+    MatInput,
+    ClearButtonComponent
   ],
   templateUrl: "./event-selection.component.html",
-  styleUrl: "./event-selection.component.scss"
+  styleUrl: "./event-selection.component.scss",
+  encapsulation: ViewEncapsulation.None
 })
 export class EventSelectionComponent {
   protected readonly eventService = inject(EventService);
@@ -89,6 +92,7 @@ export class EventSelectionComponent {
 
   onSearchInputChanges(event: any): void {
     this.lastSearchTerm = event.target.value;
+    this.searchTerm.set(event.target.value);
   }
 
   remainingEvents = linkedSignal({
@@ -103,4 +107,9 @@ export class EventSelectionComponent {
         (!search || event.toLowerCase().includes(search.toLowerCase()))
       )
   });
+
+  clearSearchTerm(): void {
+    this.searchTerm.set("");
+    this.lastSearchTerm = "";
+  }
 }
