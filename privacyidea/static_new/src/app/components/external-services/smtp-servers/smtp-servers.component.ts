@@ -73,6 +73,7 @@ export class SmtpServersComponent {
 
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
+  @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: any;
 
   displayedColumns: string[] = ["identifier", "server", "sender", "tls", "description", "actions"];
 
@@ -106,11 +107,21 @@ export class SmtpServersComponent {
     });
   }
 
-  protected resetFilter() {
+  onFilterInput(value: string): void {
+    const trimmed = (value ?? "").trim();
+    this.filterString.set(trimmed);
 
+    const ds = this.smtpDataSource();
+    ds.filter = trimmed.toLowerCase();
   }
 
-  protected onFilterInput(value: string) {
-
+  resetFilter(): void {
+    this.filterString.set("");
+    const ds = this.smtpDataSource();
+    ds.filter = "";
+    const inputEl = this.filterInput?.nativeElement as HTMLInputElement | undefined;
+    if (inputEl) {
+      inputEl.value = "";
+    }
   }
 }
