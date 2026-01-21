@@ -169,11 +169,11 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
 
     this.pendingChangesService.registerHasChanges(() => this.hasChanges);
 
-    effect (() => {
+    effect(() => {
       if (!this.contentService.routeUrl().startsWith(ROUTE_PATHS.USERS_RESOLVERS)) {
         this.dialogRef?.close(true);
       }
-    })
+    });
 
     effect(() => {
       const selectedName = this.resolverService.selectedResolverName();
@@ -301,12 +301,7 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
           UIDTYPE: "DN"
         };
       } else if (type === "sqlresolver") {
-        this.formData = {
-          Limit: 500,
-          poolSize: 5,
-          poolTimeout: 10,
-          poolRecycle: 7200
-        };
+        this.formData = {};
       } else if (type === "entraidresolver") {
         this.formData = {
           base_url: "https://graph.microsoft.com/v1.0",
@@ -365,21 +360,9 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
           }
         };
       } else if (type === "scimresolver") {
-        this.formData = {
-          Authserver: "http://localhost:8080/osiam-auth-server",
-          Resourceserver: "http://localhost:8080/osiam-resource-server",
-          Mapping: "{\"userName\": \"username\", \"id\": \"userid\", \"emails.0.value\": \"email\"}"
-        };
+        this.formData = {};
       } else if (type === "httpresolver") {
-        this.formData = {
-          method: "GET",
-          endpoint: "https://example.com/path/to/users/:userid",
-          requestMapping: "{}",
-          headers: "{\"Content-Type\":\"application/json; charset=UTF-8\"}",
-          responseMapping: "{\"username\":\"{username}\", \"userid\":\"{userid}\"}",
-          hasSpecialErrorHandler: false,
-          errorResponse: "{\"success\": false, \"message\": \"An error occurred!\"}"
-        };
+        this.formData = {};
       }
     }
   }

@@ -177,7 +177,13 @@
                           <ul class="resolver-list">
                             @for (res of group.resolvers; track res.name + res.type + res.priority) {
                               <li class="resolver-item">
-                                <span class="resolver-name">{{ res.name }}</span>
+                                <a
+                                  (click)="onClickResolver(res.name)"
+                                  attr.aria-label="{{ column.label }} Link"
+                                  class="resolver-name"
+                                  routerLink="/users/resolvers">
+                                  {{ res.name }}
+                                </a>
                                 @if (res.priority !== null && res.priority !== undefined) {
                                   <span class="resolver-priority">[{{ res.priority }}]</span>
                                 }
@@ -369,4 +375,5 @@
       </tr>
     </table>
   </div>
+</div>
 </div>

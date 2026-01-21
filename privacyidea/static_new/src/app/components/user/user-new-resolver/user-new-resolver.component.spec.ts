@@ -459,7 +459,7 @@ describe("UserNewResolverComponent", () => {
 
     component.resolverType = "httpresolver";
     component.onTypeChange("httpresolver");
-    expect(component.formData["endpoint"]).toBeDefined();
+    expect(component.formData["responseMapping"]).toBeUndefined();
 
     component.resolverType = "passwdresolver";
     component.onTypeChange("passwdresolver");

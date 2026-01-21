@@ -46,6 +46,7 @@ import { MatSelectModule } from "@angular/material/select";
 import { MatIconModule } from "@angular/material/icon";
 import { MatButtonModule } from "@angular/material/button";
 import { MatDialog } from "@angular/material/dialog";
+import { RouterLink } from "@angular/router";
 import { concat, last, take } from "rxjs";
 
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
@@ -62,6 +63,7 @@ import {
 import { NodeInfo, SystemService, SystemServiceInterface } from "../../../services/system/system.service";
 import { NotificationService, NotificationServiceInterface } from "../../../services/notification/notification.service";
 import { ConfirmationDialogComponent } from "../../shared/confirmation-dialog/confirmation-dialog.component";
+import { UserNewResolverComponent } from "../user-new-resolver/user-new-resolver.component";
 import { MatTooltip } from "@angular/material/tooltip";
 import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
 import { ResolverService, ResolverServiceInterface } from "../../../services/resolver/resolver.service";
@@ -109,7 +111,8 @@ const NO_NODE_ID = "";
     MatSelectModule,
     MatIconModule,
     MatButtonModule,
-    MatTooltip
+    MatTooltip,
+    RouterLink
   ],
   templateUrl: "./realm-table.component.html",
   styleUrl: "./realm-table.component.scss"
@@ -167,10 +170,6 @@ export class RealmTableComponent {
     ];
   });
 
-  /**
-   * Resolver options are now loaded from the resolver API via ResolverService,
-   * not derived from realmResource.
-   */
   resolverOptions = computed(() => {
     const resolvers = this.resolverService.resolvers();
     return resolvers.map((resolver) => ({
@@ -647,6 +646,19 @@ export class RealmTableComponent {
           );
         }
       });
+  }
+
+  onClickResolver(resolverName: unknown): void {
+    const resolver = this.resolverService.resolvers().find(r => r.resolvername === resolverName);
+    if (resolver) {
+      this.dialog.open(UserNewResolverComponent, {
+        data: { resolver },
+        width: "auto",
+        height: "auto",
+        maxWidth: "100vw",
+        maxHeight: "100vh"
+      });
+    }
   }
 
   private clientsideSortRealmData(data: RealmRow[], s: Sort): RealmRow[] {

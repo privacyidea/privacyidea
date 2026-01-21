@@ -123,4 +123,28 @@ describe("HttpResolverComponent", () => {
     expect(component.checkUserPasswordHint()).toBe("Possible tags: {userid} {username} {password}");
   });
 
+  it("should preset responseMapping only when switching to Advanced mode and it is empty", () => {
+    // Initially in Basic mode
+    expect(component["basicSettings"]()).toBe(true);
+    expect(component.responseMappingControl.value).toBe("");
+
+    // Switch to Advanced mode
+    component["basicSettings"].set(false);
+    fixture.detectChanges();
+
+    expect(component.responseMappingControl.value).toBe("{\"username\":\"{username}\", \"userid\":\"{userid}\"}");
+  });
+
+  it("should NOT overwrite responseMapping when switching to Advanced mode if it is already set", () => {
+    // Initially in Basic mode
+    expect(component["basicSettings"]()).toBe(true);
+    component.responseMappingControl.setValue("{\"custom\":\"mapping\"}");
+
+    // Switch to Advanced mode
+    component["basicSettings"].set(false);
+    fixture.detectChanges();
+
+    expect(component.responseMappingControl.value).toBe("{\"custom\":\"mapping\"}");
+  });
+
 });

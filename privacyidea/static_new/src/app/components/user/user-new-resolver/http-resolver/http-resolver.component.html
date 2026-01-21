@@ -188,27 +188,29 @@
         <td
           *matCellDef="let row; let i = index"
           mat-cell>
-          <mat-form-field
-            class="cell-field"
-            subscriptSizing="dynamic">
-            <mat-select
-              (selectionChange)="onPrivacyIdeaAttrChanged(i, $event.value)"
-              [value]="row.isCustom ? CUSTOM_ATTR_VALUE : row.privacyideaAttr"
-              i18n-placeholder
-              placeholder="Select PrivacyIDEA Attribute">
+          @if (!row.isCustom) {
+            <mat-form-field
+              class="cell-field"
+              subscriptSizing="dynamic">
+              <mat-select
+                (selectionChange)="onPrivacyIdeaAttrChanged(i, $event.value)"
+                [value]="row.privacyideaAttr"
+                i18n-placeholder
+                placeholder="Select PrivacyIDEA Attribute">
 
-              @for (attr of availableAttributes()[i]; track attr) {
-                <mat-option [value]="attr">{{ attr }}</mat-option>
-              }
+                @for (attr of availableAttributes()[i]; track attr) {
+                  <mat-option [value]="attr">{{ attr }}</mat-option>
+                }
 
-              <mat-divider></mat-divider>
+                <mat-divider></mat-divider>
 
-              <mat-option
-                [value]="CUSTOM_ATTR_VALUE"
-                i18n>Custom…
-              </mat-option>
-            </mat-select>
-          </mat-form-field>
+                <mat-option
+                  [value]="CUSTOM_ATTR_VALUE"
+                  i18n>Custom…
+                </mat-option>
+              </mat-select>
+            </mat-form-field>
+          }
 
           @if (row.isCustom) {
             <mat-form-field

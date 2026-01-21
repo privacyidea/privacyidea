@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, effect, input, linkedSignal, signal, WritableSignal } from "@angular/core";
+import { Component, computed, effect, input, linkedSignal, signal } from "@angular/core";
 import { AbstractControl, FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { toSignal } from "@angular/core/rxjs-interop";
 
@@ -228,9 +228,19 @@ export class HttpResolverComponent {
     effect(() => {
       this.syncControls();
     });
+
+    effect(() => {
+      const basic = this.basicSettings();
+      if (!basic && !this.responseMappingControl.value) {
+        this.responseMappingControl.setValue("{\"username\":\"{username}\", \"userid\":\"{userid}\"}");
+        this.verifyTlsControl.setValue(true);
+      }
+      if (basic && this.responseMappingControl.value) {
+        this.responseMappingControl.setValue("");
+        this.verifyTlsControl.setValue(false);
+      }
+    });
   }
-
-
 
   setCustomAttr(rowIndex: number, customValue: string): void {
     const v = (customValue ?? "").trim();

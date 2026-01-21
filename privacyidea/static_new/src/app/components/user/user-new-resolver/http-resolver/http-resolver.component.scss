@@ -67,6 +67,10 @@ textarea[matInput] {
   td,
   th {
     background: var(--table-color);
+
+    ::ng-deep .mdc-text-field {
+      background-color: var(--table-color) !important;
+    }
   }
 
   .cell-field {
