@@ -57,6 +57,7 @@ import { ResolverService, ResolverServiceInterface } from "../../../services/res
 import { PeriodicTaskService } from "../../../services/periodic-task/periodic-task.service";
 import { SmtpService, SmtpServiceInterface } from "../../../services/smtp/smtp.service";
 import { RadiusService, RadiusServiceInterface } from "../../../services/radius/radius.service";
+import { SmsGatewayService, SmsGatewayServiceInterface } from "../../../services/sms-gateway/sms-gateway.service";
 
 @Component({
   selector: "app-navigation",
@@ -105,6 +106,7 @@ export class NavigationComponent {
   private readonly resolverService: ResolverServiceInterface = inject(ResolverService);
   private readonly smtpService: SmtpServiceInterface = inject(SmtpService);
   private readonly radiusService: RadiusServiceInterface = inject(RadiusService);
+  private readonly smsGatewayService: SmsGatewayServiceInterface = inject(SmsGatewayService);
   protected readonly periodicTaskService = inject(PeriodicTaskService);
   protected readonly router: Router = inject(Router);
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
@@ -176,6 +178,9 @@ export class NavigationComponent {
         break;
       case ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS:
         this.radiusService.radiusServerResource.reload();
+        break;
+      case ROUTE_PATHS.EXTERNAL_SERVICES_SMS:
+        this.smsGatewayService.smsGatewayResource.reload();
         break;
     }
   }

@@ -38,6 +38,7 @@ import { MachineResolverComponent } from "./components/machine-resolver/machine-
 import { PeriodicTaskComponent } from "./components/configuration/periodic-task/periodic-task.component";
 import { SmtpServersComponent } from "./components/external-services/smtp-servers/smtp-servers.component";
 import { RadiusServersComponent } from "./components/external-services/radius-servers/radius-servers.component";
+import { SmsGatewaysComponent } from "./components/external-services/sms-gateways/sms-gateways.component";
 import { UserResolversComponent } from "./components/user/user-sources/user-resolvers.component";
 import { pendingChangesGuard } from "./guards/pending-changes.guard";
 
@@ -91,7 +92,8 @@ export const routes: Routes = [
     path: "external-services",
     children: [
       { path: "smtp", component: SmtpServersComponent, canDeactivate: [pendingChangesGuard] },
-      { path: "radius", component: RadiusServersComponent, canDeactivate: [pendingChangesGuard] }
+      { path: "radius", component: RadiusServersComponent, canDeactivate: [pendingChangesGuard] },
+      { path: "sms", component: SmsGatewaysComponent, canDeactivate: [pendingChangesGuard] }
     ]
   },
   {

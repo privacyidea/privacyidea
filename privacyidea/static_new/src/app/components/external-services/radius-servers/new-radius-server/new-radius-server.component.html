@@ -17,10 +17,11 @@
         matInput
         placeholder="myRadiusServer" />
       <mat-hint i18n>The unique identifying name of the RADIUS server definition.</mat-hint>
-      <mat-error
-        *ngIf="radiusForm.get('identifier')?.hasError('required')"
-        i18n>Identifier is required
-      </mat-error>
+      @if (radiusForm.get('identifier')?.hasError('required')) {
+        <mat-error
+          i18n>Identifier is required
+        </mat-error>
+      }
     </mat-form-field>
 
     <div class="row">
@@ -32,10 +33,11 @@
           formControlName="server"
           matInput
           placeholder="1.2.3.4" />
-        <mat-error
-          *ngIf="radiusForm.get('server')?.hasError('required')"
-          i18n>Server is required
-        </mat-error>
+        @if (radiusForm.get('server')?.hasError('required')) {
+          <mat-error
+            i18n>Server is required
+          </mat-error>
+        }
       </mat-form-field>
 
       <mat-form-field
@@ -83,10 +85,11 @@
         matInput
         placeholder="testing123"
         type="password" />
-      <mat-error
-        *ngIf="radiusForm.get('secret')?.hasError('required')"
-        i18n>Secret is required
-      </mat-error>
+      @if (radiusForm.get('secret')?.hasError('required')) {
+        <mat-error
+          i18n>Secret is required
+        </mat-error>
+      }
     </mat-form-field>
 
     <mat-form-field

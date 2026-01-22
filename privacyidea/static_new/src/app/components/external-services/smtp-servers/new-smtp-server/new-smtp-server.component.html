@@ -17,10 +17,11 @@
         matInput
         placeholder="mySmtpServer" />
       <mat-hint i18n>The unique identifying name of the SMTP server definition.</mat-hint>
-      <mat-error
-        *ngIf="smtpForm.get('identifier')?.hasError('required')"
-        i18n>Identifier is required
-      </mat-error>
+      @if (smtpForm.get('identifier')?.hasError('required')) {
+        <mat-error
+          i18n>Identifier is required
+        </mat-error>
+      }
     </mat-form-field>
 
     <div class="row">
@@ -32,10 +33,11 @@
           formControlName="server"
           matInput
           placeholder="smtp://mail.example.com" />
-        <mat-error
-          *ngIf="smtpForm.get('server')?.hasError('required')"
-          i18n>Server is required
-        </mat-error>
+        @if (smtpForm.get('server')?.hasError('required')) {
+          <mat-error
+            i18n>Server is required
+          </mat-error>
+        }
       </mat-form-field>
 
       <mat-form-field
@@ -70,14 +72,16 @@
           formControlName="sender"
           matInput
           placeholder="privacyidea@example.com" />
-        <mat-error
-          *ngIf="smtpForm.get('sender')?.hasError('required')"
-          i18n>Sender email is required
-        </mat-error>
-        <mat-error
-          *ngIf="smtpForm.get('sender')?.hasError('email')"
-          i18n>Invalid email format
-        </mat-error>
+        @if (smtpForm.get('sender')?.hasError('required')) {
+          <mat-error
+            i18n>Sender email is required
+          </mat-error>
+        }
+        @if (smtpForm.get('sender')?.hasError('email')) {
+          <mat-error
+            i18n>Invalid email format
+          </mat-error>
+        }
       </mat-form-field>
     </div>
 

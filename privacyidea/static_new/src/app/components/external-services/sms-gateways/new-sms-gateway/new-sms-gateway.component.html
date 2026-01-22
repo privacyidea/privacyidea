@@ -1,0 +1,168 @@
+<h2
+  i18n
+  mat-dialog-title>
+  {{ isEditMode ? 'Edit SMS Gateway' : 'Create SMS Gateway' }}
+</h2>
+
+<mat-dialog-content class="sms-dialog-content">
+  <form
+    [formGroup]="smsForm"
+    class="sms-form">
+    <mat-form-field
+      appearance="fill"
+      class="width-100 margin-bottom-1">
+      <mat-label i18n>Name</mat-label>
+      <input
+        formControlName="name"
+        matInput
+        placeholder="mySmsGateway" />
+      @if (smsForm.get('name')?.hasError('required')) {
+        <mat-error
+          i18n>Name is required
+        </mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field
+      appearance="fill"
+      class="width-100 margin-bottom-1">
+      <mat-label i18n>Provider Module</mat-label>
+      <mat-select formControlName="providermodule">
+        @for (provider of providers() | keyvalue; track provider.key) {
+          <mat-option [value]="provider.key">
+            {{ provider.key }}
+          </mat-option>
+        }
+      </mat-select>
+      @if (smsForm.get('providermodule')?.hasError('required')) {
+        <mat-error
+          i18n>Provider Module is required
+        </mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field
+      appearance="fill"
+      class="width-100 margin-bottom-1">
+      <mat-label i18n>Description</mat-label>
+      <input
+        formControlName="description"
+        matInput
+        placeholder="some wise words" />
+    </mat-form-field>
+  </form>
+
+  @if (selectedProvider()) {
+    <h3 i18n>Parameters</h3>
+    <form [formGroup]="parametersForm" class="parameters-form">
+      @for (param of selectedProvider()?.parameters | keyvalue; track param.key) {
+        <div>
+          <mat-form-field appearance="fill" class="width-100 margin-bottom-1">
+            <mat-label>{{ param.key }}</mat-label>
+
+            @if (param.value.values) {
+              <mat-select [formControlName]="param.key">
+                @for (val of param.value.values; track val) {
+                  <mat-option [value]="val">
+                    {{ val }}
+                  </mat-option>
+                }
+              </mat-select>
+            }
+
+            @if (!param.value.values && param.value.type === 'text') {
+              <textarea [formControlName]="param.key"
+                        matInput
+                        rows="4"></textarea>
+            }
+
+            @if (!param.value.values && param.value.type !== 'text') {
+              <input [formControlName]="param.key"
+                     matInput />
+            }
+
+            <mat-hint>{{ param.value.description }}</mat-hint>
+            @if (parametersForm.get(param.key)?.hasError('required')) {
+              <mat-error i18n>
+                This field is required
+              </mat-error>
+            }
+          </mat-form-field>
+        </div>
+      }
+    </form>
+  }
+
+  @if (selectedProvider()?.options_allowed) {
+    <h3 i18n>Options</h3>
+    <div class="custom-list">
+      @for (key of customOptionKeys; track key) {
+        <div class="custom-row">
+          <span class="key"><b>{{ key }}</b></span>
+          <span class="value">{{ customOptions[key] }}</span>
+          <button (click)="deleteOption(key)" color="warn" mat-icon-button>
+            <mat-icon>delete</mat-icon>
+          </button>
+        </div>
+      }
+      <div class="add-row">
+        <mat-form-field appearance="fill">
+          <mat-label i18n>Option Name</mat-label>
+          <input [(ngModel)]="newOptionKey" matInput />
+        </mat-form-field>
+        <mat-form-field appearance="fill">
+          <mat-label i18n>Value</mat-label>
+          <input [(ngModel)]="newOptionValue" matInput />
+        </mat-form-field>
+        <button (click)="addOption()" [disabled]="!newOptionKey" color="primary" mat-icon-button>
+          <mat-icon>add</mat-icon>
+        </button>
+      </div>
+    </div>
+  }
+
+  @if (selectedProvider()?.headers_allowed) {
+    <h3 i18n>Headers</h3>
+    <div class="custom-list">
+      @for (key of customHeaderKeys; track key) {
+        <div class="custom-row">
+          <span class="key"><b>{{ key }}</b></span>
+          <span class="value">{{ customHeaders[key] }}</span>
+          <button (click)="deleteHeader(key)" color="warn" mat-icon-button>
+            <mat-icon>delete</mat-icon>
+          </button>
+        </div>
+      }
+      <div class="add-row">
+        <mat-form-field appearance="fill">
+          <mat-label i18n>Header Name</mat-label>
+          <input [(ngModel)]="newHeaderKey" matInput />
+        </mat-form-field>
+        <mat-form-field appearance="fill">
+          <mat-label i18n>Value</mat-label>
+          <input [(ngModel)]="newHeaderValue" matInput />
+        </mat-form-field>
+        <button (click)="addHeader()" [disabled]="!newHeaderKey" color="primary" mat-icon-button>
+          <mat-icon>add</mat-icon>
+        </button>
+      </div>
+    </div>
+  }
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button
+    (click)="onCancel()"
+    i18n
+    mat-button>Cancel
+  </button>
+  <button
+    (click)="save()"
+    [disabled]="smsForm.invalid || parametersForm.invalid"
+    class="action-button-1"
+    i18n
+    mat-stroked-button>
+    <mat-icon>save</mat-icon>
+    Save
+  </button>
+</mat-dialog-actions>

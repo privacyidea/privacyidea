@@ -433,8 +433,8 @@
         </mat-list-item>
         <mat-list-item>
           <button
-            class="card-button-1"
-            disabled
+            [ngClass]="contentService.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_SMS ? 'card-button-active' : 'card-button-1'"
+            [routerLink]="[ROUTE_PATHS.EXTERNAL_SERVICES_SMS]"
             mat-stroked-button>
             <mat-icon>sms</mat-icon>
             SMS Gateways

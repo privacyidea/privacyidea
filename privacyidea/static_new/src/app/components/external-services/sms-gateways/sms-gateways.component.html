@@ -1,14 +1,14 @@
-<div class="smtp-layout">
+<div class="sms-layout">
   <div
     appScrollToTop
-    class="smtp-servers-container">
+    class="sms-gateways-container">
     <div class="header-row">
       <div class="filter-paginator-container margin-bottom-1">
         <div class="flex-row ali-center">
           <mat-form-field
             class="table-filter"
             subscriptSizing="dynamic">
-            <mat-label i18n>Filter SMTP Servers...</mat-label>
+            <mat-label i18n>Filter SMS Gateways...</mat-label>
             <app-clearable-input
               (onClick)="resetFilter()"
               [showClearButton]="filterString().length > 0">
@@ -20,7 +20,7 @@
                 i18n-aria-label
                 i18n-placeholder
                 matInput
-                placeholder="Filter by name or type" />
+                placeholder="Filter by name or provider" />
             </app-clearable-input>
           </mat-form-field>
           <button
@@ -29,7 +29,7 @@
             i18n
             mat-stroked-button>
             <mat-icon>add</mat-icon>
-            Create SMTP Server
+            Create SMS Gateway
           </button>
         </div>
         <mat-paginator
@@ -40,72 +40,28 @@
       </div>
     </div>
     <table
-      [dataSource]="smtpDataSource()"
+      [dataSource]="smsDataSource()"
       class="token-table"
       mat-table
       matSort>
 
-      <ng-container matColumnDef="identifier">
+      <ng-container matColumnDef="name">
         <th
           *matHeaderCellDef
           i18n
           mat-header-cell
-          mat-sort-header> Identifier
+          mat-sort-header> Name
         </th>
         <td
-          *matCellDef="let server"
+          *matCellDef="let gateway"
           mat-cell>
           <div class="flex-row">
             <a
-              (click)="openEditDialog(server)"
+              (click)="openEditDialog(gateway)"
               class="flex ali-center">
-              {{ server.identifier }}
+              {{ gateway.name }}
             </a>
-            <app-copy-button [copyText]="server.identifier" />
-          </div>
-        </td>
-      </ng-container>
-
-      <ng-container matColumnDef="server">
-        <th
-          *matHeaderCellDef
-          i18n
-          mat-header-cell
-          mat-sort-header> IP/FQDN
-        </th>
-        <td
-          *matCellDef="let server"
-          mat-cell> {{ server.server }}:{{ server.port }}
-        </td>
-      </ng-container>
-
-      <ng-container matColumnDef="sender">
-        <th
-          *matHeaderCellDef
-          i18n
-          mat-header-cell
-          mat-sort-header> Sender
-        </th>
-        <td
-          *matCellDef="let server"
-          mat-cell> {{ server.sender }}
-        </td>
-      </ng-container>
-
-      <ng-container matColumnDef="tls">
-        <th
-          *matHeaderCellDef
-          i18n
-          mat-header-cell
-          mat-sort-header> StartTLS
-        </th>
-        <td
-          *matCellDef="let server"
-          mat-cell>
-          <div class="flex just-center">
-            @if (server.tls) {
-              <mat-icon>check</mat-icon>
-            }
+            <app-copy-button [copyText]="gateway.name" />
           </div>
         </td>
       </ng-container>
@@ -118,8 +74,21 @@
           mat-sort-header> Description
         </th>
         <td
-          *matCellDef="let server"
-          mat-cell> {{ server.description }}
+          *matCellDef="let gateway"
+          mat-cell> {{ gateway.description }}
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="providermodule">
+        <th
+          *matHeaderCellDef
+          i18n
+          mat-header-cell
+          mat-sort-header> Provider Module
+        </th>
+        <td
+          *matCellDef="let gateway"
+          mat-cell> {{ gateway.providermodule }}
         </td>
       </ng-container>
 
@@ -130,11 +99,11 @@
           mat-header-cell> Actions
         </th>
         <td
-          *matCellDef="let server"
+          *matCellDef="let gateway"
           mat-cell>
           <div class="flex just-center">
             <button
-              (click)="deleteServer(server)"
+              (click)="deleteGateway(gateway)"
               color="warn"
               i18n-matTooltip
               mat-icon-button
@@ -157,8 +126,8 @@
         class="mat-row">
         <td
           class="mat-cell"
-          colspan="6"
-          i18n>No SMTP servers found.
+          colspan="4"
+          i18n>No SMS gateways found.
         </td>
       </tr>
     </table>
