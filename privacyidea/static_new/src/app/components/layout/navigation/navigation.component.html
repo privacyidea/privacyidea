@@ -424,8 +424,8 @@
         </mat-list-item>
         <mat-list-item>
           <button
-            class="card-button-1"
-            disabled
+            [ngClass]="contentService.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS ? 'card-button-active' : 'card-button-1'"
+            [routerLink]="[ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS]"
             mat-stroked-button>
             <mat-icon>vpn_lock</mat-icon>
             RADIUS Servers

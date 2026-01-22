@@ -1,0 +1,169 @@
+<h2
+  i18n
+  mat-dialog-title>
+  {{ isEditMode ? 'Edit RADIUS Server' : 'Create RADIUS Server' }}
+</h2>
+
+<mat-dialog-content class="radius-dialog-content">
+  <form
+    [formGroup]="radiusForm"
+    class="radius-form">
+    <mat-form-field
+      appearance="fill"
+      class="width-100 margin-bottom-1">
+      <mat-label i18n>Identifier</mat-label>
+      <input
+        formControlName="identifier"
+        matInput
+        placeholder="myRadiusServer" />
+      <mat-hint i18n>The unique identifying name of the RADIUS server definition.</mat-hint>
+      <mat-error
+        *ngIf="radiusForm.get('identifier')?.hasError('required')"
+        i18n>Identifier is required
+      </mat-error>
+    </mat-form-field>
+
+    <div class="row">
+      <mat-form-field
+        appearance="fill"
+        class="col-8">
+        <mat-label i18n>IP or FQDN</mat-label>
+        <input
+          formControlName="server"
+          matInput
+          placeholder="1.2.3.4" />
+        <mat-error
+          *ngIf="radiusForm.get('server')?.hasError('required')"
+          i18n>Server is required
+        </mat-error>
+      </mat-form-field>
+
+      <mat-form-field
+        appearance="fill"
+        class="col-4">
+        <mat-label i18n>Port</mat-label>
+        <input
+          formControlName="port"
+          matInput
+          placeholder="1812"
+          type="number" />
+      </mat-form-field>
+    </div>
+
+    <div class="row">
+      <mat-form-field
+        appearance="fill"
+        class="col-6">
+        <mat-label i18n>Timeout</mat-label>
+        <input
+          formControlName="timeout"
+          matInput
+          placeholder="5"
+          type="number" />
+      </mat-form-field>
+
+      <mat-form-field
+        appearance="fill"
+        class="col-6">
+        <mat-label i18n>Retries</mat-label>
+        <input
+          formControlName="retries"
+          matInput
+          placeholder="3"
+          type="number" />
+      </mat-form-field>
+    </div>
+
+    <mat-form-field
+      appearance="fill"
+      class="width-100">
+      <mat-label i18n>Secret</mat-label>
+      <input
+        formControlName="secret"
+        matInput
+        placeholder="testing123"
+        type="password" />
+      <mat-error
+        *ngIf="radiusForm.get('secret')?.hasError('required')"
+        i18n>Secret is required
+      </mat-error>
+    </mat-form-field>
+
+    <mat-form-field
+      appearance="fill"
+      class="width-100">
+      <mat-label i18n>RADIUS Dictionary</mat-label>
+      <input
+        formControlName="dictionary"
+        matInput
+        placeholder="/etc/privacyidea/dictionary" />
+    </mat-form-field>
+
+    <mat-form-field
+      appearance="fill"
+      class="width-100">
+      <mat-label i18n>Description</mat-label>
+      <input
+        formControlName="description"
+        matInput
+        placeholder="some wise words" />
+    </mat-form-field>
+
+    <div class="checkbox-group">
+      <mat-checkbox
+        formControlName="message_authenticator"
+        i18n>Require Message-Authenticator
+      </mat-checkbox>
+    </div>
+
+    <div class="test-section">
+      <h3 i18n>Test RADIUS Server</h3>
+      <div class="row">
+        <mat-form-field
+          appearance="fill"
+          class="col-5">
+          <mat-label i18n>Username</mat-label>
+          <input
+            formControlName="username"
+            matInput />
+        </mat-form-field>
+        <mat-form-field
+          appearance="fill"
+          class="col-5">
+          <mat-label i18n>Password</mat-label>
+          <input
+            formControlName="password"
+            matInput
+            type="password" />
+        </mat-form-field>
+        <div class="col-2 flex ali-center">
+          <button
+            (click)="test()"
+            [disabled]="isTesting()"
+            i18n-matTooltip
+            mat-icon-button
+            matTooltip="Send RADIUS test request">
+            <mat-icon>send</mat-icon>
+          </button>
+        </div>
+      </div>
+    </div>
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button
+    (click)="onCancel()"
+    i18n
+    mat-button>Cancel
+  </button>
+  <button
+    (click)="save()"
+    [disabled]="radiusForm.invalid"
+    class="action-button-1"
+    i18n
+    mat-stroked-button>
+    <mat-icon>save</mat-icon>
+    Save
+  </button>
+</mat-dialog-actions>

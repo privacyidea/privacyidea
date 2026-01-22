@@ -41,5 +41,6 @@ export const ROUTE_PATHS = {
   USERS_REALMS: "/users/realms",
   CONFIGURATION_PERIODIC_TASKS: "/configuration/periodic-tasks",
   EXTERNAL_SERVICES_SMTP: "/external-services/smtp",
+  EXTERNAL_SERVICES_RADIUS: "/external-services/radius",
   USERS_RESOLVERS: "/users/resolvers"
 };
