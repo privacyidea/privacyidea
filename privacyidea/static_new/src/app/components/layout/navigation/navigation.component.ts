@@ -55,6 +55,7 @@ import { FormsModule } from "@angular/forms";
 import { RealmService, RealmServiceInterface } from "../../../services/realm/realm.service";
 import { ResolverService, ResolverServiceInterface } from "../../../services/resolver/resolver.service";
 import { PeriodicTaskService } from "../../../services/periodic-task/periodic-task.service";
+import { SmtpService, SmtpServiceInterface } from "../../../services/smtp/smtp.service";
 
 @Component({
   selector: "app-navigation",
@@ -101,6 +102,7 @@ export class NavigationComponent {
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   protected readonly sessionTimerService: SessionTimerServiceInterface = inject(SessionTimerService);
   private readonly resolverService: ResolverServiceInterface = inject(ResolverService);
+  private readonly smtpService: SmtpServiceInterface = inject(SmtpService);
   protected readonly periodicTaskService = inject(PeriodicTaskService);
   protected readonly router: Router = inject(Router);
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
@@ -167,9 +169,11 @@ export class NavigationComponent {
       case ROUTE_PATHS.USERS_RESOLVERS:
         this.resolverService.resolversResource.reload();
         break;
+      case ROUTE_PATHS.EXTERNAL_SERVICES_SMTP:
+        this.smtpService.smtpServerResource.reload();
+        break;
     }
   }
-
 
   onPoliciesHeaderClick(event: MouseEvent): void {
     event.preventDefault();
