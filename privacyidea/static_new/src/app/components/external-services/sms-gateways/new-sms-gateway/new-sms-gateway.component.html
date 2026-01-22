@@ -17,9 +17,7 @@
         matInput
         placeholder="mySmsGateway" />
       @if (smsForm.get('name')?.hasError('required')) {
-        <mat-error
-          i18n>Name is required
-        </mat-error>
+        <mat-error i18n>Name is required</mat-error>
       }
     </mat-form-field>
 
@@ -28,16 +26,14 @@
       class="width-100 margin-bottom-1">
       <mat-label i18n>Provider Module</mat-label>
       <mat-select formControlName="providermodule">
-        @for (provider of providers() | keyvalue; track provider.key) {
+        @for (provider of providerEntries(); track provider.key) {
           <mat-option [value]="provider.key">
             {{ provider.key }}
           </mat-option>
         }
       </mat-select>
       @if (smsForm.get('providermodule')?.hasError('required')) {
-        <mat-error
-          i18n>Provider Module is required
-        </mat-error>
+        <mat-error i18n>Provider Module is required</mat-error>
       }
     </mat-form-field>
 
@@ -54,10 +50,14 @@
 
   @if (selectedProvider()) {
     <h3 i18n>Parameters</h3>
-    <form [formGroup]="parametersForm" class="parameters-form">
-      @for (param of selectedProvider()?.parameters | keyvalue; track param.key) {
+    <form
+      [formGroup]="parametersForm"
+      class="parameters-form">
+      @for (param of parameterEntries(); track param.key) {
         <div>
-          <mat-form-field appearance="fill" class="width-100 margin-bottom-1">
+          <mat-form-field
+            appearance="fill"
+            class="width-100 margin-bottom-1">
             <mat-label>{{ param.key }}</mat-label>
 
             @if (param.value.values) {
@@ -71,21 +71,22 @@
             }
 
             @if (!param.value.values && param.value.type === 'text') {
-              <textarea [formControlName]="param.key"
-                        matInput
-                        rows="4"></textarea>
+              <textarea
+                [formControlName]="param.key"
+                matInput
+                rows="4"></textarea>
             }
 
             @if (!param.value.values && param.value.type !== 'text') {
-              <input [formControlName]="param.key"
-                     matInput />
+              <input
+                [formControlName]="param.key"
+                matInput />
             }
 
             <mat-hint>{{ param.value.description }}</mat-hint>
+
             @if (parametersForm.get(param.key)?.hasError('required')) {
-              <mat-error i18n>
-                This field is required
-              </mat-error>
+              <mat-error i18n>This field is required</mat-error>
             }
           </mat-form-field>
         </div>
@@ -97,55 +98,96 @@
     <h3 i18n>Options</h3>
 
     <div class="table-wrapper">
-      <table mat-table [dataSource]="optionRows" class="width-100 mat-elevation-z0">
-
+      <table
+        [dataSource]="optionRows"
+        class="width-100 mat-elevation-z0"
+        mat-table>
         <ng-container matColumnDef="key">
-          <th mat-header-cell *matHeaderCellDef i18n>Key</th>
-          <td mat-cell *matCellDef="let row">
+          <th
+            *matHeaderCellDef
+            i18n
+            mat-header-cell>Key
+          </th>
+          <td
+            *matCellDef="let row"
+            mat-cell>
             <b>{{ row.key }}</b>
           </td>
         </ng-container>
 
         <ng-container matColumnDef="value">
-          <th mat-header-cell *matHeaderCellDef i18n>Value</th>
-          <td mat-cell *matCellDef="let row">
-            {{ row.value }}
+          <th
+            *matHeaderCellDef
+            i18n
+            mat-header-cell>Value
+          </th>
+          <td
+            *matCellDef="let row"
+            mat-cell>{{ row.value }}
           </td>
         </ng-container>
 
         <ng-container matColumnDef="actions">
-          <th mat-header-cell *matHeaderCellDef i18n>Actions</th>
-          <td mat-cell *matCellDef="let row" class="actions-cell">
-            <button (click)="deleteOption(row.key)" color="warn" mat-icon-button>
+          <th
+            *matHeaderCellDef
+            i18n
+            mat-header-cell>Actions
+          </th>
+          <td
+            *matCellDef="let row"
+            class="actions-cell"
+            mat-cell>
+            <button
+              (click)="deleteOption(row.key)"
+              color="warn"
+              mat-icon-button>
               <mat-icon>delete</mat-icon>
             </button>
           </td>
         </ng-container>
 
-        <tr mat-header-row *matHeaderRowDef="optionDisplayedColumns"></tr>
-
-        <tr mat-row *matRowDef="let row; columns: optionDisplayedColumns"></tr>
+        <tr
+          *matHeaderRowDef="optionDisplayedColumns"
+          mat-header-row></tr>
+        <tr
+          *matRowDef="let row; columns: optionDisplayedColumns"
+          mat-row></tr>
 
         <ng-container matColumnDef="footerKey">
-          <td mat-footer-cell *matFooterCellDef>
-            <mat-form-field appearance="fill" class="width-100">
+          <td
+            *matFooterCellDef
+            mat-footer-cell>
+            <mat-form-field
+              appearance="fill"
+              class="width-100">
               <mat-label i18n>Option Name</mat-label>
-              <input [(ngModel)]="newOptionKey" matInput />
+              <input
+                [(ngModel)]="newOptionKey"
+                matInput />
             </mat-form-field>
           </td>
         </ng-container>
 
         <ng-container matColumnDef="footerValue">
-          <td mat-footer-cell *matFooterCellDef>
-            <mat-form-field appearance="fill" class="width-100">
+          <td
+            *matFooterCellDef
+            mat-footer-cell>
+            <mat-form-field
+              appearance="fill"
+              class="width-100">
               <mat-label i18n>Value</mat-label>
-              <input [(ngModel)]="newOptionValue" matInput />
+              <input
+                [(ngModel)]="newOptionValue"
+                matInput />
             </mat-form-field>
           </td>
         </ng-container>
 
         <ng-container matColumnDef="footerActions">
-          <td mat-footer-cell *matFooterCellDef class="actions-cell">
+          <td
+            *matFooterCellDef
+            class="actions-cell"
+            mat-footer-cell>
             <button
               (click)="addOption()"
               [disabled]="!newOptionKey"
@@ -157,39 +199,122 @@
         </ng-container>
 
         <tr
-          mat-footer-row
           *matFooterRowDef="optionFooterColumns"
-          class="add-footer-row">
-        </tr>
+          class="add-footer-row"
+          mat-footer-row></tr>
       </table>
     </div>
   }
 
   @if (selectedProvider()?.headers_allowed) {
     <h3 i18n>Headers</h3>
-    <div class="custom-list">
-      @for (key of customHeaderKeys; track key) {
-        <div class="custom-row">
-          <span class="key"><b>{{ key }}</b></span>
-          <span class="value">{{ customHeaders[key] }}</span>
-          <button (click)="deleteHeader(key)" color="warn" mat-icon-button>
-            <mat-icon>delete</mat-icon>
-          </button>
-        </div>
-      }
-      <div class="add-row">
-        <mat-form-field appearance="fill">
-          <mat-label i18n>Header Name</mat-label>
-          <input [(ngModel)]="newHeaderKey" matInput />
-        </mat-form-field>
-        <mat-form-field appearance="fill">
-          <mat-label i18n>Value</mat-label>
-          <input [(ngModel)]="newHeaderValue" matInput />
-        </mat-form-field>
-        <button (click)="addHeader()" [disabled]="!newHeaderKey" color="primary" mat-icon-button>
-          <mat-icon>add</mat-icon>
-        </button>
-      </div>
+
+    <div class="table-wrapper">
+      <table
+        [dataSource]="headerRows"
+        class="width-100 mat-elevation-z0"
+        mat-table>
+        <ng-container matColumnDef="key">
+          <th
+            *matHeaderCellDef
+            i18n
+            mat-header-cell>Key
+          </th>
+          <td
+            *matCellDef="let row"
+            mat-cell>
+            <b>{{ row.key }}</b>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="value">
+          <th
+            *matHeaderCellDef
+            i18n
+            mat-header-cell>Value
+          </th>
+          <td
+            *matCellDef="let row"
+            mat-cell>{{ row.value }}
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="actions">
+          <th
+            *matHeaderCellDef
+            i18n
+            mat-header-cell>Actions
+          </th>
+          <td
+            *matCellDef="let row"
+            class="actions-cell"
+            mat-cell>
+            <button
+              (click)="deleteHeader(row.key)"
+              color="warn"
+              mat-icon-button>
+              <mat-icon>delete</mat-icon>
+            </button>
+          </td>
+        </ng-container>
+
+        <tr
+          *matHeaderRowDef="headerDisplayedColumns"
+          mat-header-row></tr>
+        <tr
+          *matRowDef="let row; columns: headerDisplayedColumns"
+          mat-row></tr>
+
+        <ng-container matColumnDef="footerKey">
+          <td
+            *matFooterCellDef
+            mat-footer-cell>
+            <mat-form-field
+              appearance="fill"
+              class="width-100">
+              <mat-label i18n>Header Name</mat-label>
+              <input
+                [(ngModel)]="newHeaderKey"
+                matInput />
+            </mat-form-field>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="footerValue">
+          <td
+            *matFooterCellDef
+            mat-footer-cell>
+            <mat-form-field
+              appearance="fill"
+              class="width-100">
+              <mat-label i18n>Value</mat-label>
+              <input
+                [(ngModel)]="newHeaderValue"
+                matInput />
+            </mat-form-field>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="footerActions">
+          <td
+            *matFooterCellDef
+            class="actions-cell"
+            mat-footer-cell>
+            <button
+              (click)="addHeader()"
+              [disabled]="!newHeaderKey"
+              color="primary"
+              mat-icon-button>
+              <mat-icon>add</mat-icon>
+            </button>
+          </td>
+        </ng-container>
+
+        <tr
+          *matFooterRowDef="headerFooterColumns"
+          class="add-footer-row"
+          mat-footer-row></tr>
+      </table>
     </div>
   }
 </mat-dialog-content>

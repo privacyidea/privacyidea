@@ -95,7 +95,10 @@ export class NewSmsGatewayComponent implements OnInit, OnDestroy {
   headerDisplayedColumns: string[] = ["key", "value", "actions"];
   headerFooterColumns: string[] = ["footerKey", "footerValue", "footerActions"];
 
-  providers = computed(() => this.smsGatewayService.smsProvidersResource.value()?.result?.value);
+  providers = computed<Record<string, SmsProvider>>(() => {
+    return this.smsGatewayService.smsProvidersResource.value()?.result?.value ?? {};
+  });
+
   selectedProvider = signal<SmsProvider | undefined>(undefined);
 
   providermoduleSignal = toSignal(this.smsForm.get("providermodule")!.valueChanges, {
@@ -155,12 +158,14 @@ export class NewSmsGatewayComponent implements OnInit, OnDestroy {
     );
   }
 
-  get customOptionKeys() {
-    return Object.keys(this.customOptions);
+  providerEntries(): Array<{ key: string; value: SmsProvider }> {
+    const providersObj = this.providers() ?? {};
+    return Object.entries(providersObj).map(([key, value]) => ({ key, value }));
   }
 
-  get customHeaderKeys() {
-    return Object.keys(this.customHeaders);
+  parameterEntries(): Array<{ key: string; value: any }> {
+    const paramsObj = this.selectedProvider()?.parameters ?? {};
+    return Object.entries(paramsObj).map(([key, value]) => ({ key, value }));
   }
 
   ngOnInit(): void {
@@ -182,7 +187,7 @@ export class NewSmsGatewayComponent implements OnInit, OnDestroy {
     if (provider && provider.parameters) {
       Object.entries(provider.parameters).forEach(([name, param]) => {
         const validators = [];
-        if (param.required) {
+        if ((param as any).required) {
           validators.push(Validators.required);
         }
 
