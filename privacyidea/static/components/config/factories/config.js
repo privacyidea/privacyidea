@@ -20,7 +20,7 @@
  */
 myApp.factory("PolicyTemplateFactory", ["$http", "inform", "gettextCatalog",
     function ($http, inform, gettextCatalog) {
-        var URL = "https://raw.githubusercontent.com/privacyidea/policy-templates/master/templates/";
+        var URL = "/static/policy-templates/";
         return {
             setUrl: function (url) {
                 URL = url;

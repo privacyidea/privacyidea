@@ -2848,8 +2848,7 @@ def get_static_policy_definitions(scope=None):
                 'type': 'str',
                 'desc': _("The URL of a repository, where the policy "
                           "templates can be found.  (Default "
-                          "https: //raw.githubusercontent.com/ privacyidea/"
-                          "policy-templates /master/templates/)")
+                          "/static/policy-templates/")
             },
             PolicyAction.LOGOUT_REDIRECT: {
                 'type': 'str',

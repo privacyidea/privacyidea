@@ -29,15 +29,16 @@ be used to setup tokens. This server must not be exposed to the network!
 The ``check`` command can then be used to authenticate users.
 """
 
-import click
 import functools
 import json
 import os
-from pathlib import Path
 import shutil
 import string
 import subprocess  # nosec B404 # only trusted input is used
+from pathlib import Path
 from tempfile import NamedTemporaryFile
+
+import click
 
 from privacyidea.app import create_app
 from privacyidea.lib.security.default import DefaultSecurityModule
