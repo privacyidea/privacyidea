@@ -99,7 +99,7 @@ CSP = {
     'img-src': [
         '\'self\'',
         'data:',
-        'community.privacyidea.org'
+        'community.privacyidea.org',
         'privacyidea.readthedocs.io'
     ],
     'script-src': [
