@@ -106,12 +106,13 @@
           <th
             *matHeaderCellDef
             i18n
-            mat-header-cell>Key
+            mat-header-cell>
+            Key
           </th>
           <td
             *matCellDef="let row"
             mat-cell>
-            <b>{{ row.key }}</b>
+            {{ row.key }}
           </td>
         </ng-container>
 
@@ -119,11 +120,13 @@
           <th
             *matHeaderCellDef
             i18n
-            mat-header-cell>Value
+            mat-header-cell>
+            Value
           </th>
           <td
             *matCellDef="let row"
-            mat-cell>{{ row.value }}
+            mat-cell>
+            {{ row.value }}
           </td>
         </ng-container>
 
@@ -131,7 +134,8 @@
           <th
             *matHeaderCellDef
             i18n
-            mat-header-cell>Actions
+            mat-header-cell>
+            Actions
           </th>
           <td
             *matCellDef="let row"
@@ -186,15 +190,16 @@
         <ng-container matColumnDef="footerActions">
           <td
             *matFooterCellDef
-            class="actions-cell"
             mat-footer-cell>
-            <button
-              (click)="addOption()"
-              [disabled]="!newOptionKey"
-              color="primary"
-              mat-icon-button>
-              <mat-icon>add</mat-icon>
-            </button>
+            <div class="add-button">
+              <button
+                (click)="addOption()"
+                [disabled]="!newOptionKey"
+                color="primary"
+                mat-icon-button>
+                <mat-icon>add</mat-icon>
+              </button>
+            </div>
           </td>
         </ng-container>
 
@@ -212,18 +217,19 @@
     <div class="table-wrapper">
       <table
         [dataSource]="headerRows"
-        class="width-100 mat-elevation-z0"
+        class="width-100 mat-elevation-z0 sms-kv-table"
         mat-table>
         <ng-container matColumnDef="key">
           <th
             *matHeaderCellDef
             i18n
-            mat-header-cell>Key
+            mat-header-cell>
+            Key
           </th>
           <td
             *matCellDef="let row"
             mat-cell>
-            <b>{{ row.key }}</b>
+            {{ row.key }}
           </td>
         </ng-container>
 
@@ -231,11 +237,13 @@
           <th
             *matHeaderCellDef
             i18n
-            mat-header-cell>Value
+            mat-header-cell>
+            Value
           </th>
           <td
             *matCellDef="let row"
-            mat-cell>{{ row.value }}
+            mat-cell>
+            {{ row.value }}
           </td>
         </ng-container>
 
@@ -243,7 +251,8 @@
           <th
             *matHeaderCellDef
             i18n
-            mat-header-cell>Actions
+            mat-header-cell>
+            Actions
           </th>
           <td
             *matCellDef="let row"
@@ -298,15 +307,16 @@
         <ng-container matColumnDef="footerActions">
           <td
             *matFooterCellDef
-            class="actions-cell"
             mat-footer-cell>
-            <button
-              (click)="addHeader()"
-              [disabled]="!newHeaderKey"
-              color="primary"
-              mat-icon-button>
-              <mat-icon>add</mat-icon>
-            </button>
+            <div class="flex ali-center just-center">
+              <button
+                (click)="addHeader()"
+                [disabled]="!newHeaderKey"
+                color="primary"
+                mat-icon-button>
+                <mat-icon>add</mat-icon>
+              </button>
+            </div>
           </td>
         </ng-container>
 
@@ -323,7 +333,8 @@
   <button
     (click)="onCancel()"
     i18n
-    mat-button>Cancel
+    mat-button>
+    Cancel
   </button>
   <button
     (click)="save()"
