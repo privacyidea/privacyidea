@@ -1,0 +1,34 @@
+<div>
+    <h2 class="form-signin-heading">Test Risk Scores</h2>
+
+    <form class="form-horizontal">
+        <div class="form-group">
+            <label class="col-sm-2 control-label">User group</label>
+            <div class="col-sm-10">
+                <select class="form-control"
+                ng-options="select for select in $parent.form['user_groups']"
+                name="userRisk"
+                ng-model="$parent.userTest"></select>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="col-sm-2 control-label">Service</label>
+            <div class="col-sm-10">
+                <input type="text" class="form-control"
+                ng-model="$parent.serviceTest"
+                name="serviceRisk" />
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="col-sm-2 control-label">IP</label>
+            <div class="col-sm-10">
+                <input type="text" class="form-control"
+                ng-model="$parent.ipTest" name="ipRisk" />
+            </div>
+        </div>
+        <div class="text-center">
+            <button ng-click="testRisk()"
+                    class="btn btn-primary" translate>Test</button>
+        </div>
+    </form>
+</div>

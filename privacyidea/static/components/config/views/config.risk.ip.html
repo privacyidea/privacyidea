@@ -1,0 +1,42 @@
+<h2 class="form-signin-heading">Assign Risk Scores to IPs or Networks</h2>
+<div class="table-responsive">
+    <table class="table table-bordered table-striped">
+        <thead>
+            <tr>
+                <th>IP</th>
+                <th>Risk Score</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr ng-repeat="element in form['ip_risk']"
+                ng-if="hasDefinedIPRisks()">
+                <td>{{element.ip}}</td>
+                <td>{{element.risk_score}}</td>
+                <td>
+                    <button class="btn btn-danger"
+                            ng-click="deleteRisk('ip',element.ip)">
+                        Delete
+                    </button>
+                </td>
+            </tr>
+            <tr ng-show="checkRight('policywrite')">
+                <td>
+                    <input type="text"
+                            class="form-control"
+                            ng-model="$parent.newIP"
+                            name="ip"/>
+                </td>
+                <td>
+                    <input type="number" class="form-control"
+                            ng-model="$parent.newIPRiskScore" name="riskScore"/>
+                </td>
+                <td>
+                    <button class="btn btn-default"
+                            ng-click="addIPRisk()">
+                        Add new IP risk score
+                    </button>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>

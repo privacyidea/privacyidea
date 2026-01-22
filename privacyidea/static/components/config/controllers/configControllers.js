@@ -1649,3 +1649,210 @@ myApp.controller("HTTPResolverController", ["$scope", "ConfigFactory", "$state",
         };
         $scope.initDetailedEndpointConfig();
     }]);
+
+myApp.controller("riskController", ["$scope", "ConfigFactory",
+    "inform","gettextCatalog","$location",
+    function($scope, ConfigFactory,inform,gettextCatalog,$location) {
+        $scope.form = {};
+        $scope.typesWithoutScore = []
+
+        if ($location.path() === "/config/risk") {
+            $location.path("/config/risk/check");
+        }
+
+        $scope.loadRiskConfig = function() {
+            ConfigFactory.loadRiskConfig(function(data) {
+                $scope.typesWithoutScore = []
+                $scope.form = data.result.value
+                $scope.resolvername = $scope.form["group_resolver"]
+                $scope.userGroupDN = $scope.form["user_group_dn"]
+                $scope.userGroupAttr = $scope.form["user_group_attr"]
+                $scope.typesWithoutScore = $scope.form["user_groups"]
+                if($scope.hasDefinedUserRisks()) {
+                    $scope.typesWithoutScore = $scope.form["user_groups"].filter(userType =>
+                    !$scope.form["user_risk"].some(risk => risk.type === userType)
+                    );
+                }
+            });
+        };
+
+        $scope.addUserRisk = function() {
+            if ($scope.newUserType && $scope.newUserRiskScore) {
+                params = {
+                    "user_group": $scope.newUserType,
+                    "risk_score": $scope.newUserRiskScore
+                };
+                ConfigFactory.addRiskScore("user",params, function(data) {
+                    if (data.result.status === true) {
+                        inform.add(gettextCatalog.getString("User risk added."),
+                                {type: "info"});
+                        $scope.newUserType = ""
+                        $scope.newUserRiskScore = ""
+                        $scope.loadRiskConfig();
+                    }
+                });
+            }
+        };
+
+        $scope.addServiceRisk = function() {
+            if ($scope.newServiceName && $scope.newServiceRiskScore) {
+                param = {
+                    "service": $scope.newServiceName,
+                    "risk_score": $scope.newServiceRiskScore
+                };
+                ConfigFactory.addRiskScore("service",param,function(data) {
+                    if(data.result.status === true) {
+                        inform.add(gettextCatalog.getString("Service risk added."),
+                                {type: "info"});
+                        $scope.newServiceName = ""
+                        $scope.newServiceRiskScore = ""
+                        $scope.loadRiskConfig();
+                    }
+                });
+            }
+        };
+
+        $scope.addIPRisk = function() {
+            if ($scope.newIP && $scope.newIPRiskScore) {
+                param = {
+                    "ip": $scope.newIP,
+                    "risk_score": $scope.newIPRiskScore
+                }
+                ConfigFactory.addRiskScore("ip",param,function(data) {
+                    if(data.result.status === true) {
+                        inform.add(gettextCatalog.getString("IP risk added."),
+                                {type: "info"});
+                        $scope.newIP = ""
+                        $scope.newIPRiskScore = ""
+                        $scope.loadRiskConfig();
+                    }
+                })
+            }
+        };
+
+        $scope.addUserGroupResolver = function() {
+            if($scope.userResolver && $scope.groupResolver) {
+                param = {
+                    "user_resolver_name": $scope.userResolver,
+                    "group_resolver_name": $scope.groupResolver
+                }
+                ConfigFactory.saveGroupResolver(param,function(data) {
+                    if(data.result.status === true) {
+                        inform.add(gettextCatalog.getString("User resolver attached to group resolver."),
+                            {type: "success"});
+                        $scope.userResolver = ""
+                        $scope.groupResolver = ""
+                        $scope.loadRiskConfig();
+                    }
+                })
+            }
+        }
+
+        $scope.deleteRisk = function(type,key) {
+            ConfigFactory.delRiskScore(type,key, function(data) {
+                if(data.result.status === true) {
+                    inform.add(gettextCatalog.getString(type + " risk deleted."),
+                            {type: "info"});
+                    $scope.loadRiskConfig();
+                }
+            })
+        };
+
+        $scope.deleteGroup = function(user_resolver,group_resolver) {
+            ConfigFactory.delGroup(user_resolver,group_resolver, function(data) {
+                if(data.result.status === true) {
+                    inform.add(gettextCatalog.getString("Attachment deleted."), {type: "info"});
+                    $scope.loadRiskConfig();
+                }
+            })
+        };
+
+        $scope.testRisk = function() {
+            param = {
+                "user": $scope.userTest,
+                "service": $scope.serviceTest,
+                "ip": $scope.ipTest
+            }
+            ConfigFactory.testRisk(param,function(data) {
+                if(data.result.status === true)
+                    inform.add(gettextCatalog.getString("Calculated risk is " + data.result.value),
+                            {type: "info"});
+            })
+        }
+
+        $scope.testGroupResolver = function() {
+            if(!$scope.resolvername) {
+                inform.add(gettextCatalog.getString("Please provide the resolver name"),
+                        {type: "danger"});
+                return;
+            }
+
+            if(!$scope.userDN) {
+                inform.add(gettextCatalog.getString("Please provide the user DN for testing"), {type: "danger"});
+                return;
+            }
+
+            param = {
+                "resolver_name": $scope.resolvername,
+                "user_dn": $scope.userDN
+            }
+
+            //set optional parameters if they are defined
+            if($scope.userGroupDN)
+                param["user_to_group_dn"] = $scope.userGroupDN
+
+                if($scope.userGroupAttr)
+                    param["user_to_group_search_attr"] = $scope.userGroupAttr
+
+                    ConfigFactory.testGroupResolver(param,function(data) {
+                        if(data.result.status === true) {
+                            inform.add(data.detail.description, {type: "success"});
+                            console.log(data.result.value);
+                        }
+                        else {
+                            inform.add(data.detail.description, {type: "danger"})
+                        }
+
+                    })
+        }
+
+        $scope.saveResolver = function() {
+            if($scope.resolvername) {
+                param = {
+                    "resolver_name": $scope.resolvername,
+                    "user_to_group_dn": $scope.userGroupDN,
+                    "user_to_group_search_attr": $scope.userGroupAttr
+                }
+
+
+                ConfigFactory.saveGroupResolver(param,function(data) {
+                    if(data.result.status === true)
+                        inform.add("Saved successfuly", {type: "success"});
+                })
+            }
+        }
+
+        $scope.hasDefinedValues = function(key) {
+            return key in $scope.form && Object.keys($scope.form[key]).length > 0;
+        }
+
+        $scope.hasUserTypesWithoutRisk = function() {
+            return $scope.typesWithoutScore.length > 0;
+        }
+
+        $scope.hasDefinedUserRisks = function() {
+            return $scope.hasDefinedValues("user_risk");
+        }
+
+        $scope.hasDefinedServiceRisks = function() {
+            return $scope.hasDefinedValues("service_risk");
+        }
+
+        $scope.hasDefinedIPRisks = function() {
+            return $scope.hasDefinedValues("ip_risk");
+        }
+
+        $scope.loadRiskConfig();
+    }
+]);
+
