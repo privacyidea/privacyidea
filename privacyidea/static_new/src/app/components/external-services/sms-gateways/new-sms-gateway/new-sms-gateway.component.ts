@@ -17,28 +17,31 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
+import { CommonModule } from "@angular/common";
 import { Component, computed, effect, inject, OnDestroy, OnInit, signal, untracked } from "@angular/core";
-import { MAT_DIALOG_DATA, MatDialog, MatDialogModule, MatDialogRef } from "@angular/material/dialog";
+import { toSignal } from "@angular/core/rxjs-interop";
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
+import { MatButtonModule } from "@angular/material/button";
+import { MatOptionModule } from "@angular/material/core";
+import { MAT_DIALOG_DATA, MatDialog, MatDialogModule, MatDialogRef } from "@angular/material/dialog";
+import { MatFormFieldModule } from "@angular/material/form-field";
+import { MatIconModule } from "@angular/material/icon";
+import { MatInputModule } from "@angular/material/input";
+import { MatSelectModule } from "@angular/material/select";
+import { MatTableModule } from "@angular/material/table";
+import { Router } from "@angular/router";
+import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
 import {
   SmsGateway,
   SmsGatewayService,
   SmsGatewayServiceInterface,
   SmsProvider
 } from "../../../../services/sms-gateway/sms-gateway.service";
-import { MatFormFieldModule } from "@angular/material/form-field";
-import { MatInputModule } from "@angular/material/input";
-import { MatButtonModule } from "@angular/material/button";
-import { CommonModule } from "@angular/common";
-import { MatIconModule } from "@angular/material/icon";
-import { ConfirmationDialogComponent } from "../../../shared/confirmation-dialog/confirmation-dialog.component";
-import { ROUTE_PATHS } from "../../../../route_paths";
-import { Router } from "@angular/router";
-import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
 import { PendingChangesService } from "../../../../services/pending-changes/pending-changes.service";
-import { MatSelectModule } from "@angular/material/select";
-import { MatOptionModule } from "@angular/material/core";
-import { toSignal } from "@angular/core/rxjs-interop";
+import { ROUTE_PATHS } from "../../../../route_paths";
+import { ConfirmationDialogComponent } from "../../../shared/confirmation-dialog/confirmation-dialog.component";
+
+type KeyValueRow = { key: string; value: string };
 
 @Component({
   selector: "app-sms-edit-dialog",
@@ -53,7 +56,8 @@ import { toSignal } from "@angular/core/rxjs-interop";
     MatButtonModule,
     MatIconModule,
     MatSelectModule,
-    MatOptionModule
+    MatOptionModule,
+    MatTableModule
   ],
   templateUrl: "./new-sms-gateway.component.html",
   styleUrl: "./new-sms-gateway.component.scss"
@@ -73,6 +77,7 @@ export class NewSmsGatewayComponent implements OnInit, OnDestroy {
     providermodule: [this.data?.providermodule || "", [Validators.required]],
     description: [this.data?.description || ""]
   });
+
   parametersForm: FormGroup = this.fb.group({});
   isEditMode = false;
 
@@ -84,16 +89,27 @@ export class NewSmsGatewayComponent implements OnInit, OnDestroy {
   newHeaderKey = "";
   newHeaderValue = "";
 
+  optionDisplayedColumns: string[] = ["key", "value", "actions"];
+  optionFooterColumns: string[] = ["footerKey", "footerValue", "footerActions"];
+
+  headerDisplayedColumns: string[] = ["key", "value", "actions"];
+  headerFooterColumns: string[] = ["footerKey", "footerValue", "footerActions"];
+
   providers = computed(() => this.smsGatewayService.smsProvidersResource.value()?.result?.value);
   selectedProvider = signal<SmsProvider | undefined>(undefined);
-  providermoduleSignal = toSignal(this.smsForm.get("providermodule")!.valueChanges, { initialValue: this.data?.providermodule || "" });
+
+  providermoduleSignal = toSignal(this.smsForm.get("providermodule")!.valueChanges, {
+    initialValue: this.data?.providermodule || ""
+  });
 
   constructor() {
     if (this.dialogRef) {
       this.dialogRef.disableClose = true;
+
       this.dialogRef.backdropClick().subscribe(() => {
         this.onCancel();
       });
+
       this.dialogRef.keydownEvents().subscribe(event => {
         if (event.key === "Escape") {
           this.onCancel();
@@ -118,8 +134,25 @@ export class NewSmsGatewayComponent implements OnInit, OnDestroy {
     });
   }
 
+  get optionRows(): KeyValueRow[] {
+    return Object.entries(this.customOptions)
+      .map(([key, value]) => ({ key, value }))
+      .sort((a, b) => a.key.localeCompare(b.key));
+  }
+
+  get headerRows(): KeyValueRow[] {
+    return Object.entries(this.customHeaders)
+      .map(([key, value]) => ({ key, value }))
+      .sort((a, b) => a.key.localeCompare(b.key));
+  }
+
   get hasChanges(): boolean {
-    return !this.smsForm.pristine || !this.parametersForm?.pristine || Object.keys(this.customOptions).length > 0 || Object.keys(this.customHeaders).length > 0;
+    return (
+      !this.smsForm.pristine ||
+      !this.parametersForm?.pristine ||
+      Object.keys(this.customOptions).length > 0 ||
+      Object.keys(this.customHeaders).length > 0
+    );
   }
 
   get customOptionKeys() {
@@ -144,7 +177,8 @@ export class NewSmsGatewayComponent implements OnInit, OnDestroy {
     const provider = providers[module];
     this.selectedProvider.set(provider);
 
-    const group: any = {};
+    const group: Record<string, any> = {};
+
     if (provider && provider.parameters) {
       Object.entries(provider.parameters).forEach(([name, param]) => {
         const validators = [];
@@ -160,16 +194,20 @@ export class NewSmsGatewayComponent implements OnInit, OnDestroy {
         group[name] = [initialValue, validators];
       });
     }
+
     this.parametersForm = this.fb.group(group);
 
     if (this.isEditMode && this.data) {
-      this.customOptions = {};
       const paramKeys = provider ? Object.keys(provider.parameters) : [];
+
+      const nextCustomOptions: Record<string, string> = {};
       Object.entries(this.data.options || {}).forEach(([key, value]) => {
         if (!paramKeys.includes(key)) {
-          this.customOptions[key] = value;
+          nextCustomOptions[key] = value;
         }
       });
+      this.customOptions = nextCustomOptions;
+
       this.customHeaders = { ...(this.data.headers || {}) };
     }
   }
@@ -213,17 +251,20 @@ export class NewSmsGatewayComponent implements OnInit, OnDestroy {
 
   onCancel(): void {
     if (this.hasChanges) {
-      this.dialog.open(ConfirmationDialogComponent, {
-        data: {
-          title: $localize`Discard changes`,
-          action: "discard",
-          type: "sms-gateway"
-        }
-      }).afterClosed().subscribe(result => {
-        if (result) {
-          this.closeActual();
-        }
-      });
+      this.dialog
+        .open(ConfirmationDialogComponent, {
+          data: {
+            title: $localize`Discard changes`,
+            action: "discard",
+            type: "sms-gateway"
+          }
+        })
+        .afterClosed()
+        .subscribe(result => {
+          if (result) {
+            this.closeActual();
+          }
+        });
     } else {
       this.closeActual();
     }
@@ -231,26 +272,36 @@ export class NewSmsGatewayComponent implements OnInit, OnDestroy {
 
   addOption(): void {
     if (this.newOptionKey) {
-      this.customOptions[this.newOptionKey] = this.newOptionValue;
+      this.customOptions = {
+        ...this.customOptions,
+        [this.newOptionKey]: this.newOptionValue
+      };
+
       this.newOptionKey = "";
       this.newOptionValue = "";
     }
   }
 
   deleteOption(key: string): void {
-    delete this.customOptions[key];
+    const { [key]: _, ...rest } = this.customOptions;
+    this.customOptions = rest;
   }
 
   addHeader(): void {
     if (this.newHeaderKey) {
-      this.customHeaders[this.newHeaderKey] = this.newHeaderValue;
+      this.customHeaders = {
+        ...this.customHeaders,
+        [this.newHeaderKey]: this.newHeaderValue
+      };
+
       this.newHeaderKey = "";
       this.newHeaderValue = "";
     }
   }
 
   deleteHeader(key: string): void {
-    delete this.customHeaders[key];
+    const { [key]: _, ...rest } = this.customHeaders;
+    this.customHeaders = rest;
   }
 
   private closeActual(): void {

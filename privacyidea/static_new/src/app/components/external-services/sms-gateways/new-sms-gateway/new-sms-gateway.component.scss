@@ -53,3 +53,21 @@ h3 {
   border-bottom: 1px solid var(--mat-sys-outline-variant);
   padding-bottom: 8px;
 }
+
+.table-wrapper {
+  margin-top: 8px;
+  overflow: auto;
+  border-radius: 6px;
+  border: 1px solid var(--mat-sys-outline-variant);
+  background-color: var(--mat-sys-surface-container);
+}
+
+.actions-cell {
+  width: 1%;
+  white-space: nowrap;
+  text-align: right;
+}
+
+.add-footer-row td {
+  padding-top: 8px;
+}

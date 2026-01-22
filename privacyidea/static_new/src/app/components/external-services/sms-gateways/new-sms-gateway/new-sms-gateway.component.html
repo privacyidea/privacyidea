@@ -95,29 +95,73 @@
 
   @if (selectedProvider()?.options_allowed) {
     <h3 i18n>Options</h3>
-    <div class="custom-list">
-      @for (key of customOptionKeys; track key) {
-        <div class="custom-row">
-          <span class="key"><b>{{ key }}</b></span>
-          <span class="value">{{ customOptions[key] }}</span>
-          <button (click)="deleteOption(key)" color="warn" mat-icon-button>
-            <mat-icon>delete</mat-icon>
-          </button>
-        </div>
-      }
-      <div class="add-row">
-        <mat-form-field appearance="fill">
-          <mat-label i18n>Option Name</mat-label>
-          <input [(ngModel)]="newOptionKey" matInput />
-        </mat-form-field>
-        <mat-form-field appearance="fill">
-          <mat-label i18n>Value</mat-label>
-          <input [(ngModel)]="newOptionValue" matInput />
-        </mat-form-field>
-        <button (click)="addOption()" [disabled]="!newOptionKey" color="primary" mat-icon-button>
-          <mat-icon>add</mat-icon>
-        </button>
-      </div>
+
+    <div class="table-wrapper">
+      <table mat-table [dataSource]="optionRows" class="width-100 mat-elevation-z0">
+
+        <ng-container matColumnDef="key">
+          <th mat-header-cell *matHeaderCellDef i18n>Key</th>
+          <td mat-cell *matCellDef="let row">
+            <b>{{ row.key }}</b>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="value">
+          <th mat-header-cell *matHeaderCellDef i18n>Value</th>
+          <td mat-cell *matCellDef="let row">
+            {{ row.value }}
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef i18n>Actions</th>
+          <td mat-cell *matCellDef="let row" class="actions-cell">
+            <button (click)="deleteOption(row.key)" color="warn" mat-icon-button>
+              <mat-icon>delete</mat-icon>
+            </button>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="optionDisplayedColumns"></tr>
+
+        <tr mat-row *matRowDef="let row; columns: optionDisplayedColumns"></tr>
+
+        <ng-container matColumnDef="footerKey">
+          <td mat-footer-cell *matFooterCellDef>
+            <mat-form-field appearance="fill" class="width-100">
+              <mat-label i18n>Option Name</mat-label>
+              <input [(ngModel)]="newOptionKey" matInput />
+            </mat-form-field>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="footerValue">
+          <td mat-footer-cell *matFooterCellDef>
+            <mat-form-field appearance="fill" class="width-100">
+              <mat-label i18n>Value</mat-label>
+              <input [(ngModel)]="newOptionValue" matInput />
+            </mat-form-field>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="footerActions">
+          <td mat-footer-cell *matFooterCellDef class="actions-cell">
+            <button
+              (click)="addOption()"
+              [disabled]="!newOptionKey"
+              color="primary"
+              mat-icon-button>
+              <mat-icon>add</mat-icon>
+            </button>
+          </td>
+        </ng-container>
+
+        <tr
+          mat-footer-row
+          *matFooterRowDef="optionFooterColumns"
+          class="add-footer-row">
+        </tr>
+      </table>
     </div>
   }
 
