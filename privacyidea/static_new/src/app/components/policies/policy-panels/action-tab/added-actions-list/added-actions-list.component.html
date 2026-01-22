@@ -54,10 +54,7 @@
 } @else {
   <div class="added-actions-container">
     @for (action of actions(); track action.name) {
-      <div
-        class="action-card"
-        [class.action-card-selected]="selectedAction()?.name === action.name"
-        (click)="onActionClick(action)">
+      <div class="action-card no-hover">
         <div class="action-row">
           <span class="action-label">{{ action.name }}</span>
           @if (!isBooleanAction(action.name)) {

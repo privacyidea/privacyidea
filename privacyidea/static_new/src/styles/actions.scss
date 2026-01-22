@@ -1,7 +1,3 @@
-/*
-This file contains all styles for actions as used e.g. in policies, event handlers, periodic tasks, etc.
-*/
-
 .added-actions-container {
   display: flex;
   flex-direction: column;
@@ -17,7 +13,7 @@ This file contains all styles for actions as used e.g. in policies, event handle
   box-shadow: var(--mat-sys-level2);
 }
 
-.action-card:hover {
+.action-card:not(.no-hover):hover {
   background-color: var(--mat-sys-primary-light);
   color: var(--mat-sys-on-primary) !important;
   --mdc-icon-button-icon-color: currentColor;
@@ -72,11 +68,11 @@ This file contains all styles for actions as used e.g. in policies, event handle
   display: flex;
   align-items: center;
   gap: var(--global-gap);
+}
 
-  h3 {
-    margin: 0;
-    padding: 0.25rem 0;
-  }
+.action-detail-title h3 {
+  margin: 0;
+  padding: 0.25rem 0;
 }
 
 .action-detail-title-buttons {
@@ -84,15 +80,15 @@ This file contains all styles for actions as used e.g. in policies, event handle
   display: flex;
   justify-content: flex-end;
   gap: calc(var(--global-gap) / 2);
+}
 
-  button[mat-icon-button] {
-    padding: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 24px;
-    height: 24px;
-  }
+.action-detail-title-buttons button[mat-icon-button] {
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
 }
 
 .action-docu,
@@ -102,47 +98,61 @@ This file contains all styles for actions as used e.g. in policies, event handle
   border: 1px solid;
 }
 
-.action-docu,
-.action-notes,
-.action-detail-card {
-  code {
-    display: inline-block; // Use inline-block to allow padding and prevent line breaks
-    background-color: rgba(0, 0, 0, 0.08);
-    padding: 0.2em 0.4em;
-    margin: 0;
-    font-size: 85%;
-    border-radius: 3px;
-    font-family: "Courier New", Courier, monospace;
-  }
+.action-docu code,
+.action-notes code,
+.action-detail-card code {
+  display: inline-block;
+  background-color: rgba(0, 0, 0, 0.08);
+  padding: 0.2em 0.4em;
+  margin: 0;
+  font-size: 85%;
+  border-radius: 3px;
+  font-family: "Courier New", Courier, monospace;
+}
 
-  em {
-    display: inline; // Ensure em flows with the text
-    font-style: italic;
-  }
+.action-docu em,
+.action-notes em,
+.action-detail-card em {
+  display: inline;
+  font-style: italic;
+}
 
-  p {
-    margin-block-start: 1em;
-    margin-block-end: 1em;
-  }
+.action-docu p,
+.action-notes p,
+.action-detail-card p {
+  margin-block-start: 1em;
+  margin-block-end: 1em;
+}
 
-  a {
-    color: var(--mat-sys-primary);
-    text-decoration: underline;
-  }
+.action-docu a,
+.action-notes a,
+.action-detail-card a {
+  color: var(--mat-sys-primary);
+  text-decoration: underline;
+}
 
-  strong,
-  b {
-    font-weight: bold;
-  }
+.action-docu strong,
+.action-docu b,
+.action-notes strong,
+.action-notes b,
+.action-detail-card strong,
+.action-detail-card b {
+  font-weight: bold;
+}
 
-  ul,
-  ol {
-    padding-inline-start: 40px;
-  }
+.action-docu ul,
+.action-docu ol,
+.action-notes ul,
+.action-notes ol,
+.action-detail-card ul,
+.action-detail-card ol {
+  padding-inline-start: 40px;
+}
 
-  li {
-    margin-bottom: 0.5em;
-  }
+.action-docu li,
+.action-notes li,
+.action-detail-card li {
+  margin-bottom: 0.5em;
 }
 
 .action-docu {

@@ -83,7 +83,6 @@
 .user-agent-input-container {
   display: flex;
   align-items: center;
-  gap: var(--quarter-global-padding);
 }
 
 .user-agent-select {
@@ -128,4 +127,8 @@
   background: transparent;
   color: inherit;
   font-size: 0.9rem;
+}
+.gap-div-8px {
+  width: 8px;
+  height: 8px;
 }

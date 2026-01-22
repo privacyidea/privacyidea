@@ -1,7 +1,7 @@
 @use "../../../styles" as styles;
 @use "@angular/material" as mat;
 
-@mixin policy-name-input-base {
+.policy-name-input {
   background-color: transparent;
   border: none;
   border-bottom: 1px solid var(--mat-sys-outline-variant);
@@ -9,6 +9,8 @@
   box-sizing: border-box;
   font-size: 1rem;
   width: 100%;
+  padding: var(--quarter-global-padding) 0;
+  margin: 2px;
 }
 
 .policies-layout {

@@ -1,10 +1,12 @@
 @use "../../../../../../styles";
 @use "../../../policies.component.scss";
 @use "@angular/material" as mat;
+
 .small-toggle {
   transform: scale(0.7);
   transform-origin: left center;
 }
+
 .policy-title-container {
   display: flex;
   align-items: center;
@@ -19,19 +21,16 @@
   color: #29b6f6;
   width: 33px;
   height: 28px;
-  padding: 5px;
-  margin: 1px;
   text-align: center;
-
   background-color: var(--mat-sys-surface-container-highest);
   border: none;
   border-radius: 6px;
   outline: none;
   padding: 0;
   box-sizing: border-box;
-
   appearance: textfield;
   -moz-appearance: textfield;
+
   &::-webkit-outer-spin-button,
   &::-webkit-inner-spin-button {
     -webkit-appearance: none;
@@ -43,8 +42,25 @@
   }
 }
 
-.policy-name-input {
-  @include policies.policy-name-input-base;
-  margin-left: 2px;
-  padding: var(--half-global-padding) 0;
+.policy-scope-dropdown {
+  // width: 150px;
+
+  ::ng-deep {
+    @include mat.form-field-density(-4);
+
+    .mat-mdc-text-field-wrapper {
+      padding-top: 0;
+      padding-bottom: 0;
+    }
+
+    .mat-mdc-form-field-infix {
+      padding-top: 12px !important;
+      padding-bottom: 4px !important;
+    }
+
+    .mat-mdc-select-value,
+    .mat-mdc-floating-label {
+      font-size: 13px !important;
+    }
+  }
 }

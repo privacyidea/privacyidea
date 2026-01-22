@@ -35,7 +35,7 @@
             [actions]="actionsFirstHalf()"
             (actionsChange)="onActionsChange($event)"
             (actionRemove)="onActionRemove($event)"
-            [(selectedAction)]="selectedAction" />
+            [selectedAction]="selectedAction()" />
         }
       </div>
 
@@ -46,7 +46,7 @@
             [actions]="actionsSecondHalf()"
             (actionsChange)="onActionsChange($event)"
             (actionRemove)="onActionRemove($event)"
-            [(selectedAction)]="selectedAction" />
+            [selectedAction]="selectedAction()" />
         }
       </div>
     </div>

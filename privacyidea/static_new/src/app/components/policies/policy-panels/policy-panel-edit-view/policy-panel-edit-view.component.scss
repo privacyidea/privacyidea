@@ -6,12 +6,6 @@
   grid-area: right-column;
 }
 
-.policy-name-input {
-  @include policies.policy-name-input-base;
-  padding: var(--quarter-global-padding) 0;
-  margin: 2px;
-}
-
 .actions-list {
   display: flex;
   flex-direction: column;
