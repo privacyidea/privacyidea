@@ -17,8 +17,8 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, inject, OnInit, signal } from "@angular/core";
-import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from "@angular/material/dialog";
+import { Component, effect, inject, OnDestroy, OnInit, signal } from "@angular/core";
+import { MAT_DIALOG_DATA, MatDialog, MatDialogModule, MatDialogRef } from "@angular/material/dialog";
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
 import { SmtpServer, SmtpService, SmtpServiceInterface } from "../../../../services/smtp/smtp.service";
 import { MatFormFieldModule } from "@angular/material/form-field";
@@ -28,6 +28,11 @@ import { MatButtonModule } from "@angular/material/button";
 import { CommonModule } from "@angular/common";
 import { MatIconModule } from "@angular/material/icon";
 import { MatTooltip } from "@angular/material/tooltip";
+import { ConfirmationDialogComponent } from "../../../shared/confirmation-dialog/confirmation-dialog.component";
+import { ROUTE_PATHS } from "../../../../route_paths";
+import { Router } from "@angular/router";
+import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
+import { PendingChangesService } from "../../../../services/pending-changes/pending-changes.service";
 
 @Component({
   selector: "app-smtp-edit-dialog",
@@ -46,15 +51,45 @@ import { MatTooltip } from "@angular/material/tooltip";
   templateUrl: "./new-smtp-server.component.html",
   styleUrl: "./new-smtp-server.component.scss"
 })
-export class NewSmtpServerComponent implements OnInit {
+export class NewSmtpServerComponent implements OnInit, OnDestroy {
   private readonly fb = inject(FormBuilder);
   private readonly dialogRef = inject(MatDialogRef<NewSmtpServerComponent>);
   protected readonly data = inject<SmtpServer | null>(MAT_DIALOG_DATA);
   protected readonly smtpService: SmtpServiceInterface = inject(SmtpService);
+  private readonly dialog = inject(MatDialog);
+  private readonly router = inject(Router);
+  private readonly contentService: ContentServiceInterface = inject(ContentService);
+  private readonly pendingChangesService = inject(PendingChangesService);
 
   smtpForm!: FormGroup;
   isEditMode = false;
   isTesting = signal(false);
+
+  constructor() {
+    if (this.dialogRef) {
+      this.dialogRef.disableClose = true;
+      this.dialogRef.backdropClick().subscribe(() => {
+        this.onCancel();
+      });
+      this.dialogRef.keydownEvents().subscribe(event => {
+        if (event.key === "Escape") {
+          this.onCancel();
+        }
+      });
+    }
+
+    this.pendingChangesService.registerHasChanges(() => this.hasChanges);
+
+    effect(() => {
+      if (!this.contentService.routeUrl().startsWith(ROUTE_PATHS.EXTERNAL_SERVICES_SMTP)) {
+        this.dialogRef?.close(true);
+      }
+    });
+  }
+
+  get hasChanges(): boolean {
+    return !this.smtpForm.pristine;
+  }
 
   ngOnInit(): void {
     this.isEditMode = !!this.data;
@@ -75,6 +110,10 @@ export class NewSmtpServerComponent implements OnInit {
     if (this.isEditMode) {
       this.smtpForm.get("identifier")?.disable();
     }
+  }
+
+  ngOnDestroy(): void {
+    this.pendingChangesService.unregisterHasChanges();
   }
 
   save(): void {
@@ -98,7 +137,29 @@ export class NewSmtpServerComponent implements OnInit {
     }
   }
 
-  cancel(): void {
-    this.dialogRef.close();
+  onCancel(): void {
+    if (this.hasChanges) {
+      this.dialog.open(ConfirmationDialogComponent, {
+        data: {
+          title: $localize`Discard changes`,
+          action: "discard",
+          type: "smtp-server"
+        }
+      }).afterClosed().subscribe(result => {
+        if (result) {
+          this.closeActual();
+        }
+      });
+    } else {
+      this.closeActual();
+    }
+  }
+
+  private closeActual(): void {
+    if (this.dialogRef) {
+      this.dialogRef.close();
+    } else {
+      this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_SMTP);
+    }
   }
 }

@@ -88,7 +88,7 @@ export const routes: Routes = [
   },
   {
     path: "external-services",
-    children: [{ path: "smtp", component: SmtpServersComponent }]
+    children: [{ path: "smtp", component: SmtpServersComponent, canDeactivate: [pendingChangesGuard] }]
   },
   {
     path: "configuration",
