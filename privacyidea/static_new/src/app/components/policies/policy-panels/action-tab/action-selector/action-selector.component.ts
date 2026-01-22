@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -30,11 +30,12 @@ import {
 import { SelectorButtons } from "../selector-buttons/selector-buttons.component";
 
 import { MatTooltipModule } from "@angular/material/tooltip";
+import { PolicyActionItemComponent } from "./policy-action-item/policy-action-item.component";
 
 @Component({
   selector: "app-action-selector",
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule, SelectorButtons, MatTooltipModule],
+  imports: [CommonModule, FormsModule, MatIconModule, SelectorButtons, MatTooltipModule, PolicyActionItemComponent],
   templateUrl: "./action-selector.component.html",
   styleUrls: ["./action-selector.component.scss"]
 })
@@ -91,7 +92,7 @@ export class ActionSelectorComponent {
     return Object.keys(actionGroups);
   });
 
-  readonly actionNamesFiltered = computed(() => {
+  readonly actionsNamesFiltered = computed(() => {
     const group = this.selectedActionGroup();
     const scope = this.policyScope();
     if (!group && !scope) return [];
@@ -103,24 +104,28 @@ export class ActionSelectorComponent {
       .filter((actionName) => actionName.toLowerCase().includes(filter));
   });
 
+  actionDescription(actionName: string): string {
+    return this.getActionDetail(actionName)?.desc ?? "";
+  }
+
   selectActionByName(actionName: string) {
     const group = this.selectedActionGroup();
     const scope = this.policyScope();
     if (!group || !scope) return;
     const actionNames = this.policyService.actionNamesOfGroup(scope, group);
     if (actionNames.includes(actionName)) {
-      const actionDetail = this._getActionDetail(actionName);
+      const actionDetail = this.getActionDetail(actionName);
       const defaultValue =
-        this._getActionDetail(actionName)?.type === "bool" ? "true" : (actionDetail?.value?.[0] ?? "");
+        this.getActionDetail(actionName)?.type === "bool" ? "true" : (actionDetail?.value?.[0] ?? "");
       this.selectedPolicyActionChange.emit({ name: actionName, value: defaultValue });
     }
   }
 
-  addPolicyAction(name: string, value: any) {
-    this.actionAdd.emit({ name, value });
+  addPolicyAction(policyAction: { name: string; value: any }) {
+    this.actionAdd.emit(policyAction);
   }
 
-  private _getActionDetail(actionName: string): PolicyActionDetail | null {
+  getActionDetail(actionName: string): PolicyActionDetail | null {
     const actions = this.policyService.policyActions();
     const scope = this.policyScope();
     if (!scope) return null;

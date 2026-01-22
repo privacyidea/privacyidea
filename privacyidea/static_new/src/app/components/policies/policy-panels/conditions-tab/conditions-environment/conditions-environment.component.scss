@@ -112,20 +112,20 @@
 }
 
 .select-search-header {
-  padding: 8px 16px;
   position: sticky;
   top: 0;
-  background: var(--mat-sys-surface);
-  z-index: 1;
+  z-index: 10;
+  background-color: var(--mat-sys-surface-container);
+  padding: 10px 16px;
   border-bottom: 1px solid var(--mat-sys-outline-variant);
 }
 
 .select-search-input {
   width: 100%;
+  background: transparent;
   border: none;
   outline: none;
-  background: transparent;
-  color: inherit;
+  color: var(--mat-sys-on-surface);
   font-size: 0.9rem;
 }
 .gap-div-8px {

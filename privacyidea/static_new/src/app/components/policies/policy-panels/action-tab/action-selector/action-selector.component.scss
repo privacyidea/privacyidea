@@ -38,25 +38,6 @@
   overflow-y: auto;
 }
 
-.policy-action-item {
-  align-items: center;
-  border-radius: var(--border-radius);
-  box-shadow: var(--mat-sys-level1);
-  display: flex;
-  font-weight: 500;
-  justify-content: space-between;
-  margin: var(--half-global-padding) 0;
-  padding: var(--half-global-padding) var(--three-quarters-global-padding);
-  background-color: var(--mat-sys-surface-container-high);
-}
-
-.policy-action-item:hover {
-  background-color: var(--mat-sys-primary-light);
-  color: var(--mat-sys-on-primary);
-  cursor: pointer;
-  font-size: 600;
-}
-
 .policy-action-item-selected {
   background-color: var(--mat-sys-primary-base);
   color: var(--mat-sys-on-primary);

@@ -1,0 +1,58 @@
+.policy-action-item {
+  align-items: center;
+  border-radius: var(--border-radius);
+  box-shadow: var(--mat-sys-level1);
+  display: flex;
+  gap: var(--global-gap);
+  font-weight: 500;
+  justify-content: space-between;
+  margin: var(--half-global-padding) 0;
+  padding: var(--half-global-padding) var(--three-quarters-global-padding);
+  background-color: var(--mat-sys-surface-container-high);
+}
+
+.detail-label {
+  flex: 1 0 0;
+}
+
+.detail-description {
+  flex: 3 0 0;
+}
+
+.detail-input {
+  flex: 1 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  text-align: right;
+
+  .full-width {
+    width: 100%;
+  }
+  .half-width {
+    width: 50%;
+  }
+}
+
+.compact-dropdown {
+  ::ng-deep {
+    .mat-mdc-form-field-subscript-wrapper {
+      display: none;
+    }
+    .mat-mdc-text-field-wrapper {
+      height: 40px;
+    }
+  }
+}
+
+.policy-action-item:hover {
+  background-color: var(--mat-sys-primary-light);
+  color: var(--mat-sys-on-primary);
+  cursor: pointer;
+}
+
+.policy-action-item-selected {
+  background-color: var(--mat-sys-primary-base);
+  color: var(--mat-sys-on-primary);
+  font-weight: 600;
+}

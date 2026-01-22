@@ -4,14 +4,15 @@
 
 .policy-description-text {
   display: -webkit-box;
+  -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   line-clamp: 2;
-  -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
   word-break: break-word;
-  line-height: 1.4;
-  max-height: 2.8em;
+
+  line-height: 1.2rem;
+  max-height: 2.4rem;
 }
 
 .small-toggle {

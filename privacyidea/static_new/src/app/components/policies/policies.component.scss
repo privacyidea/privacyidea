@@ -21,18 +21,23 @@
   max-height: var(--max-height);
   width: 1500px;
 
-  ::ng-deep mat-expansion-panel.mat-expansion-panel-header {
-    padding: var(--half-global-padding) var(--three-quarters-global-padding) !important;
-    height: 1.5rem;
-  }
+  ::ng-deep .mat-accordion .mat-expansion-panel:last-of-type .mat-expansion-panel-header {
+    padding: var(--half-global-padding) !important;
+    padding-right: var(--global-padding) !important;
 
+    &:not(.mat-expanded),
+    &:not(.scope-is-selectable) {
+      height: 1.5rem;
+    }
+
+    &.mat-expanded.scope-is-selectable {
+      padding: 0 !important;
+      padding-right: var(--global-padding) !important;
+      height: auto !important;
+      min-height: 1.5rem;
+    }
+  }
   ::ng-deep mat-expansion-panel.mat-expansion-panel-spacing {
     margin: 0;
-  }
-
-  ::ng-deep .mat-accordion .mat-expansion-panel:last-of-type .mat-expansion-panel-header {
-    height: 1.5rem;
-    padding: var(--half-global-padding);
-    padding-right: var(--global-padding);
   }
 }

@@ -19,12 +19,6 @@
   padding: var(--half-global-padding) 0;
 }
 
-.policy-name-input {
-  @include policies.policy-name-input-base;
-  margin-left: 2px;
-  padding: var(--half-global-padding) 0;
-}
-
 // --- Content Sections ---
 .actions-list {
   display: flex;
@@ -87,11 +81,6 @@
 .search-input:focus {
   outline: none;
   border-bottom-color: var(--mat-sys-primary);
-}
-
-.add-action-button {
-  align-self: flex-end;
-  color: var(--mat-sys-primary);
 }
 
 // --- Detail Rows ---

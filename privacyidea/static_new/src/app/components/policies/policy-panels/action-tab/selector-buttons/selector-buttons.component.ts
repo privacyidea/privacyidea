@@ -29,7 +29,7 @@ import { MatButtonModule } from "@angular/material/button";
 // Implement OnInit to use the hook
 export class SelectorButtons<T> implements OnInit {
   // Inputs
-  initialValue = input.required<T>();
+  initialValue = input<T | null>(null);
   @Input({ required: true }) values!: T[];
   @Input() labels?: T[];
 
@@ -37,7 +37,7 @@ export class SelectorButtons<T> implements OnInit {
   @Output() onSelect = new EventEmitter<T>();
 
   // Component State
-  selectedValue: WritableSignal<T> = linkedSignal({
+  selectedValue: WritableSignal<T | null> = linkedSignal({
     source: () => this.initialValue(),
     computation: (source) => source
   });

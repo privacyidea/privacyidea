@@ -104,19 +104,22 @@
           #uaSelect
           [value]="null"
           (selectionChange)="addUserAgentFromSelect($event, uaSelect)"
-          (openedChange)="onDropdownToggled($event)"
           panelClass="auto-width-dropdown">
           <div class="select-search-header">
             <input
               matInput
               placeholder="Search..."
+              [value]="userAgentSearch()"
               (input)="userAgentSearch.set($any($event.target).value)"
               (keydown)="$event.stopPropagation()"
+              (keydown.enter)="handleEnterOnSearch($event, uaSelect)"
               class="select-search-input" />
           </div>
+
           @for (ua of filteredUserAgentPresets(); track ua) {
             <mat-option [value]="ua">{{ ua }}</mat-option>
           }
+
           @if (filteredUserAgentPresets().length === 0) {
             <mat-option
               disabled

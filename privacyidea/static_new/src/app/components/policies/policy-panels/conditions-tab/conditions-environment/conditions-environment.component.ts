@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -246,5 +246,19 @@ export class ConditionsEnvironmentComponent {
       return { includesComma: { value: control.value } };
     }
     return null;
+  }
+
+  handleEnterOnSearch(event: Event, select: any): void {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const currentResults = this.filteredUserAgentPresets();
+
+    if (currentResults.length > 0) {
+      const firstMatch = currentResults[0];
+      this.addUserAgentFromSelect({ value: firstMatch } as any, select);
+      this.userAgentSearch.set("");
+      select.close();
+    }
   }
 }

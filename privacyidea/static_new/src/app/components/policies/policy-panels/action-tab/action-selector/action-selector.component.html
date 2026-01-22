@@ -1,5 +1,5 @@
 <!--
- (c) NetKnights GmbH 2025,  https://netknights.it
+ (c) NetKnights GmbH 2026,  https://netknights.it
 
  This code is free software; you can redistribute it and/or
  modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -31,13 +31,12 @@
   }
   <div class="add-action-details">
     <div class="policy-action-items">
-      @for (actionName of actionNamesFiltered(); track actionName) {
-        <div
-          class="policy-action-item"
-          [class.policy-action-item-selected]="selectedPolicyAction()?.name === actionName"
-          (click)="selectActionByName(actionName)">
-          <span class="detail-label">{{ actionName }}</span>
-        </div>
+      @for (actionName of actionsNamesFiltered(); track actionName) {
+        <app-policy-action-item
+          [actionName]="actionName"
+          [actionDetail]="getActionDetail(actionName)"
+          [isSelected]="selectedPolicyAction()?.name === actionName"
+          (actionAdd)="addPolicyAction($event)" />
       }
     </div>
   </div>

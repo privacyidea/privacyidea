@@ -41,26 +41,3 @@
     box-shadow: 0 0 0 1px var(--mat-sys-primary);
   }
 }
-
-.policy-scope-dropdown {
-  // width: 150px;
-
-  ::ng-deep {
-    @include mat.form-field-density(-4);
-
-    .mat-mdc-text-field-wrapper {
-      padding-top: 0;
-      padding-bottom: 0;
-    }
-
-    .mat-mdc-form-field-infix {
-      padding-top: 12px !important;
-      padding-bottom: 4px !important;
-    }
-
-    .mat-mdc-select-value,
-    .mat-mdc-floating-label {
-      font-size: 13px !important;
-    }
-  }
-}
