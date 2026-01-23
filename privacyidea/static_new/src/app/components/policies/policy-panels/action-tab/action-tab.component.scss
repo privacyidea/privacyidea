@@ -1,12 +1,8 @@
 .policy-flex-row {
-  display: flex;
-  gap: calc(var(--global-gap) / 4 * 3);
-  flex-direction: row;
   min-width: 0;
   width: 100%;
   max-height: 564px;
   overflow-y: auto;
-  align-items: flex-start;
 
   &.view-mode {
     display: block;

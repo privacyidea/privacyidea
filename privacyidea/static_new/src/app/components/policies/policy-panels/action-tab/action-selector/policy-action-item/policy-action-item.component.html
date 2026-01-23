@@ -40,8 +40,8 @@
       } @else {
         <mat-form-field
           appearance="fill"
-          class="full-width compact-dropdown">
-          <mat-label i18n>Value</mat-label>
+          class="full-width"
+          subscriptSizing="dynamic">
           <mat-select (selectionChange)="addAction($event.value)">
             @for (option of actionDetail()?.value; track option) {
               <mat-option [value]="option">{{ option }}</mat-option>
@@ -50,10 +50,43 @@
         </mat-form-field>
       }
     } @else {
+      @switch (actionDetail()?.type) {
+        @case ("bool") {
+          <!-- Show Nothing -->
+        }
+        @case ("str") {
+          <input
+            type="text"
+            placeholder="Text"
+            [ngModel]="currentAction().value"
+            (ngModelChange)="updateSelectedActionValue($event)"
+            class="action-value-input"
+            (keydown.enter)="addAction()" />
+        }
+        @case ("int") {
+          <input
+            type="number"
+            placeholder="Number"
+            [ngModel]="currentAction().value"
+            (ngModelChange)="updateSelectedActionValue($event)"
+            class="action-value-input"
+            (keydown.enter)="addAction()" />
+        }
+        @case ("text") {
+          <textarea
+            placeholder="Text"
+            [ngModel]="currentAction().value"
+            (ngModelChange)="updateSelectedActionValue($event)"
+            class="action-value-textarea"></textarea>
+        }
+        @default {
+          <p i18n>Unknown action type: {{ actionDetail()?.type }}</p>
+        }
+      }
       <button
         mat-icon-button
         class="add-action-button half-width"
-        [disabled]="isSelected() || !inputIsValid()"
+        [disabled]="!inputIsValid()"
         (click)="$event.stopPropagation(); addAction()">
         <mat-icon>add</mat-icon>
       </button>

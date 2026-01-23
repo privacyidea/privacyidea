@@ -8,11 +8,13 @@
 }
 
 .flex-ratio-3 {
-  flex: 3 1 0;
+  flex: 3 0 0% !important;
   min-width: 0;
+  width: 0;
 }
 
 .flex-ratio-5 {
-  flex: 5 1 0;
+  flex: 5 0 0% !important;
   min-width: 0;
+  width: 0;
 }

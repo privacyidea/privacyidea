@@ -1,0 +1,27 @@
+@use "../../../../../../../styles" as styles;
+
+.gap-div-8px {
+  width: 8px;
+  height: 8px;
+}
+
+.action-button-in-panel {
+  flex-shrink: 0;
+  margin: auto -4px;
+  --mat-icon-button-state-layer-color: var(--mat-sys-surface-container-high);
+}
+
+.action-card-in-panel {
+  border-radius: var(--border-radius);
+  box-shadow: var(--mat-sys-level1);
+  font-weight: 500;
+  padding: 0 var(--global-padding);
+  background-color: var(--mat-sys-surface-container-high);
+}
+
+.action-card-in-panel:hover {
+  background-color: var(--mat-sys-primary-light);
+  color: var(--mat-sys-on-primary);
+  cursor: pointer;
+  font-size: 600;
+}

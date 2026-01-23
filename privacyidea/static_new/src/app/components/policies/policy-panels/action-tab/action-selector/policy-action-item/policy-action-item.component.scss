@@ -7,7 +7,7 @@
   font-weight: 500;
   justify-content: space-between;
   margin: var(--half-global-padding) 0;
-  padding: var(--half-global-padding) var(--three-quarters-global-padding);
+  padding: 0 var(--three-quarters-global-padding);
   background-color: var(--mat-sys-surface-container-high);
 }
 
@@ -16,6 +16,7 @@
 }
 
 .detail-description {
+  padding: var(--half-global-padding) 0;
   flex: 3 0 0;
 }
 
@@ -23,7 +24,7 @@
   flex: 1 0 0;
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: center;
   text-align: right;
 
   .full-width {
@@ -31,17 +32,6 @@
   }
   .half-width {
     width: 50%;
-  }
-}
-
-.compact-dropdown {
-  ::ng-deep {
-    .mat-mdc-form-field-subscript-wrapper {
-      display: none;
-    }
-    .mat-mdc-text-field-wrapper {
-      height: 40px;
-    }
   }
 }
 

@@ -51,22 +51,18 @@ export class PoliciesComponent {
     source: () => this.policyService.allPolicies(),
     computation: (allPolicies) => allPolicies
   });
-  readonly policiesAreFiltered = computed(
-    () => this.policiesListFiltered().length !== this.policyService.allPolicies().length
-  );
+  readonly policiesAreFiltered = computed<boolean>(() => {
+    const policiesAreFiltered = this.policiesListFiltered().length !== this.policyService.allPolicies().length;
+    if (policiesAreFiltered) {
+      setTimeout(() => this.accordion()?.openAll(), 0);
+    } else {
+      setTimeout(() => this.accordion()?.closeAll(), 0);
+    }
+    return policiesAreFiltered;
+  });
   readonly multiOpenAccordion = computed(() => this.policiesAreFiltered());
 
   onPolicyListFilteredChange(filteredPolicies: PolicyDetail[]): void {
     this.policiesListFiltered.set(filteredPolicies);
-  }
-
-  constructor() {
-    effect(() => {
-      if (this.multiOpenAccordion()) {
-        setTimeout(() => this.accordion()?.openAll(), 0);
-      } else {
-        setTimeout(() => this.accordion()?.closeAll(), 0);
-      }
-    });
   }
 }

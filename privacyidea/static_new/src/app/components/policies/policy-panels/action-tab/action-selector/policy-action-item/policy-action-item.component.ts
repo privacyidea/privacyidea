@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { CommonModule } from "@angular/common";
-import { Component, computed, inject, input, output, signal } from "@angular/core";
+import { Component, computed, inject, input, linkedSignal, output, signal } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { MatIconModule } from "@angular/material/icon";
 import { MatTooltipModule } from "@angular/material/tooltip";
@@ -57,21 +57,24 @@ export class PolicyActionItemComponent {
   readonly inputIsValid = computed<boolean>(() => {
     const actionDetail = this.actionDetail();
     const actionValue = this.currentAction()?.value;
-    if (actionDetail === null) return false;
+    if (actionDetail === null || actionValue === undefined) return false;
     return this.policyService.actionValueIsValid(actionDetail, actionValue);
   });
   readonly selectActionByName = output<string>();
   readonly actionAdd = output<{ name: string; value: any }>();
 
-  currentAction = computed<{ name: string; value: any }>(() => {
-    const actionName = this.actionName();
-    const actionDetail = this.actionDetail();
-    if (!actionDetail) return { name: actionName, value: undefined };
-    const defaultValue = actionDetail.type === "bool" ? "true" : (actionDetail?.value?.[0] ?? "");
-    return { name: actionName, value: defaultValue };
+  currentAction = linkedSignal({
+    source: () => this.actionDetail(),
+    computation: (actionDetail) => {
+      const actionName = this.actionName();
+      if (!actionDetail) return { name: actionName, value: undefined };
+      const defaultValue = actionDetail.type === "bool" ? "true" : (actionDetail?.value?.[0] ?? "");
+      return { name: actionName, value: defaultValue };
+    }
   });
 
   addAction(value?: any) {
+    console.log("Adding action", this.actionName(), "with value", value);
     let currentAction = this.currentAction();
     if (value !== undefined) {
       currentAction.value = value;
@@ -81,6 +84,6 @@ export class PolicyActionItemComponent {
 
   updateSelectedActionValue(value: any) {
     const actionName = this.actionName();
-    this.currentAction().value = value;
+    this.currentAction.set({ name: actionName, value: value });
   }
 }

@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -17,25 +17,35 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, inject, input, output } from "@angular/core";
+import { Component, computed, inject, input, output } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { MatIconModule } from "@angular/material/icon";
 import { MatButtonModule } from "@angular/material/button";
 import { MatSlideToggleModule } from "@angular/material/slide-toggle";
-import { PolicyService } from "../../../../../services/policies/policies.service";
+import { PolicyActionDetail, PolicyService } from "../../../../../services/policies/policies.service";
 import { parseBooleanValue } from "../../../../../utils/parse-boolean-value";
 import { MatExpansionModule } from "@angular/material/expansion";
+import { AddedActionEditComponent } from "./added-action-edit/added-action-edit.component";
 
 @Component({
   selector: "app-added-actions-list",
   standalone: true,
-  imports: [CommonModule, MatIconModule, MatButtonModule, MatSlideToggleModule, MatExpansionModule],
+  imports: [
+    CommonModule,
+    MatIconModule,
+    MatButtonModule,
+    MatSlideToggleModule,
+    MatExpansionModule,
+    AddedActionEditComponent
+  ],
   templateUrl: "./added-actions-list.component.html",
   styleUrl: "./added-actions-list.component.scss"
 })
 export class AddedActionsListComponent {
   // Inputs
   actions = input.required<{ name: string; value: any }[]>();
+  actionsFirstHalf = computed(() => this.actions().filter((_, index) => index % 2 === 0));
+  actionsSecondHalf = computed(() => this.actions().filter((_, index) => index % 2 !== 0));
   actionsChange = output<{ name: string; value: any }[]>();
   actionRemove = output<string>();
   isEditMode = input.required<boolean>();
@@ -70,6 +80,17 @@ export class AddedActionsListComponent {
 
   removeActionFromSelectedPolicy(actionName: string) {
     const updatedActions = this.actions().filter((action) => action.name !== actionName);
+    this.actionsChange.emit(updatedActions);
+  }
+
+  getDetailsOfAction(actionName: string): PolicyActionDetail | null {
+    return this.policyService.getDetailsOfAction(actionName);
+  }
+  uodateActionInSelectedPolicy(actionName: string, newValue: string | number) {
+    console.log("Updating action", actionName, "with value", newValue);
+    const updatedActions = this.actions().map((action) =>
+      action.name === actionName ? { name: action.name, value: newValue } : action
+    );
     this.actionsChange.emit(updatedActions);
   }
 }

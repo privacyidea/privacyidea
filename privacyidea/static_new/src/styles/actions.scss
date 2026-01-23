@@ -3,6 +3,7 @@
   flex-direction: column;
   gap: calc(var(--global-gap) / 4);
   min-width: 0;
+  flex: 1;
 }
 
 .action-card {
