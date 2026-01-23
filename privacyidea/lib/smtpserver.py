@@ -22,7 +22,9 @@ from email.mime.text import MIMEText
 from time import gmtime, strftime
 from urllib.parse import urlparse
 
-import smime_email
+from cryptography import x509
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.serialization import pkcs7
 from sqlalchemy import select
 
 from privacyidea.lib.crypto import (decryptPassword, encryptPassword,
@@ -136,11 +138,15 @@ class SMTPServer(object):
         msg = msg.as_bytes()
         if config.get('smime', False):
             try:
-                SMIME_PRIVATE_KEY = smime_email.load_key(config['private_key'])
-                SMIME_CHAIN = smime_email.load_certificates(config['certificate'])
-                SMIME_CERTIFICATE = SMIME_CHAIN[0]
-                msg = smime_email.get_smime_attachment_content(msg, SMIME_PRIVATE_KEY, SMIME_CERTIFICATE,
-                                                               SMIME_CHAIN)
+                with open(config['private_key'], "rb") as key_file:
+                    private_key = key_file.read()
+                with open(config['certificate'], "rb") as cert_file:
+                    certificate = cert_file.read()
+                key = serialization.load_pem_private_key(private_key, None)
+                cert = x509.load_pem_x509_certificate(certificate)
+                options = [pkcs7.PKCS7Options.DetachedSignature, pkcs7.PKCS7Options.NoAttributes]
+                msg = pkcs7.PKCS7SignatureBuilder().set_data(msg).add_signer(cert, key, hashes.SHA256()).sign(
+                    serialization.Encoding.SMIME, options)
             except Exception as ex:
                 abort = config.get('dont_send_on_error')
                 action = "not be sent" if abort else "be sent anyway"

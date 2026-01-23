@@ -69,7 +69,6 @@ dependencies = [
     "PyYAML",
     "requests",
     "segno",
-    "smime_email",
     "smpplib",
     "SQLAlchemy",
     "webauthn"
