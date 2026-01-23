@@ -28,27 +28,16 @@
       [policy]="policy()" />
   } @else {
     <div class="view-mode-container">
-      <div class="view-column">
-        @if (actionsFirstHalf().length > 0) {
+      @for (action of actions(); track action) {
+        <div class="view-item-wrapper">
           <app-added-actions-list
             [isEditMode]="false"
-            [actions]="actionsFirstHalf()"
+            [actions]="[action]"
             (actionsChange)="onActionsChange($event)"
             (actionRemove)="onActionRemove($event)"
             [selectedAction]="selectedAction()" />
-        }
-      </div>
-
-      <div class="view-column">
-        @if (actionsSecondHalf().length > 0) {
-          <app-added-actions-list
-            [isEditMode]="false"
-            [actions]="actionsSecondHalf()"
-            (actionsChange)="onActionsChange($event)"
-            (actionRemove)="onActionRemove($event)"
-            [selectedAction]="selectedAction()" />
-        }
-      </div>
+        </div>
+      }
     </div>
   }
 </div>

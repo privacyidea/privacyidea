@@ -25,14 +25,16 @@
     padding: var(--half-global-padding) !important;
     padding-right: var(--global-padding) !important;
 
-    &:not(.mat-expanded),
+    .mat-content {
+      align-items: center;
+    }
+
     &:not(.scope-is-selectable) {
       height: 1.5rem;
     }
 
     &.mat-expanded.scope-is-selectable {
-      padding: 0 !important;
-      padding-right: var(--global-padding) !important;
+      padding: 0 var(--global-padding) !important;
       height: auto !important;
       min-height: 1.5rem;
     }

@@ -23,45 +23,54 @@
     [disabled]="isPolicyEdited()"
     (opened)="handleExpansion()"
     (closed)="handleCollapse(panel)">
-    <mat-expansion-panel-header class="mat-expansion-panel-header">
-      <mat-panel-title>
+    <mat-expansion-panel-header
+      class="mat-expansion-panel-header"
+      [class.scope-is-selectable]="policyService.isScopeChangeable(newPolicy())">
+      <mat-panel-title class="policy-title-container">
         @if (panel.expanded) {
+          <input
+            type="number"
+            class="policy-priority-input"
+            [ngModel]="newPolicy().priority"
+            (ngModelChange)="onPriorityChange($event)"
+            (click)="$event.stopPropagation()"
+            (keydown)="$event.stopPropagation()" />
           <input
             type="text"
             class="policy-name-input"
             placeholder="Policy Name"
             [ngModel]="newPolicy().name"
             (ngModelChange)="onNameChange($event)"
-            (click)="$event.stopPropagation(); panel.expanded = true"
+            (click)="$event.stopPropagation()"
             (keydown)="$event.stopPropagation()" />
         } @else {
           <p i18n>New Policy</p>
         }
       </mat-panel-title>
+
       <mat-panel-description class="header-description">
-        <div class="description-label">
-          @if (!policyHasActions() && panel.expanded) {
-            <mat-form-field
-              appearance="fill"
-              class="policy-scope-dropdown"
-              (click)="$event.stopPropagation()">
-              <mat-label i18n>Scope</mat-label>
-              <mat-select
-                [value]="newPolicy().scope"
-                (selectionChange)="selectPolicyScope($event.value)">
-                @for (scopeOption of policyService.allPolicyScopes(); track scopeOption) {
-                  <mat-option [value]="scopeOption">{{ scopeOption }}</mat-option>
-                }
-              </mat-select>
-            </mat-form-field>
-          } @else {
-            <span>
-              {{ newPolicy().scope.toLocaleUpperCase() }}
-            </span>
-          }
-        </div>
-        <div class="actions">
-          @if (panel.expanded) {
+        @if (panel.expanded) {
+          <div class="description-label">
+            @if (!policyHasActions()) {
+              <mat-form-field
+                appearance="fill"
+                class="policy-scope-dropdown"
+                subscriptSizing="dynamic"
+                (click)="$event.stopPropagation()">
+                <mat-label i18n>Scope</mat-label>
+                <mat-select
+                  [value]="newPolicy().scope"
+                  (selectionChange)="selectPolicyScope($event.value)">
+                  @for (scopeOption of policyService.allPolicyScopes(); track scopeOption) {
+                    <mat-option [value]="scopeOption">{{ scopeOption }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+            } @else {
+              <span>{{ newPolicy().scope.toLocaleUpperCase() }}</span>
+            }
+          </div>
+          <div class="actions">
             <button
               mat-icon-button
               [disabled]="!canSavePolicy()"
@@ -73,48 +82,15 @@
               (click)="$event.stopPropagation(); resetPolicy()">
               <mat-icon>close</mat-icon>
             </button>
-          }
-        </div>
+          </div>
+        }
       </mat-panel-description>
     </mat-expansion-panel-header>
-    <div class="priority-description">
-      <app-policy-priority
-        [editMode]="true"
-        [priority]="newPolicy().priority"
-        (priorityChange)="onPriorityChange($event)" />
-      <app-policy-description
-        [isEditMode]="true"
-        [policy]="newPolicy()"
-        (policyEdit)="onPolicyEdit($event)" />
-    </div>
 
-    <div class="tab-buttons">
-      <button
-        mat-stroked-button
-        class="action-button-1"
-        [class.action-button-active]="activeTab() === 'actions'"
-        (click)="setActiveTab('actions')">
-        ACTIONS
-      </button>
-      <button
-        mat-stroked-button
-        class="action-button-1"
-        [class.action-button-active]="activeTab() === 'conditions'"
-        (click)="setActiveTab('conditions')">
-        CONDITIONS
-      </button>
-    </div>
-    @if (activeTab() === "actions") {
-      <app-action-tab
-        [isEditMode]="true"
-        [policy]="newPolicy()"
-        (actionsUpdate)="onActionsUpdate($event)" />
-    }
-    @if (activeTab() === "conditions") {
-      <app-conditions-tab
-        [isEditMode]="true"
-        [policy]="newPolicy()"
-        (policyEdit)="onPolicyEdit($event)" />
-    }
+    <app-policy-panel-edit
+      class="width-100"
+      [policy]="newPolicy()"
+      [isEditMode]="true"
+      [(policyEdits)]="newPolicy" />
   </mat-expansion-panel>
 </div>

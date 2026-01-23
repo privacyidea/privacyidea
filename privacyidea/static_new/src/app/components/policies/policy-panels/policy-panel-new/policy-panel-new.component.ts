@@ -26,14 +26,17 @@ import { MatButtonToggleModule } from "@angular/material/button-toggle";
 import { FormsModule } from "@angular/forms";
 import { MatExpansionModule, MatExpansionPanel } from "@angular/material/expansion";
 import { MatSlideToggleModule } from "@angular/material/slide-toggle";
-import { PolicyDetail, PolicyService } from "../../../../services/policies/policies.service";
-import { ActionTabComponent } from "../action-tab/action-tab.component";
-import { ConditionsTabComponent } from "../conditions-tab/conditions-tab.component";
-import { PolicyDescriptionComponent } from "../action-tab/policy-description/policy-description.component";
-import { PolicyPriorityComponent } from "../action-tab/policy-priority/policy-priority.component";
+import { PolicyDetail, PolicyService, PolicyServiceInterface } from "../../../../services/policies/policies.service";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatSelectModule } from "@angular/material/select";
 import { MatOptionModule } from "@angular/material/core";
+import { PolicyPanelEditComponent } from "../policy-panel-edit-view/policy-panel-edit/policy-panel-edit.component";
+import { DialogService, DialogServiceInterface } from "../../../../services/dialog/dialog.service";
+import {
+  SimpleConfirmationDialogComponent,
+  SimpleConfirmationDialogData
+} from "../../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { lastValueFrom, map } from "rxjs";
 
 type PolicyTab = "actions" | "conditions";
 
@@ -49,20 +52,18 @@ type PolicyTab = "actions" | "conditions";
     FormsModule,
     MatExpansionModule,
     MatSlideToggleModule,
-    ActionTabComponent,
-    ConditionsTabComponent,
-    PolicyDescriptionComponent,
-    PolicyPriorityComponent,
     MatFormFieldModule,
     MatSelectModule,
-    MatOptionModule
+    MatOptionModule,
+    PolicyPanelEditComponent
   ],
   templateUrl: "./policy-panel-new.component.html",
   styleUrl: "./policy-panel-new.component.scss"
 })
 export class PolicyPanelNewComponent {
   // Angular Inputs and Services
-  readonly policyService: PolicyService = inject(PolicyService);
+  readonly policyService: PolicyServiceInterface = inject(PolicyService);
+  readonly dialogService: DialogServiceInterface = inject(DialogService);
 
   // Component State Signals
   readonly newPolicy: WritableSignal<PolicyDetail> = linkedSignal({
@@ -103,8 +104,8 @@ export class PolicyPanelNewComponent {
     this._resetNewPolicy();
   }
 
-  handleCollapse(panel: MatExpansionPanel) {
-    if (this.resetPolicy()) {
+  async handleCollapse(panel: MatExpansionPanel) {
+    if (await this.resetPolicy()) {
       panel.close();
     } else {
       panel.open();
@@ -140,10 +141,10 @@ export class PolicyPanelNewComponent {
     this._resetNewPolicy();
   }
 
-  resetPolicy(): boolean {
+  async resetPolicy(): Promise<boolean> {
     if (this.isPolicyEdited()) {
       // TODO: Confirm dialog
-      if (confirm("Are you sure you want to discard the new policy? All changes will be lost.")) {
+      if (await this._confirm("Are you sure you want to discard the new policy? All changes will be lost.")) {
         this._resetNewPolicy();
         return true;
       }
@@ -152,6 +153,26 @@ export class PolicyPanelNewComponent {
       return true;
     }
     return false;
+  }
+  private _confirm(message: string): Promise<boolean> {
+    return lastValueFrom(
+      this.dialogService
+        .openDialog({
+          component: SimpleConfirmationDialogComponent,
+          data: {
+            title: "Confirm Discard",
+            confirmAction: {
+              type: "destruct",
+              label: "Discard",
+              value: true
+            },
+            items: [],
+            itemType: "New Policy"
+          }
+        })
+        .afterClosed()
+        .pipe(map((result) => result === true))
+    );
   }
 
   // State-checking Methods

@@ -1,6 +1,24 @@
-.policy-flex-row {
-  min-width: 0;
+@use "../../../../../styles" as styles;
+
+@mixin action-tab-input {
   width: 100%;
+  font-size: 1rem;
+  background-color: transparent;
+  border: none;
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 0;
+  box-sizing: border-box;
+  resize: vertical;
+
+  &:focus {
+    outline: none;
+    border-bottom-color: var(--mat-sys-primary);
+  }
+}
+
+.policy-flex-row {
+  width: 100%;
+  min-width: 0;
   max-height: 564px;
   overflow-y: auto;
 
@@ -10,37 +28,20 @@
 }
 
 .flex-body {
-  gap: var(--global-gap);
   display: flex;
   flex-direction: column;
-}
-
-.flex-detail {
-  flex: 5 1 0;
-  min-width: 0;
-  position: sticky;
-  top: 0;
+  gap: var(--global-gap);
 }
 
 .view-mode-container {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--global-gap);
+  column-count: 2;
+  gap: calc(var(--global-gap) / 2);
   width: 100%;
-  align-items: flex-start;
 }
 
-.view-column {
-  min-width: 0;
-}
-
-@mixin action-tab-input {
-  background-color: transparent;
-  border: none;
-  border-bottom: 1px solid var(--mat-sys-outline-variant);
-  border-radius: 0;
-  box-sizing: border-box;
-  font-size: 1rem;
-  resize: vertical;
+.view-item-wrapper {
+  display: inline-block;
   width: 100%;
+  margin-bottom: calc(var(--global-gap) / 2);
+  break-inside: avoid;
 }

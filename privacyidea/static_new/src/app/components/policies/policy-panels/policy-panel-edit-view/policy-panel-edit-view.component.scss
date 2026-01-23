@@ -122,6 +122,7 @@
 .app-policy-panel-header {
   flex: 1;
   display: flex;
+  align-items: center;
 }
 
 mat-expansion-panel-header {
@@ -138,5 +139,8 @@ mat-expansion-panel-header {
   background-color: transparent !important;
 }
 app-policy-panel-view {
+  width: 100%;
+}
+.width-100 {
   width: 100%;
 }
