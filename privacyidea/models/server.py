@@ -104,6 +104,7 @@ class SMTPServer(MethodsMixin, db.Model):
     smime: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     dont_send_on_error: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     private_key: Mapped[Optional[str]] = mapped_column(Unicode(255), default="")
+    private_key_password: Mapped[Optional[str]] = mapped_column(Unicode(255), default="")
     certificate: Mapped[Optional[str]] = mapped_column(Unicode(255), default="")
 
     def get(self):
@@ -125,5 +126,6 @@ class SMTPServer(MethodsMixin, db.Model):
             "smime": self.smime,
             "dont_send_on_error": self.dont_send_on_error,
             "private_key": self.private_key,
+            "private_key_password": self.private_key_password,
             "certificate": self.certificate
         }

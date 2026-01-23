@@ -21,6 +21,7 @@ def upgrade():
         batch_op.add_column(sa.Column('dont_send_on_error', sa.Boolean(), nullable=False))
         batch_op.add_column(sa.Column('private_key', sa.Unicode(length=255), nullable=True))
         batch_op.add_column(sa.Column('certificate', sa.Unicode(length=255), nullable=True))
+        batch_op.add_column(sa.Column('private_key_password', sa.Unicode(length=255), nullable=True))
 
 
 def downgrade():
@@ -29,3 +30,4 @@ def downgrade():
         batch_op.drop_column('private_key')
         batch_op.drop_column('dont_send_on_error')
         batch_op.drop_column('smime')
+        batch_op.drop_column('private_key_password')

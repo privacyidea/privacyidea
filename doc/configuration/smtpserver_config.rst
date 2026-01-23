@@ -18,6 +18,7 @@ An SMTP server configuration contains the
    * a TLS flag
    * S/MIME signing flag
    * S/MIME private_key
+   * passwort for the private_key (empty if not needed)
    * S/MIME certificate
    * Don't send on signing error flag
 

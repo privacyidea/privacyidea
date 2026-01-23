@@ -34,6 +34,7 @@ myApp.controller("smtpServerController", ["$scope", "$stateParams", "inform",
             dont_send_on_error: false,
             private_key: "",
             certificate: "",
+            private_key_password: "",
             timeout: 10
         }
 
@@ -55,6 +56,7 @@ myApp.controller("smtpServerController", ["$scope", "$stateParams", "inform",
                         smime: false,
                         dont_send_on_error: false,
                         private_key: "",
+                        private_key_password: "",
                         certificate: "",
                         port: 25,
                         timeout: 10

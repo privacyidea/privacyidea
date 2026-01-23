@@ -131,6 +131,16 @@
         </div>
     </div>
     <div class="form-group">
+        <label for="private_key_password" class="col-sm-3 control-label"
+               translate>Password for the private key</label>
+        <div class="col-sm-9">
+            <input name="private_key_password" class="form-control"
+                   type="password" autocomplete="new-password"
+                   ng-model="params.private_key_password"
+                   placeholder="topsecret"/>
+        </div>
+    </div>
+    <div class="form-group">
         <div class="col-sm-3 control-label"></div>
         <div class="col-sm-9">
             <input type="checkbox"
