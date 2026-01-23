@@ -26,8 +26,8 @@ def upgrade():
 
 def downgrade():
     with op.batch_alter_table('smtpserver', schema=None) as batch_op:
+        batch_op.drop_column('private_key_password')
         batch_op.drop_column('certificate')
         batch_op.drop_column('private_key')
         batch_op.drop_column('dont_send_on_error')
         batch_op.drop_column('smime')
-        batch_op.drop_column('private_key_password')
