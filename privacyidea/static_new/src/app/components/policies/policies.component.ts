@@ -55,8 +55,6 @@ export class PoliciesComponent {
     const policiesAreFiltered = this.policiesListFiltered().length !== this.policyService.allPolicies().length;
     if (policiesAreFiltered) {
       setTimeout(() => this.accordion()?.openAll(), 0);
-    } else {
-      setTimeout(() => this.accordion()?.closeAll(), 0);
     }
     return policiesAreFiltered;
   });
@@ -64,5 +62,13 @@ export class PoliciesComponent {
 
   onPolicyListFilteredChange(filteredPolicies: PolicyDetail[]): void {
     this.policiesListFiltered.set(filteredPolicies);
+  }
+
+  constructor() {
+    effect(() => {
+      if (!this.multiOpenAccordion()) {
+        setTimeout(() => this.accordion()?.closeAll(), 0);
+      }
+    });
   }
 }

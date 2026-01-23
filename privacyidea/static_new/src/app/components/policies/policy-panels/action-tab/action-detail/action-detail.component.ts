@@ -30,7 +30,7 @@ import {
 import { MatInputModule } from "@angular/material/input";
 import { MatAutocompleteModule } from "@angular/material/autocomplete";
 import { MatSelectModule } from "@angular/material/select";
-import { SelectorButtons } from "../selector-buttons/selector-buttons.component";
+import { SelectorButtonsComponent } from "../selector-buttons/selector-buttons.component";
 import {
   ActionDocumentation,
   DocumentationService,
@@ -48,7 +48,7 @@ import { MatIcon } from "@angular/material/icon";
     MatInputModule,
     MatAutocompleteModule,
     MatSelectModule,
-    SelectorButtons,
+    SelectorButtonsComponent,
     MatIcon
   ],
   templateUrl: "./action-detail.component.html",

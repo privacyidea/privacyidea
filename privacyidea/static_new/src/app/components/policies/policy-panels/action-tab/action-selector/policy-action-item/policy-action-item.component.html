@@ -21,20 +21,15 @@
   [class.policy-action-item-selected]="isSelected()"
   (click)="selectActionByName.emit(actionName())">
   <span class="detail-label">{{ actionName() }}</span>
-  <span class="detail-description">{{ actionDetail()?.desc }}</span>
 
   <div class="detail-input">
     @if (actionDetail()?.value; as actionValues) {
       @if (actionValues.length === 0) {
         <p i18n>No values available for this action.</p>
-      } @else if (actionValues.length === 1) {
-        <app-selector-buttons
-          class="half-width"
-          [values]="actionDetail()?.value!"
-          (onSelect)="addAction($event)" />
       } @else if (actionValues.length <= 3) {
         <app-selector-buttons
-          class="full-width"
+          #buttonElement
+          [class]="actionValues.length === 1 ? 'half-width' : 'full-width'"
           [values]="actionDetail()?.value!"
           (onSelect)="addAction($event)" />
       } @else {
@@ -42,7 +37,9 @@
           appearance="fill"
           class="full-width"
           subscriptSizing="dynamic">
-          <mat-select (selectionChange)="addAction($event.value)">
+          <mat-select
+            #selectElement
+            (selectionChange)="addAction($event.value)">
             @for (option of actionDetail()?.value; track option) {
               <mat-option [value]="option">{{ option }}</mat-option>
             }
@@ -51,39 +48,34 @@
       }
     } @else {
       @switch (actionDetail()?.type) {
-        @case ("bool") {
-          <!-- Show Nothing -->
-        }
         @case ("str") {
           <input
+            #inputElement
             type="text"
-            placeholder="Text"
+            class="action-value-input"
             [ngModel]="currentAction().value"
             (ngModelChange)="updateSelectedActionValue($event)"
-            class="action-value-input"
             (keydown.enter)="addAction()" />
         }
         @case ("int") {
           <input
+            #inputElement
             type="number"
-            placeholder="Number"
+            class="action-value-input"
             [ngModel]="currentAction().value"
             (ngModelChange)="updateSelectedActionValue($event)"
-            class="action-value-input"
             (keydown.enter)="addAction()" />
         }
         @case ("text") {
           <textarea
-            placeholder="Text"
+            #inputElement
+            class="action-value-textarea"
             [ngModel]="currentAction().value"
-            (ngModelChange)="updateSelectedActionValue($event)"
-            class="action-value-textarea"></textarea>
-        }
-        @default {
-          <p i18n>Unknown action type: {{ actionDetail()?.type }}</p>
+            (ngModelChange)="updateSelectedActionValue($event)"></textarea>
         }
       }
       <button
+        #buttonElement
         mat-icon-button
         class="add-action-button half-width"
         [disabled]="!inputIsValid()"
@@ -92,4 +84,6 @@
       </button>
     }
   </div>
+
+  <span class="detail-description">{{ actionDetail()?.desc }}</span>
 </div>

@@ -1,7 +1,7 @@
 @use "../../../../../styles";
 
 .pi-dialog {
-  background-color: var(--mat-sys-surface);
+  background-color: var(--mat-sys-surface-container-low);
   border-radius: var(--border-radius);
   overflow: auto;
 }
@@ -24,12 +24,6 @@
   font-size: 1.7em;
   cursor: pointer;
   color: var(--mat-sys-on-surface);
-}
-
-.pi-dialog-body {
-  padding: var(--global-padding);
-  color: var(--mat-sys-on-surface);
-  font-size: 1rem;
 }
 
 .pi-dialog-footer {

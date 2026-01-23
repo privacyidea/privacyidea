@@ -28,7 +28,7 @@ import {
   PolicyService,
   PolicyActionDetail
 } from "../../../../../../services/policies/policies.service";
-import { SelectorButtons } from "../../selector-buttons/selector-buttons.component";
+import { SelectorButtonsComponent } from "../../selector-buttons/selector-buttons.component";
 import { MatInputModule } from "@angular/material/input";
 import { MatSelect } from "@angular/material/select";
 import { MatAutocompleteModule } from "@angular/material/autocomplete";
@@ -43,7 +43,7 @@ import { FormsModule } from "@angular/forms";
     MatButtonModule,
     MatSlideToggleModule,
     MatExpansionModule,
-    SelectorButtons,
+    SelectorButtonsComponent,
     MatInputModule,
     MatSelect,
     MatAutocompleteModule,

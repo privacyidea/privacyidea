@@ -13,6 +13,7 @@ import { CommonModule } from "@angular/common";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { AuthService, AuthServiceInterface } from "../../../../../services/auth/auth.service";
 import { CopyPolicyDialogComponent } from "../../../dialog/copy-policy-dialog/copy-policy-dialog.component";
+import { EditPolicyDialogComponent } from "../../../dialog/edit-policy-dialog/edit-policy-dialog.component";
 
 @Component({
   selector: "app-policy-panel-view-header",
@@ -26,6 +27,7 @@ export class PolicyPanelViewHeaderComponent {
   readonly authService: AuthServiceInterface = inject(AuthService);
 
   readonly policy = input.required<PolicyDetail>();
+  readonly policyEditsChange = output<Partial<PolicyDetail>>();
   readonly panel = input.required<MatExpansionPanel>();
   readonly isEditMode = input.required<boolean>();
   readonly isEditModeChange = output<boolean>();
@@ -59,9 +61,18 @@ export class PolicyPanelViewHeaderComponent {
       this.policyService.disablePolicy(policy.name);
     }
   }
-  editPolicy() {
-    this.isEditModeChange.emit(true);
-    this.panel().open();
+  async editPolicy() {
+    const result = await lastValueFrom(
+      this.dialogService
+        .openDialog({
+          component: EditPolicyDialogComponent,
+          data: this.policy()
+        })
+        .afterClosed()
+    );
+    if (result) {
+      this.policyEditsChange.emit(result);
+    }
   }
   async copyPolicy() {
     const newName = await lastValueFrom(

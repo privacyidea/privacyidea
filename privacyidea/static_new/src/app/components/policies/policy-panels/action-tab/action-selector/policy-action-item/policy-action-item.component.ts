@@ -17,7 +17,18 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { CommonModule } from "@angular/common";
-import { Component, computed, inject, input, linkedSignal, output, signal } from "@angular/core";
+import {
+  Component,
+  computed,
+  ElementRef,
+  inject,
+  input,
+  linkedSignal,
+  output,
+  signal,
+  viewChild,
+  viewChildren
+} from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { MatIconModule } from "@angular/material/icon";
 import { MatTooltipModule } from "@angular/material/tooltip";
@@ -26,7 +37,7 @@ import {
   PolicyService,
   PolicyServiceInterface
 } from "../../../../../../services/policies/policies.service";
-import { SelectorButtons } from "../../selector-buttons/selector-buttons.component";
+import { SelectorButtonsComponent } from "../../selector-buttons/selector-buttons.component";
 import { MatInputModule } from "@angular/material/input";
 import { MatSelect } from "@angular/material/select";
 import { MatAutocompleteModule } from "@angular/material/autocomplete";
@@ -39,7 +50,7 @@ import { MatAutocompleteModule } from "@angular/material/autocomplete";
     FormsModule,
     MatIconModule,
     MatTooltipModule,
-    SelectorButtons,
+    SelectorButtonsComponent,
     MatInputModule,
     MatSelect,
     MatAutocompleteModule
@@ -85,5 +96,34 @@ export class PolicyActionItemComponent {
   updateSelectedActionValue(value: any) {
     const actionName = this.actionName();
     this.currentAction.set({ name: actionName, value: value });
+  }
+
+  inputEl = viewChild<ElementRef>("inputElement");
+  selectEl = viewChild<MatSelect>("selectElement");
+  buttonEl = viewChild<ElementRef>("buttonElement");
+  selectorComponent = viewChild<SelectorButtonsComponent<any>>("selectorComponent");
+
+  focusFirstInput() {
+    const input = this.inputEl()?.nativeElement;
+    const select = this.selectEl();
+    const button = this.buttonEl()?.nativeElement;
+    const selector = this.selectorComponent();
+
+    if (input) {
+      input.focus();
+      return;
+    }
+    if (select) {
+      select.focus();
+      return;
+    }
+    if (selector) {
+      selector.focusFirst();
+      return;
+    }
+    if (button) {
+      button.focus();
+      return;
+    }
   }
 }

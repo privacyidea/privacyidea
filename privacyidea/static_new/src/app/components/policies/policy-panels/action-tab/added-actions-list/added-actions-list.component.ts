@@ -44,8 +44,6 @@ import { AddedActionEditComponent } from "./added-action-edit/added-action-edit.
 export class AddedActionsListComponent {
   // Inputs
   actions = input.required<{ name: string; value: any }[]>();
-  actionsFirstHalf = computed(() => this.actions().filter((_, index) => index % 2 === 0));
-  actionsSecondHalf = computed(() => this.actions().filter((_, index) => index % 2 !== 0));
   actionsChange = output<{ name: string; value: any }[]>();
   actionRemove = output<string>();
   isEditMode = input.required<boolean>();

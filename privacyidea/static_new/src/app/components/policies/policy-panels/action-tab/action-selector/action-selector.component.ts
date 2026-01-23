@@ -17,7 +17,17 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, inject, input, linkedSignal, output, signal, WritableSignal } from "@angular/core";
+import {
+  Component,
+  computed,
+  inject,
+  input,
+  linkedSignal,
+  output,
+  signal,
+  viewChildren,
+  WritableSignal
+} from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { FormsModule } from "@angular/forms";
 import { MatIconModule } from "@angular/material/icon";
@@ -27,7 +37,7 @@ import {
   PolicyActionDetail,
   PolicyDetail
 } from "../../../../../services/policies/policies.service";
-import { SelectorButtons } from "../selector-buttons/selector-buttons.component";
+import { SelectorButtonsComponent } from "../selector-buttons/selector-buttons.component";
 
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { PolicyActionItemComponent } from "./policy-action-item/policy-action-item.component";
@@ -35,7 +45,14 @@ import { PolicyActionItemComponent } from "./policy-action-item/policy-action-it
 @Component({
   selector: "app-action-selector",
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule, SelectorButtons, MatTooltipModule, PolicyActionItemComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    MatIconModule,
+    SelectorButtonsComponent,
+    MatTooltipModule,
+    PolicyActionItemComponent
+  ],
   templateUrl: "./action-selector.component.html",
   styleUrls: ["./action-selector.component.scss"]
 })
@@ -121,10 +138,21 @@ export class ActionSelectorComponent {
     }
   }
 
-  addPolicyAction(policyAction: { name: string; value: any }) {
-    this.actionAdd.emit(policyAction);
-  }
+  actionItems = viewChildren(PolicyActionItemComponent);
 
+  addPolicyAction(event: any) {
+    const currentIndex = this.actionsNamesFiltered().indexOf(event.name);
+
+    this.actionAdd.emit(event);
+
+    setTimeout(() => {
+      const items = this.actionItems();
+      const nextItem = items[currentIndex] || items[currentIndex + 1];
+      if (nextItem) {
+        nextItem.focusFirstInput();
+      }
+    });
+  }
   getActionDetail(actionName: string): PolicyActionDetail | null {
     const actions = this.policyService.policyActions();
     const scope = this.policyScope();

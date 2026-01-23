@@ -17,13 +17,14 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div class="button-row">
-  @for (value of values; track $index) {
+  @for (value of values(); track $index) {
     <button
+      #btn
       class="button-item"
       [class.selected-button]="selectedValue() === value"
-      [class.last-button]="$index === values.length - 1"
+      [class.last-button]="$index === values().length - 1"
       (click)="selectValue(value)">
-      {{ labels?.[$index] || value }}
+      {{ labels()?.[$index] || value }}
     </button>
   }
 </div>

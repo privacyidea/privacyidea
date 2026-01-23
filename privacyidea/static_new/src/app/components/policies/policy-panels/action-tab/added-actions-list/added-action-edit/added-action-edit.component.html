@@ -10,6 +10,7 @@
             <app-selector-buttons
               class="half-width"
               [values]="actionDetail()?.value!"
+              [initialValue]="action().value"
               (onSelect)="updateAction($event)" />
           } @else if (actionValues.length <= 3) {
             <app-selector-buttons

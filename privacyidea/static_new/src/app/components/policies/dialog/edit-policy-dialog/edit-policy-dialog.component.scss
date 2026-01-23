@@ -1,0 +1,17 @@
+.dialog-content {
+  width: 80vw;
+  ::ng-deep .mat-mdc-dialog-content {
+    max-height: 75vh !important;
+    padding-bottom: 0 !important;
+  }
+}
+
+.tab-buttons {
+  display: flex;
+  gap: calc(var(--global-gap) / 2);
+  align-items: center;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: center;
+  padding: var(--half-global-padding) 0;
+}

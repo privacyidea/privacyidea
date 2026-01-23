@@ -39,11 +39,13 @@
           [panel]="panel"
           [isEditMode]="isEditMode()"
           [policy]="policy()"
-          (isEditModeChange)="isEditMode.set($event)" />
+          (isEditModeChange)="isEditMode.set($event)"
+          (policyEditsChange)="policyEdits.set($event)" />
       }
     </mat-expansion-panel-header>
     @if (isEditMode()) {
       <app-policy-panel-edit
+        class="width-100"
         [policy]="policy()"
         [isEditMode]="isEditMode()"
         [(policyEdits)]="policyEdits"

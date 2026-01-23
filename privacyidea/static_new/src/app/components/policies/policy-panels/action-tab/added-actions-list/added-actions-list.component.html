@@ -26,17 +26,8 @@
           <p i18n>Actions</p>
         </mat-panel-title>
       </mat-expansion-panel-header>
-      <div class="added-actions-container">
-        @for (action of actionsFirstHalf(); track action.name) {
-          <app-added-action-edit
-            [action]="action"
-            [actionDetail]="getDetailsOfAction(action.name)"
-            (onRemoveAction)="removeActionFromSelectedPolicy(action.name)"
-            (onUpdateAction)="uodateActionInSelectedPolicy(action.name, $event)" />
-        }
-      </div>
-      <div class="added-actions-container">
-        @for (action of actionsSecondHalf(); track action.name) {
+      <div class="added-actions-container-edit-mode">
+        @for (action of actions(); track action.name) {
           <app-added-action-edit
             [action]="action"
             [actionDetail]="getDetailsOfAction(action.name)"

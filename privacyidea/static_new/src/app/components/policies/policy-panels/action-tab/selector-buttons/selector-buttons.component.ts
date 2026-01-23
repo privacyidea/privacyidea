@@ -16,7 +16,19 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, EventEmitter, input, Output, OnInit, linkedSignal, WritableSignal, Input } from "@angular/core";
+import {
+  Component,
+  EventEmitter,
+  input,
+  Output,
+  OnInit,
+  linkedSignal,
+  WritableSignal,
+  Input,
+  output,
+  viewChildren,
+  ElementRef
+} from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 
 @Component({
@@ -27,19 +39,22 @@ import { MatButtonModule } from "@angular/material/button";
   styleUrl: "./selector-buttons.component.scss"
 })
 // Implement OnInit to use the hook
-export class SelectorButtons<T> implements OnInit {
+export class SelectorButtonsComponent<T> implements OnInit {
   // Inputs
   initialValue = input<T | null>(null);
-  @Input({ required: true }) values!: T[];
-  @Input() labels?: T[];
+  values = input.required<T[]>();
+  labels = input<T[] | undefined>(undefined);
 
   // Outputs
-  @Output() onSelect = new EventEmitter<T>();
+  onSelect = output<T>();
 
   // Component State
   selectedValue: WritableSignal<T | null> = linkedSignal({
     source: () => this.initialValue(),
-    computation: (source) => source
+    computation: (source) => {
+      console.log("Initial value set to:", source, "Values:", this.values());
+      return source;
+    }
   });
 
   // Lifecycle Hooks
@@ -52,5 +67,14 @@ export class SelectorButtons<T> implements OnInit {
   selectValue(value: T): void {
     this.selectedValue.set(value);
     this.onSelect.emit(value);
+  }
+  buttons = viewChildren<ElementRef<HTMLButtonElement>>("btn");
+  public focusFirst(): void {
+    const firstButton = this.buttons()[0]?.nativeElement;
+    console.log("Focusing first button:", firstButton);
+    if (firstButton) {
+      console.log("Button found, setting focus.");
+      firstButton.focus();
+    }
   }
 }

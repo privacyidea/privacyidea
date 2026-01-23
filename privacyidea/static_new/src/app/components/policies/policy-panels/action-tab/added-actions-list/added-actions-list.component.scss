@@ -59,3 +59,10 @@
   color: var(--mat-sys-on-primary);
   font-weight: 600;
 }
+.added-actions-container-edit-mode {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: calc(var(--global-gap) / 2);
+  width: 100%;
+  align-items: start;
+}

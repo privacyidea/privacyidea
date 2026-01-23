@@ -22,7 +22,7 @@ import { PolicyService } from "../../../../../services/policies/policies.service
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { MockPolicyService } from "../../../../../../testing/mock-services/mock-policies-service";
 import { By } from "@angular/platform-browser";
-import { SelectorButtons } from "../selector-buttons/selector-buttons.component";
+import { SelectorButtonsComponent } from "../selector-buttons/selector-buttons.component";
 import { FormsModule } from "@angular/forms";
 
 describe("ActionSelectorComponent", () => {
@@ -108,7 +108,7 @@ describe("ActionSelectorComponent", () => {
   it("should call service when group is selected", () => {
     policyServiceMock.groupNamesOfSelectedScope.set(["group1", "group2"]);
     fixture.detectChanges();
-    const groupSelector = fixture.debugElement.query(By.directive(SelectorButtons));
+    const groupSelector = fixture.debugElement.query(By.directive(SelectorButtonsComponent));
     groupSelector.triggerEventHandler("onSelect", "group2");
     expect(policyServiceMock.selectedActionGroup.set).toHaveBeenCalledWith("group2");
   });

@@ -18,20 +18,20 @@
  **/
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { SelectorButtons } from "./selector-buttons.component";
+import { SelectorButtonsComponent } from "./selector-buttons.component";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 // import "@angular/localize/init";
 
 describe("BoolSelectButtonsComponent", () => {
-  let component: SelectorButtons<any>;
-  let fixture: ComponentFixture<SelectorButtons<any>>;
+  let component: SelectorButtonsComponent<any>;
+  let fixture: ComponentFixture<SelectorButtonsComponent<any>>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [SelectorButtons, NoopAnimationsModule]
+      imports: [SelectorButtonsComponent, NoopAnimationsModule]
     }).compileComponents();
 
-    fixture = TestBed.createComponent(SelectorButtons);
+    fixture = TestBed.createComponent(SelectorButtonsComponent);
     component = fixture.componentInstance;
     fixture.componentRef.setInput("initialValue", true);
     component.values = [true, false];
