@@ -335,6 +335,7 @@ def add_smtpserver(identifier, server=None, port=25, username="", password="",
     :return: The Id of the database object
     """
     encrypted_password = encryptPassword(password)
+    encrypted_private_key_password = encryptPassword(private_key_password)
 
     stmt = select(SMTPServerDB).filter(SMTPServerDB.identifier == identifier)
     smtp_server = db.session.execute(stmt).scalar_one_or_none()
@@ -365,8 +366,8 @@ def add_smtpserver(identifier, server=None, port=25, username="", password="",
             smtp_server.dont_send_on_error = dont_send_on_error
         if private_key is not None:
             smtp_server.private_key = private_key
-        if private_key_password is not None:
-            smtp_server.private_key_password = private_key_password
+        if encrypted_private_key_password is not None:
+            smtp_server.private_key_password = encrypted_private_key_password
         if certificate is not None:
             smtp_server.certificate = certificate
     else:
