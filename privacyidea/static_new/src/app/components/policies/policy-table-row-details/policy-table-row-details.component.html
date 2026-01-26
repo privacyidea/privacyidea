@@ -1,5 +1,5 @@
 <!--
- (c) NetKnights GmbH 2025,  https://netknights.it
+ (c) NetKnights GmbH 2026,  https://netknights.it
 
  This code is free software; you can redistribute it and/or
  modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,22 +16,15 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<div
-  class="policies-layout"
-  aria-label="Policies Layout">
-  @if (authService.actionAllowed("policyread")) {
-    <app-policy-filter
-      (filteredPoliciesChange)="onPolicyListFilteredChange($event)"
-      [unfilteredPolicies]="policyService.allPolicies()">
-    </app-policy-filter>
-  }
-  @if (
-    authService.actionAllowed("policywrite") && policiesListFiltered().length === policyService.allPolicies().length
-  ) {
-    <app-policy-panel-new></app-policy-panel-new>
-  }
-  <app-policies-table
-    [policiesListFiltered]="policiesListFiltered()"
-    [isFiltered]="policiesIsFiltered()">
-  </app-policies-table>
-</div>
+@if (isEditMode()) {
+  <app-policy-panel-edit
+    class="width-100"
+    [policy]="policy()"
+    [isEditMode]="isEditMode()"
+    [(policyEdits)]="policyEdits"
+    (onEditModeChange)="isEditMode.set($event)"></app-policy-panel-edit>
+} @else {
+  <app-policy-panel-view
+    [policy]="policy()"
+    (onEditModeChange)="isEditMode.set($event)"></app-policy-panel-view>
+}

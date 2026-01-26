@@ -1,0 +1,71 @@
+@use "../../../../styles" as styles;
+
+.mat-elevation-z8 {
+  width: 100%;
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: auto;
+}
+
+th.mat-header-cell {
+  padding: 8px 16px;
+  text-align: left;
+  white-space: nowrap;
+}
+
+td.mat-cell {
+  max-width: 300px;
+  padding: 8px 16px;
+  overflow: hidden;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: middle;
+
+  > * {
+    margin: 0 auto;
+  }
+}
+
+// Fix für die Description: Mehrzeilig ohne Höhen-Kollaps
+.mat-column-description {
+  max-width: 400px;
+  min-width: 150px;
+  // Wichtig: white-space überschreiben
+  white-space: normal !important;
+  word-wrap: break-word;
+  text-align: left !important;
+  line-height: 1.5;
+}
+
+.mat-column-priority,
+.mat-column-scope,
+.mat-column-active {
+  width: 1%;
+}
+
+.mat-column-actions {
+  width: 180px;
+  text-align: right !important;
+
+  > * {
+    margin: 0 0 0 auto;
+    display: flex;
+    justify-content: flex-end;
+  }
+}
+
+.policy-row {
+  cursor: pointer;
+  &:hover {
+    background-color: var(--mat-sys-surface-container-low);
+  }
+}
+
+.detail-row {
+  height: 0;
+}

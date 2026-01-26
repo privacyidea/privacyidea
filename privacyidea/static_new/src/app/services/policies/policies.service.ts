@@ -193,6 +193,8 @@ export interface PolicyServiceInterface {
   policyHasActions(policy: PolicyDetail): boolean;
   savePolicyEdits(policyName: string, edits: Partial<PolicyDetail>): void;
   isPolicyEdited(editedPolicy: PolicyDetail, originalPolicy: PolicyDetail): boolean;
+  togglePolicyActive(policy: PolicyDetail, active: boolean): void;
+  updatePolicyOptimistic(updatedPolicy: Partial<PolicyDetail>): void;
   allPoliciesRecource: HttpResourceRef<PiResponse<PolicyDetail[], unknown> | undefined>;
 }
 
@@ -561,7 +563,12 @@ export class PolicyService implements PolicyServiceInterface {
     }
     return result;
   }
-
+  togglePolicyActive(policy: PolicyDetail, active: boolean): void {
+    const action = active ? this.enablePolicy(policy.name) : this.disablePolicy(policy.name);
+    action.catch((error) => {
+      console.error("Error toggling policy active state: ", error);
+    });
+  }
   enablePolicy(name: string): Promise<PiResponse<any>> {
     const headers = this.authService.getHeaders();
     return lastValueFrom(this.http.post<PiResponse<any>>(`${this.policyBaseUrl}enable/${name}`, {}, { headers }));
@@ -594,5 +601,16 @@ export class PolicyService implements PolicyServiceInterface {
       return value.trim().length > 0;
     }
     return false;
+  }
+
+  updatePolicyOptimistic(updatedPolicy: PolicyDetail) {
+    const currentPolicies = this.allPolicies();
+    this.allPolicies.set(currentPolicies.map((p) => (p.name === updatedPolicy.name ? updatedPolicy : p)));
+    this.http.post("/api/policy", updatedPolicy).subscribe({
+      error: (err) => {
+        this.allPolicies.set(currentPolicies);
+        console.error("Update failed, rolling back", err);
+      }
+    });
   }
 }

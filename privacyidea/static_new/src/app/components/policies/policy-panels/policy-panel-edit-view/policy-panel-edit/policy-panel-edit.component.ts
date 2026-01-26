@@ -38,8 +38,8 @@ import {
   SimpleConfirmationDialogData
 } from "../../../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { lastValueFrom } from "rxjs";
-import { PolicyTab } from "../policy-panel-edit-view.component";
 import { PolicyDescriptionComponent } from "../../action-tab/policy-description/policy-description.component";
+import { PolicyTab } from "../../../policies.component";
 
 @Component({
   selector: "app-policy-panel-edit",

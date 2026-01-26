@@ -15,9 +15,9 @@ import {
   SimpleConfirmationDialogData,
   SimpleConfirmationDialogComponent
 } from "../../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
-import { PolicyTab } from "../../policy-panels/policy-panel-edit-view/policy-panel-edit-view.component";
 import { DialogAction } from "../../../../models/dialog";
 import { PolicyPriorityComponent } from "../../policy-panels/action-tab/policy-priority/policy-priority.component";
+import { PolicyTab } from "../../policies.component";
 export function mustBeDifferentValidator(originalValue: string | null): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
     const isSame = control.value === originalValue;
