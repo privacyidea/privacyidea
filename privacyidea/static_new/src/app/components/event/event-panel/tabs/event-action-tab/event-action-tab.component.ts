@@ -45,7 +45,6 @@ export class EventActionTabComponent {
   protected readonly eventService = inject(EventService);
   action = input.required<string>();
   options = input.required<Record<string, any>>();
-  isEditMode = input.required<boolean>();
   newAction = output<string>();
   newOptions = output<ActionOptions>();
   protected readonly Object = Object;

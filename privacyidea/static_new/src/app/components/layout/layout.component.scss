@@ -119,21 +119,4 @@
     color: var(--mat-expansion-header-description-color, var(--mat-sys-on-surface-variant));
     margin-right: 16px;
   }
-
-  .cdk-overlay-container {
-    margin-left: 297px;
-    width: calc(100% - 297px);
-
-    .mat-mdc-select-panel {
-      margin-left: -297px;
-    }
-
-    .mat-mdc-autocomplete-panel {
-      margin-left: -297px;
-    }
-
-    .mat-mdc-tooltip {
-      margin-left: -340px;
-    }
-  }
 }

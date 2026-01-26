@@ -456,6 +456,11 @@ body {
   color: #d0d0d0;
 }
 
+.highlight {
+  background-color: var(--green-brand-light) !important;
+  padding: 0 2px;
+}
+
 ::ng-deep {
   .mdc-snackbar {
     margin-bottom: 76px !important;
@@ -574,5 +579,26 @@ body {
 
   .mat-mdc-option:hover:not(.mdc-list-item--selected, .mdc-list-item--disabled) {
     background-color: #f2f9fd;
+  }
+
+  .cdk-overlay-container {
+    margin-left: 297px;
+    width: calc(100% - 297px);
+
+    .mat-mdc-select-panel {
+      margin-left: -297px;
+    }
+
+    .mat-mdc-autocomplete-panel {
+      margin-left: -297px;
+    }
+
+    .mat-mdc-menu-panel {
+      margin-left: -297px;
+    }
+
+    .mat-mdc-tooltip {
+      margin-left: -340px;
+    }
   }
 }

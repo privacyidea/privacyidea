@@ -141,4 +141,26 @@ describe("EventsSelectionComponent", () => {
     expect(component.selectedEvents()).toEqual(["eventB"]);
     expect(component.newEvents.emit).toHaveBeenCalledWith(["eventB"]);
   });
+
+  it("should update searchTerm and lastSearchTerm on input changes", () => {
+    const event = { target: { value: "foobar" } };
+    component.onSearchInputChanges(event);
+    expect(component.lastSearchTerm).toBe("foobar");
+    expect(component.searchTerm()).toBe("foobar");
+  });
+
+  it("should handle empty string in onSearchInputChanges", () => {
+    const event = { target: { value: "" } };
+    component.onSearchInputChanges(event);
+    expect(component.lastSearchTerm).toBe("");
+    expect(component.searchTerm()).toBe("");
+  });
+
+  it("should clear search term and lastSearchTerm", () => {
+    component.searchTerm.set("something");
+    component.lastSearchTerm = "something";
+    component.clearSearchTerm();
+    expect(component.searchTerm()).toBe("");
+    expect(component.lastSearchTerm).toBe("");
+  });
 });

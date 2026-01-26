@@ -77,7 +77,7 @@ export const routes: Routes = [
   },
   {
     path: "events",
-    children: [{ path: "", component: EventComponent }]
+    children: [{ path: "", component: EventComponent, canDeactivate: [pendingChangesGuard] }]
   },
   {
     path: "configuration",

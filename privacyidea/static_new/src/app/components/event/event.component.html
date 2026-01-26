@@ -18,19 +18,169 @@
 -->
 <div
   appScrollToTop
-  class="events-layout"
+  class="events-table-container"
   aria-label="Event Handlers"
   i18n-aria-label>
   <h3 i18n>Event Handlers</h3>
-  <mat-accordion class="list-layout">
+
+  <div class="filter-paginator-container margin-bottom-16">
+    <mat-form-field
+      class="event-handler-table-filter"
+      subscriptSizing="dynamic">
+      <mat-label i18n>Filter Event Handlers ...</mat-label>
+      <app-clearable-input
+        (onClick)="onClearFilter()"
+        [showClearButton]="filterHTMLInputElement.value.length > 0">
+        <input
+          #filterHTMLInputElement
+          (input)="onFilterInput(filterHTMLInputElement.value)"
+          [value]="filterString()"
+          aria-label="Filter Input"
+          i18n-aria-label
+          i18n-placeholder
+          matInput
+          placeholder="Example query: 'username: root'" />
+      </app-clearable-input>
+    </mat-form-field>
+    <mat-paginator
+      [length]="eventHandlerDataSource().data.length"
+      [pageSizeOptions]="pageSizeOptions()"
+      [pageSize]="pageSizeOptions()[1]"
+      showFirstLastButtons></mat-paginator>
+  </div>
+
+  <div class="actions-container">
     @if (authService.actionAllowed("eventhandling_write")) {
-      <app-event-panel-new
-        [event]="EMPTY_EVENT"></app-event-panel-new>
-      <mat-divider class="margin-top-1 margin-bottom-1"></mat-divider>
+      <button
+        (click)="onCreateNewEventHandler()"
+        class="action-button-1"
+        i18n
+        mat-stroked-button>
+        <mat-icon> add_circle</mat-icon>
+        Create New Event Handler
+      </button>
     }
-    @for (event of eventService.eventHandlers(); track event.name) {
-      <app-event-panel
-        [event]="event"></app-event-panel>
+    <mat-slide-toggle
+      [checked]="detailedView()"
+      (change)="toggleDetailedView()">Detailed View
+    </mat-slide-toggle>
+  </div>
+
+  <table
+    class="event-handler-table"
+    mat-table
+    [dataSource]="eventHandlerDataSource()">
+    @for (column of Object.keys(columnKeysMap); track column) {
+      @if (column !== "delete" || authService.actionAllowed("eventhandling_write")) {
+        <ng-container [matColumnDef]="column">
+          <th
+            mat-header-cell
+            *matHeaderCellDef>
+            <div class="flex ali-center">
+              {{ columnKeysMap[column] }}
+              @if (column !== 'delete') {
+                <div class="margin-left-1 flex">
+                  <button
+                    (click)="tableUtilsService.onSortButtonClick(column, sort)"
+                    class="sort-button"
+                    mat-icon-button
+                    type="button">
+                    <mat-icon>{{ tableUtilsService.getSortIcon(column, sort()) }}</mat-icon>
+                  </button>
+                </div>
+              }
+            </div>
+          </th>
+          <td
+            mat-cell
+            *matCellDef="let element; let row"
+            [ngClass]="detailedView() ? 'detailed-cell' : 'compact-cell'">
+            @switch (column) {
+              @case ("name") {
+                <div [ngClass]="detailedView() ? 'break-words' : 'text-overflow-ellipsis'">
+                  @if (authService.actionAllowed("eventhandling_write")) {
+                    <a
+                      (click)="onEditEventHandler(element)"
+                      tabindex="0"
+                      [innerHTML]="element.name | highlight:filterString()"></a>
+                  } @else {
+                    <span [innerHTML]="element.name | highlight:filterString()"></span>
+                  }
+                </div>
+              }
+              @case ("event") {
+                @if (detailedView()) {
+                  <div class="detailed-cell-container">
+                    <ul class="no-indention margin-0">
+                      @for (event of getEventArray(element.event); track event) {
+                        <li [innerHTML]="event | highlight:filterString()"></li>
+                      }
+                    </ul>
+                  </div>
+                } @else {
+                  <span [innerHTML]="(element.event?.join(', ')) | highlight:filterString()"></span>
+                }
+              }
+              @case ("conditions") {
+                @if (detailedView()) {
+                  <div class="detailed-cell-container">
+                    <ul class="no-indention margin-0">
+                      @for (condition of Object.entries(element.conditions); track condition[0]) {
+                        <li [innerHTML]="(condition[0] + ': ' + condition[1]) | highlight:filterString()"></li>
+                      }
+                    </ul>
+                  </div>
+                } @else {
+                  <span [innerHTML]="formatConditions(element.conditions) | highlight:filterString()"></span>
+                }
+              }
+              @case ("action") {
+                <div [innerHTML]="element.action | highlight:filterString()"></div>
+                @if (detailedView()) {
+                  <ul class="no-indention margin-top-0">
+                    @for (option of Object.entries(element.options); track option[0]) {
+                      <li [innerHTML]="(option[0] + ': ' + option[1]) | highlight:filterString()"></li>
+                    }
+                  </ul>
+                }
+              }
+              @case ("active") {
+                <mat-slide-toggle
+                  matTooltip="Toggle Active Status"
+                  [checked]="element.active"
+                  (click)="$event.stopPropagation()"
+                  [disabled]="!authService.actionAllowed('eventhandling_write')"
+                  [disableRipple]="true"></mat-slide-toggle>
+              }
+              @case ("delete") {
+                <button
+                  mat-icon-button
+                  matTooltip="Delete Event Handler"
+                  (click)="onDeleteEventHandler(element); $event.stopPropagation()">
+                  <mat-icon>delete</mat-icon>
+                </button>
+              }
+              @case ("ordering") {
+                {{ element.ordering }}
+              }
+              @default {
+                <span
+                  [ngClass]="detailedView() ? 'break-words' : 'text-overflow-ellipsis'"
+                  [innerHTML]="element[column] | highlight:filterString()"></span>
+              }
+            }
+          </td>
+        </ng-container>
+      }
     }
-  </mat-accordion>
+
+    <tr
+      mat-header-row
+      *matHeaderRowDef="columnKeys()"></tr>
+    <tr
+      *matRowDef="let row; columns: columnKeys()"
+      class="example-element-row"
+      mat-row
+      [ngClass]="detailedView() ? 'detailed-row' : 'compact-row'"></tr>
+  </table>
 </div>

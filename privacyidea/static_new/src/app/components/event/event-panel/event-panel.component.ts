@@ -18,29 +18,25 @@
  **/
 
 import {
+  AfterViewInit,
   ChangeDetectionStrategy,
   Component,
   computed,
   effect,
+  ElementRef,
   inject,
-  input,
   linkedSignal,
+  OnDestroy,
+  Renderer2,
   signal,
   ViewChild
 } from "@angular/core";
-import {
-  MatExpansionPanel,
-  MatExpansionPanelDescription,
-  MatExpansionPanelHeader,
-  MatExpansionPanelTitle
-} from "@angular/material/expansion";
-import { MatSlideToggle } from "@angular/material/slide-toggle";
 import { MatIcon, MatIconModule } from "@angular/material/icon";
-import { MatIconButton } from "@angular/material/button";
+import { MatButton } from "@angular/material/button";
 import { MatTooltip } from "@angular/material/tooltip";
 import { AuthService } from "../../../services/auth/auth.service";
-import { MatDialog } from "@angular/material/dialog";
-import { EventHandler, EventService } from "../../../services/event/event.service";
+import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from "@angular/material/dialog";
+import { EMPTY_EVENT, EventService } from "../../../services/event/event.service";
 import { EventActionTabComponent } from "./tabs/event-action-tab/event-action-tab.component";
 import { EventConditionsTabComponent } from "./tabs/event-conditions-tab/event-conditions-tab.component";
 import { MatInput, MatLabel } from "@angular/material/input";
@@ -48,26 +44,24 @@ import { FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { MatFormField, MatFormFieldModule, MatHint } from "@angular/material/form-field";
 import { MatOption, MatSelect, MatSelectModule } from "@angular/material/select";
 import { deepCopy } from "../../../utils/deep-copy.utils";
-import { EventActionTabReadComponent } from "./tabs/event-action-tab-read/event-action-tab-read.component";
 import { NotificationService } from "../../../services/notification/notification.service";
 import { MatChipsModule } from "@angular/material/chips";
 import { MatAutocompleteModule } from "@angular/material/autocomplete";
 import { CommonModule } from "@angular/common";
 import { EventSelectionComponent } from "./event-selection/event-selection.component";
 import { MatTab, MatTabGroup } from "@angular/material/tabs";
+import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
+import { PendingChangesService } from "../../../services/pending-changes/pending-changes.service";
+import { ConfirmationDialogComponent } from "../../shared/confirmation-dialog/confirmation-dialog.component";
+import { ROUTE_PATHS } from "../../../route_paths";
+import { ContentService } from "../../../services/content/content.service";
 
 export type eventTab = "events" | "action" | "conditions";
 
 @Component({
   selector: "app-event-panel",
   imports: [
-    MatExpansionPanel,
-    MatExpansionPanelDescription,
-    MatExpansionPanelHeader,
-    MatExpansionPanelTitle,
     MatIcon,
-    MatIconButton,
-    MatSlideToggle,
     MatTooltip,
     EventActionTabComponent,
     EventConditionsTabComponent,
@@ -79,7 +73,6 @@ export type eventTab = "events" | "action" | "conditions";
     FormsModule,
     MatSelect,
     MatOption,
-    EventActionTabReadComponent,
     MatAutocompleteModule,
     CommonModule,
     MatFormFieldModule,
@@ -90,47 +83,139 @@ export type eventTab = "events" | "action" | "conditions";
     ReactiveFormsModule,
     EventSelectionComponent,
     MatTabGroup,
-    MatTab
+    MatTab,
+    ScrollToTopDirective,
+    MatButton
   ],
   standalone: true,
   templateUrl: "./event-panel.component.html",
   styleUrl: "./event-panel.component.scss",
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class EventPanelComponent {
-  eventService = inject(EventService);
-  authService = inject(AuthService);
-  notificiationService = inject(NotificationService);
+export class EventPanelComponent implements AfterViewInit, OnDestroy {
+  protected readonly eventService = inject(EventService);
+  protected readonly authService = inject(AuthService);
+  protected readonly notificationService = inject(NotificationService);
+  private readonly pendingChangesService = inject(PendingChangesService);
   private readonly dialog: MatDialog = inject(MatDialog);
-  event = input.required<EventHandler>();
-  isNewEvent = input<boolean>(false);
-  isEditMode = signal(false);
-  isExpanded = signal(false);
+  public readonly data = inject(MAT_DIALOG_DATA, { optional: false });
+  protected readonly renderer: Renderer2 = inject(Renderer2);
+  private readonly contentService = inject(ContentService);
+  public readonly dialogRef = inject(MatDialogRef<EventPanelComponent>, { optional: true });
+
+  private observer!: IntersectionObserver;
+
+  @ViewChild("stickyHeader") stickyHeader!: ElementRef<HTMLElement>;
+  @ViewChild("stickySentinel") stickySentinel!: ElementRef<HTMLElement>;
+  @ViewChild("scrollContainer") scrollContainer!: ElementRef<HTMLElement>;
 
   availableTabs: eventTab[] = ["action", "conditions"];
 
-  selectedEvents = linkedSignal(() => this.event().event);
+  event = signal(EMPTY_EVENT);
+  isNewEvent = signal(false);
 
-  onPanelOpened() {
-    this.isExpanded.set(true);
+  hasChanges = computed(() => this.editEvent() !== this.event());
+  selectedEvents = linkedSignal(() => this.event().event);
+  editEvent = linkedSignal(() => this.event());
+
+  constructor() {
+    // Initialize signals with dialog data
+    this.event.set(this.data.eventHandler ?? EMPTY_EVENT);
+    this.isNewEvent.set(this.data.isNewEvent ?? false);
+
+    // Avoid closing the dialog with pending changes (when clicking next to the dialog or pressing ESC)
+    if (this.dialogRef) {
+      this.dialogRef.disableClose = true;
+      this.dialogRef.backdropClick().subscribe(() => {
+        this.cancelEdit();
+      });
+      this.dialogRef.keydownEvents().subscribe(event => {
+        if (event.key === "Escape") {
+          this.cancelEdit();
+        }
+      });
+    }
+
+    this.pendingChangesService.registerHasChanges(() => this.hasChanges());
+
+    // Close the dialog when navigating away from the events route
+    // However, changing the route is disabled via the pendingChangesGuard when there are unsaved changes. This effect
+    // will only be triggered when there are no unsaved changes or when the user confirmed discarding them.
+    effect(() => {
+      if (!this.contentService.routeUrl().startsWith(ROUTE_PATHS.EVENTS)) {
+        this.dialogRef?.close(true);
+      }
+    });
   }
 
-  onPanelClosed() {
-    this.isExpanded.set(false);
+  ngAfterViewInit(): void {
+    // Setup for sticky header
+    if (!this.scrollContainer || !this.stickyHeader || !this.stickySentinel) {
+      return;
+    }
+
+    const options: IntersectionObserverInit = {
+      root: this.scrollContainer.nativeElement,
+      threshold: [0, 1]
+    };
+
+    this.observer = new IntersectionObserver(([entry]) => {
+      if (!entry.rootBounds) return;
+
+      const shouldFloat = entry.boundingClientRect.top < entry.rootBounds.top;
+
+      if (shouldFloat) {
+        this.renderer.addClass(this.stickyHeader.nativeElement, "is-sticky");
+      } else {
+        this.renderer.removeClass(this.stickyHeader.nativeElement, "is-sticky");
+      }
+    }, options);
+
+    this.observer.observe(this.stickySentinel.nativeElement);
+  }
+
+  ngOnDestroy(): void {
+    this.pendingChangesService.unregisterHasChanges();
+    if (this.observer) {
+      this.observer.disconnect();
+    }
   }
 
   // effect to notify the event service to reload handler module related data
   protected readonly setHandlerModuleEffect = effect(() => {
-    if (this.isExpanded() && this.event().handlermodule) {
+    if (this.event().handlermodule) {
       this.eventService.selectedHandlerModule.set(this.event().handlermodule);
+    } else if (this.isNewEvent()) {
+      const modules = this.eventService.eventHandlerModules();
+      if (modules.length > 0 && !this.eventService.selectedHandlerModule()) {
+        this.eventService.selectedHandlerModule.set(modules[0]);
+      }
     }
   });
 
-  editEvent = linkedSignal(() => this.event());
-
   cancelEdit(): void {
-    this.isEditMode.set(false);
+    if (this.editEvent() !== this.event()) {
+      this.dialog.open(ConfirmationDialogComponent, {
+        data: {
+          title: $localize`Discard changes`,
+          action: "discard",
+          type: "resolver"
+        }
+      }).afterClosed().subscribe(result => {
+        if (result) {
+          this.closeActual();
+        }
+      });
+    } else {
+      this.closeActual();
+    }
+  }
+
+  private closeActual(): void {
     this.editEvent.set(this.event());
+    if (this.dialogRef) {
+      this.dialogRef.close();
+    }
   }
 
   validActionDefinition = computed(() => {
@@ -180,7 +265,6 @@ export class EventPanelComponent {
     this.editEvent.set({ ...this.editEvent(), event: events });
   }
 
-
   updateEventHandler(key: string, value: any): void {
     // Update function to trigger change detection
     this.editEvent.set({ ...this.editEvent(), [key]: value });
@@ -199,12 +283,20 @@ export class EventPanelComponent {
 
   saveEvent(): void {
     let eventParams = this.getSaveParameters();
+    if (this.isNewEvent()) {
+      // new event handler do not yet have an ID
+      delete eventParams["id"];
+    }
     this.eventService.saveEventHandler(eventParams).subscribe({
       next: (response) => {
         if (response?.result?.value !== undefined) {
           this.eventService.allEventsResource.reload();
-          this.isEditMode.set(false);
-          this.notificiationService.openSnackBar("Event handler updated successfully.");
+          this.dialogRef?.close();
+          if(this.isNewEvent()) {
+            this.notificationService.openSnackBar("Event handler created successfully.");
+          } else {
+            this.notificationService.openSnackBar("Event handler updated successfully.");
+          }
         }
       }
     });
@@ -219,21 +311,10 @@ export class EventPanelComponent {
       return;
     }
     this.editEvent()!.active = activate;
-    if (!this.isEditMode()) {
-      if (activate) {
-        this.eventService.enableEvent(this.event()!.id);
-      } else {
-        this.eventService.disableEvent(this.event()!.id);
-      }
-    }
-  }
-
-  @ViewChild("panel") panel!: MatExpansionPanel;
-
-  onEditMode() {
-    this.isEditMode.set(true);
-    if (this.panel) {
-      this.panel.open();
+    if (activate) {
+      this.eventService.enableEvent(this.event()!.id);
+    } else {
+      this.eventService.disableEvent(this.event()!.id);
     }
   }
 }

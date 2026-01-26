@@ -62,7 +62,6 @@ import { MatIcon } from "@angular/material/icon";
 export class EventConditionsTabComponent {
   protected readonly eventService = inject(EventService);
   conditions = input.required<Record<string, any>>();
-  isEditMode = input.required<boolean>();
   newConditions = output<Record<string, any>>();
 
   selectedConditions = linkedSignal(() => this.conditions());

@@ -1,5 +1,34 @@
 @use "../../../../styles" as styles;
 
+.edit-event-handler-layout {
+  display: flex;
+  justify-content: center;
+}
+
+.edit-event-handler-container {
+  @include styles.table-container-styles;
+  @include styles.base-table-structure(".token-table", ".token-table-filter", ".table-scroll-container");
+  max-height: 90vh;
+  max-width: calc(100vw - var(--global-padding) * 5 - 48px);
+  display: grid;
+  overflow: auto;
+  position: relative;
+}
+
+.header-row {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.action-buttons {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  margin-left: 16px;
+}
+
 .event-name {
   white-space: nowrap;
   overflow: inherit;
