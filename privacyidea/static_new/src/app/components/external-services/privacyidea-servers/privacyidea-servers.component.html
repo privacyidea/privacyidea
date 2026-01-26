@@ -89,11 +89,13 @@
         <td
           *matCellDef="let server"
           mat-cell>
-          @if (server.tls) {
-            <mat-icon>check</mat-icon>
-          } @else {
-            <mat-icon>close</mat-icon>
-          }
+          <div class="flex just-center">
+            @if (server.tls) {
+              <mat-icon>check</mat-icon>
+            } @else {
+              <mat-icon>close</mat-icon>
+            }
+          </div>
         </td>
       </ng-container>
 
