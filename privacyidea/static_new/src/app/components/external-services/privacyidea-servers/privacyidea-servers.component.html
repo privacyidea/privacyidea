@@ -1,0 +1,153 @@
+<div class="privacyidea-layout">
+  <div
+    appScrollToTop
+    class="privacyidea-servers-container">
+    <div class="header-row">
+      <div class="filter-paginator-container margin-bottom-1">
+        <div class="flex-row ali-center">
+          <mat-form-field
+            class="table-filter"
+            subscriptSizing="dynamic">
+            <mat-label i18n>Filter privacyIDEA Servers...</mat-label>
+            <app-clearable-input
+              (onClick)="resetFilter()"
+              [showClearButton]="filterString().length > 0">
+              <input
+                #filterHTMLInputElement
+                (input)="onFilterInput(filterHTMLInputElement.value)"
+                [value]="filterString()"
+                aria-label="Filter Input"
+                i18n-aria-label
+                i18n-placeholder
+                matInput
+                placeholder="Filter by identifier or URL" />
+            </app-clearable-input>
+          </mat-form-field>
+          <button
+            (click)="openEditDialog()"
+            class="action-button-1 margin-left-1"
+            i18n
+            mat-stroked-button>
+            <mat-icon>add</mat-icon>
+            Create privacyIDEA Server
+          </button>
+        </div>
+        <mat-paginator
+          [length]="totalLength()"
+          [pageSizeOptions]="pageSizeOptions()"
+          [pageSize]="pageSizeOptions()[1]"
+          showFirstLastButtons />
+      </div>
+    </div>
+    <table
+      [dataSource]="privacyideaDataSource()"
+      class="token-table"
+      mat-table
+      matSort>
+
+      <ng-container matColumnDef="identifier">
+        <th
+          *matHeaderCellDef
+          i18n
+          mat-header-cell
+          mat-sort-header> Identifier
+        </th>
+        <td
+          *matCellDef="let server"
+          mat-cell>
+          <div class="flex-row">
+            <a
+              (click)="openEditDialog(server)"
+              class="flex ali-center">
+              {{ server.identifier }}
+            </a>
+            <app-copy-button [copyText]="server.identifier" />
+          </div>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="url">
+        <th
+          *matHeaderCellDef
+          i18n
+          mat-header-cell
+          mat-sort-header> URL
+        </th>
+        <td
+          *matCellDef="let server"
+          mat-cell> {{ server.url }}
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="tls">
+        <th
+          *matHeaderCellDef
+          i18n
+          mat-header-cell
+          mat-sort-header> Verify TLS
+        </th>
+        <td
+          *matCellDef="let server"
+          mat-cell>
+          @if (server.tls) {
+            <mat-icon>check</mat-icon>
+          } @else {
+            <mat-icon>close</mat-icon>
+          }
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="description">
+        <th
+          *matHeaderCellDef
+          i18n
+          mat-header-cell
+          mat-sort-header> Description
+        </th>
+        <td
+          *matCellDef="let server"
+          mat-cell> {{ server.description }}
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="actions">
+        <th
+          *matHeaderCellDef
+          i18n
+          mat-header-cell> Actions
+        </th>
+        <td
+          *matCellDef="let server"
+          mat-cell>
+          <div class="flex just-center">
+            <button
+              (click)="deleteServer(server)"
+              color="warn"
+              i18n-matTooltip
+              mat-icon-button
+              matTooltip="Delete">
+              <mat-icon>delete</mat-icon>
+            </button>
+          </div>
+        </td>
+      </ng-container>
+
+      <tr
+        *matHeaderRowDef="displayedColumns"
+        mat-header-row></tr>
+      <tr
+        *matRowDef="let row; columns: displayedColumns;"
+        mat-row></tr>
+
+      <tr
+        *matNoDataRow
+        class="mat-row">
+        <td
+          class="mat-cell"
+          colspan="5"
+          i18n>No privacyIDEA servers found.
+        </td>
+      </tr>
+    </table>
+  </div>
+</div>

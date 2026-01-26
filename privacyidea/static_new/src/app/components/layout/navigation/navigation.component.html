@@ -451,8 +451,8 @@
         </mat-list-item>
         <mat-list-item>
           <button
-            class="card-button-1"
-            disabled
+            [ngClass]="contentService.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_PRIVACYIDEA ? 'card-button-active' : 'card-button-1'"
+            [routerLink]="[ROUTE_PATHS.EXTERNAL_SERVICES_PRIVACYIDEA]"
             mat-stroked-button>
             <mat-icon class="mdi--pi-logo"></mat-icon>
             PrivacyIDEA Servers

@@ -43,5 +43,6 @@ export const ROUTE_PATHS = {
   EXTERNAL_SERVICES_SMTP: "/external-services/smtp",
   EXTERNAL_SERVICES_RADIUS: "/external-services/radius",
   EXTERNAL_SERVICES_SMS: "/external-services/sms",
+  EXTERNAL_SERVICES_PRIVACYIDEA: "/external-services/privacyidea",
   USERS_RESOLVERS: "/users/resolvers"
 };

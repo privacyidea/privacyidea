@@ -1,0 +1,108 @@
+@if (isEditMode) {
+  <h2
+    i18n
+    mat-dialog-title>
+    Edit privacyIDEA server {{ data?.identifier }}
+  </h2>
+} @else {
+  <h2
+    i18n
+    mat-dialog-title>
+    Create a new privacyIDEA server
+  </h2>
+}
+
+<mat-dialog-content>
+  <form
+    [formGroup]="privacyideaForm"
+    class="flex-column">
+
+    <mat-form-field>
+      <mat-label i18n>Identifier</mat-label>
+      <input
+        formControlName="identifier"
+        matInput
+        placeholder="myRemotePrivacyIDEAServer"
+        required />
+      <mat-hint i18n>This is the unique identifying name of the privacyIDEA server definition.</mat-hint>
+    </mat-form-field>
+
+    <mat-form-field
+      class="margin-top-1">
+      <mat-label i18n>URL of the privacyIDEA server</mat-label>
+      <input
+        formControlName="url"
+        matInput
+        placeholder="https://pi17.example.com/"
+        required />
+      <mat-hint i18n>Please provide the base URL of the privacyIDEA server.</mat-hint>
+    </mat-form-field>
+
+    <div class="margin-top-1">
+      <mat-checkbox formControlName="tls">
+        <span i18n>Verify the certificate</span>
+      </mat-checkbox>
+      <p
+        class="mat-hint"
+        i18n>
+        The certificate will be checked for a valid hostname and for a trusted certificate. Do not uncheck this in
+        productive use!
+      </p>
+    </div>
+
+    <mat-form-field
+      class="margin-top-1">
+      <mat-label i18n>Description</mat-label>
+      <input
+        formControlName="description"
+        matInput
+        placeholder="some wise words" />
+    </mat-form-field>
+
+    <div class="flex-row gap-16 margin-top-1">
+      <mat-form-field class="flex-grow-1">
+        <mat-label i18n>User</mat-label>
+        <input
+          formControlName="username"
+          matInput />
+      </mat-form-field>
+
+      <mat-form-field class="flex-grow-1">
+        <mat-label i18n>Password</mat-label>
+        <input
+          autocomplete="new-password"
+          formControlName="password"
+          matInput
+          type="password" />
+      </mat-form-field>
+
+      <button
+        (click)="test()"
+        [disabled]="privacyideaForm.invalid || isTesting()"
+        class="action-button-1"
+        mat-stroked-button
+        type="button">
+        <mat-icon>send</mat-icon>
+        <span i18n>Send test request</span>
+      </button>
+    </div>
+
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="center">
+  <button
+    (click)="onCancel()"
+    i18n
+    mat-button>Cancel
+  </button>
+  <button
+    (click)="save()"
+    [disabled]="privacyideaForm.invalid || privacyideaForm.pristine"
+    class="action-button-1"
+    i18n
+    mat-stroked-button>
+    <mat-icon>save</mat-icon>
+    {{ isEditMode ? 'Save privacyIDEA server' : 'Create privacyIDEA server' }}
+  </button>
+</mat-dialog-actions>
