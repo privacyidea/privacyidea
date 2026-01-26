@@ -100,18 +100,17 @@
 
 .priority-description {
   display: flex;
+  flex-direction: row;
   align-items: stretch;
   gap: var(--global-gap);
-}
-
-.priority-description app-policy-priority {
-  flex: 1 1 0;
-  height: 100%;
-}
-
-.priority-description app-policy-description {
-  flex: 5 1 0;
-  height: 100%;
+  app-policy-priority {
+    flex: 1 1 0;
+    height: 100%;
+  }
+  app-policy-description {
+    flex: 5 1 0;
+    height: 100%;
+  }
 }
 
 .small-toggle {

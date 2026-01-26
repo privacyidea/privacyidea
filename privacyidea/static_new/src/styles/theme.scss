@@ -52,6 +52,7 @@ html {
     --mat-sys-surface-container-highest: light-dark(hsl(0, 0%, 75%), hsl(0, 0%, 30%));
     --mat-sys-surface-variant: light-dark(hsl(0, 0%, 95%), hsl(0, 0%, 22.5%));
     --mat-sys-background: light-dark(hsl(0, 0%, 90%), hsl(0, 0%, 20%));
+    --mat-sys-surface: var(--mat-sys-background);
     --mat-sys-on-surface: light-dark(hsl(0, 0%, 10%), hsl(0, 0%, 90%));
     --mat-sys-on-surface-variant: light-dark(hsl(0, 0%, 30%), hsl(0, 0%, 80%));
     --mat-sys-on-primary-container: light-dark(hsl(198, 66%, 10%), hsl(198, 66%, 80%));
@@ -117,6 +118,7 @@ html {
     --mat-sys-surface-container-highest: hsl(0, 0%, 75%);
     --mat-sys-surface-variant: hsl(0, 0%, 95%);
     --mat-sys-background: hsl(0, 0%, 90%);
+    --mat-sys-surface: var(--mat-sys-background);
     --mat-sys-on-surface: hsl(0, 0%, 10%);
     --mat-sys-on-surface-variant: hsl(0, 0%, 30%);
     --mat-sys-on-primary-container: hsl(198, 66%, 10%);
@@ -181,6 +183,7 @@ html {
     --mat-sys-surface-container-highest: hsl(0, 0%, 30%);
     --mat-sys-surface-variant: hsl(0, 0%, 22.5%);
     --mat-sys-background: hsl(0, 0%, 20%);
+    --mat-sys-surface: var(--mat-sys-background);
     --mat-sys-on-surface: hsl(0, 0%, 90%);
     --mat-sys-on-surface-variant: hsl(0, 0%, 80%);
     --mat-sys-on-primary-container: hsl(198, 66%, 80%);
