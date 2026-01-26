@@ -46,3 +46,23 @@
   color: var(--mat-sys-on-primary);
   font-weight: 600;
 }
+.add-action-button {
+  &:focus-visible {
+    outline: 1px solid var(--mat-sys-primary-light);
+    outline-offset: 1px;
+    box-shadow: 0 0 0 1px var(--mat-sys-surface);
+    border-radius: var(--border-radius);
+  }
+}
+
+.action-value-input,
+.action-value-textarea {
+  background-color: var(--mat-sys-surface);
+  border: 1px solid var(--mat-sys-outline);
+  border-radius: var(--border-radius);
+  padding: 8px;
+  width: 100%;
+  color: var(--mat-sys-on-surface);
+  font-family: inherit;
+  box-sizing: border-box;
+}

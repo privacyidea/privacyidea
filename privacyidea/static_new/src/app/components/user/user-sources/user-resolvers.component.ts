@@ -35,8 +35,8 @@ import { NotificationService } from "../../../services/notification/notification
 import { AuthService } from "../../../services/auth/auth.service";
 import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
-import { ConfirmationDialogComponent } from "../../shared/confirmation-dialog/confirmation-dialog.component";
 import { UserNewResolverComponent } from "../user-new-resolver/user-new-resolver.component";
+import { SimpleConfirmationDialogComponent } from "../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
 
 const columnKeysMap = [
   { key: "resolvername", label: "Name" },
@@ -139,26 +139,29 @@ export class UserResolversComponent {
   }
 
   onDeleteResolver(resolver: Resolver): void {
-    this.dialog.open(ConfirmationDialogComponent, {
-      data: {
-        serialList: [resolver.resolvername],
-        title: $localize`Delete Resolver`,
-        type: "resolver",
-        action: "delete"
-      }
-    }).afterClosed().subscribe(result => {
-      if (result) {
-        this.resolverService.deleteResolver(resolver.resolvername).subscribe({
-          next: () => {
-            this.notificationService.openSnackBar($localize`Resolver "${resolver.resolvername}" deleted.`);
-            this.resolverService.resolversResource.reload?.();
-          },
-          error: (err) => {
-            const message = err.error?.result?.error?.message || err.message;
-            this.notificationService.openSnackBar($localize`Failed to delete resolver. ${message}`);
-          }
-        });
-      }
-    });
+    this.dialog
+      .open(SimpleConfirmationDialogComponent, {
+        data: {
+          serialList: [resolver.resolvername],
+          title: $localize`Delete Resolver`,
+          type: "resolver",
+          action: "delete"
+        }
+      })
+      .afterClosed()
+      .subscribe((result) => {
+        if (result) {
+          this.resolverService.deleteResolver(resolver.resolvername).subscribe({
+            next: () => {
+              this.notificationService.openSnackBar($localize`Resolver "${resolver.resolvername}" deleted.`);
+              this.resolverService.resolversResource.reload?.();
+            },
+            error: (err) => {
+              const message = err.error?.result?.error?.message || err.message;
+              this.notificationService.openSnackBar($localize`Failed to delete resolver. ${message}`);
+            }
+          });
+        }
+      });
   }
 }

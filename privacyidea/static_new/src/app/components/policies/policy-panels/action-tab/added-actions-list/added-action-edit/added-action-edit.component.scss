@@ -40,3 +40,8 @@
     width: 50%;
   }
 }
+
+.action-card-in-panel:focus-within {
+  outline: 2px solid var(--mat-sys-primary-base);
+  outline-offset: -2px;
+}

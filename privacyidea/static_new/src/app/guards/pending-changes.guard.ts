@@ -20,30 +20,33 @@ import { inject } from "@angular/core";
 import { CanDeactivateFn } from "@angular/router";
 import { PendingChangesService } from "../services/pending-changes/pending-changes.service";
 import { MatDialog } from "@angular/material/dialog";
-import { ConfirmationDialogComponent } from "../components/shared/confirmation-dialog/confirmation-dialog.component";
 import { map, of } from "rxjs";
+import { SimpleConfirmationDialogComponent } from "../components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 
 export const pendingChangesGuard: CanDeactivateFn<any> = () => {
   const pendingChangesService = inject(PendingChangesService);
   const dialog = inject(MatDialog);
 
   if (pendingChangesService.hasChanges) {
-    return dialog.open(ConfirmationDialogComponent, {
-      data: {
-        title: $localize`Discard changes`,
-        action: "discard",
-        type: "resolver"
-      }
-    }).afterClosed().pipe(
-      map(result => {
-        if (result) {
+    return dialog
+      .open(SimpleConfirmationDialogComponent, {
+        data: {
+          title: $localize`Discard changes`,
+          action: "discard",
+          type: "resolver"
+        }
+      })
+      .afterClosed()
+      .pipe(
+        map((result) => {
+          if (result) {
             // If the user confirms discarding changes, unregister the check
             pendingChangesService.unregisterHasChanges();
             return true;
-        }
-        return false;
-      })
-    );
+          }
+          return false;
+        })
+      );
   }
 
   return of(true);

@@ -18,13 +18,10 @@
  **/
 import {
   Component,
-  EventEmitter,
   input,
-  Output,
   OnInit,
   linkedSignal,
   WritableSignal,
-  Input,
   output,
   viewChildren,
   ElementRef

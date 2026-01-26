@@ -23,7 +23,7 @@ import { DialogAction } from "../../../../models/dialog";
 import { AbstractDialogComponent } from "../abstract-dialog/abstract-dialog.component";
 
 @Component({
-  selector: "app-confirmation-dialog",
+  selector: "app-simple-confirmation-dialog",
   imports: [DialogWrapperComponent, CommonModule],
   templateUrl: "./confirmation-dialog.component.html",
   styleUrl: "./confirmation-dialog.component.scss"

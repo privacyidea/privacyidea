@@ -10,6 +10,11 @@
   padding: var(--half-global-padding) var(--three-quarters-global-padding);
 }
 
+.nodes-container:focus-within {
+  outline: 2px solid var(--mat-sys-primary-base);
+  outline-offset: -2px;
+}
+
 .nodes-title {
   font-size: 1.2em;
   font-weight: 500;

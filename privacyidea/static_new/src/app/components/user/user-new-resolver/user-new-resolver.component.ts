@@ -55,9 +55,9 @@ import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { MAT_DIALOG_DATA, MatDialog, MatDialogModule, MatDialogRef } from "@angular/material/dialog";
 import { ROUTE_PATHS } from "../../../route_paths";
 import { ContentService } from "../../../services/content/content.service";
-import { ConfirmationDialogComponent } from "../../shared/confirmation-dialog/confirmation-dialog.component";
 import { PendingChangesService } from "../../../services/pending-changes/pending-changes.service";
 import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
+import { SimpleConfirmationDialogComponent } from "../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
 
 @Component({
   selector: "app-user-new-resolver",
@@ -117,7 +117,8 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
   keycloakResolver = viewChild(KeycloakResolverComponent);
 
   additionalFormFields = computed<Record<string, AbstractControl>>(() => {
-    const resolver = this.ldapResolver() ||
+    const resolver =
+      this.ldapResolver() ||
       this.sqlResolver() ||
       this.passwdResolver() ||
       this.scimResolver() ||
@@ -150,7 +151,7 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
     } else if (dialogResolverName) {
       this.resolverService.selectedResolverName.set(dialogResolverName);
     } else {
-      this.route.paramMap.pipe(takeUntilDestroyed()).subscribe(params => {
+      this.route.paramMap.pipe(takeUntilDestroyed()).subscribe((params) => {
         this.resolverService.selectedResolverName.set(params.get("name") || "");
       });
     }
@@ -160,7 +161,7 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
       this.dialogRef.backdropClick().subscribe(() => {
         this.onCancel();
       });
-      this.dialogRef.keydownEvents().subscribe(event => {
+      this.dialogRef.keydownEvents().subscribe((event) => {
         if (event.key === "Escape") {
           this.onCancel();
         }
@@ -226,11 +227,11 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
   }
 
   get isAdditionalFieldsValid(): boolean {
-    return Object.values(this.additionalFormFields()).every(control => control.valid);
+    return Object.values(this.additionalFormFields()).every((control) => control.valid);
   }
 
   get hasChanges(): boolean {
-    if (Object.values(this.additionalFormFields()).some(control => control.dirty)) {
+    if (Object.values(this.additionalFormFields()).some((control) => control.dirty)) {
       return true;
     }
 
@@ -309,24 +310,27 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
           client_credential_type: "secret",
           timeout: 60,
           verify_tls: true,
-          config_get_user_by_id: { "method": "GET", "endpoint": "/users/{userid}" },
-          config_get_user_by_name: { "method": "GET", "endpoint": "/users/{username}" },
+          config_get_user_by_id: { method: "GET", endpoint: "/users/{userid}" },
+          config_get_user_by_name: { method: "GET", endpoint: "/users/{username}" },
           config_get_user_list: {
-            "method": "GET",
-            "endpoint": "/users",
-            "headers": "{\"ConsistencyLevel\": \"eventual\"}"
+            method: "GET",
+            endpoint: "/users",
+            headers: '{"ConsistencyLevel": "eventual"}'
           },
           config_create_user: {
-            "method": "POST", "endpoint": "/users",
-            "requestMapping": "{\"accountEnabled\": true, \"displayName\": \"{givenname} {surname}\", \"mailNickname\": \"{givenname}\", \"passwordProfile\": {\"password\": \"{password}\"}}"
+            method: "POST",
+            endpoint: "/users",
+            requestMapping:
+              '{"accountEnabled": true, "displayName": "{givenname} {surname}", "mailNickname": "{givenname}", "passwordProfile": {"password": "{password}"}}'
           },
-          config_edit_user: { "method": "PATCH", "endpoint": "/users/{userid}" },
-          config_delete_user: { "method": "DELETE", "endpoint": "/users/{userid}" },
+          config_edit_user: { method: "PATCH", endpoint: "/users/{userid}" },
+          config_delete_user: { method: "DELETE", endpoint: "/users/{userid}" },
           config_user_auth: {
-            "method": "POST",
-            "headers": "{\"Content-Type\": \"application/x-www-form-urlencoded\"}",
-            "endpoint": "https://login.microsoftonline.com/{tenant}/oauth2/v2.0/token",
-            "requestMapping": "client_id={client_id}&scope=https://graph.microsoft.com/.default&username={username}&password={password}&grant_type=password&client_secret={client_credential}"
+            method: "POST",
+            headers: '{"Content-Type": "application/x-www-form-urlencoded"}',
+            endpoint: "https://login.microsoftonline.com/{tenant}/oauth2/v2.0/token",
+            requestMapping:
+              "client_id={client_id}&scope=https://graph.microsoft.com/.default&username={username}&password={password}&grant_type=password&client_secret={client_credential}"
           }
         };
       } else if (type === "keycloakresolver") {
@@ -334,14 +338,14 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
           config_authorization: {
             method: "POST",
             endpoint: "/realms/{realm}/protocol/openid-connect/token",
-            headers: "{\"Content-Type\": \"application/x-www-form-urlencoded\"}",
+            headers: '{"Content-Type": "application/x-www-form-urlencoded"}',
             requestMapping: "grant_type=password&client_id=admin-cli&username={username}&password={password}",
-            responseMapping: "{\"Authorization\": \"Bearer {access_token}\"}"
+            responseMapping: '{"Authorization": "Bearer {access_token}"}'
           },
           config_user_auth: {
             method: "POST",
             endpoint: "/realms/{realm}/protocol/openid-connect/token",
-            headers: "{\"Content-Type\": \"application/x-www-form-urlencoded\"}",
+            headers: '{"Content-Type": "application/x-www-form-urlencoded"}',
             requestMapping: "grant_type=password&client_id=admin-cli&username={username}&password={password}"
           },
           config_get_user_list: {
@@ -355,7 +359,7 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
           config_get_user_by_name: {
             method: "GET",
             endpoint: "/admin/realms/{realm}/users",
-            requestMapping: "{\"username\": \"{username}\", \"exact\": true}"
+            requestMapping: '{"username": "{username}", "exact": true}'
           }
         };
       } else if (type === "scimresolver") {
@@ -400,9 +404,7 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
         next: (res: PiResponse<any, any>) => {
           if (res.result?.status === true && (res.result.value ?? 0) >= 0) {
             this.notificationService.openSnackBar(
-              this.isEditMode
-                ? $localize`Resolver "${name}" updated.`
-                : $localize`Resolver "${name}" created.`
+              this.isEditMode ? $localize`Resolver "${name}" updated.` : $localize`Resolver "${name}" created.`
             );
             this.resolverService.resolversResource.reload?.();
 
@@ -415,16 +417,12 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
             }
           } else {
             const message = res.detail?.description || res.result?.error?.message || $localize`Unknown error occurred.`;
-            this.notificationService.openSnackBar(
-              $localize`Failed to save resolver. ${message}`
-            );
+            this.notificationService.openSnackBar($localize`Failed to save resolver. ${message}`);
           }
         },
         error: (err: HttpErrorResponse) => {
           const message = err.error?.result?.error?.message || err.message;
-          this.notificationService.openSnackBar(
-            $localize`Failed to save resolver. ${message}`
-          );
+          this.notificationService.openSnackBar($localize`Failed to save resolver. ${message}`);
         }
       })
       .add(() => (this.isSaving = false));
@@ -440,17 +438,20 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
 
   onCancel(): void {
     if (this.hasChanges) {
-      this.dialog.open(ConfirmationDialogComponent, {
-        data: {
-          title: $localize`Discard changes`,
-          action: "discard",
-          type: "resolver"
-        }
-      }).afterClosed().subscribe(result => {
-        if (result) {
-          this.closeActual();
-        }
-      });
+      this.dialog
+        .open(SimpleConfirmationDialogComponent, {
+          data: {
+            title: $localize`Discard changes`,
+            action: "discard",
+            type: "resolver"
+          }
+        })
+        .afterClosed()
+        .subscribe((result) => {
+          if (result) {
+            this.closeActual();
+          }
+        });
     } else {
       this.closeActual();
     }
@@ -503,21 +504,15 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
         next: (res: PiResponse<any, any>) => {
           if (res.result?.status === true && (res.result.value ?? 0) >= 0) {
             console.log(res.result.value);
-            this.notificationService.openSnackBar(
-              $localize`Resolver test executed: ${res.detail.description}`, 20000
-            );
+            this.notificationService.openSnackBar($localize`Resolver test executed: ${res.detail.description}`, 20000);
           } else {
             const message = res.detail?.description || res.result?.error?.message || $localize`Unknown error occurred.`;
-            this.notificationService.openSnackBar(
-              $localize`Failed to test resolver. ${message}`
-            );
+            this.notificationService.openSnackBar($localize`Failed to test resolver. ${message}`);
           }
         },
         error: (err: HttpErrorResponse) => {
           const message = err.error?.result?.error?.message || err.message;
-          this.notificationService.openSnackBar(
-            $localize`Failed to test resolver. ${message}`
-          );
+          this.notificationService.openSnackBar($localize`Failed to test resolver. ${message}`);
         }
       })
       .add(() => (this.isTesting = false));
