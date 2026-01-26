@@ -42,6 +42,8 @@ import re
 import os
 import logging
 import codecs
+from typing import List
+
 from passlib.context import CryptContext
 
 from privacyidea.lib.utils import convert_column_to_unicode
@@ -78,12 +80,12 @@ class IdResolver (UserIdResolver):
                     "email": "text"
                     }
 
-    sF = {"username": 0,
+    searchFieldIndices = {"username": 0,
           "cryptpass": 1,
           "userid": 2,
           "description": 4,
           "email": 4,
-          }
+                          }
 
     @staticmethod
     def setup(config=None, cache_dir=None):
@@ -129,10 +131,10 @@ class IdResolver (UserIdResolver):
         log.info('loading users from file {0!s} from within {1!r}'.format(self.fileName,
                                                                 os.getcwd()))
         with codecs.open(self.fileName, "r", ENCODING) as fileHandle:
-            ID = self.sF["userid"]
-            NAME = self.sF["username"]
-            PASS = self.sF["cryptpass"]
-            DESCRIPTION = self.sF["description"]
+            ID = self.searchFieldIndices["userid"]
+            NAME = self.searchFieldIndices["username"]
+            PASS = self.searchFieldIndices["cryptpass"]
+            DESCRIPTION = self.searchFieldIndices["description"]
 
             for line in fileHandle:
                 line = line.strip()
@@ -193,7 +195,7 @@ class IdResolver (UserIdResolver):
         :rtype: bool
         """
         log.info("checking password for user uid {0!s}".format(uid))
-        cryptedpasswd = self.passDict[uid]
+        cryptedpasswd = self.passDict.get(uid)
         log.debug("We found the encrypted pass {0!s} for uid {1!s}".format(cryptedpasswd, uid))
         if cryptedpasswd:
             if cryptedpasswd in ['x', '*']:
@@ -223,13 +225,16 @@ class IdResolver (UserIdResolver):
         ret = {}
 
         if userId in self.reversDict:
-            fields = self.descDict.get(userId)
+            fields = self.descDict.get(userId, [])
+            if not fields:
+                log.debug("User with user ID %s could not be found.", userId)
 
-            for key in self.sF:
+            for key in self.searchFieldIndices:
                 if no_passwd and key == "cryptpass":
                     continue
-                index = self.sF[key]
-                ret[key] = fields[index]
+                index = self.searchFieldIndices[key]
+                if index < len(fields):
+                    ret[key] = fields[index]
 
             ret['givenname'] = self.givennameDict.get(userId)
             ret['surname'] = self.surnameDict.get(userId)
@@ -247,9 +252,14 @@ class IdResolver (UserIdResolver):
         :return: username
         :rtype: str
         '''
-        fields = self.descDict.get(userId)
-        index = self.sF["username"]
-        return fields[index]
+        fields = self.descDict.get(userId, [])
+        index = self.searchFieldIndices["username"]
+        username = ""
+        if index < len(fields):
+            username = fields[index]
+        else:
+            log.debug("Username for user ID %s could not be found.", userId)
+        return username
 
     def getUserId(self, LoginName):
         """
@@ -262,7 +272,7 @@ class IdResolver (UserIdResolver):
         # We do not encode the LoginName anymore, as we are
         # storing unicode in nameDict now.
         if LoginName in self.nameDict:
-            return convert_column_to_unicode(self.nameDict[LoginName])
+            return convert_column_to_unicode(self.nameDict.get(LoginName, ""))
         else:
             return ""
 
@@ -304,46 +314,45 @@ class IdResolver (UserIdResolver):
                     ok = False
                     break
 
-                pattern = search_dict[search]
+                pattern = search_dict.get(search)
 
                 log.debug("searching for %s:%s", search, pattern)
 
-                if search == "username":
-                    ok = self.checkUserName(line, pattern)
+                if search in ["username", "description", "email"]:
+                    ok = self.check_attribute(line, pattern, search)
                 elif search == "userid":
                     ok = self.checkUserId(line, pattern)
-                elif search == "description":
-                    ok = self.checkDescription(line, pattern)
-                elif search == "email":
-                    ok = self.checkEmail(line, pattern)
 
                 if ok is not True:
                     break
 
             if ok is True:
-                uid = line[self.sF["userid"]]
+                uid_index = self.searchFieldIndices["userid"]
+                uid = ""
+                if uid_index < len(line):
+                    uid = line[self.searchFieldIndices["userid"]]
                 info = self.getUserInfo(uid, no_passwd=True)
                 ret.append(info)
 
         return ret
 
-    def checkUserName(self, line, pattern):
+    def check_attribute(self, line: List[str], pattern: str, attribute_name: str) -> bool:
         """
-        check for user name
+        Checks if a given attribute matches a pattern.
+
+        :param line: the list of user attributes
+        :param pattern: the pattern to match
+        :param attribute_name: the name of the attribute to check
+        :return: True if the attribute matches the pattern, False otherwise
         """
-
-        username = line[self.sF["username"]]
-        ret = self._stringMatch(username, pattern)
-        return ret
-
-    def checkDescription(self, line, pattern):
-        description = line[self.sF["description"]]
-        ret = self._stringMatch(description, pattern)
-        return ret
-
-    def checkEmail(self, line, pattern):
-        email = line[self.sF["email"]]
-        ret = self._stringMatch(email, pattern)
+        index = self.searchFieldIndices.get(attribute_name)
+        if index is None:
+            log.debug("Unknown search field: %s", attribute_name)
+            return False
+        attribute = ""
+        if index < len(line):
+            attribute = line[index]
+        ret = self._stringMatch(attribute, pattern)
         return ret
 
     @staticmethod
@@ -397,7 +406,7 @@ class IdResolver (UserIdResolver):
         ret = False
 
         try:
-            cUserId = int(line[self.sF["userid"]])
+            cUserId = int(line[self.searchFieldIndices["userid"]])
         except:  # pragma: no cover
             return ret
 
