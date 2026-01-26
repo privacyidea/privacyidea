@@ -31,30 +31,16 @@ export function mustBeDifferentValidator(originalValue: string | null): Validato
 export class CopyPolicyDialogComponent extends AbstractDialogComponent<string, string | null> {
   nameControl = new FormControl(this.data, [Validators.required, mustBeDifferentValidator(this.data)]);
 
-  isInvalid = toSignal(
-    this.nameControl.statusChanges.pipe(
-      map(() => {
-        console.log("Name control status:", this.nameControl.status);
-        return this.nameControl.invalid;
-      })
-    ),
-    {
-      initialValue: (() => {
-        console.log("Initial name control status:", this.nameControl.status);
-        return this.nameControl.invalid;
-      })()
-    }
-  );
+  isInvalid = toSignal(this.nameControl.statusChanges.pipe(map(() => this.nameControl.invalid)), {
+    initialValue: (() => this.nameControl.invalid)()
+  });
 
   actions: DialogAction<"submit" | null>[] = [
     {
       label: "Copy Policy",
       value: "submit",
       type: "confirm",
-      disabled: () => {
-        console.log("Is invalid:", this.isInvalid());
-        return this.isInvalid();
-      }
+      disabled: () => this.isInvalid()
     }
   ];
 

@@ -28,7 +28,7 @@
         <p i18n>No values available for this action.</p>
       } @else if (actionValues.length <= 3) {
         <app-selector-buttons
-          #buttonElement
+          #selectorComponent
           [class]="actionValues.length === 1 ? 'half-width' : 'full-width'"
           [values]="actionDetail()?.value!"
           (onSelect)="addAction($event)" />

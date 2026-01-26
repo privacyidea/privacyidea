@@ -73,7 +73,6 @@ export class AddedActionEditComponent {
     this.onRemoveAction.emit();
   }
   updateAction(newValue: string | number): void {
-    console.log("Emitting new value:", newValue);
     this.onUpdateAction.emit(newValue);
   }
 

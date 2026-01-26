@@ -51,10 +51,7 @@ export class SelectorButtonsComponent<T> implements OnInit {
   // Component State
   selectedValue: WritableSignal<T | null> = linkedSignal({
     source: () => this.initialValue(),
-    computation: (source) => {
-      console.log("Initial value set to:", source, "Values:", this.values());
-      return source;
-    }
+    computation: (source) => source
   });
 
   // Lifecycle Hooks

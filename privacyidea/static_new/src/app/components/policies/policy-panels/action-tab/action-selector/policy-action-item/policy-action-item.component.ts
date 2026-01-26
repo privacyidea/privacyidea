@@ -85,7 +85,6 @@ export class PolicyActionItemComponent {
   });
 
   addAction(value?: any) {
-    console.log("Adding action", this.actionName(), "with value", value);
     let currentAction = this.currentAction();
     if (value !== undefined) {
       currentAction.value = value;
@@ -104,26 +103,28 @@ export class PolicyActionItemComponent {
   selectorComponent = viewChild<SelectorButtonsComponent<any>>("selectorComponent");
 
   focusFirstInput() {
-    const input = this.inputEl()?.nativeElement;
-    const select = this.selectEl();
-    const button = this.buttonEl()?.nativeElement;
-    const selector = this.selectorComponent();
-
-    if (input) {
-      input.focus();
-      return;
-    }
-    if (select) {
-      select.focus();
-      return;
-    }
-    if (selector) {
-      selector.focusFirst();
-      return;
-    }
-    if (button) {
-      button.focus();
-      return;
-    }
+    setTimeout(() => {
+      const input = this.inputEl()?.nativeElement;
+      const select = this.selectEl();
+      const button = this.buttonEl()?.nativeElement;
+      const selector = this.selectorComponent();
+      console.log("Focusing first input among:", { input, select, selector, button });
+      if (input) {
+        input.focus();
+        return;
+      }
+      if (select) {
+        select.focus();
+        return;
+      }
+      if (selector) {
+        selector.focusFirst();
+        return;
+      }
+      if (button) {
+        button.focus();
+        return;
+      }
+    }, 0);
   }
 }

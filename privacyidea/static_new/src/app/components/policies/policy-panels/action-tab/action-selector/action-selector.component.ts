@@ -147,7 +147,7 @@ export class ActionSelectorComponent {
 
     setTimeout(() => {
       const items = this.actionItems();
-      const nextItem = items[currentIndex] || items[currentIndex + 1];
+      const nextItem = items[currentIndex] || items[currentIndex - 1];
       if (nextItem) {
         nextItem.focusFirstInput();
       }
