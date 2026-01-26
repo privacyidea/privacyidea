@@ -74,18 +74,18 @@ class IdResolver (UserIdResolver):
               "givenname": 0, "surname": 0, "gender": 0
               }
 
-    searchFields = {"username": "text",
+    search_fields = {"username": "text",
                     "userid": "numeric",
                     "description": "text",
                     "email": "text"
-                    }
+                     }
 
-    searchFieldIndices = {"username": 0,
+    search_field_indices = {"username": 0,
           "cryptpass": 1,
           "userid": 2,
           "description": 4,
           "email": 4,
-                          }
+                            }
 
     @staticmethod
     def setup(config=None, cache_dir=None):
@@ -104,20 +104,20 @@ class IdResolver (UserIdResolver):
         simple constructor
         """
         self.name = "etc-passwd"
-        self.fileName = ""
+        self.file_name = ""
 
         self.name = "P"
-        self.nameDict = {}
-        self.descDict = {}
-        self.reversDict = {}
-        self.passDict = {}
-        self.officePhoneDict = {}
-        self.homePhoneDict = {}
-        self.surnameDict = {}
-        self.givennameDict = {}
-        self.emailDict = {}
+        self.name_dict = {}
+        self.description_dict = {}
+        self.revers_dict = {}
+        self.pass_dict = {}
+        self.office_phone_dict = {}
+        self.home_phone_dict = {}
+        self.surname_dict = {}
+        self.given_name_dict = {}
+        self.email_dict = {}
 
-    def loadFile(self):
+    def load_file(self):
 
         """
         Loads the data of the file initially.
@@ -125,55 +125,55 @@ class IdResolver (UserIdResolver):
         Empty lines are ignored.
         """
 
-        if not self.fileName:
-            self.fileName = "/etc/passwd"
+        if not self.file_name:
+            self.file_name = "/etc/passwd"
 
-        log.info('loading users from file {0!s} from within {1!r}'.format(self.fileName,
-                                                                os.getcwd()))
-        with codecs.open(self.fileName, "r", ENCODING) as fileHandle:
-            ID = self.searchFieldIndices["userid"]
-            NAME = self.searchFieldIndices["username"]
-            PASS = self.searchFieldIndices["cryptpass"]
-            DESCRIPTION = self.searchFieldIndices["description"]
+        log.info('loading users from file {0!s} from within {1!r}'.format(self.file_name,
+                                                                          os.getcwd()))
+        with codecs.open(self.file_name, "r", ENCODING) as file_handle:
+            ID = self.search_field_indices["userid"]
+            NAME = self.search_field_indices["username"]
+            PASS = self.search_field_indices["cryptpass"]
+            DESCRIPTION = self.search_field_indices["description"]
 
-            for line in fileHandle:
+            for line in file_handle:
                 line = line.strip()
                 if not line:
                     # continue on an empty line
                     continue
 
                 fields = line.split(":", 7)
-                self.nameDict[fields[NAME]] = fields[ID]
+                self.name_dict[fields[NAME]] = fields[ID]
 
                 # for speed reason - build a revers lookup
-                self.reversDict[fields[ID]] = fields[NAME]
+                self.revers_dict[fields[ID]] = fields[NAME]
 
                 # for full info store the line
-                self.descDict[fields[ID]] = fields
+                self.description_dict[fields[ID]] = fields
 
                 # store the crypted password
-                self.passDict[fields[ID]] = fields[PASS]
+                self.pass_dict[fields[ID]] = fields[PASS]
 
                 # store surname, givenname and phones
                 descriptions = fields[DESCRIPTION].split(",")
                 name = descriptions[0]
                 names = name.split(' ', 1)
-                self.givennameDict[fields[ID]] = names[0]
-                self.surnameDict[fields[ID]] = ""
-                self.officePhoneDict[fields[ID]] = ""
-                self.homePhoneDict[fields[ID]] = ""
-                self.emailDict[fields[ID]] = ""
+                self.given_name_dict[fields[ID]] = names[0]
+                self.surname_dict[fields[ID]] = ""
+                self.office_phone_dict[fields[ID]] = ""
+                self.home_phone_dict[fields[ID]] = ""
+                self.email_dict[fields[ID]] = ""
                 if len(names) >= 2:
-                    self.surnameDict[fields[ID]] = names[1]
+                    self.surname_dict[fields[ID]] = names[1]
                 if len(descriptions) >= 4:
-                    self.officePhoneDict[fields[ID]] = descriptions[2]
-                    self.homePhoneDict[fields[ID]] = descriptions[3]
+                    self.office_phone_dict[fields[ID]] = descriptions[2]
+                    self.home_phone_dict[fields[ID]] = descriptions[3]
                 if len(descriptions) >= 5:
                     for field in descriptions[4:]:
                         # very basic e-mail regex
                         email_match = re.search(r'.+@.+\..+', field)
                         if email_match:
-                            self.emailDict[fields[ID]] = email_match.group(0)
+                            self.email_dict[fields[ID]] = email_match.group(0)
 
     def checkPass(self, uid, password):
         """
@@ -195,7 +195,7 @@ class IdResolver (UserIdResolver):
         :rtype: bool
         """
         log.info("checking password for user uid {0!s}".format(uid))
-        cryptedpasswd = self.passDict.get(uid)
+        cryptedpasswd = self.pass_dict.get(uid)
         log.debug("We found the encrypted pass {0!s} for uid {1!s}".format(cryptedpasswd, uid))
         if cryptedpasswd:
             if cryptedpasswd in ['x', '*']:
@@ -224,23 +224,23 @@ class IdResolver (UserIdResolver):
         """
         ret = {}
 
-        if userId in self.reversDict:
-            fields = self.descDict.get(userId, [])
+        if userId in self.revers_dict:
+            fields = self.description_dict.get(userId, [])
             if not fields:
                 log.debug("User with user ID %s could not be found.", userId)
 
-            for key in self.searchFieldIndices:
+            for key in self.search_field_indices:
                 if no_passwd and key == "cryptpass":
                     continue
-                index = self.searchFieldIndices[key]
+                index = self.search_field_indices[key]
                 if index < len(fields):
                     ret[key] = fields[index]
 
-            ret['givenname'] = self.givennameDict.get(userId)
-            ret['surname'] = self.surnameDict.get(userId)
-            ret['phone'] = self.homePhoneDict.get(userId)
-            ret['mobile'] = self.officePhoneDict.get(userId)
-            ret['email'] = self.emailDict.get(userId)
+            ret['givenname'] = self.given_name_dict.get(userId)
+            ret['surname'] = self.surname_dict.get(userId)
+            ret['phone'] = self.home_phone_dict.get(userId)
+            ret['mobile'] = self.office_phone_dict.get(userId)
+            ret['email'] = self.email_dict.get(userId)
 
         return ret
 
@@ -252,8 +252,8 @@ class IdResolver (UserIdResolver):
         :return: username
         :rtype: str
         '''
-        fields = self.descDict.get(userId, [])
-        index = self.searchFieldIndices["username"]
+        fields = self.description_dict.get(userId, [])
+        index = self.search_field_indices["username"]
         username = ""
         if index < len(fields):
             username = fields[index]
@@ -271,30 +271,30 @@ class IdResolver (UserIdResolver):
         """
         # We do not encode the LoginName anymore, as we are
         # storing unicode in nameDict now.
-        if LoginName in self.nameDict:
-            return convert_column_to_unicode(self.nameDict.get(LoginName, ""))
+        if LoginName in self.name_dict:
+            return convert_column_to_unicode(self.name_dict.get(LoginName, ""))
         else:
             return ""
 
-    def getSearchFields(self, searchDict=None):
+    def get_search_fields(self, search_dict=None):
         """
         show, which search fields this userIdResolver supports
 
         TODO: implementation is not completed
 
-        :param searchDict: fields, which can be queried
-        :type searchDict: dict
+        :param search_dict: fields, which can be queried
+        :type search_dict: dict
         :return: dict of all searchFields
         :rtype: dict
         """
-        if searchDict is not None:
-            for search in searchDict:
-                pattern = searchDict[search]
+        if search_dict is not None:
+            for search in search_dict:
+                pattern = search_dict[search]
 
                 log.debug("searching for %s:%s",
                           search, pattern)
 
-        return self.searchFields
+        return self.search_fields
 
     def getUserList(self, search_dict=None):
         """
@@ -305,12 +305,12 @@ class IdResolver (UserIdResolver):
         ret = []
 
         #  first check if the searches are in the searchDict
-        for _id, line in self.descDict.items():
+        for _id, line in self.description_dict.items():
             ok = True
 
             for search in search_dict:
 
-                if search not in self.searchFields:
+                if search not in self.search_fields:
                     ok = False
                     break
 
@@ -321,16 +321,16 @@ class IdResolver (UserIdResolver):
                 if search in ["username", "description", "email"]:
                     ok = self.check_attribute(line, pattern, search)
                 elif search == "userid":
-                    ok = self.checkUserId(line, pattern)
+                    ok = self.check_user_id(line, pattern)
 
                 if ok is not True:
                     break
 
             if ok is True:
-                uid_index = self.searchFieldIndices["userid"]
+                uid_index = self.search_field_indices["userid"]
                 uid = ""
                 if uid_index < len(line):
-                    uid = line[self.searchFieldIndices["userid"]]
+                    uid = line[self.search_field_indices["userid"]]
                 info = self.getUserInfo(uid, no_passwd=True)
                 ret.append(info)
 
@@ -345,31 +345,31 @@ class IdResolver (UserIdResolver):
         :param attribute_name: the name of the attribute to check
         :return: True if the attribute matches the pattern, False otherwise
         """
-        index = self.searchFieldIndices.get(attribute_name)
+        index = self.search_field_indices.get(attribute_name)
         if index is None:
             log.debug("Unknown search field: %s", attribute_name)
             return False
         attribute = ""
         if index < len(line):
             attribute = line[index]
-        ret = self._stringMatch(attribute, pattern)
+        ret = self._string_match(attribute, pattern)
         return ret
 
     @staticmethod
-    def _stringMatch(cString, cPattern):
+    def _string_match(value, pattern):
         """
         internal function to match strings.
 
-        :param cString: The string to match
-        :param cPattern: the pattern
+        :param value: The string to match
+        :param pattern: the pattern
         :return: If the sting matches
         :rtype: bool
         """
         ret = False
         e = s = ""
 
-        string = cString.lower()
-        pattern = cPattern.lower()
+        string = value.lower()
+        pattern = pattern.lower()
 
         if pattern.startswith("*"):
             e = "e"
@@ -390,7 +390,7 @@ class IdResolver (UserIdResolver):
 
         return ret
 
-    def checkUserId(self, line, pattern):
+    def check_user_id(self, line, pattern):
         """
         Check if a userid matches a pattern.
         A pattern can be "=1000", ">=1000",
@@ -406,7 +406,7 @@ class IdResolver (UserIdResolver):
         ret = False
 
         try:
-            cUserId = int(line[self.searchFieldIndices["userid"]])
+            cUserId = int(line[self.search_field_indices["userid"]])
         except:  # pragma: no cover
             return ret
 
@@ -457,7 +457,7 @@ class IdResolver (UserIdResolver):
         return the resolver identifier string, which in fact is
         filename, where it points to.
         """
-        return self.fileName
+        return self.file_name
 
     @staticmethod
     def getResolverClassType():
@@ -494,7 +494,7 @@ class IdResolver (UserIdResolver):
             this could be the passwd file ,
             whether it is /etc/passwd or /etc/shadow
         """
-        self.fileName = config.get("fileName", config.get("filename"))
-        self.loadFile()
+        self.file_name = config.get("fileName", config.get("filename"))
+        self.load_file()
 
         return self

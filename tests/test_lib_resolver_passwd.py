@@ -103,15 +103,15 @@ class PasswdResolverTest(MyTestCase):
         self.assertEqual(1, len(r))
 
     def test_07_get_seaarch_fields(self):
-        search_fields = self.resolver.getSearchFields({"username": "*"})
+        search_fields = self.resolver.get_search_fields({"username": "*"})
         self.assertEqual("text", search_fields.get("username"), search_fields)
 
     def test_08_string_match(self):
-        self.assertTrue(self.resolver._stringMatch("Hallo", "*lo"))
-        self.assertTrue(self.resolver._stringMatch("Hallo", "Hal*"))
-        self.assertFalse(self.resolver._stringMatch("Duda", "Hal*"))
-        self.assertTrue(self.resolver._stringMatch("HalloDuda", "*Du*"))
-        self.assertTrue(self.resolver._stringMatch("Duda", "Duda"))
+        self.assertTrue(self.resolver._string_match("Hallo", "*lo"))
+        self.assertTrue(self.resolver._string_match("Hallo", "Hal*"))
+        self.assertFalse(self.resolver._string_match("Duda", "Hal*"))
+        self.assertTrue(self.resolver._string_match("HalloDuda", "*Du*"))
+        self.assertTrue(self.resolver._string_match("Duda", "Duda"))
 
     def test_09_check_attribute(self):
         line = ["username", "crypt_pass", "id", "group", "description/email", "", ""]
