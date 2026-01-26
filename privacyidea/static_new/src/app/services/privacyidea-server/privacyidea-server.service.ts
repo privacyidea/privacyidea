@@ -27,7 +27,8 @@ import { lastValueFrom } from "rxjs";
 
 export interface PrivacyideaServer {
   identifier: string;
-  id: string; // compatibility
+  id: string;
+  name: string;
   url: string;
   tls: boolean;
   description?: string;
@@ -35,7 +36,6 @@ export interface PrivacyideaServer {
   password?: string;
 }
 
-// compatibility alias
 export type RemoteServer = PrivacyideaServer;
 
 export type PrivacyideaServers = {
@@ -45,12 +45,13 @@ export type PrivacyideaServers = {
 export interface PrivacyideaServerServiceInterface {
   privacyideaServerResource: HttpResourceRef<PiResponse<PrivacyideaServers> | undefined>;
   readonly privacyideaServers: Signal<PrivacyideaServer[]>;
-  // compatibility
   remoteServerResource: HttpResourceRef<PiResponse<PrivacyideaServers> | undefined>;
   readonly remoteServerOptions: Signal<PrivacyideaServer[]>;
 
   postPrivacyideaServer(server: PrivacyideaServer): Promise<void>;
+
   deletePrivacyideaServer(identifier: string): Promise<void>;
+
   testPrivacyideaServer(params: any): Promise<boolean>;
 }
 
@@ -69,10 +70,6 @@ export class PrivacyideaServerService implements PrivacyideaServerServiceInterfa
     method: "GET",
     headers: this.authService.getHeaders()
   }));
-
-  // compatibility
-  get remoteServerResource() { return this.privacyideaServerResource; }
-
   privacyideaServers = computed<PrivacyideaServer[]>(() => {
     const res = this.privacyideaServerResource.value();
     const values = res?.result?.value;
@@ -80,13 +77,15 @@ export class PrivacyideaServerService implements PrivacyideaServerServiceInterfa
       return Object.entries(values).map(([identifier, server]) => ({
         ...server,
         identifier,
-        id: identifier // compatibility
+        id: identifier,
+        name: identifier
       }));
     }
     return [];
   });
 
-  // compatibility
+  get remoteServerResource() { return this.privacyideaServerResource; }
+
   get remoteServerOptions() { return this.privacyideaServers; }
 
   async postPrivacyideaServer(server: PrivacyideaServer): Promise<void> {
