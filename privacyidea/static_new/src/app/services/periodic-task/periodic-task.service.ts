@@ -147,7 +147,6 @@ export class PeriodicTaskService implements PeriodicTaskServiceInterface {
     return lastValueFrom(
       this.http.post(this.periodicTaskBaseUrl + "enable/" + taskId, {}, { headers: headers }).pipe(
         catchError((error) => {
-          console.warn("Failed to enable periodic task:", error);
           this.periodicTasksResource.reload();
           this.notificationService.openSnackBar("Failed to enable periodic task!");
           return of(undefined);
@@ -160,7 +159,6 @@ export class PeriodicTaskService implements PeriodicTaskServiceInterface {
     const headers = this.authService.getHeaders();
     const response$ = this.http.post(this.periodicTaskBaseUrl + "disable/" + taskId, {}, { headers: headers }).pipe(
       catchError((error) => {
-        console.warn("Failed to disable periodic task:", error);
         this.periodicTasksResource.reload();
         this.notificationService.openSnackBar("Failed to disable periodic task!");
         return of(undefined);

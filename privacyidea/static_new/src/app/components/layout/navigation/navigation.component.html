@@ -60,11 +60,10 @@
         width="575" />
     </a>
     <p
-      class="margin-0"
-      style="font-size: 12px">
+      class="margin-0 version-text">
       Version {{ versioningService.version() }}
     </p>
-    <p style="font-size: 12px; margin-bottom: 6px">
+    <p class="footer-text">
       An open-source project
       <a
         href="https://netknights.it/"
@@ -75,8 +74,7 @@
       in collaboration with
       <a
         href="https://github.com/privacyidea/privacyidea"
-        target="_blank"
-        >community contributors
+        target="_blank">community contributors
       </a>
     </p>
   </div>
@@ -280,9 +278,9 @@
         @if (authService.oneActionAllowed(["container_template_list", "container_template_create"])) {
           <mat-list-item>
             <button
-              class="card-button-1"
               [ngClass]="this.contentService.onTokensContainersTemplates() ? 'card-button-active' : 'card-button-1'"
               [routerLink]="[ROUTE_PATHS.TOKENS_CONTAINERS_TEMPLATES]"
+              class="card-button-1"
               i18n
               mat-stroked-button>
               <mat-icon>plagiarism</mat-icon>
@@ -324,11 +322,12 @@
         }
         <mat-list-item>
           <button
-            class="card-button-1"
-            disabled
+            [ngClass]="contentService.routeUrl() === ROUTE_PATHS.USERS_RESOLVERS ?
+                  'card-button-active' : 'card-button-1'"
+            [routerLink]="[ROUTE_PATHS.USERS_RESOLVERS]"
             mat-stroked-button>
             <mat-icon class="ms--database"></mat-icon>
-            Sources
+            Resolvers
           </button>
         </mat-list-item>
         <mat-list-item>

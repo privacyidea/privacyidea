@@ -434,6 +434,10 @@ flask-sqlalchemy==3.0.5 \
     # via
     #   flask-migrate
     #   privacyIDEA (pyproject.toml)
+flask-talisman==1.1.0 \
+    --hash=sha256:3c42b610ebe49b0e35ca150e179bf51aa1da01e4635b49a674868ea681046208 \
+    --hash=sha256:c5f486f5f54420729f84b3c3850cd63f96e8b033a9629bee66c524ea363797ff
+    # via privacyIDEA (pyproject.toml)
 flask-versioned==0.9.4.post20101221 \
     --hash=sha256:516694dc860a1bc4f22ab60b324a85083c0150522be109282a3bed681057fd34
     # via privacyIDEA (pyproject.toml)
@@ -792,9 +796,9 @@ protobuf==6.32.0 \
     --hash=sha256:ba377e5b67b908c8f3072a57b63e2c6a4cbd18aea4ed98d2584350dbf46f2783 \
     --hash=sha256:d52691e5bee6c860fff9a1c86ad26a13afbeb4b168cd4445c922b7e2cf85aaf0
     # via privacyIDEA (pyproject.toml)
-pyasn1==0.6.1 \
-    --hash=sha256:0d632f46f2ba09143da3a8afe9e33fb6f92fa2320ab7e886e2d0f7672af84629 \
-    --hash=sha256:6f580d2bdd84365380830acf45550f2511469f673cb4a5ae3857a3170128b034
+pyasn1==0.6.2 \
+    --hash=sha256:1eb26d860996a18e9b6ed05e7aae0e9fc21619fcee6af91cca9bad4fbea224bf \
+    --hash=sha256:9b59a2b25ba7e4f8197db7686c09fb33e658b98339fadb826e9512629017833b
     # via
     #   ldap3
     #   pyasn1-modules

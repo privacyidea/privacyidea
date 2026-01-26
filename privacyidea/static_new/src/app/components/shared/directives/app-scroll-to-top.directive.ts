@@ -16,16 +16,17 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Directive, ElementRef, HostListener, Renderer2 } from "@angular/core";
+import { Directive, ElementRef, HostListener, OnDestroy, Renderer2 } from "@angular/core";
 
 @Directive({
   selector: "[appScrollToTop]",
   standalone: true
 })
-export class ScrollToTopDirective {
+export class ScrollToTopDirective implements OnDestroy {
   private readonly SCROLL_THRESHOLD = 200;
   private button!: HTMLElement;
   private isButtonVisible = false;
+  private clickListenerDispose?: () => void;
 
   constructor(
     private el: ElementRef,
@@ -46,29 +47,36 @@ export class ScrollToTopDirective {
     }
   }
 
+  ngOnDestroy() {
+    if (this.clickListenerDispose) {
+      this.clickListenerDispose();
+    }
+  }
+
   private createButton() {
     this.button = this.renderer.createElement("button");
-    this.renderer.addClass(this.button, "scroll-button");
+    this.renderer.addClass(this.button, "mat-fab");
+    this.renderer.addClass(this.button, "scroll-to-top-fab");
 
     const icon = this.renderer.createElement("mat-icon");
     this.renderer.addClass(icon, "material-icons");
-    this.renderer.setProperty(icon, "innerHTML", "arrow_upward");
+    this.renderer.addClass(icon, "scroll-to-top-fab-icon");
+    this.renderer.setProperty(icon, "innerHTML", "keyboard_arrow_upward");
 
     this.renderer.appendChild(this.button, icon);
 
     this.renderer.setStyle(this.button, "position", "sticky");
     this.renderer.setStyle(this.button, "bottom", "0px");
-    this.renderer.setStyle(this.button, "right", "0px");
     this.renderer.setStyle(this.button, "cursor", "pointer");
     this.renderer.setStyle(this.button, "order", "999");
-    this.renderer.setStyle(this.button, "width", "4rem");
-    this.renderer.setStyle(this.button, "aspect-ratio", "1.618");
+    this.renderer.setStyle(this.button, "aspect-ratio", "1");
     this.renderer.setStyle(this.button, "display", "none");
+    this.renderer.setStyle(this.button, "margin-right", "64px");
 
     // Align the button to the right side of its grid cell
     this.renderer.setStyle(this.button, "justify-self", "end");
 
-    this.renderer.listen(this.button, "click", () => {
+    this.clickListenerDispose = this.renderer.listen(this.button, "click", () => {
       this.el.nativeElement.scrollTo({
         top: 0,
         behavior: "smooth"

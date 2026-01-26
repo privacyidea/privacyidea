@@ -62,6 +62,8 @@ import {
 import { NodeInfo, SystemService, SystemServiceInterface } from "../../../services/system/system.service";
 import { NotificationService, NotificationServiceInterface } from "../../../services/notification/notification.service";
 import { SimpleConfirmationDialogComponent } from "../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
+
+import { UserNewResolverComponent } from "../user-new-resolver/user-new-resolver.component";
 import { MatTooltip } from "@angular/material/tooltip";
 import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
 import { ResolverService, ResolverServiceInterface } from "../../../services/resolver/resolver.service";
@@ -127,6 +129,7 @@ export class RealmTableComponent {
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly resolverService: ResolverServiceInterface = inject(ResolverService);
+  protected readonly dialog: MatDialog = inject(MatDialog);
 
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: any;
@@ -168,10 +171,6 @@ export class RealmTableComponent {
     ];
   });
 
-  /**
-   * Resolver options are now loaded from the resolver API via ResolverService,
-   * not derived from realmResource.
-   */
   resolverOptions = computed(() => {
     const resolvers = this.resolverService.resolvers();
     return resolvers.map((resolver) => ({
@@ -626,6 +625,19 @@ export class RealmTableComponent {
           this.notificationService.openSnackBar($localize`Failed to set default realm. ${message}`);
         }
       });
+  }
+
+  onClickResolver(resolverName: unknown): void {
+    const resolver = this.resolverService.resolvers().find((r) => r.resolvername === resolverName);
+    if (resolver) {
+      this.dialog.open(UserNewResolverComponent, {
+        data: { resolver },
+        width: "auto",
+        height: "auto",
+        maxWidth: "100vw",
+        maxHeight: "100vh"
+      });
+    }
   }
 
   private clientsideSortRealmData(data: RealmRow[], s: Sort): RealmRow[] {

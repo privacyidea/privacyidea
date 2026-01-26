@@ -191,7 +191,7 @@ export class MockPiResponse<Value, Detail = unknown> implements PiResponse<Value
   versionnumber: string;
 
   constructor(args: {
-    detail: Detail;
+    detail?: Detail;
     result?: {
       authentication?: "CHALLENGE" | "POLL" | "PUSH";
       status: boolean;
@@ -209,7 +209,7 @@ export class MockPiResponse<Value, Detail = unknown> implements PiResponse<Value
     version?: string;
     versionnumber?: string;
   }) {
-    this.detail = args.detail;
+    this.detail = (args.detail ?? ({} as Detail));
     this.result = args.result;
     this.error = args.error;
     this.id = args.id ?? 0;

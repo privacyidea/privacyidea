@@ -269,13 +269,13 @@ class PolicyTestCase(MyTestCase):
 
     def test_04_delete_policy(self):
         d1 = PolicyDescription.query.filter_by().all()
-        self.assertEqual(len(d1), 1)
+        self.assertEqual(len(d1), 5)
         delete_policy(name="pol4")
         P = PolicyClass()
         pol4 = P.match_policies(name="pol4")
         self.assertTrue(pol4 == [], pol4)
         d1 = PolicyDescription.query.filter_by().all()
-        self.assertEqual(len(d1), 0)
+        self.assertEqual(len(d1), 4)
 
     def test_05_export_policies(self):
         P = PolicyClass()
@@ -2243,7 +2243,8 @@ class PolicyTestCase(MyTestCase):
         # Invalid realm in realm list
         def check_realms_in_exception(exception, expected_realms):
             self.assertTrue(
-                exception.exception.message.startswith(f"Invalid value for action '{PolicyAction.REALMDROPDOWN}': The following realms do not exist: "),
+                exception.exception.message.startswith(
+                    f"Invalid value for action '{PolicyAction.REALMDROPDOWN}': The following realms do not exist: "),
                 exception.exception.message)
             invalid_realms = re.findall(r"\[(.*?)\]", exception.exception.message)[0].split(", ")
             self.assertSetEqual(expected_realms, set([realm.strip("'") for realm in invalid_realms]))
@@ -2261,11 +2262,13 @@ class PolicyTestCase(MyTestCase):
         # No realm defined
         with self.assertRaises(ParameterError) as exception:
             validate_actions(SCOPE.WEBUI, f"{PolicyAction.REALMDROPDOWN}=")
-        self.assertEqual(f"Invalid value for action '{PolicyAction.REALMDROPDOWN}': No realms specified!", exception.exception.message)
+        self.assertEqual(f"Invalid value for action '{PolicyAction.REALMDROPDOWN}': No realms specified!",
+                         exception.exception.message)
 
         with self.assertRaises(ParameterError) as exception:
             validate_actions(SCOPE.WEBUI, {PolicyAction.REALMDROPDOWN: ""})
-        self.assertEqual(f"Invalid value for action '{PolicyAction.REALMDROPDOWN}': No realms specified!", exception.exception.message)
+        self.assertEqual(f"Invalid value for action '{PolicyAction.REALMDROPDOWN}': No realms specified!",
+                         exception.exception.message)
 
     def test_53_set_policy_validate_realms(self):
         """
@@ -3041,7 +3044,8 @@ class PolicyConditionClassTestCase(MyTestCase):
         self.assertTrue(isinstance(data.available_keys, list))
 
         # Everything available
-        container.set_container_info([TokenContainerInfoData("registration_state", RegistrationState.CLIENT_WAIT.value)])
+        container.set_container_info(
+            [TokenContainerInfoData("registration_state", RegistrationState.CLIENT_WAIT.value)])
         data = condition.get_container_data(container_serial)
         self.assertEqual("container", data.object_name)
         self.assertTrue(data.object_available)

@@ -103,6 +103,14 @@
                       {{ element[column.key] }}
                     </a>
                   }
+                  @case ("resolver") {
+                    <a
+                      (click)="onClickResolver(element[column.key]); $event.preventDefault()"
+                      attr.aria-label="{{ column.label }} Link"
+                      role="button">
+                      {{ element[column.key] }}
+                    </a>
+                  }
                   @default {
                     <span>
                       {{ element[column.key] }}
