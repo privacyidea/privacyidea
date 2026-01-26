@@ -238,6 +238,18 @@ export class EventPanelComponent implements AfterViewInit, OnDestroy {
     return true;
   });
 
+  validConditionsDefinition = computed(() => {
+    if (!this.editEvent().conditions) {
+      return true;
+    }
+    for (const conditionValue of Object.values(this.editEvent().conditions)) {
+      if (conditionValue === null || conditionValue === undefined || conditionValue === "") {
+        return false;
+      }
+    }
+    return true;
+  });
+
   sectionValidity = computed(() => {
     const validity: Record<string, any> = {};
     validity["events"] = this.editEvent().event.length > 0;
@@ -245,6 +257,7 @@ export class EventPanelComponent implements AfterViewInit, OnDestroy {
     validity["name"] = this.editEvent().name !== "";
     validity["handlerModule"] = this.eventService.selectedHandlerModule() !== null && this.eventService.selectedHandlerModule() !== "";
     validity["position"] = this.editEvent().position !== null && this.editEvent().position !== "";
+    validity["conditions"] = this.validConditionsDefinition();
     return validity;
   });
   canSave = computed(() => Object.values(this.sectionValidity()).every((value: boolean) => value));

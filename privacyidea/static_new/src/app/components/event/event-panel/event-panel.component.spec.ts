@@ -155,6 +155,25 @@ describe("EventPanelComponent", () => {
     expect(component.validActionDefinition()).toBe(true);
   });
 
+  it("validConditionsDefinition should be true if no condition is defined", () => {
+    component.editEvent.set({ ...component.editEvent(), conditions: {} });
+    expect(component.validConditionsDefinition()).toBe(true);
+  });
+
+  it("validConditionsDefinition should be true if all conditions have a value defined", () => {
+    component.editEvent.set({ ...component.editEvent(), conditions: {cond1: "1", cond2: false} });
+    expect(component.validConditionsDefinition()).toBe(true);
+  });
+
+  it("validConditionsDefinition should be false if at least one condition has no value", () => {
+    component.editEvent.set({ ...component.editEvent(), conditions: {cond1: "1", cond2: null} });
+    expect(component.validConditionsDefinition()).toBe(false);
+    component.editEvent.set({ ...component.editEvent(), conditions: {cond1: "1", cond2: ""} });
+    expect(component.validConditionsDefinition()).toBe(false);
+    component.editEvent.set({ ...component.editEvent(), conditions: {cond1: "1", cond2: undefined} });
+    expect(component.validConditionsDefinition()).toBe(false);
+  });
+
   it("canSave should be true if all sections are valid", () => {
     mockEventService.selectedHandlerModule.set("mockModule");
     expect(component.sectionValidity()["events"]).toBe(true);

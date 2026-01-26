@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import {Component, inject, input, linkedSignal, model, output, ViewChild, ViewEncapsulation} from "@angular/core";
+import { Component, inject, input, linkedSignal, model, output, ViewChild, ViewEncapsulation } from "@angular/core";
 import { EventService } from "../../../../services/event/event.service";
 import { deepCopy } from "../../../../utils/deep-copy.utils";
 import { ENTER } from "@angular/cdk/keycodes";

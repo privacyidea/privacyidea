@@ -17,10 +17,14 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <form>
-  <mat-form-field class="width-100" floatLabel="always">
+  <mat-form-field
+    required
+    class="width-100"
+    floatLabel="always">
     <mat-label>Events</mat-label>
     <mat-chip-grid
       #chipGrid
+      required
       aria-label="Event selection">
       @for (event of selectedEvents(); track $index) {
         <mat-chip-row (removed)="removeEvent(event)">
@@ -45,23 +49,23 @@
       #autocompleteTrigger="matAutocompleteTrigger"
       matAutocompleteTrigger
       (focus)="autocompleteTrigger.openPanel()"
-      (click)="autocompleteTrigger.openPanel()" />
-      @if(searchTerm() !== "") {
-          <app-clear-button
-                  class="suffix-bottom"
-                  matSuffix
-                  [toolTipText]="toolTipClearSearch"
-                  (onClick)="clearSearchTerm()"></app-clear-button>
+      required/>
+      @if (searchTerm() !== "") {
+        <app-clear-button
+          class="suffix-bottom"
+          matSuffix
+          [toolTipText]="toolTipClearSearch"
+          (onClick)="clearSearchTerm()"></app-clear-button>
       }
-    <mat-autocomplete
-      #auto="matAutocomplete"
-      (optionSelected)="selected($event)">
-      @for (event of remainingEvents(); track event) {
-        <mat-option [value]="event">{{ event }}</mat-option>
-      }
-    </mat-autocomplete>
-    <mat-hint i18n>
-      Events that should trigger this event handler.
-    </mat-hint>
+      <mat-autocomplete
+        #auto="matAutocomplete"
+        (optionSelected)="selected($event)">
+        @for (event of remainingEvents(); track event) {
+          <mat-option [value]="event">{{ event }}</mat-option>
+        }
+      </mat-autocomplete>
+      <mat-hint i18n>
+        Events that should trigger this event handler.
+      </mat-hint>
   </mat-form-field>
 </form>
