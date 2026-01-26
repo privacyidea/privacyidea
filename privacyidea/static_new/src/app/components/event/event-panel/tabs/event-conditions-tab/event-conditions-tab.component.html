@@ -19,47 +19,48 @@
 
 <div class="flex-row gap-32">
   <div class="flex-size-1">
-      <!--   Add New Conditions   -->
-      <mat-card>
-        <mat-card-header>
-          <div class="flex margin-bottom-8 gap-8">
-            <mat-icon class="small-icon">add_circle</mat-icon>
-            <h4
-              class="margin-0"
-              i18n>Add New Conditions
-            </h4>
-          </div>
-        </mat-card-header>
-        <mat-card-content>
-          <div class="add-conditions-container">
-            <!-- Search bar -->
-            <mat-form-field
-              subscriptSizing="dynamic">
-              <mat-label i18n>Search condition ...</mat-label>
-              <app-clearable-input
-                (onClick)="searchTerm.set('')"
-                [showClearButton]="searchTerm().length > 0">
-                <input
-                  matInput
-                  type="text"
-                  placeholder="Search condition ..."
-                  [ngModel]="searchTerm()"
-                  (ngModelChange)="searchTerm.set($event)" />
-              </app-clearable-input>
-            </mat-form-field>
-            <!-- Condition Groups -->
-            <mat-tab-group
-              #conditionTabs
-              [(selectedIndex)]="selectedGroupIndex"
-              animationDuration="0ms">
-              @for (group of availableGroups(); track $index) {
-                <mat-tab
-                  class="overflow-hidden"
-                  [disabled]="Object.keys(remainingConditionsByGroup()[group]).length === 0">
-                  <ng-template mat-tab-label>
-                    {{ group | titlecase }}
-                  </ng-template>
-                  <!-- Conditions in Group -->
+    <!--   Add New Conditions   -->
+    <mat-card>
+      <mat-card-header>
+        <div class="flex margin-bottom-8 gap-8">
+          <mat-icon class="small-icon">add_circle</mat-icon>
+          <h4
+            class="margin-0"
+            i18n>Add New Conditions
+          </h4>
+        </div>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="add-conditions-container">
+          <!-- Search bar -->
+          <mat-form-field
+            subscriptSizing="dynamic">
+            <mat-label i18n>Search condition ...</mat-label>
+            <app-clearable-input
+              (onClick)="searchTerm.set('')"
+              [showClearButton]="searchTerm().length > 0">
+              <input
+                matInput
+                type="text"
+                placeholder="Search condition ..."
+                [ngModel]="searchTerm()"
+                (ngModelChange)="searchTerm.set($event)" />
+            </app-clearable-input>
+          </mat-form-field>
+          <!-- Condition Groups -->
+          <mat-tab-group
+            #conditionTabs
+            [(selectedIndex)]="selectedGroupIndex"
+            animationDuration="0ms">
+            @for (group of availableGroups(); track $index) {
+              <mat-tab
+                class="overflow-hidden"
+                [disabled]="Object.keys(remainingConditionsByGroup()[group]).length === 0">
+                <ng-template mat-tab-label>
+                  {{ group | titlecase }}
+                </ng-template>
+                <!-- Conditions in Group -->
+                <div class="max-height-selection">
                   <app-event-condition-list
                     [conditions]="remainingConditionsByGroup()[group]"
                     [action]="'add'"
@@ -68,12 +69,13 @@
                     [toolTipText]="addToolTip"
                     (newConditionValue)="onConditionValueToBeAddedChange($event.conditionName, $event.conditionValue)"
                     (actionButtonClicked)="onConditionValueChange($event.conditionName, $event.conditionValue)"></app-event-condition-list>
-                </mat-tab>
-              }
-            </mat-tab-group>
-          </div>
-        </mat-card-content>
-      </mat-card>
+                </div>
+              </mat-tab>
+            }
+          </mat-tab-group>
+        </div>
+      </mat-card-content>
+    </mat-card>
   </div>
 
   <div class="flex-size-1">
@@ -101,7 +103,9 @@
         <div class="selected-actions-container">
 
           @if (Object.keys(selectedConditions()).length === 0) {
-            <div class="italic" i18n>
+            <div
+              class="italic"
+              i18n>
               No conditions configured yet.
             </div>
           }
