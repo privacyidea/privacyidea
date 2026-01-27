@@ -70,7 +70,7 @@ export class PolicyActionItemComponent {
     computation: (actionDetail) => {
       const actionName = this.actionName();
       if (!actionDetail) return { name: actionName, value: undefined };
-      const defaultValue = actionDetail.type === "bool" ? "true" : (actionDetail?.value?.[0] ?? "");
+      const defaultValue = actionDetail.type === "bool" ? "true" : this.actionValue();
       return { name: actionName, value: defaultValue };
     }
   });

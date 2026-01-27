@@ -117,9 +117,9 @@ export class PolicyPanelNewComponent {
     this.newPolicy.set({ ...this.newPolicy(), name: name });
   }
 
-  setActiveTab(tab: PolicyTab): void {
-    this.activeTab.set(tab);
-  }
+  // setActiveTab(tab: PolicyTab): void {
+  //   this.activeTab.set(tab);
+  // }
 
   // Action Methods
   async savePolicy(panel?: MatExpansionPanel) {

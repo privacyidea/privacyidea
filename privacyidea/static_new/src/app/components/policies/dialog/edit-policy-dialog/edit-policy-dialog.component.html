@@ -23,5 +23,8 @@
   (close)="close()"
   [actions]="actions"
   (onAction)="onAction($event)">
-  <app-policy-panel-edit [policy]="data"> </app-policy-panel-edit>
+  <app-policy-panel-edit
+    [policy]="editedPolicy()"
+    (onPolicyEdit)="addPolicyEdit($event)">
+  </app-policy-panel-edit>
 </app-dialog-wrapper>

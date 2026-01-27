@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, inject, input, linkedSignal, output, signal } from "@angular/core";
+import { Component, computed, effect, inject, input, linkedSignal, output, signal } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { MatCardModule } from "@angular/material/card";
 import { MatIconModule } from "@angular/material/icon";
@@ -66,11 +66,26 @@ import { PolicyPriorityComponent } from "./policy-description/policy-priority/po
   styleUrl: "./policy-panel-edit.component.scss"
 })
 export class PolicyPanelEditComponent {
-  readonly policyService: PolicyServiceInterface = inject(PolicyService);
   readonly dialogService: DialogServiceInterface = inject(DialogService);
 
   readonly policy = input.required<PolicyDetail>();
-  readonly policyEdits = signal<Partial<PolicyDetail>>({});
+  readonly policyEdits = linkedSignal<PolicyDetail, Partial<PolicyDetail>>({
+    source: () => this.policy(),
+    computation: (source, previous) => {
+      const lastEdit = previous?.value;
+      if (!lastEdit) {
+        return {};
+      }
+      // remove values from lastEdit that are now equal to source
+      const cleanedEdits: Partial<PolicyDetail> = {};
+      for (const key in lastEdit) {
+        if ((source as any)[key] !== (lastEdit as any)[key]) {
+          (cleanedEdits as any)[key] = (lastEdit as any)[key];
+        }
+      }
+      return cleanedEdits;
+    }
+  });
   readonly editedPolicy = computed<PolicyDetail>(() => ({ ...this.policy(), ...this.policyEdits() }));
   readonly isPolicyEdited = computed(() => {
     const currentPolicy = this.policy;
@@ -85,6 +100,8 @@ export class PolicyPanelEditComponent {
   // Component State Signals
   readonly activeTab = signal<PolicyTab>("actions");
 
+  readonly onPolicyEdit = output<Partial<PolicyDetail>>();
+
   onNameChange(name: string): void {
     this.addPolicyEdit({ name });
   }
@@ -93,45 +110,45 @@ export class PolicyPanelEditComponent {
     this.activeTab.set(tab);
   }
 
-  togglePolicyActive(policy: PolicyDetail, activate: boolean) {
-    if (activate) {
-      this.policyService.enablePolicy(policy.name);
-    } else {
-      this.policyService.disablePolicy(policy.name);
-    }
-  }
+  // togglePolicyActive(policy: PolicyDetail, activate: boolean) {
+  //   if (activate) {
+  //     this.policyService.enablePolicy(policy.name);
+  //   } else {
+  //     this.policyService.disablePolicy(policy.name);
+  //   }
+  // }
 
-  async deletePolicy(policyName: string): Promise<void> {
-    if (
-      await this._confirm({
-        title: "Confirm Deletion",
-        confirmAction: {
-          type: "destruct",
-          label: "Delete",
-          value: true
-        },
-        cancelAction: {
-          type: "cancel",
-          label: "Cancel",
-          value: false
-        },
-        items: [policyName],
-        itemType: "policy"
-      })
-    ) {
-      this.policyService.deletePolicy(policyName);
-    }
-  }
+  // async deletePolicy(policyName: string): Promise<void> {
+  //   if (
+  //     await this._confirm({
+  //       title: "Confirm Deletion",
+  //       confirmAction: {
+  //         type: "destruct",
+  //         label: "Delete",
+  //         value: true
+  //       },
+  //       cancelAction: {
+  //         type: "cancel",
+  //         label: "Cancel",
+  //         value: false
+  //       },
+  //       items: [policyName],
+  //       itemType: "policy"
+  //     })
+  //   ) {
+  //     this.policyService.deletePolicy(policyName);
+  //   }
+  // }
 
   // State-checking Methods
-  canSavePolicy(): boolean {
-    if (!this.isPolicyEdited()) return false;
-    const edits = this.policyEdits();
-    if (edits.name !== undefined && edits.name?.trim() === "") {
-      return false;
-    }
-    return true;
-  }
+  // canSavePolicy(): boolean {
+  //   if (!this.isPolicyEdited()) return false;
+  //   const edits = this.policyEdits();
+  //   if (edits.name !== undefined && edits.name?.trim() === "") {
+  //     return false;
+  //   }
+  //   return true;
+  // }
 
   async confirmDiscardChanges(): Promise<boolean> {
     if (this.isPolicyEdited()) {
@@ -166,6 +183,7 @@ export class PolicyPanelEditComponent {
   }
   addPolicyEdit(edits: Partial<PolicyDetail>) {
     this.policyEdits.set({ ...this.policyEdits(), ...edits });
+    this.onPolicyEdit.emit(edits);
   }
 
   async _confirm(data: SimpleConfirmationDialogData): Promise<boolean> {

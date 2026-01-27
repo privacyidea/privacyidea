@@ -89,6 +89,7 @@
 
     <app-policy-panel-edit
       class="width-100"
-      [policy]="newPolicy()" />
+      [policy]="newPolicy()"
+      (onPolicyEdit)="onPolicyEdit($event)" />
   </mat-expansion-panel>
 </div>
