@@ -41,6 +41,8 @@ import { RadiusServersComponent } from "./components/external-services/radius-se
 import { SmsGatewaysComponent } from "./components/external-services/sms-gateways/sms-gateways.component";
 import { PrivacyideaServersComponent } from "./components/external-services/privacyidea-servers/privacyidea-servers.component";
 import { CaConnectorsComponent } from "./components/external-services/ca-connectors/ca-connectors.component";
+import { TokengroupsComponent } from "./components/external-services/tokengroups/tokengroups.component";
+import { ServiceIdsComponent } from "./components/external-services/service-ids/service-ids.component";
 import { UserResolversComponent } from "./components/user/user-sources/user-resolvers.component";
 import { pendingChangesGuard } from "./guards/pending-changes.guard";
 
@@ -97,7 +99,9 @@ export const routes: Routes = [
       { path: "radius", component: RadiusServersComponent, canDeactivate: [pendingChangesGuard] },
       { path: "sms", component: SmsGatewaysComponent, canDeactivate: [pendingChangesGuard] },
       { path: "privacyidea", component: PrivacyideaServersComponent, canDeactivate: [pendingChangesGuard] },
-      { path: "ca-connectors", component: CaConnectorsComponent, canDeactivate: [pendingChangesGuard] }
+      { path: "ca-connectors", component: CaConnectorsComponent, canDeactivate: [pendingChangesGuard] },
+      { path: "tokengroups", component: TokengroupsComponent, canDeactivate: [pendingChangesGuard] },
+      { path: "service-ids", component: ServiceIdsComponent, canDeactivate: [pendingChangesGuard] }
     ]
   },
   {

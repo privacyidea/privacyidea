@@ -28,7 +28,23 @@ export const pendingChangesGuard: CanDeactivateFn<any> = () => {
   const dialog = inject(MatDialog);
 
   if (pendingChangesService.hasChanges) {
-    const type = inject(Router).url.includes("smtp") ? "smtp-server" : "resolver";
+    const url = inject(Router).url;
+    let type = "resolver";
+    if (url.includes("smtp")) {
+      type = "smtp-server";
+    } else if (url.includes("tokengroups")) {
+      type = "tokengroup";
+    } else if (url.includes("service-ids")) {
+      type = "service-id";
+    } else if (url.includes("ca-connectors")) {
+      type = "ca-connector";
+    } else if (url.includes("sms")) {
+      type = "sms-gateway";
+    } else if (url.includes("radius")) {
+      type = "radius-server";
+    } else if (url.includes("privacyidea")) {
+      type = "privacyidea-server";
+    }
     return dialog.open(ConfirmationDialogComponent, {
       data: {
         title: $localize`Discard changes`,
