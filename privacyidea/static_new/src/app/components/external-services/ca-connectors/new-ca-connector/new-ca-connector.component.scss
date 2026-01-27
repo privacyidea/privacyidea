@@ -1,0 +1,38 @@
+@use "../../../../../styles";
+
+.flex-column {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding-top: 1rem;
+}
+
+.flex-row {
+  display: flex;
+  flex-direction: row;
+}
+
+.gap-1 {
+  gap: 1rem;
+}
+
+.flex-1 {
+  flex: 1;
+}
+
+.margin-top-1 {
+  margin-top: 1rem;
+}
+
+.margin-bottom-1 {
+  margin-bottom: 1rem;
+}
+
+.margin-right-1 {
+  margin-right: 1rem;
+}
+
+mat-spinner {
+  display: inline-block;
+  vertical-align: middle;
+}

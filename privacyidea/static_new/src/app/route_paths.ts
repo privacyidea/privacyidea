@@ -44,5 +44,6 @@ export const ROUTE_PATHS = {
   EXTERNAL_SERVICES_RADIUS: "/external-services/radius",
   EXTERNAL_SERVICES_SMS: "/external-services/sms",
   EXTERNAL_SERVICES_PRIVACYIDEA: "/external-services/privacyidea",
+  EXTERNAL_SERVICES_CA_CONNECTORS: "/external-services/ca-connectors",
   USERS_RESOLVERS: "/users/resolvers"
 };

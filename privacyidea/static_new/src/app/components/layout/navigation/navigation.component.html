@@ -442,11 +442,11 @@
         </mat-list-item>
         <mat-list-item>
           <button
-            class="card-button-1"
-            disabled
+            [ngClass]="contentService.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_CA_CONNECTORS ? 'card-button-active' : 'card-button-1'"
+            [routerLink]="[ROUTE_PATHS.EXTERNAL_SERVICES_CA_CONNECTORS]"
             mat-stroked-button>
             <mat-icon>assured_workload</mat-icon>
-            CAs
+            CA Connectors
           </button>
         </mat-list-item>
         <mat-list-item>
