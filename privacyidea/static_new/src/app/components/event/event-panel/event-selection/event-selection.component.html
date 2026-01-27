@@ -18,15 +18,15 @@
 -->
 <form>
   <mat-form-field
-    required
     class="width-100"
     floatLabel="always">
     <mat-label>Events</mat-label>
     <mat-chip-grid
       #chipGrid
       required
+      [formControl]="selectedEvents"
       aria-label="Event selection">
-      @for (event of selectedEvents(); track $index) {
+      @for (event of selectedEvents.value; track $index) {
         <mat-chip-row (removed)="removeEvent(event)">
           {{ event }}
           <button
@@ -48,24 +48,26 @@
       (matChipInputTokenEnd)="addEvent($event.value)"
       #autocompleteTrigger="matAutocompleteTrigger"
       matAutocompleteTrigger
-      (focus)="autocompleteTrigger.openPanel()"
-      required/>
-      @if (searchTerm() !== "") {
-        <app-clear-button
-          class="suffix-bottom"
-          matSuffix
-          [toolTipText]="toolTipClearSearch"
-          (onClick)="clearSearchTerm()"></app-clear-button>
+      (focus)="autocompleteTrigger.openPanel()" />
+    @if (searchTerm() !== "") {
+      <app-clear-button
+        class="suffix-bottom"
+        matSuffix
+        [toolTipText]="toolTipClearSearch"
+        (onClick)="clearSearchTerm()"></app-clear-button>
+    }
+    <mat-autocomplete
+      #auto="matAutocomplete"
+      (optionSelected)="selected($event)">
+      @for (event of remainingEvents(); track event) {
+        <mat-option [value]="event">{{ event }}</mat-option>
       }
-      <mat-autocomplete
-        #auto="matAutocomplete"
-        (optionSelected)="selected($event)">
-        @for (event of remainingEvents(); track event) {
-          <mat-option [value]="event">{{ event }}</mat-option>
-        }
-      </mat-autocomplete>
-      <mat-hint i18n>
-        Events that should trigger this event handler.
-      </mat-hint>
+    </mat-autocomplete>
+    <mat-hint i18n>
+      Events that should trigger this event handler.
+    </mat-hint>
+    <mat-error i18n>
+      At least one event must be selected.
+    </mat-error>
   </mat-form-field>
 </form>

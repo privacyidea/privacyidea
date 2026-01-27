@@ -33,7 +33,6 @@ import {
 } from "@angular/core";
 import { MatIcon, MatIconModule } from "@angular/material/icon";
 import { MatButton } from "@angular/material/button";
-import { MatTooltip } from "@angular/material/tooltip";
 import { AuthService } from "../../../services/auth/auth.service";
 import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from "@angular/material/dialog";
 import { EMPTY_EVENT, EventService } from "../../../services/event/event.service";
@@ -62,7 +61,6 @@ export type eventTab = "events" | "action" | "conditions";
   selector: "app-event-panel",
   imports: [
     MatIcon,
-    MatTooltip,
     EventActionTabComponent,
     EventConditionsTabComponent,
     MatFormField,
@@ -218,26 +216,6 @@ export class EventPanelComponent implements AfterViewInit, OnDestroy {
     }
   }
 
-  validActionDefinition = computed(() => {
-    if (!this.editEvent().action) {
-      return false;
-    }
-    const options = this.eventService.moduleActions()[this.editEvent().action] || {};
-    for (const [optionName, optionDetails] of Object.entries(options)) {
-      if (optionDetails.required) {
-        // Required options must be included and contain a valid value
-        const optionValue = this.editEvent().options?.[optionName];
-        if (optionValue === undefined || optionValue === null) {
-          return false;
-        }
-        if (typeof optionValue === "string" && optionValue === "") {
-          return false;
-        }
-      }
-    }
-    return true;
-  });
-
   validConditionsDefinition = computed(() => {
     if (!this.editEvent().conditions) {
       return true;
@@ -250,10 +228,12 @@ export class EventPanelComponent implements AfterViewInit, OnDestroy {
     return true;
   });
 
+  validOptions = signal(false);
+
   sectionValidity = computed(() => {
     const validity: Record<string, any> = {};
     validity["events"] = this.editEvent().event.length > 0;
-    validity["action"] = this.validActionDefinition();
+    validity["action"] = this.editEvent().action && this.validOptions();
     validity["name"] = this.editEvent().name !== "";
     validity["handlerModule"] = this.eventService.selectedHandlerModule() !== null && this.eventService.selectedHandlerModule() !== "";
     validity["position"] = this.editEvent().position !== null && this.editEvent().position !== "";
@@ -305,7 +285,7 @@ export class EventPanelComponent implements AfterViewInit, OnDestroy {
         if (response?.result?.value !== undefined) {
           this.eventService.allEventsResource.reload();
           this.dialogRef?.close();
-          if(this.isNewEvent()) {
+          if (this.isNewEvent()) {
             this.notificationService.openSnackBar("Event handler created successfully.");
           } else {
             this.notificationService.openSnackBar("Event handler updated successfully.");

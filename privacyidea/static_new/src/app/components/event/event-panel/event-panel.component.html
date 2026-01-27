@@ -17,147 +17,158 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div
-  class="edit-event-handler-layout"
+  #scrollContainer
+  appScrollToTop
   aria-label="Event Handler Editor"
-  i18n-aria-label>
+  i18n-aria-label
+  class="edit-event-handler-container">
+
   <div
-    #scrollContainer
-    appScrollToTop
-    class="edit-event-handler-container">
+    #stickySentinel
+    class="sticky-sentinel"></div>
 
-    <div
-      #stickySentinel
-      class="sticky-sentinel"></div>
-
-    <div
-      #stickyHeader
-      class="header-row sticky-header">
-      <h3 class="margin-0">
-        @if (isNewEvent()) {
-          <span i18n>Create New Event Handler</span>
-        } @else {
-          <span i18n>Edit Event Handler </span>
-          <span class="italic">{{ editEvent().name }}</span>
-        }
-      </h3>
-      <div class="action-buttons">
-        <button
-          class="action-button-1 width-238"
-          mat-stroked-button
-          [disabled]="!canSave()"
-          (click)="$event.stopPropagation(); saveEvent();">
-          <mat-icon>save</mat-icon>
-          <span i18n>Save</span>
-        </button>
-        <button
-          mat-stroked-button
-          (click)="$event.stopPropagation(); cancelEdit()">
-          <mat-icon>cancel</mat-icon>
-          <span i18n>Cancel</span>
-        </button>
-      </div>
-    </div>
-
-    <div class="flex-column gap-16">
+  <div
+    #stickyHeader
+    class="header-row sticky-header">
+    <h3 class="margin-0">
       @if (isNewEvent()) {
-        <div class="flex-row">
-          <div class="flex-size-1">
-            <mat-form-field
-              class="width-100"
-              subscriptSizing="dynamic">
-              <mat-label i18n>Name</mat-label>
-              <input
-                matInput
-                type="text"
-                [(ngModel)]="editEvent().name"
-                (ngModelChange)="updateEventHandler('name', $event)"
-                required />
-            </mat-form-field>
-          </div>
-          <div class="flex-size-1">
-            <mat-form-field
-              class="width-100"
-              subscriptSizing="dynamic">
-              <mat-label i18n>Handler Module</mat-label>
-              <mat-select
-                [ngModel]="eventService.selectedHandlerModule()"
-                (ngModelChange)="eventService.selectedHandlerModule.set($event)"
-                required>
-                @for (module of eventService.eventHandlerModules(); track module) {
-                  <mat-option [value]="module">
-                    {{ module }}
-                  </mat-option>
-                }
-              </mat-select>
-            </mat-form-field>
-          </div>
-        </div>
+        <span i18n>Create New Event Handler</span>
+      } @else {
+        <span i18n>Edit Event Handler </span>
+        <span class="italic">{{ editEvent().name }}</span>
       }
+    </h3>
+    <div class="action-buttons">
+      <button
+        class="action-button-1 width-238"
+        mat-stroked-button
+        [disabled]="!canSave()"
+        (click)="$event.stopPropagation(); saveEvent();">
+        <mat-icon>save</mat-icon>
+        <span i18n>Save</span>
+      </button>
+      <button
+        mat-stroked-button
+        (click)="$event.stopPropagation(); cancelEdit()">
+        <mat-icon>cancel</mat-icon>
+        <span i18n>Cancel</span>
+      </button>
+    </div>
+  </div>
 
+  <div class="flex-column gap-16">
+    @if (isNewEvent()) {
       <div class="flex-row">
         <div class="flex-size-1">
           <mat-form-field
             class="width-100"
             subscriptSizing="dynamic">
-            <mat-label i18n>Position</mat-label>
-            <mat-select
-              [ngModel]="editEvent().position"
-              (selectionChange)="updateEventHandler('position', $event.value)"
-              required>
-              @for (position of eventService.modulePositions(); track position) {
-                <mat-option [value]="position">
-                  {{ position }}
-                </mat-option>
-              }
-            </mat-select>
-            <mat-hint i18n>Whether the action should be taken before (pre) or after (post) the actual event.
-            </mat-hint>
+            <mat-label i18n>Name</mat-label>
+            <input
+              matInput
+              type="text"
+              [(ngModel)]="editEvent().name"
+              (ngModelChange)="updateEventHandler('name', $event)"
+              required />
+            <mat-error i18n>
+              Name is <strong>required</strong>.
+            </mat-error>
           </mat-form-field>
         </div>
         <div class="flex-size-1">
           <mat-form-field
             class="width-100"
             subscriptSizing="dynamic">
-            <mat-label i18n>Ordering</mat-label>
-            <input
-              matInput
-              type="number"
-              [(ngModel)]="editEvent().ordering"
-              (ngModelChange)="updateEventHandler('ordering', $event)" />
-            <mat-hint i18n>Event handlers with lower ordering number are executed first.</mat-hint>
+            <mat-label i18n>Handler Module</mat-label>
+            <mat-select
+              [ngModel]="eventService.selectedHandlerModule()"
+              (ngModelChange)="eventService.selectedHandlerModule.set($event)"
+              required>
+              @for (module of eventService.eventHandlerModules(); track module) {
+                <mat-option [value]="module">
+                  {{ module }}
+                </mat-option>
+              }
+            </mat-select>
+            <mat-error i18n>
+              Selecting a handler module is <strong>required</strong>.
+            </mat-error>
           </mat-form-field>
         </div>
       </div>
+    }
 
-      <app-event-selection
-        [events]="editEvent().event"
-        (newEvents)="setNewEvents($event)"></app-event-selection>
-
-      <mat-tab-group
-        animationDuration="0ms"
-        mat-stretch-tabs="false"
-        mat-align-tabs="start">
-        @for (tab of availableTabs; track tab) {
-          <mat-tab [label]="tab.toUpperCase()">
-            <div class="tab-container">
-              @switch (tab) {
-                @case ("action") {
-                  <app-event-action-tab
-                    [action]="editEvent().action"
-                    [options]="editEvent().options || {}"
-                    (newAction)="setNewAction($event)"
-                    (newOptions)="setNewOptions($event)"></app-event-action-tab>
-                }
-                @case ("conditions") {
-                  <app-event-conditions-tab
-                    [conditions]="editEvent().conditions"
-                    (newConditions)="setNewConditions($event)"></app-event-conditions-tab>
-                }
-              }
-            </div>
-          </mat-tab>
-        }
-      </mat-tab-group>
+    <div class="flex-row">
+      <div class="flex-size-1">
+        <mat-form-field
+          class="width-100"
+          subscriptSizing="dynamic">
+          <mat-label i18n>Position</mat-label>
+          <mat-select
+            [ngModel]="editEvent().position"
+            (selectionChange)="updateEventHandler('position', $event.value)"
+            required>
+            @for (position of eventService.modulePositions(); track position) {
+              <mat-option [value]="position">
+                {{ position }}
+              </mat-option>
+            }
+          </mat-select>
+          <mat-hint i18n>Whether the action should be taken before (pre) or after (post) the actual event.
+          </mat-hint>
+          <mat-error i18n>
+            Selecting a position is <strong>required</strong>.
+          </mat-error>
+        </mat-form-field>
+      </div>
+      <div class="flex-size-1">
+        <mat-form-field
+          class="width-100"
+          subscriptSizing="dynamic">
+          <mat-label i18n>Ordering</mat-label>
+          <input
+            matInput
+            type="number"
+            required
+            [(ngModel)]="editEvent().ordering"
+            (ngModelChange)="updateEventHandler('ordering', $event)" />
+          <mat-hint i18n>Event handlers with lower ordering number are executed first.</mat-hint>
+          <mat-error i18n>
+            Ordering is <strong>required</strong>.
+          </mat-error>
+        </mat-form-field>
+      </div>
     </div>
+
+    <app-event-selection
+      [events]="editEvent().event"
+      (newEvents)="setNewEvents($event)"></app-event-selection>
+
+    <mat-tab-group
+      animationDuration="0ms"
+      mat-stretch-tabs="false"
+      mat-align-tabs="start">
+      @for (tab of availableTabs; track tab) {
+        <mat-tab [label]="tab.toUpperCase()">
+          <div class="tab-container">
+            @switch (tab) {
+              @case ("action") {
+                <app-event-action-tab
+                  [action]="event().action || ''"
+                  [options]="event().options || {}"
+                  (newAction)="setNewAction($event)"
+                  (newOptions)="setNewOptions($event)"
+                  (optionsValid)="validOptions.set($event)"></app-event-action-tab>
+              }
+              @case ("conditions") {
+                <app-event-conditions-tab
+                  [conditions]="event().conditions"
+                  (newConditions)="setNewConditions($event)"></app-event-conditions-tab>
+              }
+            }
+          </div>
+        </mat-tab>
+      }
+    </mat-tab-group>
   </div>
 </div>

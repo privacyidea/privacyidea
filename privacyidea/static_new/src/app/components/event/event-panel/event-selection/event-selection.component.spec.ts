@@ -49,63 +49,63 @@ describe("EventsSelectionComponent", () => {
   });
 
   it("should initialize editEvents from input", () => {
-    component.selectedEvents.set([]);
+    component.selectedEvents.setValue([]);
     fixture.componentRef.setInput("events", ["foo", "bar"]);
     fixture.detectChanges();
-    expect(component.selectedEvents()).toEqual(["foo", "bar"]);
+    expect(component.selectedEvents.value).toEqual(["foo", "bar"]);
   });
 
   it("should remove an event", () => {
-    component.selectedEvents.set(["eventA", "eventB", "eventC"]);
+    component.selectedEvents.setValue(["eventA", "eventB", "eventC"]);
     component.removeEvent("eventB");
-    expect(component.selectedEvents()).toEqual(["eventA", "eventC"]);
+    expect(component.selectedEvents.value).toEqual(["eventA", "eventC"]);
     expect(component.newEvents.emit).toHaveBeenCalledWith(["eventA", "eventC"]);
   });
 
   it("remove a non existing event should do nothing", () => {
-    component.selectedEvents.set(["eventA", "eventB", "eventC"]);
+    component.selectedEvents.setValue(["eventA", "eventB", "eventC"]);
     component.removeEvent("invalid");
-    expect(component.selectedEvents()).toEqual(["eventA", "eventB", "eventC"]);
+    expect(component.selectedEvents.value).toEqual(["eventA", "eventB", "eventC"]);
     expect(component.newEvents.emit).not.toHaveBeenCalled();
   });
 
   it("should add an event", () => {
-    component.selectedEvents.set(["eventA"]);
+    component.selectedEvents.setValue(["eventA"]);
     component.addEvent("eventC");
-    expect(component.selectedEvents()).toEqual(["eventA", "eventC"]);
+    expect(component.selectedEvents.value).toEqual(["eventA", "eventC"]);
     expect(component.newEvents.emit).toHaveBeenCalledWith(["eventA", "eventC"]);
   });
 
   it("should return all available events if none selected and no search", () => {
-    component.selectedEvents.set([]);
+    component.selectedEvents.setValue([]);
     component.searchTerm.set("");
     const result = component.remainingEvents();
     expect(result).toEqual(["eventA", "eventAB", "eventB", "eventC"]);
   });
 
   it("remainingEvents should filter out selected events", () => {
-    component.selectedEvents.set(["eventA"]);
+    component.selectedEvents.setValue(["eventA"]);
     component.searchTerm.set("");
     const result = component.remainingEvents();
     expect(result).toEqual(["eventAB", "eventB", "eventC"]);
   });
 
   it("remainingEvents should filter by search term (case-insensitive)", () => {
-    component.selectedEvents.set([]);
+    component.selectedEvents.setValue([]);
     component.searchTerm.set("eventb");
     const result = component.remainingEvents();
     expect(result).toEqual(["eventB"]);
   });
 
   it("remainingEvents should filter by search term (case-insensitive) and filter out selected events", () => {
-    component.selectedEvents.set(["eventA"]);
+    component.selectedEvents.setValue(["eventA"]);
     component.searchTerm.set("entA");
     const result = component.remainingEvents();
     expect(result).toEqual(["eventAB"]);
   });
 
   it("remainingEvents should return empty if all events are selected", () => {
-    component.selectedEvents.set(["eventA", "eventAB", "eventB", "eventC"]);
+    component.selectedEvents.setValue(["eventA", "eventAB", "eventB", "eventC"]);
     component.searchTerm.set("");
     const result = component.remainingEvents();
     expect(result).toEqual([]);
@@ -136,9 +136,9 @@ describe("EventsSelectionComponent", () => {
   });
 
   it("should remove an event and emit the updated list", () => {
-    component.selectedEvents.set(["eventA", "eventB"]);
+    component.selectedEvents.setValue(["eventA", "eventB"]);
     component.removeEvent("eventA");
-    expect(component.selectedEvents()).toEqual(["eventB"]);
+    expect(component.selectedEvents.value).toEqual(["eventB"]);
     expect(component.newEvents.emit).toHaveBeenCalledWith(["eventB"]);
   });
 

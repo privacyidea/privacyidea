@@ -24,6 +24,7 @@ import { provideHttpClient } from "@angular/common/http";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { AuthService } from "../../../../../services/auth/auth.service";
 import { MockAuthService } from "../../../../../../testing/mock-services/mock-auth-service";
+import { FormControl } from "@angular/forms";
 
 describe("EventActionTabComponent", () => {
   let component: EventActionTabComponent;
@@ -56,61 +57,81 @@ describe("EventActionTabComponent", () => {
   });
 
   it("should initialize selectedAction from input", () => {
-    component.selectedAction.set("");
-    component.ngOnInit();
-    expect(component.selectedAction()).toBe("add_token_info");
+    expect(component.selectedAction.value).toBe("add_token_info");
   });
 
-  it("should emit newAction and reset options on action selection change", () => {
-    component.selectedAction.set("actionB");
-    component.selectedOptions.set({ opt3: "foo" });
-    component.onActionSelectionChange();
-    expect(component.newAction.emit).toHaveBeenCalledWith("actionB");
-    expect(component.selectedOptions()).toEqual({});
+  it("should reset options on action selection change and emit changes", () => {
+    component.selectedAction.setValue("actionB");
+    expect(Object.keys(component.selectedOptions.value)).toEqual(["opt3"]);
     expect(component.newOptions.emit).toHaveBeenCalledWith({});
   });
 
   it("should update selectedOptions and emit on option change", () => {
-    component.selectedOptions.set({ opt1: false });
-    component.onOptionChange("opt2", "test");
-    const newOptions = { opt1: false, opt2: "test" };
-    expect(component.selectedOptions()).toEqual(newOptions);
-    expect(component.newOptions.emit).toHaveBeenCalledWith(newOptions);
+    component.selectedOptions.get('key')?.setValue('another_key');
+    component.selectedOptions.get('value')?.setValue('');
+
+    expect(component.selectedOptions.value).toEqual({"key": "another_key", "value": ""});
+    expect(component.newOptions.emit).toHaveBeenCalledWith({"key": "another_key", "value": ""});
+  });
+
+  it("should also emit empty options", () => {
+    component.selectedAction.setValue("actionA");
+    expect(Object.keys(component.selectedOptions.value)).toEqual(["opt1", "opt2", "opt3"]);
+    expect(component.newOptions.emit).toHaveBeenCalledWith({});
+
+    component.selectedOptions.get('opt3')?.setValue('newValue');
+    expect(component.selectedOptions.value).toEqual({"opt1": "", "opt2": "", "opt3": "newValue"});
+    expect(component.newOptions.emit).toHaveBeenCalledWith({"opt1": "", "opt2": "", "opt3": "newValue"});
+  });
+
+  it("onActionSelectionChange should emit selected action", () => {
+    component.selectedAction.setValue("actionB");
+    component.onActionSelectionChange();
+    expect(component.newAction.emit).toHaveBeenCalledWith("actionB");
+
+    component.selectedAction.setValue("");
+    component.onActionSelectionChange();
+    expect(component.newAction.emit).toHaveBeenCalledWith("");
   });
 
   it("actionOptions() should return empty dict if no action is selected", () => {
-    component.selectedAction.set("");
+    component.selectedAction.setValue("");
     const opts = component.actionOptions();
     expect(opts).toMatchObject({});
   });
 
   it("actionOptions() should return options for selected action", () => {
-    component.selectedAction.set("actionA");
+    component.selectedAction.setValue("actionA");
     const opts = component.actionOptions();
     expect(opts["opt1"].type).toBe("bool");
     expect(opts["opt2"].type).toBe("int");
   });
 
   it("checkOptionVisibility returns true if no visibleIf", () => {
-    component.selectedAction.set("actionA");
+    component.selectedAction.setValue("actionA");
     expect(component.checkOptionVisibility("opt1")).toBe(true);
   });
 
   it("checkOptionVisibility returns true if visibleIf is set and value matches", () => {
-    component.selectedAction.set("actionA");
-    component.selectedOptions.set({ opt1: true, opt2: 3 });
+    component.selectedAction.setValue("actionA");
+    component.selectedOptions.addControl("opt1", new FormControl(true));
+    component.selectedOptions.addControl("opt2", new FormControl(3));
+    component.selectedOptions.patchValue({ opt1: true, opt2: 3 });
     expect(component.checkOptionVisibility("opt3")).toBe(true);
   });
 
   it("checkOptionVisibility returns false if visibleIf is set and value does not match", () => {
-    component.selectedAction.set("actionA");
-    component.selectedOptions.set({ opt1: true, opt2: 1 });
+    component.selectedAction.setValue("actionA");
+    component.selectedOptions.addControl("opt1", new FormControl(true));
+    component.selectedOptions.addControl("opt2", new FormControl(1));
+    component.selectedOptions.patchValue({ opt1: true, opt2: 1 });
     expect(component.checkOptionVisibility("opt3")).toBe(false);
   });
 
   it("checkOptionVisibility returns true if visibleIf is set, but not visibleValue and dependent value is set", () => {
-    component.selectedAction.set("actionA");
-    component.selectedOptions.set({ opt1: true });
+    component.selectedAction.setValue("actionA");
+    component.selectedOptions.addControl("opt1", new FormControl(true));
+    component.selectedOptions.patchValue({ opt1: true });
     expect(component.checkOptionVisibility("opt2")).toBe(true);
   });
 });

@@ -21,9 +21,7 @@
   subscriptSizing="dynamic">
   <mat-label i18n>Action</mat-label>
   <mat-select
-    [value]="selectedAction()"
-    [(ngModel)]="selectedAction"
-    [ngModelOptions]="{ standalone: true }"
+    [formControl]="selectedAction"
     (selectionChange)="onActionSelectionChange()"
     required>
     @for (action of Object.keys(eventService.moduleActions()); track action) {
@@ -33,17 +31,21 @@
     }
   </mat-select>
   <mat-hint i18n>Select an action to be executed on the specified events.</mat-hint>
+  <mat-error i18n>
+    Selecting an action is required.
+  </mat-error>
 </mat-form-field>
 
-<div class="flex-column gap-16">
+<form
+  [formGroup]="selectedOptions"
+  class="flex-column gap-16">
   @for (optionName of Object.keys(actionOptions()); track optionName) {
     @if (checkOptionVisibility(optionName)) {
       <div class="pad-0 width-100">
         @if (actionOptions()[optionName].type == "bool") {
           <mat-checkbox
             class="margin-0 width-100"
-            [ngModel]="selectedOptions()[optionName]"
-            (ngModelChange)="onOptionChange(optionName, $event)">
+            [formControlName]="optionName">
             {{ optionName }}
           </mat-checkbox>
         } @else {
@@ -55,9 +57,8 @@
             </mat-label>
             @if (actionOptions()[optionName].value) {
               <mat-select
-                [ngModel]="selectedOptions()[optionName]"
-                [required]="actionOptions()[optionName].required || false"
-                (ngModelChange)="onOptionChange(optionName, $event)">
+                [formControlName]="optionName"
+                [required]="actionOptions()[optionName].required || false">
                 @for (valueOption of actionOptions()[optionName].value; track valueOption) {
                   <mat-option [value]="valueOption">
                     {{ valueOption }}
@@ -70,34 +71,37 @@
                   <input
                     matInput
                     type="number"
-                    [ngModel]="selectedOptions()[optionName]"
-                    [required]="actionOptions()[optionName].required || false"
-                    (ngModelChange)="onOptionChange(optionName, $event)" />
+                    [formControlName]="optionName"
+                    [required]="actionOptions()[optionName].required || false" />
                 }
                 @case ("text") {
                   <textarea
                     matInput
                     rows="3"
-                    [ngModel]="selectedOptions()[optionName]"
-                    [required]="actionOptions()[optionName].required || false"
-                    (ngModelChange)="onOptionChange(optionName, $event)"></textarea>
+                    [formControlName]="optionName"
+                    [required]="actionOptions()[optionName].required || false"></textarea>
                 }
                 @default {
                   <input
                     matInput
                     type="text"
-                    [ngModel]="selectedOptions()[optionName]"
-                    [required]="actionOptions()[optionName].required || false"
-                    (ngModelChange)="onOptionChange(optionName, $event)" />
+                    [formControlName]="optionName"
+                    [required]="actionOptions()[optionName].required || false" />
                 }
               }
             }
+            <mat-error>
+              {{ optionName }} is <strong>required</strong>.
+            </mat-error>
           </mat-form-field>
         }
-        <div
-          class="checkbox-hint margin-0"
-          [innerHTML]="actionOptions()[optionName].desc || actionOptions()[optionName].description || ''"></div>
+        @if (!(selectedOptions.get(optionName)?.invalid && (selectedOptions.get(optionName)?.dirty ||
+          selectedOptions.get(optionName)?.touched))) {
+          <div
+            class="checkbox-hint margin-0"
+            [innerHTML]="actionOptions()[optionName].desc || actionOptions()[optionName].description || ''"></div>
+        }
       </div>
     }
   }
-</div>
+</form>

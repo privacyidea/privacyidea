@@ -17,9 +17,18 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, inject, input, linkedSignal, model, output, ViewChild, ViewEncapsulation } from "@angular/core";
+import {
+  Component,
+  effect,
+  inject,
+  input,
+  linkedSignal,
+  model,
+  output,
+  ViewChild,
+  ViewEncapsulation
+} from "@angular/core";
 import { EventService } from "../../../../services/event/event.service";
-import { deepCopy } from "../../../../utils/deep-copy.utils";
 import { ENTER } from "@angular/cdk/keycodes";
 import {
   MatAutocomplete,
@@ -27,12 +36,13 @@ import {
   MatAutocompleteTrigger,
   MatOption
 } from "@angular/material/autocomplete";
-import { FormsModule, ReactiveFormsModule } from "@angular/forms";
+import { FormControl, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatChipsModule } from "@angular/material/chips";
 import { MatFormFieldModule, MatHint, MatLabel } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
 import { ClearButtonComponent } from "../../../shared/clear-button/clear-button.component";
+import { toSignal } from "@angular/core/rxjs-interop";
 
 @Component({
   selector: "app-event-selection",
@@ -61,24 +71,31 @@ export class EventSelectionComponent {
 
   toolTipClearSearch = $localize`Clear Search Term`;
 
-  selectedEvents = linkedSignal(() => deepCopy(this.events()));
+  selectedEvents = new FormControl<string[]>([], { nonNullable: true, validators: [Validators.required] });
+  selectedEventsSignal = toSignal(this.selectedEvents.valueChanges, { initialValue: this.selectedEvents.value });
+
+  constructor() {
+    effect(() => {
+      this.selectedEvents.setValue(this.events(), { emitEvent: false });
+    });
+  }
 
   searchTerm = model("");
   lastSearchTerm = "";
   readonly separatorKeysCodes: number[] = [ENTER];
 
   removeEvent(event: string): void {
-    const index = this.selectedEvents().indexOf(event);
+    const index = this.selectedEvents.value.indexOf(event);
     if (index > -1) {
-      this.selectedEvents().splice(index, 1);
-      this.newEvents.emit(this.selectedEvents());
+      this.selectedEvents.value.splice(index, 1);
+      this.newEvents.emit(this.selectedEvents.value);
     }
   }
 
   addEvent(event: string): void {
-    if (event && this.selectedEvents().indexOf(event) === -1) {
-      this.selectedEvents().push(event);
-      this.newEvents.emit(this.selectedEvents());
+    if (event && this.selectedEvents.value.indexOf(event) === -1) {
+      this.selectedEvents.value.push(event);
+      this.newEvents.emit(this.selectedEvents.value);
     }
   }
 
@@ -100,7 +117,7 @@ export class EventSelectionComponent {
   remainingEvents = linkedSignal({
     source: () => ({
       available: this.eventService.availableEvents(),
-      selected: this.selectedEvents(),
+      selected: this.selectedEventsSignal(),
       search: this.searchTerm()
     }),
     computation: ({ available, selected, search }) =>

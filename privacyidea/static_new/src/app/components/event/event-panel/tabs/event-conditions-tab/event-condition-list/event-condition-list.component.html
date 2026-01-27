@@ -68,6 +68,7 @@
                   #selectedConditionInput
                   [placeholder]="'Select values ...'"
                   [value]="getMultiValues(editConditions()[conditionName]) || []"
+                  [ngModel]="editConditions()[conditionName]"
                   [multiple]="true"
                   (selectionChange)="onConditionValueChange(conditionName, $event.value)"
                   [required]="inputRequired()">
@@ -75,6 +76,9 @@
                     <mat-option [value]="option">{{ option }}</mat-option>
                   }
                 </mat-select>
+                <mat-error i18n>
+                  Select at least one value or remove the condition.
+                </mat-error>
               </mat-form-field>
             } @else {
               <!-- Needs to be a separate selection as multiple state can not be changed during runtime -->
@@ -86,12 +90,16 @@
                   #selectedConditionInput
                   placeholder="Select one option ..."
                   [value]="editConditions()[conditionName]"
+                  [ngModel]="editConditions()[conditionName]"
                   (selectionChange)="onConditionValueChange(conditionName, $event.value)"
                   [required]="inputRequired()">
                   @for (option of availableConditionValues()[conditionName]; track option) {
                     <mat-option [value]="option">{{ option }}</mat-option>
                   }
                 </mat-select>
+                <mat-error i18n>
+                  Select a value or remove the condition.
+                </mat-error>
               </mat-form-field>
             }
           } @else {
@@ -128,6 +136,9 @@
                     [required]="inputRequired()" />
                 }
               }
+              <mat-error i18n>
+                Enter a value or remove the condition.
+              </mat-error>
             </mat-form-field>
           }
           <button

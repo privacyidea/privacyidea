@@ -34,7 +34,7 @@ import {
 import { EventService } from "../../../../../../services/event/event.service";
 import { MatInput } from "@angular/material/input";
 import { FormsModule, ReactiveFormsModule } from "@angular/forms";
-import { MatFormField } from "@angular/material/form-field";
+import { MatError, MatFormField } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
 import { MatIconButton } from "@angular/material/button";
 import { MatOption, MatSelect } from "@angular/material/select";
@@ -53,7 +53,8 @@ import { MatTooltip } from "@angular/material/tooltip";
     MatIconButton,
     MatIcon,
     FormsModule,
-    MatTooltip
+    MatTooltip,
+    MatError
   ],
   templateUrl: "./event-condition-list.component.html",
   styleUrl: "./event-condition-list.component.scss"
