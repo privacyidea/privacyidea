@@ -226,8 +226,6 @@ class IdResolver (UserIdResolver):
 
         if userId in self.reverse_dict:
             fields = self.description_dict.get(userId, [])
-            if not fields:
-                log.debug("User with user ID %s could not be found.", userId)
 
             for key in self.search_field_indices:
                 if no_passwd and key == "cryptpass":
@@ -241,6 +239,8 @@ class IdResolver (UserIdResolver):
             ret['phone'] = self.home_phone_dict.get(userId)
             ret['mobile'] = self.office_phone_dict.get(userId)
             ret['email'] = self.email_dict.get(userId)
+        else:
+            log.debug("User with user ID %s could not be found.", userId)
 
         return ret
 

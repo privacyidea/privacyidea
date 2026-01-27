@@ -131,3 +131,19 @@ class PasswdResolverTest(MyTestCase):
         # unknown attribute name
         self.assertFalse(self.resolver.check_attribute(line, "somevalue", "unknownattribute"))
         self.assertFalse(self.resolver.check_attribute(line, "", "unknownattribute"))
+
+    def test_10_get_user_info(self):
+        user_info = self.resolver.getUserInfo("1001")
+        self.assertEqual("shadow", user_info.get("username"))
+        self.assertEqual("1001", user_info.get("userid"))
+        self.assertEqual("x", user_info.get("cryptpass"))
+        self.assertEqual("field1,field2,field3", user_info.get("description"))
+        self.assertEqual("", user_info.get("email"))
+        self.assertEqual("field1", user_info.get("givenname"))
+        self.assertEqual("", user_info.get("surname"))
+        self.assertEqual("", user_info.get("phone"))
+        self.assertEqual("", user_info.get("mobile"))
+
+        # Get unknown user
+        user_info = self.resolver.getUserInfo("9999")
+        self.assertDictEqual({}, user_info)
