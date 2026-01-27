@@ -109,7 +109,7 @@ class IdResolver (UserIdResolver):
         self.name = "P"
         self.name_dict = {}
         self.description_dict = {}
-        self.revers_dict = {}
+        self.reverse_dict = {}
         self.pass_dict = {}
         self.office_phone_dict = {}
         self.home_phone_dict = {}
@@ -146,7 +146,7 @@ class IdResolver (UserIdResolver):
                 self.name_dict[fields[NAME]] = fields[ID]
 
                 # for speed reason - build a revers lookup
-                self.revers_dict[fields[ID]] = fields[NAME]
+                self.reverse_dict[fields[ID]] = fields[NAME]
 
                 # for full info store the line
                 self.description_dict[fields[ID]] = fields
@@ -224,7 +224,7 @@ class IdResolver (UserIdResolver):
         """
         ret = {}
 
-        if userId in self.revers_dict:
+        if userId in self.reverse_dict:
             fields = self.description_dict.get(userId, [])
             if not fields:
                 log.debug("User with user ID %s could not be found.", userId)
