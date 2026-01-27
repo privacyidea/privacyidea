@@ -1,45 +1,75 @@
-import { Component, computed, inject, signal } from "@angular/core";
-import { DialogWrapperComponent } from "../../../shared/dialog/dialog-wrapper/dialog-wrapper.component";
+/**
+ * (c) NetKnights GmbH 2025,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ **/
+
+import { Component, computed, inject, input, linkedSignal, output, signal } from "@angular/core";
 import { CommonModule } from "@angular/common";
-import { AbstractDialogComponent } from "../../../shared/dialog/abstract-dialog/abstract-dialog.component";
-import { AbstractControl, ReactiveFormsModule, ValidationErrors, ValidatorFn } from "@angular/forms";
+import { MatCardModule } from "@angular/material/card";
+import { MatIconModule } from "@angular/material/icon";
+import { MatButtonModule } from "@angular/material/button";
+import { MatButtonToggleModule } from "@angular/material/button-toggle";
+import { FormsModule } from "@angular/forms";
+import { MatExpansionModule, MatExpansionPanel } from "@angular/material/expansion";
+import { MatSlideToggleModule } from "@angular/material/slide-toggle";
+import { PolicyDetail, PolicyService, PolicyServiceInterface } from "../../../../../services/policies/policies.service";
 import { MatFormFieldModule } from "@angular/material/form-field";
-import { MatInputModule } from "@angular/material/input";
-import { lastValueFrom } from "rxjs";
-import { DialogServiceInterface, DialogService } from "../../../../services/dialog/dialog.service";
-import { PolicyServiceInterface, PolicyService, PolicyDetail } from "../../../../services/policies/policies.service";
+import { MatSelectModule } from "@angular/material/select";
+import { MatOptionModule } from "@angular/material/core";
+import { ActionTabComponent } from "../action-tab/action-tab.component";
+import { ConditionsTabComponent } from "../conditions-tab/conditions-tab.component";
+import { DialogService, DialogServiceInterface } from "../../../../../services/dialog/dialog.service";
 import {
-  SimpleConfirmationDialogData,
-  SimpleConfirmationDialogComponent
-} from "../../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
-import { DialogAction } from "../../../../models/dialog";
-import { PolicyTab } from "../../policies.component";
-import { PolicyPanelEditComponent } from "../../policies-table/policy-panels/policy-panel-edit/policy-panel-edit.component";
-export function mustBeDifferentValidator(originalValue: string | null): ValidatorFn {
-  return (control: AbstractControl): ValidationErrors | null => {
-    const isSame = control.value === originalValue;
-    return isSame ? { notChanged: true } : null;
-  };
-}
+  SimpleConfirmationDialogComponent,
+  SimpleConfirmationDialogData
+} from "../../../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { lastValueFrom } from "rxjs";
+import { PolicyDescriptionComponent } from "./policy-description/policy-description.component";
+import { PolicyTab } from "../../../policies.component";
+import { PolicyPriorityComponent } from "./policy-description/policy-priority/policy-priority.component";
+
 @Component({
-  selector: "app-edit-policy-dialog",
-  templateUrl: "./edit-policy-dialog.component.html",
-  styleUrls: ["./edit-policy-dialog.component.scss"],
+  selector: "app-policy-panel-edit",
   standalone: true,
   imports: [
-    DialogWrapperComponent,
     CommonModule,
-    ReactiveFormsModule,
+    MatCardModule,
+    MatIconModule,
+    MatButtonModule,
+    MatButtonToggleModule,
+    FormsModule,
+    MatExpansionModule,
+    MatSlideToggleModule,
     MatFormFieldModule,
-    MatInputModule,
-    PolicyPanelEditComponent
-  ]
+    MatSelectModule,
+    MatOptionModule,
+    ActionTabComponent,
+    ConditionsTabComponent,
+    PolicyDescriptionComponent,
+    PolicyPriorityComponent
+  ],
+  templateUrl: "./policy-panel-edit.component.html",
+  styleUrl: "./policy-panel-edit.component.scss"
 })
-export class EditPolicyDialogComponent extends AbstractDialogComponent<PolicyDetail, Partial<PolicyDetail> | null> {
+export class PolicyPanelEditComponent {
   readonly policyService: PolicyServiceInterface = inject(PolicyService);
   readonly dialogService: DialogServiceInterface = inject(DialogService);
 
-  readonly policy = signal<PolicyDetail>(this.data);
+  readonly policy = input.required<PolicyDetail>();
   readonly policyEdits = signal<Partial<PolicyDetail>>({});
   readonly editedPolicy = computed<PolicyDetail>(() => ({ ...this.policy(), ...this.policyEdits() }));
   readonly isPolicyEdited = computed(() => {
@@ -71,13 +101,6 @@ export class EditPolicyDialogComponent extends AbstractDialogComponent<PolicyDet
     }
   }
 
-  // Action Methods
-  savePolicy() {
-    if (!this.canSavePolicy()) return;
-    this.policyService.savePolicyEdits(this.policy().name, this.policyEdits());
-    this.dialogRef.close(this.policyEdits());
-  }
-
   async deletePolicy(policyName: string): Promise<void> {
     if (
       await this._confirm({
@@ -98,13 +121,6 @@ export class EditPolicyDialogComponent extends AbstractDialogComponent<PolicyDet
     ) {
       this.policyService.deletePolicy(policyName);
     }
-  }
-
-  async cancelEditMode() {
-    if (!(await this.confirmDiscardChanges())) return;
-
-    this.policyEdits.set({});
-    this.dialogRef.close(null);
   }
 
   // State-checking Methods
@@ -163,22 +179,5 @@ export class EditPolicyDialogComponent extends AbstractDialogComponent<PolicyDet
           .afterClosed()
       )) === true
     );
-  }
-
-  actions: DialogAction<"submit" | null>[] = [
-    {
-      label: "Copy Policy",
-      value: "submit",
-      type: "confirm",
-      disabled: () => {
-        return !this.canSavePolicy();
-      }
-    }
-  ];
-
-  onAction(value: "submit" | null): void {
-    if (value === "submit") {
-      this.savePolicy();
-    }
   }
 }

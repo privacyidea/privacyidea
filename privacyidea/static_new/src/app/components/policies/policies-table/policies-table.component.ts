@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, input, inject, signal, linkedSignal } from "@angular/core";
+import { Component, input, inject, linkedSignal } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { MatTableModule } from "@angular/material/table";
 import { MatSortModule } from "@angular/material/sort";
@@ -27,7 +27,7 @@ import { MatSlideToggleModule } from "@angular/material/slide-toggle";
 import { animate, state, style, transition, trigger } from "@angular/animations";
 import { AuthServiceInterface, AuthService } from "../../../services/auth/auth.service";
 import { PolicyServiceInterface, PolicyService, PolicyDetail } from "../../../services/policies/policies.service";
-import { PolicyTableRowDetailsComponent } from "../policy-table-row-details/policy-table-row-details.component";
+import { PolicyTableRowDetailsComponent } from "./policy-table-row-details/policy-table-row-details.component";
 import { lastValueFrom } from "rxjs";
 import {
   SimpleConfirmationDialogData,
@@ -69,6 +69,10 @@ export class PoliciesTableComponent {
         expandedElements.add(policy);
       }
       this.expandedElements.set(expandedElements);
+      return;
+    }
+    if (this.expandedElements().has(policy)) {
+      this.expandedElements.set(new Set<PolicyDetail>());
     } else {
       this.expandedElements.set(new Set<PolicyDetail>([policy]));
     }
@@ -86,7 +90,7 @@ export class PoliciesTableComponent {
     computation: (source, previous) => {
       const { policiesListFiltered, isFiltered } = source;
       if (isFiltered) {
-        return previous?.value || new Set<PolicyDetail>();
+        return new Set<PolicyDetail>(policiesListFiltered);
       }
       return new Set<PolicyDetail>();
     }

@@ -1,0 +1,28 @@
+@use "../../../action-tab/action-tab.component.scss";
+
+.description-header {
+  font-size: 1.17em;
+  font-weight: bold;
+  margin: 0;
+}
+
+.action-priority-container {
+  background-color: var(--mat-sys-surface-container);
+  border-radius: var(--border-radius);
+  box-shadow: var(--mat-sys-level2);
+  color: var(--mat-sys-on-surface);
+  display: flex;
+  flex-direction: row;
+  gap: var(--global-gap);
+  min-width: 0;
+  padding: var(--three-quarters-global-padding);
+}
+
+.priority-input {
+  @include action-tab.action-tab-input;
+}
+
+.action-priority-container:focus-within {
+  outline: 2px solid var(--mat-sys-primary-base);
+  outline-offset: -2px;
+}

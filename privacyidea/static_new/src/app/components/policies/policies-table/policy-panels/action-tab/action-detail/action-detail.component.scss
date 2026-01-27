@@ -1,0 +1,27 @@
+@use "../../../../../../../styles" as styles;
+
+.detail-row {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.warning-icon {
+  color: #e5a500;
+}
+
+/*
+ * When .detail-row is used for the [innerHTML] container itself inside
+ * .action-detail-card, it must not be a flex container, otherwise the
+ * text flow will be broken into separate flex items.
+ * We reset it to a standard block element here.
+ */
+.action-detail-card > .detail-row {
+  display: block;
+}
+
+.action-detail-column {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}

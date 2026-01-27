@@ -17,28 +17,20 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, inject, linkedSignal } from "@angular/core";
+import { trigger, state, style, transition, animate } from "@angular/animations";
 import { CommonModule } from "@angular/common";
+import { Component, inject, linkedSignal, computed } from "@angular/core";
 import { MatExpansionModule } from "@angular/material/expansion";
-import { PolicyDetail, PolicyService, PolicyServiceInterface } from "../../services/policies/policies.service";
 import { MatIconModule } from "@angular/material/icon";
-import { AuthService, AuthServiceInterface } from "../../services/auth/auth.service";
-import { PolicyFilterComponent } from "./policy-panels/policy-filter/policy-filter.component";
-import { PolicyPanelNewComponent } from "./policy-panels/policy-panel-new/policy-panel-new.component";
-import { MatTableModule } from "@angular/material/table";
-import { MatSortModule } from "@angular/material/sort";
-import { PolicyTableRowDetailsComponent } from "./policy-table-row-details/policy-table-row-details.component";
-import { animate, state, style, transition, trigger } from "@angular/animations";
 import { MatSlideToggleModule } from "@angular/material/slide-toggle";
-import { lastValueFrom } from "rxjs";
-import { CopyPolicyDialogComponent } from "./dialog/copy-policy-dialog/copy-policy-dialog.component";
-import { EditPolicyDialogComponent } from "./dialog/edit-policy-dialog/edit-policy-dialog.component";
-import { DialogService, DialogServiceInterface } from "../../services/dialog/dialog.service";
-import {
-  SimpleConfirmationDialogData,
-  SimpleConfirmationDialogComponent
-} from "../shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { MatSortModule } from "@angular/material/sort";
+import { MatTableModule } from "@angular/material/table";
+import { AuthServiceInterface, AuthService } from "../../services/auth/auth.service";
+import { DialogServiceInterface, DialogService } from "../../services/dialog/dialog.service";
+import { PolicyServiceInterface, PolicyService, PolicyDetail } from "../../services/policies/policies.service";
 import { PoliciesTableComponent } from "./policies-table/policies-table.component";
+import { PolicyFilterComponent } from "./policy-filter/policy-filter.component";
+import { PolicyPanelNewComponent } from "./policy-panel-new/policy-panel-new.component";
 
 export type PolicyTab = "actions" | "conditions";
 
@@ -50,11 +42,11 @@ export type PolicyTab = "actions" | "conditions";
     MatExpansionModule,
     MatIconModule,
     PolicyFilterComponent,
-    PolicyPanelNewComponent,
     MatTableModule,
     MatSortModule,
     MatSlideToggleModule,
-    PoliciesTableComponent
+    PoliciesTableComponent,
+    PolicyPanelNewComponent
   ],
   templateUrl: "./policies.component.html",
   styleUrl: "./policies.component.scss",

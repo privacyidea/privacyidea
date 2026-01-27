@@ -1,25 +1,23 @@
 @use "../../../styles" as styles;
 @use "@angular/material" as mat;
 
-.policy-name-input {
-  background-color: transparent;
-  border: none;
-  border-bottom: 1px solid var(--mat-sys-outline-variant);
-  border-radius: 0;
-  box-sizing: border-box;
-  font-size: 1rem;
-  width: 100%;
-  padding: var(--quarter-global-padding) 0;
-  margin: 2px;
-}
-
 .policies-layout {
   @include styles.table-container-styles;
-  @include styles.base-table-structure(".token-table", ".token-table-filter", ".table-scroll-container");
   display: flex;
   flex-direction: column;
-  max-height: var(--max-height);
+
+  height: 100%;
+  max-height: var(--max-height, 80vh);
   width: 1500px;
+  max-width: 100%;
+  overflow-y: auto;
+  scrollbar-width: thin;
+
+  app-policies-table,
+  app-policy-panel-new {
+    flex: none;
+    overflow: visible;
+  }
 
   ::ng-deep .mat-accordion .mat-expansion-panel:last-of-type .mat-expansion-panel-header {
     padding: var(--half-global-padding) !important;
@@ -39,7 +37,20 @@
       min-height: 1.5rem;
     }
   }
+
   ::ng-deep mat-expansion-panel.mat-expansion-panel-spacing {
     margin: 0;
   }
+}
+
+.policy-name-input {
+  background-color: transparent;
+  border: none;
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 0;
+  box-sizing: border-box;
+  font-size: 1rem;
+  width: 100%;
+  padding: var(--quarter-global-padding) 0;
+  margin: 2px;
 }

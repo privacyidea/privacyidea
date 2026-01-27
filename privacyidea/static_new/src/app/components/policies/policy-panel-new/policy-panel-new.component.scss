@@ -1,0 +1,103 @@
+@use "../../../../styles" as styles;
+@use "../policies.component.scss";
+@use "@angular/material" as mat;
+
+.list-item-card {
+  width: 100%;
+}
+
+.mat-expansion-panel-header {
+  align-items: center;
+}
+
+.policy-priority-input {
+  width: 33px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background-color: var(--mat-sys-surface-container-highest);
+  color: #29b6f6;
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-align: center;
+  outline: none;
+  box-sizing: border-box;
+  appearance: textfield;
+  -moz-appearance: textfield;
+
+  &::-webkit-outer-spin-button,
+  &::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  &:focus {
+    box-shadow: 0 0 0 1px var(--mat-sys-primary);
+  }
+}
+
+.header-description {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.description-label {
+  display: flex;
+  align-items: center;
+  font-weight: 500;
+  text-transform: uppercase;
+  justify-content: center;
+}
+
+.policy-scope-dropdown {
+  width: 150px;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--half-global-padding);
+}
+
+.width-100 {
+  width: 100%;
+}
+
+.policy-title-container {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  height: 100%;
+}
+
+.policy-priority-input {
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #29b6f6;
+  width: 33px;
+  height: 28px;
+  text-align: center;
+  background-color: var(--mat-sys-surface-container-highest);
+  border: none;
+  border-radius: 6px;
+  outline: none;
+  padding: 0;
+  box-sizing: border-box;
+  appearance: textfield;
+  -moz-appearance: textfield;
+
+  &::-webkit-outer-spin-button,
+  &::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  &:focus {
+    box-shadow: 0 0 0 1px var(--mat-sys-primary);
+  }
+}
