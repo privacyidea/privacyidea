@@ -102,7 +102,7 @@ class PasswdResolverTest(MyTestCase):
         r = self.resolver.getUserList({"username": "*ö*"})
         self.assertEqual(1, len(r))
 
-    def test_07_get_seaarch_fields(self):
+    def test_07_get_search_fields(self):
         search_fields = self.resolver.get_search_fields({"username": "*"})
         self.assertEqual("text", search_fields.get("username"), search_fields)
 
