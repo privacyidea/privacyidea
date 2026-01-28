@@ -1,19 +1,19 @@
 """
 This test file tests the lib/smtpserver.py
 """
+import binascii
 import email
 from email.mime.image import MIMEImage
-import binascii
-from privacyidea.lib.queue import get_job_queue
+from smtplib import SMTPException
 
-from tests.queuemock import MockQueueTestCase
-from .base import MyTestCase
 from privacyidea.lib.error import ResourceNotFoundError
+from privacyidea.lib.queue import get_job_queue
 from privacyidea.lib.smtpserver import (get_smtpservers, add_smtpserver,
                                         delete_smtpserver, get_smtpserver,
                                         SMTPServer)
+from tests.queuemock import MockQueueTestCase
 from . import smtpmock
-from smtplib import SMTPException
+from .base import MyTestCase
 
 PNG_IMG = 'iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAAsTAA' \
           'ALEwEAmpwYAAAAB3RJTUUH5AEeDxMYtXhk0QAAAB1pVFh0Q29tbWVudAAAAAAAQ3JlYXRlZCB3aXRoIEdJTVBk' \
@@ -116,7 +116,7 @@ class SMTPServerTestCase(MyTestCase):
                                   "This is a test email from privacyIDEA. "
                                   "The configuration %s is working." % identifier)
         self.assertTrue(r)
-        parsed_email = email.message_from_string(smtpmock.get_sent_message())
+        parsed_email = email.message_from_string(smtpmock.get_sent_message().decode('utf-8'))
         self.assertEqual(parsed_email.get_content_type(), 'text/plain', parsed_email)
         self.assertEqual(parsed_email.get('To'), recipient, parsed_email)
         self.assertEqual(parsed_email.get('Subject'), "Test Email from privacyIDEA", parsed_email)
@@ -126,7 +126,7 @@ class SMTPServerTestCase(MyTestCase):
         r = SMTPServer.test_email(s, recipient, "Test Email with image",
                                   msg)
         self.assertTrue(r)
-        parsed_email = email.message_from_string(smtpmock.get_sent_message())
+        parsed_email = email.message_from_string(smtpmock.get_sent_message().decode('utf-8'))
         self.assertEqual(parsed_email.get_content_type(), 'image/png', parsed_email)
         self.assertEqual(parsed_email.get('To'), recipient, parsed_email)
         self.assertEqual(parsed_email.get('Subject'), "Test Email with image", parsed_email)
@@ -154,7 +154,7 @@ class SMTPServerTestCase(MyTestCase):
                                   "This is a test email from privacyIDEA. "
                                   "The configuration %s is working." % identifier)
         self.assertTrue(r)
-        parsed_email = email.message_from_string(smtpmock.get_sent_message())
+        parsed_email = email.message_from_string(smtpmock.get_sent_message().decode('utf-8'))
         self.assertEqual(parsed_email.get_content_type(), 'text/plain', parsed_email)
         self.assertEqual(parsed_email.get('To'), recipient, parsed_email)
         self.assertEqual(parsed_email.get('Subject'), "Test Email from privacyIDEA", parsed_email)
@@ -164,7 +164,7 @@ class SMTPServerTestCase(MyTestCase):
         r = SMTPServer.test_email(s, recipient, "Test Email with image",
                                   msg)
         self.assertTrue(r)
-        parsed_email = email.message_from_string(smtpmock.get_sent_message())
+        parsed_email = email.message_from_string(smtpmock.get_sent_message().decode('utf-8'))
         self.assertEqual(parsed_email.get_content_type(), 'image/png', parsed_email)
         self.assertEqual(parsed_email.get('To'), recipient, parsed_email)
         self.assertEqual(parsed_email.get('Subject'), "Test Email with image", parsed_email)
@@ -246,4 +246,3 @@ class SMTPServerQueueTestCase(MockQueueTestCase):
         self.assertEqual(queue.enqueued_jobs, [])
 
         delete_smtpserver("myserver")
-
