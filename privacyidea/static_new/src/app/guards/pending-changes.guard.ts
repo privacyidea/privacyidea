@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { inject } from "@angular/core";
-import { CanDeactivateFn } from "@angular/router";
+import { CanDeactivateFn, Router } from "@angular/router";
 import { PendingChangesService } from "../services/pending-changes/pending-changes.service";
 import { MatDialog } from "@angular/material/dialog";
 import { ConfirmationDialogComponent } from "../components/shared/confirmation-dialog/confirmation-dialog.component";
@@ -28,11 +28,28 @@ export const pendingChangesGuard: CanDeactivateFn<any> = () => {
   const dialog = inject(MatDialog);
 
   if (pendingChangesService.hasChanges) {
+    const url = inject(Router).url;
+    let type = "resolver";
+    if (url.includes("smtp")) {
+      type = "smtp-server";
+    } else if (url.includes("tokengroups")) {
+      type = "tokengroup";
+    } else if (url.includes("service-ids")) {
+      type = "service-id";
+    } else if (url.includes("ca-connectors")) {
+      type = "ca-connector";
+    } else if (url.includes("sms")) {
+      type = "sms-gateway";
+    } else if (url.includes("radius")) {
+      type = "radius-server";
+    } else if (url.includes("privacyidea")) {
+      type = "privacyidea-server";
+    }
     return dialog.open(ConfirmationDialogComponent, {
       data: {
         title: $localize`Discard changes`,
         action: "discard",
-        type: "resolver"
+        type: type
       }
     }).afterClosed().pipe(
       map(result => {

@@ -17,22 +17,78 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { TestBed } from "@angular/core/testing";
-
 import { CaConnectorService } from "./ca-connector.service";
 import { provideHttpClient } from "@angular/common/http";
-import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
+import { AuthService } from "../auth/auth.service";
+import { NotificationService } from "../notification/notification.service";
+import { environment } from "../../../environments/environment";
 
 describe("CaConnectorService", () => {
-  let caConnectorService: CaConnectorService;
+  let service: CaConnectorService;
+  let httpMock: HttpTestingController;
+  let notificationService: NotificationService;
 
   beforeEach(() => {
+    const authServiceMock = {
+      getHeaders: jest.fn().mockReturnValue({}),
+    };
+    const notificationServiceMock = {
+      openSnackBar: jest.fn(),
+    };
+
     TestBed.configureTestingModule({
-      providers: [provideHttpClient(), provideHttpClientTesting()]
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: AuthService, useValue: authServiceMock },
+        { provide: NotificationService, useValue: notificationServiceMock },
+      ]
     });
-    caConnectorService = TestBed.inject(CaConnectorService);
+    service = TestBed.inject(CaConnectorService);
+    httpMock = TestBed.inject(HttpTestingController);
+    notificationService = TestBed.inject(NotificationService);
+  });
+
+  afterEach(() => {
+    httpMock.verify();
   });
 
   it("should be created", () => {
-    expect(caConnectorService).toBeTruthy();
+    expect(service).toBeTruthy();
+  });
+
+  it("should post CA connector", async () => {
+    const connector = { connectorname: "test", type: "local", data: {} } as any;
+    const promise = service.postCaConnector(connector);
+
+    const req = httpMock.expectOne(`${environment.proxyUrl}/caconnector/test`);
+    expect(req.request.method).toBe("POST");
+    req.flush({ result: { status: true } });
+
+    await promise;
+    expect(notificationService.openSnackBar).toHaveBeenCalledWith("Successfully saved CA connector.");
+  });
+
+  it("should delete CA connector", async () => {
+    const promise = service.deleteCaConnector("test");
+
+    const req = httpMock.expectOne(`${environment.proxyUrl}/caconnector/test`);
+    expect(req.request.method).toBe("DELETE");
+    req.flush({ result: { status: true } });
+
+    await promise;
+    expect(notificationService.openSnackBar).toHaveBeenCalledWith("Successfully deleted CA connector: test.");
+  });
+
+  it("should get CA specific options", async () => {
+    const promise = service.getCaSpecificOptions("microsoft", { hostname: "test" });
+
+    const req = httpMock.expectOne(`${environment.proxyUrl}/caconnector/specific/microsoft?hostname=test`);
+    expect(req.request.method).toBe("GET");
+    req.flush({ result: { value: { available_cas: ["CA1"] } } });
+
+    const result = await promise;
+    expect(result).toEqual({ available_cas: ["CA1"] });
   });
 });

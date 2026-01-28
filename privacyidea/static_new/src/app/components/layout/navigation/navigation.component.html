@@ -404,7 +404,7 @@
       </mat-list>
     </mat-expansion-panel>
 
-    <mat-expansion-panel>
+    <mat-expansion-panel [expanded]="router.url.startsWith('/external-services')">
       <mat-expansion-panel-header>
         <mat-panel-title>
           <mat-icon>hub</mat-icon>
@@ -414,8 +414,8 @@
       <mat-list>
         <mat-list-item>
           <button
-            class="card-button-1"
-            disabled
+            [ngClass]="contentService.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_SMTP ? 'card-button-active' : 'card-button-1'"
+            [routerLink]="[ROUTE_PATHS.EXTERNAL_SERVICES_SMTP]"
             mat-stroked-button>
             <mat-icon>email</mat-icon>
             SMTP Servers
@@ -423,8 +423,8 @@
         </mat-list-item>
         <mat-list-item>
           <button
-            class="card-button-1"
-            disabled
+            [ngClass]="contentService.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS ? 'card-button-active' : 'card-button-1'"
+            [routerLink]="[ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS]"
             mat-stroked-button>
             <mat-icon>vpn_lock</mat-icon>
             RADIUS Servers
@@ -432,8 +432,8 @@
         </mat-list-item>
         <mat-list-item>
           <button
-            class="card-button-1"
-            disabled
+            [ngClass]="contentService.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_SMS ? 'card-button-active' : 'card-button-1'"
+            [routerLink]="[ROUTE_PATHS.EXTERNAL_SERVICES_SMS]"
             mat-stroked-button>
             <mat-icon>sms</mat-icon>
             SMS Gateways
@@ -441,17 +441,17 @@
         </mat-list-item>
         <mat-list-item>
           <button
-            class="card-button-1"
-            disabled
+            [ngClass]="contentService.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_CA_CONNECTORS ? 'card-button-active' : 'card-button-1'"
+            [routerLink]="[ROUTE_PATHS.EXTERNAL_SERVICES_CA_CONNECTORS]"
             mat-stroked-button>
             <mat-icon>assured_workload</mat-icon>
-            CAs
+            CA Connectors
           </button>
         </mat-list-item>
         <mat-list-item>
           <button
-            class="card-button-1"
-            disabled
+            [ngClass]="contentService.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_PRIVACYIDEA ? 'card-button-active' : 'card-button-1'"
+            [routerLink]="[ROUTE_PATHS.EXTERNAL_SERVICES_PRIVACYIDEA]"
             mat-stroked-button>
             <mat-icon class="mdi--pi-logo"></mat-icon>
             PrivacyIDEA Servers
@@ -459,8 +459,8 @@
         </mat-list-item>
         <mat-list-item>
           <button
-            class="card-button-1"
-            disabled
+            [ngClass]="contentService.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_TOKENGROUPS ? 'card-button-active' : 'card-button-1'"
+            [routerLink]="[ROUTE_PATHS.EXTERNAL_SERVICES_TOKENGROUPS]"
             mat-stroked-button>
             <mat-icon>local_police</mat-icon>
             Tokengroups
@@ -468,8 +468,8 @@
         </mat-list-item>
         <mat-list-item>
           <button
-            class="card-button-1"
-            disabled
+            [ngClass]="contentService.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS ? 'card-button-active' : 'card-button-1'"
+            [routerLink]="[ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS]"
             mat-stroked-button>
             <mat-icon>storage</mat-icon>
             Service IDs
