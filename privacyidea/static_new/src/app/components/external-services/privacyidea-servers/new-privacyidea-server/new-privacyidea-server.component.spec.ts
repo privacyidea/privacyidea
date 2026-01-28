@@ -21,27 +21,49 @@ import { NewPrivacyideaServerComponent } from "./new-privacyidea-server.componen
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
+import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from "@angular/material/dialog";
 import { of } from "rxjs";
+import { PrivacyideaServerService } from "../../../../services/privacyidea-server/privacyidea-server.service";
 
 describe("NewPrivacyideaServerComponent", () => {
   let component: NewPrivacyideaServerComponent;
   let fixture: ComponentFixture<NewPrivacyideaServerComponent>;
+  let privacyideaServerServiceMock: any;
+  let dialogRefMock: any;
+  let dialogMock: any;
 
   beforeEach(async () => {
+    privacyideaServerServiceMock = {
+      postPrivacyideaServer: jest.fn().mockResolvedValue(true),
+      testPrivacyideaServer: jest.fn().mockResolvedValue(true),
+    };
+
+    dialogRefMock = {
+      disableClose: false,
+      backdropClick: jest.fn().mockReturnValue(of()),
+      keydownEvents: jest.fn().mockReturnValue(of()),
+      close: jest.fn()
+    };
+
+    dialogMock = {
+      open: jest.fn().mockReturnValue({ afterClosed: () => of(true) }),
+    };
+
     await TestBed.configureTestingModule({
       imports: [NewPrivacyideaServerComponent, NoopAnimationsModule],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: MAT_DIALOG_DATA, useValue: null },
-        { provide: MatDialogRef, useValue: {
-          disableClose: false,
-          backdropClick: () => of(),
-          keydownEvents: () => of(),
-          close: () => {}
-        } }
+        { provide: MatDialogRef, useValue: dialogRefMock },
+        { provide: PrivacyideaServerService, useValue: privacyideaServerServiceMock },
       ]
+    }).overrideComponent(NewPrivacyideaServerComponent, {
+      add: {
+        providers: [
+          { provide: MatDialog, useValue: dialogMock }
+        ]
+      }
     }).compileComponents();
 
     fixture = TestBed.createComponent(NewPrivacyideaServerComponent);
@@ -51,5 +73,66 @@ describe("NewPrivacyideaServerComponent", () => {
 
   it("should create", () => {
     expect(component).toBeTruthy();
+  });
+
+  it("should initialize form for create mode", () => {
+    expect(component.isEditMode).toBe(false);
+    expect(component.privacyideaForm.get("identifier")?.value).toBe("");
+  });
+
+  it("should initialize form for edit mode", async () => {
+    TestBed.resetTestingModule();
+    await TestBed.configureTestingModule({
+      imports: [NewPrivacyideaServerComponent, NoopAnimationsModule],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: MAT_DIALOG_DATA, useValue: { identifier: "test", url: "http://test", tls: true } },
+        { provide: MatDialogRef, useValue: dialogRefMock },
+        { provide: PrivacyideaServerService, useValue: privacyideaServerServiceMock },
+      ]
+    }).overrideComponent(NewPrivacyideaServerComponent, {
+      add: {
+        providers: [
+          { provide: MatDialog, useValue: dialogMock }
+        ]
+      }
+    }).compileComponents();
+    fixture = TestBed.createComponent(NewPrivacyideaServerComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+
+    expect(component.isEditMode).toBe(true);
+    expect(component.privacyideaForm.get("identifier")?.value).toBe("test");
+    expect(component.privacyideaForm.get("identifier")?.disabled).toBe(true);
+  });
+
+  it("should be invalid when required fields are missing", () => {
+    component.privacyideaForm.patchValue({ identifier: "", url: "" });
+    expect(component.privacyideaForm.valid).toBe(false);
+  });
+
+  it("should call save when form is valid", async () => {
+    component.privacyideaForm.patchValue({ identifier: "test", url: "http://test" });
+    component.save();
+    expect(privacyideaServerServiceMock.postPrivacyideaServer).toHaveBeenCalled();
+    expect(dialogRefMock.close).toHaveBeenCalledWith(true);
+  });
+
+  it("should call test when form is valid", async () => {
+    component.privacyideaForm.patchValue({ identifier: "test", url: "http://test" });
+    component.test();
+    expect(privacyideaServerServiceMock.testPrivacyideaServer).toHaveBeenCalled();
+  });
+
+  it("should close dialog on cancel without changes", () => {
+    component.onCancel();
+    expect(dialogRefMock.close).toHaveBeenCalled();
+  });
+
+  it("should show confirmation dialog on cancel with changes", () => {
+    component.privacyideaForm.get("description")?.markAsDirty();
+    component.onCancel();
+    expect(dialogMock.open).toHaveBeenCalled();
   });
 });

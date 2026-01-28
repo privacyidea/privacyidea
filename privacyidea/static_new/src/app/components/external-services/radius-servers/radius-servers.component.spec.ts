@@ -21,19 +21,44 @@ import { RadiusServersComponent } from "./radius-servers.component";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { MatDialogModule } from "@angular/material/dialog";
+import { MatDialog, MatDialogModule } from "@angular/material/dialog";
+import { RadiusService } from "../../../services/radius/radius.service";
+import { DialogService } from "../../../services/dialog/dialog.service";
+import { signal } from "@angular/core";
 
 describe("RadiusServersComponent", () => {
   let component: RadiusServersComponent;
   let fixture: ComponentFixture<RadiusServersComponent>;
+  let radiusServiceMock: any;
+  let dialogServiceMock: any;
 
   beforeEach(async () => {
+    radiusServiceMock = {
+      radiusServers: signal([
+        { identifier: "server1", server: "1.1.1.1" },
+        { identifier: "server2", server: "2.2.2.2" }
+      ]),
+      deleteRadiusServer: jest.fn()
+    };
+
+    dialogServiceMock = {
+      confirm: jest.fn().mockResolvedValue(true)
+    };
+
     await TestBed.configureTestingModule({
       imports: [RadiusServersComponent, NoopAnimationsModule, MatDialogModule],
       providers: [
         provideHttpClient(),
-        provideHttpClientTesting()
+        provideHttpClientTesting(),
+        { provide: RadiusService, useValue: radiusServiceMock },
+        { provide: DialogService, useValue: dialogServiceMock }
       ]
+    }).overrideComponent(RadiusServersComponent, {
+      add: {
+        providers: [
+          { provide: MatDialog, useValue: { open: jest.fn() } }
+        ]
+      }
     }).compileComponents();
 
     fixture = TestBed.createComponent(RadiusServersComponent);
@@ -43,5 +68,32 @@ describe("RadiusServersComponent", () => {
 
   it("should create", () => {
     expect(component).toBeTruthy();
+  });
+
+  it("should display servers from service", () => {
+    expect(component.radiusDataSource().data.length).toBe(2);
+    expect(component.radiusDataSource().data[0].identifier).toBe("server1");
+  });
+
+  it("should filter servers", () => {
+    component.onFilterInput("server1");
+    expect(component.radiusDataSource().filter).toBe("server1");
+  });
+
+  it("should open edit dialog", () => {
+    const dialog = fixture.debugElement.injector.get(MatDialog);
+    const server = radiusServiceMock.radiusServers()[0];
+    component.openEditDialog(server);
+    expect(dialog.open).toHaveBeenCalled();
+  });
+
+  it("should delete server after confirmation", async () => {
+    const server = radiusServiceMock.radiusServers()[0];
+
+    component.deleteServer(server);
+
+    expect(dialogServiceMock.confirm).toHaveBeenCalled();
+    await Promise.resolve();
+    expect(radiusServiceMock.deleteRadiusServer).toHaveBeenCalledWith("server1");
   });
 });

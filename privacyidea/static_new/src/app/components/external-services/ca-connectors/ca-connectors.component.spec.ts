@@ -21,19 +21,44 @@ import { CaConnectorsComponent } from "./ca-connectors.component";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { MatDialogModule } from "@angular/material/dialog";
+import { MatDialog, MatDialogModule } from "@angular/material/dialog";
+import { CaConnectorService } from "../../../services/ca-connector/ca-connector.service";
+import { DialogService } from "../../../services/dialog/dialog.service";
+import { signal } from "@angular/core";
 
 describe("CaConnectorsComponent", () => {
   let component: CaConnectorsComponent;
   let fixture: ComponentFixture<CaConnectorsComponent>;
+  let caConnectorServiceMock: any;
+  let dialogServiceMock: any;
 
   beforeEach(async () => {
+    caConnectorServiceMock = {
+      caConnectors: signal([
+        { connectorname: "conn1", type: "local" },
+        { connectorname: "conn2", type: "microsoft" },
+      ]),
+      deleteCaConnector: jest.fn(),
+    };
+
+    dialogServiceMock = {
+      confirm: jest.fn().mockResolvedValue(true),
+    };
+
     await TestBed.configureTestingModule({
       imports: [CaConnectorsComponent, NoopAnimationsModule, MatDialogModule],
       providers: [
         provideHttpClient(),
-        provideHttpClientTesting()
+        provideHttpClientTesting(),
+        { provide: CaConnectorService, useValue: caConnectorServiceMock },
+        { provide: DialogService, useValue: dialogServiceMock },
       ]
+    }).overrideComponent(CaConnectorsComponent, {
+      add: {
+        providers: [
+          { provide: MatDialog, useValue: { open: jest.fn() } }
+        ]
+      }
     }).compileComponents();
 
     fixture = TestBed.createComponent(CaConnectorsComponent);
@@ -43,5 +68,30 @@ describe("CaConnectorsComponent", () => {
 
   it("should create", () => {
     expect(component).toBeTruthy();
+  });
+
+  it("should display connectors from service", () => {
+    expect(component.caConnectorDataSource().data.length).toBe(2);
+    expect(component.caConnectorDataSource().data[0].connectorname).toBe("conn1");
+  });
+
+  it("should filter connectors", () => {
+    component.onFilterInput("conn1");
+    expect(component.caConnectorDataSource().filter).toBe("conn1");
+  });
+
+  it("should open edit dialog", () => {
+    const dialog = fixture.debugElement.injector.get(MatDialog);
+    const connector = caConnectorServiceMock.caConnectors()[0];
+    component.openEditDialog(connector);
+    expect(dialog.open).toHaveBeenCalled();
+  });
+
+  it("should delete connector after confirmation", async () => {
+    const connector = caConnectorServiceMock.caConnectors()[0];
+    component.deleteConnector(connector);
+    expect(dialogServiceMock.confirm).toHaveBeenCalled();
+    await Promise.resolve();
+    expect(caConnectorServiceMock.deleteCaConnector).toHaveBeenCalledWith("conn1");
   });
 });

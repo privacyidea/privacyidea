@@ -21,19 +21,44 @@ import { SmtpServersComponent } from "./smtp-servers.component";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { MatDialogModule } from "@angular/material/dialog";
+import { MatDialog, MatDialogModule } from "@angular/material/dialog";
+import { SmtpService } from "../../../services/smtp/smtp.service";
+import { DialogService } from "../../../services/dialog/dialog.service";
+import { signal } from "@angular/core";
 
 describe("SmtpServersComponent", () => {
   let component: SmtpServersComponent;
   let fixture: ComponentFixture<SmtpServersComponent>;
+  let smtpServiceMock: any;
+  let dialogServiceMock: any;
 
   beforeEach(async () => {
+    smtpServiceMock = {
+      smtpServers: signal([
+        { identifier: "server1", server: "smtp1.com", sender: "s1@test.com", tls: true, enqueue_job: false },
+        { identifier: "server2", server: "smtp2.com", sender: "s2@test.com", tls: false, enqueue_job: true },
+      ]),
+      deleteSmtpServer: jest.fn(),
+    };
+
+    dialogServiceMock = {
+      confirm: jest.fn().mockResolvedValue(true),
+    };
+
     await TestBed.configureTestingModule({
       imports: [SmtpServersComponent, NoopAnimationsModule, MatDialogModule],
       providers: [
         provideHttpClient(),
-        provideHttpClientTesting()
+        provideHttpClientTesting(),
+        { provide: SmtpService, useValue: smtpServiceMock },
+        { provide: DialogService, useValue: dialogServiceMock },
       ]
+    }).overrideComponent(SmtpServersComponent, {
+      add: {
+        providers: [
+          { provide: MatDialog, useValue: { open: jest.fn() } }
+        ]
+      }
     }).compileComponents();
 
     fixture = TestBed.createComponent(SmtpServersComponent);
@@ -43,5 +68,30 @@ describe("SmtpServersComponent", () => {
 
   it("should create", () => {
     expect(component).toBeTruthy();
+  });
+
+  it("should display servers from service", () => {
+    expect(component.smtpDataSource().data.length).toBe(2);
+    expect(component.smtpDataSource().data[0].identifier).toBe("server1");
+  });
+
+  it("should filter servers", () => {
+    component.onFilterInput("server1");
+    expect(component.smtpDataSource().filter).toBe("server1");
+  });
+
+  it("should open edit dialog", () => {
+    const dialog = fixture.debugElement.injector.get(MatDialog);
+    const server = smtpServiceMock.smtpServers()[0];
+    component.openEditDialog(server);
+    expect(dialog.open).toHaveBeenCalled();
+  });
+
+  it("should delete server after confirmation", async () => {
+    const server = smtpServiceMock.smtpServers()[0];
+    component.deleteServer(server);
+    expect(dialogServiceMock.confirm).toHaveBeenCalled();
+    await Promise.resolve();
+    expect(smtpServiceMock.deleteSmtpServer).toHaveBeenCalledWith("server1");
   });
 });

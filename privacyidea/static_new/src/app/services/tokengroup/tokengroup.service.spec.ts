@@ -17,22 +17,67 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { TestBed } from "@angular/core/testing";
-
 import { TokengroupService } from "./tokengroup.service";
 import { provideHttpClient } from "@angular/common/http";
-import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
+import { AuthService } from "../auth/auth.service";
+import { NotificationService } from "../notification/notification.service";
+import { environment } from "../../../environments/environment";
 
 describe("TokengroupService", () => {
-  let tokengroupService: TokengroupService;
+  let service: TokengroupService;
+  let httpMock: HttpTestingController;
+  let notificationService: NotificationService;
 
   beforeEach(() => {
+    const authServiceMock = {
+      getHeaders: jest.fn().mockReturnValue({}),
+    };
+    const notificationServiceMock = {
+      openSnackBar: jest.fn(),
+    };
+
     TestBed.configureTestingModule({
-      providers: [provideHttpClient(), provideHttpClientTesting()]
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: AuthService, useValue: authServiceMock },
+        { provide: NotificationService, useValue: notificationServiceMock },
+      ]
     });
-    tokengroupService = TestBed.inject(TokengroupService);
+    service = TestBed.inject(TokengroupService);
+    httpMock = TestBed.inject(HttpTestingController);
+    notificationService = TestBed.inject(NotificationService);
+  });
+
+  afterEach(() => {
+    httpMock.verify();
   });
 
   it("should be created", () => {
-    expect(tokengroupService).toBeTruthy();
+    expect(service).toBeTruthy();
+  });
+
+  it("should post tokengroup", async () => {
+    const group = { groupname: "test", description: "desc" };
+    const promise = service.postTokengroup(group);
+
+    const req = httpMock.expectOne(`${environment.proxyUrl}/tokengroup/test`);
+    expect(req.request.method).toBe("POST");
+    req.flush({ result: { status: true } });
+
+    await promise;
+    expect(notificationService.openSnackBar).toHaveBeenCalledWith("Successfully saved tokengroup.");
+  });
+
+  it("should delete tokengroup", async () => {
+    const promise = service.deleteTokengroup("test");
+
+    const req = httpMock.expectOne(`${environment.proxyUrl}/tokengroup/test`);
+    expect(req.request.method).toBe("DELETE");
+    req.flush({ result: { status: true } });
+
+    await promise;
+    expect(notificationService.openSnackBar).toHaveBeenCalledWith("Successfully deleted tokengroup: test.");
   });
 });
