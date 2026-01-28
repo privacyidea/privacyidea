@@ -28,7 +28,7 @@
       <mat-select formControlName="providermodule">
         @for (provider of providerEntries(); track provider.key) {
           <mat-option [value]="provider.key">
-            {{ provider.key }}
+            {{ provider.key.split('.').pop() }}
           </mat-option>
         }
       </mat-select>
