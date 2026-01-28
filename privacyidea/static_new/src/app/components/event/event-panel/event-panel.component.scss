@@ -23,8 +23,8 @@
 }
 
 .action-buttons {
-  display: flex;
-  flex-direction: row;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 8px;
   margin-left: 16px;
 }
