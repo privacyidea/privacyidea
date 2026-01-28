@@ -174,8 +174,12 @@ def _register_blueprints(app):
 
 def _setup_logging(app, logging_config=DEFAULT_LOGGING_CONFIG):
     # Setup logging
+    def _load_yaml(x):
+        with open(x, 'r') as f:
+            return logging.config.dictConfig(yaml.safe_load(f))
+
     log_read_func = {
-        'yaml': lambda x: logging.config.dictConfig(yaml.safe_load(open(x, 'r').read())),
+        'yaml': _load_yaml,
         'cfg': lambda x: logging.config.fileConfig(x)
     }
     have_config = False
@@ -275,6 +279,44 @@ def _setup_node_configuration(app: Flask):
         log.debug("Finished setting up node names.")
 
 
+def _setup_sqlalchemy_ha_options(app: Flask):
+    # Set HA options while keep manual settings
+    if app.config.get(ConfigKey.SQLALCHEMY_ENABLE_HA_OPTIONS):
+        engine_options = app.config.get("SQLALCHEMY_ENGINE_OPTIONS", {})
+        engine_options.setdefault("pool_pre_ping", True)
+        engine_options.setdefault("pool_recycle", 3600)
+        app.config["SQLALCHEMY_ENGINE_OPTIONS"] = engine_options
+        if app.config.get(ConfigKey.VERBOSE):
+            print("Enabling SQLAlchemy HA Options")
+
+
+def _init_common_app(app: Flask):
+
+    _setup_sqlalchemy_ha_options(app)
+
+    # We allow to set different static folders
+    app.static_folder = app.config.get(ConfigKey.STATIC_FOLDER, DefaultConfigValues.STATIC_FOLDER)
+    app.template_folder = app.config.get(ConfigKey.TEMPLATE_FOLDER, DefaultConfigValues.TEMPLATE_FOLDER)
+
+    _register_blueprints(app)
+
+    # Set up Plug-Ins
+    db.init_app(app)
+
+    Versioned(app, format='%(path)s?v=%(version)s')
+
+    babel.init_app(app, locale_selector=get_accepted_language)
+
+    queue.register_app(app)
+
+    def exit_func():
+        # Destroy the engine pool and close all open database connections on exit
+        with app.app_context():
+            db.engine.dispose()
+
+    atexit.register(exit_func)
+
+
 def create_app(config_name="development",
                config_file=DefaultConfigValues.CFG_PATH,
                silent=False, initialize_hsm=False) -> Flask:
@@ -360,14 +402,7 @@ def create_app(config_name="development",
             DEFAULT_LOGGING_CONFIG["handlers"]["file"]["filename"] = app.config.get(ConfigKey.LOGFILE)
         _setup_logging(app, DEFAULT_LOGGING_CONFIG)
 
-    # We allow to set different static folders
-    app.static_folder = app.config.get(ConfigKey.STATIC_FOLDER, DefaultConfigValues.STATIC_FOLDER)
-    app.template_folder = app.config.get(ConfigKey.TEMPLATE_FOLDER, DefaultConfigValues.TEMPLATE_FOLDER)
-
-    _register_blueprints(app)
-
-    # Set up Plug-Ins
-    db.init_app(app)
+    _init_common_app(app)
 
     # TODO: This is not necessary except for the pi-manage command line util
     # Try to get the path of the migration directory from the installed package
@@ -380,12 +415,6 @@ def create_app(config_name="development",
     except (PackageNotFoundError, IndexError):
         pass
     migrate.init_app(app, db, directory=migration_dir)
-
-    Versioned(app, format='%(path)s?v=%(version)s')
-
-    babel.init_app(app, locale_selector=get_accepted_language)
-
-    queue.register_app(app)
 
     if initialize_hsm:
         with app.app_context():
@@ -403,13 +432,6 @@ def create_app(config_name="development",
     log.debug(f"Reading application from the static folder {app.static_folder} "
               f"and the template folder {app.template_folder}")
     app.config[ConfigKey.APP_READY] = True
-
-    def exit_func():
-        # Destroy the engine pool and close all open database connections on exit
-        with app.app_context():
-            db.engine.dispose()
-
-    atexit.register(exit_func)
 
     return app
 
@@ -458,20 +480,7 @@ def create_docker_app():
         DOCKER_LOGGING_CONFIG["loggers"]["privacyidea"]["level"] = app.config.get(ConfigKey.LOGLEVEL)
     _setup_logging(app, DOCKER_LOGGING_CONFIG)
 
-    # We allow to set different static folders
-    app.static_folder = app.config.get(ConfigKey.STATIC_FOLDER, DefaultConfigValues.STATIC_FOLDER)
-    app.template_folder = app.config.get(ConfigKey.TEMPLATE_FOLDER, DefaultConfigValues.TEMPLATE_FOLDER)
-
-    _register_blueprints(app)
-
-    # Set up Plug-Ins
-    db.init_app(app)
-
-    Versioned(app, format='%(path)s?v=%(version)s')
-
-    babel.init_app(app, locale_selector=get_accepted_language)
-
-    queue.register_app(app)
+    _init_common_app(app)
 
     if app.config.get(ConfigKey.HSM_INITIALIZE, False):
         with app.app_context():
@@ -489,12 +498,5 @@ def create_docker_app():
     _setup_node_configuration(app)
 
     app.config[ConfigKey.APP_READY] = True
-
-    def exit_func():
-        # Destroy the engine pool and close all open database connections on exit
-        with app.app_context():
-            db.engine.dispose()
-
-    atexit.register(exit_func)
 
     return app
