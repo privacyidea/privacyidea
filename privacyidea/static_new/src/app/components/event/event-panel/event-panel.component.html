@@ -39,6 +39,19 @@
       }
     </h3>
     <div class="action-buttons">
+      <mat-slide-toggle
+          matTooltip="Toggle Active Status"
+          labelPosition="before"
+          [checked]="editEvent().active"
+          (change)="updateEventHandler('active', $event.checked)"
+          [disabled]="!authService.actionAllowed('eventhandling_write')"
+          [disableRipple]="true">
+          @if (editEvent().active) {
+            <span i18n>Active</span>
+          } @else {
+            <span i18n>Inactive</span>
+          }
+        </mat-slide-toggle>
       <button
         class="action-button-1"
         mat-stroked-button
@@ -48,6 +61,7 @@
         <span i18n>Save</span>
       </button>
       <button
+        class="action-button-1"
         mat-stroked-button
         (click)="$event.stopPropagation(); cancelEdit()">
         <mat-icon>cancel</mat-icon>

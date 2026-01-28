@@ -385,4 +385,40 @@ describe("EventComponent", () => {
     const sorted = (component as any).clientsideSortEventData([...data], { active: 'ordering', direction: 'asc' });
     expect(sorted.map((e: any) => e.ordering)).toEqual([undefined, 2, 3]);
   });
+
+  it('should call eventService.disableEvent if eventHandler is active', () => {
+    const handler = {
+      id: '123',
+      name: 'Test',
+      event: [],
+      handlermodule: '',
+      position: '',
+      action: '',
+      options: {},
+      conditions: {},
+      active: true,
+      ordering: 1
+    };
+    const spy = jest.spyOn(component['eventService'], 'disableEvent');
+    component.toggleActive(handler as any);
+    expect(spy).toHaveBeenCalledWith('123');
+  });
+
+  it('should call eventService.enableEvent if eventHandler is inactive', () => {
+    const handler = {
+      id: '456',
+      name: 'Test',
+      event: [],
+      handlermodule: '',
+      position: '',
+      action: '',
+      options: {},
+      conditions: {},
+      active: false,
+      ordering: 1
+    };
+    const spy = jest.spyOn(component['eventService'], 'enableEvent');
+    component.toggleActive(handler as any);
+    expect(spy).toHaveBeenCalledWith('456');
+  });
 });

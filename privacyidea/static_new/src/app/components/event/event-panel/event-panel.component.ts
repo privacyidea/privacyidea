@@ -54,6 +54,8 @@ import { PendingChangesService } from "../../../services/pending-changes/pending
 import { ConfirmationDialogComponent } from "../../shared/confirmation-dialog/confirmation-dialog.component";
 import { ROUTE_PATHS } from "../../../route_paths";
 import { ContentService } from "../../../services/content/content.service";
+import { MatSlideToggle } from "@angular/material/slide-toggle";
+import { MatTooltip } from "@angular/material/tooltip";
 
 export type eventTab = "events" | "action" | "conditions";
 
@@ -83,7 +85,9 @@ export type eventTab = "events" | "action" | "conditions";
     MatTabGroup,
     MatTab,
     ScrollToTopDirective,
-    MatButton
+    MatButton,
+    MatSlideToggle,
+    MatTooltip
   ],
   standalone: true,
   templateUrl: "./event-panel.component.html",

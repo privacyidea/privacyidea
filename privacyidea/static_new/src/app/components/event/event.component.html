@@ -148,7 +148,7 @@
                 <mat-slide-toggle
                   matTooltip="Toggle Active Status"
                   [checked]="element.active"
-                  (click)="$event.stopPropagation()"
+                  (click)="toggleActive(element); $event.stopPropagation()"
                   [disabled]="!authService.actionAllowed('eventhandling_write')"
                   [disableRipple]="true"></mat-slide-toggle>
               }

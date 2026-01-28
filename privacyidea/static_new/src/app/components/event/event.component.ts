@@ -58,13 +58,13 @@ import { HighlightPipe } from "../shared/pipes/highlight.pipe";
     ScrollToTopDirective,
     MatIcon,
     MatSlideToggle,
-    MatTooltip,
     ClearableInputComponent,
     MatFormField,
     MatInput,
     MatLabel,
     MatPaginator,
-    HighlightPipe
+    HighlightPipe,
+    MatTooltip
   ],
   standalone: true,
   templateUrl: "./event.component.html",
@@ -242,6 +242,14 @@ export class EventComponent {
   onClearFilter() {
     this.filterString.set("");
     this.onFilterInput("");
+  }
+
+  toggleActive(eventHandler: EventHandler): void {
+    if (eventHandler.active) {
+      this.eventService.disableEvent(eventHandler.id);
+    } else {
+      this.eventService.enableEvent(eventHandler.id);
+    }
   }
 
   protected readonly Object = Object;

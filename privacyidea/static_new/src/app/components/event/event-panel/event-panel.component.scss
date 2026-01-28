@@ -24,9 +24,9 @@
 
 .action-buttons {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: auto 1fr 1fr;
+  align-items: center;
   gap: 8px;
-  margin-left: 16px;
 }
 
 .event-name {
