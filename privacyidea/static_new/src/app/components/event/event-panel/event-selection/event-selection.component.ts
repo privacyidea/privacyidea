@@ -76,7 +76,7 @@ export class EventSelectionComponent {
 
   constructor() {
     effect(() => {
-      this.selectedEvents.setValue(this.events(), { emitEvent: false });
+      this.selectedEvents.setValue(this.events());
     });
   }
 
@@ -85,17 +85,21 @@ export class EventSelectionComponent {
   readonly separatorKeysCodes: number[] = [ENTER];
 
   removeEvent(event: string): void {
-    const index = this.selectedEvents.value.indexOf(event);
+    const current = this.selectedEvents.value;
+    const index = current.indexOf(event);
     if (index > -1) {
-      this.selectedEvents.value.splice(index, 1);
-      this.newEvents.emit(this.selectedEvents.value);
+      const updated = [...current.slice(0, index), ...current.slice(index + 1)];
+      this.selectedEvents.setValue(updated);
+      this.newEvents.emit(updated);
     }
   }
 
   addEvent(event: string): void {
-    if (event && this.selectedEvents.value.indexOf(event) === -1) {
-      this.selectedEvents.value.push(event);
-      this.newEvents.emit(this.selectedEvents.value);
+    const current = this.selectedEvents.value;
+    if (event && current.indexOf(event) === -1) {
+      const updated = [...current, event];
+      this.selectedEvents.setValue(updated);
+      this.newEvents.emit(updated);
     }
   }
 

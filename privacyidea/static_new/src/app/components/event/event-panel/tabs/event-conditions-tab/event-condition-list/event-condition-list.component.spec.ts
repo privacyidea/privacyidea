@@ -86,6 +86,16 @@ describe('EventConditionListComponent', () => {
     expect(emitSpy).toHaveBeenCalledWith({ conditionName: 'condA', conditionValue: 'newVal' });
   });
 
+  it('should emit multi value conditions as comma separated list', () => {
+    const emitSpy = jest.fn();
+    fixture.componentRef.setInput('emitOnConditionValueChange', true);
+    component.newConditionValue = { emit: emitSpy } as any;
+    component.onConditionValueChange('condD', ["option1", "option2"]);
+    expect(component.editConditions()['condD']).toEqual(["option1", "option2"]);
+    expect(component.multiValueConditions()['condD']).toEqual(["option1", "option2"]);
+    expect(emitSpy).toHaveBeenCalledWith({ conditionName: 'condD', conditionValue: 'option1,option2' });
+  });
+
   it('should not emit newConditionValue if emitOnConditionValueChange is false', () => {
     const emitSpy = jest.fn();
     fixture.componentRef.setInput('emitOnConditionValueChange', false);

@@ -60,7 +60,9 @@
       #auto="matAutocomplete"
       (optionSelected)="selected($event)">
       @for (event of remainingEvents(); track event) {
-        <mat-option [value]="event">{{ event }}</mat-option>
+        <mat-option [value]="event">
+          {{ event }}
+        </mat-option>
       }
     </mat-autocomplete>
     <mat-hint i18n>

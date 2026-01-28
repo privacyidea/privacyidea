@@ -61,7 +61,8 @@ export class EventActionTabComponent {
     // Set initial values
     effect(() => {
       this.selectedAction.setValue(this.action(), { emitEvent: false });
-      this.rebuildOptionsForm(this.options());
+      this.rebuildOptionsForm(this.options(), false);
+      this.optionsValid.emit(this.selectedOptions.valid);
     });
 
     // Subscribe to value changes in selectedOptions and emit to parent
@@ -78,11 +79,11 @@ export class EventActionTabComponent {
     });
   }
 
-  rebuildOptionsForm(options: Record<string, any>) {
+  rebuildOptionsForm(options: Record<string, any>, emitEvent: boolean = true) {
     // Remove controls that are not in the new options
     Object.keys(this.selectedOptions.controls).forEach(key => {
       if (!(key in options)) {
-        this.selectedOptions.removeControl(key);
+        this.selectedOptions.removeControl(key, { emitEvent: emitEvent });
       }
     });
     // Add or update controls for each option
@@ -92,16 +93,15 @@ export class EventActionTabComponent {
       if (this.selectedOptions.contains(optionName)) {
         this.selectedOptions.get(optionName)?.setValidators(validators);
         this.selectedOptions.get(optionName)?.setValue(this.options()[optionName] ?? option.default ?? "");
-        this.selectedOptions.get(optionName)?.updateValueAndValidity({ emitEvent: false });
+        this.selectedOptions.get(optionName)?.updateValueAndValidity({ emitEvent: emitEvent });
       } else {
         this.selectedOptions.addControl(
           optionName,
-          new FormControl(this.options()[optionName] ?? option.default ?? "", validators)
+          new FormControl(this.options()[optionName] ?? option.default ?? "", validators),
+          { emitEvent: emitEvent }
         );
       }
     }
-    // Emit after rebuilding
-    this.emitOptionsToParent();
   }
 
   emitOptionsToParent() {
@@ -127,6 +127,10 @@ export class EventActionTabComponent {
 
   actionOptions = computed(() => {
     if (!this.selectedActionSignal()) {
+      if (this.action()) {
+        // initial load case if the selectedActionSignal is not yet set correctly
+        return this.eventService.moduleActions()[this.action()] || {};
+      }
       return {};
     }
     return this.eventService.moduleActions()[this.selectedActionSignal()] || {};

@@ -109,16 +109,18 @@ export class EventPanelComponent implements AfterViewInit, OnDestroy {
 
   availableTabs: eventTab[] = ["action", "conditions"];
 
+  // original event handler serves as input for child components to avoid a loop of change detection
   event = signal(EMPTY_EVENT);
+  // edited event handler
+  editEvent = signal(EMPTY_EVENT);
   isNewEvent = signal(false);
+  hasChanges = signal(false);
 
-  hasChanges = computed(() => this.editEvent() !== this.event());
   selectedEvents = linkedSignal(() => this.event().event);
-  editEvent = linkedSignal(() => this.event());
 
   constructor() {
-    // Initialize signals with dialog data
-    this.event.set(this.data.eventHandler ?? EMPTY_EVENT);
+    this.event.set(deepCopy(this.data.eventHandler ?? EMPTY_EVENT));
+    this.editEvent.set(deepCopy(this.data.eventHandler ?? EMPTY_EVENT));
     this.isNewEvent.set(this.data.isNewEvent ?? false);
 
     // Avoid closing the dialog with pending changes (when clicking next to the dialog or pressing ESC)
@@ -192,7 +194,7 @@ export class EventPanelComponent implements AfterViewInit, OnDestroy {
   });
 
   cancelEdit(): void {
-    if (this.editEvent() !== this.event()) {
+    if (this.hasChanges()) {
       this.dialog.open(ConfirmationDialogComponent, {
         data: {
           title: $localize`Discard changes`,
@@ -211,6 +213,7 @@ export class EventPanelComponent implements AfterViewInit, OnDestroy {
 
   private closeActual(): void {
     this.editEvent.set(this.event());
+    this.eventService.selectedHandlerModule.set(this.eventService.eventHandlerModules()[0] || "");
     if (this.dialogRef) {
       this.dialogRef.close();
     }
@@ -233,7 +236,7 @@ export class EventPanelComponent implements AfterViewInit, OnDestroy {
   sectionValidity = computed(() => {
     const validity: Record<string, any> = {};
     validity["events"] = this.editEvent().event.length > 0;
-    validity["action"] = this.editEvent().action && this.validOptions();
+    validity["action"] = !!this.editEvent().action && this.validOptions();
     validity["name"] = this.editEvent().name !== "";
     validity["handlerModule"] = this.eventService.selectedHandlerModule() !== null && this.eventService.selectedHandlerModule() !== "";
     validity["position"] = this.editEvent().position !== null && this.editEvent().position !== "";
@@ -244,23 +247,33 @@ export class EventPanelComponent implements AfterViewInit, OnDestroy {
 
   setNewAction(action: string): void {
     this.editEvent.set({ ...this.editEvent(), action: action });
+    this.hasChanges.set(true);
   }
 
   setNewOptions(options: any): void {
     this.editEvent.set({ ...this.editEvent(), options: options });
+    this.hasChanges.set(true);
   }
 
   setNewConditions(conditions: any): void {
     this.editEvent.set({ ...this.editEvent(), conditions: conditions });
+    this.hasChanges.set(true);
   }
 
   setNewEvents(events: string[]): void {
     this.editEvent.set({ ...this.editEvent(), event: events });
+    this.hasChanges.set(true);
+  }
+
+  setNewHandlerModule(module: string): void {
+    this.eventService.selectedHandlerModule.set(module);
+    this.hasChanges.set(true);
   }
 
   updateEventHandler(key: string, value: any): void {
     // Update function to trigger change detection
     this.editEvent.set({ ...this.editEvent(), [key]: value });
+    this.hasChanges.set(true);
   }
 
   getSaveParameters(): Record<string, any> {

@@ -39,8 +39,13 @@ $focus-outline: 3px solid var(--mat-sys-primary-light);
 
 .checkbox-hint {
   display: block;
-  font-size: 0.75rem;
+  font-family: var(--mat-form-field-subscript-text-font, var(--mat-sys-body-small-font));
+  font-size: var(--mat-form-field-subscript-text-size, var(--mat-sys-body-small-size));
+  font-weight: var(--mat-form-field-subscript-text-weight, var(--mat-sys-body-small-weight));
   color: var(--mat-sys-primary);
-  margin-left: 1rem;
-  min-height: 18px;
+  padding-left: 16px;
+  padding-right: 16px;
+  padding-top: 4px;
+  line-height: var(--mat-form-field-subscript-text-line-height, var(--mat-sys-body-small-line-height));
+  letter-spacing: var(--mat-form-field-subscript-text-tracking, var(--mat-sys-body-small-tracking));
 }

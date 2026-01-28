@@ -76,6 +76,17 @@ export class EventConditionListComponent {
   editConditions = linkedSignal(() => {
     return this.conditions();
   });
+  multiValueConditions = linkedSignal(() => {
+    const multiValues: Record<string, string[]> = {};
+    for (const [name, value] of Object.entries(this.editConditions())) {
+      const details = this.eventService.moduleConditions()[name];
+      if (details.type == "multi") {
+        multiValues[name] = this.getMultiValues(value);
+      }
+    }
+    return multiValues;
+  });
+
   showDescription: Record<string, boolean> = {};
   protected readonly Object = Object;
 
@@ -135,6 +146,9 @@ export class EventConditionListComponent {
   onConditionValueChange(conditionName: string, value: any) {
     this.editConditions()[conditionName] = value;
     if (this.emitOnConditionValueChange()) {
+      if (Array.isArray(value)) {
+        value = value.join(",");
+      }
       this.newConditionValue.emit({ conditionName, conditionValue: value });
     }
   }

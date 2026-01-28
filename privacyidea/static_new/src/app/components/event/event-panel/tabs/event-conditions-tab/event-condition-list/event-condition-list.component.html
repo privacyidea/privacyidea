@@ -67,8 +67,8 @@
                 <mat-select
                   #selectedConditionInput
                   [placeholder]="'Select values ...'"
-                  [value]="getMultiValues(editConditions()[conditionName]) || []"
-                  [ngModel]="editConditions()[conditionName]"
+                  [value]="multiValueConditions()[conditionName] || []"
+                  [ngModel]="multiValueConditions()[conditionName] || []"
                   [multiple]="true"
                   (selectionChange)="onConditionValueChange(conditionName, $event.value)"
                   [required]="inputRequired()">

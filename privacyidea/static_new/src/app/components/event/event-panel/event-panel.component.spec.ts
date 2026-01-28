@@ -126,35 +126,6 @@ describe("EventPanelComponent", () => {
     expect(component.editEvent().ordering).toBe(99);
   });
 
-  it("validActionDefinition should be false if no action is defined", () => {
-    component.editEvent.set({ ...component.editEvent(), action: "", options: {} });
-    expect(component.validActionDefinition()).toBe(false);
-  });
-
-  it("validActionDefinition should be false if a required option is not defined", () => {
-    // option not set at all
-    component.editEvent.set({ ...component.editEvent(), action: "actionA", options: {} });
-    expect(component.validActionDefinition()).toBe(false);
-
-    // option value is null
-    component.editEvent.set({ ...component.editEvent(), action: "actionA", options: { "opt1": null } });
-    expect(component.validActionDefinition()).toBe(false);
-
-    // option value is empty string
-    component.editEvent.set({ ...component.editEvent(), action: "actionA", options: { "opt1": "" } });
-    expect(component.validActionDefinition()).toBe(false);
-  });
-
-  it("validActionDefinition should be true if no action has no required options", () => {
-    component.editEvent.set({ ...component.editEvent(), action: "actionB", options: {} });
-    expect(component.validActionDefinition()).toBe(true);
-  });
-
-  it("validActionDefinition should be true if all required options are defined", () => {
-    component.editEvent.set({ ...component.editEvent(), action: "actionA", options: { "opt1": 1 } });
-    expect(component.validActionDefinition()).toBe(true);
-  });
-
   it("validConditionsDefinition should be true if no condition is defined", () => {
     component.editEvent.set({ ...component.editEvent(), conditions: {} });
     expect(component.validConditionsDefinition()).toBe(true);
@@ -181,6 +152,7 @@ describe("EventPanelComponent", () => {
     expect(component.sectionValidity()["name"]).toBe(true);
     expect(component.sectionValidity()["handlerModule"]).toBe(true);
     expect(component.sectionValidity()["position"]).toBe(true);
+    expect(component.sectionValidity()["conditions"]).toBe(true);
     expect(component.canSave()).toBe(true);
   });
 
@@ -192,6 +164,7 @@ describe("EventPanelComponent", () => {
     expect(component.sectionValidity()["name"]).toBe(false);
     expect(component.sectionValidity()["handlerModule"]).toBe(true);
     expect(component.sectionValidity()["position"]).toBe(true);
+    expect(component.sectionValidity()["conditions"]).toBe(true);
     expect(component.canSave()).toBe(false);
   });
 
@@ -203,6 +176,7 @@ describe("EventPanelComponent", () => {
     expect(component.sectionValidity()["name"]).toBe(true);
     expect(component.sectionValidity()["handlerModule"]).toBe(true);
     expect(component.sectionValidity()["position"]).toBe(false);
+    expect(component.sectionValidity()["conditions"]).toBe(true);
     expect(component.canSave()).toBe(false);
   });
 
@@ -214,6 +188,7 @@ describe("EventPanelComponent", () => {
     expect(component.sectionValidity()["name"]).toBe(true);
     expect(component.sectionValidity()["handlerModule"]).toBe(true);
     expect(component.sectionValidity()["position"]).toBe(true);
+    expect(component.sectionValidity()["conditions"]).toBe(true);
     expect(component.canSave()).toBe(false);
   });
 
@@ -225,6 +200,18 @@ describe("EventPanelComponent", () => {
     expect(component.sectionValidity()["name"]).toBe(true);
     expect(component.sectionValidity()["handlerModule"]).toBe(true);
     expect(component.sectionValidity()["position"]).toBe(true);
+    expect(component.sectionValidity()["conditions"]).toBe(true);
+    expect(component.canSave()).toBe(false);
+
+    component.editEvent.set({ ...component.editEvent(), action: "action" });
+    component.validOptions.set(false);
+    mockEventService.selectedHandlerModule.set("mockModule");
+    expect(component.sectionValidity()["events"]).toBe(true);
+    expect(component.sectionValidity()["action"]).toBe(false);
+    expect(component.sectionValidity()["name"]).toBe(true);
+    expect(component.sectionValidity()["handlerModule"]).toBe(true);
+    expect(component.sectionValidity()["position"]).toBe(true);
+    expect(component.sectionValidity()["conditions"]).toBe(true);
     expect(component.canSave()).toBe(false);
   });
 
@@ -235,12 +222,24 @@ describe("EventPanelComponent", () => {
     expect(component.sectionValidity()["name"]).toBe(true);
     expect(component.sectionValidity()["handlerModule"]).toBe(false);
     expect(component.sectionValidity()["position"]).toBe(true);
+    expect(component.sectionValidity()["conditions"]).toBe(true);
+    expect(component.canSave()).toBe(false);
+  });
+
+  it("canSave should be false if the conditions are invalid", () => {
+    component.editEvent.set({ ...component.editEvent(), conditions: { cond1: null } });
+    expect(component.sectionValidity()["events"]).toBe(true);
+    expect(component.sectionValidity()["action"]).toBe(true);
+    expect(component.sectionValidity()["name"]).toBe(true);
+    expect(component.sectionValidity()["handlerModule"]).toBe(true);
+    expect(component.sectionValidity()["position"]).toBe(true);
+    expect(component.sectionValidity()["conditions"]).toBe(false);
     expect(component.canSave()).toBe(false);
   });
 
   it("should cancel edit", () => {
     // Simulate unsaved changes
-    component.editEvent.set({ ...component.editEvent(), name: "Changed" });
+    component.updateEventHandler("name", "Changed");
 
     // Mock dialog.open to return an object with afterClosed returning an observable of true (confirmed)
     const afterClosedMock = jest.fn().mockReturnValue(of(true));

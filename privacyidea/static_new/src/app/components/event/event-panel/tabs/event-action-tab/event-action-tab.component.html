@@ -98,7 +98,7 @@
         @if (!(selectedOptions.get(optionName)?.invalid && (selectedOptions.get(optionName)?.dirty ||
           selectedOptions.get(optionName)?.touched))) {
           <div
-            class="checkbox-hint margin-0"
+            class="checkbox-hint"
             [innerHTML]="actionOptions()[optionName].desc || actionOptions()[optionName].description || ''"></div>
         }
       </div>

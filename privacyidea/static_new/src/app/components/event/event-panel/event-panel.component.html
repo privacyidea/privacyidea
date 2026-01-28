@@ -82,7 +82,7 @@
             <mat-label i18n>Handler Module</mat-label>
             <mat-select
               [ngModel]="eventService.selectedHandlerModule()"
-              (ngModelChange)="eventService.selectedHandlerModule.set($event)"
+              (ngModelChange)="setNewHandlerModule($event)"
               required>
               @for (module of eventService.eventHandlerModules(); track module) {
                 <mat-option [value]="module">
