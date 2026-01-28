@@ -147,7 +147,7 @@ export class UserResolversComponent {
         action: "delete"
       }
     }).afterClosed().subscribe(result => {
-      if (result) {
+      if (result.confirmed) {
         this.resolverService.deleteResolver(resolver.resolvername).subscribe({
           next: () => {
             this.notificationService.openSnackBar($localize`Resolver "${resolver.resolvername}" deleted.`);

@@ -447,7 +447,7 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
           type: "resolver"
         }
       }).afterClosed().subscribe(result => {
-        if (result) {
+        if (result.confirmed) {
           this.closeActual();
         }
       });

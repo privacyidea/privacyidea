@@ -237,12 +237,12 @@ describe("EventPanelComponent", () => {
     expect(component.canSave()).toBe(false);
   });
 
-  it("should cancel edit", () => {
+  it("should discard changes", () => {
     // Simulate unsaved changes
     component.updateEventHandler("name", "Changed");
 
-    // Mock dialog.open to return an object with afterClosed returning an observable of true (confirmed)
-    const afterClosedMock = jest.fn().mockReturnValue(of(true));
+    // Mock dialog with clicked button discard changes
+    const afterClosedMock = jest.fn().mockReturnValue(of({ confirmed: true }));
     const openMock = jest.spyOn(component["dialog"], "open").mockReturnValue({
       afterClosed: afterClosedMock
     } as any);
@@ -252,6 +252,46 @@ describe("EventPanelComponent", () => {
 
     // The editEvent should be reset to the original event (from this.event())
     expect(component.editEvent().name).toBe(component.event().name);
+    expect(openMock).toHaveBeenCalled();
+    expect(afterClosedMock).toHaveBeenCalled();
+  });
+
+  it("should cancel discard", () => {
+    // Simulate unsaved changes
+    component.updateEventHandler("name", "Changed");
+
+    // Mock dialog with clicked button cancel
+    const afterClosedMock = jest.fn().mockReturnValue(of({ confirmed: false }));
+    const openMock = jest.spyOn(component["dialog"], "open").mockReturnValue({
+      afterClosed: afterClosedMock
+    } as any);
+
+    // Call cancelEdit
+    component.cancelEdit();
+
+    // Nothing should happen
+    expect(component.editEvent().name).toBe("Changed");
+    expect(openMock).toHaveBeenCalled();
+    expect(afterClosedMock).toHaveBeenCalled();
+  });
+
+  it("should save and exit", () => {
+    // Simulate unsaved changes
+    component.updateEventHandler("name", "Changed");
+    const saveEventSpy = jest.spyOn(component, "saveEvent");
+
+    // Mock dialog with clicked button cancel
+    const afterClosedMock = jest.fn().mockReturnValue(of({ confirmed: false, furtherAction: "saveAndExit" }));
+    const openMock = jest.spyOn(component["dialog"], "open").mockReturnValue({
+      afterClosed: afterClosedMock
+    } as any);
+
+    // Call cancelEdit
+    component.cancelEdit();
+
+    // Nothing should happen
+    expect(component.editEvent().name).toBe("Changed");
+    expect(saveEventSpy).toHaveBeenCalled();
     expect(openMock).toHaveBeenCalled();
     expect(afterClosedMock).toHaveBeenCalled();
   });

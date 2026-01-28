@@ -170,7 +170,7 @@ describe("EventService", () => {
       const deleteSpy = jest.spyOn(service, "deleteEvent").mockReturnValue(of(response as any));
       let dialog = {
         open: jest.fn().mockReturnValue({
-          afterClosed: () => of(true)
+          afterClosed: () => of({ confirmed: true })
         })
       };
 
@@ -185,7 +185,7 @@ describe("EventService", () => {
       const deleteSpy = jest.spyOn(service, "deleteEvent");
       let dialog = {
         open: jest.fn().mockReturnValue({
-          afterClosed: () => of(false)
+          afterClosed: () => of({ confirmed: false })
         })
       };
       service.deleteWithConfirmDialog(event, dialog, afterDeleteCallback);

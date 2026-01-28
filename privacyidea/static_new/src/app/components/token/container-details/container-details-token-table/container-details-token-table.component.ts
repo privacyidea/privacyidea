@@ -215,7 +215,7 @@ export class ContainerDetailsTokenTableComponent {
       .afterClosed()
       .subscribe({
         next: (result) => {
-          if (result) {
+          if (result.confirmed) {
             this.containerService.removeTokenFromContainer(containerSerial, tokenSerial).subscribe({
               next: () => {
                 this.containerService.containerDetailResource.reload();
@@ -263,7 +263,7 @@ export class ContainerDetailsTokenTableComponent {
       .afterClosed()
       .subscribe({
         next: (result) => {
-          if (result) {
+          if (result.confirmed) {
             this.tokenService.deleteToken(tokenSerial).subscribe({
               next: () => {
                 this.containerService.containerDetailResource.reload();
