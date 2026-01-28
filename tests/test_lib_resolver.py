@@ -2452,9 +2452,6 @@ class BaseResolverTestCase(MyTestCase):
 
 
 class ResolverTestCase(MyTestCase):
-    """
-    Test the Passwdresolver
-    """
     resolvername1 = "resolver1"
     resolvername2 = "Resolver2"
 
@@ -2746,91 +2743,6 @@ class ResolverTestCase(MyTestCase):
         self.assertTrue(rid == "baseid", rid)
         self.assertFalse(y.checkPass("dummy", "pw"))
         y.close()
-
-    def test_12_passwdresolver(self):
-        # Create a resolver with an empty filename
-        # will use the filename /etc/passwd
-        rid = save_resolver({"resolver": self.resolvername1,
-                             "type": "passwdresolver",
-                             "fileName": "",
-                             "type.fileName": "string",
-                             "desc.fileName": "The name of the file"})
-        self.assertTrue(rid > 0, rid)
-        y = get_resolver_object(self.resolvername1)
-        y.loadFile()
-        delete_resolver(self.resolvername1)
-
-        # Load a file with an empty line
-        rid = save_resolver({"resolver": self.resolvername1,
-                             "type": "passwdresolver",
-                             "fileName": PWFILE,
-                             "type.fileName": "string",
-                             "desc.fileName": "The name of the file"})
-        self.assertTrue(rid > 0, rid)
-        y = get_resolver_object(self.resolvername1)
-        y.loadFile()
-
-        ulist = y.getUserList({"username": "*"})
-        self.assertTrue(len(ulist) > 1, ulist)
-
-        self.assertTrue(y.checkPass("1000", "test"))
-        self.assertFalse(y.checkPass("1000", "wrong password"))
-        self.assertRaises(NotImplementedError, y.checkPass, "1001", "secret")
-        self.assertFalse(y.checkPass("1002", "no pw at all"))
-        self.assertTrue(y.getUsername("1000") == "cornelius",
-                        y.getUsername("1000"))
-        self.assertTrue(y.getUserId("cornelius") == "1000",
-                        y.getUserId("cornelius"))
-        self.assertTrue(y.getUserId("user does not exist") == "")
-        # Check that non-ASCII user was read successfully
-        self.assertEqual(y.getUsername("1116"), "nönäscii")
-        self.assertEqual(y.getUserId("nönäscii"), "1116")
-        self.assertEqual(y.getUserInfo("1116").get('givenname'),
-                         "Nön")
-        self.assertFalse(y.checkPass("1116", "wrong"))
-        self.assertTrue(y.checkPass("1116", "pässwörd"))
-        r = y.getUserList({"username": "*ö*"})
-        self.assertEqual(len(r), 1)
-
-        sF = y.getSearchFields({"username": "*"})
-        self.assertTrue(sF.get("username") == "text", sF)
-        # unknown search fields. We get an empty userlist
-        r = y.getUserList({"blabla": "something"})
-        self.assertTrue(r == [], r)
-        # list exactly one user
-        r = y.getUserList({"userid": "=1000"})
-        self.assertTrue(len(r) == 1, r)
-        r = y.getUserList({"userid": "<1001"})
-        self.assertTrue(len(r) == 1, r)
-        r = y.getUserList({"userid": ">1000"})
-        self.assertTrue(len(r) > 1, r)
-        r = y.getUserList({"userid": "between 1000, 1001"})
-        self.assertTrue(len(r) == 2, r)
-        r = y.getUserList({"userid": "between 1001, 1000"})
-        self.assertTrue(len(r) == 2, r)
-        r = y.getUserList({"userid": "<=1000"})
-        self.assertTrue(len(r) == 1, "{0!s}".format(r))
-        r = y.getUserList({"userid": ">=1000"})
-        self.assertTrue(len(r) > 1, r)
-
-        r = y.getUserList({"description": "field1"})
-        self.assertTrue(len(r) == 0, r)
-        r = y.getUserList({"email": "field1"})
-        self.assertTrue(len(r) == 0, r)
-
-        rid = y.getResolverId()
-        self.assertTrue(rid == PWFILE, rid)
-        rtype = y.getResolverType()
-        self.assertTrue(rtype == "passwdresolver", rtype)
-        rdesc = y.getResolverDescriptor()
-        self.assertTrue("config" in rdesc.get("passwdresolver"), rdesc)
-        self.assertTrue("clazz" in rdesc.get("passwdresolver"), rdesc)
-        # internal stringMatch function
-        self.assertTrue(y._stringMatch("Hallo", "*lo"))
-        self.assertTrue(y._stringMatch("Hallo", "Hal*"))
-        self.assertFalse(y._stringMatch("Duda", "Hal*"))
-        self.assertTrue(y._stringMatch("HalloDuda", "*Du*"))
-        self.assertTrue(y._stringMatch("Duda", "Duda"))
 
     @ldap3mock.activate
     def test_13_update_resolver(self):

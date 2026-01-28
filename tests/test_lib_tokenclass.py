@@ -5,6 +5,7 @@ The lib.tokenclass depends on the DB model and lib.user
 """
 from datetime import datetime, timezone, timedelta
 
+import responses
 from dateutil.tz import tzlocal
 from mock import mock
 from sqlalchemy import select
@@ -16,7 +17,7 @@ from privacyidea.lib.error import TokenAdminError
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.realm import (set_realm)
 from privacyidea.lib.resolver import save_resolver
-from privacyidea.lib.token import init_token, assign_tokengroup, get_tokens
+from privacyidea.lib.token import init_token, assign_tokengroup
 from privacyidea.lib.tokenclass import (TokenClass, DATE_FORMAT, AUTH_DATE_FORMAT)
 from privacyidea.lib.tokengroup import set_tokengroup
 from privacyidea.lib.user import (User)
@@ -312,13 +313,15 @@ class TokenBaseTestCase(MyTestCase):
         self.assertIsNone(challenge, "Challenge was not deleted.")
         token_group = db.session.scalar(select(Tokengroup).where(Tokengroup.name == "group"))
         self.assertIsNotNone(token_group, "Tokengroup was deleted.")
-        token_token_group = db.session.scalar(select(TokenTokengroup).where(TokenTokengroup.tokengroup_id == token_group.id))
+        token_token_group = db.session.scalar(
+            select(TokenTokengroup).where(TokenTokengroup.tokengroup_id == token_group.id))
         self.assertIsNone(token_token_group, "TokenTokengroup relationship was not deleted.")
         token_info = db.session.scalar(select(TokenInfo).where(TokenInfo.Key == "key", TokenInfo.Value == "value"))
         self.assertIsNone(token_info, "TokenInfo was not deleted.")
         container = db.session.scalar(select(TokenContainer).where(TokenContainer.serial == container_serial))
         self.assertIsNotNone(container, "TokenContainer was deleted.")
-        token_container = db.session.scalar(select(TokenContainerToken).where(TokenContainerToken.container_id == container.id))
+        token_container = db.session.scalar(
+            select(TokenContainerToken).where(TokenContainerToken.container_id == container.id))
         self.assertIsNone(token_container, "TokenContainerToken was not deleted.")
 
     def test_08_info(self):
@@ -845,6 +848,30 @@ class TokenBaseTestCase(MyTestCase):
         # testing for default exception
         orph = token.is_orphaned()
         self.assertTrue(orph)
+        # clean up token
+        token.delete_token()
+
+        # Use HTTP resolver to generate an exception
+        config = {
+            "resolver": "http",
+            "type": "httpresolver",
+            'endpoint': 'http://localhost:8080/get-data',
+            'method': responses.GET,
+            'requestMapping': """{"id": "{userid}"}""",
+            'responseMapping': """{"username": "{data.the_username}"}""",
+            'hasSpecialErrorHandler': False}
+        rid = save_resolver(config)
+        self.assertGreater(rid, 0, rid)
+        (added, failed) = set_realm("http-realm", [{'name': "http"}])
+        self.assertTrue(len(failed) == 0)
+        self.assertTrue(len(added) == 1)
+
+        token = init_token({"type": "spass"})
+        TokenOwner(token_id=token.token.id,
+                   user_id=872812, resolver="http",
+                   realmname="http-realm").save()
+        token.set_realms(["http-realm"])
+
         # testing for exception_default=True
         orph = token.is_orphaned(orphaned_on_error=True)
         self.assertTrue(orph)
