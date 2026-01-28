@@ -74,40 +74,19 @@
       </button>
     </div>
   } @else {
-    <div class="readonly-grid-container">
-      @if (selectedAdminrealm().length > 0) {
-        <span
-          class="readonly-label"
-          i18n
-          >Realms:</span
-        >
-        <div class="readonly-chips-container">
-          @for (realm of selectedAdminrealm(); track realm) {
-            <div
-              class="readonly-chip"
-              [title]="realm">
-              {{ realm }}
-            </div>
-          }
-        </div>
-      }
-
-      @if (selectedAdmins().length > 0) {
-        <span
-          class="readonly-label"
-          i18n
-          >Admins:</span
-        >
-        <div class="readonly-chips-container">
-          @for (admin of selectedAdmins(); track admin) {
-            <div
-              class="readonly-chip"
-              [title]="admin">
-              {{ admin }}
-            </div>
-          }
-        </div>
-      }
-    </div>
+    @if (selectedAdminrealm().length > 0) {
+      <app-readonly-chip-section
+        class="readonly-grid-container"
+        [label]="'Admin Realms'"
+        [values]="selectedAdminrealm()">
+      </app-readonly-chip-section>
+    }
+    @if (selectedAdmins().length > 0) {
+      <app-readonly-chip-section
+        class="readonly-grid-container"
+        [label]="'Admins'"
+        [values]="selectedAdmins()">
+      </app-readonly-chip-section>
+    }
   }
 </div>

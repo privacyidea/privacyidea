@@ -54,3 +54,10 @@
   padding: var(--quarter-global-padding) 0;
   margin: 2px;
 }
+@mixin compact-badge-base {
+  font-size: 13px;
+  border-radius: 4px;
+  padding: 2px 8px;
+  line-height: 1.4;
+  flex-shrink: 0;
+}

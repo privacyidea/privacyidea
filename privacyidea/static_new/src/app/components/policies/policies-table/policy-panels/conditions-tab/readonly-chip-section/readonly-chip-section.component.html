@@ -1,0 +1,15 @@
+<div class="readonly-grid-container">
+  <span
+    class="readonly-label"
+    i18n>
+    {{ label() }}:
+  </span>
+  <div class="readonly-chips-container">
+    <div class="readonly-chip">{{ values() }}</div>
+    @if (marker()) {
+      <div class="marker-chip">
+        {{ marker() }}
+      </div>
+    }
+  </div>
+</div>

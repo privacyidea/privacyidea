@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, input, inject, linkedSignal } from "@angular/core";
+import { Component, input, inject, linkedSignal, signal } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { MatTableModule } from "@angular/material/table";
 import { MatSortModule } from "@angular/material/sort";
@@ -36,6 +36,10 @@ import {
 import { CopyPolicyDialogComponent } from "../dialog/copy-policy-dialog/copy-policy-dialog.component";
 import { EditPolicyDialogComponent } from "../dialog/edit-policy-dialog/edit-policy-dialog.component";
 import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
+import { MatInputModule } from "@angular/material/input";
+import { MatPaginatorModule } from "@angular/material/paginator";
+import { PoliciesTableActionsComponent } from "./policies-table-actions/policies-table-actions.component";
+import { MatCheckboxModule } from "@angular/material/checkbox";
 
 @Component({
   selector: "app-policies-table",
@@ -47,7 +51,11 @@ import { DialogService, DialogServiceInterface } from "../../../services/dialog/
     MatIconModule,
     MatButtonModule,
     MatSlideToggleModule,
-    PolicyTableRowDetailsComponent
+    PolicyTableRowDetailsComponent,
+    MatInputModule,
+    MatPaginatorModule,
+    PoliciesTableActionsComponent,
+    MatCheckboxModule
   ],
   templateUrl: "./policies-table.component.html",
   styleUrl: "./policies-table.component.scss",
@@ -60,29 +68,13 @@ import { DialogService, DialogServiceInterface } from "../../../services/dialog/
   ]
 })
 export class PoliciesTableComponent {
-  toggleExpansion(policy: PolicyDetail) {
-    if (this.isFiltered()) {
-      const expandedElements = this.expandedElements();
-      if (expandedElements.has(policy)) {
-        expandedElements.delete(policy);
-      } else {
-        expandedElements.add(policy);
-      }
-      this.expandedElements.set(expandedElements);
-      return;
-    }
-    if (this.expandedElements().has(policy)) {
-      this.expandedElements.set(new Set<PolicyDetail>());
-    } else {
-      this.expandedElements.set(new Set<PolicyDetail>([policy]));
-    }
-  }
   readonly policyService: PolicyServiceInterface = inject(PolicyService);
   readonly dialogService: DialogServiceInterface = inject(DialogService);
   readonly authService: AuthServiceInterface = inject(AuthService);
 
   readonly isFiltered = input.required<boolean>();
   readonly policiesListFiltered = input.required<PolicyDetail[]>();
+  readonly selectedPolicies = signal<Set<string>>(new Set<string>());
 
   displayedColumns: string[] = ["priority", "name", "scope", "description", "active", "actions"];
   expandedElements = linkedSignal<{ policiesListFiltered: PolicyDetail[]; isFiltered: boolean }, Set<PolicyDetail>>({
@@ -160,5 +152,50 @@ export class PoliciesTableComponent {
           .afterClosed()
       )) === true
     );
+  }
+  isSelected(policyName: string): boolean {
+    return this.selectedPolicies().has(policyName);
+  }
+  toggleSelection(policyName: string) {
+    const selected = this.selectedPolicies();
+    if (selected.has(policyName)) {
+      selected.delete(policyName);
+    } else {
+      selected.add(policyName);
+    }
+    this.selectedPolicies.set(selected);
+  }
+  isAllSelected(): boolean {
+    const selected = this.selectedPolicies();
+    const filtered = this.policiesListFiltered();
+    return selected.size === filtered.length && filtered.every((policy) => selected.has(policy.name));
+  }
+  masterToggle() {
+    if (this.isAllSelected()) {
+      this.selectedPolicies.set(new Set<string>());
+    } else {
+      const newSelected = new Set<string>();
+      for (const policy of this.policiesListFiltered()) {
+        newSelected.add(policy.name);
+      }
+      this.selectedPolicies.set(newSelected);
+    }
+  }
+  toggleExpansion(policy: PolicyDetail) {
+    if (this.isFiltered()) {
+      const expandedElements = this.expandedElements();
+      if (expandedElements.has(policy)) {
+        expandedElements.delete(policy);
+      } else {
+        expandedElements.add(policy);
+      }
+      this.expandedElements.set(expandedElements);
+      return;
+    }
+    if (this.expandedElements().has(policy)) {
+      this.expandedElements.set(new Set<PolicyDetail>());
+    } else {
+      this.expandedElements.set(new Set<PolicyDetail>([policy]));
+    }
   }
 }

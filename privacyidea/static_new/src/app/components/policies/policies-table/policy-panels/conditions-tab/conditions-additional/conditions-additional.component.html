@@ -81,13 +81,42 @@
         </div>
 
         <div class="form-row">
-          <mat-form-field appearance="outline">
-            <mat-label>Key</mat-label>
-            <input
-              matInput
-              [(ngModel)]="conditionKey" />
-          </mat-form-field>
-
+          @if (conditionSection() === "token") {
+            <mat-form-field appearance="outline">
+              <mat-label>Token Key</mat-label>
+              <input
+                type="text"
+                matInput
+                [(ngModel)]="conditionKey"
+                [matAutocomplete]="autoToken" />
+              <mat-autocomplete #autoToken="matAutocomplete">
+                @for (key of tokenKeysFiltered(); track key) {
+                  <mat-option [value]="key">{{ key }}</mat-option>
+                }
+              </mat-autocomplete>
+            </mat-form-field>
+          } @else if (conditionSection() === "container") {
+            <mat-form-field appearance="outline">
+              <mat-label>Container Key</mat-label>
+              <input
+                type="text"
+                matInput
+                [(ngModel)]="conditionKey"
+                [matAutocomplete]="autoContainer" />
+              <mat-autocomplete #autoContainer="matAutocomplete">
+                @for (key of containerKeys; track key) {
+                  <mat-option [value]="key">{{ key }}</mat-option>
+                }
+              </mat-autocomplete>
+            </mat-form-field>
+          } @else {
+            <mat-form-field appearance="outline">
+              <mat-label>Key</mat-label>
+              <input
+                matInput
+                [(ngModel)]="conditionKey" />
+            </mat-form-field>
+          }
           <mat-form-field appearance="outline">
             <mat-label>Comparator</mat-label>
             <mat-select

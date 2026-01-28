@@ -30,6 +30,7 @@ import { PolicyService, PolicyDetail } from "../../../../../../services/policies
 import { RealmServiceInterface, RealmService } from "../../../../../../services/realm/realm.service";
 import { ResolverService, ResolverServiceInterface } from "../../../../../../services/resolver/resolver.service";
 import { MultiSelectOnlyComponent } from "../../../../../shared/multi-select-only/multi-select-only.component";
+import { ReadonlyChipSectionComponent } from "../readonly-chip-section/readonly-chip-section.component";
 
 @Component({
   selector: "app-conditions-admin",
@@ -44,7 +45,8 @@ import { MultiSelectOnlyComponent } from "../../../../../shared/multi-select-onl
     MatButtonModule,
     MatExpansionModule,
     ReactiveFormsModule,
-    MultiSelectOnlyComponent
+    MultiSelectOnlyComponent,
+    ReadonlyChipSectionComponent
   ],
   templateUrl: "./conditions-admin.component.html",
   styleUrl: "./conditions-admin.component.scss"

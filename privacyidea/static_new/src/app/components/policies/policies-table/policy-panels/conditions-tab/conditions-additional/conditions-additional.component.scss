@@ -163,6 +163,9 @@ $edit-grid-layout: 60px 1.2fr 2fr 1.2fr 2fr 1.2fr 60px;
 .form-row {
   display: flex;
   gap: 12px;
+  mat-form-field {
+    flex: 1;
+  }
 }
 
 .form-actions {

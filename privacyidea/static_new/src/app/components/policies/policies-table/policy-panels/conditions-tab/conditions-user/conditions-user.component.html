@@ -103,47 +103,25 @@
     </div>
   </div>
 } @else {
-  <div class="readonly-user-grid-container">
-    @if (selectedRealms().length > 0) {
-      <span
-        class="readonly-label"
-        i18n
-        >Realms:</span
-      >
-      <div class="readonly-chips-container">
-        @for (realm of selectedRealms(); track realm) {
-          <div class="readonly-chip">{{ realm }}</div>
-        }
-      </div>
-    }
+  @if (selectedRealms().length > 0) {
+    <app-readonly-chip-section
+      [label]="'Realms'"
+      [values]="selectedRealms()">
+    </app-readonly-chip-section>
+  }
 
-    @if (selectedResolvers().length > 0) {
-      <span
-        class="readonly-label"
-        i18n
-        >Resolvers:</span
-      >
-      <div class="readonly-chips-container">
-        @for (resolver of selectedResolvers(); track resolver) {
-          <div class="readonly-chip">{{ resolver }}</div>
-        }
-      </div>
-    }
+  @if (selectedResolvers().length > 0) {
+    <app-readonly-chip-section
+      [label]="'Resolvers'"
+      [values]="selectedResolvers()">
+    </app-readonly-chip-section>
+  }
 
-    @if (selectedUsers().length > 0) {
-      <span
-        class="readonly-label"
-        i18n
-        >Users:</span
-      >
-      <div class="readonly-chips-container">
-        @for (user of selectedUsers(); track user) {
-          <div class="readonly-chip">{{ user }}</div>
-        }
-        <div class="sensitivity-chip">
-          {{ userCaseInsensitive() ? "case-insensitive" : "case-sensitive" }}
-        </div>
-      </div>
-    }
-  </div>
+  @if (selectedUsers().length > 0) {
+    <app-readonly-chip-section
+      [label]="'Users'"
+      [values]="selectedUsers()"
+      [marker]="userCaseInsensitive() ? 'case-insensitive' : 'case-sensitive'">
+    </app-readonly-chip-section>
+  }
 }

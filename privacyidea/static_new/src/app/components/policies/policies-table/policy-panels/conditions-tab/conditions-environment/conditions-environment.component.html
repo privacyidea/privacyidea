@@ -157,50 +157,32 @@
     </div>
   </div>
 } @else {
-  <div class="readonly-grid-container">
-    @if (selectedPinodes().length > 0) {
-      <span
-        class="readonly-label"
-        i18n
-        >privacyIDEA Nodes:</span
-      >
-      <div class="readonly-chips-container">
-        @for (node of selectedPinodes(); track node) {
-          <div class="readonly-chip">{{ node }}</div>
-        }
-      </div>
-    }
-    @if (selectedValidTime() !== "") {
-      <span
-        class="readonly-label"
-        i18n
-        >Valid time:</span
-      >
-      <div class="readonly-chips-container">
-        <div class="readonly-chip">{{ selectedValidTime() }}</div>
-      </div>
-    }
-    @if (selectedClient() && selectedClient().length > 0) {
-      <span
-        class="readonly-label"
-        i18n
-        >Client:</span
-      >
-      <div class="readonly-chips-container">
-        <div class="readonly-chip">{{ selectedClient() }}</div>
-      </div>
-    }
-    @if (selectedUserAgents().length > 0) {
-      <span
-        class="readonly-label"
-        i18n
-        >User Agents:</span
-      >
-      <div class="readonly-chips-container">
-        @for (userAgent of selectedUserAgents(); track userAgent) {
-          <div class="readonly-chip">{{ userAgent }}</div>
-        }
-      </div>
-    }
-  </div>
+  @if (selectedPinodes().length > 0) {
+    <app-readonly-chip-section
+      class="readonly-grid-container"
+      [label]="'privacyIDEA Nodes'"
+      [values]="selectedPinodes()">
+    </app-readonly-chip-section>
+  }
+  @if (selectedValidTime() !== "") {
+    <app-readonly-chip-section
+      class="readonly-grid-container"
+      [label]="'Valid time'"
+      [values]="[selectedValidTime()]">
+    </app-readonly-chip-section>
+  }
+  @if (selectedClient() && selectedClient().length > 0) {
+    <app-readonly-chip-section
+      class="readonly-grid-container"
+      [label]="'Client'"
+      [values]="selectedClient()">
+    </app-readonly-chip-section>
+  }
+  @if (selectedUserAgents().length > 0) {
+    <app-readonly-chip-section
+      class="readonly-grid-container"
+      [label]="'User Agents'"
+      [values]="selectedUserAgents()">
+    </app-readonly-chip-section>
+  }
 }

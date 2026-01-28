@@ -40,6 +40,7 @@ import {
   HandleMissingDataOptionKey,
   AdditionalCondition
 } from "../../../../../../services/policies/policies.service";
+import { MatAutocompleteModule } from "@angular/material/autocomplete";
 
 @Component({
   selector: "app-conditions-additional",
@@ -56,12 +57,56 @@ import {
     MatIconModule,
     MatIconButton,
     MatSlideToggleModule,
-    MatDividerModule
+    MatDividerModule,
+    MatAutocompleteModule
   ],
   templateUrl: "./conditions-additional.component.html",
   styleUrls: ["./conditions-additional.component.scss"]
 })
 export class ConditionsAdditionalComponent {
+  readonly tokenKeys = [
+    "id",
+    "description",
+    "serial",
+    "tokentype",
+    "info",
+    "resolver",
+    "user_id",
+    "otplen",
+    "maxfail",
+    "active",
+    "revoked",
+    "locked",
+    "failcount",
+    "count",
+    "count_window",
+    "sync_window",
+    "rollout_state"
+  ];
+  readonly tokenKeysFiltered = computed(() => {
+    const filterString = this.conditionKey();
+    return this.tokenKeys.filter((key) => key.includes(filterString));
+  });
+
+  readonly containerKeys = [
+    "type",
+    "serial",
+    "description",
+    "last_authentication",
+    "last_synchronized",
+    "states",
+    "info",
+    "internal_info_keys",
+    "realms",
+    "users",
+    "tokens",
+    "templates"
+  ];
+  readonly containerKeysFiltered = computed(() => {
+    const filterString = this.conditionKey();
+    return this.containerKeys.filter((key) => key.includes(filterString));
+  });
+
   // Services
   policyService: PolicyService = inject(PolicyService);
 

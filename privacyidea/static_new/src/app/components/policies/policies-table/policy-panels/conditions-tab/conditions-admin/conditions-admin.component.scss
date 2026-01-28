@@ -1,5 +1,5 @@
 @use "../../../../../../../styles" as styles;
-@use "../../../../policies.component.scss";
+@use "../../../../policies.component.scss" as policiesStyles;
 @use "@angular/material" as mat;
 
 .admin-container {
@@ -21,47 +21,8 @@
   margin: 0 0 var(--half-global-padding);
 }
 
-.readonly-grid-container {
-  display: grid;
-  grid-template-columns: 140px minmax(0, 1fr);
-  gap: var(--half-global-padding);
-  align-items: baseline;
-  padding: var(--half-global-padding) 0;
-}
-
-.readonly-label {
-  font-weight: 500;
-  color: var(--mat-sys-on-surface-variant);
-  font-size: 0.9rem;
-  white-space: nowrap;
-}
-
-.readonly-chips-container {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-@mixin compact-badge-base {
-  font-size: 13px;
-  border-radius: 4px;
-  padding: 2px 8px;
-  line-height: 1.4;
-  flex-shrink: 0;
-}
-
-.readonly-chip {
-  @include compact-badge-base;
-  background-color: var(--mat-sys-surface-container-high);
-  color: var(--mat-sys-on-surface);
-  max-width: 250px;
-  text-overflow: ellipsis;
-  overflow: hidden;
-  white-space: nowrap;
-}
-
 .admin-chip-edit {
-  @include compact-badge-base;
+  @include policiesStyles.compact-badge-base;
   display: flex;
   align-items: center;
   background-color: var(--mat-sys-surface-container-high);

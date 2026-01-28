@@ -33,6 +33,7 @@ import {
 } from "../../../../../../services/policies/policies.service";
 import { SystemServiceInterface, SystemService } from "../../../../../../services/system/system.service";
 import { MultiSelectOnlyComponent } from "../../../../../shared/multi-select-only/multi-select-only.component";
+import { ReadonlyChipSectionComponent } from "../readonly-chip-section/readonly-chip-section.component";
 
 @Component({
   selector: "app-conditions-environment",
@@ -47,7 +48,8 @@ import { MultiSelectOnlyComponent } from "../../../../../shared/multi-select-onl
     MatFormFieldModule,
     MatExpansionModule,
     ReactiveFormsModule,
-    MultiSelectOnlyComponent
+    MultiSelectOnlyComponent,
+    ReadonlyChipSectionComponent
   ],
   templateUrl: "./conditions-environment.component.html",
   styleUrl: "./conditions-environment.component.scss"
