@@ -172,6 +172,7 @@ export interface PolicyServiceInterface {
   filteredPolicyActionGroups(alreadyAddedActionNames: string[], filterValue: string): PolicyActionGroups;
   getActionDetail(actionName: string, scope: string): PolicyActionDetail | null;
   getGroupOfAction(actionName: string, scope: string): string | null;
+  getScopeOfAction(name: string): string | null;
   readonly allPolicies: Signal<PolicyDetail[]>;
   canSavePolicy(policy: PolicyDetail): boolean;
   getDetailsOfAction(actionName: string): PolicyActionDetail | null;
@@ -182,7 +183,8 @@ export interface PolicyServiceInterface {
   enablePolicy(name: string): Promise<PiResponse<any>>;
   disablePolicy(name: string): Promise<PiResponse<any>>;
   isScopeChangeable(policy: PolicyDetail): boolean;
-  actionNamesOfGroup(scope: string, group: string): string[];
+  getActionNamesOf(scope?: string, group?: string): string[];
+  getActionsOf(scope?: string, group?: string): Record<string, PolicyActionDetail>;
   actionValueIsValid(action: PolicyActionDetail, value: string | number): boolean;
   saveNewPolicy(newPolicy: PolicyDetail): Promise<void>;
   policyHasConditions(policy: PolicyDetail): boolean;
@@ -202,6 +204,16 @@ export interface PolicyServiceInterface {
   providedIn: "root"
 })
 export class PolicyService implements PolicyServiceInterface {
+  getScopeOfAction(name: string): string | null {
+    const policyActions = this.policyActions();
+    for (const scope in policyActions) {
+      const actions = policyActions[scope];
+      if (actions && actions[name]) {
+        return scope;
+      }
+    }
+    return null;
+  }
   getGroupOfAction(actionName: string, scope: string): string | null {
     const policyActions = this.policyActions();
     if (policyActions && policyActions[scope]) {
@@ -493,11 +505,55 @@ export class PolicyService implements PolicyServiceInterface {
     return null;
   };
 
-  actionNamesOfGroup(scope: string, group: string): string[] {
-    const actionsByGroup = this.policyActionsByGroup();
+  getActionNamesOf(scope?: string, group?: string): string[] {
+    const actions = this.policyActions();
+    console.log("getActionNamesOf", scope, group);
+    if (!actions) return [];
+    if (scope) {
+      if (group) {
+        const actionsInGroup = Object.entries(actions[scope] || {}).filter(
+          ([, actionDetail]) => actionDetail.group === group
+        );
+        return actionsInGroup.map(([actionName]) => actionName);
+      } else {
+        return Object.keys(actions[scope] || {});
+      }
+    } else {
+      return Object.keys(this.allPolicyActionsFlat());
+    }
+  }
 
-    if (!scope || !actionsByGroup[scope]) return [];
-    return Object.keys(actionsByGroup[scope][group] || {});
+  getActionsOf(scope?: string, group?: string): Record<string, PolicyActionDetail> {
+    const actions = this.policyActions();
+    const result: Record<string, PolicyActionDetail> = {};
+    if (!actions) return result;
+    if (scope) {
+      if (group) {
+        let actionsInGroup: [string, PolicyActionDetail][];
+        if (group === "Other") {
+          actionsInGroup = Object.entries(actions[scope] || {}).filter(([, actionDetail]) => !actionDetail.group);
+        } else {
+          actionsInGroup = Object.entries(actions[scope] || {}).filter(
+            ([, actionDetail]) => actionDetail.group === group
+          );
+        }
+
+        for (const [actionName, actionDetail] of actionsInGroup) {
+          result[actionName] = actionDetail;
+        }
+      } else {
+        const actionsInScope = Object.entries(actions[scope] || {});
+        for (const [actionName, actionDetail] of actionsInScope) {
+          result[actionName] = actionDetail;
+        }
+      }
+    } else {
+      const allActions = this.allPolicyActionsFlat();
+      for (const actionName in allActions) {
+        result[actionName] = allActions[actionName];
+      }
+    }
+    return result;
   }
 
   copyPolicy(policyData: PolicyDetail, newName: string): Promise<PiResponse<any>> {

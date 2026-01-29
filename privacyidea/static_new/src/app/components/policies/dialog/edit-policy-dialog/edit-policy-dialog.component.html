@@ -19,7 +19,7 @@
 
 <app-dialog-wrapper
   class="dialog-content"
-  [title]="'Edit Policy'"
+  [title]="data.mode === 'create' ? 'Create Policy' : 'Edit Policy'"
   (close)="close()"
   [actions]="actions"
   (onAction)="onAction($event)">

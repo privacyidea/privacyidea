@@ -5,6 +5,9 @@
   color: var(--mat-sys-on-surface);
   min-width: 0;
   padding: var(--three-quarters-global-padding);
+  gap: var(--global-gap);
+  display: flex;
+  flex-direction: column;
 }
 
 .search-input {

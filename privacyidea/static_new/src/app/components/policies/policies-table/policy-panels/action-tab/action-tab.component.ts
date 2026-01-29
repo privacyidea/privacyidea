@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -17,11 +17,22 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, input, output, WritableSignal, linkedSignal, signal, computed, Signal } from "@angular/core";
+import {
+  Component,
+  input,
+  output,
+  WritableSignal,
+  linkedSignal,
+  signal,
+  computed,
+  Signal,
+  inject
+} from "@angular/core";
 import { PolicyDetail, PolicyActionDetail } from "../../../../../services/policies/policies.service";
 import { ActionDetailComponent } from "./action-detail/action-detail.component";
 import { ActionSelectorComponent } from "./action-selector/action-selector.component";
 import { AddedActionsListComponent } from "./added-actions-list/added-actions-list.component";
+import { DialogServiceInterface, DialogService } from "../../../../../services/dialog/dialog.service";
 
 @Component({
   selector: "app-action-tab",
@@ -31,9 +42,12 @@ import { AddedActionsListComponent } from "./added-actions-list/added-actions-li
   styleUrl: "./action-tab.component.scss"
 })
 export class ActionTabComponent {
+  readonly dialogService: DialogServiceInterface = inject(DialogService);
+
   isEditMode = input.required<boolean>();
 
   policy = input.required<PolicyDetail>();
+  policyScopeChange = output<string>();
   actionsUpdate = output<{
     [actionName: string]: string;
   }>();
@@ -87,5 +101,9 @@ export class ActionTabComponent {
     if (this.selectedAction()?.name === actionName) {
       this.selectedAction.set(null);
     }
+  }
+
+  async onPolicyScopeChange($event: string) {
+    this.policyScopeChange.emit($event);
   }
 }

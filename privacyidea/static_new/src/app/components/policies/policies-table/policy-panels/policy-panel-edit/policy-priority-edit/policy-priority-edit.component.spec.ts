@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -18,23 +18,23 @@
  **/
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { PolicyPriorityComponent } from "./policy-priority.component";
-import { PolicyDetail, PolicyService } from "../../../../../services/policies/policies.service";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { MockPolicyService } from "../../../../../../testing/mock-services/mock-policies-service";
+import { MockPolicyService } from "../../../../../../../testing/mock-services/mock-policies-service";
+import { PolicyService, PolicyDetail } from "../../../../../../services/policies/policies.service";
+import { PolicyPriorityEditComponent } from "./policy-priority-edit.component";
 
-describe("PolicyPriorityComponent", () => {
-  let component: PolicyPriorityComponent;
-  let fixture: ComponentFixture<PolicyPriorityComponent>;
+describe("PolicyPriorityEditComponent", () => {
+  let component: PolicyPriorityEditComponent;
+  let fixture: ComponentFixture<PolicyPriorityEditComponent>;
   let policyServiceMock: MockPolicyService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [PolicyPriorityComponent, NoopAnimationsModule],
+      imports: [PolicyPriorityEditComponent, NoopAnimationsModule],
       providers: [{ provide: PolicyService, useClass: MockPolicyService }]
     }).compileComponents();
 
-    fixture = TestBed.createComponent(PolicyPriorityComponent);
+    fixture = TestBed.createComponent(PolicyPriorityEditComponent);
     policyServiceMock = TestBed.inject(PolicyService) as unknown as MockPolicyService;
     component = fixture.componentInstance;
     fixture.componentRef.setInput("editMode", true);

@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -18,12 +18,11 @@
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { ActionSelectorComponent } from "./action-selector.component";
-import { PolicyService } from "../../../../../services/policies/policies.service";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { MockPolicyService } from "../../../../../../testing/mock-services/mock-policies-service";
 import { By } from "@angular/platform-browser";
 import { SelectorButtonsComponent } from "../selector-buttons/selector-buttons.component";
-import { FormsModule } from "@angular/forms";
+import { MockPolicyService } from "../../../../../../../testing/mock-services/mock-policies-service";
+import { PolicyService } from "../../../../../../services/policies/policies.service";
 
 describe("ActionSelectorComponent", () => {
   let component: ActionSelectorComponent;

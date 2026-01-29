@@ -70,16 +70,7 @@ export class PoliciesComponent {
 
   displayedColumns: string[] = ["priority", "name", "scope", "description", "active", "actions"];
   expandedElement: PolicyDetail | null = null;
-  policiesIsFiltered = computed(() => {
-    console.log(
-      "Comparing lengths:",
-      this.policiesListFiltered().length,
-      "vs",
-      this.policyService.allPolicies().length
-    );
-    console.log("policiesIsFiltered is:", this.policiesListFiltered().length < this.policyService.allPolicies().length);
-    return this.policiesListFiltered().length < this.policyService.allPolicies().length;
-  });
+  policiesIsFiltered = computed(() => this.policiesListFiltered().length < this.policyService.allPolicies().length);
 
   onPolicyListFilteredChange(filteredPolicies: PolicyDetail[]): void {
     this.policiesListFiltered.set(filteredPolicies);

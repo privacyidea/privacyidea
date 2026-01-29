@@ -23,19 +23,32 @@
     [ngModel]="actionFilter()"
     (ngModelChange)="actionFilter.set($event)"
     class="search-input" />
-  @if (this.actionGroupNamesFiltered().length > 1) {
+  <div>
+    <h3 i18n>Select Scope</h3>
     <app-selector-buttons
-      [values]="actionGroupNamesFiltered()"
-      [initialValue]="selectedActionGroup()"
-      (onSelect)="selectedActionGroup.set($event)" />
-  }
+      [values]="allPolicyScopes"
+      [initialValue]="policy().scope"
+      [allowDeselect]="true"
+      (onSelect)="selectActionScope($event)"
+      [disabled]="!policyHasNoActions()" />
+
+    @if (this.actionGroupNamesFiltered().length > 1) {
+      <h3 i18n>Select Group</h3>
+      <app-selector-buttons
+        [values]="actionGroupNamesFiltered()"
+        [initialValue]="selectedActionGroup()"
+        (onSelect)="selectedActionGroup.set($event)"
+        [disabled]="!policy().scope" />
+    }
+  </div>
+
   <div class="add-action-details">
     <div class="policy-action-items">
-      @for (actionName of actionsNamesFiltered(); track actionName) {
+      @for (action of actionsFiltered() | keyvalue; track action.key) {
         <app-policy-action-item-new
-          [actionName]="actionName"
-          [actionDetail]="getActionDetail(actionName)"
-          [isSelected]="selectedPolicyAction()?.name === actionName"
+          [actionName]="action.key"
+          [actionDetail]="action.value"
+          [isSelected]="selectedPolicyAction()?.name === action.key"
           (actionAdd)="addPolicyAction($event)"
           [actionValue]="null" />
       }

@@ -1,10 +1,4 @@
-@use "../../../action-tab/action-tab.component.scss";
-
-.description-header {
-  font-size: 1.17em;
-  font-weight: bold;
-  margin: 0;
-}
+@use "../../action-tab/action-tab.component.scss";
 
 .action-priority-container {
   background-color: var(--mat-sys-primary-container);
@@ -16,13 +10,17 @@
   gap: var(--global-gap);
   min-width: 0;
   padding: var(--three-quarters-global-padding);
-}
+  .priority-header {
+    font-size: 1.17em;
+    font-weight: bold;
+    margin: 0;
+  }
+  .priority-input {
+    @include action-tab.action-tab-input;
+  }
 
-.priority-input {
-  @include action-tab.action-tab-input;
-}
-
-.action-priority-container:focus-within {
-  outline: 2px solid var(--mat-sys-primary-base);
-  outline-offset: -2px;
+  :focus-within {
+    outline: 2px solid var(--mat-sys-primary-base);
+    outline-offset: -2px;
+  }
 }

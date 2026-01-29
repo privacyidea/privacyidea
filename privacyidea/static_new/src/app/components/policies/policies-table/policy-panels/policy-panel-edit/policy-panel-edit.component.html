@@ -16,42 +16,48 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
  -->
-<div class="priority-description">
-  <app-policy-priority
-    [editMode]="true"
-    [priority]="editedPolicy().priority"
-    (priorityChange)="updatePolicyPriority($event)" />
-  <app-policy-description
-    [isEditMode]="true"
-    [policy]="editedPolicy()"
-    (policyEdit)="addPolicyEdit($event)" />
-</div>
-<div class="tab-buttons">
-  <button
-    mat-stroked-button
-    class="action-button-1"
-    [class.action-button-active]="activeTab() === 'actions'"
-    (click)="setActiveTab('actions')">
-    ACTIONS
-  </button>
-  <button
-    mat-stroked-button
-    class="action-button-1"
-    [class.action-button-active]="activeTab() === 'conditions'"
-    (click)="setActiveTab('conditions')">
-    CONDITIONS
-  </button>
-</div>
+<div class="policy-panel-edit-container">
+  <div class="name-priority-row">
+    <app-policy-name-edit
+      [policyName]="editedPolicy().name"
+      (policyNameChange)="addPolicyEdit({ name: $event })" />
+    <div></div>
+    <app-policy-priority-edit
+      [priority]="editedPolicy().priority"
+      (priorityChange)="addPolicyEdit({ priority: $event })" />
+  </div>
+  <app-policy-description-edit
+    [description]="editedPolicy().description ?? ''"
+    (descriptionChange)="addPolicyEdit({ description: $event })" />
 
-@if (activeTab() === "actions") {
-  <app-action-tab
-    [isEditMode]="true"
-    [policy]="editedPolicy()"
-    (actionsUpdate)="updateActions($event)" />
-}
-@if (activeTab() === "conditions") {
-  <app-conditions-tab
-    [isEditMode]="true"
-    [policy]="editedPolicy()!"
-    (policyEdit)="addPolicyEdit($event)" />
-}
+  <div class="tab-buttons">
+    <button
+      mat-stroked-button
+      class="action-button-1"
+      [class.action-button-active]="activeTab() === 'actions'"
+      (click)="setActiveTab('actions')">
+      ACTIONS
+    </button>
+    <button
+      mat-stroked-button
+      class="action-button-1"
+      [class.action-button-active]="activeTab() === 'conditions'"
+      (click)="setActiveTab('conditions')">
+      CONDITIONS
+    </button>
+  </div>
+
+  @if (activeTab() === "actions") {
+    <app-action-tab
+      [isEditMode]="true"
+      [policy]="editedPolicy()"
+      (actionsUpdate)="updateActions($event)"
+      (policyScopeChange)="onPolicyScopeChange($event)" />
+  }
+  @if (activeTab() === "conditions") {
+    <app-conditions-tab
+      [isEditMode]="true"
+      [policy]="editedPolicy()!"
+      (policyEdit)="addPolicyEdit($event)" />
+  }
+</div>

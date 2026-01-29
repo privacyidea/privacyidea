@@ -17,17 +17,15 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, input, inject, linkedSignal, signal } from "@angular/core";
+import { Component, input, inject, signal, linkedSignal } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { MatTableModule } from "@angular/material/table";
 import { MatSortModule } from "@angular/material/sort";
 import { MatIconModule } from "@angular/material/icon";
 import { MatButtonModule } from "@angular/material/button";
 import { MatSlideToggleModule } from "@angular/material/slide-toggle";
-import { animate, state, style, transition, trigger } from "@angular/animations";
 import { AuthServiceInterface, AuthService } from "../../../services/auth/auth.service";
 import { PolicyServiceInterface, PolicyService, PolicyDetail } from "../../../services/policies/policies.service";
-import { PolicyTableRowDetailsComponent } from "./policy-table-row-details/policy-table-row-details.component";
 import { lastValueFrom } from "rxjs";
 import {
   SimpleConfirmationDialogData,
@@ -40,6 +38,8 @@ import { MatInputModule } from "@angular/material/input";
 import { MatPaginatorModule } from "@angular/material/paginator";
 import { PoliciesTableActionsComponent } from "./policies-table-actions/policies-table-actions.component";
 import { MatCheckboxModule } from "@angular/material/checkbox";
+import { trigger, state, style, transition, animate } from "@angular/animations";
+import { PolicyPanelViewComponent } from "./policy-panels/policy-panel-edit-view/policy-panel-view/policy-panel-view.component";
 
 @Component({
   selector: "app-policies-table",
@@ -51,11 +51,11 @@ import { MatCheckboxModule } from "@angular/material/checkbox";
     MatIconModule,
     MatButtonModule,
     MatSlideToggleModule,
-    PolicyTableRowDetailsComponent,
     MatInputModule,
     MatPaginatorModule,
     PoliciesTableActionsComponent,
-    MatCheckboxModule
+    MatCheckboxModule,
+    PolicyPanelViewComponent
   ],
   templateUrl: "./policies-table.component.html",
   styleUrl: "./policies-table.component.scss",
@@ -76,7 +76,7 @@ export class PoliciesTableComponent {
   readonly policiesListFiltered = input.required<PolicyDetail[]>();
   readonly selectedPolicies = signal<Set<string>>(new Set<string>());
 
-  displayedColumns: string[] = ["priority", "name", "scope", "description", "active", "actions"];
+  displayedColumns: string[] = ["select", "priority", "name", "scope", "description", "active", "actions"];
   expandedElements = linkedSignal<{ policiesListFiltered: PolicyDetail[]; isFiltered: boolean }, Set<PolicyDetail>>({
     source: () => ({ policiesListFiltered: this.policiesListFiltered(), isFiltered: this.isFiltered() }),
     computation: (source, previous) => {
@@ -118,7 +118,7 @@ export class PoliciesTableComponent {
       this.dialogService
         .openDialog({
           component: EditPolicyDialogComponent,
-          data: policy
+          data: { mode: "edit", policyDetail: policy }
         })
         .afterClosed()
     );

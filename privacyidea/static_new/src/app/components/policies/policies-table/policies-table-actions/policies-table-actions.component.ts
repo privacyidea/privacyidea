@@ -27,23 +27,15 @@ export class PoliciesTableActionsComponent {
   createNewPoilicy() {
     this.dialogService.openDialog({
       component: EditPolicyDialogComponent,
-      data: this.policyService.getEmptyPolicy()
+      data: { mode: "create", policyDetail: this.policyService.getEmptyPolicy() }
     });
   }
 
   async deleteSelectedPolicies() {
-    const confirmation = await this.dialogService.openDialog({
-      component: SimpleConfirmationDialogComponent,
-      data: {
-        title: "Delete Policies",
-        confirmAction: {
-          type: "destruct",
-          label: "Delete",
-          value: true
-        },
-        items: Array.from(this.policySelection()),
-        itemType: "policy"
-      }
+    const confirmation = await this.dialogService.confirm({
+      title: $localize`Delete Policies`,
+      message: $localize`Are you sure you want to delete the selected policies?`,
+      confirmButtonText: $localize`Delete`
     });
     if (!confirmation) {
       return;

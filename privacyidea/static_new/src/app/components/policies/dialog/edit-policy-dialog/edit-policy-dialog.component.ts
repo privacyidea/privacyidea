@@ -35,11 +35,15 @@ export function mustBeDifferentValidator(originalValue: string | null): Validato
     PolicyPanelEditComponent
   ]
 })
-export class EditPolicyDialogComponent extends AbstractDialogComponent<PolicyDetail, Partial<PolicyDetail> | null> {
+export class EditPolicyDialogComponent extends AbstractDialogComponent<
+  { policyDetail: PolicyDetail; mode: "edit" | "create" },
+  Partial<PolicyDetail> | null
+> {
   readonly policyService: PolicyServiceInterface = inject(PolicyService);
   readonly dialogService: DialogServiceInterface = inject(DialogService);
 
-  readonly policy = signal<PolicyDetail>(this.data);
+  readonly policy = signal<PolicyDetail>(this.data.policyDetail);
+
   readonly policyEdits = signal<Partial<PolicyDetail>>({});
   readonly editedPolicy = computed<PolicyDetail>(() => ({ ...this.policy(), ...this.policyEdits() }));
   readonly isPolicyEdited = computed(() => {
@@ -69,13 +73,6 @@ export class EditPolicyDialogComponent extends AbstractDialogComponent<PolicyDet
     } else {
       this.policyService.disablePolicy(policy.name);
     }
-  }
-
-  // Action Methods
-  savePolicy() {
-    if (!this.canSavePolicy()) return;
-    this.policyService.savePolicyEdits(this.policy().name, this.policyEdits());
-    this.dialogRef.close(this.policyEdits());
   }
 
   async deletePolicy(policyName: string): Promise<void> {
@@ -110,8 +107,8 @@ export class EditPolicyDialogComponent extends AbstractDialogComponent<PolicyDet
   // State-checking Methods
   canSavePolicy(): boolean {
     if (!this.isPolicyEdited()) return false;
-    const edits = this.policyEdits();
-    if (edits.name !== undefined && edits.name?.trim() === "") {
+    const edits = this.editedPolicy();
+    if (edits.name === undefined || edits.name?.trim() === "") {
       return false;
     }
     return true;
@@ -167,7 +164,7 @@ export class EditPolicyDialogComponent extends AbstractDialogComponent<PolicyDet
 
   actions: DialogAction<"submit" | null>[] = [
     {
-      label: "Copy Policy",
+      label: this.data.mode === "create" ? $localize`Create Policy` : $localize`Save Changes`,
       value: "submit",
       type: "confirm",
       disabled: () => {
@@ -178,7 +175,23 @@ export class EditPolicyDialogComponent extends AbstractDialogComponent<PolicyDet
 
   onAction(value: "submit" | null): void {
     if (value === "submit") {
-      this.savePolicy();
+      if (this.data.mode === "create") {
+        this.saveNewPolicy();
+      } else {
+        this.savePolicy();
+      }
     }
+  }
+
+  savePolicy() {
+    if (!this.canSavePolicy()) return;
+    this.policyService.savePolicyEdits(this.policy().name, this.policyEdits());
+    this.dialogRef.close(this.policyEdits());
+  }
+
+  saveNewPolicy() {
+    if (!this.canSavePolicy()) return;
+    this.policyService.saveNewPolicy({ ...this.policy(), ...this.policyEdits() });
+    this.dialogRef.close(this.policyEdits());
   }
 }

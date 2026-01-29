@@ -5,7 +5,9 @@
     {{ label() }}:
   </span>
   <div class="readonly-chips-container">
-    <div class="readonly-chip">{{ values() }}</div>
+    @for (value of values(); track value) {
+      <div class="readonly-chip">{{ value }}</div>
+    }
     @if (marker()) {
       <div class="marker-chip">
         {{ marker() }}

@@ -19,186 +19,193 @@
 
 <div
   appScrollToTop
-  aria-label="Token Table"
-  class="token-table-layout"
+  aria-label="Policy Table"
+  class="policies-table-layout"
   i18n-aria-label>
-  <div class="mat-elevation-z8 table-container">
-    <app-policies-table-actions [policySelection]="selectedPolicies()" />
+  <app-policies-table-actions [policySelection]="selectedPolicies()" />
+  <table
+    mat-table
+    [dataSource]="policiesListFiltered()"
+    class="policies-table"
+    multiTemplateDataRows>
+    <ng-container matColumnDef="select">
+      <th
+        *matHeaderCellDef
+        class="table-checkbox"
+        mat-header-cell>
+        <mat-checkbox
+          (change)="masterToggle()"
+          [checked]="isAllSelected()"
+          [indeterminate]="selectedPolicies().size > 0 && !isAllSelected()"
+          aria-label="Select All Policies"
+          i18n-aria-label>
+        </mat-checkbox>
+      </th>
+      <td
+        mat-cell
+        class="table-checkbox"
+        *matCellDef="let policy">
+        <mat-checkbox
+          (click)="$event.stopPropagation()"
+          (change)="toggleSelection(policy.name)"
+          [checked]="isSelected(policy.name)"
+          aria-label="Select Policy"
+          i18n-aria-label>
+        </mat-checkbox>
+      </td>
+    </ng-container>
+    <ng-container matColumnDef="priority">
+      <th
+        mat-header-cell
+        *matHeaderCellDef
+        class="col-priority">
+        Priority
+      </th>
+      <td
+        mat-cell
+        *matCellDef="let policy"
+        class="col-priority">
+        {{ policy.priority }}
+      </td>
+    </ng-container>
 
-    <table
-      mat-table
-      [dataSource]="policiesListFiltered()"
-      multiTemplateDataRows
-      class="full-width-table">
-      <ng-container matColumnDef="select">
-        <th
-          *matHeaderCellDef
-          class="table-checkbox"
-          mat-header-cell>
-          <mat-checkbox
-            (change)="masterToggle()"
-            [checked]="isAllSelected()"
-            [indeterminate]="selectedPolicies().values.length > 0 && !isAllSelected()"
-            aria-label="Select All Policies"
-            i18n-aria-label>
-          </mat-checkbox>
-        </th>
-        <td
-          mat-cell
-          *matCellDef="let policy">
-          <mat-checkbox
-            (click)="$event.stopPropagation()"
-            (change)="toggleSelection(policy)"
-            [checked]="isSelected(policy)"
-            aria-label="Select Policy"
-            i18n-aria-label>
-          </mat-checkbox>
-        </td>
-      </ng-container>
-      <ng-container matColumnDef="priority">
-        <th
-          mat-header-cell
-          *matHeaderCellDef
-          class="col-priority">
-          Priority
-        </th>
-        <td
-          mat-cell
-          *matCellDef="let policy"
-          class="col-priority">
-          {{ policy.priority }}
-        </td>
-      </ng-container>
-
-      <ng-container matColumnDef="name">
-        <th
-          mat-header-cell
-          *matHeaderCellDef
-          class="col-name">
-          Name
-        </th>
-        <td
-          mat-cell
-          *matCellDef="let policy"
-          class="col-name">
-          @if (authService.actionAllowed("policywrite")) {
-            <button
-              mat-button
-              class="text-link-button"
-              (click)="$event.stopPropagation(); editPolicy(policy)">
-              {{ policy.name }}
-            </button>
-          } @else {
+    <ng-container matColumnDef="name">
+      <th
+        mat-header-cell
+        *matHeaderCellDef
+        class="col-name">
+        Name
+      </th>
+      <td
+        mat-cell
+        *matCellDef="let policy"
+        class="col-name">
+        @if (authService.actionAllowed("policywrite")) {
+          <button
+            mat-button
+            class="text-link-button"
+            (click)="$event.stopPropagation(); editPolicy(policy)">
             {{ policy.name }}
+          </button>
+        } @else {
+          {{ policy.name }}
+        }
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="scope">
+      <th
+        mat-header-cell
+        *matHeaderCellDef
+        class="col-scope">
+        Scope
+      </th>
+      <td
+        mat-cell
+        *matCellDef="let policy"
+        class="col-scope">
+        {{ policy.scope ? policy.scope.toLocaleUpperCase() : "NO SCOPE" }}
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="description">
+      <th
+        mat-header-cell
+        *matHeaderCellDef
+        class="col-description">
+        Description
+      </th>
+      <td
+        mat-cell
+        *matCellDef="let policy"
+        class="col-description">
+        {{ policy.description }}
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="active">
+      <th
+        mat-header-cell
+        *matHeaderCellDef
+        class="col-active">
+        Active
+      </th>
+      <td
+        mat-cell
+        *matCellDef="let policy"
+        class="col-active">
+        <div class="centered-content">
+          <mat-slide-toggle
+            class="small-toggle"
+            [checked]="policy.active"
+            (change)="policyService.togglePolicyActive(policy, $event.checked)"
+            (click)="$event.stopPropagation()"
+            [disableRipple]="true">
+          </mat-slide-toggle>
+        </div>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="actions">
+      <th
+        mat-header-cell
+        *matHeaderCellDef
+        class="col-actions">
+        Actions
+      </th>
+      <td
+        mat-cell
+        *matCellDef="let policy"
+        class="col-actions">
+        <div class="actions-wrapper">
+          @if (authService.actionAllowed("policydelete")) {
+            <button
+              mat-icon-button
+              (click)="$event.stopPropagation(); deletePolicy(policy.name)">
+              <mat-icon>delete</mat-icon>
+            </button>
           }
-        </td>
-      </ng-container>
+        </div>
+      </td>
+    </ng-container>
 
-      <ng-container matColumnDef="scope">
-        <th
-          mat-header-cell
-          *matHeaderCellDef
-          class="col-scope">
-          Scope
-        </th>
-        <td
-          mat-cell
-          *matCellDef="let policy"
-          class="col-scope">
-          {{ policy.scope ? policy.scope.toLocaleUpperCase() : "NO SCOPE" }}
-        </td>
-      </ng-container>
+    <ng-container matColumnDef="expandedDetail">
+      <td
+        mat-cell
+        *matCellDef="let policy"
+        [attr.colspan]="displayedColumns.length">
+        <div
+          [@detailExpand]="expandedElements().has(policy) ? 'expanded' : 'collapsed'"
+          class="expanded-detail">
+          <app-policy-panel-view [policy]="policy"></app-policy-panel-view>
+        </div>
+      </td>
+    </ng-container>
 
-      <ng-container matColumnDef="description">
-        <th
-          mat-header-cell
-          *matHeaderCellDef
-          class="col-description">
-          Description
-        </th>
-        <td
-          mat-cell
-          *matCellDef="let policy"
-          class="col-description">
-          {{ policy.description }}
-        </td>
-      </ng-container>
-
-      <ng-container matColumnDef="active">
-        <th
-          mat-header-cell
-          *matHeaderCellDef
-          class="col-active">
-          Active
-        </th>
-        <td
-          mat-cell
-          *matCellDef="let policy"
-          class="col-active">
-          <div class="centered-content">
-            <mat-slide-toggle
-              class="small-toggle"
-              [checked]="policy.active"
-              (change)="policyService.togglePolicyActive(policy, $event.checked)"
-              (click)="$event.stopPropagation()"
-              [disableRipple]="true">
-            </mat-slide-toggle>
-          </div>
-        </td>
-      </ng-container>
-
-      <ng-container matColumnDef="actions">
-        <th
-          mat-header-cell
-          *matHeaderCellDef
-          class="col-actions">
-          Actions
-        </th>
-        <td
-          mat-cell
-          *matCellDef="let policy"
-          class="col-actions">
-          <div class="actions-wrapper">
-            @if (authService.actionAllowed("policydelete")) {
-              <button
-                mat-icon-button
-                (click)="$event.stopPropagation(); deletePolicy(policy.name)">
-                <mat-icon>delete</mat-icon>
-              </button>
-            }
-          </div>
-        </td>
-      </ng-container>
-
-      <ng-container matColumnDef="expandedDetail">
-        <td
-          mat-cell
-          *matCellDef="let policy"
-          [attr.colspan]="displayedColumns.length"
-          class="no-padding-cell">
-          <div
-            class="policy-detail-row"
-            [@detailExpand]="isExpanded(policy) ? 'expanded' : 'collapsed'">
-            @if (isExpanded(policy)) {
-              <app-policy-table-row-details [policy]="policy"></app-policy-table-row-details>
-            }
-          </div>
-        </td>
-      </ng-container>
-
-      <tr
-        mat-header-row
-        *matHeaderRowDef="displayedColumns"></tr>
-      <tr
-        mat-row
-        *matRowDef="let policy; columns: displayedColumns"
-        class="policy-row"
-        [class.expanded-row]="isExpanded(policy)"
-        (click)="toggleExpansion(policy)"></tr>
-      <tr
-        mat-row
-        *matRowDef="let row; columns: ['expandedDetail']"
-        class="detail-row"></tr>
-    </table>
-  </div>
+    <tr
+      mat-header-row
+      *matHeaderRowDef="displayedColumns"></tr>
+    <tr
+      mat-row
+      *matRowDef="let policy; columns: displayedColumns"
+      class="policy-row"
+      [class.expanded-row]="expandedElements().has(policy)"
+      (click)="toggleExpansion(policy)"></tr>
+    <tr
+      mat-row
+      *matRowDef="let row; columns: ['expandedDetail']"
+      class="detail-row"></tr>
+    <tr
+      *matNoDataRow
+      aria-label="No Data Row"
+      i18n-aria-label>
+      <td
+        [attr.colspan]="displayedColumns.length"
+        aria-label="No Data Cell"
+        i18n
+        i18n-aria-label>
+        No policies found.
+      </td>
+    </tr>
+  </table>
 </div>

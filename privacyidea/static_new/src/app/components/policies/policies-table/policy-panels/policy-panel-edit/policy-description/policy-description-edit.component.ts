@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -17,26 +17,37 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, input, output } from "@angular/core";
+import { Component, inject, input, output } from "@angular/core";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { FormsModule } from "@angular/forms";
 import { TextFieldModule } from "@angular/cdk/text-field";
+import {
+  DocumentationService,
+  DocumentationServiceInterface
+} from "../../../../../../services/documentation/documentation.service";
+import { PolicyDetail } from "../../../../../../services/policies/policies.service";
 
 @Component({
-  selector: "app-policy-priority",
-  templateUrl: "./policy-priority.component.html",
-  styleUrls: ["./policy-priority.component.scss"],
+  selector: "app-policy-description-edit",
+  templateUrl: "./policy-description-edit.component.html",
+  styleUrls: ["./policy-description-edit.component.scss"],
   standalone: true,
   imports: [MatFormFieldModule, MatInputModule, FormsModule, TextFieldModule]
 })
-export class PolicyPriorityComponent {
-  // Inputs
-  editMode = input.required<boolean>();
-  priority = input.required<number>();
-  priorityChange = output<number>();
+export class PolicyDescriptionEditComponent {
+  // Services
+  documentationService: DocumentationServiceInterface = inject(DocumentationService);
 
-  updatePolicyPriority(event: number) {
-    this.priorityChange.emit(event);
+  // Component State
+  description = input.required<string>();
+  descriptionChange = output<string>();
+
+  openDocumentation(page: string) {
+    this.documentationService.openDocumentation(page);
+  }
+
+  updatePolicyDescription($event: string) {
+    this.descriptionChange.emit($event);
   }
 }

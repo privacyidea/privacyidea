@@ -1,12 +1,6 @@
 @use "../../action-tab/action-tab.component.scss";
 
-.description-header {
-  font-size: 1.17em;
-  font-weight: bold;
-  margin: 0;
-}
-
-.action-description-container {
+.action-name-container {
   background-color: var(--mat-sys-primary-container);
   border-radius: var(--border-radius);
   box-shadow: var(--mat-sys-level2);
@@ -16,13 +10,17 @@
   gap: var(--global-gap);
   min-width: 0;
   padding: var(--three-quarters-global-padding);
-}
+  .name-header {
+    font-size: 1.17em;
+    font-weight: bold;
+    margin: 0;
+  }
 
-.description-textarea {
-  @include action-tab.action-tab-input;
-}
-
-.action-description-container:focus-within {
-  outline: 2px solid var(--mat-sys-primary-base);
-  outline-offset: -2px;
+  .name-input {
+    @include action-tab.action-tab-input;
+  }
+  :focus-within {
+    outline: 2px solid var(--mat-sys-primary-base);
+    outline-offset: -2px;
+  }
 }

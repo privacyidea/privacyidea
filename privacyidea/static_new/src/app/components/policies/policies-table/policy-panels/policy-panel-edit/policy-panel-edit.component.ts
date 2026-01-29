@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -38,9 +38,10 @@ import {
   SimpleConfirmationDialogData
 } from "../../../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { lastValueFrom } from "rxjs";
-import { PolicyDescriptionComponent } from "./policy-description/policy-description.component";
+import { PolicyDescriptionEditComponent } from "./policy-description/policy-description-edit.component";
 import { PolicyTab } from "../../../policies.component";
-import { PolicyPriorityComponent } from "./policy-description/policy-priority/policy-priority.component";
+import { PolicyPriorityEditComponent } from "./policy-priority-edit/policy-priority-edit.component";
+import { PolicyNameEditComponent } from "./policy-name-edit/policy-name-edit.component";
 
 @Component({
   selector: "app-policy-panel-edit",
@@ -59,8 +60,9 @@ import { PolicyPriorityComponent } from "./policy-description/policy-priority/po
     MatOptionModule,
     ActionTabComponent,
     ConditionsTabComponent,
-    PolicyDescriptionComponent,
-    PolicyPriorityComponent
+    PolicyDescriptionEditComponent,
+    PolicyPriorityEditComponent,
+    PolicyNameEditComponent
   ],
   templateUrl: "./policy-panel-edit.component.html",
   styleUrl: "./policy-panel-edit.component.scss"
@@ -175,9 +177,6 @@ export class PolicyPanelEditComponent {
     this.addPolicyEdit({ scope });
   }
 
-  updatePolicyPriority(priority: number) {
-    this.addPolicyEdit({ priority });
-  }
   updateActions(actions: { [actionName: string]: string }) {
     this.addPolicyEdit({ action: actions });
   }
@@ -197,5 +196,23 @@ export class PolicyPanelEditComponent {
           .afterClosed()
       )) === true
     );
+  }
+
+  async onPolicyScopeChange($event: string) {
+    console.log("Changing policy scope to", $event);
+    const action = this.policy().action;
+    const currentActions = action ? Object.keys(action) : [];
+    if (currentActions.length > 0) {
+      const confirm = await this.dialogService.confirm({
+        title: $localize`Change Policy Scope`,
+        message: $localize`Changing the policy scope will remove all currently added actions. Do you want to proceed?`,
+        confirmButtonText: $localize`Yes, change scope`
+      });
+      if (!confirm) {
+        return;
+      }
+      this.onPolicyEdit.emit({ action: {} });
+    }
+    this.addPolicyEdit({ scope: $event });
   }
 }

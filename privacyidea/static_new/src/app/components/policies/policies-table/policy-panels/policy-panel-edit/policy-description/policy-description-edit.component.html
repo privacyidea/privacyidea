@@ -1,5 +1,5 @@
 <!--
- (c) NetKnights GmbH 2025,  https://netknights.it
+ (c) NetKnights GmbH 2026,  https://netknights.it
 
  This code is free software; you can redistribute it and/or
  modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,19 +16,20 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<div class="action-priority-container">
+
+<div class="action-description-container">
   <div
     i18n
     class="description-header">
-    Priority
+    Description
   </div>
-  @if (editMode()) {
-    <input
-      type="number"
-      class="priority-input"
-      [ngModel]="priority()"
-      (ngModelChange)="updatePolicyPriority($event)" />
-  } @else {
-    {{ priority() }}
-  }
+  <textarea
+    class="description-textarea"
+    [ngModel]="description()"
+    (ngModelChange)="updatePolicyDescription($event)"
+    placeholder="(optional) Enter a description for this policy..."
+    cdkTextareaAutosize
+    cdkAutosizeMinRows="3"
+    cdkAutosizeMaxRows="6">
+  </textarea>
 </div>

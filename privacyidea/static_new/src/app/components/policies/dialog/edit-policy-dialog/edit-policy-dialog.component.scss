@@ -7,6 +7,7 @@
   width: 80vw;
   ::ng-deep .mat-mdc-dialog-content {
     max-height: 75vh !important;
+    min-height: 75vh !important;
     padding-bottom: 0 !important;
   }
 }

@@ -57,14 +57,16 @@ import { PolicyActionItemComponent } from "./policy-action-item/policy-action-it
 })
 export class ActionSelectorComponent {
   // Services
-  policyService: PolicyServiceInterface = inject(PolicyService);
+  readonly policyService: PolicyServiceInterface = inject(PolicyService);
 
   // Bindings Inputs/Outputs
   readonly policy = input.required<PolicyDetail>();
+  readonly policyScopeChange = output<string>();
   readonly selectedPolicyAction = input.required<{ name: string; value: any } | null>();
   readonly selectedPolicyActionChange = output<{ name: string; value: any }>();
   readonly actionAdd = output<{ name: string; value: any }>();
 
+  readonly allPolicyScopes = this.policyService.allPolicyScopes();
   // Local State
   readonly selectedActionGroup: WritableSignal<string> = linkedSignal({
     source: () => ({
@@ -85,6 +87,17 @@ export class ActionSelectorComponent {
     }
   });
   readonly actionFilter = signal<string>("");
+
+  readonly policyHasNoActions = computed(() => {
+    let numOfActions = 0;
+    const policy = this.policy();
+    if (policy && policy.action) {
+      console.log("policy.action", policy.action);
+      numOfActions = Object.keys(policy.action).length;
+    }
+    console.log("numOfActions", numOfActions);
+    return numOfActions === 0;
+  });
 
   // Computed Signals
   readonly addedActionNames = computed(() => {
@@ -108,42 +121,77 @@ export class ActionSelectorComponent {
     return Object.keys(actionGroups);
   });
 
-  readonly actionsNamesFiltered = computed(() => {
+  // { key(policyName): PolicyActionDetail }
+  readonly actionsFiltered = computed<Record<string, PolicyActionDetail>>(() => {
+    console.log("Computing actionsFiltered");
+
     const group = this.selectedActionGroup();
+    console.log("Selected action group:", group);
     const scope = this.policyScope();
-    if (!group && !scope) return [];
-    let actionNames = this.policyService.actionNamesOfGroup(scope, group);
-    const filter = this.actionFilter().toLowerCase();
-    const addedActionNames = this.addedActionNames();
-    return actionNames
-      .filter((actionName) => !addedActionNames.includes(actionName))
-      .filter((actionName) => actionName.toLowerCase().includes(filter));
+    console.log("Selected scope:", scope);
+    const actions = this.policyService.getActionsOf(scope, group);
+    console.log("Actions of selected scope and group:", actions);
+    const filterText = this.actionFilter().toLowerCase().trim();
+    console.log("Filter text:", filterText);
+    const filteredActions: Record<string, PolicyActionDetail> = {};
+    for (const actionName in actions) {
+      if (!this.addedActionNames().includes(actionName) && actionName.toLowerCase().includes(filterText)) {
+        filteredActions[actionName] = actions[actionName];
+      }
+    }
+    return filteredActions;
   });
 
-  actionDescription(actionName: string): string {
-    return this.getActionDetail(actionName)?.desc ?? "";
-  }
+  readonly selectedScope = computed(() => {
+    const policy = this.policy();
+    if (!policy) return "";
+    return policy.scope;
+  });
 
-  selectActionByName(actionName: string) {
-    const group = this.selectedActionGroup();
-    const scope = this.policyScope();
-    if (!group || !scope) return;
-    const actionNames = this.policyService.actionNamesOfGroup(scope, group);
-    if (actionNames.includes(actionName)) {
-      const actionDetail = this.getActionDetail(actionName);
-      const defaultValue =
-        this.getActionDetail(actionName)?.type === "bool" ? "true" : (actionDetail?.value?.[0] ?? "");
-      this.selectedPolicyActionChange.emit({ name: actionName, value: defaultValue });
+  readonly everySingleAction = computed<{ name: string; value: PolicyActionDetail }[]>(() => {
+    const policyActions = this.policyService.policyActions();
+    const allActionsList: { name: string; value: PolicyActionDetail }[] = [];
+    for (const scope in policyActions) {
+      for (const actionName in policyActions[scope]) {
+        const action = policyActions[scope][actionName];
+        allActionsList.push({ name: actionName, value: action });
+      }
     }
-  }
+    return allActionsList;
+  });
+
+  // actionDescription(actionName: string): string {
+  //   return this.getActionDetail(actionName)?.desc ?? "";
+  // }
+
+  // selectActionByName(actionName: string) {
+  //   const group = this.selectedActionGroup();
+  //   const scope = this.policyScope();
+  //   if (!group || !scope) return;
+  //   const actionNames = this.policyService.getActionNamesOf(scope, group);
+  //   if (actionNames.includes(actionName)) {
+  //     const actionDetail = this.getActionDetail(actionName);
+  //     const defaultValue =
+  //       this.getActionDetail(actionName)?.type === "bool" ? "true" : (actionDetail?.value?.[0] ?? "");
+  //     this.selectedPolicyActionChange.emit({ name: actionName, value: defaultValue });
+  //   }
+  // }
 
   actionItems = viewChildren(PolicyActionItemComponent);
 
-  addPolicyAction(event: any) {
-    const currentIndex = this.actionsNamesFiltered().indexOf(event.name);
-
+  addPolicyAction(event: { name: string; value: any }) {
+    if (!this.policy().scope) {
+      const scope = this.policyService.getScopeOfAction(event.name);
+      if (scope) {
+        this.policyScopeChange.emit(scope);
+      }
+    }
     this.actionAdd.emit(event);
+    this.focusNextActionItem(event.name);
+  }
 
+  focusNextActionItem(currentActionName: string) {
+    const currentIndex = this.actionsFiltered() ? Object.keys(this.actionsFiltered()).indexOf(currentActionName) : -1;
     setTimeout(() => {
       const items = this.actionItems();
       const nextItem = items[currentIndex] || items[currentIndex - 1];
@@ -152,13 +200,18 @@ export class ActionSelectorComponent {
       }
     });
   }
-  getActionDetail(actionName: string): PolicyActionDetail | null {
-    const actions = this.policyService.policyActions();
-    const scope = this.policyScope();
-    if (!scope) return null;
-    if (actionName && actions && actions[scope]) {
-      return actions[scope][actionName] ?? null;
-    }
-    return null;
+
+  selectActionScope($event: string) {
+    this.selectedActionGroup.set("");
+    this.policyScopeChange.emit($event);
   }
+  // getActionDetail(actionName: string): PolicyActionDetail | null {
+  //   const actions = this.policyService.policyActions();
+  //   const scope = this.policyScope();
+  //   if (!scope) return null;
+  //   if (actionName && actions && actions[scope]) {
+  //     return actions[scope][actionName] ?? null;
+  //   }
+  //   return null;
+  // }
 }

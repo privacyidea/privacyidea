@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -18,16 +18,16 @@
  **/
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { PolicyDescriptionComponent } from "./policy-description.component";
-import { DocumentationService } from "../../../../../services/documentation/documentation.service";
-import { PolicyDetail, PolicyService } from "../../../../../services/policies/policies.service";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { MockPolicyService } from "../../../../../../testing/mock-services/mock-policies-service";
-import { MockDocumentationService } from "../../../../../../testing/mock-services/mock-documentation-service";
+import { MockDocumentationService } from "../../../../../../../testing/mock-services/mock-documentation-service";
+import { MockPolicyService } from "../../../../../../../testing/mock-services/mock-policies-service";
+import { DocumentationService } from "../../../../../../services/documentation/documentation.service";
+import { PolicyDetail, PolicyService } from "../../../../../../services/policies/policies.service";
+import { PolicyDescriptionEditComponent } from "./policy-description-edit.component";
 
-describe("PolicyDescriptionComponent", () => {
-  let component: PolicyDescriptionComponent;
-  let fixture: ComponentFixture<PolicyDescriptionComponent>;
+describe("PolicyDescriptionEditComponent", () => {
+  let component: PolicyDescriptionEditComponent;
+  let fixture: ComponentFixture<PolicyDescriptionEditComponent>;
   let policyServiceMock: MockPolicyService;
   let documentationServiceMock: MockDocumentationService;
   const policyDetail: PolicyDetail = {
@@ -52,14 +52,14 @@ describe("PolicyDescriptionComponent", () => {
   };
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [PolicyDescriptionComponent, NoopAnimationsModule],
+      imports: [PolicyDescriptionEditComponent, NoopAnimationsModule],
       providers: [
         { provide: PolicyService, useClass: MockPolicyService },
         { provide: DocumentationService, useClass: MockDocumentationService }
       ]
     }).compileComponents();
 
-    fixture = TestBed.createComponent(PolicyDescriptionComponent);
+    fixture = TestBed.createComponent(PolicyDescriptionEditComponent);
     policyServiceMock = TestBed.inject(PolicyService) as unknown as MockPolicyService;
     documentationServiceMock = TestBed.inject(DocumentationService) as unknown as MockDocumentationService;
     component = fixture.componentInstance;

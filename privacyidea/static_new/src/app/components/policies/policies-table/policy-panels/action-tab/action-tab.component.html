@@ -16,6 +16,7 @@
         [selectedPolicyAction]="selectedAction()"
         (selectedPolicyActionChange)="onSelectedActionChange($event)"
         [policy]="policy()"
+        (policyScopeChange)="onPolicyScopeChange($event)"
         (actionAdd)="onActionAdd($event)" />
     </div>
 

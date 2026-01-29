@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -41,6 +41,8 @@ export class SelectorButtonsComponent<T> implements OnInit {
   initialValue = input.required<T | null>();
   values = input.required<T[]>();
   labels = input<T[] | undefined>(undefined);
+  allowDeselect = input<boolean>(false);
+  disabled = input<boolean>(false);
 
   // Outputs
   onSelect = output<T>();
@@ -59,6 +61,13 @@ export class SelectorButtonsComponent<T> implements OnInit {
 
   // Public Methods
   selectValue(value: T): void {
+    if (this.selectedValue() === value) {
+      if (this.allowDeselect()) {
+        this.selectedValue.set(null);
+        this.onSelect.emit(null as any);
+      }
+      return;
+    }
     this.selectedValue.set(value);
     this.onSelect.emit(value);
   }

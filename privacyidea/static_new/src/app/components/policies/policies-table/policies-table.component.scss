@@ -1,4 +1,4 @@
-@use "../../../../styles" as styles;
+@use "../../../../styles";
 
 .policies-table-layout {
   @include styles.table-container-styles;
@@ -9,73 +9,38 @@
   display: grid;
 }
 
-.token-table {
-  th.mat-mdc-header-cell.mat-column-resolvers {
-    width: 100%;
-  }
-
-  td.mat-mdc-cell.mat-column-resolvers,
-  td.mat-mdc-footer-cell.mat-column-resolvers {
-    padding-top: 8px;
-    padding-bottom: 8px;
-  }
-}
-
-.mat-elevation-z8 {
-  width: 100%;
-  overflow-x: auto;
-}
-
-table {
+.policies-table {
+  table-layout: auto;
   width: 100%;
   border-collapse: collapse;
-  table-layout: auto;
-}
 
-th.mat-header-cell {
-  padding: 8px 16px;
-  text-align: left;
-  white-space: nowrap;
-}
+  // Fixe schmale Spalten
+  .table-checkbox,
+  .col-priority,
+  .col-scope,
+  .col-active {
+    width: 1%;
+    white-space: nowrap;
+  }
 
-td.mat-cell {
-  max-width: 300px;
-  padding: 8px 16px;
-  overflow: hidden;
-  text-align: center;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  vertical-align: middle;
+  // Die Description-Spalte
+  .col-description {
+    // Dieser Trick zwingt die Spalte, den Restplatz zu nehmen
+    // UND den overflow-wrap zu triggern:
+    width: 99%;
+    min-width: 200px; // Verhindert, dass sie zu klein wird
 
-  > * {
-    margin: 0 auto;
+    white-space: normal;
+    word-break: break-word; // Bricht lange Wörter
+    overflow-wrap: anywhere;
+
+    // Optional: Text linksbündig, da mehrzeilig
+    text-align: left !important;
   }
 }
 
-.mat-column-description {
-  max-width: 400px;
-  min-width: 150px;
-  white-space: normal !important;
-  word-wrap: break-word;
-  text-align: left !important;
-  line-height: 1.5;
-}
-
-.mat-column-priority,
-.mat-column-scope,
-.mat-column-active {
-  width: 1%;
-}
-
-.mat-column-actions {
-  width: 180px;
-  text-align: right !important;
-
-  > * {
-    margin: 0 0 0 auto;
-    display: flex;
-    justify-content: flex-end;
-  }
+.col-active {
+  width: 80px;
 }
 
 .policy-row {
@@ -89,25 +54,30 @@ td.mat-cell {
   height: 0;
 }
 
-.text-link-button {
-  height: auto !important;
-  line-height: inherit !important;
-  padding: 0 !important;
-  min-width: unset !important;
-  font-size: inherit !important;
-  font-weight: inherit !important;
-  color: var(--mat-sys-primary-base);
-  text-align: left;
-
-  &:hover {
-    text-decoration: underline;
-    background: transparent !important;
-  }
+.expanded-row {
+  background-color: var(--mat-sys-surface-container-low);
 }
 
-td.col-name {
-  text-align: left !important;
-  .text-link-button {
-    margin: 0;
+.selfservice-paginator-container {
+  justify-content: end;
+  display: flex;
+}
+
+.self-service-table-container {
+  overflow-y: auto;
+  max-width: 70.5rem;
+}
+
+.realm-break {
+  margin-top: 3px;
+}
+.expanded-detail {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  border-top-width: 0;
+  td {
+    border-top-width: 0px !important;
+    border-bottom-width: 0px !important;
   }
 }

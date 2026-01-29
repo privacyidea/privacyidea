@@ -205,7 +205,6 @@
         <tr
           (click)="expandedElement = expandedElement === row ? null : row"
           *matRowDef="let row; columns: columnKeys"
-          [class.example-expanded-row]="expandedElement === row"
           class="example-element-row"
           mat-row></tr>
 

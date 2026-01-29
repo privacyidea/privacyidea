@@ -1,0 +1,13 @@
+<div class="action-name-container">
+  <div
+    i18n
+    class="name-header">
+    Description
+  </div>
+  <input
+    type="text"
+    class="name-input"
+    [ngModel]="policyName()"
+    (ngModelChange)="updatePolicyName($event)"
+    placeholder="Enter policy name..." />
+</div>
