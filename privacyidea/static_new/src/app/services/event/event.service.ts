@@ -229,7 +229,7 @@ export class EventService implements EventServiceInterface {
       .afterClosed()
       .subscribe({
         next: (result: any) => {
-          if (result.confirmed) {
+          if (result?.confirmed) {
             this.deleteEvent(event.id).subscribe({
               next: (response: PiResponse<number, any>) => {
                 this.notificationService.openSnackBar("Successfully deleted event handler.");

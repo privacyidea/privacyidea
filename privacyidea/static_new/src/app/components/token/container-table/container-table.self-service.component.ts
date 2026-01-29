@@ -91,7 +91,7 @@ export class ContainerTableSelfServiceComponent extends ContainerTableComponent 
       .afterClosed()
       .subscribe({
         next: (result) => {
-          if (result.confirmed) {
+          if (result?.confirmed) {
             this.containerService.deleteContainer(serial).subscribe({
               next: () => {
                 this.containerService.containerResource.reload();

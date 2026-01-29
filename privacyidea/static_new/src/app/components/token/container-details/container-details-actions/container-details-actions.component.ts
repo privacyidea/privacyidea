@@ -131,7 +131,7 @@ export class ContainerDetailsActionsComponent {
       })
       .afterClosed()
       .subscribe((result) => {
-        if (result.confirmed) {
+        if (result?.confirmed) {
           this.containerService.deleteContainer(this.containerSerial).subscribe(() => {
             const prev = this.contentService.previousUrl();
             if (prev.startsWith(ROUTE_PATHS.TOKENS_DETAILS)) {

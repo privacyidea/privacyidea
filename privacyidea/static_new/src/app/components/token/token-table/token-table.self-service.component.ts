@@ -91,7 +91,7 @@ export class TokenTableSelfServiceComponent extends TokenTableComponent {
         next: (result) => {
           this.tokenService.revokeToken(serial).subscribe({
             next: () => {
-              if (result.confirmed) {
+              if (result?.confirmed) {
                 this.tokenService.tokenResource.reload();
               }
             }
@@ -116,7 +116,7 @@ export class TokenTableSelfServiceComponent extends TokenTableComponent {
         next: (result) => {
           this.tokenService.deleteToken(serial).subscribe({
             next: () => {
-              if (result.confirmed) {
+              if (result?.confirmed) {
                 this.tokenService.tokenResource.reload();
               }
             }

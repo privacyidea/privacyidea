@@ -206,8 +206,8 @@ export class EventPanelComponent implements AfterViewInit, OnDestroy {
           type: "resolver"
         }
       }).afterClosed().subscribe(result => {
-        const discardChanges = result.confirmed || false;
-        const furtherAction = result.furtherAction || "";
+        const discardChanges = result?.confirmed || false;
+        const furtherAction = result?.furtherAction || "";
         if (discardChanges) {
           this.closeActual();
         } else if (furtherAction === "saveAndExit") {
