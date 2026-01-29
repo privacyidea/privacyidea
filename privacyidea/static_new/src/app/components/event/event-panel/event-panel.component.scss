@@ -11,10 +11,7 @@
   max-width: calc(100vw - var(--global-padding) * 5 - 48px);
   display: grid;
   overflow: auto;
-  position: fixed;
-  left: 297px + 32px;
-  top: 32px;
-  z-index: 1000;
+  position: relative;
 }
 
 .header-row {
@@ -28,13 +25,17 @@
   display: grid;
   grid-template-columns: auto 1fr 1fr;
   align-items: center;
-  gap: 8px;
+  gap: 16px;
 }
 
 .event-name {
   white-space: nowrap;
   overflow: inherit;
   text-overflow: ellipsis;
+}
+
+.event-name-color {
+  color: var(--mat-sys-primary);
 }
 
 .event-details {
@@ -69,5 +70,5 @@
 }
 
 .tab-container {
-  margin: 16px 8px 8px 8px;
+  margin: 16px 8px 32px 8px;
 }

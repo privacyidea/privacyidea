@@ -30,12 +30,13 @@
   <div
     #stickyHeader
     class="header-row sticky-header">
-    <h3 class="margin-0">
+    <h3 class="margin-0 flex-row gap-8 ali-center">
       @if (isNewEvent()) {
         <span i18n>Create New Event Handler</span>
       } @else {
-        <span i18n>Edit Event Handler </span>
-        <span class="italic">{{ editEvent().name }}</span>
+        <span i18n>Edit Event Handler: </span>
+        <span class="event-name-color">{{ editEvent().name }}</span>
+        <app-copy-button [copyText]="editEvent().name"></app-copy-button>
       }
     </h3>
     <div class="action-buttons">
@@ -72,7 +73,7 @@
 
   <div class="flex-column gap-16">
     @if (isNewEvent()) {
-      <div class="flex-row">
+      <div class="flex-row gap-16">
         <div class="flex-size-1">
           <mat-form-field
             class="width-100"
@@ -112,7 +113,7 @@
       </div>
     }
 
-    <div class="flex-row">
+    <div class="flex-row gap-16">
       <div class="flex-size-1">
         <mat-form-field
           class="width-100"

@@ -46,3 +46,7 @@
   overflow-y: scroll;
   margin-top: calc(var(--global-gap) / 2);
 }
+
+.mat-mdc-card {
+  border-radius: var(--border-radius);
+}

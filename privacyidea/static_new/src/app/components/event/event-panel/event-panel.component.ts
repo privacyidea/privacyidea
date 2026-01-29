@@ -56,6 +56,7 @@ import { ROUTE_PATHS } from "../../../route_paths";
 import { ContentService } from "../../../services/content/content.service";
 import { MatSlideToggle } from "@angular/material/slide-toggle";
 import { MatTooltip } from "@angular/material/tooltip";
+import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
 
 export type eventTab = "events" | "action" | "conditions";
 
@@ -87,7 +88,8 @@ export type eventTab = "events" | "action" | "conditions";
     ScrollToTopDirective,
     MatButton,
     MatSlideToggle,
-    MatTooltip
+    MatTooltip,
+    CopyButtonComponent
   ],
   standalone: true,
   templateUrl: "./event-panel.component.html",
