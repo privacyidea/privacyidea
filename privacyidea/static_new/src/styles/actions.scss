@@ -20,9 +20,6 @@ This file contains all styles for actions as used e.g. in policies, event handle
   flex-direction: column;
   gap: calc(var(--global-gap) / 2);
   min-width: 0;
-  max-height: 28rem;
-  overflow-y: scroll;
-  padding: 6px;
 }
 
 .action-card {

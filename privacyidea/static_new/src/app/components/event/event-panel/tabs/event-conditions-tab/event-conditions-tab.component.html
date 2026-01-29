@@ -17,8 +17,8 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 
-<div class="flex-row gap-32">
-  <div class="flex-size-1">
+<div class="conditions-container">
+  <div class="condition-column">
     <!--   Add New Conditions   -->
     <mat-card>
       <mat-card-header>
@@ -50,6 +50,7 @@
           <!-- Condition Groups -->
           <mat-tab-group
             #conditionTabs
+            mat-stretch-tabs="false"
             [(selectedIndex)]="selectedGroupIndex"
             animationDuration="0ms">
             @for (group of availableGroups(); track $index) {
@@ -60,7 +61,7 @@
                   {{ group | titlecase }}
                 </ng-template>
                 <!-- Conditions in Group -->
-                <div class="max-height-selection">
+                <div class="add-conditions-list-container">
                   <app-event-condition-list
                     [conditions]="remainingConditionsByGroup()[group]"
                     [action]="'add'"
@@ -78,7 +79,7 @@
     </mat-card>
   </div>
 
-  <div class="flex-size-1">
+  <div class="condition-column">
     <!--  Selected Conditions  -->
     <mat-card>
       <mat-card-header>
@@ -91,17 +92,16 @@
         </div>
       </mat-card-header>
       <mat-card-content>
-        <app-event-condition-list
-          [conditions]="selectedConditions()"
-          [action]="'delete'"
-          [emitOnConditionValueChange]="true"
-          [inputRequired]="true"
-          [toolTipText]="removeToolTip"
-          (newConditionValue)="onConditionValueChange($event.conditionName, $event.conditionValue)"
-          [focusConditionName]="addedCondition()"
-          (actionButtonClicked)="removeCondition($event.conditionName)"></app-event-condition-list>
-        <div class="selected-actions-container">
-
+        <div class="configured-conditions-list-container">
+          <app-event-condition-list
+            [conditions]="selectedConditions()"
+            [action]="'delete'"
+            [emitOnConditionValueChange]="true"
+            [inputRequired]="true"
+            [toolTipText]="removeToolTip"
+            (newConditionValue)="onConditionValueChange($event.conditionName, $event.conditionValue)"
+            [focusConditionName]="addedCondition()"
+            (actionButtonClicked)="removeCondition($event.conditionName)"></app-event-condition-list>
           @if (Object.keys(selectedConditions()).length === 0) {
             <div
               class="italic"

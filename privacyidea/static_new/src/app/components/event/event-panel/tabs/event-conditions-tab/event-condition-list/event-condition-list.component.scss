@@ -26,15 +26,24 @@
 }
 
 .action-card-row-grid {
+  // appearance
+  padding: var(--half-global-padding) var(--global-padding);
+  border: 1px solid var(--mat-sys-surface-container);
+  border-radius: var(--border-radius);
+  // layout
   display: grid;
   grid-template-columns: auto auto;
   justify-content: space-between;
   align-items: center;
+  width: 550px;
 }
 
 .description {
   font-size: 0.75rem;
-  min-height: 18px;
+  white-space: normal;
+  line-break: normal;
+  box-sizing: border-box;
+  overflow-wrap: break-word;
 }
 
 .font-size-16 {

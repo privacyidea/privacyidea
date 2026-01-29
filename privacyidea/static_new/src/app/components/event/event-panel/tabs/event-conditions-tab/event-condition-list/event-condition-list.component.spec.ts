@@ -120,9 +120,4 @@ describe('EventConditionListComponent', () => {
       condD: ['option1', 'option2']
     });
   });
-
-  it('should set selectedCondition', () => {
-    component.selectedCondition.set('condB');
-    expect(component.selectedCondition()).toBe('condB');
-  });
 });

@@ -72,7 +72,6 @@ export class EventConditionListComponent {
   newConditionValue = output<{ conditionName: string, conditionValue: any }>();
   actionButtonClicked = output<{ conditionName: string, conditionValue: any }>();
 
-  selectedCondition = signal("");
   editConditions = linkedSignal(() => {
     return this.conditions();
   });
