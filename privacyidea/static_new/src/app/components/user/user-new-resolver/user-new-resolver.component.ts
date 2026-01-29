@@ -390,7 +390,6 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
       this.notificationService.openSnackBar($localize`Please select a resolver type.`);
       return;
     }
-
     if (!this.isAdditionalFieldsValid) {
       this.notificationService.openSnackBar($localize`Please fill in all required fields.`);
       return;
@@ -408,14 +407,16 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
 
     this.isSaving = true;
 
-    const promise = new Promise<void>((resolve, reject) => {
+    return new Promise<void>(resolve => {
       this.resolverService
         .postResolver(name, payload)
         .subscribe({
           next: (res: PiResponse<any, any>) => {
             if (res.result?.status === true && (res.result.value ?? 0) >= 0) {
               this.notificationService.openSnackBar(
-                this.isEditMode ? $localize`Resolver "${name}" updated.` : $localize`Resolver "${name}" created.`
+                this.isEditMode
+                  ? $localize`Resolver "${name}" updated.`
+                  : $localize`Resolver "${name}" created.`
               );
               this.resolverService.resolversResource.reload?.();
 
@@ -426,23 +427,21 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
                 this.formData = {};
                 this.router.navigateByUrl(ROUTE_PATHS.USERS_RESOLVERS);
               }
-              resolve();
             } else {
               const message = res.detail?.description || res.result?.error?.message || $localize`Unknown error occurred.`;
               this.notificationService.openSnackBar($localize`Failed to save resolver. ${message}`);
-              reject(new Error(message));
             }
           },
           error: (err: HttpErrorResponse) => {
             const message = err.error?.result?.error?.message || err.message;
             this.notificationService.openSnackBar($localize`Failed to save resolver. ${message}`);
-            reject(err);
           }
         })
-        .add(() => (this.isSaving = false));
+        .add(() => {
+          this.isSaving = false;
+          resolve();
+        });
     });
-
-    return promise;
   }
 
   onTest(): void {
