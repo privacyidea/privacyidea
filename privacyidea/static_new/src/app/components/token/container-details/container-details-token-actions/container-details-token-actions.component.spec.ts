@@ -58,7 +58,7 @@ describe("ContainerDetailsTokenActionsComponent", () => {
 
   beforeEach(async () => {
     mockDialog = {
-      open: jest.fn().mockReturnValue({ afterClosed: () => of(true) }),
+      open: jest.fn().mockReturnValue({ afterClosed: () => of({ confirmed: true }) }),
       closeAll: jest.fn()
     };
     tokenDataSignal.set(new MatTableDataSource(tokens()));

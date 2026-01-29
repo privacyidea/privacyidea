@@ -116,7 +116,7 @@ def get_module_conditions(handlermodule=None):
 
     :param handlermodule: Identifier of the handler module like
         "UserNotification"
-    :return: list oft actions
+    :return: list of conditions
     """
     ret = []
     h_obj = get_handler_object(handlermodule)

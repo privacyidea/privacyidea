@@ -298,6 +298,10 @@ body {
   margin-top: 8px;
 }
 
+.margin-top-16 {
+  margin-top: 16px;
+}
+
 .margin-top-2 {
   margin-top: 32px;
 }
@@ -316,6 +320,10 @@ body {
 
 .margin-bottom-8 {
   margin-bottom: 8px;
+}
+
+.margin-bottom-16 {
+  margin-bottom: 16px;
 }
 
 .margin-bottom-32 {
@@ -356,6 +364,10 @@ body {
 
 .height-auto {
   height: auto;
+}
+
+.gap-0 {
+  gap: 0;
 }
 
 .gap-16 {
@@ -442,6 +454,11 @@ body {
   display: flex !important;
   justify-content: center;
   color: #d0d0d0;
+}
+
+.highlight {
+  background-color: var(--green-brand-light) !important;
+  padding: 0 2px;
 }
 
 ::ng-deep {
@@ -567,7 +584,15 @@ body {
     margin-left: 297px;
     width: calc(100% - 297px);
 
-    .mat-mdc-select-panel{
+    .mat-mdc-select-panel {
+      margin-left: -297px;
+    }
+
+    .mat-mdc-autocomplete-panel {
+      margin-left: -297px;
+    }
+
+    .mat-mdc-menu-panel {
       margin-left: -297px;
     }
 

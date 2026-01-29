@@ -12,6 +12,8 @@
   text-overflow: ellipsis;
   display: block;
   margin-block: auto;
+  font-weight: bold;
+  justify-self: end;
 }
 
 .value {
@@ -33,4 +35,5 @@
   padding: 0;
   border: 0;
   margin-bottom: auto;
+  justify-content: center;
 }

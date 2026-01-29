@@ -57,7 +57,7 @@ describe("ContainerDetailsActionsComponent", () => {
     TestBed.resetTestingModule();
 
     dialogOpen = jest.fn().mockReturnValue({
-      afterClosed: () => of(true)
+      afterClosed: () => of({ confirmed: true })
     });
     dialogCloseAll = jest.fn();
     await TestBed.configureTestingModule({

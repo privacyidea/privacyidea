@@ -30,12 +30,13 @@ import { MockContentService, MockNotificationService, MockTokenService } from ".
 import { MatDialog } from "@angular/material/dialog";
 import { ConfirmationDialogComponent } from "../../shared/confirmation-dialog/confirmation-dialog.component";
 import { GetSerialResultDialogComponent } from "./get-serial-result-dialog/get-serial-result-dialog.component";
+import { DialogReturnData } from "../../../services/dialog/dialog.service";
 
 const makeCountResp = (count: number) => ({ result: { value: { count } } }) as any;
 
 const makeSerialResp = (serial?: string) => ({ result: { value: { serial } } }) as any;
 
-let confirmClosed$: Subject<boolean>;
+let confirmClosed$: Subject<DialogReturnData>;
 let lastResultDialogData: any;
 const matDialogMock = {
   open: jest.fn((cmp: any, cfg: any) => {
@@ -63,7 +64,7 @@ describe("TokenGetSerialComponent", () => {
 
   beforeEach(async () => {
     jest.clearAllMocks();
-    confirmClosed$ = new Subject<boolean>();
+    confirmClosed$ = new Subject<DialogReturnData>();
     lastResultDialogData = undefined;
 
     await TestBed.configureTestingModule({
@@ -155,7 +156,7 @@ describe("TokenGetSerialComponent", () => {
     expect(component.currentStep()).toBe("countDone");
     expect(matDialogMock.open).toHaveBeenCalledWith(ConfirmationDialogComponent, expect.anything());
 
-    confirmClosed$.next(true);
+    confirmClosed$.next({ confirmed: true });
     confirmClosed$.complete();
 
     expect(tokenSvc.getSerial).toHaveBeenCalledTimes(2);
@@ -163,13 +164,13 @@ describe("TokenGetSerialComponent", () => {
     expect(component.foundSerial()).toBe("BIG-1");
 
     (tokenSvc.getSerial as jest.Mock).mockReset().mockImplementationOnce(() => of(makeCountResp(100)));
-    confirmClosed$ = new Subject<boolean>();
+    confirmClosed$ = new Subject<DialogReturnData>();
 
     component.resetSteps();
     component.countTokens();
     expect(component.currentStep()).toBe("countDone");
 
-    confirmClosed$.next(false);
+    confirmClosed$.next({ confirmed: false });
     confirmClosed$.complete();
 
     expect(tokenSvc.getSerial as jest.Mock).toHaveBeenCalledTimes(1);

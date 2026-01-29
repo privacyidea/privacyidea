@@ -32,7 +32,7 @@ import { MockNotificationService, MockTableUtilsService } from "../../../../test
 import { MockAuthService } from "../../../../testing/mock-services/mock-auth-service";
 
 class LocalMockMatDialog {
-  result$ = of(true);
+  result$ = of({ confirmed: true });
   open = jest.fn(() => ({
     afterClosed: () => this.result$
   }));
@@ -153,7 +153,7 @@ describe("UserSourcesComponent", () => {
   });
 
   it("onDeleteResolver should delete after confirmation", () => {
-    dialog.result$ = of(true);
+    dialog.result$ = of({ confirmed: true });
     const resolver = { resolvername: "res1", type: "passwdresolver", censor_keys: [], data: {} } as Resolver;
 
     component.onDeleteResolver(resolver);
@@ -164,7 +164,7 @@ describe("UserSourcesComponent", () => {
   });
 
   it("onDeleteResolver should not delete if cancelled", () => {
-    dialog.result$ = of(false);
+    dialog.result$ = of({ confirmed: false });
     const resolver = { resolvername: "res1", type: "passwdresolver", censor_keys: [], data: {} } as Resolver;
 
     component.onDeleteResolver(resolver);
@@ -174,7 +174,7 @@ describe("UserSourcesComponent", () => {
   });
 
   it("onDeleteResolver should show error if delete fails", () => {
-    dialog.result$ = of(true);
+    dialog.result$ = of({ confirmed: true });
     const resolver = { resolvername: "res1", type: "passwdresolver", censor_keys: [], data: {} } as Resolver;
     resolverService.deleteResolver.mockReturnValue({
       subscribe: (obs: any) => obs.error({ message: "Delete failed" })
@@ -186,7 +186,7 @@ describe("UserSourcesComponent", () => {
   });
 
   it("onDeleteResolver should show error message from response if delete fails", () => {
-    dialog.result$ = of(true);
+    dialog.result$ = of({ confirmed: true });
     const resolver = { resolvername: "res1", type: "passwdresolver", censor_keys: [], data: {} } as Resolver;
     const errorResponse = {
       error: {

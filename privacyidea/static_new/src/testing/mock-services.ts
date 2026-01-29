@@ -45,7 +45,7 @@ import { Realm, Realms, RealmServiceInterface } from "../app/services/realm/real
 import { computed, linkedSignal, Resource, ResourceStatus, Signal, signal, WritableSignal } from "@angular/core";
 import { UserAttributePolicy, UserData, UserServiceInterface } from "../app/services/user/user.service";
 import { ValidateCheckResponse, ValidateServiceInterface } from "../app/services/validate/validate.service";
-import { ContentServiceInterface } from "../app/services/content/content.service";
+import { ContentService, ContentServiceInterface } from "../app/services/content/content.service";
 import { FilterValue } from "../app/core/models/filter_value";
 import { LocalServiceInterface } from "../app/services/local/local.service";
 import { MatTableDataSource } from "@angular/material/table";
@@ -336,9 +336,7 @@ export class MockNotificationService implements NotificationServiceInterface {
   timerSub: Subscription = new Subscription();
   startTime: number = 0;
 
-  openSnackBar = jest.fn().mockImplementation((message: string) => {
-    // Simulate showing a notification
-  });
+  openSnackBar = jest.fn();
 }
 
 export class MockValidateService implements ValidateServiceInterface {
@@ -548,6 +546,8 @@ export class MockContentService implements ContentServiceInterface {
   );
 
   onTokensContainersTemplates = signal(false); // Is mocked, not an actual implementation
+
+  onEvents: Signal<boolean> = computed(() => this.routeUrl() === ROUTE_PATHS.EVENTS);
 
   tokenSelected = jest.fn().mockImplementation((serial: string) => {
     this.tokenSerial.set(serial);
