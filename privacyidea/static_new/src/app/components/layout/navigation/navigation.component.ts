@@ -55,6 +55,7 @@ import { FormsModule } from "@angular/forms";
 import { RealmService, RealmServiceInterface } from "../../../services/realm/realm.service";
 import { ResolverService, ResolverServiceInterface } from "../../../services/resolver/resolver.service";
 import { PeriodicTaskService } from "../../../services/periodic-task/periodic-task.service";
+import { SubscriptionService } from "../../../services/subscription/subscription.service";
 
 @Component({
   selector: "app-navigation",
@@ -102,6 +103,7 @@ export class NavigationComponent {
   protected readonly sessionTimerService: SessionTimerServiceInterface = inject(SessionTimerService);
   private readonly resolverService: ResolverServiceInterface = inject(ResolverService);
   protected readonly periodicTaskService = inject(PeriodicTaskService);
+  protected readonly subscriptionService = inject(SubscriptionService);
   protected readonly router: Router = inject(Router);
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
 
@@ -167,6 +169,9 @@ export class NavigationComponent {
       case ROUTE_PATHS.USERS_RESOLVERS:
         this.resolverService.resolversResource.reload();
         break;
+      case ROUTE_PATHS.SUBSCRIPTION:
+        this.subscriptionService.subscriptionResource.reload();
+        break;
     }
   }
 
@@ -177,5 +182,13 @@ export class NavigationComponent {
     event.stopPropagation();
 
     this.router.navigate([ROUTE_PATHS.POLICIES]);
+  }
+
+  onSubscriptionHeaderClick(event: MouseEvent): void {
+    event.preventDefault();
+    (event as any).stopImmediatePropagation?.();
+    event.stopPropagation();
+
+    this.router.navigate([ROUTE_PATHS.SUBSCRIPTION]);
   }
 }

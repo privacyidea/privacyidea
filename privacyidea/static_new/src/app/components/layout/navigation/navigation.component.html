@@ -543,6 +543,24 @@
         }
       </mat-list>
     </mat-expansion-panel>
+    @if (authService.actionAllowed("managesubscription")) {
+      <mat-expansion-panel
+        [disabled]="true"
+        [ngClass]="{ 'childless-expension-panel-header-active': this.contentService.onSubscription() }"
+        class="childless-expension-panel-header">
+        <mat-expansion-panel-header (click)="onSubscriptionHeaderClick($event)">
+          <mat-panel-title>
+            <mat-icon>assignment</mat-icon>
+            <span i18n>Subscriptions</span>
+          </mat-panel-title>
+          <mat-icon
+            [class.active]="router.url.startsWith(ROUTE_PATHS.SUBSCRIPTION)"
+            class="childless-expansion-panel-arrow">
+            chevron_right
+          </mat-icon>
+        </mat-expansion-panel-header>
+      </mat-expansion-panel>
+    }
   </mat-accordion>
 
   <div class="sticky-actions">

@@ -1,0 +1,9 @@
+@use "../../../styles";
+
+.subscription-layout {
+  @include styles.table-container-styles;
+  max-height: var(--max-height);
+  max-width: calc(100vw - var(--global-padding) * 5 - 48px);
+  overflow: auto;
+  display: grid;
+}
